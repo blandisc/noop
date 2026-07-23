@@ -61,7 +61,10 @@ public struct LiquidHoyModel: Sendable {
     }
 
     public enum Carga: Sendable {
-        case medida(pos: Double, zone: Int, status: String, state: LiquidSignalState)
+        /// `ratio` es el DATO (p. ej. «1.03») separado del rótulo de estado (pasada UI:
+        /// jerarquía de dato — el número pesa más que el rótulo).
+        case medida(pos: Double, zone: Int, status: String, ratio: String?,
+                    state: LiquidSignalState)
         case calibrando(status: String)
     }
 
@@ -75,10 +78,16 @@ public struct LiquidHoyModel: Sendable {
         public let tone: Color
         public let icon: LiquidIcon.Glyph
         public let origen: LiquidOrigen
+        /// Valencia YA localizada para VoiceOver («mejor que tu base») — el color solo no
+        /// habla (pasada UX). `nil` = sin valencia.
+        public let a11yValencia: String?
+        /// Origen YA localizado para VoiceOver («Apple Salud» / «calculado en tu teléfono»).
+        public let a11yOrigen: String?
 
         public init(id: String, label: String, value: String, unit: String = "",
                     delta: String, deltaTone: LiquidDeltaTone = .neutral, tone: Color,
-                    icon: LiquidIcon.Glyph, origen: LiquidOrigen = .medido) {
+                    icon: LiquidIcon.Glyph, origen: LiquidOrigen = .medido,
+                    a11yValencia: String? = nil, a11yOrigen: String? = nil) {
             self.id = id
             self.label = label
             self.value = value
@@ -88,6 +97,8 @@ public struct LiquidHoyModel: Sendable {
             self.tone = tone
             self.icon = icon
             self.origen = origen
+            self.a11yValencia = a11yValencia
+            self.a11yOrigen = a11yOrigen
         }
     }
 
@@ -98,15 +109,18 @@ public struct LiquidHoyModel: Sendable {
     /// `nil` = la barra de carga no se muestra (el modelo de carga aún no siembra).
     public let carga: Carga?
     public let metricas: [Metrica]
+    /// Hint de VoiceOver del héroe («Abre el detalle»), YA localizado. `nil` = sin hint.
+    public let heroHint: String?
 
     public init(kicker: String, dial: Dial, senales: [Senal], hero: Hero, carga: Carga?,
-                metricas: [Metrica]) {
+                metricas: [Metrica], heroHint: String? = nil) {
         self.kicker = kicker
         self.dial = dial
         self.senales = senales
         self.hero = hero
         self.carga = carga
         self.metricas = metricas
+        self.heroHint = heroHint
     }
 
     /// El contenido de muestra del ensamble §7.1 («Dale con todo»).
@@ -125,7 +139,7 @@ public struct LiquidHoyModel: Sendable {
                          highlightTone: LiquidColor.verdePrimario,
                          subtitle: "Tus 3 señales amanecieron dentro de tu rango.",
                          confianza: nil),
-        carga: .medida(pos: 51.5, zone: 1, status: "EN EQUILIBRIO · 1.03", state: .ok),
+        carga: .medida(pos: 51.5, zone: 1, status: "EN EQUILIBRIO", ratio: "1.03", state: .ok),
         metricas: [
             .init(id: "sueno", label: "SUEÑO", value: "7:20", delta: "En tu base",
                   tone: LiquidColor.indigo, icon: .luna),
@@ -198,6 +212,7 @@ public struct LiquidHoyContent: View {
                     LiquidMetricTile(
                         label: m.label, value: m.value, unit: m.unit, delta: m.delta,
                         deltaTone: m.deltaTone, tone: m.tone, icon: m.icon, origen: m.origen,
+                        a11yValencia: m.a11yValencia, a11yOrigen: m.a11yOrigen,
                         action: onTapMetric.map { tap in { tap(m.id) } })
                         .liquidEntrada(index: 4 + i)
                 }
@@ -221,6 +236,7 @@ public struct LiquidHoyContent: View {
         if let onTapHero {
             Button(action: onTapHero) { heroView }
                 .buttonStyle(.liquidPress)
+                .accessibilityHint(Text(verbatim: model.heroHint ?? ""))
         } else {
             heroView
         }
@@ -229,9 +245,9 @@ public struct LiquidHoyContent: View {
     @ViewBuilder
     private var carga: some View {
         switch model.carga {
-        case .medida(let pos, let zone, let status, let state):
+        case .medida(let pos, let zone, let status, let ratio, let state):
             LiquidCargaBar(modo: .medida(pos: pos, zone: zone), status: status,
-                           state: state, action: onTapCarga)
+                           ratio: ratio, state: state, action: onTapCarga)
         case .calibrando(let status):
             LiquidCargaBar(modo: .calibrando, status: status, action: onTapCarga)
         case nil:
@@ -242,7 +258,10 @@ public struct LiquidHoyContent: View {
     /// Zona de señales (alto 178): cables vivos de fondo + 3 orbes centrados gap 53.
     private var senales: some View {
         ZStack(alignment: .top) {
+            // Detalle fino (pasada UI): los cables llegan al FINAL de la cascada de
+            // entrada — primera impresión serena, el movimiento entra como respiración.
             LiquidSignalCables()
+                .liquidEntrada(index: 12)
             HStack(spacing: 53) {
                 ForEach(model.senales) { senal in
                     LiquidSignalOrb(label: senal.label, caption: senal.caption,
@@ -252,7 +271,7 @@ public struct LiquidHoyContent: View {
                 }
             }
         }
-        .frame(height: 178)
+        .frame(height: 140)
         .frame(maxWidth: .infinity)
     }
 }

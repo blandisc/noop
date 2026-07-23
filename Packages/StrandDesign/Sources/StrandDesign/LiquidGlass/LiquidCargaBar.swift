@@ -21,19 +21,25 @@ public struct LiquidCargaBar: View {
     private let label: String
     private let modo: LiquidCargaModo
     private let status: String
+    private let ratio: String?
     private let state: LiquidSignalState
     private let action: (() -> Void)?
 
     @State private var shownPos: Double = 50
     @State private var entered = false
+    @State private var haloOut = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.liquidMotionDisabled) private var motionDisabled
 
+    /// `ratio` es el DATO («1.03») separado del rótulo (`status` = «EN EQUILIBRIO»):
+    /// jerarquía de dato de la pasada UI /inject.
     public init(label: String = "CARGA", modo: LiquidCargaModo, status: String,
-                state: LiquidSignalState = .ok, action: (() -> Void)? = nil) {
+                ratio: String? = nil, state: LiquidSignalState = .ok,
+                action: (() -> Void)? = nil) {
         self.label = label
         self.modo = modo
         self.status = status
+        self.ratio = ratio
         self.state = state
         self.action = action
     }
@@ -42,7 +48,7 @@ public struct LiquidCargaBar: View {
     public init(label: String = "CARGA", pos: Double, zone: Int, status: String,
                 state: LiquidSignalState = .ok, action: (() -> Void)? = nil) {
         self.init(label: label, modo: .medida(pos: pos, zone: zone), status: status,
-                  state: state, action: action)
+                  ratio: nil, state: state, action: action)
     }
 
     public var body: some View {
@@ -69,21 +75,35 @@ public struct LiquidCargaBar: View {
                 .textCase(.uppercase)
                 .foregroundStyle(LiquidColor.tinta500)
             bar
-            Text(status)
-                .font(LiquidType.cargaStatus).tracking(LiquidType.cargaStatusTracking)
-                .foregroundStyle(calibrando ? LiquidColor.tinta500 : state.status)
-                .lineLimit(1)
+            HStack(alignment: .firstTextBaseline, spacing: 5) {
+                // Rótulo en tinta; el NÚMERO es el dato y lleva el tono (pasada UI).
+                Text(status)
+                    .font(LiquidType.cargaStatus).tracking(LiquidType.cargaStatusTracking)
+                    .foregroundStyle(calibrando ? LiquidColor.tinta500 : LiquidColor.tinta700)
+                if let ratio {
+                    Text(ratio)
+                        .font(LiquidType.cargaRatio)
+                        .foregroundStyle(state.status)
+                }
+            }
+            .lineLimit(1)
         }
         .padding(.vertical, 9)
         .padding(.horizontal, LiquidSpace.s400)
         .liquidGlass(.pastilla)
+        // Área tocable ≥ 44 pt sin engordar el vidrio (pasada UX).
+        .padding(.vertical, 3)
+        .contentShape(Rectangle())
         .onAppear {
             guard case .medida = modo, !entered, !motionDisabled else { return }
             entered = true
             if reduceMotion {
                 shownPos = clampedPos
+                haloOut = true
             } else {
                 withAnimation(LiquidMotion.ringProgress) { shownPos = clampedPos }
+                withAnimation(LiquidMotion.glassOut(LiquidMotion.gentle)
+                    .delay(LiquidMotion.gentle)) { haloOut = true }
             }
         }
     }
@@ -116,6 +136,13 @@ public struct LiquidCargaBar: View {
                 }
                 .padding(.vertical, 3)
                 if !calibrando {
+                    // Halo de llegada (detalle fino /inject): un pulso único al asentarse.
+                    Circle()
+                        .stroke(LiquidColor.verdeAurora, lineWidth: 1.5)
+                        .frame(width: 10, height: 10)
+                        .scaleEffect(haloOut ? 2.6 : 0.8)
+                        .opacity(haloOut ? 0 : 0.55)
+                        .offset(x: w * effectivePos / 100 - 5)
                     Circle()
                         .fill(Color.white)
                         .overlay(Circle().strokeBorder(LiquidColor.tinta900, lineWidth: 2))

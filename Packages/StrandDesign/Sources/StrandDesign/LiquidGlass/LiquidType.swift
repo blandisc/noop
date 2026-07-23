@@ -85,7 +85,8 @@ public enum LiquidType {
     public static let microTracking: CGFloat = 0.8
 
     /// `micro/estado` — 9/600. Chips de estado («EN TU RANGO»).
-    public static let microEstado = InstrumentoType.grotesk(9, weight: .semibold)
+    public static let microEstado = InstrumentoType.grotesk(9, weight: .semibold,
+                                                            relativeTo: .caption2)
 
     /// `botón` — 14/600, tracking +0.2. GlassButton.
     public static let boton = InstrumentoType.grotesk(14, weight: .semibold)
@@ -94,11 +95,17 @@ public enum LiquidType {
     // MARK: Specs de componente (no forman parte de la escala pública, pero son cerradas)
 
     /// Label de CargaBar — 10.5/600, tracking +1.6 (subido del 9 del handoff, /inject).
-    public static let cargaLabel = InstrumentoType.grotesk(10.5, weight: .semibold)
+    public static let cargaLabel = InstrumentoType.grotesk(10.5, weight: .semibold,
+                                                           relativeTo: .caption)
     public static let cargaLabelTracking: CGFloat = 1.6
 
+    /// El RATIO de CargaBar — 15/700 tabular, escala con Dynamic Type (el dato de la
+    /// barra, separado del rótulo; pasada UI /inject).
+    public static let cargaRatio = InstrumentoType.groteskNumber(15, relativeTo: .caption)
+
     /// Status de CargaBar — 11.5/700, tracking +1 (subido del 10 del handoff, /inject).
-    public static let cargaStatus = InstrumentoType.grotesk(11.5, weight: .bold)
+    public static let cargaStatus = InstrumentoType.grotesk(11.5, weight: .bold,
+                                                            relativeTo: .caption)
     public static let cargaStatusTracking: CGFloat = 1
 }
 

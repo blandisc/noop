@@ -109,7 +109,7 @@ public enum LiquidMotion {
 
     /// Largo del pulso como fracción del cable (los 2.5 pt del dash sobre un cable de
     /// ~130 pt del ensamble).
-    public static let flowPulseLength: Double = 0.02
+    public static let flowPulseLength: Double = 0.06
 }
 
 // MARK: - Override de motion para previews/tests

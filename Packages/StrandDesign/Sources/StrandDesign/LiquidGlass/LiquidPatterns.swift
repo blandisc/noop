@@ -312,10 +312,12 @@ public struct LiquidSignalCables: View {
     /// Paths del ensamble (viewBox 358 × 178) con el delay de su pulso. Cada cable lleva un
     /// TRAMO DE CONEXIÓN inicial (línea desde y=72, el pie de su orbe) para que el pulso
     /// nazca visiblemente EN el orbe (pedido del dueño, sesión /inject 2026-07-22).
+    // Zona comprimida ~25 % (pasada UI /inject): el vacío entre orbes y héroe se recorta
+    // para que veredicto + carga + primera fila de tiles entren al primer pantallazo.
     private static let cables: [(d: String, delay: Double)] = [
-        ("M62 56 L62 94 C52 122, 112 132, 130 148 S153 161, 156 165", 0.0),
-        ("M179 56 L179 100 C171 120, 192 140, 187 156 S183 165, 182 170", 0.8),
-        ("M296 56 L296 94 C305 126, 262 138, 234 152 S211 162, 207 166", 1.6),
+        ("M62 56 L62 88 C54 104, 108 110, 124 118 S148 126, 152 128", 0.0),
+        ("M179 56 L179 92 C173 102, 190 110, 186 118 S183 124, 182 127", 0.8),
+        ("M296 56 L296 88 C304 106, 260 112, 238 120 S212 126, 208 128", 1.6),
     ]
 
     public var body: some View {

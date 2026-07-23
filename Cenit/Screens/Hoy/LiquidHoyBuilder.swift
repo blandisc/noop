@@ -98,7 +98,8 @@ enum LiquidHoyBuilder {
             senales: senales(prep: i.preparedness, thermalDeviation: i.thermalDeviation),
             hero: hero,
             carga: carga(i.trainingLoad),
-            metricas: metricas(i))
+            metricas: metricas(i),
+            heroHint: String(localized: "Opens the detail"))
         return Output(model: model, heroRoute: route)
     }
 
@@ -191,8 +192,8 @@ enum LiquidHoyBuilder {
         _ = sleepMin
         return .demotado(
             kicker: String(localized: "READINESS"),
-            title: "Aún sin datos suficientes",
-            subtitle: "Duerme con tu Apple Watch unas noches y aquí amanece tu veredicto del día.")
+            title: String(localized: "Not enough data yet"),
+            subtitle: String(localized: "Sleep with your Apple Watch a few nights and your daily verdict will appear here."))
     }
 
     // MARK: Señales (port literal de `TodayView.needles()`)
@@ -208,7 +209,7 @@ enum LiquidHoyBuilder {
         // AUTONÓMICO — posición desde el z orientado del compuesto.
         let aut = driver(.autonomic)
         out.append(.init(
-            id: "autonomico", label: "AUTONÓMICO",
+            id: "autonomico", label: String(localized: "Autonomic"),
             caption: caption(for: aut?.state),
             progress: (aut?.state.hasData ?? false) ? positionFromZ(aut?.orientedZ) : nil,
             icon: .ondaSenal,
@@ -217,7 +218,7 @@ enum LiquidHoyBuilder {
         // SUEÑO — posición categórica por estado.
         let sleep = driver(.sleep)
         out.append(.init(
-            id: "sueno", label: "SUEÑO",
+            id: "sueno", label: String(localized: "Sleep"),
             caption: caption(for: sleep?.state),
             progress: (sleep?.state.hasData ?? false) ? positionFromState(sleep!.state) : nil,
             icon: .lunaSenal,
@@ -230,14 +231,14 @@ enum LiquidHoyBuilder {
             let cut = Preparedness.Config.default.thermalOutC
             let state: Preparedness.AxisState = dev >= cut ? .high : (dev <= -cut ? .low : .inRange)
             out.append(.init(
-                id: "termico", label: "TÉRMICO",
+                id: "termico", label: String(localized: "Thermal"),
                 caption: caption(for: state),
                 progress: positionFromState(state),
                 icon: .termoSenal,
                 state: state.isOut ? .atencion : .ok))
         } else {
             out.append(.init(
-                id: "termico", label: "TÉRMICO",
+                id: "termico", label: String(localized: "Thermal"),
                 caption: caption(for: Preparedness.AxisState.noData),
                 progress: nil, icon: .termoSenal, state: .ok))
         }
@@ -285,8 +286,8 @@ enum LiquidHoyBuilder {
         case .buildingFast: zone = 2
         case .spiking: zone = 3
         }
-        let status = "\(band.shortLabel.uppercased()) · \(String(format: "%.2f", acwr))"
-        return .medida(pos: pos, zone: zone, status: status,
+        return .medida(pos: pos, zone: zone, status: band.shortLabel.uppercased(),
+                       ratio: String(format: "%.2f", acwr),
                        state: band.flag == .good ? .ok : .atencion)
     }
 
@@ -425,7 +426,26 @@ enum LiquidHoyBuilder {
             tone: i.stress.map(stressTone) ?? LiquidColor.tinta500, icon: .estres,
             origen: .calculado))
 
-        return out
+        // VoiceOver (pasada UX): la valencia hace audible lo que el color muestra, y el
+        // origen viaja como accessibilityValue.
+        return out.map { m in
+            LiquidHoyModel.Metrica(
+                id: m.id, label: m.label, value: m.value, unit: m.unit, delta: m.delta,
+                deltaTone: m.deltaTone, tone: m.tone, icon: m.icon, origen: m.origen,
+                a11yValencia: valenciaA11y(m.deltaTone),
+                a11yOrigen: m.value == "—" ? nil
+                    : String(localized: m.origen == .medido
+                             ? "Apple Health source" : "computed on your phone"))
+        }
+    }
+
+    /// La valencia audible de un delta (nil cuando es neutro o no hay lectura).
+    private static func valenciaA11y(_ tone: LiquidDeltaTone) -> String? {
+        switch tone {
+        case .up: return String(localized: "better than your base")
+        case .down: return String(localized: "worse than your base")
+        case .neutral: return nil
+        }
     }
 
     /// El color del valor de Estrés por banda 0–3 (misma `StressBand` del tile actual),

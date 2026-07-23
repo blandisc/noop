@@ -23,6 +23,9 @@ public struct LiquidTabBar: View {
     private let active: LiquidTab
     private let onSelect: ((LiquidTab) -> Void)?
 
+    /// El selector de vidrio que se desliza a la pestaña activa (patrón nativo iOS).
+    @Namespace private var seleccion
+
     public init(active: LiquidTab, onSelect: ((LiquidTab) -> Void)? = nil) {
         self.active = active
         self.onSelect = onSelect
@@ -43,6 +46,21 @@ public struct LiquidTabBar: View {
         .padding(.horizontal, LiquidSpace.s150)
         .padding(.bottom, LiquidSpace.s150)
         .liquidGlass(.lente)
+        // El selector se desliza con carácter (glass-spring · quick).
+        .animation(LiquidMotion.glassSpring(LiquidMotion.quick), value: active)
+    }
+
+    /// La pastilla de vidrio del ítem activo: nativa en iOS 26, imitación antes.
+    @ViewBuilder
+    private var selectorPill: some View {
+        if #available(iOS 26.0, macOS 26.0, watchOS 26.0, *) {
+            Color.clear.glassEffect(.regular.interactive(), in: Capsule())
+        } else {
+            Capsule()
+                .fill(.ultraThinMaterial)
+                .overlay(Capsule().fill(Color.white.opacity(0.35)))
+                .overlay(Capsule().strokeBorder(LiquidColor.vidrioBordePastilla, lineWidth: 0.5))
+        }
     }
 
     private func item(_ tab: LiquidTab) -> some View {
@@ -55,7 +73,14 @@ public struct LiquidTabBar: View {
                 .font(LiquidType.tab(active: isActive))
                 .foregroundStyle(color)
         }
+        .padding(.vertical, 4)
         .frame(maxWidth: .infinity)
+        .background {
+            if isActive {
+                selectorPill
+                    .matchedGeometryEffect(id: "seleccion", in: seleccion)
+            }
+        }
         .contentShape(Rectangle())
     }
 }

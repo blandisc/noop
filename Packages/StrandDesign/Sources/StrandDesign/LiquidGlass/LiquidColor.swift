@@ -34,7 +34,7 @@ public enum LiquidColor {
     /// Fin del degradado de pantalla.
     public static let papelBajo = Color(hex: "#F0EDE4")
     /// Relleno del vidrio/lente (dock) — #FBF9F2 al 50 %.
-    public static let papelDock = Color(hex: "#FBF9F2").opacity(0.5)
+    public static let papelDock = Color(hex: "#FBF9F2").opacity(0.38)
 
     /// El degradado de pantalla papel/alto → papel/bajo (fondo base de toda pantalla Liquid).
     public static let papelGradient = LinearGradient(
@@ -87,6 +87,9 @@ public enum LiquidColor {
     public static let atencion = Color(hex: "#C4631F")
     /// Deltas en contra.
     public static let negativo = Color(hex: "#B3402A")
+    /// La voz de «atención» PARA TEXTO CHICO: el ámbar #C4631F ronda 3.5:1 sobre vidrio
+    /// (falla AA); esta variante oscurecida pasa 4.5:1 (pasada UI /inject 2026-07-22).
+    public static let atencionTexto = Color(hex: "#8F4712")
 
     // MARK: Blancos de vidrio (alfas fijos de #FFFFFF — §4.1)
 
@@ -103,11 +106,11 @@ public enum LiquidColor {
     /// `.55` — streak especular del dock.
     public static let vidrioStreak = Color.white.opacity(0.55)
     /// `.5` — relleno lente/dial.
-    public static let vidrioLente = Color.white.opacity(0.5)
+    public static let vidrioLente = Color.white.opacity(0.38)
     /// `.45` — relleno pastilla.
-    public static let vidrioPastilla = Color.white.opacity(0.45)
+    public static let vidrioPastilla = Color.white.opacity(0.32)
     /// `.30` — relleno superficie tile.
-    public static let vidrioSuperficie = Color.white.opacity(0.30)
+    public static let vidrioSuperficie = Color.white.opacity(0.20)
 }
 
 // MARK: - Estado de señal (§5.2 SignalOrb · §5.5 CargaBar)
@@ -134,11 +137,12 @@ public enum LiquidSignalState: Sendable {
         }
     }
 
-    /// El caption/status del estado («EN TU RANGO» / «EN EQUILIBRIO · 1.03»).
+    /// El caption/status del estado. Pasada UI /inject: en ok habla TINTA (el único verde
+    /// protagonista es la palabra del veredicto); en atención, el ámbar de texto AA.
     public var caption: Color {
         switch self {
-        case .ok: return LiquidColor.verdeProfundo
-        case .atencion: return LiquidColor.atencion
+        case .ok: return LiquidColor.tinta500
+        case .atencion: return LiquidColor.atencionTexto
         }
     }
 

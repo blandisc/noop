@@ -84,6 +84,21 @@ private struct LiquidGlassLayer<S: InsettableShape>: ViewModifier {
     let shadow: [LiquidShadowLayer]
 
     func body(content: Content) -> some View {
+        if #available(iOS 26.0, macOS 26.0, watchOS 26.0, *) {
+            // Liquid Glass NATIVO (investigación /inject 2026-07-22, Cupertino): el sistema
+            // aporta refracción, lensing y reactividad al toque reales — imposibles de
+            // imitar con material + relleno. La elevación tonal sigue siendo nuestra
+            // (silueta difuminada); el resto del stack queda como fallback para OS previos.
+            content
+                .glassEffect(.regular.interactive(), in: shape)
+                .liquidShadow(shadow, silhouette: shape)
+        } else {
+            imitacion(content)
+        }
+    }
+
+    /// El stack de imitación (< iOS 26): material del sistema + relleno blanco + bordes.
+    private func imitacion(_ content: Content) -> some View {
         content
             .background {
                 ZStack {
@@ -179,8 +194,8 @@ public struct LiquidSphere: View {
                 Circle().fill(
                     RadialGradient(
                         stops: [
-                            .init(color: .white.opacity(0.92), location: 0),
-                            .init(color: .white.opacity(0.38), location: 0.4),
+                            .init(color: .white.opacity(0.82), location: 0),
+                            .init(color: .white.opacity(0.24), location: 0.4),
                             .init(color: tone.opacity(0.22), location: 1),
                         ],
                         center: UnitPoint(x: 0.32, y: 0.24),
