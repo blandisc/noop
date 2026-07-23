@@ -72,6 +72,99 @@ struct LiquidMetricSheetView: View {
             levelsRelative: info.levelsRelative))
     }
 
+    // MARK: Modo DEMO en vivo (/inject 2026-07-23) — apagar al cerrar la sesión.
+
+    /// Con `true`, la hoja usa un dato de muestra por métrica y siembra las series de las
+    /// gráficas, para pulir el diseño en un simulador sin datos de Apple Salud.
+    private var demo: Bool { true }
+
+    /// El `MetricInfo` que la hoja MUESTRA: el fixture con dato en modo demo, el real si no.
+    private var datoInfo: MetricInfo { demo ? Self.demoInfo(info.id) : info }
+
+    /// Fixture con dato de muestra por id (mismas factories del catálogo → misma variante).
+    static func demoInfo(_ id: String) -> MetricInfo {
+        switch id {
+        case "sleep":     return .sleep(432)
+        case "hrv":       return .hrv(56)
+        case "rhr":       return .restingHR(52)
+        case "strain":    return .strain(10.0)
+        case "steps":     return .steps(8432)
+        case "spo2":      return .spo2(97)
+        case "skin_temp": return .skinTemp(0.1)
+        case "resp_rate": return .respiratory(14)
+        case "stress":    return .stress(1.2)
+        case "heart_rate": return .heartRate(avgBpm: 62)
+        case "recovery":  return .recovery(score: 78, calibrationNights: nil, nightsNeeded: 4)
+        case "vo2max":    return .vo2max(42)
+        default:          return .hrv(56)
+        }
+    }
+
+    /// Centro plausible de la serie por id (para niveles y trend de muestra).
+    private static func demoCentro(_ id: String) -> (centro: Double, amp: Double) {
+        switch id {
+        case "sleep":     return (430, 45)
+        case "rhr":       return (54, 5)
+        case "strain":    return (10, 3)
+        case "steps":     return (8000, 1600)
+        case "spo2":      return (97, 1.2)
+        case "skin_temp": return (0.1, 0.35)
+        case "resp_rate": return (14, 1.2)
+        case "stress":    return (1.2, 0.5)
+        default:          return (55, 8)   // hrv
+        }
+    }
+
+    /// Formateador de day-key «yyyy-MM-dd» (el que `parseDayKey` entiende).
+    private static let demoKeyFmt: DateFormatter = {
+        let f = DateFormatter()
+        f.calendar = Calendar(identifier: .gregorian)
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
+
+    /// 30 días de serie diaria de muestra (day-keys válidas), deterministas.
+    static func demoRows(_ id: String) -> [(day: String, value: Double)] {
+        let (centro, amp) = demoCentro(id)
+        let cal = Calendar.current
+        let hoy = Date()
+        return (0..<30).reversed().map { i in
+            let fecha = cal.date(byAdding: .day, value: -i, to: hoy) ?? hoy
+            let onda: Double = sin(Double(i) * 0.6)
+            let v: Double = centro + amp * onda + Double(i % 4) - 1.5
+            return (day: demoKeyFmt.string(from: fecha), value: v)
+        }
+    }
+
+    /// 14 puntos de tendencia de muestra.
+    static func demoTrend(_ id: String) -> [TrendPoint] {
+        let (centro, amp) = demoCentro(id)
+        let cal = Calendar.current
+        let hoy = Date()
+        return (0..<14).reversed().map { i in
+            let fecha = cal.date(byAdding: .day, value: -i, to: hoy) ?? hoy
+            let v: Double = centro + amp * sin(Double(i) * 0.5)
+            return TrendPoint(date: fecha, value: v)
+        }
+    }
+
+    /// Curva de FC de un día de muestra (~180 puntos, 5 min).
+    static func demoCurva() -> [TrendPoint] {
+        let cal = Calendar.current
+        let inicio = cal.startOfDay(for: Date())
+        return (0..<180).map { (i: Int) -> TrendPoint in
+            // Tipos explícitos: el type-checker se atora con expresiones mixtas largas.
+            let seg: Double = Double(i) * 300
+            let fecha: Date = inicio.addingTimeInterval(seg)
+            let hora: Double = seg / 3600
+            let circadiano: Double = sin(hora / 24 * 2 * Double.pi - 1.3)
+            let ruido: Double = sin(hora * 1.7)
+            let v: Double = 62 + 22 * circadiano + 6 * ruido
+            return TrendPoint(date: fecha, value: Swift.max(48, v))
+        }
+    }
+
     var body: some View {
         LiquidMetricSheet(tono: tono, detent: detent) {
             cabecera
@@ -79,6 +172,14 @@ struct LiquidMetricSheetView: View {
             pie
         }
         .task {
+            // Modo DEMO (/inject 2026-07-23): siembra datos de muestra para pulir la hoja
+            // en un simulador sin datos de Apple Salud. Apagar antes de cerrar la sesión.
+            if demo {
+                heartRateCurve = Self.demoCurva()
+                trendData = Self.demoTrend(info.id)
+                levelsHost.load(rows: Self.demoRows(info.id))
+                return
+            }
             // Paridad MetricInfoSheet:128-133 — curva FC solo para heart_rate.
             guard info.id == "heart_rate", let loader = heartRateCurveLoader else { return }
             heartRateLoading = true
@@ -86,6 +187,7 @@ struct LiquidMetricSheetView: View {
             heartRateLoading = false
         }
         .task {
+            if demo { return }
             // Paridad :134-140 — trend ordenado por fecha al cargar (FER-876).
             guard let loader = trendLoader else { return }
             trendLoading = true
@@ -94,6 +196,7 @@ struct LiquidMetricSheetView: View {
             trendLoading = false
         }
         .task {
+            if demo { return }
             // Paridad :141-151 — la serie completa de niveles, parseada UNA vez en el host.
             guard let loader = levelsSeriesLoader else { return }
             let rows: [(day: String, value: Double)] = await loader()
@@ -104,18 +207,18 @@ struct LiquidMetricSheetView: View {
     // MARK: Variantes (paridad `summaryBranch` :170-182 + skeleton F5)
 
     private var isRecoverySummary: Bool {
-        info.id == "recovery" && info.calibration == nil && info.displayValue != "—"
+        datoInfo.id == "recovery" && datoInfo.calibration == nil && datoInfo.displayValue != "—"
     }
     private static let vitalTemplateIDs: Set<String> =
         ["hrv", "rhr", "spo2", "skin_temp", "steps", "stress", "resp_rate"]
     private var isVitalTemplate: Bool {
-        info.usesLevels && Self.vitalTemplateIDs.contains(info.id)
+        datoInfo.usesLevels && Self.vitalTemplateIDs.contains(datoInfo.id)
     }
     /// F5 (comportamiento NUEVO, contrato §1.3): el modelo de sueño se construye off-main;
     /// mientras no llega, skeleton — la hoja vieja caía al layout clásico.
-    private var isSleepLoading: Bool { info.id == "sleep" && sleepDetail == nil }
-    private var isSleepRich: Bool { info.id == "sleep" && sleepDetail?.night != nil }
-    private var isStrainSummary: Bool { info.id == "strain" && info.displayValue != "—" }
+    private var isSleepLoading: Bool { datoInfo.id == "sleep" && sleepDetail == nil }
+    private var isSleepRich: Bool { datoInfo.id == "sleep" && sleepDetail?.night != nil }
+    private var isStrainSummary: Bool { datoInfo.id == "strain" && datoInfo.displayValue != "—" }
 
     @ViewBuilder private var cuerpo: some View {
         if isRecoverySummary {
@@ -136,8 +239,8 @@ struct LiquidMetricSheetView: View {
     // MARK: Detent (paridad :274-278)
 
     private var detent: LiquidSheetDetent {
-        (info.id == "strain" || info.id == "heart_rate" || trendLoader != nil
-            || info.usesLevels) ? .porContenido : .medio
+        (datoInfo.id == "strain" || datoInfo.id == "heart_rate" || trendLoader != nil
+            || datoInfo.usesLevels) ? .porContenido : .medio
     }
 
     // MARK: Tono + glifo + tinte (mapa id→hue de `LiquidHoyBuilder.metricas` extendido)
@@ -147,7 +250,7 @@ struct LiquidMetricSheetView: View {
     /// pasos → teal · respiración/SpO₂ → azul (familia dataSpO2) · recovery → verde.
     /// Estrés no tiene hue propio: banda 0–3 → verde/ámbar/rojo (paridad :96-97).
     private var tono: Color {
-        switch info.id {
+        switch datoInfo.id {
         case "sleep", "sleep_performance", "sleep_efficiency", "sleep_restorative",
              "sleep_awakenings", "sleep_latency":
             return LiquidColor.indigo
@@ -157,7 +260,7 @@ struct LiquidMetricSheetView: View {
         case "steps":               return LiquidColor.teal
         case "resp_rate", "spo2":   return LiquidColor.azul
         case "stress":
-            switch info.headerTint {
+            switch datoInfo.headerTint {
             case .good: return LiquidColor.verdePrimario
             case .warn: return LiquidColor.atencion
             case .bad:  return LiquidColor.negativo
@@ -172,7 +275,7 @@ struct LiquidMetricSheetView: View {
     /// Liquid no tiene gota («drop»); el oxígeno comparte la familia respiratoria (azul),
     /// mismo criterio que su hue. recovery y vo2max quedan sin glifo (paridad).
     private var glifo: LiquidIcon.Glyph? {
-        switch info.id {
+        switch datoInfo.id {
         case "sleep", "sleep_performance", "sleep_efficiency", "sleep_restorative",
              "sleep_awakenings", "sleep_latency":
             return .luna
@@ -204,21 +307,21 @@ struct LiquidMetricSheetView: View {
 
     /// Recovery y strain: «/ 100» · «/ 21» solo con score real (paridad :369-373).
     private var sufijo: String? {
-        if info.id == "recovery" { return isRecoverySummary ? "/ 100" : nil }
-        if info.id == "strain" { return info.displayValue != "—" ? "/ 21" : nil }
+        if datoInfo.id == "recovery" { return isRecoverySummary ? "/ 100" : nil }
+        if datoInfo.id == "strain" { return datoInfo.displayValue != "—" ? "/ 21" : nil }
         return nil
     }
 
     /// D3 — origen honesto Apple-only: calculado en el teléfono (recovery/strain/stress)
     /// o medido por Apple Salud; sin procedencia clara, sin punto (nunca «Band»).
     private var origen: LiquidOrigen? {
-        if ["recovery", "strain", "stress"].contains(info.id) { return .calculado }
+        if ["recovery", "strain", "stress"].contains(datoInfo.id) { return .calculado }
         if appleSource { return .medido }
         return nil
     }
 
     private var origenEtiqueta: String? {
-        if ["recovery", "strain", "stress"].contains(info.id) {
+        if ["recovery", "strain", "stress"].contains(datoInfo.id) {
             return String(localized: "Calculated")
         }
         if appleSource { return String(localized: "Apple Health") }
@@ -228,14 +331,14 @@ struct LiquidMetricSheetView: View {
     private var cabecera: some View {
         LiquidSheetHeader(
             icono: glifo,
-            titulo: LiquidSheetCopy.titulo(info.id),
+            titulo: LiquidSheetCopy.titulo(datoInfo.id),
             tono: tono,
             // La variante rica de sueño (y su skeleton) reemplazan el numeral con el
             // doble dato (paridad :333).
-            numeral: (isSleepRich || isSleepLoading) ? nil : info.displayValue,
-            unidad: info.unit,
+            numeral: (isSleepRich || isSleepLoading) ? nil : datoInfo.displayValue,
+            unidad: datoInfo.unit,
             sufijo: sufijo,
-            numeralTono: tinte(info.headerTint),
+            numeralTono: tinte(datoInfo.headerTint),
             origen: origen,
             origenEtiqueta: origenEtiqueta,
             explicacion: LiquidSheetCopy.headline(info))
@@ -253,7 +356,7 @@ struct LiquidMetricSheetView: View {
 
     /// Paridad `recoveryReadingText` (:615-622) — mismas claves.
     private var recoveryReadingText: String? {
-        switch info.headerTint {
+        switch datoInfo.headerTint {
         case .good: return String(localized: "Above your baseline, ready for a strong day.")
         case .warn: return String(localized: "Recovering, train but keep it controlled.")
         case .bad:  return String(localized: "Low, prioritize rest today.")
@@ -266,7 +369,7 @@ struct LiquidMetricSheetView: View {
     /// del único hogar clave→nombre (FER-731/638).
     private var recoveryZoneMeter: some View {
         let niveles = MetricLevels.levels(for: .recovery)
-        let score = info.levelsTodayValue ?? 0
+        let score = datoInfo.levelsTodayValue ?? 0
         let activo = MetricLevels.activeIndex(for: score, in: niveles)
         let segmentos = niveles.enumerated().map { (i, lvl) in
             LiquidZoneMeter.Segmento(
@@ -305,7 +408,7 @@ struct LiquidMetricSheetView: View {
 
     /// El nivel activo de la lectura de hoy (paridad `activeLevelKey` :425-429).
     private var activeLevelKey: String? {
-        guard let levels = levelsHost.levels, let v = info.levelsTodayValue,
+        guard let levels = levelsHost.levels, let v = datoInfo.levelsTodayValue,
               let idx = MetricLevels.activeIndex(for: v, in: levels) else { return nil }
         return levels[idx].key
     }
@@ -313,7 +416,7 @@ struct LiquidMetricSheetView: View {
     /// Paridad `vitalReadingText` (:443-474) — mismas claves, dicho en String.
     private var vitalReadingText: String? {
         guard let key = activeLevelKey else { return nil }
-        switch (info.id, key) {
+        switch (datoInfo.id, key) {
         case ("hrv", "above"):        return String(localized: "Above your base, a good sign.")
         case ("hrv", "inBase"):       return String(localized: "In your usual range.")
         case ("hrv", "below"):        return String(localized: "Below your base, worth a look.")
@@ -458,15 +561,15 @@ struct LiquidMetricSheetView: View {
     // MARK: Clásica (§1.5-1.6 — niveles o trend/curva/bandas + calibración)
 
     @ViewBuilder private var classicContent: some View {
-        if info.usesLevels {
+        if datoInfo.usesLevels {
             levelsBlock
         } else {
             if trendLoader != nil { trendBlock }
-            if info.id == "heart_rate" { heartRateBlock }
-            if !info.bands.isEmpty { bandsTableBlock }
+            if datoInfo.id == "heart_rate" { heartRateBlock }
+            if !datoInfo.bands.isEmpty { bandsTableBlock }
         }
         // La calibración cabalga junto a ambos layouts — solo recovery la trae (:234-236).
-        if let cal = info.calibration {
+        if let cal = datoInfo.calibration {
             LiquidCalibracionCard(
                 titulo: String(localized: "Calibrating baseline"),
                 leyenda: String(localized: "\(cal.done) of \(cal.needed) nights"),
@@ -505,15 +608,15 @@ struct LiquidMetricSheetView: View {
     /// Paridad `rangeReadout` (:852-867): banda activa = la de hoy (o la última lectura
     /// completada) + cuántos días/noches completados comparten su rango.
     private var trendReadout: (etiqueta: String, tono: Color, frase: String)? {
-        guard !info.bands.isEmpty, !trendData.isEmpty else { return nil }
-        let toHours = info.id == "sleep"
-        let isSteps = info.id == "steps"
+        guard !datoInfo.bands.isEmpty, !trendData.isEmpty else { return nil }
+        let toHours = datoInfo.id == "sleep"
+        let isSteps = datoInfo.id == "steps"
         let source = (isSteps && trendData.count > 1) ? Array(trendData.dropLast()) : trendData
         let values = source.map { toHours ? $0.value / 60 : $0.value }
-        let bands = info.bands.map {
+        let bands = datoInfo.bands.map {
             TrendBand(label: $0.label, lower: $0.lower, upper: $0.upper)
         }
-        guard let ai = info.bands.firstIndex(where: { $0.isActive })
+        guard let ai = datoInfo.bands.firstIndex(where: { $0.isActive })
             ?? TrendBands.activeBand(values: values, bands: bands)?.index else { return nil }
         let count = values.reduce(0) { $0 + (bands[ai].contains($1) ? 1 : 0) }
         let frase = nightly
@@ -533,7 +636,7 @@ struct LiquidMetricSheetView: View {
 
     /// Paridad `trendValueFormat` (:1104-1121) — mismos formatos por métrica.
     private func trendValueFormat(_ v: Double) -> String {
-        switch info.id {
+        switch datoInfo.id {
         case "strain", "stress", "resp_rate":
             return String(format: "%.1f", v)
         case "sleep":
@@ -573,7 +676,7 @@ struct LiquidMetricSheetView: View {
     private var bandsTableBlock: some View {
         let counts = bandCounts
         return LiquidBandsTable(
-            filas: info.bands.enumerated().map { (i, band) in
+            filas: datoInfo.bands.enumerated().map { (i, band) in
                 LiquidBandsTable.Fila(
                     etiqueta: etiquetaBanda(i),
                     rango: band.range,
@@ -585,15 +688,15 @@ struct LiquidMetricSheetView: View {
 
     /// Paridad `bandSummary` (:832-846): conteos por banda cuando el trend cargó.
     private var bandCounts: [Int]? {
-        guard !info.bands.isEmpty, !trendData.isEmpty else { return nil }
-        let toHours = info.id == "sleep"
-        let isSteps = info.id == "steps"
+        guard !datoInfo.bands.isEmpty, !trendData.isEmpty else { return nil }
+        let toHours = datoInfo.id == "sleep"
+        let isSteps = datoInfo.id == "steps"
         let source = (isSteps && trendData.count > 1) ? Array(trendData.dropLast()) : trendData
         let values = source.map { toHours ? $0.value / 60 : $0.value }
-        let bands = info.bands.map {
+        let bands = datoInfo.bands.map {
             TrendBand(label: $0.label, lower: $0.lower, upper: $0.upper)
         }
-        let todayIndex = isSteps ? nil : info.bands.firstIndex(where: { $0.isActive })
+        let todayIndex = isSteps ? nil : datoInfo.bands.firstIndex(where: { $0.isActive })
         return TrendBands.summarize(values: values, bands: bands, todayIndex: todayIndex)?.counts
     }
 
@@ -604,7 +707,7 @@ struct LiquidMetricSheetView: View {
     /// el rango numérico, que ya es String.
     private func etiquetaBanda(_ index: Int) -> String {
         let labels: [String]
-        switch info.id {
+        switch datoInfo.id {
         case "sleep_performance", "sleep_efficiency":
             labels = [String(localized: "Low"), String(localized: "Adequate"),
                       String(localized: "Optimal")]
@@ -617,7 +720,7 @@ struct LiquidMetricSheetView: View {
         default:
             labels = []
         }
-        return index < labels.count ? labels[index] : info.bands[index].range
+        return index < labels.count ? labels[index] : datoInfo.bands[index].range
     }
 
     // MARK: Curva FC 24h (paridad `heartRateSection` :889-976)
@@ -677,7 +780,7 @@ struct LiquidMetricSheetView: View {
 
     @ViewBuilder private var levelsBlock: some View {
         if levelsHost.levels != nil,
-           let d = levelsHost.clasificacion(today: info.levelsTodayValue) {
+           let d = levelsHost.clasificacion(today: datoInfo.levelsTodayValue) {
             let window = levelsHost.window
             VStack(alignment: .leading, spacing: LiquidSpace.s300) {
                 LiquidRangeSelector(opciones: ExploreRange.allCases.map(\.label),
@@ -690,7 +793,7 @@ struct LiquidMetricSheetView: View {
                 nivelesGrafica(d, window: window)
                 nivelesLista(d)
             }
-        } else if info.levelsRelative {
+        } else if datoInfo.levelsRelative {
             // HRV sin base propia todavía — nota honesta (paridad :737-741).
             LiquidNotaLine(String(localized: "Your levels come from your own baseline: a few more nights and they'll appear."))
         }
@@ -755,7 +858,7 @@ struct LiquidMetricSheetView: View {
                 "\(self.scrubValor(v)) · \(Self.diaCorto(f))"
             },
             estadoVacio: String(localized: "No readings in this range."),
-            a11yLabel: LiquidSheetCopy.titulo(info.id))
+            a11yLabel: LiquidSheetCopy.titulo(datoInfo.id))
     }
 
     /// Dominio Y del explorador (paridad `chartDomain` :163-173: umbrales + serie con
@@ -826,7 +929,7 @@ struct LiquidMetricSheetView: View {
         return n == 1 ? String(localized: "\(n) day") : String(localized: "\(n) days")
     }
 
-    private var nightly: Bool { BandSummaryCopy.isNightly(metricID: info.id) }
+    private var nightly: Bool { BandSummaryCopy.isNightly(metricID: datoInfo.id) }
 
     /// El nombre localizado de un nivel, del único hogar clave→nombre (FER-731; la clave
     /// inglesa ES la del catálogo, paridad `label` del explorador :253-255).
@@ -837,7 +940,7 @@ struct LiquidMetricSheetView: View {
     /// Formato del valor en el explorador (paridad :727-732): sueño h/min, piel una
     /// décima, resto entero.
     private func levelsValueFormat(_ v: Double) -> String {
-        switch info.id {
+        switch datoInfo.id {
         case "sleep":
             let h = Int(v) / 60, m = Int(v) % 60
             return m == 0 ? "\(h)h" : "\(h)h \(m)m"
@@ -850,7 +953,7 @@ struct LiquidMetricSheetView: View {
 
     /// El valor del chip de scrub: formato + unidad (paridad explorador :139).
     private func scrubValor(_ v: Double) -> String {
-        "\(levelsValueFormat(v)) \(info.unit ?? "")"
+        "\(levelsValueFormat(v)) \(datoInfo.unit ?? "")"
             .trimmingCharacters(in: .whitespaces)
     }
 
@@ -890,7 +993,7 @@ struct LiquidMetricSheetView: View {
     /// «Ver más» (paridad `seeMoreLink` :1186-1231): ancho completo hacia Tendencias
     /// para métricas con niveles, pastilla compacta para el resto.
     @ViewBuilder private func verMas(_ action: @escaping () -> Void) -> some View {
-        if info.usesLevels {
+        if datoInfo.usesLevels {
             LiquidVerMas(title: String(localized: "See more in Trends"),
                          hint: String(localized: "Opens the full detail"),
                          tone: tono, anchoCompleto: true, action: action)
