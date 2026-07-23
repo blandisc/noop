@@ -40,6 +40,13 @@ public enum LiquidColor {
     public static let papelGradient = LinearGradient(
         colors: [papelAlto, papelBajo], startPoint: .top, endPoint: .bottom)
 
+    /// Fondo NEUTRO del rediseño (decisión del dueño, sesión /inject 2026-07-22: adiós al
+    /// beige en Hoy) — el color lo ponen la aurora y los orbes, no el papel.
+    public static let fondoAlto = Color(hex: "#FCFCFB")
+    public static let fondoBajo = Color(hex: "#F1F2F0")
+    public static let fondoGradient = LinearGradient(
+        colors: [fondoAlto, fondoBajo], startPoint: .top, endPoint: .bottom)
+
     // MARK: Verde (única voz de marca)
 
     /// CTA, énfasis, palabra destacada del hero, pulsos.

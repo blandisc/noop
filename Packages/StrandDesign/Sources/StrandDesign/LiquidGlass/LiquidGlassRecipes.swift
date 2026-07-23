@@ -141,8 +141,9 @@ public struct LiquidVeil: View {
         Rectangle()
             .fill(.ultraThinMaterial)
             .overlay {
+                // Neutro (adiós beige, /inject): el velo tiñe con el fondo claro, no papel.
                 LinearGradient(
-                    colors: [LiquidColor.papelAlto.opacity(0.5), LiquidColor.papelAlto.opacity(0)],
+                    colors: [LiquidColor.fondoAlto.opacity(0.5), LiquidColor.fondoAlto.opacity(0)],
                     startPoint: .top, endPoint: .bottom)
             }
             .mask {

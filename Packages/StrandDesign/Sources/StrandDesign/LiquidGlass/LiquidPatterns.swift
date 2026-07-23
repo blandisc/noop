@@ -18,9 +18,14 @@ public struct LiquidOrbSpec: Sendable {
     let blur: CGFloat
     let period: Double
     let reverse: Bool
+    /// Radios del RECORRIDO del orbe (sesión /inject): el orbe circula por la pantalla en
+    /// una órbita suave de esta amplitud (pt), con un respiro de intensidad sutil. `.zero`
+    /// = el drift corto original del handoff.
+    let orbit: CGSize
 
     public init(alignment: Alignment, offset: CGSize, size: CGSize, tone: Color,
-                opacity: Double, blur: CGFloat, period: Double, reverse: Bool = false) {
+                opacity: Double, blur: CGFloat, period: Double, reverse: Bool = false,
+                orbit: CGSize = .zero) {
         self.alignment = alignment
         self.offset = offset
         self.size = size
@@ -29,6 +34,7 @@ public struct LiquidOrbSpec: Sendable {
         self.blur = blur
         self.period = period
         self.reverse = reverse
+        self.orbit = orbit
     }
 }
 
@@ -59,13 +65,16 @@ public struct LiquidAmbientBackground: View {
             orbs: [
                 .init(alignment: .topLeading, offset: CGSize(width: -50, height: 110),
                       size: CGSize(width: 280, height: 240), tone: LiquidColor.verdeOrbe,
-                      opacity: 0.24, blur: 28, period: 16),
+                      opacity: 0.24, blur: 28, period: 16,
+                      orbit: CGSize(width: 110, height: 190)),
                 .init(alignment: .topTrailing, offset: CGSize(width: 60, height: 430),
                       size: CGSize(width: 300, height: 260), tone: LiquidColor.verdePrimario,
-                      opacity: 0.18, blur: 30, period: 21, reverse: true),
+                      opacity: 0.18, blur: 30, period: 21, reverse: true,
+                      orbit: CGSize(width: 130, height: 230)),
                 .init(alignment: .bottomLeading, offset: CGSize(width: 90, height: -60),
                       size: CGSize(width: 240, height: 200), tone: LiquidColor.indigo,
-                      opacity: 0.13, blur: 28, period: 26),
+                      opacity: 0.13, blur: 28, period: 26,
+                      orbit: CGSize(width: 90, height: 150)),
             ])
     }
 
@@ -75,7 +84,9 @@ public struct LiquidAmbientBackground: View {
             let w = geo.size.width
             let h = geo.size.height
             ZStack {
-                LiquidColor.papelGradient
+                // Fondo neutro (adiós beige en Hoy, /inject): el color lo ponen la aurora
+                // y los orbes que circulan.
+                LiquidColor.fondoGradient
                 // Aurora: radial 120 % × 55 % anclada arriba (50 % / −8 %).
                 if !debugHide.contains("aurora") {
                     RadialGradient(stops: auroraStops,
@@ -88,19 +99,27 @@ public struct LiquidAmbientBackground: View {
                     TimelineView(.animation(minimumInterval: 1.0 / 20.0, paused: still)) { context in
                         let t = still ? 0 : context.date.timeIntervalSinceReferenceDate
                         ZStack {
-                            ForEach(Array(orbs.enumerated()), id: \.offset) { _, orb in
+                            ForEach(Array(orbs.enumerated()), id: \.offset) { index, orb in
                                 let u = still ? 0 : LiquidMotion.driftProgress(
                                     time: t, period: orb.period, reverse: orb.reverse)
-                                // Sin `.blur` (el degradado radial YA es suave): el blur de una
-                                // capa enorme era candidato a artefactos y costo de GPU.
+                                // Órbita suave por la pantalla (/inject): desplazamiento
+                                // Lissajous que arranca en 0 (Reduce Motion = layout del
+                                // handoff) con periodos ≥16 s, + un respiro sutil de
+                                // intensidad. Sin `.blur` (el degradado radial YA es suave).
+                                let theta = still ? 0 : 2 * .pi * t / orb.period
+                                    + Double(index) * 2.1
+                                let ox = orb.orbit.width * CGFloat(sin(theta))
+                                let oy = orb.orbit.height * CGFloat(sin(theta * 0.5))
+                                let breathe = still ? 1.0 : 0.8 + 0.2 * (0.5 + 0.5 * sin(theta))
                                 Ellipse()
                                     .fill(EllipticalGradient(
-                                        colors: [orb.tone.opacity(orb.opacity), orb.tone.opacity(0)],
+                                        colors: [orb.tone.opacity(orb.opacity * breathe),
+                                                 orb.tone.opacity(0)],
                                         center: .center))
                                     .frame(width: orb.size.width, height: orb.size.height)
                                     .scaleEffect(1 + (LiquidMotion.driftScaleMax - 1) * u)
-                                    .offset(x: orb.offset.width + LiquidMotion.driftTranslation.width * u,
-                                            y: orb.offset.height + LiquidMotion.driftTranslation.height * u)
+                                    .offset(x: orb.offset.width + ox,
+                                            y: orb.offset.height + oy)
                                     .frame(maxWidth: .infinity, maxHeight: .infinity,
                                            alignment: orb.alignment)
                             }
