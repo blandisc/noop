@@ -32,7 +32,36 @@ public struct LiquidIcon: View {
         self.color = color
     }
 
+    /// Los 8 glifos de MÉTRICA se dibujan como el SF Symbol que ya ancla su hoja de
+    /// resumen (decisión del dueño, /inject 2026-07-22: mismos iconos arriba y abajo —
+    /// el tile promete exactamente lo que la hoja entrega). El resto sigue con los paths
+    /// custom del handoff.
+    private var sfName: String? {
+        switch glyph {
+        case .luna: "moon"
+        case .onda: "waveform.path.ecg"
+        case .corazon: "heart"
+        case .llama: "bolt"
+        case .pasos: "figure.walk"
+        case .termo: "thermometer.medium"
+        case .resp: "lungs"
+        case .estres: "waveform.path"
+        default: nil
+        }
+    }
+
     public var body: some View {
+        if let sfName {
+            Image(systemName: sfName)
+                .font(.system(size: size * 0.78, weight: .semibold))
+                .foregroundStyle(color)
+                .frame(width: size, height: size)
+        } else {
+            custom
+        }
+    }
+
+    @ViewBuilder private var custom: some View {
         // Geometría RELLENA (el contorno del trazo convertido a path con `strokedPath` y
         // luego `fill`): el render de trazos de glifos chicos se comió dos hipótesis en
         // device — el relleno de geometría pura no depende de ese camino.
