@@ -84,6 +84,9 @@ public struct LiquidCargaBar: View {
                 Text(status)
                     .font(LiquidType.cargaStatus).tracking(LiquidType.cargaStatusTracking)
                     .foregroundStyle(calibrando ? LiquidColor.tinta500 : LiquidColor.tinta700)
+                    // «EN EQUILIBRIO» + ratio no caben a 402 pt: el rótulo cede tamaño
+                    // antes que truncarse con elipsis (defecto visto en render /inject).
+                    .minimumScaleFactor(0.8)
                 if let ratio {
                     Text(ratio)
                         .font(LiquidType.cargaRatio)
