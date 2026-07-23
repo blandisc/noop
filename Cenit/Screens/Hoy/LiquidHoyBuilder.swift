@@ -128,7 +128,10 @@ enum LiquidHoyBuilder {
             }
             return (lecturaDeDia(prep), .autonomic)
         }
-        return (suenoFallback(sleepMin: sleepMin), .sleep)
+        // Decisión del dueño (sesión /inject 2026-07-22): sin veredicto NO se disfraza el
+        // héroe con otro dato — los 5 estados canónicos son full/caution/easy · lectura de
+        // día · «aún sin datos suficientes». El fallback de sueño de anoche se retiró.
+        return (suenoFallback(sleepMin: sleepMin), .autonomic)
     }
 
     /// Renglones 1 (full/caution/easy con noche): la palabra-veredicto con su tono.
@@ -175,22 +178,14 @@ enum LiquidHoyBuilder {
             subtitle: String(localized: "No sleep reading last night; this is less precise."))
     }
 
-    /// Renglón 3 (`lowSignal` ∨ `prep == nil`): el sueño medido de anoche (paridad
-    /// `appleTrendHero`) — nunca una palabra-veredicto.
+    /// Renglón 5 (`lowSignal` ∨ `prep == nil`): «aún sin datos suficientes» — SIEMPRE,
+    /// haya o no sueño grabado (decisión del dueño: el héroe de sueño de anoche se retiró;
+    /// el sueño vive en su tile y su detalle). El parámetro `sleepMin` queda ignorado y se
+    /// limpia de la firma en el cierre de la sesión (quitar parámetros no es inyectable).
+    // TODO(/inject cierre): mover este copy al String Catalog (clave EN + es-MX) y limpiar
+    // la firma + el caso `.sleep` de HeroRoute.
     private static func suenoFallback(sleepMin: Double?) -> LiquidHoyModel.Hero {
-        if let sleepMin, sleepMin > 0 {
-            let h = Int(sleepMin) / 60, m = Int(sleepMin) % 60
-            return .demotado(
-                kicker: String(localized: "LAST NIGHT'S SLEEP"),
-                title: "\(h) h \(m) m",
-                subtitle: sleepMin >= 420
-                    ? String(localized: "You slept well")
-                    : String(localized: "Sleep was short"))
-        }
-        // Sin veredicto Y sin nada que mostrar: honestidad explícita en vez de un «—» mudo
-        // (decisión del dueño, sesión /inject 2026-07-22).
-        // TODO(/inject cierre): mover este copy al String Catalog (clave EN + es-MX) antes
-        // del commit final de la sesión.
+        _ = sleepMin
         return .demotado(
             kicker: String(localized: "READINESS"),
             title: "Aún sin datos suficientes",

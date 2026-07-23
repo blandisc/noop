@@ -82,24 +82,27 @@ final class LiquidHoyBuilderTests: XCTestCase {
         XCTAssertEqual(route, .autonomic)
     }
 
-    func test_hero_lowSignal_yPrepNil_caenAlSuenoJamasBajaSenal() {
-        // lowSignal → fallback de SUEÑO con el valor de anoche.
+    func test_hero_lowSignal_yPrepNil_sonAunSinDatos_jamasSuenoNiBajaSenal() {
+        // Decisión del dueño (sesión /inject 2026-07-22): sin veredicto NO hay héroe de
+        // sueño — SIEMPRE «aún sin datos suficientes», aunque exista sueño grabado.
         let (heroLow, routeLow) = LiquidHoyBuilder.hero(
             prep: read(verdict: .lowSignal, drivers: [], maturity: .calibrating),
             sleepMin: 440, nights: 2)
         guard case .demotado(_, let title, _) = heroLow else {
-            return XCTFail("esperaba .demotado (sueño)")
+            return XCTFail("esperaba .demotado (sin datos)")
         }
-        XCTAssertEqual(title, "7 h 20 m")
-        XCTAssertEqual(routeLow, .sleep)
+        XCTAssertFalse(title.contains("h"), "jamás la hora de sueño: \(title)")
+        XCTAssertTrue(title.localizedCaseInsensitiveContains("datos") ||
+                      title.localizedCaseInsensitiveContains("data"), title)
+        XCTAssertEqual(routeLow, .autonomic)
 
-        // prep == nil, sin sueño → «—», mismo destino.
+        // prep == nil → mismo estado honesto, mismo destino.
         let (heroNil, routeNil) = LiquidHoyBuilder.hero(prep: nil, sleepMin: nil, nights: 0)
         guard case .demotado(_, let titleNil, _) = heroNil else {
-            return XCTFail("esperaba .demotado (sueño)")
+            return XCTFail("esperaba .demotado (sin datos)")
         }
-        XCTAssertEqual(titleNil, "—")
-        XCTAssertEqual(routeNil, .sleep)
+        XCTAssertEqual(titleNil, title, "con o sin sueño grabado, el mismo copy honesto")
+        XCTAssertEqual(routeNil, .autonomic)
     }
 
     // MARK: Señales — port literal de `needles()`

@@ -251,9 +251,9 @@ public struct LiquidSignalCables: View {
     /// TRAMO DE CONEXIÓN inicial (línea desde y=72, el pie de su orbe) para que el pulso
     /// nazca visiblemente EN el orbe (pedido del dueño, sesión /inject 2026-07-22).
     private static let cables: [(d: String, delay: Double)] = [
-        ("M62 72 L62 94 C52 122, 112 132, 130 148 S153 161, 156 165", 0.0),
-        ("M179 78 L179 100 C171 120, 192 140, 187 156 S183 165, 182 170", 0.8),
-        ("M296 72 L296 94 C305 126, 262 138, 234 152 S211 162, 207 166", 1.6),
+        ("M62 56 L62 94 C52 122, 112 132, 130 148 S153 161, 156 165", 0.0),
+        ("M179 56 L179 100 C171 120, 192 140, 187 156 S183 165, 182 170", 0.8),
+        ("M296 56 L296 94 C305 126, 262 138, 234 152 S211 162, 207 166", 1.6),
     ]
 
     public var body: some View {
@@ -316,14 +316,18 @@ public struct LiquidSignalCables: View {
     }
 }
 
-/// Un cable escalado del viewBox 358 × 178 al rect (preserveAspectRatio = none).
+/// Un cable del viewBox 358 × 178, CENTRADO sin escalar en x: los orbes van con anchos y
+/// separación FIJOS (64 + gap 53 → centros a ±117 del medio), así que en pantallas más
+/// anchas que 402 pt un escalado proporcional desalineaba los cables exteriores de sus
+/// orbes (~12 pt en un Pro Max). Centrar el dibujo mantiene cada cable naciendo EXACTO
+/// bajo su orbe en cualquier ancho.
 private struct CablePath: Shape {
     let d: String
 
     func path(in rect: CGRect) -> Path {
         SVGPathData.path(d).applying(
-            CGAffineTransform(translationX: rect.minX, y: rect.minY)
-                .scaledBy(x: rect.width / 358, y: rect.height / 178))
+            CGAffineTransform(translationX: rect.minX + (rect.width - 358) / 2,
+                              y: rect.minY))
     }
 }
 
