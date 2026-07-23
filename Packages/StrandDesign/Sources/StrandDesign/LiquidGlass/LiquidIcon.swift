@@ -17,6 +17,10 @@ public struct LiquidIcon: View {
         case rayo, envivo, intervalo, movilidad, respira
         // Chevron de fila (ListRow) — viewBox 12, stroke 1.8.
         case chevron
+        // Enlace a Tendencias (LiquidVerMas) — viewBox 23, stroke 1.8. Mismo arte que la
+        // pestaña del dock (curva + dos nodos rellenos): el pie promete la pantalla a la
+        // que lleva, con el mismo dibujo que el usuario ya toca abajo.
+        case tendencias
     }
 
     private let glyph: Glyph
@@ -75,6 +79,12 @@ public struct LiquidIcon: View {
             LiquidIconShape(glyph: glyph,
                             strokedWidth: spec.strokeWidth * size / spec.viewBox)
                 .fill(color)
+            // Capa de geometría YA rellena (nodos de la curva de Tendencias): va ENCIMA del
+            // trazo, en el mismo orden que el dock. Sin ella los nodos saldrían como anillos
+            // finos — arte equivocado.
+            if !spec.pathsFilled.isEmpty {
+                LiquidIconShape(glyph: glyph, relleno: true).fill(color)
+            }
         }
         .frame(width: size, height: size)
     }
@@ -88,24 +98,30 @@ public struct LiquidIconShape: Shape {
     public var strokedWidth: CGFloat?
     /// `true` = dibuja la capa secundaria tenue del glifo (paths2).
     public var secondary: Bool = false
+    /// `true` = dibuja la capa de geometría YA rellena del glifo (`pathsFilled`, los nodos
+    /// de la curva de Tendencias). Ignora `strokedWidth`: el path se rellena tal cual.
+    public var relleno: Bool = false
 
-    public init(glyph: LiquidIcon.Glyph, strokedWidth: CGFloat? = nil, secondary: Bool = false) {
+    public init(glyph: LiquidIcon.Glyph, strokedWidth: CGFloat? = nil,
+                secondary: Bool = false, relleno: Bool = false) {
         self.glyph = glyph
         self.strokedWidth = strokedWidth
         self.secondary = secondary
+        self.relleno = relleno
     }
 
     public func path(in rect: CGRect) -> Path {
         let spec = glyph.spec
         var combined = Path()
-        for d in (secondary ? spec.paths2 : spec.paths) {
+        let fuente = relleno ? spec.pathsFilled : (secondary ? spec.paths2 : spec.paths)
+        for d in fuente {
             combined.addPath(SVGPathData.path(d))
         }
         let scale = min(rect.width, rect.height) / spec.viewBox
         let scaled = combined.applying(
             CGAffineTransform(translationX: rect.minX, y: rect.minY)
                 .scaledBy(x: scale, y: scale))
-        guard let strokedWidth else { return scaled }
+        guard !relleno, let strokedWidth else { return scaled }
         return scaled.strokedPath(StrokeStyle(lineWidth: strokedWidth,
                                               lineCap: .round, lineJoin: .round))
     }
@@ -118,6 +134,8 @@ extension LiquidIcon.Glyph {
         let paths: [String]
         /// Capa secundaria TENUE (45 %) — la segunda onda del glifo autonómico.
         var paths2: [String] = []
+        /// Capa RELLENA a color pleno (sin trazo) — los nodos de la curva de Tendencias.
+        var pathsFilled: [String] = []
     }
 
     /// Paths EXACTOS del handoff (MetricTile / SignalOrb / ModeTile / ListRow .dc.html).
@@ -212,6 +230,17 @@ extension LiquidIcon.Glyph {
         case .chevron:
             return Spec(viewBox: 12, strokeWidth: 1.8, paths: [
                 "M4 2l4 4-4 4",
+            ])
+
+        // MARK: Tendencias (viewBox 23, sw 1.8) — paths IDÉNTICOS a los de la pestaña
+        // «Tendencias» del dock (LiquidTabBar.TabGlyph, que es privado): curva trazada +
+        // dos nodos rellenos. Si alguno cambia allá, cámbialo aquí.
+        case .tendencias:
+            return Spec(viewBox: 23, strokeWidth: 1.8, paths: [
+                "M2.5 17C7 17 7.5 6 11.5 6s4.5 9 9 9",
+            ], pathsFilled: [
+                "M8.6 11A1.6 1.6 0 1 0 5.4 11A1.6 1.6 0 1 0 8.6 11",
+                "M17.6 11.5A1.6 1.6 0 1 0 14.4 11.5A1.6 1.6 0 1 0 17.6 11.5",
             ])
         }
     }

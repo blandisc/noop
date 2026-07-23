@@ -149,6 +149,28 @@ struct LiquidMetricSheetView: View {
         }
     }
 
+    /// La NOCHE de muestra: sin ella la variante rica de sueño (doble dato + etapas +
+    /// regularidad) no se puede pulir en un simulador sin datos de Apple Salud, porque
+    /// `sleepDetail` lo inyecta TodayView y en demo llega `nil`.
+    ///
+    /// Los números cuadran entre sí a propósito (si no, la hoja se contradice sola):
+    /// 91 profundo + 104 REM + 237 ligero = 432 min dormido = «7h 12m», EXACTAMENTE el
+    /// numeral del fixture `.sleep(432)` y su banda «Óptimo» (7-9 h); + 47 despierto =
+    /// 479 min en cama = la ventana 23:38 → 7:37.
+    static func demoNoche() -> SleepDetailModel.Night {
+        let cal: Calendar = Calendar.current
+        let medianoche: Date = cal.startOfDay(for: Date())
+        let inicio: Date = cal.date(byAdding: .minute, value: -22, to: medianoche) ?? medianoche
+        let fin: Date = cal.date(byAdding: .minute, value: 457, to: medianoche) ?? medianoche
+        let etapas = SleepDetailModel.Stages(awake: 47, light: 237, deep: 91, rem: 104)
+        return SleepDetailModel.Night(
+            startTs: Int(inicio.timeIntervalSince1970),
+            endTs: Int(fin.timeIntervalSince1970),
+            efficiency: 90.2,
+            respRate: 14.2,
+            stages: etapas)
+    }
+
     /// Curva de FC de un día de muestra (~180 puntos, 5 min).
     static func demoCurva() -> [TrendPoint] {
         let cal = Calendar.current
@@ -219,7 +241,20 @@ struct LiquidMetricSheetView: View {
     // En demo NO se queda en el esqueleto: sin modelo de noche cae a la variante clásica
     // de sueño (numeral + niveles), que sí se puede pulir.
     private var isSleepLoading: Bool { !demo && datoInfo.id == "sleep" && sleepDetail == nil }
-    private var isSleepRich: Bool { datoInfo.id == "sleep" && sleepDetail?.night != nil }
+    private var isSleepRich: Bool { datoInfo.id == "sleep" && nocheSueno != nil }
+
+    /// La noche que la hoja PINTA: la de muestra en demo, la real (inyectada por TodayView)
+    /// si no. Un solo hogar para las tres lecturas (`isSleepRich`, doble dato, etapas).
+    private var nocheSueno: SleepDetailModel.Night? {
+        if demo { return Self.demoNoche() }
+        return sleepDetail?.night
+    }
+
+    /// La regularidad 0–100 que la hoja PINTA; `nil` = aún sin base (el numeral dice «··»).
+    private var regularidadSueno: Int? {
+        if demo { return 84 }
+        return sleepDetail?.regularity?.score
+    }
     private var isStrainSummary: Bool { datoInfo.id == "strain" && datoInfo.displayValue != "—" }
 
     @ViewBuilder private var cuerpo: some View {
@@ -343,7 +378,10 @@ struct LiquidMetricSheetView: View {
             numeralTono: tinte(datoInfo.headerTint),
             origen: origen,
             origenEtiqueta: origenEtiqueta,
-            explicacion: LiquidSheetCopy.headline(info))
+            explicacion: LiquidSheetCopy.headline(info),
+            // L5.1 — el ⓘ se nombra solo en VoiceOver (antes leía «VFC, uno»).
+            infoMostrar: String(localized: "Show explanation"),
+            infoOcultar: String(localized: "Hide explanation"))
     }
 
     // MARK: Recovery (§1.1 — lectura + medidor de zonas + niveles)
@@ -473,16 +511,28 @@ struct LiquidMetricSheetView: View {
         levelsBlock
     }
 
-    // MARK: Sueño rica (§1.3 — doble dato + lectura + etapas + lane + niveles)
+    // MARK: Sueño rica (§1.3 — doble dato + lectura + etapas + niveles)
 
     @ViewBuilder private var sleepContent: some View {
-        if let night = sleepDetail?.night {
+        if let night = nocheSueno {
+            // El ⓘ de regularidad (L5.2): la métrica más opaca de la hoja explica su propio
+            // método sin abrir otra pantalla; con «··» VoiceOver dice la frase honesta.
+            let regularidad: String = regularidadSueno.map { (s: Int) -> String in "\(s)" } ?? "··"
+            // Tipado explícito y fuera del call: el type-checker de iOS revienta con
+            // ternarios sin ancla dentro de un builder (trampa documentada del repo).
+            let a11yRegularidad: String? = regularidadSueno == nil
+                ? String(localized: "not enough nights yet")
+                : nil
             LiquidDobleDato(
                 principal: (valor: Self.sleepHM(night.stages.asleep),
                             etiqueta: String(localized: "hours asleep")),
-                secundario: (valor: sleepDetail?.regularity.map { "\($0.score)" } ?? "··",
+                secundario: (valor: regularidad,
                              etiqueta: String(localized: "regularity")),
-                tono: tono)
+                tono: tono,
+                secundarioInfo: String(localized: "How steady your sleep schedule is: we take each night's midpoint (between falling asleep and waking) and measure how much it shifts night to night. Less drift, closer to 100."),
+                secundarioA11y: a11yRegularidad,
+                infoMostrar: String(localized: "Show explanation"),
+                infoOcultar: String(localized: "Hide explanation"))
             if let frase = sleepReadingText {
                 LiquidReadingLine(frase)
             }
@@ -490,10 +540,8 @@ struct LiquidMetricSheetView: View {
                 etapas: sleepEtapas(night),
                 overline: String(localized: "Last night"),
                 ventana: "\(Self.clock(night.startTs)) → \(Self.clock(night.endTs))")
-            if let lane = sleepLaneName {
-                LiquidLaneLabel(texto: "\(lane) · \(String(localized: "last night"))",
-                                tono: tono)
-            }
+            // `LiquidLaneLabel` RETIRADO (L3.3): la frase display de los niveles ya dice el
+            // nombre del carril en grande — la pastilla lo repetía dos bloques más abajo.
             levelsBlock
             // «Para esta noche» RETIRADO (decisión del dueño, /inject 2026-07-23):
             // la hoja de sueño cierra con los niveles.
@@ -528,12 +576,6 @@ struct LiquidMetricSheetView: View {
         case "extended": return String(localized: "Longer than usual last night.")
         default:         return nil
         }
-    }
-
-    /// Paridad `sleepLaneName` (:590-592): el nombre del carril activo del único hogar
-    /// clave→nombre; nil sin lectura.
-    private var sleepLaneName: String? {
-        activeLevelKey.map(nombreNivel)
     }
 
     /// «7:12» desde minutos (paridad `sleepHM` :510-512).
@@ -576,17 +618,31 @@ struct LiquidMetricSheetView: View {
         // {sleep, stress, spo2, rhr, steps} es subconjunto de `usesLevels`, que va por
         // niveles; toda métrica que llega al trend clásico (submétricas de sueño, vo2max)
         // pinta la curva plana auto-escalada, igual que hoy. Las bandas viven en la tabla.
-        LiquidTrendChart(
+        // Fuera del call: el type-checker de iOS se atora con expresiones largas dentro de
+        // un builder (ver la nota de `curvaEstado`).
+        let puntos: [(fecha: Date, valor: Double)] =
+            trendData.map { (p: TrendPoint) in (fecha: p.date, valor: p.value) }
+        let ejeFmt: (Date) -> String = Self.ejeFechaFmt(puntos)
+        let popupFecha: (Date) -> String = { (d: Date) -> String in Self.popupDiaFmt.string(from: d) }
+        let popupValor: (Double) -> String = { (v: Double) -> String in self.trendValueFormat(v) }
+        let marcasY: [(valor: Double, etiqueta: String)] =
+            Self.ticksY(trendData.map(\.value), formato: popupValor)
+        return LiquidTrendChart(
             titulo: String(localized: "Last 14 days"),
             readout: trendReadout,
-            puntos: trendData.map { (fecha: $0.date, valor: $0.value) },
+            puntos: puntos,
             bandas: [],
             dominio: trendValueRange,
-            ticksY: [],
+            ticksY: marcasY,
             tono: tono,
+            // La frase COMPUESTA es la de VoiceOver (el DS no acuña el « · »); las dos
+            // líneas del popup salen de los formateadores sueltos.
             formatoScrub: { (v: Double, f: Date) in
                 "\(self.trendValueFormat(v)) · \(Self.diaCorto(f))"
             },
+            formatoValorScrub: popupValor,
+            formatoFechaScrub: popupFecha,
+            formatoFechaEje: ejeFmt,
             estado: trendEstado,
             a11yLabel: String(localized: "14-day trend"))
     }
@@ -649,10 +705,59 @@ struct LiquidMetricSheetView: View {
         }
     }
 
-    private static let trendDayFmt: DateFormatter = {
-        let f = DateFormatter(); f.dateFormat = "d MMM"; return f
+    // MARK: Fechas de las gráficas (L3.1)
+    //
+    // TODOS por PLANTILLA (`setLocalizedDateFormatFromTemplate`), nunca con `dateFormat`
+    // duro: el orden y los separadores los decide el locale («14 jul» en es-MX, «Jul 14»
+    // en en-US; 24 h vs a. m./p. m.). Cacheados en `static let` porque construir un
+    // `DateFormatter` por punto de la serie es caro y estos se llaman en el scrub.
+
+    /// Eje X de una serie DIARIA corta («14 jul»).
+    private static let ejeDiaFmt: DateFormatter = {
+        let f = DateFormatter(); f.setLocalizedDateFormatFromTemplate("dMMM"); return f
     }()
-    private static func diaCorto(_ date: Date) -> String { trendDayFmt.string(from: date) }
+    /// Eje X de una ventana LARGA (> 300 días): el día deja de importar («jul 25»).
+    private static let ejeMesFmt: DateFormatter = {
+        let f = DateFormatter(); f.setLocalizedDateFormatFromTemplate("MMMyy"); return f
+    }()
+    /// Segunda línea del popup del scrub en series diarias («mar, 14 jul»).
+    private static let popupDiaFmt: DateFormatter = {
+        let f = DateFormatter(); f.setLocalizedDateFormatFromTemplate("EEEdMMM"); return f
+    }()
+    /// Eje X de la curva de FC: solo la hora («7 a. m.»).
+    private static let ejeHoraFmt: DateFormatter = {
+        let f = DateFormatter(); f.setLocalizedDateFormatFromTemplate("ha"); return f
+    }()
+    /// Segunda línea del popup de la curva de FC: hora y minuto en el ciclo del locale.
+    private static let popupHoraFmt: DateFormatter = {
+        let f = DateFormatter(); f.setLocalizedDateFormatFromTemplate("jmm"); return f
+    }()
+
+    private static func diaCorto(_ date: Date) -> String { ejeDiaFmt.string(from: date) }
+
+    /// El formateador del eje X de una serie diaria, elegido por el SPAN de la ventana:
+    /// con más de 300 días las etiquetas «14 jul» se repiten de año a año y engañan.
+    private static func ejeFechaFmt(_ puntos: [(fecha: Date, valor: Double)]) -> (Date) -> String {
+        let primero: Date? = puntos.first?.fecha
+        let ultimo: Date? = puntos.last?.fecha
+        var largo: Bool = false
+        if let a = primero, let b = ultimo {
+            largo = b.timeIntervalSince(a) > 300 * 86_400
+        }
+        let fmt: DateFormatter = largo ? ejeMesFmt : ejeDiaFmt
+        return { (d: Date) -> String in fmt.string(from: d) }
+    }
+
+    /// 3 marcas del eje Y (mín · medio · máx de los DATOS, no del dominio: sus bordes son
+    /// puro respiro y etiquetarlos imprimiría valores que nunca ocurrieron).
+    private static func ticksY(_ vals: [Double],
+                               formato: (Double) -> String) -> [(valor: Double, etiqueta: String)] {
+        guard let lo = vals.min(), let hi = vals.max(), hi > lo else { return [] }
+        let medio: Double = (lo + hi) / 2
+        return [lo, medio, hi].map { (v: Double) -> (valor: Double, etiqueta: String) in
+            (valor: v, etiqueta: formato(v))
+        }
+    }
 
     private static let stepFmt: NumberFormatter = {
         let f = NumberFormatter(); f.numberStyle = .decimal; return f
@@ -718,20 +823,33 @@ struct LiquidMetricSheetView: View {
     // MARK: Curva FC 24h (paridad `heartRateSection` :889-976)
 
     @ViewBuilder private var heartRateBlock: some View {
-        let v = heartRateCurve.map(\.value)
+        let v: [Double] = heartRateCurve.map(\.value)
+        // El eje X de esta curva es el RELOJ: el motor mapea x por tiempo (`mapeoPorTiempo`),
+        // así que las horas caen donde de verdad ocurrieron aunque falten buckets.
+        let ejeFmt: (Date) -> String = { (d: Date) -> String in Self.ejeHoraFmt.string(from: d) }
+        let popupFecha: (Date) -> String = { (d: Date) -> String in Self.popupHoraFmt.string(from: d) }
+        let popupValor: (Double) -> String = { (val: Double) -> String in
+            "\(Int(val.rounded())) \(String(localized: "bpm"))"
+        }
+        let marcasY: [(valor: Double, etiqueta: String)] =
+            Self.ticksY(v, formato: { (val: Double) -> String in "\(Int(val.rounded()))" })
         LiquidCurvaFC(
             titulo: String(localized: "Beats per minute"),
             subtitulo: String(localized: "5-minute average · since midnight"),
             ultimo: v.last.map { String(localized: "\(Int($0.rounded())) bpm") },
-            puntos: heartRateCurve.map { (fecha: $0.date, valor: $0.value) },
+            puntos: heartRateCurve.map { (p: TrendPoint) in (fecha: p.date, valor: p.value) },
             dominio: Self.hrRange(v),
             stats: hrStats(v),
             statsEtiquetas: (min: String(localized: "Min"),
                              prom: String(localized: "Avg"),
                              max: String(localized: "Max")),
+            ticksY: marcasY,
             formatoScrub: { (val: Double, f: Date) in
-                "\(Int(val.rounded())) \(String(localized: "bpm")) · \(Self.hrClock.string(from: f))"
+                "\(Int(val.rounded())) \(String(localized: "bpm")) · \(Self.popupHoraFmt.string(from: f))"
             },
+            formatoValorScrub: popupValor,
+            formatoFechaScrub: popupFecha,
+            formatoFechaEje: ejeFmt,
             estado: curvaEstado,
             a11yLabel: LiquidSheetCopy.titulo("heart_rate"))
     }
@@ -764,10 +882,6 @@ struct LiquidMetricSheetView: View {
         return (lo - span * 0.12)...(hi + span * 0.12)
     }
 
-    private static let hrClock: DateFormatter = {
-        let f = DateFormatter(); f.dateFormat = "h a"; return f
-    }()
-
     // MARK: Niveles (F3a host + F3b explorador Liquid; paridad `levelsBlock` :716-742)
 
     @ViewBuilder private var levelsBlock: some View {
@@ -778,8 +892,11 @@ struct LiquidMetricSheetView: View {
                 LiquidRangeSelector(opciones: ExploreRange.allCases.map(\.label),
                                     seleccion: rangeSeleccion)
                 if window.fellBack {
-                    // Auto-widen (paridad MetricLevelsExplorer:105-108).
-                    LiquidNotaLine(String(localized: "Showing the last \(window.rows.count) days"))
+                    // Auto-widen (paridad MetricLevelsExplorer:105-108). Va en
+                    // `atencionTexto`, no en tinta quieta: AVISA que la ventana que estás
+                    // leyendo no es la que pediste en el selector.
+                    LiquidNotaLine(String(localized: "Showing the last \(window.rows.count) days"),
+                                   tono: LiquidColor.atencionTexto)
                 }
                 nivelesFrase(d)
                 nivelesGrafica(d, window: window)
@@ -809,20 +926,23 @@ struct LiquidMetricSheetView: View {
         return d.activeIndex
     }
 
-    /// «{nivel} · N de tus últimos M días» (paridad `phrase` del explorador :112-127),
-    /// una sola línea Liquid con el nivel destacado en el tono.
+    /// La frase DISPLAY del explorador (paridad `phrase` :112-127, MISMAS claves de copy):
+    /// el nivel destacado en grande y en el tono, con su conteo debajo en voz de lectura.
+    /// El primer pase Liquid la había aplanado a una sola línea; `LiquidFraseNivel` (L2)
+    /// devuelve los dos escalones de jerarquía.
     @ViewBuilder private func nivelesFrase(_ d: MetricLevels.Classification) -> some View {
         if let i = nivelDestacado(d) {
-            let nombre = nombreNivel(d.levels[i].key)
-            let conteo = nightly
+            let nombre: String = nombreNivel(d.levels[i].key)
+            let conteo: String = nightly
                 ? String(localized: "\(d.counts[i]) of your last \(d.total) nights")
                 : String(localized: "\(d.counts[i]) of your last \(d.total) days")
-            LiquidReadingLine("\(nombre) · \(conteo)", highlight: nombre, highlightTone: tono)
+            LiquidFraseNivel(nivel: nombre, conteo: conteo, tono: tono)
         } else {
-            let total = nightly
+            let total: String = nightly
                 ? String(localized: "\(d.total) nights with data in this range")
                 : String(localized: "\(d.total) days with data in this range")
-            LiquidReadingLine("\(String(localized: "No reading today")) · \(total)")
+            LiquidFraseNivel(nivel: nil, conteo: total, tono: tono,
+                             sinLectura: String(localized: "No reading today"))
         }
     }
 
@@ -833,6 +953,9 @@ struct LiquidMetricSheetView: View {
         let puntos = MetricWindowMath
             .decimatedPoints(rows: window.rows, values: window.values, maxPoints: 80)
             .map { (fecha: $0.date, valor: $0.value) }
+        let ejeFmt: (Date) -> String = Self.ejeFechaFmt(puntos)
+        let popupFecha: (Date) -> String = { (d: Date) -> String in Self.popupDiaFmt.string(from: d) }
+        let popupValor: (Double) -> String = { (v: Double) -> String in self.scrubValor(v) }
         return LiquidGraficaNiveles(
             puntos: puntos,
             bandas: d.levels.enumerated().map { (i, lvl) in
@@ -849,6 +972,9 @@ struct LiquidMetricSheetView: View {
             formatoScrub: { (v: Double, f: Date) in
                 "\(self.scrubValor(v)) · \(Self.diaCorto(f))"
             },
+            formatoValorScrub: popupValor,
+            formatoFechaScrub: popupFecha,
+            formatoFechaEje: ejeFmt,
             estadoVacio: String(localized: "No readings in this range."),
             a11yLabel: LiquidSheetCopy.titulo(datoInfo.id))
     }
@@ -883,6 +1009,8 @@ struct LiquidMetricSheetView: View {
                     esHoy: i == d.activeIndex,
                     activa: i == highlight,
                     tono: tono,
+                    // El rótulo que marca EN LA LISTA dónde cayó hoy (clave existente).
+                    hoyEtiqueta: String(localized: "· today"),
                     a11yHint: String(localized: "Highlights this level on the chart"),
                     onTap: {
                         // Tocar la fila destacada limpia de vuelta a hoy (paridad :197-200).
@@ -1032,11 +1160,11 @@ private enum LiquidSheetCopy {
         case "strain":
             return String(localized: "Cardiovascular load scored 0–21. Each second of the day your heart rate is recorded, it's assigned to a zone (1–5). Higher zones carry more weight. The total is compressed logarithmically so 21 represents a theoretical maximum: a full day at peak intensity.")
         case "sleep":
-            return String(localized: "Total time asleep last night, estimated from movement and heart rate. Sleep contributes ~15% of your recovery score and feeds the strain-to-load balance (ACWR).")
+            return String(localized: "Total time asleep last night, estimated from movement and heart rate. Sleep is one of the signals behind your daily verdict.")
         case "hrv":
-            return String(localized: "HRV is how much the time between your heartbeats varies, in milliseconds, while you sleep. More variation usually means better recovery. What matters isn't the number itself, but how it compares with your own average.")
+            return String(localized: "HRV is how much the time between your heartbeats varies, in milliseconds, while you sleep. More variation usually means a nervous system that's better rested. What matters isn't the number itself, but how it compares with your own average.")
         case "rhr":
-            return String(localized: "Your heart rate when your body is fully at rest: how hard your heart has to work doing nothing. Lower generally means a stronger, more efficient cardiovascular system. Cénit uses it as ~20% of your recovery score; a rise from your norm can signal fatigue or that something's coming on.")
+            return String(localized: "Your heart rate when your body is fully at rest: how hard your heart has to work doing nothing. Lower generally means a stronger, more efficient cardiovascular system. Cénit reads it against your own norm as part of your daily verdict; a rise can signal fatigue or that something's coming on.")
         case "resp_rate":
             return String(localized: "How many breaths you take per minute while you sleep. It's one of the steadiest signals your body has, so even a small rise from your own normal can be an early sign of strain, illness, or a late, heavy meal.")
         case "sleep_performance":
@@ -1052,11 +1180,11 @@ private enum LiquidSheetCopy {
         case "spo2":
             return String(localized: "Percentage of haemoglobin carrying oxygen in your blood. Healthy adults typically stay above 95%. A drop can indicate altitude effects, sleep apnea, or respiratory illness.")
         case "skin_temp":
-            return String(localized: "The temperature of your skin, read at your wrist while you sleep. It shifts with your circadian rhythm and recovery. What matters isn't the number itself, but how far it sits from your own baseline. A sustained rise can be an early sign of inflammation or a coming illness.")
+            return String(localized: "The temperature of your skin, read at your wrist while you sleep. It shifts with your circadian rhythm. What matters isn't the number itself, but how far it sits from your own baseline. A sustained rise can be an early sign of inflammation or a coming illness; that's why it's one of the signals behind your daily verdict.")
         case "vo2max":
             return String(localized: "The most oxygen your body can use during hard exercise, per kilo of body weight. It's the single best measure of cardiorespiratory fitness, and one of the best-evidenced predictors of long-term health.")
         case "steps":
-            return String(localized: "Daily step count. Consistent activity, even a 30-minute walk, supports cardiovascular health, mood, and recovery quality.")
+            return String(localized: "Daily step count. Consistent activity, even a 30-minute walk, supports cardiovascular health and mood. It's context for your day: it doesn't move your daily verdict or your load balance.")
         case "stress":
             return String(localized: "Your autonomic load today, from 0 to 3. We estimate it by comparing today's resting heart rate and HRV with your own 30-day baseline: a higher-than-usual resting HR and a lower-than-usual HRV both push the number up: classic signs your body is activated.")
         case "heart_rate":
@@ -1119,8 +1247,8 @@ private enum LiquidSheetCopy {
         guard info.method != nil else { return nil }
         switch info.id {
         case "hrv":
-            return (String(localized: "The number you see is the HRV Apple records overnight: SDNN, the overall spread of the time between your heartbeats. The read that tells you how recovered you are uses a different HRV measure, RMSSD, recomputed from the beat-to-beat intervals of your densest nights. RMSSD tracks the vagal, rest-and-digest branch specifically, while SDNN blends both branches of your nervous system; that, plus the two being measured over different nightly windows, means the HRV number here won't always line up with the direction of your recovery."),
-                    String(localized: "SDNN and RMSSD (Task Force, 1996); RMSSD is the vagal recovery measure (Shaffer & Ginsberg, 2017). HRV is the biggest driver of your recovery."))
+            return (String(localized: "The number you see is the HRV Apple records: SDNN, the overall spread of the time between your heartbeats. Your daily verdict reads this same signal against your own baseline. The trend uses a different HRV measure, RMSSD, recomputed from the beat-to-beat intervals of your densest nights; RMSSD tracks the vagal, rest-and-repair branch specifically, while SDNN blends both branches, so the two won't always move together."),
+                    String(localized: "SDNN and RMSSD (Task Force, 1996); RMSSD is the vagal recovery measure (Shaffer & Ginsberg, 2017)."))
         case "resp_rate":
             return (String(localized: "We count your breaths across the night from the slow rise and fall in your heart-rate signal (respiratory sinus arrhythmia) and report the nightly mean."),
                     String(localized: "Respiration from RSA in the overnight inter-beat intervals; reported as the nightly mean."))

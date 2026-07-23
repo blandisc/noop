@@ -49,15 +49,48 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
         }
     }
 
-    /// Curva FC intradía determinista: ~200 puntos cada 5 min desde la medianoche fija.
+    /// Curva FC intradía determinista: ~200 puntos cada 5 min desde la MEDIANOCHE del día
+    /// del ancla (en el huso fijo). Arranca en medianoche de verdad porque el subtítulo del
+    /// fixture lo afirma y el eje de reloj ahora lo enseña: antes la serie empezaba a las
+    /// 8 p.m. y nadie podía verlo.
     private static func curvaFCDia() -> [(fecha: Date, valor: Double)] {
-        (0..<200).map { i in
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = husoFijo
+        let medianoche = cal.startOfDay(for: ancla)
+        return (0..<200).map { i in
             let t = Double(i) / 200.0
             let base = 62.0 + 26.0 * sin(t * .pi * 3.1) * sin(t * .pi)
             let ruido = Double((i * 13) % 9) - 4.0
-            return (fecha: ancla.addingTimeInterval(Double(i) * 300.0), valor: base + ruido)
+            return (fecha: medianoche.addingTimeInterval(Double(i) * 300.0), valor: base + ruido)
         }
     }
+
+    // MARK: Formateadores del eje y del popup (contrato D3 — los pone el CALLER)
+
+    /// Locale y huso FIJOS. El DS no conoce locales, así que el eje X y el popup se arman
+    /// con closures del arnés; si esos closures leyeran el locale del Mac, el mismo commit
+    /// escribiría PNG distintos en dos máquinas y el arnés dejaría de ser comparable.
+    private static let localeFijo = Locale(identifier: "es_MX")
+    private static let husoFijo = TimeZone(identifier: "America/Mexico_City")
+        ?? TimeZone(secondsFromGMT: 0)!
+
+    /// Un `DateFormatter` por PLANTILLA (jamás `dateFormat` duro), como la hoja real (L3.1).
+    private static func fmt(_ plantilla: String) -> (Date) -> String {
+        let f = DateFormatter()
+        f.locale = localeFijo
+        f.timeZone = husoFijo
+        f.setLocalizedDateFormatFromTemplate(plantilla)
+        return { (d: Date) -> String in f.string(from: d) }
+    }
+
+    /// Los cuatro formatos que cablea la hoja: eje diario, eje de reloj (curva FC), y las
+    /// dos fechas de popup. CACHEADOS como en la hoja real (armar un `DateFormatter` por
+    /// punto es caro) y aislados al main actor: los fixtures ya viven ahí, y así el
+    /// harness no arrastra estado global mutable.
+    @MainActor private static let ejeDia: (Date) -> String = fmt("dMMM")
+    @MainActor private static let ejeHora: (Date) -> String = fmt("ha")
+    @MainActor private static let popupDia: (Date) -> String = fmt("EEEdMMM")
+    @MainActor private static let popupHora: (Date) -> String = fmt("jmm")
 
     private static func bandasVFC(activa: Int?) -> [LiquidChartBanda] {
         [
@@ -89,6 +122,7 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
             ("vital_sindato", vitalSinDato()),
             ("recovery", recovery()),
             ("sleep_rica", sleepRica()),
+            ("sleep_rica_ax", sleepRica(tamano: .accessibility3)),
             ("sleep_skeleton", sleepSkeleton()),
             ("sleep_sinnoche", sleepSinNoche()),
             ("sleep_sindato", sleepSinDato()),
@@ -106,6 +140,9 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
 
     /// §1.2 · Vital-template con dato: VFC 56 ms, selector + explorador de niveles con la
     /// banda media activa, filas de nivel, patrón, método y «Ver más» ancho completo.
+    /// Es el fixture COMPLETO del bloque de niveles: mismo orden que `levelsBlock` de la
+    /// hoja real (selector → frase → gráfica), con eje X de fechas, puntos por dato y el
+    /// popup de DOS líneas del scrub.
     @MainActor
     private static func vitalConDato() -> AnyView {
         let puntos = serieDiaria(dias: 28, base: 58, onda: 13)
@@ -114,7 +151,11 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
             ticksY: [(71, "71"), (49, "49")], tono: LiquidColor.cian,
             puntoHoy: (puntos[puntos.count - 1].fecha, puntos[puntos.count - 1].valor),
             hoyAnillo: false,
-            formatoScrub: { v, _ in "\(Int(v)) ms" },
+            // La frase COMPUESTA es lo que lee VoiceOver (el DS no acuña el « · »).
+            formatoScrub: { (v: Double, f: Date) in "\(Int(v)) ms · \(popupDia(f))" },
+            formatoValorScrub: { (v: Double) in "\(Int(v)) ms" },
+            formatoFechaScrub: popupDia,
+            formatoFechaEje: ejeDia,
             estadoVacio: "Sin lecturas en este rango.",
             a11yLabel: "VFC, últimos 28 días")
         grafica.scrubFijo = 9
@@ -123,12 +164,19 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
                 icono: .onda, titulo: "VFC", tono: LiquidColor.cian,
                 numeral: "56", unidad: "ms",
                 origenEtiqueta: "Apple Salud · anoche",
-                explicacion: "La variación entre latidos mientras duermes — tu señal más temprana de recuperación.")
+                explicacion: "La variación entre latidos mientras duermes — tu señal más temprana de recuperación.",
+                infoMostrar: "Mostrar explicación",
+                infoOcultar: "Ocultar explicación")
             LiquidReadingLine("Tu VFC amaneció en tu rango.",
                               highlight: "en tu rango",
                               highlightTone: LiquidColor.verdeProfundo)
             LiquidRangeSelector(opciones: ["S", "M", "3M", "6M", "1A", "TODO"],
                                 seleccion: .constant(1))
+            // La frase display del nivel destacado (L2), en su sitio canónico: entre el
+            // selector y la gráfica.
+            LiquidFraseNivel(nivel: "En tu base",
+                             conteo: "12 de tus últimos 28 días",
+                             tono: LiquidColor.cian)
             grafica
             LiquidBandsTable(
                 filas: [
@@ -199,18 +247,29 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
         }
     }
 
-    /// §1.3 · Sueño rica: doble dato 7:12 | 84, etapas de la noche, lane activa y
-    /// «Para esta noche».
+    /// §1.3 · Sueño rica: doble dato 7:12 | 84 con el ⓘ de regularidad (L5.2), etapas de la
+    /// noche y «Para esta noche». La pastilla `LiquidLaneLabel` está RETIRADA (L3.3): la
+    /// frase display de los niveles ya dice el carril en grande.
+    ///
+    /// Las etapas CUADRAN con el numeral: 91 + 104 + 237 = 432 min dormido = 7:12, + 47
+    /// despierto = 479 en cama = 23:38 → 7:37. Un fixture que se contradice a sí mismo no
+    /// sirve para verificar nada.
     @MainActor
-    private static func sleepRica() -> AnyView {
-        columna(tone: LiquidColor.indigo) {
+    private static func sleepRica(tamano: DynamicTypeSize = .large) -> AnyView {
+        AnyView(columna(tone: LiquidColor.indigo) {
             LiquidSheetHeader(
                 icono: .luna, titulo: "SUEÑO", tono: LiquidColor.indigo,
                 numeral: nil,
-                explicacion: "Cuánto y qué tan parejo dormiste anoche.")
-            LiquidDobleDato(principal: (valor: "7:12", etiqueta: "horas dormido"),
-                            secundario: (valor: "84", etiqueta: "regularidad"),
-                            tono: LiquidColor.indigo)
+                explicacion: "Cuánto y qué tan parejo dormiste anoche.",
+                infoMostrar: "Mostrar explicación",
+                infoOcultar: "Ocultar explicación")
+            LiquidDobleDato(
+                principal: (valor: "7:12", etiqueta: "horas dormido"),
+                secundario: (valor: "84", etiqueta: "regularidad"),
+                tono: LiquidColor.indigo,
+                secundarioInfo: "Qué tan parejo es tu horario de sueño: tomamos el centro de cada noche (entre dormirte y despertar) y medimos cuánto brinca de noche a noche. Menos brincos, más cerca de 100.",
+                infoMostrar: "Mostrar explicación",
+                infoOcultar: "Ocultar explicación")
             LiquidReadingLine("Dormiste dentro de tu rango óptimo.",
                               highlight: "rango óptimo",
                               highlightTone: LiquidColor.indigo)
@@ -220,19 +279,19 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
                           etiqueta: "Profundo", duracion: "1:31"),
                     .init(minutos: 104, color: LiquidColor.indigo.opacity(0.78), // token-exempt: rampa graduada de etapas
                           etiqueta: "REM", duracion: "1:44"),
-                    .init(minutos: 190, color: LiquidColor.indigo.opacity(0.52), // token-exempt: rampa graduada de etapas
-                          etiqueta: "Ligero", duracion: "3:10"),
+                    .init(minutos: 237, color: LiquidColor.indigo.opacity(0.52), // token-exempt: rampa graduada de etapas
+                          etiqueta: "Ligero", duracion: "3:57"),
                     .init(minutos: 47, color: LiquidColor.tinta10,
                           etiqueta: "Despierto", duracion: "0:47"),
                 ],
                 overline: "Anoche",
-                ventana: "23:38 → 7:04")
-            LiquidLaneLabel(texto: "ÓPTIMO · ANOCHE", tono: LiquidColor.indigo)
+                ventana: "23:38 → 7:37")
             LiquidPatternBlock(
                 overline: "Para esta noche",
                 lineas: ["Acostarte a una hora pareja esta noche ayuda a tu ritmo."],
                 tono: LiquidColor.indigo)
         }
+        .environment(\.dynamicTypeSize, tamano))
     }
 
     /// §1.3 · Sueño cargando async: el skeleton NUEVO de F5 bajo el header de sueño.
@@ -264,7 +323,12 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
             ticksY: [(14, "14"), (8, "8")], tono: LiquidColor.ambar,
             puntoHoy: (puntos[puntos.count - 1].fecha, puntos[puntos.count - 1].valor),
             hoyAnillo: false,
-            formatoScrub: { v, _ in String(format: "%.1f", v) },
+            formatoScrub: { (v: Double, f: Date) in
+                String(format: "%.1f", v) + " · " + popupDia(f)
+            },
+            formatoValorScrub: { (v: Double) in String(format: "%.1f", v) },
+            formatoFechaScrub: popupDia,
+            formatoFechaEje: ejeDia,
             estadoVacio: "Sin días en este rango.",
             a11yLabel: "Esfuerzo, últimos 28 días")
         grafica.scrubFijo = 14
@@ -285,18 +349,30 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
         }
     }
 
-    /// §1.6 · heart_rate: curva 24h con ~200 puntos deterministas + stats min/prom/max.
+    /// §1.6 · heart_rate: curva 24h con ~200 puntos deterministas + stats min/prom/max,
+    /// ahora con eje de RELOJ y ticks Y (L3.4). El eje se reparte por TIEMPO real, no por
+    /// índice: los buckets de 5 min sin muestras no existen en la serie.
     @MainActor
     private static func heartRate() -> AnyView {
         var curva = LiquidCurvaFC(
             titulo: "Pulsaciones por minuto",
             subtitulo: "Promedio de 5 min · desde medianoche",
-            ultimo: "72 lpm",
+            // Numeral, stats y ticks salen de la serie de verdad (mín 32 · prom 62 · máx 82,
+            // último 62): con los valores decorativos de antes el dominio 40…105 recortaba
+            // el valle y el popup del scrub cantaba «33 lpm» bajo un «MÍN 48».
+            ultimo: "62 lpm",
             puntos: curvaFCDia(),
-            dominio: 40...105,
-            stats: (min: "48", prom: "64", max: "98"),
+            dominio: 26...88,
+            stats: (min: "32", prom: "62", max: "82"),
             statsEtiquetas: (min: "Mín", prom: "Prom", max: "Máx"),
-            formatoScrub: { v, _ in "\(Int(v)) lpm · 2 pm" },
+            // Tres marcas sobre los DATOS (mín · prom · máx), como las cablea la hoja: los
+            // bordes del dominio son puro respiro y etiquetarlos imprimiría valores que
+            // nunca ocurrieron — además el de abajo caería sobre la fila de fechas.
+            ticksY: [(82, "82"), (62, "62"), (32, "32")],
+            formatoScrub: { (v: Double, f: Date) in "\(Int(v)) lpm · \(popupHora(f))" },
+            formatoValorScrub: { (v: Double) in "\(Int(v)) lpm" },
+            formatoFechaScrub: popupHora,
+            formatoFechaEje: ejeHora,
             estado: .datos,
             a11yLabel: "Frecuencia cardiaca de hoy")
         curva.scrubFijo = 90
@@ -329,7 +405,12 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
             dominio: 5...10,
             ticksY: [(9, "9"), (7, "7"), (6, "6")],
             tono: LiquidColor.indigo,
-            formatoScrub: { v, _ in String(format: "%.1f h", v) },
+            formatoScrub: { (v: Double, f: Date) in
+                String(format: "%.1f h", v) + " · " + popupDia(f)
+            },
+            formatoValorScrub: { (v: Double) in String(format: "%.1f h", v) },
+            formatoFechaScrub: popupDia,
+            formatoFechaEje: ejeDia,
             estado: .datos,
             a11yLabel: "Sueño, últimos 14 días")
         trend.scrubFijo = 5
@@ -337,7 +418,12 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
             LiquidSheetHeader(
                 icono: .luna, titulo: "HORAS DE SUEÑO", tono: LiquidColor.indigo,
                 numeral: "7:12", origenEtiqueta: "Apple Salud · anoche",
-                explicacion: "Cuánto dormiste anoche, contra tu rango de referencia.")
+                explicacion: "Cuánto dormiste anoche, contra tu rango de referencia.",
+                infoMostrar: "Mostrar explicación",
+                infoOcultar: "Ocultar explicación")
+            // Auto-widen (L6): la nota AVISA que la ventana no es la que pediste, así que
+            // va en `atencionTexto`, no en la tinta quieta del resto de las notas.
+            LiquidNotaLine("Mostrando los últimos 14 días", tono: LiquidColor.atencionTexto)
             trend
             LiquidBandsTable(
                 filas: [
@@ -362,6 +448,12 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
             LiquidCalibracionCard(titulo: "Calibrando tu base",
                                   leyenda: "2 de 4 noches",
                                   hechas: 2, necesarias: 4,
+                                  tono: LiquidColor.verdePrimario)
+            // L6 · con CERO noches el riel sigue mostrando el nub mínimo de 6 pt (paridad
+            // de la tarjeta vieja): la barra vacía del todo se leía como componente roto.
+            LiquidCalibracionCard(titulo: "Calibrando tu base",
+                                  leyenda: "0 de 7 noches",
+                                  hechas: 0, necesarias: 7,
                                   tono: LiquidColor.verdePrimario)
         }
     }
@@ -466,13 +558,21 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
                 icono: .onda, titulo: "VFC", tono: LiquidColor.cian,
                 numeral: "—",
                 explicacion: "La variación entre latidos mientras duermes.")
+            // Rama SIN lectura de `LiquidFraseNivel`: el texto honesto del caller en
+            // tinta/500 (el DS jamás lo acuña), con el conteo debajo.
+            LiquidFraseNivel(nivel: nil,
+                             conteo: "28 noches con datos en este rango",
+                             tono: LiquidColor.cian,
+                             sinLectura: "Hoy sin lectura")
             grafica
             LiquidLevelRow(etiqueta: "Arriba de tu base", rango: "> 63", conteo: "6 noches",
                            esHoy: false, activa: false, tono: LiquidColor.cian, onTap: {})
+            // Hoy cayó aquí mientras exploras otro nivel: anillo hueco + rótulo «· hoy».
             LiquidLevelRow(etiqueta: "En tu base", rango: "48–63", conteo: "18 noches",
-                           esHoy: true, activa: true, tono: LiquidColor.cian, onTap: {})
+                           esHoy: true, activa: false, tono: LiquidColor.cian,
+                           hoyEtiqueta: "· hoy", onTap: {})
             LiquidLevelRow(etiqueta: "Debajo de tu base", rango: "< 48", conteo: "4 noches",
-                           esHoy: false, activa: false, tono: LiquidColor.cian, onTap: {})
+                           esHoy: false, activa: true, tono: LiquidColor.cian, onTap: {})
         }
     }
 

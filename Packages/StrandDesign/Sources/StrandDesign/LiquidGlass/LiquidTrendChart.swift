@@ -18,13 +18,19 @@ public struct LiquidTrendChart: View {
     private let dominio: ClosedRange<Double>
     private let ticksY: [(valor: Double, etiqueta: String)]
     private let tono: Color
-    private let formatoScrub: (Double, Date) -> String
+    private let formatoScrub: ((Double, Date) -> String)?
+    private let formatoValorScrub: ((Double) -> String)?
+    private let formatoFechaScrub: ((Date) -> String)?
+    private let formatoFechaEje: ((Date) -> String)?
     private let estado: LiquidChartEstado
     /// Rótulo de VoiceOver del plot (el contrato §3 F4 no lo lista; la regla de a11y de la
     /// familia — «cada gráfica con el a11yLabel del caller» — lo exige, así que se añade).
     private let a11yLabel: String
     /// SOLO previews/arnés: overlay de scrub asentado en un índice fijo.
     var scrubFijo: Int? = nil
+
+    /// El punto bajo el dedo (lo publica el plot); mueve el `accessibilityValue`.
+    @State private var iScrub: Int? = nil
 
     public init(titulo: String,
                 readout: (etiqueta: String, tono: Color, frase: String)? = nil,
@@ -33,7 +39,10 @@ public struct LiquidTrendChart: View {
                 dominio: ClosedRange<Double>,
                 ticksY: [(valor: Double, etiqueta: String)],
                 tono: Color,
-                formatoScrub: @escaping (Double, Date) -> String,
+                formatoScrub: ((Double, Date) -> String)? = nil,
+                formatoValorScrub: ((Double) -> String)? = nil,
+                formatoFechaScrub: ((Date) -> String)? = nil,
+                formatoFechaEje: ((Date) -> String)? = nil,
                 estado: LiquidChartEstado,
                 a11yLabel: String) {
         self.titulo = titulo
@@ -44,6 +53,9 @@ public struct LiquidTrendChart: View {
         self.ticksY = ticksY
         self.tono = tono
         self.formatoScrub = formatoScrub
+        self.formatoValorScrub = formatoValorScrub
+        self.formatoFechaScrub = formatoFechaScrub
+        self.formatoFechaEje = formatoFechaEje
         self.estado = estado
         self.a11yLabel = a11yLabel
     }
@@ -75,10 +87,15 @@ public struct LiquidTrendChart: View {
                             ticksY: ticksY, tono: tono,
                             puntoHoy: nil, hoyAnillo: false,
                             formatoScrub: formatoScrub,
+                            formatoValorScrub: formatoValorScrub,
+                            formatoFechaScrub: formatoFechaScrub,
+                            formatoFechaEje: formatoFechaEje,
                             alto: LiquidChartAlto.trend,
-                            scrubFijo: scrubFijo)
+                            scrubFijo: scrubFijo,
+                            onScrub: { (i: Int?) in iScrub = i })
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(Text(verbatim: a11yLabel))
+                .accessibilityValue(Text(verbatim: valorA11y))
         case .cargando:
             LiquidChartCargando(alto: LiquidChartAlto.trend)
         case .vacio(let mensaje):
@@ -86,6 +103,16 @@ public struct LiquidTrendChart: View {
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(Text(verbatim: "\(a11yLabel). \(mensaje)"))
         }
+    }
+
+    /// VoiceOver nombra el punto SCRUBBEADO (o el último) con la frase compuesta del
+    /// caller; el DS no une valor + fecha por su cuenta (contrato D3).
+    private var valorA11y: String {
+        guard !puntos.isEmpty else { return "" }
+        let p = puntos[LiquidChartA11y.indice(iScrub, puntos.count)]
+        if let f = formatoScrub { return f(p.valor, p.fecha) }
+        if let f = formatoValorScrub { return f(p.valor) }
+        return ""
     }
 }
 
@@ -101,6 +128,16 @@ private func trendDemo() -> [(fecha: Date, valor: Double)] {
 }
 
 #Preview("Liquid · Trend 14d — datos") {
+    let ejeFmt: (Date) -> String = {
+        let f = DateFormatter()
+        f.setLocalizedDateFormatFromTemplate("dMMM")
+        return { (d: Date) -> String in f.string(from: d) }
+    }()
+    let popupFmt: (Date) -> String = {
+        let f = DateFormatter()
+        f.setLocalizedDateFormatFromTemplate("EEEdMMM")
+        return { (d: Date) -> String in f.string(from: d) }
+    }()
     var chart = LiquidTrendChart(
         titulo: "Últimos 14 días",
         readout: (etiqueta: "Adecuado", tono: LiquidColor.indigo,
@@ -115,6 +152,9 @@ private func trendDemo() -> [(fecha: Date, valor: Double)] {
         ticksY: [(9, "9"), (7, "7"), (6, "6")],
         tono: LiquidColor.indigo,
         formatoScrub: { v, _ in String(format: "%.1f h · mar 14", v) },
+        formatoValorScrub: { v in String(format: "%.1f h", v) },
+        formatoFechaScrub: popupFmt,
+        formatoFechaEje: ejeFmt,
         estado: .datos,
         a11yLabel: "Sueño, últimos 14 días")
     chart.scrubFijo = 5

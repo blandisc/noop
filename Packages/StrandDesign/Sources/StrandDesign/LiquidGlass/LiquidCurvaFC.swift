@@ -21,12 +21,19 @@ public struct LiquidCurvaFC: View {
     /// lista, pero el DS no puede inventar copy (D3) — el caller los pasa junto a los
     /// valores; `nil` = solo valores.
     private let statsEtiquetas: (min: String, prom: String, max: String)?
-    private let formatoScrub: (Double, Date) -> String
+    private let ticksY: [(valor: Double, etiqueta: String)]
+    private let formatoScrub: ((Double, Date) -> String)?
+    private let formatoValorScrub: ((Double) -> String)?
+    private let formatoFechaScrub: ((Date) -> String)?
+    private let formatoFechaEje: ((Date) -> String)?
     private let estado: LiquidChartEstado
     /// Rótulo de VoiceOver (regla de a11y de la familia; añadido igual que en el trend).
     private let a11yLabel: String
     /// SOLO previews/arnés: overlay de scrub asentado en un índice fijo.
     var scrubFijo: Int? = nil
+
+    /// El punto bajo el dedo (lo publica el plot); mueve el `accessibilityValue`.
+    @State private var iScrub: Int? = nil
 
     public init(titulo: String,
                 subtitulo: String,
@@ -35,7 +42,11 @@ public struct LiquidCurvaFC: View {
                 dominio: ClosedRange<Double>,
                 stats: (min: String, prom: String, max: String)? = nil,
                 statsEtiquetas: (min: String, prom: String, max: String)? = nil,
-                formatoScrub: @escaping (Double, Date) -> String,
+                ticksY: [(valor: Double, etiqueta: String)] = [],
+                formatoScrub: ((Double, Date) -> String)? = nil,
+                formatoValorScrub: ((Double) -> String)? = nil,
+                formatoFechaScrub: ((Date) -> String)? = nil,
+                formatoFechaEje: ((Date) -> String)? = nil,
                 estado: LiquidChartEstado,
                 a11yLabel: String) {
         self.titulo = titulo
@@ -45,7 +56,11 @@ public struct LiquidCurvaFC: View {
         self.dominio = dominio
         self.stats = stats
         self.statsEtiquetas = statsEtiquetas
+        self.ticksY = ticksY
         self.formatoScrub = formatoScrub
+        self.formatoValorScrub = formatoValorScrub
+        self.formatoFechaScrub = formatoFechaScrub
+        self.formatoFechaEje = formatoFechaEje
         self.estado = estado
         self.a11yLabel = a11yLabel
     }
@@ -83,13 +98,25 @@ public struct LiquidCurvaFC: View {
         switch estado {
         case .datos:
             LiquidChartPlot(puntos: puntos, bandas: [], dominio: dominio,
-                            ticksY: [], tono: LiquidColor.rosa,
+                            ticksY: ticksY, tono: LiquidColor.rosa,
                             puntoHoy: puntos.last, hoyAnillo: false,
                             formatoScrub: formatoScrub,
+                            formatoValorScrub: formatoValorScrub,
+                            formatoFechaScrub: formatoFechaScrub,
+                            formatoFechaEje: formatoFechaEje,
+                            // El eje de esta curva es el RELOJ, no el índice: los buckets
+                            // vacíos no existen en la consulta (`GROUP BY ts / bucket`), así
+                            // que repartir por índice etiquetaría «7 a. m. · 8 a. m. · 7 p. m.»
+                            // a distancias iguales y afirmaría una linealidad que el motor
+                            // no da. Con mapeo por tiempo, cada marca cae donde de verdad
+                            // ocurrió.
+                            mapeoPorTiempo: true,
                             alto: LiquidChartAlto.curvaFC,
-                            scrubFijo: scrubFijo)
+                            scrubFijo: scrubFijo,
+                            onScrub: { (i: Int?) in iScrub = i })
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(Text(verbatim: a11yLabel))
+                .accessibilityValue(Text(verbatim: valorA11y))
         case .cargando:
             LiquidChartCargando(alto: LiquidChartAlto.curvaFC)
         case .vacio(let mensaje):
@@ -123,6 +150,16 @@ public struct LiquidCurvaFC: View {
         }
         .accessibilityElement(children: .combine)
     }
+
+    /// VoiceOver nombra el punto SCRUBBEADO (o el último) con la frase compuesta del
+    /// caller; el DS no une valor + hora por su cuenta (contrato D3).
+    private var valorA11y: String {
+        guard !puntos.isEmpty else { return "" }
+        let p = puntos[LiquidChartA11y.indice(iScrub, puntos.count)]
+        if let f = formatoScrub { return f(p.valor, p.fecha) }
+        if let f = formatoValorScrub { return f(p.valor) }
+        return ""
+    }
 }
 
 #if DEBUG
@@ -137,6 +174,16 @@ private func curvaDemo() -> [(fecha: Date, valor: Double)] {
 }
 
 #Preview("Liquid · Curva FC — datos") {
+    let relojFmt: (Date) -> String = {
+        let f = DateFormatter()
+        f.setLocalizedDateFormatFromTemplate("ha")
+        return { (d: Date) -> String in f.string(from: d) }
+    }()
+    let popupFmt: (Date) -> String = {
+        let f = DateFormatter()
+        f.setLocalizedDateFormatFromTemplate("jmm")
+        return { (d: Date) -> String in f.string(from: d) }
+    }()
     var curva = LiquidCurvaFC(
         titulo: "Pulsaciones por minuto",
         subtitulo: "Promedio de 5 min · desde medianoche",
@@ -145,7 +192,11 @@ private func curvaDemo() -> [(fecha: Date, valor: Double)] {
         dominio: 40...105,
         stats: (min: "48", prom: "64", max: "98"),
         statsEtiquetas: (min: "Mín", prom: "Prom", max: "Máx"),
+        ticksY: [(100, "100"), (70, "70"), (45, "45")],
         formatoScrub: { v, _ in "\(Int(v)) lpm · 2 pm" },
+        formatoValorScrub: { v in "\(Int(v)) lpm" },
+        formatoFechaScrub: popupFmt,
+        formatoFechaEje: relojFmt,
         estado: .datos,
         a11yLabel: "Frecuencia cardiaca de hoy")
     curva.scrubFijo = 90

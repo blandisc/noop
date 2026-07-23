@@ -65,7 +65,9 @@ final class LiquidGlassTests: XCTestCase {
         for glyph in LiquidIcon.Glyph.allCases {
             let spec = glyph.spec
             var combined = Path()
-            for d in spec.paths + spec.paths2 {
+            // `pathsFilled` es la tercera capa (geometría YA rellena: los nodos de
+            // `.tendencias`). Sin ella el test dejaba sin cubrir arte que SÍ se pinta.
+            for d in spec.paths + spec.paths2 + spec.pathsFilled {
                 combined.addPath(SVGPathData.path(d))
             }
             XCTAssertFalse(combined.isEmpty, "\(glyph.rawValue): path vacío")
@@ -79,6 +81,56 @@ final class LiquidGlassTests: XCTestCase {
             XCTAssertLessThanOrEqual(b.maxX, spec.viewBox + slop, glyph.rawValue)
             XCTAssertLessThanOrEqual(b.maxY, spec.viewBox + slop, glyph.rawValue)
         }
+    }
+
+    // MARK: Contrato de gráfica (recuperación /inject — tokens `LiquidChart`)
+
+    /// El invariante que hace HONESTOS los puntos por dato: un disco por muestra vuelve la
+    /// ventana CONTABLE, así que el umbral tiene que quedar por debajo del tope de
+    /// decimación del caller (80, `MetricWindowMath.decimatedPoints`). Si alguien sube este
+    /// número sin subir aquel, el usuario contaría 7 discos donde la fila de nivel afirma
+    /// «9 noches» y la hoja mentiría en silencio, sin fallar ninguna compilación.
+    func test_puntoDatoUmbral_bajoElTopeDeDecimacion() {
+        XCTAssertLessThan(LiquidChart.puntoDatoUmbral, 80,
+                          "los discos por dato harían contable una serie ya decimada")
+        XCTAssertGreaterThan(LiquidChart.puntoDatoUmbral, 0)
+    }
+
+    /// I1 se juega en 13 puntos de alfa (8 reposo / 16 activa / 3 apagada): el disco de un
+    /// punto FUERA de la banda activa tiene que acompañar a su wash, nunca competir con él.
+    func test_puntosDato_apagadosPorDebajoDelEncendido() {
+        XCTAssertLessThan(LiquidChart.puntoApagadoAlfa, 1)
+        XCTAssertLessThan(LiquidChart.puntoApagadoEscala, 1)
+        // I1 intacto: los tres washes de banda siguen siendo 8 / 16 / 3.
+        XCTAssertEqual(LiquidChart.bandaReposoAlfa, 0.08)
+        XCTAssertEqual(LiquidChart.bandaActivaAlfa, 0.16)
+        XCTAssertEqual(LiquidChart.bandaApagadaAlfa, 0.03)
+    }
+
+    /// La banda es un intervalo half-open `[lo, hi)` — el mismo resolver que pinta el color
+    /// del anillo del scrub, del popup y de cada disco. Un solo punto en dos bandas dejaría
+    /// el anillo y su popup discrepando del wash que ilumina.
+    func test_banda_intervaloHalfOpen() {
+        let media = LiquidChartBanda(lo: 49, hi: 71, color: .cyan, activa: true)
+        XCTAssertTrue(media.contiene(49), "el borde bajo PERTENECE a la banda")
+        XCTAssertTrue(media.contiene(70.9))
+        XCTAssertFalse(media.contiene(71), "el borde alto es de la banda de arriba")
+        XCTAssertFalse(media.contiene(48.9))
+        let abierta = LiquidChartBanda(lo: 71, hi: nil, color: .green, activa: false)
+        XCTAssertTrue(abierta.contiene(1_000))
+        let porAbajo = LiquidChartBanda(lo: nil, hi: 49, color: .orange, activa: false)
+        XCTAssertTrue(porAbajo.contiene(-1_000))
+        XCTAssertFalse(porAbajo.contiene(49))
+    }
+
+    /// Qué punto nombra VoiceOver: el que está bajo el dedo mientras dura el scrub, y el
+    /// ÚLTIMO en reposo (nunca el primero, que es el más viejo de la ventana).
+    func test_a11y_indiceDelScrub() {
+        XCTAssertEqual(LiquidChartA11y.indice(3, 14), 3)
+        XCTAssertEqual(LiquidChartA11y.indice(nil, 14), 13, "en reposo lee el último punto")
+        XCTAssertEqual(LiquidChartA11y.indice(99, 14), 13, "índice fuera de rango = último")
+        XCTAssertEqual(LiquidChartA11y.indice(-1, 14), 13)
+        XCTAssertEqual(LiquidChartA11y.indice(nil, 0), 0, "serie vacía no puede desbordar")
     }
 
     // MARK: Contrato de motion

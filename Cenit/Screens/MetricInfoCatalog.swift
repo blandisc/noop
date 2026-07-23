@@ -131,7 +131,7 @@ extension MetricInfo {
         return MetricInfo(
             id: "sleep",
             name: "Sleep",
-            headline: "Total time asleep last night, estimated from movement and heart rate. Sleep contributes ~15% of your recovery score and feeds the strain-to-load balance (ACWR).",
+            headline: "Total time asleep last night, estimated from movement and heart rate. Sleep is one of the signals behind your daily verdict.",
             displayValue: display,
             unit: nil,
             headerTint: totalMinutes == nil ? .neutral : .metric,
@@ -150,7 +150,7 @@ extension MetricInfo {
         MetricInfo(
             id: "hrv",
             name: "HRV",
-            headline: "HRV is how much the time between your heartbeats varies, in milliseconds, while you sleep. More variation usually means better recovery. What matters isn't the number itself, but how it compares with your own average.",
+            headline: "HRV is how much the time between your heartbeats varies, in milliseconds, while you sleep. More variation usually means a nervous system that's better rested. What matters isn't the number itself, but how it compares with your own average.",
             displayValue: value.map { "\(Int($0.rounded()))" } ?? "—",
             unit: String(localized: "ms"),
             headerTint: value == nil ? .neutral : .metric,
@@ -159,8 +159,8 @@ extension MetricInfo {
                 ? "No HRV from last night. That can happen if you didn't wear your Apple Watch to sleep, or the night was too short for it to record."
                 : "HRV is personal. There are no universal good/bad thresholds: only your trend over time.",
             method: Method(
-                prose: "The number you see is the HRV Apple records overnight: SDNN, the overall spread of the time between your heartbeats. The read that tells you how recovered you are uses a different HRV measure, RMSSD, recomputed from the beat-to-beat intervals of your densest nights. RMSSD tracks the vagal, rest-and-digest branch specifically, while SDNN blends both branches of your nervous system; that, plus the two being measured over different nightly windows, means the HRV number here won't always line up with the direction of your recovery.",
-                citation: "SDNN and RMSSD (Task Force, 1996); RMSSD is the vagal recovery measure (Shaffer & Ginsberg, 2017). HRV is the biggest driver of your recovery."
+                prose: "The number you see is the HRV Apple records: SDNN, the overall spread of the time between your heartbeats. Your daily verdict reads this same signal against your own baseline. The trend uses a different HRV measure, RMSSD, recomputed from the beat-to-beat intervals of your densest nights; RMSSD tracks the vagal, rest-and-repair branch specifically, while SDNN blends both branches, so the two won't always move together.",
+                citation: "SDNN and RMSSD (Task Force, 1996); RMSSD is the vagal recovery measure (Shaffer & Ginsberg, 2017)."
             ),
             levelsTodayValue: value,
             levelsRelative: true
@@ -182,7 +182,7 @@ extension MetricInfo {
         return MetricInfo(
             id: "rhr",
             name: "Resting HR",
-            headline: "Your heart rate when your body is fully at rest: how hard your heart has to work doing nothing. Lower generally means a stronger, more efficient cardiovascular system. Cénit uses it as ~20% of your recovery score; a rise from your norm can signal fatigue or that something's coming on.",
+            headline: "Your heart rate when your body is fully at rest: how hard your heart has to work doing nothing. Lower generally means a stronger, more efficient cardiovascular system. Cénit reads it against your own norm as part of your daily verdict; a rise can signal fatigue or that something's coming on.",
             displayValue: value.map { "\($0)" } ?? "—",
             unit: lpm,
             headerTint: value == nil ? .neutral : .metric,
@@ -373,7 +373,7 @@ extension MetricInfo {
         MetricInfo(
             id: "skin_temp",
             name: "Skin Temperature",
-            headline: "The temperature of your skin, read at your wrist while you sleep. It shifts with your circadian rhythm and recovery. What matters isn't the number itself, but how far it sits from your own baseline. A sustained rise can be an early sign of inflammation or a coming illness.",
+            headline: "The temperature of your skin, read at your wrist while you sleep. It shifts with your circadian rhythm. What matters isn't the number itself, but how far it sits from your own baseline. A sustained rise can be an early sign of inflammation or a coming illness; that's why it's one of the signals behind your daily verdict.",
             displayValue: value.map { String(format: "%+.1f", $0) } ?? "—",
             unit: "°C",
             headerTint: value == nil ? .neutral : .metric,
@@ -423,7 +423,7 @@ extension MetricInfo {
         return MetricInfo(
             id: "steps",
             name: "Steps",
-            headline: "Daily step count. Consistent activity, even a 30-minute walk, supports cardiovascular health, mood, and recovery quality.",
+            headline: "Daily step count. Consistent activity, even a 30-minute walk, supports cardiovascular health and mood. It's context for your day: it doesn't move your daily verdict or your load balance.",
             displayValue: value.map { v in
                 let f = NumberFormatter(); f.numberStyle = .decimal
                 return f.string(from: NSNumber(value: v)) ?? "\(v)"
@@ -501,6 +501,17 @@ extension MetricInfo {
         )
     }
 
+    /// ⚠️ CÓDIGO MUERTO — decisión explícita del pase de copy (/inject 2026-07-23).
+    /// `MetricInfo.recovery` YA NO ES ALCANZABLE desde la app: `metricDetail` nunca se
+    /// asigna a `.recovery` (TodayView:1043-1074) y el único llamador vivo es el fixture
+    /// DEMO de `LiquidMetricSheetView`. Por eso su copy —el único que sigue nombrando el
+    /// score de recuperación y sus pesos exactos— quedó SIN reescribir: reescribir texto
+    /// muerto lo legitimaría. Lo honesto es BORRAR esta factory junto con su rama de la
+    /// hoja (`isRecoverySummary` / `recoveryContent` / `recoveryZoneMeter` /
+    /// `recoveryReadingText` / el «/ 100» / sus entradas de `LiquidSheetCopy`); no se hizo
+    /// en esta pasada porque es una amputación que no se puede compilar desde el paquete y
+    /// la sesión de recarga en caliente del dueño estaba viva. Pendiente para el CIERRE.
+    ///
     /// Recovery (0–100) is a weighted composite, not a banded range, so it gets its own body:
     /// a "See the method" disclosure (where the exact weights and the σ language live). While the
     /// baseline is still seeding (`calibrationNights` non-nil) it shows honest progress instead of a

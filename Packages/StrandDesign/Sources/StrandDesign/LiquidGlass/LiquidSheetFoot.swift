@@ -51,17 +51,25 @@ public struct LiquidMetodo<Content: View>: View {
 }
 
 /// Nota corta del pie (nota de método, o la línea de conectar Apple Salud).
+///
+/// El `tono` es tinta quieta por defecto — la nota acompaña, no llama. El caller solo lo
+/// sube (a `LiquidColor.atencionTexto`) cuando la nota AVISA algo que cambia la lectura de
+/// lo que está viendo: p. ej. «se muestran los últimos N días» cuando la ventana se
+/// ensanchó sola. Recolorear el componente entero teñiría todas las notas de todas las
+/// hojas, que es justo lo que no queremos.
 public struct LiquidNotaLine: View {
     private let text: String
+    private let tono: Color
 
-    public init(_ text: String) {
+    public init(_ text: String, tono: Color = LiquidColor.tinta500) {
         self.text = text
+        self.tono = tono
     }
 
     public var body: some View {
         Text(verbatim: text)
             .font(LiquidType.captionLectura)
-            .foregroundStyle(LiquidColor.tinta500)
+            .foregroundStyle(tono)
             .fixedSize(horizontal: false, vertical: true)
     }
 }
@@ -86,11 +94,19 @@ public struct LiquidVerMas: View {
     public var body: some View {
         if anchoCompleto {
             Button(action: action) {
-                Text(verbatim: title)
-                    .font(LiquidType.boton).tracking(LiquidType.botonTracking)
-                    .foregroundStyle(LiquidColor.tinta900)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, LiquidSpace.s300)
+                // El glifo de Tendencias a la IZQUIERDA del rótulo (la variante de ancho
+                // completo es siempre «Ver más en Tendencias»): el pie dibuja la pantalla a
+                // la que lleva, con el mismo arte de la pestaña del dock. En tinta/900 —
+                // acompaña al rótulo, no compite con el dato. Tamaño fijo: es cromo.
+                HStack(spacing: LiquidSpace.s200) {
+                    LiquidIcon(.tendencias, size: 18, color: LiquidColor.tinta900)
+                        .accessibilityHidden(true)
+                    Text(verbatim: title)
+                        .font(LiquidType.boton).tracking(LiquidType.botonTracking)
+                        .foregroundStyle(LiquidColor.tinta900)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, LiquidSpace.s300)
             }
             .buttonStyle(.liquidPress)
             .liquidGlass(.pastilla)
@@ -125,6 +141,7 @@ public struct LiquidVerMas: View {
             LiquidNotaLine("SDNN sobre los latidos nocturnos, comparado contra tu base de 21 noches (Task Force, 1996).")
         }
         LiquidNotaLine("Conecta Apple Salud para ver tu VFC aquí.")
+        LiquidNotaLine("Se muestran los últimos 47 días.", tono: LiquidColor.atencionTexto)
         LiquidVerMas(title: "Ver más en Tendencias", hint: "Abre el detalle completo",
                      tone: LiquidColor.cian, anchoCompleto: true, action: {})
         LiquidVerMas(title: "Ver más", hint: "Abre el detalle completo",

@@ -24,11 +24,18 @@ public struct LiquidGraficaNiveles: View {
     private let tono: Color
     private let puntoHoy: (fecha: Date, valor: Double)?
     private let hoyAnillo: Bool
-    private let formatoScrub: (Double, Date) -> String
+    private let formatoScrub: ((Double, Date) -> String)?
+    private let formatoValorScrub: ((Double) -> String)?
+    private let formatoFechaScrub: ((Date) -> String)?
+    private let formatoFechaEje: ((Date) -> String)?
     private let estadoVacio: String
     private let a11yLabel: String
     /// SOLO previews/arnés: overlay de scrub asentado en un índice fijo.
     var scrubFijo: Int? = nil
+
+    /// El punto bajo el dedo (lo publica el plot). Mueve el `accessibilityValue` con el
+    /// scrub y vuelve a `nil` — es decir, al último punto — al soltar.
+    @State private var iScrub: Int? = nil
 
     public init(puntos: [(fecha: Date, valor: Double)],
                 bandas: [Banda],
@@ -37,7 +44,10 @@ public struct LiquidGraficaNiveles: View {
                 tono: Color,
                 puntoHoy: (fecha: Date, valor: Double)? = nil,
                 hoyAnillo: Bool = false,
-                formatoScrub: @escaping (Double, Date) -> String,
+                formatoScrub: ((Double, Date) -> String)? = nil,
+                formatoValorScrub: ((Double) -> String)? = nil,
+                formatoFechaScrub: ((Date) -> String)? = nil,
+                formatoFechaEje: ((Date) -> String)? = nil,
                 estadoVacio: String,
                 a11yLabel: String) {
         self.puntos = puntos
@@ -48,6 +58,9 @@ public struct LiquidGraficaNiveles: View {
         self.puntoHoy = puntoHoy
         self.hoyAnillo = hoyAnillo
         self.formatoScrub = formatoScrub
+        self.formatoValorScrub = formatoValorScrub
+        self.formatoFechaScrub = formatoFechaScrub
+        self.formatoFechaEje = formatoFechaEje
         self.estadoVacio = estadoVacio
         self.a11yLabel = a11yLabel
     }
@@ -59,8 +72,12 @@ public struct LiquidGraficaNiveles: View {
                                 ticksY: ticksY, tono: tono,
                                 puntoHoy: puntoHoy, hoyAnillo: hoyAnillo,
                                 formatoScrub: formatoScrub,
+                                formatoValorScrub: formatoValorScrub,
+                                formatoFechaScrub: formatoFechaScrub,
+                                formatoFechaEje: formatoFechaEje,
                                 alto: LiquidChartAlto.explorador,
-                                scrubFijo: scrubFijo)
+                                scrubFijo: scrubFijo,
+                                onScrub: { (i: Int?) in iScrub = i })
             } else {
                 LiquidChartVacio(mensaje: estadoVacio, alto: LiquidChartAlto.explorador)
             }
@@ -70,10 +87,16 @@ public struct LiquidGraficaNiveles: View {
         .accessibilityValue(Text(verbatim: valorA11y))
     }
 
-    /// VoiceOver lee el último punto con el mismo formato del scrub (paridad GraficaRangos).
+    /// VoiceOver lee el punto SCRUBBEADO (o el último) con la frase compuesta del caller
+    /// — paridad GraficaRangos. El DS nunca une valor + fecha por su cuenta: si el caller
+    /// no dio la frase compuesta, se degrada al valor solo (contrato D3).
     private var valorA11y: String {
-        guard let ultimo = puntos.last else { return estadoVacio }
-        return formatoScrub(ultimo.valor, ultimo.fecha)
+        guard !puntos.isEmpty else { return estadoVacio }
+        let i: Int = LiquidChartA11y.indice(iScrub, puntos.count)
+        let p = puntos[i]
+        if let f = formatoScrub { return f(p.valor, p.fecha) }
+        if let f = formatoValorScrub { return f(p.valor) }
+        return estadoVacio
     }
 }
 
@@ -89,6 +112,13 @@ private func serieDemo(dias: Int = 30, base: Double = 58, onda: Double = 13)
     }
 }
 
+/// Formateadores de demo: el DS no conoce locales, el caller SÍ (contrato D3).
+private func fmtDemo(_ plantilla: String) -> (Date) -> String {
+    let f = DateFormatter()
+    f.setLocalizedDateFormatFromTemplate(plantilla)
+    return { (d: Date) -> String in f.string(from: d) }
+}
+
 private func bandasDemo(activa: Int?) -> [LiquidChartBanda] {
     [
         .init(lo: 71, hi: nil, color: LiquidColor.positivo, activa: activa == 0),
@@ -99,12 +129,14 @@ private func bandasDemo(activa: Int?) -> [LiquidChartBanda] {
 
 #Preview("Liquid · Niveles — banda activa") {
     let puntos = serieDemo()
+    let ejeFmt: (Date) -> String = fmtDemo("dMMM")
     return LiquidGraficaNiveles(
         puntos: puntos, bandas: bandasDemo(activa: 1), dominio: 30...95,
         ticksY: [(71, "71"), (49, "49")], tono: LiquidColor.cian,
         puntoHoy: (puntos[puntos.count - 1].fecha, puntos[puntos.count - 1].valor),
         hoyAnillo: false,
         formatoScrub: { v, _ in "\(Int(v)) ms" },
+        formatoFechaEje: ejeFmt,
         estadoVacio: "Sin lecturas en este rango.",
         a11yLabel: "VFC, últimos 30 días")
         .padding(LiquidSpace.s550)
@@ -139,12 +171,18 @@ private func bandasDemo(activa: Int?) -> [LiquidChartBanda] {
 }
 
 #Preview("Liquid · Niveles — scrub estático") {
-    let puntos = serieDemo()
+    // Serie corta: se ven los PUNTOS POR DATO y el popup con sus dos líneas.
+    let puntos = serieDemo(dias: 14)
+    let ejeFmt: (Date) -> String = fmtDemo("dMMM")
+    let popupFmt: (Date) -> String = fmtDemo("EEEdMMM")
     var g = LiquidGraficaNiveles(
         puntos: puntos, bandas: bandasDemo(activa: 1), dominio: 30...95,
         ticksY: [(71, "71"), (49, "49")], tono: LiquidColor.cian,
         puntoHoy: (puntos[puntos.count - 1].fecha, puntos[puntos.count - 1].valor),
         formatoScrub: { v, _ in "\(Int(v)) ms · mar 14" },
+        formatoValorScrub: { v in "\(Int(v)) ms" },
+        formatoFechaScrub: popupFmt,
+        formatoFechaEje: ejeFmt,
         estadoVacio: "Sin lecturas en este rango.",
         a11yLabel: "VFC, últimos 30 días")
     g.scrubFijo = 9

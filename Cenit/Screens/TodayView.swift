@@ -465,7 +465,10 @@ struct TodayView: View {
     /// for Apple-sourceable metrics that aren't connected and have no value yet — strap-only metrics
     /// (strain, heart rate) never get it. The connect action itself stays in Today. (FER-162)
     private func metricSheet(for info: MetricInfo) -> some View {
-        let appleCapable = ["sleep", "hrv", "rhr", "spo2", "steps"].contains(info.id)
+        // Temp. de piel y respiración también las mide el Apple Watch (los tiles ya las
+        // resuelven así), así que entran a la pista «conecta Apple Salud» igual que el resto.
+        let appleCapable = ["sleep", "hrv", "rhr", "spo2", "steps",
+                            "skin_temp", "resp_rate"].contains(info.id)
         let notConnected = health.auth != .authorized && health.auth != .unavailable
         // ¿El valor que se muestra vino de Apple Salud (no del strap)? MISMA resolución que el tile de Hoy,
         // por métrica: HRV/FCrep/SpO₂ usan `latestFromDisplay` (el último de la gráfica, FER-546) y Sueño
@@ -481,6 +484,12 @@ struct TodayView: View {
             // corazón desaparecía dentro de la tarjeta aunque el número mostrado SÍ venía de Apple Salud.
             case "sleep": return resolveMeasured(todayOnly: true) { $0.totalSleepMin }?.fromApple == true
             case "spo2":  return latestFromDisplay { $0.spo2Pct }?.fromApple == true
+            // Temp. de piel y respiración caían al `default` y la hoja se quedaba SIN sello
+            // aunque el dato viniera de Apple Salud. Se resuelven igual que sus tiles
+            // (:1519 y :1529), nunca con un `true` fijo. Los ids son los de `MetricInfo`
+            // («skin_temp» / «resp_rate»), NO los de la superficie Liquid («skintemp» / «resp»).
+            case "skin_temp": return latestFromDisplay { $0.skinTempDevC }?.fromApple == true
+            case "resp_rate": return latestFromDisplay { $0.respRateBpm }?.fromApple == true
             default:      return false
             }
         }()

@@ -36,6 +36,10 @@ public struct LiquidStageBar: View {
     private let overline: String
     private let ventana: String
 
+    /// La leyenda de 4 etapas no cabe en una fila cuando el texto crece: en tamaños de
+    /// accesibilidad se acomoda en rejilla 2×2 (mismos items, dos columnas).
+    @Environment(\.dynamicTypeSize) private var tamanoTexto
+
     /// Alto de la barra — geometría interna del componente (paridad `SleepStageBar`).
     private let altoBarra: CGFloat = 24
 
@@ -75,28 +79,44 @@ public struct LiquidStageBar: View {
             }
             .frame(height: altoBarra)
             .clipShape(RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous))
-            HStack(spacing: LiquidSpace.s300) {
-                ForEach(etapas) { etapa in
-                    HStack(spacing: LiquidSpace.s100) {
-                        Circle()
-                            .fill(etapa.color)
-                            .frame(width: 5, height: 5)
-                        Text(verbatim: etapa.etiqueta)
-                            .font(LiquidType.microEstado)
-                            .textCase(.uppercase)
-                            .foregroundStyle(LiquidColor.tinta500)
-                        Text(verbatim: etapa.duracion)
-                            .font(LiquidType.captionLectura)
-                            .foregroundStyle(LiquidColor.tinta700)
-                    }
-                }
-            }
+            leyenda
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(verbatim: overline))
         .accessibilityValue(Text(verbatim:
             (etapas.map { "\($0.etiqueta) \($0.duracion)" } + [ventana])
                 .joined(separator: ", ")))
+    }
+
+    /// Fila de 4 items; en tamaños de accesibilidad, rejilla 2×2 (el cambio es SOLO visual:
+    /// el bloque entero es un único elemento de a11y, ver `.accessibilityElement`).
+    @ViewBuilder private var leyenda: some View {
+        if tamanoTexto.isAccessibilitySize {
+            LazyVGrid(columns: [GridItem(.flexible(), alignment: .topLeading),
+                                GridItem(.flexible(), alignment: .topLeading)],
+                      alignment: .leading, spacing: LiquidSpace.s200) {
+                ForEach(etapas) { item($0) }
+            }
+        } else {
+            HStack(spacing: LiquidSpace.s300) {
+                ForEach(etapas) { item($0) }
+            }
+        }
+    }
+
+    private func item(_ etapa: Etapa) -> some View {
+        HStack(spacing: LiquidSpace.s100) {
+            Circle()
+                .fill(etapa.color)
+                .frame(width: 5, height: 5)
+            Text(verbatim: etapa.etiqueta)
+                .font(LiquidType.microEstado)
+                .textCase(.uppercase)
+                .foregroundStyle(LiquidColor.tinta500)
+            Text(verbatim: etapa.duracion)
+                .font(LiquidType.captionLectura)
+                .foregroundStyle(LiquidColor.tinta700)
+        }
     }
 }
 
@@ -115,5 +135,21 @@ public struct LiquidStageBar: View {
         ventana: "23:38 → 7:04")
     .padding(LiquidSpace.s550)
     .background(LiquidSheetFondo(tone: LiquidColor.indigo))
+}
+
+#Preview("Liquid · StageBar (AX)") {
+    // Tamaño de accesibilidad: la leyenda deja de ser una fila y se acomoda 2×2.
+    LiquidStageBar(
+        etapas: [
+            .init(minutos: 91, color: LiquidColor.indigo, etiqueta: "Profundo", duracion: "1:31"),
+            .init(minutos: 104, color: LiquidColor.indigo.opacity(0.78), etiqueta: "REM", duracion: "1:44"), // token-exempt: rampa graduada de etapas
+            .init(minutos: 190, color: LiquidColor.indigo.opacity(0.52), etiqueta: "Ligero", duracion: "3:10"), // token-exempt: rampa graduada de etapas
+            .init(minutos: 47, color: LiquidColor.tinta10, etiqueta: "Despierto", duracion: "0:47"),
+        ],
+        overline: "Anoche",
+        ventana: "23:38 → 7:04")
+    .padding(LiquidSpace.s550)
+    .background(LiquidSheetFondo(tone: LiquidColor.indigo))
+    .environment(\.dynamicTypeSize, .accessibility3)
 }
 #endif

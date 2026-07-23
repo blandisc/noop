@@ -9,9 +9,9 @@ import SwiftUI
 // (paridad `MetricLevelsExplorer:231-237`). Tocar dispara `onTap` — el caller alterna la
 // selección y resalta la banda en la gráfica.
 //
-// Contrato D3: strings YA localizados/formateados («En tu base», «49–71», «12 días»);
-// el DS no conoce `MetricLevels` ni locales. `a11yHint` viene del caller por la misma
-// regla (el DS no puede acuñar copy).
+// Contrato D3: strings YA localizados/formateados («En tu base», «49–71», «12 días»,
+// «· hoy»); el DS no conoce `MetricLevels` ni locales. `a11yHint` y `hoyEtiqueta` vienen
+// del caller por la misma regla (el DS no puede acuñar copy).
 
 public struct LiquidLevelRow: View {
     private let etiqueta: String
@@ -20,11 +20,13 @@ public struct LiquidLevelRow: View {
     private let esHoy: Bool
     private let activa: Bool
     private let tono: Color
+    private let hoyEtiqueta: String?
     private let a11yHint: String?
     private let onTap: () -> Void
 
     public init(etiqueta: String, rango: String, conteo: String,
                 esHoy: Bool, activa: Bool, tono: Color,
+                hoyEtiqueta: String? = nil,
                 a11yHint: String? = nil, onTap: @escaping () -> Void) {
         self.etiqueta = etiqueta
         self.rango = rango
@@ -32,6 +34,7 @@ public struct LiquidLevelRow: View {
         self.esHoy = esHoy
         self.activa = activa
         self.tono = tono
+        self.hoyEtiqueta = hoyEtiqueta
         self.a11yHint = a11yHint
         self.onTap = onTap
     }
@@ -40,10 +43,19 @@ public struct LiquidLevelRow: View {
         Button(action: onTap) {
             HStack(spacing: LiquidSpace.s300) {
                 punto
-                Text(verbatim: etiqueta)
-                    .font(LiquidType.cuerpo)
-                    .fontWeight(activa ? .semibold : .regular)
-                    .foregroundStyle(activa ? LiquidColor.tinta900 : LiquidColor.tinta700)
+                // La etiqueta y el rótulo de HOY viajan juntos (gap chico): son una sola
+                // idea, no dos columnas — el `Spacer` de abajo los separa del rango.
+                HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s150) {
+                    Text(verbatim: etiqueta)
+                        .font(LiquidType.cuerpo)
+                        .fontWeight(activa ? .semibold : .regular)
+                        .foregroundStyle(activa ? LiquidColor.tinta900 : LiquidColor.tinta700)
+                    if esHoy, let hoyEtiqueta {
+                        Text(verbatim: hoyEtiqueta)
+                            .font(LiquidType.captionLectura)
+                            .foregroundStyle(tonoRotulo)
+                    }
+                }
                 Spacer(minLength: LiquidSpace.s200)
                 Text(verbatim: rango)
                     .font(LiquidType.captionLectura)
@@ -64,9 +76,20 @@ public struct LiquidLevelRow: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.liquidPress)
+        // `.combine` fusiona los cuatro textos de la fila, así que el rótulo de HOY entra
+        // solo en el label de VoiceOver («Bajo, · hoy, < 49, 2 días») — sin componer copy.
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(activa ? [.isButton, .isSelected] : .isButton)
         .accessibilityHint(Text(verbatim: a11yHint ?? ""))
+    }
+
+    /// El tono del rótulo de HOY, corregido para AA: el ámbar de dato (#C4631F, que llega
+    /// como `tono` en piel/esfuerzo y en el clima de atención) ronda 3.5:1 sobre vidrio y
+    /// esto es texto chico, así que usa su hermano oscurecido `atencionTexto` (misma regla
+    /// que `LiquidSignalState.caption`). Los demás tonos de dato ya pasan.
+    private var tonoRotulo: Color {
+        (tono == LiquidColor.ambar || tono == LiquidColor.atencion)
+            ? LiquidColor.atencionTexto : tono
     }
 
     /// El punto del nivel: lleno del tono cuando la fila está activa; ANILLO hueco cuando es
@@ -92,14 +115,35 @@ public struct LiquidLevelRow: View {
                        esHoy: false, activa: true, tono: LiquidColor.cian, onTap: {})
         Rectangle().fill(LiquidColor.tinta10).frame(height: 1)
             .padding(.leading, LiquidSpace.s400 + 8 + LiquidSpace.s300)
-        // Hoy, mientras exploras otro nivel: anillo hueco.
+        // Hoy, mientras exploras otro nivel: anillo hueco + rótulo «· hoy».
         LiquidLevelRow(etiqueta: "Bajo", rango: "< 49", conteo: "2 días",
-                       esHoy: true, activa: false, tono: LiquidColor.cian, onTap: {})
+                       esHoy: true, activa: false, tono: LiquidColor.cian,
+                       hoyEtiqueta: "· hoy", onTap: {})
     }
     .clipShape(RoundedRectangle(cornerRadius: LiquidRadius.tarjeta, style: .continuous))
     .liquidGlass(.superficie)
     .padding(LiquidSpace.s550)
     .background(LiquidSheetFondo(tone: LiquidColor.cian))
+    .environment(\.liquidMotionDisabled, true)
+}
+
+#Preview("Liquid · LevelRow · ámbar (AA)") {
+    // El tono ámbar del dato falla AA en texto chico: el rótulo de HOY se pinta en
+    // `atencionTexto`, no en el ámbar crudo.
+    VStack(spacing: 0) {
+        LiquidLevelRow(etiqueta: "Sobre tu base", rango: "≥ +0.4 °C", conteo: "3 noches",
+                       esHoy: true, activa: false, tono: LiquidColor.ambar,
+                       hoyEtiqueta: "· hoy", onTap: {})
+        Rectangle().fill(LiquidColor.tinta10).frame(height: 1)
+            .padding(.leading, LiquidSpace.s400 + 8 + LiquidSpace.s300)
+        LiquidLevelRow(etiqueta: "En tu base", rango: "−0.3–+0.4 °C", conteo: "9 noches",
+                       esHoy: false, activa: true, tono: LiquidColor.ambar,
+                       hoyEtiqueta: "· hoy", onTap: {})
+    }
+    .clipShape(RoundedRectangle(cornerRadius: LiquidRadius.tarjeta, style: .continuous))
+    .liquidGlass(.superficie)
+    .padding(LiquidSpace.s550)
+    .background(LiquidSheetFondo(tone: LiquidColor.ambar))
     .environment(\.liquidMotionDisabled, true)
 }
 #endif

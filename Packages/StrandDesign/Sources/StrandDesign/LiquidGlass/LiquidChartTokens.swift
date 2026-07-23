@@ -48,10 +48,39 @@ public enum LiquidChart {
     public static let scrubAnilloDiametro: CGFloat = 10
     /// Grosor del borde del anillo (color de la banda del punto).
     public static let scrubAnilloBorde: CGFloat = 2.5
-    /// Alto del chip de valor («56 ms · mar 14»).
-    public static let scrubChipAlto: CGFloat = 16
-    /// Tipografía del chip (tabular, sobre tinta).
-    public static let scrubChipFuente = InstrumentoType.groteskNumber(9.5, weight: .semibold)
+    /// Diámetro de la gota de color del popup del scrub (tiñe la BANDA del punto, mismo
+    /// resolver que el anillo — el popup explica el color que ves).
+    public static let popupPuntoDiametro: CGFloat = 7
+
+    // MARK: Eje X (fila de fechas bajo el plot)
+
+    /// Alto de la franja reservada BAJO el área de datos para la fila de fechas.
+    /// 22 = caja de línea de `LiquidType.unidadCompacta` (≈12.5) + respiro arriba y abajo;
+    /// con 18 el descendente se colaba al bloque siguiente (el plot no clipa).
+    /// El eje va DENTRO del alto nominal de la gráfica: si creciera el total, `.datos`
+    /// mediría distinto que `.vacio`/`.cargando` y la hoja brincaría al cargar.
+    /// DECISIÓN (revote /inject): la etiqueta del eje es CHROME GEOMÉTRICO y NO escala con
+    /// Dynamic Type — misma voz y misma exención que los labels del eje Y, que ya usan
+    /// `unidadCompacta`. La lectura accesible la sirve el `accessibilityValue` de la
+    /// gráfica, que sí escala sin tope.
+    public static let ejeXAlto: CGFloat = 22
+
+    // MARK: Puntos por dato
+
+    /// Radio del disco que marca cada muestra cuando la serie es corta.
+    public static let puntoDatoRadio: CGFloat = 2.2
+    /// Tope de muestras para dibujar un disco por dato.
+    /// INVARIANTE: debe quedar POR DEBAJO del tope de decimación del caller (80 puntos,
+    /// `MetricWindowMath.decimatedPoints`). Los discos hacen CONTABLE la ventana; si la
+    /// serie viene decimada, el usuario contaría 7 discos donde la fila de nivel afirma
+    /// «9 noches». Subir este número sin subir el tope de decimación vuelve la hoja
+    /// mentirosa en silencio.
+    public static let puntoDatoUmbral: Int = 60
+    /// Alfa de los puntos FUERA de la banda activa (paridad `GraficaRangos`: el punto
+    /// acompaña al wash, nunca compite con él — I1 se juega en 13 puntos de alfa).
+    public static let puntoApagadoAlfa: Double = 0.25
+    /// Escala del radio de esos mismos puntos apagados.
+    public static let puntoApagadoEscala: CGFloat = 0.7
 
     // MARK: Selector de rango (I3 — RECTANGULAR)
 
@@ -105,13 +134,19 @@ public enum LiquidChart {
                 .frame(width: LiquidChart.endpointRadio * 2,
                        height: LiquidChart.endpointRadio * 2)
                 .offset(x: 217, y: 35)
-            Text(verbatim: "56 ms · mar 14")
-                .font(LiquidChart.scrubChipFuente)
-                .foregroundStyle(LiquidColor.papelAlto)
-                .padding(.horizontal, 6)
-                .frame(height: LiquidChart.scrubChipAlto)
-                .background(LiquidColor.tinta900, in: Capsule(style: .continuous))
-                .offset(x: 90, y: 2)
+            // Puntos por dato: encendidos en la banda activa, apagados fuera de ella.
+            ForEach([0, 1, 2, 3], id: \.self) { (k: Int) in
+                let encendido: Bool = k >= 1 && k <= 2
+                let r: CGFloat = encendido
+                    ? LiquidChart.puntoDatoRadio
+                    : LiquidChart.puntoDatoRadio * LiquidChart.puntoApagadoEscala
+                Circle().fill(hue)
+                    .opacity(encendido ? 1 : LiquidChart.puntoApagadoAlfa)
+                    .frame(width: r * 2, height: r * 2)
+                    .offset(x: CGFloat(30 + k * 55) - r, y: CGFloat(50 - k * 4) - r)
+            }
+            LiquidScrubPopup(valor: "56 ms", fecha: "mar 14 jul", color: hue)
+                .offset(x: 74, y: 2)
         }
         .frame(width: 220, height: 80)
         .liquidGlass(.superficie)

@@ -13449,19 +13449,19 @@
         }
       }
     },
-    "Daily step count. Consistent activity, even a 30-minute walk, supports cardiovascular health, mood, and recovery quality." : {
+    "Daily step count. Consistent activity, even a 30-minute walk, supports cardiovascular health and mood. It's context for your day: it doesn't move your daily verdict or your load balance." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Daily step count. Consistent activity, even a 30-minute walk, supports cardiovascular health, mood, and recovery quality."
+            "value" : "Daily step count. Consistent activity, even a 30-minute walk, supports cardiovascular health and mood. It's context for your day: it doesn't move your daily verdict or your load balance."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tu conteo de pasos del día. La actividad constante, aunque sea una caminata de 30 minutos, apoya tu salud cardiovascular, tu ánimo y la calidad de tu recuperación."
+            "value" : "Tu conteo de pasos del día. La actividad constante, aunque sea una caminata de 30 minutos, apoya tu salud cardiovascular y tu ánimo. Es contexto de tu día: no mueve tu veredicto del día ni tu balance de carga."
           }
         }
       }
@@ -19663,6 +19663,23 @@
         }
       }
     },
+    "How steady your sleep schedule is: we take each night's midpoint (between falling asleep and waking) and measure how much it shifts night to night. Less drift, closer to 100." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How steady your sleep schedule is: we take each night's midpoint (between falling asleep and waking) and measure how much it shifts night to night. Less drift, closer to 100."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qué tan parejo es tu horario de sueño: tomamos el centro de cada noche (entre dormirte y despertar) y medimos cuánto brinca de noche a noche. Menos brincos, más cerca de 100."
+          }
+        }
+      }
+    },
     "How They Move Together" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -20051,19 +20068,19 @@
         }
       }
     },
-    "HRV is how much the time between your heartbeats varies, in milliseconds, while you sleep. More variation usually means better recovery. What matters isn't the number itself, but how it compares with your own average." : {
+    "HRV is how much the time between your heartbeats varies, in milliseconds, while you sleep. More variation usually means a nervous system that's better rested. What matters isn't the number itself, but how it compares with your own average." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "HRV is how much the time between your heartbeats varies, in milliseconds, while you sleep. More variation usually means better recovery. What matters isn't the number itself, but how it compares with your own average."
+            "value" : "HRV is how much the time between your heartbeats varies, in milliseconds, while you sleep. More variation usually means a nervous system that's better rested. What matters isn't the number itself, but how it compares with your own average."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "La HRV es cuánto varían, en milisegundos, los tiempos entre tus latidos mientras duermes. Más variación suele indicar mejor recuperación. Lo que importa no es el número en sí, sino cómo se compara con tu propio promedio."
+            "value" : "La VFC es cuánto varía el tiempo entre tus latidos, en milisegundos, mientras duermes. Más variación suele indicar un sistema nervioso más descansado. Lo que importa no es el número en sí, sino cómo se compara con tu propio promedio."
           }
         }
       }
@@ -27834,6 +27851,23 @@
         }
       }
     },
+    "not enough nights yet" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "not enough nights yet"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "aún no hay noches suficientes"
+          }
+        }
+      }
+    },
     "Not enough nights yet to draw a trend." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -35449,19 +35483,19 @@
         }
       }
     },
-    "SDNN and RMSSD (Task Force, 1996); RMSSD is the vagal recovery measure (Shaffer & Ginsberg, 2017). HRV is the biggest driver of your recovery." : {
+    "SDNN and RMSSD (Task Force, 1996); RMSSD is the vagal recovery measure (Shaffer & Ginsberg, 2017)." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "SDNN and RMSSD (Task Force, 1996); RMSSD is the vagal recovery measure (Shaffer & Ginsberg, 2017). HRV is the biggest driver of your recovery."
+            "value" : "SDNN and RMSSD (Task Force, 1996); RMSSD is the vagal recovery measure (Shaffer & Ginsberg, 2017)."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "SDNN y RMSSD (Task Force, 1996); el RMSSD es la medida vagal de recuperación (Shaffer & Ginsberg, 2017). El HRV es el mayor motor de tu recuperación."
+            "value" : "SDNN y RMSSD (Task Force, 1996); la RMSSD es la medida vagal de recuperación (Shaffer y Ginsberg, 2017)."
           }
         }
       }
@@ -40364,19 +40398,19 @@
         }
       }
     },
-    "The number you see is the HRV Apple records overnight: SDNN, the overall spread of the time between your heartbeats. The read that tells you how recovered you are uses a different HRV measure, RMSSD, recomputed from the beat-to-beat intervals of your densest nights. RMSSD tracks the vagal, rest-and-digest branch specifically, while SDNN blends both branches of your nervous system; that, plus the two being measured over different nightly windows, means the HRV number here won't always line up with the direction of your recovery." : {
+    "The number you see is the HRV Apple records: SDNN, the overall spread of the time between your heartbeats. Your daily verdict reads this same signal against your own baseline. The trend uses a different HRV measure, RMSSD, recomputed from the beat-to-beat intervals of your densest nights; RMSSD tracks the vagal, rest-and-repair branch specifically, while SDNN blends both branches, so the two won't always move together." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The number you see is the HRV Apple records overnight: SDNN, the overall spread of the time between your heartbeats. The read that tells you how recovered you are uses a different HRV measure, RMSSD, recomputed from the beat-to-beat intervals of your densest nights. RMSSD tracks the vagal, rest-and-digest branch specifically, while SDNN blends both branches of your nervous system; that, plus the two being measured over different nightly windows, means the HRV number here won't always line up with the direction of your recovery."
+            "value" : "The number you see is the HRV Apple records: SDNN, the overall spread of the time between your heartbeats. Your daily verdict reads this same signal against your own baseline. The trend uses a different HRV measure, RMSSD, recomputed from the beat-to-beat intervals of your densest nights; RMSSD tracks the vagal, rest-and-repair branch specifically, while SDNN blends both branches, so the two won't always move together."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "El número que ves es el HRV que Apple registra de noche: SDNN, la dispersión general del tiempo entre tus latidos. Tu lectura de recuperación usa otra medida de HRV —RMSSD— recalculada de los intervalos latido a latido de tus noches más densas. El RMSSD sigue específicamente la rama vagal (de descanso), mientras que el SDNN mezcla ambas ramas de tu sistema nervioso; eso, sumado a que se calculan sobre ventanas distintas de la noche, hace que el número de HRV de aquí no siempre coincida con la dirección de tu recuperación."
+            "value" : "El número que ves es la VFC que registra Apple: SDNN, la dispersión total del tiempo entre tus latidos. Tu veredicto del día lee esta misma señal contra tu propia base. La tendencia usa otra medida de VFC, RMSSD, recalculada latido a latido de tus noches más densas; la RMSSD sigue específicamente la rama vagal (descansa y repara), mientras que la SDNN mezcla ambas ramas, así que las dos no siempre se mueven juntas."
           }
         }
       }
@@ -40626,19 +40660,19 @@
         }
       }
     },
-    "The temperature of your skin, read at your wrist while you sleep. It shifts with your circadian rhythm and recovery. What matters isn't the number itself, but how far it sits from your own baseline. A sustained rise can be an early sign of inflammation or a coming illness." : {
+    "The temperature of your skin, read at your wrist while you sleep. It shifts with your circadian rhythm. What matters isn't the number itself, but how far it sits from your own baseline. A sustained rise can be an early sign of inflammation or a coming illness; that's why it's one of the signals behind your daily verdict." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The temperature of your skin, read at your wrist while you sleep. It shifts with your circadian rhythm and recovery. What matters isn't the number itself, but how far it sits from your own baseline. A sustained rise can be an early sign of inflammation or a coming illness."
+            "value" : "The temperature of your skin, read at your wrist while you sleep. It shifts with your circadian rhythm. What matters isn't the number itself, but how far it sits from your own baseline. A sustained rise can be an early sign of inflammation or a coming illness; that's why it's one of the signals behind your daily verdict."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "La temperatura de tu piel, medida en la muñeca mientras duermes. Cambia con tu ritmo circadiano y tu recuperación. Lo que importa no es el número en sí, sino qué tan lejos queda de tu propia base. Una subida sostenida puede ser una señal temprana de inflamación o de que te estás enfermando."
+            "value" : "La temperatura de tu piel, medida en la muñeca mientras duermes. Cambia con tu ritmo circadiano. Lo que importa no es el número en sí, sino qué tan lejos queda de tu propia base. Una subida sostenida puede ser una señal temprana de inflamación o de que te estás enfermando; por eso es una de las señales detrás de tu veredicto del día."
           }
         }
       }
@@ -42087,19 +42121,19 @@
         }
       }
     },
-    "Total time asleep last night, estimated from movement and heart rate. Sleep contributes ~15% of your recovery score and feeds the strain-to-load balance (ACWR)." : {
+    "Total time asleep last night, estimated from movement and heart rate. Sleep is one of the signals behind your daily verdict." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Total time asleep last night, estimated from movement and heart rate. Sleep contributes ~15% of your recovery score and feeds the strain-to-load balance (ACWR)."
+            "value" : "Total time asleep last night, estimated from movement and heart rate. Sleep is one of the signals behind your daily verdict."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "El tiempo total que dormiste anoche, estimado a partir de tu movimiento y tu frecuencia cardíaca. El sueño aporta alrededor del 15% de tu recuperación y alimenta el balance entre esfuerzo y carga (ACWR)."
+            "value" : "El tiempo total que dormiste anoche, estimado a partir de tu movimiento y tu frecuencia cardíaca. El sueño es una de las señales detrás de tu veredicto del día."
           }
         }
       }
@@ -47352,19 +47386,19 @@
         }
       }
     },
-    "Your heart rate when your body is fully at rest: how hard your heart has to work doing nothing. Lower generally means a stronger, more efficient cardiovascular system. Cénit uses it as ~20% of your recovery score; a rise from your norm can signal fatigue or that something's coming on." : {
+    "Your heart rate when your body is fully at rest: how hard your heart has to work doing nothing. Lower generally means a stronger, more efficient cardiovascular system. Cénit reads it against your own norm as part of your daily verdict; a rise can signal fatigue or that something's coming on." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your heart rate when your body is fully at rest: how hard your heart has to work doing nothing. Lower generally means a stronger, more efficient cardiovascular system. Cénit uses it as ~20% of your recovery score; a rise from your norm can signal fatigue or that something's coming on."
+            "value" : "Your heart rate when your body is fully at rest: how hard your heart has to work doing nothing. Lower generally means a stronger, more efficient cardiovascular system. Cénit reads it against your own norm as part of your daily verdict; a rise can signal fatigue or that something's coming on."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tu frecuencia cardíaca cuando tu cuerpo está en reposo total: lo que le cuesta latir sin hacer nada. Más baja suele indicar un sistema cardiovascular más fuerte y eficiente. Cénit la usa como cerca del 20% de tu recuperación; una subida respecto a tu norma puede señalar fatiga o que algo se está gestando."
+            "value" : "Tu frecuencia cardíaca cuando tu cuerpo está en reposo total: lo que le cuesta latir sin hacer nada. Más baja suele indicar un sistema cardiovascular más fuerte y eficiente. Cénit la compara con tu propia norma como parte de tu veredicto del día; una subida puede señalar fatiga o que algo se está gestando."
           }
         }
       }

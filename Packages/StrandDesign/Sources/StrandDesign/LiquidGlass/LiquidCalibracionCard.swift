@@ -35,18 +35,19 @@ public struct LiquidCalibracionCard: View {
                     .monospacedDigit()
                     .foregroundStyle(LiquidColor.tinta700)
             }
-            // Barra de progreso (paridad :1150-1156): pista tenue + relleno del tono,
-            // mínimo visible 6 pt cuando hechas > 0; necesarias == 0 no divide entre cero.
+            // Barra de progreso (paridad :1150-1156): pista tenue + relleno del tono.
+            // El relleno se pinta SIEMPRE con un mínimo de 6 pt (`s150`), también con
+            // `hechas == 0`: el nub es la promesa de que la barra ya empezó a contar —
+            // paridad exacta con la vieja (`max(6, …)` sin condicional). `necesarias == 0`
+            // no divide entre cero.
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     Capsule().fill(LiquidColor.tinta10).frame(height: LiquidSpace.s150)
-                    if hechas > 0 {
-                        Capsule().fill(tono)
-                            .frame(width: max(LiquidSpace.s150,
-                                              geo.size.width * CGFloat(hechas)
-                                                  / CGFloat(max(necesarias, 1))),
-                                   height: LiquidSpace.s150)
-                    }
+                    Capsule().fill(tono)
+                        .frame(width: max(LiquidSpace.s150,
+                                          geo.size.width * CGFloat(hechas)
+                                              / CGFloat(max(necesarias, 1))),
+                               height: LiquidSpace.s150)
                 }
             }
             .frame(height: LiquidSpace.s150)
