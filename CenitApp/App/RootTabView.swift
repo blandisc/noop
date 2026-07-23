@@ -2,6 +2,7 @@
 import SwiftUI
 import StrandDesign
 import StrandAnalytics
+import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 /// iOS navigation shell — the «IA de 3 capas» tab shell (FER-182). Five tabs over the «Barra de
 /// instrumento» (FER-163): **Hoy · Cuerpo · Coach · Entrenar · Ajustes**. Trends and the old "More"
@@ -72,8 +73,13 @@ struct RootTabView: View {
 
     // FER-981: `body` kept thin so type-check stays under the long-function budget. Tab shell,
     // heavy tabs, and the modifier chain each type-check in their own scope.
+    // Inject: hooks en el struct NO privado del archivo (regla PR#1036) para iterar el
+    // dock Liquid en vivo durante las sesiones /inject.
+    @ObserveInjection private var inject
+
     var body: some View {
         rootChrome(rootTabs)
+            .enableInjection()
     }
 
     /// Five-tab shell. Extracted from `body` (FER-981) so TabView + tags type-check apart from chrome.
