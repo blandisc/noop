@@ -152,7 +152,7 @@ public struct LiquidHoyModel: Sendable {
         metricas: [
             .init(id: "sleep", label: "SUEÑO", value: "7:20", delta: "En tu base",
                   tone: LiquidColor.indigo, icon: .luna),
-            .init(id: "hrv", label: "HRV", value: "56", unit: "ms", delta: "+2 ms vs tu base",
+            .init(id: "hrv", label: "VFC", value: "56", unit: "ms", delta: "+2 ms vs tu base",
                   deltaTone: .up, tone: LiquidColor.cian, icon: .onda),
             .init(id: "rhr", label: "FC EN REPOSO", value: "52", unit: "lpm", delta: "En tu base",
                   tone: LiquidColor.rosa, icon: .corazon),
