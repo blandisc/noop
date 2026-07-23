@@ -94,9 +94,11 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
 
     private static func bandasVFC(activa: Int?) -> [LiquidChartBanda] {
         [
-            .init(lo: 71, hi: nil, color: LiquidColor.positivo, activa: activa == 0),
-            .init(lo: 49, hi: 71, color: LiquidColor.cian, activa: activa == 1),
-            .init(lo: nil, hi: 49, color: LiquidColor.atencion, activa: activa == 2),
+            // Cortes IDÉNTICOS a los rangos de las filas de nivel (> 63 · 48–63 · < 48):
+            // si el chart y la lista dicen números distintos, la evidencia de I1 miente.
+            .init(lo: 63, hi: nil, color: LiquidColor.positivo, activa: activa == 0),
+            .init(lo: 48, hi: 63, color: LiquidColor.cian, activa: activa == 1),
+            .init(lo: nil, hi: 48, color: LiquidColor.atencion, activa: activa == 2),
         ]
     }
 
@@ -175,7 +177,7 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
             // La frase display del nivel destacado (L2), en su sitio canónico: entre el
             // selector y la gráfica.
             LiquidFraseNivel(nivel: "En tu base",
-                             conteo: "12 de tus últimos 28 días",
+                             conteo: "8 de tus últimos 14 días",
                              tono: LiquidColor.cian)
             grafica
             LiquidBandsTable(
@@ -392,7 +394,9 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
         }
         var trend = LiquidTrendChart(
             titulo: "Últimos 14 días",
-            readout: (etiqueta: "Adecuado", tono: LiquidColor.indigo,
+            // El readout nombra la banda ACTIVA (Óptimo), la misma de la fila activa:
+            // el código real deriva ambos del mismo índice, el fixture debe respetarlo.
+            readout: (etiqueta: "Óptimo", tono: LiquidColor.indigo,
                       frase: "9 de las últimas 14 noches en este rango"),
             puntos: puntos,
             bandas: [
@@ -472,9 +476,14 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
             ticksY: [(540, "9 h"), (420, "7 h"), (360, "6 h")],
             tono: LiquidColor.indigo,
             puntoHoy: nil, hoyAnillo: false,
-            formatoScrub: { v, _ in
+            formatoScrub: { (v: Double, f: Date) in
+                let m = Int(v.rounded()); return "\(m / 60) h \(m % 60) min · \(popupDia(f))"
+            },
+            formatoValorScrub: { (v: Double) in
                 let m = Int(v.rounded()); return "\(m / 60) h \(m % 60) min"
             },
+            formatoFechaScrub: popupDia,
+            formatoFechaEje: ejeDia,
             estadoVacio: "Sin lecturas en este rango",
             a11yLabel: "Sueño por noche")
         grafica.scrubFijo = nil
@@ -519,7 +528,12 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
             tono: LiquidColor.azul,
             puntoHoy: (fecha: puntos[puntos.count - 1].fecha, valor: 97.0),
             hoyAnillo: false,
-            formatoScrub: { v, _ in String(format: "%.0f %%", v) },
+            formatoScrub: { (v: Double, f: Date) in
+                String(format: "%.0f %% · ", v) + popupDia(f)
+            },
+            formatoValorScrub: { (v: Double) in String(format: "%.0f %%", v) },
+            formatoFechaScrub: popupDia,
+            formatoFechaEje: ejeDia,
             estadoVacio: "Sin lecturas en este rango",
             a11yLabel: "Oxígeno en sangre")
         grafica.scrubFijo = 20
@@ -543,13 +557,18 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
         let puntos = serieDiaria(dias: 28, base: 55, onda: 6)
         let grafica = LiquidGraficaNiveles(
             puntos: puntos,
-            // Coherente con la fila «En tu base» activa de abajo (invariante I1).
-            bandas: bandasVFC(activa: 1),
+            // I1: la banda iluminada es la de la fila ACTIVA de abajo — «Debajo de tu
+            // base» (índice 2), que es el nivel que el usuario está explorando mientras
+            // «hoy» vive en otro. Si no coinciden, el render desmiente al invariante.
+            bandas: bandasVFC(activa: 2),
             dominio: 40...72,
-            ticksY: [(66, "66"), (55, "55"), (46, "46")],
+            ticksY: [(63, "63"), (55, "55"), (48, "48")],
             tono: LiquidColor.cian,
             puntoHoy: nil, hoyAnillo: false,
-            formatoScrub: { v, _ in "\(Int(v.rounded())) ms" },
+            formatoScrub: { (v: Double, f: Date) in "\(Int(v.rounded())) ms · \(popupDia(f))" },
+            formatoValorScrub: { (v: Double) in "\(Int(v.rounded())) ms" },
+            formatoFechaScrub: popupDia,
+            formatoFechaEje: ejeDia,
             estadoVacio: "Sin lecturas en este rango",
             a11yLabel: "VFC por noche")
         return columna(tone: LiquidColor.cian) {
