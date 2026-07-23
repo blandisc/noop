@@ -52,6 +52,9 @@ public enum LiquidType {
 
     // MARK: Cuerpo (SF)
 
+    /// Glifo ⓘ de cabecera de hoja — 15 SF (QA F1-D5: fuera del inline).
+    public static let infoGlifo = Font.system(size: 15)
+
     /// `lectura/hoja` — 14 SF, base del texto de lectura de la hoja de resumen (readings,
     /// subtítulo del héroe). Los consumidores lo escalan con @ScaledMetric(relativeTo:
     /// .footnote) — acuñado en el revote adversarial F2 (adiós 14 inline).

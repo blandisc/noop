@@ -522,7 +522,16 @@ y el alto del skeleton de F5.
 
 ---
 
-## Dudas abiertas — requieren decisión del dueño
+## Decisiones — RESUELTAS en revote adversarial Claude+Grok (2026-07-22)
+
+> Registro del fallo (antes «dudas abiertas»; QA F−1 pidió dejarlas escritas aquí para
+> que F6 no las re-litigue):
+> **D1 → (a)**: F6 migra también la `.sheet` de SleepDetailScreen a la hoja Liquid (las
+> submétricas son variante clásica). **D2 → (a)**: spo2/heart_rate/recovery solo
+> arnés/#Preview en este épico; su wiring de entrada es un issue aparte vía /pm.
+> **D3 → (a)**: la hoja Liquid reemplaza el copy legado «Band» por origen honesto
+> Apple-only desde F1. **D4 → (a)**: washes 8/16/3 (LiquidChart), documentado para el
+> primer ⌘R de F3b.
 
 1. **SleepDetailScreen usa `MetricInfoSheet` (6 tiles vivos)** y el plan la excluye (D5) pero
    ordena borrar la hoja Instrumento en F6. Opciones: (a) F6 también cambia esa `.sheet` a la

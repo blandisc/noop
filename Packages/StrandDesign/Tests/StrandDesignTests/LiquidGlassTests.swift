@@ -134,6 +134,33 @@ final class LiquidGlassTests: XCTestCase {
             "Dale con todo. Tus 3 señales amanecieron dentro de tu rango. Confianza: 12 de 21 noches")
     }
 
+    // MARK: Contratos a11y — hoja de resumen (QA F0-F2 D4)
+
+    func test_a11y_sheetHeader() {
+        XCTAssertEqual(LiquidSheetHeader.a11yLabel(titulo: "VFC", numeral: "56",
+                                                   unidad: "ms", origen: "Apple Salud"),
+                       "VFC, 56 ms, Apple Salud")
+        XCTAssertEqual(LiquidSheetHeader.a11yLabel(titulo: "SUEÑO", numeral: nil,
+                                                   unidad: nil, origen: nil),
+                       "SUEÑO")
+        XCTAssertEqual(LiquidSheetHeader.a11yLabel(titulo: "ESFUERZO", numeral: "10.0",
+                                                   unidad: nil, origen: nil),
+                       "ESFUERZO, 10.0")
+    }
+
+    func test_a11y_zoneMeter() {
+        let segmentos: [LiquidZoneMeter.Segmento] = [
+            .init(peso: 1, color: .red, activa: false, etiqueta: "AGOTADO"),
+            .init(peso: 1, color: .green, activa: true, etiqueta: "LISTO"),
+        ]
+        XCTAssertEqual(LiquidZoneMeter.a11yLabel(segmentos: segmentos), "LISTO")
+        let ninguna = segmentos.map {
+            LiquidZoneMeter.Segmento(peso: $0.peso, color: $0.color,
+                                     activa: false, etiqueta: $0.etiqueta)
+        }
+        XCTAssertEqual(LiquidZoneMeter.a11yLabel(segmentos: ninguna), "")
+    }
+
     // MARK: Render de humo (macOS)
 
     #if os(macOS)

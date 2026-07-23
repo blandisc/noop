@@ -90,6 +90,9 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
             ("recovery", recovery()),
             ("sleep_rica", sleepRica()),
             ("sleep_skeleton", sleepSkeleton()),
+            ("sleep_sinnoche", sleepSinNoche()),
+            ("sleep_sindato", sleepSinDato()),
+            ("recovery_calibrando", recoveryCalibrando()),
             ("strain", strain()),
             ("heart_rate", heartRate()),
             ("clasica", clasica()),
@@ -175,11 +178,14 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
             LiquidReadingLine("Tu cuerpo amaneció listo para empujar.",
                               highlight: "listo",
                               highlightTone: LiquidColor.verdeProfundo)
-            // Coherencia numeral↔tick: 78/100 cae en la zona alta (LISTO activa).
+            // Las 5 zonas CANÓNICAS de recovery (25/25/20/18/12, matriz §1.1 — QA D3);
+            // 78/100 cae en ALTO (25+25+20=70 … 88).
             LiquidZoneMeter(segmentos: [
-                .init(peso: 34, color: LiquidColor.negativo, activa: false, etiqueta: "AGOTADO"),
-                .init(peso: 33, color: LiquidColor.atencion, activa: false, etiqueta: "MODERADO"),
-                .init(peso: 33, color: LiquidColor.positivo, activa: true, etiqueta: "LISTO"),
+                .init(peso: 25, color: LiquidColor.negativo, activa: false, etiqueta: "AGOTADO"),
+                .init(peso: 25, color: LiquidColor.atencion, activa: false, etiqueta: "BAJO"),
+                .init(peso: 20, color: LiquidColor.ambar, activa: false, etiqueta: "MODERADO"),
+                .init(peso: 18, color: LiquidColor.positivo, activa: true, etiqueta: "ALTO"),
+                .init(peso: 12, color: LiquidColor.verdeProfundo, activa: false, etiqueta: "PLENO"),
             ], fraccion: 0.78)
             LiquidMetodo(title: "Cómo se calcula") {
                 LiquidNotaLine("VFC, pulso en reposo y sueño de anoche, comparados contra tu propia base.")
@@ -299,8 +305,8 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
         }
     }
 
-    /// §1.5 · Clásica: headline + trend 14d con readout + tabla de 4 bandas con conteos
-    /// + tarjeta de calibración 2/4.
+    /// §1.5 · Clásica PURA (VO₂máx: sin niveles, sin calibración — la calibración es de
+    /// recovery, QA F5-D1): headline + trend 14d con readout + tabla de bandas.
     @MainActor
     private static func clasica() -> AnyView {
         let puntos = serieDiaria(dias: 14, base: 7.1, onda: 0.9).map {
@@ -337,10 +343,66 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
                     .init(etiqueta: "Muy corto", rango: "< 5 h", conteo: "0 noches"),
                 ],
                 tono: LiquidColor.indigo)
+        }
+    }
+
+    /// §1.1 · Recovery CALIBRANDO: numeral «—» + tarjeta de calibración (el único lugar
+    /// donde la calibración existe — QA F5-D1).
+    @MainActor
+    private static func recoveryCalibrando() -> AnyView {
+        columna(tone: LiquidColor.verdePrimario) {
+            LiquidSheetHeader(
+                icono: nil, titulo: "RECUPERACIÓN", tono: LiquidColor.verdePrimario,
+                numeral: "—", origen: .calculado,
+                explicacion: "Qué tan listo amaneció tu cuerpo.")
             LiquidCalibracionCard(titulo: "Calibrando tu base",
                                   leyenda: "2 de 4 noches",
                                   hechas: 2, necesarias: 4,
-                                  tono: LiquidColor.indigo)
+                                  tono: LiquidColor.verdePrimario)
+        }
+    }
+
+    /// §1.3 · Sueño SIN NOCHE (fallback clásico): numeral único + gráfica de niveles,
+    /// SIN doble dato ni etapas (QA F5-D1).
+    @MainActor
+    private static func sleepSinNoche() -> AnyView {
+        let puntos = serieDiaria(dias: 21, base: 430, onda: 40)
+        var grafica = LiquidGraficaNiveles(
+            puntos: puntos.map { (fecha: $0.fecha, valor: $0.valor) },
+            bandas: [
+                .init(lo: 420, hi: 540, color: LiquidColor.indigo, activa: true),
+                .init(lo: 360, hi: 420, color: LiquidColor.teal, activa: false),
+                .init(lo: nil, hi: 360, color: LiquidColor.atencion, activa: false),
+            ],
+            dominio: 320...560,
+            ticksY: [(540, "9 h"), (420, "7 h"), (360, "6 h")],
+            tono: LiquidColor.indigo,
+            puntoHoy: nil, hoyAnillo: false,
+            formatoScrub: { v, _ in
+                let m = Int(v.rounded()); return "\(m / 60) h \(m % 60) min"
+            },
+            estadoVacio: "Sin lecturas en este rango",
+            a11yLabel: "Sueño por noche")
+        grafica.scrubFijo = nil
+        return columna(tone: LiquidColor.indigo) {
+            LiquidSheetHeader(
+                icono: .luna, titulo: "SUEÑO", tono: LiquidColor.indigo,
+                numeral: "7:12", origenEtiqueta: "Apple Salud",
+                explicacion: "Cuánto dormiste, contra tu rango de referencia.")
+            LiquidNotaLine("Sin noche con etapas anoche: el resumen muestra tus horas contra tu rango.")
+            grafica
+        }
+    }
+
+    /// §1.3 · Sueño SIN DATO: «—» neutro, nota honesta (QA F5-D1).
+    @MainActor
+    private static func sleepSinDato() -> AnyView {
+        columna(tone: LiquidColor.indigo) {
+            LiquidSheetHeader(
+                icono: .luna, titulo: "SUEÑO", tono: LiquidColor.indigo,
+                numeral: "—",
+                explicacion: "Cuánto y qué tan parejo dormiste anoche.")
+            LiquidNotaLine("Duerme con tu Apple Watch para ver tu noche aquí.")
         }
     }
 

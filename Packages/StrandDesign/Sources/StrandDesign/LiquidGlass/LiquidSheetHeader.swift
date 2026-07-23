@@ -30,6 +30,8 @@ public struct LiquidSheetHeader: View {
 
     /// `icono == nil` = recovery (sin glifo). `numeral == nil` = la variante rica de sueño
     /// (el doble dato reemplaza al numeral). `explicacion == nil` = sin ⓘ.
+    /// `origen == .medido` NO pinta punto (QA F1-D2, deliberado): lo medido se dice con
+    /// `origenEtiqueta` («Apple Salud · anoche»); el punto es solo para lo CALCULADO.
     public init(icono: LiquidIcon.Glyph?, titulo: String, tono: Color,
                 numeral: String?, unidad: String? = nil, sufijo: String? = nil,
                 numeralTono: Color? = nil, origen: LiquidOrigen? = nil,
@@ -66,7 +68,7 @@ public struct LiquidSheetHeader: View {
                         }
                     } label: {
                         Image(systemName: "info.circle")
-                            .font(.system(size: 15))
+                            .font(LiquidType.infoGlifo)
                             .foregroundStyle(LiquidColor.tinta500)
                     }
                     .buttonStyle(.liquidPress)
