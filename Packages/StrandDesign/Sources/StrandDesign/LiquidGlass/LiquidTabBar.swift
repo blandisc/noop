@@ -47,7 +47,7 @@ public struct LiquidTabBar: View {
         .padding(.bottom, LiquidSpace.s150)
         .liquidGlass(.lente)
         // El selector se desliza con carácter (glass-spring · quick).
-        .animation(LiquidMotion.glassSpring(LiquidMotion.quick), value: active)
+        .animation(LiquidMotion.selector, value: active)
     }
 
     /// La pastilla de vidrio del ítem activo: nativa en iOS 26, imitación antes.

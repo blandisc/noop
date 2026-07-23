@@ -58,7 +58,7 @@ public enum LiquidAmbiente: Sendable, Equatable {
     var aurora: (Color, Color) {
         switch self {
         case .bien: return (LiquidColor.verdeAurora, LiquidColor.verdePrimario)
-        case .atencion: return (LiquidColor.oro, LiquidColor.atencion)
+        case .atencion: return (LiquidColor.ambarClaro, LiquidColor.atencion)
         case .alerta: return (LiquidColor.rosa, LiquidColor.negativo)
         case .neutro: return (LiquidColor.tinta500, LiquidColor.tinta500)
         }
@@ -68,7 +68,7 @@ public enum LiquidAmbiente: Sendable, Equatable {
     var orbes: (Color, Color) {
         switch self {
         case .bien: return (LiquidColor.verdeOrbe, LiquidColor.verdePrimario)
-        case .atencion: return (LiquidColor.oro, LiquidColor.atencion)
+        case .atencion: return (LiquidColor.ambarClaro, LiquidColor.atencion)
         case .alerta: return (LiquidColor.rosa, LiquidColor.negativo)
         case .neutro: return (LiquidColor.tinta500, LiquidColor.tinta500)
         }
@@ -378,7 +378,7 @@ public struct LiquidSignalCables: View {
                     ZStack {
                         ForEach(Array(Self.cables.enumerated()), id: \.offset) { _, cable in
                             CablePath(d: cable.d)
-                                .stroke(LiquidColor.verdePrimario.opacity(0.45), lineWidth: 1.2)
+                                .stroke(tone.opacity(0.45), lineWidth: 1.2)
                         }
                     }
                     .mask {

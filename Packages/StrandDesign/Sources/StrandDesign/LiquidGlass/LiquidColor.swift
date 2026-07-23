@@ -78,6 +78,9 @@ public enum LiquidColor {
     public static let azul = Color(hex: "#3B6FA0")
     /// Amanecer / halos cálidos.
     public static let oro = Color(hex: "#E8C24B")
+    /// El ámbar CLARO del clima de atención (decisión del dueño /inject: un solo ámbar,
+    /// familia naranja — el oro amarillo queda solo para el dial solar).
+    public static let ambarClaro = Color(hex: "#E29A50")
 
     // MARK: Semánticos
 

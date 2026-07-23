@@ -90,7 +90,9 @@ private struct LiquidGlassLayer<S: InsettableShape>: ViewModifier {
             // imitar con material + relleno. La elevación tonal sigue siendo nuestra
             // (silueta difuminada); el resto del stack queda como fallback para OS previos.
             content
-                .glassEffect(.regular.interactive(), in: shape)
+                // `.clear`: la variante más transparente del material (pedido del dueño:
+                // «todo más de cristal»); sobre el fondo neutro la tinta conserva AA.
+                .glassEffect(.clear.interactive(), in: shape)
                 .liquidShadow(shadow, silhouette: shape)
         } else {
             imitacion(content)
@@ -190,12 +192,19 @@ public struct LiquidSphere: View {
         GeometryReader { geo in
             let d = min(geo.size.width, geo.size.height)
             ZStack {
-                Circle().fill(.ultraThinMaterial)
+                // Esfera de vidrio NATIVO en iOS 26 (más cristal, pedido del dueño);
+                // el radial especular de abajo la corona en ambos caminos.
+                if #available(iOS 26.0, macOS 26.0, watchOS 26.0, *) {
+                    Circle().glassEffect(.clear.tint(tone.opacity(0.14)).interactive(),
+                                         in: Circle())
+                } else {
+                    Circle().fill(.ultraThinMaterial)
+                }
                 Circle().fill(
                     RadialGradient(
                         stops: [
-                            .init(color: .white.opacity(0.82), location: 0),
-                            .init(color: .white.opacity(0.24), location: 0.4),
+                            .init(color: .white.opacity(0.55), location: 0),
+                            .init(color: .white.opacity(0.12), location: 0.4),
                             .init(color: tone.opacity(0.22), location: 1),
                         ],
                         center: UnitPoint(x: 0.32, y: 0.24),
