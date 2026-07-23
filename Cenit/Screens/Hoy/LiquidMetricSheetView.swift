@@ -968,18 +968,9 @@ struct LiquidMetricSheetView: View {
         if let disclaimer = LiquidSheetCopy.disclaimer(info) {
             LiquidNotaLine(disclaimer)
         }
-        if appleSource { appleSourceLine }
+        // Línea de procedencia del pie RETIRADA (decisión del dueño /inject 2026-07-23):
+        // el origen ya se dice arriba, en la etiqueta del header («Apple Salud · anoche»).
         if let onSeeMore { verMas(onSeeMore) }
-    }
-
-    /// Línea de procedencia al pie (paridad `appleSourceLine` :698-709).
-    private var appleSourceLine: some View {
-        HStack(spacing: LiquidSpace.s150) {
-            LiquidIcon(.corazon, size: 12, color: LiquidColor.rosa)
-            LiquidNotaLine(String(localized: "Apple Health"))
-        }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(verbatim: String(localized: "Source · Apple Health")))
     }
 
     /// «Ver más» (paridad `seeMoreLink` :1186-1231): ancho completo hacia Tendencias
