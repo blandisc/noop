@@ -99,7 +99,8 @@ enum LiquidHoyBuilder {
             hero: hero,
             carga: carga(i.trainingLoad),
             metricas: metricas(i),
-            heroHint: String(localized: "Opens the detail"))
+            heroHint: String(localized: "Opens the detail"),
+            ambiente: ambiente(prep: i.preparedness))
         return Output(model: model, heroRoute: route)
     }
 
@@ -120,6 +121,18 @@ enum LiquidHoyBuilder {
     static func markerHour(now: Date, calendar: Calendar) -> Double {
         let parts = calendar.dateComponents([.hour, .minute], from: now)
         return Double(parts.hour ?? 0) + Double(parts.minute ?? 0) / 60
+    }
+
+    /// El ambiente semántico del día (pedido del dueño /inject): verde = «Dale con todo»,
+    /// ámbar = «con un detalle», rojo = «Ándate leve», neutro = sin veredicto nocturno.
+    static func ambiente(prep: Preparedness.Read?) -> LiquidAmbiente {
+        guard let prep, prep.verdict != .lowSignal, prep.isNightAnchored else { return .neutro }
+        switch prep.verdict {
+        case .full: return .bien
+        case .caution: return .atencion
+        case .easy: return .alerta
+        case .lowSignal: return .neutro
+        }
     }
 
     // MARK: Héroe (tabla canónica — port literal de `TodayView.heroBlock`)
@@ -161,11 +174,13 @@ enum LiquidHoyBuilder {
                 subtitle: String(localized: "You're doing well, with one thing to watch."),
                 confianza: confianza)
         case .easy, .lowSignal:
-            // lowSignal jamás llega aquí (el if-chain lo manda al fallback de sueño).
+            // lowSignal jamás llega aquí (el if-chain lo manda al estado sin datos).
+            // D1 resuelta por el dueño (/inject): «Ándate leve» habla en ROJO, como la
+            // superficie clásica (algo está MUY fuera; el ámbar es para «un detalle»).
             return .veredicto(
                 title: String(localized: "Take it easy"),
                 highlight: String(localized: "hero.highlight.easy", defaultValue: "easy"),
-                highlightTone: LiquidColor.atencion,
+                highlightTone: LiquidColor.negativo,
                 subtitle: String(localized: "Your body's asking you to ease off today."),
                 confianza: confianza)
         }

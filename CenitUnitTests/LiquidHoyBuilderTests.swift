@@ -47,16 +47,30 @@ final class LiquidHoyBuilderTests: XCTestCase {
         XCTAssertEqual(route, .autonomic)
     }
 
-    func test_hero_caution_y_easy_llevanTonoAtencion() {
-        for verdict in [Preparedness.Verdict.caution, .easy] {
+    func test_hero_caution_ambar_y_easy_rojo() {
+        // D1 resuelta por el dueño: caution = ámbar, easy = ROJO (como el clásico).
+        for (verdict, esperado) in [(Preparedness.Verdict.caution, LiquidColor.atencion),
+                                    (.easy, LiquidColor.negativo)] {
             let (hero, _) = LiquidHoyBuilder.hero(
                 prep: read(verdict: verdict, drivers: nocheAnclada), sleepMin: nil, nights: 21)
             guard case .veredicto(let title, let highlight, let tone, _, _) = hero else {
                 return XCTFail("esperaba .veredicto para \(verdict)")
             }
             XCTAssertTrue(title.contains(highlight), "\(verdict): resalte ⊆ título")
-            XCTAssertEqual(tone, LiquidColor.atencion, "\(verdict)")
+            XCTAssertEqual(tone, esperado, "\(verdict)")
         }
+    }
+
+    func test_ambiente_semantico() {
+        XCTAssertEqual(LiquidHoyBuilder.ambiente(
+            prep: read(verdict: .full, drivers: nocheAnclada)), .bien)
+        XCTAssertEqual(LiquidHoyBuilder.ambiente(
+            prep: read(verdict: .caution, drivers: nocheAnclada)), .atencion)
+        XCTAssertEqual(LiquidHoyBuilder.ambiente(
+            prep: read(verdict: .easy, drivers: nocheAnclada)), .alerta)
+        XCTAssertEqual(LiquidHoyBuilder.ambiente(prep: nil), .neutro)
+        XCTAssertEqual(LiquidHoyBuilder.ambiente(
+            prep: read(verdict: .lowSignal, drivers: [], maturity: .calibrating)), .neutro)
     }
 
     func test_hero_confianza_soloBajo21Noches() {

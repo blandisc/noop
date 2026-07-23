@@ -111,9 +111,12 @@ public struct LiquidHoyModel: Sendable {
     public let metricas: [Metrica]
     /// Hint de VoiceOver del héroe («Abre el detalle»), YA localizado. `nil` = sin hint.
     public let heroHint: String?
+    /// El ambiente semántico del día (tiñe fondo y pulsos): verde/ámbar/rojo/neutro.
+    public let ambiente: LiquidAmbiente
 
     public init(kicker: String, dial: Dial, senales: [Senal], hero: Hero, carga: Carga?,
-                metricas: [Metrica], heroHint: String? = nil) {
+                metricas: [Metrica], heroHint: String? = nil,
+                ambiente: LiquidAmbiente = .bien) {
         self.kicker = kicker
         self.dial = dial
         self.senales = senales
@@ -121,6 +124,7 @@ public struct LiquidHoyModel: Sendable {
         self.carga = carga
         self.metricas = metricas
         self.heroHint = heroHint
+        self.ambiente = ambiente
     }
 
     /// El contenido de muestra del ensamble §7.1 («Dale con todo»).
@@ -260,7 +264,7 @@ public struct LiquidHoyContent: View {
         ZStack(alignment: .top) {
             // Detalle fino (pasada UI): los cables llegan al FINAL de la cascada de
             // entrada — primera impresión serena, el movimiento entra como respiración.
-            LiquidSignalCables()
+            LiquidSignalCables(tone: model.ambiente.acento)
                 .liquidEntrada(index: 12)
             HStack(spacing: 53) {
                 ForEach(model.senales) { senal in
@@ -298,7 +302,7 @@ public struct LiquidHoyScreen: View {
 
     public var body: some View {
         ZStack {
-            LiquidAmbientBackground.hoy
+            LiquidAmbientBackground.hoy(model.ambiente)
             if scrolls {
                 ScrollView(.vertical, showsIndicators: false) { column }
             } else {

@@ -37,10 +37,17 @@ public struct LiquidIcon: View {
         // luego `fill`): el render de trazos de glifos chicos se comió dos hipótesis en
         // device — el relleno de geometría pura no depende de ese camino.
         let spec = glyph.spec
-        LiquidIconShape(glyph: glyph,
-                        strokedWidth: spec.strokeWidth * size / spec.viewBox)
-            .fill(color)
-            .frame(width: size, height: size)
+        ZStack {
+            if !spec.paths2.isEmpty {
+                LiquidIconShape(glyph: glyph, strokedWidth: spec.strokeWidth * size / spec.viewBox,
+                                secondary: true)
+                    .fill(color.opacity(0.45))
+            }
+            LiquidIconShape(glyph: glyph,
+                            strokedWidth: spec.strokeWidth * size / spec.viewBox)
+                .fill(color)
+        }
+        .frame(width: size, height: size)
     }
 }
 
@@ -50,16 +57,19 @@ public struct LiquidIcon: View {
 public struct LiquidIconShape: Shape {
     public let glyph: LiquidIcon.Glyph
     public var strokedWidth: CGFloat?
+    /// `true` = dibuja la capa secundaria tenue del glifo (paths2).
+    public var secondary: Bool = false
 
-    public init(glyph: LiquidIcon.Glyph, strokedWidth: CGFloat? = nil) {
+    public init(glyph: LiquidIcon.Glyph, strokedWidth: CGFloat? = nil, secondary: Bool = false) {
         self.glyph = glyph
         self.strokedWidth = strokedWidth
+        self.secondary = secondary
     }
 
     public func path(in rect: CGRect) -> Path {
         let spec = glyph.spec
         var combined = Path()
-        for d in spec.paths {
+        for d in (secondary ? spec.paths2 : spec.paths) {
             combined.addPath(SVGPathData.path(d))
         }
         let scale = min(rect.width, rect.height) / spec.viewBox
@@ -77,6 +87,8 @@ extension LiquidIcon.Glyph {
         let viewBox: CGFloat
         let strokeWidth: CGFloat
         let paths: [String]
+        /// Capa secundaria TENUE (45 %) — la segunda onda del glifo autonómico.
+        var paths2: [String] = []
     }
 
     /// Paths EXACTOS del handoff (MetricTile / SignalOrb / ModeTile / ListRow .dc.html).
@@ -119,23 +131,27 @@ extension LiquidIcon.Glyph {
                 "M8 11L10.8 7",
             ])
 
-        // MARK: Señales (viewBox 16, sw 1.8 — rediseñadas en la sesión /inject 2026-07-22:
-        // el dueño pidió glifos más presentes y literales; la onda sinusoidal y el termo
-        // fino no se leían en la esfera)
+        // MARK: Señales (viewBox 16, sw 1.8) — familia FINAL elegida por el dueño
+        // (/inject 2026-07-22): Autonómico = doble onda entrelazada («ondas finas») ·
+        // Sueño = luna con satélite · Térmico = brasa (núcleo + halos + puntos cardinales).
         case .ondaSenal:
-            // Pulso tipo ECG: línea base con espiga — «autonómico» inconfundible.
             return Spec(viewBox: 16, strokeWidth: 1.8, paths: [
-                "M1.5 8.5 H5 L6.5 4 L9 12 L10.8 6.5 L11.6 8.5 H14.5",
+                "M2 9.4 C3.6 6.2, 5.4 6.2, 7 9.4 C8.6 12.6, 10.4 12.6, 12 9.4 C12.9 7.7, 13.5 7.2, 14 7.5",
+            ], paths2: [
+                "M2 6.6 C3.6 9.8, 5.4 9.8, 7 6.6 C8.6 3.4, 10.4 3.4, 12 6.6",
             ])
         case .lunaSenal:
             return Spec(viewBox: 16, strokeWidth: 1.8, paths: [
                 "M13.8 9.9A5.6 5.6 0 1 1 6.1 2.2 4.5 4.5 0 0 0 13.8 9.9z",
+                "M13.6 3.6A0.8 0.8 0 1 0 12 3.6A0.8 0.8 0 1 0 13.6 3.6",
             ])
         case .termoSenal:
-            // Termómetro franco: bulbo grande + tallo + marcas de escala a la derecha.
             return Spec(viewBox: 16, strokeWidth: 1.8, paths: [
-                "M8 1.8v7.4M8 9.2a3 3 0 1 0 .01 0",
-                "M10.8 3.2h2.2M10.8 5.8h1.7",
+                "M9.5 8A1.5 1.5 0 1 0 6.5 8A1.5 1.5 0 1 0 9.5 8",
+                "M8.6 8A0.6 0.6 0 1 0 7.4 8A0.6 0.6 0 1 0 8.6 8",
+                "M8 3.4A4.6 4.6 0 0 1 12.6 8",
+                "M8 12.6A4.6 4.6 0 0 1 3.4 8",
+                "M8 1v1M8 14v1M1 8h1M14 8h1",
             ])
 
         // MARK: Modos (viewBox 16, sw 1.5)

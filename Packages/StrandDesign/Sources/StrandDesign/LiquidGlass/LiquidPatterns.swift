@@ -38,6 +38,46 @@ public struct LiquidOrbSpec: Sendable {
     }
 }
 
+/// El ESTADO del ambiente (pedido del dueño /inject 2026-07-22): el color que respira
+/// detrás del vidrio y viaja por los cables es SEMÁNTICO — verde cuando el día está bien,
+/// ámbar con un detalle, rojo cuando el cuerpo pide bajarle, neutro sin veredicto.
+public enum LiquidAmbiente: Sendable, Equatable {
+    case bien, atencion, alerta, neutro
+
+    /// El acento (pulsos de cables, punto activo).
+    public var acento: Color {
+        switch self {
+        case .bien: return LiquidColor.verdePrimario
+        case .atencion: return LiquidColor.atencion
+        case .alerta: return LiquidColor.negativo
+        case .neutro: return LiquidColor.tinta500
+        }
+    }
+
+    /// (tono de arranque, tono medio) de la aurora.
+    var aurora: (Color, Color) {
+        switch self {
+        case .bien: return (LiquidColor.verdeAurora, LiquidColor.verdePrimario)
+        case .atencion: return (LiquidColor.oro, LiquidColor.atencion)
+        case .alerta: return (LiquidColor.rosa, LiquidColor.negativo)
+        case .neutro: return (LiquidColor.tinta500, LiquidColor.tinta500)
+        }
+    }
+
+    /// (tono claro, tono profundo) de las manchas que circulan.
+    var orbes: (Color, Color) {
+        switch self {
+        case .bien: return (LiquidColor.verdeOrbe, LiquidColor.verdePrimario)
+        case .atencion: return (LiquidColor.oro, LiquidColor.atencion)
+        case .alerta: return (LiquidColor.rosa, LiquidColor.negativo)
+        case .neutro: return (LiquidColor.tinta500, LiquidColor.tinta500)
+        }
+    }
+
+    /// El neutro baja la intensidad a la mitad (calma, no celebración).
+    var intensidad: Double { self == .neutro ? 0.5 : 1 }
+}
+
 /// El fondo de una pantalla Liquid: degradado de papel + aurora superior + orbes drift.
 /// La animación es un `TimelineView` ambiental (16–26 s); con Reduce Motion queda quieta.
 public struct LiquidAmbientBackground: View {
@@ -54,32 +94,33 @@ public struct LiquidAmbientBackground: View {
         self.orbs = orbs
     }
 
-    /// El fondo de Hoy: aurora verde + 3 orbes (verde ×2, índigo ×1) — ensamble §7.1.
-    public static var hoy: LiquidAmbientBackground {
-        LiquidAmbientBackground(
+    /// El fondo de Hoy, teñido por el ESTADO del día (ensamble §7.1 + ambiente semántico).
+    public static func hoy(_ ambiente: LiquidAmbiente = .bien) -> LiquidAmbientBackground {
+        let k = ambiente.intensidad
+        return LiquidAmbientBackground(
             auroraStops: [
-                .init(color: LiquidColor.verdeAurora.opacity(0.34), location: 0),
-                .init(color: LiquidColor.verdePrimario.opacity(0.20), location: 0.46),
-                .init(color: LiquidColor.verdePrimario.opacity(0), location: 0.78),
+                .init(color: ambiente.aurora.0.opacity(0.34 * k), location: 0),
+                .init(color: ambiente.aurora.1.opacity(0.20 * k), location: 0.46),
+                .init(color: ambiente.aurora.1.opacity(0), location: 0.78),
             ],
             orbs: [
                 // Arriba: presencia más fuerte (junto con la aurora).
                 .init(alignment: .topLeading, offset: CGSize(width: -50, height: 110),
-                      size: CGSize(width: 280, height: 240), tone: LiquidColor.verdeOrbe,
-                      opacity: 0.32, blur: 28, period: 13,
+                      size: CGSize(width: 280, height: 240), tone: ambiente.orbes.0,
+                      opacity: 0.32 * k, blur: 28, period: 13,
                       orbit: CGSize(width: 120, height: 200)),
                 .init(alignment: .topTrailing, offset: CGSize(width: 60, height: 300),
-                      size: CGSize(width: 300, height: 260), tone: LiquidColor.verdePrimario,
-                      opacity: 0.25, blur: 30, period: 17, reverse: true,
+                      size: CGSize(width: 300, height: 260), tone: ambiente.orbes.1,
+                      opacity: 0.25 * k, blur: 30, period: 17, reverse: true,
                       orbit: CGSize(width: 140, height: 260)),
                 // Abajo: manchas que también circulan (pedido del dueño /inject).
                 .init(alignment: .bottomLeading, offset: CGSize(width: 60, height: -120),
                       size: CGSize(width: 260, height: 220), tone: LiquidColor.indigo,
-                      opacity: 0.19, blur: 28, period: 21,
+                      opacity: 0.19 * k, blur: 28, period: 21,
                       orbit: CGSize(width: 110, height: 200)),
                 .init(alignment: .bottomTrailing, offset: CGSize(width: 40, height: -40),
-                      size: CGSize(width: 280, height: 230), tone: LiquidColor.verdeOrbe,
-                      opacity: 0.21, blur: 28, period: 15,
+                      size: CGSize(width: 280, height: 230), tone: ambiente.orbes.0,
+                      opacity: 0.21 * k, blur: 28, period: 15,
                       orbit: CGSize(width: 130, height: 220)),
             ])
     }
@@ -302,12 +343,17 @@ private struct DialTicks: Shape {
 /// verde que se apaga + un pulso que viaja (flowDash · 9 s linear · delays 0/0.8/1.6).
 /// Con Reduce Motion los pulsos quedan congelados en su fase inicial.
 public struct LiquidSignalCables: View {
+    /// El tono semántico del flujo (el `acento` del ambiente del día).
+    private let tone: Color
+
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.liquidMotionDisabled) private var motionDisabled
     @Environment(\.liquidAmbientPaused) private var ambientPaused
     @Environment(\.liquidDebugHide) private var debugHide
 
-    public init() {}
+    public init(tone: Color = LiquidColor.verdePrimario) {
+        self.tone = tone
+    }
 
     /// Paths del ensamble (viewBox 358 × 178) con el delay de su pulso. Cada cable lleva un
     /// TRAMO DE CONEXIÓN inicial (línea desde y=72, el pie de su orbe) para que el pulso
@@ -370,7 +416,7 @@ public struct LiquidSignalCables: View {
                 let fadeOut = min(1, max(0, (1 - p - len) / 0.18))
                 CablePath(d: d)
                     .trim(from: p, to: min(1, p + len))
-                    .stroke(LiquidColor.verdePrimario, style: style)
+                    .stroke(tone, style: style)
                     .opacity(0.75 * fadeIn * fadeOut)
             }
         }
@@ -516,7 +562,7 @@ private struct LiquidHeroSubtitle: View {
 #if DEBUG
 #Preview("Liquid · Patrones") {
     ZStack {
-        LiquidAmbientBackground.hoy
+        LiquidAmbientBackground.hoy()
         VStack(spacing: LiquidSpace.s400) {
             LiquidScreenHeader(kicker: "MIÉ 22 DE JUL") { LiquidDialSeal() }
             ZStack(alignment: .top) {

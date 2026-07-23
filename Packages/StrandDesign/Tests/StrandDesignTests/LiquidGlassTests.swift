@@ -65,7 +65,7 @@ final class LiquidGlassTests: XCTestCase {
         for glyph in LiquidIcon.Glyph.allCases {
             let spec = glyph.spec
             var combined = Path()
-            for d in spec.paths {
+            for d in spec.paths + spec.paths2 {
                 combined.addPath(SVGPathData.path(d))
             }
             XCTAssertFalse(combined.isEmpty, "\(glyph.rawValue): path vacío")

@@ -609,7 +609,7 @@ struct TodayView: View {
             if noSources {
                 PaperBackground()
             } else {
-                LiquidAmbientBackground.hoy
+                LiquidAmbientBackground.hoy(liquidAmbiente)
             }
         }
         .overlay(alignment: .top) {
@@ -932,6 +932,14 @@ struct TodayView: View {
     /// fuerza el estado de veredicto con los datos de muestra del ensamble para pulirlo en
     /// vivo. Computed a propósito: su cuerpo se voltea EN VIVO por inyección.
     private var liquidDemo: Bool { true }
+
+    /// El ambiente semántico que tiñe fondo y pulsos (verde/ámbar/rojo/neutro).
+    private var liquidAmbiente: LiquidAmbiente {
+        #if DEBUG
+        if liquidDemo { return .bien }
+        #endif
+        return LiquidHoyBuilder.ambiente(prep: repo.todayPreparedness)
+    }
 
     private var liquidOutput: LiquidHoyBuilder.Output {
         #if DEBUG
