@@ -21,6 +21,7 @@ public struct LiquidSignalOrb: View {
     private let progress: Double?
     private let icon: LiquidIcon.Glyph
     private let state: LiquidSignalState
+    private let valor: String?
     private let action: (() -> Void)?
 
     @State private var shownProgress: Double = 0
@@ -32,12 +33,13 @@ public struct LiquidSignalOrb: View {
     /// tinta/500 (el eje no vota — FER-1045).
     public init(label: String, caption: String, progress: Double?,
                 icon: LiquidIcon.Glyph, state: LiquidSignalState,
-                action: (() -> Void)? = nil) {
+                valor: String? = nil, action: (() -> Void)? = nil) {
         self.label = label
         self.caption = caption
         self.progress = progress
         self.icon = icon
         self.state = state
+        self.valor = valor
         self.action = action
     }
 
@@ -45,17 +47,17 @@ public struct LiquidSignalOrb: View {
         if let action {
             Button(action: action) { column }
                 .buttonStyle(.liquidPress)
-                .accessibilityLabel(Self.a11yLabel(label: label, caption: caption))
+                .accessibilityLabel(Self.a11yLabel(label: label, caption: caption, valor: valor))
         } else {
             column
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel(Self.a11yLabel(label: label, caption: caption))
+                .accessibilityLabel(Self.a11yLabel(label: label, caption: caption, valor: valor))
         }
     }
 
-    /// «{label}: {caption}» — el contrato de VoiceOver del orbe (testeable en frío).
-    static func a11yLabel(label: String, caption: String) -> String {
-        "\(label): \(caption)"
+    /// «{label}, {valor}: {caption}» — el contrato de VoiceOver del orbe (testeable en frío).
+    static func a11yLabel(label: String, caption: String, valor: String? = nil) -> String {
+        valor.map { "\(label), \($0): \(caption)" } ?? "\(label): \(caption)"
     }
 
     private var column: some View {
@@ -114,8 +116,18 @@ public struct LiquidSignalOrb: View {
                 OrbMarkerDot(progress: displayed)
                     .stroke(Color.white, lineWidth: 1.6)
             }
-            LiquidIcon(icon, size: 20, color: LiquidColor.tinta900.opacity(0.85))
-                .offset(y: 1)
+            // Camino 1+3 (/inject): el DATO vive dentro del lente; el icono es la
+            // identidad del eje cuando aún no hay lectura.
+            if let valor {
+                Text(valor)
+                    .font(LiquidType.cargaRatio)
+                    .foregroundStyle(LiquidColor.tinta900)
+                    .lineLimit(1).minimumScaleFactor(0.7)
+                    .offset(y: 1)
+            } else {
+                LiquidIcon(icon, size: 20, color: LiquidColor.tinta900.opacity(0.5))
+                    .offset(y: 1)
+            }
         }
         .frame(width: 72, height: 72)
     }

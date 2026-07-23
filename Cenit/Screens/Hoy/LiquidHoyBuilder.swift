@@ -95,7 +95,10 @@ enum LiquidHoyBuilder {
             kicker: kicker(now: i.now, calendar: i.calendar, locale: i.locale),
             dial: .init(night: i.night, sol: i.sol,
                         marker: markerHour(now: i.now, calendar: i.calendar)),
-            senales: senales(prep: i.preparedness, thermalDeviation: i.thermalDeviation),
+            senales: senales(prep: i.preparedness, thermalDeviation: i.thermalDeviation,
+                             valores: (hrv: i.hrv.map { "\(Int($0.value.rounded())) \(String(localized: "ms"))" },
+                                       sueno: i.sleep.map { sleepClockText($0.value) },
+                                       termico: i.skinTemp.map { String(format: "%+.1f°", $0.value) })),
             hero: hero,
             carga: carga(i.trainingLoad),
             metricas: metricas(i),
@@ -213,7 +216,8 @@ enum LiquidHoyBuilder {
 
     // MARK: Señales (port literal de `TodayView.needles()`)
 
-    static func senales(prep: Preparedness.Read?, thermalDeviation: Double?)
+    static func senales(prep: Preparedness.Read?, thermalDeviation: Double?,
+                        valores: (hrv: String?, sueno: String?, termico: String?) = (nil, nil, nil))
         -> [LiquidHoyModel.Senal] {
         func driver(_ ax: Preparedness.Axis) -> Preparedness.Driver? {
             prep?.drivers.first { $0.axis == ax }
@@ -228,7 +232,8 @@ enum LiquidHoyBuilder {
             caption: caption(for: aut?.state),
             progress: (aut?.state.hasData ?? false) ? positionFromZ(aut?.orientedZ) : nil,
             icon: .ondaSenal,
-            state: (aut?.state.isOut ?? false) ? .atencion : .ok))
+            state: (aut?.state.isOut ?? false) ? .atencion : .ok,
+            valor: valores.hrv))
 
         // SUEÑO — posición categórica por estado.
         let sleep = driver(.sleep)
@@ -237,7 +242,8 @@ enum LiquidHoyBuilder {
             caption: caption(for: sleep?.state),
             progress: (sleep?.state.hasData ?? false) ? positionFromState(sleep!.state) : nil,
             icon: .lunaSenal,
-            state: (sleep?.state.isOut ?? false) ? .atencion : .ok))
+            state: (sleep?.state.isOut ?? false) ? .atencion : .ok,
+            valor: valores.sueno))
 
         // TÉRMICO — la MISMA última desviación que el tile (FER-1043) con el corte del motor.
         // Desviación deliberada vs `needles()`: sin lectura el orbe queda «sin datos» en vez
@@ -250,7 +256,8 @@ enum LiquidHoyBuilder {
                 caption: caption(for: state),
                 progress: positionFromState(state),
                 icon: .termoSenal,
-                state: state.isOut ? .atencion : .ok))
+                state: state.isOut ? .atencion : .ok,
+                valor: valores.termico))
         } else {
             out.append(.init(
                 id: "termico", label: String(localized: "Thermal"),

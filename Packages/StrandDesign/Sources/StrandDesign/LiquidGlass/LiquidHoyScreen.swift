@@ -24,15 +24,20 @@ public struct LiquidHoyModel: Sendable {
         public let progress: Double?
         public let icon: LiquidIcon.Glyph
         public let state: LiquidSignalState
+        /// El micro-valor del eje YA formateado («56 ms» · «7:20» · «+0.1°») — camino
+        /// 1+3 de la elevación /inject: el orbe muestra su DATO; el icono queda como
+        /// identidad cuando no hay lectura.
+        public let valor: String?
 
         public init(id: String, label: String, caption: String, progress: Double?,
-                    icon: LiquidIcon.Glyph, state: LiquidSignalState) {
+                    icon: LiquidIcon.Glyph, state: LiquidSignalState, valor: String? = nil) {
             self.id = id
             self.label = label
             self.caption = caption
             self.progress = progress
             self.icon = icon
             self.state = state
+            self.valor = valor
         }
     }
 
@@ -133,11 +138,11 @@ public struct LiquidHoyModel: Sendable {
         dial: Dial(night: (start: 20, end: 4), sol: (start: 6.8, end: 20.3), marker: 8),
         senales: [
             .init(id: "autonomico", label: "AUTONÓMICO", caption: "EN TU RANGO",
-                  progress: 0.35, icon: .ondaSenal, state: .ok),
+                  progress: 0.35, icon: .ondaSenal, state: .ok, valor: "56 ms"),
             .init(id: "sueno", label: "SUEÑO", caption: "EN TU RANGO",
-                  progress: 0.43, icon: .lunaSenal, state: .ok),
+                  progress: 0.43, icon: .lunaSenal, state: .ok, valor: "7:20"),
             .init(id: "termico", label: "TÉRMICO", caption: "EN TU RANGO",
-                  progress: 0.5, icon: .termoSenal, state: .ok),
+                  progress: 0.5, icon: .termoSenal, state: .ok, valor: "+0.1°"),
         ],
         hero: .veredicto(title: "Dale\ncon todo", highlight: "todo",
                          highlightTone: LiquidColor.verdePrimario,
@@ -271,7 +276,7 @@ public struct LiquidHoyContent: View {
                 ForEach(model.senales) { senal in
                     LiquidSignalOrb(label: senal.label, caption: senal.caption,
                                     progress: senal.progress, icon: senal.icon,
-                                    state: senal.state,
+                                    state: senal.state, valor: senal.valor,
                                     action: onTapSenal.map { tap in { tap(senal.id) } })
                 }
             }
