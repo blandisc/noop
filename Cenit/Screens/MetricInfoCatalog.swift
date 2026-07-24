@@ -54,10 +54,13 @@ struct MetricInfo: Identifiable {
         let label: LocalizedStringKey
         let range: String
         var isActive: Bool
-        /// Numeric bounds as a half-open interval [lower, upper); `nil` = open on that side. Only filled
-        /// for sleep & stress (FER-244) so their trend chart can draw the active band + count days in it;
-        /// every other metric leaves them `nil` and the chart stays band-less. Units match the chart's:
-        /// sleep in HOURS, stress in score (0–3).
+        /// Numeric bounds as a half-open interval [lower, upper); `nil` = open on that side. Filled
+        /// wherever the band ladder is real (FER-244) so the trend chart can draw the active band + count
+        /// days in it; a metric with no honest cutoffs ships `bands: []` instead. Units match the chart's:
+        /// sleep duration in HOURS, stress in score (0–3), the sleep sub-metrics in PERCENT.
+        /// **Leaving BOTH `nil` on a band you do show is a bug** — `TrendBand.contains` reads that as "no
+        /// interval", so the band counts nothing (before FER-1045 it counted everything, which is how the
+        /// sleep sub-metrics reported «14 of 14» forever).
         var lower: Double? = nil
         var upper: Double? = nil
     }
@@ -236,10 +239,17 @@ extension MetricInfo {
 
     /// Sleep performance — time asleep vs your personal need, capped at 100%.
     static func sleepPerformance(_ pct: Double?) -> MetricInfo {
+        // Bounds in PERCENT — the units the trend chart plots — so the band readout and the per-band
+        // night counts are real. They were `nil` until FER-1045, and a boundless band contains every
+        // value: the sheet said «14 of the last 14 nights in this range» and the table «14 / 0 / 0»
+        // whatever the series. Half-open [lower, upper), matching `isActive` exactly. (FER-1045 · C1)
         let bands: [Band] = [
-            Band(label: "Low", range: "< 70%", isActive: pct.map { $0 < 70 } ?? false),
-            Band(label: "Adequate", range: "70 – 85%", isActive: pct.map { $0 >= 70 && $0 < 85 } ?? false),
-            Band(label: "Optimal", range: "85 – 100%", isActive: pct.map { $0 >= 85 } ?? false),
+            Band(label: "Low", range: "< 70%", isActive: pct.map { $0 < 70 } ?? false,
+                 lower: nil, upper: 70),
+            Band(label: "Adequate", range: "70 – 85%", isActive: pct.map { $0 >= 70 && $0 < 85 } ?? false,
+                 lower: 70, upper: 85),
+            Band(label: "Optimal", range: "85 – 100%", isActive: pct.map { $0 >= 85 } ?? false,
+                 lower: 85, upper: nil),
         ]
         return MetricInfo(
             id: "sleep_performance",
@@ -255,10 +265,14 @@ extension MetricInfo {
 
     /// Sleep efficiency — of the time in bed, how much was actually spent asleep.
     static func sleepEfficiency(_ pct: Double?) -> MetricInfo {
+        // Bounds in PERCENT, half-open [lower, upper) — see `sleepPerformance`. (FER-1045 · C1)
         let bands: [Band] = [
-            Band(label: "Low", range: "< 75%", isActive: pct.map { $0 < 75 } ?? false),
-            Band(label: "Adequate", range: "75 – 85%", isActive: pct.map { $0 >= 75 && $0 < 85 } ?? false),
-            Band(label: "Optimal", range: "> 85%", isActive: pct.map { $0 >= 85 } ?? false),
+            Band(label: "Low", range: "< 75%", isActive: pct.map { $0 < 75 } ?? false,
+                 lower: nil, upper: 75),
+            Band(label: "Adequate", range: "75 – 85%", isActive: pct.map { $0 >= 75 && $0 < 85 } ?? false,
+                 lower: 75, upper: 85),
+            Band(label: "Optimal", range: "> 85%", isActive: pct.map { $0 >= 85 } ?? false,
+                 lower: 85, upper: nil),
         ]
         return MetricInfo(
             id: "sleep_efficiency",
@@ -274,10 +288,19 @@ extension MetricInfo {
 
     /// Restorative sleep — the share of the night in deep + REM, the stages that do the repair.
     static func sleepRestorative(_ pct: Double?) -> MetricInfo {
+        // Bounds in PERCENT, half-open [lower, upper) — see `sleepPerformance`. `isActive` moved to the
+        // same half-open shape as every other ladder in this catalog: this was the ONE closed set
+        // («Typical» was `>= 30 && <= 50`, «High» `> 50`), so a night of exactly 50% lit the Typical row
+        // while `TrendBand.contains` counted it in High — the highlighted row contradicted its own count.
+        // The visible copy («30 – 50%» / «> 50%») is deliberately unchanged: it's a one-integer edge, and
+        // the numbers people read are the ranges, not the tie-break. (FER-1045 · C1)
         let bands: [Band] = [
-            Band(label: "Low", range: "< 30%", isActive: pct.map { $0 < 30 } ?? false),
-            Band(label: "Typical", range: "30 – 50%", isActive: pct.map { $0 >= 30 && $0 <= 50 } ?? false),
-            Band(label: "High", range: "> 50%", isActive: pct.map { $0 > 50 } ?? false),
+            Band(label: "Low", range: "< 30%", isActive: pct.map { $0 < 30 } ?? false,
+                 lower: nil, upper: 30),
+            Band(label: "Typical", range: "30 – 50%", isActive: pct.map { $0 >= 30 && $0 < 50 } ?? false,
+                 lower: 30, upper: 50),
+            Band(label: "High", range: "> 50%", isActive: pct.map { $0 >= 50 } ?? false,
+                 lower: 50, upper: nil),
         ]
         return MetricInfo(
             id: "sleep_restorative",

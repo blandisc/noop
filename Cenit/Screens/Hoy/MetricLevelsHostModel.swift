@@ -18,6 +18,12 @@ final class MetricLevelsHostModel {
     var range: ExploreRange = .week
 
     private(set) var parsed: MetricWindowMath.Parsed = []
+
+    /// D7 · ¿Ya llegó la serie? El host no exponía estado de carga, así que la hoja no podía
+    /// distinguir «todavía no sé» de «no hay nada» e imprimía «0 de tus últimas 0 noches»
+    /// (y «0 noches» en cada fila) desde el primer frame. Se enciende cuando `load(rows:)`
+    /// corre — también con `rows` vacío: eso ya es una respuesta, no una espera.
+    private(set) var cargado = false
     private var cache: [MetricLevels.Level]? = nil
     private var cacheKey: String = ""
 
@@ -38,6 +44,7 @@ final class MetricLevelsHostModel {
     func load(rows: [(day: String, value: Double)]) {
         parsed = rows.map { (day: $0.day, date: Repository.parseDayKey($0.day), value: $0.value) }
         refreshCache()
+        cargado = true
     }
 
     /// La ventana del rango activo — lo que la gráfica dibuja.

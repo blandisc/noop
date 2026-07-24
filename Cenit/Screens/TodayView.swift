@@ -493,12 +493,18 @@ struct TodayView: View {
             default:      return false
             }
         }()
+        // D8 · FER-883: cuando el esfuerzo de hoy es el ESTIMADO de Apple, el tile dice
+        // «Carga del día · medido» mientras la hoja decía «Esfuerzo del día · Calculado», a
+        // un tap de distancia. Misma resolución del día que el resto de la pantalla (:1435).
+        let strainEstimated: Bool = info.id == "strain"
+            && repo.isStrainEstimated(repo.today?.day ?? Repository.localDayKey(Date()))
         // CUTOVER F6 (épico hoja Liquid): la hoja de resumen es la composición Liquid.
         // Mismos loaders, mismos gates de origen; el tema Instrumento ya no viaja.
         return LiquidMetricSheetView(
             info: info,
             appleConnectHint: appleCapable && notConnected && info.displayValue == "—",
             appleSource: fromApple && info.displayValue != "—",
+            strainEstimated: strainEstimated,
             heartRateCurveLoader: info.id == "heart_rate" ? { hrPoints } : nil,
             trendLoader: trendLoader(for: info.id),
             onSeeMore: seeMoreAction(for: info.id),

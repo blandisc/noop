@@ -59,8 +59,21 @@ public struct LiquidStageBar: View {
     ///
     /// Ojo (caller): con TODAS las etapas en 0 esto queda vacío y la barra se dibuja hueca.
     /// Esa noche no se midió: el caller no debe pintar el componente.
-    private var etapasVisibles: [Etapa] {
+    private var etapasVisibles: [Etapa] { Self.visibles(etapas) }
+
+    /// El filtro, como función pura para que segmentos, leyenda, VoiceOver **y el test**
+    /// cuenten exactamente lo mismo.
+    static func visibles(_ etapas: [Etapa]) -> [Etapa] {
         etapas.filter { $0.minutos > 0 }
+    }
+
+    /// Lo que dicta VoiceOver: las etapas MEDIDAS con su duración y, solo si el caller la
+    /// pudo afirmar, la ventana de la noche (contrato testeable en frío, como
+    /// `LiquidSheetHeader.a11yLabel`).
+    static func a11yValue(etapas: [Etapa], ventana: String?) -> String {
+        (visibles(etapas).map { "\($0.etiqueta) \($0.duracion)" }
+            + [ventana].compactMap { $0 })
+            .joined(separator: ", ")
     }
 
     /// Anchos ∝ minutos sobre el total, descontando los gaps (paridad `SleepStageBar.widths`).

@@ -170,7 +170,9 @@ struct LiquidChartPlot: View {
     /// Para cada punto ORDENADO, su índice en el arreglo que pasó el caller. Es la
     /// identidad en el caso normal (serie ya ordenada) y el único puente correcto para
     /// `onScrub` / `scrubFijo`: quien los lee indexa SU arreglo, no el nuestro.
-    private let ordenOriginal: [Int]
+    /// Interno (no privado) a propósito: es lo que verifica el test del orden defensivo —
+    /// que el índice publicado siga siendo el del caller aunque la serie llegue revuelta.
+    let ordenOriginal: [Int]
     let bandas: [LiquidChartBanda]
     let dominio: ClosedRange<Double>
     let ticksY: [(valor: Double, etiqueta: String)]

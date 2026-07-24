@@ -28,6 +28,12 @@ public struct LiquidGraficaNiveles: View {
     private let formatoValorScrub: ((Double) -> String)?
     private let formatoFechaScrub: ((Date) -> String)?
     private let formatoFechaEje: ((Date) -> String)?
+    /// Mismo contrato de estados que `LiquidTrendChart`. `.datos` es el default y conserva
+    /// el comportamiento de siempre (con menos de 2 puntos cae al pozo de `estadoVacio`);
+    /// `.cargando` y `.vacio` dan al caller los pozos del motor SIN volver públicos
+    /// `LiquidChartVacio` / `LiquidChartCargando` / `LiquidChartAlto`, que son detalle
+    /// interno del paquete.
+    private let estado: LiquidChartEstado
     private let estadoVacio: String
     private let a11yLabel: String
     /// Apaga los puntos por dato fuera de la banda activa. `false` = todos a opacidad
@@ -53,6 +59,7 @@ public struct LiquidGraficaNiveles: View {
                 formatoFechaScrub: ((Date) -> String)? = nil,
                 formatoFechaEje: ((Date) -> String)? = nil,
                 atenuarFuera: Bool = false,
+                estado: LiquidChartEstado = .datos,
                 estadoVacio: String,
                 a11yLabel: String) {
         self.puntos = puntos
@@ -67,14 +74,21 @@ public struct LiquidGraficaNiveles: View {
         self.formatoFechaScrub = formatoFechaScrub
         self.formatoFechaEje = formatoFechaEje
         self.atenuarFuera = atenuarFuera
+        self.estado = estado
         self.estadoVacio = estadoVacio
         self.a11yLabel = a11yLabel
     }
 
     public var body: some View {
         Group {
-            if puntos.count > 1 {
-                LiquidChartPlot(puntos: puntos, bandas: bandas, dominio: dominio,
+            switch estado {
+            case .cargando:
+                LiquidChartCargando(alto: LiquidChartAlto.explorador)
+            case .vacio(let mensaje):
+                LiquidChartVacio(mensaje: mensaje, alto: LiquidChartAlto.explorador)
+            case .datos:
+                if puntos.count > 1 {
+                    LiquidChartPlot(puntos: puntos, bandas: bandas, dominio: dominio,
                                 ticksY: ticksY, tono: tono,
                                 puntoHoy: puntoHoy, hoyAnillo: hoyAnillo,
                                 formatoScrub: formatoScrub,
@@ -92,8 +106,9 @@ public struct LiquidGraficaNiveles: View {
                                 alto: LiquidChartAlto.explorador,
                                 scrubFijo: scrubFijo,
                                 onScrub: { (i: Int?) in iScrub = i })
-            } else {
-                LiquidChartVacio(mensaje: estadoVacio, alto: LiquidChartAlto.explorador)
+                } else {
+                    LiquidChartVacio(mensaje: estadoVacio, alto: LiquidChartAlto.explorador)
+                }
             }
         }
         .accessibilityElement(children: .ignore)
@@ -105,6 +120,10 @@ public struct LiquidGraficaNiveles: View {
     /// — paridad GraficaRangos. El DS nunca une valor + fecha por su cuenta: si el caller
     /// no dio la frase compuesta, se degrada al valor solo (contrato D3).
     private var valorA11y: String {
+        // Cargando no se anuncia con copy inventado: el rótulo del caller basta (el DS no
+        // tiene catálogo, D3).
+        if case .cargando = estado { return "" }
+        if case .vacio(let mensaje) = estado { return mensaje }
         guard !puntos.isEmpty else { return estadoVacio }
         let i: Int = LiquidChartA11y.indice(iScrub, puntos.count)
         let p = puntos[i]
@@ -292,6 +311,30 @@ private func serieConHuecos() -> [(fecha: Date, valor: Double)] {
             atenuarFuera: true,
             estadoVacio: "Sin lecturas en este rango.",
             a11yLabel: "VFC, últimos 14 días")
+    }
+    .padding(LiquidSpace.s550)
+    .background(LiquidSheetFondo(tone: LiquidColor.cian))
+    .environment(\.liquidMotionDisabled, true)
+}
+
+#Preview("Liquid · Niveles — estados (cargando / vacío del caller)") {
+    // El contrato de estados que el compositor necesita para NO imprimir ceros mientras la
+    // serie viaja (D7): mismo `LiquidChartEstado` que `LiquidTrendChart`, sin volver
+    // públicos los pozos ni el alto del explorador. Ambos miden lo MISMO que `.datos`, así
+    // que la hoja no brinca al cargar.
+    VStack(spacing: LiquidSpace.s400) {
+        LiquidGraficaNiveles(
+            puntos: [], bandas: bandasDemo(activa: nil), dominio: 30...95,
+            ticksY: [], tono: LiquidColor.cian,
+            estado: .cargando,
+            estadoVacio: "Sin lecturas en este rango.",
+            a11yLabel: "VFC, últimos 30 días")
+        LiquidGraficaNiveles(
+            puntos: [], bandas: bandasDemo(activa: nil), dominio: 30...95,
+            ticksY: [], tono: LiquidColor.cian,
+            estado: .vacio("Sin lecturas en este rango."),
+            estadoVacio: "Sin lecturas en este rango.",
+            a11yLabel: "VFC, últimos 30 días")
     }
     .padding(LiquidSpace.s550)
     .background(LiquidSheetFondo(tone: LiquidColor.cian))

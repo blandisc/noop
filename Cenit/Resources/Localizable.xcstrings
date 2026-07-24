@@ -19074,6 +19074,23 @@
         }
       }
     },
+    "Hide method" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hide method"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ocultar cómo se calcula"
+          }
+        }
+      }
+    },
     "Hide keyboard" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -37001,6 +37018,23 @@
         }
       }
     },
+    "Show method" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show method"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ver cómo se calcula"
+          }
+        }
+      }
+    },
     "Showing the last %@ days" : {
 
     },
@@ -37017,6 +37051,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mostrando los últimos %lld días"
+          }
+        }
+      }
+    },
+    "Showing the last %lld nights" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Showing the last %lld nights"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrando las últimas %lld noches"
           }
         }
       }

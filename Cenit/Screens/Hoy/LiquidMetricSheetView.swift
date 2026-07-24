@@ -212,8 +212,12 @@ struct LiquidMetricSheetView: View {
     }
 
     var body: some View {
+        // `cargando` incluye los niveles (D7): si la altura se fijara con el explorador
+        // todavía en su pozo, la hoja se quedaría del tamaño del esqueleto y el instrumento
+        // entraría apretado en cuanto llegara la serie.
         LiquidMetricSheet(tono: tono, detent: detent,
-                          cargando: isSleepLoading || trendLoading || heartRateLoading) {
+                          cargando: isSleepLoading || trendLoading || heartRateLoading
+                              || levelsCargando) {
             cabecera
             cuerpo
             pie
@@ -263,8 +267,10 @@ struct LiquidMetricSheetView: View {
     }
     /// F5 (comportamiento NUEVO, contrato §1.3): el modelo de sueño se construye off-main;
     /// mientras no llega, skeleton — la hoja vieja caía al layout clásico.
-    // En demo NO se queda en el esqueleto: sin modelo de noche cae a la variante clásica
-    // de sueño (numeral + niveles), que sí se puede pulir.
+    // D9 · En demo el esqueleto no se pinta NUNCA, y no por este `!demo`: `nocheSueno`
+    // devuelve la noche de muestra INCONDICIONALMENTE, así que `isSleepRich` ya es cierto
+    // en el primer frame. (La prosa anterior prometía una caída a la variante clásica de
+    // sueño que el código nunca hace; el código está bien, la mentira era el comentario.)
     private var isSleepLoading: Bool { !demo && datoInfo.id == "sleep" && sleepDetail == nil }
     private var isSleepRich: Bool { datoInfo.id == "sleep" && nocheSueno != nil }
 
@@ -374,26 +380,45 @@ struct LiquidMetricSheetView: View {
         return nil
     }
 
+    /// D1 · La procedencia en modo DEMO. `appleSource` lo resuelve `TodayView` contra el
+    /// `info` REAL (y lo apaga con `displayValue == "—"`), así que en un simulador sin Apple
+    /// Salud es `false` SIEMPRE: la cabecera de muestra nunca pintaría de dónde salió el
+    /// dato y la variante rica de sueño quedaría sin nada que verificar. Fuera de demo es
+    /// `appleSource` tal cual (no-op en producción).
+    private var origenApple: Bool { demo || appleSource }
+
+    /// D8 · El esfuerzo ESTIMADO es la carga que MIDIÓ Apple (FER-883), no un cálculo
+    /// nuestro: el tile de Hoy ya lo dice así y la hoja está a un tap de distancia.
+    private var isStrainEstimado: Bool { datoInfo.id == "strain" && strainEstimated }
+
     /// D3 — origen honesto Apple-only: calculado en el teléfono (recovery/strain/stress)
     /// o medido por Apple Salud; sin procedencia clara, sin punto (nunca «Band»).
     private var origen: LiquidOrigen? {
+        if isStrainEstimado { return .medido }
         if ["recovery", "strain", "stress"].contains(datoInfo.id) { return .calculado }
-        if appleSource { return .medido }
+        if origenApple { return .medido }
         return nil
     }
 
     private var origenEtiqueta: String? {
+        if isStrainEstimado { return String(localized: "Apple Health") }
         if ["recovery", "strain", "stress"].contains(datoInfo.id) {
             return String(localized: "Calculated")
         }
-        if appleSource { return String(localized: "Apple Health") }
+        if origenApple { return String(localized: "Apple Health") }
         return nil
+    }
+
+    /// D8 · El título de la hoja. Con esfuerzo estimado dice lo mismo que el tile («Carga
+    /// del día»), clave que ya existe en el catálogo (`LiquidHoyBuilder`).
+    private var tituloHoja: String {
+        isStrainEstimado ? String(localized: "Day load") : LiquidSheetCopy.titulo(datoInfo.id)
     }
 
     private var cabecera: some View {
         LiquidSheetHeader(
             icono: glifo,
-            titulo: LiquidSheetCopy.titulo(datoInfo.id),
+            titulo: tituloHoja,
             tono: tono,
             // La variante rica de sueño (y su skeleton) reemplazan el numeral con el
             // doble dato (paridad :333).
@@ -403,7 +428,10 @@ struct LiquidMetricSheetView: View {
             numeralTono: tinte(datoInfo.headerTint),
             origen: origen,
             origenEtiqueta: origenEtiqueta,
-            explicacion: LiquidSheetCopy.headline(info),
+            // D1 · La explicación habla del dato que la hoja MUESTRA (`datoInfo`), no del
+            // real: con el fixture de demo la cabecera decía «56 ms» y la explicación
+            // describía otra métrica. Fuera de demo `datoInfo == info` (no-op).
+            explicacion: LiquidSheetCopy.headline(datoInfo),
             // L5.1 — el ⓘ se nombra solo en VoiceOver (antes leía «VFC, uno»).
             infoMostrar: String(localized: "Show explanation"),
             infoOcultar: String(localized: "Hide explanation"))
@@ -564,16 +592,33 @@ struct LiquidMetricSheetView: View {
                 LiquidReadingLine(frase, highlight: sleepReadingHighlight,
                                   highlightTone: tono)
             }
-            LiquidStageBar(
-                etapas: sleepEtapas(night),
-                overline: String(localized: "Last night"),
-                ventana: "\(Self.clock(night.startTs)) → \(Self.clock(night.endTs))")
+            // D10 · La ventana solo se afirma cuando existe: el fallback diario de Apple
+            // fabrica la noche con `startTs == endTs` y la hoja imprimía «6:00 → 6:00».
+            // Tipado y fuera del call (trampa del type-checker con ternarios en builders).
+            let ventanaNoche: String? = night.endTs > night.startTs
+                ? "\(Self.clock(night.startTs)) → \(Self.clock(night.endTs))"
+                : nil
+            // D10 · Y con las CUATRO etapas en 0 (mismo fallback) no hay noche que dibujar:
+            // la barra saldría hueca bajo un overline suelto y una leyenda vacía.
+            if sleepEtapasMedidas(night) {
+                LiquidStageBar(
+                    etapas: sleepEtapas(night),
+                    overline: String(localized: "Last night"),
+                    ventana: ventanaNoche)
+            }
             // `LiquidLaneLabel` RETIRADO (L3.3): la frase display de los niveles ya dice el
             // nombre del carril en grande — la pastilla lo repetía dos bloques más abajo.
             levelsBlock
             // «Para esta noche» RETIRADO (decisión del dueño, /inject 2026-07-23):
             // la hoja de sueño cierra con los niveles.
         }
+    }
+
+    /// D10 · ¿Hubo etapas medidas anoche? Con el fallback diario de Apple las cuatro llegan
+    /// en 0 y el componente (que ya filtra las etapas de 0 min, B7) se quedaría sin nada
+    /// que pintar: es el caller quien decide no dibujar esa barra.
+    private func sleepEtapasMedidas(_ night: SleepDetailModel.Night) -> Bool {
+        night.stages.total > 0
     }
 
     /// Paridad `sleepAnocheBlock` (:561-578): profundo→REM→ligero en un índigo graduado
@@ -658,10 +703,6 @@ struct LiquidMetricSheetView: View {
     // MARK: Trend 14d (paridad `trendSection` :984-1036)
 
     private var trendBlock: some View {
-        // Nota de paridad: `bandedTrend` (:1056-1093) es INALCANZABLE aquí — su set
-        // {sleep, stress, spo2, rhr, steps} es subconjunto de `usesLevels`, que va por
-        // niveles; toda métrica que llega al trend clásico (submétricas de sueño, vo2max)
-        // pinta la curva plana auto-escalada, igual que hoy. Las bandas viven en la tabla.
         // Fuera del call: el type-checker de iOS se atora con expresiones largas dentro de
         // un builder (ver la nota de `curvaEstado`).
         let puntos: [(fecha: Date, valor: Double)] =
@@ -675,7 +716,7 @@ struct LiquidMetricSheetView: View {
             titulo: String(localized: "Last 14 days"),
             readout: trendReadout,
             puntos: puntos,
-            bandas: [],
+            bandas: trendBandas,
             dominio: trendValueRange,
             ticksY: marcasY,
             tono: tono,
@@ -689,6 +730,28 @@ struct LiquidMetricSheetView: View {
             formatoFechaEje: ejeFmt,
             estado: trendEstado,
             a11yLabel: String(localized: "14-day trend"))
+    }
+
+    /// D13 · Los washes de banda del trend de 14 días. La hoja NOMBRA una banda arriba
+    /// (`trendReadout`) y lista las tres con su conteo abajo (`bandsTableBlock`), pero la
+    /// GRÁFICA —lo primero que mira el ojo, 140 pt— no mostraba ninguna clasificación
+    /// (`bandas: []`): la curva quedaba como una polilínea desnuda, sin nada contra qué
+    /// leerse. Con las cotas reales del catálogo (C1) vuelve a tener contexto, dicho con el
+    /// MISMO wash de la familia (I1) y no con un área de relleno (E42, descartado por
+    /// identidad). Una banda sin cotas no se pinta: lavaría la gráfica entera.
+    ///
+    /// `sleep` queda fuera a propósito: sus cotas van en HORAS mientras la serie se dibuja
+    /// en minutos. Hoy es inalcanzable por aquí (tiene niveles), pero un wash mal escalado
+    /// sería una mentira gráfica silenciosa el día que lo sea.
+    private var trendBandas: [LiquidChartBanda] {
+        guard datoInfo.id != "sleep" else { return [] }
+        let activa: Int? = datoInfo.bands.firstIndex(where: { $0.isActive })
+        return datoInfo.bands.enumerated().compactMap {
+            (i: Int, band: MetricInfo.Band) -> LiquidChartBanda? in
+            guard band.lower != nil || band.upper != nil else { return nil }
+            return LiquidChartBanda(lo: band.lower, hi: band.upper, color: tono,
+                                    activa: i == activa)
+        }
     }
 
     private var trendEstado: LiquidChartEstado {
@@ -935,21 +998,67 @@ struct LiquidMetricSheetView: View {
             VStack(alignment: .leading, spacing: LiquidSpace.s300) {
                 LiquidRangeSelector(opciones: ExploreRange.allCases.map(\.label),
                                     seleccion: rangeSeleccion)
-                if window.fellBack {
-                    // Auto-widen (paridad MetricLevelsExplorer:105-108). Va en
-                    // `atencionTexto`, no en tinta quieta: AVISA que la ventana que estás
-                    // leyendo no es la que pediste en el selector.
-                    LiquidNotaLine(String(localized: "Showing the last \(window.rows.count) days"),
-                                   tono: LiquidColor.atencionTexto)
+                if levelsCargando {
+                    // D7 · La serie todavía no llega. Los carriles y sus rangos SÍ se
+                    // conocen (son umbrales), pero los conteos no: imprimir «Óptimo · 0 de
+                    // tus últimas 0 noches» y «0 noches» en cada fila desde el primer frame
+                    // es una mentira momentánea (defecto heredado §13.24). Se omiten la
+                    // frase y los conteos, y el instrumento espera en su esqueleto.
+                    esqueletoNiveles
+                    nivelesLista(d, conteos: false)
+                } else {
+                    if window.fellBack { avisoVentana(window) }
+                    nivelesFrase(d)
+                    nivelesGrafica(d, window: window)
+                    nivelesLista(d)
                 }
-                nivelesFrase(d)
-                nivelesGrafica(d, window: window)
-                nivelesLista(d)
             }
         } else if datoInfo.levelsRelative {
-            // HRV sin base propia todavía — nota honesta (paridad :737-741).
-            LiquidNotaLine(String(localized: "Your levels come from your own baseline: a few more nights and they'll appear."))
+            // D4 · HRV sin base propia todavía. La explicación honesta OCUPA el hueco del
+            // instrumento (paridad NIV-09: un pozo con presencia), en vez de degradarse a
+            // una línea de letra chica que pesa menos que la nota al pie de abajo — y que
+            // dejaba el cuerpo de la hoja VACÍO entre cabecera y pie.
+            pozoNiveles(String(localized: "Your levels come from your own baseline: a few more nights and they'll appear."))
         }
+    }
+
+    /// D7 · ¿La serie de niveles sigue en camino? Gate por la PRESENCIA del loader: quien
+    /// presenta la hoja SIN serie (el Detalle de Sueño, para respiración) no la va a cargar
+    /// nunca y no debe quedarse en un pozo eterno. Residual conocido y anotado: por esa
+    /// ruta la frase sigue arrancando en «0 de tus últimos 0 días».
+    private var levelsCargando: Bool { levelsSeriesLoader != nil && !levelsHost.cargado }
+
+    /// El pozo del explorador dicho con la gráfica PÚBLICA: con la serie vacía
+    /// `LiquidGraficaNiveles` ya pinta el pozo del sistema (alto del explorador, papel y
+    /// radio del DS) y lo dice en VoiceOver. Sin ícono, por decisión de sistema (E45).
+    private func pozoNiveles(_ mensaje: String) -> some View {
+        LiquidGraficaNiveles(puntos: [], bandas: [], dominio: 0.0...1.0, ticksY: [],
+                             tono: tono, estadoVacio: mensaje, a11yLabel: tituloHoja)
+    }
+
+    /// D7 · El esqueleto del explorador mientras la serie viene en camino: el MISMO estado
+    /// `.cargando` que ya usa el trend de 14 días, del alto del instrumento, así que la
+    /// hoja no cambia de tamaño cuando llegan los datos. Sin copy inventado — un esqueleto
+    /// no se anuncia, y el rótulo de la gráfica ya dice de qué métrica hablamos.
+    private var esqueletoNiveles: some View {
+        LiquidGraficaNiveles(puntos: [], bandas: [], dominio: 0.0...1.0, ticksY: [],
+                             tono: tono, estado: .cargando, estadoVacio: "",
+                             a11yLabel: tituloHoja)
+    }
+
+    /// D6 · El aviso de auto-ensanchado, con dos correcciones. (a) Cuenta los DÍAS de la
+    /// ventana efectiva: `window.rows.count` son las filas CON DATO, así que tras ensanchar
+    /// a 30 días con 12 lecturas decía «Mostrando los últimos 12 días», que es falso.
+    /// (b) En las hojas nocturnas dice «noches», como la frase de nivel y los conteos de las
+    /// filas del MISMO bloque (antes el aviso decía «días» junto a ellos).
+    @ViewBuilder private func avisoVentana(_ window: MetricWindow) -> some View {
+        let dias: Int = window.range.days ?? window.rows.count
+        let texto: String = nightly
+            ? String(localized: "Showing the last \(dias) nights")
+            : String(localized: "Showing the last \(dias) days")
+        // Va en `atencionTexto`, no en tinta quieta: AVISA que la ventana que estás
+        // leyendo no es la que pediste en el selector.
+        LiquidNotaLine(texto, tono: LiquidColor.atencionTexto)
     }
 
     /// El índice del selector ⇄ `ExploreRange` del host; cambiar de rango limpia la
@@ -1007,7 +1116,7 @@ struct LiquidMetricSheetView: View {
                                  activa: i == highlight)
             },
             dominio: nivelesDominio(d, values: window.values),
-            ticksY: nivelesTicks(d).map { (valor: $0, etiqueta: levelsValueFormat($0)) },
+            ticksY: nivelesMarcasY(d),
             tono: tono,
             // Hoy = el último punto dibujado (paridad marksLastPoint/markedPointHollow
             // :144-145): anillo hueco mientras exploras un nivel que no es el de hoy.
@@ -1019,15 +1128,28 @@ struct LiquidMetricSheetView: View {
             formatoValorScrub: popupValor,
             formatoFechaScrub: popupFecha,
             formatoFechaEje: ejeFmt,
+            // D12 (A4) · Los puntos se apagan SOLO cuando el usuario explora un carril
+            // (paridad `GraficaRangos`). Antes se apagaban con la sola existencia de una
+            // lectura de hoy, sin que nadie hubiera pedido nada.
+            atenuarFuera: nivelExplorado != nil,
             estadoVacio: String(localized: "No readings in this range."),
-            a11yLabel: LiquidSheetCopy.titulo(datoInfo.id))
+            a11yLabel: tituloHoja)
     }
 
     /// Dominio Y del explorador (paridad `chartDomain` :163-173: umbrales + serie con
     /// respiro 10/12 %; la hoja siempre pasa dominio automático).
     private func nivelesDominio(_ d: MetricLevels.Classification,
                                 values: [Double]) -> ClosedRange<Double> {
-        let bounds = d.levels.flatMap { [$0.lower, $0.upper].compactMap { $0 } }
+        // El dominio cubre TUS DATOS más los cortes de la banda ACTIVA — no toda la
+        // escala (/inject: en FC en reposo los umbrales llegan a 80 mientras los datos
+        // viven en 50–62, así que la mitad de arriba de la gráfica salía vacía y la
+        // línea aplastada abajo). Con esto la pregunta que la gráfica contesta —«¿dónde
+        // caigo dentro de mi banda?»— se sigue leyendo, y sin desperdiciar alto.
+        let activa: MetricLevels.Level? = d.activeIndex.flatMap {
+            d.levels.indices.contains($0) ? d.levels[$0] : nil
+        }
+        let bounds: [Double] = (activa.map { [$0.lower, $0.upper].compactMap { $0 } }
+            ?? d.levels.flatMap { [$0.lower, $0.upper].compactMap { $0 } })
         let pool = bounds + values
         guard let lo0 = pool.min(), let hi0 = pool.max(), hi0 > lo0 else {
             let v = values.first ?? bounds.first ?? 0
@@ -1042,14 +1164,32 @@ struct LiquidMetricSheetView: View {
         Set(d.levels.flatMap { [$0.lower, $0.upper].compactMap { $0 } }).sorted()
     }
 
-    private func nivelesLista(_ d: MetricLevels.Classification) -> some View {
+    /// D3 · Las marcas del eje Y. La UNIDAD vuelve al eje —se había perdido: decía «60»
+    /// donde la hoja vieja decía «60 lpm»— pero SOLO en la marca de arriba: repetirla en
+    /// cada tick es ruido de gráfica y la canaleta se ensancha por la etiqueta más larga.
+    /// El signo de temperatura de piel lo trae ya `levelsValueFormat` («+0.4»).
+    private func nivelesMarcasY(_ d: MetricLevels.Classification)
+        -> [(valor: Double, etiqueta: String)] {
+        let ticks: [Double] = nivelesTicks(d)
+        let ultimo: Int = ticks.count - 1
+        return ticks.indices.map { (i: Int) -> (valor: Double, etiqueta: String) in
+            let v: Double = ticks[i]
+            let etiqueta: String = i == ultimo ? scrubValor(v) : levelsValueFormat(v)
+            return (valor: v, etiqueta: etiqueta)
+        }
+    }
+
+    private func nivelesLista(_ d: MetricLevels.Classification,
+                              conteos: Bool = true) -> some View {
         let highlight = nivelDestacado(d)
         return VStack(spacing: 0) {
             ForEach(Array(d.levels.enumerated()), id: \.offset) { (i, nivel) in
                 LiquidLevelRow(
                     etiqueta: nombreNivel(nivel.key),
                     rango: rangoNivel(nivel),
-                    conteo: conteoLabel(d.counts[i]),
+                    // D7 · Sin serie todavía, la columna queda VACÍA (su ancho mínimo ya
+                    // está reservado, así que no salta cuando llegan los conteos).
+                    conteo: conteos ? conteoLabel(d.counts[i]) : "",
                     esHoy: i == d.activeIndex,
                     activa: i == highlight,
                     tono: tono,
@@ -1093,7 +1233,13 @@ struct LiquidMetricSheetView: View {
         return n == 1 ? String(localized: "\(n) day") : String(localized: "\(n) days")
     }
 
-    private var nightly: Bool { BandSummaryCopy.isNightly(metricID: datoInfo.id) }
+    /// D6 · Las cinco submétricas de sueño hablan EXCLUSIVAMENTE de anoche, pero no están en
+    /// `BandSummaryCopy.isNightly`, así que la hoja entera —frase de nivel, conteos por fila
+    /// y el aviso de ventana— decía «días». Se extiende aquí, caller-side: el archivo
+    /// compartido es de otro carril y esta hoja es hoy su único consumidor.
+    private var nightly: Bool {
+        BandSummaryCopy.isNightly(metricID: datoInfo.id) || datoInfo.id.hasPrefix("sleep_")
+    }
 
     /// El nombre localizado de un nivel, del único hogar clave→nombre (FER-731; la clave
     /// inglesa ES la del catálogo, paridad `label` del explorador :253-255).
@@ -1112,7 +1258,11 @@ struct LiquidMetricSheetView: View {
             let h = Int(v) / 60, m = Int(v) % 60
             return String(format: "%d:%02d", h, m)
         case "skin_temp":
-            return String(format: "%.1f", v)
+            // D3 · CON signo: la temperatura de piel es una DESVIACIÓN de tu base, y el
+            // numeral del héroe la imprime «+0.4» (`MetricInfoCatalog`). Sin el «+», el eje,
+            // el popup del scrub y los rangos de las filas decían «0.4» y la hoja se
+            // contradecía consigo misma.
+            return String(format: "%+.1f", v)
         default:
             return "\(Int(v.rounded()))"
         }
@@ -1126,26 +1276,53 @@ struct LiquidMetricSheetView: View {
 
     // MARK: Pie (paridad `sheetFoot` :251-269)
 
+    // D1 · TODO el pie lee `datoInfo`, el dato que la hoja MUESTRA. Con el `info` real, en
+    // demo la cabecera decía «56 ms» y la nota «No hubo VFC anoche» dos bloques más abajo
+    // (`nota(_:)` re-deriva la variante con/sin dato de `displayValue == "—"`). Fuera de
+    // demo `datoInfo == info`: el cambio es un no-op en producción.
     @ViewBuilder private var pie: some View {
-        if let metodo = LiquidSheetCopy.metodo(info) {
-            LiquidMetodo(title: String(localized: "How it's calculated")) {
+        if let metodo = LiquidSheetCopy.metodo(datoInfo) {
+            LiquidMetodo(title: String(localized: "How it's calculated"),
+                         // D11 (B6) · Etiquetas propias de VoiceOver: antes leía «Cómo se
+                         // calcula, uno». Distintas de las del ⓘ de la cabecera a propósito
+                         // — son dos plegables diferentes en la misma hoja.
+                         mostrar: String(localized: "Show method"),
+                         ocultar: String(localized: "Hide method")) {
                 LiquidNotaLine(metodo.prosa)
                 if let cita = metodo.cita {
                     LiquidNotaLine(cita)
                 }
             }
         }
-        if appleConnectHint {
-            LiquidNotaLine(String(localized: "This reading can come from Apple Health. Connect it from Today to see it here."))
-        } else if let nota = LiquidSheetCopy.nota(info) {
+        // D1 · `appleConnectHint` lo resuelve TodayView contra el `info` REAL, así que en
+        // demo el aviso salía junto a un dato visible («conéctalo desde Hoy» bajo «56 ms»).
+        if appleConnectHint && !demo {
+            avisoConectarApple
+        } else if let nota = LiquidSheetCopy.nota(datoInfo) {
             LiquidNotaLine(nota)
         }
-        if let disclaimer = LiquidSheetCopy.disclaimer(info) {
+        if let disclaimer = LiquidSheetCopy.disclaimer(datoInfo) {
             LiquidNotaLine(disclaimer)
         }
         // Línea de procedencia del pie RETIRADA (decisión del dueño /inject 2026-07-23):
         // el origen ya se dice arriba, en la etiqueta del header («Apple Salud · anoche»).
         if let onSeeMore { verMas(onSeeMore) }
+    }
+
+    /// D5 · El ÚNICO aviso accionable de la hoja: «esto puede venir de Apple Salud y no
+    /// está conectado». Compartía el `LiquidNotaLine` de la nota, la cita del método y el
+    /// disclaimer, así que se leía como letra chica. Recupera su superficie propia —gota de
+    /// corazón + tinta de atención sobre vidrio—, como la tarjeta con glifo y borde de la
+    /// hoja vieja. Todo caller-side, con API pública existente.
+    private var avisoConectarApple: some View {
+        HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s300) {
+            LiquidIconDrop(.corazon, tone: LiquidColor.rosa, size: 20, iconSize: 11)
+            LiquidNotaLine(String(localized: "This reading can come from Apple Health. Connect it from Today to see it here."),
+                           tono: LiquidColor.atencionTexto)
+        }
+        .padding(LiquidSpace.s300)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .liquidGlass(.superficie)
     }
 
     /// «Ver más» (paridad `seeMoreLink` :1186-1231): ancho completo hacia Tendencias
