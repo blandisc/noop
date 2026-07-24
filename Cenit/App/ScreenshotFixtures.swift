@@ -197,8 +197,14 @@ enum ScreenshotFixtures {
             _ = try? await store.insert(Streams(hr: hr), deviceId: model.deviceId)
         }
 
+        // FER-1030: the Liquid Hoy hero/axes read `repo.todayPreparedness`, not `days` directly — compute
+        // it with the real engine over the same synthetic history so the fixture states drive the hero
+        // (no `trend`/`strainByDay`: the autonomic axis reads `days` alone, matching a whoopOnly user).
+        let preparedness = Preparedness.evaluate(.init(
+            days: days, strainByDay: [:], trend: nil, asOf: Repository.localDayKey(today)))
+
         // Publish the dashboard last — single refreshSeq bump, drives loadAll.
-        model.repo.setDashboard(days: days)
+        model.repo.setDashboard(days: days, preparedness: preparedness)
     }
 
     /// Six recent sessions (newest first by start time) for the Workouts strip on Today.

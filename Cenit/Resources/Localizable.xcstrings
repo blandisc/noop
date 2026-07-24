@@ -21696,23 +21696,6 @@
         }
       }
     },
-    "In your range": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "In your range"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "En tu rango"
-          }
-        }
-      }
-    },
     "In your usual range.": {
       "extractionState": "stale",
       "localizations": {
