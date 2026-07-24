@@ -166,6 +166,13 @@ con paridad probada por fixtures.
    inner-shadows de CSS se aproximan con trazos interiores en degradado blanco.
 5. **e/2 en atención:** el prototipo usaba alfa 0.20 para el glow ámbar del orbe; el sistema usa
    la spec única de `e/2` (0.18) para no bifurcar el token.
+6. **`LiquidHill` — excepción sancionada a «color solo en el dato».** La colina de la hoja de
+   Carga (`LiquidHill`) conserva su lenguaje de zonas coloreadas del `LoadHillView` de
+   «Instrumento»: cuesta y cresta en verde, descenso en ámbar, caída en rojo. Rompe a propósito
+   la regla del datum único (§0/§1) porque el color de zona ES la identidad del instrumento —
+   el usuario lee la topografía por color. Decisión del dueño (2026-07-24), tras comparar contra
+   un bullet-graph neutro. Es la ÚNICA superficie Liquid con esta excepción; no se extiende a
+   otros componentes.
 
 ## 9. Cómo extender el sistema
 

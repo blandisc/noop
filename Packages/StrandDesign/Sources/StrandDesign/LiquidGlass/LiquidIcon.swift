@@ -11,6 +11,8 @@ public struct LiquidIcon: View {
     public enum Glyph: String, CaseIterable, Sendable {
         // Métricas (MetricTile, gotas) — viewBox 16, stroke 1.6.
         case luna, onda, corazon, llama, pasos, termo, resp, estres
+        // Carga de entrenamiento (hoja de Carga) — se dibuja como SF Symbol (pesa).
+        case carga
         // Señales (SignalOrb) — viewBox 16, stroke 1.5.
         case ondaSenal, lunaSenal, termoSenal
         // Modos de entrenamiento (ModeTile) — viewBox 16, stroke 1.5.
@@ -50,6 +52,7 @@ public struct LiquidIcon: View {
         case .termo: "thermometer.medium"
         case .resp: "lungs"
         case .estres: "waveform.path"
+        case .carga: "dumbbell"
         default: nil
         }
     }
@@ -177,6 +180,10 @@ extension LiquidIcon.Glyph {
                 "M2.5 11a6 6 0 0 1 11 0",
                 "M8 11L10.8 7",
             ])
+        // `.carga` se dibuja como SF Symbol (`sfName`); nunca llega a `custom`. Spec vacío
+        // para que el switch quede exhaustivo sin acuñar un path que no se usa.
+        case .carga:
+            return Spec(viewBox: 16, strokeWidth: 1.6, paths: [])
 
         // MARK: Señales (viewBox 16, sw 1.8) — familia FINAL elegida por el dueño
         // (/inject 2026-07-22): Autonómico = doble onda entrelazada («ondas finas») ·
