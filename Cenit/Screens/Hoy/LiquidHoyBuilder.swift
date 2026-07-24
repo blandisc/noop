@@ -348,7 +348,7 @@ enum LiquidHoyBuilder {
 
     private static func caption(for state: Preparedness.AxisState?) -> String {
         switch state {
-        case .inRange: return String(localized: "In your range")
+        case .inRange: return String(localized: "In range")
         case .low: return String(localized: "Below your base")
         case .high: return String(localized: "Above your base")
         case .noData, nil: return String(localized: "No data")
@@ -647,7 +647,7 @@ enum LiquidHoyBuilder {
             explicacion: String(localized: "Your resting nervous system: resting heart rate, HRV and breathing against your own base. It's an approximation, not a diagnosis."),
             infoMostrar: String(localized: "Show explanation"),
             infoOcultar: String(localized: "Hide explanation"),
-            nivel: hayBase ? (enRango ? String(localized: "In your range")
+            nivel: hayBase ? (enRango ? String(localized: "In range")
                                       : String(localized: "Off your range")) : nil,
             sinLectura: hayBase ? nil : String(localized: "No baseline yet"),
             conteo: conteoAutonomico(hayBase: hayBase, enRango: enRango, outCount: outCount,
@@ -670,7 +670,7 @@ enum LiquidHoyBuilder {
     /// Qué dijo la señal — dirección CORRECTA por señal (VFC peor = abajo; FC/resp peor = arriba).
     private static func estadoSenal(_ s: Preparedness.SignalRead) -> String {
         guard s.orientedZ != nil else { return String(localized: "No baseline") }
-        guard s.out else { return String(localized: "In your range") }
+        guard s.out else { return String(localized: "In range") }
         switch s.signal {
         case .hrv: return String(localized: "Below your base")
         case .rhr, .resp: return String(localized: "Above your base")

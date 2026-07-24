@@ -188,7 +188,8 @@ import UIKit
         // Screenshot fixtures (UI test): seed a synthetic readiness state and skip the production
         // refresh/analyze loop entirely, so the seeded dashboard isn't immediately overwritten by a
         // real (empty) store load. Gated on the `-noop.fixture primed|strained` launch argument; an
-        // absent/`empty` argument falls through to the normal launch path below.
+        // absent/`empty` argument falls through to the normal launch path below. `activeState()` is
+        // hard-gated to the simulator, so this never seeds a physical device (see ScreenshotFixtures).
         if let fixtureState = ScreenshotFixtures.activeState() {
             Task { [weak self] in
                 guard let self else { return }
