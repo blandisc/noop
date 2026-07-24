@@ -36,6 +36,12 @@ public struct LiquidBandsTable: View {
 
     @Environment(\.dynamicTypeSize) private var tamanoTexto
 
+    /// La etiqueta escala con Dynamic Type como su rango y su conteo (`captionLectura`,
+    /// relativo a `.caption2`). Con el `LiquidType.cuerpo` fijo de antes, a tamaños AX el
+    /// nombre de la banda terminaba MÁS CHICO que el número que lo acompaña.
+    @ScaledMetric(relativeTo: .footnote)
+    private var etiquetaPt: CGFloat = LiquidType.cuerpoLecturaBase
+
     public init(filas: [Fila], tono: Color) {
         self.filas = filas
         self.tono = tono
@@ -44,15 +50,33 @@ public struct LiquidBandsTable: View {
     /// A tamaños de ACCESIBILIDAD la fila deja de ser cuatro columnas y se apila en dos
     /// renglones (nombre arriba; rango + conteo abajo, sangrados tras el punto). Con cuatro
     /// columnas de texto en 402 pt, AX1+ aplasta o trunca — y `Spacer(minLength:)` solo
-    /// reparte el daño. Mismo espíritu que el `limiteNumeral` de `LiquidSheetHeader` (B4),
-    /// con el umbral en AX porque los rangos cortos («≥ 71», «4 días») sí caben hasta
-    /// `.xxxLarge`.
-    private var apilada: Bool { tamanoTexto >= .accessibility1 }
+    /// reparte el daño. Mismo espíritu que el `limiteNumeral` de `LiquidSheetHeader` (B4).
+    private var forzarApilada: Bool { tamanoTexto >= .accessibility1 }
 
+    /// El apilado no depende SOLO del tamaño de texto: depende de si el texto cabe.
+    ///
+    /// Con el umbral en AX, el acta del veredicto ya se rompía en `.large` —el tamaño POR
+    /// OMISIÓN— porque sus columnas no son «≥ 71 · 4 días» sino prosa («contra un mínimo
+    /// fijo»): una fila envolvía en dos renglones mientras sus hermanas cabían en uno y la
+    /// tabla se leía irregular. `ViewThatFits` decide midiendo, y decide para la TABLA
+    /// COMPLETA (no fila por fila: filas mezcladas se verían peor que cualquiera de las dos
+    /// formas). El umbral AX se conserva encima porque el arnés de renders corre en macOS,
+    /// donde las fuentes no escalan con Dynamic Type y solo esta rama declara la intención.
     public var body: some View {
+        if forzarApilada {
+            tabla(apilada: true)
+        } else {
+            ViewThatFits(in: .horizontal) {
+                tabla(apilada: false)
+                tabla(apilada: true)
+            }
+        }
+    }
+
+    private func tabla(apilada: Bool) -> some View {
         VStack(spacing: 0) {
             ForEach(Array(filas.enumerated()), id: \.offset) { i, fila in
-                self.fila(fila)
+                self.fila(fila, apilada: apilada)
                 if i < filas.count - 1 {
                     separador
                 }
@@ -64,7 +88,7 @@ public struct LiquidBandsTable: View {
         .liquidGlass(.superficie)
     }
 
-    private func fila(_ f: Fila) -> some View {
+    private func fila(_ f: Fila, apilada: Bool) -> some View {
         Group {
             if apilada {
                 VStack(alignment: .leading, spacing: LiquidSpace.s150) {
@@ -81,13 +105,20 @@ public struct LiquidBandsTable: View {
                     .padding(.leading, 8 + LiquidSpace.s300)
                 }
             } else {
+                // Los tres textos van a UNA LÍNEA, sin ceder ancho: así el tamaño de esta
+                // rama ES su ancho sin envolver, que es justo lo que `ViewThatFits` mide
+                // para decidir si cabe. Sin esto el `Spacer` se llevaba el aire, una fila
+                // envolvía «contra un mínimo fijo» en dos renglones mientras sus hermanas
+                // cabían en uno, y la rama apilada nunca llegaba a entrar.
                 HStack(spacing: LiquidSpace.s300) {
                     punto(f)
-                    etiqueta(f)
+                    etiqueta(f).lineLimit(1).fixedSize(horizontal: true, vertical: false)
                     Spacer(minLength: LiquidSpace.s200)
                     secundario(f, f.rango)
+                        .lineLimit(1).fixedSize(horizontal: true, vertical: false)
                     if let conteo = f.conteo {
                         secundario(f, conteo)
+                            .lineLimit(1).fixedSize(horizontal: true, vertical: false)
                             .frame(minWidth: 50, alignment: .trailing)
                     }
                 }
@@ -109,7 +140,8 @@ public struct LiquidBandsTable: View {
 
     private func etiqueta(_ f: Fila) -> some View {
         Text(verbatim: f.etiqueta)
-            .font(LiquidType.cuerpo)
+            // Escala con Dynamic Type como su rango y su conteo (ver `etiquetaPt`).
+            .font(.system(size: etiquetaPt))
             .fontWeight(f.activa ? .semibold : .regular)
             .foregroundStyle(f.activa ? LiquidColor.tinta900 : LiquidColor.tinta700)
             .fixedSize(horizontal: false, vertical: true)

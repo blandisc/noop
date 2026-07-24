@@ -74,6 +74,16 @@ public enum LiquidType {
     /// Aproximación del line-height 1.55 de la spec (12.5 × 1.55 ≈ 19.4 pt de línea).
     public static let cuerpoLineSpacing: CGFloat = 4
 
+    /// `cuerpo/lectura` — la variante que ESCALA con Dynamic Type del mismo 12.5.
+    ///
+    /// `Font.system(size:)` es de tamaño fijo (SF no acepta `relativeTo:`), así que la
+    /// etiqueta de las filas de nivel/banda se quedaba clavada mientras su rango y su
+    /// conteo —`captionLectura`, relativo a `.caption2`— sí crecían: a tamaños AX la fila
+    /// invertía su jerarquía y el nombre del carril acababa más chico que su número.
+    /// Se publica la BASE en puntos y el consumidor la escala con
+    /// `@ScaledMetric(relativeTo: .footnote)`, el mismo patrón de `lecturaHojaBase`.
+    public static let cuerpoLecturaBase: CGFloat = 12.5
+
     /// `unidad` — SF 400 11, color tinta/500. «ms», «lpm», «min» junto a valores.
     public static let unidad = Font.system(size: 11)
     /// La variante compacta (10.5) que usan los stats de Entrenar.

@@ -124,9 +124,12 @@ struct LiquidScrubPopup: View {
 }
 
 /// El popup MEDIDO y colocado con `ChartTooltipPlacement` (patrón `PositionedTooltip`):
-/// prefiere arriba del punto, se voltea abajo si no cabe y se clampea al RECT DEL PLOT
-/// (no al `GeometryReader` completo), para no montarse sobre la canaleta de labels Y ni
-/// sobre la franja de fechas del eje X.
+/// va arriba y AL LADO del punto —nunca encima— se voltea cuando no cabe y se clampea al
+/// RECT DEL PLOT (no al `GeometryReader` completo), para no montarse sobre la canaleta de
+/// labels Y ni sobre la franja de fechas del eje X.
+///
+/// El centrado en la x del ancla tapaba justo el dato que el popup nombra: recortaba el
+/// anillo del scrub y partía la curva en muñones sueltos que se leían como un glitch.
 private struct LiquidScrubPopupColocado: View {
     let valor: String
     let fecha: String?
@@ -143,10 +146,10 @@ private struct LiquidScrubPopupColocado: View {
     var body: some View {
         // Estimación de arranque solo para el primer frame; el `onAppear` la corrige.
         let tam: CGSize = medido == .zero ? CGSize(width: 88, height: 34) : medido
-        let p: CGPoint = ChartTooltipPlacement.position(anchor: anclaje,
-                                                        tooltipSize: tam,
-                                                        in: contenedor,
-                                                        gap: LiquidSpace.s200)
+        let p: CGPoint = ChartTooltipPlacement.positionBeside(anchor: anclaje,
+                                                              tooltipSize: tam,
+                                                              in: contenedor,
+                                                              gap: LiquidSpace.s200)
         return LiquidScrubPopup(valor: valor, fecha: fecha, color: color)
             .background {
                 GeometryReader { g in

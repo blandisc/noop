@@ -8,6 +8,32 @@ import SwiftUI
 /// /tmp/noop-liquid/ para verificación visual del dueño.
 /// Determinista: fechas fijas (sin Date()/Date.now), series sinusoidales fijas.
 /// Run: swift test --filter LiquidSheetEstadosRenderTests
+///
+/// # Lo que este arnés SÍ y NO prueba
+///
+/// El target de tests del DS no puede importar `LiquidMetricSheetView` (vive en la capa
+/// app), así que estos PNG no son la hoja: son sus componentes compuestos a mano en el
+/// mismo orden. Eso los vuelve útiles solo mientras el cableado sea el MISMO que el de la
+/// hoja, y una revisión encontró que se había separado en tres puntos (banda con color
+/// propio, tabla de bandas donde la hoja pone filas tocables, filas sin su superficie).
+/// Reglas para que no vuelva a pasar — si cambias la hoja, cambia esto:
+///
+/// 1. **Un solo color de banda.** `LiquidMetricSheetView` pinta TODA banda con `color:
+///    tono` (:1261-1263 y :841); un semáforo de tres colores muestra discos que la app no
+///    puede dibujar.
+/// 2. **Las variantes con niveles usan `LiquidLevelsList`**, no `LiquidBandsTable`: esa es
+///    la lista TOCABLE, con «· hoy», anillo hueco y `.isSelected`. La tabla de bandas es
+///    de la variante clásica (trend de 14 días).
+/// 3. **Las marcas del eje Y llevan unidad SOLO en la de arriba** (contrato D3, hoja
+///    :1328-1340): el resto va en crudo.
+/// 4. **Nada de valores literales que la serie no contiene** (el punto de hoy sale de
+///    `puntos.last`, los conteos se DERIVAN con los mismos cortes de las bandas).
+///
+/// **Dynamic Type:** los fixtures `_ax` corren bajo `#if os(macOS)` con `ImageRenderer`,
+/// donde las fuentes relativas a text style NO escalan. Lo único que demuestran es la rama
+/// de LAYOUT que lee `dynamicTypeSize` directo (el apilado de `LiquidBandsTable`, el
+/// `limiteNumeral` de la cabecera, el envoltorio 2×2 de la leyenda). El tamaño real de la
+/// letra a AX solo se verifica en device o en un test de iOS.
 final class LiquidSheetEstadosRenderTests: XCTestCase {
 
     #if os(macOS)
@@ -92,15 +118,40 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
     @MainActor private static let popupDia: (Date) -> String = fmt("EEEdMMM")
     @MainActor private static let popupHora: (Date) -> String = fmt("jmm")
 
+    /// Las tres bandas de VFC, TODAS en el tono de la métrica.
+    ///
+    /// Antes iban en tres colores (positivo/cian/atención) y por eso los renders enseñaban
+    /// discos verdes y naranjas: la hoja pinta cada banda con `color: tono` y el color del
+    /// disco sale de SU banda (`LiquidChartCore:633`), así que un semáforo de tres colores
+    /// era un dibujo que la app no puede producir.
     private static func bandasVFC(activa: Int?) -> [LiquidChartBanda] {
-        [
-            // Cortes IDÉNTICOS a los rangos de las filas de nivel (> 63 · 48–63 · < 48):
-            // si el chart y la lista dicen números distintos, la evidencia de I1 miente.
-            .init(lo: 63, hi: nil, color: LiquidColor.positivo, activa: activa == 0),
-            .init(lo: 48, hi: 63, color: LiquidColor.cian, activa: activa == 1),
-            .init(lo: nil, hi: 48, color: LiquidColor.atencion, activa: activa == 2),
-        ]
+        bandas([(63, nil), (48, 63), (nil, 48)], tono: LiquidColor.cian, activa: activa)
     }
+
+    /// Bandas de un solo tono a partir de sus cortes (lo, hi), como las arma la hoja.
+    private static func bandas(_ cortes: [(lo: Double?, hi: Double?)],
+                               tono: Color, activa: Int?) -> [LiquidChartBanda] {
+        cortes.indices.map { (i: Int) -> LiquidChartBanda in
+            LiquidChartBanda(lo: cortes[i].lo, hi: cortes[i].hi,
+                             color: tono, activa: activa == i)
+        }
+    }
+
+    /// Cuenta las lecturas de una serie dentro de un corte semiabierto [lo, hi).
+    /// Los conteos de las filas SIEMPRE se derivan: escritos a mano, la fila afirma «4
+    /// noches» sobre un wash sin un solo disco dentro y el render deja de ser evidencia.
+    private static func cuenta(_ puntos: [(fecha: Date, valor: Double)],
+                               _ lo: Double?, _ hi: Double?) -> Int {
+        puntos.reduce(0) { (n: Int, p: (fecha: Date, valor: Double)) -> Int in
+            let dentro = (lo == nil || p.valor >= lo!) && (hi == nil || p.valor < hi!)
+            return n + (dentro ? 1 : 0)
+        }
+    }
+
+    /// El plural lo resuelve el caller (en la app, `BandSummaryCopy.countLabel` con la
+    /// variación del catálogo): «1 noches» delataría un fixture que no pasó por ahí.
+    private static func noches(_ n: Int) -> String { "\(n) " + (n == 1 ? "noche" : "noches") }
+    private static func dias(_ n: Int) -> String { "\(n) " + (n == 1 ? "día" : "días") }
 
     /// Columna de hoja: mismo lienzo para todas las variantes (ancho iPhone 402,
     /// fondo `LiquidSheetFondo` con el suspiro del tono, motion congelado).
@@ -191,9 +242,16 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
     @MainActor
     private static func vitalConDato() -> AnyView {
         let puntos = serieDiaria(dias: 28, base: 58, onda: 13)
+        // Los cortes de las bandas y los de las filas son LOS MISMOS objetos de verdad
+        // (≥ 71 · 49–71 · < 49) y los conteos salen de la serie.
+        let cortes: [(lo: Double?, hi: Double?)] = [(71, nil), (49, 71), (nil, 49)]
         var grafica = LiquidGraficaNiveles(
-            puntos: puntos, bandas: bandasVFC(activa: 1), dominio: 30...95,
-            ticksY: [(71, "71"), (49, "49")], tono: LiquidColor.cian,
+            puntos: puntos,
+            bandas: bandas(cortes, tono: LiquidColor.cian, activa: 1),
+            dominio: 30...95,
+            // D3 · la unidad va SOLO en la marca de arriba (la hoja: `scrubValor` en el
+            // último tick, `levelsValueFormat` en el resto).
+            ticksY: [(71, "71 ms"), (49, "49")], tono: LiquidColor.cian,
             puntoHoy: (puntos[puntos.count - 1].fecha, puntos[puntos.count - 1].valor),
             hoyAnillo: false,
             // La frase COMPUESTA es lo que lee VoiceOver (el DS no acuña el « · »).
@@ -219,15 +277,27 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
                                 seleccion: .constant(1))
             // La frase display del nivel destacado (L2), en su sitio canónico: entre el
             // selector y la gráfica.
-            LiquidFraseNivel(nivel: "En tu base",
-                             conteo: "8 de tus últimos 14 días",
-                             tono: LiquidColor.cian)
+            LiquidFraseNivel(
+                nivel: "En tu base",
+                conteo: "\(cuenta(puntos, 49, 71)) de tus últimos \(puntos.count) días",
+                tono: LiquidColor.cian)
             grafica
-            LiquidBandsTable(
+            // La variante VITAL lista sus carriles con las filas TOCABLES dentro de su
+            // superficie (`LiquidLevelsList`, lo que dibuja `nivelesLista` en la hoja), no
+            // con la tabla de bandas de la variante clásica: aquí viven el rótulo «· hoy»,
+            // el punto de anillo y el trait `.isSelected`.
+            LiquidLevelsList(
                 filas: [
-                    .init(etiqueta: "Alto", rango: "≥ 71", conteo: "4 días"),
-                    .init(etiqueta: "En tu base", rango: "49–71", conteo: "8 días", activa: true),
-                    .init(etiqueta: "Bajo", rango: "< 49", conteo: "2 días"),
+                    .init(etiqueta: "Alto", rango: "≥ 71",
+                          conteo: dias(cuenta(puntos, 71, nil)),
+                          a11yHint: "Resalta este nivel en la gráfica"),
+                    .init(etiqueta: "En tu base", rango: "49–71",
+                          conteo: dias(cuenta(puntos, 49, 71)),
+                          esHoy: true, activa: true, hoyEtiqueta: "· hoy",
+                          a11yHint: "Resalta este nivel en la gráfica"),
+                    .init(etiqueta: "Bajo", rango: "< 49",
+                          conteo: dias(cuenta(puntos, nil, 49)),
+                          a11yHint: "Resalta este nivel en la gráfica"),
                 ],
                 tono: LiquidColor.cian)
             LiquidPatternBlock(
@@ -319,7 +389,7 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
                 infoMostrar: "Mostrar explicación",
                 infoOcultar: "Ocultar explicación")
             LiquidDobleDato(
-                principal: (valor: "7:12", etiqueta: "horas dormido"),
+                principal: (valor: "7:12", etiqueta: "horas dormidas"),
                 secundario: (valor: "84", etiqueta: "regularidad"),
                 tono: LiquidColor.indigo,
                 secundarioInfo: "Qué tan parejo es tu horario de sueño: tomamos el centro de cada noche (entre dormirte y despertar) y medimos cuánto brinca de noche a noche. Menos brincos, más cerca de 100.",
@@ -361,7 +431,7 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
                 infoMostrar: "Mostrar explicación",
                 infoOcultar: "Ocultar explicación")
             LiquidDobleDato(
-                principal: (valor: "6:45", etiqueta: "horas dormido"),
+                principal: (valor: "6:45", etiqueta: "horas dormidas"),
                 secundario: (valor: "71", etiqueta: "regularidad"),
                 tono: LiquidColor.indigo)
             LiquidStageBar(
@@ -399,11 +469,8 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
         }
         var grafica = LiquidGraficaNiveles(
             puntos: puntos,
-            bandas: [
-                .init(lo: 14, hi: nil, color: LiquidColor.negativo, activa: false),
-                .init(lo: 8, hi: 14, color: LiquidColor.ambar, activa: true),
-                .init(lo: nil, hi: 8, color: LiquidColor.positivo, activa: false),
-            ],
+            bandas: bandas([(14, nil), (8, 14), (nil, 8)],
+                           tono: LiquidColor.ambar, activa: 1),
             dominio: 0...21,
             ticksY: [(14, "14"), (8, "8")], tono: LiquidColor.ambar,
             puntoHoy: (puntos[puntos.count - 1].fecha, puntos[puntos.count - 1].valor),
@@ -421,6 +488,11 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
             LiquidSheetHeader(
                 icono: .llama, titulo: "ESFUERZO", tono: LiquidColor.ambar,
                 numeral: "10.0", sufijo: "/ 21", origen: .calculado,
+                // El punto de origen y su palabra viajan SIEMPRE juntos (la hoja los
+                // empareja en :447-449). Sin la etiqueta salía un bullet huérfano colgando
+                // detrás de «/ 21» — hoy el componente ya no lo dibuja, y el fixture
+                // tampoco lo pide.
+                origenEtiqueta: "Calculado",
                 explicacion: "Cuánta carga cardiovascular llevas acumulada hoy.")
             LiquidReadingLine("Esfuerzo moderado hasta ahora — hay espacio para más.",
                               highlight: "moderado",
@@ -484,13 +556,11 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
             readout: (etiqueta: "Óptimo", tono: LiquidColor.indigo,
                       frase: "9 de las últimas 14 noches en este rango"),
             puntos: puntos,
-            bandas: [
-                .init(lo: 7, hi: 9, color: LiquidColor.indigo, activa: true),
-                .init(lo: 6, hi: 7, color: LiquidColor.teal, activa: false),
-                .init(lo: nil, hi: 6, color: LiquidColor.atencion, activa: false),
-            ],
+            bandas: bandas([(7, 9), (6, 7), (nil, 6)],
+                           tono: LiquidColor.indigo, activa: 0),
             dominio: 5...10,
-            ticksY: [(9, "9"), (7, "7"), (6, "6")],
+            // El eje habla como el popup («9.6 h»): la unidad, en la marca de arriba.
+            ticksY: [(9, "9 h"), (7, "7"), (6, "6")],
             tono: LiquidColor.indigo,
             formatoScrub: { (v: Double, f: Date) in
                 String(format: "%.1f h", v) + " · " + popupDia(f)
@@ -552,20 +622,20 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
         let puntos = serieDiaria(dias: 21, base: 430, onda: 40)
         var grafica = LiquidGraficaNiveles(
             puntos: puntos.map { (fecha: $0.fecha, valor: $0.valor) },
-            bandas: [
-                .init(lo: 420, hi: 540, color: LiquidColor.indigo, activa: true),
-                .init(lo: 360, hi: 420, color: LiquidColor.teal, activa: false),
-                .init(lo: nil, hi: 360, color: LiquidColor.atencion, activa: false),
-            ],
+            bandas: bandas([(420, 540), (360, 420), (nil, 360)],
+                           tono: LiquidColor.indigo, activa: 0),
             dominio: 320...560,
-            ticksY: [(540, "9 h"), (420, "7 h"), (360, "6 h")],
+            // Sueño se dice en RELOJ, como el numeral de la hoja («7:12»), no en «7 h 12
+            // min»: `levelsValueFormat` del caller real formatea `%d:%02d`.
+            ticksY: [(540, "9:00"), (420, "7:00"), (360, "6:00")],
             tono: LiquidColor.indigo,
             puntoHoy: nil, hoyAnillo: false,
             formatoScrub: { (v: Double, f: Date) in
-                let m = Int(v.rounded()); return "\(m / 60) h \(m % 60) min · \(popupDia(f))"
+                let m = Int(v.rounded())
+                return String(format: "%d:%02d", m / 60, m % 60) + " · " + popupDia(f)
             },
             formatoValorScrub: { (v: Double) in
-                let m = Int(v.rounded()); return "\(m / 60) h \(m % 60) min"
+                let m = Int(v.rounded()); return String(format: "%d:%02d", m / 60, m % 60)
             },
             formatoFechaScrub: popupDia,
             formatoFechaEje: ejeDia,
@@ -603,15 +673,15 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
         }
         var grafica = LiquidGraficaNiveles(
             puntos: puntos,
-            bandas: [
-                .init(lo: 95, hi: nil, color: LiquidColor.azul, activa: true),
-                .init(lo: 90, hi: 95, color: LiquidColor.atencion, activa: false),
-                .init(lo: nil, hi: 90, color: LiquidColor.negativo, activa: false),
-            ],
+            bandas: bandas([(95, nil), (90, 95), (nil, 90)],
+                           tono: LiquidColor.azul, activa: 0),
             dominio: 88...100,
-            ticksY: [(98, "98"), (95, "95"), (90, "90")],
+            ticksY: [(98, "98 %"), (95, "95"), (90, "90")],
             tono: LiquidColor.azul,
-            puntoHoy: (fecha: puntos[puntos.count - 1].fecha, valor: 97.0),
+            // El punto de hoy sale de la SERIE. Con el 97.0 literal de antes, el anillo de
+            // «hoy» flotaba ~6 pt encima del disco real del último dato: dos marcadores
+            // encimados en la misma x.
+            puntoHoy: puntos[puntos.count - 1],
             hoyAnillo: false,
             formatoScrub: { (v: Double, f: Date) in
                 String(format: "%.0f %% · ", v) + popupDia(f)
@@ -636,18 +706,21 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
     }
 
     /// §6-F3b · Niveles SIN lectura hoy (todas las bandas al reposo 8 %) + las filas
-    /// tocables `LiquidLevelRow` (QA F3b-D1: el arnés no las renderizaba).
+    /// tocables (`LiquidLevelsList`, QA F3b-D1: el arnés no las renderizaba).
     @MainActor
     private static func nivelesReposoConFilas() -> AnyView {
-        let puntos = serieDiaria(dias: 28, base: 55, onda: 6)
+        // Amplitud suficiente para que los tres carriles TENGAN lecturas: con la anterior
+        // (55 ± 6) la banda iluminada «< 48» quedaba sin un solo disco dentro de su wash
+        // mientras su fila afirmaba «4 noches».
+        let puntos = serieDiaria(dias: 28, base: 53, onda: 11)
         let grafica = LiquidGraficaNiveles(
             puntos: puntos,
             // I1: la banda iluminada es la de la fila ACTIVA de abajo — «Debajo de tu
-            // base» (índice 2), que es el nivel que el usuario está explorando mientras
-            // «hoy» vive en otro. Si no coinciden, el render desmiente al invariante.
+            // base» (índice 2), que es el nivel que el usuario está explorando. Si no
+            // coinciden, el render desmiente al invariante.
             bandas: bandasVFC(activa: 2),
-            dominio: 40...72,
-            ticksY: [(63, "63"), (55, "55"), (48, "48")],
+            dominio: 34...72,
+            ticksY: [(63, "63 ms"), (48, "48")],
             tono: LiquidColor.cian,
             puntoHoy: nil, hoyAnillo: false,
             formatoScrub: { (v: Double, f: Date) in "\(Int(v.rounded())) ms · \(popupDia(f))" },
@@ -664,18 +737,28 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
             // Rama SIN lectura de `LiquidFraseNivel`: el texto honesto del caller en
             // tinta/500 (el DS jamás lo acuña), con el conteo debajo.
             LiquidFraseNivel(nivel: nil,
-                             conteo: "28 noches con datos en este rango",
+                             conteo: "\(puntos.count) noches con datos en este rango",
                              tono: LiquidColor.cian,
                              sinLectura: "Hoy sin lectura")
             grafica
-            LiquidLevelRow(etiqueta: "Arriba de tu base", rango: "> 63", conteo: "6 noches",
-                           esHoy: false, activa: false, tono: LiquidColor.cian, onTap: {})
-            // Hoy cayó aquí mientras exploras otro nivel: anillo hueco + rótulo «· hoy».
-            LiquidLevelRow(etiqueta: "En tu base", rango: "48–63", conteo: "18 noches",
-                           esHoy: true, activa: false, tono: LiquidColor.cian,
-                           hoyEtiqueta: "· hoy", onTap: {})
-            LiquidLevelRow(etiqueta: "Debajo de tu base", rango: "< 48", conteo: "4 noches",
-                           esHoy: false, activa: true, tono: LiquidColor.cian, onTap: {})
+            // NINGUNA fila lleva «· hoy»: el titular dice «Hoy sin lectura» y en la hoja
+            // `esHoy` es `i == d.activeIndex`, que sin lectura de hoy es falso en todas.
+            // La pantalla se contradecía a sí misma («Hoy sin lectura» arriba, «En tu base
+            // · hoy» con anillo una fila abajo).
+            LiquidLevelsList(
+                filas: [
+                    .init(etiqueta: "Arriba de tu base", rango: "> 63",
+                          conteo: noches(cuenta(puntos, 63, nil)),
+                          a11yHint: "Resalta este nivel en la gráfica"),
+                    .init(etiqueta: "En tu base", rango: "48–63",
+                          conteo: noches(cuenta(puntos, 48, 63)),
+                          a11yHint: "Resalta este nivel en la gráfica"),
+                    .init(etiqueta: "Debajo de tu base", rango: "< 48",
+                          conteo: noches(cuenta(puntos, nil, 48)),
+                          activa: true,
+                          a11yHint: "Resalta este nivel en la gráfica"),
+                ],
+                tono: LiquidColor.cian)
         }
     }
 
@@ -690,21 +773,14 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
         // Los conteos se DERIVAN de la serie (mismos cortes que `bandasVFC`: > 63 · 48–63 ·
         // < 48). Escritos a mano, la fila afirmaría «5 noches» mientras el ojo cuenta ocho
         // bolitas encendidas dentro del wash — el render dejaría de ser evidencia.
-        func cuenta(_ lo: Double?, _ hi: Double?) -> Int {
-            puntos.reduce(0) { n, p in
-                let dentro = (lo == nil || p.valor >= lo!) && (hi == nil || p.valor < hi!)
-                return n + (dentro ? 1 : 0)
-            }
-        }
-        let nArriba = cuenta(63, nil), nBase = cuenta(48, 63), nAbajo = cuenta(nil, 48)
-        // El plural lo resuelve el caller (en la app, `BandSummaryCopy.countLabel` con la
-        // variación del catálogo): «1 noches» delataría un fixture que no pasó por ahí.
-        func noches(_ n: Int) -> String { "\(n) " + (n == 1 ? "noche" : "noches") }
+        let nArriba = cuenta(puntos, 63, nil)
+        let nBase = cuenta(puntos, 48, 63)
+        let nAbajo = cuenta(puntos, nil, 48)
         let grafica = LiquidGraficaNiveles(
             puntos: puntos,
             bandas: bandasVFC(activa: 0),
             dominio: 30...95,
-            ticksY: [(63, "63"), (48, "48")],
+            ticksY: [(63, "63 ms"), (48, "48")],
             tono: LiquidColor.cian,
             puntoHoy: (puntos[puntos.count - 1].fecha, puntos[puntos.count - 1].valor),
             hoyAnillo: true,
@@ -725,15 +801,20 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
                              conteo: "\(nArriba) de tus últimas \(puntos.count) noches",
                              tono: LiquidColor.cian)
             grafica
-            LiquidLevelRow(etiqueta: "Arriba de tu base", rango: "> 63",
-                           conteo: noches(nArriba),
-                           esHoy: false, activa: true, tono: LiquidColor.cian, onTap: {})
-            LiquidLevelRow(etiqueta: "En tu base", rango: "48–63", conteo: noches(nBase),
-                           esHoy: true, activa: false, tono: LiquidColor.cian,
-                           hoyEtiqueta: "· hoy", onTap: {})
-            LiquidLevelRow(etiqueta: "Debajo de tu base", rango: "< 48",
-                           conteo: noches(nAbajo),
-                           esHoy: false, activa: false, tono: LiquidColor.cian, onTap: {})
+            LiquidLevelsList(
+                filas: [
+                    .init(etiqueta: "Arriba de tu base", rango: "> 63",
+                          conteo: noches(nArriba), activa: true,
+                          a11yHint: "Resalta este nivel en la gráfica"),
+                    // Hoy cayó aquí mientras exploras otro nivel: anillo hueco + «· hoy».
+                    .init(etiqueta: "En tu base", rango: "48–63", conteo: noches(nBase),
+                          esHoy: true, hoyEtiqueta: "· hoy",
+                          a11yHint: "Resalta este nivel en la gráfica"),
+                    .init(etiqueta: "Debajo de tu base", rango: "< 48",
+                          conteo: noches(nAbajo),
+                          a11yHint: "Resalta este nivel en la gráfica"),
+                ],
+                tono: LiquidColor.cian)
         }
     }
 
@@ -770,7 +851,7 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
             puntos: [],
             bandas: bandasVFC(activa: nil),
             dominio: 40...72,
-            ticksY: [(66, "66"), (55, "55"), (46, "46")],
+            ticksY: [(66, "66 ms"), (55, "55"), (46, "46")],
             tono: LiquidColor.cian,
             puntoHoy: nil, hoyAnillo: false,
             formatoScrub: { v, _ in "\(Int(v.rounded())) ms" },
@@ -817,7 +898,7 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
                      dias: Int) -> LiquidGraficaNiveles {
             LiquidGraficaNiveles(
                 puntos: puntos, bandas: bandasVFC(activa: 1), dominio: 30...95,
-                ticksY: [(63, "63"), (48, "48")], tono: LiquidColor.cian,
+                ticksY: [(63, "63 ms"), (48, "48")], tono: LiquidColor.cian,
                 puntoHoy: (puntos[puntos.count - 1].fecha, puntos[puntos.count - 1].valor),
                 hoyAnillo: false,
                 formatoScrub: { (v: Double, f: Date) in "\(Int(v.rounded())) ms · \(popupDia(f))" },
@@ -864,7 +945,7 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
                              sinLectura: "Aún no hay línea que dibujar")
             LiquidGraficaNiveles(
                 puntos: unica, bandas: bandasVFC(activa: nil), dominio: 30...95,
-                ticksY: [(63, "63"), (48, "48")], tono: LiquidColor.cian,
+                ticksY: [(63, "63 ms"), (48, "48")], tono: LiquidColor.cian,
                 puntoHoy: nil, hoyAnillo: false,
                 formatoScrub: { (v: Double, f: Date) in "\(Int(v.rounded())) ms · \(popupDia(f))" },
                 formatoFechaEje: ejeDia,

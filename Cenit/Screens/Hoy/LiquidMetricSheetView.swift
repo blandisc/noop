@@ -88,7 +88,18 @@ struct LiquidMetricSheetView: View {
 
     /// Con `true`, la hoja usa un dato de muestra por métrica y siembra las series de las
     /// gráficas, para pulir el diseño en un simulador sin datos de Apple Salud.
-    private var demo: Bool { true }
+    ///
+    /// Gate `#if DEBUG` (la misma disciplina que ya tenía `TodayView.liquidDemo`): el
+    /// interruptor quedó commiteado en `true` y, sin gate, cualquier merge publicaba una
+    /// hoja que pinta datos fabricados para las 17 métricas ignorando lo que traiga Apple
+    /// Salud. En Release la hoja NUNCA puede caer en el modo demo; apagarlo del todo
+    /// —volver esta línea a `false`— sigue siendo el último paso antes de mergear.
+    /// Computed a propósito: su cuerpo se voltea EN VIVO por inyección (/inject).
+    #if DEBUG
+    private var demo: Bool { true }   // /inject: ON para pulir; APAGAR antes de mergear
+    #else
+    private var demo: Bool { false }
+    #endif
 
     /// El `MetricInfo` que la hoja MUESTRA: el fixture con dato en modo demo, el real si no.
     private var datoInfo: MetricInfo { demo ? Self.demoInfo(info.id) : info }
@@ -1340,12 +1351,19 @@ struct LiquidMetricSheetView: View {
         }
     }
 
+    /// La lista de carriles. El chrome (separadores sangrados, esquinas, vidrio) vive en
+    /// `LiquidLevelsList`, del DS: estaba copiado aquí, en los previews y en el arnés de
+    /// renders, y las copias se separaron (los PNG enseñaban filas sueltas con el wash a
+    /// sangre). Aquí queda solo la traducción de `MetricLevels` a filas.
     private func nivelesLista(_ d: MetricLevels.Classification,
                               conteos: Bool = true) -> some View {
-        let highlight = nivelDestacado(d)
-        return VStack(spacing: 0) {
-            ForEach(Array(d.levels.enumerated()), id: \.offset) { (i, nivel) in
-                LiquidLevelRow(
+        let highlight: Int? = nivelDestacado(d)
+        let hoyRotulo: String = String(localized: "· today")
+        let hint: String = String(localized: "Highlights this level on the chart")
+        let filas: [LiquidLevelsList.Fila] = d.levels.indices
+            .map { (i: Int) -> LiquidLevelsList.Fila in
+                let nivel: MetricLevels.Level = d.levels[i]
+                return LiquidLevelsList.Fila(
                     etiqueta: nombreNivel(nivel.key),
                     rango: rangoNivel(nivel),
                     // D7 · Sin serie todavía, la columna queda VACÍA (su ancho mínimo ya
@@ -1353,26 +1371,17 @@ struct LiquidMetricSheetView: View {
                     conteo: conteos ? conteoLabel(d.counts[i]) : "",
                     esHoy: i == d.activeIndex,
                     activa: i == highlight,
-                    tono: tono,
                     // El rótulo que marca EN LA LISTA dónde cayó hoy (clave existente).
-                    hoyEtiqueta: String(localized: "· today"),
-                    a11yHint: String(localized: "Highlights this level on the chart"),
+                    hoyEtiqueta: hoyRotulo,
+                    a11yHint: hint,
                     onTap: {
                         // Tocar la fila destacada limpia de vuelta a hoy (paridad :197-200).
                         withAnimation(LiquidMotion.lift) {
                             nivelExplorado = (nivelExplorado == i) ? nil : i
                         }
                     })
-                if i < d.levels.count - 1 {
-                    Rectangle()
-                        .fill(LiquidColor.tinta10)
-                        .frame(height: 1)
-                        .padding(.leading, LiquidSpace.s400 + 8 + LiquidSpace.s300)
-                }
             }
-        }
-        .clipShape(RoundedRectangle(cornerRadius: LiquidRadius.tarjeta, style: .continuous))
-        .liquidGlass(.superficie)
+        return LiquidLevelsList(filas: filas, tono: tono)
     }
 
     /// Rango numérico de un nivel, half-open (paridad `rangeText` :240-247).

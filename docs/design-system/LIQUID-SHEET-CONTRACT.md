@@ -268,7 +268,23 @@ public struct LiquidLevelRow: View {         // fila tocable de la lista de nive
     public let tono: Color
     public let onTap: () -> Void
 }
+
+public struct LiquidLevelsList: View {       // LA lista: filas + separadores sangrados + vidrio
+    public struct Fila { /* los mismos campos de LiquidLevelRow, sin `tono` */ }
+    public let filas: [Fila]
+    public let tono: Color
+}
 ```
+
+> **La lista es del DS, no del caller.** El chrome (separadores de 1 px sangrados tras el
+> punto, esquinas `LiquidRadius.tarjeta`, vidrio `.superficie`) vivía COPIADO en la hoja, en
+> los `#Preview` y en el arnés de renders; las copias se separaron y los PNG acabaron
+> enseñando filas sueltas, con el wash de la fila activa a sangre y esquinas cuadradas — un
+> dibujo que la app no produce. Quien liste niveles usa `LiquidLevelsList`.
+>
+> **Y el que lista niveles NO usa `LiquidBandsTable`:** esa es la tabla (no tocable) de la
+> variante clásica. La lista de niveles es tocable, marca «· hoy» con anillo hueco y anuncia
+> `.isSelected`.
 
 ### F4 — template clásico
 

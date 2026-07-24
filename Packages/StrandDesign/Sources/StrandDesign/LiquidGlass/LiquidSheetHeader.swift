@@ -79,8 +79,13 @@ public struct LiquidSheetHeader: View {
 
     /// B1 · ¿hay procedencia que pintar? El punto solo marca lo CALCULADO (ver `init`), así
     /// que `origen == .medido` sin etiqueta no dibuja nada y no merece su propia fila.
+    ///
+    /// Y el punto SIN etiqueta tampoco: un bullet suelto colgando detrás del numeral
+    /// («10.0 / 21 ·») no dice «calculado», dice «aquí falta algo» — así salió en el render
+    /// de esfuerzo. El punto es la puntuación de la palabra, no un dato por su cuenta; sin
+    /// palabra no se pinta.
     private var hayProcedencia: Bool {
-        origen == .calculado || origenEtiqueta != nil
+        origenEtiqueta != nil
     }
 
     /// B1 · La procedencia («· Apple Salud»), que hasta ahora vivía DENTRO de la fila del
@@ -88,7 +93,7 @@ public struct LiquidSheetHeader: View {
     /// `inline` = va detrás del dato (necesita el respiro que la separa de la unidad);
     /// suelta arranca en el margen, alineada con el título.
     @ViewBuilder private func procedencia(inline: Bool) -> some View {
-        if origen == .calculado {
+        if origen == .calculado, origenEtiqueta != nil {
             LiquidOrigenDot()
         }
         if let origenEtiqueta {

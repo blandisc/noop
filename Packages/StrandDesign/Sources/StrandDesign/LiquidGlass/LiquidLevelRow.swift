@@ -27,6 +27,12 @@ public struct LiquidLevelRow: View {
     private let a11yHint: String?
     private let onTap: () -> Void
 
+    /// La etiqueta escala con Dynamic Type como su rango y su conteo (`captionLectura`,
+    /// relativo a `.caption2`). Con el `LiquidType.cuerpo` fijo de antes, a tamaños AX el
+    /// nombre del carril terminaba MÁS CHICO que el número que lo acompaña.
+    @ScaledMetric(relativeTo: .footnote)
+    private var etiquetaPt: CGFloat = LiquidType.cuerpoLecturaBase
+
     public init(etiqueta: String, rango: String, conteo: String,
                 esHoy: Bool, activa: Bool, tono: Color,
                 hoyEtiqueta: String? = nil,
@@ -50,7 +56,7 @@ public struct LiquidLevelRow: View {
                 // idea, no dos columnas — el `Spacer` de abajo los separa del rango.
                 HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s150) {
                     Text(verbatim: etiqueta)
-                        .font(LiquidType.cuerpo)
+                        .font(.system(size: etiquetaPt))
                         .fontWeight(activa ? .semibold : .regular)
                         .foregroundStyle(activa ? LiquidColor.tinta900 : LiquidColor.tinta700)
                     if esHoy, let hoyEtiqueta {
@@ -106,47 +112,106 @@ public struct LiquidLevelRow: View {
     }
 }
 
+// MARK: - La LISTA de filas (el chrome que las vuelve una tabla)
+
+/// Las filas de nivel dentro de su superficie: separadores de 1 px sangrados tras el punto,
+/// esquinas del DS y vidrio `.superficie`.
+///
+/// Existe porque ese chrome estaba COPIADO en la hoja (`LiquidMetricSheetView.nivelesLista`),
+/// en los previews y en el arnés de renders — y las copias se separaron: los PNG del arnés
+/// enseñaban filas sueltas, con el wash de la fila activa saliéndose a sangre y esquinas
+/// cuadradas, que es justo lo que la app NO dibuja. Un solo hogar, un solo dibujo.
+///
+/// Contrato D3 (igual que `LiquidLevelRow`): todo llega YA localizado y formateado.
+public struct LiquidLevelsList: View {
+
+    public struct Fila {
+        public let etiqueta: String
+        public let rango: String
+        public let conteo: String
+        public let esHoy: Bool
+        public let activa: Bool
+        public let hoyEtiqueta: String?
+        public let a11yHint: String?
+        public let onTap: () -> Void
+
+        public init(etiqueta: String, rango: String, conteo: String,
+                    esHoy: Bool = false, activa: Bool = false,
+                    hoyEtiqueta: String? = nil, a11yHint: String? = nil,
+                    onTap: @escaping () -> Void = {}) {
+            self.etiqueta = etiqueta
+            self.rango = rango
+            self.conteo = conteo
+            self.esHoy = esHoy
+            self.activa = activa
+            self.hoyEtiqueta = hoyEtiqueta
+            self.a11yHint = a11yHint
+            self.onTap = onTap
+        }
+    }
+
+    private let filas: [Fila]
+    private let tono: Color
+
+    public init(filas: [Fila], tono: Color) {
+        self.filas = filas
+        self.tono = tono
+    }
+
+    public var body: some View {
+        VStack(spacing: 0) {
+            ForEach(Array(filas.enumerated()), id: \.offset) { (i: Int, f: Fila) in
+                LiquidLevelRow(etiqueta: f.etiqueta, rango: f.rango, conteo: f.conteo,
+                               esHoy: f.esHoy, activa: f.activa, tono: tono,
+                               hoyEtiqueta: f.hoyEtiqueta, a11yHint: f.a11yHint,
+                               onTap: f.onTap)
+                if i < filas.count - 1 {
+                    // Sangría: margen de la fila + el punto + su gap, para que la línea
+                    // arranque bajo el TEXTO y la columna de puntos se lea como un riel.
+                    Rectangle()
+                        .fill(LiquidColor.tinta10)
+                        .frame(height: 1)
+                        .padding(.leading, LiquidSpace.s400 + 8 + LiquidSpace.s300)
+                }
+            }
+        }
+        // El clip va ANTES del vidrio (igual que `LiquidBandsTable`): el wash de la fila
+        // activa respeta las esquinas también en el camino nativo.
+        .clipShape(RoundedRectangle(cornerRadius: LiquidRadius.tarjeta, style: .continuous))
+        .liquidGlass(.superficie)
+    }
+}
+
 #if DEBUG
 #Preview("Liquid · LevelRow") {
-    VStack(spacing: 0) {
-        LiquidLevelRow(etiqueta: "Alto", rango: "≥ 71", conteo: "4 días",
-                       esHoy: false, activa: false, tono: LiquidColor.cian, onTap: {})
-        Rectangle().fill(LiquidColor.tinta10).frame(height: 1)
-            .padding(.leading, LiquidSpace.s400 + 8 + LiquidSpace.s300)
-        // Activa (la que exploras): wash del tono + texto en tinta/900.
-        LiquidLevelRow(etiqueta: "En tu base", rango: "49–71", conteo: "12 días",
-                       esHoy: false, activa: true, tono: LiquidColor.cian, onTap: {})
-        Rectangle().fill(LiquidColor.tinta10).frame(height: 1)
-            .padding(.leading, LiquidSpace.s400 + 8 + LiquidSpace.s300)
-        // Hoy, mientras exploras otro nivel: anillo hueco + rótulo «· hoy».
-        LiquidLevelRow(etiqueta: "Bajo", rango: "< 49", conteo: "2 días",
-                       esHoy: true, activa: false, tono: LiquidColor.cian,
-                       hoyEtiqueta: "· hoy", onTap: {})
-    }
-    .clipShape(RoundedRectangle(cornerRadius: LiquidRadius.tarjeta, style: .continuous))
-    .liquidGlass(.superficie)
-    .padding(LiquidSpace.s550)
-    .background(LiquidSheetFondo(tone: LiquidColor.cian))
-    .environment(\.liquidMotionDisabled, true)
+    LiquidLevelsList(
+        filas: [
+            .init(etiqueta: "Alto", rango: "≥ 71", conteo: "4 días"),
+            // Activa (la que exploras): wash del tono + texto en tinta/900.
+            .init(etiqueta: "En tu base", rango: "49–71", conteo: "12 días", activa: true),
+            // Hoy, mientras exploras otro nivel: anillo hueco + rótulo «· hoy».
+            .init(etiqueta: "Bajo", rango: "< 49", conteo: "2 días",
+                  esHoy: true, hoyEtiqueta: "· hoy"),
+        ],
+        tono: LiquidColor.cian)
+        .padding(LiquidSpace.s550)
+        .background(LiquidSheetFondo(tone: LiquidColor.cian))
+        .environment(\.liquidMotionDisabled, true)
 }
 
 #Preview("Liquid · LevelRow · ámbar (AA)") {
     // El tono ámbar del dato falla AA en texto chico: el rótulo de HOY se pinta en
     // `atencionTexto`, no en el ámbar crudo.
-    VStack(spacing: 0) {
-        LiquidLevelRow(etiqueta: "Sobre tu base", rango: "≥ +0.4 °C", conteo: "3 noches",
-                       esHoy: true, activa: false, tono: LiquidColor.ambar,
-                       hoyEtiqueta: "· hoy", onTap: {})
-        Rectangle().fill(LiquidColor.tinta10).frame(height: 1)
-            .padding(.leading, LiquidSpace.s400 + 8 + LiquidSpace.s300)
-        LiquidLevelRow(etiqueta: "En tu base", rango: "−0.3–+0.4 °C", conteo: "9 noches",
-                       esHoy: false, activa: true, tono: LiquidColor.ambar,
-                       hoyEtiqueta: "· hoy", onTap: {})
-    }
-    .clipShape(RoundedRectangle(cornerRadius: LiquidRadius.tarjeta, style: .continuous))
-    .liquidGlass(.superficie)
-    .padding(LiquidSpace.s550)
-    .background(LiquidSheetFondo(tone: LiquidColor.ambar))
-    .environment(\.liquidMotionDisabled, true)
+    LiquidLevelsList(
+        filas: [
+            .init(etiqueta: "Sobre tu base", rango: "≥ +0.4 °C", conteo: "3 noches",
+                  esHoy: true, hoyEtiqueta: "· hoy"),
+            .init(etiqueta: "En tu base", rango: "−0.3–+0.4 °C", conteo: "9 noches",
+                  activa: true),
+        ],
+        tono: LiquidColor.ambar)
+        .padding(LiquidSpace.s550)
+        .background(LiquidSheetFondo(tone: LiquidColor.ambar))
+        .environment(\.liquidMotionDisabled, true)
 }
 #endif
