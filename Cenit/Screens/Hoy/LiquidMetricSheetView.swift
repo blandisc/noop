@@ -1253,6 +1253,14 @@ struct LiquidMetricSheetView: View {
 
     /// Formato del valor en el explorador (paridad :727-732): sueño h/min, piel una
     /// décima, resto entero.
+    /// Enteros con separador de miles en el locale del usuario.
+    private static let milesFmt: NumberFormatter = {
+        let f = NumberFormatter()
+        f.numberStyle = .decimal
+        f.maximumFractionDigits = 0
+        return f
+    }()
+
     private func levelsValueFormat(_ v: Double) -> String {
         switch datoInfo.id {
         case "sleep":
@@ -1267,6 +1275,11 @@ struct LiquidMetricSheetView: View {
             // el popup del scrub y los rangos de las filas decían «0.4» y la hoja se
             // contradecía consigo misma.
             return String(format: "%+.1f", v)
+        case "steps":
+            // Con separador de miles, igual que el numeral (/inject: el dato decía «8,432»
+            // y el eje «10000» — el mismo número escrito de dos maneras).
+            return Self.milesFmt.string(from: NSNumber(value: Int(v.rounded())))
+                ?? "\(Int(v.rounded()))"
         default:
             return "\(Int(v.rounded()))"
         }
