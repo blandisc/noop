@@ -73,9 +73,44 @@ public enum Preparedness {
         }
     }
 
+    /// The three raw signals that COMPOSE the `autonomic` axis vote. The axis is one `Driver`;
+    /// this is the breakdown *inside* it, surfaced so the autonomic detail screen can show which
+    /// signal carried the vote and by how much — the exact same numbers `evaluate` already
+    /// computed to build the composite, never a re-derivation.
+    public enum Signal: String, Sendable, Equatable {
+        case hrv   // Apple SDNN (better when higher)
+        case rhr   // resting HR (better when lower)
+        case resp  // respiratory rate (better when lower)
+    }
+
+    /// One autonomic signal's contribution to the axis vote — a pure read-out of the composite's
+    /// internals (`autonomicAxis`): the oriented z (+ = better than your baseline), the renormalized
+    /// weight it carried over the signals that were PRESENT tonight, and — respiration only — whether
+    /// its raw z crossed `respBadZ` on its own (the one signal that can flag the axis by itself).
+    public struct SignalRead: Sendable, Equatable {
+        public let signal: Signal
+        /// Oriented z (+ = better than baseline). nil when the signal had no usable read tonight
+        /// (missing value or a baseline that isn't ready) — it then carries `share == 0` (no vote).
+        public let orientedZ: Double?
+        /// The axis weight renormalized over the signals PRESENT tonight (the present shares sum to
+        /// 1; an absent signal is 0). This is exactly the weight used in the composite average.
+        public let share: Double
+        /// `true` only for respiration, only when its RAW z reached `respBadZ` — the wider cut that
+        /// lets a breathing-rate spike flag the autonomic axis even when the composite doesn't.
+        public let flaggedAlone: Bool
+        public init(signal: Signal, orientedZ: Double?, share: Double, flaggedAlone: Bool) {
+            self.signal = signal; self.orientedZ = orientedZ
+            self.share = share; self.flaggedAlone = flaggedAlone
+        }
+    }
+
     public struct Read: Sendable, Equatable {
         public let verdict: Verdict
         public let drivers: [Driver]
+        /// The three signals that compose the `autonomic` axis, ordered by their weight
+        /// (rhr ≥ hrv ≥ resp under the signed defaults). Surfaced for the autonomic detail
+        /// screen; the axis verdict still stands on the `autonomic` `Driver`, never on this.
+        public let signals: [SignalRead]
         /// Coverage as (signals-with-a-reading-tonight, total body signals) — surfaced as the
         /// honest confidence tether. Never hidden.
         public let signalsPresent: Int
@@ -91,9 +126,10 @@ public enum Preparedness {
         /// The RMSSD trend direction (from `AutonomicTrend`), for the sparkline + the "falling"
         /// nudge. Independent of the verdict's body-signal axes.
         public let trend: AutonomicTrend.Direction?
-        public init(verdict: Verdict, drivers: [Driver], signalsPresent: Int, signalsTotal: Int,
+        public init(verdict: Verdict, drivers: [Driver], signals: [SignalRead] = [],
+                    signalsPresent: Int, signalsTotal: Int,
                     maturity: BaselineStatus, autonomicNights: Int, trend: AutonomicTrend.Direction?) {
-            self.verdict = verdict; self.drivers = drivers
+            self.verdict = verdict; self.drivers = drivers; self.signals = signals
             self.signalsPresent = signalsPresent; self.signalsTotal = signalsTotal
             self.maturity = maturity; self.autonomicNights = autonomicNights; self.trend = trend
         }
@@ -184,6 +220,8 @@ public enum Preparedness {
         // --- Axis: autonomic (weighted composite of the present oriented z's) ---
         let autonomic = autonomicAxis(hrv: (hrvZ, config.wHRV), rhr: (rhrZ, config.wRHR),
                                       resp: (respZ, config.wResp), cfg: config)
+        // The breakdown INSIDE that axis — same z's, same weights, same respBadZ cut. Pure read-out.
+        let signals = autonomicSignals(hrv: hrvZ, rhr: rhrZ, resp: respZ, cfg: config)
         let sleepAxis = sleepDriver(today)
         let thermalAxis = thermalDriver(today, config: config)
         // --- Axis: load (optional — present ONLY with a real workout; its OUT logic is deferred to
@@ -202,7 +240,8 @@ public enum Preparedness {
 
         // --- Cold start / low signal: the autonomic core must have a usable read. ---
         if autonomic.state == .noData {
-            return Read(verdict: .lowSignal, drivers: drivers, signalsPresent: signalsPresent,
+            return Read(verdict: .lowSignal, drivers: drivers, signals: signals,
+                        signalsPresent: signalsPresent,
                         signalsTotal: 3, maturity: maturity, autonomicNights: autonomicNights,
                         trend: input.trend?.direction)
         }
@@ -213,7 +252,8 @@ public enum Preparedness {
         // (`caution`) to `easy`. It never overrides a clean `full`. `/cso` may widen this.
         let final: Verdict = (stable == .caution && input.trend?.direction == .below) ? .easy : stable
 
-        return Read(verdict: final, drivers: drivers, signalsPresent: signalsPresent, signalsTotal: 3,
+        return Read(verdict: final, drivers: drivers, signals: signals,
+                    signalsPresent: signalsPresent, signalsTotal: 3,
                     maturity: maturity, autonomicNights: autonomicNights, trend: input.trend?.direction)
     }
 
@@ -272,6 +312,28 @@ public enum Preparedness {
         let respOut = (resp.0.map { -$0 }).map { $0 >= cfg.respBadZ } ?? false
         let out = composite <= cfg.autonomicOutZ || respOut
         return Driver(axis: .autonomic, state: out ? .low : .inRange, orientedZ: composite)
+    }
+
+    /// The per-signal breakdown of the autonomic composite — a PURE read-out of the exact quantities
+    /// `autonomicAxis` uses (the same oriented z's, the same `den` renormalization, the same
+    /// `respBadZ` cut). It computes no new science and can never move a verdict: `share` mirrors the
+    /// weight each present signal carries in the average, and `flaggedAlone` mirrors the `respOut`
+    /// branch. Ordered by weight (rhr ≥ hrv ≥ resp under the signed defaults).
+    private static func autonomicSignals(hrv: Double?, rhr: Double?, resp: Double?, cfg: Config) -> [SignalRead] {
+        // `den` — sum of the weights of the signals PRESENT tonight — is identical to the composite's
+        // denominator, so `share` is the exact weight each present signal carried in the average.
+        var den = 0.0
+        if hrv  != nil { den += cfg.wHRV }
+        if rhr  != nil { den += cfg.wRHR }
+        if resp != nil { den += cfg.wResp }
+        func share(_ z: Double?, _ w: Double) -> Double { (z != nil && den > 0) ? w / den : 0 }
+        // Same expression as `respOut` in `autonomicAxis`: raw high (bad) = −orientedZ ≥ respBadZ.
+        let respAlone = (resp.map { -$0 }).map { $0 >= cfg.respBadZ } ?? false
+        return [
+            SignalRead(signal: .rhr,  orientedZ: rhr,  share: share(rhr,  cfg.wRHR),  flaggedAlone: false),
+            SignalRead(signal: .hrv,  orientedZ: hrv,  share: share(hrv,  cfg.wHRV),  flaggedAlone: false),
+            SignalRead(signal: .resp, orientedZ: resp, share: share(resp, cfg.wResp), flaggedAlone: respAlone),
+        ]
     }
 
     /// The RAW (pre-hysteresis, pre-trend) body verdict for one day `i`, from its pre-built priors
