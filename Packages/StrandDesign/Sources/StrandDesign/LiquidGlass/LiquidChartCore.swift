@@ -450,9 +450,24 @@ struct LiquidChartPlot: View {
 
     // MARK: Grid + labels del eje Y
 
+    /// Las marcas del eje Y que de verdad CABEN: si dos quedan a menos de una caja de
+    /// línea, la de abajo se salta (/inject: con el dominio acotado, «+0.8 °C» y «+0.4»
+    /// se encimaban en temperatura de piel). La primera siempre entra.
+    private func ticksYVisibles(_ h: CGFloat) -> [(valor: Double, etiqueta: String)] {
+        var out: [(valor: Double, etiqueta: String)] = []
+        var ultimaY: CGFloat = -.greatestFiniteMagnitude
+        for t in ticksY.sorted(by: { $0.valor > $1.valor }) {
+            let ty = y(t.valor, h)
+            if ty - ultimaY < Self.respiroLabelY * 2 && !out.isEmpty { continue }
+            out.append(t)
+            ultimaY = ty
+        }
+        return out
+    }
+
     @ViewBuilder private func grid(_ w: CGFloat, _ h: CGFloat) -> some View {
         let piso = pisoY(h)
-        ForEach(Array(ticksY.enumerated()), id: \.offset) { _, t in
+        ForEach(Array(ticksYVisibles(h).enumerated()), id: \.offset) { _, t in
             let ty = y(t.valor, h)
             Rectangle()
                 .fill(LiquidColor.tinta900.opacity(LiquidChart.gridAlfa))
