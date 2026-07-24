@@ -24,11 +24,22 @@ enum ScreenshotFixtures {
     /// FER-711 adds `calibrating` (the `··` numeral — a strap seen, base not yet seeded) so the
     /// «numeral nunca miente» discipline of the states map is deterministically capturable.
     static func activeState() -> String? {
+        // SIMULATOR-ONLY, ALWAYS. The fixtures write demo routines/sessions/workouts into the REAL
+        // persistent store (TodayView reads them back via loadAll) and those rows OUTLIVE the flag —
+        // on a physical device that permanently pollutes the on-device DB. Screenshot UI tests run on
+        // the simulator, so hard-gating here loses no coverage while making it impossible for a stray
+        // `-noop.fixture` launch arg (e.g. left in a personal Xcode scheme) to contaminate a real
+        // iPhone build. Every fixture consumer (init seed, analysis skip, the fake 9:41 clock) routes
+        // through this one guard, so they all go inert on device together.
+        #if !targetEnvironment(simulator)
+        return nil
+        #else
         guard let raw = UserDefaults.standard.string(forKey: "noop.fixture")?
             .trimmingCharacters(in: .whitespaces).lowercased(),
               ["primed", "strained", "balanced", "rundown", "insufficient",
                "calibrating", "downloading", "train"].contains(raw) else { return nil }
         return raw
+        #endif
     }
 
     /// Seed the synthetic history (dashboard), matching workouts, and a 24h HR trace, then publish it.
