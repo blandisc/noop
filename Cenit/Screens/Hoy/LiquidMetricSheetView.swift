@@ -1116,7 +1116,7 @@ struct LiquidMetricSheetView: View {
                                  activa: i == highlight)
             },
             dominio: nivelesDominio(d, values: window.values),
-            ticksY: nivelesMarcasY(d),
+            ticksY: nivelesMarcasY(d, dominio: nivelesDominio(d, values: window.values)),
             tono: tono,
             // Hoy = el último punto dibujado (paridad marksLastPoint/markedPointHollow
             // :144-145): anillo hueco mientras exploras un nivel que no es el de hoy.
@@ -1168,9 +1168,13 @@ struct LiquidMetricSheetView: View {
     /// donde la hoja vieja decía «60 lpm»— pero SOLO en la marca de arriba: repetirla en
     /// cada tick es ruido de gráfica y la canaleta se ensancha por la etiqueta más larga.
     /// El signo de temperatura de piel lo trae ya `levelsValueFormat` («+0.4»).
-    private func nivelesMarcasY(_ d: MetricLevels.Classification)
+    private func nivelesMarcasY(_ d: MetricLevels.Classification,
+                                dominio: ClosedRange<Double>)
         -> [(valor: Double, etiqueta: String)] {
-        let ticks: [Double] = nivelesTicks(d)
+        // Solo las marcas que CAEN en el dominio visible (/inject): al acotar el dominio,
+        // los umbrales de fuera se dibujaban pegados al borde y el eje mentía («18» en una
+        // gráfica que llega a 14.5).
+        let ticks: [Double] = nivelesTicks(d).filter { dominio.contains($0) }
         let ultimo: Int = ticks.count - 1
         return ticks.indices.map { (i: Int) -> (valor: Double, etiqueta: String) in
             let v: Double = ticks[i]

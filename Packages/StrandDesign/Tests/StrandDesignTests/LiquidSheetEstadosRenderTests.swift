@@ -130,9 +130,13 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
             ("sleep_sindato", sleepSinDato()),
             ("recovery_calibrando", recoveryCalibrando()),
             ("vital_spo2", vitalSpO2()),
+            ("sleep_sin_ventana", sleepSinVentana()),
             ("niveles_reposo_filas", nivelesReposoConFilas()),
+            ("niveles_explorando", nivelesExplorando()),
             ("niveles_ventana_vacia", nivelesVentanaVacia()),
+            ("niveles_cargando", nivelesCargando()),
             ("charts_cargando_vacio", chartsCargandoVacio()),
+            ("sleep_performance", sleepPerformance()),
             ("strain", strain()),
             ("heart_rate", heartRate()),
             ("clasica", clasica()),
@@ -194,7 +198,11 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
                     "Dormir 7 h o más sube tu base a la mañana.",
                 ],
                 tono: LiquidColor.cian)
-            LiquidMetodo(title: "Cómo se calcula") {
+            // B6 · el plegable trae SUS propias etiquetas de VoiceOver: con las del ⓘ
+            // («Mostrar explicación») la hoja anunciaría dos botones idénticos.
+            LiquidMetodo(title: "Cómo se calcula",
+                         mostrar: "Ver cómo se calcula",
+                         ocultar: "Ocultar cómo se calcula") {
                 LiquidNotaLine("SDNN sobre los latidos nocturnos, comparado contra tu base de 21 noches (Task Force, 1996).")
             }
             LiquidVerMas(title: "Ver más en Tendencias", hint: "Abre el detalle completo",
@@ -263,6 +271,11 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
             LiquidSheetHeader(
                 icono: .luna, titulo: "SUEÑO", tono: LiquidColor.indigo,
                 numeral: nil,
+                // B1 · la variante rica pasa `numeral: nil`, y con la procedencia atrapada
+                // dentro de la fila del dato la hoja NO decía de dónde salía la noche
+                // mientras VoiceOver sí lo anunciaba. El fixture la pasa porque la hoja
+                // real la pasa (`origenApple`), o el render no podría desmentir nada.
+                origenEtiqueta: "Apple Salud",
                 explicacion: "Cuánto y qué tan parejo dormiste anoche.",
                 infoMostrar: "Mostrar explicación",
                 infoOcultar: "Ocultar explicación")
@@ -293,6 +306,38 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
             // la hoja REAL, no la anterior.
         }
         .environment(\.dynamicTypeSize, tamano))
+    }
+
+    /// §1.3 · Sueño con la noche del FALLBACK DIARIO de Apple (B7/D10): `startTs == endTs`
+    /// ⇒ sin ventana que afirmar, y `awake == 0` por construcción ⇒ sin etapa «Despierto».
+    /// Ni «6:00 → 6:00» ni «DESPIERTO 0:00»: los tres segmentos medidos reparten la barra
+    /// completa (y se comen el gap fantasma del segmento de ancho 0).
+    @MainActor
+    private static func sleepSinVentana() -> AnyView {
+        columna(tone: LiquidColor.indigo) {
+            LiquidSheetHeader(
+                icono: .luna, titulo: "SUEÑO", tono: LiquidColor.indigo,
+                numeral: nil, origenEtiqueta: "Apple Salud",
+                explicacion: "Cuánto y qué tan parejo dormiste anoche.",
+                infoMostrar: "Mostrar explicación",
+                infoOcultar: "Ocultar explicación")
+            LiquidDobleDato(
+                principal: (valor: "6:45", etiqueta: "horas dormido"),
+                secundario: (valor: "71", etiqueta: "regularidad"),
+                tono: LiquidColor.indigo)
+            LiquidStageBar(
+                etapas: [
+                    .init(minutos: 84, color: LiquidColor.indigo,
+                          etiqueta: "Profundo", duracion: "1:24"),
+                    .init(minutos: 96, color: LiquidColor.indigo.opacity(0.78), // token-exempt: rampa graduada de etapas
+                          etiqueta: "REM", duracion: "1:36"),
+                    .init(minutos: 225, color: LiquidColor.indigo.opacity(0.52), // token-exempt: rampa graduada de etapas
+                          etiqueta: "Ligero", duracion: "3:45"),
+                    .init(minutos: 0, color: LiquidColor.oro,
+                          etiqueta: "Despierto", duracion: "0:00"),
+                ],
+                overline: "Anoche")
+        }
     }
 
     /// §1.3 · Sueño cargando async: el skeleton NUEVO de F5 bajo el header de sueño.
@@ -595,6 +640,90 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
         }
     }
 
+    /// §6-F3b (A4 · D12) · EXPLORANDO un carril: el usuario tocó la fila «Arriba de tu
+    /// base», que no es la de hoy. Es el único estado donde los puntos se apagan fuera de
+    /// la banda iluminada (`atenuarFuera`) — en reposo van todos a tono pleno y la banda
+    /// activa se dice sola con su wash — y donde «hoy» conserva su anillo HUECO para no
+    /// perderse mientras se mira otro nivel.
+    @MainActor
+    private static func nivelesExplorando() -> AnyView {
+        let puntos = serieDiaria(dias: 21, base: 58, onda: 13)
+        // Los conteos se DERIVAN de la serie (mismos cortes que `bandasVFC`: > 63 · 48–63 ·
+        // < 48). Escritos a mano, la fila afirmaría «5 noches» mientras el ojo cuenta ocho
+        // bolitas encendidas dentro del wash — el render dejaría de ser evidencia.
+        func cuenta(_ lo: Double?, _ hi: Double?) -> Int {
+            puntos.reduce(0) { n, p in
+                let dentro = (lo == nil || p.valor >= lo!) && (hi == nil || p.valor < hi!)
+                return n + (dentro ? 1 : 0)
+            }
+        }
+        let nArriba = cuenta(63, nil), nBase = cuenta(48, 63), nAbajo = cuenta(nil, 48)
+        // El plural lo resuelve el caller (en la app, `BandSummaryCopy.countLabel` con la
+        // variación del catálogo): «1 noches» delataría un fixture que no pasó por ahí.
+        func noches(_ n: Int) -> String { "\(n) " + (n == 1 ? "noche" : "noches") }
+        let grafica = LiquidGraficaNiveles(
+            puntos: puntos,
+            bandas: bandasVFC(activa: 0),
+            dominio: 30...95,
+            ticksY: [(63, "63"), (48, "48")],
+            tono: LiquidColor.cian,
+            puntoHoy: (puntos[puntos.count - 1].fecha, puntos[puntos.count - 1].valor),
+            hoyAnillo: true,
+            formatoScrub: { (v: Double, f: Date) in "\(Int(v.rounded())) ms · \(popupDia(f))" },
+            formatoValorScrub: { (v: Double) in "\(Int(v.rounded())) ms" },
+            formatoFechaScrub: popupDia,
+            formatoFechaEje: ejeDia,
+            atenuarFuera: true,
+            estadoVacio: "Sin lecturas en este rango",
+            a11yLabel: "VFC por noche")
+        return columna(tone: LiquidColor.cian) {
+            LiquidSheetHeader(
+                icono: .onda, titulo: "VFC", tono: LiquidColor.cian,
+                numeral: "56", unidad: "ms",
+                origenEtiqueta: "Apple Salud · anoche")
+            // La frase re-lee el nivel EXPLORADO, no el de hoy (paridad NIV-03).
+            LiquidFraseNivel(nivel: "Arriba de tu base",
+                             conteo: "\(nArriba) de tus últimas \(puntos.count) noches",
+                             tono: LiquidColor.cian)
+            grafica
+            LiquidLevelRow(etiqueta: "Arriba de tu base", rango: "> 63",
+                           conteo: noches(nArriba),
+                           esHoy: false, activa: true, tono: LiquidColor.cian, onTap: {})
+            LiquidLevelRow(etiqueta: "En tu base", rango: "48–63", conteo: noches(nBase),
+                           esHoy: true, activa: false, tono: LiquidColor.cian,
+                           hoyEtiqueta: "· hoy", onTap: {})
+            LiquidLevelRow(etiqueta: "Debajo de tu base", rango: "< 48",
+                           conteo: noches(nAbajo),
+                           esHoy: false, activa: false, tono: LiquidColor.cian, onTap: {})
+        }
+    }
+
+    /// §6-F3b (D7) · El explorador CARGANDO: mientras la serie viaja, el esqueleto del
+    /// mismo alto — no el pozo de vacío con la palabra «Cargando» dentro, y sobre todo no
+    /// las filas en «0 de tus últimos 0 días», que era una mentira momentánea de la hoja
+    /// vieja. La hoja no brinca cuando llegan los datos porque los tres estados miden igual.
+    @MainActor
+    private static func nivelesCargando() -> AnyView {
+        columna(tone: LiquidColor.cian) {
+            LiquidSheetHeader(
+                icono: .onda, titulo: "VFC", tono: LiquidColor.cian,
+                numeral: "56", unidad: "ms",
+                origenEtiqueta: "Apple Salud · anoche")
+            LiquidGraficaNiveles(
+                puntos: [], bandas: [], dominio: 0.0...1.0, ticksY: [],
+                tono: LiquidColor.cian,
+                estado: .cargando,
+                estadoVacio: "",
+                a11yLabel: "VFC por noche")
+            LiquidGraficaNiveles(
+                puntos: [], bandas: [], dominio: 0.0...1.0, ticksY: [],
+                tono: LiquidColor.cian,
+                estado: .vacio("Sin lecturas en este rango"),
+                estadoVacio: "Sin lecturas en este rango",
+                a11yLabel: "VFC por noche")
+        }
+    }
+
     /// §6-F3b · Ventana VACÍA (fellBack): la gráfica muestra su estado vacío.
     @MainActor
     private static func nivelesVentanaVacia() -> AnyView {
@@ -636,6 +765,72 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
                 formatoScrub: { v, _ in "\(Int(v.rounded()))" },
                 estado: .vacio("Sin datos de los últimos 14 días"),
                 a11yLabel: "Tendencia FC en reposo")
+        }
+    }
+
+    /// §1.5 (C1 · D13) · Rendimiento de sueño: la rama CLÁSICA que solo se alcanza desde el
+    /// Detalle de Sueño, y el único sitio donde se ve el arreglo de las cotas del catálogo.
+    /// Sus tres bandas venían SIN cotas: una banda sin cotas contiene cualquier valor, así
+    /// que la hoja decía «14 de las últimas 14 noches en este rango» y la tabla «14 / 0 / 0»
+    /// pasara lo que pasara. Aquí los conteos y el readout se DERIVAN de la serie (< 70 ·
+    /// 70–85 · ≥ 85, semiabiertas), así que el fixture no puede contradecirse a sí mismo, y
+    /// los mismos cortes entran como washes al trend (antes iba `bandas: []`: una polilínea
+    /// desnuda bajo una tabla que sí clasificaba).
+    @MainActor
+    private static func sleepPerformance() -> AnyView {
+        let puntos = serieDiaria(dias: 14, base: 84, onda: 11).map {
+            (fecha: $0.fecha, valor: min(max($0.valor, 58), 100))
+        }
+        let cortes: [(lo: Double?, hi: Double?, etiqueta: String, rango: String)] = [
+            (85, nil, "Óptimo", "85 – 100%"),
+            (70, 85, "Adecuado", "70 – 85%"),
+            (nil, 70, "Bajo", "< 70%"),
+        ]
+        func cuenta(_ lo: Double?, _ hi: Double?) -> Int {
+            puntos.reduce(0) { n, p in
+                let dentro = (lo == nil || p.valor >= lo!) && (hi == nil || p.valor < hi!)
+                return n + (dentro ? 1 : 0)
+            }
+        }
+        // La banda ACTIVA es la de la última noche — la misma que nombra el readout y la
+        // que se ilumina en la gráfica (un solo índice manda sobre los tres sitios).
+        let ultima = puntos[puntos.count - 1].valor
+        let iActiva = cortes.firstIndex { c in
+            (c.lo == nil || ultima >= c.lo!) && (c.hi == nil || ultima < c.hi!)
+        } ?? 0
+        let trend = LiquidTrendChart(
+            titulo: "Últimos 14 días",
+            readout: (etiqueta: cortes[iActiva].etiqueta, tono: LiquidColor.indigo,
+                      frase: "\(cuenta(cortes[iActiva].lo, cortes[iActiva].hi)) de las últimas \(puntos.count) noches en este rango"),
+            puntos: puntos,
+            bandas: cortes.enumerated().map { (i, c) in
+                .init(lo: c.lo, hi: c.hi, color: LiquidColor.indigo, activa: i == iActiva)
+            },
+            dominio: 55...105,
+            ticksY: [(85, "85%"), (70, "70%")],
+            tono: LiquidColor.indigo,
+            formatoScrub: { (v: Double, f: Date) in "\(Int(v.rounded())) % · \(popupDia(f))" },
+            formatoValorScrub: { (v: Double) in "\(Int(v.rounded())) %" },
+            formatoFechaScrub: popupDia,
+            formatoFechaEje: ejeDia,
+            estado: .datos,
+            a11yLabel: "Rendimiento de sueño, últimos 14 días")
+        return columna(tone: LiquidColor.indigo) {
+            LiquidSheetHeader(
+                icono: .luna, titulo: "RENDIMIENTO", tono: LiquidColor.indigo,
+                numeral: "\(Int(ultima.rounded()))%",
+                origenEtiqueta: "Apple Salud · anoche",
+                explicacion: "Cuánto dormiste contra lo que tu cuerpo necesita. Al 100 % cubriste la necesidad de anoche.",
+                infoMostrar: "Mostrar explicación",
+                infoOcultar: "Ocultar explicación")
+            trend
+            LiquidBandsTable(
+                filas: cortes.enumerated().map { (i, c) in
+                    .init(etiqueta: c.etiqueta, rango: c.rango,
+                          conteo: "\(cuenta(c.lo, c.hi)) noches", activa: i == iActiva)
+                },
+                tono: LiquidColor.indigo)
+            LiquidNotaLine("Tu necesidad es tu propio promedio de las últimas noches, nunca menos de 7.5 h.")
         }
     }
 

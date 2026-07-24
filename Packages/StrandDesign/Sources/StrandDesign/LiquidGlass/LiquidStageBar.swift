@@ -113,10 +113,7 @@ public struct LiquidStageBar: View {
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(verbatim: overline))
-        .accessibilityValue(Text(verbatim:
-            (etapasVisibles.map { "\($0.etiqueta) \($0.duracion)" }
-                + [ventana].compactMap { $0 })
-                .joined(separator: ", ")))
+        .accessibilityValue(Text(verbatim: Self.a11yValue(etapas: etapas, ventana: ventana)))
     }
 
     /// Fila de 4 items; en tamaños de accesibilidad, rejilla 2×2 (el cambio es SOLO visual:

@@ -133,6 +133,73 @@ final class LiquidGlassTests: XCTestCase {
         XCTAssertEqual(LiquidChartA11y.indice(nil, 0), 0, "serie vacía no puede desbordar")
     }
 
+    /// A5 · Orden defensivo del plot. La serie se DIBUJA ordenada por fecha (con
+    /// `mapeoPorTiempo` una serie revuelta rompe `fraccionTiempo`, que toma `first`/`last`
+    /// como extremos del span), pero el índice que se publica —`onScrub`, y el `scrubFijo`
+    /// que se recibe— pertenece al arreglo del CALLER. Sin la traducción, VoiceOver
+    /// nombraría un día y el anillo se pararía sobre otro.
+    func test_plot_ordenDefensivo_traduceIndicesAlCaller() {
+        let t0 = Date(timeIntervalSinceReferenceDate: 774_500_000)
+        func dia(_ d: Int) -> Date { t0.addingTimeInterval(Double(d) * 86_400) }
+        // Revuelta a propósito: el caller la pasa así, el plot la ordena.
+        let revuelta: [(fecha: Date, valor: Double)] = [
+            (dia(2), 52), (dia(0), 58), (dia(3), 61), (dia(1), 47),
+        ]
+        let plot = LiquidChartPlot(puntos: revuelta, bandas: [], dominio: 40...70,
+                                   ticksY: [], tono: .cyan, puntoHoy: nil, hoyAnillo: false,
+                                   alto: 168)
+        XCTAssertEqual(plot.puntos.map(\.valor), [58, 47, 52, 61], "el plot dibuja ordenado")
+        XCTAssertEqual(plot.ordenOriginal, [1, 3, 0, 2],
+                       "cada punto dibujado recuerda su índice en el arreglo del caller")
+        // Ida y vuelta: el punto que el plot dibuja en la posición k es el del caller en
+        // `ordenOriginal[k]`, y su valor coincide.
+        for (k, orig) in plot.ordenOriginal.enumerated() {
+            XCTAssertEqual(plot.puntos[k].valor, revuelta[orig].valor)
+            XCTAssertEqual(plot.puntos[k].fecha, revuelta[orig].fecha)
+        }
+        // Camino rápido: una serie YA ordenada no se toca (identidad, sin copias).
+        let ordenada: [(fecha: Date, valor: Double)] = (0..<5).map { (dia($0), Double(50 + $0)) }
+        let plot2 = LiquidChartPlot(puntos: ordenada, bandas: [], dominio: 40...70,
+                                    ticksY: [], tono: .cyan, puntoHoy: nil, hoyAnillo: false,
+                                    alto: 168)
+        XCTAssertEqual(plot2.ordenOriginal, Array(0..<5))
+    }
+
+    /// B7 · Una etapa de 0 minutos NO existe para la barra de la noche: con el fallback
+    /// diario de Apple `awake` llega en 0 por construcción y la leyenda imprimía
+    /// «DESPIERTO 0:00», insinuando una medición que nunca ocurrió. Y la ventana solo entra
+    /// a VoiceOver cuando el caller la pudo afirmar («6:00 → 6:00» no es un horario).
+    func test_stageBar_etapasEnCeroNoExisten() {
+        let etapas: [LiquidStageBar.Etapa] = [
+            .init(minutos: 91, color: .indigo, etiqueta: "Profundo", duracion: "1:31"),
+            .init(minutos: 104, color: .indigo, etiqueta: "REM", duracion: "1:44"),
+            .init(minutos: 190, color: .indigo, etiqueta: "Ligero", duracion: "3:10"),
+            .init(minutos: 0, color: .yellow, etiqueta: "Despierto", duracion: "0:00"),
+        ]
+        XCTAssertEqual(LiquidStageBar.visibles(etapas).map(\.etiqueta),
+                       ["Profundo", "REM", "Ligero"])
+        XCTAssertEqual(LiquidStageBar.a11yValue(etapas: etapas, ventana: nil),
+                       "Profundo 1:31, REM 1:44, Ligero 3:10")
+        XCTAssertEqual(LiquidStageBar.a11yValue(etapas: etapas, ventana: "23:38 → 7:04"),
+                       "Profundo 1:31, REM 1:44, Ligero 3:10, 23:38 → 7:04")
+        // Noche sin medir: el componente no inventa nada (es el CALLER quien no debe
+        // pintar la barra — `sleepEtapasMedidas` en la hoja).
+        let ninguna = etapas.map {
+            LiquidStageBar.Etapa(minutos: 0, color: $0.color,
+                                 etiqueta: $0.etiqueta, duracion: "0:00")
+        }
+        XCTAssertTrue(LiquidStageBar.visibles(ninguna).isEmpty)
+        XCTAssertEqual(LiquidStageBar.a11yValue(etapas: ninguna, ventana: nil), "")
+    }
+
+    /// B4 · La unidad del numeral ESCALA con Dynamic Type. Era `Font.system(size: 13)`
+    /// duro: junto a un numeral que sí crecía, en `.xxxLarge` la unidad se quedaba enana.
+    /// El test fija el estilo relativo, que es lo que macOS sí puede verificar (el escalado
+    /// real solo se ve en el canvas de iOS: `ImageRenderer` de AppKit no escala fuentes).
+    func test_type_unidadDelNumeralEscala() {
+        XCTAssertEqual(LiquidType.numeralHojaUnidad, Font.system(.footnote))
+    }
+
     // MARK: Contrato de motion
 
     func test_motion_duraciones() {
