@@ -35,6 +35,17 @@ public struct LiquidMetricSheet<Content: View>: View {
 
     @State private var altoMedido: CGFloat = 0
 
+    /// El alto con el que la hoja ABRE, congelado con la primera medición utilizable.
+    /// Es el detent SELECCIONADO, así que no puede seguir a `altoMedido`: si lo siguiera,
+    /// abrir el ⓘ (que crece) subiría la hoja de golpe — justo lo que el dueño prohibió.
+    @State private var altoApertura: CGFloat = 0
+
+    /// Detent vigente. Sin selección explícita iOS conserva el que ya estaba —el `.large`
+    /// con el que la hoja se presenta mientras mide— y las hojas con instrumento se
+    /// quedaban clavadas en pantalla completa (la hoja vieja abría a la medida porque su
+    /// conjunto tenía un solo detent, `MetricInfoSheet:277`).
+    @State private var seleccion: PresentationDetent
+
     /// `cargando` evita fijar la altura con un frame que todavía no tiene el contenido
     /// (pasada UX H1): sin esto la hoja se congelaba a la medida del ESQUELETO y el
     /// contenido rico quedaba apretado en cuanto llegaba.
@@ -44,6 +55,8 @@ public struct LiquidMetricSheet<Content: View>: View {
         self.detent = detent
         self.cargando = cargando
         self.content = content()
+        let inicial: PresentationDetent = (detent == .medio) ? .medium : .large
+        _seleccion = State(initialValue: inicial)
     }
 
     public var body: some View {
@@ -59,21 +72,31 @@ public struct LiquidMetricSheet<Content: View>: View {
                 Color.clear.preference(key: LiquidSheetAltoKey.self, value: geo.size.height)
             })
         }
-        // La altura se fija con la PRIMERA medición (pedido del dueño /inject): si se
-        // re-midiera, abrir el ⓘ agrandaría la hoja y todo saltaría hacia ARRIBA; con la
-        // altura fija, la explicación empuja el contenido hacia abajo dentro del scroll.
+        // El alto del contenido CRECE, nunca encoge (pedido del dueño /inject): con el
+        // detent de apertura congelado, abrir el ⓘ empuja el contenido hacia abajo dentro
+        // del scroll en vez de saltar hacia ARRIBA.
+        // Re-medir hacia abajo con un umbral ciego (por el hueco al cambiar de rango) se
+        // evaluó y se DESCARTÓ: cerrar el ⓘ también encoge, y encogerlo ahí es justo el
+        // salto prohibido. Si el hueco llega a molestar, atarlo a la CAUSA (el rango
+        // seleccionado), no a un delta.
         .onPreferenceChange(LiquidSheetAltoKey.self) { nuevo in
-            // La altura CRECE, nunca encoge, y nunca se fija con un frame de carga.
-            // Congelarla en la PRIMERA medición (intento anterior) la dejaba clavada con
-            // un layout a medio resolver y la hoja abría corta. Al toparse con el techo
-            // de la pantalla deja de crecer, y ahí el ⓘ empuja el contenido hacia abajo
-            // dentro del scroll — que es lo que el dueño pidió.
+            // Nunca se fija con un frame de carga; y congelar `altoMedido` en la primera
+            // medición (intento anterior) lo dejaba clavado con un layout a medio resolver
+            // y la hoja abría corta — por eso el que se congela es el detent, no la medida.
             guard !cargando else { return }
             if nuevo > altoMedido { altoMedido = nuevo }
+            // La hoja abre a la medida de su contenido. Bajo un mínimo razonable no vale
+            // la pena la medida — mejor abrir en `.large` que en una rendija. El detent
+            // de apertura se fija UNA vez: `altoMedido` sigue creciendo, pero sólo para
+            // el conjunto.
+            if detent == .porContenido, altoApertura == 0, altoMedido > 320 {
+                altoApertura = altoMedido
+                seleccion = .height(altoMedido)
+            }
         }
         .presentationBackground { LiquidSheetFondo(tone: tono) }
         .presentationDragIndicator(.visible)
-        .presentationDetents(detents)
+        .presentationDetents(detents, selection: $seleccion)
         .presentationCornerRadius(LiquidRadius.hoja)
     }
 
@@ -84,10 +107,13 @@ public struct LiquidMetricSheet<Content: View>: View {
             // Type grande, leer 15 líneas por media pantalla sin poder crecer es hostil.
             return [.medium, .large]
         case .porContenido:
-            // `.large` acompaña a la altura medida: con contenido largo la hoja se
-            // quedaba sin a dónde crecer y el scroll moría. Bajo un mínimo razonable no
-            // vale la pena la medida — mejor abrir en `.large` que en una rendija.
-            return altoMedido > 320 ? [.height(altoMedido), .large] : [.large]
+            guard altoApertura > 0 else { return [.large] }
+            // `.height(altoApertura)` es el detent seleccionado: nunca sale del conjunto,
+            // o iOS reasignaría la selección y la hoja se re-dimensionaría sola.
+            // `.height(altoMedido)` acompaña al contenido que ya creció (el ⓘ abierto) y
+            // `.large` deja el tope siempre a mano: sin él la hoja se quedaba sin a dónde
+            // crecer y el scroll moría.
+            return [.height(altoApertura), .height(altoMedido), .large]
         }
     }
 }

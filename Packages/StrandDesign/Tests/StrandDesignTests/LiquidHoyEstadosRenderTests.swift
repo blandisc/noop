@@ -52,11 +52,12 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
             hero: .veredicto(title: "Bien,\ncon un detalle", highlight: "un detalle",
                              highlightTone: LiquidColor.atencion,
                              subtitle: "Vas bien, con un detalle a vigilar.",
-                             confianza: "Confianza: 12 de 21 noches"),
+                             confianza: "Confianza: 8 de 14 noches"),
             carga: .medida(pos: 62, zone: 2, status: "ALTA", ratio: "1.32", state: .atencion),
             metricas: base.metricas,
             heroHint: base.heroHint,
-            ambiente: .atencion)
+            ambiente: .atencion,
+            heroPuerta: "Cómo llegué a esto")
 
         // 3 · «Ándate leve» (rojo): dos ejes fuera.
         let rojo = LiquidHoyModel(
@@ -77,7 +78,8 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
             carga: .medida(pos: 78, zone: 3, status: "MUY ALTA", ratio: "1.61", state: .atencion),
             metricas: base.metricas,
             heroHint: base.heroHint,
-            ambiente: .alerta)
+            ambiente: .alerta,
+            heroPuerta: "Cómo llegué a esto")
 
         // 4 · «Lectura de día» (neutro): sin noche grabada.
         let lectura = LiquidHoyModel(
@@ -97,7 +99,8 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
             carga: .medida(pos: 51.5, zone: 1, status: "EN EQUILIBRIO", ratio: "1.03", state: .ok),
             metricas: base.metricas,
             heroHint: base.heroHint,
-            ambiente: .neutro)
+            ambiente: .neutro,
+            heroPuerta: "Cómo llegué a esto")
 
         // 5 · «Aún sin datos suficientes» (neutro): nada vota.
         let sinDatos = LiquidHoyModel(
@@ -117,7 +120,8 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
             carga: .calibrando(status: "CALIBRANDO"),
             metricas: base.metricas,
             heroHint: nil,
-            ambiente: .neutro)
+            ambiente: .neutro,
+            heroPuerta: "Cómo llegué a esto")
 
         return [("1_verde", base), ("2_ambar", ambar), ("3_rojo", rojo),
                 ("4_lectura", lectura), ("5_sindatos", sinDatos)]

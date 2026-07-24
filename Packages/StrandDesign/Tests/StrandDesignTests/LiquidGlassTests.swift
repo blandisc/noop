@@ -253,6 +253,38 @@ final class LiquidGlassTests: XCTestCase {
             "Dale con todo. Tus 3 señales amanecieron dentro de tu rango. Confianza: 12 de 21 noches")
     }
 
+    /// La AFORDANCIA del héroe («Cómo llegué a esto») entra al label en el ORDEN de la
+    /// pantalla: subtítulo → puerta → confianza. Es lo único que le dice a VoiceOver que
+    /// ahí se toca; si se cayera del label, el héroe volvería a ser un titular mudo para
+    /// quien no ve la pastilla de vidrio.
+    func test_a11y_heroPuerta() {
+        // Base joven: puerta Y confianza, en ese orden.
+        XCTAssertEqual(
+            LiquidHeroVeredicto.a11yLabel(title: "Bien,\ncon un detalle",
+                                          subtitle: "Tu sueño amaneció debajo de tu base.",
+                                          puerta: "Cómo llegué a esto",
+                                          confianza: "Confianza: 8 de 14 noches"),
+            "Bien, con un detalle. Tu sueño amaneció debajo de tu base. Cómo llegué a esto. Confianza: 8 de 14 noches")
+        // Base firme: sólo puerta.
+        XCTAssertEqual(
+            LiquidHeroVeredicto.a11yLabel(title: "Dale\ncon todo",
+                                          subtitle: "Amaneciste en tu base.",
+                                          puerta: "Cómo llegué a esto", confianza: nil),
+            "Dale con todo. Amaneciste en tu base. Cómo llegué a esto")
+        // Sin puerta: el contrato viejo intacto (ningún caller sin migrar cambia de voz).
+        XCTAssertEqual(
+            LiquidHeroVeredicto.a11yLabel(title: "Dale\ncon todo",
+                                          subtitle: "Amaneciste en tu base.", confianza: nil),
+            "Dale con todo. Amaneciste en tu base.")
+        // Héroe DEMOTADO: compone con el mismo helper, con el kicker al frente. Es el
+        // estado donde más se pregunta «¿por qué?» y el que antes no ofrecía ninguna pista.
+        XCTAssertEqual(
+            LiquidHeroVeredicto.a11yLabel(title: "LECTURA DE DÍA. Tus señales del día están en tu rango.",
+                                          subtitle: "Sin lectura de sueño anoche; esto es menos preciso.",
+                                          puerta: "Cómo llegué a esto", confianza: nil),
+            "LECTURA DE DÍA. Tus señales del día están en tu rango. Sin lectura de sueño anoche; esto es menos preciso. Cómo llegué a esto")
+    }
+
     // MARK: Contratos a11y — hoja de resumen (QA F0-F2 D4)
 
     func test_a11y_sheetHeader() {

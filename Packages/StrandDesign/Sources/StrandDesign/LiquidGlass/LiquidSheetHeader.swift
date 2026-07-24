@@ -25,7 +25,11 @@ public struct LiquidSheetHeader: View {
     private let explicacion: String?
     private let infoMostrar: String?
     private let infoOcultar: String?
-    private let a11y: String
+    /// Interno (no `private`) a propósito: es el contrato de VoiceOver de la cabecera y el
+    /// único punto donde se ve que el `init` compone el label con TODAS sus piezas — el
+    /// defecto C1 fue justo que el `init` no pasaba el sufijo, algo que un test de la
+    /// función estática no puede atrapar.
+    let a11y: String
 
     @State private var explicacionAbierta = false
     @ScaledMetric(relativeTo: .footnote) private var explicacionSize = LiquidType.lecturaHojaBase
@@ -38,8 +42,8 @@ public struct LiquidSheetHeader: View {
     ///
     /// L5 · a11y del ⓘ: `infoMostrar`/`infoOcultar` son la etiqueta de VoiceOver del botón
     /// («Mostrar explicación» / «Ocultar explicación»), YA localizadas por el caller — el DS
-    /// no conoce locales. Si llegan `nil` se conserva el contrato viejo (label = rótulo +
-    /// value «1»/«0»), para que ningún caller sin migrar pierda su a11y en silencio.
+    /// no conoce locales. Si llegan `nil` el label cae al rótulo del dato, para que ningún
+    /// caller sin migrar pierda su a11y en silencio.
     public init(icono: LiquidIcon.Glyph?, titulo: String, tono: Color,
                 numeral: String?, unidad: String? = nil, sufijo: String? = nil,
                 numeralTono: Color? = nil, origen: LiquidOrigen? = nil,
@@ -59,7 +63,8 @@ public struct LiquidSheetHeader: View {
         self.infoMostrar = infoMostrar
         self.infoOcultar = infoOcultar
         self.a11y = a11yLabel ?? Self.a11yLabel(titulo: titulo, numeral: numeral,
-                                                unidad: unidad, origen: origenEtiqueta)
+                                                unidad: unidad, sufijo: sufijo,
+                                                origen: origenEtiqueta)
     }
 
     /// L5 · Dynamic Type: en tamaños grandes la fila del numeral deja de truncar y envuelve
@@ -173,12 +178,27 @@ public struct LiquidSheetHeader: View {
         .accessibilityElement(children: .contain)
     }
 
-    /// «{titulo}, {numeral} {unidad}[, {origen}]» — contrato de VoiceOver (testeable en frío).
+    /// «{titulo}, {numeral} {unidad} {sufijo}[, {origen}]» — contrato de VoiceOver
+    /// (testeable en frío).
+    ///
+    /// C1 · El `sufijo` («/ 21», «/ 100») entra al label. La hoja vieja lo tenía como `Text`
+    /// suelto —una parada fea, pero la escala SÍ se oía—; al fusionar la fila del dato en una
+    /// sola parada (`children: .ignore`) el denominador se perdía y VoiceOver decía «Esfuerzo
+    /// del día, 10.0, Calculado» sobre una pantalla que muestra «10.0 / 21».
+    /// Va con valor por omisión: los callers que no tienen sufijo no cambian.
+    ///
+    /// C2 · Con `numeral == "—"` el CUERPO ya oculta unidad y sufijo; la voz los seguía
+    /// concatenando y decía «VFC, — ms» sobre una pantalla que solo muestra «—». Mismo guard.
     static func a11yLabel(titulo: String, numeral: String?, unidad: String?,
-                          origen: String?) -> String {
+                          sufijo: String? = nil, origen: String?) -> String {
         var parts = [titulo]
         if let numeral {
-            parts.append(unidad.map { "\(numeral) \($0)" } ?? numeral)
+            var dato = numeral
+            if numeral != "—" {
+                if let unidad { dato += " \(unidad)" }
+                if let sufijo { dato += " \(sufijo)" }
+            }
+            parts.append(dato)
         }
         if let origen { parts.append(origen) }
         return parts.joined(separator: ", ")
@@ -192,8 +212,17 @@ public struct LiquidSheetHeader: View {
 // El área táctil crece hacia el interior del layout (`alineacion` ancla el GLIFO al borde
 // que ya ocupaba), así que el ⓘ no se mueve de su sitio al ganar los 44 pt.
 //
-// Contrato: los strings de VoiceOver llegan YA localizados del caller. Sin ellos conserva
-// el contrato viejo (label = rótulo del dato + value «1»/«0»), nunca inventa copy.
+// Contrato: los strings de VoiceOver llegan YA localizados del caller. Sin ellos cae al
+// rótulo del dato, nunca inventa copy.
+//
+// C3 · El estado plegado/desplegado NO se expone con un rasgo: vive en el NOMBRE de la
+// acción («Mostrar explicación» ⇄ «Ocultar explicación»), que es el patrón de Apple cuando
+// no hay rasgo de expansión. `.isSelected` haría que VoiceOver diga «seleccionado» sobre un
+// ⓘ que no es seleccionable, y el único rasgo real de expansión
+// (`UIAccessibility.ExpandedStatus`) es iOS 18+ y de UIKit — el mínimo del paquete es
+// iOS 17 y `SwiftUI.AccessibilityTraits` no tiene equivalente. Si el mínimo sube a 18,
+// reevaluar. Por la misma razón que el pie (`LiquidMetodo`), aquí tampoco hay
+// `accessibilityValue` «1»/«0»: VoiceOver leía «VFC, uno», que no significa nada.
 struct LiquidInfoBoton: View {
     @Binding var abierto: Bool
     let mostrar: String?
@@ -232,12 +261,7 @@ struct LiquidInfoBoton: View {
         }
         .buttonStyle(.liquidPress)
 
-        if let etiquetaVO {
-            boton.accessibilityLabel(Text(verbatim: etiquetaVO))
-        } else {
-            boton.accessibilityLabel(Text(verbatim: rotulo))
-                .accessibilityValue(Text(verbatim: abierto ? "1" : "0"))
-        }
+        boton.accessibilityLabel(Text(verbatim: etiquetaVO ?? rotulo))
     }
 }
 
@@ -251,7 +275,7 @@ struct LiquidInfoBoton: View {
                           explicacion: "La variación entre latidos mientras duermes — tu señal más temprana de recuperación.",
                           infoMostrar: "Mostrar explicación",
                           infoOcultar: "Ocultar explicación")
-        // ⓘ sin etiquetas: contrato viejo (label = rótulo, value 1/0), mismo target 44.
+        // ⓘ sin etiquetas: el label cae al rótulo del dato, mismo target 44.
         LiquidSheetHeader(icono: nil, titulo: "RECUPERACIÓN", tono: LiquidColor.verdePrimario,
                           numeral: "78", sufijo: "/ 100",
                           numeralTono: LiquidColor.verdeProfundo, origen: .calculado,

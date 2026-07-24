@@ -119,12 +119,20 @@ public struct LiquidGraficaNiveles: View {
     /// VoiceOver lee el punto SCRUBBEADO (o el último) con la frase compuesta del caller
     /// — paridad GraficaRangos. El DS nunca une valor + fecha por su cuenta: si el caller
     /// no dio la frase compuesta, se degrada al valor solo (contrato D3).
-    private var valorA11y: String {
+    ///
+    /// Interno (no `private`) para que el contrato se pruebe en frío: es justo el tipo de
+    /// defecto que ningún compilador atrapa — dos ramas que deciden lo MISMO con umbrales
+    /// distintos (ver el `guard` de abajo).
+    var valorA11y: String {
         // Cargando no se anuncia con copy inventado: el rótulo del caller basta (el DS no
         // tiene catálogo, D3).
         if case .cargando = estado { return "" }
         if case .vacio(let mensaje) = estado { return mensaje }
-        guard !puntos.isEmpty else { return estadoVacio }
+        // E2 · el MISMO umbral que decide el pozo en `body` (`puntos.count > 1`). Con
+        // `!puntos.isEmpty` la voz y la pantalla se contradecían: con UNA sola lectura
+        // VoiceOver anunciaba «56 ms» mientras la pantalla decía «No hay lecturas en este
+        // rango» — el caso del usuario nuevo, que es justo quien más depende de la voz.
+        guard puntos.count > 1 else { return estadoVacio }
         let i: Int = LiquidChartA11y.indice(iScrub, puntos.count)
         let p = puntos[i]
         if let f = formatoScrub { return f(p.valor, p.fecha) }

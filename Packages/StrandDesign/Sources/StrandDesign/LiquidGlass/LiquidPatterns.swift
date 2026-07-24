@@ -450,22 +450,27 @@ private struct CablePath: Shape {
 
 /// El veredicto matinal: display/xl centrado con la palabra clave en el tono del estado
 /// (verde para «dale», atención para los matices) y el subtítulo cuerpo a 8 pt.
-/// `confianza` es el tether honesto ya localizado («Confianza: 12 de 21 noches»), opcional.
+/// `puerta` es la AFORDANCIA de descubrimiento ya localizada («Cómo llegué a esto»): la
+/// pastilla de vidrio con chevron que dice que el héroe se toca — el ÚNICO rótulo permanente
+/// bajo el veredicto. `confianza` es el tether honesto («Confianza: 8 de 14 noches»), que
+/// baja a línea secundaria cuando ya hay puerta y solo aparece mientras la base es joven.
 public struct LiquidHeroVeredicto: View {
     private let title: String
     private let highlight: String
     private let highlightTone: Color
     private let subtitle: String
+    private let puerta: String?
     private let confianza: String?
 
     /// `highlight` debe aparecer dentro de `title` (se pinta su última ocurrencia).
     public init(title: String, highlight: String,
                 highlightTone: Color = LiquidColor.verdePrimario,
-                subtitle: String, confianza: String? = nil) {
+                subtitle: String, puerta: String? = nil, confianza: String? = nil) {
         self.title = title
         self.highlight = highlight
         self.highlightTone = highlightTone
         self.subtitle = subtitle
+        self.puerta = puerta
         self.confianza = confianza
     }
 
@@ -479,19 +484,22 @@ public struct LiquidHeroVeredicto: View {
                 }
             }
             .multilineTextAlignment(.center)
-            LiquidHeroSubtitle(subtitle: subtitle, confianza: confianza)
+            LiquidHeroSubtitle(subtitle: subtitle, puerta: puerta, confianza: confianza)
         }
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .ignore)
         .accessibilityAddTraits(.isHeader)
-        .accessibilityLabel(Self.a11yLabel(title: title, subtitle: subtitle, confianza: confianza))
+        .accessibilityLabel(Self.a11yLabel(title: title, subtitle: subtitle,
+                                           puerta: puerta, confianza: confianza))
     }
 
     /// El label combinado que lee VoiceOver (testeable en frío). No duplica puntuación
-    /// cuando una parte ya cierra su frase.
-    static func a11yLabel(title: String, subtitle: String, confianza: String?) -> String {
+    /// cuando una parte ya cierra su frase. Orden = orden en pantalla.
+    static func a11yLabel(title: String, subtitle: String, puerta: String? = nil,
+                          confianza: String?) -> String {
         let flat = title.replacingOccurrences(of: "\n", with: " ")
-        return ([flat, subtitle] + (confianza.map { [$0] } ?? [])).reduce("") { acc, part in
+        let partes = [flat, subtitle] + [puerta, confianza].compactMap { $0 }
+        return partes.reduce("") { acc, part in
             acc.isEmpty ? part : acc + (acc.hasSuffix(".") ? " " : ". ") + part
         }
     }
@@ -516,11 +524,20 @@ public struct LiquidHeroDemotado: View {
     private let kicker: String?
     private let title: String
     private let subtitle: String
+    private let puerta: String?
+    private let confianza: String?
 
-    public init(kicker: String? = nil, title: String, subtitle: String) {
+    /// La `puerta` también vive aquí a propósito: «lectura de día» y «aún sin datos» son
+    /// justo los dos estados donde el usuario más pregunta «¿por qué?», y el héroe demotado
+    /// llamaba al subtítulo con `confianza: nil` SIEMPRE — es decir, sin una sola pista de
+    /// que ahí se toca.
+    public init(kicker: String? = nil, title: String, subtitle: String,
+                puerta: String? = nil, confianza: String? = nil) {
         self.kicker = kicker
         self.title = title
         self.subtitle = subtitle
+        self.puerta = puerta
+        self.confianza = confianza
     }
 
     public var body: some View {
@@ -533,7 +550,7 @@ public struct LiquidHeroDemotado: View {
                 .tracking(LiquidType.displayLTracking)
                 .foregroundStyle(LiquidColor.tinta900)
                 .multilineTextAlignment(.center)
-            LiquidHeroSubtitle(subtitle: subtitle, confianza: nil)
+            LiquidHeroSubtitle(subtitle: subtitle, puerta: puerta, confianza: confianza)
         }
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .ignore)
@@ -541,16 +558,18 @@ public struct LiquidHeroDemotado: View {
         .accessibilityLabel(
             LiquidHeroVeredicto.a11yLabel(
                 title: kicker.map { "\($0). \(title)" } ?? title,
-                subtitle: subtitle, confianza: nil))
+                subtitle: subtitle, puerta: puerta, confianza: confianza))
     }
 }
 
-/// Subtítulo del héroe + tether de confianza — texto de lectura: escala con Dynamic Type.
+/// Subtítulo del héroe + puerta + tether de confianza — texto de lectura: escala con
+/// Dynamic Type.
 private struct LiquidHeroSubtitle: View {
     let subtitle: String
+    var puerta: String? = nil
     let confianza: String?
     // Elevación /inject: el subtítulo sube a 14 con tracking −0.2 (el veredicto merece un
-    // apoyo con más presencia) y el tether de confianza se asienta como PASTILLA discreta.
+    // apoyo con más presencia) y la pastilla de vidrio se asienta debajo, discreta.
     @ScaledMetric(relativeTo: .footnote) private var cuerpoSize: CGFloat = 14
     @ScaledMetric(relativeTo: .caption2) private var captionSize: CGFloat = 10.5
 
@@ -561,20 +580,46 @@ private struct LiquidHeroSubtitle: View {
                 .tracking(-0.2)
                 .foregroundStyle(LiquidColor.tinta700)
                 .multilineTextAlignment(.center)
+            if let puerta {
+                // LA AFORDANCIA: el mismo vidrio que ya ocupaba el tether, ahora con el
+                // chevron de 9 del sistema. Es un RÓTULO, no un control — el target sigue
+                // siendo el héroe entero (un solo Button, cero targets anidados).
+                pastilla {
+                    Text(puerta)
+                        .font(InstrumentoType.grotesk(captionSize, weight: .medium))
+                        .foregroundStyle(LiquidColor.tinta500)
+                    LiquidIcon(.chevron, size: 9, color: LiquidColor.tinta500)
+                }
+            }
             if let confianza {
-                Text(confianza)
-                    .font(InstrumentoType.grotesk(captionSize, weight: .medium))
-                    .foregroundStyle(LiquidColor.tinta500)
-                    .padding(.horizontal, LiquidSpace.s300)
-                    .padding(.vertical, 3)
-                    // Vidrio del sistema, no ad-hoc (revote /inject).
-                    .background {
-                        Capsule().fill(LiquidColor.vidrioPastilla)
-                        Capsule().strokeBorder(LiquidColor.vidrioBordePastilla,
-                                               lineWidth: 0.5)
+                if puerta == nil {
+                    // Sin puerta, el tether conserva su pastilla de siempre.
+                    pastilla {
+                        Text(confianza)
+                            .font(InstrumentoType.grotesk(captionSize, weight: .medium))
+                            .foregroundStyle(LiquidColor.tinta500)
                     }
+                } else {
+                    // Con puerta, la confianza baja a línea secundaria: un solo vidrio bajo
+                    // el veredicto (dos pastillas apiladas leían como dos botones).
+                    Text(confianza)
+                        .font(InstrumentoType.grotesk(captionSize, weight: .medium))
+                        .foregroundStyle(LiquidColor.tinta500)
+                        .multilineTextAlignment(.center)
+                }
             }
         }
+    }
+
+    /// La pastilla de vidrio del sistema, no ad-hoc (revote /inject).
+    @ViewBuilder private func pastilla<C: View>(@ViewBuilder _ content: () -> C) -> some View {
+        HStack(spacing: LiquidSpace.s150) { content() }
+            .padding(.horizontal, LiquidSpace.s300)
+            .padding(.vertical, 3)
+            .background {
+                Capsule().fill(LiquidColor.vidrioPastilla)
+                Capsule().strokeBorder(LiquidColor.vidrioBordePastilla, lineWidth: 0.5)
+            }
     }
 }
 
@@ -597,9 +642,34 @@ private struct LiquidHeroSubtitle: View {
             }
             .frame(height: 178)
             LiquidHeroVeredicto(title: "Dale\ncon todo", highlight: "todo",
-                                subtitle: "Tus 3 señales amanecieron dentro de tu rango.")
+                                subtitle: "Tus 3 señales amanecieron dentro de tu rango.",
+                                puerta: "Cómo llegué a esto")
         }
         .padding(LiquidSpace.s550)
     }
+}
+
+/// La afordancia en los tres estados de madurez: base joven (puerta + confianza), base
+/// firme (solo puerta) y héroe demotado (que antes no ofrecía ninguna pista).
+#Preview("Liquid · Afordancia del héroe") {
+    ZStack {
+        LiquidAmbientBackground.hoy(.atencion)
+        VStack(spacing: LiquidSpace.s800) {
+            LiquidHeroVeredicto(title: "Bien,\ncon un detalle", highlight: "un detalle",
+                                highlightTone: LiquidColor.atencion,
+                                subtitle: "Tu sueño amaneció debajo de tu base.",
+                                puerta: "Cómo llegué a esto",
+                                confianza: "Confianza: 8 de 14 noches")
+            LiquidHeroVeredicto(title: "Dale\ncon todo", highlight: "todo",
+                                subtitle: "Amaneciste en tu base.",
+                                puerta: "Cómo llegué a esto")
+            LiquidHeroDemotado(kicker: "LECTURA DE DÍA",
+                               title: "Tus señales del día están en tu rango.",
+                               subtitle: "Sin lectura de sueño anoche; esto es menos preciso.",
+                               puerta: "Cómo llegué a esto")
+        }
+        .padding(LiquidSpace.s550)
+    }
+    .environment(\.liquidMotionDisabled, true)
 }
 #endif

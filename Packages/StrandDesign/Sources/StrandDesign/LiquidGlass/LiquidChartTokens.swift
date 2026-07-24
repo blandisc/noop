@@ -71,18 +71,51 @@ public enum LiquidChart {
 
     /// Radio del disco que marca cada muestra cuando la serie es corta.
     public static let puntoDatoRadio: CGFloat = 3.0   // 2.2 → 3.0 (pedido del dueño: más peso)
+    /// Hueco mínimo VISIBLE entre los BORDES de dos discos vecinos. Es lo que separa «una
+    /// ventana contable» de «una tira de discos pegados»: por debajo de esto el ojo deja de
+    /// distinguir cuántas lecturas hay y el disco pasa de dato a textura.
+    public static let puntoDatoHueco: CGFloat = 3
+    /// Distancia mínima entre CENTROS, en puntos (no en múltiplos del radio): dos radios +
+    /// el hueco. Se expresa así a propósito — el gate viejo era `radio * 4`, atado al radio,
+    /// así que cuando el dueño subió el radio de 2.2 a 3.0 el corte se movió solo de n≈34 a
+    /// n≈26 y la ventana «M» (30 lecturas) perdió sus discos sin que nadie lo pidiera.
+    public static var puntoDatoSeparacion: CGFloat { puntoDatoRadio * 2 + puntoDatoHueco }
     /// Tope de muestras para dibujar un disco por dato.
     /// INVARIANTE: debe quedar POR DEBAJO del tope de decimación del caller (80 puntos,
     /// `MetricWindowMath.decimatedPoints`). Los discos hacen CONTABLE la ventana; si la
     /// serie viene decimada, el usuario contaría 7 discos donde la fila de nivel afirma
     /// «9 noches». Subir este número sin subir el tope de decimación vuelve la hoja
     /// mentirosa en silencio.
+    /// OJO: en un iPhone real NUNCA es este número el que muerde. Con ~300 pt de plot útil
+    /// y `puntoDatoSeparacion` = 9, la geometría corta en n≈34: 60 es el techo de honestidad
+    /// (decimación), no el límite operativo. Quien lea «60» aquí y espere ver 60 discos se
+    /// equivoca — manda `hayEspacioParaPuntos(centros:)`.
     public static let puntoDatoUmbral: Int = 60
     /// Alfa de los puntos FUERA de la banda activa (paridad `GraficaRangos`: el punto
     /// acompaña al wash, nunca compite con él — I1 se juega en 13 puntos de alfa).
     public static let puntoApagadoAlfa: Double = 0.25
     /// Escala del radio de esos mismos puntos apagados.
     public static let puntoApagadoEscala: CGFloat = 0.7
+
+    /// ¿Cabe un disco por muestra? Dos condiciones, las dos del mismo invariante («la
+    /// ventana tiene que quedar CONTABLE»): que la serie no venga decimada
+    /// (`puntoDatoUmbral`) y que ningún par de discos vecinos se toque.
+    ///
+    /// La separación se mide sobre los CENTROS YA CALCULADOS, no sobre el promedio
+    /// `plotW / (n − 1)`: las tres gráficas de la familia reparten por TIEMPO real
+    /// (`mapeoPorTiempo`), así que en una serie con huecos —12 lecturas en 90 días— el
+    /// promedio dice «27 pt de aire» mientras dos lecturas de días consecutivos caen a 3 pt
+    /// una de otra. Con el promedio, esos dos discos se dibujaban encimados y el usuario
+    /// contaba 11 donde la fila de nivel afirmaba 12; medir el paso MÍNIMO prefiere no
+    /// dibujar ninguno a dibujar una cuenta falsa.
+    static func hayEspacioParaPuntos(centros: [CGFloat]) -> Bool {
+        guard centros.count > 1, centros.count <= puntoDatoUmbral else { return false }
+        var minPaso = CGFloat.greatestFiniteMagnitude
+        for i in centros.indices.dropFirst() {
+            minPaso = Swift.min(minPaso, abs(centros[i] - centros[i - 1]))
+        }
+        return minPaso >= puntoDatoSeparacion
+    }
 
     // MARK: Selector de rango (I3 — RECTANGULAR)
 

@@ -132,6 +132,8 @@ struct TodayView: View {
     @EnvironmentObject var tabRouter: TabRouter
     @State private var showDataSources = false
     @State private var showAutonomicDetail = false
+    /// La hoja «Cómo llegué a esto» — el acta del veredicto, nuevo destino del tap del héroe.
+    @State private var showVeredictoActa = false
     /// Cuenta cada pull-to-refresh para disparar la háptica declarativa (`.sensoryFeedback`) al
     /// provocar el gesto de sincronización (FER-204).
     @State private var syncHaptic = 0
@@ -671,10 +673,22 @@ struct TodayView: View {
             .preferredColorScheme(.light)
         }
         .sheet(isPresented: $showAutonomicDetail) {
+            // SIGUE VIVA: ya no es el destino del héroe Liquid, pero la superficie legacy la
+            // sigue abriendo (`:1160` y `:1257`). No queda huérfana.
             AutonomicTrendDetailSheet(theme: theme)
                 .presentationDragIndicator(.visible)
                 .presentationBackground(theme.paper)
                 .preferredColorScheme(.light)
+        }
+        // El acta del veredicto: la hoja que contesta la pregunta que el héroe provoca.
+        .sheet(isPresented: $showVeredictoActa) {
+            LiquidMetricSheet(tono: liquidActaTono, detent: .porContenido) {
+                LiquidActaVeredicto(liquidActa, onVerMas: {
+                    showVeredictoActa = false
+                    tabRouter.select(.body)
+                })
+            }
+            .preferredColorScheme(.light)
         }
     }
 
@@ -969,6 +983,22 @@ struct TodayView: View {
         return LiquidHoyBuilder.build(liquidInputs())
     }
 
+    /// El acta del veredicto — la MISMA `Preparedness.Read` que ya alimenta al héroe.
+    private var liquidActa: LiquidActa {
+        #if DEBUG
+        if liquidDemo { return LiquidHoyBuilder.actaEjemplo }
+        #endif
+        return LiquidHoyBuilder.acta(prep: repo.todayPreparedness,
+                                     healthConnected: health.auth == .authorized)
+    }
+
+    private var liquidActaTono: Color {
+        #if DEBUG
+        if liquidDemo { return LiquidColor.verdePrimario }
+        #endif
+        return LiquidHoyBuilder.actaTono(repo.todayPreparedness)
+    }
+
     @ViewBuilder private var liquidSurface: some View {
         let output = liquidOutput
         VStack(alignment: .leading, spacing: CenitMetrics.space1) {
@@ -986,15 +1016,13 @@ struct TodayView: View {
                         trainingLoadItem = makeTrainingLoadItem(trainingLoad)
                     }
                 },
-                onTapHero: {
-                    switch output.heroRoute {
-                    case .autonomic:
-                        showAutonomicDetail = true
-                    case .sleep:
-                        metricDetail = .sleep(resolveMeasured(todayOnly: true) { $0.totalSleepMin }
-                            .map { Int($0.value.rounded()) })
-                    }
-                })
+                // RE-RUTEO del gesto principal de la pantalla (antes: `showAutonomicDetail`
+                // → `AutonomicTrendDetailSheet`, tema PAPEL dentro de una superficie
+                // Liquid). El héroe ahora abre el ACTA de su propio veredicto — la pregunta
+                // que el héroe provoca. No se bifurca por `heroRoute`: los dos estados del
+                // héroe (veredicto y demotado) explican el MISMO veredicto, y el acta ya
+                // pinta «Sueño · Sin datos» cuando no hubo noche.
+                onTapHero: { showVeredictoActa = true })
             // /inject: la leyenda de origen se retiró de la superficie Liquid a pedido del
             // dueño (los puntos de origen por tile se quedan).
         }

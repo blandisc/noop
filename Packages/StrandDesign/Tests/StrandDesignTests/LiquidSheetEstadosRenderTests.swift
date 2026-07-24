@@ -141,7 +141,46 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
             ("heart_rate", heartRate()),
             ("clasica", clasica()),
             ("hrv_sinbase", hrvSinBase()),
+            // Densidad de los discos por dato (carril A2): la ventana «M» los recupera y la
+            // serie apiñada los cede. Es la evidencia visual que el test de motor
+            // (`LiquidChartMotorTests`) sólo puede afirmar en números.
+            ("niveles_densidad", nivelesDensidad()),
+            // Una sola lectura (carril E2): la pantalla cae al pozo vacío — y ahora la voz
+            // dice lo mismo (`LiquidCarrilEA11yTests`).
+            ("niveles_una_lectura", nivelesUnaLectura()),
+            // Acta del veredicto («Cómo llegué a esto»): los estados de su tabla.
+            ("acta_verde", acta(LiquidActaFixtures.verde)),
+            ("acta_ambar", acta(LiquidActaFixtures.ambar)),
+            ("acta_rojo", acta(LiquidActaFixtures.rojo)),
+            // Histéresis activa: el acta de HOY (1 fuera) NO cuadra con el veredicto
+            // MOSTRADO (verde, porque el crudo nuevo todavía no se repite 2 días). Sin el
+            // aviso, la hoja se contradice sola — por eso el estado tiene su propio PNG.
+            ("acta_histeresis", acta(LiquidActaFixtures.histeresis)),
+            // Empujón de tendencia: MISMA forma (1 fuera, veredicto que no cuadra), OTRA
+            // causa. Los dos avisos tienen precedencia: nunca se pintan juntos.
+            ("acta_tendencia", acta(LiquidActaFixtures.tendencia)),
+            ("acta_lectura_dia", acta(LiquidActaFixtures.lecturaDeDia)),
+            ("acta_sin_veredicto", acta(LiquidActaFixtures.sinVeredicto)),
+            ("acta_sin_permiso", acta(LiquidActaFixtures.sinPermiso)),
+            // AX5: las filas del acta se apilan en dos renglones en vez de aplastar cuatro
+            // columnas de texto.
+            ("acta_ambar_ax5", acta(LiquidActaFixtures.ambar, tamano: .accessibility5)),
         ]
+    }
+
+    /// El acta se renderiza SUELTA (ya trae su propio ritmo de bloques s550): solo ancho de
+    /// hoja, margen y fondo del tono — exactamente lo que le pone `LiquidMetricSheet`.
+    @MainActor
+    private static func acta(_ model: LiquidActa,
+                             tamano: DynamicTypeSize = .large) -> AnyView {
+        AnyView(
+            LiquidActaVeredicto(model, onVerMas: {})
+                .padding(LiquidSpace.s550)
+                .frame(width: 402, alignment: .topLeading)
+                .background(LiquidSheetFondo(tone: model.tono))
+                .environment(\.dynamicTypeSize, tamano)
+                .environment(\.liquidMotionDisabled, true)
+        )
     }
 
     /// §1.2 · Vital-template con dato: VFC 56 ms, selector + explorador de niveles con la
@@ -743,6 +782,94 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
                 numeral: "56", unidad: "ms",
                 origenEtiqueta: "Apple Salud · anoche")
             grafica
+        }
+    }
+
+    /// Serie con offsets de día EXPLÍCITOS respecto del ancla. Las tres gráficas de la
+    /// familia reparten por TIEMPO real, así que el hueco entre lecturas es parte del dato
+    /// (y de la geometría que decide si caben los discos).
+    private static func serieOffsets(_ offsets: [Int], base: Double, onda: Double)
+        -> [(fecha: Date, valor: Double)] {
+        offsets.enumerated().map { (k: Int, d: Int) in
+            (fecha: ancla.addingTimeInterval(Double(d) * 86_400),
+             valor: base + onda * sin(Double(k) / 1.7) + Double((k * 5) % 6) - 2.5)
+        }
+    }
+
+    /// §A2 · Los DOS lados del gate de densidad, en la misma hoja.
+    ///
+    /// Arriba, 30 lecturas diarias — la ventana «M». El gate viejo medía `paso >= radio × 4`,
+    /// así que cuando el dueño subió el radio de 2.2 a 3.0 el corte se movió solo de n≈34 a
+    /// n≈26 y «M» perdió sus discos sin que nadie lo pidiera. Con la separación mínima entre
+    /// CENTROS (9 pt = dos radios + hueco) vuelven: uno por día, contables.
+    ///
+    /// Abajo, 12 lecturas en 90 días con DOS en días seguidos. El promedio dice ~27 pt de
+    /// aire, pero ese par cae a ~3.6 pt: dibujarlo encimado haría contar 11 donde la fila de
+    /// nivel afirma 12, así que la serie entera cede sus discos y se queda con la polilínea.
+    /// Es un cambio de comportamiento —no sólo una restauración— y por eso tiene render.
+    @MainActor
+    private static func nivelesDensidad() -> AnyView {
+        let densa = serieDiaria(dias: 30, base: 58, onda: 13)
+        // 54 y 55 días atrás: el par pegado que muerde.
+        let racimo = serieOffsets([-90, -81, -72, -63, -55, -54, -45, -36, -27, -18, -9, 0],
+                                  base: 58, onda: 12)
+        func grafica(_ puntos: [(fecha: Date, valor: Double)],
+                     dias: Int) -> LiquidGraficaNiveles {
+            LiquidGraficaNiveles(
+                puntos: puntos, bandas: bandasVFC(activa: 1), dominio: 30...95,
+                ticksY: [(63, "63"), (48, "48")], tono: LiquidColor.cian,
+                puntoHoy: (puntos[puntos.count - 1].fecha, puntos[puntos.count - 1].valor),
+                hoyAnillo: false,
+                formatoScrub: { (v: Double, f: Date) in "\(Int(v.rounded())) ms · \(popupDia(f))" },
+                formatoValorScrub: { (v: Double) in "\(Int(v.rounded())) ms" },
+                formatoFechaScrub: popupDia,
+                formatoFechaEje: ejeDia,
+                estadoVacio: "Sin lecturas en este rango",
+                a11yLabel: "VFC, últimos \(dias) días")
+        }
+        return columna(tone: LiquidColor.cian) {
+            LiquidSheetHeader(
+                icono: .onda, titulo: "VFC", tono: LiquidColor.cian,
+                numeral: "56", unidad: "ms",
+                origenEtiqueta: "Apple Salud · anoche")
+            LiquidNotaLine("30 lecturas diarias: un disco por día, contable.")
+            grafica(densa, dias: 30)
+            LiquidNotaLine("12 lecturas en 90 días, dos en días seguidos: sin discos, porque contarlos mentiría.")
+            grafica(racimo, dias: 90)
+        }
+    }
+
+    /// §E2 · UNA sola lectura en la ventana. La gráfica cae al pozo (`puntos.count > 1`) y
+    /// ahora VoiceOver dice lo MISMO: antes anunciaba «56 ms» sobre una pantalla que
+    /// declaraba no tener nada que dibujar — el caso del usuario nuevo, justo quien más
+    /// depende de la voz.
+    ///
+    /// El pozo lleva el mensaje HONESTO de la hoja real («solo una lectura», no «sin
+    /// lecturas»): con la lectura de anoche viva en el numeral, negar que existe sería la
+    /// mentira contraria. La hoja lo manda como estado explícito
+    /// (`LiquidMetricSheetView:857`) y lo pasa TAMBIÉN como `estadoVacio`, que es la red de
+    /// seguridad de E2 si algún caller olvidara el estado.
+    @MainActor
+    private static func nivelesUnaLectura() -> AnyView {
+        let unica = serieDiaria(dias: 1, base: 56, onda: 0)
+        let honesto = "Solo una lectura en este rango, aún no alcanza para trazar una línea."
+        return columna(tone: LiquidColor.cian) {
+            LiquidSheetHeader(
+                icono: .onda, titulo: "VFC", tono: LiquidColor.cian,
+                numeral: "56", unidad: "ms",
+                origenEtiqueta: "Apple Salud · anoche")
+            LiquidFraseNivel(nivel: nil,
+                             conteo: "1 noche con datos en este rango",
+                             tono: LiquidColor.cian,
+                             sinLectura: "Aún no hay línea que dibujar")
+            LiquidGraficaNiveles(
+                puntos: unica, bandas: bandasVFC(activa: nil), dominio: 30...95,
+                ticksY: [(63, "63"), (48, "48")], tono: LiquidColor.cian,
+                puntoHoy: nil, hoyAnillo: false,
+                formatoScrub: { (v: Double, f: Date) in "\(Int(v.rounded())) ms · \(popupDia(f))" },
+                formatoFechaEje: ejeDia,
+                estadoVacio: honesto,
+                a11yLabel: "VFC por noche")
         }
     }
 

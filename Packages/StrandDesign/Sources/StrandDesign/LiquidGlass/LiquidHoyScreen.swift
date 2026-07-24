@@ -117,6 +117,11 @@ public struct LiquidHoyModel: Sendable {
     /// Hint de VoiceOver del héroe («Abre el detalle»), YA localizado. `nil` = sin hint.
     /// Orbes y barra de carga lo reutilizan (revote /inject: navegan igual que el héroe).
     public let heroHint: String?
+    /// La AFORDANCIA de descubrimiento del héroe («Cómo llegué a esto»), YA localizada: la
+    /// pastilla de vidrio con chevron bajo el veredicto. Vive en el MODELO y no dentro de
+    /// `Hero` porque es la misma promesa en los dos estados del héroe (veredicto y
+    /// demotado) y el destino es uno solo — igual que `heroHint`. `nil` = sin pastilla.
+    public let heroPuerta: String?
     /// Rótulo YA localizado de la barra de carga («CARGA»/«LOAD») — el DS no conoce locales.
     public let cargaLabel: String
     /// La fecha completa para VoiceOver («miércoles, 22 de julio de 2026»).
@@ -127,7 +132,7 @@ public struct LiquidHoyModel: Sendable {
     public init(kicker: String, dial: Dial, senales: [Senal], hero: Hero, carga: Carga?,
                 metricas: [Metrica], heroHint: String? = nil,
                 ambiente: LiquidAmbiente = .bien, cargaLabel: String = "CARGA",
-                kickerA11y: String? = nil) {
+                kickerA11y: String? = nil, heroPuerta: String? = nil) {
         self.cargaLabel = cargaLabel
         self.kickerA11y = kickerA11y
         self.kicker = kicker
@@ -138,6 +143,7 @@ public struct LiquidHoyModel: Sendable {
         self.metricas = metricas
         self.heroHint = heroHint
         self.ambiente = ambiente
+        self.heroPuerta = heroPuerta
     }
 
     /// El contenido de muestra del ensamble §7.1 («Dale con todo»).
@@ -175,7 +181,8 @@ public struct LiquidHoyModel: Sendable {
             .init(id: "stress", label: "ESTRÉS", value: "1.2", unit: "/3",
                   delta: "−0.5 vs tu base", deltaTone: .up,
                   tone: LiquidColor.verdePrimario, icon: .estres),
-        ])
+        ],
+        heroPuerta: "Cómo llegué a esto")
 }
 
 // MARK: - Contenido componible
@@ -249,9 +256,11 @@ public struct LiquidHoyContent: View {
             switch model.hero {
             case .veredicto(let title, let highlight, let tone, let subtitle, let confianza):
                 LiquidHeroVeredicto(title: title, highlight: highlight, highlightTone: tone,
-                                    subtitle: subtitle, confianza: confianza)
+                                    subtitle: subtitle, puerta: model.heroPuerta,
+                                    confianza: confianza)
             case .demotado(let kicker, let title, let subtitle):
-                LiquidHeroDemotado(kicker: kicker, title: title, subtitle: subtitle)
+                LiquidHeroDemotado(kicker: kicker, title: title, subtitle: subtitle,
+                                   puerta: model.heroPuerta)
             }
         }
         if let onTapHero {

@@ -109,7 +109,12 @@ enum LiquidHoyBuilder {
             heroHint: String(localized: "Opens the detail"),
             ambiente: ambiente(prep: i.preparedness),
             cargaLabel: String(localized: "Load").uppercased(with: i.locale),
-            kickerA11y: kickerA11y(now: i.now, calendar: i.calendar, locale: i.locale))
+            kickerA11y: kickerA11y(now: i.now, calendar: i.calendar, locale: i.locale),
+            // La afordancia de descubrimiento: la pastilla bajo el veredicto deja de ser el
+            // tether de confianza (que DESAPARECÍA con la base madura, justo donde vive el
+            // usuario el 90 % del tiempo) y pasa a ser la PUERTA. Siempre presente, en los
+            // dos estados del héroe.
+            heroPuerta: String(localized: "How I got here"))
         return Output(model: model, heroRoute: route)
     }
 
@@ -193,10 +198,16 @@ enum LiquidHoyBuilder {
 
     private static func veredicto(_ v: Preparedness.Verdict, nights: Int,
                                   prep: Preparedness.Read? = nil) -> LiquidHoyModel.Hero {
-        let clamped = min(nights, 21)
-        // El tether de confianza vive SOLO aquí (paridad con `SelloConfianzaArco`).
-        let confianza = clamped < 21
-            ? String(localized: "Confidence: \(clamped) of 21 nights")
+        // El denominador sale del MOTOR, no de la UI: `Baselines.minNightsTrust` es la
+        // noche en la que la base deja de encogerse y el veredicto se para completo. Las
+        // «21 noches» que decía este tether no existen en `Baselines` — eran un número de
+        // pantalla presentado como meta del motor.
+        let trust = Baselines.minNightsTrust
+        let clamped = min(nights, trust)
+        // Con la puerta puesta, el tether baja a línea secundaria y solo aparece mientras
+        // la base es JOVEN: con la base firme no hay nada honesto que confesar.
+        let confianza = clamped < trust
+            ? String(localized: "Confidence: \(clamped) of \(trust) nights")
             : nil
         switch v {
         case .full:
@@ -337,6 +348,249 @@ enum LiquidHoyBuilder {
         case .noData, nil: return String(localized: "No data")
         }
     }
+
+    // MARK: Acta del veredicto — «Cómo llegué a esto»
+    //
+    // La proyección de `Preparedness.Read` a la hoja del acta. PURA y sin re-evaluar nada:
+    // lee lo que el motor ya votó. Lo que afirma está verificado contra
+    // `Preparedness.swift`:
+    //  · el veredicto es un CONTEO de señales fuera (`rawVerdictAt` :286-293), no una suma
+    //    ponderada: 0 → full, 1 → caution, ≥2 → easy;
+    //  · la carga NUNCA entra a ese conteo (`loadAxis` :189-193) — por eso baja a nota;
+    //  · la histéresis de 2 días (:300-312) hace que el veredicto MOSTRADO pueda no ser la
+    //    lectura de hoy — por eso el aviso existe y es obligatorio;
+    //  · el empujón de tendencia solo aplica caution → easy (:214) — es OTRA causa que la
+    //    histéresis, así que tienen precedencia explícita.
+    //
+    // Lo que la hoja NO dice, porque `Read` no lo carga: el z por señal. Y lo que no dice
+    // POR DECISIÓN: los pesos 0.35/0.40/0.25 y los cortes (±0.8 °C, <6 h) — knobs sin firmar
+    // por `/cso` y, además, la allow-list de esta superficie (docs/ANALYTICS.md) prohíbe
+    // publicar números aquí. La columna «contra qué base» es cualitativa: sigue enseñando el
+    // hallazgo real (las tres señales NO se juzgan contra la misma referencia) sin publicar
+    // un solo umbral.
+
+    /// Las tres señales del acta, SIEMPRE en este orden — el mismo de los orbes de Hoy.
+    private static let ejesActa: [Preparedness.Axis] = [.autonomic, .sleep, .thermal]
+
+    /// El tono del veredicto: los MISMOS que usa el héroe. Sin veredicto → tinta/500, y
+    /// entonces la hoja no tiene una sola gota de color.
+    static func actaTono(_ prep: Preparedness.Read?) -> Color {
+        guard let prep else { return LiquidColor.tinta500 }
+        switch prep.verdict {
+        case .full: return LiquidColor.verdePrimario
+        case .caution: return LiquidColor.atencion
+        case .easy: return LiquidColor.negativo
+        case .lowSignal: return LiquidColor.tinta500
+        }
+    }
+
+    static func acta(prep: Preparedness.Read?, healthConnected: Bool = true) -> LiquidActa {
+        // El acta se SINTETIZA con sus tres filas fijas, no se itera sobre `drivers`: en el
+        // `lowSignal` por falta de fila de hoy, `Preparedness` devuelve `drivers` VACÍO
+        // (:163-166), y una tabla derivada de ahí simplemente no existiría.
+        let estados = ejesActa.map { ax in
+            prep?.drivers.first { $0.axis == ax }?.state ?? .noData
+        }
+        let fuera = estados.filter { $0.isOut }.count
+        let conLectura = estados.filter { $0.hasData }.count
+        // D1 del verificador: `isNightAnchored` es OBLIGATORIO. Sin noche grabada el héroe
+        // se demota a propósito («Lectura de día», sin palabra) y el acta reinstalaba el
+        // «Dale con todo» en grande: el usuario tocaba un héroe que se niega a dar
+        // veredicto y aterrizaba en una hoja que se lo gritaba (invariante Preparedness:101).
+        let hayVeredicto = prep != nil && prep?.verdict != .lowSignal
+            && prep?.isNightAnchored == true
+
+        let filas: [LiquidActa.Fila] = ejesActa.enumerated().map { i, ax in
+            let estado = estados[i]
+            let etiqueta = nombreEje(ax)
+            let dijo = caption(for: estado)
+            let base = baseDeEje(ax)
+            // El label de VoiceOver dice el estado FUERA con palabras: el wash de color es
+            // la única marca visual de la fila activa, y el color no habla.
+            let a11y = [etiqueta, dijo, base].joined(separator: ", ")
+                + (estado.isOut ? ", " + String(localized: "outside your range") : "")
+            return LiquidActa.Fila(id: ax.rawValue, etiqueta: etiqueta, dijo: dijo,
+                                   base: base, fuera: estado.isOut, a11y: a11y)
+        }
+
+        return LiquidActa(
+            titulo: String(localized: "Readiness"),
+            procedencia: String(localized: "Apple Health · this morning"),
+            explicacion: String(localized: "The verdict for how you woke up: your signals against your own baseline. It's an approximation, not a diagnosis."),
+            infoMostrar: String(localized: "Show explanation"),
+            infoOcultar: String(localized: "Hide explanation"),
+            nivel: hayVeredicto ? palabraVeredicto(prep!.verdict) : nil,
+            sinLectura: hayVeredicto ? nil : String(localized: "No verdict yet"),
+            conteo: hayVeredicto
+                ? conteoActa(fuera: fuera, conLectura: conLectura)
+                : String(localized: "I need a few of your own nights before I can give you a verdict."),
+            // El método en LLANO: nada de «ejes» (vocabulario de `Preparedness.Axis`, no del
+            // usuario — en Hoy solo ve tres orbes con nombre propio).
+            // D3 del verificador: la frase decía «cuentan como una sola lectura» y escondía
+            // que la respiración tiene VETO propio (`composite <= out || respOut`,
+            // Preparedness:272). Es la tesis de la hoja: tiene que ser cierta.
+            metodo: String(localized: "Your HRV and your resting heart rate are read together, so one bad night doesn't count twice. Your breathing can flag the signal on its own."),
+            metodoClave: String(localized: "acta.metodo.clave", defaultValue: "a single reading"),
+            filas: filas,
+            notas: notasActa(prep: prep, fuera: fuera, conLectura: conLectura,
+                             healthConnected: healthConnected),
+            confianza: confianzaActa(prep: prep),
+            plegable: plegableActa(prep: prep),
+            verMas: String(localized: "See more in Trends"),
+            verMasHint: String(localized: "Opens the detail"),
+            tono: actaTono(prep),
+            // El wash de la fila significa «esta es la que se salió». Con la histéresis
+            // activa el veredicto puede seguir verde mientras una señal amaneció fuera:
+            // pintar esa fila de verde diría lo contrario de lo que pasó.
+            tonoFilas: prep?.verdict == .full && fuera > 0
+                ? LiquidColor.atencion : actaTono(prep))
+    }
+
+    /// La palabra del veredicto tal cual la dice el héroe (misma clave del catálogo).
+    private static func palabraVeredicto(_ v: Preparedness.Verdict) -> String {
+        switch v {
+        case .full: return String(localized: "Go all in")
+        case .caution: return String(localized: "Good, one thing to watch")
+        case .easy: return String(localized: "Take it easy")
+        // `lowSignal` no tiene palabra-veredicto: `hayVeredicto` lo excluye. Mapearlo a
+        // «Ándate leve» era una trampa latente (D5 del verificador).
+        case .lowSignal: return String(localized: "No verdict yet")
+        }
+    }
+
+    private static func nombreEje(_ ax: Preparedness.Axis) -> String {
+        switch ax {
+        case .autonomic: return String(localized: "Autonomic")
+        case .sleep: return String(localized: "Sleep")
+        case .thermal: return String(localized: "Thermal")
+        case .load: return String(localized: "Load")
+        }
+    }
+
+    /// Contra QUÉ se compara cada señal — cualitativo, nunca el umbral. Es el hallazgo real:
+    /// las tres NO se juzgan contra la misma referencia (tu base / una banda fija / la base
+    /// que Apple ya calculó).
+    private static func baseDeEje(_ ax: Preparedness.Axis) -> String {
+        switch ax {
+        case .autonomic: return String(localized: "against your base")
+        case .sleep: return String(localized: "against a fixed minimum")
+        case .thermal: return String(localized: "against Apple's base")
+        case .load: return ""
+        }
+    }
+
+    static func conteoActa(fuera: Int, conLectura: Int) -> String {
+        if fuera == 1 { return String(localized: "1 of your 3 signals woke up outside your range.") }
+        if fuera > 1 { return String(localized: "\(fuera) of your 3 signals woke up outside your range.") }
+        if conLectura < 3 { return String(localized: "Only \(conLectura) of your 3 signals had a reading today.") }
+        return String(localized: "All 3 of your signals woke up in your range.")
+    }
+
+    /// Las notas del acta, con PRECEDENCIA explícita entre los dos avisos que cambian la
+    /// lectura (sin ella, el caso `easy` + 1 fuera + tendencia abajo pintaba los dos y la
+    /// hoja se contradecía).
+    private static func notasActa(prep: Preparedness.Read?, fuera: Int, conLectura: Int,
+                                  healthConnected: Bool) -> [LiquidActa.Nota] {
+        var out: [LiquidActa.Nota] = []
+        guard let prep, prep.verdict != .lowSignal else {
+            if !healthConnected {
+                out.append(.init(id: "permiso",
+                                 texto: String(localized: "Connect Apple Health in Settings and your daily verdict will appear here."),
+                                 avisa: true))
+            }
+            return out
+        }
+
+        // Sin noche grabada, el sueño no pudo votar (FER-1033, misma frase que el héroe).
+        if !prep.isNightAnchored {
+            out.append(.init(id: "noche",
+                             texto: String(localized: "No sleep reading last night; this is less precise."),
+                             avisa: true))
+        }
+
+        // 1) Empujón de tendencia — la causa cuando `easy` sale de UNA sola señal fuera.
+        if prep.verdict == .easy && fuera == 1 && prep.trend == .below {
+            out.append(.init(id: "tendencia",
+                             texto: String(localized: "One signal outside your range, and your night-time HRV trend is coming down."),
+                             avisa: true))
+        } else if desfaseDeHisteresis(verdict: prep.verdict, fuera: fuera) {
+            // 2) Histéresis — el acta de HOY no cuadra con el veredicto MOSTRADO.
+            out.append(.init(id: "histeresis",
+                             texto: String(localized: "Today I read \(fuera) of your signals outside your range; the verdict doesn't change until it repeats two days in a row."),
+                             avisa: true))
+        }
+
+        // La carga se mide y NUNCA vota: baja a nota, en las dos variantes.
+        let huboEntrenamiento = prep.drivers.first { $0.axis == .load }?.state.hasData ?? false
+        out.append(.init(id: "carga", texto: huboEntrenamiento
+            ? String(localized: "There was a workout today. It's measured, but it doesn't change your verdict yet.")
+            : String(localized: "No workout recorded today. Load is measured, but it doesn't change your verdict yet.")))
+        return out
+    }
+
+    /// ¿El conteo de hoy contradice al veredicto mostrado? (full→0, caution→1, easy→≥2).
+    static func desfaseDeHisteresis(verdict: Preparedness.Verdict, fuera: Int) -> Bool {
+        switch verdict {
+        case .full: return fuera != 0
+        case .caution: return fuera != 1
+        case .easy: return fuera < 2
+        case .lowSignal: return false
+        }
+    }
+
+    /// La profundidad de la base — con los ÚNICOS denominadores que existen en el motor:
+    /// `Baselines.minNightsSeed` (4) desbloquea, `Baselines.minNightsTrust` (14) da confianza
+    /// plena. Y `LiquidCalibracionCard` («Calibrando tu base») SOLO mientras de verdad
+    /// calibra: con la base ya usable, prosa sin barra de progreso.
+    private static func confianzaActa(prep: Preparedness.Read?) -> LiquidActa.Confianza? {
+        guard let prep else { return nil }
+        let n = prep.autonomicNights
+        if prep.maturity == .calibrating {
+            let meta = Baselines.minNightsSeed
+            return .calibrando(titulo: String(localized: "Calibrating your base"),
+                               leyenda: String(localized: "\(min(n, meta)) of \(meta) nights"),
+                               hechas: min(n, meta), necesarias: meta)
+        }
+        let trust = Baselines.minNightsTrust
+        guard n < trust else { return nil }
+        return .nota(String(localized: "Your verdict stands on \(n) of your own nights; at \(trust) your base is firm."))
+    }
+
+    private static func plegableActa(prep: Preparedness.Read?) -> LiquidActa.Metodo {
+        var lineas: [String] = []
+        if let prep {
+            // D2 del verificador: decía «3 de 3 señales del cuerpo» mientras el conteo de
+            // arriba decía «2 de tus 3 señales» — el mismo número contando cosas distintas
+            // (aquí: las 3 sub-señales del eje autonómico; arriba: los 3 ejes). Se nombra
+            // lo que de verdad cuenta.
+            lineas.append(String(localized: "Your autonomic signal reads \(prep.signalsPresent) of \(prep.signalsTotal) inputs: HRV, resting heart rate and breathing."))
+        }
+        lineas.append(String(localized: "A new verdict has to repeat two days in a row before it replaces the previous one."))
+        lineas.append(String(localized: "Apple's HRV is a daytime average, not a sleep-window measurement: this reads your resting signals against your own norm."))
+        lineas.append(String(localized: "Task Force, 1996 · Plews et al., 2013. Approximate, no clinical claim."))
+        return .init(titulo: String(localized: "How it's calculated"),
+                     mostrar: String(localized: "Show method"),
+                     ocultar: String(localized: "Hide method"),
+                     lineas: lineas)
+    }
+
+    #if DEBUG
+    /// El acta que acompaña al héroe de DEMO de la sesión /inject (el simulador no tiene
+    /// HealthKit): el mismo estado «Dale con todo» del ensamble, armado por el MISMO camino
+    /// que producción para que lo que se pule sea el render real.
+    static var actaEjemplo: LiquidActa {
+        acta(prep: Preparedness.Read(
+            verdict: .full,
+            drivers: [
+                .init(axis: .autonomic, state: .inRange, orientedZ: 0.2),
+                .init(axis: .sleep, state: .inRange, orientedZ: nil),
+                .init(axis: .thermal, state: .inRange, orientedZ: nil),
+                .init(axis: .load, state: .inRange, orientedZ: nil),
+            ],
+            signalsPresent: 3, signalsTotal: 3,
+            maturity: .provisional, autonomicNights: 8, trend: nil))
+    }
+    #endif
 
     // MARK: Carga (mismo mapeo que `TrainingLoadStrip`)
 

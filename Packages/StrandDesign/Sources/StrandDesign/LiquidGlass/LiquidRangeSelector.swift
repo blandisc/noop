@@ -54,8 +54,12 @@ public struct LiquidRangeSelector: View {
                             .matchedGeometryEffect(id: "thumb", in: ns)
                     }
                 }
-                .contentShape(RoundedRectangle(cornerRadius: LiquidChart.selectorRadio,
-                                               style: .continuous))
+                // E4 · Blanco táctil HIG (44 pt) SIN tocar el alto visual: el track y su
+                // thumb se siguen dibujando a `selectorAlto` (28) y quedan centrados en la
+                // banda de 44. El 44 va crudo, igual que en `LiquidVerMas`: es el mínimo
+                // de Apple, no un valor de nuestro sistema.
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(verbatim: opciones[i]))

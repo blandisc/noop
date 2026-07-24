@@ -131,6 +131,422 @@
         }
       }
     },
+    "%lld of your 3 signals woke up outside your range." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld of your 3 signals woke up outside your range."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld de tus 3 señales amanecieron fuera de tu rango."
+          }
+        }
+      }
+    },
+    "1 of your 3 signals woke up outside your range." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 of your 3 signals woke up outside your range."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 de tus 3 señales amaneció fuera de tu rango."
+          }
+        }
+      }
+    },
+    "A new verdict has to repeat two days in a row before it replaces the previous one." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A new verdict has to repeat two days in a row before it replaces the previous one."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un veredicto nuevo tiene que repetirse dos días seguidos antes de reemplazar al anterior."
+          }
+        }
+      }
+    },
+    "All 3 of your signals woke up in your range." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All 3 of your signals woke up in your range."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus 3 señales amanecieron en tu rango."
+          }
+        }
+      }
+    },
+    "Apple Health · this morning" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Health · this morning"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Salud · esta mañana"
+          }
+        }
+      }
+    },
+    "Apple's HRV is a daytime average, not a sleep-window measurement: this reads your resting signals against your own norm." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple's HRV is a daytime average, not a sleep-window measurement: this reads your resting signals against your own norm."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La VFC de Apple es un promedio del día, no una medición de la ventana de sueño: esto lee tus señales en reposo contra tu propia norma."
+          }
+        }
+      }
+    },
+    "Calibrating your base" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calibrating your base"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calibrando tu base"
+          }
+        }
+      }
+    },
+    "Confidence: %lld of %lld nights" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confidence: %lld of %lld nights"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confianza: %lld de %lld noches"
+          }
+        }
+      }
+    },
+    "How I got here" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How I got here"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cómo llegué a esto"
+          }
+        }
+      }
+    },
+    "I need a few of your own nights before I can give you a verdict." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I need a few of your own nights before I can give you a verdict."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Necesito unas noches tuyas para poder darte un veredicto."
+          }
+        }
+      }
+    },
+    "No verdict yet" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No verdict yet"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aún sin veredicto"
+          }
+        }
+      }
+    },
+    "No workout recorded today. Load is measured, but it doesn't change your verdict yet." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No workout recorded today. Load is measured, but it doesn't change your verdict yet."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoy no hubo entrenamiento registrado. La carga se mide, pero todavía no cambia tu veredicto."
+          }
+        }
+      }
+    },
+    "One signal outside your range, and your night-time HRV trend is coming down." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One signal outside your range, and your night-time HRV trend is coming down."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Una señal fuera de tu rango, y tu tendencia de VFC nocturna viene bajando."
+          }
+        }
+      }
+    },
+    "Only %lld of your 3 signals had a reading today." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only %lld of your 3 signals had a reading today."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoy solo %lld de tus 3 señales tuvieron lectura."
+          }
+        }
+      }
+    },
+    "Task Force, 1996 · Plews et al., 2013. Approximate, no clinical claim." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Task Force, 1996 · Plews et al., 2013. Approximate, no clinical claim."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Task Force, 1996 · Plews et al., 2013. Aproximado, sin valor clínico."
+          }
+        }
+      }
+    },
+    "The verdict for how you woke up: your signals against your own baseline. It's an approximation, not a diagnosis." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The verdict for how you woke up: your signals against your own baseline. It's an approximation, not a diagnosis."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El veredicto de cómo amaneciste: tus señales contra tu propia base. Es una aproximación, no un diagnóstico."
+          }
+        }
+      }
+    },
+    "There was a workout today. It's measured, but it doesn't change your verdict yet." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "There was a workout today. It's measured, but it doesn't change your verdict yet."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoy hubo entrenamiento. Se mide, pero todavía no cambia tu veredicto."
+          }
+        }
+      }
+    },
+    "This morning I read %lld of %lld body signals." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This morning I read %lld of %lld body signals."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esta mañana leí %lld de %lld señales del cuerpo."
+          }
+        }
+      }
+    },
+    "Today I read %lld of your signals outside your range; the verdict doesn't change until it repeats two days in a row." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today I read %lld of your signals outside your range; the verdict doesn't change until it repeats two days in a row."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoy leí %lld de tus señales fuera de tu rango; el veredicto no cambia hasta que se repita dos días seguidos."
+          }
+        }
+      }
+    },
+    "Your HRV, your resting heart rate and your breathing count as a single reading, so one bad night doesn't count three times." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your HRV, your resting heart rate and your breathing count as a single reading, so one bad night doesn't count three times."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu VFC, tu pulso en reposo y tu respiración cuentan como una sola lectura, para que una mala noche no cuente tres veces."
+          }
+        }
+      }
+    },
+    "Your verdict stands on %lld of your own nights; at %lld your base is firm." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your verdict stands on %lld of your own nights; at %lld your base is firm."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu veredicto se apoya en %lld noches tuyas; a las %lld tu base queda firme."
+          }
+        }
+      }
+    },
+    "acta.metodo.clave" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "a single reading"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "una sola lectura"
+          }
+        }
+      }
+    },
+    "against Apple's base" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "against Apple's base"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "contra la base de Apple"
+          }
+        }
+      }
+    },
+    "against a fixed minimum" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "against a fixed minimum"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "contra un mínimo fijo"
+          }
+        }
+      }
+    },
+    "against your base" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "against your base"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "contra tu base"
+          }
+        }
+      }
+    },
+    "outside your range" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "outside your range"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "fuera de tu rango"
+          }
+        }
+      }
+    },
     "–" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -12571,6 +12987,40 @@
         }
       }
     },
+    "Your autonomic signal reads %lld of %lld inputs: HRV, resting heart rate and breathing." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your autonomic signal reads %lld of %lld inputs: HRV, resting heart rate and breathing."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu señal autonómica lee %lld de %lld entradas: VFC, pulso en reposo y respiración."
+          }
+        }
+      }
+    },
+    "Your HRV and your resting heart rate are read together, so one bad night doesn't count twice. Your breathing can flag the signal on its own." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your HRV and your resting heart rate are read together, so one bad night doesn't count twice. Your breathing can flag the signal on its own."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu VFC y tu pulso en reposo se leen juntos, así una mala noche no cuenta dos veces. Tu respiración puede marcar la señal por su cuenta."
+          }
+        }
+      }
+    },
     "Confidence" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -12578,23 +13028,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Confianza"
-          }
-        }
-      }
-    },
-    "Confidence: %lld of 21 nights" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Confidence: %lld of 21 nights"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Confianza: %lld de 21 noches"
           }
         }
       }
@@ -22507,6 +22940,23 @@
         }
       }
     },
+    "Last recorded night · %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last recorded night · %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Última noche registrada · %@"
+          }
+        }
+      }
+    },
     "Last synced %@" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -23464,6 +23914,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Más de lo habitual anoche."
+          }
+        }
+      }
+    },
+    "Longer than usual." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Longer than usual."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Más de lo habitual."
           }
         }
       }
@@ -37048,6 +37515,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Corto para tu objetivo anoche."
+          }
+        }
+      }
+    },
+    "Short of your target." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Short of your target."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Corto para tu objetivo."
           }
         }
       }

@@ -52,6 +52,12 @@ struct LiquidMetricSheetView: View {
     @State private var heartRateLoading = false
     @State private var trendData: [TrendPoint] = []
     @State private var trendLoading = false
+    /// B8 · ¿El loader del trend ya CONTESTÓ? `trendLoading` arranca en `false`, así que el
+    /// primer frame anunciaba «Sin datos de los últimos 14 días» sobre una hoja que estaba
+    /// cargando, y un instante después saltaba al esqueleto. No se puede usar
+    /// `trendData.isEmpty` como proxy de «cargando»: una métrica que de verdad no tiene 14
+    /// días de historia se quedaría en el esqueleto para siempre.
+    @State private var trendIntentado = false
 
     init(info: MetricInfo,
          appleConnectHint: Bool = false,
@@ -226,9 +232,18 @@ struct LiquidMetricSheetView: View {
             // Modo DEMO (/inject 2026-07-23): siembra datos de muestra para pulir la hoja
             // en un simulador sin datos de Apple Salud. Apagar antes de cerrar la sesión.
             if demo {
-                heartRateCurve = Self.demoCurva()
-                trendData = Self.demoTrend(info.id)
+                // B7 · El fixture siembra SOLO lo que esta hoja de verdad dibuja. Sembrar
+                // el trend para cualquier id hacía que `sleep_latency` —que no lleva
+                // gráfica de 14 días— luciera conteos por banda calculados sobre una serie
+                // invisible, y la curva de FC se generaba en las 17 hojas. Los dos gates
+                // son los MISMOS que deciden si el bloque se pinta (`classicContent`).
+                if info.id == "heart_rate" { heartRateCurve = Self.demoCurva() }
+                if trendLoader != nil { trendData = Self.demoTrend(info.id) }
                 levelsHost.load(rows: Self.demoRows(info.id))
+                // B8 · El intento se marca DESPUÉS de sembrar, en la misma tarea: si lo
+                // hiciera la otra, un orden de arranque distinto dejaría un frame de
+                // «Sin datos de los últimos 14 días» antes de que llegue la serie.
+                trendIntentado = true
                 return
             }
             // Paridad MetricInfoSheet:128-133 — curva FC solo para heart_rate.
@@ -245,6 +260,7 @@ struct LiquidMetricSheetView: View {
             let loaded: [TrendPoint] = await loader()
             trendData = loaded.sorted { (a: TrendPoint, b: TrendPoint) in a.date < b.date }
             trendLoading = false
+            trendIntentado = true
         }
         .task {
             if demo { return }
@@ -371,6 +387,26 @@ struct LiquidMetricSheetView: View {
         }
     }
 
+    /// B4 · El mismo tinte dicho para TEXTO (la línea de lectura), no para el numeral.
+    /// El ámbar de la familia (`LiquidColor.ambar`, #C4631F) es voz de DATO: sobre el papel
+    /// de la hoja mide 3.8:1, por debajo del 4.5:1 que pide AA a los 16 pt en negrita del
+    /// destacado de `LiquidReadingLine`. `atencionTexto` (#8F4712) es ese mismo ámbar dicho
+    /// para leerse (6.1:1) — la traducción que el DS ya hace en `LiquidLevelRow` con
+    /// `.atencion`, y la que `tinte(.warn)` devuelve. Toca las DOS métricas de hue ámbar
+    /// (esfuerzo y temperatura de piel), no solo esfuerzo, y deja el ámbar crudo reservado
+    /// al numeral: un solo datum con color por hoja.
+    private func tinteTexto(_ t: MetricInfo.Tint) -> Color {
+        switch t {
+        case .metric where tonoEsAmbar: return LiquidColor.atencionTexto
+        default:                        return tinte(t)
+        }
+    }
+
+    /// Las dos métricas cuyo hue (`tono`) ES el ámbar de la familia.
+    private var tonoEsAmbar: Bool {
+        datoInfo.id == "strain" || datoInfo.id == "skin_temp"
+    }
+
     // MARK: Cabecera
 
     /// Recovery y strain: «/ 100» · «/ 21» solo con score real (paridad :369-373).
@@ -385,7 +421,13 @@ struct LiquidMetricSheetView: View {
     /// Salud es `false` SIEMPRE: la cabecera de muestra nunca pintaría de dónde salió el
     /// dato y la variante rica de sueño quedaría sin nada que verificar. Fuera de demo es
     /// `appleSource` tal cual (no-op en producción).
-    private var origenApple: Bool { demo || appleSource }
+    ///
+    /// B7 · Nunca para las submétricas de sueño: rendimiento, eficiencia, reparador,
+    /// despertares y latencia los CALCULA Cénit sobre la noche, así que el demo las
+    /// rotulaba «Apple Salud» — una procedencia inventada sobre un número nuestro.
+    private var origenApple: Bool {
+        (demo && !datoInfo.id.hasPrefix("sleep_")) || appleSource
+    }
 
     /// D8 · El esfuerzo ESTIMADO es la carga que MIDIÓ Apple (FER-883), no un cálculo
     /// nuestro: el tile de Hoy ya lo dice así y la hoja está a un tap de distancia.
@@ -444,7 +486,7 @@ struct LiquidMetricSheetView: View {
 
     @ViewBuilder private var recoveryContent: some View {
         if let frase = recoveryReadingText {
-            LiquidReadingLine(frase, highlightTone: tinte(datoInfo.headerTint))
+            LiquidReadingLine(frase, highlightTone: tinteTexto(datoInfo.headerTint))
         }
         recoveryZoneMeter
         levelsBlock
@@ -491,7 +533,7 @@ struct LiquidMetricSheetView: View {
 
     @ViewBuilder private var vitalContent: some View {
         if let frase = vitalReadingText {
-            LiquidReadingLine(frase, highlightTone: tinte(datoInfo.headerTint))
+            LiquidReadingLine(frase, highlightTone: tinteTexto(datoInfo.headerTint))
         }
         levelsBlock
         if !whatMovesIt.isEmpty {
@@ -562,7 +604,7 @@ struct LiquidMetricSheetView: View {
 
     @ViewBuilder private var strainContent: some View {
         if let frase = vitalReadingText {
-            LiquidReadingLine(frase, highlightTone: tinte(datoInfo.headerTint))
+            LiquidReadingLine(frase, highlightTone: tinteTexto(datoInfo.headerTint))
         }
         levelsBlock
     }
@@ -579,10 +621,18 @@ struct LiquidMetricSheetView: View {
             let a11yRegularidad: String? = regularidadSueno == nil
                 ? String(localized: "not enough nights yet")
                 : nil
+            // Pasada UX H3: el MISMO número que mostró el tile (`displayValue`), no la
+            // suma de etapas por otro camino — decían 7:20 y 7:12 para la misma noche.
+            // B5 · Y en el MISMO formato: el catálogo escribe «7h 12m» mientras el tile
+            // (`LiquidHoyBuilder.sleepClockText`), el eje (`levelsValueFormat`) y el chip
+            // del scrub dicen «7:12». Se formatea caller-side desde los MISMOS minutos que
+            // clasifican la noche, sin tocar `MetricInfoCatalog` (el tile lo comparte). Sin
+            // minutos, el string del catálogo tal cual. Fuera del call y tipado: trampa del
+            // type-checker con expresiones mixtas dentro de un builder.
+            let dormido: String = datoInfo.levelsTodayValue.map(Self.sleepHM)
+                ?? datoInfo.displayValue
             LiquidDobleDato(
-                // Pasada UX H3: el MISMO número que mostró el tile (`displayValue`), no la
-                // suma de etapas por otro camino — decían 7:20 y 7:12 para la misma noche.
-                principal: (valor: datoInfo.displayValue,
+                principal: (valor: dormido,
                             etiqueta: String(localized: "hours asleep")),
                 secundario: (valor: regularidad,
                              etiqueta: String(localized: "regularity")),
@@ -603,12 +653,19 @@ struct LiquidMetricSheetView: View {
             let ventanaNoche: String? = night.endTs > night.startTs
                 ? "\(Self.clock(night.startTs)) → \(Self.clock(night.endTs))"
                 : nil
+            // B6 · El overline solo afirma «Anoche» cuando la noche ES de anoche: `night`
+            // es «la última noche registrada», así que tras dos días sin reloj la hoja
+            // fechaba como de anoche una noche vieja. Tipado y fuera del call (trampa del
+            // type-checker con ternarios en builders).
+            let overlineNoche: String = nocheEsDeAnoche
+                ? String(localized: "Last night")
+                : String(localized: "Last recorded night · \(Self.diaCorto(Self.fecha(night.startTs)))")
             // D10 · Y con las CUATRO etapas en 0 (mismo fallback) no hay noche que dibujar:
             // la barra saldría hueca bajo un overline suelto y una leyenda vacía.
             if sleepEtapasMedidas(night) {
                 LiquidStageBar(
                     etapas: sleepEtapas(night),
-                    overline: String(localized: "Last night"),
+                    overline: overlineNoche,
                     ventana: ventanaNoche)
             }
             // `LiquidLaneLabel` RETIRADO (L3.3): la frase display de los niveles ya dice el
@@ -662,14 +719,37 @@ struct LiquidMetricSheetView: View {
     }
 
     /// Paridad `sleepReadingText` (:549-557) — mismas claves.
+    ///
+    /// B6 · Las dos variantes que decían «anoche» tienen gemela sin fecha: si el overline
+    /// ya degradó a «Última noche registrada · 20 jul», la lectura no puede seguir
+    /// afirmando «anoche» dos líneas más abajo. Las otras dos frases no fechan nada.
     private var sleepReadingText: String? {
         switch activeLevelKey {
         case "optimal":  return String(localized: "Right in your target range.")
         case "adequate": return String(localized: "Enough, close to your target.")
-        case "short":    return String(localized: "Short of your target last night.")
-        case "extended": return String(localized: "Longer than usual last night.")
+        case "short":
+            return nocheEsDeAnoche
+                ? String(localized: "Short of your target last night.")
+                : String(localized: "Short of your target.")
+        case "extended":
+            return nocheEsDeAnoche
+                ? String(localized: "Longer than usual last night.")
+                : String(localized: "Longer than usual.")
         default:         return nil
         }
+    }
+
+    /// B6 · ¿La noche que la hoja PINTA es la de anoche? Se ancla en el día en que la noche
+    /// EMPEZÓ: dormirse a las 23:38 de ayer o a la 1:00 de hoy son las dos formas normales
+    /// de «anoche» (0 o 1 día de distancia); a partir de dos, la noche es vieja.
+    private var nocheEsDeAnoche: Bool {
+        guard let night = nocheSueno else { return false }
+        let cal: Calendar = Calendar.current
+        let inicio: Date = Self.fecha(night.startTs)
+        let dias: Int? = cal.dateComponents([.day],
+                                            from: cal.startOfDay(for: inicio),
+                                            to: cal.startOfDay(for: Date())).day
+        return (dias ?? 0) <= 1
     }
 
     /// «7:12» desde minutos (paridad `sleepHM` :510-512).
@@ -678,9 +758,13 @@ struct LiquidMetricSheetView: View {
         return String(format: "%d:%02d", m / 60, m % 60)
     }
 
+    private static func fecha(_ ts: Int) -> Date {
+        Date(timeIntervalSince1970: TimeInterval(ts))
+    }
+
     /// Reloj local «23:38» desde un unix timestamp (paridad `clock` :514-518).
     private static func clock(_ ts: Int) -> String {
-        clockFmt.string(from: Date(timeIntervalSince1970: TimeInterval(ts)))
+        clockFmt.string(from: fecha(ts))
     }
     private static let clockFmt: DateFormatter = {
         let f = DateFormatter(); f.setLocalizedDateFormatFromTemplate("Hmm"); return f
@@ -716,7 +800,7 @@ struct LiquidMetricSheetView: View {
         let popupFecha: (Date) -> String = { (d: Date) -> String in Self.popupDiaFmt.string(from: d) }
         let popupValor: (Double) -> String = { (v: Double) -> String in self.trendValueFormat(v) }
         let marcasY: [(valor: Double, etiqueta: String)] =
-            Self.ticksY(trendData.map(\.value), formato: popupValor)
+            Self.ticksY(trendData.map(\.value), cuanto: trendCuanto, formato: popupValor)
         return LiquidTrendChart(
             titulo: String(localized: "Last 14 days"),
             readout: trendReadout,
@@ -759,9 +843,19 @@ struct LiquidMetricSheetView: View {
         }
     }
 
+    /// B8 · Dos defectos heredados, en orden. (a) La carga se evalúa PRIMERO y por el
+    /// intento, no por `trendData.isEmpty`: con `trendLoading` arrancando en `false` el
+    /// primer frame anunciaba «Sin datos de los últimos 14 días» y un instante después
+    /// saltaba al esqueleto, y usar la serie vacía como proxy colgaría el esqueleto para
+    /// siempre en una métrica que de verdad no tiene historia. (b) Con EXACTAMENTE una
+    /// lectura la hoja negaba el dato que su propia cabecera acaba de imprimir; se dice lo
+    /// honesto, con la clave que el resto de la app ya usa para este caso.
     private var trendEstado: LiquidChartEstado {
+        if trendLoading || (trendLoader != nil && !trendIntentado) { return .cargando }
         if trendData.count > 1 { return .datos }
-        if trendLoading { return .cargando }
+        if trendData.count == 1 {
+            return .vacio(String(localized: "Only one reading in this range: not enough to draw a line yet."))
+        }
         return .vacio(String(localized: "No data for the last 14 days."))
     }
 
@@ -786,12 +880,34 @@ struct LiquidMetricSheetView: View {
     }
 
     /// Auto-escala del trend (paridad :1096-1102).
+    ///
+    /// Espejo de B1 en esta gráfica: desde D13 el trend pinta washes de clasificación, y
+    /// `LiquidChartPlot.washes` los CLAMPEA al dominio. Con el dominio hecho solo de los
+    /// datos, una banda activa fuera de la serie salía de alto 0 (invisible) y una que
+    /// solapaba a medias pintaba una astilla cuyo borde NO era su umbral — la gráfica y la
+    /// tabla de bandas de abajo decían cosas distintas en las 5 submétricas de sueño. Se
+    /// unen al pool las cotas finitas de la banda ACTIVA (las mismas que se dibujan, así
+    /// que sueño —cuyas cotas van en horas y su serie en minutos— queda fuera solo).
     private var trendValueRange: ClosedRange<Double> {
         let vals = trendData.map(\.value)
-        guard let lo = vals.min(), let hi = vals.max() else { return 0...100 }
+        guard !vals.isEmpty else { return 0...100 }
+        let cotasActiva: [Double] = trendBandas.first(where: { $0.activa })
+            .map { (b: LiquidChartBanda) -> [Double] in [b.lo, b.hi].compactMap { $0 } } ?? []
+        let pool: [Double] = vals + cotasActiva
+        guard let lo = pool.min(), let hi = pool.max() else { return 0...100 }
         let span = max(hi - lo, 1)
         let pad = span * 0.15
         return max(0, lo - pad)...hi + pad
+    }
+
+    /// B2 · El PASO con que esta métrica escribe su valor (espejo de `trendValueFormat`):
+    /// una décima donde el formato imprime decimal, un entero (o un minuto, en sueño) en el
+    /// resto. `ticksY` cuantiza con él ANTES de posicionar la marca.
+    private var trendCuanto: Double {
+        switch datoInfo.id {
+        case "strain", "stress", "resp_rate": return 0.1
+        default:                              return 1
+        }
     }
 
     /// Paridad `trendValueFormat` (:1104-1121) — mismos formatos por métrica.
@@ -862,11 +978,24 @@ struct LiquidMetricSheetView: View {
 
     /// 3 marcas del eje Y (mín · medio · máx de los DATOS, no del dominio: sus bordes son
     /// puro respiro y etiquetarlos imprimiría valores que nunca ocurrieron).
-    private static func ticksY(_ vals: [Double],
+    ///
+    /// B2 · El valor se CUANTIZA al mismo paso con que se escribe (`cuanto`) ANTES de
+    /// posicionarlo: la etiqueta redondeaba («86 %») pero la línea se dibujaba en el valor
+    /// crudo (85.5), justo encima del borde de la banda «85 – 100 %», así que el eje
+    /// señalaba un umbral que no era el suyo. Tras cuantizar, el tick medio se omite si
+    /// cayó sobre un extremo (una serie plana no gana nada con la marca repetida).
+    private static func ticksY(_ vals: [Double], cuanto: Double,
                                formato: (Double) -> String) -> [(valor: Double, etiqueta: String)] {
         guard let lo = vals.min(), let hi = vals.max(), hi > lo else { return [] }
-        let medio: Double = (lo + hi) / 2
-        return [lo, medio, hi].map { (v: Double) -> (valor: Double, etiqueta: String) in
+        let q: (Double) -> Double = { (v: Double) -> Double in
+            guard cuanto > 0 else { return v }
+            return (v / cuanto).rounded() * cuanto
+        }
+        let qLo: Double = q(lo), qHi: Double = q(hi), qMedio: Double = q((lo + hi) / 2)
+        var valores: [Double] = [qLo]
+        if qMedio > qLo && qMedio < qHi { valores.append(qMedio) }
+        if qHi > qLo { valores.append(qHi) }
+        return valores.map { (v: Double) -> (valor: Double, etiqueta: String) in
             (valor: v, etiqueta: formato(v))
         }
     }
@@ -943,8 +1072,11 @@ struct LiquidMetricSheetView: View {
         let popupValor: (Double) -> String = { (val: Double) -> String in
             "\(Int(val.rounded())) \(String(localized: "bpm"))"
         }
+        // B2 · La curva de FC sufría el mismo desajuste que el trend: el tick medio se
+        // etiquetaba «72» y se dibujaba en 71.5. Su paso es el latido entero.
         let marcasY: [(valor: Double, etiqueta: String)] =
-            Self.ticksY(v, formato: { (val: Double) -> String in "\(Int(val.rounded()))" })
+            Self.ticksY(v, cuanto: 1,
+                        formato: { (val: Double) -> String in "\(Int(val.rounded()))" })
         LiquidCurvaFC(
             titulo: String(localized: "Beats per minute"),
             subtitulo: String(localized: "5-minute average · since midnight"),
@@ -1094,7 +1226,14 @@ struct LiquidMetricSheetView: View {
             let conteo: String = nightly
                 ? String(localized: "\(d.counts[i]) of your last \(d.total) nights")
                 : String(localized: "\(d.counts[i]) of your last \(d.total) days")
-            LiquidFraseNivel(nivel: nombre, conteo: conteo, tono: tono)
+            // B9 · Sin serie (la ruta del Detalle de Sueño, que presenta la hoja sin
+            // `levelsSeriesLoader` y por eso no pasa por `levelsCargando`) el conteo
+            // arrancaba en «0 de tus últimos 0 días». Se calla el conteo, NO el nivel: el
+            // nombre del carril es verdad —son umbrales, no datos— y es la respuesta
+            // literal a «¿en qué carril caigo?», el segundo elemento más grande de la hoja.
+            LiquidFraseNivel(nivel: nombre,
+                             conteo: d.total == 0 ? "" : conteo,
+                             tono: tono)
         } else {
             let total: String = nightly
                 ? String(localized: "\(d.total) nights with data in this range")
@@ -1114,14 +1253,17 @@ struct LiquidMetricSheetView: View {
         let ejeFmt: (Date) -> String = Self.ejeFechaFmt(puntos)
         let popupFecha: (Date) -> String = { (d: Date) -> String in Self.popupDiaFmt.string(from: d) }
         let popupValor: (Double) -> String = { (v: Double) -> String in self.scrubValor(v) }
+        // B1 · UNA sola evaluación: el dominio y sus marcas tienen que salir del mismo
+        // cálculo o el eje termina etiquetando una escala que la gráfica no dibuja.
+        let dominio: ClosedRange<Double> = nivelesDominio(d, values: window.values)
         return LiquidGraficaNiveles(
             puntos: puntos,
             bandas: d.levels.enumerated().map { (i, lvl) in
                 LiquidChartBanda(lo: lvl.lower, hi: lvl.upper, color: tono,
                                  activa: i == highlight)
             },
-            dominio: nivelesDominio(d, values: window.values),
-            ticksY: nivelesMarcasY(d, dominio: nivelesDominio(d, values: window.values)),
+            dominio: dominio,
+            ticksY: nivelesMarcasY(d, dominio: dominio),
             tono: tono,
             // Hoy = el último punto dibujado (paridad marksLastPoint/markedPointHollow
             // :144-145): anillo hueco mientras exploras un nivel que no es el de hoy.
@@ -1150,11 +1292,21 @@ struct LiquidMetricSheetView: View {
         // viven en 50–62, así que la mitad de arriba de la gráfica salía vacía y la
         // línea aplastada abajo). Con esto la pregunta que la gráfica contesta —«¿dónde
         // caigo dentro de mi banda?»— se sigue leyendo, y sin desperdiciar alto.
-        let activa: MetricLevels.Level? = d.activeIndex.flatMap {
-            d.levels.indices.contains($0) ? d.levels[$0] : nil
-        }
-        let bounds: [Double] = (activa.map { [$0.lower, $0.upper].compactMap { $0 } }
-            ?? d.levels.flatMap { [$0.lower, $0.upper].compactMap { $0 } })
+        //
+        // B1 · «La banda ACTIVA» son DOS: la del usuario (el carril que TOCÓ) unida a la de
+        // hoy. Con solo la de hoy, tocar «Elevada ≥ 80» sobre una serie de 50–62 dejaba el
+        // dominio en 48.8–63.4 y `LiquidChartPlot.washes` clampeaba esa franja a alto 0:
+        // el toque encendía `atenuarFuera`, todos los puntos bajaban al 25 % y la gráfica
+        // quedaba gris y vacía mientras el a11yHint prometía «Resalta este nivel en la
+        // gráfica». La unión (y no el reemplazo) también evita que la escala se dispare al
+        // explorar y vuelva de golpe: crece una sola vez y regresa al soltar.
+        let indices: [Int] = Set([nivelDestacado(d), d.activeIndex].compactMap { $0 }).sorted()
+        let destacados: [MetricLevels.Level] = indices
+            .filter { d.levels.indices.contains($0) }
+            .map { d.levels[$0] }
+        let bounds: [Double] = destacados.isEmpty
+            ? d.levels.flatMap { [$0.lower, $0.upper].compactMap { $0 } }
+            : destacados.flatMap { [$0.lower, $0.upper].compactMap { $0 } }
         let pool = bounds + values
         guard let lo0 = pool.min(), let hi0 = pool.max(), hi0 > lo0 else {
             let v = values.first ?? bounds.first ?? 0
@@ -1285,6 +1437,13 @@ struct LiquidMetricSheetView: View {
             // y el eje «10000» — el mismo número escrito de dos maneras).
             return Self.milesFmt.string(from: NSNumber(value: Int(v.rounded())))
                 ?? "\(Int(v.rounded()))"
+        case "stress":
+            // B3 · Con una décima, como el numeral del héroe («1.2 / 3»): redondeado a
+            // entero, la hoja decía «1.2 / 3» arriba, «1–2» en las filas y «1 / 3» en el
+            // chip del scrub — el mismo número escrito de tres maneras sobre una escala de
+            // 0 a 3, donde la décima ES la resolución del dato. (Respiración se queda en
+            // entero a propósito: sus cortes son enteros y «< 20.0» sería precisión falsa.)
+            return String(format: "%.1f", v)
         default:
             return "\(Int(v.rounded()))"
         }
@@ -1393,7 +1552,16 @@ private enum LiquidSheetCopy {
         case "sleep_restorative": return String(localized: "Restorative")
         case "sleep_awakenings":  return String(localized: "Awakenings")
         case "sleep_latency":     return String(localized: "Latency")
-        default:                  return id
+        default:
+            // B10 · Este `default` es un bug silencioso, no un fallback: una fábrica nueva
+            // imprimiría «vo2max» como TÍTULO de la hoja y nadie se enteraría hasta verlo
+            // en pantalla. Se avisa, no se aborta: un `assertionFailure` dentro de algo que
+            // se evalúa en `body` mata la app en DEBUG — justo el build de las sesiones
+            // /inject. (La migración de fondo es F6.)
+            #if DEBUG
+            print("LiquidSheetCopy · id sin titulo: \(id)")
+            #endif
+            return id
         }
     }
 

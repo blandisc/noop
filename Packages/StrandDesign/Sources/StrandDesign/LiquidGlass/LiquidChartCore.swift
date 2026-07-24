@@ -42,8 +42,15 @@ public struct LiquidChartBanda: Sendable {
         self.activa = activa
     }
 
+    /// Una banda SIN cotas no contiene NADA — la misma guarda que `TrendBand.contains`
+    /// (`TrendChart.swift:47`). Sin ella los dos lados abiertos se cancelan y la banda se
+    /// traga todo valor: como este resolver decide el wash, el color de cada disco, el del
+    /// anillo del scrub y el del popup, un caller que olvidara sus cortes lavaría la gráfica
+    /// entera con un solo color y nadie lo notaría. Decir «no tengo intervalo» es honesto;
+    /// decir «todo» es una mentira que la pantalla no distingue de una clasificación real.
     func contiene(_ v: Double) -> Bool {
-        (lo == nil || v >= lo!) && (hi == nil || v < hi!)
+        guard lo != nil || hi != nil else { return false }
+        return (lo == nil || v >= lo!) && (hi == nil || v < hi!)
     }
 }
 
@@ -613,9 +620,13 @@ struct LiquidChartPlot: View {
     /// nunca). En reposo, la banda activa se sigue diciendo con el wash (I1).
     @ViewBuilder private func puntosDato(_ w: CGFloat, _ h: CGFloat) -> some View {
         let n = puntos.count
-        let paso: CGFloat = n > 1 ? plotW(w) / CGFloat(n - 1) : plotW(w)
-        // Densidad medida, no solo conteo: 60 puntos en un iPhone SE se tocarían.
-        if n > 1, n <= LiquidChart.puntoDatoUmbral, paso >= LiquidChart.puntoDatoRadio * 4 {
+        // Densidad REAL, no solo conteo: 60 puntos en un iPhone SE se tocarían. El arreglo
+        // de la separación vive en `LiquidChart.hayEspacioParaPuntos` (mide el paso MÍNIMO
+        // entre centros ya mapeados, que con `mapeoPorTiempo` no es el promedio). El `n <=
+        // puntoDatoUmbral` de la condición corta ANTES de construir el arreglo de centros,
+        // así que la serie larga no paga el barrido.
+        if n > 1, n <= LiquidChart.puntoDatoUmbral,
+           LiquidChart.hayEspacioParaPuntos(centros: puntos.indices.map { x($0, w) }) {
             let hayActiva = atenuarFuera && bandas.contains { $0.activa }
             ForEach(Array(puntos.enumerated()), id: \.offset) { i, punto in
                 // Mismo resolver de banda que el anillo del scrub.
