@@ -422,7 +422,10 @@ struct LiquidMetricSheetView: View {
             tono: tono,
             // La variante rica de sueño (y su skeleton) reemplazan el numeral con el
             // doble dato (paridad :333).
-            numeral: (isSleepRich || isSleepLoading) ? nil : datoInfo.displayValue,
+            // Pasada UX H3: durante la carga la hoja de sueño abría SIN número — el usuario
+            // tocaba «7:20» y llegaba a una pantalla muda. Solo la variante rica lo cede al
+            // doble dato; mientras carga se conserva el numeral que venía del tile.
+            numeral: isSleepRich ? nil : datoInfo.displayValue,
             unidad: datoInfo.unit,
             sufijo: sufijo,
             numeralTono: tinte(datoInfo.headerTint),
@@ -577,7 +580,9 @@ struct LiquidMetricSheetView: View {
                 ? String(localized: "not enough nights yet")
                 : nil
             LiquidDobleDato(
-                principal: (valor: Self.sleepHM(night.stages.asleep),
+                // Pasada UX H3: el MISMO número que mostró el tile (`displayValue`), no la
+                // suma de etapas por otro camino — decían 7:20 y 7:12 para la misma noche.
+                principal: (valor: datoInfo.displayValue,
                             etiqueta: String(localized: "hours asleep")),
                 secundario: (valor: regularidad,
                              etiqueta: String(localized: "regularity")),

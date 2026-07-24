@@ -12418,6 +12418,159 @@
         }
       }
     },
+    "I don't know your baseline yet" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I don't know your baseline yet"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aún no conozco tu base"
+          }
+        }
+      }
+    },
+    "Your sleep came in below your range." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your sleep came in below your range."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu sueño quedó abajo de tu rango."
+          }
+        }
+      }
+    },
+    "Your sleep came in above your range." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your sleep came in above your range."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu sueño quedó arriba de tu rango."
+          }
+        }
+      }
+    },
+    "Your autonomic signal came in below your range." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your autonomic signal came in below your range."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu señal autonómica quedó abajo de tu rango."
+          }
+        }
+      }
+    },
+    "Your autonomic signal came in above your range." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your autonomic signal came in above your range."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu señal autonómica quedó arriba de tu rango."
+          }
+        }
+      }
+    },
+    "Your skin temperature came in below your baseline." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your skin temperature came in below your baseline."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu temperatura de piel quedó abajo de tu base."
+          }
+        }
+      }
+    },
+    "Your skin temperature came in above your baseline." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your skin temperature came in above your baseline."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu temperatura de piel quedó arriba de tu base."
+          }
+        }
+      }
+    },
+    "Your training load came in below your usual." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your training load came in below your usual."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu carga quedó abajo de lo habitual."
+          }
+        }
+      }
+    },
+    "Your training load came in above your usual." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your training load came in above your usual."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu carga quedó arriba de lo habitual."
+          }
+        }
+      }
+    },
     "Confidence" : {
       "extractionState" : "stale",
       "localizations" : {

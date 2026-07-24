@@ -106,11 +106,13 @@ public enum LiquidType {
                                                                relativeTo: .caption2)
 
     /// `label` — rótulo 11.5/600 +1.5, MAYÚSCULAS. Labels de tile («FC EN REPOSO»).
-    public static let label = InstrumentoType.grotesk(11.5, weight: .semibold)
+    public static let label = InstrumentoType.grotesk(11.5, weight: .semibold,
+                                                       relativeTo: .caption)
     public static let labelTracking: CGFloat = 1.5
 
     /// `micro` — rótulo 11.5/600 +1.5. Labels de orbe («AUTONÓMICO»).
-    public static let micro = InstrumentoType.grotesk(11.5, weight: .semibold)
+    public static let micro = InstrumentoType.grotesk(11.5, weight: .semibold,
+                                                       relativeTo: .caption)
     public static let microTracking: CGFloat = 1.5
 
     /// `micro/estado` — 9/600. Chips de estado («EN TU RANGO»).

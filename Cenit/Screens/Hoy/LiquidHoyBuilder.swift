@@ -161,7 +161,7 @@ enum LiquidHoyBuilder {
         -> (LiquidHoyModel.Hero, HeroRoute) {
         if let prep, prep.verdict != .lowSignal {
             if prep.isNightAnchored {
-                return (veredicto(prep.verdict, nights: nights), .autonomic)
+                return (veredicto(prep.verdict, nights: nights, prep: prep), .autonomic)
             }
             return (lecturaDeDia(prep), .autonomic)
         }
@@ -173,7 +173,26 @@ enum LiquidHoyBuilder {
     }
 
     /// Renglones 1 (full/caution/easy con noche): la palabra-veredicto con su tono.
-    private static func veredicto(_ v: Preparedness.Verdict, nights: Int) -> LiquidHoyModel.Hero {
+    /// Pasada UX H8: con veredicto ámbar el subtítulo repetía el titular («Bien, con un
+    /// detalle» / «Vas bien, con un detalle a vigilar») y el usuario tenía que escanear los
+    /// tres orbes para saber CUÁL está fuera. `prep.drivers` ya lo sabe: se nombra el eje y
+    /// su dirección. `nil` = ninguno fuera → el caller usa la frase genérica.
+    private static func subtituloDetalle(_ prep: Preparedness.Read?) -> String? {
+        guard let fuera = prep?.drivers.first(where: { $0.state.isOut }) else { return nil }
+        switch (fuera.axis, fuera.state) {
+        case (.sleep, .low):      return String(localized: "Your sleep came in below your range.")
+        case (.sleep, _):         return String(localized: "Your sleep came in above your range.")
+        case (.autonomic, .low):  return String(localized: "Your autonomic signal came in below your range.")
+        case (.autonomic, _):     return String(localized: "Your autonomic signal came in above your range.")
+        case (.thermal, .low):    return String(localized: "Your skin temperature came in below your baseline.")
+        case (.thermal, _):       return String(localized: "Your skin temperature came in above your baseline.")
+        case (.load, .low):       return String(localized: "Your training load came in below your usual.")
+        case (.load, _):          return String(localized: "Your training load came in above your usual.")
+        }
+    }
+
+    private static func veredicto(_ v: Preparedness.Verdict, nights: Int,
+                                  prep: Preparedness.Read? = nil) -> LiquidHoyModel.Hero {
         let clamped = min(nights, 21)
         // El tether de confianza vive SOLO aquí (paridad con `SelloConfianzaArco`).
         let confianza = clamped < 21
@@ -192,7 +211,8 @@ enum LiquidHoyBuilder {
                 title: String(localized: "Good, one thing to watch"),
                 highlight: String(localized: "hero.highlight.caution", defaultValue: "one thing"),
                 highlightTone: LiquidColor.atencion,
-                subtitle: String(localized: "You're doing well, with one thing to watch."),
+                subtitle: subtituloDetalle(prep) ??
+                    String(localized: "You're doing well, with one thing to watch."),
                 confianza: confianza)
         case .easy, .lowSignal:
             // lowSignal jamás llega aquí (el if-chain lo manda al estado sin datos).
@@ -234,7 +254,9 @@ enum LiquidHoyBuilder {
             : String(localized: "Connect Apple Health in Settings and your daily verdict will appear here.")
         return .demotado(
             kicker: String(localized: "READINESS"),
-            title: String(localized: "Not enough data yet"),
+            // Pasada UX H4: decía «Aún sin datos suficientes» sobre ocho tiles LLENOS de
+            // datos. Lo que falta no son datos, es la base de 21 noches.
+            title: String(localized: "I don\'t know your baseline yet"),
             subtitle: subtitle)
     }
 

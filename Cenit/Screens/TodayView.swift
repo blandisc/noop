@@ -1081,7 +1081,10 @@ struct TodayView: View {
     private func openLiquidSenal(_ id: String) {
         switch id {
         case "autonomico":
-            showAutonomicDetail = true
+            // Pasada UX H2: abría una hoja de PROSA sin un solo número, mientras el orbe
+            // que tocaste decía «56 ms». Va a la hoja Liquid de VFC —la señal que manda en
+            // el eje— hasta que exista la pantalla propia de autonómico.
+            metricDetail = .hrv(latestFromDisplay { $0.avgHrv }?.value)
         case "sueno":
             metricDetail = .sleep(resolveMeasured(todayOnly: true) { $0.totalSleepMin }
                 .map { Int($0.value.rounded()) })

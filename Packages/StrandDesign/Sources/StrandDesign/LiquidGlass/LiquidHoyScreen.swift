@@ -296,7 +296,7 @@ public struct LiquidHoyContent: View {
                 }
             }
         }
-        .frame(height: LiquidSpace.senalesAlto)
+        .frame(minHeight: LiquidSpace.senalesAlto)   // crece en Dynamic Type (UX H7)
         .frame(maxWidth: .infinity)
     }
 }
