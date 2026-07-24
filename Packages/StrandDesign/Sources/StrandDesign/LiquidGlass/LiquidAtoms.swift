@@ -13,9 +13,10 @@ public struct LiquidIconDrop: View {
     private let iconSize: CGFloat
     private let fillAlpha: Double
 
-    /// La gota de tile: 22 pt con icono 13, tono al 10 %.
+    /// La gota de tile: 24 pt con icono 14, tono al 10 % (subida del 22 del handoff,
+    /// elevación /inject — más presencia sin robarle al valor).
     public init(_ glyph: LiquidIcon.Glyph, tone: Color) {
-        self.init(glyph, tone: tone, size: 22, iconSize: 13, fillAlpha: 0.10)
+        self.init(glyph, tone: tone, size: 24, iconSize: 14, fillAlpha: 0.10)
     }
 
     /// Variante dimensionada (ModeTile usa 28/15 con alfa 0.12).
@@ -41,9 +42,16 @@ public struct LiquidIconDrop: View {
                         startPoint: .topLeading, endPoint: .bottomTrailing),
                     lineWidth: 1)
             Circle().strokeBorder(LiquidColor.vidrioBordeFuerte, lineWidth: 0.5)
-            LiquidIcon(glyph, size: iconSize).foregroundStyle(tone)
+            LiquidIcon(glyph, size: iconSize, color: tone)
         }
         .frame(width: size, height: size)
+        // B2 · La gota es SIEMPRE decorativa: nunca lleva label propio, el rótulo del dato
+        // vive al lado. Sin esto, los glifos de métrica —que se dibujan como SF Symbols—
+        // le regalaban a VoiceOver una parada con el nombre del símbolo EN INGLÉS
+        // («moon», «waveform path ecg») antes del dato, porque el `children: .contain` de
+        // la cabecera y de los tiles no absorbe hijos. Mismo patrón que ya usa
+        // `LiquidVerMas` con el glifo de Tendencias.
+        .accessibilityHidden(true)
     }
 }
 

@@ -131,7 +131,9 @@ struct SleepDetailScreen: View {
             nightDC = await loadNightDC()
         }
         .sheet(item: $metricInfo) { info in
-            MetricInfoSheet(info: info, theme: theme, trendLoader: trendLoader(for: info.id))
+            // Cutover F6 (decisión D1 del revote): las submétricas de sueño abren la
+            // hoja Liquid (variante clásica).
+            LiquidMetricSheetView(info: info, trendLoader: trendLoader(for: info.id))
         }
         .sheet(isPresented: $showStages) {
             SleepStagesInfoSheet(theme: theme)

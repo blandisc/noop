@@ -24,15 +24,20 @@ public struct LiquidHoyModel: Sendable {
         public let progress: Double?
         public let icon: LiquidIcon.Glyph
         public let state: LiquidSignalState
+        /// El micro-valor del eje YA formateado («56 ms» · «7:20» · «+0.1°») — camino
+        /// 1+3 de la elevación /inject: el orbe muestra su DATO; el icono queda como
+        /// identidad cuando no hay lectura.
+        public let valor: String?
 
         public init(id: String, label: String, caption: String, progress: Double?,
-                    icon: LiquidIcon.Glyph, state: LiquidSignalState) {
+                    icon: LiquidIcon.Glyph, state: LiquidSignalState, valor: String? = nil) {
             self.id = id
             self.label = label
             self.caption = caption
             self.progress = progress
             self.icon = icon
             self.state = state
+            self.valor = valor
         }
     }
 
@@ -45,19 +50,27 @@ public struct LiquidHoyModel: Sendable {
     }
 
     /// El dial-sello 24 h: noche real de anoche (horas 0–24, medianoche arriba) o `nil`
-    /// si no hubo sesión; `marker` = la hora actual.
+    /// si no hubo sesión; `sol` = amanecer/atardecer reales para el arco del día en oro;
+    /// `marker` = la hora actual.
     public struct Dial: Sendable {
         public let night: (start: Double, end: Double)?
+        public let sol: (start: Double, end: Double)?
         public let marker: Double
 
-        public init(night: (start: Double, end: Double)?, marker: Double) {
+        public init(night: (start: Double, end: Double)?,
+                    sol: (start: Double, end: Double)? = nil, marker: Double) {
             self.night = night
+            self.sol = sol
             self.marker = marker
         }
     }
 
     public enum Carga: Sendable {
-        case medida(pos: Double, zone: Int, status: String, state: LiquidSignalState)
+        /// `ratio` es el DATO como texto (p. ej. «1.03»); `razon` es el MISMO dato numérico
+        /// (ACWR) que alimenta el bullet-graph `LiquidCargaEscala` (barra 0→2, muesca en 1.0,
+        /// corredor sano). `pos`/`zone`/`ratio` se conservan por compatibilidad de firma.
+        case medida(pos: Double, zone: Int, status: String, ratio: String?,
+                    razon: Double?, state: LiquidSignalState)
         case calibrando(status: String)
     }
 
@@ -71,10 +84,16 @@ public struct LiquidHoyModel: Sendable {
         public let tone: Color
         public let icon: LiquidIcon.Glyph
         public let origen: LiquidOrigen
+        /// Valencia YA localizada para VoiceOver («mejor que tu base») — el color solo no
+        /// habla (pasada UX). `nil` = sin valencia.
+        public let a11yValencia: String?
+        /// Origen YA localizado para VoiceOver («Apple Salud» / «calculado en tu teléfono»).
+        public let a11yOrigen: String?
 
         public init(id: String, label: String, value: String, unit: String = "",
                     delta: String, deltaTone: LiquidDeltaTone = .neutral, tone: Color,
-                    icon: LiquidIcon.Glyph, origen: LiquidOrigen = .medido) {
+                    icon: LiquidIcon.Glyph, origen: LiquidOrigen = .medido,
+                    a11yValencia: String? = nil, a11yOrigen: String? = nil) {
             self.id = id
             self.label = label
             self.value = value
@@ -84,6 +103,8 @@ public struct LiquidHoyModel: Sendable {
             self.tone = tone
             self.icon = icon
             self.origen = origen
+            self.a11yValencia = a11yValencia
+            self.a11yOrigen = a11yOrigen
         }
     }
 
@@ -94,53 +115,75 @@ public struct LiquidHoyModel: Sendable {
     /// `nil` = la barra de carga no se muestra (el modelo de carga aún no siembra).
     public let carga: Carga?
     public let metricas: [Metrica]
+    /// Hint de VoiceOver del héroe («Abre el detalle»), YA localizado. `nil` = sin hint.
+    /// Orbes y barra de carga lo reutilizan (revote /inject: navegan igual que el héroe).
+    public let heroHint: String?
+    /// La AFORDANCIA de descubrimiento del héroe («Cómo llegué a esto»), YA localizada: la
+    /// pastilla de vidrio con chevron bajo el veredicto. Vive en el MODELO y no dentro de
+    /// `Hero` porque es la misma promesa en los dos estados del héroe (veredicto y
+    /// demotado) y el destino es uno solo — igual que `heroHint`. `nil` = sin pastilla.
+    public let heroPuerta: String?
+    /// Rótulo YA localizado de la barra de carga («CARGA»/«LOAD») — el DS no conoce locales.
+    public let cargaLabel: String
+    /// La fecha completa para VoiceOver («miércoles, 22 de julio de 2026»).
+    public let kickerA11y: String?
+    /// El ambiente semántico del día (tiñe fondo y pulsos): verde/ámbar/rojo/neutro.
+    public let ambiente: LiquidAmbiente
 
     public init(kicker: String, dial: Dial, senales: [Senal], hero: Hero, carga: Carga?,
-                metricas: [Metrica]) {
+                metricas: [Metrica], heroHint: String? = nil,
+                ambiente: LiquidAmbiente = .bien, cargaLabel: String = "CARGA",
+                kickerA11y: String? = nil, heroPuerta: String? = nil) {
+        self.cargaLabel = cargaLabel
+        self.kickerA11y = kickerA11y
         self.kicker = kicker
         self.dial = dial
         self.senales = senales
         self.hero = hero
         self.carga = carga
         self.metricas = metricas
+        self.heroHint = heroHint
+        self.ambiente = ambiente
+        self.heroPuerta = heroPuerta
     }
 
     /// El contenido de muestra del ensamble §7.1 («Dale con todo»).
     public static let ejemplo = LiquidHoyModel(
         kicker: "MIÉ 22 DE JUL",
-        dial: Dial(night: (start: 20, end: 4), marker: 8),
+        dial: Dial(night: (start: 20, end: 4), sol: (start: 6.8, end: 20.3), marker: 8),
         senales: [
-            .init(id: "autonomico", label: "AUTONÓMICO", caption: "EN TU RANGO",
-                  progress: 0.35, icon: .ondaSenal, state: .ok),
+            .init(id: "autonomico", label: "AUTONÓMICO", caption: "3 SEÑALES",
+                  progress: 0.35, icon: .ondaSenal, state: .ok, valor: "EN TU RANGO"),
             .init(id: "sueno", label: "SUEÑO", caption: "EN TU RANGO",
-                  progress: 0.43, icon: .lunaSenal, state: .ok),
+                  progress: 0.43, icon: .lunaSenal, state: .ok, valor: "7:20"),
             .init(id: "termico", label: "TÉRMICO", caption: "EN TU RANGO",
-                  progress: 0.5, icon: .termoSenal, state: .ok),
+                  progress: 0.5, icon: .termoSenal, state: .ok, valor: "+0.1°"),
         ],
         hero: .veredicto(title: "Dale\ncon todo", highlight: "todo",
                          highlightTone: LiquidColor.verdePrimario,
                          subtitle: "Tus 3 señales amanecieron dentro de tu rango.",
                          confianza: nil),
-        carga: .medida(pos: 51.5, zone: 1, status: "EN EQUILIBRIO · 1.03", state: .ok),
+        carga: .medida(pos: 51.5, zone: 1, status: "EN EQUILIBRIO", ratio: "1.03", razon: 1.03, state: .ok),
         metricas: [
-            .init(id: "sueno", label: "SUEÑO", value: "7:20", delta: "En tu base",
+            .init(id: "sleep", label: "SUEÑO", value: "7:20", delta: "En tu base",
                   tone: LiquidColor.indigo, icon: .luna),
-            .init(id: "hrv", label: "HRV", value: "56", unit: "ms", delta: "+2 ms vs tu base",
+            .init(id: "hrv", label: "VFC", value: "56", unit: "ms", delta: "+2 ms vs tu base",
                   deltaTone: .up, tone: LiquidColor.cian, icon: .onda),
             .init(id: "rhr", label: "FC EN REPOSO", value: "52", unit: "lpm", delta: "En tu base",
                   tone: LiquidColor.rosa, icon: .corazon),
-            .init(id: "esfuerzo", label: "ESFUERZO", value: "10.0", delta: "−0.7 vs tu base",
+            .init(id: "strain", label: "ESFUERZO", value: "10.0", delta: "−0.7 vs tu base",
                   deltaTone: .down, tone: LiquidColor.ambar, icon: .llama),
-            .init(id: "pasos", label: "PASOS", value: "8,432", delta: "+612 vs tu base",
+            .init(id: "steps", label: "PASOS", value: "8,432", delta: "+612 vs tu base",
                   deltaTone: .up, tone: LiquidColor.teal, icon: .pasos),
-            .init(id: "piel", label: "TEMP. DE PIEL", value: "+0.1", unit: "°C",
+            .init(id: "skintemp", label: "TEMP. DE PIEL", value: "+0.1", unit: "°C",
                   delta: "En tu base", tone: LiquidColor.ambar, icon: .termo),
-            .init(id: "respiracion", label: "RESPIRACIÓN", value: "14.5", unit: "rpm",
+            .init(id: "resp", label: "RESPIRACIÓN", value: "14.5", unit: "rpm",
                   delta: "En tu base", tone: LiquidColor.azul, icon: .resp),
-            .init(id: "estres", label: "ESTRÉS", value: "1.2", unit: "/3",
+            .init(id: "stress", label: "ESTRÉS", value: "1.2", unit: "/3",
                   delta: "−0.5 vs tu base", deltaTone: .up,
                   tone: LiquidColor.verdePrimario, icon: .estres),
-        ])
+        ],
+        heroPuerta: "Cómo llegué a esto")
 }
 
 // MARK: - Contenido componible
@@ -166,8 +209,9 @@ public struct LiquidHoyContent: View {
 
     public var body: some View {
         VStack(spacing: 0) {
-            LiquidScreenHeader(kicker: model.kicker) {
-                LiquidDialSeal(night: model.dial.night, marker: model.dial.marker)
+            LiquidScreenHeader(kicker: model.kicker, kickerA11y: model.kickerA11y) {
+                LiquidDialSeal(night: model.dial.night, sol: model.dial.sol,
+                               marker: model.dial.marker)
             }
             .liquidEntrada(index: 0)
 
@@ -176,7 +220,9 @@ public struct LiquidHoyContent: View {
                 .liquidEntrada(index: 1)
 
             hero
-                .padding(.top, LiquidSpace.s050)
+                // s150 (revote /inject): punto medio — la compresión del dueño se queda,
+                // pero el veredicto no pega contra los captions de los orbes.
+                .padding(.top, LiquidSpace.s150)
                 .liquidEntrada(index: 2)
 
             if model.carga != nil {
@@ -193,11 +239,14 @@ public struct LiquidHoyContent: View {
                     LiquidMetricTile(
                         label: m.label, value: m.value, unit: m.unit, delta: m.delta,
                         deltaTone: m.deltaTone, tone: m.tone, icon: m.icon, origen: m.origen,
+                        a11yValencia: m.a11yValencia, a11yOrigen: m.a11yOrigen,
                         action: onTapMetric.map { tap in { tap(m.id) } })
                         .liquidEntrada(index: 4 + i)
                 }
             }
-            .padding(.top, LiquidSpace.s200)
+            // s300 (revote /inject): la barra de carga NO es una fila del grid — el gap
+            // hacia los tiles debe ser mayor que el gap interno del grid (s200).
+            .padding(.top, LiquidSpace.s300)
         }
         .padding(.horizontal, LiquidSpace.s550)
     }
@@ -208,14 +257,17 @@ public struct LiquidHoyContent: View {
             switch model.hero {
             case .veredicto(let title, let highlight, let tone, let subtitle, let confianza):
                 LiquidHeroVeredicto(title: title, highlight: highlight, highlightTone: tone,
-                                    subtitle: subtitle, confianza: confianza)
+                                    subtitle: subtitle, puerta: model.heroPuerta,
+                                    confianza: confianza)
             case .demotado(let kicker, let title, let subtitle):
-                LiquidHeroDemotado(kicker: kicker, title: title, subtitle: subtitle)
+                LiquidHeroDemotado(kicker: kicker, title: title, subtitle: subtitle,
+                                   puerta: model.heroPuerta)
             }
         }
         if let onTapHero {
             Button(action: onTapHero) { heroView }
                 .buttonStyle(.liquidPress)
+                .accessibilityHint(Text(verbatim: model.heroHint ?? ""))
         } else {
             heroView
         }
@@ -224,30 +276,49 @@ public struct LiquidHoyContent: View {
     @ViewBuilder
     private var carga: some View {
         switch model.carga {
-        case .medida(let pos, let zone, let status, let state):
-            LiquidCargaBar(modo: .medida(pos: pos, zone: zone), status: status,
-                           state: state, action: onTapCarga)
+        case .medida(_, _, let status, _, let razon, let state):
+            cargaTocable(LiquidCargaEscala(razon: razon, estado: state, rotulo: status,
+                                           densidad: .fila, eje: model.cargaLabel))
         case .calibrando(let status):
-            LiquidCargaBar(modo: .calibrando, status: status, action: onTapCarga)
+            cargaTocable(LiquidCargaEscala(razon: nil, rotulo: status, densidad: .fila,
+                                           calibrando: true, eje: model.cargaLabel))
         case nil:
             EmptyView()
         }
     }
 
-    /// Zona de señales (alto 178): cables vivos de fondo + 3 orbes centrados gap 53.
+    /// La escala de carga navega igual que el héroe/orbes (revote /inject). El bullet-graph
+    /// aporta su propio vidrio y área tocable; aquí solo lo hacemos botón cuando hay destino.
+    @ViewBuilder
+    private func cargaTocable(_ escala: LiquidCargaEscala) -> some View {
+        if let onTapCarga {
+            Button(action: onTapCarga) { escala }
+                .buttonStyle(.liquidPress)
+                .accessibilityHint(Text(verbatim: model.heroHint ?? ""))
+        } else {
+            escala
+        }
+    }
+
+    /// Zona de señales (alto `senalesAlto` 140): cables de fondo + 3 orbes a gap `senalGap`.
     private var senales: some View {
         ZStack(alignment: .top) {
-            LiquidSignalCables()
-            HStack(spacing: 53) {
+            // Detalle fino (pasada UI): los cables llegan al FINAL de la cascada de
+            // entrada — primera impresión serena, el movimiento entra como respiración.
+            LiquidSignalCables(tone: model.ambiente.acento)
+                .liquidEntrada(index: 12)
+            // 72 + senalGap(45) = 117: el paso de centros es la referencia de los cables.
+            HStack(spacing: LiquidSpace.senalGap) {
                 ForEach(model.senales) { senal in
                     LiquidSignalOrb(label: senal.label, caption: senal.caption,
                                     progress: senal.progress, icon: senal.icon,
-                                    state: senal.state,
+                                    state: senal.state, valor: senal.valor,
+                                    hint: model.heroHint,
                                     action: onTapSenal.map { tap in { tap(senal.id) } })
                 }
             }
         }
-        .frame(height: 178)
+        .frame(minHeight: LiquidSpace.senalesAlto)   // crece en Dynamic Type (UX H7)
         .frame(maxWidth: .infinity)
     }
 }
@@ -274,7 +345,7 @@ public struct LiquidHoyScreen: View {
 
     public var body: some View {
         ZStack {
-            LiquidAmbientBackground.hoy
+            LiquidAmbientBackground.hoy(model.ambiente)
             if scrolls {
                 ScrollView(.vertical, showsIndicators: false) { column }
             } else {
@@ -285,7 +356,7 @@ public struct LiquidHoyScreen: View {
             }
         }
         .overlay(alignment: .top) {
-            LiquidVeil().frame(height: LiquidSpace.s1400)
+            LiquidVeil(tone: model.ambiente.acento).frame(height: LiquidSpace.s1400)
         }
         .overlay(alignment: .bottom) {
             LiquidTabBar(active: .hoy, onSelect: onSelectTab)
@@ -297,9 +368,16 @@ public struct LiquidHoyScreen: View {
 
     private var column: some View {
         LiquidHoyContent(model: model)
-            .padding(.top, LiquidSpace.s1400)
+            // Padding superior recortado (pedido del dueño /inject: la pantalla tenía un
+            // scroll «ligero»): s800 en vez de s1400 — el velo del status bar ya cubre esa
+            // franja, así que 56 pt eran aire de más. Recupera 24 pt y la columna entra sin
+            // scroll. Mejor que bajar el dock, que es flotante con margen intencional.
+            .padding(.top, LiquidSpace.s800)
             // Aire para que el último tile libre el dock flotante.
-            .padding(.bottom, scrolls ? LiquidSpace.s1400 + LiquidSpace.s800 : 0)
+            .padding(.bottom, scrolls ? LiquidSpace.s1400 + LiquidSpace.s1400 : 0)
+            // ↑ el dock FLOTA sobre el contenido (~64 pt de alto + margen): el aire debe
+            // librarlo o los últimos dos tiles quedan tapados (pedido del dueño /inject).
+            // El scroll se recortó arriba (top s1400→s800), no aquí.
     }
 }
 

@@ -15,11 +15,14 @@ public struct LiquidMetricTile: View {
     private let tone: Color
     private let icon: LiquidIcon.Glyph
     private let origen: LiquidOrigen
+    private let a11yValencia: String?
+    private let a11yOrigen: String?
     private let action: (() -> Void)?
 
     public init(label: String, value: String, unit: String = "", delta: String,
                 deltaTone: LiquidDeltaTone = .neutral, tone: Color, icon: LiquidIcon.Glyph,
-                origen: LiquidOrigen = .medido, action: (() -> Void)? = nil) {
+                origen: LiquidOrigen = .medido, a11yValencia: String? = nil,
+                a11yOrigen: String? = nil, action: (() -> Void)? = nil) {
         self.label = label
         self.value = value
         self.unit = unit
@@ -28,6 +31,8 @@ public struct LiquidMetricTile: View {
         self.tone = tone
         self.icon = icon
         self.origen = origen
+        self.a11yValencia = a11yValencia
+        self.a11yOrigen = a11yOrigen
         self.action = action
     }
 
@@ -37,19 +42,26 @@ public struct LiquidMetricTile: View {
                 .buttonStyle(.liquidPress)
                 .liquidLift(tone: tone)
                 .accessibilityLabel(Self.a11yLabel(label: label, value: value,
-                                                   unit: unit, delta: delta))
+                                                   unit: unit, delta: delta,
+                                                   valencia: a11yValencia))
+                .accessibilityValue(Text(verbatim: a11yOrigen ?? ""))
         } else {
             content
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(Self.a11yLabel(label: label, value: value,
-                                                   unit: unit, delta: delta))
+                                                   unit: unit, delta: delta,
+                                                   valencia: a11yValencia))
+                .accessibilityValue(Text(verbatim: a11yOrigen ?? ""))
         }
     }
 
-    /// «{label}, {value} {unit}, {delta}» — el contrato de VoiceOver del tile.
-    static func a11yLabel(label: String, value: String, unit: String, delta: String) -> String {
+    /// «{label}, {value} {unit}, {delta}[, {valencia}]» — el contrato de VoiceOver del
+    /// tile; la valencia hace audible lo que el color solo muestra (pasada UX).
+    static func a11yLabel(label: String, value: String, unit: String, delta: String,
+                          valencia: String? = nil) -> String {
         let valor = unit.isEmpty ? value : "\(value) \(unit)"
-        return "\(label), \(valor), \(delta)"
+        let base = "\(label), \(valor), \(delta)"
+        return valencia.map { "\(base), \($0)" } ?? base
     }
 
     private var content: some View {
@@ -76,6 +88,9 @@ public struct LiquidMetricTile: View {
         .padding(.horizontal, LiquidSpace.s300)
         .frame(maxWidth: .infinity, minHeight: 66, alignment: .topLeading)
         .liquidGlass(.superficie)
+        // TODO el tile es tocable, no solo donde hay pixel dibujado (/inject 2026-07-23):
+        // sin `contentShape` el botón solo recibe toques sobre el texto/gota.
+        .contentShape(RoundedRectangle(cornerRadius: LiquidRadius.tarjeta, style: .continuous))
     }
 }
 

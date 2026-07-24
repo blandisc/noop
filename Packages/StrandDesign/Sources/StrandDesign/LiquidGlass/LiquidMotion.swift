@@ -31,7 +31,7 @@ public enum LiquidMotion {
     /// 560 ms — hojas modales, navegación.
     public static let sheetDuration: Double = 0.56
     /// 9 s — pulsos por cables, dashes.
-    public static let flowPeriod: Double = 9
+    public static let flowPeriod: Double = 6
     /// 16–26 s — orbes de fondo (16, 21, 24 y 26 s usados en los ensambles).
     public static let driftPeriods: ClosedRange<Double> = 16...26
 
@@ -84,6 +84,10 @@ public enum LiquidMotion {
     /// `ring progress` — el anillo/knob anima a su valor al entrar (dur/gentle · glass-out).
     public static let ringProgress = glassOut(gentle)
 
+    /// `selector` — el vidrio del dock persigue la pestaña activa: spring corto y vivo
+    /// (0.18 s glass-spring; «más responsivo», pedido del dueño /inject).
+    public static let selector = glassSpring(0.18)
+
     // MARK: Ambientales (fase determinista para TimelineView — nunca por debajo de 9 s)
 
     /// Progreso 0→1→0 del `drift` (CSS `alternate` + ease-in-out ≈ coseno; ciclo completo
@@ -109,7 +113,7 @@ public enum LiquidMotion {
 
     /// Largo del pulso como fracción del cable (los 2.5 pt del dash sobre un cable de
     /// ~130 pt del ensamble).
-    public static let flowPulseLength: Double = 0.02
+    public static let flowPulseLength: Double = 0.06
 }
 
 // MARK: - Override de motion para previews/tests
@@ -129,6 +133,20 @@ public extension EnvironmentValues {
     var liquidAmbientPaused: Bool {
         get { self[LiquidAmbientPausedKey.self] }
         set { self[LiquidAmbientPausedKey.self] = newValue }
+    }
+}
+
+/// SOLO DEV (sesiones /inject): apaga capas Liquid por nombre para bisecar artefactos
+/// visuales en vivo — «aurora», «orbes», «cables», «esferas», «glow». Vacío en producción;
+/// ninguna pantalla la setea fuera de una sesión de depuración.
+private struct LiquidDebugHideKey: EnvironmentKey {
+    static let defaultValue: Set<String> = []
+}
+
+public extension EnvironmentValues {
+    var liquidDebugHide: Set<String> {
+        get { self[LiquidDebugHideKey.self] }
+        set { self[LiquidDebugHideKey.self] = newValue }
     }
 }
 

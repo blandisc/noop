@@ -133,6 +133,45 @@ public struct ChartTooltipPlacement {
 
         return CGPoint(x: x, y: y)
     }
+
+    /// Same contract as `position`, but the tooltip is pushed to ONE SIDE of the anchor
+    /// instead of being centred on it, so it can never sit on top of the datum it names.
+    ///
+    /// Centring on `anchor.x` put the box directly over the marked point: in the Liquid
+    /// sheet it clipped the scrub ring and cut the curve into disconnected stumps that read
+    /// as a rendering glitch. Here the box goes above-and-to-the-side (the roomier side
+    /// first, flipping when it doesn't fit), which is what this type's doc promised all
+    /// along. If neither side has room — a plot narrower than the tooltip — it falls back
+    /// to `position`, which at least keeps everything on screen.
+    public static func positionBeside(
+        anchor: CGPoint,
+        tooltipSize: CGSize,
+        in container: CGSize,
+        gap: CGFloat = 12
+    ) -> CGPoint {
+        let halfW = tooltipSize.width / 2
+        let halfH = tooltipSize.height / 2
+
+        let derecha = anchor.x + gap + halfW
+        let izquierda = anchor.x - gap - halfW
+        let cabeDerecha = derecha + halfW <= container.width
+        let cabeIzquierda = izquierda - halfW >= 0
+        guard cabeDerecha || cabeIzquierda else {
+            return position(anchor: anchor, tooltipSize: tooltipSize,
+                            in: container, gap: gap)
+        }
+        // Prefer the side with more air; only flip when that side doesn't fit.
+        let masAireDerecha = (container.width - anchor.x) >= anchor.x
+        let x: CGFloat = (masAireDerecha && cabeDerecha) || !cabeIzquierda
+            ? derecha : izquierda
+
+        // Above the anchor, flipping below when the top edge would spill.
+        var y = anchor.y - gap - halfH
+        if y - halfH < 0 { y = anchor.y + gap + halfH }
+        y = min(max(y, halfH), max(halfH, container.height - halfH))
+
+        return CGPoint(x: x, y: y)
+    }
 }
 
 // MARK: - Nearest-point lookup

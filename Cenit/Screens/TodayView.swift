@@ -4,6 +4,7 @@ import StrandAnalytics
 import StrandTraining
 import CenitStore
 import Foundation
+import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 
 // MARK: - Hoy «Instrumento» evolucionado (FER-709, handoff 2026-07)
@@ -86,15 +87,17 @@ private struct PullSyncHint: View {
                 let learning = !didFirstPullSync
                 let bobbing = learning && !reduceMotion && hintBob
                 VStack(spacing: CenitMetrics.space1) {
-                    StrandIcon.down.image
-                        .font(StrandFont.glyph(.chevron, weight: .semibold))
-                        .foregroundStyle(theme.inkTertiary)
+                    // Vestida de Liquid (/inject 2026-07-22): el chevron del sistema nuevo
+                    // en tinta/500 — el único chrome no-Liquid que quedaba en Hoy.
+                    LiquidIcon(.chevron, size: 11, color: LiquidColor.tinta500)
+                        .rotationEffect(.degrees(90))
                         .offset(y: bobbing ? 4 : 0)
-                        .animation(bobbing ? StrandMotion.bob : nil, value: bobbing)
+                        .animation(bobbing ? LiquidMotion.glassSpring(0.9).repeatForever(autoreverses: true) : nil,
+                                   value: bobbing)
                     if learning {
                         Text("Pull to refresh")
-                            .font(StrandFont.caption)
-                            .foregroundStyle(theme.inkTertiary)
+                            .font(LiquidType.captionLectura)
+                            .foregroundStyle(LiquidColor.tinta500)
                     }
                 }
                 .transition(.opacity)
@@ -108,6 +111,9 @@ private struct PullSyncHint: View {
 #endif
 
 struct TodayView: View {
+    // Inject: el hook vive en el struct NO privado más externo del archivo (regla PR#1036);
+    // interponer el `body` global arma la copia fresca del archivo completo, privados incluidos.
+    @ObserveInjection private var inject
     @EnvironmentObject var repo: Repository
 
     #if os(iOS)
@@ -126,6 +132,11 @@ struct TodayView: View {
     @EnvironmentObject var tabRouter: TabRouter
     @State private var showDataSources = false
     @State private var showAutonomicDetail = false
+    /// La hoja «Cómo llegué a esto» — el acta del veredicto, nuevo destino del tap del héroe.
+    @State private var showVeredictoActa = false
+    /// La hoja del eje AUTONÓMICO — destino del tap del orbe «Autonómico» (el desglose de sus
+    /// tres señales). Reemplaza el placeholder que abría la métrica de VFC (pasada UX H2).
+    @State private var showAutonomicoHoja = false
     /// Cuenta cada pull-to-refresh para disparar la háptica declarativa (`.sensoryFeedback`) al
     /// provocar el gesto de sincronización (FER-204).
     @State private var syncHaptic = 0
@@ -201,7 +212,7 @@ struct TodayView: View {
 
     // Metric-info sheet — tapping any Key Metrics row presents this.
     @State private var metricDetail: MetricInfo? = nil
-    /// FER-953: sleep summary for MetricInfoSheet, built off-main when the sleep info sheet opens.
+    /// FER-953: sleep summary para la hoja de resumen Liquid, built off-main when the sleep info sheet opens.
     @State private var sleepSummaryModel: SleepDetailModel? = nil
 
     // Rich «Instrumento» Detalle drilled into via the summary sheet's "Ver más" (FER-251). These mirror the
@@ -434,6 +445,7 @@ struct TodayView: View {
                                   onSeeTrends: item.onSeeTrends)
                     .recEntranceGate()
             }
+            .enableInjection()   // Inject: ver la nota en `inject` arriba (no-op en Release)
     }
 
     /// Arma la hoja de carga desde la franja: engancha «Tu patrón» al hallazgo de carga (si existe, de la
@@ -458,7 +470,10 @@ struct TodayView: View {
     /// for Apple-sourceable metrics that aren't connected and have no value yet — strap-only metrics
     /// (strain, heart rate) never get it. The connect action itself stays in Today. (FER-162)
     private func metricSheet(for info: MetricInfo) -> some View {
-        let appleCapable = ["sleep", "hrv", "rhr", "spo2", "steps"].contains(info.id)
+        // Temp. de piel y respiración también las mide el Apple Watch (los tiles ya las
+        // resuelven así), así que entran a la pista «conecta Apple Salud» igual que el resto.
+        let appleCapable = ["sleep", "hrv", "rhr", "spo2", "steps",
+                            "skin_temp", "resp_rate"].contains(info.id)
         let notConnected = health.auth != .authorized && health.auth != .unavailable
         // ¿El valor que se muestra vino de Apple Salud (no del strap)? MISMA resolución que el tile de Hoy,
         // por métrica: HRV/FCrep/SpO₂ usan `latestFromDisplay` (el último de la gráfica, FER-546) y Sueño
@@ -474,14 +489,27 @@ struct TodayView: View {
             // corazón desaparecía dentro de la tarjeta aunque el número mostrado SÍ venía de Apple Salud.
             case "sleep": return resolveMeasured(todayOnly: true) { $0.totalSleepMin }?.fromApple == true
             case "spo2":  return latestFromDisplay { $0.spo2Pct }?.fromApple == true
+            // Temp. de piel y respiración caían al `default` y la hoja se quedaba SIN sello
+            // aunque el dato viniera de Apple Salud. Se resuelven igual que sus tiles
+            // (:1519 y :1529), nunca con un `true` fijo. Los ids son los de `MetricInfo`
+            // («skin_temp» / «resp_rate»), NO los de la superficie Liquid («skintemp» / «resp»).
+            case "skin_temp": return latestFromDisplay { $0.skinTempDevC }?.fromApple == true
+            case "resp_rate": return latestFromDisplay { $0.respRateBpm }?.fromApple == true
             default:      return false
             }
         }()
-        return MetricInfoSheet(
+        // D8 · FER-883: cuando el esfuerzo de hoy es el ESTIMADO de Apple, el tile dice
+        // «Carga del día · medido» mientras la hoja decía «Esfuerzo del día · Calculado», a
+        // un tap de distancia. Misma resolución del día que el resto de la pantalla (:1435).
+        let strainEstimated: Bool = info.id == "strain"
+            && repo.isStrainEstimated(repo.today?.day ?? Repository.localDayKey(Date()))
+        // CUTOVER F6 (épico hoja Liquid): la hoja de resumen es la composición Liquid.
+        // Mismos loaders, mismos gates de origen; el tema Instrumento ya no viaja.
+        return LiquidMetricSheetView(
             info: info,
-            theme: theme,
             appleConnectHint: appleCapable && notConnected && info.displayValue == "—",
             appleSource: fromApple && info.displayValue != "—",
+            strainEstimated: strainEstimated,
             heartRateCurveLoader: info.id == "heart_rate" ? { hrPoints } : nil,
             trendLoader: trendLoader(for: info.id),
             onSeeMore: seeMoreAction(for: info.id),
@@ -604,12 +632,12 @@ struct TodayView: View {
             if noSources {
                 PaperBackground()
             } else {
-                LiquidAmbientBackground.hoy
+                LiquidAmbientBackground.hoy(liquidAmbiente)
             }
         }
         .overlay(alignment: .top) {
             if !noSources {
-                LiquidVeil()
+                LiquidVeil(tone: liquidAmbiente.acento)
                     .frame(height: LiquidSpace.s1400)
                     .ignoresSafeArea(edges: .top)
             }
@@ -648,10 +676,29 @@ struct TodayView: View {
             .preferredColorScheme(.light)
         }
         .sheet(isPresented: $showAutonomicDetail) {
+            // SIGUE VIVA: ya no es el destino del héroe Liquid, pero la superficie legacy la
+            // sigue abriendo (`:1160` y `:1257`). No queda huérfana.
             AutonomicTrendDetailSheet(theme: theme)
                 .presentationDragIndicator(.visible)
                 .presentationBackground(theme.paper)
                 .preferredColorScheme(.light)
+        }
+        // El acta del veredicto: la hoja que contesta la pregunta que el héroe provoca.
+        .sheet(isPresented: $showVeredictoActa) {
+            LiquidMetricSheet(tono: liquidActaTono, detent: .porContenido) {
+                LiquidActaVeredicto(liquidActa, onVerMas: {
+                    showVeredictoActa = false
+                    tabRouter.select(.body)
+                })
+            }
+            .preferredColorScheme(.light)
+        }
+        // La hoja del eje autonómico: el desglose de sus tres señales.
+        .sheet(isPresented: $showAutonomicoHoja) {
+            LiquidMetricSheet(tono: liquidAutonomicoTono, detent: .porContenido) {
+                LiquidAutonomicoScreen(liquidAutonomico)
+            }
+            .preferredColorScheme(.light)
         }
     }
 
@@ -694,7 +741,10 @@ struct TodayView: View {
                 PullSyncHint(
                     pullProgress: pullProgressModel,
                     isSyncing: isSyncing,
-                    didFirstPullSync: didFirstPullSync,
+                    // /inject 2026-07-22: el microcopy «Desliza para actualizar» se retiró
+                    // (queda el chevron como cue sutil; el gesto sigue recalculando local
+                    // y releyendo Apple Salud).
+                    didFirstPullSync: true,
                     reduceMotion: reduceMotion
                 )
             }
@@ -702,7 +752,9 @@ struct TodayView: View {
             // margen de pantalla (LiquidSpace.s550) y la clásica conserva screenPadding.
             // Margen inferior compacto: la retícula de señales respira sobre el dock sin flotar.
             .padding(.bottom, CenitMetrics.space1)
-            .padding(.top, CenitMetrics.space2)
+            // /inject 2026-07-22: la superficie Liquid pega su cabecera (fecha + dial) más
+            // arriba — el aire superior solo queda en la superficie clásica.
+            .padding(.top, noSources ? CenitMetrics.space2 : 0)
             // Llena al menos el alto visible y ancla el contenido ARRIBA (FER-1039): sin el pager ya no hay
             // un `Spacer` que reparta el sobrante, así que la alineación vertical `.top` mantiene el header
             // pegado al tope en vez de centrar la superficie; si el contenido excede el alto, crece y scrollea.
@@ -917,8 +969,65 @@ struct TodayView: View {
     // misma acción accesible «Sync». El chrome que no es de la composición (línea de sync,
     // banner de alertas, leyenda de origen) vive alrededor, alineado al margen Liquid.
 
+    /// Interruptor de DEMO para la sesión /inject (solo DEBUG): el simulador no tiene datos
+    /// de HealthKit, así que la superficie cae honestamente al héroe de sueño; con esto se
+    /// fuerza el estado de veredicto con los datos de muestra del ensamble para pulirlo en
+    /// vivo. Computed a propósito: su cuerpo se voltea EN VIVO por inyección.
+    private var liquidDemo: Bool { false }  // demo /inject apagado: Hoy corre con datos reales
+
+    /// El ambiente semántico que tiñe fondo y pulsos (verde/ámbar/rojo/neutro).
+    private var liquidAmbiente: LiquidAmbiente {
+        #if DEBUG
+        if liquidDemo { return .bien }   // demo VERDE en curso (/inject)
+        #endif
+        return LiquidHoyBuilder.ambiente(prep: repo.todayPreparedness)
+    }
+
+    private var liquidOutput: LiquidHoyBuilder.Output {
+        #if DEBUG
+        if liquidDemo {
+            // Demo VERDE (validación en vivo, /inject): el ensamble completo con arcos.
+            return LiquidHoyBuilder.Output(model: .ejemplo, heroRoute: .autonomic)
+        }
+        #endif
+        return LiquidHoyBuilder.build(liquidInputs())
+    }
+
+    /// El acta del veredicto — la MISMA `Preparedness.Read` que ya alimenta al héroe.
+    private var liquidActa: LiquidActa {
+        #if DEBUG
+        if liquidDemo { return LiquidHoyBuilder.actaEjemplo }
+        #endif
+        return LiquidHoyBuilder.acta(prep: repo.todayPreparedness,
+                                     healthConnected: health.auth == .authorized)
+    }
+
+    private var liquidActaTono: Color {
+        #if DEBUG
+        if liquidDemo { return LiquidColor.verdePrimario }
+        #endif
+        return LiquidHoyBuilder.actaTono(repo.todayPreparedness)
+    }
+
+    /// El desglose del eje autonómico — la MISMA `Preparedness.Read` del héroe, proyectada a
+    /// sus tres señales.
+    private var liquidAutonomico: LiquidAutonomico {
+        #if DEBUG
+        if liquidDemo { return LiquidHoyBuilder.autonomicoEjemplo }
+        #endif
+        return LiquidHoyBuilder.autonomico(prep: repo.todayPreparedness,
+                                           healthConnected: health.auth == .authorized)
+    }
+
+    private var liquidAutonomicoTono: Color {
+        #if DEBUG
+        if liquidDemo { return LiquidColor.verdePrimario }
+        #endif
+        return LiquidHoyBuilder.autonomicoTono(repo.todayPreparedness)
+    }
+
     @ViewBuilder private var liquidSurface: some View {
-        let output = LiquidHoyBuilder.build(liquidInputs())
+        let output = liquidOutput
         VStack(alignment: .leading, spacing: CenitMetrics.space1) {
             Group {
                 syncStatusLine
@@ -934,17 +1043,15 @@ struct TodayView: View {
                         trainingLoadItem = makeTrainingLoadItem(trainingLoad)
                     }
                 },
-                onTapHero: {
-                    switch output.heroRoute {
-                    case .autonomic:
-                        showAutonomicDetail = true
-                    case .sleep:
-                        metricDetail = .sleep(resolveMeasured(todayOnly: true) { $0.totalSleepMin }
-                            .map { Int($0.value.rounded()) })
-                    }
-                })
-            originLegend
-                .padding(.horizontal, LiquidSpace.s550)
+                // RE-RUTEO del gesto principal de la pantalla (antes: `showAutonomicDetail`
+                // → `AutonomicTrendDetailSheet`, tema PAPEL dentro de una superficie
+                // Liquid). El héroe ahora abre el ACTA de su propio veredicto — la pregunta
+                // que el héroe provoca. No se bifurca por `heroRoute`: los dos estados del
+                // héroe (veredicto y demotado) explican el MISMO veredicto, y el acta ya
+                // pinta «Sueño · Sin datos» cuando no hubo noche.
+                onTapHero: { showVeredictoActa = true })
+            // /inject: la leyenda de origen se retiró de la superficie Liquid a pedido del
+            // dueño (los puntos de origen por tile se quedan).
         }
         .accessibilityAction(named: Text("Sync")) { triggerPullSync() }
     }
@@ -953,6 +1060,7 @@ struct TodayView: View {
     /// el héroe actuales (paridad por construcción; el builder solo mapea/formatea).
     private func liquidInputs() -> LiquidHoyBuilder.Inputs {
         var inputs = LiquidHoyBuilder.Inputs()
+        inputs.healthConnected = health.auth == .authorized
         inputs.preparedness = repo.todayPreparedness
         inputs.thermalDeviation = latestFromDisplay({ $0.skinTempDevC })?.value
         inputs.trainingLoad = trainingLoad
@@ -983,6 +1091,7 @@ struct TodayView: View {
         inputs.historias.resp = history(base) { $0.respRateBpm }
         inputs.historias.stress = stressHistory
         inputs.night = liquidNight
+        inputs.sol = solarWindow.map { (start: $0.sunrise, end: $0.sunset) }
         return inputs
     }
 
@@ -1027,7 +1136,9 @@ struct TodayView: View {
     private func openLiquidSenal(_ id: String) {
         switch id {
         case "autonomico":
-            showAutonomicDetail = true
+            // La hoja propia del eje: el desglose de sus tres señales (VFC/FC en reposo/
+            // respiración) con el % del voto que cargó cada una — no una sola métrica.
+            showAutonomicoHoja = true
         case "sueno":
             metricDetail = .sleep(resolveMeasured(todayOnly: true) { $0.totalSleepMin }
                 .map { Int($0.value.rounded()) })

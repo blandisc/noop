@@ -23,8 +23,9 @@ public struct TrendPoint: Identifiable, Sendable, Equatable {
 // MARK: - Classification bands (FER-244)
 
 /// One classification band drawn behind a trend line — e.g. sleep "Optimal 7–9 h" or stress "Medium".
-/// Bounds are a half-open interval `[lower, upper)`; `nil` = open on that side. Only the band the latest
-/// value falls into is shaded (the "active" bracket); the rest are hinted by the axis grid lines.
+/// Bounds are a half-open interval `[lower, upper)`; `nil` = open on that side, and BOTH `nil` = no
+/// interval at all, so the band classifies nothing. Only the band the latest value falls into is shaded
+/// (the "active" bracket); the rest are hinted by the axis grid lines.
 public struct TrendBand: Identifiable, Equatable {
     public let id = UUID()
     public var label: LocalizedStringKey
@@ -40,8 +41,15 @@ public struct TrendBand: Identifiable, Equatable {
     }
 
     /// True when `value` falls in this band's half-open interval `[lower, upper)`.
+    ///
+    /// A band with NO bounds contains NOTHING. Without the guard the two open sides cancelled out and an
+    /// unbounded band swallowed every value, so a caller that forgot its cutoffs silently got a band that
+    /// was always active and always complete — «14 of the last 14 nights in this range», whatever the
+    /// series (the sleep sub-metrics did exactly that until FER-1045). Saying "no interval" is honest;
+    /// saying "everything" is a lie the screen can't tell from a real count.
     public func contains(_ value: Double) -> Bool {
-        (lower == nil || value >= lower!) && (upper == nil || value < upper!)
+        guard lower != nil || upper != nil else { return false }
+        return (lower == nil || value >= lower!) && (upper == nil || value < upper!)
     }
 }
 

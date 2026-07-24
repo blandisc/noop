@@ -33,10 +33,11 @@ enum SVGPathData {
                     lastCubicControl = nil
                 }
             case .number(let first):
-                // Un número sin comando nuevo = repetición implícita del comando anterior
-                // (M implícito se vuelve L, m se vuelve l — spec SVG).
-                if command == "M" { command = "L" }
-                if command == "m" { command = "l" }
+                // La repetición implícita de M→L la hace el PROPIO case "M" al terminar de
+                // consumir sus parámetros (spec SVG). Convertir aquí —antes del dispatch—
+                // se comía el moveTo inicial: macOS lo perdona (trata la primera línea como
+                // move) e iOS descarta el path en silencio (bug de la sesión /inject
+                // 2026-07-22: iconos/cables invisibles y las «placas» eran esto).
                 let relative = command.isLowercase
                 let origin = relative ? current : .zero
 

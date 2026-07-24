@@ -23,6 +23,9 @@ public struct LiquidTabBar: View {
     private let active: LiquidTab
     private let onSelect: ((LiquidTab) -> Void)?
 
+    /// El selector de vidrio que se desliza a la pestaña activa (patrón nativo iOS).
+    @Namespace private var seleccion
+
     public init(active: LiquidTab, onSelect: ((LiquidTab) -> Void)? = nil) {
         self.active = active
         self.onSelect = onSelect
@@ -43,6 +46,24 @@ public struct LiquidTabBar: View {
         .padding(.horizontal, LiquidSpace.s150)
         .padding(.bottom, LiquidSpace.s150)
         .liquidGlass(.lente)
+        // El selector se desliza con carácter (glass-spring · quick).
+        .animation(LiquidMotion.selector, value: active)
+    }
+
+    @Environment(\.liquidMotionDisabled) private var motionDisabled
+
+    /// La pastilla de vidrio del ítem activo: nativa en iOS 26, imitación antes
+    /// (y también en renders congelados — el glassEffect no rasteriza en ImageRenderer).
+    @ViewBuilder
+    private var selectorPill: some View {
+        if #available(iOS 26.0, macOS 26.0, watchOS 26.0, *), !motionDisabled {
+            Color.clear.glassEffect(.regular, in: Capsule())
+        } else {
+            Capsule()
+                .fill(.ultraThinMaterial)
+                .overlay(Capsule().fill(Color.white.opacity(0.35)))
+                .overlay(Capsule().strokeBorder(LiquidColor.vidrioBordePastilla, lineWidth: 0.5))
+        }
     }
 
     private func item(_ tab: LiquidTab) -> some View {
@@ -55,7 +76,14 @@ public struct LiquidTabBar: View {
                 .font(LiquidType.tab(active: isActive))
                 .foregroundStyle(color)
         }
+        .padding(.vertical, 4)
         .frame(maxWidth: .infinity)
+        .background {
+            if isActive {
+                selectorPill
+                    .matchedGeometryEffect(id: "seleccion", in: seleccion)
+            }
+        }
         .contentShape(Rectangle())
     }
 }
@@ -69,36 +97,40 @@ private struct TabGlyph: View {
 
     private static let viewBox: CGFloat = 23
 
-    /// (path, strokeWidth) por tab + posición del punto activo (cx, cy) con r 1.5.
-    private var layers: [(d: String, width: CGFloat)] {
+    /// Capas del glifo: trazo (con grosor) o RELLENO. Familia elegida por el dueño en la
+    /// sesión /inject: Hoy = dial-sello (H2) · Tendencias = curva con nodos (A) ·
+    /// Entrenar = mancuerna (A) · Ajustes = perilla mínima (J3).
+    private var layers: [(d: String, width: CGFloat, filled: Bool)] {
         switch tab {
         case .hoy:
             return [
-                ("M19.5 11.5A8 8 0 1 0 3.5 11.5A8 8 0 1 0 19.5 11.5", 1.6),
-                ("M11.5 3.5v1.7M11.5 17.8v1.7M3.5 11.5h1.7M17.8 11.5h1.7", 1.6),
+                ("M19 11.5A7.5 7.5 0 1 0 4 11.5A7.5 7.5 0 1 0 19 11.5", 1.6, false),
+                ("M5.7 6.7A7.5 7.5 0 0 1 17.3 6.7", 2.2, false),
+                ("M11.5 2.6v1.4", 1.6, false),
+                ("M18.5 15.2A1.5 1.5 0 1 0 15.5 15.2A1.5 1.5 0 1 0 18.5 15.2", 0, true),
             ]
         case .tendencias:
             return [
-                ("M2.5 17C7 17 7.5 6 11.5 6s4.5 9 9 9", 1.8),
-                ("M8.8 11A1.8 1.8 0 1 0 5.2 11A1.8 1.8 0 1 0 8.8 11", 1.5),
-                ("M17.8 11.5A1.8 1.8 0 1 0 14.2 11.5A1.8 1.8 0 1 0 17.8 11.5", 1.5),
+                ("M2.5 17C7 17 7.5 6 11.5 6s4.5 9 9 9", 1.8, false),
+                ("M8.6 11A1.6 1.6 0 1 0 5.4 11A1.6 1.6 0 1 0 8.6 11", 0, true),
+                ("M17.6 11.5A1.6 1.6 0 1 0 14.4 11.5A1.6 1.6 0 1 0 17.6 11.5", 0, true),
             ]
         case .entrenar:
             return [
-                ("M13.5 4.5A2 2 0 1 0 9.5 4.5A2 2 0 1 0 13.5 4.5", 1.5),
-                ("M5 10.5l4-2h5l4 4M11.5 8.5V14l-3 5M11.5 14l3.5 4.5", 1.5),
+                ("M4.2 9.8v3.4M6.6 8.2v7M16.4 8.2v7M18.8 9.8v3.4M6.6 11.5h9.8", 1.6, false),
             ]
         case .ajustes:
             return [
-                ("M14.7 11.5A3.2 3.2 0 1 0 8.3 11.5A3.2 3.2 0 1 0 14.7 11.5", 1.5),
-                ("M11.5 2.8v2.6M11.5 17.6v2.6M2.8 11.5h2.6M17.6 11.5h2.6M5.3 5.3l1.9 1.9M15.8 15.8l1.9 1.9M17.7 5.3l-1.9 1.9M7.2 15.8l-1.9 1.9", 1.5),
+                ("M18.7 11.5A7.2 7.2 0 1 0 4.3 11.5A7.2 7.2 0 1 0 18.7 11.5", 1.6, false),
+                ("M11.5 11.5 L15.5 7.5", 2.2, false),
+                ("M12.7 11.5A1.2 1.2 0 1 0 10.3 11.5A1.2 1.2 0 1 0 12.7 11.5", 0, true),
             ]
         }
     }
 
     private var dotCenter: CGPoint {
         switch tab {
-        case .hoy: return CGPoint(x: 16, y: 7)
+        case .hoy: return CGPoint(x: 19.5, y: 4)
         case .tendencias: return CGPoint(x: 19, y: 4.5)
         case .entrenar: return CGPoint(x: 19, y: 4.5)
         case .ajustes: return CGPoint(x: 19.5, y: 4)
@@ -110,9 +142,13 @@ private struct TabGlyph: View {
             let s = min(geo.size.width, geo.size.height) / Self.viewBox
             ZStack(alignment: .topLeading) {
                 ForEach(Array(layers.enumerated()), id: \.offset) { _, layer in
-                    TabGlyphPath(d: layer.d)
-                        .stroke(color, style: StrokeStyle(
-                            lineWidth: layer.width * s, lineCap: .round, lineJoin: .round))
+                    if layer.filled {
+                        TabGlyphPath(d: layer.d).fill(color)
+                    } else {
+                        TabGlyphPath(d: layer.d)
+                            .stroke(color, style: StrokeStyle(
+                                lineWidth: layer.width * s, lineCap: .round, lineJoin: .round))
+                    }
                 }
                 if showDot {
                     Circle()

@@ -2,6 +2,7 @@
 import SwiftUI
 import StrandDesign
 import StrandAnalytics
+import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 /// iOS navigation shell — the «IA de 3 capas» tab shell (FER-182). Five tabs over the «Barra de
 /// instrumento» (FER-163): **Hoy · Cuerpo · Coach · Entrenar · Ajustes**. Trends and the old "More"
@@ -72,8 +73,13 @@ struct RootTabView: View {
 
     // FER-981: `body` kept thin so type-check stays under the long-function budget. Tab shell,
     // heavy tabs, and the modifier chain each type-check in their own scope.
+    // Inject: hooks en el struct NO privado del archivo (regla PR#1036) para iterar el
+    // dock Liquid en vivo durante las sesiones /inject.
+    @ObserveInjection private var inject
+
     var body: some View {
         rootChrome(rootTabs)
+            .enableInjection()
     }
 
     /// Five-tab shell. Extracted from `body` (FER-981) so TabView + tags type-check apart from chrome.
@@ -221,8 +227,13 @@ struct RootTabView: View {
         // by ContentView via `isTodayActive` — FER-160; the bar uses explicit colors
         // either way. FER-398 retired the by-the-hour tint.)
         .overlay(alignment: .bottom) {
-            InstrumentTabBar(items: barItems, selection: $selection, isLight: isLightTab(selection))
-                .instrumentoTheme(.base)
+            // /inject 2026-07-22 (decisión del dueño): el dock global pasa al lente Liquid
+            // Glass — vidrio flotante con los 4 glifos del sistema y el punto verde activo.
+            // TODO(/inject cierre): los títulos del dock viven hardcodeados es-MX en
+            // LiquidTab.titulo — pasarlos por catálogo al cerrar.
+            LiquidTabBar(active: liquidTab(for: selection)) { selection = appTab(for: $0) }
+                .padding(.horizontal, LiquidSpace.dockSide)
+                .padding(.bottom, LiquidSpace.dockBottom)
                 .background(
                     GeometryReader { proxy in
                         Color.clear.preference(key: BarHeightKey.self, value: proxy.size.height)
@@ -420,6 +431,27 @@ struct RootTabView: View {
     /// The dock tabs as drawn by `InstrumentTabBar`. Thin-stroke set: the 24h dial for Hoy (the bar's
     /// signature mark), line glyphs for the rest. (Hidden `tabItem` icons use the filled variants from
     /// the issue spec; only this custom bar is visible.) FER-992: Patrones removed — four tabs.
+    /// Mapeo pestaña del app ↔ dock Liquid (coach está apagado — FER-992 — y cae a Hoy
+    /// por exhaustividad; no es alcanzable desde el dock).
+    private func liquidTab(for tab: Tab) -> LiquidTab {
+        switch tab {
+        case .today: return .hoy
+        case .body: return .tendencias
+        case .coach: return .hoy
+        case .train: return .entrenar
+        case .settings: return .ajustes
+        }
+    }
+
+    private func appTab(for liquid: LiquidTab) -> Tab {
+        switch liquid {
+        case .hoy: return .today
+        case .tendencias: return .body
+        case .entrenar: return .train
+        case .ajustes: return .settings
+        }
+    }
+
     private var barItems: [InstrumentTabBar<Tab>.Item] {
         [
             .init(.today,    "Today",   .dial),

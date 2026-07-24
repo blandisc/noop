@@ -25,6 +25,12 @@ public enum LiquidSpace {
     /// 56 — safe-area top (velo de status).
     public static let s1400: CGFloat = 56
 
+    /// 45 — gap entre orbes de señal. El paso de centros (orbe 72 + 45 = 117) es la
+    /// referencia EXACTA de los cables: si cambia, los paths del ensamble cambian con él.
+    public static let senalGap: CGFloat = 45
+    /// 140 — alto de la zona de señales (orbes + cables, comprimida ~25 % por el dueño).
+    public static let senalesAlto: CGFloat = 140
+
     /// Margen inferior del dock flotante.
     public static let dockBottom: CGFloat = 14
     /// Margen lateral del dock flotante (absolute left/right 16 en el handoff).
@@ -106,6 +112,27 @@ private struct LiquidShadowModifier: ViewModifier {
     func body(content: Content) -> some View {
         layers.reduce(AnyView(content)) { view, layer in
             AnyView(view.shadow(color: layer.color, radius: layer.radius, x: 0, y: layer.y))
+        }
+    }
+}
+
+public extension View {
+    /// Elevación dibujada como GEOMETRÍA: la silueta de `shape`, difuminada, DETRÁS de la
+    /// vista. Obligatoria cuando la vista contiene material del sistema — `.shadow` sobre
+    /// material proyecta el RECTÁNGULO de su capa de fondo (y `compositingGroup` no lo
+    /// salva, porque el backdrop no se deja aplanar). Una silueta difuminada no puede
+    /// volverse rectángulo, por construcción.
+    func liquidShadow<S: Shape>(_ layers: [LiquidShadowLayer], silhouette shape: S) -> some View {
+        background {
+            ZStack {
+                ForEach(Array(layers.enumerated()), id: \.offset) { _, layer in
+                    shape
+                        .fill(layer.color)
+                        .blur(radius: layer.radius)
+                        .offset(y: layer.y)
+                }
+            }
+            .allowsHitTesting(false)
         }
     }
 }

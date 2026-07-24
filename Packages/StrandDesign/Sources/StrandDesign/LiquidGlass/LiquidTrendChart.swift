@@ -1,0 +1,191 @@
+import SwiftUI
+
+// MARK: - Liquid Glass · Trend 14d del template clásico (épico hoja de resumen, F4)
+//
+// La gráfica «Últimos 14 días» de la variante clásica, con la MISMA gramática que
+// `LiquidGraficaNiveles` (mismo motor, mismos washes I1, mismo scrub I2). El readout
+// «{banda} · X de N días/noches» vive UNA vez, arriba (paridad FER-469/471,
+// `MetricInfoSheet:852-882`), con la frase YA compuesta por el caller.
+//
+// Estados: `.datos` pinta el plot; `.cargando` un skeleton sobrio y estático; `.vacio`
+// el mensaje del caller. Todo string llega ya localizado (contrato D3).
+
+public struct LiquidTrendChart: View {
+    private let titulo: String
+    private let readout: (etiqueta: String, tono: Color, frase: String)?
+    private let puntos: [(fecha: Date, valor: Double)]
+    private let bandas: [LiquidChartBanda]
+    private let dominio: ClosedRange<Double>
+    private let ticksY: [(valor: Double, etiqueta: String)]
+    private let tono: Color
+    private let formatoScrub: ((Double, Date) -> String)?
+    private let formatoValorScrub: ((Double) -> String)?
+    private let formatoFechaScrub: ((Date) -> String)?
+    private let formatoFechaEje: ((Date) -> String)?
+    private let estado: LiquidChartEstado
+    /// Rótulo de VoiceOver del plot (el contrato §3 F4 no lo lista; la regla de a11y de la
+    /// familia — «cada gráfica con el a11yLabel del caller» — lo exige, así que se añade).
+    private let a11yLabel: String
+    /// SOLO previews/arnés: overlay de scrub asentado en un índice fijo.
+    var scrubFijo: Int? = nil
+
+    /// El punto bajo el dedo (lo publica el plot); mueve el `accessibilityValue`.
+    @State private var iScrub: Int? = nil
+
+    public init(titulo: String,
+                readout: (etiqueta: String, tono: Color, frase: String)? = nil,
+                puntos: [(fecha: Date, valor: Double)],
+                bandas: [LiquidChartBanda],
+                dominio: ClosedRange<Double>,
+                ticksY: [(valor: Double, etiqueta: String)],
+                tono: Color,
+                formatoScrub: ((Double, Date) -> String)? = nil,
+                formatoValorScrub: ((Double) -> String)? = nil,
+                formatoFechaScrub: ((Date) -> String)? = nil,
+                formatoFechaEje: ((Date) -> String)? = nil,
+                estado: LiquidChartEstado,
+                a11yLabel: String) {
+        self.titulo = titulo
+        self.readout = readout
+        self.puntos = puntos
+        self.bandas = bandas
+        self.dominio = dominio
+        self.ticksY = ticksY
+        self.tono = tono
+        self.formatoScrub = formatoScrub
+        self.formatoValorScrub = formatoValorScrub
+        self.formatoFechaScrub = formatoFechaScrub
+        self.formatoFechaEje = formatoFechaEje
+        self.estado = estado
+        self.a11yLabel = a11yLabel
+    }
+
+    public var body: some View {
+        VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+            Text(verbatim: titulo)
+                .font(LiquidType.titulo)
+                .foregroundStyle(LiquidColor.tinta900)
+            if let readout {
+                (Text(verbatim: readout.etiqueta)
+                    .foregroundColor(readout.tono)
+                    .fontWeight(.semibold)
+                 + Text(verbatim: " · ")
+                    .foregroundColor(LiquidColor.tinta500)
+                 + Text(verbatim: readout.frase)
+                    .foregroundColor(LiquidColor.tinta700))
+                    .font(LiquidType.cuerpo)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            grafica
+        }
+    }
+
+    @ViewBuilder private var grafica: some View {
+        switch estado {
+        case .datos:
+            LiquidChartPlot(puntos: puntos, bandas: bandas, dominio: dominio,
+                            ticksY: ticksY, tono: tono,
+                            puntoHoy: nil, hoyAnillo: false,
+                            formatoScrub: formatoScrub,
+                            formatoValorScrub: formatoValorScrub,
+                            formatoFechaScrub: formatoFechaScrub,
+                            formatoFechaEje: formatoFechaEje,
+                            // Mismo motivo que el explorador: la serie de 14 días de las
+                            // submétricas de sueño trae solo las NOCHES que existen. Con
+                            // reparto por índice, una semana sin registrar se dibujaba como
+                            // si fueran días consecutivos.
+                            mapeoPorTiempo: true,
+                            alto: LiquidChartAlto.trend,
+                            scrubFijo: scrubFijo,
+                            onScrub: { (i: Int?) in iScrub = i })
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: a11yLabel))
+                .accessibilityValue(Text(verbatim: valorA11y))
+        case .cargando:
+            LiquidChartCargando(alto: LiquidChartAlto.trend)
+        case .vacio(let mensaje):
+            LiquidChartVacio(mensaje: mensaje, alto: LiquidChartAlto.trend)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: "\(a11yLabel). \(mensaje)"))
+        }
+    }
+
+    /// VoiceOver nombra el punto SCRUBBEADO (o el último) con la frase compuesta del
+    /// caller; el DS no une valor + fecha por su cuenta (contrato D3).
+    private var valorA11y: String {
+        guard !puntos.isEmpty else { return "" }
+        let p = puntos[LiquidChartA11y.indice(iScrub, puntos.count)]
+        if let f = formatoScrub { return f(p.valor, p.fecha) }
+        if let f = formatoValorScrub { return f(p.valor) }
+        return ""
+    }
+}
+
+#if DEBUG
+private func trendDemo() -> [(fecha: Date, valor: Double)] {
+    let cal: Calendar = Calendar.current
+    return (0..<14).map { (i: Int) -> (fecha: Date, valor: Double) in
+        let fecha: Date = cal.date(byAdding: .day, value: i - 13, to: Date())!
+        let seno: Double = 0.9 * sin(Double(i) / 1.8)
+        let ruido: Double = Double((i * 5) % 3) * 0.2
+        return (fecha: fecha, valor: 7.1 + seno + ruido)
+    }
+}
+
+#Preview("Liquid · Trend 14d — datos") {
+    let ejeFmt: (Date) -> String = {
+        let f = DateFormatter()
+        f.setLocalizedDateFormatFromTemplate("dMMM")
+        return { (d: Date) -> String in f.string(from: d) }
+    }()
+    let popupFmt: (Date) -> String = {
+        let f = DateFormatter()
+        f.setLocalizedDateFormatFromTemplate("EEEdMMM")
+        return { (d: Date) -> String in f.string(from: d) }
+    }()
+    var chart = LiquidTrendChart(
+        titulo: "Últimos 14 días",
+        readout: (etiqueta: "Adecuado", tono: LiquidColor.indigo,
+                  frase: "9 de las últimas 14 noches en este rango"),
+        puntos: trendDemo(),
+        bandas: [
+            .init(lo: 7, hi: 9, color: LiquidColor.indigo, activa: true),
+            .init(lo: 6, hi: 7, color: LiquidColor.teal, activa: false),
+            .init(lo: nil, hi: 6, color: LiquidColor.atencion, activa: false),
+        ],
+        dominio: 5...10,
+        ticksY: [(9, "9"), (7, "7"), (6, "6")],
+        tono: LiquidColor.indigo,
+        formatoScrub: { v, _ in String(format: "%.1f h · mar 14", v) },
+        formatoValorScrub: { v in String(format: "%.1f h", v) },
+        formatoFechaScrub: popupFmt,
+        formatoFechaEje: ejeFmt,
+        estado: .datos,
+        a11yLabel: "Sueño, últimos 14 días")
+    chart.scrubFijo = 5
+    return chart
+        .padding(LiquidSpace.s550)
+        .background(LiquidSheetFondo(tone: LiquidColor.indigo))
+        .environment(\.liquidMotionDisabled, true)
+}
+
+#Preview("Liquid · Trend 14d — cargando y vacío") {
+    VStack(alignment: .leading, spacing: LiquidSpace.s550) {
+        LiquidTrendChart(
+            titulo: "Últimos 14 días", puntos: [], bandas: [], dominio: 0...1,
+            ticksY: [], tono: LiquidColor.rosa,
+            formatoScrub: { v, _ in "\(Int(v))" },
+            estado: .cargando,
+            a11yLabel: "FC en reposo, últimos 14 días")
+        LiquidTrendChart(
+            titulo: "Últimos 14 días", puntos: [], bandas: [], dominio: 0...1,
+            ticksY: [], tono: LiquidColor.rosa,
+            formatoScrub: { v, _ in "\(Int(v))" },
+            estado: .vacio("Sin datos de los últimos 14 días."),
+            a11yLabel: "FC en reposo, últimos 14 días")
+    }
+    .padding(LiquidSpace.s550)
+    .background(LiquidSheetFondo(tone: LiquidColor.rosa))
+    .environment(\.liquidMotionDisabled, true)
+}
+#endif

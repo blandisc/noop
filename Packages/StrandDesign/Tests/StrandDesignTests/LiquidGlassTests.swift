@@ -8,6 +8,20 @@ final class LiquidGlassTests: XCTestCase {
 
     // MARK: Parser SVG
 
+    /// Regresión del bug /inject 2026-07-22: el path DEBE arrancar con un moveTo real —
+    /// macOS perdona un addLine inicial (lo trata como move) pero iOS descarta el path
+    /// en silencio, así que el bounding box por sí solo no bastaba como test.
+    func test_parser_arrancaConMoveTo() {
+        for d in ["M2 3l4 0v5h-4z", "M1 8h3l2-4 3 8 2-4h4",
+                  "M62 56 L62 94 C52 122, 112 132, 130 148"] {
+            var first: CGPathElementType?
+            SVGPathData.path(d).cgPath.applyWithBlock { element in
+                if first == nil { first = element.pointee.type }
+            }
+            XCTAssertEqual(first, .moveToPoint, "«\(d.prefix(12))…» debe abrir con moveTo")
+        }
+    }
+
     func test_parser_lineasYRelativos() {
         // M/l/h/v relativos y absolutos.
         let p = SVGPathData.path("M2 3l4 0v5h-4z")
@@ -51,7 +65,9 @@ final class LiquidGlassTests: XCTestCase {
         for glyph in LiquidIcon.Glyph.allCases {
             let spec = glyph.spec
             var combined = Path()
-            for d in spec.paths {
+            // `pathsFilled` es la tercera capa (geometría YA rellena: los nodos de
+            // `.tendencias`). Sin ella el test dejaba sin cubrir arte que SÍ se pinta.
+            for d in spec.paths + spec.paths2 + spec.pathsFilled {
                 combined.addPath(SVGPathData.path(d))
             }
             XCTAssertFalse(combined.isEmpty, "\(glyph.rawValue): path vacío")
@@ -67,6 +83,123 @@ final class LiquidGlassTests: XCTestCase {
         }
     }
 
+    // MARK: Contrato de gráfica (recuperación /inject — tokens `LiquidChart`)
+
+    /// El invariante que hace HONESTOS los puntos por dato: un disco por muestra vuelve la
+    /// ventana CONTABLE, así que el umbral tiene que quedar por debajo del tope de
+    /// decimación del caller (80, `MetricWindowMath.decimatedPoints`). Si alguien sube este
+    /// número sin subir aquel, el usuario contaría 7 discos donde la fila de nivel afirma
+    /// «9 noches» y la hoja mentiría en silencio, sin fallar ninguna compilación.
+    func test_puntoDatoUmbral_bajoElTopeDeDecimacion() {
+        XCTAssertLessThan(LiquidChart.puntoDatoUmbral, 80,
+                          "los discos por dato harían contable una serie ya decimada")
+        XCTAssertGreaterThan(LiquidChart.puntoDatoUmbral, 0)
+    }
+
+    /// I1 se juega en 13 puntos de alfa (8 reposo / 16 activa / 3 apagada): el disco de un
+    /// punto FUERA de la banda activa tiene que acompañar a su wash, nunca competir con él.
+    func test_puntosDato_apagadosPorDebajoDelEncendido() {
+        XCTAssertLessThan(LiquidChart.puntoApagadoAlfa, 1)
+        XCTAssertLessThan(LiquidChart.puntoApagadoEscala, 1)
+        // I1 intacto: los tres washes de banda siguen siendo 8 / 16 / 3.
+        XCTAssertEqual(LiquidChart.bandaReposoAlfa, 0.08)
+        XCTAssertEqual(LiquidChart.bandaActivaAlfa, 0.16)
+        XCTAssertEqual(LiquidChart.bandaApagadaAlfa, 0.03)
+    }
+
+    /// La banda es un intervalo half-open `[lo, hi)` — el mismo resolver que pinta el color
+    /// del anillo del scrub, del popup y de cada disco. Un solo punto en dos bandas dejaría
+    /// el anillo y su popup discrepando del wash que ilumina.
+    func test_banda_intervaloHalfOpen() {
+        let media = LiquidChartBanda(lo: 49, hi: 71, color: .cyan, activa: true)
+        XCTAssertTrue(media.contiene(49), "el borde bajo PERTENECE a la banda")
+        XCTAssertTrue(media.contiene(70.9))
+        XCTAssertFalse(media.contiene(71), "el borde alto es de la banda de arriba")
+        XCTAssertFalse(media.contiene(48.9))
+        let abierta = LiquidChartBanda(lo: 71, hi: nil, color: .green, activa: false)
+        XCTAssertTrue(abierta.contiene(1_000))
+        let porAbajo = LiquidChartBanda(lo: nil, hi: 49, color: .orange, activa: false)
+        XCTAssertTrue(porAbajo.contiene(-1_000))
+        XCTAssertFalse(porAbajo.contiene(49))
+    }
+
+    /// Qué punto nombra VoiceOver: el que está bajo el dedo mientras dura el scrub, y el
+    /// ÚLTIMO en reposo (nunca el primero, que es el más viejo de la ventana).
+    func test_a11y_indiceDelScrub() {
+        XCTAssertEqual(LiquidChartA11y.indice(3, 14), 3)
+        XCTAssertEqual(LiquidChartA11y.indice(nil, 14), 13, "en reposo lee el último punto")
+        XCTAssertEqual(LiquidChartA11y.indice(99, 14), 13, "índice fuera de rango = último")
+        XCTAssertEqual(LiquidChartA11y.indice(-1, 14), 13)
+        XCTAssertEqual(LiquidChartA11y.indice(nil, 0), 0, "serie vacía no puede desbordar")
+    }
+
+    /// A5 · Orden defensivo del plot. La serie se DIBUJA ordenada por fecha (con
+    /// `mapeoPorTiempo` una serie revuelta rompe `fraccionTiempo`, que toma `first`/`last`
+    /// como extremos del span), pero el índice que se publica —`onScrub`, y el `scrubFijo`
+    /// que se recibe— pertenece al arreglo del CALLER. Sin la traducción, VoiceOver
+    /// nombraría un día y el anillo se pararía sobre otro.
+    func test_plot_ordenDefensivo_traduceIndicesAlCaller() {
+        let t0 = Date(timeIntervalSinceReferenceDate: 774_500_000)
+        func dia(_ d: Int) -> Date { t0.addingTimeInterval(Double(d) * 86_400) }
+        // Revuelta a propósito: el caller la pasa así, el plot la ordena.
+        let revuelta: [(fecha: Date, valor: Double)] = [
+            (dia(2), 52), (dia(0), 58), (dia(3), 61), (dia(1), 47),
+        ]
+        let plot = LiquidChartPlot(puntos: revuelta, bandas: [], dominio: 40...70,
+                                   ticksY: [], tono: .cyan, puntoHoy: nil, hoyAnillo: false,
+                                   alto: 168)
+        XCTAssertEqual(plot.puntos.map(\.valor), [58, 47, 52, 61], "el plot dibuja ordenado")
+        XCTAssertEqual(plot.ordenOriginal, [1, 3, 0, 2],
+                       "cada punto dibujado recuerda su índice en el arreglo del caller")
+        // Ida y vuelta: el punto que el plot dibuja en la posición k es el del caller en
+        // `ordenOriginal[k]`, y su valor coincide.
+        for (k, orig) in plot.ordenOriginal.enumerated() {
+            XCTAssertEqual(plot.puntos[k].valor, revuelta[orig].valor)
+            XCTAssertEqual(plot.puntos[k].fecha, revuelta[orig].fecha)
+        }
+        // Camino rápido: una serie YA ordenada no se toca (identidad, sin copias).
+        let ordenada: [(fecha: Date, valor: Double)] = (0..<5).map { (dia($0), Double(50 + $0)) }
+        let plot2 = LiquidChartPlot(puntos: ordenada, bandas: [], dominio: 40...70,
+                                    ticksY: [], tono: .cyan, puntoHoy: nil, hoyAnillo: false,
+                                    alto: 168)
+        XCTAssertEqual(plot2.ordenOriginal, Array(0..<5))
+    }
+
+    /// B7 · Una etapa de 0 minutos NO existe para la barra de la noche: con el fallback
+    /// diario de Apple `awake` llega en 0 por construcción y la leyenda imprimía
+    /// «DESPIERTO 0:00», insinuando una medición que nunca ocurrió. Y la ventana solo entra
+    /// a VoiceOver cuando el caller la pudo afirmar («6:00 → 6:00» no es un horario).
+    func test_stageBar_etapasEnCeroNoExisten() {
+        let etapas: [LiquidStageBar.Etapa] = [
+            .init(minutos: 91, color: .indigo, etiqueta: "Profundo", duracion: "1:31"),
+            .init(minutos: 104, color: .indigo, etiqueta: "REM", duracion: "1:44"),
+            .init(minutos: 190, color: .indigo, etiqueta: "Ligero", duracion: "3:10"),
+            .init(minutos: 0, color: .yellow, etiqueta: "Despierto", duracion: "0:00"),
+        ]
+        XCTAssertEqual(LiquidStageBar.visibles(etapas).map(\.etiqueta),
+                       ["Profundo", "REM", "Ligero"])
+        XCTAssertEqual(LiquidStageBar.a11yValue(etapas: etapas, ventana: nil),
+                       "Profundo 1:31, REM 1:44, Ligero 3:10")
+        XCTAssertEqual(LiquidStageBar.a11yValue(etapas: etapas, ventana: "23:38 → 7:04"),
+                       "Profundo 1:31, REM 1:44, Ligero 3:10, 23:38 → 7:04")
+        // Noche sin medir: el componente no inventa nada (es el CALLER quien no debe
+        // pintar la barra — `sleepEtapasMedidas` en la hoja).
+        let ninguna = etapas.map {
+            LiquidStageBar.Etapa(minutos: 0, color: $0.color,
+                                 etiqueta: $0.etiqueta, duracion: "0:00")
+        }
+        XCTAssertTrue(LiquidStageBar.visibles(ninguna).isEmpty)
+        XCTAssertEqual(LiquidStageBar.a11yValue(etapas: ninguna, ventana: nil), "")
+    }
+
+    /// B4 · La unidad del numeral ESCALA con Dynamic Type. Era `Font.system(size: 13)`
+    /// duro: junto a un numeral que sí crecía, en `.xxxLarge` la unidad se quedaba enana.
+    /// El test fija el estilo relativo, que es lo que macOS sí puede verificar (el escalado
+    /// real solo se ve en el canvas de iOS: `ImageRenderer` de AppKit no escala fuentes).
+    func test_type_unidadDelNumeralEscala() {
+        XCTAssertEqual(LiquidType.numeralHojaUnidad, Font.system(.footnote))
+    }
+
     // MARK: Contrato de motion
 
     func test_motion_duraciones() {
@@ -74,7 +207,7 @@ final class LiquidGlassTests: XCTestCase {
         XCTAssertEqual(LiquidMotion.quick, 0.24)
         XCTAssertEqual(LiquidMotion.gentle, 0.42)
         XCTAssertEqual(LiquidMotion.sheetDuration, 0.56)
-        XCTAssertEqual(LiquidMotion.flowPeriod, 9)
+        XCTAssertEqual(LiquidMotion.flowPeriod, 6)   // 9 → 6: ritmo escalonado del dueño
         XCTAssertEqual(LiquidMotion.driftPeriods, 16...26)
         XCTAssertEqual(LiquidMotion.entradaStagger, 0.06)
         XCTAssertEqual(LiquidMotion.pressScale, 0.97)
@@ -90,13 +223,13 @@ final class LiquidGlassTests: XCTestCase {
     }
 
     func test_motion_flowPulse() {
-        // Un recorrido por ciclo de 9 s, continuo, con wrap limpio y delay por cable.
+        // Un recorrido por ciclo de 6 s, continuo, con wrap limpio y delay por cable.
         XCTAssertEqual(LiquidMotion.flowPulseProgress(time: 0), 0, accuracy: 1e-9)
-        XCTAssertEqual(LiquidMotion.flowPulseProgress(time: 4.5), 0.5, accuracy: 1e-9)
-        XCTAssertEqual(LiquidMotion.flowPulseProgress(time: 9), 0, accuracy: 1e-9)
-        XCTAssertEqual(LiquidMotion.flowPulseProgress(time: 0, delay: 0.8),
-                       1 - 0.8 / 9, accuracy: 1e-9)
-        XCTAssertEqual(LiquidMotion.flowPulseProgress(time: 5.3, delay: 0.8), 0.5, accuracy: 1e-9)
+        XCTAssertEqual(LiquidMotion.flowPulseProgress(time: 3), 0.5, accuracy: 1e-9)
+        XCTAssertEqual(LiquidMotion.flowPulseProgress(time: 6), 0, accuracy: 1e-9)
+        XCTAssertEqual(LiquidMotion.flowPulseProgress(time: 0, delay: 2),
+                       1 - 2.0 / 6, accuracy: 1e-9)
+        XCTAssertEqual(LiquidMotion.flowPulseProgress(time: 5, delay: 2), 0.5, accuracy: 1e-9)
     }
 
     // MARK: Contratos a11y (FER-1045) — las composiciones de label que lee VoiceOver
@@ -118,6 +251,83 @@ final class LiquidGlassTests: XCTestCase {
                                           subtitle: "Tus 3 señales amanecieron dentro de tu rango.",
                                           confianza: "Confianza: 12 de 21 noches"),
             "Dale con todo. Tus 3 señales amanecieron dentro de tu rango. Confianza: 12 de 21 noches")
+    }
+
+    /// La AFORDANCIA del héroe («Cómo llegué a esto») entra al label en el ORDEN de la
+    /// pantalla: subtítulo → puerta → confianza. Es lo único que le dice a VoiceOver que
+    /// ahí se toca; si se cayera del label, el héroe volvería a ser un titular mudo para
+    /// quien no ve la pastilla de vidrio.
+    func test_a11y_heroPuerta() {
+        // Base joven: puerta Y confianza, en ese orden.
+        XCTAssertEqual(
+            LiquidHeroVeredicto.a11yLabel(title: "Bien,\ncon un detalle",
+                                          subtitle: "Tu sueño amaneció debajo de tu base.",
+                                          puerta: "Cómo llegué a esto",
+                                          confianza: "Confianza: 8 de 14 noches"),
+            "Bien, con un detalle. Tu sueño amaneció debajo de tu base. Cómo llegué a esto. Confianza: 8 de 14 noches")
+        // Base firme: sólo puerta.
+        XCTAssertEqual(
+            LiquidHeroVeredicto.a11yLabel(title: "Dale\ncon todo",
+                                          subtitle: "Amaneciste en tu base.",
+                                          puerta: "Cómo llegué a esto", confianza: nil),
+            "Dale con todo. Amaneciste en tu base. Cómo llegué a esto")
+        // Sin puerta: el contrato viejo intacto (ningún caller sin migrar cambia de voz).
+        XCTAssertEqual(
+            LiquidHeroVeredicto.a11yLabel(title: "Dale\ncon todo",
+                                          subtitle: "Amaneciste en tu base.", confianza: nil),
+            "Dale con todo. Amaneciste en tu base.")
+        // Héroe DEMOTADO: compone con el mismo helper, con el kicker al frente. Es el
+        // estado donde más se pregunta «¿por qué?» y el que antes no ofrecía ninguna pista.
+        XCTAssertEqual(
+            LiquidHeroVeredicto.a11yLabel(title: "LECTURA DE DÍA. Tus señales del día están en tu rango.",
+                                          subtitle: "Sin lectura de sueño anoche; esto es menos preciso.",
+                                          puerta: "Cómo llegué a esto", confianza: nil),
+            "LECTURA DE DÍA. Tus señales del día están en tu rango. Sin lectura de sueño anoche; esto es menos preciso. Cómo llegué a esto")
+    }
+
+    // MARK: Contratos a11y — hoja de resumen (QA F0-F2 D4)
+
+    func test_a11y_sheetHeader() {
+        XCTAssertEqual(LiquidSheetHeader.a11yLabel(titulo: "VFC", numeral: "56",
+                                                   unidad: "ms", origen: "Apple Salud"),
+                       "VFC, 56 ms, Apple Salud")
+        XCTAssertEqual(LiquidSheetHeader.a11yLabel(titulo: "SUEÑO", numeral: nil,
+                                                   unidad: nil, origen: nil),
+                       "SUEÑO")
+        XCTAssertEqual(LiquidSheetHeader.a11yLabel(titulo: "ESFUERZO", numeral: "10.0",
+                                                   unidad: nil, origen: nil),
+                       "ESFUERZO, 10.0")
+    }
+
+    func test_a11y_zoneMeter() {
+        let segmentos: [LiquidZoneMeter.Segmento] = [
+            .init(peso: 1, color: .red, activa: false, etiqueta: "AGOTADO"),
+            .init(peso: 1, color: .green, activa: true, etiqueta: "LISTO"),
+        ]
+        XCTAssertEqual(LiquidZoneMeter.a11yLabel(segmentos: segmentos), "LISTO")
+        let ninguna = segmentos.map {
+            LiquidZoneMeter.Segmento(peso: $0.peso, color: $0.color,
+                                     activa: false, etiqueta: $0.etiqueta)
+        }
+        XCTAssertEqual(LiquidZoneMeter.a11yLabel(segmentos: ninguna), "")
+    }
+
+    // MARK: Lectura de la hoja (negrita del veredicto)
+
+    /// La negrita cae en el veredicto sin necesitar una clave por frase (pasada UX H5).
+    func test_lectura_clausulaDelVeredicto() {
+        // Con coma: solo la primera cláusula.
+        XCTAssertEqual(LiquidReadingLine.clausulaVeredicto("Por encima de tu base, buena señal."),
+                       "Por encima de tu base")
+        XCTAssertEqual(LiquidReadingLine.clausulaVeredicto("Above your base, a good sign."),
+                       "Above your base")
+        // Sin coma: la frase completa, sin el punto final.
+        XCTAssertEqual(LiquidReadingLine.clausulaVeredicto("En tu rango de siempre."),
+                       "En tu rango de siempre")
+        // Degenerados: nada que destacar.
+        XCTAssertNil(LiquidReadingLine.clausulaVeredicto(""))
+        XCTAssertNil(LiquidReadingLine.clausulaVeredicto(","))
+        XCTAssertNil(LiquidReadingLine.clausulaVeredicto("."))
     }
 
     // MARK: Render de humo (macOS)

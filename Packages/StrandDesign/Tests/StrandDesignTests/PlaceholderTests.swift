@@ -160,6 +160,43 @@ final class StrandDesignTests: XCTestCase {
         XCTAssertGreaterThan(pos.y, 5)
     }
 
+    /// El popup del scrub no puede sentarse ENCIMA del dato que nombra: en la hoja Liquid
+    /// recortaba el anillo del punto marcado y partía la curva en muñones sueltos.
+    func testTooltipBesideNeverCoversTheAnchor() {
+        let container = CGSize(width: 300, height: 160)
+        let size = CGSize(width: 90, height: 40)
+        let gap: CGFloat = 8
+        for x in stride(from: CGFloat(0), through: 300, by: 15) {
+            for y in stride(from: CGFloat(0), through: 160, by: 20) {
+                let p = ChartTooltipPlacement.positionBeside(
+                    anchor: CGPoint(x: x, y: y), tooltipSize: size,
+                    in: container, gap: gap)
+                // Fuera de la columna del ancla, por al menos el gap.
+                XCTAssertGreaterThanOrEqual(abs(p.x - x), size.width / 2 + gap - 0.001,
+                                            "ancla (\(x), \(y))")
+                // Y dentro del plot.
+                XCTAssertGreaterThanOrEqual(p.x - size.width / 2, -0.001)
+                XCTAssertLessThanOrEqual(p.x + size.width / 2, container.width + 0.001)
+                XCTAssertGreaterThanOrEqual(p.y - size.height / 2, -0.001)
+                XCTAssertLessThanOrEqual(p.y + size.height / 2, container.height + 0.001)
+            }
+        }
+    }
+
+    /// Un plot más angosto que el propio popup no tiene costado donde ponerlo: cae al
+    /// colocado de siempre (arriba/abajo) en vez de salirse del área de datos.
+    func testTooltipBesideFallsBackWhenNoSideFits() {
+        let container = CGSize(width: 100, height: 160)
+        let size = CGSize(width: 90, height: 40)
+        let anchor = CGPoint(x: 50, y: 80)
+        let beside = ChartTooltipPlacement.positionBeside(anchor: anchor, tooltipSize: size,
+                                                          in: container, gap: 8)
+        let clasico = ChartTooltipPlacement.position(anchor: anchor, tooltipSize: size,
+                                                     in: container, gap: 8)
+        XCTAssertEqual(beside.x, clasico.x, accuracy: 0.001)
+        XCTAssertEqual(beside.y, clasico.y, accuracy: 0.001)
+    }
+
     func testTrendChartDefaultDateStringNonEmpty() {
         let s = TrendChart.defaultDateString(Date(timeIntervalSince1970: 1_700_000_000))
         XCTAssertFalse(s.isEmpty)

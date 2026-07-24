@@ -47,16 +47,30 @@ final class LiquidHoyBuilderTests: XCTestCase {
         XCTAssertEqual(route, .autonomic)
     }
 
-    func test_hero_caution_y_easy_llevanTonoAtencion() {
-        for verdict in [Preparedness.Verdict.caution, .easy] {
+    func test_hero_caution_ambar_y_easy_rojo() {
+        // D1 resuelta por el dueño: caution = ámbar, easy = ROJO (como el clásico).
+        for (verdict, esperado) in [(Preparedness.Verdict.caution, LiquidColor.atencion),
+                                    (.easy, LiquidColor.negativo)] {
             let (hero, _) = LiquidHoyBuilder.hero(
                 prep: read(verdict: verdict, drivers: nocheAnclada), sleepMin: nil, nights: 21)
             guard case .veredicto(let title, let highlight, let tone, _, _) = hero else {
                 return XCTFail("esperaba .veredicto para \(verdict)")
             }
             XCTAssertTrue(title.contains(highlight), "\(verdict): resalte ⊆ título")
-            XCTAssertEqual(tone, LiquidColor.atencion, "\(verdict)")
+            XCTAssertEqual(tone, esperado, "\(verdict)")
         }
+    }
+
+    func test_ambiente_semantico() {
+        XCTAssertEqual(LiquidHoyBuilder.ambiente(
+            prep: read(verdict: .full, drivers: nocheAnclada)), .bien)
+        XCTAssertEqual(LiquidHoyBuilder.ambiente(
+            prep: read(verdict: .caution, drivers: nocheAnclada)), .atencion)
+        XCTAssertEqual(LiquidHoyBuilder.ambiente(
+            prep: read(verdict: .easy, drivers: nocheAnclada)), .alerta)
+        XCTAssertEqual(LiquidHoyBuilder.ambiente(prep: nil), .neutro)
+        XCTAssertEqual(LiquidHoyBuilder.ambiente(
+            prep: read(verdict: .lowSignal, drivers: [], maturity: .calibrating)), .neutro)
     }
 
     func test_hero_confianza_soloBajo21Noches() {
@@ -82,24 +96,31 @@ final class LiquidHoyBuilderTests: XCTestCase {
         XCTAssertEqual(route, .autonomic)
     }
 
-    func test_hero_lowSignal_yPrepNil_caenAlSuenoJamasBajaSenal() {
-        // lowSignal → fallback de SUEÑO con el valor de anoche.
+    func test_hero_lowSignal_yPrepNil_sonAunSinDatos_jamasSuenoNiBajaSenal() {
+        // Decisión del dueño (sesión /inject 2026-07-22): sin veredicto NO hay héroe de
+        // sueño — SIEMPRE «aún sin datos suficientes», aunque exista sueño grabado.
         let (heroLow, routeLow) = LiquidHoyBuilder.hero(
             prep: read(verdict: .lowSignal, drivers: [], maturity: .calibrating),
             sleepMin: 440, nights: 2)
         guard case .demotado(_, let title, _) = heroLow else {
-            return XCTFail("esperaba .demotado (sueño)")
+            return XCTFail("esperaba .demotado (sin datos)")
         }
-        XCTAssertEqual(title, "7 h 20 m")
-        XCTAssertEqual(routeLow, .sleep)
+        // El copy pasó de «Aún sin datos suficientes» a «Aún no conozco tu base» (pasada
+        // UX H4: decía «sin datos» encima de ocho tiles LLENOS de datos; lo que falta es
+        // la base). Lo que el test protege es la INVARIANTE, no la redacción: jamás la
+        // hora de sueño, y siempre un titular que hable de la base que falta.
+        XCTAssertFalse(title.contains(":"), "jamás la hora de sueño: \(title)")
+        XCTAssertTrue(title.localizedCaseInsensitiveContains("base") ||
+                      title.localizedCaseInsensitiveContains("baseline"), title)
+        XCTAssertEqual(routeLow, .autonomic)
 
-        // prep == nil, sin sueño → «—», mismo destino.
+        // prep == nil → mismo estado honesto, mismo destino.
         let (heroNil, routeNil) = LiquidHoyBuilder.hero(prep: nil, sleepMin: nil, nights: 0)
         guard case .demotado(_, let titleNil, _) = heroNil else {
-            return XCTFail("esperaba .demotado (sueño)")
+            return XCTFail("esperaba .demotado (sin datos)")
         }
-        XCTAssertEqual(titleNil, "—")
-        XCTAssertEqual(routeNil, .sleep)
+        XCTAssertEqual(titleNil, title, "con o sin sueño grabado, el mismo copy honesto")
+        XCTAssertEqual(routeNil, .autonomic)
     }
 
     // MARK: Señales — port literal de `needles()`
@@ -153,18 +174,18 @@ final class LiquidHoyBuilderTests: XCTestCase {
         }
 
         // El caso del ensamble: 1.03 → equilibrio, knob 51.5, ok.
-        guard case .medida(let pos, let zone, let status, let state) = LiquidHoyBuilder.carga(
+        guard case .medida(let pos, let zone, _, let ratio, let state) = LiquidHoyBuilder.carga(
             TrainingLoadModel(acwr: 1.03, series: []))! else {
             return XCTFail("esperaba .medida")
         }
         XCTAssertEqual(pos, 51.5, accuracy: 1e-9)
         XCTAssertEqual(zone, 1)
-        XCTAssertTrue(status.contains("1.03"))
+        XCTAssertEqual(ratio, "1.03", "el ratio viaja separado del rótulo (pasada UI)")
         XCTAssertEqual(state, .ok)
 
         // Las zonas siguen al motor (el oráculo es `loadBand`), knob clampeado 0.05–0.95.
         for (ratio, expectedZone, okEsperado) in [(0.7, 0, false), (1.4, 2, false), (1.9, 3, false)] {
-            guard case .medida(let p, let z, _, let s) = LiquidHoyBuilder.carga(
+            guard case .medida(let p, let z, _, _, let s) = LiquidHoyBuilder.carga(
                 TrainingLoadModel(acwr: ratio, series: []))! else {
                 return XCTFail("esperaba .medida para \(ratio)")
             }
@@ -302,7 +323,10 @@ final class LiquidHoyBuilderTests: XCTestCase {
 
         let pares = [("Go all in", "hero.highlight.full"),
                      ("Good, one thing to watch", "hero.highlight.caution"),
-                     ("Take it easy", "hero.highlight.easy")]
+                     ("Take it easy", "hero.highlight.easy"),
+                     // La cláusula en negrita del acta vive dentro de su frase.
+                     ("Your HRV, your resting heart rate and your breathing count as a single reading, so one bad night doesn't count three times.",
+                      "acta.metodo.clave")]
         for lang in ["en", "es"] {
             for (titleKey, highlightKey) in pares {
                 let title = try XCTUnwrap(value(titleKey, lang), "\(titleKey) [\(lang)]")
@@ -311,5 +335,149 @@ final class LiquidHoyBuilderTests: XCTestCase {
                               "[\(lang)] «\(highlight)» debe vivir dentro de «\(title)»")
             }
         }
+    }
+
+    // MARK: Acta del veredicto — «Cómo llegué a esto»
+
+    /// El acta se SINTETIZA: en el `lowSignal` por falta de fila de hoy, `Preparedness`
+    /// devuelve `drivers` VACÍO (:163-166). Una tabla derivada de `drivers` no existiría.
+    func test_acta_sinDrivers_sintetizaLasTresFilas() {
+        let acta = LiquidHoyBuilder.acta(
+            prep: read(verdict: .lowSignal, drivers: [], maturity: .calibrating))
+        XCTAssertEqual(acta.filas.count, 3)
+        XCTAssertEqual(acta.filas.map(\.id), ["autonomic", "sleep", "thermal"])
+        XCTAssertTrue(acta.filas.allSatisfy { !$0.fuera }, "sin datos, nadie está fuera")
+        XCTAssertNil(acta.nivel, "sin veredicto no hay palabra")
+        XCTAssertNotNil(acta.sinLectura)
+        XCTAssertEqual(acta.tono, LiquidColor.tinta500,
+                       "sin veredicto la hoja no tiene una sola gota de color")
+
+        // Y con `prep == nil` tampoco revienta ni inventa filas.
+        XCTAssertEqual(LiquidHoyBuilder.acta(prep: nil).filas.count, 3)
+    }
+
+    /// El conteo habla de SEÑALES (lo que el usuario ve en los orbes), jamás de «ejes».
+    func test_acta_conteo_porSenalesNoPorEjes() {
+        let combos = [
+            LiquidHoyBuilder.conteoActa(fuera: 0, conLectura: 3),
+            LiquidHoyBuilder.conteoActa(fuera: 1, conLectura: 3),
+            LiquidHoyBuilder.conteoActa(fuera: 2, conLectura: 3),
+            LiquidHoyBuilder.conteoActa(fuera: 0, conLectura: 2),
+        ]
+        for texto in combos {
+            XCTAssertFalse(texto.localizedCaseInsensitiveContains("eje"),
+                           "vocabulario de ingeniería en pantalla: \(texto)")
+            XCTAssertFalse(texto.localizedCaseInsensitiveContains("axis"), texto)
+        }
+        XCTAssertNotEqual(combos[0], combos[3], "cobertura parcial tiene su propia frase")
+    }
+
+    /// El acta NO publica un solo umbral del motor: la columna «contra qué base» es
+    /// cualitativa (los cortes son knobs sin firmar por `/cso` y la allow-list de esta
+    /// superficie prohíbe números).
+    func test_acta_noPublicaUmbrales() {
+        let acta = LiquidHoyBuilder.acta(
+            prep: read(verdict: .caution,
+                       drivers: [driver(.autonomic, .inRange, z: 0.1),
+                                 driver(.sleep, .low), driver(.thermal, .inRange)]))
+        for fila in acta.filas {
+            XCTAssertNil(fila.base.rangeOfCharacter(from: .decimalDigits),
+                         "la columna de base publica un número: «\(fila.base)»")
+            XCTAssertNil(fila.dijo.rangeOfCharacter(from: .decimalDigits),
+                         "«qué dijo» publica un número: «\(fila.dijo)»")
+        }
+    }
+
+    /// Precedencia: `easy` + UNA señal fuera + tendencia abajo es el EMPUJÓN DE TENDENCIA
+    /// (:214), no la histéresis (:300-312). Sin precedencia se pintaban los dos y la hoja
+    /// se contradecía.
+    func test_acta_precedencia_tendenciaGanaAHisteresis() {
+        let prep = Preparedness.Read(
+            verdict: .easy,
+            drivers: [driver(.autonomic, .low, z: -1.4), driver(.sleep, .inRange),
+                      driver(.thermal, .inRange), driver(.load, .noData)],
+            signalsPresent: 3, signalsTotal: 3, maturity: .trusted,
+            autonomicNights: 21, trend: .below)
+        let ids = LiquidHoyBuilder.acta(prep: prep).notas.map(\.id)
+        XCTAssertTrue(ids.contains("tendencia"))
+        XCTAssertFalse(ids.contains("histeresis"), "no puede haber dos causas a la vez")
+    }
+
+    /// El veredicto MOSTRADO puede no ser la lectura de hoy (histéresis de 2 días). Cuando
+    /// el acta y la palabra no cuadran, el aviso es OBLIGATORIO y va en la superficie.
+    func test_acta_histeresis_avisaCuandoElConteoNoCuadra() {
+        // Verde estable con una señal fuera hoy: el crudo nuevo aún no se repite.
+        let prep = Preparedness.Read(
+            verdict: .full,
+            drivers: [driver(.autonomic, .inRange, z: 0.3), driver(.sleep, .low),
+                      driver(.thermal, .inRange), driver(.load, .noData)],
+            signalsPresent: 3, signalsTotal: 3, maturity: .trusted,
+            autonomicNights: 21, trend: nil)
+        let acta = LiquidHoyBuilder.acta(prep: prep)
+        let aviso = acta.notas.first { $0.id == "histeresis" }
+        XCTAssertNotNil(aviso, "sin este aviso la tarjeta miente en un caso real")
+        XCTAssertTrue(aviso?.avisa == true, "el aviso va en tinta de atención, no como nota")
+        // Y la fila que se salió NO se pinta del verde del veredicto.
+        XCTAssertEqual(acta.tonoFilas, LiquidColor.atencion)
+        XCTAssertEqual(acta.tono, LiquidColor.verdePrimario)
+
+        XCTAssertTrue(LiquidHoyBuilder.desfaseDeHisteresis(verdict: .full, fuera: 1))
+        XCTAssertFalse(LiquidHoyBuilder.desfaseDeHisteresis(verdict: .caution, fuera: 1))
+        XCTAssertFalse(LiquidHoyBuilder.desfaseDeHisteresis(verdict: .easy, fuera: 2))
+        XCTAssertTrue(LiquidHoyBuilder.desfaseDeHisteresis(verdict: .easy, fuera: 1))
+    }
+
+    /// La carga se mide y NUNCA vota (`loadAxis` :189-193): no entra al acta, baja a nota,
+    /// y tiene copy en las DOS variantes (con y sin entrenamiento).
+    func test_acta_cargaNuncaVota_conCopyEnLasDosVariantes() {
+        func nota(hayWorkout: Bool) -> String? {
+            let prep = Preparedness.Read(
+                verdict: .full,
+                drivers: nocheAnclada + [driver(.load, hayWorkout ? .inRange : .noData)],
+                signalsPresent: 3, signalsTotal: 3, maturity: .trusted,
+                autonomicNights: 21, trend: nil)
+            let acta = LiquidHoyBuilder.acta(prep: prep)
+            XCTAssertEqual(acta.filas.count, 3, "la carga jamás es una cuarta fila")
+            XCTAssertFalse(acta.filas.contains { $0.id == "load" })
+            return acta.notas.first { $0.id == "carga" }?.texto
+        }
+        let con = nota(hayWorkout: true)
+        let sin = nota(hayWorkout: false)
+        XCTAssertNotNil(con)
+        XCTAssertNotNil(sin)
+        XCTAssertNotEqual(con, sin, "las dos variantes tienen su propio copy")
+    }
+
+    /// Ningún número de noches en pantalla que no salga de `Baselines`, y
+    /// `LiquidCalibracionCard` SOLO mientras de verdad calibra.
+    func test_acta_confianza_soloDenominadoresDelMotor() {
+        // Calibrando: tarjeta con barra, meta = minNightsSeed (4).
+        let calibrando = LiquidHoyBuilder.acta(
+            prep: read(verdict: .full, drivers: nocheAnclada, nights: 2,
+                       maturity: .calibrating))
+        guard case .calibrando(_, _, _, let necesarias)? = calibrando.confianza else {
+            return XCTFail("esperaba la tarjeta de calibración")
+        }
+        XCTAssertEqual(necesarias, Baselines.minNightsSeed)
+
+        // Base usable pero joven: prosa, SIN barra de progreso.
+        let joven = LiquidHoyBuilder.acta(
+            prep: read(verdict: .full, drivers: nocheAnclada, nights: 8,
+                       maturity: .provisional))
+        guard case .nota? = joven.confianza else {
+            return XCTFail("con base usable no va la tarjeta «Calibrando tu base»")
+        }
+
+        // Base firme: no hay nada honesto que confesar.
+        let firme = LiquidHoyBuilder.acta(
+            prep: read(verdict: .full, drivers: nocheAnclada,
+                       nights: Baselines.minNightsTrust, maturity: .trusted))
+        XCTAssertNil(firme.confianza)
+    }
+
+    /// La afordancia es PERMANENTE: la pastilla bajo el veredicto ya no depende de un
+    /// tether que desaparece con la base madura.
+    func test_heroPuerta_siemprePresente() {
+        XCTAssertNotNil(LiquidHoyBuilder.build(LiquidHoyBuilder.Inputs()).model.heroPuerta)
     }
 }

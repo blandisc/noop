@@ -66,8 +66,13 @@ enum LiquidHoyBuilder {
         var resp: Lectura?
         var stress: Double?
         var historias = Historias()
+        /// ¿El permiso de Apple Salud está concedido? Sin él, el héroe «sin datos» pide
+        /// conectar Salud en vez de una instrucción imposible (revote /inject).
+        var healthConnected: Bool = true
         /// Ventana de la sesión de sueño de anoche en horas locales 0–24 (nil = sin sesión).
         var night: (start: Double, end: Double)?
+        /// Amanecer/atardecer locales en horas reloj (SolarClock; nil = caso polar).
+        var sol: (start: Double, end: Double)?
         var now: Date = Date()
         var calendar: Calendar = .current
         var locale: Locale = .current
@@ -88,14 +93,28 @@ enum LiquidHoyBuilder {
 
     static func build(_ i: Inputs) -> Output {
         let (hero, route) = hero(prep: i.preparedness, sleepMin: i.sleep?.value,
-                                 nights: i.preparedness?.autonomicNights ?? 0)
+                                 nights: i.preparedness?.autonomicNights ?? 0,
+                                 healthConnected: i.healthConnected)
         let model = LiquidHoyModel(
             kicker: kicker(now: i.now, calendar: i.calendar, locale: i.locale),
-            dial: .init(night: i.night, marker: markerHour(now: i.now, calendar: i.calendar)),
-            senales: senales(prep: i.preparedness, thermalDeviation: i.thermalDeviation),
+            dial: .init(night: i.night, sol: i.sol,
+                        marker: markerHour(now: i.now, calendar: i.calendar)),
+            senales: senales(prep: i.preparedness, thermalDeviation: i.thermalDeviation,
+                             valores: (hrv: i.hrv.map { "\(Int($0.value.rounded())) \(String(localized: "ms"))" },
+                                       sueno: i.sleep.map { sleepClockText($0.value) },
+                                       termico: i.skinTemp.map { String(format: "%+.1f°", $0.value) })),
             hero: hero,
-            carga: carga(i.trainingLoad),
-            metricas: metricas(i))
+            carga: carga(i.trainingLoad, locale: i.locale),
+            metricas: metricas(i),
+            heroHint: String(localized: "Opens the detail"),
+            ambiente: ambiente(prep: i.preparedness),
+            cargaLabel: String(localized: "Load").uppercased(with: i.locale),
+            kickerA11y: kickerA11y(now: i.now, calendar: i.calendar, locale: i.locale),
+            // La afordancia de descubrimiento: la pastilla bajo el veredicto deja de ser el
+            // tether de confianza (que DESAPARECÍA con la base madura, justo donde vive el
+            // usuario el 90 % del tiempo) y pasa a ser la PUERTA. Siempre presente, en los
+            // dos estados del héroe.
+            heroPuerta: String(localized: "How I got here"))
         return Output(model: model, heroRoute: route)
     }
 
@@ -112,31 +131,83 @@ enum LiquidHoyBuilder {
             .uppercased(with: locale)
     }
 
+    /// La fecha COMPLETA para VoiceOver («miércoles, 22 de julio de 2026») — la
+    /// abreviatura en caja alta del kicker se deletrea mal (revote /inject).
+    static func kickerA11y(now: Date, calendar: Calendar, locale: Locale) -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = calendar
+        formatter.locale = locale
+        formatter.dateStyle = .full
+        return formatter.string(from: now)
+    }
+
     /// La hora local actual como fracción 0–24 para el marcador del dial.
     static func markerHour(now: Date, calendar: Calendar) -> Double {
         let parts = calendar.dateComponents([.hour, .minute], from: now)
         return Double(parts.hour ?? 0) + Double(parts.minute ?? 0) / 60
     }
 
+    /// El ambiente semántico del día (pedido del dueño /inject): verde = «Dale con todo»,
+    /// ámbar = «con un detalle», rojo = «Ándate leve», neutro = sin veredicto nocturno.
+    static func ambiente(prep: Preparedness.Read?) -> LiquidAmbiente {
+        guard let prep, prep.verdict != .lowSignal, prep.isNightAnchored else { return .neutro }
+        switch prep.verdict {
+        case .full: return .bien
+        case .caution: return .atencion
+        case .easy: return .alerta
+        case .lowSignal: return .neutro
+        }
+    }
+
     // MARK: Héroe (tabla canónica — port literal de `TodayView.heroBlock`)
 
-    static func hero(prep: Preparedness.Read?, sleepMin: Double?, nights: Int)
+    static func hero(prep: Preparedness.Read?, sleepMin: Double?, nights: Int,
+                     healthConnected: Bool = true)
         -> (LiquidHoyModel.Hero, HeroRoute) {
         if let prep, prep.verdict != .lowSignal {
             if prep.isNightAnchored {
-                return (veredicto(prep.verdict, nights: nights), .autonomic)
+                return (veredicto(prep.verdict, nights: nights, prep: prep), .autonomic)
             }
             return (lecturaDeDia(prep), .autonomic)
         }
-        return (suenoFallback(sleepMin: sleepMin), .sleep)
+        // Decisión del dueño (sesión /inject 2026-07-22): sin veredicto NO se disfraza el
+        // héroe con otro dato — los 5 estados canónicos son full/caution/easy · lectura de
+        // día · «aún sin datos suficientes». El fallback de sueño de anoche se retiró.
+        return (suenoFallback(sleepMin: sleepMin, healthConnected: healthConnected),
+                .autonomic)
     }
 
     /// Renglones 1 (full/caution/easy con noche): la palabra-veredicto con su tono.
-    private static func veredicto(_ v: Preparedness.Verdict, nights: Int) -> LiquidHoyModel.Hero {
-        let clamped = min(nights, 21)
-        // El tether de confianza vive SOLO aquí (paridad con `SelloConfianzaArco`).
-        let confianza = clamped < 21
-            ? String(localized: "Confidence: \(clamped) of 21 nights")
+    /// Pasada UX H8: con veredicto ámbar el subtítulo repetía el titular («Bien, con un
+    /// detalle» / «Vas bien, con un detalle a vigilar») y el usuario tenía que escanear los
+    /// tres orbes para saber CUÁL está fuera. `prep.drivers` ya lo sabe: se nombra el eje y
+    /// su dirección. `nil` = ninguno fuera → el caller usa la frase genérica.
+    private static func subtituloDetalle(_ prep: Preparedness.Read?) -> String? {
+        guard let fuera = prep?.drivers.first(where: { $0.state.isOut }) else { return nil }
+        switch (fuera.axis, fuera.state) {
+        case (.sleep, .low):      return String(localized: "Your sleep came in below your range.")
+        case (.sleep, _):         return String(localized: "Your sleep came in above your range.")
+        case (.autonomic, .low):  return String(localized: "Your autonomic signal came in below your range.")
+        case (.autonomic, _):     return String(localized: "Your autonomic signal came in above your range.")
+        case (.thermal, .low):    return String(localized: "Your skin temperature came in below your baseline.")
+        case (.thermal, _):       return String(localized: "Your skin temperature came in above your baseline.")
+        case (.load, .low):       return String(localized: "Your training load came in below your usual.")
+        case (.load, _):          return String(localized: "Your training load came in above your usual.")
+        }
+    }
+
+    private static func veredicto(_ v: Preparedness.Verdict, nights: Int,
+                                  prep: Preparedness.Read? = nil) -> LiquidHoyModel.Hero {
+        // El denominador sale del MOTOR, no de la UI: `Baselines.minNightsTrust` es la
+        // noche en la que la base deja de encogerse y el veredicto se para completo. Las
+        // «21 noches» que decía este tether no existen en `Baselines` — eran un número de
+        // pantalla presentado como meta del motor.
+        let trust = Baselines.minNightsTrust
+        let clamped = min(nights, trust)
+        // Con la puerta puesta, el tether baja a línea secundaria y solo aparece mientras
+        // la base es JOVEN: con la base firme no hay nada honesto que confesar.
+        let confianza = clamped < trust
+            ? String(localized: "Confidence: \(clamped) of \(trust) nights")
             : nil
         switch v {
         case .full:
@@ -151,14 +222,17 @@ enum LiquidHoyBuilder {
                 title: String(localized: "Good, one thing to watch"),
                 highlight: String(localized: "hero.highlight.caution", defaultValue: "one thing"),
                 highlightTone: LiquidColor.atencion,
-                subtitle: String(localized: "You're doing well, with one thing to watch."),
+                subtitle: subtituloDetalle(prep) ??
+                    String(localized: "You're doing well, with one thing to watch."),
                 confianza: confianza)
         case .easy, .lowSignal:
-            // lowSignal jamás llega aquí (el if-chain lo manda al fallback de sueño).
+            // lowSignal jamás llega aquí (el if-chain lo manda al estado sin datos).
+            // D1 resuelta por el dueño (/inject): «Ándate leve» habla en ROJO, como la
+            // superficie clásica (algo está MUY fuera; el ámbar es para «un detalle»).
             return .veredicto(
                 title: String(localized: "Take it easy"),
                 highlight: String(localized: "hero.highlight.easy", defaultValue: "easy"),
-                highlightTone: LiquidColor.atencion,
+                highlightTone: LiquidColor.negativo,
                 subtitle: String(localized: "Your body's asking you to ease off today."),
                 confianza: confianza)
         }
@@ -175,27 +249,32 @@ enum LiquidHoyBuilder {
             subtitle: String(localized: "No sleep reading last night; this is less precise."))
     }
 
-    /// Renglón 3 (`lowSignal` ∨ `prep == nil`): el sueño medido de anoche (paridad
-    /// `appleTrendHero`) — nunca una palabra-veredicto.
-    private static func suenoFallback(sleepMin: Double?) -> LiquidHoyModel.Hero {
-        if let sleepMin, sleepMin > 0 {
-            let h = Int(sleepMin) / 60, m = Int(sleepMin) % 60
-            return .demotado(
-                kicker: String(localized: "LAST NIGHT'S SLEEP"),
-                title: "\(h) h \(m) m",
-                subtitle: sleepMin >= 420
-                    ? String(localized: "You slept well")
-                    : String(localized: "Sleep was short"))
-        }
+    /// Renglón 5 (`lowSignal` ∨ `prep == nil`): «aún sin datos suficientes» — SIEMPRE,
+    /// haya o no sueño grabado (decisión del dueño: el héroe de sueño de anoche se retiró;
+    /// el sueño vive en su tile y su detalle). El parámetro `sleepMin` queda ignorado y se
+    /// limpia de la firma en el cierre de la sesión (quitar parámetros no es inyectable).
+    // TODO(/inject cierre): mover este copy al String Catalog (clave EN + es-MX) y limpiar
+    // la firma + el caso `.sleep` de HeroRoute.
+    private static func suenoFallback(sleepMin: Double?,
+                                      healthConnected: Bool) -> LiquidHoyModel.Hero {
+        _ = sleepMin
+        // Sin permiso de Salud, «duerme con tu Watch» es una instrucción imposible: el
+        // único camino real es conceder el permiso (revote /inject).
+        let subtitle = healthConnected
+            ? String(localized: "Sleep with your Apple Watch a few nights and your daily verdict will appear here.")
+            : String(localized: "Connect Apple Health in Settings and your daily verdict will appear here.")
         return .demotado(
-            kicker: String(localized: "LAST NIGHT'S SLEEP"),
-            title: "—",
-            subtitle: String(localized: "No sleep recorded last night"))
+            kicker: String(localized: "READINESS"),
+            // Pasada UX H4: decía «Aún sin datos suficientes» sobre ocho tiles LLENOS de
+            // datos. Lo que falta no son datos, es la base de 21 noches.
+            title: String(localized: "I don\'t know your baseline yet"),
+            subtitle: subtitle)
     }
 
     // MARK: Señales (port literal de `TodayView.needles()`)
 
-    static func senales(prep: Preparedness.Read?, thermalDeviation: Double?)
+    static func senales(prep: Preparedness.Read?, thermalDeviation: Double?,
+                        valores: (hrv: String?, sueno: String?, termico: String?) = (nil, nil, nil))
         -> [LiquidHoyModel.Senal] {
         func driver(_ ax: Preparedness.Axis) -> Preparedness.Driver? {
             prep?.drivers.first { $0.axis == ax }
@@ -203,23 +282,31 @@ enum LiquidHoyBuilder {
 
         var out: [LiquidHoyModel.Senal] = []
 
-        // AUTONÓMICO — posición desde el z orientado del compuesto.
+        // AUTONÓMICO — posición desde el z orientado del compuesto. El eje NO es una métrica:
+        // mostrar «56 ms» adentro (solo la VFC) engañaba, porque son TRES señales. Cuando hay
+        // lectura, el orbe habla con la PALABRA del veredicto del eje adentro y anuncia «3
+        // señales» abajo (decisión del dueño /inject, «opción 2 mixta honesta»). Sin lectura
+        // vuelve al patrón normal (icono + «SIN DATOS»).
         let aut = driver(.autonomic)
+        let autHasData = aut?.state.hasData ?? false
         out.append(.init(
-            id: "autonomico", label: "AUTONÓMICO",
-            caption: caption(for: aut?.state),
-            progress: (aut?.state.hasData ?? false) ? positionFromZ(aut?.orientedZ) : nil,
+            id: "autonomico", label: String(localized: "Autonomic"),
+            caption: autHasData ? String(localized: "3 signals").localizedUppercase
+                                : caption(for: aut?.state),
+            progress: autHasData ? positionFromZ(aut?.orientedZ) : nil,
             icon: .ondaSenal,
-            state: (aut?.state.isOut ?? false) ? .atencion : .ok))
+            state: (aut?.state.isOut ?? false) ? .atencion : .ok,
+            valor: autHasData ? caption(for: aut?.state) : nil))
 
         // SUEÑO — posición categórica por estado.
         let sleep = driver(.sleep)
         out.append(.init(
-            id: "sueno", label: "SUEÑO",
+            id: "sueno", label: String(localized: "Sleep"),
             caption: caption(for: sleep?.state),
             progress: (sleep?.state.hasData ?? false) ? positionFromState(sleep!.state) : nil,
             icon: .lunaSenal,
-            state: (sleep?.state.isOut ?? false) ? .atencion : .ok))
+            state: (sleep?.state.isOut ?? false) ? .atencion : .ok,
+            valor: valores.sueno))
 
         // TÉRMICO — la MISMA última desviación que el tile (FER-1043) con el corte del motor.
         // Desviación deliberada vs `needles()`: sin lectura el orbe queda «sin datos» en vez
@@ -228,14 +315,15 @@ enum LiquidHoyBuilder {
             let cut = Preparedness.Config.default.thermalOutC
             let state: Preparedness.AxisState = dev >= cut ? .high : (dev <= -cut ? .low : .inRange)
             out.append(.init(
-                id: "termico", label: "TÉRMICO",
+                id: "termico", label: String(localized: "Thermal"),
                 caption: caption(for: state),
                 progress: positionFromState(state),
                 icon: .termoSenal,
-                state: state.isOut ? .atencion : .ok))
+                state: state.isOut ? .atencion : .ok,
+                valor: valores.termico))
         } else {
             out.append(.init(
-                id: "termico", label: "TÉRMICO",
+                id: "termico", label: String(localized: "Thermal"),
                 caption: caption(for: Preparedness.AxisState.noData),
                 progress: nil, icon: .termoSenal, state: .ok))
         }
@@ -267,12 +355,393 @@ enum LiquidHoyBuilder {
         }
     }
 
+    // MARK: Acta del veredicto — «Cómo llegué a esto»
+    //
+    // La proyección de `Preparedness.Read` a la hoja del acta. PURA y sin re-evaluar nada:
+    // lee lo que el motor ya votó. Lo que afirma está verificado contra
+    // `Preparedness.swift`:
+    //  · el veredicto es un CONTEO de señales fuera (`rawVerdictAt` :286-293), no una suma
+    //    ponderada: 0 → full, 1 → caution, ≥2 → easy;
+    //  · la carga NUNCA entra a ese conteo (`loadAxis` :189-193) — por eso baja a nota;
+    //  · la histéresis de 2 días (:300-312) hace que el veredicto MOSTRADO pueda no ser la
+    //    lectura de hoy — por eso el aviso existe y es obligatorio;
+    //  · el empujón de tendencia solo aplica caution → easy (:214) — es OTRA causa que la
+    //    histéresis, así que tienen precedencia explícita.
+    //
+    // Lo que la hoja NO dice, porque `Read` no lo carga: el z por señal. Y lo que no dice
+    // POR DECISIÓN: los pesos 0.35/0.40/0.25 y los cortes (±0.8 °C, <6 h) — knobs sin firmar
+    // por `/cso` y, además, la allow-list de esta superficie (docs/ANALYTICS.md) prohíbe
+    // publicar números aquí. La columna «contra qué base» es cualitativa: sigue enseñando el
+    // hallazgo real (las tres señales NO se juzgan contra la misma referencia) sin publicar
+    // un solo umbral.
+
+    /// Las tres señales del acta, SIEMPRE en este orden — el mismo de los orbes de Hoy.
+    private static let ejesActa: [Preparedness.Axis] = [.autonomic, .sleep, .thermal]
+
+    /// El tono del veredicto: los MISMOS que usa el héroe. Sin veredicto → tinta/500, y
+    /// entonces la hoja no tiene una sola gota de color.
+    static func actaTono(_ prep: Preparedness.Read?) -> Color {
+        guard let prep else { return LiquidColor.tinta500 }
+        switch prep.verdict {
+        case .full: return LiquidColor.verdePrimario
+        case .caution: return LiquidColor.atencion
+        case .easy: return LiquidColor.negativo
+        case .lowSignal: return LiquidColor.tinta500
+        }
+    }
+
+    static func acta(prep: Preparedness.Read?, healthConnected: Bool = true) -> LiquidActa {
+        // El acta se SINTETIZA con sus tres filas fijas, no se itera sobre `drivers`: en el
+        // `lowSignal` por falta de fila de hoy, `Preparedness` devuelve `drivers` VACÍO
+        // (:163-166), y una tabla derivada de ahí simplemente no existiría.
+        let estados = ejesActa.map { ax in
+            prep?.drivers.first { $0.axis == ax }?.state ?? .noData
+        }
+        let fuera = estados.filter { $0.isOut }.count
+        let conLectura = estados.filter { $0.hasData }.count
+        // D1 del verificador: `isNightAnchored` es OBLIGATORIO. Sin noche grabada el héroe
+        // se demota a propósito («Lectura de día», sin palabra) y el acta reinstalaba el
+        // «Dale con todo» en grande: el usuario tocaba un héroe que se niega a dar
+        // veredicto y aterrizaba en una hoja que se lo gritaba (invariante Preparedness:101).
+        let hayVeredicto = prep != nil && prep?.verdict != .lowSignal
+            && prep?.isNightAnchored == true
+
+        let filas: [LiquidActa.Fila] = ejesActa.enumerated().map { i, ax in
+            let estado = estados[i]
+            let etiqueta = nombreEje(ax)
+            let dijo = caption(for: estado)
+            let base = baseDeEje(ax)
+            // El label de VoiceOver dice el estado FUERA con palabras: el wash de color es
+            // la única marca visual de la fila activa, y el color no habla.
+            let a11y = [etiqueta, dijo, base].joined(separator: ", ")
+                + (estado.isOut ? ", " + String(localized: "outside your range") : "")
+            return LiquidActa.Fila(id: ax.rawValue, etiqueta: etiqueta, dijo: dijo,
+                                   base: base, fuera: estado.isOut, a11y: a11y)
+        }
+
+        return LiquidActa(
+            titulo: String(localized: "Readiness"),
+            procedencia: String(localized: "Apple Health · this morning"),
+            explicacion: String(localized: "The verdict for how you woke up: your signals against your own baseline. It's an approximation, not a diagnosis."),
+            infoMostrar: String(localized: "Show explanation"),
+            infoOcultar: String(localized: "Hide explanation"),
+            nivel: hayVeredicto ? palabraVeredicto(prep!.verdict) : nil,
+            sinLectura: hayVeredicto ? nil : String(localized: "No verdict yet"),
+            conteo: hayVeredicto
+                ? conteoActa(fuera: fuera, conLectura: conLectura)
+                : String(localized: "I need a few of your own nights before I can give you a verdict."),
+            // El método en LLANO: nada de «ejes» (vocabulario de `Preparedness.Axis`, no del
+            // usuario — en Hoy solo ve tres orbes con nombre propio).
+            // D3 del verificador: la frase decía «cuentan como una sola lectura» y escondía
+            // que la respiración tiene VETO propio (`composite <= out || respOut`,
+            // Preparedness:272). Es la tesis de la hoja: tiene que ser cierta.
+            metodo: String(localized: "Your HRV and your resting heart rate are read together, so one bad night doesn't count twice. Your breathing can flag the signal on its own."),
+            metodoClave: String(localized: "acta.metodo.clave", defaultValue: "a single reading"),
+            filas: filas,
+            notas: notasActa(prep: prep, fuera: fuera, conLectura: conLectura,
+                             healthConnected: healthConnected),
+            confianza: confianzaActa(prep: prep),
+            plegable: plegableActa(prep: prep),
+            verMas: String(localized: "See more in Trends"),
+            verMasHint: String(localized: "Opens the detail"),
+            tono: actaTono(prep),
+            // El wash de la fila significa «esta es la que se salió». Con la histéresis
+            // activa el veredicto puede seguir verde mientras una señal amaneció fuera:
+            // pintar esa fila de verde diría lo contrario de lo que pasó.
+            tonoFilas: prep?.verdict == .full && fuera > 0
+                ? LiquidColor.atencion : actaTono(prep))
+    }
+
+    /// La palabra del veredicto tal cual la dice el héroe (misma clave del catálogo).
+    private static func palabraVeredicto(_ v: Preparedness.Verdict) -> String {
+        switch v {
+        case .full: return String(localized: "Go all in")
+        case .caution: return String(localized: "Good, one thing to watch")
+        case .easy: return String(localized: "Take it easy")
+        // `lowSignal` no tiene palabra-veredicto: `hayVeredicto` lo excluye. Mapearlo a
+        // «Ándate leve» era una trampa latente (D5 del verificador).
+        case .lowSignal: return String(localized: "No verdict yet")
+        }
+    }
+
+    private static func nombreEje(_ ax: Preparedness.Axis) -> String {
+        switch ax {
+        case .autonomic: return String(localized: "Autonomic")
+        case .sleep: return String(localized: "Sleep")
+        case .thermal: return String(localized: "Thermal")
+        case .load: return String(localized: "Load")
+        }
+    }
+
+    /// Contra QUÉ se compara cada señal — cualitativo, nunca el umbral. Es el hallazgo real:
+    /// las tres NO se juzgan contra la misma referencia (tu base / una banda fija / la base
+    /// que Apple ya calculó).
+    private static func baseDeEje(_ ax: Preparedness.Axis) -> String {
+        switch ax {
+        case .autonomic: return String(localized: "against your base")
+        case .sleep: return String(localized: "against a fixed minimum")
+        case .thermal: return String(localized: "against Apple's base")
+        case .load: return ""
+        }
+    }
+
+    static func conteoActa(fuera: Int, conLectura: Int) -> String {
+        if fuera == 1 { return String(localized: "1 of your 3 signals woke up outside your range.") }
+        if fuera > 1 { return String(localized: "\(fuera) of your 3 signals woke up outside your range.") }
+        if conLectura < 3 { return String(localized: "Only \(conLectura) of your 3 signals had a reading today.") }
+        return String(localized: "All 3 of your signals woke up in your range.")
+    }
+
+    /// Las notas del acta, con PRECEDENCIA explícita entre los dos avisos que cambian la
+    /// lectura (sin ella, el caso `easy` + 1 fuera + tendencia abajo pintaba los dos y la
+    /// hoja se contradecía).
+    private static func notasActa(prep: Preparedness.Read?, fuera: Int, conLectura: Int,
+                                  healthConnected: Bool) -> [LiquidActa.Nota] {
+        var out: [LiquidActa.Nota] = []
+        guard let prep, prep.verdict != .lowSignal else {
+            if !healthConnected {
+                out.append(.init(id: "permiso",
+                                 texto: String(localized: "Connect Apple Health in Settings and your daily verdict will appear here."),
+                                 avisa: true))
+            }
+            return out
+        }
+
+        // Sin noche grabada, el sueño no pudo votar (FER-1033, misma frase que el héroe).
+        if !prep.isNightAnchored {
+            out.append(.init(id: "noche",
+                             texto: String(localized: "No sleep reading last night; this is less precise."),
+                             avisa: true))
+        }
+
+        // 1) Empujón de tendencia — la causa cuando `easy` sale de UNA sola señal fuera.
+        if prep.verdict == .easy && fuera == 1 && prep.trend == .below {
+            out.append(.init(id: "tendencia",
+                             texto: String(localized: "One signal outside your range, and your night-time HRV trend is coming down."),
+                             avisa: true))
+        } else if desfaseDeHisteresis(verdict: prep.verdict, fuera: fuera) {
+            // 2) Histéresis — el acta de HOY no cuadra con el veredicto MOSTRADO.
+            out.append(.init(id: "histeresis",
+                             texto: String(localized: "Today I read \(fuera) of your signals outside your range; the verdict doesn't change until it repeats two days in a row."),
+                             avisa: true))
+        }
+
+        // La carga se mide y NUNCA vota: baja a nota, en las dos variantes.
+        let huboEntrenamiento = prep.drivers.first { $0.axis == .load }?.state.hasData ?? false
+        out.append(.init(id: "carga", texto: huboEntrenamiento
+            ? String(localized: "There was a workout today. It's measured, but it doesn't change your verdict yet.")
+            : String(localized: "No workout recorded today. Load is measured, but it doesn't change your verdict yet.")))
+        return out
+    }
+
+    /// ¿El conteo de hoy contradice al veredicto mostrado? (full→0, caution→1, easy→≥2).
+    static func desfaseDeHisteresis(verdict: Preparedness.Verdict, fuera: Int) -> Bool {
+        switch verdict {
+        case .full: return fuera != 0
+        case .caution: return fuera != 1
+        case .easy: return fuera < 2
+        case .lowSignal: return false
+        }
+    }
+
+    /// La profundidad de la base — con los ÚNICOS denominadores que existen en el motor:
+    /// `Baselines.minNightsSeed` (4) desbloquea, `Baselines.minNightsTrust` (14) da confianza
+    /// plena. Y `LiquidCalibracionCard` («Calibrando tu base») SOLO mientras de verdad
+    /// calibra: con la base ya usable, prosa sin barra de progreso.
+    private static func confianzaActa(prep: Preparedness.Read?) -> LiquidActa.Confianza? {
+        guard let prep else { return nil }
+        let n = prep.autonomicNights
+        if prep.maturity == .calibrating {
+            let meta = Baselines.minNightsSeed
+            return .calibrando(titulo: String(localized: "Calibrating your base"),
+                               leyenda: String(localized: "\(min(n, meta)) of \(meta) nights"),
+                               hechas: min(n, meta), necesarias: meta)
+        }
+        let trust = Baselines.minNightsTrust
+        guard n < trust else { return nil }
+        return .nota(String(localized: "Your verdict stands on \(n) of your own nights; at \(trust) your base is firm."))
+    }
+
+    private static func plegableActa(prep: Preparedness.Read?) -> LiquidActa.Metodo {
+        var lineas: [String] = []
+        if let prep {
+            // D2 del verificador: decía «3 de 3 señales del cuerpo» mientras el conteo de
+            // arriba decía «2 de tus 3 señales» — el mismo número contando cosas distintas
+            // (aquí: las 3 sub-señales del eje autonómico; arriba: los 3 ejes). Se nombra
+            // lo que de verdad cuenta.
+            lineas.append(String(localized: "Your autonomic signal reads \(prep.signalsPresent) of \(prep.signalsTotal) inputs: HRV, resting heart rate and breathing."))
+        }
+        lineas.append(String(localized: "A new verdict has to repeat two days in a row before it replaces the previous one."))
+        lineas.append(String(localized: "Apple's HRV is a daytime average, not a sleep-window measurement: this reads your resting signals against your own norm."))
+        lineas.append(String(localized: "Task Force, 1996 · Plews et al., 2013. Approximate, no clinical claim."))
+        return .init(titulo: String(localized: "How it's calculated"),
+                     mostrar: String(localized: "Show method"),
+                     ocultar: String(localized: "Hide method"),
+                     lineas: lineas)
+    }
+
+    #if DEBUG
+    /// El acta que acompaña al héroe de DEMO de la sesión /inject (el simulador no tiene
+    /// HealthKit): el mismo estado «Dale con todo» del ensamble, armado por el MISMO camino
+    /// que producción para que lo que se pule sea el render real.
+    static var actaEjemplo: LiquidActa {
+        acta(prep: Preparedness.Read(
+            verdict: .full,
+            drivers: [
+                .init(axis: .autonomic, state: .inRange, orientedZ: 0.2),
+                .init(axis: .sleep, state: .inRange, orientedZ: nil),
+                .init(axis: .thermal, state: .inRange, orientedZ: nil),
+                .init(axis: .load, state: .inRange, orientedZ: nil),
+            ],
+            signalsPresent: 3, signalsTotal: 3,
+            maturity: .provisional, autonomicNights: 8, trend: nil))
+    }
+    #endif
+
+    // MARK: Autonómico (el desglose del eje — las 3 señales del compuesto)
+
+    static func autonomicoTono(_ prep: Preparedness.Read?) -> Color {
+        guard let st = prep?.drivers.first(where: { $0.axis == .autonomic })?.state else {
+            return LiquidColor.tinta500
+        }
+        switch st {
+        case .inRange: return LiquidColor.verdePrimario
+        case .low, .high: return LiquidColor.atencion
+        case .noData: return LiquidColor.tinta500
+        }
+    }
+
+    /// La hoja del eje AUTONÓMICO — el desglose de las tres señales que `Preparedness` ya
+    /// computó (`Read.signals`). Proyección pura: no decide nada, solo nombra/ordena/formatea
+    /// lo que el motor votó. El bit `out` por señal viene del motor (mismo corte del compuesto),
+    /// así el builder no adivina umbrales.
+    static func autonomico(prep: Preparedness.Read?,
+                           healthConnected: Bool = true,
+                           locale: Locale = .current) -> LiquidAutonomico {
+        let driver = prep?.drivers.first { $0.axis == .autonomic }
+        let estado = driver?.state
+        let hayBase = estado != nil && estado != .noData
+        let enRango = estado == .inRange
+        // Las señales llegan del motor YA ordenadas por peso (rhr ≥ hrv ≥ resp).
+        let signals = prep?.signals ?? []
+        let outCount = signals.filter { $0.out }.count
+        let respAlone = signals.first { $0.signal == .resp }?.flaggedAlone ?? false
+
+        let filas: [LiquidAutonomico.Senal] = signals.map { s in
+            let etiqueta = nombreSenal(s.signal)
+            let est = estadoSenal(s)
+            let voto = s.share > 0 ? porcentajeVoto(s.share, locale: locale) : nil
+            let nota = (s.signal == .resp && s.flaggedAlone)
+                ? String(localized: "Your breathing alone was enough to flag the axis this morning.")
+                : nil
+            let a11y = [etiqueta, est, voto.map { String(localized: "\($0) of the vote") } ?? ""]
+                .filter { !$0.isEmpty }.joined(separator: ", ")
+                + (s.out ? ", " + String(localized: "outside your range") : "")
+            return LiquidAutonomico.Senal(id: s.signal.rawValue, etiqueta: etiqueta, estado: est,
+                                          voto: voto, fuera: s.out, nota: nota, a11y: a11y)
+        }
+
+        return LiquidAutonomico(
+            titulo: String(localized: "Autonomic"),
+            procedencia: String(localized: "Apple Health · this morning"),
+            explicacion: String(localized: "Your resting nervous system: resting heart rate, HRV and breathing against your own base. It's an approximation, not a diagnosis."),
+            infoMostrar: String(localized: "Show explanation"),
+            infoOcultar: String(localized: "Hide explanation"),
+            nivel: hayBase ? (enRango ? String(localized: "In your range")
+                                      : String(localized: "Off your range")) : nil,
+            sinLectura: hayBase ? nil : String(localized: "No baseline yet"),
+            conteo: conteoAutonomico(hayBase: hayBase, enRango: enRango, outCount: outCount,
+                                     respAlone: respAlone, healthConnected: healthConnected),
+            metodo: String(localized: "Your three signals count as a single reading, so one bad night doesn't count three times."),
+            metodoClave: String(localized: "autonomico.metodo.clave", defaultValue: "a single reading"),
+            senales: filas,
+            plegable: plegableAutonomico(),
+            enRango: enRango)
+    }
+
+    private static func nombreSenal(_ s: Preparedness.Signal) -> String {
+        switch s {
+        case .rhr: return String(localized: "Resting heart rate")
+        case .hrv: return String(localized: "HRV")
+        case .resp: return String(localized: "Breathing")
+        }
+    }
+
+    /// Qué dijo la señal — dirección CORRECTA por señal (VFC peor = abajo; FC/resp peor = arriba).
+    private static func estadoSenal(_ s: Preparedness.SignalRead) -> String {
+        guard s.orientedZ != nil else { return String(localized: "No baseline") }
+        guard s.out else { return String(localized: "In your range") }
+        switch s.signal {
+        case .hrv: return String(localized: "Below your base")
+        case .rhr, .resp: return String(localized: "Above your base")
+        }
+    }
+
+    /// El voto como porcentaje entero, localizado («40 %»).
+    private static func porcentajeVoto(_ share: Double, locale: Locale) -> String {
+        let f = NumberFormatter()
+        f.locale = locale
+        f.numberStyle = .percent
+        f.maximumFractionDigits = 0
+        return f.string(from: NSNumber(value: share)) ?? "\(Int((share * 100).rounded())) %"
+    }
+
+    private static func conteoAutonomico(hayBase: Bool, enRango: Bool, outCount: Int,
+                                         respAlone: Bool, healthConnected: Bool) -> String {
+        guard hayBase else {
+            return healthConnected
+                ? String(localized: "I need a few of your own nights to read your autonomic axis.")
+                : String(localized: "Connect Apple Health in Settings to read your autonomic axis.")
+        }
+        if enRango { return String(localized: "Your 3 signals woke up in your range.") }
+        // Fuera: la respiración pudo marcar el eje sola, aun con el promedio tranquilo.
+        if respAlone && outCount <= 1 {
+            return String(localized: "Your breathing flagged the axis on its own.")
+        }
+        if outCount >= 1 {
+            return String(localized: "\(outCount) of your 3 signals woke up outside your range.")
+        }
+        // El compuesto votó fuera aunque ninguna señal cruzó el corte por sí sola (tres levemente
+        // bajas promedian debajo) — honesto: la lista queda gris, esta frase lo explica.
+        return String(localized: "Together, your signals woke up below your base.")
+    }
+
+    private static func plegableAutonomico() -> LiquidAutonomico.Metodo {
+        .init(titulo: String(localized: "How it's calculated"),
+              mostrar: String(localized: "Show method"),
+              ocultar: String(localized: "Hide method"),
+              lineas: [
+                String(localized: "Your resting heart rate, HRV and breathing are averaged by weight (40% · 35% · 25%) against your own base."),
+                String(localized: "Breathing can flag the axis on its own if it rises enough, even when the average doesn't cross."),
+                String(localized: "Apple's HRV is a daytime average, not a sleep-window measurement: this reads your resting signals against your own norm."),
+                String(localized: "Task Force, 1996 · Plews et al., 2013. Approximate, no clinical claim."),
+              ])
+    }
+
+    #if DEBUG
+    /// El desglose autonómico de DEMO (mismo estado «en rango» del ensamble /inject).
+    static var autonomicoEjemplo: LiquidAutonomico {
+        autonomico(prep: Preparedness.Read(
+            verdict: .full,
+            drivers: [.init(axis: .autonomic, state: .inRange, orientedZ: 0.2)],
+            signals: [
+                .init(signal: .rhr, orientedZ: 0.3, share: 0.40, flaggedAlone: false, out: false),
+                .init(signal: .hrv, orientedZ: 0.1, share: 0.35, flaggedAlone: false, out: false),
+                .init(signal: .resp, orientedZ: 0.2, share: 0.25, flaggedAlone: false, out: false),
+            ],
+            signalsPresent: 3, signalsTotal: 3,
+            maturity: .provisional, autonomicNights: 8, trend: nil))
+    }
+    #endif
+
     // MARK: Carga (mismo mapeo que `TrainingLoadStrip`)
 
-    static func carga(_ trainingLoad: TrainingLoadModel?) -> LiquidHoyModel.Carga? {
+    static func carga(_ trainingLoad: TrainingLoadModel?,
+                      locale: Locale = .current) -> LiquidHoyModel.Carga? {
         guard let trainingLoad else { return nil }   // sin sembrar → sin barra (paridad)
         guard let acwr = trainingLoad.acwr, let band = trainingLoad.band else {
-            return .calibrando(status: String(localized: "Calibrating").uppercased())
+            return .calibrando(status: String(localized: "Calibrating")
+                .uppercased(with: locale))
         }
         // Escala 0…2; knob clampeado 0.05–0.95 como la franja actual.
         let pos = min(max(acwr / 2, 0.05), 0.95) * 100
@@ -283,8 +752,10 @@ enum LiquidHoyBuilder {
         case .buildingFast: zone = 2
         case .spiking: zone = 3
         }
-        let status = "\(band.shortLabel.uppercased()) · \(String(format: "%.2f", acwr))"
-        return .medida(pos: pos, zone: zone, status: status,
+        return .medida(pos: pos, zone: zone,
+                       status: band.shortLabel.uppercased(with: locale),
+                       ratio: String(format: "%.2f", acwr),
+                       razon: acwr,
                        state: band.flag == .good ? .ok : .atencion)
     }
 
@@ -423,7 +894,26 @@ enum LiquidHoyBuilder {
             tone: i.stress.map(stressTone) ?? LiquidColor.tinta500, icon: .estres,
             origen: .calculado))
 
-        return out
+        // VoiceOver (pasada UX): la valencia hace audible lo que el color muestra, y el
+        // origen viaja como accessibilityValue.
+        return out.map { m in
+            LiquidHoyModel.Metrica(
+                id: m.id, label: m.label, value: m.value, unit: m.unit, delta: m.delta,
+                deltaTone: m.deltaTone, tone: m.tone, icon: m.icon, origen: m.origen,
+                a11yValencia: valenciaA11y(m.deltaTone),
+                a11yOrigen: m.value == "—" ? nil
+                    : String(localized: m.origen == .medido
+                             ? "Apple Health source" : "computed on your phone"))
+        }
+    }
+
+    /// La valencia audible de un delta (nil cuando es neutro o no hay lectura).
+    private static func valenciaA11y(_ tone: LiquidDeltaTone) -> String? {
+        switch tone {
+        case .up: return String(localized: "better than your base")
+        case .down: return String(localized: "worse than your base")
+        case .neutral: return nil
+        }
     }
 
     /// El color del valor de Estrés por banda 0–3 (misma `StressBand` del tile actual),
@@ -449,7 +939,8 @@ enum LiquidHoyBuilder {
 
     /// «18m» / «1h 5m» — el delta de sueño en unidades de una letra.
     static func sleepDeltaText(_ minutes: Double) -> String {
+        // «1 h 5 min» / «18 min» (revote /inject): unidades SI legibles en es-MX y en.
         let m = Int(minutes.rounded())
-        return m >= 60 ? "\(m / 60)h \(m % 60)m" : "\(m)m"
+        return m >= 60 ? "\(m / 60) h \(m % 60) min" : "\(m) min"
     }
 }

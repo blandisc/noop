@@ -33,8 +33,25 @@ public enum LiquidType {
 
     // MARK: Valores y títulos
 
-    /// `valor/l` — 20/700 tabular. Valores de métricas (MetricTile).
-    public static let valorL = InstrumentoType.groteskNumber(20)
+    /// `valor/l` — 22/700 tabular (subido del 20 del handoff, elevación /inject: el
+    /// dato manda en el tile). Escala con Dynamic Type (revote /inject): el dato
+    /// protagonista no puede escalar menos que su delta.
+    public static let valorL = InstrumentoType.groteskNumber(22, relativeTo: .title3)
+
+    /// `numeral/hoja` — 34/700 tabular, escala con Dynamic Type. El dato héroe de la
+    /// hoja de resumen (épico hoja Liquid, F0): manda sobre todo lo demás de la hoja.
+    public static let numeralHoja = InstrumentoType.groteskNumber(34, relativeTo: .largeTitle)
+    /// Unidad junto al numeral de hoja — 13 en el tamaño base, tinta/500. ESCALA con
+    /// Dynamic Type (B4): el numeral es `.largeTitle` relativo, así que una unidad fija
+    /// se quedaba enana junto a un numeral inflado. `.footnote` = 13 pt en `.large`,
+    /// paridad exacta con el viejo `StrandFont.unit`.
+    public static let numeralHojaUnidad = Font.system(.footnote)
+
+    /// `título/hoja` — 17/700, escala con Dynamic Type. El nombre de la métrica en la
+    /// cabecera de la hoja de resumen: manda sobre los títulos de sección (pasada UX H6;
+    /// con `titulo` empataba con «Últimos 14 días» y además no crecía).
+    public static let tituloHoja = InstrumentoType.grotesk(17, weight: .bold,
+                                                           relativeTo: .headline)
 
     /// `título` — 15/700. Títulos de tarjeta.
     public static let titulo = InstrumentoType.grotesk(15, weight: .bold)
@@ -44,10 +61,28 @@ public enum LiquidType {
 
     // MARK: Cuerpo (SF)
 
+    /// Glifo ⓘ de cabecera de hoja — 15 SF (QA F1-D5: fuera del inline).
+    public static let infoGlifo = Font.system(size: 15)
+
+    /// `lectura/hoja` — 14 SF, base del texto de lectura de la hoja de resumen (readings,
+    /// subtítulo del héroe). Los consumidores lo escalan con @ScaledMetric(relativeTo:
+    /// .footnote) — acuñado en el revote adversarial F2 (adiós 14 inline).
+    public static let lecturaHojaBase: CGFloat = 14
+
     /// `cuerpo` — SF 400 12.5. Texto corrido, subtítulos hero.
     public static let cuerpo = Font.system(size: 12.5)
     /// Aproximación del line-height 1.55 de la spec (12.5 × 1.55 ≈ 19.4 pt de línea).
     public static let cuerpoLineSpacing: CGFloat = 4
+
+    /// `cuerpo/lectura` — la variante que ESCALA con Dynamic Type del mismo 12.5.
+    ///
+    /// `Font.system(size:)` es de tamaño fijo (SF no acepta `relativeTo:`), así que la
+    /// etiqueta de las filas de nivel/banda se quedaba clavada mientras su rango y su
+    /// conteo —`captionLectura`, relativo a `.caption2`— sí crecían: a tamaños AX la fila
+    /// invertía su jerarquía y el nombre del carril acababa más chico que su número.
+    /// Se publica la BASE en puntos y el consumidor la escala con
+    /// `@ScaledMetric(relativeTo: .footnote)`, el mismo patrón de `lecturaHojaBase`.
+    public static let cuerpoLecturaBase: CGFloat = 12.5
 
     /// `unidad` — SF 400 11, color tinta/500. «ms», «lpm», «min» junto a valores.
     public static let unidad = Font.system(size: 11)
@@ -61,27 +96,38 @@ public enum LiquidType {
 
     // MARK: Chrome chico (Space Grotesk)
 
-    /// `kicker` — 11/600, tracking +2, MAYÚSCULAS. Fecha, cabeceras («MIÉ 22 DE JUL»).
-    public static let kicker = InstrumentoType.grotesk(11, weight: .semibold)
-    public static let kickerTracking: CGFloat = 2
+    /// `kicker` — 11.5/600, tracking +1.5, MAYÚSCULAS. Fecha, cabeceras («MIÉ 22 DE JUL»).
+    /// (kicker/label/micro son alias del escalón «rótulo» de la escala chica unificada.)
+    public static let kicker = InstrumentoType.grotesk(11.5, weight: .semibold)
+    public static let kickerTracking: CGFloat = 1.5
 
-    /// `caption` — 9/500. Deltas («+2 ms vs tu base»).
-    public static let caption = InstrumentoType.grotesk(9, weight: .medium)
-    /// La variante de LECTURA del caption: mismo 9/500 pero escala con Dynamic Type
-    /// (relativo a .caption2) — los deltas se leen, no son chrome (FER-1045).
-    public static let captionLectura = InstrumentoType.grotesk(9, weight: .medium,
+    // ESCALA CHICA UNIFICADA (revisión de tipos /inject 2026-07-22, pedido del dueño):
+    // el handoff traía 7 tamaños casi iguales (9–11.5) que en device leían como
+    // inconsistencia. Quedan TRES escalones: rótulos en caja alta 11.5/600 +1.5 (fecha,
+    // labels de tiles/orbes/carga), lectura 10.5 (deltas, captions de estado, unidades) y
+    // dato menor 15 tabular (ratio de carga). El estado de carga conserva su 700.
+
+    /// `caption` — 10.5/500. Sin consumidor en componentes (los deltas usan
+    /// `captionLectura`); se conserva para previews/debug.
+    public static let caption = InstrumentoType.grotesk(10.5, weight: .medium)
+    /// La variante de LECTURA del caption: escala con Dynamic Type (relativo a .caption2)
+    /// — los deltas se leen, no son chrome (FER-1045).
+    public static let captionLectura = InstrumentoType.grotesk(10.5, weight: .medium,
                                                                relativeTo: .caption2)
 
-    /// `label` — 8.5/600, tracking +1.2, MAYÚSCULAS. Labels de tile («FC EN REPOSO»).
-    public static let label = InstrumentoType.grotesk(8.5, weight: .semibold)
-    public static let labelTracking: CGFloat = 1.2
+    /// `label` — rótulo 11.5/600 +1.5, MAYÚSCULAS. Labels de tile («FC EN REPOSO»).
+    public static let label = InstrumentoType.grotesk(11.5, weight: .semibold,
+                                                       relativeTo: .caption)
+    public static let labelTracking: CGFloat = 1.5
 
-    /// `micro` — 8/700, tracking +0.8. Labels de orbe («AUTONÓMICO»).
-    public static let micro = InstrumentoType.grotesk(8, weight: .bold)
-    public static let microTracking: CGFloat = 0.8
+    /// `micro` — rótulo 11.5/600 +1.5. Labels de orbe («AUTONÓMICO»).
+    public static let micro = InstrumentoType.grotesk(11.5, weight: .semibold,
+                                                       relativeTo: .caption)
+    public static let microTracking: CGFloat = 1.5
 
-    /// `micro/estado` — 7.5/600. Chips de estado («EN TU RANGO»).
-    public static let microEstado = InstrumentoType.grotesk(7.5, weight: .semibold)
+    /// `micro/estado` — 9/600. Chips de estado («EN TU RANGO»).
+    public static let microEstado = InstrumentoType.grotesk(10.5, weight: .semibold,
+                                                            relativeTo: .caption2)
 
     /// `botón` — 14/600, tracking +0.2. GlassButton.
     public static let boton = InstrumentoType.grotesk(14, weight: .semibold)
@@ -89,12 +135,20 @@ public enum LiquidType {
 
     // MARK: Specs de componente (no forman parte de la escala pública, pero son cerradas)
 
-    /// Label de CargaBar — 9/600, tracking +1.6.
-    public static let cargaLabel = InstrumentoType.grotesk(9, weight: .semibold)
-    public static let cargaLabelTracking: CGFloat = 1.6
+    /// Label de CargaBar — 10.5/600, tracking +1.6 (subido del 9 del handoff, /inject).
+    public static let cargaLabel = InstrumentoType.grotesk(11.5, weight: .semibold,
+                                                           relativeTo: .caption)
+    public static let cargaLabelTracking: CGFloat = 1.5
 
-    /// Status de CargaBar — 10/700, tracking +1.
-    public static let cargaStatus = InstrumentoType.grotesk(10, weight: .bold)
+    /// `dato/menor` — 15/700 tabular, escala con Dynamic Type. El tercer escalón de la
+    /// escala chica: el ratio de CargaBar y el micro-valor de los orbes (revote /inject).
+    public static let datoMenor = InstrumentoType.groteskNumber(15, relativeTo: .caption)
+    /// Alias histórico de `datoMenor` (nombre original, acuñado para CargaBar).
+    public static let cargaRatio = datoMenor
+
+    /// Status de CargaBar — 11.5/700, tracking +1 (subido del 10 del handoff, /inject).
+    public static let cargaStatus = InstrumentoType.grotesk(11.5, weight: .bold,
+                                                            relativeTo: .caption)
     public static let cargaStatusTracking: CGFloat = 1
 }
 
@@ -134,6 +188,10 @@ public extension Text {
             HStack(alignment: .firstTextBaseline, spacing: 3) {
                 Text("56").font(LiquidType.valorL).foregroundStyle(LiquidColor.cian)
                 Text("ms").font(LiquidType.unidad).foregroundStyle(LiquidColor.tinta500)
+            }
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text("66").font(LiquidType.numeralHoja).foregroundStyle(LiquidColor.cian)
+                Text("ms").font(LiquidType.numeralHojaUnidad).foregroundStyle(LiquidColor.tinta500)
             }
             Text("MIÉ 22 DE JUL").liquidKicker().foregroundStyle(LiquidColor.tinta700)
             Text("FC EN REPOSO").liquidLabel().foregroundStyle(LiquidColor.tinta500)
