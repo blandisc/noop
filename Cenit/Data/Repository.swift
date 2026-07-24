@@ -584,11 +584,12 @@ final class Repository: ObservableObject {
                       sleeps: [CachedSleepSession] = [],
                       importedSleep: [String: ImportedSleepFigures] = [:],
                       appleHealthDays: Set<String> = [],
+                      preparedness: Preparedness.Read? = nil,
                       loaded: Bool = true,
                       fullyLoaded: Bool = true) {
         dashboard = DashboardData(days: days, displayDays: days, sleeps: sleeps, importedSleep: importedSleep,
-                                  appleHealthDays: appleHealthDays, loaded: loaded, fullyLoaded: fullyLoaded,
-                                  seq: dashboard.seq + 1)
+                                  appleHealthDays: appleHealthDays, preparedness: preparedness,
+                                  loaded: loaded, fullyLoaded: fullyLoaded, seq: dashboard.seq + 1)
     }
 
     /// Layered precedence (FER-62): Apple Health rows are the base, on-device computed rows fill the
