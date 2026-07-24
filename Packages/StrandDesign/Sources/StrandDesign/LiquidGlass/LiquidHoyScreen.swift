@@ -361,7 +361,10 @@ public struct LiquidHoyScreen: View {
             // scroll. Mejor que bajar el dock, que es flotante con margen intencional.
             .padding(.top, LiquidSpace.s800)
             // Aire para que el último tile libre el dock flotante.
-            .padding(.bottom, scrolls ? LiquidSpace.s1400 + LiquidSpace.s400 : 0)
+            .padding(.bottom, scrolls ? LiquidSpace.s1400 + LiquidSpace.s1400 : 0)
+            // ↑ el dock FLOTA sobre el contenido (~64 pt de alto + margen): el aire debe
+            // librarlo o los últimos dos tiles quedan tapados (pedido del dueño /inject).
+            // El scroll se recortó arriba (top s1400→s800), no aquí.
     }
 }
 
