@@ -134,6 +134,9 @@ struct TodayView: View {
     @State private var showAutonomicDetail = false
     /// La hoja «Cómo llegué a esto» — el acta del veredicto, nuevo destino del tap del héroe.
     @State private var showVeredictoActa = false
+    /// La hoja del eje AUTONÓMICO — destino del tap del orbe «Autonómico» (el desglose de sus
+    /// tres señales). Reemplaza el placeholder que abría la métrica de VFC (pasada UX H2).
+    @State private var showAutonomicoHoja = false
     /// Cuenta cada pull-to-refresh para disparar la háptica declarativa (`.sensoryFeedback`) al
     /// provocar el gesto de sincronización (FER-204).
     @State private var syncHaptic = 0
@@ -690,6 +693,13 @@ struct TodayView: View {
             }
             .preferredColorScheme(.light)
         }
+        // La hoja del eje autonómico: el desglose de sus tres señales.
+        .sheet(isPresented: $showAutonomicoHoja) {
+            LiquidMetricSheet(tono: liquidAutonomicoTono, detent: .porContenido) {
+                LiquidAutonomicoScreen(liquidAutonomico)
+            }
+            .preferredColorScheme(.light)
+        }
     }
 
     /// El `ScrollView` de Hoy + el rastreo del tirón del pull-to-refresh propio (FER-222). El offset del
@@ -999,6 +1009,23 @@ struct TodayView: View {
         return LiquidHoyBuilder.actaTono(repo.todayPreparedness)
     }
 
+    /// El desglose del eje autonómico — la MISMA `Preparedness.Read` del héroe, proyectada a
+    /// sus tres señales.
+    private var liquidAutonomico: LiquidAutonomico {
+        #if DEBUG
+        if liquidDemo { return LiquidHoyBuilder.autonomicoEjemplo }
+        #endif
+        return LiquidHoyBuilder.autonomico(prep: repo.todayPreparedness,
+                                           healthConnected: health.auth == .authorized)
+    }
+
+    private var liquidAutonomicoTono: Color {
+        #if DEBUG
+        if liquidDemo { return LiquidColor.verdePrimario }
+        #endif
+        return LiquidHoyBuilder.autonomicoTono(repo.todayPreparedness)
+    }
+
     @ViewBuilder private var liquidSurface: some View {
         let output = liquidOutput
         VStack(alignment: .leading, spacing: CenitMetrics.space1) {
@@ -1109,10 +1136,9 @@ struct TodayView: View {
     private func openLiquidSenal(_ id: String) {
         switch id {
         case "autonomico":
-            // Pasada UX H2: abría una hoja de PROSA sin un solo número, mientras el orbe
-            // que tocaste decía «56 ms». Va a la hoja Liquid de VFC —la señal que manda en
-            // el eje— hasta que exista la pantalla propia de autonómico.
-            metricDetail = .hrv(latestFromDisplay { $0.avgHrv }?.value)
+            // La hoja propia del eje: el desglose de sus tres señales (VFC/FC en reposo/
+            // respiración) con el % del voto que cargó cada una — no una sola métrica.
+            showAutonomicoHoja = true
         case "sueno":
             metricDetail = .sleep(resolveMeasured(todayOnly: true) { $0.totalSleepMin }
                 .map { Int($0.value.rounded()) })

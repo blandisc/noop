@@ -592,6 +592,142 @@ enum LiquidHoyBuilder {
     }
     #endif
 
+    // MARK: Autonómico (el desglose del eje — las 3 señales del compuesto)
+
+    static func autonomicoTono(_ prep: Preparedness.Read?) -> Color {
+        guard let st = prep?.drivers.first(where: { $0.axis == .autonomic })?.state else {
+            return LiquidColor.tinta500
+        }
+        switch st {
+        case .inRange: return LiquidColor.verdePrimario
+        case .low, .high: return LiquidColor.atencion
+        case .noData: return LiquidColor.tinta500
+        }
+    }
+
+    /// La hoja del eje AUTONÓMICO — el desglose de las tres señales que `Preparedness` ya
+    /// computó (`Read.signals`). Proyección pura: no decide nada, solo nombra/ordena/formatea
+    /// lo que el motor votó. El bit `out` por señal viene del motor (mismo corte del compuesto),
+    /// así el builder no adivina umbrales.
+    static func autonomico(prep: Preparedness.Read?,
+                           healthConnected: Bool = true,
+                           locale: Locale = .current) -> LiquidAutonomico {
+        let driver = prep?.drivers.first { $0.axis == .autonomic }
+        let estado = driver?.state
+        let hayBase = estado != nil && estado != .noData
+        let enRango = estado == .inRange
+        // Las señales llegan del motor YA ordenadas por peso (rhr ≥ hrv ≥ resp).
+        let signals = prep?.signals ?? []
+        let outCount = signals.filter { $0.out }.count
+        let respAlone = signals.first { $0.signal == .resp }?.flaggedAlone ?? false
+
+        let filas: [LiquidAutonomico.Senal] = signals.map { s in
+            let etiqueta = nombreSenal(s.signal)
+            let est = estadoSenal(s)
+            let voto = s.share > 0 ? porcentajeVoto(s.share, locale: locale) : nil
+            let nota = (s.signal == .resp && s.flaggedAlone)
+                ? String(localized: "Your breathing alone was enough to flag the axis this morning.")
+                : nil
+            let a11y = [etiqueta, est, voto.map { String(localized: "\($0) of the vote") } ?? ""]
+                .filter { !$0.isEmpty }.joined(separator: ", ")
+                + (s.out ? ", " + String(localized: "outside your range") : "")
+            return LiquidAutonomico.Senal(id: s.signal.rawValue, etiqueta: etiqueta, estado: est,
+                                          voto: voto, fuera: s.out, nota: nota, a11y: a11y)
+        }
+
+        return LiquidAutonomico(
+            titulo: String(localized: "Autonomic"),
+            procedencia: String(localized: "Apple Health · this morning"),
+            explicacion: String(localized: "Your resting nervous system: resting heart rate, HRV and breathing against your own base. It's an approximation, not a diagnosis."),
+            infoMostrar: String(localized: "Show explanation"),
+            infoOcultar: String(localized: "Hide explanation"),
+            nivel: hayBase ? (enRango ? String(localized: "In your range")
+                                      : String(localized: "Off your range")) : nil,
+            sinLectura: hayBase ? nil : String(localized: "No baseline yet"),
+            conteo: conteoAutonomico(hayBase: hayBase, enRango: enRango, outCount: outCount,
+                                     respAlone: respAlone, healthConnected: healthConnected),
+            metodo: String(localized: "Your three signals count as a single reading, so one bad night doesn't count three times."),
+            metodoClave: String(localized: "autonomico.metodo.clave", defaultValue: "a single reading"),
+            senales: filas,
+            plegable: plegableAutonomico(),
+            enRango: enRango)
+    }
+
+    private static func nombreSenal(_ s: Preparedness.Signal) -> String {
+        switch s {
+        case .rhr: return String(localized: "Resting heart rate")
+        case .hrv: return String(localized: "HRV")
+        case .resp: return String(localized: "Breathing")
+        }
+    }
+
+    /// Qué dijo la señal — dirección CORRECTA por señal (VFC peor = abajo; FC/resp peor = arriba).
+    private static func estadoSenal(_ s: Preparedness.SignalRead) -> String {
+        guard s.orientedZ != nil else { return String(localized: "No baseline") }
+        guard s.out else { return String(localized: "In your range") }
+        switch s.signal {
+        case .hrv: return String(localized: "Below your base")
+        case .rhr, .resp: return String(localized: "Above your base")
+        }
+    }
+
+    /// El voto como porcentaje entero, localizado («40 %»).
+    private static func porcentajeVoto(_ share: Double, locale: Locale) -> String {
+        let f = NumberFormatter()
+        f.locale = locale
+        f.numberStyle = .percent
+        f.maximumFractionDigits = 0
+        return f.string(from: NSNumber(value: share)) ?? "\(Int((share * 100).rounded())) %"
+    }
+
+    private static func conteoAutonomico(hayBase: Bool, enRango: Bool, outCount: Int,
+                                         respAlone: Bool, healthConnected: Bool) -> String {
+        guard hayBase else {
+            return healthConnected
+                ? String(localized: "I need a few of your own nights to read your autonomic axis.")
+                : String(localized: "Connect Apple Health in Settings to read your autonomic axis.")
+        }
+        if enRango { return String(localized: "Your 3 signals woke up in your range.") }
+        // Fuera: la respiración pudo marcar el eje sola, aun con el promedio tranquilo.
+        if respAlone && outCount <= 1 {
+            return String(localized: "Your breathing flagged the axis on its own.")
+        }
+        if outCount >= 1 {
+            return String(localized: "\(outCount) of your 3 signals woke up outside your range.")
+        }
+        // El compuesto votó fuera aunque ninguna señal cruzó el corte por sí sola (tres levemente
+        // bajas promedian debajo) — honesto: la lista queda gris, esta frase lo explica.
+        return String(localized: "Together, your signals woke up below your base.")
+    }
+
+    private static func plegableAutonomico() -> LiquidAutonomico.Metodo {
+        .init(titulo: String(localized: "How it's calculated"),
+              mostrar: String(localized: "Show method"),
+              ocultar: String(localized: "Hide method"),
+              lineas: [
+                String(localized: "Your resting heart rate, HRV and breathing are averaged by weight (40% · 35% · 25%) against your own base."),
+                String(localized: "Breathing can flag the axis on its own if it rises enough, even when the average doesn't cross."),
+                String(localized: "Apple's HRV is a daytime average, not a sleep-window measurement: this reads your resting signals against your own norm."),
+                String(localized: "Task Force, 1996 · Plews et al., 2013. Approximate, no clinical claim."),
+              ])
+    }
+
+    #if DEBUG
+    /// El desglose autonómico de DEMO (mismo estado «en rango» del ensamble /inject).
+    static var autonomicoEjemplo: LiquidAutonomico {
+        autonomico(prep: Preparedness.Read(
+            verdict: .full,
+            drivers: [.init(axis: .autonomic, state: .inRange, orientedZ: 0.2)],
+            signals: [
+                .init(signal: .rhr, orientedZ: 0.3, share: 0.40, flaggedAlone: false, out: false),
+                .init(signal: .hrv, orientedZ: 0.1, share: 0.35, flaggedAlone: false, out: false),
+                .init(signal: .resp, orientedZ: 0.2, share: 0.25, flaggedAlone: false, out: false),
+            ],
+            signalsPresent: 3, signalsTotal: 3,
+            maturity: .provisional, autonomicNights: 8, trend: nil))
+    }
+    #endif
+
     // MARK: Carga (mismo mapeo que `TrainingLoadStrip`)
 
     static func carga(_ trainingLoad: TrainingLoadModel?,
@@ -613,6 +749,7 @@ enum LiquidHoyBuilder {
         return .medida(pos: pos, zone: zone,
                        status: band.shortLabel.uppercased(with: locale),
                        ratio: String(format: "%.2f", acwr),
+                       razon: acwr,
                        state: band.flag == .good ? .ok : .atencion)
     }
 

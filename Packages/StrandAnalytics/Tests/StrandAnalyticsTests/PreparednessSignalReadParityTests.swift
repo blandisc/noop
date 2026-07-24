@@ -135,6 +135,30 @@ final class PreparednessSignalReadParityTests: XCTestCase {
         XCTAssertEqual(signal(rc, .resp)?.flaggedAlone, false)
     }
 
+    /// `out` marks the signal that itself woke up at/under the axis OUT cut (`autonomicOutZ`, i.e. ≥1
+    /// SD below your own baseline) — the row the detail screen washes. A bad night pushes all three
+    /// past the cut; a normal night leaves them all in range. Independent of the axis verdict.
+    func testSignals_outMarksLowSignals() {
+        var bad = baseline()
+        bad.append(dm("2026-06-21", hrv: 30, rhr: 75, resp: 20, sleep: 450, temp: 0.0))
+        let rb = read(bad, asOf: "2026-06-21", config: noHyst)
+        // HRV crashed, RHR and respiration spiked → each oriented z is far below −1.0.
+        XCTAssertEqual(signal(rb, .hrv)?.out, true)
+        XCTAssertEqual(signal(rb, .rhr)?.out, true)
+        XCTAssertEqual(signal(rb, .resp)?.out, true)
+        // `out` reuses the SAME cut the composite uses: it holds iff orientedZ ≤ autonomicOutZ (or resp
+        // flagged alone) — no independent threshold.
+        for s in rb.signals {
+            let expected = (s.orientedZ.map { $0 <= Preparedness.Config.default.autonomicOutZ } ?? false)
+                || s.flaggedAlone
+            XCTAssertEqual(s.out, expected, "\(s.signal) out must mirror the axis cut")
+        }
+
+        var calm = baseline(); calm.append(dm("2026-06-21"))
+        let rc = read(calm, asOf: "2026-06-21")
+        XCTAssertTrue(rc.signals.allSatisfy { !$0.out }, "a normal night leaves every signal in range")
+    }
+
     /// Cold start: the autonomic core has no usable baseline → verdict is `lowSignal` AND the surfaced
     /// signals carry no vote (all shares 0), so the detail screen shows "sin base" honestly.
     func testSignals_coldStart_noVote() {

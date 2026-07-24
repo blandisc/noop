@@ -98,9 +98,16 @@ public enum Preparedness {
         /// `true` only for respiration, only when its RAW z reached `respBadZ` — the wider cut that
         /// lets a breathing-rate spike flag the autonomic axis even when the composite doesn't.
         public let flaggedAlone: Bool
-        public init(signal: Signal, orientedZ: Double?, share: Double, flaggedAlone: Bool) {
+        /// `true` when THIS signal itself woke up at/under the axis out cut (`orientedZ ≤
+        /// autonomicOutZ`, i.e. ≥1 SD below your own baseline) — or, for respiration, `flaggedAlone`.
+        /// A pure read-out against the SAME cut the composite uses, so the detail screen can wash the
+        /// row that came in low. Independent of the axis verdict: a single signal can be below its cut
+        /// while the composite (with the other two) still reads in-range, and vice-versa — both honest.
+        public let out: Bool
+        public init(signal: Signal, orientedZ: Double?, share: Double,
+                    flaggedAlone: Bool, out: Bool = false) {
             self.signal = signal; self.orientedZ = orientedZ
-            self.share = share; self.flaggedAlone = flaggedAlone
+            self.share = share; self.flaggedAlone = flaggedAlone; self.out = out
         }
     }
 
@@ -329,10 +336,13 @@ public enum Preparedness {
         func share(_ z: Double?, _ w: Double) -> Double { (z != nil && den > 0) ? w / den : 0 }
         // Same expression as `respOut` in `autonomicAxis`: raw high (bad) = −orientedZ ≥ respBadZ.
         let respAlone = (resp.map { -$0 }).map { $0 >= cfg.respBadZ } ?? false
+        // Per-signal `out`: this signal itself at/under the composite's OUT cut. Same threshold the
+        // axis uses (`autonomicOutZ`), applied to the signal's own oriented z — no new science.
+        func low(_ z: Double?) -> Bool { z.map { $0 <= cfg.autonomicOutZ } ?? false }
         return [
-            SignalRead(signal: .rhr,  orientedZ: rhr,  share: share(rhr,  cfg.wRHR),  flaggedAlone: false),
-            SignalRead(signal: .hrv,  orientedZ: hrv,  share: share(hrv,  cfg.wHRV),  flaggedAlone: false),
-            SignalRead(signal: .resp, orientedZ: resp, share: share(resp, cfg.wResp), flaggedAlone: respAlone),
+            SignalRead(signal: .rhr,  orientedZ: rhr,  share: share(rhr,  cfg.wRHR),  flaggedAlone: false,     out: low(rhr)),
+            SignalRead(signal: .hrv,  orientedZ: hrv,  share: share(hrv,  cfg.wHRV),  flaggedAlone: false,     out: low(hrv)),
+            SignalRead(signal: .resp, orientedZ: resp, share: share(resp, cfg.wResp), flaggedAlone: respAlone, out: low(resp) || respAlone),
         ]
     }
 

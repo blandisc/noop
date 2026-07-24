@@ -66,10 +66,11 @@ public struct LiquidHoyModel: Sendable {
     }
 
     public enum Carga: Sendable {
-        /// `ratio` es el DATO (p. ej. «1.03») separado del rótulo de estado (pasada UI:
-        /// jerarquía de dato — el número pesa más que el rótulo).
+        /// `ratio` es el DATO como texto (p. ej. «1.03»); `razon` es el MISMO dato numérico
+        /// (ACWR) que alimenta el bullet-graph `LiquidCargaEscala` (barra 0→2, muesca en 1.0,
+        /// corredor sano). `pos`/`zone`/`ratio` se conservan por compatibilidad de firma.
         case medida(pos: Double, zone: Int, status: String, ratio: String?,
-                    state: LiquidSignalState)
+                    razon: Double?, state: LiquidSignalState)
         case calibrando(status: String)
     }
 
@@ -162,7 +163,7 @@ public struct LiquidHoyModel: Sendable {
                          highlightTone: LiquidColor.verdePrimario,
                          subtitle: "Tus 3 señales amanecieron dentro de tu rango.",
                          confianza: nil),
-        carga: .medida(pos: 51.5, zone: 1, status: "EN EQUILIBRIO", ratio: "1.03", state: .ok),
+        carga: .medida(pos: 51.5, zone: 1, status: "EN EQUILIBRIO", ratio: "1.03", razon: 1.03, state: .ok),
         metricas: [
             .init(id: "sleep", label: "SUEÑO", value: "7:20", delta: "En tu base",
                   tone: LiquidColor.indigo, icon: .luna),
@@ -275,15 +276,27 @@ public struct LiquidHoyContent: View {
     @ViewBuilder
     private var carga: some View {
         switch model.carga {
-        case .medida(let pos, let zone, let status, let ratio, let state):
-            LiquidCargaBar(label: model.cargaLabel, modo: .medida(pos: pos, zone: zone),
-                           status: status, ratio: ratio, state: state,
-                           hint: model.heroHint, action: onTapCarga)
+        case .medida(_, _, let status, _, let razon, let state):
+            cargaTocable(LiquidCargaEscala(razon: razon, estado: state, rotulo: status,
+                                           densidad: .fila, eje: model.cargaLabel))
         case .calibrando(let status):
-            LiquidCargaBar(label: model.cargaLabel, modo: .calibrando, status: status,
-                           hint: model.heroHint, action: onTapCarga)
+            cargaTocable(LiquidCargaEscala(razon: nil, rotulo: status, densidad: .fila,
+                                           calibrando: true, eje: model.cargaLabel))
         case nil:
             EmptyView()
+        }
+    }
+
+    /// La escala de carga navega igual que el héroe/orbes (revote /inject). El bullet-graph
+    /// aporta su propio vidrio y área tocable; aquí solo lo hacemos botón cuando hay destino.
+    @ViewBuilder
+    private func cargaTocable(_ escala: LiquidCargaEscala) -> some View {
+        if let onTapCarga {
+            Button(action: onTapCarga) { escala }
+                .buttonStyle(.liquidPress)
+                .accessibilityHint(Text(verbatim: model.heroHint ?? ""))
+        } else {
+            escala
         }
     }
 
