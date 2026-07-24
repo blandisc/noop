@@ -174,7 +174,7 @@ final class LiquidHoyBuilderTests: XCTestCase {
         }
 
         // El caso del ensamble: 1.03 → equilibrio, knob 51.5, ok.
-        guard case .medida(let pos, let zone, _, let ratio, let state) = LiquidHoyBuilder.carga(
+        guard case .medida(let pos, let zone, _, let ratio, _, let state) = LiquidHoyBuilder.carga(
             TrainingLoadModel(acwr: 1.03, series: []))! else {
             return XCTFail("esperaba .medida")
         }
@@ -185,7 +185,7 @@ final class LiquidHoyBuilderTests: XCTestCase {
 
         // Las zonas siguen al motor (el oráculo es `loadBand`), knob clampeado 0.05–0.95.
         for (ratio, expectedZone, okEsperado) in [(0.7, 0, false), (1.4, 2, false), (1.9, 3, false)] {
-            guard case .medida(let p, let z, _, _, let s) = LiquidHoyBuilder.carga(
+            guard case .medida(let p, let z, _, _, _, let s) = LiquidHoyBuilder.carga(
                 TrainingLoadModel(acwr: ratio, series: []))! else {
                 return XCTFail("esperaba .medida para \(ratio)")
             }
