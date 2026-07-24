@@ -96,7 +96,7 @@ struct LiquidMetricSheetView: View {
     /// —volver esta línea a `false`— sigue siendo el último paso antes de mergear.
     /// Computed a propósito: su cuerpo se voltea EN VIVO por inyección (/inject).
     #if DEBUG
-    private var demo: Bool { true }   // /inject: ON para pulir; APAGAR antes de mergear
+    private var demo: Bool { false }  // /inject: ON para pulir; APAGADO para mergear (datos reales de Apple Salud)
     #else
     private var demo: Bool { false }
     #endif
