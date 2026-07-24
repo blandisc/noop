@@ -1250,7 +1250,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ baja tu HRV."
+            "value" : "%@ baja tu VFC."
           }
         }
       }
@@ -1367,7 +1367,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ sube tu HRV."
+            "value" : "%@ sube tu VFC."
           }
         }
       }
@@ -5688,7 +5688,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Un compuesto de z-scores con una curva logística. HRV vía RMSSD (Task Force, 1996)."
+            "value" : "Un compuesto de z-scores con una curva logística. VFC vía RMSSD (Task Force, 1996)."
           }
         }
       }
@@ -5807,7 +5807,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Un zumbido suave cuando tu HRV baja mientras tu pulso está en calma, una señal para respirar con calma. Limitado a una vez cada 15 minutos; apagado por defecto."
+            "value" : "Un zumbido suave cuando tu VFC baja mientras tu pulso está en calma, una señal para respirar con calma. Limitado a una vez cada 15 minutos; apagado por defecto."
           }
         }
       }
@@ -6201,7 +6201,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Una comparación de bienestar, no una edad biológica ni un diagnóstico clínico. La HRV se estima desde PPG nocturno; la norma de referencia es conservadora."
+            "value" : "Una comparación de bienestar, no una edad biológica ni un diagnóstico clínico. La VFC se estima desde PPG nocturno; la norma de referencia es conservadora."
           }
         }
       }
@@ -7940,7 +7940,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Anoche dormiste menos de 6 h. Una noche corta deprime tu HRV e infla tu frecuencia en reposo aunque tu recuperación real sea mejor, así que hoy el número se lee con menos certeza. No es que estés peor: una noche corta se mide con menos confianza."
+            "value" : "Anoche dormiste menos de 6 h. Una noche corta deprime tu VFC e infla tu frecuencia en reposo aunque tu recuperación real sea mejor, así que hoy el número se lee con menos certeza. No es que estés peor: una noche corta se mide con menos confianza."
           }
         }
       }
@@ -12008,7 +12008,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Coeficiente de variación = desviación estándar ÷ promedio de tus últimas semanas. Mide qué tan dispersos están tus valores respecto a tu media. Bajo = estable. En HRV, que el CV suba puede preceder a la fatiga, aunque el valor siga alto. (Plews 2013)"
+            "value" : "Coeficiente de variación = desviación estándar ÷ promedio de tus últimas semanas. Mide qué tan dispersos están tus valores respecto a tu media. Bajo = estable. En VFC, que el CV suba puede preceder a la fatiga, aunque el valor siga alto. (Plews 2013)"
           }
         }
       }
@@ -12104,7 +12104,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Z-score combinado de FC en reposo y HRV a través de una curva logística; HRV vía RMSSD (Task Force, 1996)."
+            "value" : "Z-score combinado de FC en reposo y VFC a través de una curva logística; VFC vía RMSSD (Task Force, 1996)."
           }
         }
       }
@@ -12121,7 +12121,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Z-score combinado de frecuencia en reposo / HRV a través de una curva logística. HRV vía RMSSD (Task Force, 1996). Una estimación, no un diagnóstico."
+            "value" : "Z-score combinado de frecuencia en reposo / VFC a través de una curva logística. VFC vía RMSSD (Task Force, 1996). Una estimación, no un diagnóstico."
           }
         }
       }
@@ -14244,7 +14244,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Se deriva de tu frecuencia cardíaca en reposo y tu HRV nocturnas, un proxy transparente de la carga autonómica, no una medida clínica de estrés."
+            "value" : "Se deriva de tu frecuencia cardíaca en reposo y tu VFC nocturnas, un proxy transparente de la carga autonómica, no una medida clínica de estrés."
           }
         }
       }
@@ -15612,7 +15612,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cada señal se convierte en un puntaje de qué tan por arriba o por abajo de tu promedio personal quedó (un z-score, en σ). Se promedian con pesos fijos, HRV 60%, FC en reposo 20%, sueño 15%, temperatura de la piel 10%, respiración 5%, y se mapean a una escala de 0 a 100, calibrada para que un día típico caiga cerca de 58. Si una señal falta una noche, su peso se reparte entre las demás."
+            "value" : "Cada señal se convierte en un puntaje de qué tan por arriba o por abajo de tu promedio personal quedó (un z-score, en σ). Se promedian con pesos fijos, VFC 60%, FC en reposo 20%, sueño 15%, temperatura de la piel 10%, respiración 5%, y se mapean a una escala de 0 a 100, calibrada para que un día típico caiga cerca de 58. Si una señal falta una noche, su peso se reparte entre las demás."
           }
         }
       }
@@ -16850,7 +16850,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "todo junto, el «volumen» de tu HRV"
+            "value" : "todo junto, el «volumen» de tu VFC"
           }
         }
       }
@@ -18496,7 +18496,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Respiración guiada por vibración · mira cómo responde tu HRV"
+            "value" : "Respiración guiada por vibración · mira cómo responde tu VFC"
           }
         }
       }
@@ -19001,7 +19001,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aquí exploras todo tu historial: elige una métrica (recuperación, HRV, sueño, FC en reposo) y mira cómo cada hábito que anotas la mueve, en promedio.\n\nEs la versión a fondo de «Lo que funciona en ti». Asociaciones, no causa."
+            "value" : "Aquí exploras todo tu historial: elige una métrica (recuperación, VFC, sueño, FC en reposo) y mira cómo cada hábito que anotas la mueve, en promedio.\n\nEs la versión a fondo de «Lo que funciona en ti». Asociaciones, no causa."
           }
         }
       }
@@ -20063,7 +20063,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "HRV (RMSSD)"
+            "value" : "VFC (RMSSD)"
           }
         }
       }
@@ -20080,7 +20080,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "HRV −%lld%%"
+            "value" : "VFC −%lld%%"
           }
         }
       }
@@ -20097,7 +20097,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "HRV estimada de Apple Salud"
+            "value" : "VFC estimada de Apple Salud"
           }
         }
       }
@@ -20114,7 +20114,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "La HRV cayó muy por debajo de tu línea base, lo que apunta a estrés o fatiga elevados. Baja el ritmo y dale a tu cuerpo tiempo de recuperarse."
+            "value" : "La VFC cayó muy por debajo de tu línea base, lo que apunta a estrés o fatiga elevados. Baja el ritmo y dale a tu cuerpo tiempo de recuperarse."
           }
         }
       }
@@ -20131,7 +20131,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "la HRV está un poco baja"
+            "value" : "la VFC está un poco baja"
           }
         }
       }
@@ -20148,7 +20148,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "La HRV está por encima de tu línea base, señal de un sistema nervioso relajado y bien recuperado. El estrés es bajo."
+            "value" : "La VFC está por encima de tu línea base, señal de un sistema nervioso relajado y bien recuperado. El estrés es bajo."
           }
         }
       }
@@ -20182,7 +20182,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "La HRV es personal. No hay umbrales universales de bueno o malo, solo tu tendencia en el tiempo."
+            "value" : "La VFC es personal. No hay umbrales universales de bueno o malo, solo tu tendencia en el tiempo."
           }
         }
       }
@@ -24571,7 +24571,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Medianas sobre tu historial (Plews et al., 2013; HRV vía RMSSD, Task Force 1996)."
+            "value" : "Medianas sobre tu historial (Plews et al., 2013; VFC vía RMSSD, Task Force 1996)."
           }
         }
       }
@@ -26889,7 +26889,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sin HRV de anoche. Puede pasar si no dormiste con tu Apple Watch, o si la noche fue muy corta para registrarla."
+            "value" : "Sin VFC de anoche. Puede pasar si no dormiste con tu Apple Watch, o si la noche fue muy corta para registrarla."
           }
         }
       }
@@ -27568,7 +27568,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aún no hay lectura de estrés. Duerme con tu Apple Watch y vuelve a abrir esto cuando sincronice. El estrés se lee de tu frecuencia en reposo y tu HRV."
+            "value" : "Aún no hay lectura de estrés. Duerme con tu Apple Watch y vuelve a abrir esto cuando sincronice. El estrés se lee de tu frecuencia en reposo y tu VFC."
           }
         }
       }
@@ -30670,7 +30670,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "La Edad física mide solo el lado cardiorrespiratorio. Esta también pesa sueño, regularidad, HRV y pasos, por eso pueden no coincidir."
+            "value" : "La Edad física mide solo el lado cardiorrespiratorio. Esta también pesa sueño, regularidad, VFC y pasos, por eso pueden no coincidir."
           }
         }
       }
@@ -32862,7 +32862,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "La recuperación combina varias señales de tu sistema nervioso, tu HRV sobre todo, más la frecuencia cardiaca en reposo, el sueño y la respiración, y las compara con tu propia base de las últimas semanas. Es una estimación de qué tan listo está tu cuerpo hoy, no un diagnóstico. (Buchheit 2014)"
+            "value" : "La recuperación combina varias señales de tu sistema nervioso, tu VFC sobre todo, más la frecuencia cardiaca en reposo, el sueño y la respiración, y las compara con tu propia base de las últimas semanas. Es una estimación de qué tan listo está tu cuerpo hoy, no un diagnóstico. (Buchheit 2014)"
           }
         }
       }
@@ -34227,7 +34227,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "La frecuencia cardiaca en reposo y la HRV están en tu línea base o por debajo, estrés fisiológico bajo. Estás en un estado tranquilo y recuperado."
+            "value" : "La frecuencia cardiaca en reposo y la VFC están en tu línea base o por debajo, estrés fisiológico bajo. Estás en un estado tranquilo y recuperado."
           }
         }
       }
@@ -34244,7 +34244,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "La frecuencia cardiaca en reposo está baja y la HRV alta, tu sistema nervioso se ve recuperado y en calma. Un gran día para exigirte si quieres."
+            "value" : "La frecuencia cardiaca en reposo está baja y la VFC alta, tu sistema nervioso se ve recuperado y en calma. Un gran día para exigirte si quieres."
           }
         }
       }
@@ -34346,7 +34346,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "La FC en reposo está elevada y la HRV está por debajo de tu línea base, dos señales clásicas de alta activación. Prioriza el descanso, la hidratación y un día tranquilo."
+            "value" : "La FC en reposo está elevada y la VFC está por debajo de tu línea base, dos señales clásicas de alta activación. Prioriza el descanso, la hidratación y un día tranquilo."
           }
         }
       }
@@ -44137,7 +44137,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vigila tu FC en reposo, HRV, temperatura de la piel y respiración contra tu propia base de 28 días. En el dispositivo y aproximado, solo informativo, no un diagnóstico."
+            "value" : "Vigila tu FC en reposo, VFC, temperatura de la piel y respiración contra tu propia base de 28 días. En el dispositivo y aproximado, solo informativo, no un diagnóstico."
           }
         }
       }
@@ -44401,7 +44401,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tomamos tu frecuencia cardíaca en reposo y tu HRV de hoy y expresamos cada una como qué tan lejos está de tu promedio de 30 días (un z-score). Una FC en reposo por arriba de tu norma y una HRV por debajo suman a la carga; las dos se combinan y se ajustan a una escala de 0 a 3, donde 0 es calma, 1.5 es tu línea base y 3 es muy activado."
+            "value" : "Tomamos tu frecuencia cardíaca en reposo y tu VFC de hoy y expresamos cada una como qué tan lejos está de tu promedio de 30 días (un z-score). Una FC en reposo por arriba de tu norma y una VFC por debajo suman a la carga; las dos se combinan y se ajustan a una escala de 0 a 3, donde 0 es calma, 1.5 es tu línea base y 3 es muy activado."
           }
         }
       }
@@ -45383,7 +45383,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hacia dónde va tu HRV este mes comparado con el anterior."
+            "value" : "Hacia dónde va tu VFC este mes comparado con el anterior."
           }
         }
       }
@@ -45400,7 +45400,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Donde suele caer tu HRV cuando estás bien. Solo vale la pena fijarse si un día se sale de aquí."
+            "value" : "Donde suele caer tu VFC cuando estás bien. Solo vale la pena fijarse si un día se sale de aquí."
           }
         }
       }
@@ -45891,7 +45891,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Calculada sin HRV ni FC en reposo, las dos señales de mayor peso. El número sigue valiendo, con menos precisión."
+            "value" : "Calculada sin VFC ni FC en reposo, las dos señales de mayor peso. El número sigue valiendo, con menos precisión."
           }
         }
       }
@@ -45908,7 +45908,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Calculada sin HRV, una de las señales de mayor peso. El número sigue valiendo, con menos precisión."
+            "value" : "Calculada sin VFC, una de las señales de mayor peso. El número sigue valiendo, con menos precisión."
           }
         }
       }
@@ -46813,7 +46813,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tu carga autonómica de hoy, del 0 al 3. La estimamos comparando tu frecuencia cardíaca en reposo y tu HRV con tu propia línea base de 30 días: una FC en reposo más alta de lo normal y una HRV más baja empujan el número hacia arriba, señales clásicas de que tu cuerpo está activado."
+            "value" : "Tu carga autonómica de hoy, del 0 al 3. La estimamos comparando tu frecuencia cardíaca en reposo y tu VFC con tu propia línea base de 30 días: una FC en reposo más alta de lo normal y una VFC más baja empujan el número hacia arriba, señales clásicas de que tu cuerpo está activado."
           }
         }
       }
@@ -47617,7 +47617,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "tu HRV"
+            "value" : "tu VFC"
           }
         }
       }
@@ -47634,7 +47634,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tu HRV por frecuencia"
+            "value" : "Tu VFC por frecuencia"
           }
         }
       }
@@ -48170,7 +48170,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tu recuperación resume qué tan listo está tu cuerpo hoy, del 0 al 100. Combina varias señales de tu noche, sobre todo tu HRV, y las compara con tu propio promedio de las últimas semanas, no con el de nadie más."
+            "value" : "Tu recuperación resume qué tan listo está tu cuerpo hoy, del 0 al 100. Combina varias señales de tu noche, sobre todo tu VFC, y las compara con tu propio promedio de las últimas semanas, no con el de nadie más."
           }
         }
       }
