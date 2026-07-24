@@ -26,6 +26,7 @@ public struct LiquidSignalOrb: View {
     private let action: (() -> Void)?
 
     @State private var shownProgress: Double = 0
+    @State private var shownFill: Double = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.liquidMotionDisabled) private var motionDisabled
     @Environment(\.liquidDebugHide) private var debugHide
@@ -77,11 +78,15 @@ public struct LiquidSignalOrb: View {
         // Toda la columna es tocable (/inject 2026-07-23), no solo el trazo del glifo.
         .contentShape(Rectangle())
         .onAppear {
-            guard let clamped, shownProgress == 0, !motionDisabled else { return }
+            guard shownProgress == 0, shownFill == 0, !motionDisabled else { return }
             if reduceMotion {
-                shownProgress = clamped
+                if let clamped { shownProgress = clamped }
+                shownFill = fillTarget
             } else {
-                withAnimation(LiquidMotion.ringProgress) { shownProgress = clamped }
+                withAnimation(LiquidMotion.ringProgress) {
+                    if let clamped { shownProgress = clamped }
+                    shownFill = fillTarget
+                }
             }
         }
     }
@@ -90,9 +95,23 @@ public struct LiquidSignalOrb: View {
         progress.map { min(1, max(0.02, $0)) }
     }
 
+    /// Nivel de luz DENTRO del lente — DISCRETO por el estado del eje, NO por el z crudo.
+    /// Sigue la revisión adversarial (Grok): el motor descarta magnitud al votar, así que el
+    /// llenado codifica el mismo bit que el veredicto (en rango / atención / sin datos), no un
+    /// continuo que fingiría una resolución que la señal no tiene. Da la sensación de «lleno»
+    /// sin ser un score de contrabando. En rango = luz alta; atención = media; sin datos = 0.
+    private var fillTarget: Double {
+        guard progress != nil else { return 0 }
+        switch state {
+        case .ok: return 0.9
+        case .atencion: return 0.42
+        }
+    }
+
     private var orb: some View {
         // Con el motion congelado (previews/renders) el anillo se pinta ya en su valor.
         let displayed: Double? = motionDisabled ? clamped : (clamped == nil ? nil : shownProgress)
+        let fill: Double = motionDisabled ? fillTarget : shownFill
         return ZStack {
             if !debugHide.contains("esferas") {
                 LiquidSphere(tone: state.tone)
@@ -101,6 +120,13 @@ public struct LiquidSignalOrb: View {
                     .liquidShadow(debugHide.contains("glow") ? []
                                   : LiquidElevation.e2(tone: state.tone),
                                   silhouette: Circle())
+                    .padding(4)
+            }
+            // La LUZ del eje sube dentro del lente hasta su nivel discreto (en rango = alto,
+            // atención = medio, sin datos = nada). Sensación de «lleno» honesta: el tono del
+            // clima, suave, recortado al círculo; el anillo y el dato quedan encima.
+            if fill > 0, !debugHide.contains("esferas") {
+                OrbFill(level: fill, tone: state.tone)
                     .padding(4)
             }
             // Medidor CENTRADO (pedido del dueño, sesión /inject): el arco es el semicírculo
@@ -149,6 +175,25 @@ private struct OrbRing: Shape {
         let r = min(rect.width, rect.height) / 2 * (29.0 / 32.0)
         let c = CGPoint(x: rect.midX, y: rect.midY)
         return Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: 2 * r, height: 2 * r))
+    }
+}
+
+/// La luz que llena el lente desde abajo hasta `level` (0…1) — recortada al círculo del
+/// orbe para que se vea como líquido dentro del vidrio. Animable vía `level`.
+private struct OrbFill: View {
+    var level: Double
+    var tone: Color
+
+    var body: some View {
+        GeometryReader { geo in
+            let d = min(geo.size.width, geo.size.height)
+            let h = d * CGFloat(min(1, max(0, level)))
+            tone.opacity(0.26)
+                .frame(height: h)
+                .frame(maxHeight: .infinity, alignment: .bottom)
+        }
+        .clipShape(Circle())
+        .allowsHitTesting(false)
     }
 }
 
