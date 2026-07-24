@@ -152,8 +152,8 @@ public struct LiquidHoyModel: Sendable {
         kicker: "MIÉ 22 DE JUL",
         dial: Dial(night: (start: 20, end: 4), sol: (start: 6.8, end: 20.3), marker: 8),
         senales: [
-            .init(id: "autonomico", label: "AUTONÓMICO", caption: "EN TU RANGO",
-                  progress: 0.35, icon: .ondaSenal, state: .ok, valor: "56 ms"),
+            .init(id: "autonomico", label: "AUTONÓMICO", caption: "3 SEÑALES",
+                  progress: 0.35, icon: .ondaSenal, state: .ok, valor: "EN TU RANGO"),
             .init(id: "sueno", label: "SUEÑO", caption: "EN TU RANGO",
                   progress: 0.43, icon: .lunaSenal, state: .ok, valor: "7:20"),
             .init(id: "termico", label: "TÉRMICO", caption: "EN TU RANGO",

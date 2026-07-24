@@ -155,7 +155,12 @@ public struct LiquidSignalOrb: View {
                 Text(valor)
                     .font(LiquidType.cargaRatio)
                     .foregroundStyle(LiquidColor.tinta900)
-                    .lineLimit(1).minimumScaleFactor(0.7)
+                    // El dato compuesto (autonómico) entra como PALABRA de dos líneas
+                    // («EN TU / RANGO»); los numerales de eje («56 ms», «7:20») caben en una
+                    // sin tocar el límite. Centrado para que la palabra respire en el lente.
+                    .lineLimit(2).minimumScaleFactor(0.6)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 6)
                     .offset(y: 1)
             } else {
                 LiquidIcon(icon, size: 20, color: LiquidColor.tinta900.opacity(0.5))

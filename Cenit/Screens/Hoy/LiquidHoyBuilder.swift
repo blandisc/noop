@@ -282,15 +282,21 @@ enum LiquidHoyBuilder {
 
         var out: [LiquidHoyModel.Senal] = []
 
-        // AUTONÓMICO — posición desde el z orientado del compuesto.
+        // AUTONÓMICO — posición desde el z orientado del compuesto. El eje NO es una métrica:
+        // mostrar «56 ms» adentro (solo la VFC) engañaba, porque son TRES señales. Cuando hay
+        // lectura, el orbe habla con la PALABRA del veredicto del eje adentro y anuncia «3
+        // señales» abajo (decisión del dueño /inject, «opción 2 mixta honesta»). Sin lectura
+        // vuelve al patrón normal (icono + «SIN DATOS»).
         let aut = driver(.autonomic)
+        let autHasData = aut?.state.hasData ?? false
         out.append(.init(
             id: "autonomico", label: String(localized: "Autonomic"),
-            caption: caption(for: aut?.state),
-            progress: (aut?.state.hasData ?? false) ? positionFromZ(aut?.orientedZ) : nil,
+            caption: autHasData ? String(localized: "3 signals").localizedUppercase
+                                : caption(for: aut?.state),
+            progress: autHasData ? positionFromZ(aut?.orientedZ) : nil,
             icon: .ondaSenal,
             state: (aut?.state.isOut ?? false) ? .atencion : .ok,
-            valor: valores.hrv))
+            valor: autHasData ? caption(for: aut?.state) : nil))
 
         // SUEÑO — posición categórica por estado.
         let sleep = driver(.sleep)
