@@ -172,15 +172,22 @@ final class PreparednessTests: XCTestCase {
 
     // MARK: Signed knobs (/cso gate) — any change here must be an intentional re-gate
 
-    /// Locks the values `/cso` signed for FER-1030 so a future retune can't drift silently.
+    /// Locks the values `/cso` signed so a future retune can't drift silently. Re-gated 2026-07-24
+    /// (v3, CSO+Grok deep investigation): the autonomic vote moved to resting-HR only — SDNN
+    /// (`wHRV`) and respiration (`wResp`) are OUT of the vote (SDNN MAPE ~29% O'Grady 2024; resp
+    /// → illness sentinel). Any change to these numbers must be an intentional re-gate, like this one.
     func testSignedKnobs_lockedByCSO() {
         let c = Preparedness.Config.default
-        XCTAssertEqual(c.wHRV, 0.35); XCTAssertEqual(c.wRHR, 0.40); XCTAssertEqual(c.wResp, 0.25)
+        XCTAssertEqual(c.wHRV, 0.0); XCTAssertEqual(c.wRHR, 1.0); XCTAssertEqual(c.wResp, 0.0)
         XCTAssertEqual(c.autonomicOutZ, -1.0)
         XCTAssertEqual(c.respBadZ, 1.5)
         XCTAssertEqual(c.thermalOutC, 0.8)
         XCTAssertEqual(c.hysteresisDays, 2)
         XCTAssertEqual(c.sdnnCfgKey, "sdnn")
+        // v3 sleep knobs (graded vs need, not the 6h cliff).
+        XCTAssertEqual(c.sleepNeedFloorMin, 420)
+        XCTAssertEqual(c.sleepSlackMin, 45)
+        XCTAssertEqual(c.sleepEffFloor, 0.80)
     }
 
     /// The SDNN baseline config exists and is byte-identical to the HRV machinery (signed: SDNN is

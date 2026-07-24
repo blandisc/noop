@@ -13,11 +13,21 @@ import StrandModels
 /// measurement. UI copy must not claim overnight precision, and the four verdict strings must be
 /// added to the claims allow-list (docs/ANALYTICS.md) before they surface.
 ///
-/// ## Design (settled through two adversarial science rounds + a product negotiation)
-/// - **Consensus by AXIS, not by signal.** HRV + resting-HR + respiration collapse into ONE
-///   `autonomic` vote via a *weighted composite* (never the min-of-three, which biases to −0.85,
-///   and never a flag count) — this is what stops a single bad night (which moves all three at
-///   once) from being counted three times (FER-1010).
+/// ## Design (v3 — 2026-07-24, after a deep CSO+Grok science investigation with verified citations)
+/// The daily verdict stands on what an Apple Watch measures WELL: **resting HR + sleep**. The
+/// all-day SDNN (`avgHrv`) is OUT of the vote (`wHRV=0`) — MAPE ~29% (O'Grady 2024), the wrong
+/// construct measured in the wrong window; it survives only as a `SignalRead` read-out. The nocturnal
+/// RMSSD re-enters via a dedicated dense-night path (deferred to the Repository wiring). Apple's own
+/// Vitals app reached the same shape (nocturnal HR + resp + temp, no HRV). Details:
+/// - **Autonomic axis = resting HR** vs your own baseline (`wRHR=1`). One signal, the dense/reliable one.
+/// - **Sleep = graded vs need + efficiency** (`sleepDriver`), NOT the binary 6h cliff (Van Dongen 2003).
+/// - **Illness sentinel:** temp + respiration must CORROBORATE (both elevated) to vote — a lone temp
+///   or breathing rise no longer flags anything (kills warm-room / talking false positives; Mishra 2020).
+/// - **Consensus by AXIS, not by signal** (autonomic · sleep · sentinel): a single bad night that moves
+///   several signals at once is still ONE vote, never triple-counted (FER-1010).
+/// - Deferred to `/arquitecto` (needs new on-device data): nocturnal resting-HR nadir (SWS percentile),
+///   menstrual-cycle baseline adjustment (`CyclePhaseEngine` exists, not wired — luteal false positives),
+///   dense-night RMSSD re-entry, HRR. See the spec.
 /// - **Reuses `Baselines`** (public API) for the per-signal z; does NOT depend on `ReadinessEngine`
 ///   (its ACWR / monotony machinery is band-era load, out of scope for a passive Apple morning read).
 /// - **Two different HRV constructs, kept separate:** the autonomic axis z-scores Apple's **SDNN**
@@ -151,6 +161,12 @@ public enum Preparedness {
         public var isNightAnchored: Bool {
             drivers.first(where: { $0.axis == .sleep })?.state.hasData ?? false
         }
+
+        /// v3 cold-start middle tier: a real verdict, but on a resting-HR baseline that isn't fully
+        /// mature yet (`seed ≤ nights < trust`). The UI shows it with a visible "provisional, aún
+        /// aprendo tu normal" hedge — never the confident word, never a silent `lowSignal`. Below seed
+        /// the verdict is already `lowSignal`; at trust the hedge lifts. Derived, so no init change.
+        public var provisional: Bool { verdict != .lowSignal && maturity != .trusted }
     }
 
     // MARK: Inputs
@@ -172,19 +188,39 @@ public enum Preparedness {
     // MARK: Config — named, `/cso`-gated knobs (defaults are provisional)
 
     public struct Config: Sendable, Equatable {
-        // Autonomic composite weights (must sum > 0). Default: RHR/HRV weighted for Apple's better
-        // resting-HR fidelity vs its sparse SDNN. `/cso` signs these.
-        public var wHRV: Double = 0.35
-        public var wRHR: Double = 0.40
-        public var wResp: Double = 0.25
+        // Autonomic composite weights (must sum > 0). v3 re-gate (2026-07-24, CSO+Grok deep
+        // investigation): the daily verdict stands on **resting HR** — Apple's densest, most
+        // validated cardiac signal (O'Grady 2024: RHR MAE 3.73 bpm vs SDNN MAPE 28.88%). The
+        // all-day SDNN (`avgHrv`) is OUT of the vote (`wHRV=0`) — kept only as a `SignalRead`
+        // read-out; the nocturnal RMSSD re-enters via a dedicated dense-night path (deferred).
+        // Respiration leaves the autonomic vote too (`wResp=0`) and becomes an illness-sentinel
+        // corroborator (see `rawVerdictAt`). `/cso` signs these.
+        public var wHRV: Double = 0.0
+        public var wRHR: Double = 1.0
+        public var wResp: Double = 0.0
         /// Oriented-z below which an axis counts as OUT. −1.0 (one-sided ≈16%) matches the shipped
         /// `ReadinessEngine.Flag.bad` cut; NOT `|z|≤1` (rejected as noisy in `VitalBands`). `/cso`.
         public var autonomicOutZ: Double = -1.0
         /// Respiration flags on its own (wider) cut, so a normal nightly rise isn't flagged. A raw
         /// respiratory z at or above this counts the autonomic axis out even if the composite doesn't.
         public var respBadZ: Double = 1.5
-        /// Skin-temp deviation (°C from Apple's own baseline) that counts as OUT. Absolute, no z.
+        /// Skin-temp deviation (°C from Apple's own baseline) that counts as elevated for the illness
+        /// sentinel. Absolute, no z. v3: temp alone no longer votes — it must be CORROBORATED by an
+        /// elevated respiration (both together, the multi-signal illness pattern — Mishra 2020, Apple
+        /// Vitals "2+ out"), which cuts the lone-temp false positives (warm room, blanket).
         public var thermalOutC: Double = 0.8
+        // Sleep axis (v3 — graded vs need, not the binary 6h cliff). `low` when the night is short
+        // vs the personal need OR efficiency is poor. Need = a population FLOOR here (Hirshkowitz
+        // 2015 ≈ 7 h); a personal-need input is deferred (a rolling average of what was *achieved*
+        // would normalise the chronically deprived — CSO hallazgo #4). Van Dongen 2003: sleep debt is
+        // a continuous gradient, so a hard 360-min cliff is wrong.
+        public var sleepNeedFloorMin: Double = 420
+        /// Minutes below `need` before the night counts as short — a slack band so a normal −30 min
+        /// isn't flagged.
+        public var sleepSlackMin: Double = 45
+        /// Sleep efficiency (fraction 0–1, `DailyMetric.efficiency`) below which the night reads poor
+        /// even at full duration. Ohayon 2017: SE <75% is bad, ≥85% good — 0.80 is the honest margin.
+        public var sleepEffFloor: Double = 0.80
         /// Consecutive daily readings a NEW raw verdict must hold before it replaces the stable one.
         public var hysteresisDays: Int = 2
         /// Baseline config key for Apple's SDNN (`Baselines.metricCfg["sdnn"]`). SIGNED by `/cso`
@@ -229,7 +265,7 @@ public enum Preparedness {
                                       resp: (respZ, config.wResp), cfg: config)
         // The breakdown INSIDE that axis — same z's, same weights, same respBadZ cut. Pure read-out.
         let signals = autonomicSignals(hrv: hrvZ, rhr: rhrZ, resp: respZ, cfg: config)
-        let sleepAxis = sleepDriver(today)
+        let sleepAxis = sleepDriver(today, config: config)
         let thermalAxis = thermalDriver(today, config: config)
         // --- Axis: load (optional — present ONLY with a real workout; its OUT logic is deferred to
         // `/cso`, so today it contributes coverage/context but never flips the verdict). ---
@@ -239,9 +275,11 @@ public enum Preparedness {
 
         let drivers = [autonomic, sleepAxis, thermalAxis, loadAxis]
 
-        // Maturity + confidence depth come from the SAME SDNN priors baseline the verdict stands on
-        // (`prefixStates` last element == fold over the days strictly before asOf).
-        let autoBaseline = priorStates.hrv?[lastIdx]
+        // Maturity + confidence depth come from the RESTING-HR priors baseline — v3's autonomic
+        // backbone — NOT the SDNN one (`prefixStates` last element == fold over the days strictly
+        // before asOf). The verdict now stands on RHR, so its confidence must too: a mature SDNN
+        // history would otherwise over-state confidence in a verdict RHR actually carries.
+        let autoBaseline = priorStates.rhr?[lastIdx]
         let maturity = autoBaseline?.status ?? .calibrating
         let autonomicNights = autoBaseline?.nValid ?? 0
 
@@ -290,10 +328,16 @@ public enum Preparedness {
         return betterWhenHigher ? dev.z : -dev.z
     }
 
-    /// Sleep axis for a given day — `.low` iff the night is short, `.noData` when unmeasured.
-    private static func sleepDriver(_ day: DailyMetric) -> Driver {
+    /// Sleep axis for a given day (v3 — graded vs need, not the binary 6h cliff). `.low` when the
+    /// night is materially short vs the personal need OR efficiency is poor; `.noData` when unmeasured.
+    /// Deliberately does NOT call `SleepBands.short` (the global 360-min cliff) — that band stays for
+    /// other surfaces, but the verdict now reads duration-vs-need + continuity (Van Dongen 2003 dose–
+    /// response; Ohayon 2017 efficiency). A personal-need input is deferred (see `Config`).
+    private static func sleepDriver(_ day: DailyMetric, config: Config) -> Driver {
         guard let mins = day.totalSleepMin else { return Driver(axis: .sleep, state: .noData, orientedZ: nil) }
-        return Driver(axis: .sleep, state: SleepBands.band(mins) == .short ? .low : .inRange, orientedZ: nil)
+        let shortVsNeed = mins < config.sleepNeedFloorMin - config.sleepSlackMin
+        let poorEfficiency = day.efficiency.map { $0 < config.sleepEffFloor } ?? false
+        return Driver(axis: .sleep, state: (shortVsNeed || poorEfficiency) ? .low : .inRange, orientedZ: nil)
     }
 
     /// Thermal axis for a given day — `skinTempDevC` is already a deviation from Apple's own baseline.
@@ -314,9 +358,12 @@ public enum Preparedness {
         if let z = resp.0 { num += resp.1 * z; den += resp.1 }
         guard den > 0 else { return Driver(axis: .autonomic, state: .noData, orientedZ: nil) }
         let composite = num / den
-        // Respiration has its own (wider) watch: a big respiration rise alone can flag the axis.
-        // resp.0 is the ORIENTED z (−raw); raw high (bad) = −resp.0 ≥ respBadZ.
-        let respOut = (resp.0.map { -$0 }).map { $0 >= cfg.respBadZ } ?? false
+        // Respiration's lone-flag ONLY applies while respiration is part of the autonomic vote
+        // (`wResp > 0`). v3 moves respiration to the illness sentinel (`wResp = 0`), so it no longer
+        // flags the autonomic axis by itself — a breathing rise is judged there, corroborated by temp.
+        let respOut = cfg.wResp > 0
+            ? ((resp.0.map { -$0 }).map { $0 >= cfg.respBadZ } ?? false)
+            : false
         let out = composite <= cfg.autonomicOutZ || respOut
         return Driver(axis: .autonomic, state: out ? .low : .inRange, orientedZ: composite)
     }
@@ -335,7 +382,11 @@ public enum Preparedness {
         if resp != nil { den += cfg.wResp }
         func share(_ z: Double?, _ w: Double) -> Double { (z != nil && den > 0) ? w / den : 0 }
         // Same expression as `respOut` in `autonomicAxis`: raw high (bad) = −orientedZ ≥ respBadZ.
-        let respAlone = (resp.map { -$0 }).map { $0 >= cfg.respBadZ } ?? false
+        // Gated on `wResp > 0` for the same reason: with respiration moved to the sentinel (v3), it
+        // no longer "flags the axis alone", so the read-out must not claim it did.
+        let respAlone = cfg.wResp > 0
+            ? ((resp.map { -$0 }).map { $0 >= cfg.respBadZ } ?? false)
+            : false
         // Per-signal `out`: this signal itself at/under the composite's OUT cut. Same threshold the
         // axis uses (`autonomicOutZ`), applied to the signal's own oriented z — no new science.
         func low(_ z: Double?) -> Bool { z.map { $0 <= cfg.autonomicOutZ } ?? false }
@@ -357,9 +408,16 @@ public enum Preparedness {
         let respZ = orientedZ(prior: priorStates.resp?[i], value: day.respRateBpm,               betterWhenHigher: false)
         let a = autonomicAxis(hrv: (hrvZ, config.wHRV), rhr: (rhrZ, config.wRHR), resp: (respZ, config.wResp), cfg: config).state
         guard a.hasData else { return .lowSignal }
-        let s = sleepDriver(day).state
-        let t = thermalDriver(day, config: config).state
-        let out = [a, s, t].filter { $0.isOut }.count
+        let s = sleepDriver(day, config: config).state
+        // v3 illness sentinel: temp counts as OUT only when CORROBORATED by an elevated respiration
+        // (both together, sustained illness pattern — Mishra 2020; Apple Vitals "2+ out"). A lone
+        // temp anomaly (warm room, blanket) or a lone breathing rise no longer votes → far fewer
+        // false "ease" days. `respZ` is oriented (+ = better); an elevated (bad) breathing rate is
+        // `−respZ ≥ respBadZ`. Cold temp is not an illness sign — only the HIGH side corroborates.
+        let tempHigh = day.skinTempDevC.map { $0 >= config.thermalOutC } ?? false
+        let respHigh = (respZ.map { -$0 }).map { $0 >= config.respBadZ } ?? false
+        let sentinelOut = tempHigh && respHigh
+        let out = (a.isOut ? 1 : 0) + (s.isOut ? 1 : 0) + (sentinelOut ? 1 : 0)
         if out == 0 { return .full }
         if out == 1 { return .caution }
         return .easy

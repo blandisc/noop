@@ -89,19 +89,21 @@ final class PreparednessSignalReadParityTests: XCTestCase {
                        "signals must reconstruct the exact composite the axis voted on")
     }
 
-    /// `share` mirrors the signed weights (rhr 0.40 > hrv 0.35 > resp 0.25) and the array is ordered
-    /// by weight. With all three present the shares equal the raw weights (den == 1.0).
+    /// v3 re-gate: the autonomic vote is resting-HR ONLY (`wRHR=1`, `wHRV=0`, `wResp=0`). SDNN and
+    /// respiration still SHOW in the breakdown (context) but carry share 0 — they don't vote. The
+    /// array is still ordered [rhr, hrv, resp].
     func testSignals_sharesAreRenormalizedWeights_orderedByWeight() {
         var days = baseline(); days.append(dm("2026-06-21"))
         let r = read(days, asOf: "2026-06-21")
         XCTAssertEqual(r.signals.map(\.signal), [.rhr, .hrv, .resp])
-        XCTAssertEqual(signal(r, .rhr)?.share ?? 0, 0.40, accuracy: 1e-9)
-        XCTAssertEqual(signal(r, .hrv)?.share ?? 0, 0.35, accuracy: 1e-9)
-        XCTAssertEqual(signal(r, .resp)?.share ?? 0, 0.25, accuracy: 1e-9)
+        XCTAssertEqual(signal(r, .rhr)?.share ?? 0, 1.0, accuracy: 1e-9)
+        XCTAssertEqual(signal(r, .hrv)?.share ?? -1, 0.0, accuracy: 1e-9, "SDNN shows but does not vote (v3)")
+        XCTAssertEqual(signal(r, .resp)?.share ?? -1, 0.0, accuracy: 1e-9, "resp moved to the sentinel (v3)")
     }
 
-    /// An absent signal carries no vote: `orientedZ == nil`, `share == 0`, and the PRESENT shares
-    /// renormalize to 1 among themselves (den drops that signal's weight).
+    /// An absent signal carries no vote: `orientedZ == nil`, `share == 0`. v3: the vote is resting-HR
+    /// only, so the surfaced shares are [rhr 1, hrv 0, resp 0] and the present shares still sum to 1
+    /// (only rhr carries weight). Dropping respiration changes nothing about the vote.
     func testSignals_absentSignal_zeroShare_presentRenormalize() {
         var days = baseline()
         days.append(dm("2026-06-21", resp: nil))   // no respiration tonight
@@ -109,30 +111,29 @@ final class PreparednessSignalReadParityTests: XCTestCase {
         let resp = signal(r, .resp)
         XCTAssertNil(resp?.orientedZ)
         XCTAssertEqual(resp?.share ?? -1, 0)
-        // rhr (0.40) + hrv (0.35) renormalize over 0.75 → 0.5333… and 0.4666…, summing to 1.
-        let present = r.signals.filter { $0.orientedZ != nil }
+        let present = r.signals.filter { $0.orientedZ != nil }   // rhr + hrv have z tonight
         XCTAssertEqual(present.reduce(0) { $0 + $1.share }, 1.0, accuracy: 1e-9)
-        XCTAssertEqual(signal(r, .rhr)?.share ?? 0, 0.40 / 0.75, accuracy: 1e-9)
-        XCTAssertEqual(signal(r, .hrv)?.share ?? 0, 0.35 / 0.75, accuracy: 1e-9)
+        XCTAssertEqual(signal(r, .rhr)?.share ?? 0, 1.0, accuracy: 1e-9)
+        XCTAssertEqual(signal(r, .hrv)?.share ?? -1, 0.0, accuracy: 1e-9)
     }
 
-    /// `flaggedAlone` is respiration-only and mirrors the `respBadZ` branch: a big respiration rise
-    /// flags it even when HRV/RHR are calm. HRV and RHR never flag alone.
-    func testSignals_respFlaggedAlone_mirrorsRespBadZ() {
+    /// v3 re-gate: respiration NO LONGER flags the autonomic axis by itself — it moved to the illness
+    /// sentinel (judged with temp, in `rawVerdictAt`). A lone respiration spike (HRV/RHR calm, temp
+    /// normal) leaves the autonomic axis `inRange` and `flaggedAlone == false`. This is the exact
+    /// inverse of the v2 assertion, on purpose: it prevents a lone breathing rise (talking, a dream,
+    /// a stuffy room) from spuriously flagging autonomic recovery.
+    func testSignals_respNoLongerFlagsAxisAlone_v3() {
         var days = baseline()
-        // HRV/RHR normal, respiration WAY up → its raw z clears respBadZ on its own.
+        // HRV/RHR normal, respiration WAY up, temp normal → nothing corroborates.
         days.append(dm("2026-06-21", hrv: 55, rhr: 55, resp: 22, sleep: 450, temp: 0.0))
         let r = read(days, asOf: "2026-06-21", config: noHyst)
-        XCTAssertEqual(signal(r, .resp)?.flaggedAlone, true, "a lone respiration spike flags the axis")
+        XCTAssertEqual(signal(r, .resp)?.flaggedAlone, false, "resp no longer flags the axis alone (v3)")
         XCTAssertEqual(signal(r, .hrv)?.flaggedAlone, false)
         XCTAssertEqual(signal(r, .rhr)?.flaggedAlone, false)
-        // And the axis itself is out because respiration alone crossed its wider cut.
-        XCTAssertEqual(r.drivers.first { $0.axis == .autonomic }?.state, .low)
-
-        // A calm respiration never flags alone.
-        var calm = baseline(); calm.append(dm("2026-06-21"))
-        let rc = read(calm, asOf: "2026-06-21")
-        XCTAssertEqual(signal(rc, .resp)?.flaggedAlone, false)
+        // The autonomic axis stands on resting-HR (calm) → in range; the lone breathing rise does not
+        // move the verdict off `full`.
+        XCTAssertEqual(r.drivers.first { $0.axis == .autonomic }?.state, .inRange)
+        XCTAssertEqual(r.verdict, .full)
     }
 
     /// `out` marks the signal that itself woke up at/under the axis OUT cut (`autonomicOutZ`, i.e. ≥1
