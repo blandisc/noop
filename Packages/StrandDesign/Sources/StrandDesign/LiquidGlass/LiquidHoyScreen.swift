@@ -355,9 +355,13 @@ public struct LiquidHoyScreen: View {
 
     private var column: some View {
         LiquidHoyContent(model: model)
-            .padding(.top, LiquidSpace.s1400)
+            // Padding superior recortado (pedido del dueño /inject: la pantalla tenía un
+            // scroll «ligero»): s800 en vez de s1400 — el velo del status bar ya cubre esa
+            // franja, así que 56 pt eran aire de más. Recupera 24 pt y la columna entra sin
+            // scroll. Mejor que bajar el dock, que es flotante con margen intencional.
+            .padding(.top, LiquidSpace.s800)
             // Aire para que el último tile libre el dock flotante.
-            .padding(.bottom, scrolls ? LiquidSpace.s1400 + LiquidSpace.s800 : 0)
+            .padding(.bottom, scrolls ? LiquidSpace.s1400 + LiquidSpace.s400 : 0)
     }
 }
 
