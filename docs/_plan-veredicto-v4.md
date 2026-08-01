@@ -614,11 +614,32 @@ los propios datos**, que es la postura defendible dada la literatura.
 - **Doc:** `docs/_spec-veredicto-v3.md` sigue describiendo el diferido como pendiente; ya aterrizó.
 - **Doc:** el header de `Preparedness.swift` sigue diciendo «deferred to the Repository wiring» /
   «Still outside the engine: the Repository wiring» — quedó stale con `9312dc78`.
-- **UI — BLOQUEANTE DE MERGE, con dueño.** La pantalla Hoy en producción muestra el orbe autonómico
-  con «3 SEÑALES»; con v3 **vota una sola**. Quedan **dos orbes** (En reposo · Sueño) + el tercero
-  condicional que introduce la fase 2. **Dueño: `/ux` + `/ui`.** ⚠️ **La rama v3 no debe mergearse
-  hasta que esta pasada exista**, o la pantalla afirmará algo que el motor ya no hace. Es la única
-  deuda que bloquea; las de docs no.
+- **UI — BLOQUEANTE DE MERGE, con dueño y con el diseño YA ELEGIDO.** La pantalla Hoy en producción
+  muestra el orbe autonómico con «3 SEÑALES»; con v3 **vota una sola**. ⚠️ **La rama v3 no debe
+  mergearse hasta que esta pasada exista**, o la pantalla afirmará algo que el motor ya no hace. Es la
+  única deuda que bloquea; las de docs no. **Dueño: `/ux` + `/ui`.** Tres cambios, decididos por el
+  dueño el 2026-08-01 — **no los re-abras, impleméntalos**:
+
+  1. **Fila de orbes: de tres a DOS.** Quedan `EN REPOSO` (con sus lpm) y `SUEÑO`. El orbe `TÉRMICO`
+     sale de la fila: ya no es un voto igual.
+  2. **El primer orbe deja de decir «AUTONÓMICO · 3 SEÑALES».** Rótulo `EN REPOSO` + el valor de FC
+     (p. ej. «52 lpm»). El héroe pasa de «tus 3 señales» a **«tus dos señales»**. *(La clave
+     `3 signals` del catálogo queda huérfana: retírala o reutilízala.)*
+  3. **Franja del guardián, SIEMPRE VISIBLE** — opción A, elegida sobre un tercer orbe subordinado y
+     sobre dejarlo solo en las tiles. Va **debajo de los orbes y fuera de la fila**, precisamente para
+     que se lea que **vigila pero no vota**. Principio rector: **mostrar no es votar** — el dueño
+     quiere ver su temperatura y su respiración todos los días, aunque no haya alerta. Tres estados:
+     - **Tranquilo:** `🛡 VIGILANDO … temp +0.1° · resp 14`, números en tinta, **cero color**.
+     - **Una se movió:** solo esa señal se tiñe de ámbar. **El veredicto NO cambia** — es justo el
+       caso que el motor decidió no dejar votar solo (mata el falso positivo del cuarto caliente).
+     - **Las dos juntas:** franja en tono de alerta con la frase corroborada («Tu temperatura y tu
+       respiración se salieron **juntas** de tu patrón»). Ahí el centinela sí empuja el veredicto.
+     ⚠️ **Nunca decir «enfermedad»** ni sugerir diagnóstico: «algo se salió de tu patrón, hoy ve leve».
+     La franja debe pesar **menos** que los orbes por jerarquía de espacio y tipografía, **no** por
+     color (DNA «Instrumento diurno»: color solo en el dato).
+
+  *(Cuando la fase 2 se retome entra un tercer orbe `VFC` las noches densas — pero la VFC está
+  diferida por decisión del dueño, así que hoy son dos orbes y la franja.)*
 - **Copy:** las 4 cadenas del veredicto deben quedar **descriptivas, nunca predictivas** («tus señales
   en reposo vs tu normal», jamás «vas a rendir peor»). *(Su alta en la allow-list de
   `docs/ANALYTICS.md` YA está hecha — verificado; no es deuda.)*
