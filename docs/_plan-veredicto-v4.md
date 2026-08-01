@@ -26,10 +26,15 @@
 >   ahí viven sus commits. Continúa ahí **o** abre un worktree desde `blandisc/verdict-v3-engine` —
 >   pero **no mezcles**: media rama en cada sitio es cómo se pierden commits. Si abres worktree,
 >   recuerda que el build del iPhone sale del canónico.
-> - **ANTES de codear: issue de Linear.** `CLAUDE.md` exige `/pm` → issue con criterios de aceptación
->   y campo **`Carril`**. Este trabajo es **carril PESADO** (analítica + datos on-device): lleva
->   `/arquitecto` si toca plomería, gate `/cso` (ciencia) + `/estadistico` (números) y `/qa`
->   independiente antes del merge. **Hoy NO existe issue — créalo antes de la primera fase.**
+> - **Issues de Linear: YA CREADOS** (team **Fer**, proyecto **Cénit iOS**, 2026-08-01). Los tres son
+>   **carril PESADO** y llevan gate `/cso` + `/estadistico` + `/qa` antes del merge:
+>   | Issue | Qué | Prioridad |
+>   |---|---|---|
+>   | **FER-1047** | Pasada de UI: dos orbes + franja del guardián — **BLOQUEA el merge de v3** | Alta |
+>   | **FER-1048** | Fase 1b · tramo estable de la noche (**la de mayor impacto**) | Alta |
+>   | **FER-1049** | Fase 1a · suavizado multi-noche (capacidad, default apagado) | Media |
+>   Usa el `gitBranchName` que Linear generó para cada uno, y referencia el issue en el PR
+>   (`Closes FER-NN`). **FER-1047 no depende de las otras dos** y se puede tomar en paralelo.
 > - **PR:** etiqueta **`ci-app` OBLIGATORIA** en cualquier PR que toque `Cenit/**` (la fase 2 lo hace).
 >   Referencia el issue (`Closes FER-NN`). Entrada de **CHANGELOG** si el cambio es visible al usuario.
 >   Si el cambio mueve la arquitectura, actualiza **`docs/ARCHITECTURE.md`** en el mismo PR.
@@ -626,8 +631,16 @@ los propios datos**, que es la postura defendible dada la literatura.
      (p. ej. «52 lpm»). El héroe pasa de «tus 3 señales» a **«tus dos señales»**. *(La clave
      `3 signals` del catálogo queda huérfana: retírala o reutilízala.)*
   3. **Franja del guardián, SIEMPRE VISIBLE** — opción A, elegida sobre un tercer orbe subordinado y
-     sobre dejarlo solo en las tiles. Va **debajo de los orbes y fuera de la fila**, precisamente para
-     que se lea que **vigila pero no vota**. Principio rector: **mostrar no es votar** — el dueño
+     sobre dejarlo solo en las tiles.
+     **Colocación exacta (decidida por el dueño):** va **debajo de la franja de CARGA**, con el
+     **mismo alto y el mismo vidrio** que ella. Las dos forman un **par simétrico** — mismo alto,
+     mismo radio, mismo material, una sobre otra — y eso las lee el ojo como «lo que acompaña»,
+     separado de los orbes que son «lo que decide». Hereda la jerarquía que la fila de carga ya
+     establecía en la pantalla, en vez de inventar una nueva. Fuera de la fila de orbes, precisamente
+     para que se lea que **vigila pero no vota**.
+     **Rótulo:** `VIGILANDO` en los dos primeros estados; cambia a **`JUNTAS`** cuando ambas se
+     salen — es lo que explica por qué esta vez sí cuenta. Contenido a la derecha: los dos valores
+     (`+0.1° · 14 rpm`). Principio rector: **mostrar no es votar** — el dueño
      quiere ver su temperatura y su respiración todos los días, aunque no haya alerta. Tres estados:
      - **Tranquilo:** `🛡 VIGILANDO … temp +0.1° · resp 14`, números en tinta, **cero color**.
      - **Una se movió:** solo esa señal se tiñe de ámbar. **El veredicto NO cambia** — es justo el
