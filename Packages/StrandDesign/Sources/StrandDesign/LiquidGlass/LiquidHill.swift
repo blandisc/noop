@@ -62,7 +62,12 @@ public struct LiquidHill: View {
 
     /// `nil` = mostrando HOY; non-nil = ratio bajo el dedo.
     @State private var scrubRatio: Double? = nil
+    /// El ancho MEDIDO del readout de vidrio, para clampearlo dentro del plot sin cortarlo
+    /// en los extremos (el popup mide `fixedSize` y crece con el texto/Dynamic Type; una
+    /// estimación fija lo recortaba con «HOY · 1.62 · SOBRECARGA» pegado a un borde).
+    @State private var readoutW: CGFloat = 96
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.liquidMotionDisabled) private var motionDisabled
 
     /// Alto fijo del plot (paridad con el mock del `LoadHillView` original).
     private let chartH: CGFloat = 132
@@ -227,7 +232,7 @@ public struct LiquidHill: View {
                         scrubRatio = min(max(ratioForX(value.location.x, width: w), 0), maximo)
                     }
                     .onEnded { _ in
-                        if reduceMotion {
+                        if reduceMotion || motionDisabled {
                             scrubRatio = nil
                         } else {
                             withAnimation(LiquidMotion.glassOut(LiquidMotion.quick)) { scrubRatio = nil }
@@ -247,10 +252,16 @@ public struct LiquidHill: View {
         let valor = isShowingToday
             ? "\(hoyEtiqueta) · \(Self.fmt(displayRatio))"
             : Self.fmt(displayRatio)
-        // Ancho estimado del popup para clampearlo dentro del plot; el popup mide fixedSize.
-        let estimado: CGFloat = 92
-        let x = min(max(estimado / 2, hx), w - estimado / 2)
+        // Clamp con el ancho MEDIDO del popup (no una estimación): así nunca se corta en los
+        // bordes, ni con la etiqueta más ancha ni en Dynamic Type grande.
+        let mitad = min(readoutW, w) / 2
+        let x = min(max(mitad, hx), w - mitad)
         LiquidScrubPopup(valor: valor, fecha: etiqueta, color: color)
+            .background(GeometryReader { g in
+                Color.clear
+                    .onAppear { readoutW = g.size.width }
+                    .onChange(of: g.size.width) { _, nuevo in readoutW = nuevo }
+            })
             .position(x: x, y: max(14, hy - 26))
             .allowsHitTesting(false)
             .accessibilityHidden(true)

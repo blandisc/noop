@@ -368,7 +368,14 @@ struct TodayView: View {
             // FER-953: precompute the sleep summary model off-main when the sleep info sheet opens.
             .task(id: metricDetail?.id) {
                 guard metricDetail?.id == "sleep" else {
-                    if sleepSummaryModel != nil { sleepSummaryModel = nil }   // avoid gratuitous invalidation
+                    // Solo soltar el modelo cacheado cuando el usuario CAMBIÓ a otra métrica
+                    // con una hoja abierta — NUNCA al cerrar (`metricDetail == nil`).
+                    // Nulificarlo al cerrar pintaba la tabla de sueño de GRIS a media bajada:
+                    // la hoja sigue animándose hacia afuera y se re-dibuja con `sleepDetail ==
+                    // nil` (revisión en simulador). Conservarlo evita el flash y hace que la
+                    // siguiente apertura de Sueño muestre el dato al instante (el `.task` lo
+                    // reconstruye igual). Solo se invalida al abrir OTRA métrica.
+                    if metricDetail != nil, sleepSummaryModel != nil { sleepSummaryModel = nil }
                     return
                 }
                 let model = await SleepDetailModel.buildDetached(repo: repo)
