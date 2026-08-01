@@ -47,20 +47,31 @@ final class PreparednessV3InputsTests: XCTestCase {
 
     /// Two different nocturnal RHR values for the same asOf day flip the autonomic read; the Apple
     /// `restingHr` on the DailyMetric is intentionally calm so only the nocturnal map can be the cause.
+    ///
+    /// The nocturnal map covers the WHOLE series, not just asOf: the engine deliberately refuses a
+    /// half-nocturnal / half-awake baseline (the two are different constructs and the blend biases
+    /// the z optimistic), so a nocturnal value only counts when the history backs it.
     func testNocturnalRHR_drivesZ_notAppleAwake() {
         let asOf = "2026-06-21"
+        /// Nocturnal series for the 20 baseline nights (calm, ~55) plus `today` for the asOf night.
+        func nocturnalMap(today: Double) -> [String: Double] {
+            var m: [String: Double] = [:]
+            for i in 1...20 { m[String(format: "2026-06-%02d", i)] = 54 + Double(i % 3) }
+            m[asOf] = today
+            return m
+        }
         // Apple awake RHR on the metric is calm (55); nocturnal map disagrees on purpose.
         var calm = baseline()
         calm.append(dm(asOf, rhr: 55))
         let inRange = read(calm, asOf: asOf, config: noHyst,
-                           nocturnalRestingHr: [asOf: 55])
+                           nocturnalRestingHr: nocturnalMap(today: 55))
         XCTAssertEqual(inRange.verdict, .full)
         XCTAssertEqual(inRange.drivers.first { $0.axis == .autonomic }?.state, .inRange)
 
         var hot = baseline()
         hot.append(dm(asOf, rhr: 55))  // Apple says calm…
         let out = read(hot, asOf: asOf, config: noHyst,
-                       nocturnalRestingHr: [asOf: 90])  // …nocturnal says elevated
+                       nocturnalRestingHr: nocturnalMap(today: 90))  // …nocturnal says elevated
         XCTAssertEqual(out.drivers.first { $0.axis == .autonomic }?.state, .low,
                        "nocturnal 90 bpm (not Apple 55) must drive the axis low")
         XCTAssertNotEqual(out.verdict, inRange.verdict,
@@ -71,6 +82,24 @@ final class PreparednessV3InputsTests: XCTestCase {
         XCTAssertNotNil(zCalm); XCTAssertNotNil(zHot)
         XCTAssertLessThan(zHot!, zCalm!, "worse nocturnal RHR → lower (worse) oriented z")
         XCTAssertLessThanOrEqual(zHot!, -1.0, "90 bpm must cross the out cut against a flat baseline")
+    }
+
+    /// REGRESSION (found by the science audit): a nocturnal value for ONLY the recent nights used to
+    /// be blended into an otherwise-awake baseline. Because Apple's awake resting HR reads
+    /// systematically HIGHER than a true nocturnal one, that blend pushed today's oriented z positive
+    /// — the verdict skewed optimistic and went blind to real elevations. The engine must now refuse
+    /// the blend: with too few nocturnal nights to stand on their own it uses the awake series WHOLE.
+    func testSparseNocturnal_doesNotBlendIntoAwakeBaseline() {
+        let asOf = "2026-06-21"
+        var days = baseline()
+        days.append(dm(asOf, rhr: 55))
+        // A single nocturnal night (below the seed gate) that is far LOWER than the awake series.
+        let sparse = read(days, asOf: asOf, config: noHyst, nocturnalRestingHr: [asOf: 40])
+        let allAwake = read(days, asOf: asOf, config: noHyst)
+        XCTAssertEqual(sparse.drivers.first { $0.axis == .autonomic }?.orientedZ,
+                       allAwake.drivers.first { $0.axis == .autonomic }?.orientedZ,
+                       "one nocturnal night must not enter an awake baseline — no mixed constructs")
+        XCTAssertEqual(sparse.verdict, allAwake.verdict)
     }
 
     // MARK: B-CA2 — luteal allowance is partial credit, not amnesty

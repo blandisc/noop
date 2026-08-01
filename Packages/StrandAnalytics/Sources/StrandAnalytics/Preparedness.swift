@@ -293,12 +293,24 @@ public enum Preparedness {
                         maturity: .calibrating, autonomicNights: 0, trend: input.trend?.direction)
         }
 
-        // --- ONE resolved resting-HR series (nocturnal override, else Apple awake) ---
-        // Used EVERYWHERE resting HR is z-scored: the baseline fold AND every per-day value.
-        // Never mix constructions (baseline from awake, day from nocturnal) — that makes z garbage.
-        let rhrSeries: [Double?] = ordered.map { day in
-            input.nocturnalRestingHr[day.day] ?? day.restingHr.map(Double.init)
-        }
+        // --- ONE resolved resting-HR series, in ONE construct (never a blend) ---
+        // Resting HR comes in two INCOMPATIBLE constructs: the real nocturnal value (a low quantile
+        // of the sleep window) and Apple's `restingHr` (an awake-sedentary aggregate that by
+        // definition EXCLUDES sleep, and so reads systematically higher). Falling back per-day —
+        // nocturnal for the recent nights, awake for the rest — silently builds a HALF-AND-HALF
+        // baseline (the EWMA half-life is 14 nights, so a 14-night nocturnal window leaves the
+        // baseline permanently ~half awake). Today's lower nocturnal value would then be scored
+        // against a partly-awake, higher baseline: the oriented z drifts POSITIVE and the verdict
+        // skews optimistic — exactly blind to the real elevations it exists to catch.
+        // So: use the nocturnal series ONLY if it covers enough of the history to stand on its own
+        // (`Baselines.minNightsSeed`); otherwise use the awake series WHOLE. One construct, always.
+        let nocturnalSeries: [Double?] = ordered.map { input.nocturnalRestingHr[$0.day] }
+        let awakeSeries: [Double?] = ordered.map { $0.restingHr.map(Double.init) }
+        let nocturnalCount = nocturnalSeries.compactMap { $0 }.count
+        // The asOf night must itself be nocturnal — a nocturnal baseline with an awake day is the
+        // same mixed-construct bug in miniature.
+        let nocturnalUsable = nocturnalCount >= Baselines.minNightsSeed && nocturnalSeries.last.flatMap { $0 } != nil
+        let rhrSeries: [Double?] = nocturnalUsable ? nocturnalSeries : awakeSeries
 
         // --- ONE forward pass per body signal (FER-1040) ---
         // `priorStates.<sig>[i]` is the baseline built from `ordered[0..<i]` — exactly the "priors"

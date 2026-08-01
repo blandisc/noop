@@ -444,9 +444,21 @@ final class Repository: ObservableObject {
                 // las noches más viejas de la ventana — no se rellena ni se reintenta; el diccionario
                 // simplemente refleja lo que trajo esta única lectura (honesto, no inventado).
                 for session in recentSleeps {
+                    // Deep-sleep windows for THIS night, from the hypnogram the session already
+                    // carries. The estimator prefers the deep subset (where the true nadir lives)
+                    // and only falls back to the whole window when it isn't dense enough — passing
+                    // `deep: false` for everything (the first cut) silently disabled that branch
+                    // while the docs still promised it. Apple's staging is approximate (κ≈0.53 for
+                    // deep), which is why it only STEERS the quantile and never becomes a claim.
+                    let deepWindows: [(Int, Int)] = (session.stagesJSON
+                        .flatMap { $0.data(using: .utf8) }
+                        .flatMap { try? JSONDecoder().decode([StageSegment].self, from: $0) } ?? [])
+                        .filter { $0.stage == "deep" }
+                        .map { ($0.start, $0.end) }
+                    func isDeep(_ ts: Int) -> Bool { deepWindows.contains { ts >= $0.0 && ts <= $0.1 } }
                     let sessionSamples = hrForNights
                         .filter { $0.ts >= session.startTs && $0.ts <= session.endTs }
-                        .map { NocturnalRestingHR.Sample(ts: $0.ts, bpm: Double($0.bpm), deep: false) }
+                        .map { NocturnalRestingHR.Sample(ts: $0.ts, bpm: Double($0.bpm), deep: isDeep($0.ts)) }
                     if let bpm = NocturnalRestingHR.estimate(sessionSamples) {
                         let dayKey = Self.localDayKey(Date(timeIntervalSince1970: Double(session.endTs)))
                         nocturnalRestingHr[dayKey] = bpm
