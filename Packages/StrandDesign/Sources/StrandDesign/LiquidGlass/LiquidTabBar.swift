@@ -46,10 +46,12 @@ public struct LiquidTabBar: View {
         .padding(.horizontal, LiquidSpace.s150)
         .padding(.bottom, LiquidSpace.s150)
         .liquidGlass(.lente)
-        // El selector se desliza con carácter (glass-spring · quick).
-        .animation(LiquidMotion.selector, value: active)
+        // El selector se desliza con carácter (glass-spring · quick). Reduce Motion / renders
+        // congelados: sin animación, la pastilla salta directo a la pestaña activa.
+        .animation(reduceMotion || motionDisabled ? nil : LiquidMotion.selector, value: active)
     }
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.liquidMotionDisabled) private var motionDisabled
 
     /// La pastilla de vidrio del ítem activo: nativa en iOS 26, imitación antes
