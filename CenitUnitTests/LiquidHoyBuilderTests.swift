@@ -147,6 +147,18 @@ final class LiquidHoyBuilderTests: XCTestCase {
         }
         XCTAssertNotEqual(titlePending, titleNoBase,
                           "«leyendo» y «no conozco tu base» son dos estados distintos")
+
+        // Y un veredicto REAL le gana a `verdictPending`: la bandera solo aplica cuando no hay nada
+        // que mostrar. Amarra el contrato de la función pura (en producción el llamador ya calcula
+        // `prep == nil && !fullyLoaded`, pero aquí no dependemos de eso).
+        let anclado = read(verdict: .full,
+                           drivers: [.init(axis: .sleep, state: .inRange, orientedZ: nil)],
+                           maturity: .trusted)
+        let (heroReal, _) = LiquidHoyBuilder.hero(prep: anclado, sleepMin: 440, nights: 20,
+                                                  verdictPending: true)
+        if case .demotado = heroReal {
+            XCTFail("con veredicto real no puede caer a «leyendo»: el dato gana a la bandera")
+        }
     }
 
     // MARK: Señales — port literal de `needles()`
