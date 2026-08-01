@@ -92,7 +92,9 @@ en su iPhone antes de producción). Commits, del más viejo al más nuevo:
 | `5ae2f3e3` | `NocturnalRestingHR` (carril A) |
 | `71f08ccb` | Entradas v3 en `Input` (carril B) |
 | `9312dc78` | Cableado en `Repository` (carril C) |
-| `db11e148` | Los dos defectos de la auditoría |
+| `db11e148` | Los dos primeros defectos de la auditoría (mezcla de constructos · `deep`) |
+| `f04cf751` | Este plan (primer checkpoint) |
+| `86d8f79c` | Tercer defecto (el veredicto solo se publica en refresh completo) + las 7 decisiones arbitradas |
 
 **Verificación al cierre (2026-08-01, tras `db11e148`):** `swift test` del paquete → 1030 tests,
 0 fallas; `xcodebuild … -jobs 4` → BUILD SUCCEEDED. ⚠️ **Los conteos y las fechas se pudren: no los
@@ -141,10 +143,16 @@ Tres rankings distintos salieron de la investigación (sofisticación, impacto/e
 El plan no sigue a ninguno: sigue **qué necesita qué**.
 
 ```
-Fase 1a (suavizado del pulso)  ─┐
-                                ├─→ Fase 2 (VFC co-protagonista, necesita 1b)
-Fase 1b (segmento estable)     ─┘
+Fase 1a (suavizado del pulso)  ──→ Fase 2   (dependencia de ARCHIVO: ambas editan Preparedness.swift)
+Fase 1b (segmento estable)     ──   independiente de la 2
 ```
+⚠️ **La flecha 1b → 2 NO existe.** Tras la decisión D5 (la fase 2 no toca la ventana de medición del
+RMSSD), la fase 2 **no consume** el tramo estable: ese aplica solo a la FC nocturna. Lo único que ata
+la 2 a la 1a es que **ambas editan `Preparedness.swift`** — colisión de archivo, no de símbolo.
+
+**Orden por IMPACTO real** (distinto del orden por dependencia): **1b** (arregla el constructo) →
+**2** (la VFC sube a co-protagonista) → **1a** (capacidad/instrumentación). Si hay que elegir una
+sola, empieza por **1b**.
 **Corrección del DAG (Grok):** la fase 3 (residuo) depende de **1a + 1b**, NO de la 2 — su modelo
 predice la FC, no la VFC. Solo dependería de la 2 si más adelante se extiende el residuo al compuesto
 autonómico completo. Las fases 4, 5 y 6 son independientes entre sí.
@@ -154,11 +162,12 @@ autonómico completo. Las fases 4, 5 y 6 son independientes entre sí.
 | Fase | Dueño exclusivo de |
 |---|---|
 | 1a | `Preparedness.swift` + `Tests/…/PreparednessV4SmoothingTests.swift` (nuevo) |
-| 1b | `NightStableSegment.swift` (nuevo) + `Tests/…/NightStableSegmentTests.swift` (nuevo) |
-| 2 | `Preparedness.swift`, `Repository.swift` — **secuencial, después de 1a y 1b** |
+| 1b | `NightStableSegment.swift` (nuevo) + `Tests/…/NightStableSegmentTests.swift` (nuevo) **+ `NocturnalRestingHR.swift`** (cambiar el orden de preferencia: segmento → deep → ventana completa) |
+| 2 | `Preparedness.swift`, `Repository.swift` **+ `Baselines.swift`** (alta de la clave `"rmssd_verdict"` + su test hermano, molde: `testSdnnBaselineConfig_existsAndIdentical`) — **secuencial, después de 1a** (colisión en `Preparedness.swift`) |
 
-1a y 1b **pueden correr en paralelo** (archivos disjuntos). La 2 va después porque toca los mismos
-archivos que 1a y consume el símbolo de 1b.
+1a y 1b **pueden correr en paralelo** (archivos disjuntos: `Preparedness.swift` vs
+`NightStableSegment.swift`+`NocturnalRestingHR.swift`). La 2 va después de la **1a** porque comparten
+`Preparedness.swift`; **no** depende de la 1b.
 
 ---
 
