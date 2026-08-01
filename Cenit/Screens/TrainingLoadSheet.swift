@@ -176,8 +176,10 @@ struct TrainingLoadSheet: View {
                 tono: tono,
                 numeral: model.acwr.map(fmt) ?? "—",
                 numeralTono: tono,
-                origen: .calculado,
-                origenEtiqueta: String(localized: "Apple Health · last 28 days"),
+                // Calibrando (sin ratio): sin punto ni «últimos 28 días» — no hay ventana de
+                // 28 días todavía, y afirmarla junto al numeral «—» miente.
+                origen: model.acwr == nil ? nil : .calculado,
+                origenEtiqueta: model.acwr == nil ? nil : String(localized: "Apple Health · last 28 days"),
                 explicacion: heroExplanation,
                 infoMostrar: String(localized: "Show explanation"),
                 infoOcultar: String(localized: "Hide explanation"))

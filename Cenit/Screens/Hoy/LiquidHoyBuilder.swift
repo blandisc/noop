@@ -379,9 +379,12 @@ enum LiquidHoyBuilder {
     private static let ejesActa: [Preparedness.Axis] = [.autonomic, .sleep, .thermal]
 
     /// El tono del veredicto: los MISMOS que usa el héroe. Sin veredicto → tinta/500, y
-    /// entonces la hoja no tiene una sola gota de color.
+    /// entonces la hoja no tiene una sola gota de color. `isNightAnchored` es OBLIGATORIO
+    /// (mismo gate que `hayVeredicto` en `acta()`): sin noche grabada el acta lee «Aún sin
+    /// veredicto», así que teñirla del color del veredicto abriría una hoja verde que se
+    /// contradice con su propio texto.
     static func actaTono(_ prep: Preparedness.Read?) -> Color {
-        guard let prep else { return LiquidColor.tinta500 }
+        guard let prep, prep.isNightAnchored else { return LiquidColor.tinta500 }
         switch prep.verdict {
         case .full: return LiquidColor.verdePrimario
         case .caution: return LiquidColor.atencion
