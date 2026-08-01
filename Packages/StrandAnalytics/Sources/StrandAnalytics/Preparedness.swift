@@ -25,9 +25,14 @@ import StrandModels
 ///   or breathing rise no longer flags anything (kills warm-room / talking false positives; Mishra 2020).
 /// - **Consensus by AXIS, not by signal** (autonomic · sleep · sentinel): a single bad night that moves
 ///   several signals at once is still ONE vote, never triple-counted (FER-1010).
-/// - Deferred to `/arquitecto` (needs new on-device data): nocturnal resting-HR nadir (SWS percentile),
-///   menstrual-cycle baseline adjustment (`CyclePhaseEngine` exists, not wired — luteal false positives),
-///   dense-night RMSSD re-entry, HRR. See the spec.
+/// - **Optional v3 inputs (all default to no-op):** `nocturnalRestingHr` (the real nocturnal resting
+///   HR from `NocturnalRestingHR`, substituted through the WHOLE series so baseline and day share one
+///   construct), `cyclePhase` (luteal allowance on the asOf day ONLY — never the baseline — so a normal
+///   luteal RHR/temp shift isn't misread as "out of range"; Shilaih 2017 / Maijala 2019), and
+///   `nocturnalRmssd` (dense nights only; never votes without resting HR present).
+/// - Still outside the engine: the Repository wiring that feeds those three, and HRR (deliberately NOT
+///   implemented — Cole 1999 validates it in a standardized exercise test for mortality, not as a
+///   free-living daily readiness marker). See the spec.
 /// - **Reuses `Baselines`** (public API) for the per-signal z; does NOT depend on `ReadinessEngine`
 ///   (its ACWR / monotony machinery is band-era load, out of scope for a passive Apple morning read).
 /// - **Two different HRV constructs, kept separate:** the autonomic axis z-scores Apple's **SDNN**
@@ -104,6 +109,8 @@ public enum Preparedness {
         public let orientedZ: Double?
         /// The axis weight renormalized over the signals PRESENT tonight (the present shares sum to
         /// 1; an absent signal is 0). This is exactly the weight used in the composite average.
+        /// When dense nocturnal RMSSD participates (asOf-only), its weight is in `den` but has no
+        /// `Signal` row — the three visible shares then sum to less than 1 (honest missing share).
         public let share: Double
         /// `true` only for respiration, only when its RAW z reached `respBadZ` — the wider cut that
         /// lets a breathing-rate spike flag the autonomic axis even when the composite doesn't.
@@ -119,6 +126,15 @@ public enum Preparedness {
             self.signal = signal; self.orientedZ = orientedZ
             self.share = share; self.flaggedAlone = flaggedAlone; self.out = out
         }
+    }
+
+    /// Tonight's dense/ralo nocturnal RMSSD z, pre-computed by the caller (asOf-day only — no
+    /// historical series). Participates in the autonomic composite iff `dense == true` AND the
+    /// asOf day's resting-HR z is present (RMSSD never votes alone).
+    public struct DenseRmssd: Sendable, Equatable {
+        public let z: Double
+        public let dense: Bool
+        public init(z: Double, dense: Bool) { self.z = z; self.dense = dense }
     }
 
     public struct Read: Sendable, Equatable {
@@ -179,9 +195,30 @@ public enum Preparedness {
         public let strainByDay: [String: Double]    // Apple workout-HR strain; nil-absent = no workout
         public let trend: AutonomicTrend.Read?
         public let asOf: String                     // "YYYY-MM-DD" local civil day
+        /// Optional per-day nocturnal resting HR (bpm, key = "yyyy-MM-dd"). When present for a day,
+        /// replaces Apple's awake `restingHr` for BOTH that day's z-score AND the resting-HR baseline
+        /// series (one resolved series everywhere — never mix constructions). While any night still
+        /// falls back to Apple's awake value, the axis is honestly "en reposo" (resting), NOT
+        /// "nocturno" (nocturnal) — UI copy must not claim overnight precision for the axis as a whole.
+        public let nocturnalRestingHr: [String: Double]
+        /// Optional menstrual-cycle phase for the asOf day only. When `.lutealLean`, a partial
+        /// allowance is subtracted from asOf-day resting HR and from the HIGH side of asOf-day skin
+        /// temp (never from history or any baseline/prefix series). See `Config.lutealRHRAllowanceBpm`
+        /// / `lutealTempAllowanceC`.
+        public let cyclePhase: CyclePhaseEngine.Phase?
+        /// Optional tonight-only dense nocturnal RMSSD (pre-computed z). Participates in the asOf
+        /// autonomic composite only when `dense` and resting-HR z is present — never alone, never
+        /// historically. See `Config.wNocturnalRMSSD`.
+        public let nocturnalRmssd: DenseRmssd?
         public init(days: [DailyMetric], strainByDay: [String: Double],
-                    trend: AutonomicTrend.Read?, asOf: String) {
+                    trend: AutonomicTrend.Read?, asOf: String,
+                    nocturnalRestingHr: [String: Double] = [:],
+                    cyclePhase: CyclePhaseEngine.Phase? = nil,
+                    nocturnalRmssd: DenseRmssd? = nil) {
             self.days = days; self.strainByDay = strainByDay; self.trend = trend; self.asOf = asOf
+            self.nocturnalRestingHr = nocturnalRestingHr
+            self.cyclePhase = cyclePhase
+            self.nocturnalRmssd = nocturnalRmssd
         }
     }
 
@@ -198,6 +235,10 @@ public enum Preparedness {
         public var wHRV: Double = 0.0
         public var wRHR: Double = 1.0
         public var wResp: Double = 0.0
+        /// Weight of dense nocturnal RMSSD in the asOf-day autonomic composite (when
+        /// `Input.nocturnalRmssd?.dense == true` and resting-HR z is present). Default 0.5 so RHR
+        /// remains the backbone; RMSSD is a co-vote, never a solo vote.
+        public var wNocturnalRMSSD: Double = 0.5
         /// Oriented-z below which an axis counts as OUT. −1.0 (one-sided ≈16%) matches the shipped
         /// `ReadinessEngine.Flag.bad` cut; NOT `|z|≤1` (rejected as noisy in `VitalBands`). `/cso`.
         public var autonomicOutZ: Double = -1.0
@@ -209,6 +250,14 @@ public enum Preparedness {
         /// elevated respiration (both together, the multi-signal illness pattern — Mishra 2020, Apple
         /// Vitals "2+ out"), which cuts the lone-temp false positives (warm room, blanket).
         public var thermalOutC: Double = 0.8
+        /// Shilaih 2017 Sci Rep 7: sleeping pulse +1.8 bpm mid-luteal vs fertile-window baseline —
+        /// discounted from the asOf-day resting-HR value ONLY, so a normal luteal-phase RHR bump isn't
+        /// misread as "out of range". Never applied to the baseline series (see field doc on `cyclePhase`).
+        public var lutealRHRAllowanceBpm: Double = 2.0
+        /// Maijala 2019 BMC Women's Health: luteal-phase nightly skin-temp shift ≈ +0.30 °C — discounted
+        /// from the asOf-day HIGH-side temperature deviation only (never the low/cold side, and never the
+        /// baseline series).
+        public var lutealTempAllowanceC: Double = 0.3
         // Sleep axis (v3 — graded vs need, not the binary 6h cliff). `low` when the night is short
         // vs the personal need OR efficiency is poor. Need = a population FLOOR here (Hirshkowitz
         // 2015 ≈ 7 h); a personal-need input is deferred (a rolling average of what was *achieved*
@@ -244,29 +293,47 @@ public enum Preparedness {
                         maturity: .calibrating, autonomicNights: 0, trend: input.trend?.direction)
         }
 
+        // --- ONE resolved resting-HR series (nocturnal override, else Apple awake) ---
+        // Used EVERYWHERE resting HR is z-scored: the baseline fold AND every per-day value.
+        // Never mix constructions (baseline from awake, day from nocturnal) — that makes z garbage.
+        let rhrSeries: [Double?] = ordered.map { day in
+            input.nocturnalRestingHr[day.day] ?? day.restingHr.map(Double.init)
+        }
+
         // --- ONE forward pass per body signal (FER-1040) ---
         // `priorStates.<sig>[i]` is the baseline built from `ordered[0..<i]` — exactly the "priors"
         // baseline day `i` must be deviated against. This replaces the old O(n²) machinery, where
         // every per-day raw verdict re-filtered + re-sorted the whole `days` array and re-folded the
         // full history from scratch (`hysteresed` × `axisStates`). `prefixStates` reuses the SAME
         // `Baselines.update` reduce, so every state — and therefore every verdict — is bit-identical.
-        let priorStates = bodySignalPriorStates(ordered, config: config)
+        let priorStates = bodySignalPriorStates(ordered, rhrSeries: rhrSeries, config: config)
         let lastIdx = ordered.count - 1
 
         // --- today's oriented z's (from the last priors state) ---
-        let hrvZ  = orientedZ(prior: priorStates.hrv?[lastIdx],  value: today.avgHrv,                    betterWhenHigher: true)
-        let rhrZ  = orientedZ(prior: priorStates.rhr?[lastIdx],  value: today.restingHr.map(Double.init), betterWhenHigher: false)
-        let respZ = orientedZ(prior: priorStates.resp?[lastIdx], value: today.respRateBpm,               betterWhenHigher: false)
+        // B2: luteal allowance on asOf-day resolved RHR only (never folded into the baseline).
+        let rhrValueToday = adjustedRhr(rhrSeries[lastIdx], cyclePhase: input.cyclePhase,
+                                        isAsOf: true, config: config)
+        let hrvZ  = orientedZ(prior: priorStates.hrv?[lastIdx],  value: today.avgHrv,      betterWhenHigher: true)
+        let rhrZ  = orientedZ(prior: priorStates.rhr?[lastIdx],  value: rhrValueToday,     betterWhenHigher: false)
+        let respZ = orientedZ(prior: priorStates.resp?[lastIdx], value: today.respRateBpm, betterWhenHigher: false)
 
         let signalsPresent = [hrvZ, rhrZ, respZ].compactMap { $0 }.count
 
+        // B3: dense nocturnal RMSSD co-votes only when dense AND rhrZ is present (never alone).
+        let rmssdTerm = nocturnalRmssdTerm(input.nocturnalRmssd, rhrZ: rhrZ, isAsOf: true, config: config)
+
         // --- Axis: autonomic (weighted composite of the present oriented z's) ---
         let autonomic = autonomicAxis(hrv: (hrvZ, config.wHRV), rhr: (rhrZ, config.wRHR),
-                                      resp: (respZ, config.wResp), cfg: config)
-        // The breakdown INSIDE that axis — same z's, same weights, same respBadZ cut. Pure read-out.
-        let signals = autonomicSignals(hrv: hrvZ, rhr: rhrZ, resp: respZ, cfg: config)
+                                      resp: (respZ, config.wResp), nocturnalRmssd: rmssdTerm, cfg: config)
+        // The breakdown INSIDE that axis — same z's, same weights (incl. RMSSD den), same respBadZ.
+        let signals = autonomicSignals(hrv: hrvZ, rhr: rhrZ, resp: respZ,
+                                       nocturnalRmssdWeight: rmssdTerm?.weight ?? 0, cfg: config)
         let sleepAxis = sleepDriver(today, config: config)
-        let thermalAxis = thermalDriver(today, config: config)
+        // B2: luteal high-side temp allowance on asOf day only.
+        let thermalAxis = thermalDriver(
+            skinTempDevC: adjustedTempDev(today.skinTempDevC, cyclePhase: input.cyclePhase,
+                                          isAsOf: true, config: config),
+            config: config)
         // --- Axis: load (optional — present ONLY with a real workout; its OUT logic is deferred to
         // `/cso`, so today it contributes coverage/context but never flips the verdict). ---
         let loadAxis: Driver = input.strainByDay[today.day] != nil
@@ -292,7 +359,9 @@ public enum Preparedness {
         }
 
         // --- Consensus + hysteresis over RAW body verdicts across history (deterministic, no persistence) ---
-        let stable = hysteresed(ordered: ordered, priorStates: priorStates, config: config)
+        let stable = hysteresed(ordered: ordered, priorStates: priorStates, rhrSeries: rhrSeries,
+                                cyclePhase: input.cyclePhase, asOf: input.asOf,
+                                nocturnalRmssd: input.nocturnalRmssd, config: config)
         // Trend nudge (post-hysteresis): a sustained falling RMSSD trend pushes a borderline day
         // (`caution`) to `easy`. It never overrides a clean `full`. `/cso` may widen this.
         let final: Verdict = (stable == .caution && input.trend?.direction == .below) ? .easy : stable
@@ -312,12 +381,41 @@ public enum Preparedness {
         let rhr: [BaselineState]?
         let resp: [BaselineState]?
     }
-    private static func bodySignalPriorStates(_ ordered: [DailyMetric], config: Config) -> PriorStates {
+    private static func bodySignalPriorStates(_ ordered: [DailyMetric], rhrSeries: [Double?],
+                                              config: Config) -> PriorStates {
         PriorStates(
             hrv:  Baselines.metricCfg[config.sdnnCfgKey].map { Baselines.prefixStates(ordered.map { $0.avgHrv }, cfg: $0) },
-            rhr:  Baselines.metricCfg["resting_hr"].map { Baselines.prefixStates(ordered.map { $0.restingHr.map(Double.init) }, cfg: $0) },
+            // RHR baseline folds the SAME resolved series used for per-day z (nocturnal override or
+            // Apple awake) — never recompute a second map of `day.restingHr` here.
+            rhr:  Baselines.metricCfg["resting_hr"].map { Baselines.prefixStates(rhrSeries, cfg: $0) },
             resp: Baselines.metricCfg["resp"].map { Baselines.prefixStates(ordered.map { $0.respRateBpm }, cfg: $0) }
         )
+    }
+
+    /// asOf-only luteal RHR discount (B2). Applied on top of the B1-resolved value; never to history.
+    private static func adjustedRhr(_ resolved: Double?, cyclePhase: CyclePhaseEngine.Phase?,
+                                    isAsOf: Bool, config: Config) -> Double? {
+        guard let r = resolved else { return nil }
+        if isAsOf, cyclePhase == .lutealLean { return r - config.lutealRHRAllowanceBpm }
+        return r
+    }
+
+    /// asOf-only luteal high-side skin-temp discount (B2). Cold side (`dev ≤ 0`) is untouched.
+    private static func adjustedTempDev(_ dev: Double?, cyclePhase: CyclePhaseEngine.Phase?,
+                                        isAsOf: Bool, config: Config) -> Double? {
+        guard let d = dev else { return nil }
+        if isAsOf, cyclePhase == .lutealLean, d > 0 {
+            return max(0, d - config.lutealTempAllowanceC)
+        }
+        return d
+    }
+
+    /// Dense nocturnal RMSSD composite term (B3). Participates only on asOf when `dense` and rhrZ
+    /// is present — RMSSD never votes alone (axis must still fall to `.noData` without RHR).
+    private static func nocturnalRmssdTerm(_ nr: DenseRmssd?, rhrZ: Double?, isAsOf: Bool,
+                                           config: Config) -> (z: Double, weight: Double)? {
+        guard isAsOf, let nr, nr.dense, rhrZ != nil else { return nil }
+        return (nr.z, config.wNocturnalRMSSD)
     }
 
     /// Oriented z for one body signal against a pre-built priors baseline: + = better than baseline.
@@ -340,22 +438,30 @@ public enum Preparedness {
         return Driver(axis: .sleep, state: (shortVsNeed || poorEfficiency) ? .low : .inRange, orientedZ: nil)
     }
 
-    /// Thermal axis for a given day — `skinTempDevC` is already a deviation from Apple's own baseline.
-    private static func thermalDriver(_ day: DailyMetric, config: Config) -> Driver {
-        guard let dev = day.skinTempDevC else { return Driver(axis: .thermal, state: .noData, orientedZ: nil) }
+    /// Thermal axis — `skinTempDevC` is already a deviation from Apple's own baseline (caller may
+    /// pass a luteal-adjusted asOf value; history never gets that discount).
+    private static func thermalDriver(skinTempDevC: Double?, config: Config) -> Driver {
+        guard let dev = skinTempDevC else { return Driver(axis: .thermal, state: .noData, orientedZ: nil) }
         let state: AxisState = dev >= config.thermalOutC ? .high : (dev <= -config.thermalOutC ? .low : .inRange)
         return Driver(axis: .thermal, state: state, orientedZ: nil)
     }
 
-    /// Collapse HRV/RHR/resp into one autonomic vote via a weighted average of the PRESENT oriented
-    /// z's (weights renormalized over present signals). `.low` iff the composite is at/under the OUT
-    /// cut; respiration additionally flags on its own wider cut. Never the min (no −0.85 bias).
+    /// Collapse HRV/RHR/resp (+ optional dense nocturnal RMSSD) into one autonomic vote via a
+    /// weighted average of the PRESENT oriented z's (weights renormalized over present terms).
+    /// `.low` iff the composite is at/under the OUT cut; respiration additionally flags on its own
+    /// wider cut. Never the min (no −0.85 bias).
     private static func autonomicAxis(hrv: (Double?, Double), rhr: (Double?, Double),
-                                      resp: (Double?, Double), cfg: Config) -> Driver {
+                                      resp: (Double?, Double),
+                                      nocturnalRmssd: (z: Double, weight: Double)? = nil,
+                                      cfg: Config) -> Driver {
         var num = 0.0, den = 0.0
         if let z = hrv.0 { num += hrv.1 * z; den += hrv.1 }
         if let z = rhr.0 { num += rhr.1 * z; den += rhr.1 }
         if let z = resp.0 { num += resp.1 * z; den += resp.1 }
+        if let rmssd = nocturnalRmssd {
+            num += rmssd.weight * rmssd.z
+            den += rmssd.weight
+        }
         guard den > 0 else { return Driver(axis: .autonomic, state: .noData, orientedZ: nil) }
         let composite = num / den
         // Respiration's lone-flag ONLY applies while respiration is part of the autonomic vote
@@ -373,13 +479,18 @@ public enum Preparedness {
     /// `respBadZ` cut). It computes no new science and can never move a verdict: `share` mirrors the
     /// weight each present signal carries in the average, and `flaggedAlone` mirrors the `respOut`
     /// branch. Ordered by weight (rhr ≥ hrv ≥ resp under the signed defaults).
-    private static func autonomicSignals(hrv: Double?, rhr: Double?, resp: Double?, cfg: Config) -> [SignalRead] {
-        // `den` — sum of the weights of the signals PRESENT tonight — is identical to the composite's
+    /// `nocturnalRmssdWeight` is the composite's 4th-term weight when active (else 0) — it widens
+    /// `den` so rhr/hrv/resp shares honestly drop below 1, without adding a `Signal` enum case.
+    private static func autonomicSignals(hrv: Double?, rhr: Double?, resp: Double?,
+                                         nocturnalRmssdWeight: Double = 0,
+                                         cfg: Config) -> [SignalRead] {
+        // `den` — sum of the weights of the terms PRESENT tonight — is identical to the composite's
         // denominator, so `share` is the exact weight each present signal carried in the average.
         var den = 0.0
         if hrv  != nil { den += cfg.wHRV }
         if rhr  != nil { den += cfg.wRHR }
         if resp != nil { den += cfg.wResp }
+        den += nocturnalRmssdWeight
         func share(_ z: Double?, _ w: Double) -> Double { (z != nil && den > 0) ? w / den : 0 }
         // Same expression as `respOut` in `autonomicAxis`: raw high (bad) = −orientedZ ≥ respBadZ.
         // Gated on `wResp > 0` for the same reason: with respiration moved to the sentinel (v3), it
@@ -400,13 +511,21 @@ public enum Preparedness {
     /// The RAW (pre-hysteresis, pre-trend) body verdict for one day `i`, from its pre-built priors
     /// baselines. Trend is applied once, after hysteresis, in `evaluate` — never folded into the
     /// per-day raw (that would make the historical raws depend on today's trend). O(1) per day.
+    /// B1/B2/B3: uses the resolved `rhrSeries`; applies luteal + dense-RMSSD only when
+    /// `day.day == asOf` (historical raws stay pre-adjustment so hysteresis is consistent).
     private static func rawVerdictAt(_ i: Int, ordered: [DailyMetric],
-                                     priorStates: PriorStates, config: Config) -> Verdict {
+                                     priorStates: PriorStates, rhrSeries: [Double?],
+                                     cyclePhase: CyclePhaseEngine.Phase?, asOf: String,
+                                     nocturnalRmssd: DenseRmssd?, config: Config) -> Verdict {
         let day = ordered[i]
-        let hrvZ  = orientedZ(prior: priorStates.hrv?[i],  value: day.avgHrv,                    betterWhenHigher: true)
-        let rhrZ  = orientedZ(prior: priorStates.rhr?[i],  value: day.restingHr.map(Double.init), betterWhenHigher: false)
-        let respZ = orientedZ(prior: priorStates.resp?[i], value: day.respRateBpm,               betterWhenHigher: false)
-        let a = autonomicAxis(hrv: (hrvZ, config.wHRV), rhr: (rhrZ, config.wRHR), resp: (respZ, config.wResp), cfg: config).state
+        let isAsOf = day.day == asOf
+        let rhrVal = adjustedRhr(rhrSeries[i], cyclePhase: cyclePhase, isAsOf: isAsOf, config: config)
+        let hrvZ  = orientedZ(prior: priorStates.hrv?[i],  value: day.avgHrv,      betterWhenHigher: true)
+        let rhrZ  = orientedZ(prior: priorStates.rhr?[i],  value: rhrVal,          betterWhenHigher: false)
+        let respZ = orientedZ(prior: priorStates.resp?[i], value: day.respRateBpm, betterWhenHigher: false)
+        let rmssdTerm = nocturnalRmssdTerm(nocturnalRmssd, rhrZ: rhrZ, isAsOf: isAsOf, config: config)
+        let a = autonomicAxis(hrv: (hrvZ, config.wHRV), rhr: (rhrZ, config.wRHR),
+                              resp: (respZ, config.wResp), nocturnalRmssd: rmssdTerm, cfg: config).state
         guard a.hasData else { return .lowSignal }
         let s = sleepDriver(day, config: config).state
         // v3 illness sentinel: temp counts as OUT only when CORROBORATED by an elevated respiration
@@ -414,7 +533,9 @@ public enum Preparedness {
         // temp anomaly (warm room, blanket) or a lone breathing rise no longer votes → far fewer
         // false "ease" days. `respZ` is oriented (+ = better); an elevated (bad) breathing rate is
         // `−respZ ≥ respBadZ`. Cold temp is not an illness sign — only the HIGH side corroborates.
-        let tempHigh = day.skinTempDevC.map { $0 >= config.thermalOutC } ?? false
+        // B2: asOf-only luteal high-side temp discount (same gate as `thermalDriver` in evaluate).
+        let tempDev = adjustedTempDev(day.skinTempDevC, cyclePhase: cyclePhase, isAsOf: isAsOf, config: config)
+        let tempHigh = tempDev.map { $0 >= config.thermalOutC } ?? false
         let respHigh = (respZ.map { -$0 }).map { $0 >= config.respBadZ } ?? false
         let sentinelOut = tempHigh && respHigh
         let out = (a.isOut ? 1 : 0) + (s.isOut ? 1 : 0) + (sentinelOut ? 1 : 0)
@@ -427,8 +548,15 @@ public enum Preparedness {
     /// verdict must persist `hysteresisDays` consecutive days before it replaces the stable one.
     /// Operates on RAW (not smoothed) verdicts, so there is no unbounded recursion. O(n): each raw
     /// is O(1) from the single-pass `priorStates` (was O(n²) re-folding the full history per day).
-    private static func hysteresed(ordered: [DailyMetric], priorStates: PriorStates, config: Config) -> Verdict {
-        let raws = ordered.indices.map { rawVerdictAt($0, ordered: ordered, priorStates: priorStates, config: config) }
+    private static func hysteresed(ordered: [DailyMetric], priorStates: PriorStates,
+                                   rhrSeries: [Double?], cyclePhase: CyclePhaseEngine.Phase?,
+                                   asOf: String, nocturnalRmssd: DenseRmssd?,
+                                   config: Config) -> Verdict {
+        let raws = ordered.indices.map {
+            rawVerdictAt($0, ordered: ordered, priorStates: priorStates, rhrSeries: rhrSeries,
+                         cyclePhase: cyclePhase, asOf: asOf, nocturnalRmssd: nocturnalRmssd,
+                         config: config)
+        }
         guard var stable = raws.first else { return .lowSignal }
         // A new raw verdict must persist `hysteresisDays` CONSECUTIVE days before it replaces the
         // stable one — so an isolated borderline day never flips the hero.
