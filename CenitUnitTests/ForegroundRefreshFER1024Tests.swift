@@ -33,4 +33,23 @@ final class ForegroundRefreshFER1024Tests: XCTestCase {
         XCTAssertTrue(AppModel.shouldForceRefreshOnForeground(lastPublishedDay: "2025-12-31",
                                                               currentDay: "2026-01-01"))
     }
+
+    /// An unfinished full pass forces a refresh even on the SAME day. First paint already stamps
+    /// `lastRefreshDayKey = today`, so a user who backgrounds the app mid-load and returns the same
+    /// day would otherwise never complete it — and with the «Preparación» verdict published only by
+    /// the full pass, the hero would sit on «Leyendo tu noche…» all day.
+    func testIncompleteFullPassForcesEvenSameDay() {
+        XCTAssertTrue(AppModel.shouldForceRefreshOnForeground(lastPublishedDay: "2026-07-21",
+                                                              currentDay: "2026-07-21",
+                                                              fullyLoaded: false),
+                      "un pase completo a medias debe reintentarse aunque no haya cambiado el día")
+        // Ya cargado y mismo día → sigue sin forzar (la conducta FER-1024 original, intacta).
+        XCTAssertFalse(AppModel.shouldForceRefreshOnForeground(lastPublishedDay: "2026-07-21",
+                                                               currentDay: "2026-07-21",
+                                                               fullyLoaded: true))
+        // Nada publicado todavía → la secuencia de arranque manda, aunque no esté cargado.
+        XCTAssertFalse(AppModel.shouldForceRefreshOnForeground(lastPublishedDay: nil,
+                                                               currentDay: "2026-07-21",
+                                                               fullyLoaded: false))
+    }
 }

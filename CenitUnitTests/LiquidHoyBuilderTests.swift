@@ -123,6 +123,32 @@ final class LiquidHoyBuilderTests: XCTestCase {
         XCTAssertEqual(routeNil, .autonomic)
     }
 
+    /// El veredicto solo se calcula en el pase COMPLETO (`Repository.performRefresh(full:)`), así que
+    /// en el primer pintado llega `nil`. Sin distinguir ese caso, el héroe caía al fallback y le decía
+    /// «Todavía no conozco tu base» a un usuario con AÑOS de historia, en CADA arranque en frío: una
+    /// frase falsa. `verdictPending` separa «todavía no lo calculo» de «no tengo base».
+    func test_hero_verdictPending_diceQueLeeNoQueNoTeConoce() {
+        let (heroPending, routePending) = LiquidHoyBuilder.hero(
+            prep: nil, sleepMin: 440, nights: 0, verdictPending: true)
+        guard case .demotado(_, let titlePending, _) = heroPending else {
+            return XCTFail("esperaba .demotado (leyendo)")
+        }
+        // La invariante, no la redacción: mientras calcula NO puede afirmar que no conoce tu base.
+        XCTAssertFalse(titlePending.localizedCaseInsensitiveContains("base"),
+                       "mientras calcula no puede decir que no conoce tu base: \(titlePending)")
+        XCTAssertFalse(titlePending.localizedCaseInsensitiveContains("baseline"), titlePending)
+        XCTAssertEqual(routePending, .autonomic)
+
+        // Y el estado honesto de «sin base» sigue intacto cuando NO está pendiente: son distintos.
+        let (heroNoBase, _) = LiquidHoyBuilder.hero(prep: nil, sleepMin: 440, nights: 0,
+                                                    verdictPending: false)
+        guard case .demotado(_, let titleNoBase, _) = heroNoBase else {
+            return XCTFail("esperaba .demotado (sin base)")
+        }
+        XCTAssertNotEqual(titlePending, titleNoBase,
+                          "«leyendo» y «no conozco tu base» son dos estados distintos")
+    }
+
     // MARK: Señales — port literal de `needles()`
 
     func test_senales_posicionesIdenticasALasAgujas() {

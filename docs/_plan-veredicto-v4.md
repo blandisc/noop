@@ -252,16 +252,28 @@ public var rhrSmoothingNights: Int = 1   // ⚠️ DEFAULT 1 A PROPÓSITO — ve
   con la fixture `baseline()`** — no las confundas, y fija en el test el de la fixture que uses. Con `N=5` el eje SÍ queda `.low`: no lo escribas al revés.
 - **CA2b:** con `N=1` una noche mala deja el eje `.low` y con `N = N*` no — la misma serie, dos
   configuraciones, resultados distintos: eso prueba que el knob hace algo.
-- **CA3 (independencia del centinela) — OJO, el centinela NO es observable desde `Read`.**
-  `sentinelOut` es una variable local dentro de `rawVerdictAt` (`Preparedness.swift`), `Axis` no tiene
-  caso para él, y el driver `.thermal` que sí se publica viene de `thermalDriver` (**solo
-  temperatura**), que no es el centinela. Un test que asierte sobre `.thermal` pasa **por vacuidad**.
-  **Redacción ejecutable:** usa una serie de FC **perfectamente plana** (donde el suavizado es la
-  identidad, así el eje autonómico es idéntico para todo N) con **temp + resp elevadas hoy**, y
-  asierta que el **`verdict`** es el mismo con `N=1` y con `N=8`. Eso sí prueba que el centinela no
-  depende del suavizado, sin tocar la API.
-  *(Si alguien quiere el test fuerte —asertar el centinela directamente— eso exige exponerlo en
-  `Read`/`Axis`: es un cambio de API que este plan NO autoriza; decídelo aparte.)*
+- **CA3 (independencia del centinela) — ⚠️ TERCERA redacción; las dos anteriores pasaban por
+  vacuidad. Lee esto antes de escribirlo.**
+  El centinela **no es observable** desde `Read`: `sentinelOut` es local en `rawVerdictAt`, `Axis` no
+  tiene caso para él, y el driver `.thermal` que sí se publica es **solo temperatura**. Por eso:
+  - ❌ Asertar sobre `.thermal` → pasa por vacuidad (no toca el centinela).
+  - ❌ Asertar `verdict(N=1) == verdict(N=8)` sobre una **serie plana** → **también** es vacuo: sobre
+    una serie plana el suavizado es la **identidad**, así que el `Input` completo es bit-idéntico
+    entre N y la aserción es una tautología. Pasaría **incluso si** alguien cableara el centinela a
+    leer la serie suavizada — que es justo el bug que este criterio dice cazar.
+  - ✅ **Redacción correcta (verificada por ejecución):** usa una fixture donde `N` **sí muerde** —
+    20 noches planas + **pico de +20 bpm hoy** — **y** temp/resp elevadas hoy. Entonces:
+    ```
+    N=1 → verdict == .easy      (eje autonómico .low + centinela  = 2 votos)
+    N=8 → verdict == .caution   (eje autonómico .inRange + centinela = 1 voto)
+    ```
+    **La prueba está en que N=8 da `.caution` y NO `.full`:** el suavizado apagó el eje autonómico,
+    y aun así quedó un voto — el del centinela. Si el suavizado lo hubiera silenciado también, N=8
+    daría `.full`. Este test **puede fallar**, que es lo que lo hace un test.
+  *(El test fuerte —asertar el centinela directamente— exige exponerlo en `Read`/`Axis`: es un cambio
+  de API que este plan NO autoriza. Decídelo aparte si lo quieres.)*
+  **Lección transferible:** un criterio sobre *independencia* nunca se prueba con una fixture donde la
+  variable no varía.
 - **CA4 (no regresión):** con el **default 1**, las suites del veredicto siguen verdes **sin
   editarlas** — incluido `testHysteresisVerdictSequence_frozen`, que es el que rompería cualquier
   N>1. Si tocas ese test, te saliste de la decisión de arriba. Lista exacta y cómo
