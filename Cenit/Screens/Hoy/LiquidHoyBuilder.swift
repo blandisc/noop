@@ -69,6 +69,11 @@ enum LiquidHoyBuilder {
         /// ¿El permiso de Apple Salud está concedido? Sin él, el héroe «sin datos» pide
         /// conectar Salud en vez de una instrucción imposible (revote /inject).
         var healthConnected: Bool = true
+        /// El veredicto todavía NO se ha calculado en este pase (solo sale del refresh completo,
+        /// `Repository.performRefresh(full:)`). Distinto de «no hay veredicto»: con `true` el héroe
+        /// dice que está leyendo, NO que no conoce tu base — a alguien con años de historia esa frase
+        /// sería falsa, y aparecería en cada arranque en frío.
+        var verdictPending: Bool = false
         /// Ventana de la sesión de sueño de anoche en horas locales 0–24 (nil = sin sesión).
         var night: (start: Double, end: Double)?
         /// Amanecer/atardecer locales en horas reloj (SolarClock; nil = caso polar).
@@ -94,7 +99,8 @@ enum LiquidHoyBuilder {
     static func build(_ i: Inputs) -> Output {
         let (hero, route) = hero(prep: i.preparedness, sleepMin: i.sleep?.value,
                                  nights: i.preparedness?.autonomicNights ?? 0,
-                                 healthConnected: i.healthConnected)
+                                 healthConnected: i.healthConnected,
+                                 verdictPending: i.verdictPending)
         let model = LiquidHoyModel(
             kicker: kicker(now: i.now, calendar: i.calendar, locale: i.locale),
             dial: .init(night: i.night, sol: i.sol,
@@ -162,8 +168,17 @@ enum LiquidHoyBuilder {
     // MARK: Héroe (tabla canónica — port literal de `TodayView.heroBlock`)
 
     static func hero(prep: Preparedness.Read?, sleepMin: Double?, nights: Int,
-                     healthConnected: Bool = true)
+                     healthConnected: Bool = true, verdictPending: Bool = false)
         -> (LiquidHoyModel.Hero, HeroRoute) {
+        // Todavía calculando (primer pintado): el veredicto solo sale del refresh completo. Decirle
+        // «no conozco tu base» a alguien con años de historia es FALSO — y saldría en cada arranque.
+        // Preferimos decir la verdad pequeña: lo estamos leyendo.
+        if prep == nil, verdictPending {
+            return (.demotado(kicker: String(localized: "READINESS"),
+                              title: String(localized: "Reading your night…"),
+                              subtitle: String(localized: "One moment.")),
+                    .autonomic)
+        }
         if let prep, prep.verdict != .lowSignal {
             if prep.isNightAnchored {
                 return (veredicto(prep.verdict, nights: nights, prep: prep), .autonomic)

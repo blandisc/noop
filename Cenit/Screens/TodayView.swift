@@ -1062,6 +1062,11 @@ struct TodayView: View {
         var inputs = LiquidHoyBuilder.Inputs()
         inputs.healthConnected = health.auth == .authorized
         inputs.preparedness = repo.todayPreparedness
+        // El veredicto SOLO se calcula en el refresh completo (`Repository`, para no puntuar la FC
+        // despierta en el primer pintado y desdecirse segundos después). Mientras eso llega, el héroe
+        // debe decir que está leyendo — no «no conozco tu base», que a alguien con años de historia
+        // es falso y saldría en CADA arranque en frío.
+        inputs.verdictPending = repo.todayPreparedness == nil && !repo.fullyLoaded
         inputs.thermalDeviation = latestFromDisplay({ $0.skinTempDevC })?.value
         inputs.trainingLoad = trainingLoad
         inputs.sleep = resolveMeasured(todayOnly: true, { $0.totalSleepMin })

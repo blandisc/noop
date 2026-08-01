@@ -49788,6 +49788,26 @@
           }
         }
       }
+    },
+    "Reading your night…": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leyendo tu noche…"
+          }
+        }
+      }
+    },
+    "One moment.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un momento."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

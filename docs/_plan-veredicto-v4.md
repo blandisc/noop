@@ -2,7 +2,7 @@
 
 > **Para una sesión nueva:** este documento es autosuficiente. No necesitas la conversación que lo
 > originó. Lee «Estado actual» y «Cómo trabajar cada fase», y arranca por la fase que toque.
-> Fecha: 2026-07-24 · Rama base: `blandisc/verdict-v3-engine` (pusheada, **NO mergeada**).
+> Última actualización: 2026-08-01 · Rama base: `blandisc/verdict-v3-engine` (pusheada, **NO mergeada**).
 >
 > ## ⚠️ Estructura del documento — léela antes de codear
 > Este plan pasó una revisión adversarial (Grok) que lo dividió en dos partes con distinto nivel de
@@ -20,9 +20,26 @@
 > cat docs/_plan-veredicto-v4.md          # este documento
 > cd Packages/StrandAnalytics && swift build && swift test   # línea base verde antes de tocar nada
 > ```
-> Convenciones: **un commit por fase**; **nunca merges sin que el dueño valide en su iPhone**; trabaja
-> en el checkout canónico `~/code/noop` (no en un worktree, para no fragmentar esta rama).
-> Antes de cualquier fase, checklist de 15 min de la **deuda de docs** (sección «Deuda pendiente») — no bloquea código.
+> **Convenciones — leer completo, hay una excepción explícita a `CLAUDE.md`:**
+> - **Worktree vs canónico (EXCEPCIÓN CONSCIENTE).** `CLAUDE.md` manda trabajar en un worktree por
+>   rama y **nunca** en el checkout principal. Esta rama se construyó en el canónico `~/code/noop` y
+>   ahí viven sus commits. Continúa ahí **o** abre un worktree desde `blandisc/verdict-v3-engine` —
+>   pero **no mezcles**: media rama en cada sitio es cómo se pierden commits. Si abres worktree,
+>   recuerda que el build del iPhone sale del canónico.
+> - **ANTES de codear: issue de Linear.** `CLAUDE.md` exige `/pm` → issue con criterios de aceptación
+>   y campo **`Carril`**. Este trabajo es **carril PESADO** (analítica + datos on-device): lleva
+>   `/arquitecto` si toca plomería, gate `/cso` (ciencia) + `/estadistico` (números) y `/qa`
+>   independiente antes del merge. **Hoy NO existe issue — créalo antes de la primera fase.**
+> - **PR:** etiqueta **`ci-app` OBLIGATORIA** en cualquier PR que toque `Cenit/**` (la fase 2 lo hace).
+>   Referencia el issue (`Closes FER-NN`). Entrada de **CHANGELOG** si el cambio es visible al usuario.
+>   Si el cambio mueve la arquitectura, actualiza **`docs/ARCHITECTURE.md`** en el mismo PR.
+> - **Un commit por fase**; **nunca merges sin que el dueño valide en su iPhone**.
+> - **Si Grok no está disponible** para la revisión adversarial: usa el subagente `qa` (escéptico), o
+>   `cso`/`estadistico` según el eje. Lo que **no** es opcional es que alguien que no escribió el plan
+>   lo ataque **ejecutando los criterios, no leyéndolos**: esta ronda encontró tres criterios
+>   numéricamente falsos justo porque el auditor construyó un arnés y los corrió.
+> - Antes de cualquier fase, checklist de 15 min de la **deuda de docs** (sección «Deuda pendiente») —
+>   no bloquea código.
 
 ---
 
@@ -96,7 +113,8 @@ en su iPhone antes de producción). Commits, del más viejo al más nuevo:
 | `f04cf751` | Este plan (primer checkpoint) |
 | `86d8f79c` | Tercer defecto (el veredicto solo se publica en refresh completo) + las 7 decisiones arbitradas |
 
-**Verificación al cierre (2026-08-01, tras `db11e148`):** `swift test` del paquete → 1030 tests,
+**Verificación al cierre (2026-08-01, tras `86d8f79c` — el commit que hace opcional el veredicto):**
+`swift test` del paquete → 1030 tests,
 0 fallas; `xcodebuild … -jobs 4` → BUILD SUCCEEDED. ⚠️ **Los conteos y las fechas se pudren: no los
 cites, re-córrelos.** Ojo: `swift test` del paquete **no compila `Cenit/Data/Repository.swift`** — si
 tocas la capa app, el `xcodebuild` es obligatorio, no opcional.
@@ -118,9 +136,11 @@ mezcla) · `NocturnalRestingHRTests` (6).
 - `Packages/StrandAnalytics/Sources/StrandAnalytics/NocturnalHRV.swift` — gates de densidad
   (`minCleanBeats=60`, `minSuccessivePairs=30`), `NightResult{rmssdMs, nClean, nPairs}`.
 - `Packages/StrandAnalytics/Sources/StrandAnalytics/AutonomicTrend.swift` — `Read{direction,
-  confidence, nightsUsable, recentDenseNights, z7d, spark, asOfWasDense}`. **`spark` = z por-noche
-  (past-only), oldest→newest; `spark.last` es el z de la noche asOf. `z7d` es OTRO constructo (media
-  de 7 d) — no confundirlos.**
+  confidence, nightsUsable, **nightsToTrend**, recentDenseNights, z7d, spark, asOfWasDense}` (8
+  campos). **`spark` = z por-noche (past-only), oldest→newest. ⚠️ `spark == []` salvo que
+  `confidence == .solid`, y `spark.last` es el z de la noche asOf SOLO si `asOfWasDense == true`** —
+  si no, es el de la última noche densa anterior. `z7d` es OTRO constructo (media de 7 d): no
+  confundirlos.
 - `Packages/StrandAnalytics/Sources/StrandAnalytics/NightAutonomicShape.swift` — **ya existe y ya
   está cableado** en `SleepDetailScreen` (nadirHour, dipPct, fractionBelowRHR). Es descriptivo y
   **debe seguir siéndolo**: promoverlo al veredicto sería sobreafirmar.
@@ -150,9 +170,12 @@ Fase 1b (segmento estable)     ──   independiente de la 2
 RMSSD), la fase 2 **no consume** el tramo estable: ese aplica solo a la FC nocturna. Lo único que ata
 la 2 a la 1a es que **ambas editan `Preparedness.swift`** — colisión de archivo, no de símbolo.
 
-**Orden por IMPACTO real** (distinto del orden por dependencia): **1b** (arregla el constructo) →
-**2** (la VFC sube a co-protagonista) → **1a** (capacidad/instrumentación). Si hay que elegir una
-sola, empieza por **1b**.
+**Orden por IMPACTO real** (distinto del de dependencia): **1b** (arregla el constructo) → **2** (la
+VFC sube a co-protagonista) → **1a** (capacidad/instrumentación). Si hay que elegir una sola fase,
+empieza por **1b**.
+⚠️ **No es contradicción con la tabla de carriles:** la 2 va «después de la 1a» por **colisión de
+archivo** (`Preparedness.swift`), no por valor. Si priorizas por impacto y haces la 2 antes que la 1a,
+es válido — solo asegúrate de no correrlas **a la vez** sobre el mismo archivo.
 **Corrección del DAG (Grok):** la fase 3 (residuo) depende de **1a + 1b**, NO de la 2 — su modelo
 predice la FC, no la VFC. Solo dependería de la 2 si más adelante se extiende el residuo al compuesto
 autonómico completo. Las fases 4, 5 y 6 son independientes entre sí.
@@ -225,15 +248,20 @@ public var rhrSmoothingNights: Int = 1   // ⚠️ DEFAULT 1 A PROPÓSITO — ve
 - **CA2 (corregido — el original era numéricamente falso):** el efecto del suavizado es
   **monótono**: con 20 noches planas y una sola noche de +20 bpm, el z orientado del día crece (menos
   negativo) conforme sube N, y existe un `N*` a partir del cual el eje deja de ser `.low`.
-  **Determina `N*` ejecutándolo, no a mano** (con la fixture de `baseline()` ronda 8), y fija ese
-  número en el test. Con `N=5` el eje SÍ queda `.low`: no lo escribas al revés.
+  **Determina `N*` ejecutándolo, no a mano.** Medido: **`N* = 8` con 20 noches planas** y **`N* = 9`
+  con la fixture `baseline()`** — no las confundas, y fija en el test el de la fixture que uses. Con `N=5` el eje SÍ queda `.low`: no lo escribas al revés.
 - **CA2b:** con `N=1` una noche mala deja el eje `.low` y con `N = N*` no — la misma serie, dos
   configuraciones, resultados distintos: eso prueba que el knob hace algo.
-- **CA3 (independencia del centinela):** el centinela usa **temp + respiración**, no la FC — cambiar
-  `rhrSmoothingNights` **no altera** el estado del centinela en ningún caso. Test: temp+resp elevadas
-  hoy disparan el centinela con `N=1` y con `N=5` por igual. *(Reemplaza un CA anterior que era
-  incoherente: suavizar la FC no podía «dejar la noche cruda al centinela» porque el centinela nunca
-  miró la FC.)*
+- **CA3 (independencia del centinela) — OJO, el centinela NO es observable desde `Read`.**
+  `sentinelOut` es una variable local dentro de `rawVerdictAt` (`Preparedness.swift`), `Axis` no tiene
+  caso para él, y el driver `.thermal` que sí se publica viene de `thermalDriver` (**solo
+  temperatura**), que no es el centinela. Un test que asierte sobre `.thermal` pasa **por vacuidad**.
+  **Redacción ejecutable:** usa una serie de FC **perfectamente plana** (donde el suavizado es la
+  identidad, así el eje autonómico es idéntico para todo N) con **temp + resp elevadas hoy**, y
+  asierta que el **`verdict`** es el mismo con `N=1` y con `N=8`. Eso sí prueba que el centinela no
+  depende del suavizado, sin tocar la API.
+  *(Si alguien quiere el test fuerte —asertar el centinela directamente— eso exige exponerlo en
+  `Read`/`Axis`: es un cambio de API que este plan NO autoriza; decídelo aparte.)*
 - **CA4 (no regresión):** con el **default 1**, las suites del veredicto siguen verdes **sin
   editarlas** — incluido `testHysteresisVerdictSequence_frozen`, que es el que rompería cualquier
   N>1. Si tocas ese test, te saliste de la decisión de arriba. Lista exacta y cómo
@@ -535,6 +563,8 @@ los propios datos**, que es la postura defendible dada la literatura.
 - **`Repository.hrSamples(from:to:)` hardcodea el `deviceId` de la BANDA** (vacío en Apple-only). Para
   datos de Apple usa `store.hrSamples(deviceId: "apple-health", …)`.
 - **`spark.last` ≠ `z7d`.** El primero es el z de esa noche; el segundo, el de la media de 7 días.
+  Y `spark.last` solo es «la noche de hoy» si `asOfWasDense == true` y `confidence == .solid`; si no,
+  `spark` está vacío o su último elemento es de otra noche.
 
 ---
 
