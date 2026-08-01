@@ -7,9 +7,9 @@
 > ## ⚠️ Estructura del documento — léela antes de codear
 > Este plan pasó una revisión adversarial (Grok) que lo dividió en dos partes con distinto nivel de
 > madurez. **Respeta la división:**
-> - **PARTE A (§2) — EJECUTABLE.** Fases 1a, 1b y 2. Decisiones cerradas, contratos de API, criterios
+> - **PARTE A — EJECUTABLE.** Fases 1a, 1b y 2. Decisiones cerradas, contratos de API, criterios
 >   de aceptación numéricos. Un agente puede implementarlas desde aquí sin preguntar.
-> - **PARTE B (§3) — HOJA DE RUTA, NO CODEAR.** Fases 3, 4, 5 y 6. Están justificadas y priorizadas,
+> - **PARTE B — HOJA DE RUTA, NO CODEAR.** Fases 3, 4, 5 y 6. Están justificadas y priorizadas,
 >   pero **NO tienen el detalle suficiente para implementarse desde este doc**. Cada una necesita su
 >   propia spec hija (y la 6, además, `/pm` + `/ux`). Si intentas codearlas desde aquí, inventarás.
 >
@@ -22,7 +22,7 @@
 > ```
 > Convenciones: **un commit por fase**; **nunca merges sin que el dueño valide en su iPhone**; trabaja
 > en el checkout canónico `~/code/noop` (no en un worktree, para no fragmentar esta rama).
-> Antes de cualquier fase, checklist de 15 min de la **deuda de docs** (§5) — no bloquea código.
+> Antes de cualquier fase, checklist de 15 min de la **deuda de docs** (sección «Deuda pendiente») — no bloquea código.
 
 ---
 
@@ -55,7 +55,16 @@ señal más débil que Apple da. v3 corrigió:
      más baja, el z se corría a positivo → **sesgo optimista**. Ahora la serie nocturna se usa
      **entera o nada** (gate `Baselines.minNightsSeed` + la noche asOf debe ser nocturna).
   2. *La promesa de sueño profundo no se ejecutaba*: el cableado pasaba `deep: false` siempre. Ahora
-     se decodifica `stagesJSON` y se marca cada muestra.
+     se decodifica `stagesJSON` y se marca cada muestra. ⚠️ Puede ser **inerte en la práctica** — ver
+     la nota de la fase 1b: el subconjunto profundo rara vez llega a las 20 muestras que exige.
+  3. *(Tercer defecto, cazado por la revisión escéptica)* **El veredicto cambiaba de constructo dentro
+     de la misma mañana**: en el primer pintado `nocturnalRestingHr` viene vacío → se puntuaba la FC
+     **despierta**; segundos después, en el refresh completo, la **nocturna**. El héroe podía decir una
+     cosa y desdecirse. **Arreglado:** el veredicto ahora **solo se publica en el refresh completo**
+     (`inputs.full`); en el primer pintado queda `nil`. Se rechazó marcarlo «preliminar» con un número
+     que luego se contradice: eso entrena desconfianza. Es la misma disciplina que el archivo ya aplica
+     a todo lo derivado de `days` que persiste («keep waiting for `fullyLoaded`»); el veredicto se
+     había escapado de ella.
 
 **Veredicto de la re-investigación «¿v3 es el techo?»** No, pero el techo **no está en más señales**.
 Se rechazaron con evidencia: la hora del nadir (regla de marketing de Oura, sin publicación),
@@ -85,8 +94,10 @@ en su iPhone antes de producción). Commits, del más viejo al más nuevo:
 | `9312dc78` | Cableado en `Repository` (carril C) |
 | `db11e148` | Los dos defectos de la auditoría |
 
-**Verificación al cierre (2026-07-24):** `swift test` del paquete → 1030 tests, 0 fallas;
-`xcodebuild … -jobs 4` → BUILD SUCCEEDED. ⚠️ **Los conteos se pudren: no los cites, re-córrelos.**
+**Verificación al cierre (2026-08-01, tras `db11e148`):** `swift test` del paquete → 1030 tests,
+0 fallas; `xcodebuild … -jobs 4` → BUILD SUCCEEDED. ⚠️ **Los conteos y las fechas se pudren: no los
+cites, re-córrelos.** Ojo: `swift test` del paquete **no compila `Cenit/Data/Repository.swift`** — si
+tocas la capa app, el `xcodebuild` es obligatorio, no opcional.
 ```bash
 cd ~/code/noop/Packages/StrandAnalytics && swift test          # línea base del paquete
 swift test --filter Preparedness && swift test --filter NocturnalRestingHR
@@ -167,8 +178,30 @@ día contra un baseline crudo desalinearía la varianza y volvería el z inservi
 // En Config:
 /// Noches (incluida la propia) promediadas para el valor de FC-reposo que se z-scorea.
 /// 1 = comportamiento pre-v4, bit-idéntico. Media SIMPLE, solo hacia el pasado (nunca mira al futuro).
-public var rhrSmoothingNights: Int = 5
+public var rhrSmoothingNights: Int = 1   // ⚠️ DEFAULT 1 A PROPÓSITO — ver abajo
 ```
+
+> ### ⚠️ DECISIÓN CERRADA (auditoría ejecutada + arbitraje): el default es **1**, y esta fase entrega
+> una **capacidad, no un cambio de comportamiento**.
+>
+> Un auditor construyó un arnés y **ejecutó** los criterios en vez de leerlos. Dos hallazgos:
+> 1. Con 20 noches planas la dispersión cae al piso (`floorSpread = 2.0` bpm), así que con `N=5` una
+>    **sola** noche de +20 bpm ya cruza el corte: `(55·4+75)/5 = 59`, `z = (59−55)/2 = 2.0` → orientado
+>    `−2.0 ≤ −1.0` → `.low`. Para que una noche aislada NO mueva el eje harían falta **N ≳ 8**.
+> 2. Peor: el suavizado tiene **latencia SIMÉTRICA**. Con `N=5` se rompe
+>    `testHysteresisVerdictSequence_frozen` (`PreparednessTests.swift:117-131`): tras bad·bad·good·good
+>    el cuarto día debe volver a `full` y devuelve `caution`. Yo solo había admitido la latencia de
+>    subida; la de bajada **retrasa el reconocimiento de que ya te recuperaste**.
+>
+> **Resolución (criterio de desempate: lo que el repo ya firmó gana sobre un criterio de plan que la
+> aritmética desmiente):** se implementa el mecanismo con **default `1`** — comportamiento actual
+> bit-idéntico, test congelado intacto, cero re-gate. El valor operativo lo firma `/cso` **con
+> evidencia sobre datos reales**, no con un número elegido en un plan.
+> **Rechazado explícitamente:** suavizado **asimétrico** (rápido a la baja, lento a la alza) — es
+> hackear el filtro para pasar un test, y rompe la simetría que la histéresis bidireccional de 2 días
+> ya firmó; y `N=2–3`, que ni arregla el ruido ni evita la latencia.
+> **Entregable honesto de la fase:** el knob + los tests + la medición que le permita a `/cso` elegir
+> N. Si eso te parece poco, es porque el hallazgo fue que el cambio "obvio" no era gratis.
 - Media **simple past-only**: `mean(rhrSeries[max(0, i-N+1)...i])`, ignorando `nil`.
 - Si en la ventana hay **menos de 2 valores** no-nil, usa el valor crudo del día (sin inventar).
 - Se aplica a **todos** los días, incluidos los del pase histórico de `rawVerdictAt`/`hysteresed`.
@@ -177,15 +210,24 @@ public var rhrSmoothingNights: Int = 5
 
 **Criterios de aceptación (numéricos y testeables).**
 - **CA1 (paridad):** `rhrSmoothingNights = 1` produce `verdict`, `drivers` y `signals` **idénticos**
-  a los actuales sobre la serie fija de `PreparednessTests.baseline()`.
-- **CA2:** con `N=5` y 20 noches planas, **una** noche de +20 bpm NO deja el eje `.low`; **cinco**
-  noches consecutivas de +20 bpm SÍ lo dejan `.low`.
+  a los actuales. ⚠️ `PreparednessTests.baseline()` es `private` dentro de esa clase: **duplica la
+  fixture** en tu archivo nuevo (20 noches: `hrv 52+i%5`, `rhr 54+i%3`, `resp 13+i%3`,
+  `sleep 440+(i%4)*5`, `temp 0`) en vez de abrir el acceso del test existente.
+- **CA2 (corregido — el original era numéricamente falso):** el efecto del suavizado es
+  **monótono**: con 20 noches planas y una sola noche de +20 bpm, el z orientado del día crece (menos
+  negativo) conforme sube N, y existe un `N*` a partir del cual el eje deja de ser `.low`.
+  **Determina `N*` ejecutándolo, no a mano** (con la fixture de `baseline()` ronda 8), y fija ese
+  número en el test. Con `N=5` el eje SÍ queda `.low`: no lo escribas al revés.
+- **CA2b:** con `N=1` una noche mala deja el eje `.low` y con `N = N*` no — la misma serie, dos
+  configuraciones, resultados distintos: eso prueba que el knob hace algo.
 - **CA3 (independencia del centinela):** el centinela usa **temp + respiración**, no la FC — cambiar
   `rhrSmoothingNights` **no altera** el estado del centinela en ningún caso. Test: temp+resp elevadas
   hoy disparan el centinela con `N=1` y con `N=5` por igual. *(Reemplaza un CA anterior que era
   incoherente: suavizar la FC no podía «dejar la noche cruda al centinela» porque el centinela nunca
   miró la FC.)*
-- **CA4 (no regresión):** las suites del veredicto siguen verdes sin editarlas. Lista exacta y cómo
+- **CA4 (no regresión):** con el **default 1**, las suites del veredicto siguen verdes **sin
+  editarlas** — incluido `testHysteresisVerdictSequence_frozen`, que es el que rompería cualquier
+  N>1. Si tocas ese test, te saliste de la decisión de arriba. Lista exacta y cómo
   contarlas (el número se pudre; usa el comando):
   ```bash
   cd ~/code/noop/Packages/StrandAnalytics && swift test --filter Preparedness   # PreparednessTests,
@@ -245,6 +287,17 @@ public enum NightStableSegment {
 `segmento estable` → si `nil`, `deep` de Apple → si tampoco, **toda la ventana**. La etiqueta de Apple
 baja a segunda opción, no desaparece.
 
+⚠️ **Sospecha a zanjar con datos ANTES de confiar en el fix #2:** la preferencia por `deep` exige que
+el subconjunto profundo llegue solo a `minSamples = 20`. Apple muestrea FC durante el sueño ~cada
+5 min, así que 1–1.5 h de profundo da ~12–18 muestras: **la rama `deep` podría no activarse nunca** y
+caer siempre a la ventana completa — es decir, el fix #2 estaría cableado pero sin efecto medible.
+**Mídelo:** cuenta muestras `deep` por noche en datos reales antes de dar por bueno ese arreglo.
+⚠️ **DECISIÓN CERRADA (arbitrada): NO bajes el umbral «para que `deep` dispare».** Aflojar el gate
+para forzar una rama es exactamente cómo se cuela ruido con etiqueta de precisión (y la etiqueta de
+Apple ya trae κ≈0.53). Acepta el fallback a la ventana completa y **retira la promesa del copy y de
+los docs**: «preferimos el sueño profundo cuando hay ≥20 muestras; en la práctica suele ser la noche
+entera». **El arreglo de constructo es la fase 1b (tramo estable), no aflojar `deep`.**
+
 **Criterios de aceptación (numéricos).**
 - **CA1:** noche sintética de 8 h con un tramo de 2 h a 50±1 bpm y el resto a 70±8 bpm → `find`
   devuelve un rango contenido en el tramo de 50 bpm, con duración ≥ `minDurationSec`.
@@ -255,8 +308,12 @@ baja a segunda opción, no desaparece.
 - **CA5:** la ruta de `NocturnalRestingHR` con `find == nil` reproduce **exactamente** el
   comportamiento actual (paridad).
 
-**Recompute histórico.** El segmento se calcula por noche, para **todas las noches de la ventana que
-`Repository` ya lee** — no solo la de hoy, o volveríamos a mezclar constructos entre base y día.
+**Recompute histórico.** ⚠️ **Ojo con la premisa:** `Repository` NO lee todas las noches — hoy calcula
+la FC nocturna solo para las **14 más recientes** y **solo en refresh completo**
+(`Repository.swift:436-437`, `prefix(14)` dentro de `if full`). El segmento debe calcularse para el
+mismo conjunto de noches que alimente la serie nocturna, sea cual sea; si ese conjunto se amplía,
+amplíalo **a la vez** para base y día, o vuelves a mezclar constructos. El costo de lectura es real
+(la propia función lo advierte): ampliarlo es una decisión con presupuesto, no un detalle.
 
 ---
 
@@ -276,12 +333,26 @@ sensibilidad que las matutinas.
 propio dentro del veredicto (usa la z de `AutonomicTrend`, que es un constructo distinto).
 
 **Decisiones cerradas.**
-1. **Fuente de datos.** La serie por noche de `apple_rmssd_night` que `Repository` ya lee
-   (`nightRows`), más `nClean`/`nPairs` por noche desde `NocturnalHRV`. **No** reusar la z de
-   `AutonomicTrend`: ese motor es la superficie de tendencia, con su propio gate (`solid` = 21 noches).
-   El veredicto necesita su propia z, disponible antes.
-2. **Baseline propio.** Log-domain con `Baselines.metricCfg["hrv"]` (el RMSSD es log-normal), bajo su
-   **propia clave** para que un retune del veredicto no mueva la tendencia. Mismo `prefixStates`.
+1. **Fuente de datos (claves EXACTAS, verificadas).** El RMSSD por noche NO se calcula en el motor:
+   lo calcula `CenitApp/Health/HealthKitBridge.swift` sobre los R-R crudos y lo persiste como
+   **`apple_rmssd_night`** (que `Repository` ya lee en `nightRows`). La densidad vive en dos claves
+   hermanas que **hoy nadie lee** salvo el bridge para su cursor: **`apple_rr_clean_night`** y
+   **`apple_rr_pairs_night`** (`HealthKitBridge.swift:1024-1025`). Hay que agregar su
+   `store.metricSeries(...)` en `performRefresh`. **No** reusar la z de `AutonomicTrend`: ese motor es
+   la superficie de tendencia con su propio gate (`solid` = 21 noches); el veredicto necesita su
+   propia z, disponible antes.
+   ⚠️ **Rama muerta a sabiendas:** `apple_rmssd_night` **solo se escribe si la noche es densa**
+   (`HealthKitBridge.swift:1021`), así que el tramo `peso = 0 si p < 30` de la rampa es inalcanzable
+   con datos reales — es testeable en el motor pero nunca se ejercita en producción. Déjalo por
+   robustez, pero no lo cuentes como cobertura.
+2. **Baseline propio — CLAVE NUEVA, no `"hrv"`.** ⚠️ *(Corrección: el borrador decía «usa
+   `metricCfg["hrv"]` bajo su propia clave», que es contradictorio — usar esa clave ES compartirla.)*
+   Crea **`"rmssd_verdict"`** en `Baselines.metricCfg` como **copia** de la config log-domain de
+   `"hrv"` (`floorSpread=0.08`, `halfLifeB=14`, `halfLifeS=21`). Es exactamente el patrón que el repo
+   ya firmó con `"sdnn"` (clave propia, config idéntica, «so a future RMSSD retune can never silently
+   move the SDNN baseline» — `Baselines.swift:154-160`), y su test hermano
+   `testSdnnBaselineConfig_existsAndIdentical` es el molde del que debes escribir. Expón el knob
+   análogo `rmssdCfgKey` en `Config`. Mismo `prefixStates`.
 3. **Forma del `Input`** (reemplaza el `nocturnalRmssd: DenseRmssd?` actual):
    ```swift
    /// RMSSD nocturno por día ("yyyy-MM-dd" → ms) y densidad de esa noche.
@@ -300,12 +371,28 @@ propio dentro del veredicto (usa la z de `AutonomicTrend`, que es un constructo 
    `/cso`.
 5. **Invariante que se conserva:** nunca vota sin FC-reposo presente (`rhrZ != nil`). Sin espinazo no
    hay veredicto.
-6. **Medición sobre el segmento estable** de la fase 1b cuando exista.
+6. ⚠️ **La fase 2 NO toca la ventana de medición del RMSSD.** *(Corrección: el borrador decía «medir
+   sobre el segmento estable», y eso rompe su propio CA4.)* El RMSSD por noche se calcula en
+   `CenitApp/Health/HealthKitBridge.swift` sobre la unión del sueño de la noche entera y se persiste
+   bajo `apple_rmssd_night` — **la misma clave que lee `AutonomicTrend`**. Cambiar la ventana movería
+   la superficie de tendencia Y mezclaría filas históricas (noche entera) con nuevas (segmento): el
+   mismo defecto de constructos que `db11e148` acaba de cerrar en la FC.
+   **Alcance cerrado de la fase 2:** serie histórica en `Input` + baseline propio + rampa de peso +
+   cableado. **Nada más.** El segmento estable de la fase 1b aplica a la **FC nocturna**
+   (`NocturnalRestingHR`), no al RMSSD. Medir el RMSSD sobre el segmento es una **fase futura** que
+   exige clave nueva + recompute/backfill explícito, nunca reescribir `apple_rmssd_night` en sitio.
+   Por eso `HealthKitBridge.swift` **no** está en la tabla de dueños de archivo de esta fase.
 
 **Criterios de aceptación (numéricos).**
 - **CA1:** `nPairs = 20` (< 30) → `peso == 0` exacto, y el veredicto es idéntico a no pasar RMSSD.
-- **CA2:** `nPairs = 120` y `z(RMSSD) = −2.0` con `z(FC)` en rango (0.0) → el eje autonómico queda
-  `.low` (el compuesto cae bajo `autonomicOutZ`).
+- **CA2 (corregido — el original era aritméticamente imposible):** con `wRHR=1`, techo
+  `wNocturnalRMSSD=0.5` y `autonomicOutZ=−1.0`, el compuesto es `(1·zFC + 0.5·zRMSSD)/1.5`. Con
+  `zFC=0` hace falta **`zRMSSD ≤ −3.0`** para cruzar el corte (con `−2.0` da `−0.667`, en rango).
+  Escribe el CA con ese número. **Lo que esto significa, y hay que decirlo en el copy:** la VFC densa
+  **no puede volcar el eje sola** salvo en valores extremos — su papel real es **corroborar los
+  bordes**: empujar a `.low` un día en que la FC ya viene floja, o sostener `inRange` uno dudoso.
+  Si alguien quiere que la VFC pueda decidir sola, eso es **subir el techo `wNocturnalRMSSD`**, y es
+  una decisión de `/cso` con evidencia — no un ajuste para que pase un criterio.
 - **CA3:** sin FC-reposo (`restingHr = nil`, sin nocturna) y con RMSSD denso → `verdict == .lowSignal`.
 - **CA4:** el baseline del RMSSD del veredicto es independiente: cambiarlo no altera
   `AutonomicTrend.spark` ni `z7d` (test de no-interferencia).
@@ -316,7 +403,7 @@ propio dentro del veredicto (usa la z de `AutonomicTrend`, que es un constructo 
 **Nunca** afirmar paridad con Oura/WHOOP.
 
 **Consecuencia de UI — bloqueante de producto, con dueño.** Aparece un **tercer orbe «VFC»** las
-noches densas. **Dueño: `/ux` + `/ui` antes de mergear la fase 2.** Ver §5 (deuda de UI): la pantalla
+noches densas. **Dueño: `/ux` + `/ui` antes de mergear la fase 2.** Ver «Deuda pendiente» (deuda de UI): la pantalla
 en producción todavía dice «3 SEÑALES» en el orbe autonómico, y con v3 vota una sola.
 
 ---
@@ -449,13 +536,16 @@ los propios datos**, que es la postura defendible dada la literatura.
 - **Doc:** `docs/ANALYTICS.md` marca `NocturnalDC` y `ThermalStabilityEngine` como *library-only*,
   pero **ambos están cableados** (`SleepDetailScreen`, `SkinTempDetailScreen`). Tabla stale.
 - **Doc:** `docs/_spec-veredicto-v3.md` sigue describiendo el diferido como pendiente; ya aterrizó.
+- **Doc:** el header de `Preparedness.swift` sigue diciendo «deferred to the Repository wiring» /
+  «Still outside the engine: the Repository wiring» — quedó stale con `9312dc78`.
 - **UI — BLOQUEANTE DE MERGE, con dueño.** La pantalla Hoy en producción muestra el orbe autonómico
   con «3 SEÑALES»; con v3 **vota una sola**. Quedan **dos orbes** (En reposo · Sueño) + el tercero
   condicional que introduce la fase 2. **Dueño: `/ux` + `/ui`.** ⚠️ **La rama v3 no debe mergearse
   hasta que esta pasada exista**, o la pantalla afirmará algo que el motor ya no hace. Es la única
   deuda que bloquea; las de docs no.
 - **Copy:** las 4 cadenas del veredicto deben quedar **descriptivas, nunca predictivas** («tus señales
-  en reposo vs tu normal», jamás «vas a rendir peor») y estar en la allow-list de `docs/ANALYTICS.md`.
+  en reposo vs tu normal», jamás «vas a rendir peor»). *(Su alta en la allow-list de
+  `docs/ANALYTICS.md` YA está hecha — verificado; no es deuda.)*
 - **Validación:** los cortes de los 4 estados **no tienen validación prospectiva**. Rotular como
   aproximación; la fase 6 es la respuesta honesta a esto.
 

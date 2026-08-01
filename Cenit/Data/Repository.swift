@@ -482,7 +482,7 @@ final class Repository: ObservableObject {
             appleAggRaw: appleAggRaw, stepsEstRaw: stepsEstRaw,
             perf: perf, cons: cons, need: need, debt: debt, baselineEpoch: baselineEpoch,
             strainHRmax: strainHRmax, strainSex: strainSex,
-            nightRows: nightRows.map { (day: $0.day, rmssdMs: $0.value) }, asOf: asOf, recentCutoff: recentCutoff,
+            nightRows: nightRows.map { (day: $0.day, rmssdMs: $0.value) }, asOf: asOf, full: full, recentCutoff: recentCutoff,
             nocturnalRestingHr: nocturnalRestingHr))
 
         // Back on the main actor: publish only if this is still the newest refresh, and never let a
@@ -528,6 +528,12 @@ final class Repository: ObservableObject {
         /// verdict are composed against.
         var nightRows: [(day: String, rmssdMs: Double)] = []
         var asOf: String = ""
+        /// Whether this is the FULL refresh. The «Preparación» verdict is only published on the full
+        /// pass: the first paint doesn't load `nocturnalRestingHr`, so it would score the AWAKE
+        /// resting-HR construct and then be replaced seconds later by the NOCTURNAL one — the same
+        /// verdict flipping construct within one morning. Same discipline the file already applies to
+        /// anything derived from `days` that persists: wait for `fullyLoaded`.
+        var full: Bool = false
         var recentCutoff: String = ""
         var nocturnalRestingHr: [String: Double] = [:]
     }
@@ -611,11 +617,18 @@ final class Repository: ObservableObject {
         let denseRmssd: Preparedness.DenseRmssd? = (autonomicTrend.asOfWasDense == true)
             ? autonomicTrend.spark.last.map { Preparedness.DenseRmssd(z: $0, dense: true) }
             : nil
-        let preparedness = Preparedness.evaluate(.init(days: merged.days, strainByDay: strainEstimates,
-                                                       trend: autonomicTrend, asOf: inputs.asOf,
-                                                       nocturnalRestingHr: inputs.nocturnalRestingHr,
-                                                       cyclePhase: cyclePhase,
-                                                       nocturnalRmssd: denseRmssd))
+        // El veredicto SOLO sale del refresh completo. En el primer pintado `nocturnalRestingHr`
+        // viene vacío, así que el eje caería a la FC DESPIERTA de Apple y segundos después, ya con la
+        // nocturna, podría decir otra cosa: el mismo héroe cambiando de constructo en una misma
+        // mañana. Preferimos no decir nada a decir algo que nos desdecimos — un «preliminar» con un
+        // número que luego se contradice entrena desconfianza.
+        let preparedness: Preparedness.Read? = inputs.full
+            ? Preparedness.evaluate(.init(days: merged.days, strainByDay: strainEstimates,
+                                          trend: autonomicTrend, asOf: inputs.asOf,
+                                          nocturnalRestingHr: inputs.nocturnalRestingHr,
+                                          cyclePhase: cyclePhase,
+                                          nocturnalRmssd: denseRmssd))
+            : nil
         return DashboardData(
             days: merged.days,
             displayDays: merged.displayDays,
