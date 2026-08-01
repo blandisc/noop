@@ -157,6 +157,31 @@ mezcla) · `NocturnalRestingHRTests` (6).
 
 ---
 
+## ⚠️ DECISIÓN DEL DUEÑO (2026-08-01): la VFC queda FUERA por ahora
+
+La **fase 2 (VFC nocturna a co-protagonista) queda DIFERIDA** por decisión de producto. No es un
+rechazo técnico —su análisis sigue siendo válido y está escrito abajo—, es una decisión de alcance:
+la VFC de Apple solo se vuelve señal de primera si el usuario **densifica el muestreo**, y esa
+palanca tiene costos que el dueño no quiere pedir hoy:
+- **AFib History** multiplica el muestreo nocturno (de ~cada 4 h a ~cada 15 min), pero **apaga las
+  notificaciones de ritmo irregular** (pasan a resumen semanal) y **Apple pide confirmar un
+  diagnóstico de fibrilación auricular** para activarlo. No se sugiere proactivamente; vive solo en
+  ajustes avanzados con el intercambio explicado.
+- **Polar H10** (~USD 80) da VFC a grado ECG y **reusa la plomería BLE que el repo ya tiene**, pero
+  es hardware extra: sería su propia fase, pequeña y opcional.
+
+**Orden vigente sin la fase 2:** **1b** (tramo estable) → **1a** (capacidad de suavizado) → **3**
+(residuo condicional). La fase 3 **NO depende de la 2** (su modelo predice la FC, no la VFC), así que
+diferir la VFC no le cuesta nada.
+
+⚠️ **Hueco que la spec hija de la fase 3 DEBE resolver:** la fase 3 depende de la 1a, pero la 1a
+quedó con `rhrSmoothingNights = 1` (apagada) hasta que `/cso` firme un valor con evidencia. Si nadie
+lo firma, **la fase 3 correría sobre señal sin suavizar** — justo lo que su dependencia buscaba
+evitar. Decidir: (a) firmar N antes de la 3, (b) que la 3 haga su propio suavizado interno, o (c)
+aceptar explícitamente que corre sin él y documentarlo.
+
+---
+
 ## PARTE A · FASES EJECUTABLES
 
 Tres rankings distintos salieron de la investigación (sofisticación, impacto/esfuerzo, y el de Grok).
