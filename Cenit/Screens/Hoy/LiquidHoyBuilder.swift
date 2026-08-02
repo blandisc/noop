@@ -129,6 +129,35 @@ enum LiquidHoyBuilder {
         return Output(model: model, heroRoute: route)
     }
 
+    /// La hoja del guardián (FER-10, revisión de usuario): contesta «¿qué es VIGILANDO?»
+    /// con la regla del centinela — vigila, no vota; solo en pareja empuja. Jamás
+    /// «enfermedad».
+    static func guardianHoja(_ guardian: LiquidHoyModel.Guardian?) -> LiquidGuardianHoja {
+        let estado = guardian?.estado ?? .tranquilo
+        let ahora: String
+        switch estado {
+        case .tranquilo:
+            ahora = String(localized: "Right now: inside your pattern.")
+        case .tempFuera:
+            ahora = String(localized: "Right now: only your temperature is off; your verdict doesn't change.")
+        case .respFuera:
+            ahora = String(localized: "Right now: only your breathing is off; your verdict doesn't change.")
+        case .juntas:
+            ahora = String(localized: "Right now: both moved out together, so they pushed today's verdict.")
+        }
+        return LiquidGuardianHoja(
+            kicker: String(localized: "Watching").uppercased(),
+            titulo: String(localized: "The guardian"),
+            intro: String(localized: "Your nightly skin temperature and breathing, watched against your own pattern."),
+            filaTemp: (String(localized: "Temperature"), guardian?.temp ?? "—",
+                       estado == .tempFuera || estado == .juntas),
+            filaResp: (String(localized: "Breathing"), guardian?.resp ?? "—",
+                       estado == .respFuera || estado == .juntas),
+            estadoAhora: ahora,
+            reglaTitulo: String(localized: "It watches; it doesn't vote."),
+            reglaCuerpo: String(localized: "One signal off your pattern never changes your verdict: a warm room or an extra blanket can move it on its own. Only when both move out together does the guardian push your day to a lighter one. It never diagnoses anything."))
+    }
+
     /// Los rótulos del Ecosistema (FER-10) desde el catálogo, en caja alta del locale.
     static func rotulos(locale: Locale) -> EcosistemaRotulos {
         EcosistemaRotulos(
@@ -219,7 +248,9 @@ enum LiquidHoyBuilder {
         let calibracion: LiquidHoyModel.Calibracion? = healthConnected
             ? {
                 let c = calibracionConteo(nights: nights)
-                return .init(noche: c.noche, total: c.total)
+                // Solo mientras la base SE FORMA (gate /cso B2): en el tope, el estado es
+                // «sin lectura hoy», no acreción con puntos llenos.
+                return c.noche < c.total ? .init(noche: c.noche, total: c.total) : nil
             }()
             : nil
         // Sin permiso, la puerta del héroe cambia de promesa: «Conectar Salud» (FER-10,
@@ -288,7 +319,9 @@ enum LiquidHoyBuilder {
                 title: String(localized: "hero.title.easy", defaultValue: "Recover"),
                 highlight: String(localized: "hero.highlight.easy", defaultValue: "Recover"),
                 highlightTone: LiquidColor.negativo,
-                subtitle: String(localized: "Your body's asking you to ease off today."),
+                // El rojo también nombra su causa (gate /cso M3): el ámbar ya lo hacía.
+                subtitle: subtituloDetalle(prep) ??
+                    String(localized: "Your body's asking you to ease off today."),
                 confianza: confianza)
         }
     }
@@ -323,7 +356,16 @@ enum LiquidHoyBuilder {
         }
         // FER-10 «Conociéndote»: la calibración habla más bajito (displayS) y su avance es
         // honesto — el denominador sale del MOTOR (`Baselines.minNightsSeed`), no de la UI.
+        // Gate /cso B2: con `nights >= total` la base YA está sembrada — este estado llega
+        // por «falta la lectura de hoy» o «base rancia», y decir «se está formando» con
+        // los puntos llenos sería falso. Ahí el héroe dice la causa real, sin contador.
         let (noche, total) = calibracionConteo(nights: nights)
+        guard noche < total else {
+            return .demotado(
+                kicker: String(localized: "READINESS"),
+                title: String(localized: "No reading today"),
+                subtitle: String(localized: "Your range is formed; today's reading hasn't arrived yet."))
+        }
         return .demotado(
             kicker: String(localized: "READINESS"),
             title: String(localized: "hero.title.calibrando", defaultValue: "Getting to know you"),
@@ -572,9 +614,11 @@ enum LiquidHoyBuilder {
     /// La palabra del veredicto tal cual la dice el héroe (misma clave del catálogo).
     private static func palabraVeredicto(_ v: Preparedness.Verdict) -> String {
         switch v {
-        case .full: return String(localized: "Go all in")
-        case .caution: return String(localized: "Good, one thing to watch")
-        case .easy: return String(localized: "Take it easy")
+        // Paridad héroe↔acta (gate /cso B1): el acta dice EXACTAMENTE la palabra del
+        // héroe FER-10 — jamás las retiradas.
+        case .full: return String(localized: "hero.title.full", defaultValue: "In range")
+        case .caution: return String(localized: "hero.title.caution", defaultValue: "Go light today")
+        case .easy: return String(localized: "hero.title.easy", defaultValue: "Recover")
         // `lowSignal` no tiene palabra-veredicto: `hayVeredicto` lo excluye. Mapearlo a
         // «Ándate leve» era una trampa latente (D5 del verificador).
         case .lowSignal: return String(localized: "No verdict yet")

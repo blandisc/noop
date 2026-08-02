@@ -181,6 +181,12 @@ public enum LiquidEcosistemaMotion {
     public static let acrecionCaida: Double = 0.055
     public static let acrecionGiro: Double = 0.45
 
+    // tributo (las lunas alimentan el orbe)
+    /// Duración del viaje luna→orbe de cada mota del chorro (s).
+    public static let tributoPeriodo: Double = 2.6
+    /// Motas por luna decisora (el guardián no tributa).
+    public static let tributoParticulas: Int = 5
+
     // eclipse (guardián en pareja)
     public static let eclipseDur: Double = 1.8
 

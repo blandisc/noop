@@ -130,7 +130,9 @@ public enum LiquidColor {
     /// `.45` — relleno pastilla.
     public static let vidrioPastilla = Color.white.opacity(0.32)
     /// `.30` — relleno superficie tile.
-    public static let vidrioSuperficie = Color.white.opacity(0.20)
+    // 0.30 = el canon del doc (§1 LIQUID-GLASS.md); el 0.20 era deriva. Con menos
+    // relleno la tarjeta depende del backdrop y cambia de valor al scrollear la hoja.
+    public static let vidrioSuperficie = Color.white.opacity(0.30)
 }
 
 // MARK: - Estado de señal (§5.2 SignalOrb · §5.5 CargaBar)

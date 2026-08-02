@@ -148,6 +148,8 @@ struct TodayView: View {
     // — corre UNA vez por día LOCAL (dayKey local, no UTC: trampa conocida de la fila
     // fantasma). El hint «Toca para separar» se retira tras 3 separaciones acumuladas.
     @AppStorage("today.ecosistemaFusionDay") private var ecosistemaFusionDay = ""
+    /// La hoja del guardián («¿qué es VIGILANDO?», FER-10).
+    @State private var showGuardianHoja = false
     @AppStorage("today.ecosistemaSeparaciones") private var ecosistemaSeparaciones = 0
 
     // MARK: - Pull-to-refresh propio (FER-222)
@@ -706,6 +708,16 @@ struct TodayView: View {
             }
             .preferredColorScheme(.light)
         }
+        // La hoja del guardián: qué vigila (temp + respiración) y por qué no vota.
+        .sheet(isPresented: $showGuardianHoja) {
+            LiquidMetricSheet(
+                tono: liquidOutput.model.guardian?.estado == .juntas
+                    ? LiquidColor.atencion : LiquidColor.tinta700,
+                detent: .medio) {
+                LiquidGuardianScreen(LiquidHoyBuilder.guardianHoja(liquidOutput.model.guardian))
+            }
+            .preferredColorScheme(.light)
+        }
         // La hoja del eje autonómico: el desglose de sus tres señales.
         .sheet(isPresented: $showAutonomicoHoja) {
             LiquidMetricSheet(tono: liquidAutonomicoTono, detent: .porContenido) {
@@ -1070,9 +1082,9 @@ struct TodayView: View {
                         showVeredictoActa = true
                     }
                 },
-                // El guardián separado navega al acta: la superficie que explica al
-                // centinela (la franja no tiene hoja propia).
-                onTapGuardian: { showVeredictoActa = true },
+                // El guardián (orbe separado Y franja) abre SU hoja: qué vigila y por
+                // qué no vota (FER-10, revisión de usuario).
+                onTapGuardian: { showGuardianHoja = true },
                 mostrarHintSeparar: ecosistemaSeparaciones < 3,
                 fusionInicial: ecosistemaFusionDay != Repository.localDayKey(Date()),
                 onFusionArrancada: {

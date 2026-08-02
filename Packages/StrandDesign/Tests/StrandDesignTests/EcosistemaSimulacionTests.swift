@@ -92,6 +92,51 @@ final class EcosistemaSimulacionTests: XCTestCase {
         XCTAssertTrue(sep.separada)
     }
 
+    /// La reunión es seamless: u jamás sobrepasa 1 (los centros no se cruzan) y el
+    /// viaje no lleva stretch (la deformación leía «chunky» — revisión de usuario).
+    func test_cuadro_uniendo_sinSobrepasoNiStretch() {
+        let fase = Sim.Fase.uniendo(desde: 0)
+        var previo = -1.0
+        for paso in 0...40 {
+            let c = Sim.cuadro(t: Double(paso) / 40 * M.fusionDur, fase: fase)
+            XCTAssertGreaterThanOrEqual(c.u, 0)
+            XCTAssertLessThanOrEqual(c.u, 1)
+            XCTAssertGreaterThanOrEqual(c.u, previo, "u debe ser monótona (sin rebotes)")
+            XCTAssertEqual(c.stretch, 0)
+            previo = c.u
+        }
+    }
+
+    // MARK: Tributo (las lunas alimentan el orbe)
+
+    func test_tributo_deterministaYAbsorbido() {
+        let luna = CGPoint(x: 88, y: 122)
+        let a = Sim.tributo(2, t: 7.25, luna: luna, radioLuna: 13)
+        let b = Sim.tributo(2, t: 7.25, luna: luna, radioLuna: 13)
+        XCTAssertEqual(a, b, "mismo instante → misma mota (sin estado)")
+        // Alfa acotada y con fade (nace y muere apagándose).
+        for k in 0..<M.tributoParticulas {
+            for paso in 0...20 {
+                let m = Sim.tributo(k, t: Double(paso) * 0.17, luna: luna, radioLuna: 13)
+                XCTAssertGreaterThanOrEqual(m.alfa, 0)
+                XCTAssertLessThanOrEqual(m.alfa, 0.71)
+                XCTAssertGreaterThan(m.tamano, 0)
+            }
+        }
+        // El viaje ACERCA la mota al orbe: comparar dos fracciones del mismo ciclo.
+        // fr = frac(t/periodo): t1 → fr≈0.15, t2 → fr≈0.75 (misma mota k=0).
+        let t1 = M.tributoPeriodo * 0.15, t2 = M.tributoPeriodo * 0.75
+        let temprano = Sim.tributo(0, t: t1, luna: luna, radioLuna: 13)
+        let tarde = Sim.tributo(0, t: t2, luna: luna, radioLuna: 13)
+        func dist(_ p: CGPoint) -> Double {
+            let dx = Double(p.x - Sim.Geometria.centro.x)
+            let dy = Double(p.y - Sim.Geometria.centro.y)
+            return (dx * dx + dy * dy).squareRoot()
+        }
+        XCTAssertLessThan(dist(tarde.pos), dist(temprano.pos),
+                          "la mota viaja de la luna HACIA el orbe")
+    }
+
     func test_bump_viveEnElContacto() {
         XCTAssertGreaterThan(Sim.bumpEn(0.8), 0.95)
         XCTAssertLessThan(Sim.bumpEn(0.2), 0.01)
@@ -179,5 +224,26 @@ final class EcosistemaSimulacionTests: XCTestCase {
             XCTAssertLessThanOrEqual(m.alfa, 0.4 + 1e-9)
         }
         XCTAssertEqual(Sim.espiral(5, t: 3.3), Sim.espiral(5, t: 3.3))
+    }
+
+    // MARK: Fase efectiva (una fase vencida ES su sucesora al decidir un tap)
+
+    func test_faseEfectiva_resuelveVencidas() {
+        let viaje = M.anticipacion + M.fusionDur
+        // Separando vencida → separada (el primer tap de unir debe ACTUAR, no
+        // re-etiquetar — el tap muerto cazado en simulador).
+        XCTAssertEqual(Sim.faseEfectiva(.separando(desde: 0), t: viaje + 5), .separada)
+        // A media separación sigue siendo separando (tap = completar al instante).
+        XCTAssertEqual(Sim.faseEfectiva(.separando(desde: 0), t: viaje * 0.4),
+                       .separando(desde: 0))
+        // Uniendo vencida → viva; formando vencida → viva.
+        XCTAssertEqual(Sim.faseEfectiva(.uniendo(desde: 0), t: M.fusionDur + 3),
+                       .viva(desde: M.fusionDur))
+        XCTAssertEqual(
+            Sim.faseEfectiva(.formando(inicio: 0), t: M.fusionIntroEspera + M.fusionDur + 1),
+            .viva(desde: M.fusionIntroEspera + M.fusionDur))
+        // Los estados de reposo son puntos fijos.
+        XCTAssertEqual(Sim.faseEfectiva(.separada, t: 99), .separada)
+        XCTAssertEqual(Sim.faseEfectiva(.viva(desde: 2), t: 99), .viva(desde: 2))
     }
 }

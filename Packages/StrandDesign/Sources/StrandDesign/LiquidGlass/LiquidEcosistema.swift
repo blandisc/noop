@@ -292,16 +292,14 @@ public struct LiquidEcosistema: View {
     private func alternar() {
         guard coreo.separable, let actual = fase else { return }
         let ahora = Date().timeIntervalSinceReferenceDate
-        switch actual {
-        case .formando(let inicio):
-            // Tap durante la fusión = saltar al estado FUNDIDO final (HIG: nunca atrapar
-            // al usuario en una animación). No cuenta como separación.
-            if Sim.cuadro(t: ahora, fase: .formando(inicio: inicio)).fundida {
-                fase = still ? .separada : .separando(desde: ahora)
-                onSeparacion?()
-            } else {
-                fase = .viva(desde: ahora)
-            }
+        // La fase VENCIDA se resuelve a su sucesora antes de decidir: el primer tap
+        // sobre un estado asentado siempre actúa (sin esto, `.separando` vencida se
+        // re-etiquetaba `.separada` y el tap de unir moría — cazado en simulador).
+        switch Sim.faseEfectiva(actual, t: ahora) {
+        case .formando:
+            // Tap DURANTE la fusión = saltar al estado fundido final (HIG: nunca
+            // atrapar al usuario en una animación). No cuenta como separación.
+            fase = .viva(desde: ahora)
         case .viva:
             fase = still ? .separada : .separando(desde: ahora)
             onSeparacion?()
@@ -339,15 +337,19 @@ public struct LiquidEcosistema: View {
 
     @ViewBuilder private var overlays: some View {
         let G = Sim.Geometria.self
-        // Hint (arriba, centrado).
+        // Hint: arriba en fundido; en separado BAJA al centro vacío del lienzo para no
+        // chocar con los mini-orbes del guardián (revisión de usuario en simulador).
         if coreo.separable {
             Text(esSeparadaEstable ? rotulos.hintUnir
                  : (mostrarHintSeparar ? rotulos.hintSeparar : ""))
                 .font(LiquidType.microEstado).tracking(LiquidType.labelTracking)
                 .foregroundStyle(LiquidColor.tinta500.opacity(0.6))
                 .frame(width: G.lienzo.width)
-                .offset(y: 8)
+                .offset(y: esSeparadaEstable ? 226 : 8)
                 .animation(LiquidMotion.glassOut(LiquidMotion.quick), value: esSeparadaEstable)
+                // El hint invita al tap: JAMÁS debe comérselo (un Text con hit-testing
+                // default encima del canvas bloquea el gesto — cazado en simulador).
+                .allowsHitTesting(false)
         }
         // Valores ADENTRO de las esferas (estado separado). `allowsHitTesting` sigue a la
         // visibilidad: un botón invisible jamás intercepta el tap del lienzo (D11).
@@ -402,7 +404,7 @@ public struct LiquidEcosistema: View {
                     Text(senal.badge?.contexto
                          ?? (i == 1 ? rotulos.sinLecturaNoche : rotulos.sinLecturaHoy))
                         .font(LiquidType.captionLectura)
-                        .foregroundStyle(LiquidColor.tinta500)
+                        .foregroundStyle(LiquidColor.tinta700)
                         .opacity(senal.badge != nil || senal.progress == nil ? 1 : 0)
                 }
                 .padding(LiquidSpace.s300)
@@ -458,10 +460,15 @@ public struct LiquidEcosistema: View {
     }
 
     /// El respaldo esmerilado que garantiza la legibilidad del dato sobre partículas.
+    /// El respaldo esmerilado que garantiza la legibilidad del dato sobre partículas —
+    /// más sólido tras la revisión en simulador (el dato flotaba sobre el moteado).
     private var respaldo: some View {
-        RadialGradient(colors: [LiquidColor.vidrioEspecular,
-                                LiquidColor.vidrioStreak.opacity(0.6), .clear],
-                       center: .center, startRadius: 4, endRadius: 44)
+        RadialGradient(stops: [
+            .init(color: Color.white.opacity(0.97), location: 0),
+            .init(color: Color.white.opacity(0.9), location: 0.55),
+            .init(color: Color.white.opacity(0.5), location: 0.8),
+            .init(color: .clear, location: 1),
+        ], center: .center, startRadius: 4, endRadius: 52)
     }
 
     @ViewBuilder private func botonSenal<C: View>(_ senal: LiquidHoyModel.Senal,
@@ -494,10 +501,12 @@ public struct LiquidEcosistema: View {
                 if let kicker {
                     Text(kicker).liquidLabel().foregroundStyle(LiquidColor.tinta500)
                 }
+                // Los estados sin veredicto hablan bajito (displayS): un titular
+                // demotado de 2 líneas en displayL se encimaba al orbe (revisión en
+                // simulador con «Aún no conozco tu base»).
                 Text(title)
-                    .font(esCalibrando ? LiquidType.displayS : LiquidType.displayL)
-                    .tracking(esCalibrando ? LiquidType.displaySTracking
-                                           : LiquidType.displayLTracking)
+                    .font(LiquidType.displayS)
+                    .tracking(LiquidType.displaySTracking)
                     .foregroundStyle(esCalibrando ? LiquidColor.tinta700 : LiquidColor.tinta900)
                     .multilineTextAlignment(.center)
                 Text(subtitle)
@@ -728,13 +737,18 @@ private struct EcosistemaCanvas: View {
         let eclipse = eclipseProgreso(t: t)
         let flicker = coreo == .desgaste && !still
             ? 0.9 + 0.1 * sin(t * M.flickerDesgaste) : 1.0
+        // Rampa de estreno del séquito: lunas/guardián/especular se FUNDEN en la escena
+        // en la última parte del viaje en vez de aparecer de golpe en u=0.94 (el «pop»
+        // que leía chunky al reunir — revisión de usuario).
+        let alfaFundida = min(1, max(0, (cuadro.u - G.umbralFundida) / (1 - G.umbralFundida)))
 
         // 1 · El guardián atrás (órbita con z<0, o el eclipse asomándose). En separado el
         // orbital NO se dibuja: el guardián «se partió» en sus dos mini-orbes (D4).
         let orbGuardian = Sim.guardian(t: t, eclipse: eclipse)
-        let sepTemprano = Sim.cuadro(t: t, fase: still ? faseEstable : fase).separada
+        let sepTemprano = cuadro.separada
         if !sepTemprano, orbGuardian.z < 0 || eclipse > 0.5 {
-            dibujarGuardian(ctx: &ctx, t: t, orb: orbGuardian, eclipse: eclipse)
+            dibujarGuardian(ctx: &ctx, t: t, orb: orbGuardian, eclipse: eclipse,
+                            alfa: eclipse > 0 ? 1 : alfaFundida)
         }
 
         // 2 · Lunas detrás del orbe: una por señal — HUECA si su eje no tiene dato (no
@@ -754,7 +768,7 @@ private struct EcosistemaCanvas: View {
                     fuera: senal.state == .atencion))
             }
             for luna in lunas where luna.orb.z < 0 {
-                dibujarLuna(ctx: &ctx, t: t, luna: luna)
+                dibujarLuna(ctx: &ctx, t: t, luna: luna, alfa: alfaFundida)
             }
         }
 
@@ -785,23 +799,24 @@ private struct EcosistemaCanvas: View {
             dibujarDestello(ctx: &ctx, t: t, bump: cuadro.bump, radio: CGFloat(radio))
         }
 
-        // 5 · Especular del orbe fundido.
+        // 5 · Especular del orbe fundido (entra con la rampa, no de golpe).
         if cuadro.fundida {
             let r = CGFloat(radio)
             let rect = CGRect(x: G.centro.x - r * 1.05, y: G.centro.y - r * 1.05,
                               width: r * 2.1, height: r * 2.1)
             ctx.fill(Path(ellipseIn: rect), with: .radialGradient(
-                Gradient(colors: [Color.white.opacity(0.5), Color.white.opacity(0)]),
+                Gradient(colors: [Color.white.opacity(0.5 * alfaFundida), Color.white.opacity(0)]),
                 center: CGPoint(x: G.centro.x - r * 0.3, y: G.centro.y - r * 0.36),
                 startRadius: 3, endRadius: r * 1.05))
         }
 
         // 6 · Lunas al frente + guardián al frente (órbita con z≥0, sin eclipse).
         for luna in lunas where luna.orb.z >= 0 {
-            dibujarLuna(ctx: &ctx, t: t, luna: luna)
+            dibujarLuna(ctx: &ctx, t: t, luna: luna, alfa: alfaFundida)
         }
         if orbGuardian.z >= 0, eclipse <= 0.5, cuadro.fundida, !cuadro.separada {
-            dibujarGuardian(ctx: &ctx, t: t, orb: orbGuardian, eclipse: eclipse)
+            dibujarGuardian(ctx: &ctx, t: t, orb: orbGuardian, eclipse: eclipse,
+                            alfa: alfaFundida)
         }
         // 7 · Mini-esferas del guardián en el estado separado (fondo de los badges).
         if sep {
@@ -898,34 +913,51 @@ private struct EcosistemaCanvas: View {
         }
     }
 
-    private func dibujarLuna(ctx: inout GraphicsContext, t: TimeInterval, luna: LunaSpec) {
+    private func dibujarLuna(ctx: inout GraphicsContext, t: TimeInterval, luna: LunaSpec,
+                             alfa: Double = 1) {
         let orb = luna.orb
         let dep = (orb.z + 1) / 2
+        // Tributo: la luna ALIMENTA el orbe con un chorro de motas (revisión de usuario).
+        // Una luna hueca no tiene qué dar; con Reduce Motion el chorro no se fabrica
+        // (motas congeladas a media ruta leerían como basura visual).
+        if !luna.hueca, !still, alfa > 0.05 {
+            var chorro: [Int: Path] = [:]   // bucket por alfa (fade de cada mota, ≤4 fills)
+            for k in 0..<M.tributoParticulas {
+                let m = Sim.tributo(k, t: t, luna: orb.centro, radioLuna: orb.radio)
+                let idx = min(3, max(0, Int(m.alfa * 5)))
+                chorro[idx, default: Path()].addEllipse(in: CGRect(
+                    x: m.pos.x - m.tamano, y: m.pos.y - m.tamano,
+                    width: m.tamano * 2, height: m.tamano * 2))
+            }
+            for (idx, path) in chorro {
+                ctx.fill(path, with: .color(tintaClima.opacity((Double(idx) + 0.5) / 5 * alfa)))
+            }
+        }
         // Hueca = materia rala y tenue (el eje no tiene dato); fuera = casquete ámbar.
         dibujarEsfera(ctx: &ctx, dirs: luna.hueca ? Self.dLunaHueca : Self.dLuna,
                       centro: orb.centro, radio: orb.radio, rot: t * luna.rotK,
                       jitter: 0.4, t: t,
-                      alfaK: (0.5 + 0.5 * dep) * (luna.hueca ? 0.45 : 1),
+                      alfaK: (0.5 + 0.5 * dep) * (luna.hueca ? 0.45 : 1) * alfa,
                       stretch: 0, nivel: nil, nivelBajo: false, capAmbar: luna.fuera)
         etiqueta(ctx: &ctx, texto: luna.nombre,
                  en: CGPoint(x: orb.centro.x, y: orb.centro.y + orb.radio + 13),
-                 alfa: 0.35 + 0.5 * dep)
+                 alfa: (0.35 + 0.5 * dep) * alfa)
     }
 
     private func dibujarGuardian(ctx: inout GraphicsContext, t: TimeInterval,
-                                 orb: Sim.Orbital, eclipse: Double) {
+                                 orb: Sim.Orbital, eclipse: Double, alfa: Double = 1) {
         let dep = (orb.z + 1) / 2
         let tono = eclipse > 0 ? LiquidColor.atencion : LiquidColor.particulaNeutra
         let alfaK = (eclipse > 0 ? 0.85 * max(0.4, eclipse)
                                  : (0.4 + 0.6 * dep) * 0.75)
-                    * (guardianHueco ? 0.55 : 1)
+                    * (guardianHueco ? 0.55 : 1) * alfa
         dibujarNube(ctx: &ctx, dirs: guardianHueco ? Self.dGuardianHueco : Self.dGuardian,
                     centro: orb.centro, radio: orb.radio,
                     rot: t * M.rotacionGuardian, t: t, alfaK: alfaK, tono: tono)
         if eclipse < 0.5 {
             etiqueta(ctx: &ctx, texto: rotulos.guardian,
                      en: CGPoint(x: orb.centro.x, y: orb.centro.y + orb.radio + 13),
-                     alfa: dep * 0.8)
+                     alfa: dep * 0.8 * alfa)
         }
     }
 

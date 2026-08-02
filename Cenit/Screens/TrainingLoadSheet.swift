@@ -293,6 +293,10 @@ struct TrainingLoadSheet: View {
             Text(verbatim: value)
                 .font(LiquidType.valorL)
                 .foregroundStyle(tono ?? LiquidColor.tinta700)
+                // El RANGO («0.90–1.66») partía en dos líneas y desnivelaba el trío
+                // (revisión de usuario en simulador): una línea, auto-escalada.
+                .lineLimit(1)
+                .minimumScaleFactor(0.65)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.vertical, LiquidSpace.s200)

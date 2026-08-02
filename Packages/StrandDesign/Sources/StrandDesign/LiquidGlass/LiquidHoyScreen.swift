@@ -336,7 +336,7 @@ public struct LiquidHoyContent: View {
             // Gap corto (s150) cuando acompaña a la carga para que el ojo las lea juntas; s300 si
             // la carga no está, para no pegarse al héroe/grid.
             if let guardian = model.guardian {
-                LiquidGuardianFranja(guardian)
+                franjaGuardianTocable(guardian)
                     .padding(.top, model.carga != nil ? LiquidSpace.s150 : LiquidSpace.s300)
                     .liquidEntrada(index: 2)
             }
@@ -372,6 +372,19 @@ public struct LiquidHoyContent: View {
                                            calibrando: true, eje: model.cargaLabel))
         case nil:
             EmptyView()
+        }
+    }
+
+    /// La franja del guardián abre su hoja de explicación (FER-10, revisión de usuario):
+    /// «¿qué es VIGILANDO?» merece respuesta a un tap, igual que la carga.
+    @ViewBuilder
+    private func franjaGuardianTocable(_ guardian: LiquidHoyModel.Guardian) -> some View {
+        if let onTapGuardian {
+            Button(action: onTapGuardian) { LiquidGuardianFranja(guardian) }
+                .buttonStyle(.liquidPress)
+                .accessibilityHint(Text(verbatim: model.heroHint ?? ""))
+        } else {
+            LiquidGuardianFranja(guardian)
         }
     }
 

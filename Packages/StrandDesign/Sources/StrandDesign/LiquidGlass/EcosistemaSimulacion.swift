@@ -177,6 +177,28 @@ public enum EcosistemaSimulacion {
         }
     }
 
+    /// La fase EFECTIVA en `t`: una fase con viaje vencido ES su sucesora. La máquina
+    /// nunca muta sola — esto resuelve la etiqueta al decidir un tap, para que el
+    /// primer toque sobre un estado asentado SIEMPRE actúe (sin él, un `.separando`
+    /// vencido se re-etiquetaba `.separada` y el tap moría — cazado en simulador).
+    public static func faseEfectiva(_ fase: Fase, t: TimeInterval) -> Fase {
+        switch fase {
+        case .formando(let inicio):
+            let fin = inicio + LiquidEcosistemaMotion.fusionIntroEspera
+                + LiquidEcosistemaMotion.fusionDur
+            return t >= fin ? .viva(desde: fin) : fase
+        case .separando(let desde):
+            let fin = desde + LiquidEcosistemaMotion.anticipacion
+                + LiquidEcosistemaMotion.fusionDur
+            return t >= fin ? .separada : fase
+        case .uniendo(let desde):
+            let fin = desde + LiquidEcosistemaMotion.fusionDur
+            return t >= fin ? .viva(desde: fin) : fase
+        case .viva, .separada:
+            return fase
+        }
+    }
+
     /// El cuadro del instante `t` para la fase dada. Determinista; las transiciones
     /// temporales son implícitas (una fase «vencida» se comporta como su sucesora).
     public static func cuadro(t: TimeInterval, fase: Fase) -> Cuadro {
@@ -214,12 +236,15 @@ public enum EcosistemaSimulacion {
         case .separada:
             return Cuadro(u: 0, stretch: 0, settle: 0, bump: 0)
         case .uniendo(let desde):
+            // Reunión SEAMLESS (revisión de usuario): smoothstep sin sobrepaso — los
+            // centros jamás se cruzan ni se infla el radio — y sin stretch (la
+            // deformación del viaje leía «chunky»). El carácter orgánico lo pone el
+            // settle amortiguado al aterrizar en `.viva`.
             let tm = t - desde
             if tm < dur {
                 let pr = tm / dur
-                return Cuadro(u: backOut(pr),
-                              stretch: LiquidEcosistemaMotion.fusionStretch * sin(.pi * pr),
-                              settle: 0, bump: bumpEn(backOut(pr)))
+                return Cuadro(u: suave(pr), stretch: 0,
+                              settle: 0, bump: bumpEn(suave(pr)))
             }
             return cuadro(t: t, fase: .viva(desde: desde + dur))
         }
@@ -363,6 +388,30 @@ public enum EcosistemaSimulacion {
     }
 
     static func lerpCG(_ a: CGFloat, _ b: CGFloat, _ u: CGFloat) -> CGFloat { a + (b - a) * u }
+
+    // MARK: Tributo (las lunas decisoras ALIMENTAN el orbe — revisión de usuario)
+
+    /// La mota `k` (0..<`tributoParticulas`) del chorro que fluye de la luna al orbe en
+    /// el instante `t`. Nace en la superficie de la luna, muere ya adentro del borde del
+    /// orbe (absorbida: encoge y se apaga en ambos extremos). La deriva lateral rompe la
+    /// línea recta — es un fluido, no un láser. Determinista; se calcula desde la
+    /// posición ACTUAL de la luna, así el chorro se curva solo con la órbita.
+    /// El guardián NO tributa (vigila, no vota) y una luna hueca no tiene qué dar.
+    public static func tributo(_ k: Int, t: TimeInterval,
+                               luna: CGPoint, radioLuna: CGFloat) -> Mota {
+        let fr = (t / LiquidEcosistemaMotion.tributoPeriodo + Double(k) * 0.618)
+            .truncatingRemainder(dividingBy: 1)
+        let dx = Double(Geometria.centro.x - luna.x)
+        let dy = Double(Geometria.centro.y - luna.y)
+        let d = max(1, (dx * dx + dy * dy).squareRoot())
+        let ux = dx / d, uy = dy / d
+        let s = lerp(Double(radioLuna) + 2, d - Double(Geometria.radioOrbe) * 0.82, suave(fr))
+        let lat = sin(fr * 2 * .pi + Double(k) * 2.1) * 2.2 * sin(.pi * fr)
+        return Mota(pos: CGPoint(x: Double(luna.x) + ux * s - uy * lat,
+                                 y: Double(luna.y) + uy * s + ux * lat),
+                    alfa: sin(.pi * fr) * 0.7,
+                    tamano: CGFloat(2.6 - 1.2 * fr))
+    }
 
     // MARK: Acreción (calibrando: espirales que caen al embrión)
 
