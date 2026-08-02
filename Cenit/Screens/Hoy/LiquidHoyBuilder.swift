@@ -446,6 +446,12 @@ enum LiquidHoyBuilder {
         // veredicto y aterrizaba en una hoja que se lo gritaba (invariante Preparedness:101).
         let hayVeredicto = prep != nil && prep?.verdict != .lowSignal
             && prep?.isNightAnchored == true
+        // «Lectura de día»: hay señal autonómica (verdict != lowSignal) pero NO se grabó sueño
+        // anoche (isNightAnchored == false). No hay veredicto —falta la noche—, pero la razón
+        // NO es «me faltan tus noches» (la base puede estar madura): es que anoche no hubo
+        // sueño. Sin distinguirlo, el conteo grande contradecía a su propia nota y al héroe.
+        let esLecturaDeDia = prep != nil && prep?.verdict != .lowSignal
+            && prep?.isNightAnchored == false
 
         let filas: [LiquidActa.Fila] = ejesActa.enumerated().map { i, ax in
             let estado = estados[i]
@@ -470,7 +476,9 @@ enum LiquidHoyBuilder {
             sinLectura: hayVeredicto ? nil : String(localized: "No verdict yet"),
             conteo: hayVeredicto
                 ? conteoActa(fuera: fuera, conLectura: conLectura)
-                : String(localized: "I need a few of your own nights before I can give you a verdict."),
+                : esLecturaDeDia
+                    ? String(localized: "No sleep recorded last night, so there's no morning verdict.")
+                    : String(localized: "I need a few of your own nights before I can give you a verdict."),
             // El método en LLANO: nada de «ejes» (vocabulario de `Preparedness.Axis`, no del
             // usuario — en Hoy solo ve tres orbes con nombre propio).
             // D3 del verificador: la frase decía «cuentan como una sola lectura» y escondía
