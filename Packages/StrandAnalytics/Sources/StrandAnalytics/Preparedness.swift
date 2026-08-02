@@ -278,6 +278,16 @@ public enum Preparedness {
         /// treatment (Task Force 1996). This is NOT a cross-construct RMSSD conversion, so the
         /// "RMSSD ≠ SDNN" trap that killed the v1 design does not apply here.
         public var sdnnCfgKey: String = "sdnn"
+        /// Nights (including today) averaged into the resting-HR value that gets z-scored — a
+        /// past-only simple mean applied ONCE to the resolved series and used EVERYWHERE (the
+        /// baseline fold AND each day's value), so measurement noise is reduced in one construct
+        /// (Plews 2013: the multi-day trend has better validity than a single night). ⚠️ DEFAULT 1
+        /// ON PURPOSE (FER-1049): this phase ships a CAPACITY, not a behavior change. `1` is
+        /// byte-identical to pre-v4 (the series is returned untouched). An audit that EXECUTED the
+        /// criteria found the smoothing has SYMMETRIC latency — an N>1 default breaks the frozen
+        /// hysteresis sequence and delays recognising recovery — so the operating value is left for
+        /// `/cso` to sign on real data. `hysteresisDays` stays 2 (don't stack behavior changes).
+        public var rhrSmoothingNights: Int = 1
         public init() {}
         public static let `default` = Config()
     }
@@ -310,7 +320,11 @@ public enum Preparedness {
         // The asOf night must itself be nocturnal — a nocturnal baseline with an awake day is the
         // same mixed-construct bug in miniature.
         let nocturnalUsable = nocturnalCount >= Baselines.minNightsSeed && nocturnalSeries.last.flatMap { $0 } != nil
-        let rhrSeries: [Double?] = nocturnalUsable ? nocturnalSeries : awakeSeries
+        let resolvedRhr: [Double?] = nocturnalUsable ? nocturnalSeries : awakeSeries
+        // Fase 1a (FER-1049): smooth the resolved series ONCE, then use the smoothed series for BOTH
+        // the baseline fold and every per-day z — never smooth the day against a raw baseline (that
+        // would desalign the variance and make the z meaningless). Default N=1 → identity (paridad).
+        let rhrSeries: [Double?] = smoothedRhrSeries(resolvedRhr, nights: config.rhrSmoothingNights)
 
         // --- ONE forward pass per body signal (FER-1040) ---
         // `priorStates.<sig>[i]` is the baseline built from `ordered[0..<i]` — exactly the "priors"
@@ -402,6 +416,23 @@ public enum Preparedness {
             rhr:  Baselines.metricCfg["resting_hr"].map { Baselines.prefixStates(rhrSeries, cfg: $0) },
             resp: Baselines.metricCfg["resp"].map { Baselines.prefixStates(ordered.map { $0.respRateBpm }, cfg: $0) }
         )
+    }
+
+    /// Past-only simple moving average of the resolved resting-HR series (FER-1049 · fase 1a).
+    /// Applied ONCE to the whole series so the baseline fold and every per-day value share one
+    /// smoothed construct. `nights <= 1` returns the series untouched — byte-identical pre-v4
+    /// behaviour (paridad), no floating-point mean-of-one drift. For each day `i` the mean of the
+    /// non-nil values in the trailing window `series[max(0, i-nights+1)...i]`; with fewer than 2
+    /// non-nil values in the window the day's RAW value is kept (never fabricate from a single point).
+    /// Simple mean, strictly backward-looking — never peeks at the future.
+    private static func smoothedRhrSeries(_ series: [Double?], nights: Int) -> [Double?] {
+        guard nights > 1 else { return series }
+        return series.indices.map { i in
+            let lo = max(0, i - nights + 1)
+            let window = series[lo...i].compactMap { $0 }
+            guard window.count >= 2 else { return series[i] }
+            return window.reduce(0, +) / Double(window.count)
+        }
     }
 
     /// asOf-only luteal RHR discount (B2). Applied on top of the B1-resolved value; never to history.
