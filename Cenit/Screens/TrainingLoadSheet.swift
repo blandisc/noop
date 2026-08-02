@@ -186,7 +186,7 @@ struct TrainingLoadSheet: View {
 
             if let acwr = model.acwr, let band = model.band {
                 LiquidReadingLine(readingText(band), highlight: readingHighlight(band),
-                                  highlightTone: tono)
+                                  highlightTone: tonoTexto)
                 colina(acwr: acwr)
                 historial
                 if let onSeeTrends {
@@ -202,8 +202,8 @@ struct TrainingLoadSheet: View {
             }
 
             LiquidMetodo(title: String(localized: "How it's calculated"),
-                         mostrar: String(localized: "Show how it's calculated"),
-                         ocultar: String(localized: "Hide how it's calculated")) {
+                         mostrar: String(localized: "Show method"),
+                         ocultar: String(localized: "Hide method")) {
                 LiquidNotaLine(methodProse)
             }
         }
@@ -332,6 +332,13 @@ struct TrainingLoadSheet: View {
     private var tono: Color {
         guard let band = model.band else { return LiquidColor.tinta500 }
         return hillColor(band)
+    }
+
+    /// El tono para TEXTO CHICO (la lectura honesta): el ámbar de dato falla AA sobre vidrio,
+    /// así que se sustituye por su hermano oscurecido. El numeral del héroe sí usa `tono` pleno
+    /// (es texto grande, pasa AA). Verde/rojo pasan y no cambian.
+    private var tonoTexto: Color {
+        tono == LiquidColor.atencion ? LiquidColor.atencionTexto : tono
     }
 
     private func hillColor(_ band: ReadinessEngine.LoadBand) -> Color {

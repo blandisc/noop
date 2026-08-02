@@ -72,6 +72,10 @@ public struct LiquidSignalOrb: View {
             Text(label).liquidMicro().foregroundStyle(LiquidColor.tinta900)
                 .multilineTextAlignment(.center)
             Text(caption).font(LiquidType.microEstado)
+                // Convención del DS: los chips de estado van en MAYÚSCULAS (como el label y el
+                // resto de la familia microEstado). El caller pasa el copy ya localizado en su
+                // caja natural; el orbe lo normaliza para no depender de cada call site.
+                .textCase(.uppercase)
                 .foregroundStyle(progress == nil ? LiquidColor.tinta500 : state.caption)
                 .padding(.top, -3)
         }
@@ -165,6 +169,9 @@ public struct LiquidSignalOrb: View {
             if let valor {
                 Text(valor)
                     .font(LiquidType.cargaRatio)
+                    // El dato-palabra del orbe autonómico («EN TU RANGO») en MAYÚSCULAS; los
+                    // numerales de eje («56 ms», «7:20») no llevan letras, así que no cambian.
+                    .textCase(.uppercase)
                     .foregroundStyle(LiquidColor.tinta900)
                     // El dato compuesto (autonómico) entra como PALABRA de dos líneas
                     // («EN TU / RANGO»); los numerales de eje («56 ms», «7:20») caben en una
