@@ -164,7 +164,13 @@ enum ScreenshotFixtures {
             var spo2 = 97.5
             var steps = 8000 + Int(wobble(idx, 1500, 0.2))
 
-            if isToday {
+            // Los estados MALOS (strained/rundown) se siembran los ÚLTIMOS 2 DÍAS, no solo hoy:
+            // el veredicto tiene histéresis (una señal fuera un solo día NO baja el veredicto —
+            // se sostiene hasta que se repite dos días seguidos), así que con un único día malo
+            // el fixture renderizaba «Dale con todo» sobre un orbe rojo. Los estados de un día
+            // (primed/balanced, buenos) solo tocan HOY.
+            let esMalo = (state == "strained" || state == "rundown")
+            if isToday || (esMalo && ago == 1) {
                 switch state {
                 case "primed":
                     // HRV muy arriba (z≈+2.7 good) + RHR bajo (good) + carga en el sweet-spot ⇒ good≥2.
