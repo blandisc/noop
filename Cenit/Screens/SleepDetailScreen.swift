@@ -30,6 +30,10 @@ struct SleepDetailScreen: View {
     /// Loads the night's raw R-R intervals for a `[from, to)` window — injected for nocturnal DC
     /// («reserva para bajar de marcha», FER-849). Empty by default.
     var loadNightRR: (_ from: Int, _ to: Int) async -> [RRInterval] = { _, _ in [] }
+
+    /// FER-7 · Veredicto v4 Fase 4: the persisted per-night first-third − last-third sleeping-HR
+    /// deltas (bpm), read from the Apple-computed partition. Empty ⇒ the tercios module hides.
+    var loadNightThirds: () async -> [(day: String, value: Double)] = { [] }
     /// Loads the user's recent DC baseline (ms) for the trend read. nil ⇒ no "vs your normal".
     var loadDCBaseline: () async -> Double? = { nil }
 
@@ -52,6 +56,9 @@ struct SleepDetailScreen: View {
     @State private var nightShape: NightAutonomicShape.Result? = nil
     /// Downsampled HR series (asleep window) for the fall curve. Built with the shape. (FER-832)
     @State private var nightShapeCurve: [Double] = []
+
+    /// FER-7 · Fase 4: tonight's first-third vs last-third sleeping-HR reading (nil ⇒ section hidden).
+    @State private var nightThirds: NightThirdsUI? = nil
     /// Nocturnal Deceleration Capacity (FER-849). `nil` until loaded / Apple-only / no R-R.
     @State private var nightDC: NocturnalDC.Result? = nil
 
@@ -71,6 +78,9 @@ struct SleepDetailScreen: View {
                     seccion(String(localized: "Last night")) { lastNightContent(night) }
                     if let shape = nightShape {
                         seccion(String(localized: "Night shape")) { nightShapeContent(shape) }
+                    }
+                    if let thirds = nightThirds {
+                        seccion(String(localized: "First third vs last")) { nightThirdsContent(thirds) }
                     }
                     seccion(String(localized: "Last night vs your typical")) { stagesVsTypicalContent(night) }
                     seccion(String(localized: "Tonight's metrics")) { nightMetricsContent(night) }
@@ -126,6 +136,9 @@ struct SleepDetailScreen: View {
             let (shape, curve) = await loadNightShape()
             nightShape = shape
             nightShapeCurve = curve
+        }
+        .task(id: model.night?.startTs) {
+            nightThirds = await loadNightThirdsUI()
         }
         .task(id: model.night?.startTs) {
             nightDC = await loadNightDC()
@@ -515,6 +528,71 @@ struct SleepDetailScreen: View {
         case .blunted:
             return "A gentler drop than a deep-rest night usually shows. It's a pattern, not a diagnosis."
         }
+    }
+
+    // MARK: - First third vs last (FER-7 · Fase 4) — descriptive, never a vote
+
+    /// How tonight's first-third→last-third rise compares to the user's own trailing normal.
+    enum ThirdsTone: Equatable { case calibrating(Int), usual, higher, lower }
+    struct NightThirdsUI: Equatable { let deltaBpm: Double; let tone: ThirdsTone }
+
+    @ViewBuilder
+    private func nightThirdsContent(_ r: NightThirdsUI) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(verbatim: signedBpm(r.deltaBpm))
+                    .font(InstrumentoType.groteskNumber(24, weight: .bold))
+                    .foregroundStyle(theme.dataHeart)
+                    .monospacedDigit()
+                Text("from the first third of the night to the last")
+                    .font(InstrumentoType.grotesk(13))
+                    .foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            BarraAncla(String(localized: String.LocalizationValue(thirdsCopyKey(r.tone))),
+                       color: theme.dataHeart, theme: theme)
+        }
+    }
+
+    /// "+12 lpm" / "−3 lpm" / "0 lpm" — signed, U+2212 minus, localized unit.
+    private func signedBpm(_ d: Double) -> String {
+        let n = Int(d.rounded())
+        let sign = n > 0 ? "+" : (n < 0 ? "\u{2212}" : "")
+        return "\(sign)\(abs(n)) \(String(localized: "bpm"))"
+    }
+
+    private func thirdsCopyKey(_ tone: ThirdsTone) -> String {
+        switch tone {
+        case .calibrating:
+            return "Getting to know your nights — a few more and we'll compare this to your usual."
+        case .higher:
+            return "Higher than your usual overnight rise — last night's start may have run hot (a workout, a late meal, a drink). It's a pattern, not a diagnosis."
+        case .usual:
+            return "About your usual overnight rise. It's a pattern, not a diagnosis."
+        case .lower:
+            return "A gentler overnight rise than your usual. It's a pattern, not a diagnosis."
+        }
+    }
+
+    /// Read the persisted per-night thirds deltas, pick THIS night's, and score it against the user's
+    /// own trailing normal (PAST nights only, so tonight isn't compared to itself). `nil` ⇒ hidden.
+    private func loadNightThirdsUI() async -> NightThirdsUI? {
+        guard let night = model.night else { return nil }
+        let series = await loadNightThirds()
+        guard !series.isEmpty else { return nil }
+        let nightDay = Repository.localDayKey(Date(timeIntervalSince1970: TimeInterval(night.endTs)))
+        guard let tonight = series.first(where: { $0.day == nightDay })?.value else { return nil }
+        let cfg = Baselines.metricCfg["night_thirds_delta"]!
+        let past: [Double?] = series.filter { $0.day < nightDay }.sorted { $0.day < $1.day }.map { $0.value }
+        let state = Baselines.rollingMeanSD(past, cfg: cfg, window: 30)
+        let tone: ThirdsTone
+        if !state.trusted {
+            tone = .calibrating(max(0, Baselines.minNightsTrust - state.nValid))
+        } else {
+            let dev = Baselines.deviation(tonight, state: state)
+            tone = dev.inNormalRange ? .usual : (dev.z > 0 ? .higher : .lower)
+        }
+        return NightThirdsUI(deltaBpm: tonight, tone: tone)
     }
 
     private static let clockFormatter: DateFormatter = {
