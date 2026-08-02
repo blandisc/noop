@@ -13,7 +13,7 @@ using namespace metal;
 //
 // ⚠️ Las tres structs de abajo se reflejan campo a campo en `EcosistemaMetalRenderer.swift`.
 // Si tocas una, toca la otra: no hay header compartido (un target SwiftPM mixto no lo
-// permite limpio) y los tamaños se afirman en `EcosistemaMetalTests`.
+// permite limpio) y los tamaños se afirman en `EcosistemaPlanTests.testLayoutDeLosUniformes`.
 
 struct Fisica {
     float aplastamiento;

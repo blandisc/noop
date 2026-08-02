@@ -19,11 +19,22 @@ final class EcosistemaMetalRenderTests: XCTestCase {
     private static let ancho = Int(G.lienzo.width)
     private static let alto = Int(G.lienzo.height)
 
-    /// Un cuadro renderizado, como cobertura de tinta por píxel (0…1) en fila-mayor.
+    /// Un cuadro renderizado: cobertura de tinta por píxel (0…1) y color PREMULTIPLICADO
+    /// por canal, en fila-mayor.
     private struct Cuadro {
         let alfa: [Float]
+        let rojo: [Float]
+        let verde: [Float]
 
         var tinta: Float { alfa.reduce(0, +) }
+
+        /// Rojo contra verde. Es un cociente y no dos sumas sueltas A PROPÓSITO: el blanco
+        /// (especular, destello) aporta IGUAL a los dos canales, así que el cociente aísla
+        /// el TONO de la tinta. `particulaVerde` (#10694E) da R/G ≈ 0.15; el ámbar de
+        /// atención (#C4631F) da ≈ 1.98 — dos órdenes de separación.
+        var calidez: Float {
+            rojo.reduce(0, +) / max(verde.reduce(0, +), .leastNonzeroMagnitude)
+        }
 
         /// Tinta dentro de un disco (centro y radio en pt) — para preguntar «¿hay materia
         /// AQUÍ?» sin depender de un match pixel a pixel.
@@ -96,17 +107,20 @@ final class EcosistemaMetalRenderTests: XCTestCase {
             textura.getBytes(crudo.baseAddress!, bytesPerRow: Self.ancho * 4,
                              from: MTLRegionMake2D(0, 0, Self.ancho, Self.alto), mipmapLevel: 0)
         }
-        // El canal alfa ES la cobertura: el fragmento sale premultiplicado.
-        return Cuadro(alfa: stride(from: 3, to: bytes.count, by: 4).map { Float(bytes[$0]) / 255 })
+        // BGRA: el canal alfa ES la cobertura y el color sale premultiplicado.
+        return Cuadro(alfa: stride(from: 3, to: bytes.count, by: 4).map { Float(bytes[$0]) / 255 },
+                      rojo: stride(from: 2, to: bytes.count, by: 4).map { Float(bytes[$0]) / 255 },
+                      verde: stride(from: 1, to: bytes.count, by: 4).map { Float(bytes[$0]) / 255 })
     }
 
     private func escena(coreo: Sim.Coreografia = .enRango,
                         fase: Sim.Fase = .viva(desde: 0),
                         still: Bool = false,
-                        niveles: [Double?] = [0.7, 0.6]) -> Sim.Escena {
+                        niveles: [Double?] = [0.7, 0.6],
+                        eclipse: Double = 0) -> Sim.Escena {
         Sim.Escena(coreo: coreo, fase: fase, still: still, niveles: niveles,
                    fuera: [false, false], guardianJuntas: false, guardianHueco: false,
-                   eclipse: 0)
+                   eclipse: eclipse)
     }
 
     // MARK: El shader compila y pinta
@@ -190,30 +204,55 @@ final class EcosistemaMetalRenderTests: XCTestCase {
         XCTAssertFalse(a.alfa == b.alfa)
     }
 
-    /// ⚠️ EL test que importa: con el reloj REAL de la app. `t` es
-    /// `timeIntervalSinceReferenceDate` (~8.07·10⁸ s), y ahí es donde un `Float` se rompe:
-    /// mandar `t` crudo a la GPU congela la rotación ~53 s y colapsa el jitter de 300
-    /// partículas a 6 fases. Con `t` chiquito (0…4) el bug es INVISIBLE — por eso este
-    /// test usa la magnitud verdadera y exige movimiento cuadro a cuadro.
-    func testSeMueveConElRelojRealDeLaApp() throws {
-        let ahora = Date().timeIntervalSinceReferenceDate
-        XCTAssertGreaterThan(ahora, 7e8, "premisa del test: el reloj de la app es enorme")
-        let a = try renderizar(escena: escena(), t: ahora)
-        let b = try renderizar(escena: escena(), t: ahora + 1.0 / 60)
-        XCTAssertFalse(a.alfa == b.alfa,
-                       "un cuadro después el héroe DEBE haberse movido con el reloj real")
-    }
+    // MARK: El reloj REAL de la app (donde un Float se rompe)
+    //
+    // `t` es `timeIntervalSinceReferenceDate` (~8.07·10⁸ s). Ahí el ULP de un `Float` vale
+    // 32–128 rad: mandar `t` crudo a la GPU congela la rotación ~53 s y colapsa el jitter
+    // de 300 partículas a 6 fases. Con `t` chiquito (0…4) el bug es INVISIBLE.
+    //
+    // Las dos sondas de abajo usan `.separada` A PROPÓSITO: ahí no hay lunas ni motas de
+    // tributo, cuyas posiciones se calculan en `Double` en la CPU y se moverían aunque la
+    // GPU estuviera congelada — un test sobre la escena fundida PASA con el bug puesto.
+    // En separado, todo lo que se pinta sale del shader.
 
-    /// Y el jitter en particular: con el reloj real, dos instantes separados por medio
-    /// periodo de `jitterVelocidad` deben dar cuadros distintos aun con las órbitas casi
-    /// donde estaban. Es la sonda directa de la fase que viaja reducida a la GPU.
+    /// El jitter: medio periodo de `jitterVelocidad` después, el cuadro debe cambiar.
     func testElJitterVibraConElRelojReal() throws {
         let ahora = Date().timeIntervalSinceReferenceDate
-        let medioPeriodo = Double.pi / LiquidEcosistemaMotion.jitterVelocidad
-        let quieta = escena(fase: .separada, niveles: [0.7, 0.6])
+        XCTAssertGreaterThan(ahora, 7e8, "premisa del test: el reloj de la app es enorme")
+        let quieta = escena(fase: .separada)
         let a = try renderizar(escena: quieta, t: ahora)
-        let b = try renderizar(escena: quieta, t: ahora + medioPeriodo)
+        let b = try renderizar(escena: quieta, t: ahora + .pi / LiquidEcosistemaMotion.jitterVelocidad)
         XCTAssertFalse(a.alfa == b.alfa, "el jitter perdió su fase al cruzar a Float")
+    }
+
+    /// La rotación, aislada: con `still` el jitter se apaga y los centros quedan fijos, así
+    /// que lo ÚNICO que varía con `t` es `rot`. Media vuelta después, el cuadro debe cambiar.
+    func testLaRotacionGiraConElRelojReal() throws {
+        let ahora = Date().timeIntervalSinceReferenceDate
+        let sinJitter = escena(fase: .separada, still: true)
+        let a = try renderizar(escena: sinJitter, t: ahora)
+        let b = try renderizar(escena: sinJitter,
+                               t: ahora + .pi / LiquidEcosistemaMotion.rotacionEsfera)
+        XCTAssertFalse(a.alfa == b.alfa, "la rotación perdió su fase al cruzar a Float")
+    }
+
+    // MARK: Los campos de COLOR del uniforme
+
+    /// El readback de alfa no ve `colorAmbar` ni el flag `capAmbar`: un desfase de offset
+    /// en esos campos del uniforme sería silencioso. El casquete del eclipse es la sonda.
+    ///
+    /// (`colorBajo` NO tiene sonda equivalente y no puede tenerla: `nivelBajo` solo existe
+    /// en desgaste, donde la tinta base ya es `particulaRoja` #963426 y el líquido fuera de
+    /// rango es `negativo` #B3402A — R/G 2.88 contra 2.80. Son el mismo tono por diseño, así
+    /// que ningún test de color los distingue; su candado es `testLayoutDeLosUniformes`.)
+    func testElCasqueteAmbarDelEclipseTiñeLaEsfera() throws {
+        let sin = try renderizar(escena: escena(coreo: .atencion(eclipse: true), eclipse: 0), t: 3)
+        let con = try renderizar(escena: escena(coreo: .atencion(eclipse: true), eclipse: 1), t: 3)
+        // Margen medido: +7.3 % (0.823 → 0.883). El casquete cubre solo el gajo que mira
+        // al guardián (x > 0.25 ∧ y < −0.15) y el especular blanco amortigua el cociente,
+        // así que la señal real es ésa — no una inundación de ámbar.
+        XCTAssertGreaterThan(con.calidez, sin.calidez * 1.05,
+                             "el eclipse debe teñir de ámbar el casquete que mira al guardián")
     }
 
     /// Calibrando es otro plan entero (espirales + embrión): que también llegue a la GPU.
