@@ -14,6 +14,9 @@ let package = Package(
             name: "StrandDesign",
             // Space Grotesk (OFL) — bundled so the «Instrumento» type voice renders fully offline;
             // registered at runtime via CoreText (a package can't use Info.plist UIAppFonts).
+            // El shader del Ecosistema (FER-13) viaja como FUENTE y se compila en runtime:
+            // SwiftPM (tools 5.9) no compila `.metal` de un target, y así el mismo camino
+            // sirve igual desde `swift build` y desde Xcode. Ver `EcosistemaMetal`.
             resources: [.process("Resources")],
             swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
         ),

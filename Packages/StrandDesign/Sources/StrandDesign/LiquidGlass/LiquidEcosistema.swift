@@ -294,12 +294,12 @@ public struct LiquidEcosistema: View {
 
     private var escena: some View {
         ZStack(alignment: .topLeading) {
-            EcosistemaCanvas(coreo: coreo, fase: fase ?? .viva(desde: 0),
-                             senales: senales, guardianJuntas: guardian?.estado == .juntas,
-                             guardianHueco: guardian == nil
-                                 || (guardian?.temp == "—" && guardian?.resp == "—"),
-                             rotulos: rotulos, still: still,
-                             paused: still || ambientPaused || !visible)
+            EcosistemaEscenario(coreo: coreo, fase: fase ?? .viva(desde: 0),
+                                senales: senales, guardianJuntas: guardian?.estado == .juntas,
+                                guardianHueco: guardian == nil
+                                    || (guardian?.temp == "—" && guardian?.resp == "—"),
+                                rotulos: rotulos, still: still,
+                                paused: still || ambientPaused || !visible)
                 .contentShape(Rectangle())
                 .onTapGesture { alternar() }
             overlays
@@ -712,12 +712,14 @@ private final class EcosistemaEtiquetas {
     func vaciar() { resueltas.removeAll() }
 }
 
-// MARK: - El canvas de partículas (decorativo: la a11y vive en el elemento compuesto)
+// MARK: - El escenario (el reloj, el ancla del eclipse y QUÉ backend pinta)
 
-private struct EcosistemaCanvas: View {
+/// Un solo reloj para todo el héroe. Decide entre el shader de Metal (Fase B, FER-13) y el
+/// Canvas de Fase A: en iOS con Metal disponible pinta las partículas la GPU y este Canvas
+/// queda SOLO para los rótulos; en macOS/watchOS, en previews y mientras el shader se
+/// compila, el Canvas pinta el plan completo. Los dos recorren el MISMO plan.
+private struct EcosistemaEscenario: View {
     typealias Sim = EcosistemaSimulacion
-    typealias G = EcosistemaSimulacion.Geometria
-    typealias M = LiquidEcosistemaMotion
 
     let coreo: Sim.Coreografia
     let fase: Sim.Fase
@@ -728,48 +730,108 @@ private struct EcosistemaCanvas: View {
     let still: Bool
     let paused: Bool
 
-    /// Esferas fibonacci precomputadas (una vez por proceso).
-    private static let dEsfera = Sim.fibonacci(G.nEsfera)
-    private static let dLuna = Sim.fibonacci(G.nLuna)
-    private static let dGuardian = Sim.fibonacci(G.nGuardian)
-    /// Variantes RALAS para lo «hueco» (sin dato: no se fabrica materia densa).
-    private static let dLunaHueca = Sim.fibonacci(G.nLuna).enumerated()
-        .filter { $0.offset % 3 == 0 }.map(\.element)
-    private static let dGuardianHueco = Sim.fibonacci(G.nGuardian).enumerated()
-        .filter { $0.offset % 2 == 0 }.map(\.element)
-
     /// Ancla del eclipse (el guardián viaja al asomarse; con `still` aparece colocado).
     @State private var eclipseDesde: TimeInterval?
-    /// Rótulos orbitales resueltos una sola vez (FER-14 #1).
-    @State private var etiquetas = EcosistemaEtiquetas()
-
-    @Environment(\.colorScheme) private var colorScheme
-
-    /// La materia de una luna: su órbita, identidad y estado honesto.
-    struct LunaSpec {
-        let orb: Sim.Orbital
-        let nombre: String
-        let rotK: Double
-        let hueca: Bool
-        let fuera: Bool
-    }
+    #if os(iOS) && canImport(MetalKit)
+    @ObservedObject private var metal = EcosistemaMetal.compartido
+    #endif
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 60.0, paused: paused)) { context in
             let t = still ? 0 : context.date.timeIntervalSinceReferenceDate
-            Canvas { ctx, _ in
-                dibujar(ctx: &ctx, t: t)
-            }
+            capas(t: t, escena: escena(t: t))
         }
         .accessibilityHidden(true)
         .onAppear {
             if case .atencion(eclipse: true) = coreo, eclipseDesde == nil {
                 eclipseDesde = Date().timeIntervalSinceReferenceDate
             }
+            #if os(iOS) && canImport(MetalKit)
+            metal.preparar()
+            #endif
         }
         .onChange(of: guardianJuntas) { _, juntas in
             eclipseDesde = juntas ? Date().timeIntervalSinceReferenceDate : nil
         }
+    }
+
+    @ViewBuilder private func capas(t: TimeInterval, escena: Sim.Escena) -> some View {
+        #if os(iOS) && canImport(MetalKit)
+        if let recursos = metal.recursos {
+            ZStack {
+                EcosistemaMetalLienzo(recursos: recursos, escena: escena, t: t,
+                                      paleta: .desde(clima: coreo.tintaClima))
+                EcosistemaCanvas(coreo: coreo, escena: escena, t: t, rotulos: rotulos,
+                                 soloEtiquetas: true)
+            }
+        } else {
+            EcosistemaCanvas(coreo: coreo, escena: escena, t: t, rotulos: rotulos)
+        }
+        #else
+        EcosistemaCanvas(coreo: coreo, escena: escena, t: t, rotulos: rotulos)
+        #endif
+    }
+
+    /// Lo que el plan necesita saber del modelo, en el instante `t`.
+    private func escena(t: TimeInterval) -> Sim.Escena {
+        Sim.Escena(
+            coreo: coreo, fase: fase, still: still,
+            niveles: (0..<2).map { senales.indices.contains($0) ? senales[$0].progress : nil },
+            fuera: (0..<2).map { senales.indices.contains($0) && senales[$0].state == .atencion },
+            guardianJuntas: guardianJuntas, guardianHueco: guardianHueco,
+            eclipse: eclipseProgreso(t: t))
+    }
+
+    private func eclipseProgreso(t: TimeInterval) -> Double {
+        guard case .atencion(eclipse: true) = coreo else { return 0 }
+        if still { return 1 }
+        guard let desde = eclipseDesde else { return 1 }
+        return min(1, max(0, (t - desde) / LiquidEcosistemaMotion.eclipseDur))
+    }
+}
+
+/// La tinta del clima: verde / roja / neutra según el veredicto (todo de tokens).
+extension EcosistemaSimulacion.Coreografia {
+    var tintaClima: Color {
+        switch self {
+        case .enRango, .atencion: return LiquidColor.particulaVerde
+        case .desgaste: return LiquidColor.particulaRoja
+        case .neutra, .calibrando: return LiquidColor.particulaNeutra
+        }
+    }
+}
+
+// MARK: - El canvas de partículas (decorativo: la a11y vive en el elemento compuesto)
+
+private struct EcosistemaCanvas: View {
+    typealias Sim = EcosistemaSimulacion
+    typealias G = EcosistemaSimulacion.Geometria
+
+    /// Solo para la tinta del clima; la coreografía completa llega en `escena`.
+    let coreo: Sim.Coreografia
+    let escena: Sim.Escena
+    let t: TimeInterval
+    let rotulos: EcosistemaRotulos
+    /// Modo capa-de-texto: el shader de Metal ya pintó las partículas y este Canvas queda
+    /// SOLO para los rótulos orbitales (FER-13). En el camino de Fase A vale `false` y el
+    /// Canvas pinta el plan completo.
+    var soloEtiquetas: Bool = false
+
+    /// Esferas fibonacci precomputadas (una vez por proceso).
+    private static let dEsfera = Sim.fibonacci(G.nEsfera)
+    private static let dLuna = Sim.fibonacci(G.nLuna)
+    private static let dGuardian = Sim.fibonacci(G.nGuardian)
+
+    /// Rótulos orbitales resueltos una sola vez (FER-14 #1).
+    @State private var etiquetas = EcosistemaEtiquetas()
+
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        Canvas { ctx, _ in
+            dibujar(ctx: &ctx, t: t)
+        }
+        .accessibilityHidden(true)
         // Un `ResolvedText` congela el entorno con el que se resolvió: si el esquema
         // cambia, los rótulos cacheados dejan de ser válidos.
         .onChange(of: colorScheme) { _, _ in etiquetas.vaciar() }
@@ -777,167 +839,94 @@ private struct EcosistemaCanvas: View {
 
     // MARK: Colores por clase (todo de tokens — cero hex aquí)
 
-    private var tintaClima: Color {
-        switch coreo {
-        case .enRango, .atencion: return LiquidColor.particulaVerde
-        case .desgaste: return LiquidColor.particulaRoja
-        case .neutra, .calibrando: return LiquidColor.particulaNeutra
-        }
-    }
+    private var tintaClima: Color { coreo.tintaClima }
 
-    private func color(_ clase: Sim.ClaseParticula) -> Color {
+    private func color(_ clase: Sim.ClaseParticula, tinta: Sim.Tinta) -> Color {
         switch clase {
-        case .base, .menisco, .vapor: return tintaClima
+        case .base, .menisco, .vapor: return color(tinta)
         case .capAmbar: return LiquidColor.atencion
         case .liquidoBajo: return LiquidColor.negativo
         }
     }
 
-    // MARK: Dibujo
+    /// Un ROL del plan → su token. El plan vive fuera de SwiftUI y no conoce `Color`.
+    private func color(_ tinta: Sim.Tinta) -> Color {
+        switch tinta {
+        case .clima: return tintaClima
+        case .atencion: return LiquidColor.atencion
+        case .negativo: return LiquidColor.negativo
+        case .neutra: return LiquidColor.particulaNeutra
+        case .blanco: return .white
+        }
+    }
+
+    private func rotulo(_ cual: Sim.RotuloOrbital) -> String {
+        switch cual {
+        case .reposo: return rotulos.reposo
+        case .sueno: return rotulos.sueno
+        case .guardian: return rotulos.guardian
+        }
+    }
+
+    // MARK: Dibujo (recorre el PLAN — la coreografía vive en `EcosistemaSimulacion.plan`)
 
     private func dibujar(ctx: inout GraphicsContext, t: TimeInterval) {
-        if case .calibrando(let noche, let total) = coreo {
-            dibujarAcrecion(ctx: &ctx, t: t, noche: noche, total: total)
-            return
-        }
-        let cuadro = Sim.cuadro(t: t, fase: still ? faseEstable : fase)
-        let eclipse = eclipseProgreso(t: t)
-        let flicker = coreo == .desgaste && !still
-            ? 0.9 + 0.1 * sin(t * M.flickerDesgaste) : 1.0
-        // Rampa de estreno del séquito: lunas/guardián/especular se FUNDEN en la escena
-        // en la última parte del viaje en vez de aparecer de golpe en u=0.94 (el «pop»
-        // que leía chunky al reunir — revisión de usuario).
-        let alfaFundida = min(1, max(0, (cuadro.u - G.umbralFundida) / (1 - G.umbralFundida)))
-
-        // 1 · El guardián atrás (órbita con z<0, o el eclipse asomándose). En separado el
-        // orbital NO se dibuja: el guardián «se partió» en sus dos mini-orbes (D4).
-        let orbGuardian = Sim.guardian(t: t, eclipse: eclipse)
-        let sepTemprano = cuadro.separada
-        if !sepTemprano, orbGuardian.z < 0 || eclipse > 0.5 {
-            dibujarGuardian(ctx: &ctx, t: t, orb: orbGuardian, eclipse: eclipse,
-                            alfa: eclipse > 0 ? 1 : alfaFundida)
-        }
-
-        // 2 · Lunas detrás del orbe: una por señal — HUECA si su eje no tiene dato (no
-        // se fabrica materia), con CASQUETE ámbar si su eje está fuera (la luna causante).
-        var lunas: [LunaSpec] = []
-        // Estado 7/8 («sin datos»): si NINGUNA señal tiene dato, no se fabrican lunas —
-        // ni huecas (Grok #4). Con al menos una con dato, la otra aparece hueca (estado 6).
-        let algunaConDato = senales.prefix(2).contains { $0.progress != nil }
-        if cuadro.fundida, algunaConDato {
-            for (i, senal) in senales.prefix(2).enumerated() {
-                let orb = Sim.luna(i + 1, t: t, desgaste: coreo == .desgaste)
-                lunas.append(LunaSpec(
-                    orb: orb,
-                    nombre: i == 0 ? rotulos.reposo : rotulos.sueno,
-                    rotK: i == 0 ? M.rotacionLuna1 : M.rotacionLuna2,
-                    hueca: senal.progress == nil,
-                    fuera: senal.state == .atencion))
-            }
-            for luna in lunas where luna.orb.z < 0 {
-                dibujarLuna(ctx: &ctx, t: t, luna: luna, alfa: alfaFundida)
+        for trazo in Sim.plan(t: t, escena: escena) {
+            switch trazo {
+            case .rotulo(let cual, let punto, let alfa):
+                etiqueta(ctx: &ctx, texto: rotulo(cual), en: punto, alfa: alfa)
+            // Con `soloEtiquetas` el Canvas es la capa de TEXTO sobre el shader de Metal
+            // (FER-13): las partículas ya las pintó la GPU, aquí solo van los rótulos.
+            case .nube(let nube):
+                if soloEtiquetas { break }
+                dibujarNube(ctx: &ctx, nube: nube, t: t)
+            case .disco(let centro, let radio, let tinta, let alfa):
+                if soloEtiquetas { break }
+                ctx.fill(circulo(centro, radio), with: .color(color(tinta).opacity(recorte(alfa))))
+            case .anillo(let centro, let radio, let grosor, let tinta, let alfa):
+                if soloEtiquetas { break }
+                ctx.stroke(circulo(centro, radio),
+                           with: .color(color(tinta).opacity(recorte(alfa))), lineWidth: grosor)
+            case .halo(let centro, let radio, let foco, let radioIni, let tinta, let alfa):
+                if soloEtiquetas { break }
+                let c = color(tinta)
+                ctx.fill(circulo(centro, radio), with: .radialGradient(
+                    Gradient(colors: [c.opacity(recorte(alfa)), c.opacity(0)]),
+                    center: foco, startRadius: radioIni, endRadius: radio))
             }
         }
-
-        // 3 · Las esferas decisoras (separadas / viajando / fundidas).
-        let capAmbar = eclipse > 0.5 && cuadro.fundida
-        let radio = (Sim.lerp(Double(G.radioSeparada), Double(coreo.radioOrbe), min(1, cuadro.u))
-                     * (1 + 0.02 * sin(t * M.respiracionEsfera) * cuadro.u)
-                     + cuadro.settle) * (1 + min(0, cuadro.stretch))
-        let c1 = puntoLerp(G.p1, G.centro, cuadro.u)
-        let c2 = puntoLerp(G.p2, G.centro, cuadro.u)
-        let jitter = still ? 0 : coreo.jitter
-        let sep = cuadro.separada
-        dibujarEsfera(ctx: &ctx, dirs: Self.dEsfera, centro: c1, radio: CGFloat(radio),
-                      rot: t * M.rotacionEsfera, jitter: jitter, t: t, alfaK: flicker,
-                      stretch: max(0, cuadro.stretch),
-                      nivel: sep ? nivelSenal(0) : nil,
-                      nivelBajo: sep && senalFuera(0) && coreo == .desgaste,
-                      capAmbar: capAmbar)
-        dibujarEsfera(ctx: &ctx, dirs: Self.dEsfera, centro: c2, radio: CGFloat(radio),
-                      rot: -t * 0.5, jitter: jitter, t: t, alfaK: flicker,
-                      stretch: max(0, cuadro.stretch),
-                      nivel: sep ? nivelSenal(1) : nil,
-                      nivelBajo: sep && senalFuera(1) && coreo == .desgaste,
-                      capAmbar: capAmbar)
-
-        // 4 · Destello + chispas del contacto.
-        if cuadro.bump > 0.25, !still {
-            dibujarDestello(ctx: &ctx, t: t, bump: cuadro.bump, radio: CGFloat(radio))
-        }
-
-        // 5 · Especular del orbe fundido (entra con la rampa, no de golpe).
-        if cuadro.fundida {
-            let r = CGFloat(radio)
-            let rect = CGRect(x: G.centro.x - r * 1.05, y: G.centro.y - r * 1.05,
-                              width: r * 2.1, height: r * 2.1)
-            ctx.fill(Path(ellipseIn: rect), with: .radialGradient(
-                Gradient(colors: [Color.white.opacity(0.5 * alfaFundida), Color.white.opacity(0)]),
-                center: CGPoint(x: G.centro.x - r * 0.3, y: G.centro.y - r * 0.36),
-                startRadius: 3, endRadius: r * 1.05))
-        }
-
-        // 6 · Lunas al frente + guardián al frente (órbita con z≥0, sin eclipse).
-        for luna in lunas where luna.orb.z >= 0 {
-            dibujarLuna(ctx: &ctx, t: t, luna: luna, alfa: alfaFundida)
-        }
-        if orbGuardian.z >= 0, eclipse <= 0.5, cuadro.fundida, !cuadro.separada {
-            dibujarGuardian(ctx: &ctx, t: t, orb: orbGuardian, eclipse: eclipse,
-                            alfa: alfaFundida)
-        }
-        // 7 · Mini-esferas del guardián en el estado separado (fondo de los badges).
-        if sep {
-            let tono = guardianJuntas ? LiquidColor.atencion : LiquidColor.particulaNeutra
-            dibujarNube(ctx: &ctx, dirs: Self.dGuardian, centro: G.guardianSeparado1,
-                        radio: G.radioGuardianSeparado, rot: t * 0.9, t: t, alfaK: 0.9,
-                        tono: tono)
-            dibujarNube(ctx: &ctx, dirs: Self.dGuardian, centro: G.guardianSeparado2,
-                        radio: G.radioGuardianSeparado, rot: -t * 0.8, t: t, alfaK: 0.9,
-                        tono: tono)
-        }
     }
 
-    /// Con Reduce Motion la fase se lee en su estado FINAL (sin viajes).
-    private var faseEstable: Sim.Fase {
-        switch fase {
-        case .formando, .uniendo, .viva: return .viva(desde: 0)
-        case .separando, .separada: return .separada
-        }
+    private func circulo(_ centro: CGPoint, _ radio: CGFloat) -> Path {
+        Path(ellipseIn: CGRect(x: centro.x - radio, y: centro.y - radio,
+                               width: radio * 2, height: radio * 2))
     }
 
-    private func eclipseProgreso(t: TimeInterval) -> Double {
-        guard case .atencion(eclipse: true) = coreo else { return 0 }
-        if still { return 1 }
-        guard let desde = eclipseDesde else { return 1 }
-        return min(1, max(0, (t - desde) / M.eclipseDur))
-    }
-
-    private func nivelSenal(_ i: Int) -> Double? {
-        senales.indices.contains(i) ? senales[i].progress : nil
-    }
-
-    private func senalFuera(_ i: Int) -> Bool {
-        senales.indices.contains(i) && senales[i].state == .atencion
-    }
-
-    private func puntoLerp(_ a: CGPoint, _ b: CGPoint, _ u: Double) -> CGPoint {
-        CGPoint(x: a.x + (b.x - a.x) * CGFloat(u), y: a.y + (b.y - a.y) * CGFloat(u))
-    }
+    private func recorte(_ alfa: Double) -> Double { min(1, max(0, alfa)) }
 
     // MARK: Primitivas de dibujo (bucketing: un Path por clase×alfa, ≤40 fills/frame)
 
-    private func dibujarEsfera(ctx: inout GraphicsContext, dirs: [SIMD3<Double>],
-                               centro: CGPoint, radio: CGFloat, rot: Double,
-                               jitter: Double, t: TimeInterval, alfaK: Double,
-                               stretch: Double, nivel: Double?, nivelBajo: Bool,
-                               capAmbar: Bool) {
+    /// Las direcciones fuente de una nube. Las variantes RALAS no son otro arreglo: la
+    /// partícula `i` toma la dirección `i·paso` de la misma esfera (así el shader de Fase
+    /// B puede derivarlas por índice sin subir tablas a la GPU).
+    private static func direcciones(_ n: Int) -> [SIMD3<Double>] {
+        switch n {
+        case G.nEsfera: return dEsfera
+        case G.nLuna: return dLuna
+        default: return dGuardian
+        }
+    }
+
+    private func dibujarNube(ctx: inout GraphicsContext, nube: Sim.Nube, t: TimeInterval) {
+        let dirs = Self.direcciones(nube.n)
         var buckets: [Int: Path] = [:]
         var clases: [Int: Sim.ClaseParticula] = [:]
-        for (i, dir) in dirs.enumerated() {
-            let p = Sim.particula(dir: dir, indice: i, centro: centro, radio: radio,
-                                  rotacion: rot, jitterAmp: jitter, t: t, alfaK: alfaK,
-                                  stretch: stretch, nivel: nivel, nivelBajo: nivelBajo,
-                                  capAmbar: capAmbar)
+        for i in 0..<nube.cuenta {
+            let p = Sim.particula(dir: dirs[i * nube.paso], indice: i, centro: nube.centro,
+                                  radio: nube.radio, rotacion: nube.rotacion,
+                                  jitterAmp: nube.jitterAmp, t: t, alfaK: nube.alfaK,
+                                  stretch: nube.stretch, nivel: nube.nivel,
+                                  nivelBajo: nube.nivelBajo, capAmbar: nube.capAmbar)
             let alfaIdx = min(11, max(0, Int(p.alfa * 12)))
             let clave = claseIndice(p.clase) * 16 + alfaIdx
             buckets[clave, default: Path()].addEllipse(in: CGRect(
@@ -947,26 +936,8 @@ private struct EcosistemaCanvas: View {
         }
         for (clave, path) in buckets {
             let alfa = (Double(clave % 16) + 0.5) / 12
-            ctx.fill(path, with: .color(color(clases[clave] ?? .base).opacity(min(1, alfa))))
-        }
-    }
-
-    /// Nube simple (lunas, guardián): sin gauge ni cap — el camino rápido.
-    private func dibujarNube(ctx: inout GraphicsContext, dirs: [SIMD3<Double>],
-                             centro: CGPoint, radio: CGFloat, rot: Double,
-                             t: TimeInterval, alfaK: Double, tono: Color) {
-        var buckets: [Int: Path] = [:]
-        for (i, dir) in dirs.enumerated() {
-            let p = Sim.particula(dir: dir, indice: i, centro: centro, radio: radio,
-                                  rotacion: rot, jitterAmp: 0.4, t: t, alfaK: alfaK)
-            let alfaIdx = min(11, max(0, Int(p.alfa * 12)))
-            buckets[alfaIdx, default: Path()].addEllipse(in: CGRect(
-                x: p.pos.x - p.tamano, y: p.pos.y - p.tamano,
-                width: p.tamano * 2, height: p.tamano * 2))
-        }
-        for (alfaIdx, path) in buckets {
-            let alfa = (Double(alfaIdx) + 0.5) / 12
-            ctx.fill(path, with: .color(tono.opacity(min(1, alfa))))
+            ctx.fill(path, with: .color(color(clases[clave] ?? .base, tinta: nube.tinta)
+                                            .opacity(min(1, alfa))))
         }
     }
 
@@ -978,87 +949,6 @@ private struct EcosistemaCanvas: View {
         case .capAmbar: return 3
         case .liquidoBajo: return 4
         }
-    }
-
-    private func dibujarLuna(ctx: inout GraphicsContext, t: TimeInterval, luna: LunaSpec,
-                             alfa: Double = 1) {
-        let orb = luna.orb
-        let dep = (orb.z + 1) / 2
-        // Tributo: la luna ALIMENTA el orbe con un chorro de motas (revisión de usuario).
-        // Una luna hueca no tiene qué dar; con Reduce Motion el chorro no se fabrica
-        // (motas congeladas a media ruta leerían como basura visual).
-        if !luna.hueca, !still, alfa > 0.05 {
-            var chorro: [Int: Path] = [:]   // bucket por alfa (fade de cada mota, ≤4 fills)
-            for k in 0..<M.tributoParticulas {
-                let m = Sim.tributo(k, t: t, luna: orb.centro, radioLuna: orb.radio)
-                let idx = min(3, max(0, Int(m.alfa * 5)))
-                chorro[idx, default: Path()].addEllipse(in: CGRect(
-                    x: m.pos.x - m.tamano, y: m.pos.y - m.tamano,
-                    width: m.tamano * 2, height: m.tamano * 2))
-            }
-            for (idx, path) in chorro {
-                ctx.fill(path, with: .color(tintaClima.opacity((Double(idx) + 0.5) / 5 * alfa)))
-            }
-        }
-        // Hueca = materia rala y tenue (el eje no tiene dato); fuera = casquete ámbar.
-        dibujarEsfera(ctx: &ctx, dirs: luna.hueca ? Self.dLunaHueca : Self.dLuna,
-                      centro: orb.centro, radio: orb.radio, rot: t * luna.rotK,
-                      jitter: 0.4, t: t,
-                      alfaK: (0.5 + 0.5 * dep) * (luna.hueca ? 0.45 : 1) * alfa,
-                      stretch: 0, nivel: nil, nivelBajo: false, capAmbar: luna.fuera)
-        etiqueta(ctx: &ctx, texto: luna.nombre,
-                 en: CGPoint(x: orb.centro.x, y: orb.centro.y + orb.radio + 13),
-                 alfa: (0.35 + 0.5 * dep) * alfa)
-    }
-
-    private func dibujarGuardian(ctx: inout GraphicsContext, t: TimeInterval,
-                                 orb: Sim.Orbital, eclipse: Double, alfa: Double = 1) {
-        let dep = (orb.z + 1) / 2
-        let tono = eclipse > 0 ? LiquidColor.atencion : LiquidColor.particulaNeutra
-        let alfaK = (eclipse > 0 ? 0.85 * max(0.4, eclipse)
-                                 : (0.4 + 0.6 * dep) * 0.75)
-                    * (guardianHueco ? 0.55 : 1) * alfa
-        dibujarNube(ctx: &ctx, dirs: guardianHueco ? Self.dGuardianHueco : Self.dGuardian,
-                    centro: orb.centro, radio: orb.radio,
-                    rot: t * M.rotacionGuardian, t: t, alfaK: alfaK, tono: tono)
-        if eclipse < 0.5 {
-            etiqueta(ctx: &ctx, texto: rotulos.guardian,
-                     en: CGPoint(x: orb.centro.x, y: orb.centro.y + orb.radio + 13),
-                     alfa: dep * 0.8 * alfa)
-        }
-    }
-
-    private func dibujarDestello(ctx: inout GraphicsContext, t: TimeInterval,
-                                 bump: Double, radio: CGFloat) {
-        let r = radio + 6 + CGFloat(bump) * 10
-        let anillo = CGRect(x: G.centro.x - r, y: G.centro.y - r, width: r * 2, height: r * 2)
-        ctx.stroke(Path(ellipseIn: anillo),
-                   with: .color(Color.white.opacity(bump * 0.8)), lineWidth: 1.5)
-        for k in 0..<8 {
-            let a = Double(k) / 8 * 2 * .pi + t
-            let sr = Double(radio) + 10 + bump * 22
-            let p = CGPoint(x: G.centro.x + CGFloat(cos(a) * sr),
-                            y: G.centro.y + CGFloat(sin(a) * sr * 0.9))
-            ctx.fill(Path(ellipseIn: CGRect(x: p.x - 1.3, y: p.y - 1.3,
-                                            width: 2.6, height: 2.6)),
-                     with: .color(Color.white.opacity(bump * 0.75)))
-        }
-    }
-
-    private func dibujarAcrecion(ctx: inout GraphicsContext, t: TimeInterval,
-                                 noche: Int, total: Int) {
-        for i in 0..<G.nEspirales {
-            let m = Sim.espiral(i, t: t)
-            ctx.fill(Path(ellipseIn: CGRect(x: m.pos.x - m.tamano, y: m.pos.y - m.tamano,
-                                            width: m.tamano * 2, height: m.tamano * 2)),
-                     with: .color(tintaClima.opacity(m.alfa)))
-        }
-        // El embrión: solo sus franjas de abajo pobladas (noche/total), respirando apenas.
-        let radio = G.radioEmbrion + CGFloat(still ? 0 : 1.6 * sin(t * 0.8))
-        let nivel = total > 0 ? Double(noche) / Double(total) : 0
-        dibujarEsfera(ctx: &ctx, dirs: Self.dEsfera, centro: G.centro, radio: radio,
-                      rot: t * 0.35, jitter: still ? 0 : 0.5, t: t, alfaK: 0.9,
-                      stretch: 0, nivel: nivel, nivelBajo: false, capAmbar: false)
     }
 
     private func etiqueta(ctx: inout GraphicsContext, texto: String, en punto: CGPoint,
