@@ -168,7 +168,7 @@ private func bandasDemo(activa: Int?) -> [LiquidChartBanda] {
     ]
 }
 
-#Preview("Liquid · Niveles — banda activa") {
+#Preview("Liquid · Niveles · banda activa") {
     let puntos = serieDemo()
     let ejeFmt: (Date) -> String = fmtDemo("dMMM")
     return LiquidGraficaNiveles(
@@ -185,7 +185,7 @@ private func bandasDemo(activa: Int?) -> [LiquidChartBanda] {
         .environment(\.liquidMotionDisabled, true)
 }
 
-#Preview("Liquid · Niveles — reposo + anillo hoy") {
+#Preview("Liquid · Niveles · reposo + anillo hoy") {
     let puntos = serieDemo()
     return VStack(spacing: LiquidSpace.s400) {
         // Sin banda activa: todos los washes al reposo (8 %).
@@ -211,7 +211,7 @@ private func bandasDemo(activa: Int?) -> [LiquidChartBanda] {
     .environment(\.liquidMotionDisabled, true)
 }
 
-#Preview("Liquid · Niveles — scrub estático") {
+#Preview("Liquid · Niveles · scrub estático") {
     // Serie corta: se ven los PUNTOS POR DATO y el popup con sus dos líneas.
     let puntos = serieDemo(dias: 14)
     let ejeFmt: (Date) -> String = fmtDemo("dMMM")
@@ -245,7 +245,7 @@ private func serieConHuecos() -> [(fecha: Date, valor: Double)] {
     }
 }
 
-#Preview("Liquid · Niveles — serie con huecos (90 días)") {
+#Preview("Liquid · Niveles · serie con huecos (90 días)") {
     // Prueba del hueco (carril A, A1): con reparto por ÍNDICE los 12 puntos salían
     // equiespaciados y el eje mentía sobre el span. Con mapeo por TIEMPO se ven los dos
     // racimos y el vacío de mes y medio, y las fechas del eje caen sobre sus bolitas.
@@ -264,7 +264,7 @@ private func serieConHuecos() -> [(fecha: Date, valor: Double)] {
         .environment(\.liquidMotionDisabled, true)
 }
 
-#Preview("Liquid · Niveles — serie corta con racimo (n = 5, 7, 8)") {
+#Preview("Liquid · Niveles · serie corta con racimo (n = 5, 7, 8)") {
     // El reparto `n <= 8 ⇒ todas las fechas` es el que muerde con mapeo por tiempo: dos
     // lecturas seguidas dentro de un rango largo caen a 3 pt una de otra. La poda por
     // geometría debe dejar solo las que caben, y NUNCA soltar la última.
@@ -296,7 +296,7 @@ private func serieConHuecos() -> [(fecha: Date, valor: Double)] {
     .environment(\.liquidMotionDisabled, true)
 }
 
-#Preview("Liquid · Niveles — atenuación explícita (opt-in)") {
+#Preview("Liquid · Niveles · atenuación explícita (opt-in)") {
     // Sin `atenuarFuera` (el default, y lo que ve la app hoy) todos los puntos van a
     // opacidad plena; con el opt-in se apagan los de fuera de la banda activa.
     let puntos = serieDemo(dias: 14)
@@ -325,7 +325,7 @@ private func serieConHuecos() -> [(fecha: Date, valor: Double)] {
     .environment(\.liquidMotionDisabled, true)
 }
 
-#Preview("Liquid · Niveles — estados (cargando / vacío del caller)") {
+#Preview("Liquid · Niveles · estados (cargando / vacío del caller)") {
     // El contrato de estados que el compositor necesita para NO imprimir ceros mientras la
     // serie viaja (D7): mismo `LiquidChartEstado` que `LiquidTrendChart`, sin volver
     // públicos los pozos ni el alto del explorador. Ambos miden lo MISMO que `.datos`, así
@@ -349,7 +349,7 @@ private func serieConHuecos() -> [(fecha: Date, valor: Double)] {
     .environment(\.liquidMotionDisabled, true)
 }
 
-#Preview("Liquid · Niveles — vacío") {
+#Preview("Liquid · Niveles · vacío") {
     LiquidGraficaNiveles(
         puntos: [], bandas: bandasDemo(activa: nil), dominio: 30...95,
         ticksY: [], tono: LiquidColor.cian,
