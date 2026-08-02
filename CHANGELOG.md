@@ -20,6 +20,11 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **El acta ya no dice «me faltan tus noches» cuando la base está madura y solo faltó dormir anoche / The verdict recap no longer says "I need more nights" when your baseline is mature and you just didn't sleep last night.**
+  **ES** — Cuando amaneces con la base ya madura pero anoche NO se grabó sueño (Cénit cae a «Lectura de día», sin veredicto), la hoja «Cómo llegué a esto» decía «Necesito algunas de tus noches antes de darte un veredicto» — falso y contradictorio con el héroe. Ahora dice la razón real: «No se registró sueño anoche, así que no hay veredicto de la mañana.» Solo copy; ninguna matemática cambia.
+  **EN** — When you wake up with a mature baseline but no sleep was recorded last night (Cénit falls back to "Day reading", no verdict), the "how I got here" sheet said "I need a few of your own nights before I can give you a verdict" — false and at odds with the hero. It now states the real reason: "No sleep recorded last night, so there's no morning verdict." Copy only; no math changes.
+  ([LiquidHoyBuilder.swift](Cenit/Screens/Hoy/LiquidHoyBuilder.swift))
+
 - **Preparación: dos orbes + la franja del guardián / Preparación: two orbs + the guardian strip.**
   **ES** — La fila de Hoy pasa de tres orbes a **dos** («En reposo» con tus lpm, y «Sueño»): el motor v3 vota con esas dos señales. La temperatura y la respiración bajan a una **franja del guardián** siempre visible, debajo de la de carga y con su mismo alto: las ves todos los días, pero **vigilan sin votar** — solo cuando ambas se salen *juntas* de tu patrón la franja se tiñe y cuentan. Nunca dice «enfermedad».
   **EN** — Today's row goes from three orbs to **two** ("At rest" with your bpm, and "Sleep"): the v3 engine votes on those two signals. Temperature and respiration drop to an always-visible **guardian strip** below the load strip, same height: you see them every day, but they **watch without voting** — only when both move *together* out of your pattern does the strip tint and count. It never says "illness".

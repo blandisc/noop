@@ -50096,6 +50096,22 @@
           }
         }
       }
+    },
+    "No sleep recorded last night, so there's no morning verdict.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No sleep recorded last night, so there's no morning verdict."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se registró sueño anoche, así que no hay veredicto de la mañana."
+          }
+        }
+      }
     }
   },
   "version": "1.1"
