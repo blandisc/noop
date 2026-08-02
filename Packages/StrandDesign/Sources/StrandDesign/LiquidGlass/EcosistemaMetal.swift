@@ -61,9 +61,8 @@ struct EcosistemaMarcoU {
     var _pad: SIMD2<Float> = .zero
 }
 
-#if os(iOS) && canImport(MetalKit)
-import MetalKit
-import simd
+#if canImport(Metal)
+import Metal
 
 // MARK: - «El Ecosistema» · Fase B (FER-13) — el héroe de Hoy en Metal
 //
@@ -97,11 +96,11 @@ struct EcosistemaPaleta: Equatable {
                          blanco: SIMD4<Float>(1, 1, 1, 1))
     }
 
-    /// El token es la fuente de verdad; aquí solo se lee su valor sRGB.
+    /// El token es la fuente de verdad; aquí solo se lee su valor sRGB. `resolve(in:)`
+    /// evita bajar a UIKit/AppKit y deja la paleta compilable en las tres plataformas.
     private static func rgba(_ color: Color) -> SIMD4<Float> {
-        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
-        UIColor(color).getRed(&r, green: &g, blue: &b, alpha: &a)
-        return SIMD4<Float>(Float(r), Float(g), Float(b), Float(a))
+        let r = color.resolve(in: EnvironmentValues())
+        return SIMD4<Float>(r.red, r.green, r.blue, r.opacity)
     }
 
     func color(_ tinta: EcosistemaSimulacion.Tinta) -> SIMD4<Float> {
@@ -136,7 +135,9 @@ final class EcosistemaMetal: ObservableObject {
     private var pedido = false
 
     /// El formato del drawable; fijo para que el pipeline se pueda construir sin la vista.
-    static let formato: MTLPixelFormat = .bgra8Unorm
+    /// `.bgra8Unorm` y no `_srgb` A PROPÓSITO: así el blending ocurre en sRGB, igual que en
+    /// el `Canvas` de Fase A — con sRGB lineal los dos backends no se verían iguales.
+    nonisolated static let formato: MTLPixelFormat = .bgra8Unorm
 
     private init() {}
 
@@ -202,12 +203,12 @@ final class EcosistemaMetal: ObservableObject {
 
 // MARK: - El renderer (recorre el plan y encodea)
 
-final class EcosistemaMetalRenderer: NSObject, MTKViewDelegate {
+final class EcosistemaMetalRenderer: NSObject {
     typealias Sim = EcosistemaSimulacion
 
-    private let recursos: EcosistemaMetal.Recursos
+    let recursos: EcosistemaMetal.Recursos
     /// Un draw de átomos cabe en `setVertexBytes` (4 KB): 80 × 48 B = 3 840 B.
-    private static let atomosPorDraw = 80
+    static let atomosPorDraw = 80
 
     var escena = Sim.Escena(coreo: .neutra(lunaSueno: false), fase: .viva(desde: 0),
                             still: true, niveles: [nil, nil], fuera: [false, false],
@@ -219,14 +220,9 @@ final class EcosistemaMetalRenderer: NSObject, MTKViewDelegate {
         self.recursos = recursos
     }
 
-    func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {}
-
-    func draw(in view: MTKView) {
-        guard let paso = view.currentRenderPassDescriptor,
-              let drawable = view.currentDrawable,
-              let buffer = recursos.cola.makeCommandBuffer(),
-              let enc = buffer.makeRenderCommandEncoder(descriptor: paso) else { return }
-
+    /// Encodea el cuadro en un render pass YA abierto: recorre el plan en orden y lo
+    /// traduce a draws instanciados. El orden de pintado del plan es la ley.
+    func encodar(en enc: MTLRenderCommandEncoder) {
         let lienzo = SIMD2<Float>(Float(Sim.Geometria.lienzo.width),
                                   Float(Sim.Geometria.lienzo.height))
         var fisica = EcosistemaFisicaU.tokens
@@ -257,7 +253,7 @@ final class EcosistemaMetalRenderer: NSObject, MTKViewDelegate {
                 continue
 
             case .nube(let nube):
-                vaciar()   // el orden de pintado del plan es la ley
+                vaciar()
                 var u = uniforme(nube, lienzo: lienzo)
                 enc.setRenderPipelineState(recursos.nube)
                 enc.setVertexBytes(&u, length: MemoryLayout<EcosistemaNubeU>.stride, index: 0)
@@ -282,10 +278,22 @@ final class EcosistemaMetalRenderer: NSObject, MTKViewDelegate {
             }
         }
         vaciar()
+    }
 
+    /// Un cuadro completo a una textura. Es el camino de los tests offscreen — el mismo
+    /// `encodar` que usa la vista, sin `MTKView` de por medio.
+    func renderizar(en textura: MTLTexture) {
+        let paso = MTLRenderPassDescriptor()
+        paso.colorAttachments[0].texture = textura
+        paso.colorAttachments[0].loadAction = .clear
+        paso.colorAttachments[0].storeAction = .store
+        paso.colorAttachments[0].clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 0)
+        guard let buffer = recursos.cola.makeCommandBuffer(),
+              let enc = buffer.makeRenderCommandEncoder(descriptor: paso) else { return }
+        encodar(en: enc)
         enc.endEncoding()
-        buffer.present(drawable)
         buffer.commit()
+        buffer.waitUntilCompleted()
     }
 
     // MARK: Traducción plan → uniformes
@@ -322,7 +330,25 @@ final class EcosistemaMetalRenderer: NSObject, MTKViewDelegate {
     }
 }
 
+#if os(iOS) && canImport(MetalKit)
+import MetalKit
+
 // MARK: - El lienzo de Metal en SwiftUI
+
+extension EcosistemaMetalRenderer: MTKViewDelegate {
+    func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {}
+
+    func draw(in view: MTKView) {
+        guard let paso = view.currentRenderPassDescriptor,
+              let drawable = view.currentDrawable,
+              let buffer = recursos.cola.makeCommandBuffer(),
+              let enc = buffer.makeRenderCommandEncoder(descriptor: paso) else { return }
+        encodar(en: enc)
+        enc.endEncoding()
+        buffer.present(drawable)
+        buffer.commit()
+    }
+}
 
 /// `MTKView` manejada por SwiftUI: sin reloj propio (`isPaused`), redibuja cuando el
 /// `TimelineView` de arriba entrega un `t` nuevo. Así hay UN solo reloj para las
@@ -359,4 +385,5 @@ struct EcosistemaMetalLienzo: UIViewRepresentable {
         vista.setNeedsDisplay()
     }
 }
+#endif
 #endif
