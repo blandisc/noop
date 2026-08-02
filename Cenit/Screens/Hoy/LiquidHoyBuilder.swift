@@ -357,12 +357,34 @@ enum LiquidHoyBuilder {
 
         let tempStr = thermalDeviation.map { String(format: "%+.1f°", $0) } ?? "—"
         let respStr = resp.map { "\(Int($0.value.rounded())) \(String(localized: "rpm"))" } ?? "—"
-        let label = estado == .juntas ? String(localized: "Together") : String(localized: "Watching")
+
+        // FER-12: la RACHA del centinela (FER-8) enriquece el rótulo cuando ambas llevan >= 2 noches
+        // JUNTAS. Número factual, sin adjetivos de gravedad; la salience NO crece con N (el tinte de la
+        // franja es el mismo para 1 o 3 noches — solo se agrega el conteo, DNA «color solo en el dato»).
+        // Gated en `.corroborated` del motor (la fuente autoritativa de la racha), no en la derivación
+        // visual del estado, así que un desajuste imposible nunca muestra un conteo espurio.
+        let streak: Int = {
+            guard estado == .juntas, let s = prep?.sentinel, s.state == .corroborated else { return 0 }
+            return s.streakNights
+        }()
+        let nightsWord = String(localized: "nights")
+        let label: String
+        switch estado {
+        case .juntas:
+            label = streak >= 2 ? "\(String(localized: "Together")) · \(streak) \(nightsWord)"
+                                : String(localized: "Together")
+        default:
+            label = String(localized: "Watching")
+        }
         // VoiceOver: honesto, jamás «enfermedad» ni diagnóstico. La frase corroborada solo aparece
-        // cuando ambas se salieron JUNTAS (el caso en que sí cuenta).
-        let prefijo = estado == .juntas
-            ? String(localized: "Your temperature and breathing moved out of your pattern together.")
-            : String(localized: "Watching")
+        // cuando ambas se salieron JUNTAS (el caso en que sí cuenta); con racha, agrega el conteo.
+        let prefijo: String
+        if estado == .juntas {
+            let base = String(localized: "Your temperature and breathing moved out of your pattern together.")
+            prefijo = streak >= 2 ? "\(base) \(streak) \(nightsWord)." : base
+        } else {
+            prefijo = String(localized: "Watching")
+        }
         let a11y = "\(prefijo) \(tempStr), \(respStr)"
         return .init(label: label, temp: tempStr, resp: respStr, estado: estado, a11y: a11y)
     }

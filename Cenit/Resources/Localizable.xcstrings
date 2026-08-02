@@ -50186,6 +50186,23 @@
           }
         }
       }
+    },
+    "nights": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "nights"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "noches"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

@@ -20,6 +20,11 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **La franja del guardián ahora te dice cuántas noches llevan juntas / The guardian strip now tells you how many nights they've been together.**
+  **ES** — Cuando tu temperatura y tu respiración se salen JUNTAS de tu patrón varias noches seguidas, la franja del guardián lo dice: «JUNTAS · 3 NOCHES». El número es un hecho, no una alarma: la franja **NO se tiñe más** por más noches (color solo en el dato). Sigue sin decir «enfermedad»: describe tu patrón, no lo diagnostica.
+  **EN** — When your temperature and breathing move out of your pattern TOGETHER several nights in a row, the guardian strip says so: "TOGETHER · 3 NIGHTS". The number is a fact, not an alarm: the strip **does not tint more** with more nights (color only in the datum). It still never says "illness": it describes your pattern, it doesn't diagnose it.
+  ([LiquidHoyBuilder.swift](Cenit/Screens/Hoy/LiquidHoyBuilder.swift))
+
 - **Nuevo en el detalle de sueño: cómo cambió tu pulso del primer al último tercio de la noche / New in Sleep detail: how your pulse changed from the first third of the night to the last.**
   **ES** — En el detalle de sueño, Cénit ahora te muestra cuánto subió (o bajó) tu FC del **primer** al **último** tercio de la noche, comparado con lo habitual tuyo. Separa «anoche el inicio venía cargado» (un entrenamiento, una cena tardía, una copa) de «tu base se movió parejo toda la noche». Es una lectura **descriptiva**: NO cambia tu veredicto y nunca es un diagnóstico. Mientras aprende tu normal (unas 2 semanas) te lo dice. La FC de cada tercio se toma con la mediana, para que un pico de pulso aislado no la mueva.
   **EN** — In Sleep detail, Cénit now shows how much your heart rate rose (or fell) from the **first** third of the night to the **last**, compared to your own usual. It separates "last night's start ran hot" (a workout, a late meal, a drink) from "your baseline moved evenly all night". A **descriptive** reading: it does NOT change your verdict and is never a diagnosis. While it learns your normal (~2 weeks) it tells you. Each third's HR uses the median, so a lone pulse spike doesn't move it.
