@@ -49989,12 +49989,12 @@
         }
       }
     },
-    "Your resting heart rate against your own base is the vote — Apple's densest, most reliable signal, so it carries this axis on its own.": {
+    "Your resting heart rate against your own base is the vote: Apple's densest, most reliable signal, so it carries this axis on its own.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your resting heart rate against your own base is the vote — Apple's densest, most reliable signal, so it carries this axis on its own."
+            "value": "Your resting heart rate against your own base is the vote: Apple's densest, most reliable signal, so it carries this axis on its own."
           }
         },
         "es": {
@@ -50005,12 +50005,12 @@
         }
       }
     },
-    "HRV and breathing are shown for context but don't vote here — Apple's all-day HRV is too noisy to trust, and breathing is watched by the sentinel alongside your temperature.": {
+    "HRV and breathing are shown for context but don't vote here. Apple's all-day HRV is too noisy to trust, and breathing is watched by the sentinel alongside your temperature.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "HRV and breathing are shown for context but don't vote here — Apple's all-day HRV is too noisy to trust, and breathing is watched by the sentinel alongside your temperature."
+            "value": "HRV and breathing are shown for context but don't vote here. Apple's all-day HRV is too noisy to trust, and breathing is watched by the sentinel alongside your temperature."
           }
         },
         "es": {
@@ -50053,35 +50053,34 @@
         }
       }
     },
-    "Your autonomic axis reads %lld of %lld resting signals, but votes on just your resting heart rate — HRV and breathing ride along for context.": {
+    "Your autonomic axis reads %lld of %lld resting signals, but votes on just your resting heart rate; HRV and breathing ride along for context.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your autonomic axis reads %lld of %lld resting signals, but votes on just your resting heart rate — HRV and breathing ride along for context."
+            "value": "Your autonomic axis reads %lld of %lld resting signals, but votes on just your resting heart rate; HRV and breathing ride along for context."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu eje autonómico lee %lld de %lld señales en reposo, pero vota solo con tu pulso en reposo — la VFC y la respiración van de contexto."
+            "value": "Tu eje autonómico lee %lld de %lld señales en reposo, pero vota solo con tu pulso en reposo; la VFC y la respiración van de contexto."
           }
         }
       }
     },
-    "Your resting heart rate and your sleep are read as separate votes, so one rough night can't count against you twice. Your breathing and temperature only keep watch — they don't vote here.": {
-      "extractionState": "manual",
+    "Your resting heart rate and your sleep are read as separate votes, so one rough night can't count against you twice. Your breathing and temperature only keep watch. They don't vote here.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your resting heart rate and your sleep are read as separate votes, so one rough night can't count against you twice. Your breathing and temperature only keep watch — they don't vote here."
+            "value": "Your resting heart rate and your sleep are read as separate votes, so one rough night can't count against you twice. Your breathing and temperature only keep watch. They don't vote here."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu pulso en reposo y tu sueño se leen como votos separados, así una mala noche no cuenta en tu contra dos veces. Tu respiración y tu temperatura solo vigilan — aquí no votan."
+            "value": "Tu pulso en reposo y tu sueño se leen como votos separados, así una mala noche no cuenta en tu contra dos veces. Tu respiración y tu temperatura solo vigilan. Aquí no votan."
           }
         }
       }
