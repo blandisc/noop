@@ -180,10 +180,14 @@ extension LiquidIcon.Glyph {
                 "M2.5 11a6 6 0 0 1 11 0",
                 "M8 11L10.8 7",
             ])
-        // `.carga` se dibuja como SF Symbol (`sfName`); nunca llega a `custom`. Spec vacío
-        // para que el switch quede exhaustivo sin acuñar un path que no se usa.
+        // `.carga` se dibuja como SF Symbol (`sfName`), igual que las otras métricas; el
+        // path custom (pesa: placas + barra) mantiene el invariante del catálogo — todo
+        // glifo parsea a un path no vacío dentro de su viewBox (LiquidGlassTests).
         case .carga:
-            return Spec(viewBox: 16, strokeWidth: 1.6, paths: [])
+            return Spec(viewBox: 16, strokeWidth: 1.6, paths: [
+                "M3 5.5v5M5.5 4v8M10.5 4v8M13 5.5v5",
+                "M1.5 8h1.5M5.5 8h5M13 8h1.5",
+            ])
 
         // MARK: Señales (viewBox 16, sw 1.8) — familia FINAL elegida por el dueño
         // (/inject 2026-07-22): Autonómico = doble onda entrelazada («ondas finas») ·
