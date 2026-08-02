@@ -49926,6 +49926,176 @@
           }
         }
       }
+    },
+    "Apple Health · last 28 days": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Health · last 28 days"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Salud · últimos 28 días"
+          }
+        }
+      }
+    },
+    "BUILDING YOUR USUAL": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BUILDING YOUR USUAL"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ARMANDO TU COSTUMBRE"
+          }
+        }
+      }
+    },
+    "I need about two weeks of recorded strain to read your load.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I need about two weeks of recorded strain to read your load."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Necesito unas dos semanas de esfuerzo registrado para leer tu carga."
+          }
+        }
+      }
+    },
+    "In line with what your body is used to": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In line with what your body is used to"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Va en línea con lo que tu cuerpo acostumbra"
+          }
+        }
+      }
+    },
+    "Less than your body is used to": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Less than your body is used to"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Menos de lo que tu cuerpo acostumbra"
+          }
+        }
+      }
+    },
+    "Log a few workouts with heart rate on your Apple Watch and this read will appear.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Log a few workouts with heart rate on your Apple Watch and this read will appear."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Registra unos entrenamientos con frecuencia cardiaca en tu Apple Watch y esta lectura aparecerá."
+          }
+        }
+      }
+    },
+    "More than your body is used to": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "More than your body is used to"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Más de lo que tu cuerpo acostumbra"
+          }
+        }
+      }
+    },
+    "Training load history": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Training load history"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Historial de carga de entrenamiento"
+          }
+        }
+      }
+    },
+    "Well above what your body is used to": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Well above what your body is used to"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Muy por encima de lo que tu cuerpo acostumbra"
+          }
+        }
+      }
+    },
+    "two weeks of recorded strain": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "two weeks of recorded strain"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "dos semanas de esfuerzo registrado"
+          }
+        }
+      }
     }
   },
   "version": "1.1"
