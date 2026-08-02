@@ -293,7 +293,7 @@ enum LiquidHoyBuilder {
             id: "autonomico", label: String(localized: "Autonomic"),
             caption: autHasData ? String(localized: "3 signals").localizedUppercase
                                 : caption(for: aut?.state),
-            progress: autHasData ? positionFromZ(aut?.orientedZ) : nil,
+            progress: autHasData ? autonomoPosicion(estado: aut?.state, z: aut?.orientedZ) : nil,
             icon: .ondaSenal,
             state: (aut?.state.isOut ?? false) ? .atencion : .ok,
             valor: autHasData ? caption(for: aut?.state) : nil))
@@ -334,6 +334,20 @@ enum LiquidHoyBuilder {
     static func positionFromZ(_ z: Double?) -> Double {
         guard let z else { return 0.5 }
         return min(0.94, max(0.06, 0.5 + z / 4))
+    }
+
+    /// La posición de la aguja del orbe autonómico. Normalmente sale del z COMPUESTO
+    /// (`positionFromZ`, + = mejor → derecha), pero el eje puede marcarse fuera por la
+    /// RESPIRACIÓN sola (`respOut`) con el compuesto positivo: ahí el z apuntaría al lado
+    /// «mejor» contradiciendo el estado FUERA (anillo ámbar + «Debajo de tu base»). En ese
+    /// desacuerdo la aguja cae al lado del estado; cuando z y estado concuerdan, se respeta z.
+    static func autonomoPosicion(estado: Preparedness.AxisState?, z: Double?) -> Double {
+        let pos = positionFromZ(z)
+        switch estado {
+        case .low:  return pos > 0.5 ? positionFromState(.low) : pos
+        case .high: return pos < 0.5 ? positionFromState(.high) : pos
+        default:    return pos
+        }
     }
 
     /// Port literal: posición categórica del estado.
@@ -408,6 +422,12 @@ enum LiquidHoyBuilder {
         // veredicto y aterrizaba en una hoja que se lo gritaba (invariante Preparedness:101).
         let hayVeredicto = prep != nil && prep?.verdict != .lowSignal
             && prep?.isNightAnchored == true
+        // «Lectura de día»: hay señal autonómica (verdict != lowSignal) pero NO se grabó sueño
+        // anoche (isNightAnchored == false). No hay veredicto —falta la noche—, pero la razón
+        // NO es «me faltan tus noches» (la base puede estar madura): es que anoche no hubo
+        // sueño. Sin distinguirlo, el conteo grande contradecía a su propia nota y al héroe.
+        let esLecturaDeDia = prep != nil && prep?.verdict != .lowSignal
+            && prep?.isNightAnchored == false
 
         let filas: [LiquidActa.Fila] = ejesActa.enumerated().map { i, ax in
             let estado = estados[i]
@@ -432,7 +452,9 @@ enum LiquidHoyBuilder {
             sinLectura: hayVeredicto ? nil : String(localized: "No verdict yet"),
             conteo: hayVeredicto
                 ? conteoActa(fuera: fuera, conLectura: conLectura)
-                : String(localized: "I need a few of your own nights before I can give you a verdict."),
+                : esLecturaDeDia
+                    ? String(localized: "No sleep recorded last night, so there's no morning verdict.")
+                    : String(localized: "I need a few of your own nights before I can give you a verdict."),
             // El método en LLANO: nada de «ejes» (vocabulario de `Preparedness.Axis`, no del
             // usuario — en Hoy solo ve tres orbes con nombre propio).
             // D3 del verificador: la frase decía «cuentan como una sola lectura» y escondía
