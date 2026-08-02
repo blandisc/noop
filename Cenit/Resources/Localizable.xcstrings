@@ -86,19 +86,19 @@
         }
       }
     },
-    "Right now: both moved out together, so they pushed today's verdict.": {
+    "Right now: both moved out together. That counts as one signal out; your verdict changes if it repeats two days in a row.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Right now: both moved out together, so they pushed today's verdict."
+            "value": "Right now: both moved out together. That counts as one signal out; your verdict changes if it repeats two days in a row."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ahora: las dos se salieron juntas, así que sí empujaron tu veredicto de hoy."
+            "value": "Ahora: las dos se salieron juntas. Eso cuenta como una señal fuera; tu veredicto cambia si se repite dos días seguidos."
           }
         }
       }
@@ -120,19 +120,19 @@
         }
       }
     },
-    "One signal off your pattern never changes your verdict: a warm room or an extra blanket can move it on its own. Only when both move out together does the guardian push your day to a lighter one. It never diagnoses anything.": {
+    "One signal off your pattern never changes your verdict: a warm room or an extra blanket can move it on its own. Only when both move out together, two days in a row, does the guardian push your day to a lighter one. It never diagnoses anything.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "One signal off your pattern never changes your verdict: a warm room or an extra blanket can move it on its own. Only when both move out together does the guardian push your day to a lighter one. It never diagnoses anything."
+            "value": "One signal off your pattern never changes your verdict: a warm room or an extra blanket can move it on its own. Only when both move out together, two days in a row, does the guardian push your day to a lighter one. It never diagnoses anything."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Una sola señal fuera de tu patrón nunca cambia tu veredicto: un cuarto caliente o una cobija de más la mueven sola. Solo cuando las dos se salen juntas, el guardián empuja tu día a uno más leve. Nunca diagnostica nada."
+            "value": "Una sola señal fuera de tu patrón nunca cambia tu veredicto: un cuarto caliente o una cobija de más la mueven sola. Solo cuando las dos se salen juntas, dos días seguidos, el guardián empuja tu día a uno más leve. Nunca diagnostica nada."
           }
         }
       }

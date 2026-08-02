@@ -143,7 +143,10 @@ enum LiquidHoyBuilder {
         case .respFuera:
             ahora = String(localized: "Right now: only your breathing is off; your verdict doesn't change.")
         case .juntas:
-            ahora = String(localized: "Right now: both moved out together, so they pushed today's verdict.")
+            // El veredicto MOSTRADO pasa por histéresis de 2 días (Preparedness.Config
+            // .hysteresisDays): un solo día en pareja cuenta, pero no voltea — la hoja
+            // no puede afirmar el empujón como hecho (gate CSO G1).
+            ahora = String(localized: "Right now: both moved out together. That counts as one signal out; your verdict changes if it repeats two days in a row.")
         }
         return LiquidGuardianHoja(
             kicker: String(localized: "Watching").uppercased(),
@@ -155,7 +158,7 @@ enum LiquidHoyBuilder {
                        estado == .respFuera || estado == .juntas),
             estadoAhora: ahora,
             reglaTitulo: String(localized: "It watches; it doesn't vote."),
-            reglaCuerpo: String(localized: "One signal off your pattern never changes your verdict: a warm room or an extra blanket can move it on its own. Only when both move out together does the guardian push your day to a lighter one. It never diagnoses anything."))
+            reglaCuerpo: String(localized: "One signal off your pattern never changes your verdict: a warm room or an extra blanket can move it on its own. Only when both move out together, two days in a row, does the guardian push your day to a lighter one. It never diagnoses anything."))
     }
 
     /// Los rótulos del Ecosistema (FER-10) desde el catálogo, en caja alta del locale.

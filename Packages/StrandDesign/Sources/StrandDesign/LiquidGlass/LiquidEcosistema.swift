@@ -2,8 +2,9 @@ import SwiftUI
 
 // MARK: - «El Ecosistema» (FER-10) — el héroe de Hoy
 //
-// Esferas de PARTÍCULAS (cada punto representa una medición) que se funden en el orbe del
-// veredicto: las dos decisoras (EN REPOSO · SUEÑO) quedan orbitándolo como lunas con su
+// Esferas de PARTÍCULAS (la nube es textura; el DATO es el nivel del líquido y el valor
+// adentro — los conteos son constantes, no una partícula por lectura) que se funden en el
+// orbe del veredicto: las dos decisoras (EN REPOSO · SUEÑO) quedan orbitándolo como lunas con su
 // etiqueta, y el guardián (temperatura + respiración) es el tercer orbe menor SIEMPRE
 // presente en su órbita externa — el día que sus dos señales van juntas, la abandona y se
 // asoma DETRÁS del orbe («el eclipse»). Tap = separar (pegajoso); tap de nuevo = unir.

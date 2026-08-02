@@ -97,7 +97,7 @@ public struct LiquidGuardianScreen: View {
             filaResp: ("Respiración", "14 rpm", false),
             estadoAhora: "Ahora: dentro de tu patrón.",
             reglaTitulo: "Vigila; no vota.",
-            reglaCuerpo: "Una sola señal fuera de tu patrón nunca cambia tu veredicto: un cuarto caliente o una cobija de más la mueven sola. Solo cuando las dos se salen juntas, el guardián empuja tu día a «Hoy ve leve». Nunca diagnostica nada."))
+            reglaCuerpo: "Una sola señal fuera de tu patrón nunca cambia tu veredicto: un cuarto caliente o una cobija de más la mueven sola. Solo cuando las dos se salen juntas, dos días seguidos, el guardián empuja tu día a uno más leve. Nunca diagnostica nada."))
             .padding(LiquidSpace.s550)
     }
 }
