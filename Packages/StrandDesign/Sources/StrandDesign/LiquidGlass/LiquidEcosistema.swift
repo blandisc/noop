@@ -393,13 +393,13 @@ public struct LiquidEcosistema: View {
         let juntas = guardian?.estado == .juntas
         let tempFuera = guardian?.estado == .tempFuera || juntas
         let respFuera = guardian?.estado == .respFuera || juntas
-        let contenido = HStack(spacing: 26) {
+        let contenido = HStack(spacing: 18) {
             miniGuardian(valor: guardian?.temp ?? "—", rotulo: rotulos.temperatura,
                          fuera: tempFuera)
-                .frame(width: 92)
+                .frame(width: 100)   // «TEMPERATURA» a 8pt +2.2 tracking mide ~97 (R2)
             miniGuardian(valor: guardian?.resp ?? "—", rotulo: rotulos.respiracion,
                          fuera: respFuera)
-                .frame(width: 92)
+                .frame(width: 100)
         }
         .frame(minHeight: 44)
         .contentShape(Rectangle())

@@ -170,6 +170,14 @@ public enum Baselines {
                                halfLifeB: 14.0, halfLifeS: 21.0),
         "efficiency": MetricCfg(minVal: 0.2, maxVal: 1.0, floorSpread: 0.03,
                                 halfLifeB: 14.0, halfLifeS: 21.0),
+        // FER-7 · Veredicto v4 Fase 4: the first-third − last-third sleeping-HR delta (bpm), baselined
+        // against the user's own history for a DESCRIPTIVE "vs your normal" read (never a vote). A
+        // difference metric so it can be negative → NOT log-domain. bounds ±30 bpm and floorSpread=2.5
+        // are PRODUCT-CALIBRATION knobs (not validated): 2.5 keeps the σ floor (2.5·1.253≈3.1 bpm)
+        // above the delta's measurement noise so an ultra-consistent sleeper isn't flagged on noise.
+        // To be signed by /estadistico + /cso on real data.
+        "night_thirds_delta": MetricCfg(minVal: -30.0, maxVal: 30.0, floorSpread: 2.5,
+                                        halfLifeB: 14.0, halfLifeS: 21.0),
     ]
 
     /// Convenience accessors for the standard configs.
