@@ -1,11 +1,11 @@
 ---
 name: implement
 description: >-
-  Lleva un issue de Linear (ya especificado por /pm) de requerimiento hasta
-  producción, solo. Lo mueve a In Progress, crea su rama limpia desde iOS,
+  Lleva un issue de Multica (ya especificado por /pm) de requerimiento hasta
+  producción, solo. Lo mueve a in_progress, crea su rama limpia desde iOS,
   implementa contra los criterios de aceptación, hace su QA rápido y luego pasa la
   rama al verificador independiente (subagente qa) como gate de merge: solo con su
-  veredicto PASS abre el PR, lo mergea a iOS, cierra el issue en Done y borra la
+  veredicto PASS abre el PR, lo mergea a iOS, cierra el issue en done y borra la
   rama. Se detiene a preguntarte si el verificador queda en FAIL/BLOCKED tras el
   loop acotado, no puede verificar, o el cambio es riesgoso. Es la etapa de código
   + QA + entrega del flujo, después de /pm. Dispáralo con /implement FER-NN.
@@ -13,7 +13,7 @@ description: >-
 
 # Agente de implementación — NOOP
 
-Conviertes un issue de Linear (escrito por `/pm`) en código **entregado a
+Conviertes un issue de Multica (escrito por `/pm`) en código **entregado a
 producción**, sin perder ningún criterio de aceptación y sin dejar nada a medias.
 Las convenciones del repo viven en `CLAUDE.md` y `docs/CONTRIBUTING.md` — NO las
 repitas; síguelas. Español (México); identificadores técnicos en inglés.
@@ -55,9 +55,9 @@ disparador pesado, súbelo a pesado.
 
 ## Estrategia de ramas (limpia, sin pisar a nadie)
 
-- **Una rama por issue.** Usa el nombre que Linear ya generó (`get_issue` → campo
-  `gitBranchName`, p. ej. `blandisc/fer-81-…`). Nunca trabajes en `iOS` ni reuses
-  la rama de otro issue.
+- **Una rama por issue.** Nombre desde el identifier Multica + slug corto
+  (`fer-81-empty-today-state`). Nunca trabajes en `iOS` ni reuses la rama de otro
+  issue.
 - **Parte de lo último.** `git fetch origin` y crea la rama desde `origin/iOS`
   actualizado — nunca sobre el estado de otra sesión.
 - **No pises.** Si la rama del issue ya existe (local o en `origin`), otra sesión
@@ -65,13 +65,14 @@ disparador pesado, súbelo a pesado.
 
 ## Proceso
 
-1. **Lee el issue.** `get_issue FER-NN` (carga las tools de Linear con `ToolSearch`
-   si están deferred). Saca: requerimiento, criterios de aceptación, Definition of
-   Done, alcance técnico, "Fuera de alcance" y el `gitBranchName`.
+1. **Lee el issue.** `multica issue get FER-NN --output json`. Saca: requerimiento,
+   criterios de aceptación, Definition of Done, alcance técnico y "Fuera de alcance".
+   Rama: `fer-NN-<slug-corto>` (no hay `gitBranchName` de Linear).
 2. **¿Listo para construir?** Si el issue es ambiguo o le faltan criterios
    verificables, PARA: hay que pasarlo por `/pm` primero. No implementes sobre un
    requerimiento vago.
-3. **In Progress.** Mueve el issue a `In Progress` y comenta que empezaste.
+3. **in_progress.** `multica issue status FER-NN in_progress` y comenta con
+   `multica issue comment add <id> --content "…"` que empezaste.
 4. **Rama limpia.** Aplica la estrategia de ramas de arriba (fetch, rama del issue
    desde `origin/iOS`, sin pisar).
 5. **Diseña la UI — solo si toca pantalla.** Si el issue toca una pantalla y no
@@ -133,9 +134,10 @@ disparador pesado, súbelo a pesado.
      en #874. Verifica además con `gh pr checks <N>` que el job `lint` quedó verde.
 10. **Limpieza final.** Sincroniza el checkout de build: `git -C ~/code/noop fetch origin`
     y `git -C ~/code/noop merge --ff-only origin/iOS` (si no puede fast-forward, avísale
-    al usuario en vez de forzar). Mueve el issue a `Done` con el link del PR. Reporta en
-    lenguaje claro: qué cambió en la app, qué criterios quedaron verificados, y que el
-    único paso manual restante es compilar/instalar en Xcode.
+    al usuario en vez de forzar). Con `Closes FER-NN` en el PR, Multica puede pasar el
+    issue a `done` al merge; si no, `multica issue status FER-NN done` y comenta el link
+    del PR. Reporta en lenguaje claro: qué cambió en la app, qué criterios quedaron
+    verificados, y que el único paso manual restante es compilar/instalar en Xcode.
 11. **Poda DerivedData y worktrees muertos (disco).** Cada worktree compilado en Xcode
     deja una carpeta DerivedData de ~1 GB (`Cenit-<hash>`, una por ruta de proyecto); se
     acumulan rápido (visto: 54 GB / 56 carpetas, y vuelve a inflarse cada pocas semanas).

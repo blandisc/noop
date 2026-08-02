@@ -68,7 +68,7 @@ Si te disparan para algo que no es de fondo, dilo y manda el trabajo directo a
 
 ## Insumos (léelos al empezar, no los adivines)
 
-1. **El requerimiento de `/pm`** (el issue de Linear): qué, criterios de
+1. **El requerimiento de `/pm`** (el issue de Multica): qué, criterios de
    aceptación, Definition of Done.
 2. **[docs/ARCHITECTURE.md](../../../docs/ARCHITECTURE.md)** — el mapa del
    sistema. Es tu fuente de verdad de diseño. Empieza siempre aquí.
