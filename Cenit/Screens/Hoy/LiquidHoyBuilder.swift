@@ -87,6 +87,7 @@ enum LiquidHoyBuilder {
     enum HeroRoute: Equatable {
         case autonomic   // veredicto y lectura de día → hoja autonómica
         case sleep       // fallback de sueño → detalle de sueño
+        case salud       // sin permiso de Salud: la puerta abre el flujo de conexión (FER-10)
     }
 
     struct Output {
@@ -97,16 +98,17 @@ enum LiquidHoyBuilder {
     // MARK: Build
 
     static func build(_ i: Inputs) -> Output {
-        let (hero, route) = hero(prep: i.preparedness, sleepMin: i.sleep?.value,
-                                 nights: i.preparedness?.autonomicNights ?? 0,
-                                 healthConnected: i.healthConnected,
-                                 verdictPending: i.verdictPending)
+        let (hero, route, calibracion) = hero(prep: i.preparedness, sleepMin: i.sleep?.value,
+                                              nights: i.preparedness?.autonomicNights ?? 0,
+                                              healthConnected: i.healthConnected,
+                                              verdictPending: i.verdictPending)
         let model = LiquidHoyModel(
             kicker: kicker(now: i.now, calendar: i.calendar, locale: i.locale),
             dial: .init(night: i.night, sol: i.sol,
                         marker: markerHour(now: i.now, calendar: i.calendar)),
             senales: senales(prep: i.preparedness,
                              valores: (rhr: i.rhr.map { "\(Int($0.value.rounded())) \(String(localized: "bpm"))" },
+                                       rhrNum: i.rhr.map { "\(Int($0.value.rounded()))" },
                                        sueno: i.sleep.map { sleepClockText($0.value) })),
             hero: hero,
             carga: carga(i.trainingLoad, locale: i.locale),
@@ -120,8 +122,64 @@ enum LiquidHoyBuilder {
             // tether de confianza (que DESAPARECÍA con la base madura, justo donde vive el
             // usuario el 90 % del tiempo) y pasa a ser la PUERTA. Siempre presente, en los
             // dos estados del héroe.
-            heroPuerta: String(localized: "How I got here"))
+            heroPuerta: route == .salud ? String(localized: "Connect Health")
+                                        : String(localized: "How I got here"),
+            calibracion: calibracion,
+            rotulos: rotulos(locale: i.locale))
         return Output(model: model, heroRoute: route)
+    }
+
+    /// La hoja del guardián (FER-10, revisión de usuario): contesta «¿qué es VIGILANDO?»
+    /// con la regla del centinela — vigila, no vota; solo en pareja empuja. Jamás
+    /// «enfermedad».
+    static func guardianHoja(_ guardian: LiquidHoyModel.Guardian?) -> LiquidGuardianHoja {
+        let estado = guardian?.estado ?? .tranquilo
+        let ahora: String
+        switch estado {
+        case .tranquilo:
+            ahora = String(localized: "Right now: inside your pattern.")
+        case .tempFuera:
+            ahora = String(localized: "Right now: only your temperature is off; your verdict doesn't change.")
+        case .respFuera:
+            ahora = String(localized: "Right now: only your breathing is off; your verdict doesn't change.")
+        case .juntas:
+            // El veredicto MOSTRADO pasa por histéresis de 2 días (Preparedness.Config
+            // .hysteresisDays): un solo día en pareja cuenta, pero no voltea — la hoja
+            // no puede afirmar el empujón como hecho (gate CSO G1).
+            ahora = String(localized: "Right now: both moved out together. That counts as one signal out; your verdict changes if it repeats two days in a row.")
+        }
+        return LiquidGuardianHoja(
+            kicker: String(localized: "Watching").uppercased(),
+            titulo: String(localized: "The guardian"),
+            intro: String(localized: "Your nightly skin temperature and breathing, watched against your own pattern."),
+            filaTemp: (String(localized: "Temperature"), guardian?.temp ?? "—",
+                       estado == .tempFuera || estado == .juntas),
+            filaResp: (String(localized: "Breathing"), guardian?.resp ?? "—",
+                       estado == .respFuera || estado == .juntas),
+            estadoAhora: ahora,
+            reglaTitulo: String(localized: "It watches; it doesn't vote."),
+            reglaCuerpo: String(localized: "One signal off your pattern never changes your verdict: a warm room or an extra blanket can move it on its own. Only when both move out together, two days in a row, does the guardian push your day to a lighter one. It never diagnoses anything."))
+    }
+
+    /// Los rótulos del Ecosistema (FER-10) desde el catálogo, en caja alta del locale.
+    static func rotulos(locale: Locale) -> EcosistemaRotulos {
+        EcosistemaRotulos(
+            reposo: String(localized: "At rest").uppercased(with: locale),
+            sueno: String(localized: "Sleep").uppercased(with: locale),
+            guardian: String(localized: "Guardian").uppercased(with: locale),
+            temperatura: String(localized: "Temperature").uppercased(with: locale),
+            respiracion: String(localized: "Breathing").uppercased(with: locale),
+            hintSeparar: String(localized: "Tap to separate").uppercased(with: locale),
+            hintUnir: String(localized: "Tap to reunite").uppercased(with: locale),
+            accionSeparar: String(localized: "Separate the signals"),
+            accionUnir: String(localized: "Reunite the signals"),
+            abrirReposo: String(localized: "Open at rest"),
+            abrirSueno: String(localized: "Open sleep"),
+            abrirGuardian: String(localized: "Open the guardian"),
+            sinLecturaNoche: String(localized: "No reading last night"),
+            sinLecturaHoy: String(localized: "No reading today"),
+            guardianSinLecturas: String(localized: "Guardian: no readings today"),
+            anuncioVeredicto: String(localized: "Your verdict is in: %@"))
     }
 
     // MARK: Kicker + dial
@@ -169,7 +227,7 @@ enum LiquidHoyBuilder {
 
     static func hero(prep: Preparedness.Read?, sleepMin: Double?, nights: Int,
                      healthConnected: Bool = true, verdictPending: Bool = false)
-        -> (LiquidHoyModel.Hero, HeroRoute) {
+        -> (LiquidHoyModel.Hero, HeroRoute, LiquidHoyModel.Calibracion?) {
         // Todavía calculando (primer pintado): el veredicto solo sale del refresh completo. Decirle
         // «no conozco tu base» a alguien con años de historia es FALSO — y saldría en cada arranque.
         // Preferimos decir la verdad pequeña: lo estamos leyendo.
@@ -177,19 +235,30 @@ enum LiquidHoyBuilder {
             return (.demotado(kicker: String(localized: "READINESS"),
                               title: String(localized: "Reading your night…"),
                               subtitle: String(localized: "One moment.")),
-                    .autonomic)
+                    .autonomic, nil)
         }
         if let prep, prep.verdict != .lowSignal {
             if prep.isNightAnchored {
-                return (veredicto(prep.verdict, nights: nights, prep: prep), .autonomic)
+                return (veredicto(prep.verdict, nights: nights, prep: prep), .autonomic, nil)
             }
-            return (lecturaDeDia(prep), .autonomic)
+            return (lecturaDeDia(prep), .autonomic, nil)
         }
         // Decisión del dueño (sesión /inject 2026-07-22): sin veredicto NO se disfraza el
-        // héroe con otro dato — los 5 estados canónicos son full/caution/easy · lectura de
-        // día · «aún sin datos suficientes». El fallback de sueño de anoche se retiró.
-        return (suenoFallback(sleepMin: sleepMin, healthConnected: healthConnected),
-                .autonomic)
+        // héroe con otro dato. FER-10: con Salud conectada, el estado sin-base es la
+        // ACRECIÓN del Ecosistema («Conociéndote · Noche n de m»).
+        let heroFallback = suenoFallback(sleepMin: sleepMin, nights: nights,
+                                         healthConnected: healthConnected)
+        let calibracion: LiquidHoyModel.Calibracion? = healthConnected
+            ? {
+                let c = calibracionConteo(nights: nights)
+                // Solo mientras la base SE FORMA (gate /cso B2): en el tope, el estado es
+                // «sin lectura hoy», no acreción con puntos llenos.
+                return c.noche < c.total ? .init(noche: c.noche, total: c.total) : nil
+            }()
+            : nil
+        // Sin permiso, la puerta del héroe cambia de promesa: «Conectar Salud» (FER-10,
+        // estado 8) — el único camino real es conceder el permiso.
+        return (heroFallback, healthConnected ? .autonomic : .salud, calibracion)
     }
 
     /// Renglones 1 (full/caution/easy con noche): la palabra-veredicto con su tono.
@@ -224,11 +293,15 @@ enum LiquidHoyBuilder {
         let confianza = clamped < trust
             ? String(localized: "Confidence: \(clamped) of \(trust) nights")
             : nil
+        // Palabras FER-10 («El Ecosistema», aprobadas por el dueño en 6 iteraciones y
+        // pasadas por /cso): LECTURAS de tu estado, no órdenes de coach. «En rango» /
+        // «Hoy ve leve» / «Recupera» sustituyen a «Dale con todo» / «Bien, con un
+        // detalle» / «Ándate leve».
         switch v {
         case .full:
             return .veredicto(
-                title: String(localized: "Go all in"),
-                highlight: String(localized: "hero.highlight.full", defaultValue: "all in"),
+                title: String(localized: "hero.title.full", defaultValue: "In range"),
+                highlight: String(localized: "hero.highlight.full", defaultValue: "range"),
                 highlightTone: LiquidColor.verdePrimario,
                 // FER-1047: el héroe afirma «tus DOS señales» (en reposo · sueño) — el eje autonómico
                 // ya no cuenta como tres, y el térmico bajó al guardián que vigila pero no vota.
@@ -236,21 +309,22 @@ enum LiquidHoyBuilder {
                 confianza: confianza)
         case .caution:
             return .veredicto(
-                title: String(localized: "Good, one thing to watch"),
-                highlight: String(localized: "hero.highlight.caution", defaultValue: "one thing"),
+                title: String(localized: "hero.title.caution", defaultValue: "Go light today"),
+                highlight: String(localized: "hero.highlight.caution", defaultValue: "light"),
                 highlightTone: LiquidColor.atencion,
                 subtitle: subtituloDetalle(prep) ??
                     String(localized: "You're doing well, with one thing to watch."),
                 confianza: confianza)
         case .easy, .lowSignal:
             // lowSignal jamás llega aquí (el if-chain lo manda al estado sin datos).
-            // D1 resuelta por el dueño (/inject): «Ándate leve» habla en ROJO, como la
-            // superficie clásica (algo está MUY fuera; el ámbar es para «un detalle»).
+            // El rojo conserva la decisión D1: habla en NEGATIVO (algo está MUY fuera).
             return .veredicto(
-                title: String(localized: "Take it easy"),
-                highlight: String(localized: "hero.highlight.easy", defaultValue: "easy"),
+                title: String(localized: "hero.title.easy", defaultValue: "Recover"),
+                highlight: String(localized: "hero.highlight.easy", defaultValue: "Recover"),
                 highlightTone: LiquidColor.negativo,
-                subtitle: String(localized: "Your body's asking you to ease off today."),
+                // El rojo también nombra su causa (gate /cso M3): el ámbar ya lo hacía.
+                subtitle: subtituloDetalle(prep) ??
+                    String(localized: "Your body's asking you to ease off today."),
                 confianza: confianza)
         }
     }
@@ -272,26 +346,46 @@ enum LiquidHoyBuilder {
     /// limpia de la firma en el cierre de la sesión (quitar parámetros no es inyectable).
     // TODO(/inject cierre): mover este copy al String Catalog (clave EN + es-MX) y limpiar
     // la firma + el caso `.sleep` de HeroRoute.
-    private static func suenoFallback(sleepMin: Double?,
+    private static func suenoFallback(sleepMin: Double?, nights: Int,
                                       healthConnected: Bool) -> LiquidHoyModel.Hero {
         _ = sleepMin
         // Sin permiso de Salud, «duerme con tu Watch» es una instrucción imposible: el
         // único camino real es conceder el permiso (revote /inject).
-        let subtitle = healthConnected
-            ? String(localized: "Sleep with your Apple Watch a few nights and your daily verdict will appear here.")
-            : String(localized: "Connect Apple Health in Settings and your daily verdict will appear here.")
+        guard healthConnected else {
+            return .demotado(
+                kicker: String(localized: "READINESS"),
+                title: String(localized: "I don\'t know your baseline yet"),
+                subtitle: String(localized: "Connect Apple Health in Settings and your daily verdict will appear here."))
+        }
+        // FER-10 «Conociéndote»: la calibración habla más bajito (displayS) y su avance es
+        // honesto — el denominador sale del MOTOR (`Baselines.minNightsSeed`), no de la UI.
+        // Gate /cso B2: con `nights >= total` la base YA está sembrada — este estado llega
+        // por «falta la lectura de hoy» o «base rancia», y decir «se está formando» con
+        // los puntos llenos sería falso. Ahí el héroe dice la causa real, sin contador.
+        let (noche, total) = calibracionConteo(nights: nights)
+        guard noche < total else {
+            return .demotado(
+                kicker: String(localized: "READINESS"),
+                title: String(localized: "No reading today"),
+                subtitle: String(localized: "Your range is formed; today's reading hasn't arrived yet."))
+        }
         return .demotado(
             kicker: String(localized: "READINESS"),
-            // Pasada UX H4: decía «Aún sin datos suficientes» sobre ocho tiles LLENOS de
-            // datos. Lo que falta no son datos, es la base de 21 noches.
-            title: String(localized: "I don\'t know your baseline yet"),
-            subtitle: subtitle)
+            title: String(localized: "hero.title.calibrando", defaultValue: "Getting to know you"),
+            subtitle: String(localized: "Night \(noche) of \(total) · your range is taking shape"))
+    }
+
+    /// El conteo honesto de la calibración: noche actual (acotada) de las que el motor
+    /// necesita para sembrar la base (`Baselines.minNightsSeed`).
+    static func calibracionConteo(nights: Int) -> (noche: Int, total: Int) {
+        let total = Baselines.minNightsSeed
+        return (min(max(0, nights), total), total)
     }
 
     // MARK: Señales (port literal de `TodayView.needles()`)
 
     static func senales(prep: Preparedness.Read?,
-                        valores: (rhr: String?, sueno: String?) = (nil, nil))
+                        valores: (rhr: String?, rhrNum: String?, sueno: String?) = (nil, nil, nil))
         -> [LiquidHoyModel.Senal] {
         func driver(_ ax: Preparedness.Axis) -> Preparedness.Driver? {
             prep?.drivers.first { $0.axis == ax }
@@ -308,23 +402,39 @@ enum LiquidHoyBuilder {
         // Sin lectura vuelve al patrón normal (icono + «SIN DATOS»).
         let aut = driver(.autonomic)
         let autHasData = aut?.state.hasData ?? false
+        let autFuera = aut?.state.isOut ?? false
         out.append(.init(
             id: "autonomico", label: String(localized: "At rest"),
             caption: caption(for: aut?.state),
             progress: autHasData ? positionFromZ(aut?.orientedZ) : nil,
             icon: .ondaSenal,
-            state: (aut?.state.isOut ?? false) ? .atencion : .ok,
-            valor: autHasData ? valores.rhr : nil))
+            state: autFuera ? .atencion : .ok,
+            valor: autHasData ? valores.rhr : nil,
+            // El badge del estado separado (FER-10): el número grande + su contexto.
+            badge: autHasData ? valores.rhrNum.map {
+                .init(valor: $0, contexto: autFuera
+                      ? String(localized: "bpm · out of your range")
+                      : String(localized: "bpm · in your range"))
+            } : nil))
 
         // SUEÑO — posición categórica por estado.
         let sleep = driver(.sleep)
+        let sleepHasData = sleep?.state.hasData ?? false
+        let sleepFuera = sleep?.state.isOut ?? false
         out.append(.init(
             id: "sueno", label: String(localized: "Sleep"),
             caption: caption(for: sleep?.state),
-            progress: (sleep?.state.hasData ?? false) ? positionFromState(sleep!.state) : nil,
+            progress: sleepHasData ? positionFromState(sleep!.state) : nil,
             icon: .lunaSenal,
-            state: (sleep?.state.isOut ?? false) ? .atencion : .ok,
-            valor: valores.sueno))
+            state: sleepFuera ? .atencion : .ok,
+            // Simétrico al reposo (Grok #5): sin driver de sueño con dato, NADA de valor —
+            // «7:20» junto a «Sin lectura anoche» sería una contradicción de salud.
+            valor: sleepHasData ? valores.sueno : nil,
+            badge: sleepHasData ? valores.sueno.map {
+                .init(valor: $0, contexto: sleepFuera
+                      ? String(localized: "h · out of your range")
+                      : String(localized: "h · in your range"))
+            } : nil))
 
         // El TÉRMICO ya NO es un orbe: temperatura y respiración viven en la franja del guardián
         // (`guardian(...)`), que vigila pero no vota. «Mostrar no es votar» (FER-1047).
@@ -531,9 +641,11 @@ enum LiquidHoyBuilder {
     /// La palabra del veredicto tal cual la dice el héroe (misma clave del catálogo).
     private static func palabraVeredicto(_ v: Preparedness.Verdict) -> String {
         switch v {
-        case .full: return String(localized: "Go all in")
-        case .caution: return String(localized: "Good, one thing to watch")
-        case .easy: return String(localized: "Take it easy")
+        // Paridad héroe↔acta (gate /cso B1): el acta dice EXACTAMENTE la palabra del
+        // héroe FER-10 — jamás las retiradas.
+        case .full: return String(localized: "hero.title.full", defaultValue: "In range")
+        case .caution: return String(localized: "hero.title.caution", defaultValue: "Go light today")
+        case .easy: return String(localized: "hero.title.easy", defaultValue: "Recover")
         // `lowSignal` no tiene palabra-veredicto: `hayVeredicto` lo excluye. Mapearlo a
         // «Ándate leve» era una trampa latente (D5 del verificador).
         case .lowSignal: return String(localized: "No verdict yet")

@@ -95,6 +95,11 @@ private struct LiquidGlassLayer<S: InsettableShape>: ViewModifier {
             // imitar con material + relleno. La elevación tonal sigue siendo nuestra
             // (silueta difuminada); el resto del stack queda como fallback para OS previos.
             content
+                // El relleno de la receta TAMBIÉN va en el camino nativo: sin él la
+                // superficie es 100 % backdrop y cambia de valor según dónde esté en
+                // pantalla (las tablas de las hojas «se encendían» al scrollear bajo
+                // el canto claro del fondo — revisión de usuario en simulador).
+                .background { shape.fill(fill) }
                 // `.regular` SIN `.interactive()` (decisión del dueño /inject: el clear se
                 // sintió aguado y la reactividad táctil del vidrio competía con nuestro
                 // press — la única gramática de toque es `.liquidPress`).

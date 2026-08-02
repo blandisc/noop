@@ -17,20 +17,32 @@ import SwiftUI
 
 public struct LiquidHoyModel: Sendable {
     public struct Senal: Sendable, Identifiable {
+        /// El valor GRANDE del estado separado del Ecosistema (FER-10): «52» + su contexto
+        /// («lpm · en tu rango») — no es el `valor` compacto del orbe retirado.
+        public struct Badge: Sendable {
+            public let valor: String
+            public let contexto: String
+            public init(valor: String, contexto: String) {
+                self.valor = valor
+                self.contexto = contexto
+            }
+        }
+
         public let id: String
         public let label: String
         public let caption: String
-        /// `nil` = SIN DATOS (el eje no vota): solo track, sin arco ni punto.
+        /// `nil` = SIN DATOS (el eje no vota): la esfera separada no dibuja nivel.
         public let progress: Double?
         public let icon: LiquidIcon.Glyph
         public let state: LiquidSignalState
-        /// El micro-valor del eje YA formateado («56 ms» · «7:20» · «+0.1°») — camino
-        /// 1+3 de la elevación /inject: el orbe muestra su DATO; el icono queda como
-        /// identidad cuando no hay lectura.
+        /// El micro-valor del eje YA formateado («56 ms» · «7:20» · «+0.1°»).
         public let valor: String?
+        /// El valor del estado separado (FER-10). `nil` = cae a `valor`/«—».
+        public let badge: Badge?
 
         public init(id: String, label: String, caption: String, progress: Double?,
-                    icon: LiquidIcon.Glyph, state: LiquidSignalState, valor: String? = nil) {
+                    icon: LiquidIcon.Glyph, state: LiquidSignalState, valor: String? = nil,
+                    badge: Badge? = nil) {
             self.id = id
             self.label = label
             self.caption = caption
@@ -38,6 +50,19 @@ public struct LiquidHoyModel: Sendable {
             self.icon = icon
             self.state = state
             self.valor = valor
+            self.badge = badge
+        }
+    }
+
+    /// El avance honesto de la calibración (FER-10): noche `noche` de `total`, donde
+    /// `total` viene del MOTOR (`Baselines.minNightsSeed`), no de la UI. `nil` = no
+    /// estamos calibrando.
+    public struct Calibracion: Sendable, Equatable {
+        public let noche: Int
+        public let total: Int
+        public init(noche: Int, total: Int) {
+            self.noche = noche
+            self.total = total
         }
     }
 
@@ -156,11 +181,16 @@ public struct LiquidHoyModel: Sendable {
     public let kickerA11y: String?
     /// El ambiente semántico del día (tiñe fondo y pulsos): verde/ámbar/rojo/neutro.
     public let ambiente: LiquidAmbiente
+    /// Calibrando (FER-10): la acreción del Ecosistema + «Noche n de m». `nil` = no aplica.
+    public let calibracion: Calibracion?
+    /// Los rótulos del Ecosistema YA localizados (la app los pasa del catálogo).
+    public let rotulos: EcosistemaRotulos
 
     public init(kicker: String, dial: Dial, senales: [Senal], hero: Hero, carga: Carga?,
                 metricas: [Metrica], guardian: Guardian? = nil, heroHint: String? = nil,
                 ambiente: LiquidAmbiente = .bien, cargaLabel: String = "CARGA",
-                kickerA11y: String? = nil, heroPuerta: String? = nil) {
+                kickerA11y: String? = nil, heroPuerta: String? = nil,
+                calibracion: Calibracion? = nil, rotulos: EcosistemaRotulos = .base) {
         self.cargaLabel = cargaLabel
         self.kickerA11y = kickerA11y
         self.kicker = kicker
@@ -173,19 +203,23 @@ public struct LiquidHoyModel: Sendable {
         self.heroHint = heroHint
         self.ambiente = ambiente
         self.heroPuerta = heroPuerta
+        self.calibracion = calibracion
+        self.rotulos = rotulos
     }
 
-    /// El contenido de muestra del ensamble §7.1 («Dale con todo»).
+    /// El contenido de muestra del ensamble («En rango» — palabras FER-10).
     public static let ejemplo = LiquidHoyModel(
         kicker: "MIÉ 22 DE JUL",
         dial: Dial(night: (start: 20, end: 4), sol: (start: 6.8, end: 20.3), marker: 8),
         senales: [
             .init(id: "autonomico", label: "EN REPOSO", caption: "EN TU RANGO",
-                  progress: 0.35, icon: .ondaSenal, state: .ok, valor: "52 lpm"),
+                  progress: 0.35, icon: .ondaSenal, state: .ok, valor: "52 lpm",
+                  badge: .init(valor: "52", contexto: "lpm · en tu rango")),
             .init(id: "sueno", label: "SUEÑO", caption: "EN TU RANGO",
-                  progress: 0.43, icon: .lunaSenal, state: .ok, valor: "7:20"),
+                  progress: 0.43, icon: .lunaSenal, state: .ok, valor: "7:20",
+                  badge: .init(valor: "7:20", contexto: "h · en tu rango")),
         ],
-        hero: .veredicto(title: "Dale\ncon todo", highlight: "todo",
+        hero: .veredicto(title: "En rango", highlight: "rango",
                          highlightTone: LiquidColor.verdePrimario,
                          subtitle: "Tus dos señales amanecieron dentro de tu rango.",
                          confianza: nil),
@@ -221,17 +255,54 @@ public struct LiquidHoyContent: View {
     private let onTapSenal: ((String) -> Void)?
     private let onTapCarga: (() -> Void)?
     private let onTapHero: (() -> Void)?
+    private let onTapGuardian: (() -> Void)?
+    private let mostrarHintSeparar: Bool
+    private let fusionInicial: Bool
+    private let onFusionArrancada: (() -> Void)?
+    private let onSeparacion: (() -> Void)?
+    /// SOLO tests/renders: fija la fase del Ecosistema (p. ej. `.separada`).
+    let ecosistemaFase: EcosistemaSimulacion.Fase?
 
     public init(model: LiquidHoyModel,
                 onTapMetric: ((String) -> Void)? = nil,
                 onTapSenal: ((String) -> Void)? = nil,
                 onTapCarga: (() -> Void)? = nil,
-                onTapHero: (() -> Void)? = nil) {
+                onTapHero: (() -> Void)? = nil,
+                onTapGuardian: (() -> Void)? = nil,
+                mostrarHintSeparar: Bool = true,
+                fusionInicial: Bool = false,
+                onFusionArrancada: (() -> Void)? = nil,
+                onSeparacion: (() -> Void)? = nil) {
+        self.init(model: model, onTapMetric: onTapMetric, onTapSenal: onTapSenal,
+                  onTapCarga: onTapCarga, onTapHero: onTapHero,
+                  onTapGuardian: onTapGuardian,
+                  mostrarHintSeparar: mostrarHintSeparar, fusionInicial: fusionInicial,
+                  onFusionArrancada: onFusionArrancada, onSeparacion: onSeparacion,
+                  ecosistemaFase: nil)
+    }
+
+    init(model: LiquidHoyModel,
+         onTapMetric: ((String) -> Void)? = nil,
+         onTapSenal: ((String) -> Void)? = nil,
+         onTapCarga: (() -> Void)? = nil,
+         onTapHero: (() -> Void)? = nil,
+         onTapGuardian: (() -> Void)? = nil,
+         mostrarHintSeparar: Bool = true,
+         fusionInicial: Bool = false,
+         onFusionArrancada: (() -> Void)? = nil,
+         onSeparacion: (() -> Void)? = nil,
+         ecosistemaFase: EcosistemaSimulacion.Fase?) {
         self.model = model
         self.onTapMetric = onTapMetric
         self.onTapSenal = onTapSenal
         self.onTapCarga = onTapCarga
         self.onTapHero = onTapHero
+        self.onTapGuardian = onTapGuardian
+        self.mostrarHintSeparar = mostrarHintSeparar
+        self.fusionInicial = fusionInicial
+        self.onFusionArrancada = onFusionArrancada
+        self.onSeparacion = onSeparacion
+        self.ecosistemaFase = ecosistemaFase
     }
 
     public var body: some View {
@@ -242,29 +313,32 @@ public struct LiquidHoyContent: View {
             }
             .liquidEntrada(index: 0)
 
-            senales
+            // «El Ecosistema» (FER-10): sustituye a la fila de orbes + el bloque del héroe.
+            LiquidEcosistema(
+                senales: model.senales, hero: model.hero, guardian: model.guardian,
+                ambiente: model.ambiente, calibracion: model.calibracion,
+                rotulos: model.rotulos, heroPuerta: model.heroPuerta,
+                heroHint: model.heroHint, mostrarHintSeparar: mostrarHintSeparar,
+                fusionInicial: fusionInicial, faseForzada: ecosistemaFase,
+                onTapVeredicto: onTapHero, onTapSenal: onTapSenal,
+                onTapGuardian: onTapGuardian,
+                onFusionArrancada: onFusionArrancada, onSeparacion: onSeparacion)
                 .padding(.top, LiquidSpace.s150)
                 .liquidEntrada(index: 1)
-
-            hero
-                // s150 (revote /inject): punto medio — la compresión del dueño se queda,
-                // pero el veredicto no pega contra los captions de los orbes.
-                .padding(.top, LiquidSpace.s150)
-                .liquidEntrada(index: 2)
 
             if model.carga != nil {
                 carga
                     .padding(.top, LiquidSpace.s300)
-                    .liquidEntrada(index: 3)
+                    .liquidEntrada(index: 2)
             }
 
             // La franja del guardián (FER-1047): par simétrico bajo la carga (mismo vidrio/alto).
             // Gap corto (s150) cuando acompaña a la carga para que el ojo las lea juntas; s300 si
             // la carga no está, para no pegarse al héroe/grid.
             if let guardian = model.guardian {
-                LiquidGuardianFranja(guardian)
+                franjaGuardianTocable(guardian)
                     .padding(.top, model.carga != nil ? LiquidSpace.s150 : LiquidSpace.s300)
-                    .liquidEntrada(index: 3)
+                    .liquidEntrada(index: 2)
             }
 
             LazyVGrid(columns: [
@@ -277,7 +351,7 @@ public struct LiquidHoyContent: View {
                         deltaTone: m.deltaTone, tone: m.tone, icon: m.icon, origen: m.origen,
                         a11yValencia: m.a11yValencia, a11yOrigen: m.a11yOrigen,
                         action: onTapMetric.map { tap in { tap(m.id) } })
-                        .liquidEntrada(index: 4 + i)
+                        .liquidEntrada(index: 3 + i)
                 }
             }
             // s300 (revote /inject): la barra de carga NO es una fila del grid — el gap
@@ -285,28 +359,6 @@ public struct LiquidHoyContent: View {
             .padding(.top, LiquidSpace.s300)
         }
         .padding(.horizontal, LiquidSpace.s550)
-    }
-
-    @ViewBuilder
-    private var hero: some View {
-        let heroView = Group {
-            switch model.hero {
-            case .veredicto(let title, let highlight, let tone, let subtitle, let confianza):
-                LiquidHeroVeredicto(title: title, highlight: highlight, highlightTone: tone,
-                                    subtitle: subtitle, puerta: model.heroPuerta,
-                                    confianza: confianza)
-            case .demotado(let kicker, let title, let subtitle):
-                LiquidHeroDemotado(kicker: kicker, title: title, subtitle: subtitle,
-                                   puerta: model.heroPuerta)
-            }
-        }
-        if let onTapHero {
-            Button(action: onTapHero) { heroView }
-                .buttonStyle(.liquidPress)
-                .accessibilityHint(Text(verbatim: model.heroHint ?? ""))
-        } else {
-            heroView
-        }
     }
 
     @ViewBuilder
@@ -323,7 +375,20 @@ public struct LiquidHoyContent: View {
         }
     }
 
-    /// La escala de carga navega igual que el héroe/orbes (revote /inject). El bullet-graph
+    /// La franja del guardián abre su hoja de explicación (FER-10, revisión de usuario):
+    /// «¿qué es VIGILANDO?» merece respuesta a un tap, igual que la carga.
+    @ViewBuilder
+    private func franjaGuardianTocable(_ guardian: LiquidHoyModel.Guardian) -> some View {
+        if let onTapGuardian {
+            Button(action: onTapGuardian) { LiquidGuardianFranja(guardian) }
+                .buttonStyle(.liquidPress)
+                .accessibilityHint(Text(verbatim: model.heroHint ?? ""))
+        } else {
+            LiquidGuardianFranja(guardian)
+        }
+    }
+
+    /// La escala de carga navega igual que el héroe (revote /inject). El bullet-graph
     /// aporta su propio vidrio y área tocable; aquí solo lo hacemos botón cuando hay destino.
     @ViewBuilder
     private func cargaTocable(_ escala: LiquidCargaEscala) -> some View {
@@ -334,28 +399,6 @@ public struct LiquidHoyContent: View {
         } else {
             escala
         }
-    }
-
-    /// Zona de señales (alto `senalesAlto` 140): cables de fondo + 3 orbes a gap `senalGap`.
-    private var senales: some View {
-        ZStack(alignment: .top) {
-            // Detalle fino (pasada UI): los cables llegan al FINAL de la cascada de
-            // entrada — primera impresión serena, el movimiento entra como respiración.
-            LiquidSignalCables(tone: model.ambiente.acento)
-                .liquidEntrada(index: 12)
-            // 72 + senalGap(45) = 117: el paso de centros es la referencia de los cables.
-            HStack(spacing: LiquidSpace.senalGap) {
-                ForEach(model.senales) { senal in
-                    LiquidSignalOrb(label: senal.label, caption: senal.caption,
-                                    progress: senal.progress, icon: senal.icon,
-                                    state: senal.state, valor: senal.valor,
-                                    hint: model.heroHint,
-                                    action: onTapSenal.map { tap in { tap(senal.id) } })
-                }
-            }
-        }
-        .frame(minHeight: LiquidSpace.senalesAlto)   // crece en Dynamic Type (UX H7)
-        .frame(maxWidth: .infinity)
     }
 }
 
@@ -429,7 +472,7 @@ public struct LiquidHoyScreen: View {
         .environment(\.liquidMotionDisabled, true)
 }
 
-#Preview("Hoy · demotado + calibrando") {
+#Preview("Hoy · calibrando (acreción)") {
     LiquidHoyScreen(model: LiquidHoyModel(
         kicker: "MIÉ 22 DE JUL",
         dial: .init(night: nil, marker: 10),
@@ -439,12 +482,14 @@ public struct LiquidHoyScreen: View {
             .init(id: "sueno", label: "SUEÑO", caption: "SIN DATOS",
                   progress: nil, icon: .lunaSenal, state: .ok),
         ],
-        hero: .demotado(kicker: "LECTURA DE DÍA",
-                        title: "Señales en tu rango",
-                        subtitle: "Sin noche grabada: lectura menos precisa."),
+        hero: .demotado(kicker: "PREPARACIÓN",
+                        title: "Conociéndote",
+                        subtitle: "Noche 4 de 7 · tu rango se está formando"),
         carga: .calibrando(status: "CALIBRANDO"),
         metricas: LiquidHoyModel.ejemplo.metricas,
-        guardian: .init(label: "VIGILANDO", temp: "—", resp: "—", estado: .tranquilo)))
+        guardian: .init(label: "VIGILANDO", temp: "—", resp: "—", estado: .tranquilo),
+        ambiente: .neutro,
+        calibracion: .init(noche: 4, total: 7)))
         .frame(width: 402, height: 874)
         .environment(\.liquidMotionDisabled, true)
 }

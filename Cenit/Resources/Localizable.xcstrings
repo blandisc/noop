@@ -1,6 +1,516 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "The guardian": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The guardian"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El guardián"
+          }
+        }
+      }
+    },
+    "Your nightly skin temperature and breathing, watched against your own pattern.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your nightly skin temperature and breathing, watched against your own pattern."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu temperatura de piel y tu respiración de la noche, vigiladas contra tu propio patrón."
+          }
+        }
+      }
+    },
+    "Right now: inside your pattern.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Right now: inside your pattern."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ahora: dentro de tu patrón."
+          }
+        }
+      }
+    },
+    "Right now: only your temperature is off; your verdict doesn't change.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Right now: only your temperature is off; your verdict doesn't change."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ahora: solo tu temperatura está fuera; tu veredicto no cambia."
+          }
+        }
+      }
+    },
+    "Right now: only your breathing is off; your verdict doesn't change.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Right now: only your breathing is off; your verdict doesn't change."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ahora: solo tu respiración está fuera; tu veredicto no cambia."
+          }
+        }
+      }
+    },
+    "Right now: both moved out together. That counts as one signal out; your verdict changes if it repeats two days in a row.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Right now: both moved out together. That counts as one signal out; your verdict changes if it repeats two days in a row."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ahora: las dos se salieron juntas. Eso cuenta como una señal fuera; tu veredicto cambia si se repite dos días seguidos."
+          }
+        }
+      }
+    },
+    "It watches; it doesn't vote.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It watches; it doesn't vote."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vigila; no vota."
+          }
+        }
+      }
+    },
+    "One signal off your pattern never changes your verdict: a warm room or an extra blanket can move it on its own. Only when both move out together, two days in a row, does the guardian push your day to a lighter one. It never diagnoses anything.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One signal off your pattern never changes your verdict: a warm room or an extra blanket can move it on its own. Only when both move out together, two days in a row, does the guardian push your day to a lighter one. It never diagnoses anything."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Una sola señal fuera de tu patrón nunca cambia tu veredicto: un cuarto caliente o una cobija de más la mueven sola. Solo cuando las dos se salen juntas, dos días seguidos, el guardián empuja tu día a uno más leve. Nunca diagnostica nada."
+          }
+        }
+      }
+    },
+    "Your range is formed; today's reading hasn't arrived yet.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your range is formed; today's reading hasn't arrived yet."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu rango ya está formado; la lectura de hoy aún no llega."
+          }
+        }
+      }
+    },
+    "Connect Health": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect Health"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conectar Salud"
+          }
+        }
+      }
+    },
+    "Guardian: no readings today": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardian: no readings today"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardián: sin lecturas hoy"
+          }
+        }
+      }
+    },
+    "No reading last night": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No reading last night"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin lectura anoche"
+          }
+        }
+      }
+    },
+    "Open at rest": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open At rest"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abrir En reposo"
+          }
+        }
+      }
+    },
+    "Open sleep": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Sleep"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abrir Sueño"
+          }
+        }
+      }
+    },
+    "Open the guardian": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open the Guardian"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abrir Guardián"
+          }
+        }
+      }
+    },
+    "Your verdict is in: %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your verdict is in: %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu veredicto llegó: %@"
+          }
+        }
+      }
+    },
+    "Guardian": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardian"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardián"
+          }
+        }
+      }
+    },
+    "Night %lld of %lld · your range is taking shape": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Night %lld of %lld · your range is taking shape"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noche %lld de %lld · tu rango se está formando"
+          }
+        }
+      }
+    },
+    "Reunite the signals": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reunite the signals"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unir señales"
+          }
+        }
+      }
+    },
+    "Separate the signals": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Separate the signals"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Separar señales"
+          }
+        }
+      }
+    },
+    "Tap to reunite": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap to reunite"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toca para unir"
+          }
+        }
+      }
+    },
+    "Tap to separate": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap to separate"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toca para separar"
+          }
+        }
+      }
+    },
+    "bpm · in your range": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "bpm · in your range"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "lpm · en tu rango"
+          }
+        }
+      }
+    },
+    "bpm · out of your range": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "bpm · out of your range"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "lpm · fuera de tu rango"
+          }
+        }
+      }
+    },
+    "h · in your range": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "h · in your range"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "h · en tu rango"
+          }
+        }
+      }
+    },
+    "h · out of your range": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "h · out of your range"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "h · fuera de tu rango"
+          }
+        }
+      }
+    },
+    "hero.title.calibrando": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Getting to know you"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conociéndote"
+          }
+        }
+      }
+    },
+    "hero.title.caution": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Go light today"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hoy ve leve"
+          }
+        }
+      }
+    },
+    "hero.title.easy": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recover"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recupera"
+          }
+        }
+      }
+    },
+    "hero.title.full": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In range"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En rango"
+          }
+        }
+      }
+    },
     "Off your range": {
       "extractionState": "manual",
       "localizations": {
@@ -19526,24 +20036,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "one thing"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "un detalle"
-          }
-        }
-      }
-    },
-    "hero.highlight.easy": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "easy"
+            "value": "light"
           }
         },
         "es": {
@@ -19554,19 +20047,36 @@
         }
       }
     },
+    "hero.highlight.easy": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recover"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recupera"
+          }
+        }
+      }
+    },
     "hero.highlight.full": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "all in"
+            "value": "range"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "todo"
+            "value": "rango"
           }
         }
       }

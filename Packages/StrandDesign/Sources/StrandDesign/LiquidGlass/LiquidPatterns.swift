@@ -94,35 +94,44 @@ public struct LiquidAmbientBackground: View {
         self.orbs = orbs
     }
 
-    /// El fondo de Hoy, teñido por el ESTADO del día (ensamble §7.1 + ambiente semántico).
-    public static func hoy(_ ambiente: LiquidAmbiente = .bien) -> LiquidAmbientBackground {
-        let k = ambiente.intensidad
-        return LiquidAmbientBackground(
-            auroraStops: [
-                .init(color: ambiente.aurora.0.opacity(0.34 * k), location: 0),
-                .init(color: ambiente.aurora.1.opacity(0.20 * k), location: 0.46),
-                .init(color: ambiente.aurora.1.opacity(0), location: 0.78),
-            ],
-            orbs: [
-                // Arriba: presencia más fuerte (junto con la aurora).
-                .init(alignment: .topLeading, offset: CGSize(width: -50, height: 110),
-                      size: CGSize(width: 280, height: 240), tone: ambiente.orbes.0,
-                      opacity: 0.32 * k, blur: 28, period: 17,
-                      orbit: CGSize(width: 120, height: 200)),
-                .init(alignment: .topTrailing, offset: CGSize(width: 60, height: 300),
-                      size: CGSize(width: 300, height: 260), tone: ambiente.orbes.1,
-                      opacity: 0.25 * k, blur: 30, period: 19, reverse: true,
-                      orbit: CGSize(width: 140, height: 260)),
-                // Abajo: manchas que también circulan (pedido del dueño /inject).
-                .init(alignment: .bottomLeading, offset: CGSize(width: 60, height: -120),
-                      size: CGSize(width: 260, height: 220), tone: LiquidColor.indigo,
-                      opacity: 0.19 * k, blur: 28, period: 24,
-                      orbit: CGSize(width: 110, height: 200)),
-                .init(alignment: .bottomTrailing, offset: CGSize(width: 40, height: -40),
-                      size: CGSize(width: 280, height: 230), tone: ambiente.orbes.0,
-                      opacity: 0.21 * k, blur: 28, period: 21,
-                      orbit: CGSize(width: 130, height: 220)),
-            ])
+    /// El fondo de Hoy (FER-10 «El Ecosistema»): UN SOLO COLOR — el del veredicto — en
+    /// tres manchas monocromas que derivan detrás del vidrio, con crossfade de 1.6 s al
+    /// cambiar de estado. La aurora multicolor y la mancha índigo se retiraron de Hoy
+    /// (violaban «un solo color, el del veredicto»); `auroraStops` sigue disponible para
+    /// otros presets.
+    public static func hoy(_ ambiente: LiquidAmbiente = .bien) -> some View {
+        LiquidHoyAmbient(ambiente: ambiente)
+    }
+
+    /// Las tres manchas monocromas de Hoy para un ambiente dado (alfas del prototipo v6).
+    static func hoyOrbs(_ ambiente: LiquidAmbiente) -> [LiquidOrbSpec] {
+        let (c1, c2, c3, a1, a2, a3): (Color, Color, Color, Double, Double, Double)
+        switch ambiente {
+        case .bien:
+            (c1, c2, c3) = (LiquidColor.verdeAurora, LiquidColor.verdePrimario, LiquidColor.verdeAurora)
+            (a1, a2, a3) = (0.22, 0.15, 0.13)
+        case .atencion:
+            (c1, c2, c3) = (LiquidColor.ambarClaro, LiquidColor.atencion, LiquidColor.ambarClaro)
+            (a1, a2, a3) = (0.24, 0.15, 0.13)
+        case .alerta:
+            (c1, c2, c3) = (LiquidColor.negativo, LiquidColor.negativo, LiquidColor.rojoClaro)
+            (a1, a2, a3) = (0.20, 0.13, 0.13)
+        case .neutro:
+            (c1, c2, c3) = (LiquidColor.tinta500, LiquidColor.tinta500, LiquidColor.tinta500)
+            (a1, a2, a3) = (0.15, 0.10, 0.08)
+        }
+        return [
+            .init(alignment: .topLeading, offset: CGSize(width: -80, height: 50),
+                  size: CGSize(width: 300, height: 300), tone: c1, opacity: a1,
+                  blur: 28, period: 21, orbit: CGSize(width: 64, height: 42)),
+            .init(alignment: .topTrailing, offset: CGSize(width: 80, height: 210),
+                  size: CGSize(width: 250, height: 250), tone: c2, opacity: a2,
+                  blur: 28, period: 26, reverse: true,
+                  orbit: CGSize(width: 48, height: 54)),
+            .init(alignment: .bottomLeading, offset: CGSize(width: 40, height: -100),
+                  size: CGSize(width: 210, height: 210), tone: c3, opacity: a3,
+                  blur: 28, period: 18, orbit: CGSize(width: 40, height: 46)),
+        ]
     }
 
     public var body: some View {
@@ -143,38 +152,78 @@ public struct LiquidAmbientBackground: View {
                                      anchor: UnitPoint(x: 0.5, y: -0.08))
                 }
                 if !debugHide.contains("orbes") {
-                    TimelineView(.animation(minimumInterval: 1.0 / 20.0, paused: still)) { context in
-                        let t = still ? 0 : context.date.timeIntervalSinceReferenceDate
-                        ZStack {
-                            ForEach(Array(orbs.enumerated()), id: \.offset) { index, orb in
-                                let u = still ? 0 : LiquidMotion.driftProgress(
-                                    time: t, period: orb.period, reverse: orb.reverse)
-                                // Órbita suave por la pantalla (/inject): desplazamiento
-                                // Lissajous que arranca en 0 (Reduce Motion = layout del
-                                // handoff) con periodos ≥16 s, + un respiro sutil de
-                                // intensidad. Sin `.blur` (el degradado radial YA es suave).
-                                let theta = still ? 0 : 2 * .pi * t / orb.period
-                                    + Double(index) * 2.1
-                                let ox = orb.orbit.width * CGFloat(sin(theta))
-                                let oy = orb.orbit.height * CGFloat(sin(theta * 0.5))
-                                let breathe = still ? 1.0 : 0.8 + 0.2 * (0.5 + 0.5 * sin(theta))
-                                Ellipse()
-                                    .fill(EllipticalGradient(
-                                        colors: [orb.tone.opacity(orb.opacity * breathe),
-                                                 orb.tone.opacity(0)],
-                                        center: .center))
-                                    .frame(width: orb.size.width, height: orb.size.height)
-                                    .scaleEffect(1 + (LiquidMotion.driftScaleMax - 1) * u)
-                                    .offset(x: orb.offset.width + ox,
-                                            y: orb.offset.height + oy)
-                                    .frame(maxWidth: .infinity, maxHeight: .infinity,
-                                           alignment: orb.alignment)
-                            }
-                        }
-                    }
+                    LiquidAmbientOrbs(orbs: orbs)
                 }
             }
         }
+        .ignoresSafeArea()
+        .allowsHitTesting(false)
+    }
+}
+
+/// El loop de manchas drift (compartido por `LiquidAmbientBackground` y el fondo de Hoy).
+struct LiquidAmbientOrbs: View {
+    let orbs: [LiquidOrbSpec]
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.liquidMotionDisabled) private var motionDisabled
+    @Environment(\.liquidAmbientPaused) private var ambientPaused
+
+    var body: some View {
+        let still = reduceMotion || motionDisabled || ambientPaused
+        TimelineView(.animation(minimumInterval: 1.0 / 20.0, paused: still)) { context in
+            let t = still ? 0 : context.date.timeIntervalSinceReferenceDate
+            ZStack {
+                ForEach(Array(orbs.enumerated()), id: \.offset) { index, orb in
+                    let u = still ? 0 : LiquidMotion.driftProgress(
+                        time: t, period: orb.period, reverse: orb.reverse)
+                    // Órbita suave por la pantalla (/inject): desplazamiento Lissajous que
+                    // arranca en 0 (Reduce Motion = layout del handoff) con periodos
+                    // ≥16 s, + un respiro sutil de intensidad. Sin `.blur` (el degradado
+                    // radial YA es suave).
+                    let theta = still ? 0 : 2 * .pi * t / orb.period + Double(index) * 2.1
+                    let ox = orb.orbit.width * CGFloat(sin(theta))
+                    let oy = orb.orbit.height * CGFloat(sin(theta * 0.5))
+                    let breathe = still ? 1.0 : 0.8 + 0.2 * (0.5 + 0.5 * sin(theta))
+                    Ellipse()
+                        .fill(EllipticalGradient(
+                            colors: [orb.tone.opacity(orb.opacity * breathe),
+                                     orb.tone.opacity(0)],
+                            center: .center))
+                        .frame(width: orb.size.width, height: orb.size.height)
+                        .scaleEffect(1 + (LiquidMotion.driftScaleMax - 1) * u)
+                        .offset(x: orb.offset.width + ox,
+                                y: orb.offset.height + oy)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity,
+                               alignment: orb.alignment)
+                }
+            }
+        }
+    }
+}
+
+/// El fondo de Hoy (FER-10): fondo neutro + las tres manchas MONOCROMAS del veredicto,
+/// con crossfade `ambienteCrossfade` (1.6 s) entre climas. Bajo Reduce Motion el fade se
+/// conserva (un fade no es movimiento); lo que se congela es el drift.
+public struct LiquidHoyAmbient: View {
+    private let ambiente: LiquidAmbiente
+
+    public init(ambiente: LiquidAmbiente) {
+        self.ambiente = ambiente
+    }
+
+    private static let todos: [LiquidAmbiente] = [.bien, .atencion, .alerta, .neutro]
+
+    public var body: some View {
+        ZStack {
+            LiquidColor.fondoGradient
+            ForEach(Array(Self.todos.enumerated()), id: \.offset) { _, amb in
+                LiquidAmbientOrbs(orbs: LiquidAmbientBackground.hoyOrbs(amb))
+                    .opacity(amb == ambiente ? 1 : 0)
+            }
+        }
+        .animation(.easeInOut(duration: LiquidEcosistemaMotion.ambienteCrossfade),
+                   value: ambiente)
         .ignoresSafeArea()
         .allowsHitTesting(false)
     }
@@ -343,332 +392,24 @@ private struct DialTicks: Shape {
     }
 }
 
-// MARK: Cables vivos (Hoy)
-
-/// Las tres curvas que conectan los orbes de señal con el hero: trazo base en degradado
-/// verde que se apaga + un pulso que viaja (flowDash · 9 s linear · delays 0/0.8/1.6).
-/// Con Reduce Motion los pulsos quedan congelados en su fase inicial.
-public struct LiquidSignalCables: View {
-    /// El tono semántico del flujo (el `acento` del ambiente del día).
-    private let tone: Color
-
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.liquidMotionDisabled) private var motionDisabled
-    @Environment(\.liquidAmbientPaused) private var ambientPaused
-    @Environment(\.liquidDebugHide) private var debugHide
-
-    public init(tone: Color = LiquidColor.verdePrimario) {
-        self.tone = tone
-    }
-
-    /// Paths del ensamble (viewBox 358 × 178) con el delay de su pulso. Cada cable lleva un
-    /// TRAMO DE CONEXIÓN inicial (línea desde y=72, el pie de su orbe) para que el pulso
-    /// nazca visiblemente EN el orbe (pedido del dueño, sesión /inject 2026-07-22).
-    // Zona comprimida ~25 % (pasada UI /inject): el vacío entre orbes y héroe se recorta
-    // para que veredicto + carga + primera fila de tiles entren al primer pantallazo.
-    private static let cables: [(d: String, delay: Double)] = [
-        // Ritmo ESCALONADO (decisión del dueño /inject, supersede al pulso síncrono):
-        // periodo 6 s con delays a tercios — un pulso llega al veredicto cada ~2 s,
-        // nunca los tres juntos.
-        ("M62 56 L62 88 C54 104, 108 110, 124 118 S148 126, 152 128", 0.0),
-        ("M179 56 L179 92 C173 102, 190 110, 186 118 S183 124, 182 127", 2.0),
-        ("M296 56 L296 88 C304 106, 260 112, 238 120 S212 126, 208 128", 4.0),
-    ]
-
-    public var body: some View {
-        let still = reduceMotion || motionDisabled || ambientPaused
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: still)) { context in
-            let t = still ? 0 : context.date.timeIntervalSinceReferenceDate
-            ZStack {
-                if !debugHide.contains("cables") {
-                    // Trazo base SÓLIDO + máscara vertical de desvanecimiento: el stroke con
-                    // gradiente directo era candidato a artefactos de placa en device; la
-                    // máscara reproduce el mismo apagado hacia el hero, cable por cable.
-                    ZStack {
-                        ForEach(Array(Self.cables.enumerated()), id: \.offset) { _, cable in
-                            CablePath(d: cable.d)
-                                .stroke(tone.opacity(0.45), lineWidth: 1.2)
-                        }
-                    }
-                    .mask {
-                        LinearGradient(
-                            stops: [
-                                .init(color: .black, location: 0),
-                                .init(color: .black.opacity(0.15), location: 0.85),
-                                .init(color: .clear, location: 1),
-                            ],
-                            startPoint: .top, endPoint: .bottom)
-                    }
-                    ForEach(Array(Self.cables.enumerated()), id: \.offset) { _, cable in
-                        // El pulso viaja con `trim` (la gramática del sistema para progreso
-                        // sobre Shape); congelado queda en el arranque del cable.
-                        pulse(cable.d, progress: still
-                              ? 0 : LiquidMotion.flowPulseProgress(time: t, delay: cable.delay))
-                    }
-                }
-            }
-        }
-        .allowsHitTesting(false)
-    }
-
-    @ViewBuilder
-    private func pulse(_ d: String, progress: Double) -> some View {
-        let len = LiquidMotion.flowPulseLength
-        let style = StrokeStyle(lineWidth: 1.6, lineCap: .round)
-        // UN pulso por cable (firma /inject): nace suave bajo su orbe (fade-in corto) y
-        // se apaga en fade al llegar al veredicto — un latido cada ciclo, no tráfico.
-        ZStack {
-            ForEach(0..<1, id: \.self) { k in
-                let p = (progress + Double(k)).truncatingRemainder(dividingBy: 1)
-                let fadeIn = min(1, p / 0.08)
-                let fadeOut = min(1, max(0, (1 - p - len) / 0.18))
-                CablePath(d: d)
-                    .trim(from: p, to: min(1, p + len))
-                    .stroke(tone, style: style)
-                    .opacity(0.75 * fadeIn * fadeOut)
-            }
-        }
-    }
-}
-
-/// Un cable del viewBox 358 × 178, CENTRADO sin escalar en x: los orbes van con anchos y
-/// separación FIJOS (64 + gap 53 → centros a ±117 del medio), así que en pantallas más
-/// anchas que 402 pt un escalado proporcional desalineaba los cables exteriores de sus
-/// orbes (~12 pt en un Pro Max). Centrar el dibujo mantiene cada cable naciendo EXACTO
-/// bajo su orbe en cualquier ancho.
-private struct CablePath: Shape {
-    let d: String
-
-    func path(in rect: CGRect) -> Path {
-        SVGPathData.path(d).applying(
-            CGAffineTransform(translationX: rect.minX + (rect.width - 358) / 2,
-                              y: rect.minY))
-    }
-}
-
-// MARK: Hero de veredicto (Hoy)
-
-/// El veredicto matinal: display/xl centrado con la palabra clave en el tono del estado
-/// (verde para «dale», atención para los matices) y el subtítulo cuerpo a 8 pt.
-/// `puerta` es la AFORDANCIA de descubrimiento ya localizada («Cómo llegué a esto»): la
-/// pastilla de vidrio con chevron que dice que el héroe se toca — el ÚNICO rótulo permanente
-/// bajo el veredicto. `confianza` es el tether honesto («Confianza: 8 de 14 noches»), que
-/// baja a línea secundaria cuando ya hay puerta y solo aparece mientras la base es joven.
-public struct LiquidHeroVeredicto: View {
-    private let title: String
-    private let highlight: String
-    private let highlightTone: Color
-    private let subtitle: String
-    private let puerta: String?
-    private let confianza: String?
-
-    /// `highlight` debe aparecer dentro de `title` (se pinta su última ocurrencia).
-    public init(title: String, highlight: String,
-                highlightTone: Color = LiquidColor.verdePrimario,
-                subtitle: String, puerta: String? = nil, confianza: String? = nil) {
-        self.title = title
-        self.highlight = highlight
-        self.highlightTone = highlightTone
-        self.subtitle = subtitle
-        self.puerta = puerta
-        self.confianza = confianza
-    }
-
-    public var body: some View {
-        VStack(spacing: LiquidSpace.s200) {
-            // Las líneas del hero se apilan a mano para lograr el line-height 0.96.
-            VStack(spacing: LiquidType.displayXLLineSpacing) {
-                ForEach(Array(title.components(separatedBy: "\n").enumerated()),
-                        id: \.offset) { _, line in
-                    lineText(line)
-                }
-            }
-            .multilineTextAlignment(.center)
-            LiquidHeroSubtitle(subtitle: subtitle, puerta: puerta, confianza: confianza)
-        }
-        .frame(maxWidth: .infinity)
-        .accessibilityElement(children: .ignore)
-        .accessibilityAddTraits(.isHeader)
-        .accessibilityLabel(Self.a11yLabel(title: title, subtitle: subtitle,
-                                           puerta: puerta, confianza: confianza))
-    }
-
-    /// El label combinado que lee VoiceOver (testeable en frío). No duplica puntuación
-    /// cuando una parte ya cierra su frase. Orden = orden en pantalla.
-    static func a11yLabel(title: String, subtitle: String, puerta: String? = nil,
-                          confianza: String?) -> String {
-        let flat = title.replacingOccurrences(of: "\n", with: " ")
-        let partes = [flat, subtitle] + [puerta, confianza].compactMap { $0 }
-        return partes.reduce("") { acc, part in
-            acc.isEmpty ? part : acc + (acc.hasSuffix(".") ? " " : ". ") + part
-        }
-    }
-
-    private func lineText(_ line: String) -> Text {
-        if let range = line.range(of: highlight, options: .backwards) {
-            return Text(line[..<range.lowerBound]).liquidDisplayXL()
-                .foregroundStyle(LiquidColor.tinta900)
-                + Text(line[range]).liquidDisplayXL()
-                .foregroundStyle(highlightTone)
-                + Text(line[range.upperBound...]).liquidDisplayXL()
-                .foregroundStyle(LiquidColor.tinta900)
-        }
-        return Text(line).liquidDisplayXL().foregroundStyle(LiquidColor.tinta900)
-    }
-}
-
-/// El héroe demotado (lectura de día FER-1033 / fallback de sueño): display/l SIN palabra
-/// destacada — la jerarquía baja un escalón porque el dato es menos preciso. El título es
-/// texto que se LEE, así que escala con Dynamic Type (relativo a .title2).
-public struct LiquidHeroDemotado: View {
-    private let kicker: String?
-    private let title: String
-    private let subtitle: String
-    private let puerta: String?
-    private let confianza: String?
-
-    /// La `puerta` también vive aquí a propósito: «lectura de día» y «aún sin datos» son
-    /// justo los dos estados donde el usuario más pregunta «¿por qué?», y el héroe demotado
-    /// llamaba al subtítulo con `confianza: nil` SIEMPRE — es decir, sin una sola pista de
-    /// que ahí se toca.
-    public init(kicker: String? = nil, title: String, subtitle: String,
-                puerta: String? = nil, confianza: String? = nil) {
-        self.kicker = kicker
-        self.title = title
-        self.subtitle = subtitle
-        self.puerta = puerta
-        self.confianza = confianza
-    }
-
-    public var body: some View {
-        VStack(spacing: LiquidSpace.s200) {
-            if let kicker {
-                Text(kicker).liquidLabel().foregroundStyle(LiquidColor.tinta500)
-            }
-            Text(title)
-                .font(InstrumentoType.grotesk(30, weight: .bold, relativeTo: .title2))
-                .tracking(LiquidType.displayLTracking)
-                .foregroundStyle(LiquidColor.tinta900)
-                .multilineTextAlignment(.center)
-            LiquidHeroSubtitle(subtitle: subtitle, puerta: puerta, confianza: confianza)
-        }
-        .frame(maxWidth: .infinity)
-        .accessibilityElement(children: .ignore)
-        .accessibilityAddTraits(.isHeader)
-        .accessibilityLabel(
-            LiquidHeroVeredicto.a11yLabel(
-                title: kicker.map { "\($0). \(title)" } ?? title,
-                subtitle: subtitle, puerta: puerta, confianza: confianza))
-    }
-}
-
-/// Subtítulo del héroe + puerta + tether de confianza — texto de lectura: escala con
-/// Dynamic Type.
-private struct LiquidHeroSubtitle: View {
-    let subtitle: String
-    var puerta: String? = nil
-    let confianza: String?
-    // Elevación /inject: el subtítulo sube a 14 con tracking −0.2 (el veredicto merece un
-    // apoyo con más presencia) y la pastilla de vidrio se asienta debajo, discreta.
-    @ScaledMetric(relativeTo: .footnote) private var cuerpoSize: CGFloat = 14
-    @ScaledMetric(relativeTo: .caption2) private var captionSize: CGFloat = 10.5
-
-    var body: some View {
-        VStack(spacing: LiquidSpace.s150) {
-            Text(subtitle)
-                .font(.system(size: cuerpoSize))
-                .tracking(-0.2)
-                .foregroundStyle(LiquidColor.tinta700)
-                .multilineTextAlignment(.center)
-            if let puerta {
-                // LA AFORDANCIA: el mismo vidrio que ya ocupaba el tether, ahora con el
-                // chevron de 9 del sistema. Es un RÓTULO, no un control — el target sigue
-                // siendo el héroe entero (un solo Button, cero targets anidados).
-                pastilla {
-                    Text(puerta)
-                        .font(InstrumentoType.grotesk(captionSize, weight: .medium))
-                        .foregroundStyle(LiquidColor.tinta500)
-                    LiquidIcon(.chevron, size: 9, color: LiquidColor.tinta500)
-                }
-            }
-            if let confianza {
-                if puerta == nil {
-                    // Sin puerta, el tether conserva su pastilla de siempre.
-                    pastilla {
-                        Text(confianza)
-                            .font(InstrumentoType.grotesk(captionSize, weight: .medium))
-                            .foregroundStyle(LiquidColor.tinta500)
-                    }
-                } else {
-                    // Con puerta, la confianza baja a línea secundaria: un solo vidrio bajo
-                    // el veredicto (dos pastillas apiladas leían como dos botones).
-                    Text(confianza)
-                        .font(InstrumentoType.grotesk(captionSize, weight: .medium))
-                        .foregroundStyle(LiquidColor.tinta500)
-                        .multilineTextAlignment(.center)
-                }
-            }
-        }
-    }
-
-    /// La pastilla de vidrio del sistema, no ad-hoc (revote /inject).
-    @ViewBuilder private func pastilla<C: View>(@ViewBuilder _ content: () -> C) -> some View {
-        HStack(spacing: LiquidSpace.s150) { content() }
-            .padding(.horizontal, LiquidSpace.s300)
-            .padding(.vertical, 3)
-            .background {
-                Capsule().fill(LiquidColor.vidrioPastilla)
-                Capsule().strokeBorder(LiquidColor.vidrioBordePastilla, lineWidth: 0.5)
-            }
-    }
-}
-
 #if DEBUG
-#Preview("Liquid · Patrones") {
+#Preview("Liquid · Patrones (ambiente monocromo)") {
     ZStack {
-        LiquidAmbientBackground.hoy()
+        LiquidAmbientBackground.hoy(.bien)
         VStack(spacing: LiquidSpace.s400) {
             LiquidScreenHeader(kicker: "MIÉ 22 DE JUL") { LiquidDialSeal() }
-            ZStack(alignment: .top) {
-                LiquidSignalCables()
-                HStack(spacing: 53) {
-                    LiquidSignalOrb(label: "AUTONÓMICO", caption: "EN TU RANGO",
-                                    progress: 0.35, icon: .ondaSenal, state: .ok)
-                    LiquidSignalOrb(label: "SUEÑO", caption: "EN TU RANGO",
-                                    progress: 0.43, icon: .lunaSenal, state: .ok)
-                    LiquidSignalOrb(label: "TÉRMICO", caption: "EN TU RANGO",
-                                    progress: 0.5, icon: .termoSenal, state: .ok)
-                }
-            }
-            .frame(height: 178)
-            LiquidHeroVeredicto(title: "Dale\ncon todo", highlight: "todo",
-                                subtitle: "Tus 3 señales amanecieron dentro de tu rango.",
-                                puerta: "Cómo llegué a esto")
+            Spacer()
         }
         .padding(LiquidSpace.s550)
     }
 }
 
-/// La afordancia en los tres estados de madurez: base joven (puerta + confianza), base
-/// firme (solo puerta) y héroe demotado (que antes no ofrecía ninguna pista).
-#Preview("Liquid · Afordancia del héroe") {
-    ZStack {
+#Preview("Liquid · Ambiente por estado") {
+    VStack(spacing: 0) {
+        LiquidAmbientBackground.hoy(.bien)
         LiquidAmbientBackground.hoy(.atencion)
-        VStack(spacing: LiquidSpace.s800) {
-            LiquidHeroVeredicto(title: "Bien,\ncon un detalle", highlight: "un detalle",
-                                highlightTone: LiquidColor.atencion,
-                                subtitle: "Tu sueño amaneció debajo de tu base.",
-                                puerta: "Cómo llegué a esto",
-                                confianza: "Confianza: 8 de 14 noches")
-            LiquidHeroVeredicto(title: "Dale\ncon todo", highlight: "todo",
-                                subtitle: "Amaneciste en tu base.",
-                                puerta: "Cómo llegué a esto")
-            LiquidHeroDemotado(kicker: "LECTURA DE DÍA",
-                               title: "Tus señales del día están en tu rango.",
-                               subtitle: "Sin lectura de sueño anoche; esto es menos preciso.",
-                               puerta: "Cómo llegué a esto")
-        }
-        .padding(LiquidSpace.s550)
+        LiquidAmbientBackground.hoy(.alerta)
+        LiquidAmbientBackground.hoy(.neutro)
     }
     .environment(\.liquidMotionDisabled, true)
 }

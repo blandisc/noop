@@ -144,6 +144,13 @@ struct TodayView: View {
     /// El usuario ya hizo al menos un pull-to-sync con strap (FER-270): apaga para siempre la pista
     /// «Desliza para sincronizar» del héroe — ya aprendió el gesto. Persiste entre lanzamientos.
     @AppStorage("today.didFirstPullSync") private var didFirstPullSync = false
+    // «El Ecosistema» (FER-10): la fusión de apertura es el ritual de «tu veredicto llegó»
+    // — corre UNA vez por día LOCAL (dayKey local, no UTC: trampa conocida de la fila
+    // fantasma). El hint «Toca para separar» se retira tras 3 separaciones acumuladas.
+    @AppStorage("today.ecosistemaFusionDay") private var ecosistemaFusionDay = ""
+    /// La hoja del guardián («¿qué es VIGILANDO?», FER-10).
+    @State private var showGuardianHoja = false
+    @AppStorage("today.ecosistemaSeparaciones") private var ecosistemaSeparaciones = 0
 
     // MARK: - Pull-to-refresh propio (FER-222)
     //
@@ -701,6 +708,16 @@ struct TodayView: View {
             }
             .preferredColorScheme(.light)
         }
+        // La hoja del guardián: qué vigila (temp + respiración) y por qué no vota.
+        .sheet(isPresented: $showGuardianHoja) {
+            LiquidMetricSheet(
+                tono: liquidOutput.model.guardian?.estado == .juntas
+                    ? LiquidColor.atencion : LiquidColor.tinta700,
+                detent: .medio) {
+                LiquidGuardianScreen(LiquidHoyBuilder.guardianHoja(liquidOutput.model.guardian))
+            }
+            .preferredColorScheme(.light)
+        }
         // La hoja del eje autonómico: el desglose de sus tres señales.
         .sheet(isPresented: $showAutonomicoHoja) {
             LiquidMetricSheet(tono: liquidAutonomicoTono, detent: .porContenido) {
@@ -1053,11 +1070,29 @@ struct TodayView: View {
                 },
                 // RE-RUTEO del gesto principal de la pantalla (antes: `showAutonomicDetail`
                 // → `AutonomicTrendDetailSheet`, tema PAPEL dentro de una superficie
-                // Liquid). El héroe ahora abre el ACTA de su propio veredicto — la pregunta
-                // que el héroe provoca. No se bifurca por `heroRoute`: los dos estados del
-                // héroe (veredicto y demotado) explican el MISMO veredicto, y el acta ya
-                // pinta «Sueño · Sin datos» cuando no hubo noche.
-                onTapHero: { showVeredictoActa = true })
+                // Liquid). En el Ecosistema (FER-10) el tap del LIENZO separa/une los
+                // orbes; la puerta al ACTA vive en la palabra + la pastilla «Cómo llegué
+                // a esto» (este callback).
+                onTapHero: {
+                    // Sin permiso de Salud la puerta dice «Conectar Salud» y abre el
+                    // flujo de conexión (FER-10 estado 8); con permiso, el acta.
+                    if output.heroRoute == .salud {
+                        showDataSources = true
+                    } else {
+                        showVeredictoActa = true
+                    }
+                },
+                // El guardián (orbe separado Y franja) abre SU hoja: qué vigila y por
+                // qué no vota (FER-10, revisión de usuario).
+                onTapGuardian: { showGuardianHoja = true },
+                mostrarHintSeparar: ecosistemaSeparaciones < 3,
+                fusionInicial: ecosistemaFusionDay != Repository.localDayKey(Date()),
+                onFusionArrancada: {
+                    ecosistemaFusionDay = Repository.localDayKey(Date())
+                },
+                onSeparacion: {
+                    ecosistemaSeparaciones = min(3, ecosistemaSeparaciones + 1)
+                })
             // /inject: la leyenda de origen se retiró de la superficie Liquid a pedido del
             // dueño (los puntos de origen por tile se quedan).
         }

@@ -36,7 +36,7 @@ final class LiquidHoyBuilderTests: XCTestCase {
     // MARK: Héroe — tabla canónica (paridad con `TodayView.heroBlock`)
 
     func test_hero_full_nocturno_esVeredictoVerde() {
-        let (hero, route) = LiquidHoyBuilder.hero(
+        let (hero, route, _) = LiquidHoyBuilder.hero(
             prep: read(verdict: .full, drivers: nocheAnclada), sleepMin: 440, nights: 21)
         guard case .veredicto(let title, let highlight, let tone, _, let confianza) = hero else {
             return XCTFail("esperaba .veredicto")
@@ -51,7 +51,7 @@ final class LiquidHoyBuilderTests: XCTestCase {
         // D1 resuelta por el dueño: caution = ámbar, easy = ROJO (como el clásico).
         for (verdict, esperado) in [(Preparedness.Verdict.caution, LiquidColor.atencion),
                                     (.easy, LiquidColor.negativo)] {
-            let (hero, _) = LiquidHoyBuilder.hero(
+            let (hero, _, _) = LiquidHoyBuilder.hero(
                 prep: read(verdict: verdict, drivers: nocheAnclada), sleepMin: nil, nights: 21)
             guard case .veredicto(let title, let highlight, let tone, _, _) = hero else {
                 return XCTFail("esperaba .veredicto para \(verdict)")
@@ -74,7 +74,7 @@ final class LiquidHoyBuilderTests: XCTestCase {
     }
 
     func test_hero_confianza_soloBajo21Noches() {
-        let (hero, _) = LiquidHoyBuilder.hero(
+        let (hero, _, _) = LiquidHoyBuilder.hero(
             prep: read(verdict: .full, drivers: nocheAnclada, nights: 12), sleepMin: nil, nights: 12)
         guard case .veredicto(_, _, _, _, let confianza) = hero else {
             return XCTFail("esperaba .veredicto")
@@ -87,7 +87,7 @@ final class LiquidHoyBuilderTests: XCTestCase {
         // El eje de sueño sin datos → isNightAnchored == false → demotado, tap autonómico.
         let drivers = [driver(.autonomic, .inRange, z: 0.1), driver(.sleep, .noData),
                        driver(.thermal, .inRange)]
-        let (hero, route) = LiquidHoyBuilder.hero(
+        let (hero, route, _) = LiquidHoyBuilder.hero(
             prep: read(verdict: .full, drivers: drivers), sleepMin: nil, nights: 21)
         guard case .demotado(let kicker, _, _) = hero else {
             return XCTFail("esperaba .demotado (lectura de día)")
@@ -99,27 +99,29 @@ final class LiquidHoyBuilderTests: XCTestCase {
     func test_hero_lowSignal_yPrepNil_sonAunSinDatos_jamasSuenoNiBajaSenal() {
         // Decisión del dueño (sesión /inject 2026-07-22): sin veredicto NO hay héroe de
         // sueño — SIEMPRE «aún sin datos suficientes», aunque exista sueño grabado.
-        let (heroLow, routeLow) = LiquidHoyBuilder.hero(
+        let (heroLow, routeLow, calLow) = LiquidHoyBuilder.hero(
             prep: read(verdict: .lowSignal, drivers: [], maturity: .calibrating),
             sleepMin: 440, nights: 2)
         guard case .demotado(_, let title, _) = heroLow else {
             return XCTFail("esperaba .demotado (sin datos)")
         }
-        // El copy pasó de «Aún sin datos suficientes» a «Aún no conozco tu base» (pasada
-        // UX H4: decía «sin datos» encima de ocho tiles LLENOS de datos; lo que falta es
-        // la base). Lo que el test protege es la INVARIANTE, no la redacción: jamás la
-        // hora de sueño, y siempre un titular que hable de la base que falta.
+        // FER-10: el estado sin-base es la CALIBRACIÓN del Ecosistema («Conociéndote»)
+        // con el avance honesto del MOTOR. La invariante: jamás la hora de sueño, y la
+        // calibración presente con el denominador de `Baselines.minNightsSeed`.
         XCTAssertFalse(title.contains(":"), "jamás la hora de sueño: \(title)")
-        XCTAssertTrue(title.localizedCaseInsensitiveContains("base") ||
-                      title.localizedCaseInsensitiveContains("baseline"), title)
+        XCTAssertNotNil(calLow, "sin base con Salud conectada → calibración de acreción")
+        XCTAssertEqual(calLow?.total, Baselines.minNightsSeed)
+        XCTAssertEqual(calLow?.noche, 2, "las noches reales, acotadas al total")
         XCTAssertEqual(routeLow, .autonomic)
 
         // prep == nil → mismo estado honesto, mismo destino.
-        let (heroNil, routeNil) = LiquidHoyBuilder.hero(prep: nil, sleepMin: nil, nights: 0)
+        let (heroNil, routeNil, calNil) = LiquidHoyBuilder.hero(prep: nil, sleepMin: nil, nights: 0)
         guard case .demotado(_, let titleNil, _) = heroNil else {
             return XCTFail("esperaba .demotado (sin datos)")
         }
         XCTAssertEqual(titleNil, title, "con o sin sueño grabado, el mismo copy honesto")
+        XCTAssertEqual(calNil?.total, Baselines.minNightsSeed)
+        XCTAssertEqual(calNil?.noche, 0)
         XCTAssertEqual(routeNil, .autonomic)
     }
 
@@ -128,7 +130,7 @@ final class LiquidHoyBuilderTests: XCTestCase {
     /// «Todavía no conozco tu base» a un usuario con AÑOS de historia, en CADA arranque en frío: una
     /// frase falsa. `verdictPending` separa «todavía no lo calculo» de «no tengo base».
     func test_hero_verdictPending_diceQueLeeNoQueNoTeConoce() {
-        let (heroPending, routePending) = LiquidHoyBuilder.hero(
+        let (heroPending, routePending, calPending) = LiquidHoyBuilder.hero(
             prep: nil, sleepMin: 440, nights: 0, verdictPending: true)
         guard case .demotado(_, let titlePending, _) = heroPending else {
             return XCTFail("esperaba .demotado (leyendo)")
@@ -137,16 +139,18 @@ final class LiquidHoyBuilderTests: XCTestCase {
         XCTAssertFalse(titlePending.localizedCaseInsensitiveContains("base"),
                        "mientras calcula no puede decir que no conoce tu base: \(titlePending)")
         XCTAssertFalse(titlePending.localizedCaseInsensitiveContains("baseline"), titlePending)
+        XCTAssertNil(calPending, "mientras lee NO afirma calibración")
         XCTAssertEqual(routePending, .autonomic)
 
         // Y el estado honesto de «sin base» sigue intacto cuando NO está pendiente: son distintos.
-        let (heroNoBase, _) = LiquidHoyBuilder.hero(prep: nil, sleepMin: 440, nights: 0,
+        let (heroNoBase, _, calNoBase) = LiquidHoyBuilder.hero(prep: nil, sleepMin: 440, nights: 0,
                                                     verdictPending: false)
         guard case .demotado(_, let titleNoBase, _) = heroNoBase else {
             return XCTFail("esperaba .demotado (sin base)")
         }
         XCTAssertNotEqual(titlePending, titleNoBase,
-                          "«leyendo» y «no conozco tu base» son dos estados distintos")
+                          "«leyendo» y «conociéndote» son dos estados distintos")
+        XCTAssertNotNil(calNoBase, "el estado sin-base SÍ trae la calibración")
 
         // Y un veredicto REAL le gana a `verdictPending`: la bandera solo aplica cuando no hay nada
         // que mostrar. Amarra el contrato de la función pura (en producción el llamador ya calcula
@@ -154,7 +158,7 @@ final class LiquidHoyBuilderTests: XCTestCase {
         let anclado = read(verdict: .full,
                            drivers: [.init(axis: .sleep, state: .inRange, orientedZ: nil)],
                            maturity: .trusted)
-        let (heroReal, _) = LiquidHoyBuilder.hero(prep: anclado, sleepMin: 440, nights: 20,
+        let (heroReal, _, _) = LiquidHoyBuilder.hero(prep: anclado, sleepMin: 440, nights: 20,
                                                   verdictPending: true)
         if case .demotado = heroReal {
             XCTFail("con veredicto real no puede caer a «leyendo»: el dato gana a la bandera")
@@ -180,7 +184,7 @@ final class LiquidHoyBuilderTests: XCTestCase {
         let prep = read(verdict: .caution, drivers: [
             driver(.autonomic, .low, z: -1.2), driver(.sleep, .noData), driver(.thermal, .inRange),
         ])
-        let senales = LiquidHoyBuilder.senales(prep: prep, valores: (rhr: "52 bpm", sueno: nil))
+        let senales = LiquidHoyBuilder.senales(prep: prep, valores: (rhr: "52 bpm", rhrNum: "52", sueno: nil))
         XCTAssertEqual(senales.map(\.id), ["autonomico", "sueno"], "dos orbes, sin térmico")
 
         // Primer orbe = EN REPOSO con su dato (lpm), NUNCA «3 señales».
@@ -427,9 +431,11 @@ final class LiquidHoyBuilderTests: XCTestCase {
             return unit?["value"] as? String
         }
 
-        let pares = [("Go all in", "hero.highlight.full"),
-                     ("Good, one thing to watch", "hero.highlight.caution"),
-                     ("Take it easy", "hero.highlight.easy"),
+        // Las palabras vigentes viven en hero.title.* (FER-10); las retiradas
+        // («Dale con todo»…) ya no existen como llaves del héroe.
+        let pares = [("hero.title.full", "hero.highlight.full"),
+                     ("hero.title.caution", "hero.highlight.caution"),
+                     ("hero.title.easy", "hero.highlight.easy"),
                      // La cláusula en negrita del acta vive dentro de su método —
                      // el párrafo que SÍ renderiza `LiquidHoyBuilder.acta` (v3, FER-5/FER-9:
                      // respiración salió del voto y «solo vigila»), no el copy anterior.
