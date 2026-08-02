@@ -35,7 +35,8 @@ final class PreparednessV3Tests: XCTestCase {
     // MARK: CA1 — SDNN (avgHrv) is OUT of the vote
 
     /// Two nights identical except the all-day SDNN produce the SAME verdict: the SDNN no longer
-    /// moves the vote (its MAPE ~29% is why — O'Grady 2024). It still SHOWS with share 0.
+    /// moves the vote: O'Grady 2024 clocked SDNN MAPE 28.88% even on a short morning supine
+    /// reading, and Apple's all-day SDNN is a worse construct still. It still SHOWS with share 0.
     func testSdnnDoesNotMoveVerdict() {
         var goodHrv = baseline(); goodHrv.append(dm("2026-06-21", hrv: 90))   // SDNN way up
         var badHrv  = baseline(); badHrv.append(dm("2026-06-21", hrv: 20))    // SDNN way down

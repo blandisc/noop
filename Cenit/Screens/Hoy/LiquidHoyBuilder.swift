@@ -300,7 +300,9 @@ enum LiquidHoyBuilder {
         var out: [LiquidHoyModel.Senal] = []
 
         // EN REPOSO (FER-1047) — el eje autonómico vota con UNA sola señal densa: la FC en reposo
-        // (`wRHR=1`). La VFC salió del voto (SDNN de Apple, MAPE ~29% — O'Grady 2024) y la
+        // (`wRHR=1`). La VFC salió del voto: O'Grady 2024 midió SDNN con MAPE 28.88% aun en una
+        // lectura corta supina matutina, y el SDNN all-day de Apple es un constructo distinto y
+        // peor, así que sale con más razón. La respiración pasó al guardián junto con la temperatura.
         // respiración pasó al guardián junto con la temperatura. Por eso el orbe deja de decir
         // «AUTONÓMICO · 3 SEÑALES» y muestra su DATO honesto — la FC en reposo (p. ej. «52 lpm»).
         // Sin lectura vuelve al patrón normal (icono + «SIN DATOS»).
