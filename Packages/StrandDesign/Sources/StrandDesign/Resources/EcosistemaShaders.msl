@@ -1,0 +1,200 @@
+#include <metal_stdlib>
+using namespace metal;
+
+// MARK: - «El Ecosistema» · Fase B (FER-13)
+//
+// El shader ES `EcosistemaSimulacion.particula(dir:indice:…)`, evaluada por índice en GPU.
+// La función de Swift sigue siendo la SPEC: si cambia allá, cambia aquí, y los tests puros
+// de `EcosistemaSimulacionTests` son el contrato compartido.
+//
+// Nada de constantes mágicas: la física llega en `Fisica` desde los mismos tokens que usa
+// el Canvas (`Geometria` / `LiquidEcosistemaMotion`). Lo único intrínseco al shader es la
+// espiral de Fibonacci, que se deriva del índice para no subir tablas a la GPU.
+//
+// ⚠️ Las tres structs de abajo se reflejan campo a campo en `EcosistemaMetalRenderer.swift`.
+// Si tocas una, toca la otra: no hay header compartido (un target SwiftPM mixto no lo
+// permite limpio) y los tamaños se afirman en `EcosistemaMetalTests`.
+
+struct Fisica {
+    float aplastamiento;
+    float bandaMenisco;
+    float pisoNivel;
+    float jitterVelocidad;
+    float ondaVelocidad;
+    float ondaAmplitud;
+    float _p0;
+    float _p1;
+};
+
+struct NubeU {
+    float4 colorTinta;   // clases base / menisco / vapor
+    float4 colorAmbar;   // casquete del guardián
+    float4 colorBajo;    // líquido fuera de rango
+    float2 lienzo;
+    float2 centro;
+    float  radio;
+    float  rot;
+    float  jitterAmp;
+    float  t;
+    float  alfaK;
+    float  stretch;
+    float  nivel;        // < 0 ⇒ sin modo gauge
+    uint   n;            // direcciones de la esfera FUENTE
+    uint   paso;         // 1 densa · 2/3 rala (lo «hueco»)
+    uint   nivelBajo;
+    uint   capAmbar;
+    uint   _pad;
+};
+
+struct Atomo {
+    float4 color;
+    float2 centro;
+    float2 foco;      // halo: centro del gradiente
+    float  radio;
+    float  radioIni;  // halo: radio interior (opaco)
+    float  grosor;    // > 0 anillo (pt) · 0 disco · < 0 halo
+    float  _pad;
+};
+
+struct Marco {
+    float2 lienzo;
+    float2 _pad;
+};
+
+struct VOut {
+    float4 position [[position]];
+    float2 uv;        // −1…1 dentro del quad
+    float4 color;     // sin premultiplicar
+    float2 pt;        // posición en pt del lienzo
+    float2 foco;
+    float  radio;
+    float  radioIni;
+    float  grosor;
+};
+
+// El quad de la instancia, como triangle-strip de 4 vértices.
+static inline float2 esquina(uint vid) {
+    return float2((vid & 1u) != 0u ? 1.0 : -1.0, (vid & 2u) != 0u ? 1.0 : -1.0);
+}
+
+// pt del lienzo (y hacia abajo) → clip space.
+static inline float4 aClip(float2 pt, float2 lienzo) {
+    return float4(pt.x / lienzo.x * 2.0 - 1.0, 1.0 - pt.y / lienzo.y * 2.0, 0.0, 1.0);
+}
+
+// `EcosistemaSimulacion.fibonacci(_:)` para UNA dirección, derivada del índice.
+static inline float3 fibonacci(uint i, uint n) {
+    float dorado = M_PI_F * (3.0 - sqrt(5.0));
+    float y = 1.0 - 2.0 * (float(i) + 0.5) / float(n);
+    float r = sqrt(max(0.0, 1.0 - y * y));
+    float th = dorado * float(i);
+    return float3(cos(th) * r, y, sin(th) * r);
+}
+
+// MARK: Nubes de partículas (el puerto de `particula(dir:indice:…)`)
+
+vertex VOut vsNube(uint vid [[vertex_id]],
+                   uint iid [[instance_id]],
+                   constant NubeU &u [[buffer(0)]],
+                   constant Fisica &f [[buffer(1)]]) {
+    // La partícula `i` toma la dirección `i·paso` de la esfera fuente, y conserva `i`
+    // como índice de jitter (idéntico a enumerar la variante rala en el Canvas).
+    float3 dir = fibonacci(iid * u.paso, u.n);
+
+    float cr = cos(u.rot), sr = sin(u.rot);
+    float x = dir.x * cr + dir.z * sr;
+    float z = -dir.x * sr + dir.z * cr;
+    float y = dir.y;
+
+    float j = u.jitterAmp == 0.0 ? 0.0
+            : sin(u.t * f.jitterVelocidad + float(iid) * 2.1) * u.jitterAmp;
+    float kx = 1.0 + u.stretch;
+    float ky = 1.0 - u.stretch * 0.55;
+    float sx = u.centro.x + x * (u.radio + j) * kx;
+    float sy = u.centro.y + y * (u.radio + j) * f.aplastamiento * ky;
+
+    float dep = (z + 1.0) * 0.5;
+    float tam = 0.7 + dep * 1.5;
+    float alfa = (0.15 + dep * 0.5) * u.alfaK;
+    float4 color = u.colorTinta;
+
+    if (u.nivel >= 0.0) {
+        // Modo gauge: y ∈ [−1 arriba, +1 abajo]; líquido si y > umbral.
+        float umbral = 1.0 - 2.0 * max(f.pisoNivel, min(1.0, u.nivel));
+        if (y > umbral + f.bandaMenisco) {
+            if (u.nivelBajo != 0u) { color = u.colorBajo; }
+        } else if (y > umbral - f.bandaMenisco) {
+            alfa *= 1.5;
+            tam *= 1.2;
+            if (u.nivelBajo != 0u) { color = u.colorBajo; }
+            // La ola del menisco: la superficie del líquido ondula.
+            sy += sin(sx * 0.09 + u.t * f.ondaVelocidad) * f.ondaAmplitud;
+        } else {
+            alfa *= 0.22;
+        }
+    }
+    if (u.capAmbar != 0u && x > 0.25 && y < -0.15) {
+        color = u.colorAmbar;
+    }
+
+    float2 q = esquina(vid);
+    float2 centro = float2(sx, sy);
+    VOut out;
+    out.position = aClip(centro + q * tam, u.lienzo);
+    out.uv = q;
+    out.color = float4(color.rgb, min(1.0, max(0.0, alfa)) * color.a);
+    out.pt = centro + q * tam;
+    out.foco = centro;
+    out.radio = tam;
+    out.radioIni = 0.0;
+    out.grosor = 0.0;
+    return out;
+}
+
+// MARK: Átomos sueltos (chispas, motas, espirales, el anillo y el especular)
+
+vertex VOut vsAtomo(uint vid [[vertex_id]],
+                    uint iid [[instance_id]],
+                    constant Atomo *atomos [[buffer(0)]],
+                    constant Marco &m [[buffer(1)]]) {
+    Atomo a = atomos[iid];
+    // El anillo se traza sobre su radio: el quad lo cubre con medio grosor de holgura.
+    float alcance = a.grosor > 0.0 ? a.radio + a.grosor : a.radio;
+    float2 q = esquina(vid);
+    VOut out;
+    out.position = aClip(a.centro + q * alcance, m.lienzo);
+    out.uv = q;
+    out.color = a.color;
+    out.pt = a.centro + q * alcance;
+    out.foco = a.foco;
+    out.radio = alcance;
+    out.radioIni = a.radioIni;
+    // El fragmento necesita el grosor y el radio del trazo en unidades del quad.
+    out.grosor = a.grosor > 0.0 ? a.grosor / alcance : a.grosor;
+    return out;
+}
+
+// MARK: Fragmento común
+
+fragment float4 fsTrazo(VOut in [[stage_in]]) {
+    float d = length(in.uv);
+    float aa = max(fwidth(d), 1e-4);
+    float cobertura;
+
+    if (in.grosor > 0.0) {
+        // Anillo: banda centrada en el radio del trazo (1 − medio grosor en unidades uv).
+        float centro = 1.0 - in.grosor;
+        float medio = in.grosor * 0.5;
+        cobertura = 1.0 - smoothstep(medio - aa, medio + aa, abs(d - centro));
+    } else if (in.grosor < 0.0) {
+        // Halo: gradiente radial desde `foco` (opaco) hasta el borde del círculo.
+        float dd = distance(in.pt, in.foco);
+        float g = 1.0 - smoothstep(in.radioIni, in.radio, dd);
+        cobertura = g * (1.0 - smoothstep(1.0 - aa, 1.0, d));
+    } else {
+        cobertura = 1.0 - smoothstep(1.0 - aa, 1.0, d);
+    }
+
+    float a = in.color.a * cobertura;
+    return float4(in.color.rgb * a, a);   // premultiplicado
+}

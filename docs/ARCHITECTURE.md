@@ -710,6 +710,27 @@ tint), and the pure **OKLab** colour math (Ottosson 2020) backs the paper gradie
 never imported — `StrandDesign` remains the dependency-free leaf of the package graph, 100% offline
 (`Date`/`Calendar` only).
 
+**The Today hero renders on two backends (FER-10 Phase A → FER-13 Phase B).** «El Ecosistema» is the
+only place in the design system with a GPU path, and it is structured so the two can never drift:
+
+- `EcosistemaSimulacion` (pure, Foundation-only) owns the physics. `particula(dir:indice:…)` is
+  deliberately stateless and derived only from *(direction, frame, t)* — that is what makes it
+  expressible as a shader.
+- `EcosistemaSimulacion.plan(t:escena:)` (also pure) turns an instant into an ordered list of
+  `Trazo` values — clouds, discs, rings, halos, labels — speaking in *tints* (roles), never `Color`.
+  This is the single choreography; `EcosistemaPlanTests` is its contract.
+- **Backend A — `EcosistemaCanvas`** walks the plan with `GraphicsContext`. It is the path for
+  macOS/watchOS, previews and deterministic QA renders, and the fallback whenever Metal is not
+  available.
+- **Backend B — `EcosistemaMetal` + `EcosistemaShaders.msl`** (iOS only) walks the same plan and
+  encodes *instanced* draws: one cloud is one draw and the vertex shader derives each particle from
+  its index, so ~850 particles never cross the CPU/GPU boundary as data. Orbital **labels stay on the
+  Canvas** on top — text remains real text with the design system's typography.
+- The shader ships as **`.msl`, not `.metal`, on purpose**: Xcode compiles any `.metal` it finds,
+  which would make the separately-downloaded **Metal Toolchain** a hard requirement to build the app
+  at all. It is compiled at runtime, in the background, and until it is ready (or forever, if it
+  fails) the Canvas draws. Degrading is a designed state, not an error.
+
 ---
 
 ## 11. Design principles, restated
