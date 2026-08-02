@@ -1429,7 +1429,16 @@ struct TodayView: View {
 
     /// Cero fuentes: ni strap visto, ni datos de Apple Health, ni permiso de Health concedido. (FER-364)
     private var noSources: Bool {
-        repo.appleHealthDays.isEmpty && health.auth != .authorized
+        #if DEBUG
+        // Los fixtures de captura (`-noop.fixture …`) siembran el dashboard pero NO
+        // `appleHealthDays` ni el permiso de Salud, así que sin conceder HealthKit a mano
+        // caían a la superficie CLÁSICA (las agujas «En reposo») en vez de la Liquid que
+        // representan. En modo fixture SIEMPRE hay fuentes: el estado sin fuentes se captura
+        // con el arg ausente/`empty`, que toma el camino normal. (SIMULADOR-ONLY, ver
+        // `ScreenshotFixtures.activeState`.)
+        if ScreenshotFixtures.activeState() != nil { return false }
+        #endif
+        return repo.appleHealthDays.isEmpty && health.auth != .authorized
     }
 
     /// La tarjeta de «conecta tus fuentes» del estado vacío: Apple Health como base, la banda como capa
