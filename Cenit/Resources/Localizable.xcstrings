@@ -50119,40 +50119,6 @@
         }
       }
     },
-    "Getting to know your nights — a few more and we'll compare this to your usual.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Getting to know your nights — a few more and we'll compare this to your usual."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Conociendo tus noches: con unas cuantas más lo comparamos con lo habitual."
-          }
-        }
-      }
-    },
-    "Higher than your usual overnight rise — last night's start may have run hot (a workout, a late meal, a drink). It's a pattern, not a diagnosis.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Higher than your usual overnight rise — last night's start may have run hot (a workout, a late meal, a drink). It's a pattern, not a diagnosis."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Subió más de lo habitual durante la noche: quizá el inicio de anoche venía cargado (entrenamiento, cena tardía, una copa). Es un patrón, no un diagnóstico."
-          }
-        }
-      }
-    },
     "About your usual overnight rise. It's a pattern, not a diagnosis.": {
       "extractionState": "manual",
       "localizations": {
@@ -50183,6 +50149,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Subió menos de lo habitual durante la noche. Es un patrón, no un diagnóstico."
+          }
+        }
+      }
+    },
+    "Getting to know your nights: a few more and we'll compare this to your usual.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Getting to know your nights: a few more and we'll compare this to your usual."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conociendo tus noches: con unas cuantas más lo comparamos con lo habitual."
+          }
+        }
+      }
+    },
+    "Higher than your usual overnight rise: last night's start may have run hot (a workout, a late meal, a drink). It's a pattern, not a diagnosis.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Higher than your usual overnight rise: last night's start may have run hot (a workout, a late meal, a drink). It's a pattern, not a diagnosis."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subió más de lo habitual durante la noche: quizá el inicio de anoche venía cargado (entrenamiento, cena tardía, una copa). Es un patrón, no un diagnóstico."
           }
         }
       }
