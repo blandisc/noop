@@ -487,7 +487,7 @@ enum LiquidHoyBuilder {
             // guardián junto con la temperatura, y ambas deben corroborar (Preparedness:24-25,
             // :513; Mishra 2020). El acta vota por 2 señales separadas (FC en reposo · sueño):
             // votos que no cuentan doble; respiración y temperatura no votan aquí.
-            metodo: String(localized: "Your resting heart rate and your sleep are read as separate votes, so one rough night can't count against you twice. Your breathing and temperature only keep watch — they don't vote here."),
+            metodo: String(localized: "Your resting heart rate and your sleep are read as separate votes, so one rough night can't count against you twice. Your breathing and temperature only keep watch. They don't vote here."),
             metodoClave: String(localized: "acta.metodo.clave", defaultValue: "only keep watch"),
             filas: filas,
             notas: notasActa(prep: prep, fuera: fuera, conLectura: conLectura,
@@ -620,7 +620,7 @@ enum LiquidHoyBuilder {
             // v3: el eje autonómico LEE las 3 señales en reposo (para el desglose), pero VOTA
             // solo con la FC en reposo (`wRHR=1`); VFC y respiración van de contexto. La línea
             // nombra ambas cosas —cuántas se leyeron y cuál decide— sin implicar que las 3 votan.
-            lineas.append(String(localized: "Your autonomic axis reads \(prep.signalsPresent) of \(prep.signalsTotal) resting signals, but votes on just your resting heart rate — HRV and breathing ride along for context."))
+            lineas.append(String(localized: "Your autonomic axis reads \(prep.signalsPresent) of \(prep.signalsTotal) resting signals, but votes on just your resting heart rate; HRV and breathing ride along for context."))
         }
         lineas.append(String(localized: "A new verdict has to repeat two days in a row before it replaces the previous one."))
         lineas.append(String(localized: "Apple's HRV is a daytime average, not a sleep-window measurement: this reads your resting signals against your own norm."))
@@ -781,8 +781,8 @@ enum LiquidHoyBuilder {
               mostrar: String(localized: "Show method"),
               ocultar: String(localized: "Hide method"),
               lineas: [
-                String(localized: "Your resting heart rate against your own base is the vote — Apple's densest, most reliable signal, so it carries this axis on its own."),
-                String(localized: "HRV and breathing are shown for context but don't vote here — Apple's all-day HRV is too noisy to trust, and breathing is watched by the sentinel alongside your temperature."),
+                String(localized: "Your resting heart rate against your own base is the vote: Apple's densest, most reliable signal, so it carries this axis on its own."),
+                String(localized: "HRV and breathing are shown for context but don't vote here. Apple's all-day HRV is too noisy to trust, and breathing is watched by the sentinel alongside your temperature."),
                 String(localized: "Apple's HRV is a daytime average, not a sleep-window reading, so it stays a reference here rather than a vote."),
                 String(localized: "O'Grady et al., 2024 · Task Force, 1996 · Plews et al., 2013. Approximate, no clinical claim."),
               ])
