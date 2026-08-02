@@ -255,6 +255,7 @@ public struct LiquidHoyContent: View {
     private let onTapSenal: ((String) -> Void)?
     private let onTapCarga: (() -> Void)?
     private let onTapHero: (() -> Void)?
+    private let onTapGuardian: (() -> Void)?
     private let mostrarHintSeparar: Bool
     private let fusionInicial: Bool
     private let onFusionArrancada: (() -> Void)?
@@ -267,12 +268,14 @@ public struct LiquidHoyContent: View {
                 onTapSenal: ((String) -> Void)? = nil,
                 onTapCarga: (() -> Void)? = nil,
                 onTapHero: (() -> Void)? = nil,
+                onTapGuardian: (() -> Void)? = nil,
                 mostrarHintSeparar: Bool = true,
                 fusionInicial: Bool = false,
                 onFusionArrancada: (() -> Void)? = nil,
                 onSeparacion: (() -> Void)? = nil) {
         self.init(model: model, onTapMetric: onTapMetric, onTapSenal: onTapSenal,
                   onTapCarga: onTapCarga, onTapHero: onTapHero,
+                  onTapGuardian: onTapGuardian,
                   mostrarHintSeparar: mostrarHintSeparar, fusionInicial: fusionInicial,
                   onFusionArrancada: onFusionArrancada, onSeparacion: onSeparacion,
                   ecosistemaFase: nil)
@@ -283,6 +286,7 @@ public struct LiquidHoyContent: View {
          onTapSenal: ((String) -> Void)? = nil,
          onTapCarga: (() -> Void)? = nil,
          onTapHero: (() -> Void)? = nil,
+         onTapGuardian: (() -> Void)? = nil,
          mostrarHintSeparar: Bool = true,
          fusionInicial: Bool = false,
          onFusionArrancada: (() -> Void)? = nil,
@@ -293,6 +297,7 @@ public struct LiquidHoyContent: View {
         self.onTapSenal = onTapSenal
         self.onTapCarga = onTapCarga
         self.onTapHero = onTapHero
+        self.onTapGuardian = onTapGuardian
         self.mostrarHintSeparar = mostrarHintSeparar
         self.fusionInicial = fusionInicial
         self.onFusionArrancada = onFusionArrancada
@@ -316,6 +321,7 @@ public struct LiquidHoyContent: View {
                 heroHint: model.heroHint, mostrarHintSeparar: mostrarHintSeparar,
                 fusionInicial: fusionInicial, faseForzada: ecosistemaFase,
                 onTapVeredicto: onTapHero, onTapSenal: onTapSenal,
+                onTapGuardian: onTapGuardian,
                 onFusionArrancada: onFusionArrancada, onSeparacion: onSeparacion)
                 .padding(.top, LiquidSpace.s150)
                 .liquidEntrada(index: 1)

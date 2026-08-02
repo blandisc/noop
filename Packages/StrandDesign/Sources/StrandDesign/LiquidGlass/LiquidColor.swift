@@ -219,6 +219,12 @@ public enum LiquidDeltaTone: Sendable {
             swatch("teal · pasos", LiquidColor.teal)
             swatch("azul · respiración", LiquidColor.azul)
             swatch("oro · amanecer", LiquidColor.oro)
+            Text("ECOSISTEMA (FER-10)").font(LiquidType.kicker).tracking(LiquidType.kickerTracking)
+                .foregroundStyle(LiquidColor.tinta500)
+            swatch("partícula · verde", LiquidColor.particulaVerde)
+            swatch("partícula · roja", LiquidColor.particulaRoja)
+            swatch("partícula · neutra", LiquidColor.particulaNeutra)
+            swatch("rojo claro · clima alerta", LiquidColor.rojoClaro)
         }
         .padding(24)
         .frame(maxWidth: .infinity, alignment: .leading)

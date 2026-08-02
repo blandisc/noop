@@ -87,6 +87,7 @@ enum LiquidHoyBuilder {
     enum HeroRoute: Equatable {
         case autonomic   // veredicto y lectura de día → hoja autonómica
         case sleep       // fallback de sueño → detalle de sueño
+        case salud       // sin permiso de Salud: la puerta abre el flujo de conexión (FER-10)
     }
 
     struct Output {
@@ -121,7 +122,8 @@ enum LiquidHoyBuilder {
             // tether de confianza (que DESAPARECÍA con la base madura, justo donde vive el
             // usuario el 90 % del tiempo) y pasa a ser la PUERTA. Siempre presente, en los
             // dos estados del héroe.
-            heroPuerta: String(localized: "How I got here"),
+            heroPuerta: route == .salud ? String(localized: "Connect Health")
+                                        : String(localized: "How I got here"),
             calibracion: calibracion,
             rotulos: rotulos(locale: i.locale))
         return Output(model: model, heroRoute: route)
@@ -138,7 +140,14 @@ enum LiquidHoyBuilder {
             hintSeparar: String(localized: "Tap to separate").uppercased(with: locale),
             hintUnir: String(localized: "Tap to reunite").uppercased(with: locale),
             accionSeparar: String(localized: "Separate the signals"),
-            accionUnir: String(localized: "Reunite the signals"))
+            accionUnir: String(localized: "Reunite the signals"),
+            abrirReposo: String(localized: "Open at rest"),
+            abrirSueno: String(localized: "Open sleep"),
+            abrirGuardian: String(localized: "Open the guardian"),
+            sinLecturaNoche: String(localized: "No reading last night"),
+            sinLecturaHoy: String(localized: "No reading today"),
+            guardianSinLecturas: String(localized: "Guardian: no readings today"),
+            anuncioVeredicto: String(localized: "Your verdict is in: %@"))
     }
 
     // MARK: Kicker + dial
@@ -213,7 +222,9 @@ enum LiquidHoyBuilder {
                 return .init(noche: c.noche, total: c.total)
             }()
             : nil
-        return (heroFallback, .autonomic, calibracion)
+        // Sin permiso, la puerta del héroe cambia de promesa: «Conectar Salud» (FER-10,
+        // estado 8) — el único camino real es conceder el permiso.
+        return (heroFallback, healthConnected ? .autonomic : .salud, calibracion)
     }
 
     /// Renglones 1 (full/caution/easy con noche): la palabra-veredicto con su tono.

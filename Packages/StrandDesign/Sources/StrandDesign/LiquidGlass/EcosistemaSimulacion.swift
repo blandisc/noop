@@ -46,8 +46,8 @@ public enum EcosistemaSimulacion {
         /// Destino del guardián en eclipse (offset desde `centro`).
         public static let eclipseOffset = CGSize(width: 30, height: -58)
         /// Posiciones del guardián partido en dos (estado separado).
-        public static let guardianSeparado1 = CGPoint(x: 122, y: 44)
-        public static let guardianSeparado2 = CGPoint(x: 240, y: 44)
+        public static let guardianSeparado1 = CGPoint(x: 122, y: 34)
+        public static let guardianSeparado2 = CGPoint(x: 240, y: 34)
         /// Conteos de partículas (esferas fibonacci).
         public static let nEsfera = 300
         public static let nLuna = 90
@@ -281,7 +281,7 @@ public enum EcosistemaSimulacion {
         let kx = 1 + stretch
         let ky = 1 - stretch * 0.55
         let sx = centro.x + CGFloat(x) * (radio + CGFloat(j)) * CGFloat(kx)
-        let sy = centro.y + CGFloat(y) * (radio + CGFloat(j)) * Geometria.aplastamiento * CGFloat(ky)
+        var sy = centro.y + CGFloat(y) * (radio + CGFloat(j)) * Geometria.aplastamiento * CGFloat(ky)
         let dep = (z + 1) / 2
         var tam: CGFloat = 0.7 + CGFloat(dep) * 1.5
         var alfa = (0.15 + dep * 0.5) * alfaK
@@ -296,6 +296,10 @@ public enum EcosistemaSimulacion {
                 alfa *= 1.5
                 tam *= 1.2
                 clase = nivelBajo ? .liquidoBajo : .menisco
+                // La ola del menisco: la superficie del líquido ondula (recetas del
+                // Ecosistema `nivelOnda*`; con t = 0 queda una ondulación estática).
+                sy += CGFloat(sin(Double(sx) * 0.09 + t * LiquidEcosistemaMotion.nivelOndaVelocidad)
+                              * LiquidEcosistemaMotion.nivelOndaAmplitud)
             } else {
                 alfa *= 0.22
                 clase = .vapor

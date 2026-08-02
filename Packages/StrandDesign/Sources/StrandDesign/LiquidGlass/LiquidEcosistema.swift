@@ -24,10 +24,24 @@ public struct EcosistemaRotulos: Sendable {
     public let hintUnir: String     // «TOCA PARA UNIR»
     public let accionSeparar: String
     public let accionUnir: String
+    public let abrirReposo: String        // «Abrir En reposo» (rotor)
+    public let abrirSueno: String
+    public let abrirGuardian: String
+    public let sinLecturaNoche: String    // «Sin lectura anoche» (badge sin dato)
+    public let sinLecturaHoy: String
+    public let guardianSinLecturas: String // «Guardián: sin lecturas hoy» (VoiceOver)
+    public let anuncioVeredicto: String   // «Tu veredicto llegó: %@» (announcement)
 
     public init(reposo: String, sueno: String, guardian: String, temperatura: String,
                 respiracion: String, hintSeparar: String, hintUnir: String,
-                accionSeparar: String, accionUnir: String) {
+                accionSeparar: String, accionUnir: String,
+                abrirReposo: String = "Abrir En reposo",
+                abrirSueno: String = "Abrir Sueño",
+                abrirGuardian: String = "Abrir Guardián",
+                sinLecturaNoche: String = "Sin lectura anoche",
+                sinLecturaHoy: String = "Sin lectura hoy",
+                guardianSinLecturas: String = "Guardián: sin lecturas hoy",
+                anuncioVeredicto: String = "Tu veredicto llegó: %@") {
         self.reposo = reposo
         self.sueno = sueno
         self.guardian = guardian
@@ -37,6 +51,13 @@ public struct EcosistemaRotulos: Sendable {
         self.hintUnir = hintUnir
         self.accionSeparar = accionSeparar
         self.accionUnir = accionUnir
+        self.abrirReposo = abrirReposo
+        self.abrirSueno = abrirSueno
+        self.abrirGuardian = abrirGuardian
+        self.sinLecturaNoche = sinLecturaNoche
+        self.sinLecturaHoy = sinLecturaHoy
+        self.guardianSinLecturas = guardianSinLecturas
+        self.anuncioVeredicto = anuncioVeredicto
     }
 
     /// El juego BASE (es-MX) — default del modelo para previews/tests del paquete; la app
@@ -63,6 +84,7 @@ public struct LiquidEcosistema: View {
     private let fusionInicial: Bool
     private let onTapVeredicto: (() -> Void)?
     private let onTapSenal: ((String) -> Void)?
+    private let onTapGuardian: (() -> Void)?
     private let onFusionArrancada: (() -> Void)?
     private let onSeparacion: (() -> Void)?
 
@@ -80,12 +102,14 @@ public struct LiquidEcosistema: View {
                 heroPuerta: String? = nil, heroHint: String? = nil,
                 mostrarHintSeparar: Bool = true, fusionInicial: Bool = false,
                 onTapVeredicto: (() -> Void)? = nil, onTapSenal: ((String) -> Void)? = nil,
+                onTapGuardian: (() -> Void)? = nil,
                 onFusionArrancada: (() -> Void)? = nil, onSeparacion: (() -> Void)? = nil) {
         self.init(senales: senales, hero: hero, guardian: guardian, ambiente: ambiente,
                   calibracion: calibracion, rotulos: rotulos, heroPuerta: heroPuerta,
                   heroHint: heroHint, mostrarHintSeparar: mostrarHintSeparar,
                   fusionInicial: fusionInicial, faseForzada: nil,
                   onTapVeredicto: onTapVeredicto, onTapSenal: onTapSenal,
+                  onTapGuardian: onTapGuardian,
                   onFusionArrancada: onFusionArrancada, onSeparacion: onSeparacion)
     }
 
@@ -97,6 +121,7 @@ public struct LiquidEcosistema: View {
          mostrarHintSeparar: Bool = true, fusionInicial: Bool = false,
          faseForzada: Sim.Fase?,
          onTapVeredicto: (() -> Void)? = nil, onTapSenal: ((String) -> Void)? = nil,
+         onTapGuardian: (() -> Void)? = nil,
          onFusionArrancada: (() -> Void)? = nil, onSeparacion: (() -> Void)? = nil) {
         self.senales = senales
         self.hero = hero
@@ -111,6 +136,7 @@ public struct LiquidEcosistema: View {
         self.faseForzada = faseForzada
         self.onTapVeredicto = onTapVeredicto
         self.onTapSenal = onTapSenal
+        self.onTapGuardian = onTapGuardian
         self.onFusionArrancada = onFusionArrancada
         self.onSeparacion = onSeparacion
         if let faseForzada {
@@ -178,13 +204,31 @@ public struct LiquidEcosistema: View {
         .onAppear {
             guard fase == nil else { return }
             let ahora = Date().timeIntervalSinceReferenceDate
-            if fusionInicial && coreo.conFusion && !still {
-                fase = .formando(inicio: ahora)
+            if fusionInicial && coreo.conFusion {
+                // El ritual del día corre (con Reduce Motion aparece asentado, pero el
+                // día SÍ se consume: recibió su veredicto).
+                fase = still ? .viva(desde: ahora) : .formando(inicio: ahora)
                 onFusionArrancada?()
             } else {
+                // SIN veredicto aún («Leyendo…», calibrando): el día NO se marca — el
+                // ritual espera a que el veredicto se estrene (D1 del gate de QA).
                 fase = .viva(desde: ahora)
-                if fusionInicial { onFusionArrancada?() }
             }
+        }
+        // El veredicto se estrena con la pantalla abierta (sync matutino): AHÍ corre el
+        // ritual pendiente + el announcement de VoiceOver.
+        .onChange(of: coreo.conFusion) { antes, ahora in
+            guard ahora, !antes, fusionInicial else { return }
+            let t = Date().timeIntervalSinceReferenceDate
+            fase = still ? .viva(desde: t) : .formando(inicio: t)
+            onFusionArrancada?()
+            anunciarVeredicto()
+        }
+        // La separación es una consulta momentánea: al salir de la tab o backgroundear,
+        // el héroe regresa a fundido (su reposo ES el veredicto) — sin re-fusión.
+        .onDisappear { normalizarFase() }
+        .onChange(of: ambientPaused) { _, paused in
+            if paused { normalizarFase() }
         }
         .accessibilityElement(children: .ignore)
         .accessibilityAddTraits(.isHeader)
@@ -195,7 +239,7 @@ public struct LiquidEcosistema: View {
             separada: esSeparadaEstable,
             rotulos: rotulos, senales: senales, heroPuerta: heroPuerta,
             onToggle: { alternar() }, onTapVeredicto: onTapVeredicto,
-            onTapSenal: onTapSenal))
+            onTapSenal: onTapSenal, onTapGuardian: onTapGuardian))
     }
 
     /// ¿La fase actual es (o desemboca en) separada? — para hints y acciones AX.
@@ -210,6 +254,8 @@ public struct LiquidEcosistema: View {
         ZStack(alignment: .topLeading) {
             EcosistemaCanvas(coreo: coreo, fase: fase ?? .viva(desde: 0),
                              senales: senales, guardianJuntas: guardian?.estado == .juntas,
+                             guardianHueco: guardian == nil
+                                 || (guardian?.temp == "—" && guardian?.resp == "—"),
                              rotulos: rotulos, still: still, paused: still || ambientPaused)
                 .contentShape(Rectangle())
                 .onTapGesture { alternar() }
@@ -221,12 +267,46 @@ public struct LiquidEcosistema: View {
         guard coreo.separable, let actual = fase else { return }
         let ahora = Date().timeIntervalSinceReferenceDate
         switch actual {
-        case .viva, .formando, .uniendo:
+        case .formando(let inicio):
+            // Tap durante la fusión = saltar al estado FUNDIDO final (HIG: nunca atrapar
+            // al usuario en una animación). No cuenta como separación.
+            if Sim.cuadro(t: ahora, fase: .formando(inicio: inicio)).fundida {
+                fase = still ? .separada : .separando(desde: ahora)
+                onSeparacion?()
+            } else {
+                fase = .viva(desde: ahora)
+            }
+        case .viva:
             fase = still ? .separada : .separando(desde: ahora)
             onSeparacion?()
-        case .separada, .separando:
+        case .separando:
+            fase = .separada                    // completar la transición al instante
+        case .separada:
             fase = still ? .viva(desde: ahora) : .uniendo(desde: ahora)
+        case .uniendo:
+            fase = .viva(desde: ahora)          // completar la transición al instante
         }
+    }
+
+    /// El reposo del héroe es el veredicto: cualquier separación viva vuelve a fundido.
+    private func normalizarFase() {
+        switch fase {
+        case .separada, .separando:
+            fase = .viva(desde: Date().timeIntervalSinceReferenceDate)
+        default:
+            break
+        }
+    }
+
+    /// Announcement de VoiceOver al estrenar el veredicto (jamás durante la coreografía
+    /// se repite: una sola vez, al llegar).
+    private func anunciarVeredicto() {
+        #if canImport(UIKit)
+        guard case .veredicto(let title, _, _, _, _) = hero else { return }
+        let plano = title.replacingOccurrences(of: "\n", with: " ")
+        UIAccessibility.post(notification: .announcement,
+                             argument: String(format: rotulos.anuncioVeredicto, plano))
+        #endif
     }
 
     // MARK: Overlays (texto real — jamás dibujado en partículas)
@@ -243,19 +323,33 @@ public struct LiquidEcosistema: View {
                 .offset(y: 8)
                 .animation(LiquidMotion.glassOut(LiquidMotion.quick), value: esSeparadaEstable)
         }
-        // Valores ADENTRO de las esferas (estado separado).
+        // Valores ADENTRO de las esferas (estado separado). `allowsHitTesting` sigue a la
+        // visibilidad: un botón invisible jamás intercepta el tap del lienzo (D11).
         Group {
             valoresSeparados
-            if esSeparadaEstable { guardianSeparado }
+            guardianSeparado
         }
         .opacity(esSeparadaEstable ? 1 : 0)
-        .animation(LiquidMotion.glassOut(LiquidMotion.gentle), value: esSeparadaEstable)
-        // La palabra del veredicto (abajo, centrada) + puerta.
+        .allowsHitTesting(esSeparadaEstable)
+        .animation(still ? .easeInOut(duration: LiquidEcosistemaMotion.reduceMotionCrossfade)
+                         : LiquidMotion.glassOut(LiquidMotion.gentle),
+                   value: esSeparadaEstable)
+        // La palabra del veredicto (abajo, centrada) — se oculta en separado.
         palabra
             .frame(width: G.lienzo.width)
-            .frame(height: G.lienzo.height, alignment: .bottom)
+            .frame(height: G.lienzo.height - 34, alignment: .bottom)
             .opacity(esSeparadaEstable ? 0 : 1)
-            .animation(LiquidMotion.glassOut(LiquidMotion.gentle), value: esSeparadaEstable)
+            .allowsHitTesting(!esSeparadaEstable)
+            .animation(still ? .easeInOut(duration: LiquidEcosistemaMotion.reduceMotionCrossfade)
+                             : LiquidMotion.glassOut(LiquidEcosistemaMotion.palabraDur),
+                       value: esSeparadaEstable)
+        // La PUERTA al acta («Cómo llegué a esto») vive en AMBOS modos (D10): el tap del
+        // lienzo ya no navega, así que esta pastilla es la única entrada visible.
+        if let heroPuerta {
+            botonPuerta(heroPuerta)
+                .frame(width: G.lienzo.width)
+                .frame(height: G.lienzo.height, alignment: .bottom)
+        }
     }
 
     @ViewBuilder private var valoresSeparados: some View {
@@ -268,18 +362,20 @@ public struct LiquidEcosistema: View {
                     .font(LiquidType.micro).tracking(LiquidType.microTracking)
                     .foregroundStyle(LiquidColor.tinta500)
             }
-            .position(x: centro.x, y: 52)
+            .position(x: centro.x, y: 74)
             botonSenal(senal) {
                 VStack(spacing: 1) {
                     Text(senal.badge?.valor ?? senal.valor ?? "—")
                         .font(LiquidType.valorL)
                         .foregroundStyle(senal.state == .atencion
                                          ? LiquidColor.negativo : LiquidColor.tinta900)
-                    if let contexto = senal.badge?.contexto {
-                        Text(contexto)
-                            .font(LiquidType.captionLectura)
-                            .foregroundStyle(LiquidColor.tinta500)
-                    }
+                    // Sin dato: la honestidad tiene voz («Sin lectura anoche/hoy»), no
+                    // solo un guion (D8).
+                    Text(senal.badge?.contexto
+                         ?? (i == 1 ? rotulos.sinLecturaNoche : rotulos.sinLecturaHoy))
+                        .font(LiquidType.captionLectura)
+                        .foregroundStyle(LiquidColor.tinta500)
+                        .opacity(senal.badge != nil || senal.progress == nil ? 1 : 0)
                 }
                 .padding(LiquidSpace.s300)
                 .background(respaldo)
@@ -290,18 +386,33 @@ public struct LiquidEcosistema: View {
     }
 
     /// El guardián también da la cara SIEMPRE al separar (default confirmado FER-10):
-    /// sus dos señales con su dato, haya alerta o no.
+    /// sus dos señales con su dato, haya alerta o no. Es UN target conjunto ≥44 pt que
+    /// navega al mismo destino que la franja (D3 del gate de QA).
     @ViewBuilder private var guardianSeparado: some View {
         let G = Sim.Geometria.self
         let juntas = guardian?.estado == .juntas
         let tempFuera = guardian?.estado == .tempFuera || juntas
         let respFuera = guardian?.estado == .respFuera || juntas
-        miniGuardian(valor: guardian?.temp ?? "—", rotulo: rotulos.temperatura,
-                     fuera: tempFuera)
-            .position(x: G.guardianSeparado1.x, y: G.guardianSeparado1.y)
-        miniGuardian(valor: guardian?.resp ?? "—", rotulo: rotulos.respiracion,
-                     fuera: respFuera)
-            .position(x: G.guardianSeparado2.x, y: G.guardianSeparado2.y)
+        let contenido = HStack(spacing: 26) {
+            miniGuardian(valor: guardian?.temp ?? "—", rotulo: rotulos.temperatura,
+                         fuera: tempFuera)
+                .frame(width: 92)
+            miniGuardian(valor: guardian?.resp ?? "—", rotulo: rotulos.respiracion,
+                         fuera: respFuera)
+                .frame(width: 92)
+        }
+        .frame(minHeight: 44)
+        .contentShape(Rectangle())
+        Group {
+            if let onTapGuardian {
+                Button(action: onTapGuardian) { contenido }
+                    .buttonStyle(.liquidPress)
+            } else {
+                contenido
+            }
+        }
+        .position(x: Sim.Geometria.centro.x,
+                  y: (G.guardianSeparado1.y + G.guardianSeparado2.y) / 2)
     }
 
     private func miniGuardian(valor: String, rotulo: String, fuera: Bool) -> some View {
@@ -369,9 +480,6 @@ public struct LiquidEcosistema: View {
             if case .calibrando(let noche, let total) = coreo {
                 puntosProgreso(noche: noche, total: total)
             }
-            if let heroPuerta {
-                botonPuerta(heroPuerta)
-            }
         }
         .padding(.horizontal, LiquidSpace.s400)
         .padding(.bottom, 2)
@@ -421,8 +529,12 @@ public struct LiquidEcosistema: View {
             Capsule().strokeBorder(LiquidColor.vidrioBordePastilla, lineWidth: 0.5)
         }
         if let onTapVeredicto {
-            Button(action: onTapVeredicto) { etiqueta }
-                .buttonStyle(.liquidPress)
+            Button(action: onTapVeredicto) {
+                etiqueta
+                    .frame(minHeight: 44)      // target real ≥44 pt (D10)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.liquidPress)
         } else {
             etiqueta
         }
@@ -452,6 +564,9 @@ public struct LiquidEcosistema: View {
         }
         if let guardian {
             partes.append(guardian.a11y ?? "\(guardian.label): \(guardian.temp), \(guardian.resp)")
+        } else {
+            // El guardián es una promesa constante: sin lecturas también da la cara (D9).
+            partes.append(rotulos.guardianSinLecturas)
         }
         return partes.reduce("") { acc, parte in
             acc.isEmpty ? parte : acc + (acc.hasSuffix(".") ? " " : ". ") + parte
@@ -470,26 +585,26 @@ private struct EcosistemaA11yAcciones: ViewModifier {
     let onToggle: () -> Void
     let onTapVeredicto: (() -> Void)?
     let onTapSenal: ((String) -> Void)?
+    let onTapGuardian: (() -> Void)?
 
     func body(content: Content) -> some View {
         content
             .accessibilityAction(named: Text(verbatim: heroPuerta ?? "")) {
                 onTapVeredicto?()
             }
-            .accessibilityAction(named: Text(verbatim: abrir(0))) {
+            .accessibilityAction(named: Text(verbatim: rotulos.abrirReposo)) {
                 if let id = senales.first?.id { onTapSenal?(id) }
             }
-            .accessibilityAction(named: Text(verbatim: abrir(1))) {
+            .accessibilityAction(named: Text(verbatim: rotulos.abrirSueno)) {
                 if let id = senales.dropFirst().first?.id { onTapSenal?(id) }
+            }
+            .accessibilityAction(named: Text(verbatim: rotulos.abrirGuardian)) {
+                onTapGuardian?()
             }
             .accessibilityAction(named: Text(verbatim: separada ? rotulos.accionUnir
                                                                 : rotulos.accionSeparar)) {
                 if separable { onToggle() }
             }
-    }
-
-    private func abrir(_ i: Int) -> String {
-        i == 0 ? rotulos.reposo : rotulos.sueno
     }
 }
 
@@ -504,6 +619,7 @@ private struct EcosistemaCanvas: View {
     let fase: Sim.Fase
     let senales: [LiquidHoyModel.Senal]
     let guardianJuntas: Bool
+    let guardianHueco: Bool
     let rotulos: EcosistemaRotulos
     let still: Bool
     let paused: Bool
@@ -512,9 +628,23 @@ private struct EcosistemaCanvas: View {
     private static let dEsfera = Sim.fibonacci(G.nEsfera)
     private static let dLuna = Sim.fibonacci(G.nLuna)
     private static let dGuardian = Sim.fibonacci(G.nGuardian)
+    /// Variantes RALAS para lo «hueco» (sin dato: no se fabrica materia densa).
+    private static let dLunaHueca = Sim.fibonacci(G.nLuna).enumerated()
+        .filter { $0.offset % 3 == 0 }.map(\.element)
+    private static let dGuardianHueco = Sim.fibonacci(G.nGuardian).enumerated()
+        .filter { $0.offset % 2 == 0 }.map(\.element)
 
     /// Ancla del eclipse (el guardián viaja al asomarse; con `still` aparece colocado).
     @State private var eclipseDesde: TimeInterval?
+
+    /// La materia de una luna: su órbita, identidad y estado honesto.
+    struct LunaSpec {
+        let orb: Sim.Orbital
+        let nombre: String
+        let rotK: Double
+        let hueca: Bool
+        let fuera: Bool
+    }
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 60.0, paused: paused)) { context in
@@ -564,21 +694,29 @@ private struct EcosistemaCanvas: View {
         let flicker = coreo == .desgaste && !still
             ? 0.9 + 0.1 * sin(t * M.flickerDesgaste) : 1.0
 
-        // 1 · El guardián atrás (órbita con z<0, o el eclipse asomándose).
+        // 1 · El guardián atrás (órbita con z<0, o el eclipse asomándose). En separado el
+        // orbital NO se dibuja: el guardián «se partió» en sus dos mini-orbes (D4).
         let orbGuardian = Sim.guardian(t: t, eclipse: eclipse)
-        if orbGuardian.z < 0 || eclipse > 0.5 {
+        let sepTemprano = Sim.cuadro(t: t, fase: still ? faseEstable : fase).separada
+        if !sepTemprano, orbGuardian.z < 0 || eclipse > 0.5 {
             dibujarGuardian(ctx: &ctx, t: t, orb: orbGuardian, eclipse: eclipse)
         }
 
-        // 2 · Lunas detrás del orbe.
-        var lunas: [(Sim.Orbital, String, Double)] = []
+        // 2 · Lunas detrás del orbe: una por señal — HUECA si su eje no tiene dato (no
+        // se fabrica materia), con CASQUETE ámbar si su eje está fuera (la luna causante).
+        var lunas: [LunaSpec] = []
         if cuadro.fundida {
-            let l1 = Sim.luna(1, t: t, desgaste: coreo == .desgaste)
-            let l2 = Sim.luna(2, t: t, desgaste: coreo == .desgaste)
-            lunas = [(l1, rotulos.reposo, M.rotacionLuna1), (l2, rotulos.sueno, M.rotacionLuna2)]
-            if case .neutra(lunaSueno: false) = coreo { lunas.removeLast() }
-            for (orb, nombre, rotK) in lunas where orb.z < 0 {
-                dibujarLuna(ctx: &ctx, t: t, orb: orb, nombre: nombre, rotK: rotK)
+            for (i, senal) in senales.prefix(2).enumerated() {
+                let orb = Sim.luna(i + 1, t: t, desgaste: coreo == .desgaste)
+                lunas.append(LunaSpec(
+                    orb: orb,
+                    nombre: i == 0 ? rotulos.reposo : rotulos.sueno,
+                    rotK: i == 0 ? M.rotacionLuna1 : M.rotacionLuna2,
+                    hueca: senal.progress == nil,
+                    fuera: senal.state == .atencion))
+            }
+            for luna in lunas where luna.orb.z < 0 {
+                dibujarLuna(ctx: &ctx, t: t, luna: luna)
             }
         }
 
@@ -621,10 +759,10 @@ private struct EcosistemaCanvas: View {
         }
 
         // 6 · Lunas al frente + guardián al frente (órbita con z≥0, sin eclipse).
-        for (orb, nombre, rotK) in lunas where orb.z >= 0 {
-            dibujarLuna(ctx: &ctx, t: t, orb: orb, nombre: nombre, rotK: rotK)
+        for luna in lunas where luna.orb.z >= 0 {
+            dibujarLuna(ctx: &ctx, t: t, luna: luna)
         }
-        if orbGuardian.z >= 0, eclipse <= 0.5, cuadro.fundida {
+        if orbGuardian.z >= 0, eclipse <= 0.5, cuadro.fundida, !cuadro.separada {
             dibujarGuardian(ctx: &ctx, t: t, orb: orbGuardian, eclipse: eclipse)
         }
         // 7 · Mini-esferas del guardián en el estado separado (fondo de los badges).
@@ -722,13 +860,17 @@ private struct EcosistemaCanvas: View {
         }
     }
 
-    private func dibujarLuna(ctx: inout GraphicsContext, t: TimeInterval,
-                             orb: Sim.Orbital, nombre: String, rotK: Double) {
+    private func dibujarLuna(ctx: inout GraphicsContext, t: TimeInterval, luna: LunaSpec) {
+        let orb = luna.orb
         let dep = (orb.z + 1) / 2
-        dibujarNube(ctx: &ctx, dirs: Self.dLuna, centro: orb.centro, radio: orb.radio,
-                    rot: t * rotK, t: t, alfaK: 0.5 + 0.5 * dep, tono: tintaClima)
-        etiqueta(ctx: &ctx, texto: nombre, en: CGPoint(x: orb.centro.x,
-                                                       y: orb.centro.y + orb.radio + 13),
+        // Hueca = materia rala y tenue (el eje no tiene dato); fuera = casquete ámbar.
+        dibujarEsfera(ctx: &ctx, dirs: luna.hueca ? Self.dLunaHueca : Self.dLuna,
+                      centro: orb.centro, radio: orb.radio, rot: t * luna.rotK,
+                      jitter: 0.4, t: t,
+                      alfaK: (0.5 + 0.5 * dep) * (luna.hueca ? 0.45 : 1),
+                      stretch: 0, nivel: nil, nivelBajo: false, capAmbar: luna.fuera)
+        etiqueta(ctx: &ctx, texto: luna.nombre,
+                 en: CGPoint(x: orb.centro.x, y: orb.centro.y + orb.radio + 13),
                  alfa: 0.35 + 0.5 * dep)
     }
 
@@ -736,9 +878,11 @@ private struct EcosistemaCanvas: View {
                                  orb: Sim.Orbital, eclipse: Double) {
         let dep = (orb.z + 1) / 2
         let tono = eclipse > 0 ? LiquidColor.atencion : LiquidColor.particulaNeutra
-        let alfaK = eclipse > 0 ? 0.85 * max(0.4, eclipse)
-                                : (0.4 + 0.6 * dep) * 0.75
-        dibujarNube(ctx: &ctx, dirs: Self.dGuardian, centro: orb.centro, radio: orb.radio,
+        let alfaK = (eclipse > 0 ? 0.85 * max(0.4, eclipse)
+                                 : (0.4 + 0.6 * dep) * 0.75)
+                    * (guardianHueco ? 0.55 : 1)
+        dibujarNube(ctx: &ctx, dirs: guardianHueco ? Self.dGuardianHueco : Self.dGuardian,
+                    centro: orb.centro, radio: orb.radio,
                     rot: t * M.rotacionGuardian, t: t, alfaK: alfaK, tono: tono)
         if eclipse < 0.5 {
             etiqueta(ctx: &ctx, texto: rotulos.guardian,

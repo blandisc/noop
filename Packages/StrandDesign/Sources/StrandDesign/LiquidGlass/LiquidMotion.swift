@@ -157,8 +157,8 @@ public enum LiquidEcosistemaMotion {
     public static let orbitaLuna1: Double = 0.85
     public static let orbitaLuna2: Double = -0.6
     public static let orbitaGuardian: Double = 0.32
-    public static let faseLuna2: Double = 2.2
-    public static let faseGuardian: Double = 4.1
+    public static let faseLuna2: Double = .pi   // t=0: la luna queda libre del orbe (composición canónica RM)
+    public static let faseGuardian: Double = 2.4 // t=0: el guardián no pisa a las lunas
     /// Autorrotación de las nubes de partículas (esferas / lunas / guardián).
     public static let rotacionEsfera: Double = 0.6
     public static let rotacionLuna1: Double = 1.3

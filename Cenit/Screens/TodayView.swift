@@ -1060,7 +1060,18 @@ struct TodayView: View {
                 // Liquid). En el Ecosistema (FER-10) el tap del LIENZO separa/une los
                 // orbes; la puerta al ACTA vive en la palabra + la pastilla «Cómo llegué
                 // a esto» (este callback).
-                onTapHero: { showVeredictoActa = true },
+                onTapHero: {
+                    // Sin permiso de Salud la puerta dice «Conectar Salud» y abre el
+                    // flujo de conexión (FER-10 estado 8); con permiso, el acta.
+                    if output.heroRoute == .salud {
+                        showDataSources = true
+                    } else {
+                        showVeredictoActa = true
+                    }
+                },
+                // El guardián separado navega al acta: la superficie que explica al
+                // centinela (la franja no tiene hoja propia).
+                onTapGuardian: { showVeredictoActa = true },
                 mostrarHintSeparar: ecosistemaSeparaciones < 3,
                 fusionInicial: ecosistemaFusionDay != Repository.localDayKey(Date()),
                 onFusionArrancada: {
