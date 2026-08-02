@@ -2,16 +2,22 @@
 
 > **Para una sesión nueva:** este documento es autosuficiente. No necesitas la conversación que lo
 > originó. Lee «Estado actual» y «Cómo trabajar cada fase», y arranca por la fase que toque.
-> Última actualización: 2026-08-01 · Rama base: `blandisc/verdict-v3-engine` (pusheada, **NO mergeada**).
+> Última actualización: 2026-08-02 · **PARTE A MERGEADA a `iOS`** (PR #1135; v3+v4 en un bundle).
+> **PARTE B decidida:** fases 3 y 6 **descartadas** por el dueño; fases 4 y 5 con **spec hija cerrada**
+> (`docs/_spec-fase4-tercios.md`, `docs/_spec-fase5-centinela-rachas.md`; issues **FER-7 / FER-8** en Multica).
 >
 > ## ⚠️ Estructura del documento — léela antes de codear
 > Este plan pasó una revisión adversarial (Grok) que lo dividió en dos partes con distinto nivel de
 > madurez. **Respeta la división:**
 > - **PARTE A — EJECUTABLE.** Fases 1a, 1b y 2. Decisiones cerradas, contratos de API, criterios
 >   de aceptación numéricos. Un agente puede implementarlas desde aquí sin preguntar.
-> - **PARTE B — HOJA DE RUTA, NO CODEAR.** Fases 3, 4, 5 y 6. Están justificadas y priorizadas,
->   pero **NO tienen el detalle suficiente para implementarse desde este doc**. Cada una necesita su
->   propia spec hija (y la 6, además, `/pm` + `/ux`). Si intentas codearlas desde aquí, inventarás.
+> - **PARTE B — ACTUALIZADA 2026-08-02.** Ya NO son cuatro fases sin especificar:
+>   - **Fase 3 (residuo condicional) · DESCARTADA** por el dueño: no quiere que el veredicto prescriba
+>     qué tan duro darle hoy según lo de ayer (cruza de descriptivo a prescriptivo/circular).
+>   - **Fase 6 (N-of-1) · DESCARTADA** por ahora: no es ingeniería aún (`/pm` + `/ux` primero).
+>   - **Fase 4 (tercios) y Fase 5 (centinela por rachas) · SPEC HIJA CERRADA** — ver
+>     `docs/_spec-fase4-tercios.md` y `docs/_spec-fase5-centinela-rachas.md` (2 rondas adversariales:
+>     escéptico + Grok + `/estadistico`/`/cso`, todos en check). Implementables por FER-7 / FER-8.
 >
 > ## Bootstrap de sesión (haz esto primero)
 > ```bash
@@ -487,18 +493,21 @@ en producción todavía dice «3 SEÑALES» en el orbe autonómico, y con v3 vot
 
 ---
 
-## PARTE B · HOJA DE RUTA — **NO CODEAR DESDE ESTE DOCUMENTO**
+## PARTE B · ESTADO 2026-08-02
 
-⚠️ Las fases siguientes están **justificadas y priorizadas, pero NO especificadas al nivel de la
-Parte A**. La revisión adversarial las marcó como **no implementables de forma autónoma**: falta el
-modelo completo (3), los criterios de aceptación numéricos (4 y 5) y el requerimiento de producto (6).
-**Cada una necesita su propia spec hija**, escrita con el mismo rigor que la Parte A y pasada por
-revisión adversarial, antes de que alguien escriba código. Lo que sigue es el *por qué* y el *qué*,
-deliberadamente **no** el *cómo*.
+> **Decidido.** El dueño **descartó la Fase 3 y la Fase 6**. Las **Fases 4 y 5 ya tienen spec hija
+> cerrada** (`docs/_spec-fase4-tercios.md` → FER-7; `docs/_spec-fase5-centinela-rachas.md` → FER-8),
+> con el rigor de la Parte A y pasadas por 2 rondas adversariales (escéptico + Grok +
+> `/estadistico`/`/cso`) hasta check de todos. Las secciones de abajo conservan el *por qué* original;
+> el *cómo* vive en las specs hijas. **Ya NO apliques el «no codear» a la 4 y la 5.**
 
 ---
 
-### FASE 3 · Residuo condicional («¿está alto para lo que hiciste?») — *spec hija pendiente*
+### FASE 3 · Residuo condicional — ❌ DESCARTADA por el dueño (2026-08-02)
+
+> No se implementa: el dueño no quiere que el veredicto prescriba qué tan duro darle hoy en función de
+> lo de ayer (cruza de descriptivo a prescriptivo/circular, y el modelo aprendería su propio ruido). El
+> *por qué* original se conserva abajo por si algún día se reabre.
 
 **Idea.** Hoy el veredicto pregunta «¿tu FC está alta vs tu normal?». El salto es «¿está más alta **de
 lo que debería** dado lo que entrenaste ayer y lo que dormiste?». Si entrenaste duro y dormiste poco,
@@ -523,7 +532,7 @@ interpretación condicional con fallback, no como verdad fisiológica.
 
 ---
 
-### FASE 4 · Contraste por tercios de la noche — *spec hija pendiente*
+### FASE 4 · Contraste por tercios de la noche — ✅ SPEC HIJA CERRADA → `docs/_spec-fase4-tercios.md` (FER-7)
 
 **Qué.** FC media del **primer tercio** menos la del **último tercio**, contra tu propio normal.
 Separa «ayer entrenaste fuerte o tomaste» (golpea el principio de la noche) de «tu línea base se
@@ -540,7 +549,7 @@ requeriría evidencia que hoy no existe. Costo bajo: la serie de FC ya se lee.
 
 ---
 
-### FASE 5 · El centinela pasa de «hoy» a rachas — *spec hija pendiente*
+### FASE 5 · El centinela pasa de «hoy» a rachas — ✅ SPEC HIJA CERRADA → `docs/_spec-fase5-centinela-rachas.md` (FER-8)
 
 **Qué.** Hoy el centinela mira si temp **y** respiración se salen **hoy**. Alavi et al. 2022
 (*Nature Medicine* 28(1):175–184) publicó `NightSignal`: una máquina de estados finitos determinista
@@ -557,7 +566,11 @@ tu patrón, hoy ve leve».
 
 ---
 
-### FASE 6 · N-of-1: que tus propios datos juzguen al veredicto — *requiere `/pm` + `/ux` antes que código*
+### FASE 6 · N-of-1: que tus propios datos juzguen al veredicto — ❌ DESCARTADA por ahora (dueño, 2026-08-02)
+
+> No se implementa aún: no es ingeniería todavía (necesita `/pm` + `/ux`), y es la única fase que le
+> pide algo al usuario. El *por qué* se conserva abajo — es la respuesta honesta a la falta de
+> validación, así que probablemente vuelva como requerimiento de producto.
 
 **Por qué es el salto real.** Ningún fabricante puede demostrar que su veredicto predice algo
 (Doherty/Altini 2025). Cénit tiene lo que ninguno: **offline, años de historia del mismo cuerpo**, y
