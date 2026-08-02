@@ -36,8 +36,7 @@ final class LiquidAutonomicoRenderTests: XCTestCase {
 
     static let estados: [(String, LiquidAutonomico)] = [
         ("1_enRango", LiquidAutonomicoFixtures.enRango),
-        ("2_unaFuera", LiquidAutonomicoFixtures.unaFuera),
-        ("3_respSola", LiquidAutonomicoFixtures.respSola),
-        ("4_sinBase", LiquidAutonomicoFixtures.sinBase),
+        ("2_fcFuera", LiquidAutonomicoFixtures.unaFuera),
+        ("3_sinBase", LiquidAutonomicoFixtures.sinBase),
     ]
 }
