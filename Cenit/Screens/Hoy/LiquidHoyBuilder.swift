@@ -630,18 +630,32 @@ enum LiquidHoyBuilder {
         let outCount = signals.filter { $0.out }.count
         let respAlone = signals.first { $0.signal == .resp }?.flaggedAlone ?? false
 
-        let filas: [LiquidAutonomico.Senal] = signals.map { s in
-            let etiqueta = nombreSenal(s.signal)
-            let est = estadoSenal(s)
-            let voto = s.share > 0 ? porcentajeVoto(s.share, locale: locale) : nil
-            let nota = (s.signal == .resp && s.flaggedAlone)
-                ? String(localized: "Your breathing alone was enough to flag the axis this morning.")
-                : nil
-            let a11y = [etiqueta, est, voto.map { String(localized: "\($0) of the vote") } ?? ""]
-                .filter { !$0.isEmpty }.joined(separator: ", ")
-                + (s.out ? ", " + String(localized: "outside your range") : "")
-            return LiquidAutonomico.Senal(id: s.signal.rawValue, etiqueta: etiqueta, estado: est,
-                                          voto: voto, fuera: s.out, nota: nota, a11y: a11y)
+        // Sin Preparedness (arranque en frío / sin base) la tabla conserva sus 3 filas fijas
+        // en «Sin datos» —igual que `acta` sintetiza sus 3 ejes desde `ejesActa`— en vez de
+        // una tarjeta de vidrio VACÍA. Orden por peso: FC en reposo ≥ VFC ≥ respiración.
+        let filas: [LiquidAutonomico.Senal]
+        if signals.isEmpty {
+            let sinDato = caption(for: .noData)
+            filas = [Preparedness.Signal.rhr, .hrv, .resp].map { sig in
+                let etiqueta = nombreSenal(sig)
+                return LiquidAutonomico.Senal(id: sig.rawValue, etiqueta: etiqueta, estado: sinDato,
+                                              voto: nil, fuera: false, nota: nil,
+                                              a11y: "\(etiqueta), \(sinDato)")
+            }
+        } else {
+            filas = signals.map { s in
+                let etiqueta = nombreSenal(s.signal)
+                let est = estadoSenal(s)
+                let voto = s.share > 0 ? porcentajeVoto(s.share, locale: locale) : nil
+                let nota = (s.signal == .resp && s.flaggedAlone)
+                    ? String(localized: "Your breathing alone was enough to flag the axis this morning.")
+                    : nil
+                let a11y = [etiqueta, est, voto.map { String(localized: "\($0) of the vote") } ?? ""]
+                    .filter { !$0.isEmpty }.joined(separator: ", ")
+                    + (s.out ? ", " + String(localized: "outside your range") : "")
+                return LiquidAutonomico.Senal(id: s.signal.rawValue, etiqueta: etiqueta, estado: est,
+                                              voto: voto, fuera: s.out, nota: nota, a11y: a11y)
+            }
         }
 
         return LiquidAutonomico(

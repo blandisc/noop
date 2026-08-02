@@ -90,7 +90,7 @@ public struct LiquidZoneMeter: View {
                     ForEach(segmentos.indices, id: \.self) { i in
                         Text(verbatim: segmentos[i].etiqueta)
                             .font(LiquidType.microEstado)
-                            .foregroundStyle(segmentos[i].activa ? segmentos[i].color
+                            .foregroundStyle(segmentos[i].activa ? tonoRotulo(segmentos[i].color)
                                                                  : LiquidColor.tinta500)
                             .lineLimit(1)
                             .minimumScaleFactor(0.6)
@@ -102,6 +102,14 @@ public struct LiquidZoneMeter: View {
         .frame(height: LiquidSpace.s300 + LiquidSpace.s150 + etiquetaAlto)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(verbatim: Self.a11yLabel(segmentos: segmentos)))
+    }
+
+    /// El tono del RÓTULO activo: el ámbar de dato (#C4631F) ronda 3.5:1 sobre vidrio y falla
+    /// AA en texto chico; se sustituye por su hermano oscurecido `atencionTexto` (4.5:1),
+    /// misma regla que `LiquidLevelRow`. El resto de colores (verde/rojo) pasan AA y no cambian.
+    private func tonoRotulo(_ color: Color) -> Color {
+        (color == LiquidColor.atencion || color == LiquidColor.ambar)
+            ? LiquidColor.atencionTexto : color
     }
 
     /// La etiqueta de la zona activa (ya localizada por el caller) — contrato de VoiceOver

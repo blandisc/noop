@@ -32,7 +32,7 @@ public enum LiquidSpace {
     public static let senalesAlto: CGFloat = 140
 
     /// Margen inferior del dock flotante.
-    public static let dockBottom: CGFloat = 14
+    public static let dockBottom: CGFloat = 8
     /// Margen lateral del dock flotante (absolute left/right 16 en el handoff).
     public static let dockSide: CGFloat = 16
 }
