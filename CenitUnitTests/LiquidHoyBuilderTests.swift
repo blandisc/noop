@@ -123,6 +123,44 @@ final class LiquidHoyBuilderTests: XCTestCase {
         XCTAssertEqual(routeNil, .autonomic)
     }
 
+    /// El veredicto solo se calcula en el pase COMPLETO (`Repository.performRefresh(full:)`), así que
+    /// en el primer pintado llega `nil`. Sin distinguir ese caso, el héroe caía al fallback y le decía
+    /// «Todavía no conozco tu base» a un usuario con AÑOS de historia, en CADA arranque en frío: una
+    /// frase falsa. `verdictPending` separa «todavía no lo calculo» de «no tengo base».
+    func test_hero_verdictPending_diceQueLeeNoQueNoTeConoce() {
+        let (heroPending, routePending) = LiquidHoyBuilder.hero(
+            prep: nil, sleepMin: 440, nights: 0, verdictPending: true)
+        guard case .demotado(_, let titlePending, _) = heroPending else {
+            return XCTFail("esperaba .demotado (leyendo)")
+        }
+        // La invariante, no la redacción: mientras calcula NO puede afirmar que no conoce tu base.
+        XCTAssertFalse(titlePending.localizedCaseInsensitiveContains("base"),
+                       "mientras calcula no puede decir que no conoce tu base: \(titlePending)")
+        XCTAssertFalse(titlePending.localizedCaseInsensitiveContains("baseline"), titlePending)
+        XCTAssertEqual(routePending, .autonomic)
+
+        // Y el estado honesto de «sin base» sigue intacto cuando NO está pendiente: son distintos.
+        let (heroNoBase, _) = LiquidHoyBuilder.hero(prep: nil, sleepMin: 440, nights: 0,
+                                                    verdictPending: false)
+        guard case .demotado(_, let titleNoBase, _) = heroNoBase else {
+            return XCTFail("esperaba .demotado (sin base)")
+        }
+        XCTAssertNotEqual(titlePending, titleNoBase,
+                          "«leyendo» y «no conozco tu base» son dos estados distintos")
+
+        // Y un veredicto REAL le gana a `verdictPending`: la bandera solo aplica cuando no hay nada
+        // que mostrar. Amarra el contrato de la función pura (en producción el llamador ya calcula
+        // `prep == nil && !fullyLoaded`, pero aquí no dependemos de eso).
+        let anclado = read(verdict: .full,
+                           drivers: [.init(axis: .sleep, state: .inRange, orientedZ: nil)],
+                           maturity: .trusted)
+        let (heroReal, _) = LiquidHoyBuilder.hero(prep: anclado, sleepMin: 440, nights: 20,
+                                                  verdictPending: true)
+        if case .demotado = heroReal {
+            XCTFail("con veredicto real no puede caer a «leyendo»: el dato gana a la bandera")
+        }
+    }
+
     // MARK: Señales — port literal de `needles()`
 
     func test_senales_posicionesIdenticasALasAgujas() {
@@ -137,30 +175,78 @@ final class LiquidHoyBuilderTests: XCTestCase {
         XCTAssertEqual(LiquidHoyBuilder.positionFromState(.high), 0.8)
     }
 
-    func test_senales_estadosYSinDatos() {
+    func test_senales_dosOrbes_sinTermico() {
+        // FER-1047: la fila pasó de tres a DOS orbes; el térmico salió (vive en el guardián).
         let prep = read(verdict: .caution, drivers: [
             driver(.autonomic, .low, z: -1.2), driver(.sleep, .noData), driver(.thermal, .inRange),
         ])
-        let senales = LiquidHoyBuilder.senales(prep: prep, thermalDeviation: nil)
-        XCTAssertEqual(senales.map(\.id), ["autonomico", "sueno", "termico"])
+        let senales = LiquidHoyBuilder.senales(prep: prep, valores: (rhr: "52 bpm", sueno: nil))
+        XCTAssertEqual(senales.map(\.id), ["autonomico", "sueno"], "dos orbes, sin térmico")
 
+        // Primer orbe = EN REPOSO con su dato (lpm), NUNCA «3 señales».
+        XCTAssertEqual(senales[0].valor, "52 bpm")
+        XCTAssertNotEqual(senales[0].caption, "3 SEÑALES")
+        XCTAssertFalse(senales[0].caption.contains("3"))
         // Autonómico fuera → atención, posición del z.
         XCTAssertEqual(senales[0].state, .atencion)
         XCTAssertEqual(senales[0].progress ?? -1, 0.5 - 1.2 / 4, accuracy: 1e-9)
         // Sueño sin datos → sin progreso (el eje no vota).
         XCTAssertNil(senales[1].progress)
-        // Térmico sin lectura → orbe «sin datos» (desviación documentada: no se oculta).
-        XCTAssertNil(senales[2].progress)
     }
 
-    func test_senales_termico_usaElCorteDelMotor() {
-        let cut = Preparedness.Config.default.thermalOutC
-        let alto = LiquidHoyBuilder.senales(prep: nil, thermalDeviation: cut + 0.01)
-        XCTAssertEqual(alto[2].state, .atencion)
-        XCTAssertEqual(alto[2].progress ?? -1, 0.8, accuracy: 1e-9)
-        let normal = LiquidHoyBuilder.senales(prep: nil, thermalDeviation: 0)
-        XCTAssertEqual(normal[2].state, .ok)
-        XCTAssertEqual(normal[2].progress ?? -1, 0.5, accuracy: 1e-9)
+    // MARK: Guardián (FER-1047) — vigila pero no vota; refleja los cortes del centinela
+
+    /// Un `Read` con un SignalRead de respiración con la z orientada dada (+ = mejor que la base;
+    /// una respiración ALTA/mala es z orientada NEGATIVA).
+    private func readConResp(thermal: Preparedness.AxisState, respOrientedZ: Double?)
+        -> Preparedness.Read {
+        let signals = [Preparedness.SignalRead(signal: .resp, orientedZ: respOrientedZ,
+                                               share: 0, flaggedAlone: false)]
+        return Preparedness.Read(
+            verdict: .full,
+            drivers: [driver(.autonomic, .inRange, z: 0.2), driver(.sleep, .inRange),
+                      driver(.thermal, thermal)],
+            signals: signals, signalsPresent: 3, signalsTotal: 4,
+            maturity: .trusted, autonomicNights: 21, trend: nil)
+    }
+
+    func test_guardian_tranquilo_ceroColor() {
+        let g = LiquidHoyBuilder.guardian(
+            prep: readConResp(thermal: .inRange, respOrientedZ: 0.3),
+            thermalDeviation: 0.1, resp: .init(14))
+        XCTAssertEqual(g?.estado, .tranquilo)
+        XCTAssertEqual(g?.temp, "+0.1°")
+        XCTAssertEqual(g?.resp, "14 rpm")
+    }
+
+    func test_guardian_unaFuera_soloEsaSeTiñe_yVeredictoNoCambia() {
+        // Temp alta (driver térmico .high) pero respiración en rango → solo temp fuera; el motor
+        // NO deja votar al centinela con una sola señal (el veredicto se decide aparte).
+        let soloTemp = LiquidHoyBuilder.guardian(
+            prep: readConResp(thermal: .high, respOrientedZ: 0.0),
+            thermalDeviation: 0.9, resp: .init(14))
+        XCTAssertEqual(soloTemp?.estado, .tempFuera)
+
+        // Respiración alta (z orientada ≤ −respBadZ) pero temp en rango → solo resp fuera.
+        let badZ = Preparedness.Config.default.respBadZ
+        let soloResp = LiquidHoyBuilder.guardian(
+            prep: readConResp(thermal: .inRange, respOrientedZ: -badZ),
+            thermalDeviation: 0.1, resp: .init(19))
+        XCTAssertEqual(soloResp?.estado, .respFuera)
+    }
+
+    func test_guardian_juntas_franjaSeTiñe() {
+        let badZ = Preparedness.Config.default.respBadZ
+        let g = LiquidHoyBuilder.guardian(
+            prep: readConResp(thermal: .high, respOrientedZ: -badZ - 0.1),
+            thermalDeviation: 0.9, resp: .init(19))
+        XCTAssertEqual(g?.estado, .juntas, "temp + resp fuera JUNTAS = el centinela del motor")
+    }
+
+    func test_guardian_sinLecturas_noSeMuestra() {
+        XCTAssertNil(LiquidHoyBuilder.guardian(prep: nil, thermalDeviation: nil, resp: nil))
+        // Con al menos una lectura, se muestra (siempre visible).
+        XCTAssertNotNil(LiquidHoyBuilder.guardian(prep: nil, thermalDeviation: 0.1, resp: nil))
     }
 
     // MARK: Carga — mismo mapeo que la franja
@@ -341,11 +427,13 @@ final class LiquidHoyBuilderTests: XCTestCase {
 
     /// El acta se SINTETIZA: en el `lowSignal` por falta de fila de hoy, `Preparedness`
     /// devuelve `drivers` VACÍO (:163-166). Una tabla derivada de `drivers` no existiría.
-    func test_acta_sinDrivers_sintetizaLasTresFilas() {
+    func test_acta_sinDrivers_sintetizaLasDosFilas() {
+        // FER-1047: el acta explica las DOS señales que votan (en reposo · sueño); el térmico
+        // dejó de ser una fila (vive en el guardián).
         let acta = LiquidHoyBuilder.acta(
             prep: read(verdict: .lowSignal, drivers: [], maturity: .calibrating))
-        XCTAssertEqual(acta.filas.count, 3)
-        XCTAssertEqual(acta.filas.map(\.id), ["autonomic", "sleep", "thermal"])
+        XCTAssertEqual(acta.filas.count, 2)
+        XCTAssertEqual(acta.filas.map(\.id), ["autonomic", "sleep"])
         XCTAssertTrue(acta.filas.allSatisfy { !$0.fuera }, "sin datos, nadie está fuera")
         XCTAssertNil(acta.nivel, "sin veredicto no hay palabra")
         XCTAssertNotNil(acta.sinLectura)
@@ -353,21 +441,22 @@ final class LiquidHoyBuilderTests: XCTestCase {
                        "sin veredicto la hoja no tiene una sola gota de color")
 
         // Y con `prep == nil` tampoco revienta ni inventa filas.
-        XCTAssertEqual(LiquidHoyBuilder.acta(prep: nil).filas.count, 3)
+        XCTAssertEqual(LiquidHoyBuilder.acta(prep: nil).filas.count, 2)
     }
 
-    /// El conteo habla de SEÑALES (lo que el usuario ve en los orbes), jamás de «ejes».
+    /// El conteo habla de SEÑALES (lo que el usuario ve en los orbes), jamás de «ejes» ni «3».
     func test_acta_conteo_porSenalesNoPorEjes() {
         let combos = [
-            LiquidHoyBuilder.conteoActa(fuera: 0, conLectura: 3),
-            LiquidHoyBuilder.conteoActa(fuera: 1, conLectura: 3),
-            LiquidHoyBuilder.conteoActa(fuera: 2, conLectura: 3),
             LiquidHoyBuilder.conteoActa(fuera: 0, conLectura: 2),
+            LiquidHoyBuilder.conteoActa(fuera: 1, conLectura: 2),
+            LiquidHoyBuilder.conteoActa(fuera: 2, conLectura: 2),
+            LiquidHoyBuilder.conteoActa(fuera: 0, conLectura: 1),
         ]
         for texto in combos {
             XCTAssertFalse(texto.localizedCaseInsensitiveContains("eje"),
                            "vocabulario de ingeniería en pantalla: \(texto)")
             XCTAssertFalse(texto.localizedCaseInsensitiveContains("axis"), texto)
+            XCTAssertFalse(texto.contains("3"), "ninguna frase dice «3 señales»: \(texto)")
         }
         XCTAssertNotEqual(combos[0], combos[3], "cobertura parcial tiene su propia frase")
     }
@@ -437,8 +526,9 @@ final class LiquidHoyBuilderTests: XCTestCase {
                 signalsPresent: 3, signalsTotal: 3, maturity: .trusted,
                 autonomicNights: 21, trend: nil)
             let acta = LiquidHoyBuilder.acta(prep: prep)
-            XCTAssertEqual(acta.filas.count, 3, "la carga jamás es una cuarta fila")
+            XCTAssertEqual(acta.filas.count, 2, "las dos señales que votan; la carga nunca es fila")
             XCTAssertFalse(acta.filas.contains { $0.id == "load" })
+            XCTAssertFalse(acta.filas.contains { $0.id == "thermal" }, "el térmico bajó al guardián")
             return acta.notas.first { $0.id == "carga" }?.texto
         }
         let con = nota(hayWorkout: true)

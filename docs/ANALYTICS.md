@@ -198,6 +198,8 @@ Source: `Preparedness.swift`, `SleepBands.swift` (both `StrandAnalytics`, pure).
 
 **Allowed** «Lectura de día» copy (FER-1033, the demoted watchless-night surface): *«LECTURA DE DÍA»* (overline) · *«Tus señales de día vienen en tu rango.»* · *«Tus señales de día vienen abajo de tu rango.»* · the mandatory hedge *«Anoche no hubo lectura de sueño; esto es menos preciso.»* **Forbidden** on this surface: the four verdict words, verdict color, any implication of a night reading.
 
+**Allowed** «Franja del guardián» copy (FER-1047, the always-visible sentinel strip of skin-temp + respiration that *watches but doesn't vote*): the label *«VIGILANDO»* (calm / one signal out) → *«JUNTAS»* (both out); the two raw data (*«+0.1°»* · *«14 rpm»*); and the corroborated VoiceOver line *«Tu temperatura y tu respiración se salieron juntas de tu patrón.»* The strip is number-only when calm (color only in the datum); a single elevated signal tints only that datum and **never changes the verdict** (the engine requires both to corroborate — Mishra 2020 / Apple Vitals «2+ out»). **Forbidden**: the word «enfermedad», any diagnosis or clinical claim, and letting one signal read as if it decided the day. The honest fallback framing is *«algo se salió de tu patrón, hoy ve leve»*, never a named illness.
+
 ---
 
 ## `RecoveryScorer` — transparent 0–100 recovery composite

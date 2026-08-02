@@ -429,6 +429,46 @@ final class Repository: ObservableObject {
         let asOf = Self.localDayKey(now)
         let recentCutoff = Self.localDayKey(Calendar.current.date(byAdding: .day, value: -6, to: now) ?? now)
 
+        // Preparedness v3: FC-reposo nocturna real, solo en refresh completo — leer HR de las
+        // últimas 14 noches es demasiado costoso para el primer pintado. UNA sola llamada a
+        // hrSamples cubriendo TODO el rango (no 14 llamadas), luego se reparte por sesión en memoria.
+        var nocturnalRestingHr: [String: Double] = [:]
+        if full {
+            let recentSleeps = appleSleepRaw.sorted { $0.startTs > $1.startTs }.prefix(14)
+            if let oldestStart = recentSleeps.map(\.startTs).min(),
+               let newestEnd = recentSleeps.map(\.endTs).max() {
+                let hrForNights = (try? await store.hrSamples(deviceId: "apple-health",
+                                                               from: oldestStart, to: newestEnd,
+                                                               limit: 80_000)) ?? []
+                // Si esta lectura devuelve exactamente el límite (80_000), puede venir truncada para
+                // las noches más viejas de la ventana — no se rellena ni se reintenta; el diccionario
+                // simplemente refleja lo que trajo esta única lectura (honesto, no inventado).
+                for session in recentSleeps {
+                    // Deep-sleep windows for THIS night, from the hypnogram the session already
+                    // carries. FER-1048: the estimator now prefers the SIGNAL-detected stable segment
+                    // (`NightStableSegment`, computed inside `estimate` from the HR alone), with this
+                    // `deep` label only a SECOND choice and the whole window the last resort. Apple's
+                    // staging is weak (N3 sensitivity ≈51%, κ≈0.53 — Schyvens 2025), so it only STEERS
+                    // the quantile when the signal can't resolve a stretch, and never becomes a claim.
+                    // (Still decoded so the fallback exists; in practice the stable segment or the
+                    // whole window carries most nights — we do NOT loosen any gate to force this branch.)
+                    let deepWindows: [(Int, Int)] = (session.stagesJSON
+                        .flatMap { $0.data(using: .utf8) }
+                        .flatMap { try? JSONDecoder().decode([StageSegment].self, from: $0) } ?? [])
+                        .filter { $0.stage == "deep" }
+                        .map { ($0.start, $0.end) }
+                    func isDeep(_ ts: Int) -> Bool { deepWindows.contains { ts >= $0.0 && ts <= $0.1 } }
+                    let sessionSamples = hrForNights
+                        .filter { $0.ts >= session.startTs && $0.ts <= session.endTs }
+                        .map { NocturnalRestingHR.Sample(ts: $0.ts, bpm: Double($0.bpm), deep: isDeep($0.ts)) }
+                    if let bpm = NocturnalRestingHR.estimate(sessionSamples) {
+                        let dayKey = Self.localDayKey(Date(timeIntervalSince1970: Double(session.endTs)))
+                        nocturnalRestingHr[dayKey] = bpm
+                    }
+                }
+            }
+        }
+
         // The O(n) merge/fusion work over every row read runs OFF the main actor (`assembleDashboard`
         // is nonisolated) — on a years-deep DB the full pass builds the dashboard without stealing
         // frames from the UI the first-paint pass already put up. FER-1040: the autonomic trend AND
@@ -444,7 +484,8 @@ final class Repository: ObservableObject {
             appleAggRaw: appleAggRaw, stepsEstRaw: stepsEstRaw,
             perf: perf, cons: cons, need: need, debt: debt, baselineEpoch: baselineEpoch,
             strainHRmax: strainHRmax, strainSex: strainSex,
-            nightRows: nightRows.map { (day: $0.day, rmssdMs: $0.value) }, asOf: asOf, recentCutoff: recentCutoff))
+            nightRows: nightRows.map { (day: $0.day, rmssdMs: $0.value) }, asOf: asOf, full: full, recentCutoff: recentCutoff,
+            nocturnalRestingHr: nocturnalRestingHr))
 
         // Back on the main actor: publish only if this is still the newest refresh, and never let a
         // first-paint pass overwrite a fully loaded dashboard.
@@ -489,7 +530,14 @@ final class Repository: ObservableObject {
         /// verdict are composed against.
         var nightRows: [(day: String, rmssdMs: Double)] = []
         var asOf: String = ""
+        /// Whether this is the FULL refresh. The «Preparación» verdict is only published on the full
+        /// pass: the first paint doesn't load `nocturnalRestingHr`, so it would score the AWAKE
+        /// resting-HR construct and then be replaced seconds later by the NOCTURNAL one — the same
+        /// verdict flipping construct within one morning. Same discipline the file already applies to
+        /// anything derived from `days` that persists: wait for `fullyLoaded`.
+        var full: Bool = false
         var recentCutoff: String = ""
+        var nocturnalRestingHr: [String: Double] = [:]
     }
 
     /// Pure assembly of the dashboard from rows already read — the EXACT merge pipeline `refresh()`
@@ -559,8 +607,30 @@ final class Repository: ObservableObject {
         // years-deep import even O(n) work has no business on the main thread.
         let autonomicTrend = Self.autonomicTrend(nights: inputs.nightRows,
                                                  asOf: inputs.asOf, recentCutoff: inputs.recentCutoff)
-        let preparedness = Preparedness.evaluate(.init(days: merged.days, strainByDay: strainEstimates,
-                                                       trend: autonomicTrend, asOf: inputs.asOf))
+        let cycleNights = merged.days.map {
+            CyclePhaseEngine.NightSample(day: $0.day, skinTempDevC: $0.skinTempDevC,
+                                          restingHr: $0.restingHr.map(Double.init), avgHrv: $0.avgHrv)
+        }
+        let cyclePhase: CyclePhaseEngine.Phase?
+        switch CyclePhaseEngine.estimate(cycleNights, asOf: inputs.asOf) {
+        case .estimated(let phase, _, _): cyclePhase = phase
+        case .learning, .noClearPattern: cyclePhase = nil
+        }
+        let denseRmssd: Preparedness.DenseRmssd? = (autonomicTrend.asOfWasDense == true)
+            ? autonomicTrend.spark.last.map { Preparedness.DenseRmssd(z: $0, dense: true) }
+            : nil
+        // El veredicto SOLO sale del refresh completo. En el primer pintado `nocturnalRestingHr`
+        // viene vacío, así que el eje caería a la FC DESPIERTA de Apple y segundos después, ya con la
+        // nocturna, podría decir otra cosa: el mismo héroe cambiando de constructo en una misma
+        // mañana. Preferimos no decir nada a decir algo que nos desdecimos — un «preliminar» con un
+        // número que luego se contradice entrena desconfianza.
+        let preparedness: Preparedness.Read? = inputs.full
+            ? Preparedness.evaluate(.init(days: merged.days, strainByDay: strainEstimates,
+                                          trend: autonomicTrend, asOf: inputs.asOf,
+                                          nocturnalRestingHr: inputs.nocturnalRestingHr,
+                                          cyclePhase: cyclePhase,
+                                          nocturnalRmssd: denseRmssd))
+            : nil
         return DashboardData(
             days: merged.days,
             displayDays: merged.displayDays,

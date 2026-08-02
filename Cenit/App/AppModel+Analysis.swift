@@ -65,20 +65,31 @@ extension AppModel {
     ///    genuinely new Apple data.
     @MainActor
     func resumeForegroundAnalysis() async {
+        // Un pase COMPLETO que nunca terminó también obliga a refrescar. El primer pintado ya fija
+        // `lastRefreshDayKey = hoy`, así que si el usuario manda la app a segundo plano antes de que
+        // el pase completo acabe y vuelve el MISMO día, la compuerta de medianoche no dispara y el
+        // dashboard se queda a medias. Con el veredicto publicándose SOLO en el pase completo, eso
+        // dejaría al héroe pegado en «Leyendo tu noche…» toda la jornada.
         if Self.shouldForceRefreshOnForeground(lastPublishedDay: repo.lastRefreshDayKey,
-                                               currentDay: Repository.localDayKey(Date())) {
+                                               currentDay: Repository.localDayKey(Date()),
+                                               fullyLoaded: repo.fullyLoaded) {
             await repo.refresh()
         }
     }
 
-    /// Whether returning to the foreground must force a full dashboard rebuild: only when the day
-    /// rolled over since the dashboard was last assembled. Pure (no instance state) so a unit test can
-    /// pin the midnight matrix without a live AppModel — the risk this whole change turns on
-    /// (FER-1024). `nil` (nothing published yet) never forces: the launch sequence owns that path.
+    /// Whether returning to the foreground must force a full dashboard rebuild. Two triggers:
+    /// (a) the day rolled over since the dashboard was last assembled (FER-1024 — the midnight case);
+    /// (b) **the full pass never finished** (`fullyLoaded == false`). (b) exists because first paint
+    /// already stamps `lastRefreshDayKey = today`, so a user who backgrounds the app mid-load and
+    /// returns the SAME day would otherwise never complete it — and since the «Preparación» verdict
+    /// is published only by the full pass, the hero would sit on «Leyendo tu noche…» all day.
+    /// Pure (no instance state) so a unit test can pin the matrix without a live AppModel.
+    /// `nil` (nothing published yet) never forces: the launch sequence owns that path.
     nonisolated static func shouldForceRefreshOnForeground(lastPublishedDay: String?,
-                                                           currentDay: String) -> Bool {
+                                                           currentDay: String,
+                                                           fullyLoaded: Bool = true) -> Bool {
         guard let lastPublishedDay else { return false }
-        return lastPublishedDay != currentDay
+        return !fullyLoaded || lastPublishedDay != currentDay
     }
 
     // MARK: - Baseline recalibration («Recalibrar recuperación», FER-677)

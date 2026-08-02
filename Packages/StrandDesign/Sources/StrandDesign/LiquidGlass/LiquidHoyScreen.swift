@@ -74,6 +74,30 @@ public struct LiquidHoyModel: Sendable {
         case calibrando(status: String)
     }
 
+    /// La franja del guardián (FER-1047): temperatura + respiración SIEMPRE visibles, debajo de
+    /// la franja de carga y con su mismo vidrio/alto (par simétrico «lo que acompaña»). Vigila,
+    /// no vota — «mostrar no es votar». Tres estados: tranquilo (cero color), UNA fuera (solo ese
+    /// dato en ámbar, el veredicto NO cambia — mata el falso positivo del cuarto caliente), y las
+    /// dos JUNTAS (la franja se tiñe y el centinela sí empuja el veredicto).
+    public struct Guardian: Sendable {
+        public enum Estado: Sendable, Equatable { case tranquilo, tempFuera, respFuera, juntas }
+        /// Rótulo YA localizado: «VIGILANDO» en tranquilo/una, «JUNTAS» cuando ambas se salen.
+        public let label: String
+        /// Temp y resp YA formateadas («+0.1°» · «14 rpm»); «—» cuando no hay lectura hoy.
+        public let temp: String
+        public let resp: String
+        public let estado: Estado
+        /// Etiqueta de VoiceOver YA compuesta y localizada. `nil` = se deriva de label + valores.
+        public let a11y: String?
+        public init(label: String, temp: String, resp: String, estado: Estado, a11y: String? = nil) {
+            self.label = label
+            self.temp = temp
+            self.resp = resp
+            self.estado = estado
+            self.a11y = a11y
+        }
+    }
+
     public struct Metrica: Sendable, Identifiable {
         public let id: String
         public let label: String
@@ -114,6 +138,9 @@ public struct LiquidHoyModel: Sendable {
     public let hero: Hero
     /// `nil` = la barra de carga no se muestra (el modelo de carga aún no siembra).
     public let carga: Carga?
+    /// La franja del guardián (temp + resp). `nil` = sin lectura de ninguna de las dos (no se
+    /// muestra); con al menos una lectura va SIEMPRE visible, debajo de la carga.
+    public let guardian: Guardian?
     public let metricas: [Metrica]
     /// Hint de VoiceOver del héroe («Abre el detalle»), YA localizado. `nil` = sin hint.
     /// Orbes y barra de carga lo reutilizan (revote /inject: navegan igual que el héroe).
@@ -131,7 +158,7 @@ public struct LiquidHoyModel: Sendable {
     public let ambiente: LiquidAmbiente
 
     public init(kicker: String, dial: Dial, senales: [Senal], hero: Hero, carga: Carga?,
-                metricas: [Metrica], heroHint: String? = nil,
+                metricas: [Metrica], guardian: Guardian? = nil, heroHint: String? = nil,
                 ambiente: LiquidAmbiente = .bien, cargaLabel: String = "CARGA",
                 kickerA11y: String? = nil, heroPuerta: String? = nil) {
         self.cargaLabel = cargaLabel
@@ -141,6 +168,7 @@ public struct LiquidHoyModel: Sendable {
         self.senales = senales
         self.hero = hero
         self.carga = carga
+        self.guardian = guardian
         self.metricas = metricas
         self.heroHint = heroHint
         self.ambiente = ambiente
@@ -152,16 +180,14 @@ public struct LiquidHoyModel: Sendable {
         kicker: "MIÉ 22 DE JUL",
         dial: Dial(night: (start: 20, end: 4), sol: (start: 6.8, end: 20.3), marker: 8),
         senales: [
-            .init(id: "autonomico", label: "AUTONÓMICO", caption: "3 SEÑALES",
-                  progress: 0.35, icon: .ondaSenal, state: .ok, valor: "EN TU RANGO"),
+            .init(id: "autonomico", label: "EN REPOSO", caption: "EN TU RANGO",
+                  progress: 0.35, icon: .ondaSenal, state: .ok, valor: "52 lpm"),
             .init(id: "sueno", label: "SUEÑO", caption: "EN TU RANGO",
                   progress: 0.43, icon: .lunaSenal, state: .ok, valor: "7:20"),
-            .init(id: "termico", label: "TÉRMICO", caption: "EN TU RANGO",
-                  progress: 0.5, icon: .termoSenal, state: .ok, valor: "+0.1°"),
         ],
         hero: .veredicto(title: "Dale\ncon todo", highlight: "todo",
                          highlightTone: LiquidColor.verdePrimario,
-                         subtitle: "Tus 3 señales amanecieron dentro de tu rango.",
+                         subtitle: "Tus dos señales amanecieron dentro de tu rango.",
                          confianza: nil),
         carga: .medida(pos: 51.5, zone: 1, status: "EN EQUILIBRIO", ratio: "1.03", razon: 1.03, state: .ok),
         metricas: [
@@ -183,6 +209,7 @@ public struct LiquidHoyModel: Sendable {
                   delta: "−0.5 vs tu base", deltaTone: .up,
                   tone: LiquidColor.verdePrimario, icon: .estres),
         ],
+        guardian: .init(label: "VIGILANDO", temp: "+0.1°", resp: "14 rpm", estado: .tranquilo),
         heroPuerta: "Cómo llegué a esto")
 }
 
@@ -228,6 +255,15 @@ public struct LiquidHoyContent: View {
             if model.carga != nil {
                 carga
                     .padding(.top, LiquidSpace.s300)
+                    .liquidEntrada(index: 3)
+            }
+
+            // La franja del guardián (FER-1047): par simétrico bajo la carga (mismo vidrio/alto).
+            // Gap corto (s150) cuando acompaña a la carga para que el ojo las lea juntas; s300 si
+            // la carga no está, para no pegarse al héroe/grid.
+            if let guardian = model.guardian {
+                LiquidGuardianFranja(guardian)
+                    .padding(.top, model.carga != nil ? LiquidSpace.s150 : LiquidSpace.s300)
                     .liquidEntrada(index: 3)
             }
 
@@ -398,18 +434,17 @@ public struct LiquidHoyScreen: View {
         kicker: "MIÉ 22 DE JUL",
         dial: .init(night: nil, marker: 10),
         senales: [
-            .init(id: "autonomico", label: "AUTONÓMICO", caption: "EN TU RANGO",
-                  progress: 0.4, icon: .ondaSenal, state: .ok),
+            .init(id: "autonomico", label: "EN REPOSO", caption: "SIN DATOS",
+                  progress: nil, icon: .ondaSenal, state: .ok),
             .init(id: "sueno", label: "SUEÑO", caption: "SIN DATOS",
                   progress: nil, icon: .lunaSenal, state: .ok),
-            .init(id: "termico", label: "TÉRMICO", caption: "SIN DATOS",
-                  progress: nil, icon: .termoSenal, state: .ok),
         ],
         hero: .demotado(kicker: "LECTURA DE DÍA",
                         title: "Señales en tu rango",
                         subtitle: "Sin noche grabada: lectura menos precisa."),
         carga: .calibrando(status: "CALIBRANDO"),
-        metricas: LiquidHoyModel.ejemplo.metricas))
+        metricas: LiquidHoyModel.ejemplo.metricas,
+        guardian: .init(label: "VIGILANDO", temp: "—", resp: "—", estado: .tranquilo)))
         .frame(width: 402, height: 874)
         .environment(\.liquidMotionDisabled, true)
 }
