@@ -159,12 +159,19 @@ public enum Preparedness {
         /// The RMSSD trend direction (from `AutonomicTrend`), for the sparkline + the "falling"
         /// nudge. Independent of the verdict's body-signal axes.
         public let trend: AutonomicTrend.Direction?
+        /// FER-8 · Fase 5: the illness sentinel (temp∧resp) with streak memory, exposed for the
+        /// guardian strip. `nil` when the asOf night has neither temperature nor respiration to read.
+        /// The streak drives COPY only — it never changes `verdict` (the sentinel's single vote is
+        /// unchanged from v3).
+        public let sentinel: SentinelRead?
         public init(verdict: Verdict, drivers: [Driver], signals: [SignalRead] = [],
                     signalsPresent: Int, signalsTotal: Int,
-                    maturity: BaselineStatus, autonomicNights: Int, trend: AutonomicTrend.Direction?) {
+                    maturity: BaselineStatus, autonomicNights: Int, trend: AutonomicTrend.Direction?,
+                    sentinel: SentinelRead? = nil) {
             self.verdict = verdict; self.drivers = drivers; self.signals = signals
             self.signalsPresent = signalsPresent; self.signalsTotal = signalsTotal
             self.maturity = maturity; self.autonomicNights = autonomicNights; self.trend = trend
+            self.sentinel = sentinel
         }
 
         /// Whether today's read is anchored by a RECORDED night of sleep (FER-1033). `false` means
@@ -183,6 +190,28 @@ public enum Preparedness {
         /// aprendo tu normal" hedge — never the confident word, never a silent `lowSignal`. Below seed
         /// the verdict is already `lowSignal`; at trust the hedge lifts. Derived, so no init change.
         public var provisional: Bool { verdict != .lowSignal && maturity != .trusted }
+    }
+
+    // MARK: Illness sentinel with streak memory (FER-8 · Fase 5)
+
+    /// The illness sentinel's state for the asOf night. `corroborated` (temp AND resp out) is the one
+    /// that votes — exactly as v3; `watchingOneSignal` (exactly one out) NEVER votes; `quiet` is neither.
+    public enum SentinelState: String, Sendable, Equatable { case quiet, watchingOneSignal, corroborated }
+    public enum SentinelSignal: String, Sendable, Equatable { case temp, resp }
+    /// Exposed on `Read.sentinel`. `streakNights` = consecutive calendar-contiguous nights ending at
+    /// asOf in the SAME state (and, for `watchingOneSignal`, the same signal out). The streak drives
+    /// COPY only — the vote (one, when `corroborated`) is unchanged from v3.
+    public struct SentinelRead: Sendable, Equatable {
+        public let state: SentinelState
+        public let streakNights: Int
+        public let watchingSignal: SentinelSignal?
+        public let tempOut: Bool
+        public let respOut: Bool
+        public init(state: SentinelState, streakNights: Int, watchingSignal: SentinelSignal?,
+                    tempOut: Bool, respOut: Bool) {
+            self.state = state; self.streakNights = streakNights; self.watchingSignal = watchingSignal
+            self.tempOut = tempOut; self.respOut = respOut
+        }
     }
 
     // MARK: Inputs
@@ -385,16 +414,23 @@ public enum Preparedness {
         }
 
         // --- Consensus + hysteresis over RAW body verdicts across history (deterministic, no persistence) ---
-        let stable = hysteresed(ordered: ordered, priorStates: priorStates, rhrSeries: rhrSeries,
-                                cyclePhase: input.cyclePhase, asOf: input.asOf,
-                                nocturnalRmssd: input.nocturnalRmssd, config: config)
+        // ONE forward pass yields the per-day RawDay (verdict + illness-sentinel signals): hysteresis
+        // rides the verdicts, the sentinel STREAK (FER-8) rides the temp/resp flags — same pass, no
+        // extra cost, and no drift between the vote and the sentinel.
+        let raws = ordered.indices.map {
+            rawVerdictAt($0, ordered: ordered, priorStates: priorStates, rhrSeries: rhrSeries,
+                         cyclePhase: input.cyclePhase, asOf: input.asOf,
+                         nocturnalRmssd: input.nocturnalRmssd, config: config)
+        }
+        let stable = hysteresed(raws.map(\.verdict), hysteresisDays: config.hysteresisDays)
         // Trend nudge (post-hysteresis): a sustained falling RMSSD trend pushes a borderline day
         // (`caution`) to `easy`. It never overrides a clean `full`. `/cso` may widen this.
         let final: Verdict = (stable == .caution && input.trend?.direction == .below) ? .easy : stable
 
         return Read(verdict: final, drivers: drivers, signals: signals,
                     signalsPresent: signalsPresent, signalsTotal: 3,
-                    maturity: maturity, autonomicNights: autonomicNights, trend: input.trend?.direction)
+                    maturity: maturity, autonomicNights: autonomicNights, trend: input.trend?.direction,
+                    sentinel: sentinelStreak(ordered: ordered, raws: raws))
     }
 
     // MARK: - Internals
@@ -556,59 +592,96 @@ public enum Preparedness {
     /// per-day raw (that would make the historical raws depend on today's trend). O(1) per day.
     /// B1/B2/B3: uses the resolved `rhrSeries`; applies luteal + dense-RMSSD only when
     /// `day.day == asOf` (historical raws stay pre-adjustment so hysteresis is consistent).
+    /// One day's raw evaluation: the consensus verdict PLUS the illness-sentinel signals (temp/resp
+    /// out), so the forward pass carries both without recomputing (FER-8).
+    private struct RawDay { let verdict: Verdict; let tempOut: Bool; let respOut: Bool }
+
     private static func rawVerdictAt(_ i: Int, ordered: [DailyMetric],
                                      priorStates: PriorStates, rhrSeries: [Double?],
                                      cyclePhase: CyclePhaseEngine.Phase?, asOf: String,
-                                     nocturnalRmssd: DenseRmssd?, config: Config) -> Verdict {
+                                     nocturnalRmssd: DenseRmssd?, config: Config) -> RawDay {
         let day = ordered[i]
         let isAsOf = day.day == asOf
         let rhrVal = adjustedRhr(rhrSeries[i], cyclePhase: cyclePhase, isAsOf: isAsOf, config: config)
         let hrvZ  = orientedZ(prior: priorStates.hrv?[i],  value: day.avgHrv,      betterWhenHigher: true)
         let rhrZ  = orientedZ(prior: priorStates.rhr?[i],  value: rhrVal,          betterWhenHigher: false)
         let respZ = orientedZ(prior: priorStates.resp?[i], value: day.respRateBpm, betterWhenHigher: false)
-        let rmssdTerm = nocturnalRmssdTerm(nocturnalRmssd, rhrZ: rhrZ, isAsOf: isAsOf, config: config)
-        let a = autonomicAxis(hrv: (hrvZ, config.wHRV), rhr: (rhrZ, config.wRHR),
-                              resp: (respZ, config.wResp), nocturnalRmssd: rmssdTerm, cfg: config).state
-        guard a.hasData else { return .lowSignal }
-        let s = sleepDriver(day, config: config).state
         // v3 illness sentinel: temp counts as OUT only when CORROBORATED by an elevated respiration
-        // (both together, sustained illness pattern — Mishra 2020; Apple Vitals "2+ out"). A lone
-        // temp anomaly (warm room, blanket) or a lone breathing rise no longer votes → far fewer
-        // false "ease" days. `respZ` is oriented (+ = better); an elevated (bad) breathing rate is
+        // (both together, sustained illness pattern — Mishra 2020; Apple Vitals "2+ out"). A lone temp
+        // anomaly (warm room, blanket) or a lone breathing rise no longer votes → far fewer false
+        // "ease" days. `respZ` is oriented (+ = better); an elevated (bad) breathing rate is
         // `−respZ ≥ respBadZ`. Cold temp is not an illness sign — only the HIGH side corroborates.
-        // B2: asOf-only luteal high-side temp discount (same gate as `thermalDriver` in evaluate).
+        // B2: asOf-only luteal high-side temp discount. Computed BEFORE the autonomic gate so a
+        // low-signal day still reports its sentinel signals (FER-8), without changing the vote below.
         let tempDev = adjustedTempDev(day.skinTempDevC, cyclePhase: cyclePhase, isAsOf: isAsOf, config: config)
         let tempHigh = tempDev.map { $0 >= config.thermalOutC } ?? false
         let respHigh = (respZ.map { -$0 }).map { $0 >= config.respBadZ } ?? false
+
+        let rmssdTerm = nocturnalRmssdTerm(nocturnalRmssd, rhrZ: rhrZ, isAsOf: isAsOf, config: config)
+        let a = autonomicAxis(hrv: (hrvZ, config.wHRV), rhr: (rhrZ, config.wRHR),
+                              resp: (respZ, config.wResp), nocturnalRmssd: rmssdTerm, cfg: config).state
+        guard a.hasData else { return RawDay(verdict: .lowSignal, tempOut: tempHigh, respOut: respHigh) }
+        let s = sleepDriver(day, config: config).state
         let sentinelOut = tempHigh && respHigh
         let out = (a.isOut ? 1 : 0) + (s.isOut ? 1 : 0) + (sentinelOut ? 1 : 0)
-        if out == 0 { return .full }
-        if out == 1 { return .caution }
-        return .easy
+        let v: Verdict = out == 0 ? .full : (out == 1 ? .caution : .easy)
+        return RawDay(verdict: v, tempOut: tempHigh, respOut: respHigh)
     }
 
-    /// Forward pass applying hysteresis over the RAW verdicts of every day up to `asOf`. A new raw
-    /// verdict must persist `hysteresisDays` consecutive days before it replaces the stable one.
-    /// Operates on RAW (not smoothed) verdicts, so there is no unbounded recursion. O(n): each raw
-    /// is O(1) from the single-pass `priorStates` (was O(n²) re-folding the full history per day).
-    private static func hysteresed(ordered: [DailyMetric], priorStates: PriorStates,
-                                   rhrSeries: [Double?], cyclePhase: CyclePhaseEngine.Phase?,
-                                   asOf: String, nocturnalRmssd: DenseRmssd?,
-                                   config: Config) -> Verdict {
-        let raws = ordered.indices.map {
-            rawVerdictAt($0, ordered: ordered, priorStates: priorStates, rhrSeries: rhrSeries,
-                         cyclePhase: cyclePhase, asOf: asOf, nocturnalRmssd: nocturnalRmssd,
-                         config: config)
-        }
+    /// Run-length hysteresis over the RAW verdicts (computed once by the caller — the same pass the
+    /// sentinel streak rides). A new raw verdict must persist `hysteresisDays` CONSECUTIVE days before
+    /// it replaces the stable one, so an isolated borderline day never flips the hero. O(n).
+    private static func hysteresed(_ raws: [Verdict], hysteresisDays: Int) -> Verdict {
         guard var stable = raws.first else { return .lowSignal }
-        // A new raw verdict must persist `hysteresisDays` CONSECUTIVE days before it replaces the
-        // stable one — so an isolated borderline day never flips the hero.
         var runVal = stable
         var runLen = 1
         for r in raws.dropFirst() {
             if r == runVal { runLen += 1 } else { runVal = r; runLen = 1 }
-            if runVal != stable && runLen >= max(1, config.hysteresisDays) { stable = runVal }
+            if runVal != stable && runLen >= max(1, hysteresisDays) { stable = runVal }
         }
         return stable
+    }
+
+    /// The illness-sentinel read for the asOf night, with streak memory (FER-8). `nil` when the asOf
+    /// night has neither temperature nor respiration to read. `streakNights` counts consecutive
+    /// CALENDAR-CONTIGUOUS nights ending at asOf in the SAME state (and, for `watchingOneSignal`, the
+    /// same signal out) — a quiet night, a state change, a signal flip, OR a calendar gap ends it
+    /// (`Input.days` is not calendar-filled, so a missing night is an ABSENT row, not a nil — the
+    /// contiguity is checked by civil date via `ComparisonEngine.epochDay`). COPY only: never the vote.
+    private static func sentinelStreak(ordered: [DailyMetric], raws: [RawDay]) -> SentinelRead? {
+        guard let asOfDay = ordered.last, let asOf = raws.last else { return nil }
+        if asOfDay.skinTempDevC == nil && asOfDay.respRateBpm == nil { return nil }
+
+        let state: SentinelState
+        let signal: SentinelSignal?
+        if asOf.tempOut && asOf.respOut { state = .corroborated; signal = nil }
+        else if asOf.tempOut          { state = .watchingOneSignal; signal = .temp }
+        else if asOf.respOut          { state = .watchingOneSignal; signal = .resp }
+        else                          { state = .quiet; signal = nil }
+
+        var streak = state == .quiet ? 0 : 1
+        if state != .quiet {
+            var prevDay = asOfDay.day
+            var idx = ordered.count - 2
+            while idx >= 0 {
+                guard let ePrev = ComparisonEngine.epochDay(of: prevDay),
+                      let eThis = ComparisonEngine.epochDay(of: ordered[idx].day),
+                      ePrev - eThis == 1 else { break }          // calendar gap ends the streak
+                let r = raws[idx]
+                let matches: Bool
+                switch state {
+                case .corroborated:      matches = r.tempOut && r.respOut
+                case .watchingOneSignal: matches = signal == .temp ? (r.tempOut && !r.respOut)
+                                                                    : (r.respOut && !r.tempOut)
+                case .quiet:             matches = false
+                }
+                if !matches { break }                            // state change / signal flip ends it
+                streak += 1
+                prevDay = ordered[idx].day
+                idx -= 1
+            }
+        }
+        return SentinelRead(state: state, streakNights: streak, watchingSignal: signal,
+                            tempOut: asOf.tempOut, respOut: asOf.respOut)
     }
 }
