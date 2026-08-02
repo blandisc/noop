@@ -91,6 +91,10 @@ public struct LiquidEcosistema: View {
 
     @State private var fase: Sim.Fase?
     @State private var escala: CGFloat = 1
+    /// ¿El héroe está a la vista? (FER-14 #3) — fuera del viewport el reloj de 60 Hz se
+    /// apaga. Arranca en `true`: si el héroe no vive dentro de un ScrollView el modifier
+    /// nunca dispara y el default honesto es «visible».
+    @State private var visible = true
     private let faseForzada: Sim.Fase?
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -187,8 +191,12 @@ public struct LiquidEcosistema: View {
     // MARK: Body
 
     public var body: some View {
-        if dynamicTypeSize.isAccessibilitySize {
-            // AX1+: el héroe abandona la física — variante lista con TODOS los datos.
+        if dynamicTypeSize >= .xxxLarge {
+            // xxxLarge+: el héroe abandona la física — variante lista con TODOS los datos.
+            // El corte NO espera a AX1 (FER-14 #2): el lienzo mide 364×324 fijos y entre
+            // xxxLarge y accessibility1 la tipografía ya crece lo suficiente para que la
+            // palabra del veredicto se encime al orbe. El colapso temprano es honesto —
+            // ningún dato se pierde, solo la física.
             EcosistemaListado(senales: senales, hero: hero, guardian: guardian,
                               calibracion: calibracion, rotulos: rotulos,
                               heroPuerta: heroPuerta,
@@ -218,6 +226,7 @@ public struct LiquidEcosistema: View {
                 .frame(maxWidth: .infinity)
         }
         .frame(height: LiquidSpace.ecosistemaAlto * escala)
+        .modifier(EcosistemaVisibilidad { visible = $0 })
         .onAppear {
             guard fase == nil else { return }
             let ahora = Date().timeIntervalSinceReferenceDate
@@ -236,6 +245,12 @@ public struct LiquidEcosistema: View {
         }
         // El veredicto se estrena o CAMBIA con la pantalla abierta (sync matutino,
         // backfill que voltea el día): corre el ritual de nuevo + announcement (Grok #2).
+        // Esto también resuelve el edge de QA R1 (FER-14 #4): si el dato se borra el
+        // héroe cae a demotado (`tituloVeredicto` = nil) y, cuando el veredicto REGRESA
+        // el mismo día, la palabra vuelve a cambiar y el ritual SÍ corre. Es lo correcto:
+        // el ritual es «tu veredicto llegó», y para el usuario acaba de llegar otra vez.
+        // El día ya se consumió en `fusionDay`, así que `onFusionArrancada` no se vuelve
+        // a llamar — la re-fusión es visual, no re-marca el día.
         .onChange(of: tituloVeredicto) { antes, ahora in
             guard ahora != nil, antes != ahora, fase != nil else { return }
             let t = Date().timeIntervalSinceReferenceDate
@@ -283,7 +298,8 @@ public struct LiquidEcosistema: View {
                              senales: senales, guardianJuntas: guardian?.estado == .juntas,
                              guardianHueco: guardian == nil
                                  || (guardian?.temp == "—" && guardian?.resp == "—"),
-                             rotulos: rotulos, still: still, paused: still || ambientPaused)
+                             rotulos: rotulos, still: still,
+                             paused: still || ambientPaused || !visible)
                 .contentShape(Rectangle())
                 .onTapGesture { alternar() }
             overlays
@@ -653,6 +669,49 @@ private struct EcosistemaA11yAcciones: ViewModifier {
     }
 }
 
+// MARK: - Pausa por viewport (FER-14 #3)
+
+/// El reloj del héroe no corre si el héroe no está en pantalla: en Hoy el hero vive
+/// arriba de un scroll largo y su `TimelineView` seguía latiendo a 60 Hz al bajar (QA R5).
+/// `onScrollVisibilityChange` es iOS 18+/macOS 15+; por debajo el héroe se comporta como
+/// siempre (visible), que es el estado seguro.
+private struct EcosistemaVisibilidad: ViewModifier {
+    let cambio: (Bool) -> Void
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if #available(iOS 18.0, macOS 15.0, watchOS 11.0, *) {
+            content.onScrollVisibilityChange(threshold: 0.01) { cambio($0) }
+        } else {
+            content
+        }
+    }
+}
+
+// MARK: - Rótulos orbitales ya resueltos (FER-14 #1)
+
+/// `GraphicsContext.resolve` construye el layout del texto: hacerlo por rótulo POR FRAME
+/// era el costo real del canvas a 60 Hz (Grok #7). Los rótulos son un puñado de constantes
+/// («REPOSO», «SUEÑO», «GUARDIÁN»), así que se resuelven UNA vez y se reusan; el fade con
+/// la profundidad de la órbita lo pone la opacidad del contexto, no un color nuevo (que
+/// obligaría a re-resolver cada frame). La caché se tira si cambia el entorno que el
+/// resuelto congela (esquema de color).
+private final class EcosistemaEtiquetas {
+    private var resueltas: [String: GraphicsContext.ResolvedText] = [:]
+
+    func resuelta(_ texto: String, en ctx: GraphicsContext) -> GraphicsContext.ResolvedText {
+        if let hit = resueltas[texto] { return hit }
+        // Espaciado de las versalitas orbitales: «R E P O S O».
+        let v = ctx.resolve(Text(texto.map(String.init).joined(separator: " "))
+            .font(LiquidType.orbita)
+            .foregroundColor(LiquidColor.tinta500))
+        resueltas[texto] = v
+        return v
+    }
+
+    func vaciar() { resueltas.removeAll() }
+}
+
 // MARK: - El canvas de partículas (decorativo: la a11y vive en el elemento compuesto)
 
 private struct EcosistemaCanvas: View {
@@ -681,6 +740,10 @@ private struct EcosistemaCanvas: View {
 
     /// Ancla del eclipse (el guardián viaja al asomarse; con `still` aparece colocado).
     @State private var eclipseDesde: TimeInterval?
+    /// Rótulos orbitales resueltos una sola vez (FER-14 #1).
+    @State private var etiquetas = EcosistemaEtiquetas()
+
+    @Environment(\.colorScheme) private var colorScheme
 
     /// La materia de una luna: su órbita, identidad y estado honesto.
     struct LunaSpec {
@@ -707,6 +770,9 @@ private struct EcosistemaCanvas: View {
         .onChange(of: guardianJuntas) { _, juntas in
             eclipseDesde = juntas ? Date().timeIntervalSinceReferenceDate : nil
         }
+        // Un `ResolvedText` congela el entorno con el que se resolvió: si el esquema
+        // cambia, los rótulos cacheados dejan de ser válidos.
+        .onChange(of: colorScheme) { _, _ in etiquetas.vaciar() }
     }
 
     // MARK: Colores por clase (todo de tokens — cero hex aquí)
@@ -995,23 +1061,13 @@ private struct EcosistemaCanvas: View {
                       stretch: 0, nivel: nivel, nivelBajo: false, capAmbar: false)
     }
 
-    /// Cache de los rótulos ya espaciados (el `map+joined` por frame era alocación
-    /// gratuita a 60 Hz — Grok #7).
-    private static var espaciadosCache: [String: String] = [:]
-    private static func espaciado(_ texto: String) -> String {
-        if let hit = espaciadosCache[texto] { return hit }
-        let v = texto.map(String.init).joined(separator: " ")
-        espaciadosCache[texto] = v
-        return v
-    }
-
     private func etiqueta(ctx: inout GraphicsContext, texto: String, en punto: CGPoint,
                           alfa: Double) {
-        let resuelto = ctx.resolve(
-            Text(Self.espaciado(texto))
-                .font(LiquidType.orbita)
-                .foregroundColor(LiquidColor.tinta500.opacity(alfa)))
+        let resuelto = etiquetas.resuelta(texto, en: ctx)
+        let previa = ctx.opacity
+        ctx.opacity = previa * alfa
         ctx.draw(resuelto, at: punto, anchor: .center)
+        ctx.opacity = previa
     }
 }
 
