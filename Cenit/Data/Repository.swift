@@ -445,11 +445,13 @@ final class Repository: ObservableObject {
                 // simplemente refleja lo que trajo esta única lectura (honesto, no inventado).
                 for session in recentSleeps {
                     // Deep-sleep windows for THIS night, from the hypnogram the session already
-                    // carries. The estimator prefers the deep subset (where the true nadir lives)
-                    // and only falls back to the whole window when it isn't dense enough — passing
-                    // `deep: false` for everything (the first cut) silently disabled that branch
-                    // while the docs still promised it. Apple's staging is approximate (κ≈0.53 for
-                    // deep), which is why it only STEERS the quantile and never becomes a claim.
+                    // carries. FER-1048: the estimator now prefers the SIGNAL-detected stable segment
+                    // (`NightStableSegment`, computed inside `estimate` from the HR alone), with this
+                    // `deep` label only a SECOND choice and the whole window the last resort. Apple's
+                    // staging is weak (N3 sensitivity ≈51%, κ≈0.53 — Schyvens 2025), so it only STEERS
+                    // the quantile when the signal can't resolve a stretch, and never becomes a claim.
+                    // (Still decoded so the fallback exists; in practice the stable segment or the
+                    // whole window carries most nights — we do NOT loosen any gate to force this branch.)
                     let deepWindows: [(Int, Int)] = (session.stagesJSON
                         .flatMap { $0.data(using: .utf8) }
                         .flatMap { try? JSONDecoder().decode([StageSegment].self, from: $0) } ?? [])
