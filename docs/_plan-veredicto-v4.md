@@ -1,10 +1,20 @@
 # PLAN DE IMPLEMENTACIÓN — Veredicto de preparación v4
 
+> ## 🗄️ ARCHIVADO — referencia histórica (2026-08-02)
+> **Este plan cumplió su rol; no arranques trabajo desde aquí.** La **Parte A (v3 + v4) está en `iOS`**
+> (PR #1135; el copy de ciencia siguió por #1134 → #1140; la rama `blandisc/verdict-v3-engine` **se
+> retiró tras integrarse por completo**). La **Parte B** vive ahora en sus specs hijas + Multica:
+> **Fase 4 → FER-7 (`in_review`)** y **Fase 5 → FER-8 (`in_progress`)**; **Fases 3 y 6 descartadas**.
+> Para trabajar la 4/5 usa `docs/_spec-fase4-tercios.md` / `docs/_spec-fase5-centinela-rachas.md` y sus
+> issues, **no este plan**. Se conserva como bitácora del *por qué*; el cuerpo de abajo refleja el
+> estado al momento de planear y puede citar la rama ya retirada.
+
 > **Para una sesión nueva:** este documento es autosuficiente. No necesitas la conversación que lo
 > originó. Lee «Estado actual» y «Cómo trabajar cada fase», y arranca por la fase que toque.
-> Última actualización: 2026-08-02 · **PARTE A MERGEADA a `iOS`** (PR #1135; v3+v4 en un bundle).
-> **PARTE B decidida:** fases 3 y 6 **descartadas** por el dueño; fases 4 y 5 con **spec hija cerrada**
-> (`docs/_spec-fase4-tercios.md`, `docs/_spec-fase5-centinela-rachas.md`; issues **FER-7 / FER-8** en Multica).
+> Última actualización: 2026-08-02 · **PARTE A EN `iOS`** (PR #1135; v3+v4 en un bundle; copy #1134/#1140).
+> **PARTE B:** fases 3 y 6 **descartadas** por el dueño; fases 4 y 5 con **spec hija cerrada, en
+> implementación** (`docs/_spec-fase4-tercios.md` → **FER-7 `in_review`**;
+> `docs/_spec-fase5-centinela-rachas.md` → **FER-8 `in_progress`**).
 >
 > ## ⚠️ Estructura del documento — léela antes de codear
 > Este plan pasó una revisión adversarial (Grok) que lo dividió en dos partes con distinto nivel de
@@ -22,16 +32,16 @@
 > ## Bootstrap de sesión (haz esto primero)
 > ```bash
 > cd ~/code/noop && git fetch origin
-> git checkout blandisc/verdict-v3-engine && git pull --ff-only
-> cat docs/_plan-veredicto-v4.md          # este documento
+> git checkout iOS && git pull --ff-only   # la rama verdict-v3-engine se RETIRÓ; Parte A ya está en iOS
+> cat docs/_plan-veredicto-v4.md          # este documento (ARCHIVADO — ver banner de arriba)
 > cd Packages/StrandAnalytics && swift build && swift test   # línea base verde antes de tocar nada
 > ```
 > **Convenciones — leer completo, hay una excepción explícita a `CLAUDE.md`:**
 > - **Worktree vs canónico (EXCEPCIÓN CONSCIENTE).** `CLAUDE.md` manda trabajar en un worktree por
 >   rama y **nunca** en el checkout principal. Esta rama se construyó en el canónico `~/code/noop` y
->   ahí viven sus commits. Continúa ahí **o** abre un worktree desde `blandisc/verdict-v3-engine` —
->   pero **no mezcles**: media rama en cada sitio es cómo se pierden commits. Si abres worktree,
->   recuerda que el build del iPhone sale del canónico.
+>   ahí vivieron sus commits (histórico — la rama `verdict-v3-engine` ya se **retiró** e integró a
+>   `iOS`). Para trabajo NUEVO (p. ej. FER-7 / FER-8) aplica la regla estándar de `CLAUDE.md`: worktree
+>   por rama desde `iOS`, y recuerda que el build del iPhone sale del canónico `~/code/noop`.
 > - **Issues de Linear: YA CREADOS** (team **Fer**, proyecto **Cénit iOS**, 2026-08-01). Los tres son
 >   **carril PESADO** y llevan gate `/cso` + `/estadistico` + `/qa` antes del merge:
 >   | Issue | Qué | Prioridad |
@@ -61,7 +71,7 @@
 **nunca un score 0–100**. Es consenso por EJE, no por señal (FER-1010: una mala noche mueve varias
 señales a la vez y no debe contarse tres veces).
 
-**Qué se hizo antes de este plan (v3, ya implementado en la rama).** Una investigación científica
+**Qué se hizo antes de este plan (v3, ya en `iOS`).** Una investigación científica
 profunda (dos auditores independientes, citas verificadas) concluyó que el motor se apoyaba en la
 señal más débil que Apple da. v3 corrigió:
 - El **SDNN all-day de Apple sale del voto** (`wHRV=0`). O'Grady 2024 (*Sensors* 24(19):6220): MAPE
@@ -111,8 +121,9 @@ veredicto prediga cómo me irá», regrésalo a `/pm`: no es verificable con est
 
 ## 1 · Estado actual (verificado)
 
-**Rama:** `blandisc/verdict-v3-engine`, pusheada a origin, **sin PR y sin mergear** (el dueño valida
-en su iPhone antes de producción). Commits, del más viejo al más nuevo:
+**Rama (RETIRADA):** `blandisc/verdict-v3-engine` se **mergeó a `iOS`** (PR #1135, 2026-08-02) y luego
+**se borró**; el copy de ciencia siguió por #1134 → #1140. Ya no hay rama de trabajo v3/v4 — lo nuevo
+ramifica de `iOS`. Commits históricos de la rama, del más viejo al más nuevo:
 
 | Commit | Qué trae |
 |---|---|
@@ -495,11 +506,11 @@ en producción todavía dice «3 SEÑALES» en el orbe autonómico, y con v3 vot
 
 ## PARTE B · ESTADO 2026-08-02
 
-> **Decidido.** El dueño **descartó la Fase 3 y la Fase 6**. Las **Fases 4 y 5 ya tienen spec hija
-> cerrada** (`docs/_spec-fase4-tercios.md` → FER-7; `docs/_spec-fase5-centinela-rachas.md` → FER-8),
-> con el rigor de la Parte A y pasadas por 2 rondas adversariales (escéptico + Grok +
-> `/estadistico`/`/cso`) hasta check de todos. Las secciones de abajo conservan el *por qué* original;
-> el *cómo* vive en las specs hijas. **Ya NO apliques el «no codear» a la 4 y la 5.**
+> **Decidido + EN VUELO.** El dueño **descartó la Fase 3 y la Fase 6**. Las **Fases 4 y 5 tienen spec
+> hija cerrada y ya están en implementación**: `docs/_spec-fase4-tercios.md` → **FER-7 (`in_review`)**;
+> `docs/_spec-fase5-centinela-rachas.md` → **FER-8 (`in_progress`)**. Pasadas por 2 rondas adversariales
+> (escéptico + Grok + `/estadistico`/`/cso`) hasta check de todos. Las secciones de abajo conservan el
+> *por qué* original; el *cómo* vive en las specs hijas. **Ya NO apliques el «no codear» a la 4 y la 5.**
 
 ---
 

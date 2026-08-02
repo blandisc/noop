@@ -69,155 +69,19 @@
         }
       }
     },
-    "Your 3 signals woke up in your range.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your 3 signals woke up in your range."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tus 3 señales amanecieron en tu rango."
-          }
-        }
-      }
-    },
-    "Your breathing flagged the axis on its own.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your breathing flagged the axis on its own."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tu respiración marcó el eje por su cuenta."
-          }
-        }
-      }
-    },
-    "Together, your signals woke up below your base.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Together, your signals woke up below your base."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Juntas, tus señales amanecieron debajo de tu base."
-          }
-        }
-      }
-    },
-    "Your three signals count as a single reading, so one bad night doesn't count three times.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your three signals count as a single reading, so one bad night doesn't count three times."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tus tres señales cuentan como una sola lectura, para que una mala noche no cuente tres veces."
-          }
-        }
-      }
-    },
     "autonomico.metodo.clave": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "a single reading"
+            "value": "a single vote"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "una sola lectura"
-          }
-        }
-      }
-    },
-    "I need a few of your own nights to read your autonomic axis.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "I need a few of your own nights to read your autonomic axis."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Necesito unas noches tuyas para leer tu eje autonómico."
-          }
-        }
-      }
-    },
-    "Connect Apple Health in Settings to read your autonomic axis.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Connect Apple Health in Settings to read your autonomic axis."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Conecta Apple Salud en Ajustes para leer tu eje autonómico."
-          }
-        }
-      }
-    },
-    "Your resting nervous system: resting heart rate, HRV and breathing against your own base. It's an approximation, not a diagnosis.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your resting nervous system: resting heart rate, HRV and breathing against your own base. It's an approximation, not a diagnosis."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tu sistema nervioso en reposo: FC en reposo, VFC y respiración contra tu propia base. Es una aproximación, no un diagnóstico."
-          }
-        }
-      }
-    },
-    "Your breathing alone was enough to flag the axis this morning.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your breathing alone was enough to flag the axis this morning."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tu respiración sola bastó para marcar el eje esta mañana."
+            "value": "un solo voto"
           }
         }
       }
@@ -235,40 +99,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@ del voto"
-          }
-        }
-      }
-    },
-    "Your resting heart rate, HRV and breathing are averaged by weight (40% · 35% · 25%) against your own base.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your resting heart rate, HRV and breathing are averaged by weight (40% · 35% · 25%) against your own base."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tu FC en reposo, tu VFC y tu respiración se promedian con peso (40% · 35% · 25%) contra tu propia base."
-          }
-        }
-      }
-    },
-    "Breathing can flag the axis on its own if it rises enough, even when the average doesn't cross.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Breathing can flag the axis on its own if it rises enough, even when the average doesn't cross."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "La respiración puede marcar el eje por su cuenta si sube bastante, aunque el promedio no cruce."
           }
         }
       }
@@ -397,38 +227,6 @@
           "stringUnit": {
             "state": "translated",
             "value": " Cuando %1$@ sube, %2$@ %3$@, un vínculo %5$@ %4$@."
-          }
-        }
-      }
-    },
-    "%lld of your 3 signals woke up outside your range.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld of your 3 signals woke up outside your range."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld de tus 3 señales amanecieron fuera de tu rango."
-          }
-        }
-      }
-    },
-    "1 of your 3 signals woke up outside your range.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "1 of your 3 signals woke up outside your range."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "1 de tus 3 señales amaneció fuera de tu rango."
           }
         }
       }
@@ -625,22 +423,6 @@
         }
       }
     },
-    "Task Force, 1996 · Plews et al., 2013. Approximate, no clinical claim.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Task Force, 1996 · Plews et al., 2013. Approximate, no clinical claim."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Task Force, 1996 · Plews et al., 2013. Aproximado, sin valor clínico."
-          }
-        }
-      }
-    },
     "The verdict for how you woke up: your signals against your own baseline. It's an approximation, not a diagnosis.": {
       "localizations": {
         "en": {
@@ -742,13 +524,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "a single reading"
+            "value": "only keep watch"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "una sola lectura"
+            "value": "solo vigilan"
           }
         }
       }
@@ -13175,40 +12957,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tu carga quedó arriba de lo habitual."
-          }
-        }
-      }
-    },
-    "Your autonomic signal reads %lld of %lld inputs: HRV, resting heart rate and breathing.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your autonomic signal reads %lld of %lld inputs: HRV, resting heart rate and breathing."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tu señal autonómica lee %lld de %lld entradas: VFC, pulso en reposo y respiración."
-          }
-        }
-      }
-    },
-    "Your HRV and your resting heart rate are read together, so one bad night doesn't count twice. Your breathing can flag the signal on its own.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your HRV and your resting heart rate are read together, so one bad night doesn't count twice. Your breathing can flag the signal on its own."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tu VFC y tu pulso en reposo se leen juntos, así una mala noche no cuenta dos veces. Tu respiración puede marcar la señal por su cuenta."
           }
         }
       }
@@ -50109,6 +49857,230 @@
           "stringUnit": {
             "state": "translated",
             "value": "No se registró sueño anoche, así que no hay veredicto de la mañana."
+          }
+        }
+      }
+    },
+    "Your resting nervous system, read mainly from your resting heart rate against your own base. HRV and breathing are shown too, but they don't carry the vote. An approximation, not a diagnosis.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your resting nervous system, read mainly from your resting heart rate against your own base. HRV and breathing are shown too, but they don't carry the vote. An approximation, not a diagnosis."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu sistema nervioso en reposo, leído sobre todo desde tu pulso en reposo comparado con tu propia base. La VFC y la respiración también se muestran, pero no cargan el voto. Una aproximación, no un diagnóstico."
+          }
+        }
+      }
+    },
+    "reference": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "reference"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "referencia"
+          }
+        }
+      }
+    },
+    "shown for reference, doesn't vote": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "shown for reference, doesn't vote"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "se muestra como referencia, no vota"
+          }
+        }
+      }
+    },
+    "I need a few of your own nights to read your resting heart rate.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I need a few of your own nights to read your resting heart rate."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Necesito algunas de tus propias noches para leer tu pulso en reposo."
+          }
+        }
+      }
+    },
+    "Connect Apple Health in Settings to read your resting heart rate.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect Apple Health in Settings to read your resting heart rate."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conecta Salud de Apple en Ajustes para leer tu pulso en reposo."
+          }
+        }
+      }
+    },
+    "Your resting heart rate woke up in your range.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your resting heart rate woke up in your range."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu pulso en reposo amaneció en tu rango."
+          }
+        }
+      }
+    },
+    "Your resting heart rate woke up above your base.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your resting heart rate woke up above your base."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu pulso en reposo amaneció por arriba de tu base."
+          }
+        }
+      }
+    },
+    "This axis counts as a single vote, so a rough morning can't push your day down more than once.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This axis counts as a single vote, so a rough morning can't push your day down more than once."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Este eje cuenta como un solo voto, así una mañana pesada no puede empujar tu día hacia abajo más de una vez."
+          }
+        }
+      }
+    },
+    "Your resting heart rate against your own base is the vote: Apple's densest, most reliable signal, so it carries this axis on its own.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your resting heart rate against your own base is the vote: Apple's densest, most reliable signal, so it carries this axis on its own."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu pulso en reposo contra tu propia base es el voto: la señal más densa y confiable de Apple, así carga este eje por sí sola."
+          }
+        }
+      }
+    },
+    "HRV and breathing are shown for context but don't vote here. Apple's all-day HRV is too noisy to trust, and breathing is watched by the sentinel alongside your temperature.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HRV and breathing are shown for context but don't vote here. Apple's all-day HRV is too noisy to trust, and breathing is watched by the sentinel alongside your temperature."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La VFC y la respiración se muestran como contexto, pero aquí no votan: la VFC de todo el día de Apple es demasiado ruidosa para confiar en ella, y la respiración la vigila el centinela junto con tu temperatura."
+          }
+        }
+      }
+    },
+    "Apple's HRV is a daytime average, not a sleep-window reading, so it stays a reference here rather than a vote.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple's HRV is a daytime average, not a sleep-window reading, so it stays a reference here rather than a vote."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La VFC de Apple es un promedio de día, no una lectura de la ventana de sueño, así que aquí es referencia y no voto."
+          }
+        }
+      }
+    },
+    "O'Grady et al., 2024 · Task Force, 1996 · Plews et al., 2013. Approximate, no clinical claim.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O'Grady et al., 2024 · Task Force, 1996 · Plews et al., 2013. Approximate, no clinical claim."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O'Grady et al., 2024 · Task Force, 1996 · Plews et al., 2013. Aproximación, sin fin clínico."
+          }
+        }
+      }
+    },
+    "Your autonomic axis reads %lld of %lld resting signals, but votes on just your resting heart rate; HRV and breathing ride along for context.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your autonomic axis reads %lld of %lld resting signals, but votes on just your resting heart rate; HRV and breathing ride along for context."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu eje autonómico lee %lld de %lld señales en reposo, pero vota solo con tu pulso en reposo; la VFC y la respiración van de contexto."
+          }
+        }
+      }
+    },
+    "Your resting heart rate and your sleep are read as separate votes, so one rough night can't count against you twice. Your breathing and temperature only keep watch. They don't vote here.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your resting heart rate and your sleep are read as separate votes, so one rough night can't count against you twice. Your breathing and temperature only keep watch. They don't vote here."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu pulso en reposo y tu sueño se leen como votos separados, así una mala noche no cuenta en tu contra dos veces. Tu respiración y tu temperatura solo vigilan. Aquí no votan."
           }
         }
       }

@@ -34,13 +34,15 @@ public struct LiquidAutonomico: Sendable {
         public let etiqueta: String
         /// Qué dijo esta señal («En tu rango» · «Debajo de tu base» · «Sin base»).
         public let estado: String
-        /// El porcentaje del voto que cargó, YA formateado con locale («40 %»); `nil` cuando la
-        /// señal no votó (sin base / sin lectura) — entonces la columna se queda muda.
+        /// La columna derecha, YA localizada: el porcentaje del voto que cargó («40 %») cuando la
+        /// señal vota y no es el votante único; el rótulo «referencia» cuando NO vota (v3: VFC y
+        /// respiración son read-out); `nil` cuando es el único votante («100 %» sería ruido) o no
+        /// hay lectura.
         public let voto: String?
         /// ¿Esta señal amaneció fuera de tu rango? Es la única fila con color (wash + punto ámbar).
+        /// Solo la señal que VOTA puede encenderse: una fila de referencia nunca tiñe.
         public let fuera: Bool
-        /// Nota bajo la fila, ya localizada — reservada para la respiración cuando cruzó el umbral
-        /// por su cuenta («Tu respiración sola bastó para marcar el eje»). `nil` = sin nota.
+        /// Nota opcional bajo la fila, ya localizada. `nil` = sin nota.
         public let nota: String?
         /// Label compuesto de VoiceOver, YA localizado (el color no habla: el estado «fuera» y el
         /// peso del voto tienen que ser audibles).
@@ -83,7 +85,7 @@ public struct LiquidAutonomico: Sendable {
     public let nivel: String?
     /// El texto que sustituye a la palabra cuando no hay veredicto («Sin base todavía»).
     public let sinLectura: String?
-    /// El conteo que sostiene la palabra («Tus 3 señales pesan como una sola lectura.»).
+    /// El conteo que sostiene la palabra («Tu pulso en reposo amaneció en tu rango.»).
     public let conteo: String
     /// La frase que explica el método en llano, con su cláusula clave en negrita.
     public let metodo: String
@@ -269,14 +271,14 @@ enum LiquidAutonomicoFixtures {
         mostrar: "Ver cómo se calcula",
         ocultar: "Ocultar cómo se calcula",
         lineas: [
-            "Tu FC en reposo, tu VFC y tu respiración se promedian con peso (40 % · 35 % · 25 %) contra tu propia base.",
-            "La respiración puede marcar el eje por su cuenta si sube bastante, aunque el promedio no cruce.",
-            "La VFC de Apple es un promedio del día, no una medición de la ventana de sueño: esto lee tus señales en reposo contra tu propia norma.",
-            "Task Force, 1996 · Plews et al., 2013. Aproximado, sin valor clínico.",
+            "Tu FC en reposo contra tu propia base es el voto: la señal más densa y confiable de Apple, así carga este eje por sí sola.",
+            "La VFC y la respiración se muestran como contexto, pero aquí no votan: la VFC de todo el día de Apple es demasiado ruidosa para confiar en ella, y la respiración la vigila el centinela junto con tu temperatura.",
+            "La VFC de Apple es un promedio del día, no una lectura de la ventana de sueño, así que aquí es referencia y no voto.",
+            "O'Grady et al., 2024 · Task Force, 1996 · Plews et al., 2013. Aproximado, sin valor clínico.",
         ])
 
-    static let metodo = "Tus tres señales cuentan como una sola lectura, para que una mala noche no cuente tres veces."
-    static let metodoClave = "una sola lectura"
+    static let metodo = "Este eje cuenta como un solo voto, así una mañana pesada no puede empujar tu día hacia abajo más de una vez."
+    static let metodoClave = "un solo voto"
 
     static func senal(_ id: String, _ etiqueta: String, _ estado: String, _ voto: String?,
                       fuera: Bool = false, nota: String? = nil) -> LiquidAutonomico.Senal {
@@ -291,52 +293,42 @@ enum LiquidAutonomicoFixtures {
         LiquidAutonomico(
             titulo: "AUTONÓMICO",
             procedencia: "Apple Salud · esta mañana",
-            explicacion: "Tu sistema nervioso en reposo: FC en reposo, VFC y respiración contra tu propia base. Es una aproximación, no un diagnóstico.",
+            explicacion: "Tu sistema nervioso en reposo, leído sobre todo desde tu pulso en reposo comparado con tu propia base. La VFC y la respiración también se muestran, pero no cargan el voto. Una aproximación, no un diagnóstico.",
             infoMostrar: "Mostrar explicación", infoOcultar: "Ocultar explicación",
             nivel: nivel, sinLectura: sinLectura, conteo: conteo,
             metodo: metodo, metodoClave: metodoClave,
             senales: senales, plegable: plegable, enRango: enRango)
     }
 
-    /// En rango: nadie fuera. La lista queda ENTERAMENTE gris — el único color es la palabra verde.
+    /// En rango: la FC en reposo (el votante) amaneció en tu rango. VFC/respiración van como
+    /// referencia. La lista queda ENTERAMENTE gris — el único color es la palabra verde.
     static let enRango = base(
         nivel: "En tu rango",
-        conteo: "Tus 3 señales amanecieron en tu rango.",
+        conteo: "Tu pulso en reposo amaneció en tu rango.",
         senales: [
-            senal("rhr", "FC en reposo", "En tu rango", "40 %"),
-            senal("hrv", "VFC", "En tu rango", "35 %"),
-            senal("resp", "Respiración", "En tu rango", "25 %"),
+            senal("rhr", "FC en reposo", "En tu rango", nil),
+            senal("hrv", "VFC", "En tu rango", "referencia"),
+            senal("resp", "Respiración", "En tu rango", "referencia"),
         ],
         enRango: true)
 
-    /// Una señal fuera: la VFC amaneció debajo de tu base. Fila washeada al 12 % de ámbar.
+    /// Fuera: la FC en reposo —el único votante en v3— amaneció por arriba de tu base. Solo esa
+    /// fila se ilumina; VFC/respiración siguen como referencia gris (no votan, no tiñen).
     static let unaFuera = base(
         nivel: "Fuera de tu rango",
-        conteo: "1 de tus 3 señales amaneció fuera de tu rango.",
+        conteo: "Tu pulso en reposo amaneció por arriba de tu base.",
         senales: [
-            senal("rhr", "FC en reposo", "En tu rango", "40 %"),
-            senal("hrv", "VFC", "Debajo de tu base", "35 %", fuera: true),
-            senal("resp", "Respiración", "En tu rango", "25 %"),
+            senal("rhr", "FC en reposo", "Arriba de tu base", nil, fuera: true),
+            senal("hrv", "VFC", "Debajo de tu base", "referencia"),
+            senal("resp", "Respiración", "En tu rango", "referencia"),
         ],
         enRango: false)
 
-    /// Respiración sola: cruzó el umbral por su cuenta y marcó el eje aunque el promedio no cruzara.
-    static let respSola = base(
-        nivel: "Fuera de tu rango",
-        conteo: "Tu respiración marcó el eje por su cuenta.",
-        senales: [
-            senal("rhr", "FC en reposo", "En tu rango", "40 %"),
-            senal("hrv", "VFC", "En tu rango", "35 %"),
-            senal("resp", "Respiración", "Bastante arriba", "25 %", fuera: true,
-                  nota: "Tu respiración sola bastó para marcar el eje esta mañana."),
-        ],
-        enRango: false)
-
-    /// Sin base: la base todavía se está armando. CERO color; las señales quedan grises y sin voto.
+    /// Sin base: la base de FC todavía se está armando. CERO color; las señales quedan grises.
     static let sinBase = base(
         nivel: nil,
         sinLectura: "Sin base todavía",
-        conteo: "Necesito unas noches tuyas para medir tu eje autonómico.",
+        conteo: "Necesito algunas de tus propias noches para leer tu pulso en reposo.",
         senales: [
             senal("rhr", "FC en reposo", "Sin base", nil),
             senal("hrv", "VFC", "Sin base", nil),
@@ -354,8 +346,7 @@ private func autonomicoPreview(_ model: LiquidAutonomico) -> some View {
 }
 
 #Preview("Autonómico · en rango") { autonomicoPreview(LiquidAutonomicoFixtures.enRango) }
-#Preview("Autonómico · una señal fuera") { autonomicoPreview(LiquidAutonomicoFixtures.unaFuera) }
-#Preview("Autonómico · respiración sola") { autonomicoPreview(LiquidAutonomicoFixtures.respSola) }
+#Preview("Autonómico · FC fuera") { autonomicoPreview(LiquidAutonomicoFixtures.unaFuera) }
 #Preview("Autonómico · sin base") { autonomicoPreview(LiquidAutonomicoFixtures.sinBase) }
 
 #Preview("Autonómico · AX3 (filas apiladas)") {
