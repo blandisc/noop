@@ -430,8 +430,10 @@ final class LiquidHoyBuilderTests: XCTestCase {
         let pares = [("Go all in", "hero.highlight.full"),
                      ("Good, one thing to watch", "hero.highlight.caution"),
                      ("Take it easy", "hero.highlight.easy"),
-                     // La cláusula en negrita del acta vive dentro de su frase.
-                     ("Your HRV, your resting heart rate and your breathing count as a single reading, so one bad night doesn't count three times.",
+                     // La cláusula en negrita del acta vive dentro de su método —
+                     // el párrafo que SÍ renderiza `LiquidHoyBuilder.acta` (v3, FER-5/FER-9:
+                     // respiración salió del voto y «solo vigila»), no el copy anterior.
+                     ("Your resting heart rate and your sleep are read as separate votes, so one rough night can't count against you twice. Your breathing and temperature only keep watch. They don't vote here.",
                       "acta.metodo.clave")]
         for lang in ["en", "es"] {
             for (titleKey, highlightKey) in pares {
