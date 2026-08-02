@@ -524,13 +524,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "a single reading"
+            "value": "only keep watch"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "una sola lectura"
+            "value": "solo vigilan"
           }
         }
       }
@@ -12957,23 +12957,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tu carga quedó arriba de lo habitual."
-          }
-        }
-      }
-    },
-    "Your HRV and your resting heart rate are read together, so one bad night doesn't count twice. Your breathing can flag the signal on its own.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your HRV and your resting heart rate are read together, so one bad night doesn't count twice. Your breathing can flag the signal on its own."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tu VFC y tu pulso en reposo se leen juntos, así una mala noche no cuenta dos veces. Tu respiración puede marcar la señal por su cuenta."
           }
         }
       }
@@ -50066,6 +50049,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tu eje autonómico lee %lld de %lld señales en reposo, pero vota solo con tu pulso en reposo — la VFC y la respiración van de contexto."
+          }
+        }
+      }
+    },
+    "Your resting heart rate and your sleep are read as separate votes, so one rough night can't count against you twice. Your breathing and temperature only keep watch — they don't vote here.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your resting heart rate and your sleep are read as separate votes, so one rough night can't count against you twice. Your breathing and temperature only keep watch — they don't vote here."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu pulso en reposo y tu sueño se leen como votos separados, así una mala noche no cuenta en tu contra dos veces. Tu respiración y tu temperatura solo vigilan — aquí no votan."
           }
         }
       }
