@@ -431,9 +431,11 @@ final class LiquidHoyBuilderTests: XCTestCase {
             return unit?["value"] as? String
         }
 
-        let pares = [("Go all in", "hero.highlight.full"),
-                     ("Good, one thing to watch", "hero.highlight.caution"),
-                     ("Take it easy", "hero.highlight.easy"),
+        // Las palabras vigentes viven en hero.title.* (FER-10); las retiradas
+        // («Dale con todo»…) ya no existen como llaves del héroe.
+        let pares = [("hero.title.full", "hero.highlight.full"),
+                     ("hero.title.caution", "hero.highlight.caution"),
+                     ("hero.title.easy", "hero.highlight.easy"),
                      // La cláusula en negrita del acta vive dentro de su método —
                      // el párrafo que SÍ renderiza `LiquidHoyBuilder.acta` (v3, FER-5/FER-9:
                      // respiración salió del voto y «solo vigila»), no el copy anterior.

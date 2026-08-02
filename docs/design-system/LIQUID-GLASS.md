@@ -110,10 +110,13 @@ Recetas (las pantallas solo consumen esto):
 - **Ecosistema (FER-10)** — `LiquidEcosistemaMotion` + `EcosistemaSimulacion` (física pura,
   testeable): **fusión** (viaje 1.55 s back-out s=1.35, stretch direccional 16 %, destello con
   8 chispas en el contacto, asentamiento 4·e^(−2.5τ)·sin(11τ)), **separación** (anticipación
-  0.22 s squeeze 5 %; pegajosa — no se re-une hasta el siguiente tap), **órbita** (lunas
-  0.85/−0.6 rad/s, guardián 0.32), **acreción** (34 espirales, caída ≈18 s), **eclipse**
-  (1.8 s — el guardián deja su órbita SOLO con `.juntas`) y **ambiente** (crossfade
-  monocromo 1.6 s, que SÍ se conserva bajo Reduce Motion).
+  0.22 s squeeze 5 %; pegajosa — no se re-une hasta el siguiente tap), **reunión**
+  (smoothstep sin sobrepaso ni stretch; el carácter lo pone el asentamiento al aterrizar),
+  **órbita** (lunas 0.85/−0.6 rad/s, guardián 0.32), **tributo** (cada luna decisora
+  alimenta al orbe con 5 motas en ciclo de 2.6 s; el guardián NO tributa — vigila, no
+  vota; luna hueca no tributa; Reduce Motion = sin chorro), **acreción** (34 espirales,
+  caída ≈18 s), **eclipse** (1.8 s — el guardián deja su órbita SOLO con `.juntas`) y
+  **ambiente** (crossfade monocromo 1.6 s, que SÍ se conserva bajo Reduce Motion).
 
 **Reduce Motion (no negociable):** `drift`/`flow` se congelan, `entrada` degrada a crossfade
 simple, los progresos aparecen colocados. Los consumidores leen `accessibilityReduceMotion`;
