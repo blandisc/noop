@@ -198,7 +198,8 @@ final class LiquidHoyBuilderTests: XCTestCase {
 
     /// Un `Read` con un SignalRead de respiración con la z orientada dada (+ = mejor que la base;
     /// una respiración ALTA/mala es z orientada NEGATIVA).
-    private func readConResp(thermal: Preparedness.AxisState, respOrientedZ: Double?)
+    private func readConResp(thermal: Preparedness.AxisState, respOrientedZ: Double?,
+                             sentinel: Preparedness.SentinelRead? = nil)
         -> Preparedness.Read {
         let signals = [Preparedness.SignalRead(signal: .resp, orientedZ: respOrientedZ,
                                                share: 0, flaggedAlone: false)]
@@ -207,7 +208,7 @@ final class LiquidHoyBuilderTests: XCTestCase {
             drivers: [driver(.autonomic, .inRange, z: 0.2), driver(.sleep, .inRange),
                       driver(.thermal, thermal)],
             signals: signals, signalsPresent: 3, signalsTotal: 4,
-            maturity: .trusted, autonomicNights: 21, trend: nil)
+            maturity: .trusted, autonomicNights: 21, trend: nil, sentinel: sentinel)
     }
 
     func test_guardian_tranquilo_ceroColor() {
@@ -241,6 +242,25 @@ final class LiquidHoyBuilderTests: XCTestCase {
             prep: readConResp(thermal: .high, respOrientedZ: -badZ - 0.1),
             thermalDeviation: 0.9, resp: .init(19))
         XCTAssertEqual(g?.estado, .juntas, "temp + resp fuera JUNTAS = el centinela del motor")
+    }
+
+    func test_guardian_juntas_racha_muestraNoches() {
+        // FER-12: con la racha del centinela (>= 2 noches JUNTAS), el rótulo agrega el conteo
+        // factual; con 1 noche se queda como hoy. La salience no cambia (no se testea color aquí).
+        let badZ = Preparedness.Config.default.respBadZ
+        func juntas(streak: Int) -> LiquidHoyModel.Guardian? {
+            let s = Preparedness.SentinelRead(state: .corroborated, streakNights: streak,
+                                              watchingSignal: nil, tempOut: true, respOut: true)
+            return LiquidHoyBuilder.guardian(
+                prep: readConResp(thermal: .high, respOrientedZ: -badZ - 0.1, sentinel: s),
+                thermalDeviation: 0.9, resp: .init(19))
+        }
+        let g3 = juntas(streak: 3)
+        XCTAssertEqual(g3?.estado, .juntas)
+        XCTAssertTrue(g3?.label.contains("3") ?? false, "el rótulo debe incluir el conteo de noches")
+        XCTAssertTrue(g3?.label.contains(String(localized: "nights")) ?? false)
+        // 1 noche: sin conteo, como hoy.
+        XCTAssertEqual(juntas(streak: 1)?.label, String(localized: "Together"))
     }
 
     func test_guardian_sinLecturas_noSeMuestra() {
