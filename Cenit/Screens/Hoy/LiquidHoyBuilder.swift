@@ -481,11 +481,14 @@ enum LiquidHoyBuilder {
                     : String(localized: "I need a few of your own nights before I can give you a verdict."),
             // El método en LLANO: nada de «ejes» (vocabulario de `Preparedness.Axis`, no del
             // usuario — en Hoy solo ve tres orbes con nombre propio).
-            // D3 del verificador: la frase decía «cuentan como una sola lectura» y escondía
-            // que la respiración tiene VETO propio (`composite <= out || respOut`,
-            // Preparedness:272). Es la tesis de la hoja: tiene que ser cierta.
-            metodo: String(localized: "Your HRV and your resting heart rate are read together, so one bad night doesn't count twice. Your breathing can flag the signal on its own."),
-            metodoClave: String(localized: "acta.metodo.clave", defaultValue: "a single reading"),
+            // v3 (hermana de FER-5, firmado /cso): la versión previa decía «tu respiración
+            // puede marcar la señal por su cuenta» — cierto en v2 (`respOut` daba veto propio),
+            // FALSO en v3: la respiración salió del voto (`wResp=0`) y ahora solo VIGILA en el
+            // guardián junto con la temperatura, y ambas deben corroborar (Preparedness:24-25,
+            // :513; Mishra 2020). El acta vota por 2 señales separadas (FC en reposo · sueño):
+            // votos que no cuentan doble; respiración y temperatura no votan aquí.
+            metodo: String(localized: "Your resting heart rate and your sleep are read as separate votes, so one rough night can't count against you twice. Your breathing and temperature only keep watch — they don't vote here."),
+            metodoClave: String(localized: "acta.metodo.clave", defaultValue: "only keep watch"),
             filas: filas,
             notas: notasActa(prep: prep, fuera: fuera, conLectura: conLectura,
                              healthConnected: healthConnected),
@@ -614,15 +617,14 @@ enum LiquidHoyBuilder {
     private static func plegableActa(prep: Preparedness.Read?) -> LiquidActa.Metodo {
         var lineas: [String] = []
         if let prep {
-            // D2 del verificador: decía «3 de 3 señales del cuerpo» mientras el conteo de
-            // arriba decía «2 de tus 3 señales» — el mismo número contando cosas distintas
-            // (aquí: las 3 sub-señales del eje autonómico; arriba: los 3 ejes). Se nombra
-            // lo que de verdad cuenta.
-            lineas.append(String(localized: "Your autonomic signal reads \(prep.signalsPresent) of \(prep.signalsTotal) inputs: HRV, resting heart rate and breathing."))
+            // v3: el eje autonómico LEE las 3 señales en reposo (para el desglose), pero VOTA
+            // solo con la FC en reposo (`wRHR=1`); VFC y respiración van de contexto. La línea
+            // nombra ambas cosas —cuántas se leyeron y cuál decide— sin implicar que las 3 votan.
+            lineas.append(String(localized: "Your autonomic axis reads \(prep.signalsPresent) of \(prep.signalsTotal) resting signals, but votes on just your resting heart rate — HRV and breathing ride along for context."))
         }
         lineas.append(String(localized: "A new verdict has to repeat two days in a row before it replaces the previous one."))
         lineas.append(String(localized: "Apple's HRV is a daytime average, not a sleep-window measurement: this reads your resting signals against your own norm."))
-        lineas.append(String(localized: "Task Force, 1996 · Plews et al., 2013. Approximate, no clinical claim."))
+        lineas.append(String(localized: "O'Grady et al., 2024 · Task Force, 1996 · Plews et al., 2013. Approximate, no clinical claim."))
         return .init(titulo: String(localized: "How it's calculated"),
                      mostrar: String(localized: "Show method"),
                      ocultar: String(localized: "Hide method"),
@@ -671,10 +673,9 @@ enum LiquidHoyBuilder {
         let estado = driver?.state
         let hayBase = estado != nil && estado != .noData
         let enRango = estado == .inRange
-        // Las señales llegan del motor YA ordenadas por peso (rhr ≥ hrv ≥ resp).
+        // Las señales llegan del motor YA ordenadas por peso. En v3 SOLO la FC en reposo vota
+        // (`wRHR=1`); VFC y respiración se muestran como READ-OUT (`share==0`) — no cargan el voto.
         let signals = prep?.signals ?? []
-        let outCount = signals.filter { $0.out }.count
-        let respAlone = signals.first { $0.signal == .resp }?.flaggedAlone ?? false
 
         // Sin Preparedness (arranque en frío / sin base) la tabla conserva sus 3 filas fijas
         // en «Sin datos» —igual que `acta` sintetiza sus 3 ejes desde `ejesActa`— en vez de
@@ -689,34 +690,44 @@ enum LiquidHoyBuilder {
                                               a11y: "\(etiqueta), \(sinDato)")
             }
         } else {
+            // En v3 SOLO la FC en reposo vota (`wRHR=1`); VFC y respiración se muestran como
+            // READ-OUT (`share==0`) — no cargan el voto.
             filas = signals.map { s in
                 let etiqueta = nombreSenal(s.signal)
                 let est = estadoSenal(s)
-                let voto = s.share > 0 ? porcentajeVoto(s.share, locale: locale) : nil
-                let nota = (s.signal == .resp && s.flaggedAlone)
-                    ? String(localized: "Your breathing alone was enough to flag the axis this morning.")
-                    : nil
-                let a11y = [etiqueta, est, voto.map { String(localized: "\($0) of the vote") } ?? ""]
+                let vota = s.share > 0
+                // Color solo en el dato que decidió: una señal que no vota nunca se pinta como «fuera».
+                let fuera = vota && s.out
+                // Columna derecha: para el votante único «100 %» es ruido → muda; si algún día un
+                // co-voto denso (RMSSD nocturno) baja su share, se muestra el porcentaje real. La
+                // señal que no vota lleva el rótulo «referencia» para explicar por qué no tiñe.
+                let voto: String? = vota
+                    ? (s.share >= 0.999 ? nil : porcentajeVoto(s.share, locale: locale))
+                    : String(localized: "reference")
+                let a11yVoto = vota
+                    ? (voto.map { String(localized: "\($0) of the vote") } ?? "")
+                    : String(localized: "shown for reference, doesn't vote")
+                let a11y = [etiqueta, est, a11yVoto]
                     .filter { !$0.isEmpty }.joined(separator: ", ")
-                    + (s.out ? ", " + String(localized: "outside your range") : "")
+                    + (fuera ? ", " + String(localized: "outside your range") : "")
                 return LiquidAutonomico.Senal(id: s.signal.rawValue, etiqueta: etiqueta, estado: est,
-                                              voto: voto, fuera: s.out, nota: nota, a11y: a11y)
+                                              voto: voto, fuera: fuera, nota: nil, a11y: a11y)
             }
         }
 
         return LiquidAutonomico(
             titulo: String(localized: "Autonomic"),
             procedencia: String(localized: "Apple Health · this morning"),
-            explicacion: String(localized: "Your resting nervous system: resting heart rate, HRV and breathing against your own base. It's an approximation, not a diagnosis."),
+            explicacion: String(localized: "Your resting nervous system, read mainly from your resting heart rate against your own base. HRV and breathing are shown too, but they don't carry the vote. An approximation, not a diagnosis."),
             infoMostrar: String(localized: "Show explanation"),
             infoOcultar: String(localized: "Hide explanation"),
             nivel: hayBase ? (enRango ? String(localized: "In range")
                                       : String(localized: "Off your range")) : nil,
             sinLectura: hayBase ? nil : String(localized: "No baseline yet"),
-            conteo: conteoAutonomico(hayBase: hayBase, enRango: enRango, outCount: outCount,
-                                     respAlone: respAlone, healthConnected: healthConnected),
-            metodo: String(localized: "Your three signals count as a single reading, so one bad night doesn't count three times."),
-            metodoClave: String(localized: "autonomico.metodo.clave", defaultValue: "a single reading"),
+            conteo: conteoAutonomico(hayBase: hayBase, enRango: enRango,
+                                     healthConnected: healthConnected),
+            metodo: String(localized: "This axis counts as a single vote, so a rough morning can't push your day down more than once."),
+            metodoClave: String(localized: "autonomico.metodo.clave", defaultValue: "a single vote"),
             senales: filas,
             plegable: plegableAutonomico(),
             enRango: enRango)
@@ -749,24 +760,20 @@ enum LiquidHoyBuilder {
         return f.string(from: NSNumber(value: share)) ?? "\(Int((share * 100).rounded())) %"
     }
 
-    private static func conteoAutonomico(hayBase: Bool, enRango: Bool, outCount: Int,
-                                         respAlone: Bool, healthConnected: Bool) -> String {
+    private static func conteoAutonomico(hayBase: Bool, enRango: Bool,
+                                         healthConnected: Bool) -> String {
         guard hayBase else {
+            // La madurez del eje viene de la base de FC en reposo (`priorStates.rhr`), así el
+            // cold-start habla de la FC, no de un «eje autonómico» abstracto.
             return healthConnected
-                ? String(localized: "I need a few of your own nights to read your autonomic axis.")
-                : String(localized: "Connect Apple Health in Settings to read your autonomic axis.")
+                ? String(localized: "I need a few of your own nights to read your resting heart rate.")
+                : String(localized: "Connect Apple Health in Settings to read your resting heart rate.")
         }
-        if enRango { return String(localized: "Your 3 signals woke up in your range.") }
-        // Fuera: la respiración pudo marcar el eje sola, aun con el promedio tranquilo.
-        if respAlone && outCount <= 1 {
-            return String(localized: "Your breathing flagged the axis on its own.")
-        }
-        if outCount >= 1 {
-            return String(localized: "\(outCount) of your 3 signals woke up outside your range.")
-        }
-        // El compuesto votó fuera aunque ninguna señal cruzó el corte por sí sola (tres levemente
-        // bajas promedian debajo) — honesto: la lista queda gris, esta frase lo explica.
-        return String(localized: "Together, your signals woke up below your base.")
+        // v3: la FC en reposo es el ÚNICO votante del eje, así el estado del eje = el de la FC
+        // (`composite == zFC`). Revisar si algún día se cablea el co-voto de RMSSD nocturno (FER-5).
+        return enRango
+            ? String(localized: "Your resting heart rate woke up in your range.")
+            : String(localized: "Your resting heart rate woke up above your base.")
     }
 
     private static func plegableAutonomico() -> LiquidAutonomico.Metodo {
@@ -774,10 +781,10 @@ enum LiquidHoyBuilder {
               mostrar: String(localized: "Show method"),
               ocultar: String(localized: "Hide method"),
               lineas: [
-                String(localized: "Your resting heart rate, HRV and breathing are averaged by weight (40% · 35% · 25%) against your own base."),
-                String(localized: "Breathing can flag the axis on its own if it rises enough, even when the average doesn't cross."),
-                String(localized: "Apple's HRV is a daytime average, not a sleep-window measurement: this reads your resting signals against your own norm."),
-                String(localized: "Task Force, 1996 · Plews et al., 2013. Approximate, no clinical claim."),
+                String(localized: "Your resting heart rate against your own base is the vote — Apple's densest, most reliable signal, so it carries this axis on its own."),
+                String(localized: "HRV and breathing are shown for context but don't vote here — Apple's all-day HRV is too noisy to trust, and breathing is watched by the sentinel alongside your temperature."),
+                String(localized: "Apple's HRV is a daytime average, not a sleep-window reading, so it stays a reference here rather than a vote."),
+                String(localized: "O'Grady et al., 2024 · Task Force, 1996 · Plews et al., 2013. Approximate, no clinical claim."),
               ])
     }
 
@@ -788,9 +795,9 @@ enum LiquidHoyBuilder {
             verdict: .full,
             drivers: [.init(axis: .autonomic, state: .inRange, orientedZ: 0.2)],
             signals: [
-                .init(signal: .rhr, orientedZ: 0.3, share: 0.40, flaggedAlone: false, out: false),
-                .init(signal: .hrv, orientedZ: 0.1, share: 0.35, flaggedAlone: false, out: false),
-                .init(signal: .resp, orientedZ: 0.2, share: 0.25, flaggedAlone: false, out: false),
+                .init(signal: .rhr, orientedZ: 0.3, share: 1.0, flaggedAlone: false, out: false),
+                .init(signal: .hrv, orientedZ: 0.1, share: 0.0, flaggedAlone: false, out: false),
+                .init(signal: .resp, orientedZ: 0.2, share: 0.0, flaggedAlone: false, out: false),
             ],
             signalsPresent: 3, signalsTotal: 3,
             maturity: .provisional, autonomicNights: 8, trend: nil))
