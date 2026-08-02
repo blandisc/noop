@@ -301,7 +301,7 @@ public struct LiquidEcosistema: View {
     /// Announcement de VoiceOver al estrenar el veredicto (jamás durante la coreografía
     /// se repite: una sola vez, al llegar).
     private func anunciarVeredicto() {
-        #if canImport(UIKit)
+        #if canImport(UIKit) && !os(watchOS)
         guard case .veredicto(let title, _, _, _, _) = hero else { return }
         let plano = title.replacingOccurrences(of: "\n", with: " ")
         UIAccessibility.post(notification: .announcement,
