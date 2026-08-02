@@ -443,28 +443,49 @@ final class Repository: ObservableObject {
                 // Si esta lectura devuelve exactamente el límite (80_000), puede venir truncada para
                 // las noches más viejas de la ventana — no se rellena ni se reintenta; el diccionario
                 // simplemente refleja lo que trajo esta única lectura (honesto, no inventado).
+                var thirdsRows: [MetricPoint] = []
                 for session in recentSleeps {
-                    // Deep-sleep windows for THIS night, from the hypnogram the session already
-                    // carries. FER-1048: the estimator now prefers the SIGNAL-detected stable segment
-                    // (`NightStableSegment`, computed inside `estimate` from the HR alone), with this
-                    // `deep` label only a SECOND choice and the whole window the last resort. Apple's
-                    // staging is weak (N3 sensitivity ≈51%, κ≈0.53 — Schyvens 2025), so it only STEERS
-                    // the quantile when the signal can't resolve a stretch, and never becomes a claim.
-                    // (Still decoded so the fallback exists; in practice the stable segment or the
-                    // whole window carries most nights — we do NOT loosen any gate to force this branch.)
-                    let deepWindows: [(Int, Int)] = (session.stagesJSON
+                    let dayKey = Self.localDayKey(Date(timeIntervalSince1970: Double(session.endTs)))
+                    // Decode the hypnogram ONCE for this night; both reads below use it.
+                    let segs: [StageSegment] = (session.stagesJSON
                         .flatMap { $0.data(using: .utf8) }
                         .flatMap { try? JSONDecoder().decode([StageSegment].self, from: $0) } ?? [])
-                        .filter { $0.stage == "deep" }
-                        .map { ($0.start, $0.end) }
+                    let sessionHR = hrForNights.filter { $0.ts >= session.startTs && $0.ts <= session.endTs }
+
+                    // Deep-sleep windows for THIS night. FER-1048: the estimator now prefers the
+                    // SIGNAL-detected stable segment (`NightStableSegment`, computed inside `estimate`
+                    // from the HR alone), with this `deep` label only a SECOND choice and the whole
+                    // window the last resort. Apple's staging is weak (N3 sensitivity ≈51%, κ≈0.53 —
+                    // Schyvens 2025), so it only STEERS the quantile when the signal can't resolve a
+                    // stretch, and never becomes a claim. (Still decoded so the fallback exists; in
+                    // practice the stable segment or the whole window carries most nights — we do NOT
+                    // loosen any gate to force this branch.)
+                    let deepWindows: [(Int, Int)] = segs.filter { $0.stage == "deep" }.map { ($0.start, $0.end) }
                     func isDeep(_ ts: Int) -> Bool { deepWindows.contains { ts >= $0.0 && ts <= $0.1 } }
-                    let sessionSamples = hrForNights
-                        .filter { $0.ts >= session.startTs && $0.ts <= session.endTs }
+                    let sessionSamples = sessionHR
                         .map { NocturnalRestingHR.Sample(ts: $0.ts, bpm: Double($0.bpm), deep: isDeep($0.ts)) }
                     if let bpm = NocturnalRestingHR.estimate(sessionSamples) {
-                        let dayKey = Self.localDayKey(Date(timeIntervalSince1970: Double(session.endTs)))
                         nocturnalRestingHr[dayKey] = bpm
                     }
+
+                    // FER-7 · Veredicto v4 Fase 4: first-third vs last-third delta of the sleeping HR,
+                    // computed HERE (same wall-clock frame as `sessionHR`, so never the coordinate
+                    // mismatch that returns nil) and persisted per night; the sleep-detail screen reads
+                    // the scalar. Asleep = non-wake stage segments, or the whole session window when
+                    // staging is unavailable (same fallback as NightAutonomicShape). Descriptive only.
+                    let asleepSpans: [NightAutonomicShape.AsleepSpan] = {
+                        let nonWake = segs.filter { $0.stage != "wake" }
+                            .map { NightAutonomicShape.AsleepSpan(start: $0.start, end: $0.end) }
+                        return nonWake.isEmpty
+                            ? [NightAutonomicShape.AsleepSpan(start: session.startTs, end: session.endTs)]
+                            : nonWake
+                    }()
+                    if let thirds = NightThirds.compute(hr: sessionHR, asleep: asleepSpans) {
+                        thirdsRows.append(MetricPoint(day: dayKey, key: "night_thirds_delta", value: thirds.deltaBpm))
+                    }
+                }
+                if !thirdsRows.isEmpty {
+                    _ = try? await store.upsertMetricSeries(thirdsRows, deviceId: Self.appleComputedDeviceId)
                 }
             }
         }
@@ -839,6 +860,14 @@ final class Repository: ObservableObject {
     /// reconstruct the `-noop` suffix by hand (FER-663).
     func computedSeries(key: String, days: Int = 4000) async -> [(day: String, value: Double)] {
         await series(key: key, source: computedDeviceId, days: days)
+    }
+
+    /// FER-7 · Veredicto v4 Fase 4: the persisted first-third − last-third sleeping-HR delta per night
+    /// (bpm), written in the full refresh under the APPLE-computed source (`appleComputedDeviceId`,
+    /// "apple-health-noop") — NOT the strap `-noop` partition `computedSeries` reads. The sleep-detail
+    /// screen reads this scalar and z-scores it against the user's own history for a descriptive read.
+    func nightThirdsDeltas(days: Int = 60) async -> [(day: String, value: Double)] {
+        await series(key: "night_thirds_delta", source: Self.appleComputedDeviceId, days: days)
     }
 
     // MARK: - Intraday stress summaries (FER-378) — persisted in metricSeries, no new table
