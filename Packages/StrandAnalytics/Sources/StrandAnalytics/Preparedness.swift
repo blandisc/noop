@@ -15,8 +15,11 @@ import StrandModels
 ///
 /// ## Design (v3 — 2026-07-24, after a deep CSO+Grok science investigation with verified citations)
 /// The daily verdict stands on what an Apple Watch measures WELL: **resting HR + sleep**. The
-/// all-day SDNN (`avgHrv`) is OUT of the vote (`wHRV=0`) — MAPE ~29% (O'Grady 2024), the wrong
-/// construct measured in the wrong window; it survives only as a `SignalRead` read-out. The nocturnal
+/// all-day SDNN (`avgHrv`) is OUT of the vote (`wHRV=0`): even in O'Grady 2024's *favourable*
+/// case — a short ~5-min morning supine reading (Apple Watch S9/Ultra 2 vs Polar H10/Kubios) —
+/// the Watch's SDNN ran MAPE 28.88% (bias −8.31 ms); Apple's `avgHrv` is a *different, worse*
+/// construct (all-day `discreteAverage`, not that morning reading), so it sits out with more
+/// reason still. It survives only as a `SignalRead` read-out. The nocturnal
 /// RMSSD re-enters via a dedicated dense-night path (deferred to the Repository wiring). Apple's own
 /// Vitals app reached the same shape (nocturnal HR + resp + temp, no HRV). Details:
 /// - **Autonomic axis = resting HR** vs your own baseline (`wRHR=1`). One signal, the dense/reliable one.
@@ -256,8 +259,9 @@ public enum Preparedness {
     public struct Config: Sendable, Equatable {
         // Autonomic composite weights (must sum > 0). v3 re-gate (2026-07-24, CSO+Grok deep
         // investigation): the daily verdict stands on **resting HR** — Apple's densest, most
-        // validated cardiac signal (O'Grady 2024: RHR MAE 3.73 bpm vs SDNN MAPE 28.88%). The
-        // all-day SDNN (`avgHrv`) is OUT of the vote (`wHRV=0`) — kept only as a `SignalRead`
+        // validated cardiac signal (O'Grady 2024, a ~5-min morning supine reading: RHR MAE
+        // 3.73 bpm vs that reading's SDNN MAPE 28.88%). Apple's all-day SDNN (`avgHrv`, a
+        // different & worse construct) is OUT of the vote (`wHRV=0`) — kept only as a `SignalRead`
         // read-out; the nocturnal RMSSD re-enters via a dedicated dense-night path (deferred).
         // Respiration leaves the autonomic vote too (`wResp=0`) and becomes an illness-sentinel
         // corroborator (see `rawVerdictAt`). `/cso` signs these.

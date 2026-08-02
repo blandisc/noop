@@ -174,7 +174,8 @@ final class PreparednessTests: XCTestCase {
 
     /// Locks the values `/cso` signed so a future retune can't drift silently. Re-gated 2026-07-24
     /// (v3, CSO+Grok deep investigation): the autonomic vote moved to resting-HR only — SDNN
-    /// (`wHRV`) and respiration (`wResp`) are OUT of the vote (SDNN MAPE ~29% O'Grady 2024; resp
+    /// (`wHRV`) and respiration (`wResp`) are OUT of the vote (O'Grady 2024 clocked SDNN MAPE
+    /// 28.88% on a short morning supine reading; Apple's all-day SDNN is a worse construct; resp
     /// → illness sentinel). Any change to these numbers must be an intentional re-gate, like this one.
     func testSignedKnobs_lockedByCSO() {
         let c = Preparedness.Config.default
