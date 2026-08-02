@@ -4,7 +4,7 @@ description: >-
   Product Manager interactivo para NOOP. Convierte una idea cruda ("quiero
   hacer X", "hay un bug en Y", "cambiemos la pantalla Z") en un requerimiento
   claro, autocontenido y ejecutable por un agente de coding, y lo crea como
-  issue en Linear (team Fer, proyecto NOOP iOS). Úsalo al INICIO de cualquier
+  issue en Multica (workspace Fer, proyecto Cénit iOS). Úsalo al INICIO de cualquier
   trabajo de producto —feature, cambio de UI/diseño, bug, analytics/algoritmo,
   import, performance, i18n, BLE— ANTES de escribir código, para fijar alcance
   y criterios de aceptación y evitar retrabajo. Dispáralo con /pm o cuando el
@@ -44,9 +44,9 @@ en una línea: "¿Qué quieres construir o arreglar?".
 **Esto es lo que hace al agente flexible.** No todo necesita pantalla ni
 estados; un bug necesita pasos de reproducción, no un mockup. Infiere el tipo de
 la descripción y **confírmalo en una sola pregunta de opción** (puedes usar
-`AskUserQuestion`). Los tipos mapean a los labels de Linear:
+`AskUserQuestion`). Los tipos mapean a los labels de Multica:
 
-| Tipo | Cuándo | Label Linear |
+| Tipo | Cuándo | Label Multica |
 |---|---|---|
 | **Feature** | capacidad nueva (suele traer UI) | `Feature` (+ `UI/Today` o `Diseño` si toca pantalla) |
 | **Cambio de UI / Diseño** | rediseño o ajuste visual de pantalla existente | `Diseño` o `UI/Today` |
@@ -80,7 +80,7 @@ corre.
 
 Para el **carril ligero**, trabaja en **modo lean**: una o ninguna pregunta, un
 requerimiento corto (objetivo + comportamiento + 2–3 criterios verificables), sin
-la pasada de UX de subagente. Igual creas el issue en Linear y lo etiquetas
+la pasada de UX de subagente. Igual creas el issue en Multica y lo etiquetas
 (hygiene) — solo que barato.
 
 ### 3. Lee lo justo (no inventes)
@@ -137,11 +137,11 @@ de experiencia.
 
 ### 6. Aprueba antes de crear (gate)
 Muestra el borrador completo al usuario y pregunta si lo aprueba o quiere
-ajustes. **No crees el issue sin su OK.** Antes, revisa duplicados en Linear
-(`list_issues` con una query corta del tema) y avisa si ya existe algo parecido.
+ajustes. **No crees el issue sin su OK.** Antes, revisa duplicados en Multica
+(`multica issue search "…"` o `multica issue list --output json`) y avisa si ya existe algo parecido.
 
-### 7. Crea el issue en Linear
-Al aprobar, créalo y devuelve el link. Ver "Crear en Linear".
+### 7. Crea el issue en Multica
+Al aprobar, créalo y devuelve el identifier (`FER-NN`) + link de la app. Ver "Crear en Multica".
 
 ## Plantilla del requerimiento
 
@@ -220,25 +220,36 @@ alcance** — dilo si surge.
   su `MigrationTests`.
 - **Tests:** `swift test` por package tocado. Un solo concern por PR.
 
-## Crear en Linear
+## Crear en Multica
 
-Las tools `mcp__plugin_productivity_linear__*` pueden estar deferred; cárgalas
-con `ToolSearch` (`select:mcp__plugin_productivity_linear__save_issue,mcp__plugin_productivity_linear__list_issues`)
-antes de usarlas. Crea con `save_issue` (sin `id`):
+**No uses Linear.** Usa el CLI `multica` (ya autenticado en esta máquina).
 
-- `team`: `Fer`
-- `project`: `NOOP iOS`
-- `title`: claro, en imperativo (ej. "Mostrar estado vacío en TodayView cuando no hay datos de hoy")
-- `description`: el requerimiento en Markdown. **Usa saltos de línea reales, no
-  `\n` literales.**
-- `labels`: el/los del tipo (ver tabla de clasificación)
-- `state`: `Todo` por defecto (listo para que un agente de coding lo tome). Usa
-  `Backlog` si es "para después".
-- `priority`: infiere o pregunta. Default `3` (Medium). 1=Urgent, 2=High, 4=Low.
+1. Revisa duplicados: `multica issue search "<tema corto>"`
+2. Crea el issue (descripción multi-línea por stdin o archivo):
 
-Devuelve la URL del issue y cierra recordando el handoff: *"Requerimiento listo
-en FER-XX. El siguiente paso es que un agente de coding lo tome (pasará a In
-Progress)."*
+```bash
+# Project Cénit iOS
+PROJECT_ID=0be0890a-890a-4994-b0dc-02dbb73306d4
+
+multica issue create \
+  --title "Mostrar estado vacío en TodayView cuando no hay datos de hoy" \
+  --status todo \
+  --priority medium \
+  --project "$PROJECT_ID" \
+  --description-stdin <<'EOF'
+## Contexto
+…
+EOF
+```
+
+3. Etiqueta por tipo: resuelve el id con `multica label list --output json` y luego
+   `multica issue label add <issue-id> <label-id>` (nombres de la tabla de tipos).
+4. Statuses válidos: `backlog` | `todo` | `in_progress` | `in_review` | `done` | `blocked` | `cancelled`.
+   - Default **`todo`** (listo para coding). Usa **`backlog`** si es "para después".
+5. Priorities: infiere o pregunta (`low` / `medium` / `high` / `urgent` según acepte el CLI; si falla, omite).
+
+Devuelve el **identifier** (`FER-XX`) y cierra recordando el handoff: *"Requerimiento listo
+en FER-XX (Multica). El siguiente paso es `/implement FER-XX` (pasará a in_progress)."*
 
 ## Qué NO hacer
 - No escribas código ni implementes nada. Solo el requerimiento.
