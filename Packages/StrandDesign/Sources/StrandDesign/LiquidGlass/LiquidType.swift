@@ -31,6 +31,20 @@ public enum LiquidType {
     public static let displayM = InstrumentoType.grotesk(40, weight: .bold)
     public static let displayMTracking: CGFloat = -1.4
 
+    /// `display/s` — 22/700, tracking −0.5, escala con Dynamic Type. La palabra de
+    /// CALIBRANDO del Ecosistema («Conociéndote»): habla más bajito que un veredicto
+    /// (30 pt) porque todavía NO es un veredicto — la humildad se ve en el tamaño (FER-10).
+    public static let displayS = InstrumentoType.grotesk(22, weight: .bold,
+                                                         relativeTo: .title2)
+    public static let displaySTracking: CGFloat = -0.5
+
+    /// `órbita` — 8/600, tracking +2.2. SOLO para las etiquetas orbitales dibujadas dentro
+    /// del canvas del Ecosistema (REPOSO · SUEÑO · GUARDIÁN): tamaño fijo, exenta de
+    /// Dynamic Type como los glifos de `LiquidIcon` — la accesibilidad la lleva el elemento
+    /// compuesto del héroe, nunca el canvas (FER-10).
+    public static let orbita = InstrumentoType.grotesk(8, weight: .semibold)
+    public static let orbitaTracking: CGFloat = 2.2
+
     // MARK: Valores y títulos
 
     /// `valor/l` — 22/700 tabular (subido del 20 del handoff, elevación /inject: el

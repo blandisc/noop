@@ -116,6 +116,78 @@ public enum LiquidMotion {
     public static let flowPulseLength: Double = 0.06
 }
 
+// MARK: - Recetas del Ecosistema (FER-10 — el héroe de esferas de partículas)
+//
+// Seis recetas nuevas al contrato, cada una con su comportamiento bajo Reduce Motion:
+//   fusión      — viaje 1.55 s backOut(s=1.35) + stretch direccional 16 % + destello con
+//                 chispas en el contacto + asentamiento amortiguado. RM: crossfade ≤0.3 s.
+//   separación  — anticipación 0.22 s (squeeze 5 %) + apertura 1.55 s. RM: instantánea.
+//   órbita      — lunas 0.85 / −0.6 rad/s, guardián 0.32 rad/s (dato coreografiado, NO
+//                 ambiente: desviación sancionada al piso de 9 s, LIQUID-GLASS §8).
+//                 RM: congelada en t = 0 (composición canónica determinista).
+//   acreción    — 34 espirales cayendo ≈18 s al embrión. RM: constelación estática.
+//   eclipse     — el guardián deja su órbita y asoma detrás (1.8 s smoothstep). RM: aparece
+//                 colocado.
+//   ambiente    — crossfade de color del clima 1.6 s. RM: el fade SÍ se conserva (un fade
+//                 no es movimiento; lo que se congela es el drift).
+public enum LiquidEcosistemaMotion {
+
+    // fusión / separación
+    public static let fusionDur: Double = 1.55
+    /// Overshoot del back-out (s del cubic-back).
+    public static let fusionOvershoot: Double = 1.35
+    /// Estiramiento direccional máximo durante el viaje (squash & stretch).
+    public static let fusionStretch: Double = 0.16
+    /// Espera antes de la fusión de apertura (las esferas se presentan).
+    public static let fusionIntroEspera: Double = 0.9
+    /// Anticipación de la separación (el orbe toma aire).
+    public static let anticipacion: Double = 0.22
+    /// Squeeze de la anticipación (escala −5 %).
+    public static let squeeze: Double = 0.05
+    /// Asentamiento al quedar unido: `settleAmplitud·e^(−settleAmortiguacion·τ)·sin(settleFrecuencia·τ)`.
+    public static let settleAmplitud: Double = 4
+    public static let settleAmortiguacion: Double = 2.5
+    public static let settleFrecuencia: Double = 11
+    /// Fade de la palabra del veredicto al coronar.
+    public static let palabraDur: Double = 0.70
+    /// Crossfade bajo Reduce Motion (sustituye viaje/asentamiento).
+    public static let reduceMotionCrossfade: Double = 0.3
+
+    // órbita (velocidades angulares rad/s + fases iniciales)
+    public static let orbitaLuna1: Double = 0.85
+    public static let orbitaLuna2: Double = -0.6
+    public static let orbitaGuardian: Double = 0.32
+    public static let faseLuna2: Double = 2.2
+    public static let faseGuardian: Double = 4.1
+    /// Autorrotación de las nubes de partículas (esferas / lunas / guardián).
+    public static let rotacionEsfera: Double = 0.6
+    public static let rotacionLuna1: Double = 1.3
+    public static let rotacionLuna2: Double = -1.1
+    public static let rotacionGuardian: Double = 0.7
+    /// Respiración del orbe fundido (±2 %).
+    public static let respiracionEsfera: Double = 1.4
+    /// Jitter de superficie (amplitud pt · velocidad rad/s); desgaste multiplica la amplitud.
+    public static let jitterAmplitud: Double = 1.1
+    public static let jitterDesgaste: Double = 2.6
+    public static let jitterVelocidad: Double = 1.5
+    /// Flicker de alfa en desgaste (rad/s; alfa 0.9–1.0).
+    public static let flickerDesgaste: Double = 7.3
+    /// Onda del menisco del nivel líquido (rad/s · amplitud pt).
+    public static let nivelOndaVelocidad: Double = 2.0
+    public static let nivelOndaAmplitud: Double = 2.2
+
+    // acreción (calibrando)
+    /// Ciclos de caída por segundo de cada espiral (caída completa ≈ 18.2 s).
+    public static let acrecionCaida: Double = 0.055
+    public static let acrecionGiro: Double = 0.45
+
+    // eclipse (guardián en pareja)
+    public static let eclipseDur: Double = 1.8
+
+    // ambiente monocromo
+    public static let ambienteCrossfade: Double = 1.6
+}
+
 // MARK: - Override de motion para previews/tests
 
 private struct LiquidMotionDisabledKey: EnvironmentKey {

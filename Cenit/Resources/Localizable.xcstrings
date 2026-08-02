@@ -1,6 +1,244 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "Guardian": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardian"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardián"
+          }
+        }
+      }
+    },
+    "Night %lld of %lld · your range is taking shape": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Night %lld of %lld · your range is taking shape"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noche %lld de %lld · tu rango se está formando"
+          }
+        }
+      }
+    },
+    "Reunite the signals": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reunite the signals"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unir señales"
+          }
+        }
+      }
+    },
+    "Separate the signals": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Separate the signals"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Separar señales"
+          }
+        }
+      }
+    },
+    "Tap to reunite": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap to reunite"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toca para unir"
+          }
+        }
+      }
+    },
+    "Tap to separate": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap to separate"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toca para separar"
+          }
+        }
+      }
+    },
+    "bpm · in your range": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "bpm · in your range"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "lpm · en tu rango"
+          }
+        }
+      }
+    },
+    "bpm · out of your range": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "bpm · out of your range"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "lpm · fuera de tu rango"
+          }
+        }
+      }
+    },
+    "h · in your range": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "h · in your range"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "h · en tu rango"
+          }
+        }
+      }
+    },
+    "h · out of your range": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "h · out of your range"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "h · fuera de tu rango"
+          }
+        }
+      }
+    },
+    "hero.title.calibrando": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Getting to know you"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conociéndote"
+          }
+        }
+      }
+    },
+    "hero.title.caution": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Go light today"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hoy ve leve"
+          }
+        }
+      }
+    },
+    "hero.title.easy": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recover"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recupera"
+          }
+        }
+      }
+    },
+    "hero.title.full": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In range"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En rango"
+          }
+        }
+      }
+    },
     "Off your range": {
       "extractionState": "manual",
       "localizations": {
@@ -19778,24 +20016,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "one thing"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "un detalle"
-          }
-        }
-      }
-    },
-    "hero.highlight.easy": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "easy"
+            "value": "light"
           }
         },
         "es": {
@@ -19806,19 +20027,36 @@
         }
       }
     },
+    "hero.highlight.easy": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recover"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recupera"
+          }
+        }
+      }
+    },
     "hero.highlight.full": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "all in"
+            "value": "range"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "todo"
+            "value": "rango"
           }
         }
       }

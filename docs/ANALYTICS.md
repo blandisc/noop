@@ -194,7 +194,7 @@ Source: `Preparedness.swift`, `SleepBands.swift` (both `StrandAnalytics`, pure).
 
 ### Claims allow-list — «Preparación» (PR-blocking)
 
-**Allowed** verdict copy (es-MX, a training *suggestion*, never a diagnosis): *«Dale con todo» / «Bien, con un detalle» / «Ándate leve» / «Con poca señal»*, plus a per-axis "why" that names the out axis ("tu pulso viene alto", "dormiste corto"). **Forbidden**: any number, "como WHOOP", "estás enfermo / sobreentrenado", any clinical or overnight-precision claim. "Ándate leve" reads as a suggestion from *your own* signals, never an imperative or diagnosis.
+**Allowed** verdict copy (es-MX, a *reading* of your state — never an order, never a diagnosis; FER-10 replaced the coach-voice words): *«En rango» / «Hoy ve leve» / «Recupera» / «Conociéndote»* (calibration), plus a per-axis "why" that names the out axis ("tu pulso viene alto", "dormiste corto") and the calibration progress *«Noche N de M · tu rango se está formando»* (M = `Baselines.minNightsSeed`, never a UI-invented number). **Forbidden**: any number as verdict, "como WHOOP", "estás enfermo / sobreentrenado", any clinical or overnight-precision claim. «Recupera» reads as a suggestion from *your own* signals, never an imperative or diagnosis. Retired words (do not resurface): «Dale con todo» / «Bien, con un detalle» / «Ándate leve».
 
 **Allowed** «Lectura de día» copy (FER-1033, the demoted watchless-night surface): *«LECTURA DE DÍA»* (overline) · *«Tus señales de día vienen en tu rango.»* · *«Tus señales de día vienen abajo de tu rango.»* · the mandatory hedge *«Anoche no hubo lectura de sueño; esto es menos preciso.»* **Forbidden** on this surface: the four verdict words, verdict color, any implication of a night reading.
 

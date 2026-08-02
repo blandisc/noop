@@ -82,6 +82,23 @@ public enum LiquidColor {
     /// familia naranja — el oro amarillo queda solo para el dial solar).
     public static let ambarClaro = Color(hex: "#E29A50")
 
+    // MARK: Partículas del Ecosistema (FER-10)
+    //
+    // La tinta de las esferas de partículas del héroe: más profunda que los tonos de dato
+    // porque un punto de 0.7–2.2 pt con alfa ≤ .65 lava cualquier tono medio. Un color por
+    // clima; el ámbar de atención reusa `atencion` (las decisoras siguen verdes ahí — el
+    // ámbar entra por el guardián).
+
+    /// Partícula en rango/atención (verde tinta, más profundo que `verdePrimario`).
+    public static let particulaVerde = Color(hex: "#10694E")
+    /// Partícula en desgaste (rojo tinta, más profundo que `negativo`).
+    public static let particulaRoja = Color(hex: "#963426")
+    /// Partícula neutra: calibrando y el orbe del guardián tranquilo.
+    public static let particulaNeutra = Color(hex: "#737670")
+    /// El rojo CLARO del clima de alerta (par simétrico de `ambarClaro` — el ambiente de
+    /// alerta usaba `rosa`, que es el tono 1:1 de FC en reposo, no un clima).
+    public static let rojoClaro = Color(hex: "#E06C56")
+
     // MARK: Semánticos
 
     /// Deltas a favor.

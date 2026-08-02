@@ -242,47 +242,60 @@ final class LiquidGlassTests: XCTestCase {
         XCTAssertEqual(
             LiquidMetricTile.a11yLabel(label: "SUEÑO", value: "7:20", unit: "", delta: "En tu base"),
             "SUEÑO, 7:20, En tu base")
-        XCTAssertEqual(LiquidSignalOrb.a11yLabel(label: "AUTONÓMICO", caption: "EN TU RANGO"),
-                       "AUTONÓMICO: EN TU RANGO")
         XCTAssertEqual(LiquidCargaBar.a11yLabel(label: "CARGA", status: "EN EQUILIBRIO · 1.03"),
                        "CARGA: EN EQUILIBRIO · 1.03")
-        XCTAssertEqual(
-            LiquidHeroVeredicto.a11yLabel(title: "Dale\ncon todo",
-                                          subtitle: "Tus dos señales amanecieron dentro de tu rango.",
-                                          confianza: "Confianza: 12 de 21 noches"),
-            "Dale con todo. Tus dos señales amanecieron dentro de tu rango. Confianza: 12 de 21 noches")
     }
 
-    /// La AFORDANCIA del héroe («Cómo llegué a esto») entra al label en el ORDEN de la
-    /// pantalla: subtítulo → puerta → confianza. Es lo único que le dice a VoiceOver que
-    /// ahí se toca; si se cayera del label, el héroe volvería a ser un titular mudo para
-    /// quien no ve la pastilla de vidrio.
-    func test_a11y_heroPuerta() {
-        // Base joven: puerta Y confianza, en ese orden.
-        XCTAssertEqual(
-            LiquidHeroVeredicto.a11yLabel(title: "Bien,\ncon un detalle",
-                                          subtitle: "Tu sueño amaneció debajo de tu base.",
-                                          puerta: "Cómo llegué a esto",
-                                          confianza: "Confianza: 8 de 14 noches"),
-            "Bien, con un detalle. Tu sueño amaneció debajo de tu base. Cómo llegué a esto. Confianza: 8 de 14 noches")
-        // Base firme: sólo puerta.
-        XCTAssertEqual(
-            LiquidHeroVeredicto.a11yLabel(title: "Dale\ncon todo",
-                                          subtitle: "Amaneciste en tu base.",
-                                          puerta: "Cómo llegué a esto", confianza: nil),
-            "Dale con todo. Amaneciste en tu base. Cómo llegué a esto")
-        // Sin puerta: el contrato viejo intacto (ningún caller sin migrar cambia de voz).
-        XCTAssertEqual(
-            LiquidHeroVeredicto.a11yLabel(title: "Dale\ncon todo",
-                                          subtitle: "Amaneciste en tu base.", confianza: nil),
-            "Dale con todo. Amaneciste en tu base.")
-        // Héroe DEMOTADO: compone con el mismo helper, con el kicker al frente. Es el
-        // estado donde más se pregunta «¿por qué?» y el que antes no ofrecía ninguna pista.
-        XCTAssertEqual(
-            LiquidHeroVeredicto.a11yLabel(title: "LECTURA DE DÍA. Tus señales del día están en tu rango.",
-                                          subtitle: "Sin lectura de sueño anoche; esto es menos preciso.",
-                                          puerta: "Cómo llegué a esto", confianza: nil),
-            "LECTURA DE DÍA. Tus señales del día están en tu rango. Sin lectura de sueño anoche; esto es menos preciso. Cómo llegué a esto")
+    /// El contrato de VoiceOver del Ecosistema (FER-10): veredicto + valores + guardián,
+    /// JAMÁS la física (nada de «orbe», «partículas», «se funden»). El label es idéntico
+    /// fundido o separado — la separación es puramente visual.
+    func test_a11y_ecosistema() {
+        let eco = LiquidEcosistema(
+            senales: LiquidHoyModel.ejemplo.senales,
+            hero: LiquidHoyModel.ejemplo.hero,
+            guardian: LiquidHoyModel.ejemplo.guardian,
+            ambiente: .bien, calibracion: nil, rotulos: .base,
+            heroPuerta: "Cómo llegué a esto")
+        let label = eco.a11yCompuesta
+        XCTAssertTrue(label.contains("En rango"))
+        XCTAssertTrue(label.contains("REPOSO: 52 lpm · en tu rango"))
+        XCTAssertTrue(label.contains("SUEÑO: 7:20 h · en tu rango"))
+        XCTAssertTrue(label.contains("VIGILANDO"))
+        for prohibida in ["orbe", "partícula", "funde", "esfera"] {
+            XCTAssertFalse(label.lowercased().contains(prohibida),
+                           "el label de VoiceOver no habla de la física: \(prohibida)")
+        }
+    }
+
+    /// La proyección modelo → coreografía (FER-10): el eclipse es EXCLUSIVO de `.juntas`,
+    /// y una sola señal del guardián fuera jamás cambia la coreografía.
+    func test_ecosistema_coreografia() {
+        typealias Sim = EcosistemaSimulacion
+        let v = LiquidHoyModel.ejemplo.hero
+        XCTAssertEqual(LiquidEcosistema.coreografia(
+            hero: v, ambiente: .bien, guardianEstado: .tranquilo, lunaSueno: true,
+            calibracion: nil), .enRango)
+        // Una señal del guardián fuera NO cambia nada («mostrar no es votar»).
+        XCTAssertEqual(LiquidEcosistema.coreografia(
+            hero: v, ambiente: .bien, guardianEstado: .tempFuera, lunaSueno: true,
+            calibracion: nil), .enRango)
+        // Atención SIN guardián en pareja → sin eclipse.
+        XCTAssertEqual(LiquidEcosistema.coreografia(
+            hero: v, ambiente: .atencion, guardianEstado: .tempFuera, lunaSueno: true,
+            calibracion: nil), .atencion(eclipse: false))
+        // Atención CON `.juntas` → el eclipse.
+        XCTAssertEqual(LiquidEcosistema.coreografia(
+            hero: v, ambiente: .atencion, guardianEstado: .juntas, lunaSueno: true,
+            calibracion: nil), .atencion(eclipse: true))
+        XCTAssertEqual(LiquidEcosistema.coreografia(
+            hero: v, ambiente: .alerta, guardianEstado: .juntas, lunaSueno: true,
+            calibracion: nil), .desgaste)
+        // Calibrando manda sobre todo y no es separable.
+        let cal = LiquidEcosistema.coreografia(
+            hero: v, ambiente: .neutro, guardianEstado: nil, lunaSueno: false,
+            calibracion: .init(noche: 4, total: 7))
+        XCTAssertEqual(cal, .calibrando(noche: 4, total: 7))
+        XCTAssertFalse(cal.separable)
     }
 
     // MARK: Contratos a11y — hoja de resumen (QA F0-F2 D4)
