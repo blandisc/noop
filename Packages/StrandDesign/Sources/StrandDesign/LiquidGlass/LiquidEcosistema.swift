@@ -89,6 +89,7 @@ public struct LiquidEcosistema: View {
     private let onSeparacion: (() -> Void)?
 
     @State private var fase: Sim.Fase?
+    @State private var escala: CGFloat = 1
     private let faseForzada: Sim.Fase?
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -175,6 +176,13 @@ public struct LiquidEcosistema: View {
 
     private var still: Bool { reduceMotion || motionDisabled }
 
+    /// La identidad del veredicto visible (nil = demotado/calibrando): el ciclo de vida
+    /// observa CAMBIOS de palabra, no solo el flanco con-fusión (Grok #2).
+    private var tituloVeredicto: String? {
+        if case .veredicto(let title, _, _, _, _) = hero, coreo.conFusion { return title }
+        return nil
+    }
+
     // MARK: Body
 
     public var body: some View {
@@ -183,46 +191,64 @@ public struct LiquidEcosistema: View {
             EcosistemaListado(senales: senales, hero: hero, guardian: guardian,
                               calibracion: calibracion, rotulos: rotulos,
                               heroPuerta: heroPuerta,
-                              onTapVeredicto: onTapVeredicto, onTapSenal: onTapSenal)
+                              onTapVeredicto: onTapVeredicto, onTapSenal: onTapSenal,
+                              onTapGuardian: onTapGuardian)
         } else {
             lienzo
         }
     }
 
     private var lienzo: some View {
-        GeometryReader { geo in
-            let escala = min(1, geo.size.width / Sim.Geometria.lienzo.width)
-            ZStack(alignment: .topLeading) {
-                escena
-                    .frame(width: Sim.Geometria.lienzo.width,
-                           height: Sim.Geometria.lienzo.height)
-                    .scaleEffect(escala, anchor: .top)
-                    .frame(maxWidth: .infinity)
+        ZStack(alignment: .topLeading) {
+            // Lector de ancho (una vía): el hueco reservado escala CON el lienzo — en un
+            // SE/mini no queda banda muerta bajo el héroe (Grok #13).
+            GeometryReader { geo in
+                Color.clear
+                    .onAppear { escala = min(1, geo.size.width / Sim.Geometria.lienzo.width) }
+                    .onChange(of: geo.size.width) { _, w in
+                        escala = min(1, w / Sim.Geometria.lienzo.width)
+                    }
             }
+            .frame(height: 0)
+            escena
+                .frame(width: Sim.Geometria.lienzo.width,
+                       height: Sim.Geometria.lienzo.height)
+                .scaleEffect(escala, anchor: .top)
+                .frame(maxWidth: .infinity)
         }
-        .frame(height: LiquidSpace.ecosistemaAlto)
+        .frame(height: LiquidSpace.ecosistemaAlto * escala)
         .onAppear {
             guard fase == nil else { return }
             let ahora = Date().timeIntervalSinceReferenceDate
             if fusionInicial && coreo.conFusion {
                 // El ritual del día corre (con Reduce Motion aparece asentado, pero el
-                // día SÍ se consume: recibió su veredicto).
+                // día SÍ se consume: recibió su veredicto). El usuario de VoiceOver
+                // también lo oye en el cold start (Grok #6).
                 fase = still ? .viva(desde: ahora) : .formando(inicio: ahora)
                 onFusionArrancada?()
+                anunciarVeredicto()
             } else {
                 // SIN veredicto aún («Leyendo…», calibrando): el día NO se marca — el
                 // ritual espera a que el veredicto se estrene (D1 del gate de QA).
                 fase = .viva(desde: ahora)
             }
         }
-        // El veredicto se estrena con la pantalla abierta (sync matutino): AHÍ corre el
-        // ritual pendiente + el announcement de VoiceOver.
-        .onChange(of: coreo.conFusion) { antes, ahora in
-            guard ahora, !antes, fusionInicial else { return }
+        // El veredicto se estrena o CAMBIA con la pantalla abierta (sync matutino,
+        // backfill que voltea el día): corre el ritual de nuevo + announcement (Grok #2).
+        .onChange(of: tituloVeredicto) { antes, ahora in
+            guard ahora != nil, antes != ahora, fase != nil else { return }
+            let t = Date().timeIntervalSinceReferenceDate
+            fase = still ? .viva(desde: t) : .formando(inicio: t)
+            if fusionInicial { onFusionArrancada?() }
+            anunciarVeredicto()
+        }
+        // Medianoche con la app viva: cuando el día local cambia y el body se re-evalúa,
+        // `fusionInicial` vuelve a true — el ritual del día nuevo corre (Grok #3).
+        .onChange(of: fusionInicial) { antes, ahora in
+            guard ahora, !antes, coreo.conFusion, fase != nil else { return }
             let t = Date().timeIntervalSinceReferenceDate
             fase = still ? .viva(desde: t) : .formando(inicio: t)
             onFusionArrancada?()
-            anunciarVeredicto()
         }
         // La separación es una consulta momentánea: al salir de la tab o backgroundear,
         // el héroe regresa a fundido (su reposo ES el veredicto) — sin re-fusión.
@@ -339,7 +365,9 @@ public struct LiquidEcosistema: View {
             .frame(width: G.lienzo.width)
             .frame(height: G.lienzo.height - 34, alignment: .bottom)
             .opacity(esSeparadaEstable ? 0 : 1)
-            .allowsHitTesting(!esSeparadaEstable)
+            // La palabra es puro texto (la puerta vive aparte): NUNCA intercepta el tap
+            // del lienzo — tocar el veredicto también separa (Grok #1).
+            .allowsHitTesting(false)
             .animation(still ? .easeInOut(duration: LiquidEcosistemaMotion.reduceMotionCrossfade)
                              : LiquidMotion.glassOut(LiquidEcosistemaMotion.palabraDur),
                        value: esSeparadaEstable)
@@ -587,8 +615,9 @@ private struct EcosistemaA11yAcciones: ViewModifier {
     let onTapSenal: ((String) -> Void)?
     let onTapGuardian: (() -> Void)?
 
+    @ViewBuilder
     func body(content: Content) -> some View {
-        content
+        let base = content
             .accessibilityAction(named: Text(verbatim: heroPuerta ?? "")) {
                 onTapVeredicto?()
             }
@@ -601,10 +630,16 @@ private struct EcosistemaA11yAcciones: ViewModifier {
             .accessibilityAction(named: Text(verbatim: rotulos.abrirGuardian)) {
                 onTapGuardian?()
             }
-            .accessibilityAction(named: Text(verbatim: separada ? rotulos.accionUnir
-                                                                : rotulos.accionSeparar)) {
-                if separable { onToggle() }
+        // La acción de separar/unir solo se OFRECE cuando existe (calibrando no la
+        // tiene — un rotor que miente es peor que uno corto, Grok #10).
+        if separable {
+            base.accessibilityAction(named: Text(verbatim: separada ? rotulos.accionUnir
+                                                                    : rotulos.accionSeparar)) {
+                onToggle()
             }
+        } else {
+            base
+        }
     }
 }
 
@@ -705,7 +740,10 @@ private struct EcosistemaCanvas: View {
         // 2 · Lunas detrás del orbe: una por señal — HUECA si su eje no tiene dato (no
         // se fabrica materia), con CASQUETE ámbar si su eje está fuera (la luna causante).
         var lunas: [LunaSpec] = []
-        if cuadro.fundida {
+        // Estado 7/8 («sin datos»): si NINGUNA señal tiene dato, no se fabrican lunas —
+        // ni huecas (Grok #4). Con al menos una con dato, la otra aparece hueca (estado 6).
+        let algunaConDato = senales.prefix(2).contains { $0.progress != nil }
+        if cuadro.fundida, algunaConDato {
             for (i, senal) in senales.prefix(2).enumerated() {
                 let orb = Sim.luna(i + 1, t: t, desgaste: coreo == .desgaste)
                 lunas.append(LunaSpec(
@@ -924,10 +962,20 @@ private struct EcosistemaCanvas: View {
                       stretch: 0, nivel: nivel, nivelBajo: false, capAmbar: false)
     }
 
+    /// Cache de los rótulos ya espaciados (el `map+joined` por frame era alocación
+    /// gratuita a 60 Hz — Grok #7).
+    private static var espaciadosCache: [String: String] = [:]
+    private static func espaciado(_ texto: String) -> String {
+        if let hit = espaciadosCache[texto] { return hit }
+        let v = texto.map(String.init).joined(separator: " ")
+        espaciadosCache[texto] = v
+        return v
+    }
+
     private func etiqueta(ctx: inout GraphicsContext, texto: String, en punto: CGPoint,
                           alfa: Double) {
         let resuelto = ctx.resolve(
-            Text(texto.map(String.init).joined(separator: " "))
+            Text(Self.espaciado(texto))
                 .font(LiquidType.orbita)
                 .foregroundColor(LiquidColor.tinta500.opacity(alfa)))
         ctx.draw(resuelto, at: punto, anchor: .center)
@@ -945,6 +993,7 @@ private struct EcosistemaListado: View {
     let heroPuerta: String?
     let onTapVeredicto: (() -> Void)?
     let onTapSenal: ((String) -> Void)?
+    let onTapGuardian: (() -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: LiquidSpace.s300) {
@@ -953,8 +1002,15 @@ private struct EcosistemaListado: View {
                 filaSenal(senal, etiqueta: i == 0 ? rotulos.reposo : rotulos.sueno)
             }
             if let guardian {
-                fila(rotulos.guardian, valor: "\(guardian.temp) · \(guardian.resp)",
-                     fuera: guardian.estado != .tranquilo)
+                let filaGuardian = fila(rotulos.guardian,
+                                        valor: "\(guardian.temp) · \(guardian.resp)",
+                                        fuera: guardian.estado != .tranquilo)
+                if let onTapGuardian {
+                    Button(action: onTapGuardian) { filaGuardian }
+                        .buttonStyle(.liquidPress)
+                } else {
+                    filaGuardian
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

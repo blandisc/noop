@@ -380,7 +380,9 @@ enum LiquidHoyBuilder {
             progress: sleepHasData ? positionFromState(sleep!.state) : nil,
             icon: .lunaSenal,
             state: sleepFuera ? .atencion : .ok,
-            valor: valores.sueno,
+            // Simétrico al reposo (Grok #5): sin driver de sueño con dato, NADA de valor —
+            // «7:20» junto a «Sin lectura anoche» sería una contradicción de salud.
+            valor: sleepHasData ? valores.sueno : nil,
             badge: sleepHasData ? valores.sueno.map {
                 .init(valor: $0, contexto: sleepFuera
                       ? String(localized: "h · out of your range")
