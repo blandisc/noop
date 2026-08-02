@@ -165,7 +165,7 @@ xcodebuild -project Cenit.xcodeproj -scheme Cenit -destination 'generic/platform
 ```
 
 The scheme is `Cenit`; the built product is `Cenit.app` (`project.yml` sets `PRODUCT_NAME: Cenit`,
-display name `Cénit`, bundle id `com.feriracheta.noop`). A **free** Apple ID is enough to install a personal build on your own
+display name `Cénit`, bundle id `com.feriracheta.cenit`). A **free** Apple ID is enough to install a personal build on your own
 iPhone — no paid Apple Developer account needed. See [`BUILD.md`](BUILD.md) for the on-device install
 recipe.
 

@@ -25,7 +25,7 @@ enum RestActivityBridge {
 
     /// Darwin notification the extension posts and the app observes (cross-process, unlike
     /// `NotificationCenter`). Named, not payload-carrying — the payload is the App Group inbox.
-    static let darwinNotification = "com.feriracheta.noop.rest.action"
+    static let darwinNotification = "com.feriracheta.cenit.rest.action"
 
     private static let inboxKey = "rest.activity.pendingActions"
 

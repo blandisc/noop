@@ -13,10 +13,10 @@ public enum AppGroup {
     /// (`NOOP.entitlements`, `CenitWidgets.entitlements`, and the `project.yml` mirrors of both).
     ///
     /// This is the ONE declaration of the suite — `RestActivityBridge` reads it rather than repeating
-    /// the literal. It used to say `group.com.noopapp.noop` (a leftover from the old bundle-id prefix)
-    /// while every entitlement said `group.com.feriracheta.noop`; nothing caught the drift because an
-    /// unentitled suite fails silently rather than loudly. See `warnIfGroupUnprovisioned` below.
-    public static let suiteName = "group.com.feriracheta.noop"
+    /// the literal. It has already drifted twice from the entitlements (each time a leftover from an
+    /// older bundle-id prefix), and nothing caught it because an unentitled suite fails silently
+    /// rather than loudly. See `warnIfGroupUnprovisioned` below.
+    public static let suiteName = "group.com.feriracheta.cenit"
 
     /// Startup canary: surfaces a misprovisioned App Group immediately instead of letting it
     /// masquerade as "nothing happened."
