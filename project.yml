@@ -134,14 +134,14 @@ targets:
         # provision it, and NOOP never reads clinical records. Base HealthKit above
         # is enough for steps/HR/sleep. Restore the key only with a paid team.
         com.apple.security.application-groups:
-          - group.com.feriracheta.noop
+          - group.com.feriracheta.cenit
     settings:
       configFiles:
         Debug: Cenit/Config.xcconfig
         Release: Cenit/Config.xcconfig
       base:
         # CURRENT_PROJECT_VERSION / MARKETING_VERSION are inherited from settings.base above.
-        PRODUCT_BUNDLE_IDENTIFIER: com.feriracheta.noop
+        PRODUCT_BUNDLE_IDENTIFIER: com.feriracheta.cenit
         PRODUCT_NAME: Cenit
         SWIFT_MODULE_NAME: Cenit
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
@@ -202,7 +202,7 @@ targets:
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         # Marks this as a single-target watchOS app and links it to the iPhone app.
         WKApplication: true
-        WKCompanionAppBundleIdentifier: com.feriracheta.noop
+        WKCompanionAppBundleIdentifier: com.feriracheta.cenit
         WKRunsIndependentlyOfCompanionApp: false
         # Required by watchOS for ANY HKWorkoutSession (incl. the mirrored strength session
         # of FER-391 F1). Without it startMirroringToCompanionDevice() fails and the iPhone
@@ -217,7 +217,7 @@ targets:
         com.apple.developer.healthkit: true
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.feriracheta.noop.watchkitapp
+        PRODUCT_BUNDLE_IDENTIFIER: com.feriracheta.cenit.watchkitapp
         PRODUCT_NAME: Cenit
         SWIFT_MODULE_NAME: CenitWatch
         DEVELOPMENT_TEAM: "B7KRCF776Z"
@@ -260,10 +260,10 @@ targets:
       path: CenitWidgets/Resources/CenitWidgets.entitlements
       properties:
         com.apple.security.application-groups:
-          - group.com.feriracheta.noop
+          - group.com.feriracheta.cenit
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.feriracheta.noop.CenitWidgets
+        PRODUCT_BUNDLE_IDENTIFIER: com.feriracheta.cenit.CenitWidgets
         PRODUCT_NAME: CenitWidgets
         GENERATE_INFOPLIST_FILE: NO
         TARGETED_DEVICE_FAMILY: "1"
@@ -287,7 +287,7 @@ targets:
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
-        PRODUCT_BUNDLE_IDENTIFIER: com.feriracheta.noop.uitests
+        PRODUCT_BUNDLE_IDENTIFIER: com.feriracheta.cenit.uitests
 
   # ---------------------------------------------------------------------------
   # Unit-test bundle for the iOS app target. Runs the app-layer logic tests
@@ -315,7 +315,7 @@ targets:
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
-        PRODUCT_BUNDLE_IDENTIFIER: com.feriracheta.noop.unittests
+        PRODUCT_BUNDLE_IDENTIFIER: com.feriracheta.cenit.unittests
         TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Cenit.app/Cenit"
         BUNDLE_LOADER: "$(TEST_HOST)"
 

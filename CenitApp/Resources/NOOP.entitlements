@@ -6,7 +6,7 @@
 	<true/>
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>group.com.feriracheta.noop</string>
+		<string>group.com.feriracheta.cenit</string>
 	</array>
 </dict>
 </plist>

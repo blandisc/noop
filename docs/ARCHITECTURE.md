@@ -108,11 +108,20 @@ with the design tokens — both are pure (Foundation-only / SwiftUI behind `#if 
 with `#if os(iOS)` guards on the two haptic/hover-scrub spots). `CenitStore`/`StrandAnalytics`/
 `StrandImport` are **not** watchOS-bound: no DB or analytics runs on the wrist.
 
-**Frozen identifiers from the NOOP legacy.** Bundle id `com.feriracheta.noop`, App Group
-`group.com.feriracheta.noop` (entitlements / `project.yml`), on-disk folder `OpenWhoop/`
-(`Cenit/Data/StorePaths.swift`), and `noop.*` UserDefaults keys are load-bearing (data,
-install). **Never rename them** — the visual rebrand to Cénit is complete, but these ids stay frozen
+**Frozen identifiers from the NOOP legacy.** The on-disk folder `OpenWhoop/`
+(`Cenit/Data/StorePaths.swift`) and the `noop.*` UserDefaults keys are load-bearing for existing
+data. **Never rename them** — the visual rebrand to Cénit is complete, but these ids stay frozen
 on purpose.
+
+The bundle id and App Group used to be frozen alongside them (`com.feriracheta.noop` /
+`group.com.feriracheta.noop`), but were **not** in the end: the App ID `com.feriracheta.noop` turned out
+to be registered to a different Apple team, so Xcode refused to provision any of the three signed targets
+("cannot be registered to your development team because it is not available"). The prefix moved to
+`com.feriracheta.cenit` — bundle ids, App Group, the exported drag UTType and the Darwin notification all
+in step. **Cost of that move:** the App Group is a new container, so any data already in the old one
+(the Live Activity rest-action inbox, Shortcuts' `PendingIntents`) does not carry over — both are
+transient queues, so nothing durable was lost, but a device installed with the old id keeps the old app
+side by side until it's deleted.
 
 The App Group in particular is declared **once**, in `AppGroup.suiteName` (`CenitShared/`, compiled into
 the app, the watch and the widget extension); every consumer reads it from there rather than repeating the
@@ -272,7 +281,7 @@ The same `RestActivitySnapshot` (`CenitShared`) drives the **session Live Activi
 Dynamic Island (`RestActivityController`, `Cenit/LiveActivity/`) → `RestActivityAttributes.ContentState`
 (`CenitWidgets/Shared/`, ActivityKit-gated). Lock-screen buttons fire `LiveActivityIntent`s
 (`RestActivityIntents`) that don't apply anything inline — they **enqueue** onto a durable inbox in the
-shared App Group `group.com.feriracheta.noop` (`RestActivityBridge`: `UserDefaults(suiteName:)` + a Darwin
+shared App Group `group.com.feriracheta.cenit` (`RestActivityBridge`: `UserDefaults(suiteName:)` + a Darwin
 notification), and the app drains it into `AppModel.applyRestAction` → the live `StrengthSessionModel`; the
 normal reconcile loop reflects the result back onto the Activity. FER-789's four actions map to existing
 model methods — **Completar ≠ Saltar**: `completeSet` logs the upcoming set (`registerCurrentSet`) and rests

@@ -91,7 +91,7 @@ The iOS app ships with a deliberately minimal entitlement set
 
 ```xml
 <key>com.apple.developer.healthkit</key>                       <true/>
-<key>com.apple.security.application-groups</key>               <array>group.com.feriracheta.noop</array>
+<key>com.apple.security.application-groups</key>               <array>group.com.feriracheta.cenit</array>
 ```
 
 - **`healthkit`** — read your own Apple Health data on-device (steps, heart rate, sleep)

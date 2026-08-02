@@ -15,7 +15,7 @@ import StrandDesign   // InstrumentoTheme, CenitMetrics, StrandMotion
 /// aceptaría cualquier cosa arrastrada desde otra app —una palabra de Safari, por ejemplo— e intentaría
 /// resolverla como rutina. Con un tipo propio, el sistema solo ofrece el soltar donde tiene sentido.
 extension UTType {
-    static let cenitRoutineID = UTType(exportedAs: "com.feriracheta.noop.routine-id")
+    static let cenitRoutineID = UTType(exportedAs: "com.feriracheta.cenit.routine-id")
 }
 
 private struct RoutineID: Transferable, Codable {
