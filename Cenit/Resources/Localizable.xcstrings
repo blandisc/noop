@@ -49779,16 +49779,6 @@
         }
       }
     },
-    "3 signals": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "3 señales"
-          }
-        }
-      }
-    },
     "Reading your night…": {
       "localizations": {
         "es": {
@@ -49805,6 +49795,134 @@
           "stringUnit": {
             "state": "translated",
             "value": "Un momento."
+          }
+        }
+      }
+    },
+    "At rest": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At rest"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En reposo"
+          }
+        }
+      }
+    },
+    "Watching": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Watching"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vigilando"
+          }
+        }
+      }
+    },
+    "Together": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Together"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Juntas"
+          }
+        }
+      }
+    },
+    "Both of your signals woke up outside your range.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Both of your signals woke up outside your range."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tus dos señales amanecieron fuera de tu rango."
+          }
+        }
+      }
+    },
+    "1 of your 2 signals woke up outside your range.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 of your 2 signals woke up outside your range."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 de tus 2 señales amaneció fuera de tu rango."
+          }
+        }
+      }
+    },
+    "Only %lld of your 2 signals had a reading today.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only %lld of your 2 signals had a reading today."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hoy solo %lld de tus 2 señales tuvieron lectura."
+          }
+        }
+      }
+    },
+    "Both of your signals woke up in your range.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Both of your signals woke up in your range."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tus dos señales amanecieron en tu rango."
+          }
+        }
+      }
+    },
+    "Your temperature and breathing moved out of your pattern together.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your temperature and breathing moved out of your pattern together."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu temperatura y tu respiración se salieron juntas de tu patrón."
           }
         }
       }

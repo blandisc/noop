@@ -248,9 +248,9 @@ final class LiquidGlassTests: XCTestCase {
                        "CARGA: EN EQUILIBRIO · 1.03")
         XCTAssertEqual(
             LiquidHeroVeredicto.a11yLabel(title: "Dale\ncon todo",
-                                          subtitle: "Tus 3 señales amanecieron dentro de tu rango.",
+                                          subtitle: "Tus dos señales amanecieron dentro de tu rango.",
                                           confianza: "Confianza: 12 de 21 noches"),
-            "Dale con todo. Tus 3 señales amanecieron dentro de tu rango. Confianza: 12 de 21 noches")
+            "Dale con todo. Tus dos señales amanecieron dentro de tu rango. Confianza: 12 de 21 noches")
     }
 
     /// La AFORDANCIA del héroe («Cómo llegué a esto») entra al label en el ORDEN de la

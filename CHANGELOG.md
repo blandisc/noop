@@ -20,6 +20,12 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **Preparación: dos orbes + la franja del guardián / Preparación: two orbs + the guardian strip.**
+  **ES** — La fila de Hoy pasa de tres orbes a **dos** («En reposo» con tus lpm, y «Sueño»): el motor v3 vota con esas dos señales. La temperatura y la respiración bajan a una **franja del guardián** siempre visible, debajo de la de carga y con su mismo alto: las ves todos los días, pero **vigilan sin votar** — solo cuando ambas se salen *juntas* de tu patrón la franja se tiñe y cuentan. Nunca dice «enfermedad».
+  **EN** — Today's row goes from three orbs to **two** ("At rest" with your bpm, and "Sleep"): the v3 engine votes on those two signals. Temperature and respiration drop to an always-visible **guardian strip** below the load strip, same height: you see them every day, but they **watch without voting** — only when both move *together* out of your pattern does the strip tint and count. It never says "illness".
+- **La FC en reposo de la noche se mide en el tramo estable, no por la etiqueta de Apple / Nocturnal resting HR is measured on the stable stretch, not Apple's label.**
+  **ES** — Cénit ahora detecta el tramo estable de tu noche desde la propia señal de pulso (pulso bajo y parejo) y mide ahí tu FC en reposo, en vez de fiarse de la etiqueta «sueño profundo» de Apple (poco fiable en el Apple Watch). Si la noche no se estabiliza, cae al comportamiento anterior. Aproximación, sin claim clínico.
+  **EN** — Cénit now finds the stable stretch of your night from the heart-rate signal itself (low, steady pulse) and measures your resting HR there, instead of trusting Apple's "deep sleep" label (weak on Apple Watch). If the night never settles, it falls back to the prior behavior. Approximate, no clinical claim.
 - **«En tu rango» se acorta a «En rango» en Preparación / "In your range" shortens to "In range" in Preparación.**
   **ES** — En el héroe «Preparación» de Hoy y en el detalle del eje Autonómico, la lectura de un eje/señal dentro de tu base decía «En tu rango»; ahora dice «En rango», más corto y consistente con el resto del copy de Hoy (que ya usaba «En rango» en otra pantalla). Solo texto — ningún dato ni la matemática del veredicto cambian.
   **EN** — In Today's "Preparación" hero and the Autonomic axis detail, an axis/signal reading within your base said "In your range"; it now says "In range" — shorter, and consistent with copy already used elsewhere in Today. Text only — no data or verdict math changes.

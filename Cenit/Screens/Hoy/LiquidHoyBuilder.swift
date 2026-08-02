@@ -105,13 +105,13 @@ enum LiquidHoyBuilder {
             kicker: kicker(now: i.now, calendar: i.calendar, locale: i.locale),
             dial: .init(night: i.night, sol: i.sol,
                         marker: markerHour(now: i.now, calendar: i.calendar)),
-            senales: senales(prep: i.preparedness, thermalDeviation: i.thermalDeviation,
-                             valores: (hrv: i.hrv.map { "\(Int($0.value.rounded())) \(String(localized: "ms"))" },
-                                       sueno: i.sleep.map { sleepClockText($0.value) },
-                                       termico: i.skinTemp.map { String(format: "%+.1f°", $0.value) })),
+            senales: senales(prep: i.preparedness,
+                             valores: (rhr: i.rhr.map { "\(Int($0.value.rounded())) \(String(localized: "bpm"))" },
+                                       sueno: i.sleep.map { sleepClockText($0.value) })),
             hero: hero,
             carga: carga(i.trainingLoad, locale: i.locale),
             metricas: metricas(i),
+            guardian: guardian(prep: i.preparedness, thermalDeviation: i.thermalDeviation, resp: i.resp),
             heroHint: String(localized: "Opens the detail"),
             ambiente: ambiente(prep: i.preparedness),
             cargaLabel: String(localized: "Load").uppercased(with: i.locale),
@@ -230,7 +230,9 @@ enum LiquidHoyBuilder {
                 title: String(localized: "Go all in"),
                 highlight: String(localized: "hero.highlight.full", defaultValue: "all in"),
                 highlightTone: LiquidColor.verdePrimario,
-                subtitle: String(localized: "You woke up on your baseline."),
+                // FER-1047: el héroe afirma «tus DOS señales» (en reposo · sueño) — el eje autonómico
+                // ya no cuenta como tres, y el térmico bajó al guardián que vigila pero no vota.
+                subtitle: String(localized: "Both of your signals woke up in your range."),
                 confianza: confianza)
         case .caution:
             return .veredicto(
@@ -288,8 +290,8 @@ enum LiquidHoyBuilder {
 
     // MARK: Señales (port literal de `TodayView.needles()`)
 
-    static func senales(prep: Preparedness.Read?, thermalDeviation: Double?,
-                        valores: (hrv: String?, sueno: String?, termico: String?) = (nil, nil, nil))
+    static func senales(prep: Preparedness.Read?,
+                        valores: (rhr: String?, sueno: String?) = (nil, nil))
         -> [LiquidHoyModel.Senal] {
         func driver(_ ax: Preparedness.Axis) -> Preparedness.Driver? {
             prep?.drivers.first { $0.axis == ax }
@@ -297,21 +299,20 @@ enum LiquidHoyBuilder {
 
         var out: [LiquidHoyModel.Senal] = []
 
-        // AUTONÓMICO — posición desde el z orientado del compuesto. El eje NO es una métrica:
-        // mostrar «56 ms» adentro (solo la VFC) engañaba, porque son TRES señales. Cuando hay
-        // lectura, el orbe habla con la PALABRA del veredicto del eje adentro y anuncia «3
-        // señales» abajo (decisión del dueño /inject, «opción 2 mixta honesta»). Sin lectura
-        // vuelve al patrón normal (icono + «SIN DATOS»).
+        // EN REPOSO (FER-1047) — el eje autonómico vota con UNA sola señal densa: la FC en reposo
+        // (`wRHR=1`). La VFC salió del voto (SDNN de Apple, MAPE ~29% — O'Grady 2024) y la
+        // respiración pasó al guardián junto con la temperatura. Por eso el orbe deja de decir
+        // «AUTONÓMICO · 3 SEÑALES» y muestra su DATO honesto — la FC en reposo (p. ej. «52 lpm»).
+        // Sin lectura vuelve al patrón normal (icono + «SIN DATOS»).
         let aut = driver(.autonomic)
         let autHasData = aut?.state.hasData ?? false
         out.append(.init(
-            id: "autonomico", label: String(localized: "Autonomic"),
-            caption: autHasData ? String(localized: "3 signals").localizedUppercase
-                                : caption(for: aut?.state),
+            id: "autonomico", label: String(localized: "At rest"),
+            caption: caption(for: aut?.state),
             progress: autHasData ? positionFromZ(aut?.orientedZ) : nil,
             icon: .ondaSenal,
             state: (aut?.state.isOut ?? false) ? .atencion : .ok,
-            valor: autHasData ? caption(for: aut?.state) : nil))
+            valor: autHasData ? valores.rhr : nil))
 
         // SUEÑO — posición categórica por estado.
         let sleep = driver(.sleep)
@@ -323,26 +324,45 @@ enum LiquidHoyBuilder {
             state: (sleep?.state.isOut ?? false) ? .atencion : .ok,
             valor: valores.sueno))
 
-        // TÉRMICO — la MISMA última desviación que el tile (FER-1043) con el corte del motor.
-        // Desviación deliberada vs `needles()`: sin lectura el orbe queda «sin datos» en vez
-        // de ocultarse (la zona conserva sus 3 orbes y sus 3 cables).
-        if let dev = thermalDeviation {
-            let cut = Preparedness.Config.default.thermalOutC
-            let state: Preparedness.AxisState = dev >= cut ? .high : (dev <= -cut ? .low : .inRange)
-            out.append(.init(
-                id: "termico", label: String(localized: "Thermal"),
-                caption: caption(for: state),
-                progress: positionFromState(state),
-                icon: .termoSenal,
-                state: state.isOut ? .atencion : .ok,
-                valor: valores.termico))
-        } else {
-            out.append(.init(
-                id: "termico", label: String(localized: "Thermal"),
-                caption: caption(for: Preparedness.AxisState.noData),
-                progress: nil, icon: .termoSenal, state: .ok))
-        }
+        // El TÉRMICO ya NO es un orbe: temperatura y respiración viven en la franja del guardián
+        // (`guardian(...)`), que vigila pero no vota. «Mostrar no es votar» (FER-1047).
         return out
+    }
+
+    /// La franja del guardián (FER-1047): temp + respiración, SIEMPRE visible bajo la carga.
+    /// Refleja EXACTAMENTE los cortes del centinela del motor, leídos de `Preparedness.Read` sin
+    /// tocar su API: temp fuera ⇔ el driver térmico votó `.high` (`skinTempDevC ≥ thermalOutC`,
+    /// ya con el descuento lúteo del día); resp fuera ⇔ la z orientada de la respiración cruza
+    /// `respBadZ`. `.juntas` ⇔ ambas ⇔ `sentinelOut` — el único caso en que el centinela empuja
+    /// el veredicto. Una sola fuera NO cambia el veredicto (mata el falso positivo del cuarto
+    /// caliente): el diseño enseña esa regla sin explicarla. Nunca dice «enfermedad».
+    static func guardian(prep: Preparedness.Read?, thermalDeviation: Double?,
+                         resp: Lectura?) -> LiquidHoyModel.Guardian? {
+        // Sin ninguna de las dos lecturas no hay nada que vigilar (no se muestra).
+        guard thermalDeviation != nil || resp != nil else { return nil }
+        let tempHigh = prep?.drivers.first { $0.axis == .thermal }?.state == .high
+        let respBadZ = Preparedness.Config.default.respBadZ
+        let respHigh = prep?.signals.first { $0.signal == .resp }?.orientedZ
+            .map { -$0 >= respBadZ } ?? false
+
+        let estado: LiquidHoyModel.Guardian.Estado
+        switch (tempHigh, respHigh) {
+        case (true, true):   estado = .juntas
+        case (true, false):  estado = .tempFuera
+        case (false, true):  estado = .respFuera
+        case (false, false): estado = .tranquilo
+        }
+
+        let tempStr = thermalDeviation.map { String(format: "%+.1f°", $0) } ?? "—"
+        let respStr = resp.map { "\(Int($0.value.rounded())) \(String(localized: "rpm"))" } ?? "—"
+        let label = estado == .juntas ? String(localized: "Together") : String(localized: "Watching")
+        // VoiceOver: honesto, jamás «enfermedad» ni diagnóstico. La frase corroborada solo aparece
+        // cuando ambas se salieron JUNTAS (el caso en que sí cuenta).
+        let prefijo = estado == .juntas
+            ? String(localized: "Your temperature and breathing moved out of your pattern together.")
+            : String(localized: "Watching")
+        let a11y = "\(prefijo) \(tempStr), \(respStr)"
+        return .init(label: label, temp: tempStr, resp: respStr, estado: estado, a11y: a11y)
     }
 
     /// Port literal: + (mejor que tu base) → a la derecha, acotado a la banda visible.
@@ -391,7 +411,10 @@ enum LiquidHoyBuilder {
     // un solo umbral.
 
     /// Las tres señales del acta, SIEMPRE en este orden — el mismo de los orbes de Hoy.
-    private static let ejesActa: [Preparedness.Axis] = [.autonomic, .sleep, .thermal]
+    // FER-1047: el acta explica las DOS señales que votan (en reposo · sueño). El térmico dejó de
+    // ser una fila: temp + respiración viven en la franja del guardián («vigila pero no vota», salvo
+    // cuando ambas se salen juntas — eso lo cuenta el centinela, no una fila del acta).
+    private static let ejesActa: [Preparedness.Axis] = [.autonomic, .sleep]
 
     /// El tono del veredicto: los MISMOS que usa el héroe. Sin veredicto → tinta/500, y
     /// entonces la hoja no tiene una sola gota de color.
@@ -501,10 +524,10 @@ enum LiquidHoyBuilder {
     }
 
     static func conteoActa(fuera: Int, conLectura: Int) -> String {
-        if fuera == 1 { return String(localized: "1 of your 3 signals woke up outside your range.") }
-        if fuera > 1 { return String(localized: "\(fuera) of your 3 signals woke up outside your range.") }
-        if conLectura < 3 { return String(localized: "Only \(conLectura) of your 3 signals had a reading today.") }
-        return String(localized: "All 3 of your signals woke up in your range.")
+        if fuera >= 2 { return String(localized: "Both of your signals woke up outside your range.") }
+        if fuera == 1 { return String(localized: "1 of your 2 signals woke up outside your range.") }
+        if conLectura < 2 { return String(localized: "Only \(conLectura) of your 2 signals had a reading today.") }
+        return String(localized: "Both of your signals woke up in your range.")
     }
 
     /// Las notas del acta, con PRECEDENCIA explícita entre los dos avisos que cambian la
