@@ -58,6 +58,8 @@ struct LiquidMetricSheetView: View {
     /// `trendData.isEmpty` como proxy de «cargando»: una métrica que de verdad no tiene 14
     /// días de historia se quedaría en el esqueleto para siempre.
     @State private var trendIntentado = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.liquidMotionDisabled) private var motionDisabled
 
     init(info: MetricInfo,
          appleConnectHint: Bool = false,
@@ -1376,8 +1378,13 @@ struct LiquidMetricSheetView: View {
                     a11yHint: hint,
                     onTap: {
                         // Tocar la fila destacada limpia de vuelta a hoy (paridad :197-200).
-                        withAnimation(LiquidMotion.lift) {
+                        // Reduce Motion / renders congelados: el cambio es instantáneo.
+                        if reduceMotion || motionDisabled {
                             nivelExplorado = (nivelExplorado == i) ? nil : i
+                        } else {
+                            withAnimation(LiquidMotion.lift) {
+                                nivelExplorado = (nivelExplorado == i) ? nil : i
+                            }
                         }
                     })
             }

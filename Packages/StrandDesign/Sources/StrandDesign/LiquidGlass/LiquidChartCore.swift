@@ -115,7 +115,7 @@ struct LiquidScrubPopup: View {
         // Vidrio, no papel beige (pedido del dueño /inject): material del sistema + un
         // velo blanco, que es el mismo lenguaje de las recetas de vidrio.
         .background(.ultraThinMaterial, in: forma)
-        .background(Color.white.opacity(0.55), in: forma)
+        .background(LiquidColor.vidrioStreak, in: forma)   // white .55 — token del sistema
         .overlay(forma.strokeBorder(LiquidColor.tinta10, lineWidth: 1))
         .liquidShadow(LiquidElevation.e1, silhouette: forma)
         .fixedSize()

@@ -89,6 +89,17 @@ public struct LiquidSignalOrb: View {
                 }
             }
         }
+        // Si el dato del eje CAMBIA después de aparecer (p. ej. tras un jalón que recomputa
+        // el veredicto), el anillo y la luz siguen al nuevo valor — antes se quedaban clavados
+        // en el valor viejo porque el `onAppear` solo corre una vez (guard `== 0`).
+        .onChange(of: clamped) { _, nuevo in
+            if reduceMotion || motionDisabled { shownProgress = nuevo ?? 0 }
+            else { withAnimation(LiquidMotion.ringProgress) { shownProgress = nuevo ?? 0 } }
+        }
+        .onChange(of: fillTarget) { _, nuevo in
+            if reduceMotion || motionDisabled { shownFill = nuevo }
+            else { withAnimation(LiquidMotion.ringProgress) { shownFill = nuevo } }
+        }
     }
 
     private var clamped: Double? {
