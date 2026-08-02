@@ -190,6 +190,32 @@ final class EcosistemaMetalRenderTests: XCTestCase {
         XCTAssertFalse(a.alfa == b.alfa)
     }
 
+    /// ⚠️ EL test que importa: con el reloj REAL de la app. `t` es
+    /// `timeIntervalSinceReferenceDate` (~8.07·10⁸ s), y ahí es donde un `Float` se rompe:
+    /// mandar `t` crudo a la GPU congela la rotación ~53 s y colapsa el jitter de 300
+    /// partículas a 6 fases. Con `t` chiquito (0…4) el bug es INVISIBLE — por eso este
+    /// test usa la magnitud verdadera y exige movimiento cuadro a cuadro.
+    func testSeMueveConElRelojRealDeLaApp() throws {
+        let ahora = Date().timeIntervalSinceReferenceDate
+        XCTAssertGreaterThan(ahora, 7e8, "premisa del test: el reloj de la app es enorme")
+        let a = try renderizar(escena: escena(), t: ahora)
+        let b = try renderizar(escena: escena(), t: ahora + 1.0 / 60)
+        XCTAssertFalse(a.alfa == b.alfa,
+                       "un cuadro después el héroe DEBE haberse movido con el reloj real")
+    }
+
+    /// Y el jitter en particular: con el reloj real, dos instantes separados por medio
+    /// periodo de `jitterVelocidad` deben dar cuadros distintos aun con las órbitas casi
+    /// donde estaban. Es la sonda directa de la fase que viaja reducida a la GPU.
+    func testElJitterVibraConElRelojReal() throws {
+        let ahora = Date().timeIntervalSinceReferenceDate
+        let medioPeriodo = Double.pi / LiquidEcosistemaMotion.jitterVelocidad
+        let quieta = escena(fase: .separada, niveles: [0.7, 0.6])
+        let a = try renderizar(escena: quieta, t: ahora)
+        let b = try renderizar(escena: quieta, t: ahora + medioPeriodo)
+        XCTAssertFalse(a.alfa == b.alfa, "el jitter perdió su fase al cruzar a Float")
+    }
+
     /// Calibrando es otro plan entero (espirales + embrión): que también llegue a la GPU.
     func testCalibrandoTambienRenderiza() throws {
         let cuadro = try renderizar(escena: escena(coreo: .calibrando(noche: 3, total: 5)), t: 2)

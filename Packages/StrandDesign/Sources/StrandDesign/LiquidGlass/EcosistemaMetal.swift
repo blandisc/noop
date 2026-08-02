@@ -10,19 +10,28 @@ struct EcosistemaFisicaU {
     var aplastamiento: Float
     var bandaMenisco: Float
     var pisoNivel: Float
-    var jitterVelocidad: Float
-    var ondaVelocidad: Float
     var ondaAmplitud: Float
+    /// (t · `jitterVelocidad`) mod 2π.
+    var faseJitter: Float
+    /// (t · `nivelOndaVelocidad`) mod 2π.
+    var faseOnda: Float
     var _p0: Float = 0
     var _p1: Float = 0
 
-    static let tokens = EcosistemaFisicaU(
-        aplastamiento: Float(EcosistemaSimulacion.Geometria.aplastamiento),
-        bandaMenisco: Float(EcosistemaSimulacion.Geometria.bandaMenisco),
-        pisoNivel: Float(EcosistemaSimulacion.Geometria.pisoNivel),
-        jitterVelocidad: Float(LiquidEcosistemaMotion.jitterVelocidad),
-        ondaVelocidad: Float(LiquidEcosistemaMotion.nivelOndaVelocidad),
-        ondaAmplitud: Float(LiquidEcosistemaMotion.nivelOndaAmplitud))
+    /// ⚠️ El reloj de la app es `timeIntervalSinceReferenceDate` (~8.07·10⁸ s). A esa
+    /// magnitud el ULP de un `Float` vale 32–128 rad: mandar `t` crudo a la GPU CONGELA
+    /// la rotación por ~53 s de golpe y colapsa el jitter de 300 partículas a 6 fases.
+    /// Por eso todo lo que entra a un `sin`/`cos` viaja **ya reducido a [0, 2π) en
+    /// `Double`** — matemáticamente idéntico (difiere en múltiplos de 2π), y a esa escala
+    /// un `Float` sí tiene resolución de sobra.
+    init(t: TimeInterval) {
+        aplastamiento = Float(EcosistemaSimulacion.Geometria.aplastamiento)
+        bandaMenisco = Float(EcosistemaSimulacion.Geometria.bandaMenisco)
+        pisoNivel = Float(EcosistemaSimulacion.Geometria.pisoNivel)
+        ondaAmplitud = Float(LiquidEcosistemaMotion.nivelOndaAmplitud)
+        faseJitter = Float(EcosistemaSimulacion.fase(t * LiquidEcosistemaMotion.jitterVelocidad))
+        faseOnda = Float(EcosistemaSimulacion.fase(t * LiquidEcosistemaMotion.nivelOndaVelocidad))
+    }
 }
 
 struct EcosistemaNubeU {
@@ -32,9 +41,9 @@ struct EcosistemaNubeU {
     var lienzo: SIMD2<Float>
     var centro: SIMD2<Float>
     var radio: Float
+    /// Ya reducida a [0, 2π) — ver `EcosistemaFisicaU.init(t:)`.
     var rot: Float
     var jitterAmp: Float
-    var t: Float
     var alfaK: Float
     var stretch: Float
     var nivel: Float
@@ -42,7 +51,8 @@ struct EcosistemaNubeU {
     var paso: UInt32
     var nivelBajo: UInt32
     var capAmbar: UInt32
-    var _pad: UInt32 = 0
+    var _pad0: UInt32 = 0
+    var _pad1: UInt32 = 0
 }
 
 struct EcosistemaAtomoU {
@@ -119,7 +129,9 @@ struct EcosistemaPaleta: Equatable {
 /// El shader viaja como fuente en el bundle y se compila en runtime (SwiftPM no compila
 /// `.metal` de un target). El compilador de Metal tarda lo suficiente como para que
 /// hacerlo en el primer cuadro se vea: se compila en background y, mientras tanto, el
-/// héroe se dibuja con el Canvas de Fase A. El cambio es invisible — pintan lo mismo.
+/// héroe se dibuja con el Canvas de Fase A. Los dos recorren el mismo plan y el cambio no
+/// se nota; lo que NO existe es una garantía pixel a pixel — el contrato compartido es el
+/// plan, no el rasterizado (Core Graphics y Metal antialiasean distinto).
 @MainActor
 final class EcosistemaMetal: ObservableObject {
     struct Recursos {
@@ -225,7 +237,7 @@ final class EcosistemaMetalRenderer: NSObject {
     func encodar(en enc: MTLRenderCommandEncoder) {
         let lienzo = SIMD2<Float>(Float(Sim.Geometria.lienzo.width),
                                   Float(Sim.Geometria.lienzo.height))
-        var fisica = EcosistemaFisicaU.tokens
+        var fisica = EcosistemaFisicaU(t: t)
         var marco = EcosistemaMarcoU(lienzo: lienzo)
         var atomos: [EcosistemaAtomoU] = []
         atomos.reserveCapacity(Self.atomosPorDraw)
@@ -306,9 +318,8 @@ final class EcosistemaMetalRenderer: NSObject {
             lienzo: lienzo,
             centro: punto(nube.centro),
             radio: Float(nube.radio),
-            rot: Float(nube.rotacion),
+            rot: Float(Sim.fase(nube.rotacion)),
             jitterAmp: Float(nube.jitterAmp),
-            t: Float(t),
             alfaK: Float(nube.alfaK),
             stretch: Float(nube.stretch),
             // `nivel` negativo ES la ausencia de gauge (el shader no tiene opcionales).

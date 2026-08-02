@@ -199,12 +199,42 @@ final class EcosistemaPlanTests: XCTestCase {
 
     /// La física que viaja al shader sale de los MISMOS tokens que usa el Canvas.
     func testLaFisicaDelShaderSaleDeLosTokens() {
-        let f = EcosistemaFisicaU.tokens
+        let f = EcosistemaFisicaU(t: 0)
         XCTAssertEqual(f.aplastamiento, Float(G.aplastamiento))
         XCTAssertEqual(f.bandaMenisco, Float(G.bandaMenisco))
         XCTAssertEqual(f.pisoNivel, Float(G.pisoNivel))
-        XCTAssertEqual(f.jitterVelocidad, Float(LiquidEcosistemaMotion.jitterVelocidad))
-        XCTAssertEqual(f.ondaVelocidad, Float(LiquidEcosistemaMotion.nivelOndaVelocidad))
         XCTAssertEqual(f.ondaAmplitud, Float(LiquidEcosistemaMotion.nivelOndaAmplitud))
+    }
+
+    // MARK: Las fases que cruzan a la GPU
+
+    /// El reloj de la app (`timeIntervalSinceReferenceDate`, ~8.07·10⁸ s) NO cabe en un
+    /// `Float` como ángulo: el ULP a esa magnitud vale decenas de radianes. Todo lo que
+    /// entra a un `sin`/`cos` del shader viaja reducido a [0, 2π) en `Double`.
+    func testLasFasesLleganReducidasYConResolucionEnFloat() {
+        let ahora = Date().timeIntervalSinceReferenceDate
+        for k in [LiquidEcosistemaMotion.jitterVelocidad,
+                  LiquidEcosistemaMotion.nivelOndaVelocidad,
+                  LiquidEcosistemaMotion.rotacionEsfera] {
+            let crudo = ahora * k
+            let reducido = Sim.fase(crudo)
+            XCTAssertGreaterThanOrEqual(reducido, 0)
+            XCTAssertLessThan(reducido, 2 * .pi)
+            // Mismo ángulo (difieren en múltiplos de 2π) …
+            XCTAssertEqual(sin(reducido), sin(crudo), accuracy: 1e-6)
+            // … pero UNO cabe en Float y el otro no: un cuadro (1/60 s) después, el
+            // ángulo crudo en Float ni se mueve.
+            let sigue = Sim.fase((ahora + 1.0 / 60) * k)
+            XCTAssertNotEqual(Float(reducido), Float(sigue))
+            XCTAssertEqual(Float(crudo), Float((ahora + 1.0 / 60) * k),
+                           "premisa: en Float el ángulo crudo se congela — por eso se reduce")
+        }
+    }
+
+    func testFaseNormalizaAngulosNegativos() {
+        // `rotacionLuna2` y `rotacionGuardian` giran al revés: la fase no puede salir < 0.
+        let r = Sim.fase(-3 * Double.pi)
+        XCTAssertEqual(r, Double.pi, accuracy: 1e-9)
+        XCTAssertEqual(Sim.fase(0), 0)
     }
 }

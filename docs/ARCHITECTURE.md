@@ -711,7 +711,9 @@ never imported — `StrandDesign` remains the dependency-free leaf of the packag
 (`Date`/`Calendar` only).
 
 **The Today hero renders on two backends (FER-10 Phase A → FER-13 Phase B).** «El Ecosistema» is the
-only place in the design system with a GPU path, and it is structured so the two can never drift:
+only place in the design system with a GPU path. The two share a **choreography** contract, not a
+pixel one — Core Graphics and Metal antialias differently, and nothing asserts they rasterize
+identically:
 
 - `EcosistemaSimulacion` (pure, Foundation-only) owns the physics. `particula(dir:indice:…)` is
   deliberately stateless and derived only from *(direction, frame, t)* — that is what makes it
@@ -726,6 +728,11 @@ only place in the design system with a GPU path, and it is structured so the two
   encodes *instanced* draws: one cloud is one draw and the vertex shader derives each particle from
   its index, so ~850 particles never cross the CPU/GPU boundary as data. Orbital **labels stay on the
   Canvas** on top — text remains real text with the design system's typography.
+- **Nothing derived from the app's clock reaches the GPU as `Float`.** The hero's `t` is
+  `timeIntervalSinceReferenceDate` (~8.07 × 10⁸ s); at that magnitude a `Float` ULP is tens of
+  radians, which would freeze the rotation for ~53 s at a time and collapse 300 jitter phases into
+  6. Every angle is reduced to `[0, 2π)` in `Double` first (`EcosistemaSimulacion.fase`) — exact,
+  since sine and cosine have period 2π.
 - The shader ships as **`.msl`, not `.metal`, on purpose**: Xcode compiles any `.metal` it finds,
   which would make the separately-downloaded **Metal Toolchain** a hard requirement to build the app
   at all. It is compiled at runtime, in the background, and until it is ready (or forever, if it

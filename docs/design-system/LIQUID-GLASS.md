@@ -141,7 +141,7 @@ TabBar viven en `LiquidTabBar` (viewBox 23). Tests de bounds por glifo en `Liqui
 | Componente | Props clave |
 |---|---|
 | `LiquidMetricTile` | label · value · unit · delta · deltaTone · tone · icon (· action) |
-| `LiquidEcosistema` (FER-10) | senales · hero · guardian · ambiente · calibracion · rotulos (`EcosistemaRotulos`) · heroPuerta/Hint · fusionInicial · onTapVeredicto/onTapSenal — el héroe de esferas de partículas; física en `EcosistemaSimulacion` (pura, `particula(i:)` determinista = spec del shader de Fase B) |
+| `LiquidEcosistema` (FER-10 · FER-13) | senales · hero · guardian · ambiente · calibracion · rotulos (`EcosistemaRotulos`) · heroPuerta/Hint · fusionInicial · onTapVeredicto/onTapSenal — el héroe de esferas de partículas. Física en `EcosistemaSimulacion` (pura, `particula(i:)` determinista) y coreografía en `EcosistemaSimulacion.plan(t:escena:)`, que recorren POR IGUAL los dos backends: el `Canvas` de Fase A (macOS/watchOS, previews, renders de QA, y fallback) y el shader instanciado de Fase B (`EcosistemaShaders.msl`, solo iOS). Los rótulos orbitales NUNCA van al shader: son texto real, dibujados por el Canvas encima. Ver §«El héroe de Hoy» en `docs/ARCHITECTURE.md` |
 | `LiquidCargaBar` | label · pos 0–100 · zone 0–3 · status · state |
 | `LiquidTabBar` | active: hoy/tendencias/entrenar/ajustes (· onSelect) |
 | `LiquidGlassButton` | label · variant: primary/glass/quiet (· expands · action) |

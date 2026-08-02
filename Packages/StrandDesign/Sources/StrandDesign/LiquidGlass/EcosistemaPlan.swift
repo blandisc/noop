@@ -299,4 +299,14 @@ public extension EcosistemaSimulacion {
     static func puntoLerp(_ a: CGPoint, _ b: CGPoint, _ u: Double) -> CGPoint {
         CGPoint(x: a.x + (b.x - a.x) * CGFloat(u), y: a.y + (b.y - a.y) * CGFloat(u))
     }
+
+    /// Un ángulo reducido a [0, 2π), calculado en `Double`. Existe por el backend de GPU:
+    /// el reloj de la app es `timeIntervalSinceReferenceDate` (~8.07·10⁸ s) y cualquier
+    /// ángulo derivado de él NO cabe en un `Float` con resolución útil (el ULP a esa
+    /// magnitud vale decenas de radianes). Reducir aquí es matemáticamente inocuo —
+    /// `sin`/`cos` tienen periodo 2π — y deja el ángulo en un rango donde `Float` sobra.
+    static func fase(_ angulo: Double) -> Double {
+        let r = angulo.truncatingRemainder(dividingBy: 2 * .pi)
+        return r < 0 ? r + 2 * .pi : r
+    }
 }

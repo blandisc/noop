@@ -19,9 +19,13 @@ struct Fisica {
     float aplastamiento;
     float bandaMenisco;
     float pisoNivel;
-    float jitterVelocidad;
-    float ondaVelocidad;
     float ondaAmplitud;
+    // Las FASES llegan ya reducidas a [0, 2π) desde la CPU, en `Double`. NUNCA mandes
+    // `t` crudo a la GPU: el reloj de la app es `timeIntervalSinceReferenceDate`
+    // (~8.07·10⁸ s) y en `float` el ULP a esa magnitud es de 32–128 rad — la rotación
+    // se congelaría por ~53 s y el jitter de 300 partículas colapsaría a 6 fases.
+    float faseJitter;    // (t · jitterVelocidad) mod 2π
+    float faseOnda;      // (t · nivelOndaVelocidad) mod 2π
     float _p0;
     float _p1;
 };
@@ -33,9 +37,8 @@ struct NubeU {
     float2 lienzo;
     float2 centro;
     float  radio;
-    float  rot;
+    float  rot;          // ya reducida a [0, 2π) — ver `Fisica`
     float  jitterAmp;
-    float  t;
     float  alfaK;
     float  stretch;
     float  nivel;        // < 0 ⇒ sin modo gauge
@@ -43,7 +46,8 @@ struct NubeU {
     uint   paso;         // 1 densa · 2/3 rala (lo «hueco»)
     uint   nivelBajo;
     uint   capAmbar;
-    uint   _pad;
+    uint   _pad0;
+    uint   _pad1;
 };
 
 struct Atomo {
@@ -107,7 +111,7 @@ vertex VOut vsNube(uint vid [[vertex_id]],
     float y = dir.y;
 
     float j = u.jitterAmp == 0.0 ? 0.0
-            : sin(u.t * f.jitterVelocidad + float(iid) * 2.1) * u.jitterAmp;
+            : sin(f.faseJitter + float(iid) * 2.1) * u.jitterAmp;
     float kx = 1.0 + u.stretch;
     float ky = 1.0 - u.stretch * 0.55;
     float sx = u.centro.x + x * (u.radio + j) * kx;
@@ -128,7 +132,7 @@ vertex VOut vsNube(uint vid [[vertex_id]],
             tam *= 1.2;
             if (u.nivelBajo != 0u) { color = u.colorBajo; }
             // La ola del menisco: la superficie del líquido ondula.
-            sy += sin(sx * 0.09 + u.t * f.ondaVelocidad) * f.ondaAmplitud;
+            sy += sin(sx * 0.09 + f.faseOnda) * f.ondaAmplitud;
         } else {
             alfa *= 0.22;
         }
@@ -189,7 +193,9 @@ fragment float4 fsTrazo(VOut in [[stage_in]]) {
     } else if (in.grosor < 0.0) {
         // Halo: gradiente radial desde `foco` (opaco) hasta el borde del círculo.
         float dd = distance(in.pt, in.foco);
-        float g = 1.0 - smoothstep(in.radioIni, in.radio, dd);
+        // Rampa LINEAL, como el `radialGradient` del Canvas — un smoothstep aquí daba
+        // una caída distinta y los dos backends dejaban de verse iguales.
+        float g = 1.0 - clamp((dd - in.radioIni) / max(in.radio - in.radioIni, 1e-4), 0.0, 1.0);
         cobertura = g * (1.0 - smoothstep(1.0 - aa, 1.0, d));
     } else {
         cobertura = 1.0 - smoothstep(1.0 - aa, 1.0, d);
