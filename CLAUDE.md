@@ -27,6 +27,8 @@ Cross-platform **Swift packages do the real work**; thin platform apps wrap them
 
 ## Build & test
 
+**`Tools/verify.sh` is the one verification command — run it before finishing any change that touches Swift.** Modes: no args = auto (linters + build/test of touched packages + app `build-for-testing` if the app layer changed), `quick` (linters only), `package <N>`, `app`, `app-tests` (runs `CenitUnitTests` on a simulator — the only way those tests run anywhere, CI never executes them). It encapsulates the whole resource choreography below (wait-for-idle, `-jobs 4`, DerivedData prune, simulator shutdown) so you don't have to. A Stop-hook blocks ending the turn with unverified `.swift` edits; live-iteration sessions (`/canvas`, `/inject`) opt out by creating `.claude/live-session` (delete it when the session ends — the user is the eye there).
+
 Packages are the fast loop (no Xcode, no strap):
 
 ```bash
