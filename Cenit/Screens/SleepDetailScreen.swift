@@ -564,9 +564,9 @@ struct SleepDetailScreen: View {
     private func thirdsCopyKey(_ tone: ThirdsTone) -> String {
         switch tone {
         case .calibrating:
-            return "Getting to know your nights — a few more and we'll compare this to your usual."
+            return "Getting to know your nights: a few more and we'll compare this to your usual."
         case .higher:
-            return "Higher than your usual overnight rise — last night's start may have run hot (a workout, a late meal, a drink). It's a pattern, not a diagnosis."
+            return "Higher than your usual overnight rise: last night's start may have run hot (a workout, a late meal, a drink). It's a pattern, not a diagnosis."
         case .usual:
             return "About your usual overnight rise. It's a pattern, not a diagnosis."
         case .lower:
