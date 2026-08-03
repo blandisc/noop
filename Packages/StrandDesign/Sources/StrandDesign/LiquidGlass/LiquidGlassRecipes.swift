@@ -264,18 +264,29 @@ public struct LiquidVeil: View {
 
 // MARK: - vidrio/hoja (fondo de sheet de resumen — épico hoja Liquid, F0)
 
-/// El fondo de una hoja de resumen Liquid: degradado del fondo claro con un suspiro del
-/// tono del clima/métrica arriba (4 %, mismo lenguaje que el velo) — pensado para
+/// El fondo de una hoja de resumen Liquid: vidrio nativo + plasta monocroma del tono de
+/// la métrica (dos masas desenfocadas detrás del héroe) + velo neutro de papel
+/// (`fondoAlto`/`fondoBajo`) + reflejo especular del canto. Pensado para
 /// `presentationBackground`. El grip lo pone el sistema (`presentationDragIndicator`).
+///
+/// La plasta NO es el lavado estático de color que cubría toda la hoja (ese se retiró
+/// por pedido del dueño: ensuciaba el papel). Son dos masas concentradas, muy
+/// desenfocadas, que respiran detrás del héroe, del tono de la métrica. Aprobada en
+/// los prototipos canónicos (LIQUID-GLASS §11.3, DESIGN §8.9). `tone == nil` o
+/// `plasta: false` la omiten; el velo pasa por encima y la suaviza como luz bajo el papel.
 public struct LiquidSheetFondo: View {
     private let tone: Color?
+    /// Si es `false`, la hoja no pinta plasta aunque haya `tone` (escotilla de escape).
+    private let plasta: Bool
 
     /// En renders/previews congelados el `glassEffect` nativo no rasteriza: ahí se usa
-    /// el material, igual que el resto de las recetas.
+    /// el material, igual que el resto de las recetas. También congela la plasta.
     @Environment(\.liquidMotionDisabled) private var motionDisabled
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    public init(tone: Color? = nil) {
+    public init(tone: Color? = nil, plasta: Bool = true) {
         self.tone = tone
+        self.plasta = plasta
     }
 
     public var body: some View {
@@ -288,6 +299,12 @@ public struct LiquidSheetFondo: View {
             } else {
                 Rectangle().fill(.ultraThinMaterial)
             }
+            // Plasta monocroma: DESPUÉS del vidrio, ANTES del velo. El velo la suaviza
+            // como luz bajo el papel (no mancha encima). Compuesta aquí (no reusa
+            // `LiquidPlasta`: esa es el fondo completo de Hoy, 4 masas + suelo + viñeta).
+            if plasta, let tone {
+                sheetPlasta(tone: tone)
+            }
             // El velo baja a la mitad: sostiene el contraste del texto sin tapar el vidrio.
             // El velo NO adelgaza hacia abajo (pasada UI H1): el acento ya se apaga solo,
             // y sumar los dos dejaba el pie —lista de niveles y notas de 10.5— con el
@@ -295,10 +312,6 @@ public struct LiquidSheetFondo: View {
             LinearGradient(colors: [LiquidColor.fondoAlto.opacity(0.46),
                                     LiquidColor.fondoBajo.opacity(0.50)],
                            startPoint: .top, endPoint: .bottom)
-            // El acento del tono se retiró (pedido del dueño): las hojas de resumen ya no
-            // llevan lavado de color de la métrica detrás — solo vidrio + velo neutro, para
-            // que el papel mande y el único color viva en el dato. `tone` se conserva
-            // en la firma por compatibilidad con los sitios de llamada.
             // Reflejo especular en el canto superior: el gesto que delata al cristal
             // (misma gramática que la receta `lente` del dock).
             VStack(spacing: 0) {
@@ -316,6 +329,68 @@ public struct LiquidSheetFondo: View {
         }
         .ignoresSafeArea()
     }
+
+    /// Dos masas del tono de la métrica: principal (late 9 s) arriba-centro detrás del
+    /// héroe; secundaria (deriva 26 s) más chica, abajo-izquierda al primer tercio.
+    /// Misma gramática que la plasta de Hoy (blur 52, coseno, freeze en t = 0).
+    @ViewBuilder
+    private func sheetPlasta(tone: Color) -> some View {
+        let still = reduceMotion || motionDisabled
+        GeometryReader { geo in
+            TimelineView(.animation(minimumInterval: LiquidMotion.intervaloAmbiente, paused: still)) { context in
+                let t = still ? 0 : context.date.timeIntervalSinceReferenceDate
+                // Latido 1 → driftScaleMax → 1 en un ciclo de `plastaLatidoPeriod`.
+                let pulse: CGFloat = still
+                    ? 1
+                    : 1 + (LiquidMotion.driftScaleMax - 1) * 0.5
+                        * (1 - cos(2 * .pi * t / LiquidMotion.plastaLatidoPeriod))
+                // Deriva: `driftProgress` usa medio ciclo; periodo = ciclo completo / 2.
+                let u = still
+                    ? 0
+                    : LiquidMotion.driftProgress(
+                        time: t,
+                        period: LiquidMotion.plastaDerivaPeriod / 2)
+                let dx = Self.plastaDerivaX * u
+                let dy = Self.plastaDerivaY * u
+
+                ZStack {
+                    // Principal: ~300 pt, opacidad baja, anclada arriba y centrada;
+                    // asoma un poco por el borde superior (centro cerca del top + blur).
+                    Circle()
+                        .fill(tone.opacity(Self.plastaPrincipalAlpha))
+                        .frame(width: Self.plastaPrincipalSize, height: Self.plastaPrincipalSize)
+                        .scaleEffect(pulse)
+                        .blur(radius: Self.plastaBlur)
+                        .position(
+                            x: geo.size.width / 2,
+                            y: Self.plastaPrincipalTop + Self.plastaPrincipalSize / 2)
+
+                    // Secundaria: ~210 pt, borde izquierdo, altura del primer tercio.
+                    Circle()
+                        .fill(tone.opacity(Self.plastaSecundariaAlpha))
+                        .frame(width: Self.plastaSecundariaSize, height: Self.plastaSecundariaSize)
+                        .blur(radius: Self.plastaBlur)
+                        .position(
+                            x: Self.plastaSecundariaLeft + Self.plastaSecundariaSize / 2 + dx,
+                            y: Self.plastaSecundariaTop + Self.plastaSecundariaSize / 2 + dy)
+                }
+            }
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+
+    // Geometría de la plasta de hoja (canónica: sheet-generica-final.html).
+    private static let plastaBlur: CGFloat = 52
+    private static let plastaPrincipalSize: CGFloat = 300
+    private static let plastaPrincipalAlpha: Double = 0.16
+    private static let plastaPrincipalTop: CGFloat = 14
+    private static let plastaSecundariaSize: CGFloat = 210
+    private static let plastaSecundariaAlpha: Double = 0.09
+    private static let plastaSecundariaLeft: CGFloat = -40
+    private static let plastaSecundariaTop: CGFloat = 104
+    private static let plastaDerivaX: CGFloat = 26
+    private static let plastaDerivaY: CGFloat = 36
 }
 
 // MARK: - Esfera (SignalOrb / dial) — variante esférica del vidrio
@@ -390,5 +465,41 @@ public struct LiquidSphere: View {
         .padding(28)
         VStack { LiquidVeil().frame(height: LiquidSpace.s1400); Spacer() }.ignoresSafeArea()
     }
+}
+
+#Preview("Liquid · SheetFondo (cian + indigo + sin plasta)") {
+    HStack(spacing: 0) {
+        ZStack {
+            LiquidSheetFondo(tone: LiquidColor.cian)
+            VStack {
+                Text("cian")
+                    .font(LiquidType.titulo)
+                    .foregroundStyle(LiquidColor.tinta900)
+                Spacer()
+            }
+            .padding(24)
+        }
+        ZStack {
+            LiquidSheetFondo(tone: LiquidColor.indigo)
+            VStack {
+                Text("indigo")
+                    .font(LiquidType.titulo)
+                    .foregroundStyle(LiquidColor.tinta900)
+                Spacer()
+            }
+            .padding(24)
+        }
+        ZStack {
+            LiquidSheetFondo(tone: LiquidColor.cian, plasta: false)
+            VStack {
+                Text("plasta: false")
+                    .font(LiquidType.titulo)
+                    .foregroundStyle(LiquidColor.tinta900)
+                Spacer()
+            }
+            .padding(24)
+        }
+    }
+    .environment(\.liquidMotionDisabled, true)
 }
 #endif
