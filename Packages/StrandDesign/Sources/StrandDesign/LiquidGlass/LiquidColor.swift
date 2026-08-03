@@ -127,12 +127,13 @@ public enum LiquidColor {
     public static let vidrioStreak = Color.white.opacity(0.55)
     /// `.5` — relleno lente/dial.
     public static let vidrioLente = Color.white.opacity(0.38)
-    /// `.45` — relleno pastilla.
-    public static let vidrioPastilla = Color.white.opacity(0.32)
-    /// `.30` — relleno superficie tile.
-    // 0.30 = el canon del doc (§1 LIQUID-GLASS.md); el 0.20 era deriva. Con menos
-    // relleno la tarjeta depende del backdrop y cambia de valor al scrollear la hoja.
-    public static let vidrioSuperficie = Color.white.opacity(0.30)
+    /// `.46` — relleno pastilla. Subido de 0.32 para estabilizar el vidrio durante
+    /// el arrastre de la hoja: menos backdrop = menos «blanqueo» al bajar (pedido del dueño).
+    public static let vidrioPastilla = Color.white.opacity(0.46)
+    /// `.46` — relleno superficie tile. Subido de 0.30 (canon previo del doc §1
+    /// LIQUID-GLASS.md) por la misma razón — la tabla dependía del backdrop y cambiaba
+    /// de valor al arrastrar/scrollear la hoja.
+    public static let vidrioSuperficie = Color.white.opacity(0.46)
 }
 
 // MARK: - Estado de señal (§5.2 SignalOrb · §5.5 CargaBar)

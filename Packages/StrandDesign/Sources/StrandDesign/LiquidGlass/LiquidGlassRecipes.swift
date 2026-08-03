@@ -232,20 +232,10 @@ public struct LiquidSheetFondo: View {
             LinearGradient(colors: [LiquidColor.fondoAlto.opacity(0.46),
                                     LiquidColor.fondoBajo.opacity(0.50)],
                            startPoint: .top, endPoint: .bottom)
-            if let tone {
-                // El acento del tono, apagándose hacia el pie para que el dato mande.
-                // Transición SUAVE (pedido del dueño /inject): más paradas y el apagado
-                // repartido a lo largo de toda la hoja — antes moría a un tercio y el
-                // corte contra el blanco se veía duro a la altura de la gráfica.
-                LinearGradient(stops: [
-                    .init(color: tone.opacity(0.15), location: 0),
-                    .init(color: tone.opacity(0.115), location: 0.22),
-                    .init(color: tone.opacity(0.075), location: 0.45),
-                    .init(color: tone.opacity(0.04), location: 0.68),
-                    .init(color: tone.opacity(0.015), location: 0.86),
-                    .init(color: tone.opacity(0), location: 1),
-                ], startPoint: .top, endPoint: .bottom)
-            }
+            // El acento del tono se retiró (pedido del dueño): las hojas de resumen ya no
+            // llevan lavado de color de la métrica detrás — solo vidrio + velo neutro, para
+            // que el papel mande y el único color viva en el dato. `tone` se conserva
+            // en la firma por compatibilidad con los sitios de llamada.
             // Reflejo especular en el canto superior: el gesto que delata al cristal
             // (misma gramática que la receta `lente` del dock).
             VStack(spacing: 0) {
