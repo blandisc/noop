@@ -376,14 +376,13 @@ struct TrainingLoadSheet: View {
 
     // MARK: - Copy
 
-    /// Frase de veredicto bajo el numeral. Descriptiva, sin imperativo.
+    /// Frase de veredicto bajo el numeral. Descriptiva, sin imperativo. FER-29 · contrato 4:
+    /// el copy vive en el catálogo bajo `reading.vsBase.load.*`; `LoadBand.rawValue`
+    /// coincide 1:1 con las claves de nivel de `MetricLevelPhrase`.
     private func readingText(_ band: ReadinessEngine.LoadBand) -> String {
-        switch band {
-        case .rampingDown:  String(localized: "Less than your body is used to these days.")
-        case .sweetSpot:    String(localized: "In line with what your body is used to.")
-        case .buildingFast: String(localized: "More than your body is used to these days.")
-        case .spiking:      String(localized: "Well above what your body is used to.")
-        }
+        let clave = MetricLevelPhrase.key(metricID: "load", levelKey: band.rawValue)
+            ?? "reading.vsBase.load.\(band.rawValue)"   // fallback defensivo; los rawValue coinciden 1:1
+        return String(localized: String.LocalizationValue(clave))
     }
 
     private func readingHighlight(_ band: ReadinessEngine.LoadBand) -> String {

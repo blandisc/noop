@@ -416,10 +416,29 @@ struct LiquidMetricSheetView: View {
 
     // MARK: Cabecera
 
-    /// Strain: «/ 21» solo con score real (paridad :369-373). (Recovery ya no tiene hoja — C6.)
+    /// El `FixedMetric` de un id de la hoja, o `nil` para las que NO son FixedMetric (hrv,
+    /// heart_rate, load y las 5 submétricas de sueño): esas conservan su formato bespoke,
+    /// porque `MetricFormat.forMetric` no las cubre. (FER-29 F3b.)
+    static func fixedMetric(_ id: String) -> MetricLevels.FixedMetric? {
+        switch id {
+        case "sleep":     return .sleep
+        case "rhr":       return .restingHR
+        case "strain":    return .strain
+        case "steps":     return .steps
+        case "skin_temp": return .skinTemp
+        case "resp_rate": return .respiration
+        case "stress":    return .stress
+        case "spo2":      return .bloodOxygen
+        default:          return nil
+        }
+    }
+
+    /// Strain: «/ 21» solo con score real (paridad :369-373). El sufijo es el mismo de
+    /// `MetricFormat.forMetric(.strain).scaleSuffix` (F3b). (Recovery ya no tiene hoja — C6.)
     private var sufijo: String? {
-        if datoInfo.id == "strain" { return datoInfo.displayValue != "—" ? "/ 21" : nil }
-        return nil
+        guard datoInfo.id == "strain", datoInfo.displayValue != "—",
+              let fm = Self.fixedMetric("strain") else { return nil }
+        return MetricFormat.forMetric(fm).scaleSuffix
     }
 
     /// D1 · La procedencia en modo DEMO. `appleSource` lo resuelve `TodayView` contra el
@@ -439,16 +458,28 @@ struct LiquidMetricSheetView: View {
     /// nuestro: el tile de Hoy ya lo dice así y la hoja está a un tap de distancia.
     private var isStrainEstimado: Bool { datoInfo.id == "strain" && strainEstimated }
 
-    /// D3 — origen honesto Apple-only: calculado en el teléfono (recovery/strain/stress)
-    /// o medido por Apple Salud; sin procedencia clara, sin punto (nunca «Band»).
-    private var origen: LiquidOrigen? {
-        if isStrainEstimado { return .medido }
-        if ["recovery", "strain", "stress"].contains(datoInfo.id) { return .calculado }
-        if origenApple { return .medido }
-        return nil
+    /// FER-29 · C2 — la procedencia en el VOCABULARIO CERRADO (`LiquidOrigen`), por métrica,
+    /// según el blueprint: sleep/hrv/rhr/steps/spo2 = appleSalud · strain/stress = calculado
+    /// en el teléfono · skin_temp/resp_rate = appleWatch. El sello (punto) solo marca lo
+    /// CALCULADO (`esCalculado`), igual que el legado — el texto lo dice `origenEtiqueta`.
+    ///
+    /// Contrato 2: NUNCA se afirma procedencia sobre un numeral «—». Sin dato ⇒ `sinOrigen`,
+    /// y `origenEtiqueta` calla — así la clase calculada deja de rotular «Calculated» sobre
+    /// «—» (antes lo hacía). `TrainingLoadSheet` ya usa `.calculadoEnTelefono` (no se toca).
+    private var origen: LiquidOrigen {
+        guard datoInfo.displayValue != "—" else { return .sinOrigen }
+        if isStrainEstimado { return .appleSalud }
+        switch datoInfo.id {
+        case "recovery", "strain", "stress": return .calculadoEnTelefono
+        case "skin_temp", "resp_rate":       return .appleWatch
+        default:                             return .appleSalud   // sleep, hrv, rhr, steps, spo2
+        }
     }
 
+    /// El texto del sello — copy HONESTO del caller (sin cambio de string). Sobre «—» calla
+    /// (contrato 2); para lo medido solo aparece cuando el valor vino de Apple (`origenApple`).
     private var origenEtiqueta: String? {
+        guard datoInfo.displayValue != "—" else { return nil }
         if isStrainEstimado { return String(localized: "Apple Health") }
         if ["recovery", "strain", "stress"].contains(datoInfo.id) {
             return String(localized: "Calculated")
@@ -515,38 +546,15 @@ struct LiquidMetricSheetView: View {
         return levels[idx].key
     }
 
-    /// Paridad `vitalReadingText` (:443-474) — mismas claves, dicho en String.
+    /// La lectura de nivel de hoy (FER-29 · contrato 4): una sola tabla de datos
+    /// (`MetricLevelPhrase`) keyeada por `(metricID, levelKey)` reemplaza los 26 `case`
+    /// dispersos. `activeLevelKey` entrega la MISMA clave de nivel que el switch consumía
+    /// (incluido hrv below/inBase/above), así que el copy queda idéntico — vive en el
+    /// catálogo bajo `reading.*`. Un par que no está en el contrato ⇒ `nil` (sin línea).
     private var vitalReadingText: String? {
-        guard let key = activeLevelKey else { return nil }
-        switch (datoInfo.id, key) {
-        case ("hrv", "above"):        return String(localized: "Above your base, a good sign.")
-        case ("hrv", "inBase"):       return String(localized: "In your usual range.")
-        case ("hrv", "below"):        return String(localized: "Below your base, worth a look.")
-        case ("rhr", "athlete"):      return String(localized: "Very low, athlete range.")
-        case ("rhr", "excellent"):    return String(localized: "Low, a strong sign.")
-        case ("rhr", "normal"):       return String(localized: "In a normal range.")
-        case ("rhr", "elevated"):     return String(localized: "Above your usual, worth a look.")
-        case ("spo2", "normal"):      return String(localized: "In a normal range.")
-        case ("spo2", "low"):         return String(localized: "Below the typical range.")
-        case ("steps", "veryActive"): return String(localized: "Very active today.")
-        case ("steps", "active"):     return String(localized: "Active, a solid day.")
-        case ("steps", "sedentary"):  return String(localized: "Quiet so far today.")
-        case ("stress", "low"):       return String(localized: "Low, a calm day so far.")
-        case ("stress", "medium"):    return String(localized: "Moderate so far today.")
-        case ("stress", "high"):      return String(localized: "Running high today.")
-        case ("resp_rate", "normal"):   return String(localized: "In a normal range.")
-        case ("resp_rate", "elevated"): return String(localized: "Above your usual.")
-        case ("skin_temp", "below"):    return String(localized: "Below your base.")
-        case ("skin_temp", "inBase"):   return String(localized: "In your base.")
-        case ("skin_temp", "warm"):     return String(localized: "Running warm vs your base.")
-        case ("skin_temp", "elevated"): return String(localized: "Well above your base, worth a look.")
-        case ("strain", "rest"):     return String(localized: "Very light day so far.")
-        case ("strain", "light"):    return String(localized: "A light day so far.")
-        case ("strain", "moderate"): return String(localized: "A solid, moderate day.")
-        case ("strain", "hard"):     return String(localized: "A hard day of load.")
-        case ("strain", "extreme"):  return String(localized: "An all-out day.")
-        default: return nil
-        }
+        guard let key = activeLevelKey,
+              let phraseKey = MetricLevelPhrase.key(metricID: datoInfo.id, levelKey: key) else { return nil }
+        return String(localized: String.LocalizationValue(phraseKey))
     }
 
     /// Paridad `WhatMovesItFinding.phrase` — mismas claves (el modelo entrega
@@ -682,25 +690,19 @@ struct LiquidMetricSheetView: View {
         }
     }
 
-    /// Paridad `sleepReadingText` (:549-557) — mismas claves.
+    /// La lectura de nivel de sueño (FER-29 · contrato 4/B6): el mismo lookup de
+    /// `MetricLevelPhrase` que las vitales, CONSERVANDO la variante «anoche».
     ///
-    /// B6 · Las dos variantes que decían «anoche» tienen gemela sin fecha: si el overline
-    /// ya degradó a «Última noche registrada · 20 jul», la lectura no puede seguir
-    /// afirmando «anoche» dos líneas más abajo. Las otras dos frases no fechan nada.
+    /// B6 · Las dos variantes que decían «anoche» (short/extended) tienen gemela sin fecha:
+    /// si el overline ya degradó a «Última noche registrada · 20 jul», la lectura no puede
+    /// seguir afirmando «anoche» dos líneas más abajo. Las claves `.lastNight` viven en el
+    /// catálogo; las otras dos frases (adequate/optimal) no fechan nada.
     private var sleepReadingText: String? {
-        switch activeLevelKey {
-        case "optimal":  return String(localized: "Right in your target range.")
-        case "adequate": return String(localized: "Enough, close to your target.")
-        case "short":
-            return nocheEsDeAnoche
-                ? String(localized: "Short of your target last night.")
-                : String(localized: "Short of your target.")
-        case "extended":
-            return nocheEsDeAnoche
-                ? String(localized: "Longer than usual last night.")
-                : String(localized: "Longer than usual.")
-        default:         return nil
-        }
+        guard let key = activeLevelKey,
+              let baseKey = MetricLevelPhrase.key(metricID: "sleep", levelKey: key) else { return nil }
+        let usaAnoche = nocheEsDeAnoche && (key == "short" || key == "extended")
+        let clave = usaAnoche ? baseKey + ".lastNight" : baseKey
+        return String(localized: String.LocalizationValue(clave))
     }
 
     /// B6 · ¿La noche que la hoja PINTA es la de anoche? Se ancla en el día en que la noche
@@ -874,10 +876,17 @@ struct LiquidMetricSheetView: View {
         }
     }
 
-    /// Paridad `trendValueFormat` (:1104-1121) — mismos formatos por métrica.
+    /// Paridad `trendValueFormat` (:1104-1121) — mismos formatos por métrica (F3b).
+    ///
+    /// strain/stress/resp_rate (décima) y rhr (entero) pasan por `MetricFormat`. Quedan
+    /// BESPOKE (gate /estadistico): sleep imprime «7h 12m» (no el reloj de MetricFormat);
+    /// spo2 usa «%.0f» (redondeo banca vs `Int.rounded`, diverge en un promedio diario .5);
+    /// steps sigue el locale; las submétricas de sueño no son FixedMetric.
     private func trendValueFormat(_ v: Double) -> String {
         switch datoInfo.id {
         case "strain", "stress", "resp_rate":
+            // decimal1 == «%.1f»; el redondeo coincide con `String(format:)`.
+            if let fm = Self.fixedMetric(datoInfo.id) { return MetricFormat.forMetric(fm).numeral(v) }
             return String(format: "%.1f", v)
         case "sleep":
             return Self.formatSleep(Int(v.rounded()))
@@ -886,7 +895,9 @@ struct LiquidMetricSheetView: View {
         case "sleep_awakenings":
             return "\(Int(v.rounded()))"
         case "rhr":
-            return "\(Int(v.rounded())) \(String(localized: "bpm"))"
+            // El número por MetricFormat (entero, mismo `Int.rounded`); la unidad la localiza
+            // el caller («bpm» → «lpm»), que MetricFormat NO hace (lleva el símbolo crudo).
+            return "\(MetricFormat.forMetric(.restingHR).numeral(v)) \(String(localized: "bpm"))"
         case "spo2":
             return String(format: "%.0f%%", v)
         case "steps":
@@ -1386,6 +1397,13 @@ struct LiquidMetricSheetView: View {
     }()
 
     private func levelsValueFormat(_ v: Double) -> String {
+        // F3b · Tres casos quedan BESPOKE porque `MetricFormat` normalizaría un dígito
+        // visible (gate /estadistico): sleep TRUNCA (`Int(v)`) mientras el reloj de
+        // MetricFormat redondea; skin_temp mantiene el «-» ASCII (MetricFormat usa «−»
+        // Unicode); steps sigue el separador de miles del LOCALE (MetricFormat mete «,» a
+        // mano). stress usa la décima del numeral (no la banda entera). El resto de las
+        // FixedMetric enteras pasan por `MetricFormat.boundary` (byte-idéntico); las que no
+        // son FixedMetric (hrv, heart_rate, submétricas) caen al entero de siempre.
         switch datoInfo.id {
         case "sleep":
             // Reloj SIEMPRE con horas y minutos (pedido del dueño /inject): «7:00», no
@@ -1410,8 +1428,14 @@ struct LiquidMetricSheetView: View {
             // chip del scrub — el mismo número escrito de tres maneras sobre una escala de
             // 0 a 3, donde la décima ES la resolución del dato. (Respiración se queda en
             // entero a propósito: sus cortes son enteros y «< 20.0» sería precisión falsa.)
-            return String(format: "%.1f", v)
+            // MetricFormat.numeral(.stress) es exactamente ese «%.1f».
+            return MetricFormat.forMetric(.stress).numeral(v)
         default:
+            // rhr / spo2 / resp_rate / strain: cotas enteras vía MetricFormat (byte-idéntico
+            // a `Int(v.rounded())`). hrv / heart_rate / submétricas: entero de siempre.
+            if let fm = Self.fixedMetric(datoInfo.id) {
+                return MetricFormat.forMetric(fm).boundary(v)
+            }
             return "\(Int(v.rounded()))"
         }
     }

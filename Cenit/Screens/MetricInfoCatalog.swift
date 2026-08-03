@@ -170,16 +170,10 @@ extension MetricInfo {
 
     static func restingHR(_ value: Int?) -> MetricInfo {
         let lpm = String(localized: "bpm")
-        let bands: [Band] = [
-            Band(label: "Athlete", range: "< 50 \(lpm)",
-                 isActive: value.map { $0 < 50 } ?? false, lower: nil, upper: 50),
-            Band(label: "Excellent", range: "50 – 60 \(lpm)",
-                 isActive: value.map { $0 >= 50 && $0 < 60 } ?? false, lower: 50, upper: 60),
-            Band(label: "Normal", range: "60 – 80 \(lpm)",
-                 isActive: value.map { $0 >= 60 && $0 < 80 } ?? false, lower: 60, upper: 80),
-            Band(label: "Elevated", range: "> 80 \(lpm)",
-                 isActive: value.map { $0 >= 80 } ?? false, lower: 80, upper: nil),
-        ]
+        // FER-29 · C1/F3c: la ÚNICA escalera viene del motor (`engineBands`), como las otras
+        // vitales. Los cortes coinciden con el legado (50/60/80); la banda abierta arriba
+        // pasa a la forma semiabierta del motor («≥ 80 bpm», antes «> 80 bpm»).
+        let bands = engineBands(.restingHR, value: value.map(Double.init))
         return MetricInfo(
             id: "rhr",
             name: "Resting HR",
@@ -453,14 +447,10 @@ extension MetricInfo {
     /// plain-language headline plus a "See the method" disclosure with the z-score derivation keep it
     /// consistent with the other seven sheets.
     static func stress(_ score: Double?) -> MetricInfo {
-        let bands: [Band] = [
-            Band(label: "Low", range: "0 – 1",
-                 isActive: score.map { $0 < 1 } ?? false, lower: nil, upper: 1),
-            Band(label: "Medium", range: "1 – 2",
-                 isActive: score.map { $0 >= 1 && $0 < 2 } ?? false, lower: 1, upper: 2),
-            Band(label: "High", range: "2 – 3",
-                 isActive: score.map { $0 >= 2 } ?? false, lower: 2, upper: nil),
-        ]
+        // FER-29 · C1/F3c: la ÚNICA escalera viene del motor (`engineBands`). Cortes idénticos
+        // al legado (1/2); las bandas abiertas pasan a la forma semiabierta del motor
+        // («< 1» y «≥ 2», antes «0 – 1» y «2 – 3»).
+        let bands = engineBands(.stress, value: score)
         // WHOOP-style band → header tint, matching TodayView's stress tile (low green, medium amber,
         // high red). Reserved roles, never the StressView blue→amber ramp (that's its own gauge).
         let tint: Tint = score.map { s in

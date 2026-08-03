@@ -344,7 +344,7 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
             LiquidSheetHeader(
                 icono: nil, titulo: "RECUPERACIÓN", tono: LiquidColor.verdePrimario,
                 numeral: "78", sufijo: "/ 100",
-                numeralTono: LiquidColor.verdeProfundo, origen: .calculado,
+                numeralTono: LiquidColor.verdeProfundo, origen: .calculadoEnTelefono,
                 origenEtiqueta: "Calculado",
                 explicacion: "Qué tan listo amaneció tu cuerpo para el esfuerzo de hoy.")
             LiquidReadingLine("Tu cuerpo amaneció listo para empujar.",
@@ -487,7 +487,7 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
         return columna(tone: LiquidColor.ambar) {
             LiquidSheetHeader(
                 icono: .llama, titulo: "ESFUERZO", tono: LiquidColor.ambar,
-                numeral: "10.0", sufijo: "/ 21", origen: .calculado,
+                numeral: "10.0", sufijo: "/ 21", origen: .calculadoEnTelefono,
                 // El punto de origen y su palabra viajan SIEMPRE juntos (la hoja los
                 // empareja en :447-449). Sin la etiqueta salía un bullet huérfano colgando
                 // detrás de «/ 21» — hoy el componente ya no lo dibuja, y el fixture
@@ -600,7 +600,7 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
         columna(tone: LiquidColor.verdePrimario) {
             LiquidSheetHeader(
                 icono: nil, titulo: "RECUPERACIÓN", tono: LiquidColor.verdePrimario,
-                numeral: "—", origen: .calculado, origenEtiqueta: "Calculado",
+                numeral: "—", origen: .calculadoEnTelefono, origenEtiqueta: "Calculado",
                 explicacion: "Qué tan listo amaneció tu cuerpo.")
             LiquidCalibracionCard(titulo: "Calibrando tu base",
                                   leyenda: "2 de 4 noches",
