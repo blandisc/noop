@@ -486,10 +486,12 @@ public struct LiquidEcosistema: View {
                 // El número en el COLOR del orbe (revisión del dueño: la tinta neutra
                 // desconectaba al dato de su esfera) — verde profundo, el mismo verde
                 // del clima dicho en voz de texto; en atención, el rojo de siempre.
+                // Tinta NEGRA siempre (revisión del dueño: el verde no se leía contra
+                // el cuerpo del orbe); el rojo queda solo para atención — semántica.
                 datoEnMotas(senal.badge?.valor ?? senal.valor ?? "—",
                             paso: 3.4,
                             color: senal.state == .atencion
-                                ? LiquidColor.negativo : LiquidColor.verdeProfundo,
+                                ? LiquidColor.negativo : LiquidColor.tinta900,
                             fallback: LiquidType.valorL)
                     .padding(LiquidSpace.s300)
                     .frame(minWidth: 60, minHeight: 44)
@@ -549,8 +551,10 @@ public struct LiquidEcosistema: View {
             .foregroundStyle(fuera ? LiquidColor.atencionTexto : LiquidColor.tinta900)
             .fixedSize()
             .position(x: x, y: 6)
+        // Tinta NEGRA siempre (revisión del dueño: el azul no se leía contra el
+        // vigía azul); el ámbar queda solo para fuera-de-rango — semántica.
         datoEnMotas(valor, paso: 2.8,
-                    color: fuera ? LiquidColor.atencionTexto : LiquidColor.azul,
+                    color: fuera ? LiquidColor.atencionTexto : LiquidColor.tinta900,
                     fallback: LiquidType.datoMenor)
             .position(x: x, y: 32)
     }
