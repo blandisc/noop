@@ -24,8 +24,10 @@ import SwiftUI
 
 public struct LiquidCargaEscala: View {
 
-    /// Densidad de presentación: fila compacta de Hoy vs. bloque anotado de la hoja.
-    public enum Densidad: Sendable, Equatable { case fila, bloque }
+    /// Densidad de presentación: fila compacta de Hoy, bloque anotado de la hoja, o módulo
+    /// (FER-28) — el bullet DESNUDO (valor + riel) para una columna de «El Tablero», sin
+    /// vidrio, ticks ni a11y: el rótulo, el tap y VoiceOver los aporta `LiquidColumnaShell`.
+    public enum Densidad: Sendable, Equatable { case fila, bloque, modulo }
 
     /// Una marca de la escala: su valor de razón y la etiqueta ya lista para pintar.
     public struct Tick: Sendable, Equatable {
@@ -109,14 +111,40 @@ public struct LiquidCargaEscala: View {
     // MARK: Cuerpo
 
     public var body: some View {
-        Group {
-            switch densidad {
-            case .fila:   fila
-            case .bloque: bloque
+        switch densidad {
+        case .modulo:
+            // El a11y lo pone el LiquidColumnaShell contenedor (rótulo + valor + tap).
+            modulo
+        case .fila:
+            fila.accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: resolvedA11y))
+        case .bloque:
+            bloque.accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: resolvedA11y))
+        }
+    }
+
+    // MARK: Densidad · módulo (FER-28)
+
+    /// El bullet desnudo de una columna de «El Tablero»: valor teñido por su acento + riel
+    /// compacto (corredor, muesca, aguja). Sin vidrio, ticks ni frase — la casa lo enmarca.
+    private var modulo: some View {
+        HStack(alignment: .center, spacing: LiquidSpace.s250) {
+            if let razon, !esCalibrando {
+                Text(Self.formato(razon))
+                    .font(LiquidType.datoMenor)
+                    .foregroundStyle(acento)
+                    .lineLimit(1)
+            } else {
+                Text(rotulo)
+                    .font(LiquidType.cargaStatus).tracking(LiquidType.cargaStatusTracking)
+                    .foregroundStyle(LiquidColor.tinta500)
+                    .lineLimit(1)
+            }
+            if !esCalibrando {
+                bulletTrack(trackH: 5)
             }
         }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(verbatim: resolvedA11y))
     }
 
     /// «{eje}: {rótulo}[, {razón}]» — contrato de VoiceOver testeable. El número es el dato

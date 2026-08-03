@@ -20,6 +20,11 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **Hoy estrena «El Tablero»: cuatro módulos de vidrio bajo el orbe, sin scroll / Today unveils «The Board»: four glass modules under the orb, no scrolling.**
+  **ES** — La mitad inferior de Hoy se rediseñó. En vez de un grid de ocho mosaicos, tus datos viven ahora en cuatro módulos de vidrio con nombre —«Lo que informa tu veredicto» (sueño · FC en reposo), «Lo que acompaña» (carga · lo que se vigila), «El día» (esfuerzo · pasos · estrés) y «La noche» (VFC · temp. de piel · respiración)—, cada dato tocable y teñido con su color. Detrás, una luz suave del color de tu veredicto respira; en el filo de cada módulo, una aurora finísima insinúa los colores de sus datos. Toda la pantalla cabe de un vistazo, sin scroll (con letra más grande vuelve el scroll y los datos se apilan). El dial del día también se aligeró.
+  **EN** — Today's lower half was redesigned. Instead of a grid of eight tiles, your data now lives in four named glass modules — «What informs your verdict» (sleep · resting HR), «What accompanies» (load · what's being watched), «The day» (exertion · steps · stress) and «The night» (HRV · skin temp · respiration) — each datum tappable and tinted with its own color. Behind them, a soft light in your verdict's color breathes; on each module's edge, a whisper-thin aurora hints at its data's colors. The whole screen fits at a glance, no scrolling (at larger text sizes scrolling returns and the data stacks). The day dial was lightened too.
+  ([LiquidHoyScreen.swift](Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/LiquidHoyScreen.swift), [LiquidHoyBuilder.swift](Cenit/Screens/Hoy/LiquidHoyBuilder.swift))
+
 - **«Cómo llegué a esto» abre sin partículas de ningún lado / «How I got here» opens with no particles from anywhere.**
   **ES** — Se retiró el soplo de motas del orbe al abrir el acta (su otra mitad, la siembra de la hoja, ya se había quitado). La hoja abre a papel directo, limpia.
   **EN** — The orb's puff of motes on opening the acta was removed (its other half, the sheet's seeding, was already gone). The sheet opens on plain paper, clean.

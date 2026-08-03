@@ -147,6 +147,22 @@ public enum LiquidType {
     public static let boton = InstrumentoType.grotesk(14, weight: .semibold)
     public static let botonTracking: CGFloat = 0.2
 
+    /// `regla` — 10/600, tracking +2.2, MAYÚSCULAS, tinta/500. La cabecera-kicker de un
+    /// módulo de «El Tablero» (FER-28): SOLO el rótulo, sin líneas ni chevrons ni resúmenes.
+    /// «Silencio por defecto» — en día bueno no dice nada más. Más apretada y más chica que
+    /// `label` porque manda menos que un dato: es el nombre de la casa, no su contenido.
+    public static let regla = InstrumentoType.grotesk(10, weight: .semibold,
+                                                      relativeTo: .caption2)
+    public static let reglaTracking: CGFloat = 2.2
+
+    /// `dato` — 8.5/600, tracking +1.6, MAYÚSCULAS, tinta/500. El rótulo de una COLUMNA de
+    /// dato dentro de un módulo de «El Tablero» (FER-28): «SUEÑO», «FC REPOSO», «PASOS». Más
+    /// chico que la regla del módulo porque manda aún menos — los dígitos del valor mandan.
+    /// Escala con Dynamic Type (relativo a `.caption2`) para que a tallas AX no se quede enano.
+    public static let dato = InstrumentoType.grotesk(8.5, weight: .semibold,
+                                                     relativeTo: .caption2)
+    public static let datoTracking: CGFloat = 1.6
+
     // MARK: Specs de componente (no forman parte de la escala pública, pero son cerradas)
 
     /// Label de CargaBar — 10.5/600, tracking +1.6 (subido del 9 del handoff, /inject).
@@ -188,6 +204,17 @@ public extension Text {
     /// Label de orbe 8/700 +0.8 (ya llega en MAYÚSCULAS desde el copy).
     func liquidMicro() -> some View {
         self.font(LiquidType.micro).tracking(LiquidType.microTracking).textCase(.uppercase)
+    }
+
+    /// Cabecera-kicker de módulo (FER-28): regla 10/600 +2.2 MAYÚSCULAS. El color lo pone
+    /// el caller (tinta/500 en día bueno; ámbar de una sola palabra cuando algo sale de rango).
+    func liquidRegla() -> some View {
+        self.font(LiquidType.regla).tracking(LiquidType.reglaTracking).textCase(.uppercase)
+    }
+
+    /// Rótulo de columna de dato (FER-28): dato 8.5/600 +1.6 MAYÚSCULAS, tinta/500.
+    func liquidDato() -> some View {
+        self.font(LiquidType.dato).tracking(LiquidType.datoTracking).textCase(.uppercase)
     }
 }
 

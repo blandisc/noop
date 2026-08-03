@@ -206,3 +206,47 @@ con paridad probada por fixtures.
 3. ¿Un patrón se repite en una tercera pantalla? Se promueve a componente con contrato.
 4. Motion nuevo = receta nueva en `LiquidMotion` con su token de duración/easing y su
    comportamiento bajo Reduce Motion definido. No existe otra gramática de movimiento.
+
+## 10. «El Tablero» — la mitad inferior de Hoy (FER-28)
+
+El rediseño de Hoy: 4 módulos de vidrio bajo el héroe, sobre un suelo casi blanco. Su DNA
+(evolución de «color en 3 capas» + doctrina sin-scroll) vive en `DESIGN.md §8.8`; aquí la spec
+cerrada de tokens y componentes. Todos con `#Preview`.
+
+### 10.1 Tokens nuevos
+
+- **Color (`LiquidColor`)**
+  - `fondoAlto/fondoBajo` → `#FEFEFD / #F3F4F2` (amend): suelo casi blanco para que plasta y aurora respiren.
+  - `vidrioCanto` = `tinta900 · 6 %`: canto exterior hairline de un módulo (lo que separa «caro» de «lavado»).
+  - `vidrioRefraccion` = `1.28`: saturación del backdrop de un módulo («refracción honesta»).
+  - `vidrioSuperficieDensidad(index:)`: relleno blanco por profundidad (.42 → .54, índice 0…3).
+  - `plastaVerde/Ambar/Rojo/Neutra` (4 tonos c/u): las masas pálidas de la plasta por clima; `LiquidAmbiente.plasta` las mapea.
+- **Tipografía (`LiquidType`)**
+  - `regla` (10/600 +2.2): kicker de módulo. `dato` (8.5/600 +1.6): rótulo de columna. Helpers `liquidRegla()`/`liquidDato()`.
+- **Layout (`LiquidSpace`/`LiquidRadius`/`LiquidElevation`)**
+  - `s250` = 10, `s600` = 24; `LiquidRadius.modulo` = 20; `LiquidElevation.modulo(index:)` (sombra 2 capas por profundidad).
+  - `ecosistemaAltoCompacto` + `ecosistemaRecorteTop`/`ecosistemaAcercaVeredicto`: la presentación compacta del héroe.
+- **Motion (`LiquidMotion`)**
+  - `onda` (`liquidOnda(index:)`, `ondaSink`/`ondaStagger`): el «amanecer de datos» — cada columna se hunde 1.5 pt en cascada, una vez. Reduce Motion la omite.
+
+### 10.2 Componentes nuevos
+
+- **`LiquidModulo`** — el contenedor de vidrio: densidad por índice + `vidrioCanto` + sombra `modulo(index:)` + refracción + radio 20 + la aurora del filo. Un componente, no un `.liquidGlass` suelto.
+- **`LiquidAuroraEdge(tones:period:reverse:)`** — el filo de 2 capas: los tonos de los DATOS del módulo girando lentísimo (44/52/38/58 s; pares invertidos) + un especular blanco FIJO arriba. La luz no gira; el color pasa por debajo.
+- **`LiquidCapilar`** — separador vertical de 1 pt, `tinta900 · 8 %`, con puntas desvanecidas. Es greedy vertical (`maxHeight: .infinity`): la fila que lo usa debe abrazarse con `.fixedSize(vertical:)` o iguala su alto a la columna, no al revés.
+- **`LiquidColumna` + `LiquidColumnaShell`** — el dato tocable (rótulo + valor teñido 1:1 + detalle), botón con `.liquidPress` + haptic + a11y. La `Shell` es el envoltorio reutilizable para columnas ricas (sueño con dos-puntos tenue, carga con bullet, «VIGILANDO» con par teñido).
+- **`LiquidPlasta`** (evolución de `LiquidAmbientBackground` → `.tablero(_:)`) — 4 masas monocromas del veredicto (blur 52; la principal late 9 s tras el orbe) + viñeta de luz; crossfade de clima 1.6 s.
+- **`LiquidCargaEscala` densidad `.modulo`** — el bullet DESNUDO (valor + riel) para una columna, sin vidrio/ticks/a11y (los aporta la `Shell`).
+- **`LiquidEcosistema.compacto`** — presentación compacta del héroe: recorta el aire superior y acerca el veredicto al orbe, con el frame reservado anclado arriba para no dejar espacio muerto. NO toca el shader (FER-13).
+
+### 10.3 Notas de tokenización y desviaciones
+
+- **Hit target 44 pt (`LiquidControl.hitTarget`).** Cada columna es botón con piso de 44 pt (HIG,
+  eje de tamaños de control). El desperdicio vertical que se veía en los módulos NO era este piso
+  sino el **capilar greedy** (`maxHeight: .infinity` inflaba la fila con columnas cortas); se
+  arregla con `.fixedSize(horizontal: false, vertical: true)` en la fila del módulo, no bajando el
+  target. Con eso, 44 pt es el estándar sano y los módulos abrazan su contenido.
+- **Alineación: todas centradas.** Cada dato centra título+cifra en su celda (decisión del dueño),
+  no la mezcla orillas del mock CSS.
+- **Área de datos = 3 capas de color en Hoy.** Excepción nombrada a «color solo en el dato» (ver
+  `DESIGN.md §8.8`).

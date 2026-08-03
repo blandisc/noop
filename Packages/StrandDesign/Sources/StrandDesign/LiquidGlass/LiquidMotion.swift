@@ -76,6 +76,11 @@ public enum LiquidMotion {
     /// Desplazamiento inicial de la entrada.
     public static let entradaOffset: CGFloat = 8
 
+    /// `onda` — el «amanecer de datos» de El Tablero (FER-28): cada columna se hunde
+    /// `ondaSink` pt en cascada de `ondaStagger` s por columna (orden de lectura).
+    public static let ondaStagger: Double = 0.07
+    public static let ondaSink: CGFloat = 1.5
+
     /// `sheet` — translateY(100 %) → 0 · dur/sheet · glass-spring. (API lista; Hoy no la usa.)
     public static let sheet = glassSpring(sheetDuration)
     /// La transición hermana del sheet, para `.transition(_:)`.
@@ -296,6 +301,46 @@ public extension View {
     /// 60 ms por `index` entre hermanos. Bajo Reduce Motion degrada a crossfade simple.
     func liquidEntrada(index: Int = 0, delay: Double = 0) -> some View {
         modifier(LiquidEntrada(index: index, baseDelay: delay))
+    }
+}
+
+// MARK: - Receta `onda` (apertura de «El Tablero», FER-28)
+
+private struct LiquidOnda: ViewModifier {
+    let index: Int
+    @State private var appeared = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.liquidMotionDisabled) private var motionDisabled
+
+    func body(content: Content) -> some View {
+        let still = reduceMotion || motionDisabled
+        if #available(iOS 17.0, macOS 14.0, *), !still {
+            content
+                .keyframeAnimator(initialValue: CGFloat(0), trigger: appeared) { view, y in
+                    view.offset(y: y)
+                } keyframes: { _ in
+                    KeyframeTrack {
+                        // El retardo en cascada por columna (orden de lectura) va como un
+                        // tramo plano antes del hundimiento.
+                        LinearKeyframe(0, duration: Double(index) * LiquidMotion.ondaStagger)
+                        CubicKeyframe(LiquidMotion.ondaSink, duration: 0.14)
+                        CubicKeyframe(0, duration: 0.16)
+                    }
+                }
+                .onAppear { appeared = true }
+        } else {
+            // Reduce Motion / OS previo: colocada directo (sin onda), como el resto del sistema.
+            content
+        }
+    }
+}
+
+public extension View {
+    /// La «onda de apertura» de El Tablero: la columna se hunde 1.5 pt UNA vez al entrar, en
+    /// cascada por `index` (orden de lectura, 70 ms entre columnas). Es un «amanecer de datos»:
+    /// no se repite en cada visita al tab (corre en `onAppear`). Reduce Motion la omite.
+    func liquidOnda(index: Int = 0) -> some View {
+        modifier(LiquidOnda(index: index))
     }
 }
 

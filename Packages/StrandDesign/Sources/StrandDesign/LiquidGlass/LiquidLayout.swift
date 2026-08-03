@@ -14,12 +14,17 @@ public enum LiquidSpace {
     public static let s150: CGFloat = 6
     /// 8 — gap del grid de tiles.
     public static let s200: CGFloat = 8
+    /// 10 — medio paso: gap entre módulos de «El Tablero» y su padding vertical interior (FER-28).
+    public static let s250: CGFloat = 10
     /// 12 — padding H de tile, separación entre bloques chicos.
     public static let s300: CGFloat = 12
-    /// 16 — padding H de pastilla.
+    /// 16 — padding H de pastilla / interior horizontal de módulo.
     public static let s400: CGFloat = 16
-    /// 22 — margen horizontal de pantalla.
+    /// 22 — margen horizontal de pantalla (legacy Liquid).
     public static let s550: CGFloat = 22
+    /// 24 — margen horizontal de la pantalla «El Tablero» (FER-28): un punto más de aire
+    /// lateral que el resto, para que los módulos de vidrio no rocen el bisel.
+    public static let s600: CGFloat = 24
     /// 32.
     public static let s800: CGFloat = 32
     /// 56 — safe-area top (velo de status).
@@ -29,6 +34,20 @@ public enum LiquidSpace {
     /// de partículas + la palabra del veredicto. Sustituye a `senalesAlto` (140), que
     /// murió con la fila de orbes y sus cables.
     public static let ecosistemaAlto: CGFloat = 324
+    /// La compresión COMPACTA del héroe para «El Tablero» (FER-28), en dos recortes que NO
+    /// tocan el arte ni el shader —solo la presentación—:
+    ///   · `ecosistemaRecorteTop` sube el lienzo recortando el aire SUPERIOR (el estado
+    ///     separado sigue librando la cabecera: sus etiquetas viven en y≈74, verificado);
+    ///   · `ecosistemaAcercaVeredicto` jala el veredicto + la puerta HACIA el orbe, recortando
+    ///     el aire de ABAJO — que es exactamente lo que el mockup aprobado ya muestra.
+    /// El alto reservado compacto = `ecosistemaAlto − recorteTop − acercaVeredicto`.
+    public static let ecosistemaRecorteTop: CGFloat = 42
+    public static let ecosistemaAcercaVeredicto: CGFloat = 40
+    /// Alto RESERVADO del héroe compacto: se fija directo (con `.frame(alignment: .top)`) para
+    /// que el box ABRACE al contenido —orbe + veredicto + subtítulo + pastilla— sin espacio
+    /// muerto abajo. Derivarlo de los recortes dejaba ~62 pt de aire reservado bajo la pastilla
+    /// (el frame centrado); este valor + anclaje arriba lo eliminan y suben el módulo 1 pegado.
+    public static let ecosistemaAltoCompacto: CGFloat = 250
 
     /// Margen inferior del dock flotante. Negativo entra al área segura para pegarlo
     /// más al borde (pedido del dueño /inject: a 8 y a 0 seguía flotando muy arriba).
@@ -44,11 +63,29 @@ public enum LiquidRadius {
     public static let control: CGFloat = 12
     /// 18 — tiles, tarjetas, contenedores de lista.
     public static let tarjeta: CGFloat = 18
+    /// 20 — módulos de vidrio de «El Tablero» (FER-28): un punto más que el tile para que la
+    /// aurora fina del filo tenga curva donde correr.
+    public static let modulo: CGFloat = 20
     /// 28 — sheets y modales (reservado).
     public static let hoja: CGFloat = 28
     /// 999 — botones, dock, barras, badges (en SwiftUI: `Capsule`).
     public static let pastilla: CGFloat = 999
     // r/orbe = 50 % → en SwiftUI es `Circle`; no necesita constante.
+}
+
+// MARK: - Liquid Glass · Tamaños de control (eje de tokenización: sm/md/lg + hit target)
+
+/// Alturas de control por tamaño y el objetivo táctil mínimo. Ningún elemento tocable inventa
+/// su alto: usa `hitTarget` como piso (HIG 44 pt) o una de las tallas.
+public enum LiquidControl {
+    /// Objetivo táctil mínimo (HIG): 44 pt. El piso de toda columna/fila/botón tocable.
+    public static let hitTarget: CGFloat = 44
+    /// `sm` — chips, filas densas.
+    public static let sm: CGFloat = 32
+    /// `md` — el control por defecto (== hit target).
+    public static let md: CGFloat = 44
+    /// `lg` — CTAs, controles destacados.
+    public static let lg: CGFloat = 56
 }
 
 // MARK: - Liquid Glass · Elevación (handoff §4.6)
@@ -96,6 +133,17 @@ public enum LiquidElevation {
         .init(color: tintaSombra.opacity(0.16), radius: 16, y: 12),
         .init(color: tintaSombra.opacity(0.08), radius: 3, y: 2),
     ]
+
+    /// `e/módulo` — la sombra de dos capas de un módulo de «El Tablero» (FER-28), por índice
+    /// de profundidad: contacto corto (tinta 5 %, radius 3, y 2) + ambiente que se alarga
+    /// conforme el módulo baja en la pila (tinta 7 %, radius 14, y 9 + índice × 1.5). El
+    /// radius ya viene convertido del blur CSS (≈ 2×): 6/28 px → 3/14 pt.
+    public static func modulo(index: Int) -> [LiquidShadowLayer] {
+        [
+            .init(color: tintaSombra.opacity(0.05), radius: 3, y: 2),
+            .init(color: tintaSombra.opacity(0.07), radius: 14, y: 9 + CGFloat(index) * 1.5),
+        ]
+    }
 }
 
 public extension View {

@@ -102,6 +102,9 @@ enum LiquidHoyBuilder {
                                               nights: i.preparedness?.autonomicNights ?? 0,
                                               healthConnected: i.healthConnected,
                                               verdictPending: i.verdictPending)
+        let ms = metricas(i)
+        let cargaM = carga(i.trainingLoad, locale: i.locale)
+        let guardianM = guardian(prep: i.preparedness, thermalDeviation: i.thermalDeviation, resp: i.resp)
         let model = LiquidHoyModel(
             kicker: kicker(now: i.now, calendar: i.calendar, locale: i.locale),
             dial: .init(night: i.night, sol: i.sol,
@@ -111,9 +114,11 @@ enum LiquidHoyBuilder {
                                        rhrNum: i.rhr.map { "\(Int($0.value.rounded()))" },
                                        sueno: i.sleep.map { sleepClockText($0.value) })),
             hero: hero,
-            carga: carga(i.trainingLoad, locale: i.locale),
-            metricas: metricas(i),
-            guardian: guardian(prep: i.preparedness, thermalDeviation: i.thermalDeviation, resp: i.resp),
+            carga: cargaM,
+            metricas: ms,
+            modulos: modulos(ms: ms, carga: cargaM, guardian: guardianM,
+                             calibrando: calibracion != nil, locale: i.locale),
+            guardian: guardianM,
             heroHint: String(localized: "Opens the detail"),
             ambiente: ambiente(prep: i.preparedness),
             cargaLabel: String(localized: "Load").uppercased(with: i.locale),
@@ -1113,6 +1118,130 @@ enum LiquidHoyBuilder {
                     : String(localized: m.origen == .medido
                              ? "Apple Health source" : "computed on your phone"))
         }
+    }
+
+    // MARK: Módulos de «El Tablero» (FER-28) — las mismas casas de datos, cuatro módulos
+    //
+    // Los 4 módulos NO recalculan nada: reproyectan las métricas/carga/guardián ya construidos
+    // (mismos drivers, nuevas casas). Los rótulos compactos y kickers son strings del catálogo
+    // (es-MX + en); en día bueno la cabecera calla, y cuando un dato empeora recupera UNA
+    // palabra en ámbar. La alineación visual (todas centradas) la decide la pantalla.
+
+    static func modulos(ms: [LiquidHoyModel.Metrica], carga: LiquidHoyModel.Carga?,
+                        guardian: LiquidHoyModel.Guardian?, calibrando: Bool,
+                        locale: Locale) -> [LiquidHoyModel.Modulo] {
+        let byId = Dictionary(ms.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+        func up(_ s: String) -> String { s.uppercased(with: locale) }
+        // El hint de VoiceOver de cada columna, YA localizado (el DS no conoce locales — sin
+        // esto el default del modelo era «Abre el detalle» hardcodeado, mal en inglés).
+        let hint = String(localized: "Opens the detail")
+        // Une partes de a11y sin comas colgantes cuando un tramo (delta) viene vacío.
+        func junta(_ partes: String?...) -> String {
+            partes.compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: ", ")
+        }
+
+        /// Columna simple desde una métrica (valor teñido + unidad + detalle/delta).
+        func simple(_ id: String, label: String) -> LiquidHoyModel.Columna {
+            let m = byId[id]
+            let value = m?.value ?? "—"
+            let unit = m?.unit ?? ""
+            let valor = unit.isEmpty ? value : "\(value) \(unit)"
+            return .init(id: id, label: up(label), tone: m?.tone ?? LiquidColor.tinta500,
+                         contenido: .simple(value: value, unit: unit, detail: m?.delta ?? "",
+                                            mejora: m?.deltaTone == .up),
+                         destino: .metrica(id),
+                         a11yLabel: junta(up(label), valor, m?.delta, m?.a11yValencia,
+                                          m?.a11yOrigen),
+                         a11yHint: hint)
+        }
+
+        /// Sueño: los dígitos mandan, los dos-puntos van tenues.
+        func sueno() -> LiquidHoyModel.Columna {
+            let m = byId["sleep"]
+            let value = m?.value ?? "—"
+            let partes = value.split(separator: ":", maxSplits: 1).map(String.init)
+            let contenido: LiquidHoyModel.Columna.Contenido = partes.count == 2
+                ? .sueno(horas: partes[0], minutos: partes[1], unit: m?.unit ?? "",
+                         detail: m?.delta ?? "")
+                : .simple(value: value, unit: m?.unit ?? "", detail: m?.delta ?? "", mejora: false)
+            let label = up(String(localized: "Sleep"))
+            return .init(id: "sleep", label: label, tone: m?.tone ?? LiquidColor.indigo,
+                         contenido: contenido, destino: .metrica("sleep"),
+                         a11yLabel: junta(label, value, m?.delta, m?.a11yValencia, m?.a11yOrigen),
+                         a11yHint: hint)
+        }
+
+        /// Carga: el bullet desnudo (densidad .modulo).
+        func cargaCol() -> LiquidHoyModel.Columna {
+            let label = up(String(localized: "Load"))
+            let contenido: LiquidHoyModel.Columna.Contenido
+            let a11y: String
+            switch carga {
+            case .medida(_, _, let status, _, let razon, let state):
+                contenido = .carga(razon: razon, status: status, state: state, calibrando: false)
+                a11y = junta(label, razon.map { String(format: "%.2f", $0) }, status)
+            case .calibrando(let status):
+                contenido = .carga(razon: nil, status: status, state: .ok, calibrando: true)
+                a11y = junta(label, status)
+            case nil:
+                let status = up(String(localized: "Calibrating"))
+                contenido = .carga(razon: nil, status: status, state: .ok, calibrando: true)
+                a11y = junta(label, status)
+            }
+            return .init(id: "carga", label: label, tone: LiquidColor.verdePrimario,
+                         contenido: contenido, destino: .carga, a11yLabel: a11y, a11yHint: hint)
+        }
+
+        /// Vigilando: par teñido temp·resp; el rótulo es el label del guardián (VIGILANDO/JUNTAS).
+        func vigilando() -> LiquidHoyModel.Columna {
+            let g = guardian
+            let label = g?.label ?? up(String(localized: "Watching"))
+            let tempTone = (g?.estado == .tempFuera || g?.estado == .juntas)
+                ? LiquidColor.atencion : LiquidColor.ambar
+            let respTone = (g?.estado == .respFuera || g?.estado == .juntas)
+                ? LiquidColor.atencion : LiquidColor.azul
+            let temp = g?.temp ?? "—"
+            let resp = g?.resp ?? "—"
+            return .init(id: "vigilando", label: label, tone: LiquidColor.tinta500,
+                         contenido: .par(v1: temp, tone1: tempTone, v2: resp, tone2: respTone),
+                         destino: .guardian,
+                         a11yLabel: g?.a11y ?? junta(label, temp, resp), a11yHint: hint)
+        }
+
+        /// UNA palabra de ámbar en la cabecera cuando el primer dato del módulo empeora.
+        func palabra(_ ids: [String]) -> String? {
+            guard !calibrando else { return nil }
+            for id in ids where byId[id]?.deltaTone == .down {
+                return byId[id]?.label.lowercased(with: locale)
+            }
+            return nil
+        }
+
+        return [
+            .init(id: "veredicto", kicker: up(String(localized: "What informs your verdict")),
+                  atencion: palabra(["sleep", "rhr"]),
+                  auroraTones: [LiquidColor.indigo, LiquidColor.rosa, LiquidColor.verdePrimario],
+                  auroraPeriod: 44,
+                  columnas: [sueno(), simple("rhr", label: String(localized: "Rest HR"))]),
+            .init(id: "acompana", kicker: up(String(localized: "What accompanies")),
+                  auroraTones: [LiquidColor.verdePrimario, LiquidColor.ambar, LiquidColor.azul],
+                  auroraPeriod: 52, auroraReverse: true,
+                  columnas: [cargaCol(), vigilando()]),
+            .init(id: "dia", kicker: up(String(localized: "The day")),
+                  atencion: palabra(["strain", "steps", "stress"]),
+                  auroraTones: [LiquidColor.ambar, LiquidColor.teal, LiquidColor.verdePrimario],
+                  auroraPeriod: 38,
+                  columnas: [simple("strain", label: String(localized: "Exertion")),
+                             simple("steps", label: String(localized: "Steps")),
+                             simple("stress", label: String(localized: "Stress"))]),
+            .init(id: "noche", kicker: up(String(localized: "The night")),
+                  atencion: palabra(["hrv", "skintemp", "resp"]),
+                  auroraTones: [LiquidColor.cian, LiquidColor.ambar, LiquidColor.azul],
+                  auroraPeriod: 58, auroraReverse: true,
+                  columnas: [simple("hrv", label: String(localized: "HRV short")),
+                             simple("skintemp", label: String(localized: "Skin temp short")),
+                             simple("resp", label: String(localized: "Resp short"))]),
+        ]
     }
 
     /// La valencia audible de un delta (nil cuando es neutro o no hay lectura).

@@ -42,8 +42,11 @@ public enum LiquidColor {
 
     /// Fondo NEUTRO del rediseño (decisión del dueño, sesión /inject 2026-07-22: adiós al
     /// beige en Hoy) — el color lo ponen la aurora y los orbes, no el papel.
-    public static let fondoAlto = Color(hex: "#FCFCFB")
-    public static let fondoBajo = Color(hex: "#F1F2F0")
+    /// Amend «El Tablero» (FER-28): un punto más frío y claro (#FEFEFD/#F3F4F2) para que la
+    /// plasta monocroma del veredicto y la aurora fina de los filos respiren sobre un suelo
+    /// casi blanco — el tercio del héroe es «cielo», el tablero «instrumento».
+    public static let fondoAlto = Color(hex: "#FEFEFD")
+    public static let fondoBajo = Color(hex: "#F3F4F2")
     public static let fondoGradient = LinearGradient(
         colors: [fondoAlto, fondoBajo], startPoint: .top, endPoint: .bottom)
 
@@ -137,6 +140,60 @@ public enum LiquidColor {
     /// LIQUID-GLASS.md) por la misma razón — la tabla dependía del backdrop y cambiaba
     /// de valor al arrastrar/scrollear la hoja.
     public static let vidrioSuperficie = Color.white.opacity(0.46)
+
+    // MARK: Vidrio de «El Tablero» (FER-28 — módulos de Hoy sobre fondo casi blanco)
+    //
+    // Sobre el suelo claro nuevo, un vidrio blanco liso se «lava» y pierde el filo. Tres
+    // tokens lo devuelven al terreno de lo caro: densidad progresiva del relleno hacia abajo,
+    // un canto exterior de tinta hairline que dibuja el borde contra el papel, y la
+    // «refracción honesta» (la plasta se ve más viva a través del vidrio que fuera).
+
+    /// Canto exterior hairline de un módulo — tinta/900 al 6 %, 0.5 pt. Es lo que separa
+    /// «caro» de «lavado» sobre fondo claro: un filo de tinta bajo el borde blanco.
+    public static let vidrioCanto = tinta900.opacity(0.06)
+
+    /// Factor de saturación del backdrop de un módulo («refracción honesta»): lo que pasa
+    /// detrás del vidrio se ve 1.28× más vivo que fuera. En iOS 26 el vidrio nativo aporta
+    /// refracción real; en el fallback se aplica sobre el material que muestrea el fondo.
+    public static let vidrioRefraccion: Double = 1.28
+
+    /// Relleno blanco de un módulo por índice de profundidad (0…3): la densidad sube hacia
+    /// abajo — .42 → .46 → .50 → .54 — para que la pila de vidrio gane cuerpo conforme baja.
+    /// Índices fuera de rango se clampan a los extremos.
+    public static func vidrioSuperficieDensidad(_ index: Int) -> Color {
+        let alfas: [Double] = [0.42, 0.46, 0.50, 0.54]
+        let i = min(max(index, 0), alfas.count - 1)
+        return Color.white.opacity(alfas[i])
+    }
+
+    // MARK: Plasta de «El Tablero» (FER-28 — 4 masas pálidas monocromas del veredicto)
+    //
+    // La plasta es UNA familia de clima a la vez, cuatro masas suaves (blur 52) que laten y
+    // derivan detrás del vidrio. Son tonos MUY pálidos —luminancia casi constante entre
+    // climas— porque una masa de 320 pt difuminada a alfa .5 sobre suelo casi blanco lava
+    // cualquier tono medio. El verde es el canon aprobado (mockup); ámbar/rojo/neutro son la
+    // misma coreografía trasladada de hue a luminancia pareja (crossfade de 1.6 s al cambiar).
+
+    /// Verde «en rango» — el canon del mockup aprobado (principal → derivas).
+    public static let plastaVerde: [Color] = [
+        Color(hex: "#A9DFC6"), Color(hex: "#CBEBDA"),
+        Color(hex: "#93D4B4"), Color(hex: "#DFF2E7"),
+    ]
+    /// Ámbar «atención» — familia cálida a la misma luminancia.
+    public static let plastaAmbar: [Color] = [
+        Color(hex: "#F0D8B4"), Color(hex: "#F7E7CE"),
+        Color(hex: "#E9C79A"), Color(hex: "#FBEEDC"),
+    ]
+    /// Rojo «alerta» — familia rosada a la misma luminancia.
+    public static let plastaRojo: [Color] = [
+        Color(hex: "#F1CBC3"), Color(hex: "#F8DDD8"),
+        Color(hex: "#ECB6AD"), Color(hex: "#FBE5E1"),
+    ]
+    /// Neutro «calibrando» — gris cálido, sin fingir veredicto.
+    public static let plastaNeutra: [Color] = [
+        Color(hex: "#DCE0DA"), Color(hex: "#E9ECE6"),
+        Color(hex: "#D1D6CF"), Color(hex: "#EFF1EC"),
+    ]
 }
 
 // MARK: - Estado de señal (§5.2 SignalOrb · §5.5 CargaBar)
