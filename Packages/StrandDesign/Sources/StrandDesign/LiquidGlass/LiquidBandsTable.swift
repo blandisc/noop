@@ -15,6 +15,10 @@ public struct LiquidBandsTable: View {
         public let rango: String
         public let conteo: String?
         public let activa: Bool
+        /// Eco visual del scrub tabla↔gráfica: wash tenue del tono (más suave que `activa`).
+        /// Si `activa && resaltada`, gana `activa`. No altera VoiceOver (el scrub se narra
+        /// en la gráfica).
+        public let resaltada: Bool
         /// Label COMPUESTO de VoiceOver para la fila, YA localizado. Sin él, la fila se lee
         /// con `.combine` (etiqueta, rango, conteo) — que no dice si la fila está ACTIVA:
         /// el wash de color es la única señal, y el color no habla. Los callers cuyo estado
@@ -22,11 +26,12 @@ public struct LiquidBandsTable: View {
         public let a11y: String?
 
         public init(etiqueta: String, rango: String, conteo: String? = nil,
-                    activa: Bool = false, a11y: String? = nil) {
+                    activa: Bool = false, resaltada: Bool = false, a11y: String? = nil) {
             self.etiqueta = etiqueta
             self.rango = rango
             self.conteo = conteo
             self.activa = activa
+            self.resaltada = resaltada
             self.a11y = a11y
         }
     }
@@ -126,10 +131,17 @@ public struct LiquidBandsTable: View {
         }
         .padding(.horizontal, LiquidSpace.s400)
         .padding(.vertical, LiquidSpace.s300)
-        // I1 en la tabla: la fila activa se ilumina con el tono (rango 10-16 % del épico).
-        .background(f.activa ? tono.opacity(LiquidChart.filaActivaAlfa) : Color.clear)
+        // I1: activa = wash fuerte; resaltada (scrub eco) = wash tenue; activa gana si ambas.
+        .background(washFila(f))
         .accessibilityElement(children: .combine)
         .modifier(LiquidFilaLabel(label: f.a11y))
+    }
+
+    /// Wash de la fila: `activa` manda; `resaltada && !activa` es el eco del scrub.
+    private func washFila(_ f: Fila) -> Color {
+        if f.activa { return tono.opacity(LiquidChart.filaActivaAlfa) }
+        if f.resaltada { return tono.opacity(LiquidChart.filaResaltadaAlfa) }
+        return Color.clear
     }
 
     private func punto(_ f: Fila) -> some View {
@@ -187,6 +199,20 @@ private struct LiquidFilaLabel: ViewModifier {
     LiquidBandsTable(
         filas: [
             .init(etiqueta: "Alto", rango: "≥ 71", conteo: "4 días"),
+            .init(etiqueta: "En tu base", rango: "49–71", conteo: "8 días", activa: true),
+            .init(etiqueta: "Bajo", rango: "< 49", conteo: "2 días"),
+        ],
+        tono: LiquidColor.cian)
+        .padding(LiquidSpace.s550)
+        .background(LiquidSheetFondo(tone: LiquidColor.cian))
+        .environment(\.liquidMotionDisabled, true)
+}
+
+/// Diálogo tabla↔gráfica: fila resaltada (scrub) vs fila activa (hoy) — washes distintos.
+#Preview("Liquid · BandsTable — resaltada vs activa") {
+    LiquidBandsTable(
+        filas: [
+            .init(etiqueta: "Alto", rango: "≥ 71", conteo: "4 días", resaltada: true),
             .init(etiqueta: "En tu base", rango: "49–71", conteo: "8 días", activa: true),
             .init(etiqueta: "Bajo", rango: "< 49", conteo: "2 días"),
         ],

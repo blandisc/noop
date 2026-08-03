@@ -39,6 +39,9 @@ public enum LiquidChart {
     /// Wash de FILA activa (tabla de bandas, fila de nivel) — un solo número para I1
     /// fuera de la gráfica (QA F4-D7).
     public static let filaActivaAlfa: Double = 0.12
+    /// Wash de FILA resaltada (eco del scrub tabla↔gráfica): más tenue que `filaActivaAlfa`.
+    /// Solo aplica cuando la fila NO es la activa de hoy.
+    public static let filaResaltadaAlfa: Double = 0.055
 
     // MARK: Scrub (I2 — regla vertical + anillo)
 

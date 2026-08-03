@@ -22,6 +22,10 @@ public struct LiquidTrendChart: View {
     private let formatoValorScrub: ((Double) -> String)?
     private let formatoFechaScrub: ((Date) -> String)?
     private let formatoFechaEje: ((Date) -> String)?
+    /// Punto de HOY: se pinta como joya blanca (relleno papel, filo del tono) vía el plot.
+    private let puntoHoy: (fecha: Date, valor: Double)?
+    /// Si true, la joya de hoy se dibuja como anillo hueco (misma semántica que el explorador).
+    private let hoyAnillo: Bool
     private let estado: LiquidChartEstado
     /// Rótulo de VoiceOver del plot (el contrato §3 F4 no lo lista; la regla de a11y de la
     /// familia — «cada gráfica con el a11yLabel del caller» — lo exige, así que se añade).
@@ -43,6 +47,8 @@ public struct LiquidTrendChart: View {
                 formatoValorScrub: ((Double) -> String)? = nil,
                 formatoFechaScrub: ((Date) -> String)? = nil,
                 formatoFechaEje: ((Date) -> String)? = nil,
+                puntoHoy: (fecha: Date, valor: Double)? = nil,
+                hoyAnillo: Bool = false,
                 estado: LiquidChartEstado,
                 a11yLabel: String) {
         self.titulo = titulo
@@ -56,6 +62,8 @@ public struct LiquidTrendChart: View {
         self.formatoValorScrub = formatoValorScrub
         self.formatoFechaScrub = formatoFechaScrub
         self.formatoFechaEje = formatoFechaEje
+        self.puntoHoy = puntoHoy
+        self.hoyAnillo = hoyAnillo
         self.estado = estado
         self.a11yLabel = a11yLabel
     }
@@ -85,7 +93,7 @@ public struct LiquidTrendChart: View {
         case .datos:
             LiquidChartPlot(puntos: puntos, bandas: bandas, dominio: dominio,
                             ticksY: ticksY, tono: tono,
-                            puntoHoy: nil, hoyAnillo: false,
+                            puntoHoy: puntoHoy, hoyAnillo: hoyAnillo,
                             formatoScrub: formatoScrub,
                             formatoValorScrub: formatoValorScrub,
                             formatoFechaScrub: formatoFechaScrub,
@@ -164,6 +172,46 @@ private func trendDemo() -> [(fecha: Date, valor: Double)] {
         a11yLabel: "Sueño, últimos 14 días")
     chart.scrubFijo = 5
     return chart
+        .padding(LiquidSpace.s550)
+        .background(LiquidSheetFondo(tone: LiquidColor.indigo))
+        .environment(\.liquidMotionDisabled, true)
+}
+
+/// Joya de HOY: relleno papel + filo del tono (paridad con el explorador de niveles).
+#Preview("Liquid · Trend 14d — joya de hoy") {
+    let puntos = trendDemo()
+    let ultimo = puntos[puntos.count - 1]
+    let ejeFmt: (Date) -> String = {
+        let f = DateFormatter()
+        f.setLocalizedDateFormatFromTemplate("dMMM")
+        return { (d: Date) -> String in f.string(from: d) }
+    }()
+    let popupFmt: (Date) -> String = {
+        let f = DateFormatter()
+        f.setLocalizedDateFormatFromTemplate("EEEdMMM")
+        return { (d: Date) -> String in f.string(from: d) }
+    }()
+    return LiquidTrendChart(
+        titulo: "Últimos 14 días",
+        readout: (etiqueta: "Adecuado", tono: LiquidColor.indigo,
+                  frase: "9 de las últimas 14 noches en este rango"),
+        puntos: puntos,
+        bandas: [
+            .init(lo: 7, hi: 9, color: LiquidColor.indigo, activa: true),
+            .init(lo: 6, hi: 7, color: LiquidColor.teal, activa: false),
+            .init(lo: nil, hi: 6, color: LiquidColor.atencion, activa: false),
+        ],
+        dominio: 5...10,
+        ticksY: [(9, "9"), (7, "7"), (6, "6")],
+        tono: LiquidColor.indigo,
+        formatoScrub: { v, _ in String(format: "%.1f h · mar 14", v) },
+        formatoValorScrub: { v in String(format: "%.1f h", v) },
+        formatoFechaScrub: popupFmt,
+        formatoFechaEje: ejeFmt,
+        puntoHoy: (fecha: ultimo.fecha, valor: ultimo.valor),
+        hoyAnillo: true,
+        estado: .datos,
+        a11yLabel: "Sueño, últimos 14 días")
         .padding(LiquidSpace.s550)
         .background(LiquidSheetFondo(tone: LiquidColor.indigo))
         .environment(\.liquidMotionDisabled, true)
