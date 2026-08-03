@@ -46,7 +46,7 @@ struct NubeU {
     uint   paso;         // 1 densa · 2/3 rala (lo «hueco»)
     uint   nivelBajo;
     uint   capAmbar;
-    uint   _pad0;
+    float  nivelMezcla;  // 0 = esfera plena · 1 = gauge pleno (funde el modo nivel)
     uint   _pad1;
 };
 
@@ -123,18 +123,21 @@ vertex VOut vsNube(uint vid [[vertex_id]],
     float4 color = u.colorTinta;
 
     if (u.nivel >= 0.0) {
-        // Modo gauge: y ∈ [−1 arriba, +1 abajo]; líquido si y > umbral.
+        // Modo gauge fundido por nivelMezcla (espejo de EcosistemaSimulacion.particula):
+        // 0 = esfera plena, 1 = gauge pleno — el nivel se revela gradual en el viaje.
+        float m = clamp(u.nivelMezcla, 0.0, 1.0);
         float umbral = 1.0 - 2.0 * max(f.pisoNivel, min(1.0, u.nivel));
         if (y > umbral + f.bandaMenisco) {
             if (u.nivelBajo != 0u) { color = u.colorBajo; }
         } else if (y > umbral - f.bandaMenisco) {
-            alfa *= 1.5;
-            tam *= 1.2;
+            alfa *= 1.0 + 0.5 * m;
+            tam *= 1.0 + 0.2 * m;
             if (u.nivelBajo != 0u) { color = u.colorBajo; }
             // La ola del menisco: la superficie del líquido ondula.
-            sy += sin(sx * 0.09 + f.faseOnda) * f.ondaAmplitud;
+            sy += sin(sx * 0.09 + f.faseOnda) * f.ondaAmplitud * m;
         } else {
-            alfa *= 0.22;
+            // El vapor a 0.12 (opción A «aire del gauge»), fundido por la mezcla.
+            alfa *= 1.0 - 0.88 * m;
         }
     }
     if (u.capAmbar != 0u && x > 0.25 && y < -0.15) {

@@ -51,7 +51,8 @@ struct EcosistemaNubeU {
     var paso: UInt32
     var nivelBajo: UInt32
     var capAmbar: UInt32
-    var _pad0: UInt32 = 0
+    /// 0 = esfera plena · 1 = gauge pleno (funde el modo nivel; era `_pad0`).
+    var nivelMezcla: Float = 1
     var _pad1: UInt32 = 0
 }
 
@@ -96,6 +97,8 @@ struct EcosistemaPaleta: Equatable {
     var atencion: SIMD4<Float>
     var negativo: SIMD4<Float>
     var neutra: SIMD4<Float>
+    /// La voz de VIGILANDO (azul) — ver `Tinta.vigia`.
+    var vigia: SIMD4<Float>
     var blanco: SIMD4<Float>
 
     static func desde(clima: Color) -> EcosistemaPaleta {
@@ -103,6 +106,7 @@ struct EcosistemaPaleta: Equatable {
                          atencion: rgba(LiquidColor.atencion),
                          negativo: rgba(LiquidColor.negativo),
                          neutra: rgba(LiquidColor.particulaNeutra),
+                         vigia: rgba(LiquidColor.azul),
                          blanco: SIMD4<Float>(1, 1, 1, 1))
     }
 
@@ -119,6 +123,7 @@ struct EcosistemaPaleta: Equatable {
         case .atencion: return atencion
         case .negativo: return negativo
         case .neutra: return neutra
+        case .vigia: return vigia
         case .blanco: return blanco
         }
     }
@@ -327,7 +332,8 @@ final class EcosistemaMetalRenderer: NSObject {
             n: UInt32(nube.n),
             paso: UInt32(nube.paso),
             nivelBajo: nube.nivelBajo ? 1 : 0,
-            capAmbar: nube.capAmbar ? 1 : 0)
+            capAmbar: nube.capAmbar ? 1 : 0,
+            nivelMezcla: Float(nube.nivelMezcla))
     }
 
     private func teñir(_ tinta: Sim.Tinta, _ alfa: Double) -> SIMD4<Float> {

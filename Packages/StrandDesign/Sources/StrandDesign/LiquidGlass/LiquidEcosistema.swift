@@ -357,16 +357,33 @@ public struct LiquidEcosistema: View {
         // Hint: arriba en fundido; en separado BAJA al centro vacío del lienzo para no
         // chocar con los mini-orbes del guardián (revisión de usuario en simulador).
         if coreo.separable {
-            Text(esSeparadaEstable ? rotulos.hintUnir
-                 : (mostrarHintSeparar ? rotulos.hintSeparar : ""))
-                .font(LiquidType.microEstado).tracking(LiquidType.labelTracking)
-                .foregroundStyle(LiquidColor.tinta500.opacity(0.6))
-                .frame(width: G.lienzo.width)
-                .offset(y: esSeparadaEstable ? 226 : 8)
-                .animation(LiquidMotion.glassOut(LiquidMotion.quick), value: esSeparadaEstable)
-                // El hint invita al tap: JAMÁS debe comérselo (un Text con hit-testing
-                // default encima del canvas bloquea el gesto — cazado en simulador).
-                .allowsHitTesting(false)
+            // Dos textos FIJOS que se cruzan en fundido (oleada «costuras»: el texto
+            // único con offset animado VOLABA 218 pt por el lienzo al cambiar de modo).
+            // Cada hint entra retardado — cuando su escena ya aterrizó — y sale al tap.
+            let retardoHint = LiquidEcosistemaMotion.anticipacion
+                + LiquidEcosistemaMotion.fusionDur * 0.8
+            Group {
+                Text(rotulos.hintSeparar)
+                    .offset(y: 8)
+                    .opacity(!esSeparadaEstable && mostrarHintSeparar ? 1 : 0)
+                    .animation(esSeparadaEstable
+                               ? LiquidMotion.glassOut(LiquidMotion.quick)
+                               : LiquidMotion.glassOut(LiquidMotion.quick).delay(retardoHint),
+                               value: esSeparadaEstable)
+                Text(rotulos.hintUnir)
+                    .offset(y: 226)
+                    .opacity(esSeparadaEstable ? 1 : 0)
+                    .animation(esSeparadaEstable
+                               ? LiquidMotion.glassOut(LiquidMotion.quick).delay(retardoHint)
+                               : LiquidMotion.glassOut(LiquidMotion.quick),
+                               value: esSeparadaEstable)
+            }
+            .font(LiquidType.microEstado).tracking(LiquidType.labelTracking)
+            .foregroundStyle(LiquidColor.tinta500.opacity(0.6))
+            .frame(width: G.lienzo.width)
+            // El hint invita al tap: JAMÁS debe comérselo (un Text con hit-testing
+            // default encima del canvas bloquea el gesto — cazado en simulador).
+            .allowsHitTesting(false)
         }
         // Valores ADENTRO de las esferas (estado separado). `allowsHitTesting` sigue a la
         // visibilidad: un botón invisible jamás intercepta el tap del lienzo (D11).
@@ -374,10 +391,19 @@ public struct LiquidEcosistema: View {
             valoresSeparados
             guardianSeparado
         }
+        // El contenedor solo DESTAPA (paso 2 de la opción «escrito en partículas»): la
+        // entrada condensada de blur/scale fue sustituida por la FORMACIÓN real de las
+        // motas dentro de `DatoDeMotas` — cada dígito se arma desde la materia del orbe.
+        // El destape espera a que las esferas estén aterrizando; la salida es inmediata
+        // (las motas se disuelven de regreso mientras el contenedor se apaga).
         .opacity(esSeparadaEstable ? 1 : 0)
         .allowsHitTesting(esSeparadaEstable)
         .animation(still ? .easeInOut(duration: LiquidEcosistemaMotion.reduceMotionCrossfade)
-                         : LiquidMotion.glassOut(LiquidMotion.gentle),
+                         : (esSeparadaEstable
+                            ? LiquidMotion.glassOut(LiquidMotion.quick)
+                                .delay(LiquidEcosistemaMotion.anticipacion
+                                       + LiquidEcosistemaMotion.fusionDur * 0.45)
+                            : LiquidMotion.glassOut(LiquidMotion.quick)),
                    value: esSeparadaEstable)
         // La palabra del veredicto (abajo, centrada) — se oculta en separado.
         palabra
@@ -387,8 +413,14 @@ public struct LiquidEcosistema: View {
             // La palabra es puro texto (la puerta vive aparte): NUNCA intercepta el tap
             // del lienzo — tocar el veredicto también separa (Grok #1).
             .allowsHitTesting(false)
+            // Al UNIR, la palabra espera al orbe (oleada «costuras»: antes entraba al
+            // tap y flotaba sobre esferas aún en viaje); al separar se va de inmediato.
             .animation(still ? .easeInOut(duration: LiquidEcosistemaMotion.reduceMotionCrossfade)
-                             : LiquidMotion.glassOut(LiquidEcosistemaMotion.palabraDur),
+                             : (esSeparadaEstable
+                                ? LiquidMotion.glassOut(LiquidMotion.quick)
+                                : LiquidMotion.glassOut(LiquidEcosistemaMotion.palabraDur)
+                                    .delay(LiquidEcosistemaMotion.anticipacion * 0.6
+                                           + LiquidEcosistemaMotion.fusionDur * 0.7)),
                        value: esSeparadaEstable)
         // La PUERTA al acta («Cómo llegué a esto») vive en AMBOS modos (D10): el tap del
         // lienzo ya no navega, así que esta pastilla es la única entrada visible.
@@ -410,25 +442,35 @@ public struct LiquidEcosistema: View {
                     .foregroundStyle(LiquidColor.tinta500)
             }
             .position(x: centro.x, y: 74)
+            // Opción 2 «escrito en partículas» (decisión del dueño /inject, tras probar
+            // A y B): el número está HECHO de la misma materia del orbe — una matriz de
+            // motas en tinta, más densas y grandes que la nube. Sin respaldo ni vidrio:
+            // el orbe habla con su propia materia (el vapor a 0.12 le despeja el aire).
+            // Los rótulos y captions siguen siendo texto real (la regla del plan).
             botonSenal(senal) {
-                VStack(spacing: 1) {
-                    Text(senal.badge?.valor ?? senal.valor ?? "—")
-                        .font(LiquidType.valorL)
-                        .foregroundStyle(senal.state == .atencion
-                                         ? LiquidColor.negativo : LiquidColor.tinta900)
-                    // Sin dato: la honestidad tiene voz («Sin lectura anoche/hoy»), no
-                    // solo un guion (D8).
-                    Text(senal.badge?.contexto
-                         ?? (i == 1 ? rotulos.sinLecturaNoche : rotulos.sinLecturaHoy))
-                        .font(LiquidType.captionLectura)
-                        .foregroundStyle(LiquidColor.tinta700)
-                        .opacity(senal.badge != nil || senal.progress == nil ? 1 : 0)
-                }
-                .padding(LiquidSpace.s300)
-                .background(respaldo)
-                .frame(minWidth: 60, minHeight: 60)
+                // El número en el COLOR del orbe (revisión del dueño: la tinta neutra
+                // desconectaba al dato de su esfera) — verde profundo, el mismo verde
+                // del clima dicho en voz de texto; en atención, el rojo de siempre.
+                datoEnMotas(senal.badge?.valor ?? senal.valor ?? "—",
+                            paso: 3.4,
+                            color: senal.state == .atencion
+                                ? LiquidColor.negativo : LiquidColor.verdeProfundo,
+                            fallback: LiquidType.valorL)
+                    .padding(LiquidSpace.s300)
+                    .frame(minWidth: 60, minHeight: 44)
             }
-            .position(x: centro.x, y: centro.y)
+            .position(x: centro.x, y: centro.y - 4)
+            // La frase baja al PAPEL limpio bajo la esfera (revisión del dueño: dentro
+            // del orbe competía con las partículas y no se leía) y sube de peso.
+            // Sin dato: la honestidad tiene voz («Sin lectura anoche/hoy»), no un guion.
+            Text(senal.badge?.contexto
+                 ?? (i == 1 ? rotulos.sinLecturaNoche : rotulos.sinLecturaHoy))
+                .font(LiquidType.captionLectura)
+                .fontWeight(.medium)
+                .foregroundStyle(LiquidColor.tinta900)
+                .opacity(senal.badge != nil || senal.progress == nil ? 1 : 0)
+                .position(x: centro.x, y: centro.y + G.radioSeparada + 18)
+                .allowsHitTesting(false)
         }
     }
 
@@ -440,15 +482,16 @@ public struct LiquidEcosistema: View {
         let juntas = guardian?.estado == .juntas
         let tempFuera = guardian?.estado == .tempFuera || juntas
         let respFuera = guardian?.estado == .respFuera || juntas
-        let contenido = HStack(spacing: 18) {
-            miniGuardian(valor: guardian?.temp ?? "—", rotulo: rotulos.temperatura,
-                         fuera: tempFuera)
-                .frame(width: 100)   // «TEMPERATURA» a 8pt +2.2 tracking mide ~97 (R2)
-            miniGuardian(valor: guardian?.resp ?? "—", rotulo: rotulos.respiracion,
-                         fuera: respFuera)
-                .frame(width: 100)
+        // La MISMA gramática que REPOSO/SUEÑO (revisión del dueño): título arriba del
+        // orbe, número centrado EN el orbe. Coordenadas locales del ZStack (alto 64,
+        // centrado en la y de los mini-orbes): título en 6, dato en 32 = centro.
+        let contenido = ZStack {
+            vigiaColumna(valor: guardian?.temp ?? "—", rotulo: rotulos.temperatura,
+                         fuera: tempFuera, x: G.guardianSeparado1.x)
+            vigiaColumna(valor: guardian?.resp ?? "—", rotulo: rotulos.respiracion,
+                         fuera: respFuera, x: G.guardianSeparado2.x)
         }
-        .frame(minHeight: 44)
+        .frame(width: G.lienzo.width, height: 64)
         .contentShape(Rectangle())
         Group {
             if let onTapGuardian {
@@ -462,30 +505,235 @@ public struct LiquidEcosistema: View {
                   y: (G.guardianSeparado1.y + G.guardianSeparado2.y) / 2)
     }
 
-    private func miniGuardian(valor: String, rotulo: String, fuera: Bool) -> some View {
-        VStack(spacing: 1) {
-            Text(valor)
-                .font(LiquidType.datoMenor)
-                .foregroundStyle(fuera ? LiquidColor.atencionTexto : LiquidColor.tinta900)
-            Text(rotulo)
-                .font(LiquidType.orbita).tracking(LiquidType.orbitaTracking)
-                .foregroundStyle(fuera ? LiquidColor.atencionTexto : LiquidColor.tinta500)
-        }
-        .padding(.horizontal, LiquidSpace.s200)
-        .padding(.vertical, LiquidSpace.s150)
-        .background(respaldo)
+    /// Una columna de vigía en coordenadas locales del ZStack del guardián separado.
+    @ViewBuilder private func vigiaColumna(valor: String, rotulo: String, fuera: Bool,
+                                           x: CGFloat) -> some View {
+        Text(rotulo)
+            .font(LiquidType.orbita).tracking(LiquidType.orbitaTracking)
+            .fontWeight(.medium)
+            .foregroundStyle(fuera ? LiquidColor.atencionTexto : LiquidColor.tinta900)
+            .fixedSize()
+            .position(x: x, y: 6)
+        datoEnMotas(valor, paso: 2.8,
+                    color: fuera ? LiquidColor.atencionTexto : LiquidColor.azul,
+                    fallback: LiquidType.datoMenor)
+            .position(x: x, y: 32)
     }
 
-    /// El respaldo esmerilado que garantiza la legibilidad del dato sobre partículas.
-    /// El respaldo esmerilado que garantiza la legibilidad del dato sobre partículas —
-    /// más sólido tras la revisión en simulador (el dato flotaba sobre el moteado).
-    private var respaldo: some View {
-        RadialGradient(stops: [
-            .init(color: Color.white.opacity(0.97), location: 0),
-            .init(color: Color.white.opacity(0.9), location: 0.55),
-            .init(color: Color.white.opacity(0.5), location: 0.8),
-            .init(color: .clear, location: 1),
-        ], center: .center, startRadius: 4, endRadius: 52)
+    // (miniGuardian murió con la gramática de columnas: ver `vigiaColumna`.)
+
+    // (El respaldo esmerilado murió con la opción 2: el dato de motas es legible por
+    // contraste propio y el orbe ya no se tapa con ningún velo.)
+
+    /// El dato híbrido: la parte NUMÉRICA escrita en motas y la unidad («rpm», «lpm»)
+    /// como texto chico al lado — las letras jamás se dibujan en partículas. Si el
+    /// valor no arranca con nada escribible (p. ej. «—» ya es escribible; un texto
+    /// libre no), cae completo al texto de `fallback`.
+    @ViewBuilder private func datoEnMotas(_ valor: String, paso: CGFloat, color: Color,
+                                          fallback: Font) -> some View {
+        let corte = String(valor.prefix { DatoDeMotas.alfabeto.contains($0) })
+            .trimmingCharacters(in: .whitespaces)
+        let resto = String(valor.dropFirst(valor.prefix {
+            DatoDeMotas.alfabeto.contains($0) }.count)).trimmingCharacters(in: .whitespaces)
+        if corte.isEmpty {
+            Text(verbatim: valor).font(fallback).foregroundStyle(color)
+        } else {
+            HStack(alignment: .center, spacing: paso * 1.4) {
+                DatoDeMotas(texto: corte, separada: esSeparadaEstable, paso: paso,
+                            color: color, fallback: fallback)
+                if !resto.isEmpty {
+                    Text(verbatim: resto)
+                        .font(LiquidType.captionLectura)
+                        .foregroundStyle(LiquidColor.tinta500)
+                }
+            }
+        }
+    }
+
+    /// Opción 2 «escrito en partículas» (decisión del dueño /inject): un valor numérico
+    /// dibujado como matriz de motas 5×7 — la MISMA materia de las esferas, más densa y
+    /// en tinta, para que el orbe diga su dato sin respaldo. Solo números y signos
+    /// ([0-9 : . , ° — -]); cualquier otro carácter cae al texto real de `fallback`
+    /// (honestidad sobre adorno). Los rótulos jamás pasan por aquí — la regla del plan
+    /// («el texto es texto») sigue viva para todo lo que no sea EL dato.
+    private struct DatoDeMotas: View {
+        let texto: String
+        /// Estado separado del ensamble — el reloj de la coreografía: al voltear a
+        /// `true` las motas MIGRAN desde el cuerpo del orbe y se condensan en el
+        /// número; al voltear a `false` se disuelven de regreso hacia el centro.
+        var separada: Bool = true
+        var paso: CGFloat = 3.4
+        let color: Color
+        var fallback: Font = LiquidType.valorL
+
+        /// El alfabeto de motas — lo que puede escribirse en partículas. Lo que no,
+        /// es texto (la vista partidora `datoEnMotas` separa número de unidad).
+        static var alfabeto: Set<Character> { Set(glifos.keys) }
+
+        @Environment(\.liquidMotionDisabled) private var still
+        /// Anclas de la coreografía (paso 2): cuándo empezó la formación / disolución.
+        @State private var formo: Date? = .distantPast
+        @State private var disolvio: Date?
+
+        /// La formación arranca cuando las esferas están aterrizando (mismo compás que
+        /// el destape del contenedor) y las motas escalonan sus llegadas.
+        private static let retardoFormacion = LiquidEcosistemaMotion.anticipacion
+            + LiquidEcosistemaMotion.fusionDur * 0.45
+        private static let durMota = 0.55
+        private static let escalonMax = 0.35
+        private static let durDisolucion = 0.30
+
+        private static let glifos: [Character: (ancho: Int, filas: [UInt8])] = [
+            "0": (5, [0x0E, 0x11, 0x13, 0x15, 0x19, 0x11, 0x0E]),
+            "1": (5, [0x04, 0x0C, 0x04, 0x04, 0x04, 0x04, 0x0E]),
+            "2": (5, [0x0E, 0x11, 0x01, 0x02, 0x04, 0x08, 0x1F]),
+            "3": (5, [0x1F, 0x02, 0x04, 0x02, 0x01, 0x11, 0x0E]),
+            "4": (5, [0x02, 0x06, 0x0A, 0x12, 0x1F, 0x02, 0x02]),
+            "5": (5, [0x1F, 0x10, 0x1E, 0x01, 0x01, 0x11, 0x0E]),
+            "6": (5, [0x06, 0x08, 0x10, 0x1E, 0x11, 0x11, 0x0E]),
+            "7": (5, [0x1F, 0x01, 0x02, 0x04, 0x08, 0x08, 0x08]),
+            "8": (5, [0x0E, 0x11, 0x11, 0x0E, 0x11, 0x11, 0x0E]),
+            "9": (5, [0x0E, 0x11, 0x11, 0x0F, 0x01, 0x02, 0x0C]),
+            ":": (2, [0x00, 0x03, 0x03, 0x00, 0x03, 0x03, 0x00]),
+            ".": (2, [0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x03]),
+            ",": (2, [0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x02]),
+            "°": (4, [0x06, 0x09, 0x09, 0x06, 0x00, 0x00, 0x00]),
+            "+": (5, [0x00, 0x04, 0x04, 0x1F, 0x04, 0x04, 0x00]),
+            "—": (5, [0x00, 0x00, 0x00, 0x1F, 0x00, 0x00, 0x00]),
+            "-": (4, [0x00, 0x00, 0x00, 0x0F, 0x00, 0x00, 0x00]),
+            " ": (2, [0, 0, 0, 0, 0, 0, 0]),
+        ]
+
+        var body: some View {
+            if texto.allSatisfy({ Self.glifos[$0] != nil }) {
+                let avance = texto.reduce(0) { $0 + (Self.glifos[$1]?.ancho ?? 0) + 1 } - 1
+                let ancho = CGFloat(avance) * paso + paso
+                // El reloj corre mientras hay coreografía viva Y mientras el número
+                // respira (exigencia 3: el dato es materia del organismo, no lápida) —
+                // solo se pausa con Reduce Motion o tras disolverse del todo.
+                TimelineView(.animation(minimumInterval: 1.0 / 60, paused: still || enReposo)) { tl in
+                    Canvas { ctx, size in
+                        dibujar(ctx: &ctx, size: size, ahora: tl.date)
+                    }
+                }
+                .frame(width: ancho, height: 8 * paso)
+                .onChange(of: separada) { _, ahora in
+                    if ahora { formo = Date(); disolvio = nil }
+                    else { disolvio = Date() }
+                }
+                .accessibilityLabel(Text(verbatim: texto))
+            } else {
+                Text(verbatim: texto).font(fallback).foregroundStyle(color)
+            }
+        }
+
+        /// ¿El reloj puede pausarse? Solo tras una disolución consumada — un número
+        /// formado sigue respirando (exigencia 3), así que su timeline no duerme.
+        private var enReposo: Bool {
+            guard let d = disolvio else { return formo == nil }
+            return Date().timeIntervalSince(d) > Self.durDisolucion + Self.escalonMax
+        }
+
+        private func dibujar(ctx: inout GraphicsContext, size: CGSize, ahora: Date) {
+            let centroLocal = CGPoint(x: size.width / 2, y: size.height / 2)
+            // El «cuerpo» del orbe en coordenadas del glifo: su limbo es de donde la
+            // materia se desprende (exigencia 1) y a donde regresa (exigencia 6).
+            let radioOrbe = paso * 10
+            var x0: CGFloat = paso * 0.5
+            var k = 0
+            for ch in texto {
+                guard let g = Self.glifos[ch] else { continue }
+                for (f, fila) in g.filas.enumerated() where fila != 0 {
+                    for c in 0..<g.ancho where (Int(fila) >> (g.ancho - 1 - c)) & 1 == 1 {
+                        let s = Double((f * 31 + c * 17 + k * 7) % 97) / 97
+                        let jx = CGFloat(sin(s * 12.9)) * paso * 0.10
+                        let jy = CGFloat(cos(s * 7.1)) * paso * 0.10
+                        let destino = CGPoint(x: x0 + CGFloat(c) * paso + jx,
+                                              y: paso * 0.5 + CGFloat(f) * paso + jy)
+                        let rBase = paso * (0.40 + 0.05 * CGFloat((s * 3).rounded(.down)))
+                        // Dirección orbe→destino (la normal del limbo más cercano).
+                        var dx = Double(destino.x - centroLocal.x)
+                        var dy = Double(destino.y - centroLocal.y)
+                        let dd = max(1, (dx * dx + dy * dy).squareRoot())
+                        dx /= dd; dy /= dd
+                        var pos = destino, alfa = 1.0, r = rBase
+
+                        if still {
+                            // Reduce Motion: cuadro asentado, sin viajes ni respiración.
+                        } else if let d = disolvio {
+                            // Disolución HACIA el orbe (exigencia 6): la mota vuela al
+                            // interior del cuerpo — el mismo compás en que la esfera
+                            // inhala (la micro-anticipación del viaje de unión).
+                            let u = min(1, max(0, (ahora.timeIntervalSince(d) - s * 0.08)
+                                               / Self.durDisolucion))
+                            let e = Sim.suave(u)
+                            let hacia = CGPoint(
+                                x: centroLocal.x + CGFloat(dx) * radioOrbe * 0.25,
+                                y: centroLocal.y + CGFloat(dy) * radioOrbe * 0.25)
+                            pos = Sim.puntoLerp(destino, hacia, e)
+                            // Remolino compartido en la caída: enjambre, no lluvia.
+                            pos.x += CGFloat(-dy * sin(.pi * e)) * paso * (0.8 + 1.2 * s)
+                            pos.y += CGFloat(dx * sin(.pi * e)) * paso * (0.8 + 1.2 * s)
+                            alfa = 1 - e
+                            r = rBase * (1 + 0.4 * CGFloat(e))
+                        } else if let fInicio = formo, fInicio != .distantPast {
+                            // BARRIDO de escritura (exigencia 5): el escalón principal
+                            // corre de izquierda a derecha; el hash solo pone el fino.
+                            let barrido = Double(destino.x / max(1, size.width))
+                            let retraso = barrido * Self.escalonMax * 0.8
+                                + s * Self.escalonMax * 0.2
+                            let tEl = ahora.timeIntervalSince(fInicio)
+                                - Self.retardoFormacion - retraso
+                            guard tEl > 0 else { k += 1; continue }
+                            let u = tEl / Self.durMota
+                            if u < 1 {
+                                // DESPRENDIMIENTO del limbo (exigencia 1): la mota nace
+                                // en la superficie del orbe que mira a su destino y
+                                // viaja con arco perpendicular COMPARTIDO (exigencia 1b:
+                                // campo de flujo común — enjambre, no N teletransportes)
+                                // y sobrepaso que asienta (exigencia 2, backOut).
+                                let e = Sim.backOut(u)
+                                let origen = CGPoint(
+                                    x: centroLocal.x + CGFloat(dx) * radioOrbe * (0.62 + 0.25 * s),
+                                    y: centroLocal.y + CGFloat(dy) * radioOrbe * (0.62 + 0.25 * s) * 0.9)
+                                pos = Sim.puntoLerp(origen, destino, e)
+                                let bow = sin(.pi * min(1, e)) * paso * (1.1 + 1.5 * s)
+                                pos.x += CGFloat(-dy) * CGFloat(bow)
+                                pos.y += CGFloat(dx) * CGFloat(bow)
+                                alfa = min(1, u * 1.4)
+                                r = rBase * (1.5 - 0.5 * CGFloat(min(1, e)))
+                            } else {
+                                // Aterrizada: destello de radio que se amortigua
+                                // (exigencia 2) y luego RESPIRACIÓN perpetua a la
+                                // frecuencia de la esfera (exigencia 3).
+                                let tau = (u - 1) * Self.durMota
+                                let shimmer = 0.30 * exp(-5 * tau) * sin(12 * tau)
+                                r = rBase * CGFloat(1 + shimmer)
+                                let faseResp = ahora.timeIntervalSinceReferenceDate
+                                    * LiquidEcosistemaMotion.respiracionEsfera + s * 6.28
+                                alfa = 0.93 + 0.07 * sin(faseResp)
+                            }
+                        }
+                        if alfa > 0.02 {
+                            // HALO de papel por mota (revisión del dueño: los dígitos
+                            // verdes sobre partículas verdes y azules sobre azules no se
+                            // leían): cada punto de tinta lleva su propio despeje — un
+                            // bajo-punto claro apenas mayor. Crispa el glifo sobre
+                            // cualquier fondo sin resucitar el pegote.
+                            let rH = r * 1.55
+                            ctx.fill(Path(ellipseIn: CGRect(x: pos.x - rH, y: pos.y - rH,
+                                                            width: rH * 2, height: rH * 2)),
+                                     with: .color(.white.opacity(0.72 * alfa)))
+                            ctx.fill(Path(ellipseIn: CGRect(x: pos.x - r, y: pos.y - r,
+                                                            width: r * 2, height: r * 2)),
+                                     with: .color(color.opacity(alfa)))
+                        }
+                        k += 1
+                    }
+                }
+                x0 += CGFloat(g.ancho + 1) * paso
+            }
+        }
     }
 
     @ViewBuilder private func botonSenal<C: View>(_ senal: LiquidHoyModel.Senal,
@@ -856,6 +1104,9 @@ private struct EcosistemaCanvas: View {
         case .atencion: return LiquidColor.atencion
         case .negativo: return LiquidColor.negativo
         case .neutra: return LiquidColor.particulaNeutra
+        // La voz de VIGILANDO: el azul de respiración/SpO₂ — las señales que el vigía
+        // custodia (decisión del dueño /inject; el gris lo hacía mueble).
+        case .vigia: return LiquidColor.azul
         case .blanco: return .white
         }
     }
@@ -926,6 +1177,7 @@ private struct EcosistemaCanvas: View {
                                   radio: nube.radio, rotacion: nube.rotacion,
                                   jitterAmp: nube.jitterAmp, t: t, alfaK: nube.alfaK,
                                   stretch: nube.stretch, nivel: nube.nivel,
+                                  nivelMezcla: nube.nivelMezcla,
                                   nivelBajo: nube.nivelBajo, capAmbar: nube.capAmbar)
             let alfaIdx = min(11, max(0, Int(p.alfa * 12)))
             let clave = claseIndice(p.clase) * 16 + alfaIdx

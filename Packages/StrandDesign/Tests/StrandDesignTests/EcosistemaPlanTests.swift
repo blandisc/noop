@@ -154,14 +154,25 @@ final class EcosistemaPlanTests: XCTestCase {
 
     // MARK: Reduce Motion
 
-    /// `still` = cuadro asentado: sin chorro de tributo y sin destello de contacto — y el
-    /// plan de t = 0 es idéntico al de cualquier otro t (el contrato de FER-10).
-    func testStillNoFabricaTributoNiDestello() {
+    /// `still` = cuadro asentado: sin destello de contacto y sin brillos de cruce. Las
+    /// ESTELAS orbitales sí existen en still — como anillos tenues completos y
+    /// estáticos (el contrato del «sistema orbital», sesión /inject 2026-08-02, que
+    /// retiró el tributo): el plan de un t es idéntico al de cualquier otro t.
+    func testStillEstelasEstaticasSinDestello() {
         let vivo = Sim.plan(t: 4, escena: escena())
         XCTAssertTrue(vivo.contains { if case .disco = $0 { return true } else { return false } },
-                      "vivo: las lunas tributan")
+                      "vivo: las estelas orbitales dejan motas")
         let quieto = Sim.plan(t: 4, escena: escena(still: true))
-        XCTAssertFalse(quieto.contains { if case .disco = $0 { return true } else { return false } })
+        // Sin destellos ni brillos de cruce en still: cero anillos.
+        XCTAssertFalse(quieto.contains { if case .anillo = $0 { return true } else { return false } })
+        // Las estelas de still existen como anillo tenue: hay discos, y ninguno
+        // rebasa el alfa de susurro (el dato manda, la órbita susurra).
+        let discos = quieto.compactMap { t -> Double? in
+            if case .disco(_, _, _, let alfa) = t { return alfa } else { return nil }
+        }
+        XCTAssertFalse(discos.isEmpty, "still: el anillo estático debe existir")
+        XCTAssertTrue(discos.allSatisfy { $0 <= 0.16 },
+                      "still: la estela es susurro (≤ 0.16 de alfa)")
     }
 
     func testStillEnFormandoSeLeeYaFundido() {
