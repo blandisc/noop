@@ -113,6 +113,21 @@ final class EcosistemaPlanTests: XCTestCase {
         }
     }
 
+    /// FER-25: el INTRO no estaciona las lunas. Durante la espera del intro
+    /// (formando, antes del viaje) las decisoras están EN ÓRBITA — no en p1/p2 —
+    /// así no hay un frame mudo del estado separado que nadie pidió.
+    func testIntroNoEstacionaLasLunas() {
+        // t dentro de la espera del intro (u = 0): las lunas deben estar en órbita.
+        let trazos = Sim.plan(t: 0, escena: escena(fase: .formando(inicio: 0)))
+        let lunas = nubes(trazos).filter { $0.n == G.nLuna }
+        XCTAssertEqual(lunas.count, 2)
+        // En órbita el radio es el orbital (~13/11), NO el de estación (34).
+        XCTAssertLessThan(lunas[0].radio, G.radioSeparada,
+                          "en el intro la luna ORBITA, no se estaciona")
+        // Y su centro NO coincide con la estación.
+        XCTAssertNotEqual(lunas[0].centro, G.p1)
+    }
+
     // MARK: Separada
 
     /// FER-22: separado, LAS LUNAS SON LOS MEDIDORES — crecidas a radioSeparada en
