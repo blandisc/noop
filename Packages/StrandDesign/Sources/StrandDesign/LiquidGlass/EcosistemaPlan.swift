@@ -267,8 +267,11 @@ public extension EcosistemaSimulacion {
                                     hueco: e.guardianHueco, eclipse: eclipse))
         }
         for l in lunas where l.orb.z < 0 {
+            // alfa 1 SIEMPRE (revisión del dueño: con max(apertura, alfaFundida) las
+            // lunas parpadeaban a medio viaje — ambos factores rondan cero ahí). Son
+            // cuerpos permanentes: trazables de la órbita a la estación sin cortes.
             trazos += trazosLuna(t: t, luna: l, apertura: apertura,
-                                 still: e.still, alfa: max(apertura, alfaFundida))
+                                 still: e.still, alfa: 1, rotuloAlfa: alfaFundida)
         }
 
         // 3 · EL ORBE (o su graduación: el embrión madurando en vivo, FER-20).
@@ -330,7 +333,7 @@ public extension EcosistemaSimulacion {
         // 6 · Cuerpos FRONTALES (z ≥ 0) + estelas frontales.
         for l in lunas where l.orb.z >= 0 {
             trazos += trazosLuna(t: t, luna: l, apertura: apertura,
-                                 still: e.still, alfa: max(apertura, alfaFundida))
+                                 still: e.still, alfa: 1, rotuloAlfa: alfaFundida)
         }
         for (g, v) in vigias.enumerated() where v.z >= 0 {
             trazos.append(nubeVigia(v, g: g, t: t, alerta: vigiaAlerta[g],
@@ -348,7 +351,8 @@ public extension EcosistemaSimulacion {
         t: TimeInterval,
         luna l: (orb: Orbital, rotulo: RotuloOrbital, rotK: Double, hueca: Bool,
                  fuera: Bool, nivel: Double?),
-        apertura: Double, still: Bool, alfa: Double) -> [Trazo] {
+        apertura: Double, still: Bool, alfa: Double,
+        rotuloAlfa: Double) -> [Trazo] {
         var trazos: [Trazo] = []
         let dep = (l.orb.z + 1) / 2
         // El gauge se revela con la apertura (nivelMezcla): en órbita la luna es
@@ -366,7 +370,7 @@ public extension EcosistemaSimulacion {
             n: Geometria.nLuna, paso: l.hueca ? 3 : 1, tinta: .clima)))
         // El rótulo orbital CEDE a los overlays al parquearse (allí viven las
         // etiquetas de estación con su valor sólido).
-        let alfaRotulo = (0.35 + 0.5 * dep) * alfa * (1 - apertura)
+        let alfaRotulo = (0.35 + 0.5 * dep) * rotuloAlfa * (1 - apertura)
         if alfaRotulo > 0.02 {
             trazos.append(.rotulo(l.rotulo,
                                   en: CGPoint(x: l.orb.centro.x,
