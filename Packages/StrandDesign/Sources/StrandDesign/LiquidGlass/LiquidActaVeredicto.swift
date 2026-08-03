@@ -160,10 +160,13 @@ public struct LiquidActa: Sendable {
 /// `LiquidMetricSheet(tono:detent:)` — el cascarón pone fondo, grip, detents y márgenes.
 public struct LiquidActaVeredicto: View {
     private let model: LiquidActa
+    private let siembra: Bool
     private let onVerMas: (() -> Void)?
 
-    public init(_ model: LiquidActa, onVerMas: (() -> Void)? = nil) {
+    public init(_ model: LiquidActa, siembra: Bool = false,
+                onVerMas: (() -> Void)? = nil) {
         self.model = model
+        self.siembra = siembra
         self.onVerMas = onVerMas
     }
 
@@ -179,6 +182,17 @@ public struct LiquidActaVeredicto: View {
                               explicacion: model.explicacion,
                               infoMostrar: model.infoMostrar,
                               infoOcultar: model.infoOcultar)
+                // C.4 (FER-21): la SIEMBRA — al abrir, una constelación decorativa
+                // llega y se disuelve tras el header (variante A del dueño: saludo de
+                // materia, el acta termina en papel puro). El texto real nunca es
+                // motas; el overlay no intercepta taps (el ⓘ sigue vivo).
+                .background {
+                    if siembra {
+                        LiquidSiembraMotas(tono: model.tono)
+                            .padding(.horizontal, -LiquidSpace.s300)
+                            .padding(.top, -LiquidSpace.s300)
+                    }
+                }
 
             // 2 · El veredicto COMO DATO + el conteo que lo sostiene.
             LiquidFraseNivel(nivel: model.nivel, conteo: model.conteo,
