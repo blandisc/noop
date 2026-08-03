@@ -66,7 +66,7 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
                              confianza: "Confianza: 8 de 14 noches"),
             carga: .medida(pos: 62, zone: 2, status: "ALTA", ratio: "1.32", razon: 1.32, state: .atencion),
             metricas: base.metricas,
-            modulos: LiquidHoyModel.ejemploModulos,
+            modulos: LiquidHoyModel.atencionModulos,
             guardian: .init(label: "VIGILANDO", temp: "+0.1°", resp: "14 rpm", estado: .tranquilo),
             heroHint: base.heroHint,
             ambiente: .atencion,

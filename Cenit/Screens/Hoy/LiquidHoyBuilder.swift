@@ -1132,6 +1132,13 @@ enum LiquidHoyBuilder {
                         locale: Locale) -> [LiquidHoyModel.Modulo] {
         let byId = Dictionary(ms.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
         func up(_ s: String) -> String { s.uppercased(with: locale) }
+        // El hint de VoiceOver de cada columna, YA localizado (el DS no conoce locales — sin
+        // esto el default del modelo era «Abre el detalle» hardcodeado, mal en inglés).
+        let hint = String(localized: "Opens the detail")
+        // Une partes de a11y sin comas colgantes cuando un tramo (delta) viene vacío.
+        func junta(_ partes: String?...) -> String {
+            partes.compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: ", ")
+        }
 
         /// Columna simple desde una métrica (valor teñido + unidad + detalle/delta).
         func simple(_ id: String, label: String) -> LiquidHoyModel.Columna {
@@ -1139,12 +1146,13 @@ enum LiquidHoyBuilder {
             let value = m?.value ?? "—"
             let unit = m?.unit ?? ""
             let valor = unit.isEmpty ? value : "\(value) \(unit)"
-            let a11y = ([up(label), valor, m?.delta ?? ""]
-                        + (m?.a11yValencia.map { [$0] } ?? [])).joined(separator: ", ")
             return .init(id: id, label: up(label), tone: m?.tone ?? LiquidColor.tinta500,
                          contenido: .simple(value: value, unit: unit, detail: m?.delta ?? "",
                                             mejora: m?.deltaTone == .up),
-                         destino: .metrica(id), a11yLabel: a11y)
+                         destino: .metrica(id),
+                         a11yLabel: junta(up(label), valor, m?.delta, m?.a11yValencia,
+                                          m?.a11yOrigen),
+                         a11yHint: hint)
         }
 
         /// Sueño: los dígitos mandan, los dos-puntos van tenues.
@@ -1159,7 +1167,8 @@ enum LiquidHoyBuilder {
             let label = up(String(localized: "Sleep"))
             return .init(id: "sleep", label: label, tone: m?.tone ?? LiquidColor.indigo,
                          contenido: contenido, destino: .metrica("sleep"),
-                         a11yLabel: [label, value, m?.delta ?? ""].joined(separator: ", "))
+                         a11yLabel: junta(label, value, m?.delta, m?.a11yValencia, m?.a11yOrigen),
+                         a11yHint: hint)
         }
 
         /// Carga: el bullet desnudo (densidad .modulo).
@@ -1170,17 +1179,17 @@ enum LiquidHoyBuilder {
             switch carga {
             case .medida(_, _, let status, _, let razon, let state):
                 contenido = .carga(razon: razon, status: status, state: state, calibrando: false)
-                a11y = "\(label), \(razon.map { String(format: "%.2f", $0) } ?? ""), \(status)"
+                a11y = junta(label, razon.map { String(format: "%.2f", $0) }, status)
             case .calibrando(let status):
                 contenido = .carga(razon: nil, status: status, state: .ok, calibrando: true)
-                a11y = "\(label), \(status)"
+                a11y = junta(label, status)
             case nil:
                 let status = up(String(localized: "Calibrating"))
                 contenido = .carga(razon: nil, status: status, state: .ok, calibrando: true)
-                a11y = "\(label), \(status)"
+                a11y = junta(label, status)
             }
             return .init(id: "carga", label: label, tone: LiquidColor.verdePrimario,
-                         contenido: contenido, destino: .carga, a11yLabel: a11y)
+                         contenido: contenido, destino: .carga, a11yLabel: a11y, a11yHint: hint)
         }
 
         /// Vigilando: par teñido temp·resp; el rótulo es el label del guardián (VIGILANDO/JUNTAS).
@@ -1196,7 +1205,7 @@ enum LiquidHoyBuilder {
             return .init(id: "vigilando", label: label, tone: LiquidColor.tinta500,
                          contenido: .par(v1: temp, tone1: tempTone, v2: resp, tone2: respTone),
                          destino: .guardian,
-                         a11yLabel: g?.a11y ?? "\(label), \(temp), \(resp)")
+                         a11yLabel: g?.a11y ?? junta(label, temp, resp), a11yHint: hint)
         }
 
         /// UNA palabra de ámbar en la cabecera cuando el primer dato del módulo empeora.

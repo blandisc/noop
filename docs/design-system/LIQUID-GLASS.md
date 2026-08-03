@@ -239,8 +239,14 @@ cerrada de tokens y componentes. Todos con `#Preview`.
 - **`LiquidCargaEscala` densidad `.modulo`** — el bullet DESNUDO (valor + riel) para una columna, sin vidrio/ticks/a11y (los aporta la `Shell`).
 - **`LiquidEcosistema.compacto`** — presentación compacta del héroe: recorta el aire superior y acerca el veredicto al orbe, con el frame reservado anclado arriba para no dejar espacio muerto. NO toca el shader (FER-13).
 
-### 10.3 Desviaciones sancionadas
+### 10.3 Notas de tokenización y desviaciones
 
-- **Columnas sin piso de altura fijo.** Cada columna abraza su contenido (sin `minHeight` 44), para que un módulo de una línea no ocupe lo mismo que uno de tres (pedido del dueño). El área tocable la dan el ancho de la fila + el padding del módulo.
-- **Alineación: todas centradas.** Cada dato centra título+cifra en su celda (decisión del dueño), no la mezcla orillas del mock CSS.
-- **Área de datos = 3 capas de color en Hoy.** Excepción nombrada a «color solo en el dato» (ver `DESIGN.md §8.8`).
+- **Hit target 44 pt (`LiquidControl.hitTarget`).** Cada columna es botón con piso de 44 pt (HIG,
+  eje de tamaños de control). El desperdicio vertical que se veía en los módulos NO era este piso
+  sino el **capilar greedy** (`maxHeight: .infinity` inflaba la fila con columnas cortas); se
+  arregla con `.fixedSize(horizontal: false, vertical: true)` en la fila del módulo, no bajando el
+  target. Con eso, 44 pt es el estándar sano y los módulos abrazan su contenido.
+- **Alineación: todas centradas.** Cada dato centra título+cifra en su celda (decisión del dueño),
+  no la mezcla orillas del mock CSS.
+- **Área de datos = 3 capas de color en Hoy.** Excepción nombrada a «color solo en el dato» (ver
+  `DESIGN.md §8.8`).

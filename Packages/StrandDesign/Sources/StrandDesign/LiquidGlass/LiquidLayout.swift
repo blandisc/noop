@@ -73,6 +73,21 @@ public enum LiquidRadius {
     // r/orbe = 50 % → en SwiftUI es `Circle`; no necesita constante.
 }
 
+// MARK: - Liquid Glass · Tamaños de control (eje de tokenización: sm/md/lg + hit target)
+
+/// Alturas de control por tamaño y el objetivo táctil mínimo. Ningún elemento tocable inventa
+/// su alto: usa `hitTarget` como piso (HIG 44 pt) o una de las tallas.
+public enum LiquidControl {
+    /// Objetivo táctil mínimo (HIG): 44 pt. El piso de toda columna/fila/botón tocable.
+    public static let hitTarget: CGFloat = 44
+    /// `sm` — chips, filas densas.
+    public static let sm: CGFloat = 32
+    /// `md` — el control por defecto (== hit target).
+    public static let md: CGFloat = 44
+    /// `lg` — CTAs, controles destacados.
+    public static let lg: CGFloat = 56
+}
+
 // MARK: - Liquid Glass · Elevación (handoff §4.6)
 //
 // Cuatro niveles de sombra. El blur CSS ≈ 2× el radius de SwiftUI, por eso cada spec

@@ -110,6 +110,8 @@ public struct LiquidPlasta: View {
         }
         .ignoresSafeArea()
         .allowsHitTesting(false)
+        // Decorativa: la plasta es ambiente, no habla a VoiceOver (AC10, par de la aurora).
+        .accessibilityHidden(true)
     }
 }
 

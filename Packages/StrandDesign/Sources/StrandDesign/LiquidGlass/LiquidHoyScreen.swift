@@ -191,7 +191,7 @@ public struct LiquidHoyModel: Sendable {
 
         public init(id: String, label: String, tone: Color, alineacion: Alineacion = .izq,
                     contenido: Contenido, destino: Destino, a11yLabel: String,
-                    a11yHint: String = "Abre el detalle") {
+                    a11yHint: String = "Opens the detail") {
             self.id = id
             self.label = label
             self.tone = tone
@@ -467,6 +467,17 @@ public struct LiquidHoyModel: Sendable {
                       destino: .metrica("resp"), a11yLabel: "Respiración, 14.5 rpm, aún sin base"),
               ]),
     ]
+
+    /// Módulos en ATENCIÓN: el módulo culpable (M1, sueño) recupera UNA palabra en ámbar en la
+    /// cabecera — «nunca solo color» (fixture del estado ámbar).
+    public static var atencionModulos: [Modulo] {
+        var m = ejemploModulos
+        let m1 = m[0]
+        m[0] = Modulo(id: m1.id, kicker: m1.kicker, atencion: "sueño bajo",
+                      auroraTones: m1.auroraTones, auroraPeriod: m1.auroraPeriod,
+                      auroraReverse: m1.auroraReverse, columnas: m1.columnas)
+        return m
+    }
 }
 
 // MARK: - Contenido componible
@@ -645,8 +656,11 @@ public struct LiquidHoyContent: View {
     private func columnaView(_ col: LiquidHoyModel.Columna, align: HorizontalAlignment) -> some View {
         switch col.contenido {
         case .simple(let value, let unit, let detail, let mejora):
+            // El a11yLabel/a11yHint los compone el builder (con valencia + origen + hint
+            // localizado); pasarlos evita perder la valencia audible en las columnas simples.
             LiquidColumna(label: col.label, value: value, unit: unit, detail: detail,
                           detailImproves: mejora, tone: col.tone, alignment: align,
+                          a11yLabel: col.a11yLabel, a11yHint: col.a11yHint,
                           action: { tap(col.destino) })
 
         case .sueno(let horas, let minutos, let unit, let detail):

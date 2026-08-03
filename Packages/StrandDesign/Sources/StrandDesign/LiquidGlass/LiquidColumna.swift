@@ -26,7 +26,7 @@ public struct LiquidColumnaShell<Content: View>: View {
     @State private var taps = 0
 
     public init(label: String, alignment: HorizontalAlignment = .leading,
-                a11yLabel: String, a11yHint: String = "Abre el detalle",
+                a11yLabel: String, a11yHint: String = "Opens the detail",
                 action: @escaping () -> Void, @ViewBuilder content: () -> Content) {
         self.label = label
         self.alignment = alignment
@@ -53,10 +53,10 @@ public struct LiquidColumnaShell<Content: View>: View {
                 Text(label).liquidDato().foregroundStyle(LiquidColor.tinta500)
                 content
             }
-            // Sin piso de altura: cada columna abraza su contenido (pedido del dueño: un módulo
-            // de una línea no debe medir lo mismo que uno de tres). El área tocable la dan el
-            // ancho de la fila + el padding del módulo; VoiceOver la trata como botón igual.
-            .frame(maxWidth: .infinity, alignment: frameAlignment)
+            // Hit target del sistema (eje 8 de tokenización: 44 pt, HIG). El desperdicio que
+            // se veía antes NO era este piso sino el capilar greedy (arreglado con
+            // `.fixedSize(vertical:)` en la fila); con eso resuelto, 44 pt es el estándar sano.
+            .frame(maxWidth: .infinity, minHeight: LiquidControl.hitTarget, alignment: frameAlignment)
             .contentShape(Rectangle())
         }
         .buttonStyle(.liquidPress)
@@ -79,11 +79,17 @@ public struct LiquidColumna: View {
     private let tone: Color
     private let alignment: HorizontalAlignment
     private let a11yValencia: String?
+    /// VoiceOver YA compuesto por el caller (con valencia, origen, etc.). Si es `nil` se deriva
+    /// de label/valor/detalle/valencia — pero el caller que tiene el label completo debe pasarlo
+    /// para no PERDER la valencia audible ni el origen (el color no habla).
+    private let a11yLabelOverride: String?
+    private let a11yHint: String
     private let action: () -> Void
 
     public init(label: String, value: String, unit: String = "", detail: String = "",
                 detailImproves: Bool = false, tone: Color,
                 alignment: HorizontalAlignment = .leading, a11yValencia: String? = nil,
+                a11yLabel: String? = nil, a11yHint: String = "Opens the detail",
                 action: @escaping () -> Void) {
         self.label = label
         self.value = value
@@ -93,10 +99,13 @@ public struct LiquidColumna: View {
         self.tone = tone
         self.alignment = alignment
         self.a11yValencia = a11yValencia
+        self.a11yLabelOverride = a11yLabel
+        self.a11yHint = a11yHint
         self.action = action
     }
 
     private var a11yLabel: String {
+        if let a11yLabelOverride { return a11yLabelOverride }
         let valor = unit.isEmpty ? value : "\(value) \(unit)"
         var parts = ["\(label), \(valor)"]
         if !detail.isEmpty { parts.append(detail) }
@@ -106,7 +115,7 @@ public struct LiquidColumna: View {
 
     public var body: some View {
         LiquidColumnaShell(label: label, alignment: alignment, a11yLabel: a11yLabel,
-                           action: action) {
+                           a11yHint: a11yHint, action: action) {
             VStack(alignment: alignment, spacing: 1) {
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
                     Text(value).font(LiquidType.valorL).foregroundStyle(tone)
