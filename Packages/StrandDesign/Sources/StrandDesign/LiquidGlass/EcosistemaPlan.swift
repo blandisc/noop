@@ -454,7 +454,8 @@ public extension EcosistemaSimulacion {
             trazos.append(.disco(
                 centro: CGPoint(x: desde.x + CGFloat(ux * sd),
                                 y: desde.y + CGFloat(uy * sd)),
-                radio: 0.9, tinta: .vigia, alfa: 0.22))
+                // 0.9/0.22 → 1.15/0.32 (revisión del dueño: la mirada no se veía).
+                radio: 1.15, tinta: .vigia, alfa: 0.32))
             sd += pasoPunteado
         }
         if alerta {

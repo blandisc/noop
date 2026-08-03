@@ -32,6 +32,8 @@ public struct EcosistemaRotulos: Sendable {
     public let sinLecturaHoy: String
     public let guardianSinLecturas: String // «Guardián: sin lecturas hoy» (VoiceOver)
     public let anuncioVeredicto: String   // «Tu veredicto llegó: %@» (announcement)
+    public let vigiaEnRango: String       // «En rango» (subtítulo de vigía)
+    public let vigiaFuera: String         // «Fuera de tu rango»
 
     public init(reposo: String, sueno: String, guardian: String, temperatura: String,
                 respiracion: String, hintSeparar: String, hintUnir: String,
@@ -42,7 +44,9 @@ public struct EcosistemaRotulos: Sendable {
                 sinLecturaNoche: String = "Sin lectura anoche",
                 sinLecturaHoy: String = "Sin lectura hoy",
                 guardianSinLecturas: String = "Guardián: sin lecturas hoy",
-                anuncioVeredicto: String = "Tu veredicto llegó: %@") {
+                anuncioVeredicto: String = "Tu veredicto llegó: %@",
+                vigiaEnRango: String = "En rango",
+                vigiaFuera: String = "Fuera de tu rango") {
         self.reposo = reposo
         self.sueno = sueno
         self.guardian = guardian
@@ -59,6 +63,8 @@ public struct EcosistemaRotulos: Sendable {
         self.sinLecturaHoy = sinLecturaHoy
         self.guardianSinLecturas = guardianSinLecturas
         self.anuncioVeredicto = anuncioVeredicto
+        self.vigiaEnRango = vigiaEnRango
+        self.vigiaFuera = vigiaFuera
     }
 
     /// El juego BASE (es-MX) — default del modelo para previews/tests del paquete; la app
@@ -563,21 +569,23 @@ public struct LiquidEcosistema: View {
             .foregroundStyle(tinta)
             .fixedSize()
             .position(x: x, y: 6)
-        // El puente: tres motas del color del ORBE (su materia, no tinta) que gotean
-        // del limbo hacia la cifra — el cordón que dice «este número es mío».
-        ForEach(0..<3, id: \.self) { i in
-            Circle()
-                .fill(materia.opacity(0.55 - Double(i) * 0.15))
-                .frame(width: 4.0 - CGFloat(i) * 0.8)
-                .position(x: x + lado * (rOrbe + 3 + CGFloat(i) * 5), y: 32)
+        // (El puente de motas al número murió — revisión del dueño: la conexión que
+        // importa es la MIRADA del vigía al orbe principal, que vive en el plan.)
+        let _ = materia
+        // Tipografía SÓLIDA (FER-22) + SUBTÍTULO (revisión del dueño: la misma voz
+        // que «En tu base» de rest/sleep — el vigía también dice cómo amaneció).
+        VStack(alignment: lado > 0 ? .leading : .trailing, spacing: 2) {
+            Text(verbatim: valor)
+                .font(LiquidType.datoMenor)
+                .foregroundStyle(tinta)
+                .fixedSize()
+            Text(fuera ? rotulos.vigiaFuera : rotulos.vigiaEnRango)
+                .font(LiquidType.captionLectura)
+                .foregroundStyle(fuera ? LiquidColor.atencionTexto : LiquidColor.tinta700)
+                .fixedSize()
         }
-        // Tipografía SÓLIDA (FER-22): el espejo y el puente se quedan; las motas no.
-        Text(verbatim: valor)
-            .font(LiquidType.datoMenor)
-            .foregroundStyle(tinta)
-            .fixedSize()
-            .frame(width: 120, alignment: lado > 0 ? .leading : .trailing)
-            .position(x: x + lado * (rOrbe + 18 + 60), y: 32)
+        .frame(width: 120, alignment: lado > 0 ? .leading : .trailing)
+        .position(x: x + lado * (rOrbe + 18 + 60), y: 36)
     }
 
     // (miniGuardian murió con la gramática de columnas: ver `vigiaColumna`.)

@@ -179,7 +179,9 @@ enum LiquidHoyBuilder {
             sinLecturaNoche: String(localized: "No reading last night"),
             sinLecturaHoy: String(localized: "No reading today"),
             guardianSinLecturas: String(localized: "Guardian: no readings today"),
-            anuncioVeredicto: String(localized: "Your verdict is in: %@"))
+            anuncioVeredicto: String(localized: "Your verdict is in: %@"),
+            vigiaEnRango: String(localized: "In range"),
+            vigiaFuera: String(localized: "Off your range"))
     }
 
     // MARK: Kicker + dial
