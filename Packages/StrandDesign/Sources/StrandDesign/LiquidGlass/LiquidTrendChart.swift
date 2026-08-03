@@ -91,6 +91,8 @@ public struct LiquidTrendChart: View {
     @ViewBuilder private var grafica: some View {
         switch estado {
         case .datos:
+            // FER-29: `LiquidChartPlot` publica `AXChartDescriptor` (rotor «Gráficas»).
+            // El label/value de abajo se conservan: el rotor es adicional, no los reemplaza.
             LiquidChartPlot(puntos: puntos, bandas: bandas, dominio: dominio,
                             ticksY: ticksY, tono: tono,
                             puntoHoy: puntoHoy, hoyAnillo: hoyAnillo,
