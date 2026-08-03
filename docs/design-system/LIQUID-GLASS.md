@@ -282,3 +282,63 @@ SOLO tokens; se cerraron las brechas sin cambio visual (valores exactos preserva
 - **Pisos de 44 pt vía `Shell`.** Carga y guardián en la superficie son columnas dentro de
   `LiquidColumnaShell`, que ya garantiza `hitTarget`; sus densidades `.fila`/franja (solo previews)
   conservan el patrón de padding 9+3 sin piso propio.
+
+## 11. Hojas de detalle de métrica (sheets) — FER-29
+
+Las 9 hojas de detalle de Hoy (Sueño, VFC, FC en reposo, Esfuerzo, Pasos, Temperatura de piel,
+Respiración, Estrés, Carga) se reconstruyen sobre **una sola familia**: plantilla + componentes
+compartidos + 6 contratos de datos. Principio rector: se cambia la familia, nunca por pantalla;
+lo «distinto» (Sueño) se resuelve con componentes en un slot opcional del mismo shell, jamás
+forkeando. Código canónico: `Packages/StrandDesign/.../LiquidGlass/` (shell y piezas) +
+`Packages/StrandAnalytics` (niveles, formato, frase) + el cableado en `Cenit/Screens/Hoy/`.
+
+### 11.1 Papel opaco en tarjetas internas
+
+Las superficies **internas** de una sheet (tabla de bandas, botón del pie, tarjetas como
+Regularidad) usan `.liquidGlass(.superficieSolida)` / `.pastillaSolida`: papel opaco
+(`#FFFFFF` / relleno de papel sólido), **no** vidrio que muestrea el backdrop.
+
+El vidrio real se reserva para:
+
+- la hoja misma (`LiquidSheetFondo`)
+- el dock
+- el orbe
+
+**Razón:** el vidrio-sobre-vidrio hacía «saltar» las tablas de gris a blanco al arrastrar la
+hoja (el material re-muestrea el backdrop bajo el canto claro del fondo). Las recetas sólidas
+conservan el mismo chrome (borde, highlight, radio, sombra) y omiten blur / `glassEffect`.
+
+### 11.2 Los 6 contratos (la «familia»)
+
+Fuente única de verdad que **heredan las 9 métricas**. Cada contrato cierra un hallazgo de
+auditoría convergente; no hay sistemas paralelos por pantalla.
+
+| # | Contrato | Regla |
+|---|---|---|
+| **C1** | Una sola escalera de niveles por métrica | El motor es la fuente: `MetricLevels.displayBands`. El catálogo **deriva** del motor; no existe un sistema paralelo de bandas. |
+| **C2** | Origen en vocabulario cerrado | `LiquidOrigen`: `appleSalud` · `appleWatch` · `calculadoEnTelefono` · `sinOrigen`. El sello **nunca** afirma procedencia sobre un numeral «—». Nunca la palabra «Band» en superficies Liquid. |
+| **C3** | «Cómo se obtuvo» | Un componente, dos rellenos canónicos: **Método** (prosa + cita) o **Nota de procedencia**. Mismo componente visual en ambos casos. |
+| **C4** | Frase de nivel paramétrica única | `MetricLevelPhrase` con clave `reading.<comparison>.<metricID>.<levelKey>`. **No** switches ad-hoc. El nombre del nivel viene de `MetricLevels.name(for:)`. |
+| **C5** | Un formateador por métrica | Un `MetricFormat` por métrica (valor / unidad / eje / scrub) — un solo lugar por métrica. |
+| **C6** | Definición ⓘ para toda métrica | Toda métrica del catálogo tiene definición para su ⓘ; un solo mapa de copy; sin factories muertas. |
+
+### 11.3 La plantilla y sus componentes
+
+Estructura única de toda sheet (orden vertical). Cada pieza es un componente compartido:
+
+| Pieza | Rol |
+|---|---|
+| `LiquidMetricSheet` | Shell de la hoja (presentación, fondo, detents). |
+| `LiquidSheetHeader` | Cabecera; **incluye el héroe** (valor + unidad + frase de nivel), **idéntico para las 9**: sin fecha, sin doble-dato en el héroe. |
+| `LiquidRangeSelector` | Selector de rango (segmentos de texto + tick del tono). |
+| `LiquidTrendChart` | Tendencia: joya de hoy + scrub + corredor sano. El héroe no cambia al hacer scrub. |
+| `LiquidBandsTable` | Tabla de niveles/bandas sobre **papel** (`.superficieSolida`). |
+| `LiquidSheetFoot` | Pie: «Cómo se obtuvo» (C3) + chip de origen (C2) + CTA «Ver más…» (`.pastillaSolida`). |
+
+**Slot opcional de Sueño** (componen, no forkean el shell):
+
+- `LiquidStageBar` — Etapas (barra apilada + leyenda / ventana horaria)
+- `LiquidRegularityCard` — Regularidad (tarjeta de papel)
+
+Color en la sheet: **solo en el dato** + plasta monocroma del tono de la métrica (no cajas
+coloreadas). Ver nota en `DESIGN.md` §8.9.

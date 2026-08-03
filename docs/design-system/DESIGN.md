@@ -524,3 +524,19 @@ excepciones **conscientes y nombradas**, no una relajación general.
   dato (noche índigo, día oro) + una aguja a la hora actual. El dato son los arcos; el chrome calla.
 
 Tokens/componentes nuevos y su spec cerrada viven en `LIQUID-GLASS.md` (§ El Tablero).
+
+### 8.9 Hojas de detalle de métrica (sheets) — FER-29
+
+Las 9 hojas de detalle de Hoy se reconstruyen sobre **una plantilla + 6 contratos** (familia
+única; Sueño añade piezas en un slot, no un fork). Spec cerrada — papel opaco en tarjetas
+internas, contratos C1–C6, plantilla y componentes — en
+[`LIQUID-GLASS.md` §11](LIQUID-GLASS.md#11-hojas-de-detalle-de-métrica-sheets--fer-29).
+
+Reglas de superficie (reafirmación):
+
+- **Héroe idéntico para las 9:** valor + unidad + frase de nivel; **sin fecha**, **sin doble-dato**
+  en el héroe.
+- **Color solo en el dato** + plasta monocroma del tono de la métrica (no cajas teñidas).
+- **Papel opaco** en tarjetas internas (tabla de bandas, pie, Regularidad…):
+  `.liquidGlass(.superficieSolida)` / `.pastillaSolida`. El vidrio real queda en la hoja
+  (`LiquidSheetFondo`), el dock y el orbe.
