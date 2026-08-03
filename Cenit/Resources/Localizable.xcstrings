@@ -1,6 +1,618 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "reading.vsBase.hrv.below": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Below your base, worth a look."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Por debajo de tu base, vale la pena mirarlo."
+          }
+        }
+      }
+    },
+    "reading.vsBase.hrv.inBase": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In your usual range."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En tu rango de siempre."
+          }
+        }
+      }
+    },
+    "reading.vsBase.hrv.above": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Above your base, a good sign."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Por encima de tu base, buena señal."
+          }
+        }
+      }
+    },
+    "reading.vsBase.rhr.athlete": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Very low, athlete range."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Muy baja, rango de atleta."
+          }
+        }
+      }
+    },
+    "reading.vsBase.rhr.excellent": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Low, a strong sign."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baja, buena señal."
+          }
+        }
+      }
+    },
+    "reading.vsBase.rhr.normal": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In a normal range."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En un rango normal."
+          }
+        }
+      }
+    },
+    "reading.vsBase.rhr.elevated": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Above your usual, worth a look."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Por encima de lo usual, vale la pena mirarlo."
+          }
+        }
+      }
+    },
+    "reading.vsBase.resp_rate.normal": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In a normal range."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En un rango normal."
+          }
+        }
+      }
+    },
+    "reading.vsBase.resp_rate.elevated": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Above your usual."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Por encima de lo usual."
+          }
+        }
+      }
+    },
+    "reading.vsBase.skin_temp.below": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Below your base."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Debajo de tu base."
+          }
+        }
+      }
+    },
+    "reading.vsBase.skin_temp.inBase": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In your base."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En tu base."
+          }
+        }
+      }
+    },
+    "reading.vsBase.skin_temp.warm": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Running warm vs your base."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ligeramente por encima de tu base."
+          }
+        }
+      }
+    },
+    "reading.vsBase.skin_temp.elevated": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Well above your base, worth a look."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Muy por encima de tu base, vale la pena revisar."
+          }
+        }
+      }
+    },
+    "reading.vsBase.load.rampingDown": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Less than your body is used to these days."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Menos de lo que tu cuerpo acostumbra estos días."
+          }
+        }
+      }
+    },
+    "reading.vsBase.load.sweetSpot": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In line with what your body is used to."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Va en línea con lo que tu cuerpo acostumbra."
+          }
+        }
+      }
+    },
+    "reading.vsBase.load.buildingFast": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "More than your body is used to these days."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Más de lo que tu cuerpo acostumbra estos días."
+          }
+        }
+      }
+    },
+    "reading.vsBase.load.spiking": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Well above what your body is used to."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Muy por encima de lo que tu cuerpo acostumbra."
+          }
+        }
+      }
+    },
+    "reading.vsPopulation.spo2.low": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Below the typical range."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Por debajo del rango típico."
+          }
+        }
+      }
+    },
+    "reading.vsPopulation.spo2.normal": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In a normal range."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En un rango normal."
+          }
+        }
+      }
+    },
+    "reading.vsPopulation.steps.sedentary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quiet so far today."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tranquilo hasta ahora."
+          }
+        }
+      }
+    },
+    "reading.vsPopulation.steps.active": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Active, a solid day."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activo, un buen día."
+          }
+        }
+      }
+    },
+    "reading.vsPopulation.steps.veryActive": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Very active today."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Muy activo hoy."
+          }
+        }
+      }
+    },
+    "reading.vsPopulation.stress.low": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Low, a calm day so far."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bajo, un día tranquilo hasta ahora."
+          }
+        }
+      }
+    },
+    "reading.vsPopulation.stress.medium": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moderate so far today."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moderado hasta ahora."
+          }
+        }
+      }
+    },
+    "reading.vsPopulation.stress.high": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Running high today."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alto hoy."
+          }
+        }
+      }
+    },
+    "reading.vsPopulation.strain.rest": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Very light day so far."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Día muy ligero hasta ahora."
+          }
+        }
+      }
+    },
+    "reading.vsPopulation.strain.light": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A light day so far."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un día ligero hasta ahora."
+          }
+        }
+      }
+    },
+    "reading.vsPopulation.strain.moderate": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A solid, moderate day."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un día sólido, moderado."
+          }
+        }
+      }
+    },
+    "reading.vsPopulation.strain.hard": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A hard day of load."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un día de carga fuerte."
+          }
+        }
+      }
+    },
+    "reading.vsPopulation.strain.extreme": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An all-out day."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un día a tope."
+          }
+        }
+      }
+    },
+    "reading.vsTarget.sleep.short": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Short of your target."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Corto para tu objetivo."
+          }
+        }
+      }
+    },
+    "reading.vsTarget.sleep.adequate": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enough, close to your target."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suficiente, cerca de tu objetivo."
+          }
+        }
+      }
+    },
+    "reading.vsTarget.sleep.optimal": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Right in your target range."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Justo en tu rango objetivo."
+          }
+        }
+      }
+    },
+    "reading.vsTarget.sleep.extended": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Longer than usual."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Más de lo habitual."
+          }
+        }
+      }
+    },
+    "reading.vsTarget.sleep.short.lastNight": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Short of your target last night."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Corto para tu objetivo anoche."
+          }
+        }
+      }
+    },
+    "reading.vsTarget.sleep.extended.lastNight": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Longer than usual last night."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Más de lo habitual anoche."
+          }
+        }
+      }
+    },
     "Exertion": {
       "localizations": {
         "en": {
