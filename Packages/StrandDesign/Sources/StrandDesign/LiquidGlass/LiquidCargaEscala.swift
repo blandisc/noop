@@ -185,7 +185,7 @@ public struct LiquidCargaEscala: View {
                 .textCase(.uppercase)
                 .foregroundStyle(LiquidColor.tinta500)
             bulletTrack(trackH: 6)
-            HStack(alignment: .firstTextBaseline, spacing: 5) {
+            HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s125) {
                 Text(rotulo)
                     .font(LiquidType.cargaStatus).tracking(LiquidType.cargaStatusTracking)
                     .foregroundStyle(esCalibrando ? LiquidColor.tinta500 : LiquidColor.tinta700)
@@ -198,11 +198,11 @@ public struct LiquidCargaEscala: View {
             }
             .lineLimit(1)
         }
-        .padding(.vertical, 9)
+        .padding(.vertical, LiquidSpace.s225)
         .padding(.horizontal, LiquidSpace.s400)
         .liquidGlass(.pastilla)
         // Área tocable ≥ 44 pt sin engordar el vidrio (paridad con LiquidCargaBar).
-        .padding(.vertical, 3)
+        .padding(.vertical, LiquidSpace.s075)
         .contentShape(Rectangle())
     }
 

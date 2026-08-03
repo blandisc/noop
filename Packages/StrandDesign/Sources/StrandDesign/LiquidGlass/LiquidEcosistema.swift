@@ -460,7 +460,7 @@ public struct LiquidEcosistema: View {
         // Asentado sutil (ronda quirurgica): el valor no APARECE, se sienta.
         .scaleEffect(esSeparadaEstable ? 1 : 0.97)
         .allowsHitTesting(esSeparadaEstable)
-        .animation(still ? .easeInOut(duration: LiquidEcosistemaMotion.reduceMotionCrossfade)
+        .animation(still ? LiquidEcosistemaMotion.reduceCrossfadeAnim
                          : (esSeparadaEstable
                             ? LiquidMotion.glassOut(LiquidMotion.quick)
                                 .delay(LiquidEcosistemaMotion.anticipacion
@@ -479,7 +479,7 @@ public struct LiquidEcosistema: View {
             .allowsHitTesting(false)
             // Al UNIR, la palabra espera al orbe (oleada «costuras»: antes entraba al
             // tap y flotaba sobre esferas aún en viaje); al separar se va de inmediato.
-            .animation(still ? .easeInOut(duration: LiquidEcosistemaMotion.reduceMotionCrossfade)
+            .animation(still ? LiquidEcosistemaMotion.reduceCrossfadeAnim
                              : (esSeparadaEstable
                                 ? LiquidMotion.glassOut(LiquidMotion.quick)
                                 : LiquidMotion.glassOut(LiquidEcosistemaMotion.palabraDur)
@@ -501,7 +501,7 @@ public struct LiquidEcosistema: View {
         ForEach(Array(senales.prefix(2).enumerated()), id: \.element.id) { i, senal in
             let centro = i == 0 ? G.p1 : G.p2
             let etiqueta = i == 0 ? rotulos.reposo : rotulos.sueno
-            VStack(spacing: 2) {
+            VStack(spacing: LiquidSpace.s050) {
                 Text(etiqueta)
                     .font(LiquidType.micro).tracking(LiquidType.microTracking)
                     .foregroundStyle(LiquidColor.tinta500)
@@ -523,7 +523,7 @@ public struct LiquidEcosistema: View {
                     .foregroundStyle(senal.state == .atencion
                                      ? LiquidColor.negativo : LiquidColor.tinta900)
                     .padding(LiquidSpace.s300)
-                    .frame(minWidth: 60, minHeight: 44)
+                    .frame(minWidth: 60, minHeight: LiquidControl.hitTarget)
             }
             .position(x: centro.x, y: centro.y - 4)
             // La frase baja al PAPEL limpio bajo la esfera (revisión del dueño: dentro
@@ -531,8 +531,7 @@ public struct LiquidEcosistema: View {
             // Sin dato: la honestidad tiene voz («Sin lectura anoche/hoy»), no un guion.
             Text(senal.badge?.contexto
                  ?? (i == 1 ? rotulos.sinLecturaNoche : rotulos.sinLecturaHoy))
-                .font(LiquidType.captionLectura)
-                .fontWeight(.medium)
+                .font(LiquidType.captionLectura)   // FER-31: ya es medium; se quitó el .fontWeight(.medium) redundante
                 .foregroundStyle(LiquidColor.tinta900)
                 .opacity(senal.badge != nil || senal.progress == nil ? 1 : 0)
                 .position(x: centro.x, y: centro.y + G.radioSeparada + 18)
@@ -594,7 +593,7 @@ public struct LiquidEcosistema: View {
         let _ = materia
         // Tipografía SÓLIDA (FER-22) + SUBTÍTULO (revisión del dueño: la misma voz
         // que «En tu base» de rest/sleep — el vigía también dice cómo amaneció).
-        VStack(alignment: lado > 0 ? .leading : .trailing, spacing: 2) {
+        VStack(alignment: lado > 0 ? .leading : .trailing, spacing: LiquidSpace.s050) {
             Text(verbatim: valor)
                 .font(LiquidType.datoMenor)
                 .foregroundStyle(tinta)
@@ -664,7 +663,7 @@ public struct LiquidEcosistema: View {
             }
         }
         .padding(.horizontal, LiquidSpace.s400)
-        .padding(.bottom, 2)
+        .padding(.bottom, LiquidSpace.s050)
     }
 
     private var esCalibrando: Bool {
@@ -687,7 +686,7 @@ public struct LiquidEcosistema: View {
     }
 
     private func puntosProgreso(noche: Int, total: Int) -> some View {
-        HStack(spacing: 5) {
+        HStack(spacing: LiquidSpace.s125) {
             ForEach(0..<max(1, total), id: \.self) { i in
                 Circle()
                     .fill(i < noche ? LiquidColor.particulaNeutra : LiquidColor.tinta10)
@@ -705,7 +704,7 @@ public struct LiquidEcosistema: View {
             LiquidIcon(.chevron, size: 9, color: LiquidColor.tinta500)
         }
         .padding(.horizontal, LiquidSpace.s300)
-        .padding(.vertical, 3)
+        .padding(.vertical, LiquidSpace.s075)
         .background {
             Capsule().fill(LiquidColor.vidrioPastilla)
             Capsule().strokeBorder(LiquidColor.vidrioBordePastilla, lineWidth: 0.5)
@@ -713,7 +712,7 @@ public struct LiquidEcosistema: View {
         if let onTapVeredicto {
             Button(action: onTapVeredicto) {
                 etiqueta
-                    .frame(minHeight: 44)      // target real ≥44 pt (D10)
+                    .frame(minHeight: LiquidControl.hitTarget)      // target real ≥44 pt (D10)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.liquidPress)
@@ -868,7 +867,7 @@ private struct EcosistemaEscenario: View {
     #endif
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 60.0, paused: paused)) { context in
+        TimelineView(.animation(minimumInterval: LiquidMotion.intervaloPleno, paused: paused)) { context in
             let t = still ? 0 : context.date.timeIntervalSinceReferenceDate
             capas(t: t, escena: escena(t: t))
         }
@@ -997,7 +996,7 @@ private struct EcosistemaCanvas: View {
         // La voz de VIGILANDO: el azul de respiración/SpO₂ — las señales que el vigía
         // custodia (decisión del dueño /inject; el gris lo hacía mueble).
         case .vigia: return LiquidColor.azul
-        case .blanco: return .white
+        case .blanco: return LiquidColor.particulaBlanca
         }
     }
 
@@ -1229,7 +1228,7 @@ private struct EcosistemaListado: View {
                 .font(LiquidType.datoMenor)
                 .foregroundStyle(fuera ? LiquidColor.atencionTexto : LiquidColor.tinta900)
         }
-        .padding(.vertical, 9)
+        .padding(.vertical, LiquidSpace.s225)
         .padding(.horizontal, LiquidSpace.s400)
         .liquidGlass(.pastilla)
     }

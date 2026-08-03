@@ -68,7 +68,7 @@ public struct LiquidPlasta: View {
                 // Suelo casi blanco (#FEFEFD → #F3F4F2): el color lo pone la plasta, no el papel.
                 LiquidColor.fondoGradient
                 if !debugHide.contains("plasta") {
-                    TimelineView(.animation(minimumInterval: 1.0 / 20.0, paused: still)) { context in
+                    TimelineView(.animation(minimumInterval: LiquidMotion.intervaloAmbiente, paused: still)) { context in
                         let t = still ? 0 : context.date.timeIntervalSinceReferenceDate
                         ZStack {
                             ForEach(Array(LiquidPlastaMasa.hoy.enumerated()), id: \.offset) { i, masa in
@@ -90,7 +90,7 @@ public struct LiquidPlasta: View {
                             }
                         }
                         // Crossfade de clima: al cambiar `ambiente` los rellenos interpolan 1.6 s.
-                        .animation(.easeInOut(duration: LiquidEcosistemaMotion.ambienteCrossfade),
+                        .animation(LiquidEcosistemaMotion.ambienteCrossfadeAnim,
                                    value: ambiente)
                     }
                 }

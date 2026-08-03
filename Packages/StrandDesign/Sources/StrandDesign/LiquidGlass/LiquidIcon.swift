@@ -60,7 +60,7 @@ public struct LiquidIcon: View {
     public var body: some View {
         if let sfName {
             Image(systemName: sfName)
-                .font(.system(size: size * 0.78, weight: .semibold))
+                .font(LiquidType.iconSF(size: size))
                 .foregroundStyle(color)
                 .frame(width: size, height: size)
         } else {

@@ -83,7 +83,7 @@ public struct LiquidSiembraMotas: View {
     public var body: some View {
         // Reduce Motion: papel puro desde el primer cuadro (ver nota de cabecera).
         if !still {
-            TimelineView(.animation(minimumInterval: 1.0 / 60, paused: terminada)) { tl in
+            TimelineView(.animation(minimumInterval: LiquidMotion.intervaloPleno, paused: terminada)) { tl in
                 Canvas { ctx, size in
                     dibujar(ctx: &ctx, size: size, ahora: tl.date)
                 }

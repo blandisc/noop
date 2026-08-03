@@ -49,7 +49,7 @@ public struct LiquidColumnaShell<Content: View>: View {
             taps &+= 1
             action()
         } label: {
-            VStack(alignment: alignment, spacing: 1) {
+            VStack(alignment: alignment, spacing: LiquidSpace.s025) {
                 Text(label).liquidDato().foregroundStyle(LiquidColor.tinta500)
                 content
             }
@@ -116,8 +116,8 @@ public struct LiquidColumna: View {
     public var body: some View {
         LiquidColumnaShell(label: label, alignment: alignment, a11yLabel: a11yLabel,
                            a11yHint: a11yHint, action: action) {
-            VStack(alignment: alignment, spacing: 1) {
-                HStack(alignment: .firstTextBaseline, spacing: 2) {
+            VStack(alignment: alignment, spacing: LiquidSpace.s025) {
+                HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s050) {
                     Text(value).font(LiquidType.valorL).foregroundStyle(tone)
                     if !unit.isEmpty {
                         Text(unit).font(LiquidType.unidad).foregroundStyle(LiquidColor.tinta500)

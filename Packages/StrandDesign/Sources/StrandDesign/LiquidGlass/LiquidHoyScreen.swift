@@ -611,7 +611,7 @@ public struct LiquidHoyContent: View {
                                 // divisor quede centrado en el hueco y los datos no lo toquen.
                                 LiquidCapilar()
                                     .padding(.horizontal, LiquidSpace.s300)
-                                    .padding(.vertical, 2)
+                                    .padding(.vertical, LiquidSpace.s050)
                             }
                             // Todas centradas (decisión del dueño): título centrado sobre su
                             // cifra, dato balanceado respecto a sus divisores.
@@ -666,10 +666,10 @@ public struct LiquidHoyContent: View {
         case .sueno(let horas, let minutos, let unit, let detail):
             LiquidColumnaShell(label: col.label, alignment: align, a11yLabel: col.a11yLabel,
                                a11yHint: col.a11yHint, action: { tap(col.destino) }) {
-                VStack(alignment: align, spacing: 1) {
+                VStack(alignment: align, spacing: LiquidSpace.s025) {
                     HStack(alignment: .firstTextBaseline, spacing: 0) {
                         Text(horas).font(LiquidType.valorL).foregroundStyle(col.tone)
-                        Text(":").font(LiquidType.valorL).fontWeight(.regular)
+                        Text(":").font(LiquidType.valorLSeparador)
                             .foregroundStyle(LiquidColor.tinta700)
                         Text(minutos).font(LiquidType.valorL).foregroundStyle(col.tone)
                         if !unit.isEmpty {
@@ -690,13 +690,13 @@ public struct LiquidHoyContent: View {
                                a11yHint: col.a11yHint, action: { tap(col.destino) }) {
                 LiquidCargaEscala(razon: razon, estado: state, rotulo: status,
                                   densidad: .modulo, calibrando: calibrando, eje: col.label)
-                    .padding(.top, 1)
+                    .padding(.top, LiquidSpace.s025)
             }
 
         case .par(let v1, let tone1, let v2, let tone2):
             LiquidColumnaShell(label: col.label, alignment: align, a11yLabel: col.a11yLabel,
                                a11yHint: col.a11yHint, action: { tap(col.destino) }) {
-                HStack(spacing: 4) {
+                HStack(spacing: LiquidSpace.s100) {
                     Text(v1).font(LiquidType.datoMenor).foregroundStyle(tone1)
                     Text("·").font(LiquidType.datoMenor).foregroundStyle(LiquidColor.tinta500)
                     Text(v2).font(LiquidType.datoMenor).foregroundStyle(tone2)

@@ -75,7 +75,7 @@ public struct LiquidAuroraEdge: View {
     public var body: some View {
         let still = reduceMotion || motionDisabled || ambientPaused
         let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
-        return TimelineView(.animation(minimumInterval: 1.0 / 20.0, paused: still)) { context in
+        return TimelineView(.animation(minimumInterval: LiquidMotion.intervaloAmbiente, paused: still)) { context in
             let t = still ? 0 : context.date.timeIntervalSinceReferenceDate
             let turns = (t / period).truncatingRemainder(dividingBy: 1)
             let deg = turns * 360 * (reverse ? -1 : 1)

@@ -250,3 +250,35 @@ cerrada de tokens y componentes. Todos con `#Preview`.
   no la mezcla orillas del mock CSS.
 - **Área de datos = 3 capas de color en Hoy.** Excepción nombrada a «color solo en el dato» (ver
   `DESIGN.md §8.8`).
+
+### 10.4 Tokenización 100 % de la superficie de Hoy (FER-31)
+
+Auditoría doble (DeepSeek + Grok) sobre los 8 ejes. La superficie de «El Tablero» consume ahora
+SOLO tokens; se cerraron las brechas sin cambio visual (valores exactos preservados):
+
+- **Espacio — pasos finos de `LiquidSpace`.** La escala base-4 se extendió con cuatro micro-pasos
+  (`s025=1`, `s075=3`, `s125=5`, `s225=9`) para los gaps que la superficie pedía crudos (micro-gap
+  rótulo↔dato, respiro de pastilla táctil, puntos de progreso). Siguen siendo un cambio al sistema,
+  no una decisión de pantalla.
+- **Color.** Se añadió `LiquidColor.vidrioRealcePastilla` (realce del selector del dock en la
+  imitación pre-iOS 26) y `LiquidColor.particulaBlanca` (el blanco puro del orbe). Ningún componente
+  de superficie consume `.white` crudo.
+- **Tipo.** `LiquidType.valorLSeparador` (los dos-puntos tenues del sueño) y `LiquidType.iconSF(size:)`
+  (glifo SF de `LiquidIcon`). Se quitó un `.fontWeight(.medium)` redundante sobre `captionLectura`.
+- **Radio / Elevación.** `LiquidRadius.hairline` (0.5 del capilar) y `LiquidElevation.dial` (la
+  sombra plana del sello, antes ad-hoc inline).
+- **Motion.** Duraciones e intervalos nombrados (`selectorDuration`, `entradaReduce`,
+  `intervaloAmbiente=20 fps`, `intervaloPleno=60 fps`) y recetas de crossfade
+  (`ambienteCrossfadeAnim` / `reduceCrossfadeAnim`). `reduceMotion` se sigue respetando en todos.
+
+**Excepciones conscientes:**
+- **Blancos especulares de receta de material.** `LiquidPlasta` (viñeta) y `LiquidAuroraEdge`
+  (gradiente angular) conservan `Color.white.opacity(...)` crudo: son la implementación INTERNA de
+  un material, mismo estatuto que el hex dentro de `LiquidColor` — no colores semánticos de
+  superficie.
+- **`LiquidZLayer` diferido.** La superficie no usa `.zIndex` (apila por `ZStack`/`.overlay`); un
+  contrato de capas nombradas se crea cuando exista un dropdown/toast que lo necesite, no antes
+  (evitar código especulativo).
+- **Pisos de 44 pt vía `Shell`.** Carga y guardián en la superficie son columnas dentro de
+  `LiquidColumnaShell`, que ya garantiza `hitTarget`; sus densidades `.fila`/franja (solo previews)
+  conservan el patrón de padding 9+3 sin piso propio.

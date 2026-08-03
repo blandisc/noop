@@ -52,6 +52,18 @@ public enum LiquidType {
     /// protagonista no puede escalar menos que su delta.
     public static let valorL = InstrumentoType.groteskNumber(22, relativeTo: .title3)
 
+    /// `valor/l · separador` — el mismo `valorL` en peso REGULAR: los dos-puntos del tiempo de
+    /// sueño («7:20») se leen como separador tenue, no como dígito. Token (FER-31) en vez de un
+    /// `.fontWeight(.regular)` inline sobre `valorL`.
+    public static let valorLSeparador = valorL.weight(.regular)
+
+    /// Glifo de `LiquidIcon` sobre SF Symbol: `size × 0.78` (el símbolo respira dentro del cuadro
+    /// del icono), semibold, tamaño FIJO como `orbita` — la accesibilidad la lleva el elemento
+    /// compuesto, no el glifo. Token (FER-31) en vez de `.font(.system(size:weight:))` inline.
+    public static func iconSF(size: CGFloat) -> Font {
+        .system(size: size * 0.78, weight: .semibold)
+    }
+
     /// `numeral/hoja` — 34/700 tabular, escala con Dynamic Type. El dato héroe de la
     /// hoja de resumen (épico hoja Liquid, F0): manda sobre todo lo demás de la hoja.
     public static let numeralHoja = InstrumentoType.groteskNumber(34, relativeTo: .largeTitle)
