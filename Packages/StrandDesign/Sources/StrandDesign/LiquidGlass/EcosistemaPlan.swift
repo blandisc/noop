@@ -160,7 +160,13 @@ public extension EcosistemaSimulacion {
             ? 0.9 + 0.1 * sin(t * LiquidEcosistemaMotion.flickerDesgaste) : 1.0
         // Apertura 0 = fundido → 1 = separado: el eje de toda la coreografía.
         let u = min(1, max(0, cuadro.u))
-        let apertura = suave(1 - u)
+        // FER-25: en el INTRO (formando) la retinue ORBITA mientras el orbe se
+        // ensambla — NO se estaciona. Antes, durante la espera del intro (u=0),
+        // apertura valía 1 y las lunas se paraban mudas en sus estaciones ~0.35 s
+        // (estado que nadie diseñó: el separado mostrado sin que el usuario lo pida).
+        let enIntro: Bool = { if case .formando = e.fase { return true }
+                              return false }()
+        let apertura = enIntro ? 0 : suave(1 - u)
         // Rampa de estreno (estelas, especular, rótulos orbitales, destello de limbo).
         var alfaFundida = min(1, max(0, (cuadro.u - Geometria.umbralEstreno)
                                      / (1 - Geometria.umbralEstreno)))
