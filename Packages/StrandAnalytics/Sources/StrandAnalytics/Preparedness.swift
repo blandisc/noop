@@ -167,14 +167,22 @@ public enum Preparedness {
         /// The streak drives COPY only — it never changes `verdict` (the sentinel's single vote is
         /// unchanged from v3).
         public let sentinel: SentinelRead?
+        /// FER-33: the sentinel's per-night signals across the whole window (oldest → newest,
+        /// ending at asOf), taken from the SAME forward pass that produced `sentinel`. The
+        /// guardian sheet DRAWS the rule it explains ("only the pair, two nights running"), so
+        /// the diagram has to be what the engine actually judged — re-deriving the cuts in the
+        /// app layer would let the picture and the vote drift apart in silence the day a
+        /// threshold moves. Empty on the low-signal path, where no raws are computed (same
+        /// condition under which `sentinel` is already `nil`). COPY/UI only: never the vote.
+        public let sentinelHistory: [SentinelNight]
         public init(verdict: Verdict, drivers: [Driver], signals: [SignalRead] = [],
                     signalsPresent: Int, signalsTotal: Int,
                     maturity: BaselineStatus, autonomicNights: Int, trend: AutonomicTrend.Direction?,
-                    sentinel: SentinelRead? = nil) {
+                    sentinel: SentinelRead? = nil, sentinelHistory: [SentinelNight] = []) {
             self.verdict = verdict; self.drivers = drivers; self.signals = signals
             self.signalsPresent = signalsPresent; self.signalsTotal = signalsTotal
             self.maturity = maturity; self.autonomicNights = autonomicNights; self.trend = trend
-            self.sentinel = sentinel
+            self.sentinel = sentinel; self.sentinelHistory = sentinelHistory
         }
 
         /// Whether today's read is anchored by a RECORDED night of sleep (FER-1033). `false` means
@@ -214,6 +222,28 @@ public enum Preparedness {
                     tempOut: Bool, respOut: Bool) {
             self.state = state; self.streakNights = streakNights; self.watchingSignal = watchingSignal
             self.tempOut = tempOut; self.respOut = respOut
+        }
+    }
+
+    /// One night as the sentinel judged it, surfaced on `Read.sentinelHistory` (FER-33).
+    ///
+    /// `tempOut`/`respOut` carry the engine's own verdict for that night, identical to the flags
+    /// the forward pass feeds to the streak. `false` means "the engine did not flag it" — which
+    /// covers both "in range" and "could not be judged yet" (no usable baseline); it is never a
+    /// claim that the signal is fine. `tempMissing`/`respMissing` say the night simply had no
+    /// reading for that signal, which a UI must distinguish from "in range" (a hollow mark, not
+    /// a quiet one).
+    public struct SentinelNight: Sendable, Equatable {
+        /// Local civil day, "yyyy-MM-dd".
+        public let day: String
+        public let tempOut: Bool
+        public let respOut: Bool
+        public let tempMissing: Bool
+        public let respMissing: Bool
+        public init(day: String, tempOut: Bool, respOut: Bool,
+                    tempMissing: Bool, respMissing: Bool) {
+            self.day = day; self.tempOut = tempOut; self.respOut = respOut
+            self.tempMissing = tempMissing; self.respMissing = respMissing
         }
     }
 
@@ -434,7 +464,20 @@ public enum Preparedness {
         return Read(verdict: final, drivers: drivers, signals: signals,
                     signalsPresent: signalsPresent, signalsTotal: 3,
                     maturity: maturity, autonomicNights: autonomicNights, trend: input.trend?.direction,
-                    sentinel: sentinelStreak(ordered: ordered, raws: raws))
+                    sentinel: sentinelStreak(ordered: ordered, raws: raws),
+                    sentinelHistory: sentinelNights(ordered: ordered, raws: raws))
+    }
+
+    /// The per-night sentinel signals for the whole window (FER-33). Pure projection of the
+    /// forward pass that already ran: zero extra math, so the diagram the guardian draws and the
+    /// streak that drives its copy can never disagree.
+    private static func sentinelNights(ordered: [DailyMetric], raws: [RawDay]) -> [SentinelNight] {
+        zip(ordered, raws).map { day, raw in
+            SentinelNight(day: day.day,
+                          tempOut: raw.tempOut, respOut: raw.respOut,
+                          tempMissing: day.skinTempDevC == nil,
+                          respMissing: day.respRateBpm == nil)
+        }
     }
 
     // MARK: - Internals

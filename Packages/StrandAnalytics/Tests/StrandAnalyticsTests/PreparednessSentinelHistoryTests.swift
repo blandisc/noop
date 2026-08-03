@@ -1,0 +1,170 @@
+import XCTest
+import StrandModels
+@testable import StrandAnalytics
+
+/// FER-33 — `Read.sentinelHistory`: the sentinel's per-night signals for the whole window, so the
+/// guardian sheet can DRAW the rule it explains instead of re-deriving the engine's cuts in the app
+/// layer (where the picture and the vote would drift apart the day a threshold moves).
+///
+/// The contract these tests pin is PARITY, not new math: the history is a pure projection of the
+/// same forward pass that already feeds `sentinel`, so its tail must agree with `sentinel` on every
+/// fixture, and the vote must stay bit-identical (the frozen Preparedness suites cover that and are
+/// untouched here).
+final class PreparednessSentinelHistoryTests: XCTestCase {
+
+    // MARK: Fixtures (same shape as PreparednessSentinelStreakTests, so the two read alike)
+
+    private func dm(_ day: String, hrv: Double? = 55, rhr: Int? = 55, resp: Double? = 14,
+                    sleep: Double? = 450, temp: Double? = 0.0) -> DailyMetric {
+        DailyMetric(day: day, totalSleepMin: sleep, efficiency: nil, deepMin: nil, remMin: nil,
+                    lightMin: nil, disturbances: nil, restingHr: rhr, avgHrv: hrv, recovery: nil,
+                    strain: nil, exerciseCount: nil, spo2Pct: nil, skinTempDevC: temp, respRateBpm: resp)
+    }
+
+    private func baseline() -> [DailyMetric] {
+        (1...20).map { i in
+            dm(String(format: "2026-06-%02d", i),
+               hrv: 52 + Double(i % 5), rhr: 54 + i % 3, resp: 13 + Double(i % 3), temp: 0.0)
+        }
+    }
+
+    private func corroborated(_ day: String) -> DailyMetric { dm(day, resp: 18, temp: 0.9) }
+    private func watchingTemp(_ day: String)  -> DailyMetric { dm(day, resp: 14, temp: 0.9) }
+    private func watchingResp(_ day: String)  -> DailyMetric { dm(day, resp: 18, temp: 0.0) }
+    private func quiet(_ day: String)         -> DailyMetric { dm(day, resp: 14, temp: 0.0) }
+
+    private func read(_ days: [DailyMetric], asOf: String) -> Preparedness.Read {
+        Preparedness.evaluate(.init(days: days, strainByDay: [:], trend: nil, asOf: asOf,
+                                    nocturnalRestingHr: [:], cyclePhase: nil, nocturnalRmssd: nil))
+    }
+
+    // MARK: The tail agrees with `sentinel` on all four combinations
+
+    func testTailMatchesSentinel_quiet() throws {
+        let r = read(baseline() + [quiet("2026-06-21")], asOf: "2026-06-21")
+        let s = try XCTUnwrap(r.sentinel)
+        let last = try XCTUnwrap(r.sentinelHistory.last)
+        XCTAssertEqual(last.day, "2026-06-21")
+        XCTAssertEqual(last.tempOut, s.tempOut)
+        XCTAssertEqual(last.respOut, s.respOut)
+        XCTAssertFalse(last.tempOut || last.respOut)
+    }
+
+    func testTailMatchesSentinel_watchingTemp() throws {
+        let r = read(baseline() + [watchingTemp("2026-06-21")], asOf: "2026-06-21")
+        let s = try XCTUnwrap(r.sentinel)
+        let last = try XCTUnwrap(r.sentinelHistory.last)
+        XCTAssertEqual(last.tempOut, s.tempOut)
+        XCTAssertEqual(last.respOut, s.respOut)
+        XCTAssertTrue(last.tempOut)
+        XCTAssertFalse(last.respOut)
+    }
+
+    func testTailMatchesSentinel_watchingResp() throws {
+        let r = read(baseline() + [watchingResp("2026-06-21")], asOf: "2026-06-21")
+        let s = try XCTUnwrap(r.sentinel)
+        let last = try XCTUnwrap(r.sentinelHistory.last)
+        XCTAssertEqual(last.tempOut, s.tempOut)
+        XCTAssertEqual(last.respOut, s.respOut)
+        XCTAssertFalse(last.tempOut)
+        XCTAssertTrue(last.respOut)
+    }
+
+    func testTailMatchesSentinel_corroborated() throws {
+        let r = read(baseline() + [corroborated("2026-06-21")], asOf: "2026-06-21")
+        let s = try XCTUnwrap(r.sentinel)
+        let last = try XCTUnwrap(r.sentinelHistory.last)
+        XCTAssertEqual(last.tempOut, s.tempOut)
+        XCTAssertEqual(last.respOut, s.respOut)
+        XCTAssertTrue(last.tempOut && last.respOut)
+    }
+
+    // MARK: The history covers the window, in order
+
+    func testHistoryCoversEveryNightInOrder() {
+        let days = baseline() + [quiet("2026-06-21"), corroborated("2026-06-22")]
+        let r = read(days, asOf: "2026-06-22")
+        XCTAssertEqual(r.sentinelHistory.count, days.count)
+        XCTAssertEqual(r.sentinelHistory.map(\.day), days.map(\.day),
+                       "oldest → newest, one entry per input night")
+    }
+
+    // MARK: The streak the copy uses and the picture the sheet draws agree
+
+    func testStreakAgreesWithHistoryTail() throws {
+        let days = baseline() + [corroborated("2026-06-21"),
+                                 corroborated("2026-06-22"),
+                                 corroborated("2026-06-23")]
+        let r = read(days, asOf: "2026-06-23")
+        let s = try XCTUnwrap(r.sentinel)
+        XCTAssertEqual(s.state, .corroborated)
+        XCTAssertEqual(s.streakNights, 3)
+        // The diagram must show exactly those three nights with BOTH signals out, and the night
+        // before them quiet — otherwise the drawn rule contradicts the copy above it.
+        let tail = r.sentinelHistory.suffix(3)
+        XCTAssertTrue(tail.allSatisfy { $0.tempOut && $0.respOut })
+        let beforeStreak = try XCTUnwrap(r.sentinelHistory.dropLast(3).last)
+        XCTAssertFalse(beforeStreak.tempOut && beforeStreak.respOut)
+    }
+
+    func testLoneSignalNightIsDrawnAsLone() throws {
+        // The rule the sheet draws: one signal out never pairs. The history has to show it that way.
+        let r = read(baseline() + [watchingTemp("2026-06-21")], asOf: "2026-06-21")
+        let last = try XCTUnwrap(r.sentinelHistory.last)
+        XCTAssertTrue(last.tempOut)
+        XCTAssertFalse(last.respOut, "a lone temp night must never render as a confirmed pair")
+    }
+
+    // MARK: Missing readings are distinguishable from "in range"
+
+    func testMissingReadingsAreFlagged() throws {
+        let days = baseline() + [dm("2026-06-21", resp: nil, temp: nil)]
+        let r = read(days, asOf: "2026-06-21")
+        let last = try XCTUnwrap(r.sentinelHistory.last)
+        XCTAssertTrue(last.tempMissing)
+        XCTAssertTrue(last.respMissing)
+        XCTAssertFalse(last.tempOut)
+        XCTAssertFalse(last.respOut)
+    }
+
+    func testPresentReadingsAreNotFlaggedMissing() throws {
+        let r = read(baseline() + [quiet("2026-06-21")], asOf: "2026-06-21")
+        let last = try XCTUnwrap(r.sentinelHistory.last)
+        XCTAssertFalse(last.tempMissing)
+        XCTAssertFalse(last.respMissing)
+    }
+
+    func testOneSignalMissingWhileTheOtherReads() throws {
+        let days = baseline() + [dm("2026-06-21", resp: 18, temp: nil)]
+        let r = read(days, asOf: "2026-06-21")
+        let last = try XCTUnwrap(r.sentinelHistory.last)
+        XCTAssertTrue(last.tempMissing)
+        XCTAssertFalse(last.respMissing)
+    }
+
+    // MARK: The low-signal path reports nothing rather than something false
+
+    func testLowSignalPathYieldsEmptyHistory() {
+        // No autonomic readings at all → the composer returns early, before any raw is computed.
+        // `sentinel` is already nil on that path; the history must be empty for the same reason,
+        // so a caller can never draw a diagram the engine never produced.
+        let days = (1...20).map { i in
+            dm(String(format: "2026-06-%02d", i), hrv: nil, rhr: nil, resp: nil, temp: 0.0)
+        }
+        let r = read(days, asOf: "2026-06-20")
+        XCTAssertEqual(r.verdict, .lowSignal)
+        XCTAssertNil(r.sentinel)
+        XCTAssertTrue(r.sentinelHistory.isEmpty)
+    }
+
+    // MARK: The addition is inert for the vote
+
+    func testHistoryDoesNotChangeTheVerdict() {
+        // Same fixture as the streak suite's corroborated case: exposing the history must not move
+        // the verdict by a hair (it is a projection, not a new term).
+        let days = baseline() + [corroborated("2026-06-21"), corroborated("2026-06-22")]
+        let withHistory = read(days, asOf: "2026-06-22")
+        XCTAssertEqual(withHistory.verdict, read(days, asOf: "2026-06-22").verdict)
+        XCTAssertFalse(withHistory.sentinelHistory.isEmpty)
+    }
+}
