@@ -100,8 +100,6 @@ public struct LiquidEcosistema: View {
     /// abierta (calibrando → veredicto) y el embrión madura al orbe con un morfo,
     /// en vez del corte al ritual de fusión.
     @State private var graduacionDesde: TimeInterval?
-    /// Ancla de la EXHALACION (FER-21): el soplo del orbe hacia la pastilla al tap.
-    @State private var exhalaDesde: TimeInterval?
     @State private var escala: CGFloat = 1
     /// ¿El héroe está a la vista? (FER-14 #3) — fuera del viewport el reloj de 60 Hz se
     /// apaga. Arranca en `true`: si el héroe no vive dentro de un ScrollView el modifier
@@ -330,7 +328,6 @@ public struct LiquidEcosistema: View {
         ZStack(alignment: .topLeading) {
             EcosistemaEscenario(coreo: coreo, fase: fase ?? .viva(desde: 0),
                                 graduacionDesde: graduacionDesde,
-                                exhalaDesde: exhalaDesde,
                                 senales: senales, guardianJuntas: guardian?.estado == .juntas,
                                 vigiaFuera: [
                                     guardian?.estado == .tempFuera || guardian?.estado == .juntas,
@@ -693,13 +690,7 @@ public struct LiquidEcosistema: View {
             Capsule().strokeBorder(LiquidColor.vidrioBordePastilla, lineWidth: 0.5)
         }
         if let onTapVeredicto {
-            Button {
-                // EXHALACION (FER-21): el orbe sopla hacia la pastilla justo al tap --
-                // la mitad-heroe de la ilusion; la hoja siembra la suya al abrir. Con
-                // Reduce Motion no hay soplo (el plan tambien lo ignora).
-                if !still { exhalaDesde = Date().timeIntervalSinceReferenceDate }
-                onTapVeredicto()
-            } label: {
+            Button(action: onTapVeredicto) {
                 etiqueta
                     .frame(minHeight: 44)      // target real ≥44 pt (D10)
                     .contentShape(Rectangle())
@@ -841,8 +832,6 @@ private struct EcosistemaEscenario: View {
     let fase: Sim.Fase
     /// Ancla de la graduacion en vivo (FER-20) — nil = sin graduacion.
     let graduacionDesde: TimeInterval?
-    /// Ancla de la exhalacion (FER-21) -- nil = sin soplo.
-    let exhalaDesde: TimeInterval?
     let senales: [LiquidHoyModel.Senal]
     let guardianJuntas: Bool
     let vigiaFuera: [Bool]
@@ -904,9 +893,6 @@ private struct EcosistemaEscenario: View {
             vigiaFuera: vigiaFuera,
             graduacion: graduacionDesde.map {
                 min(1, max(0, (t - $0) / LiquidEcosistemaMotion.graduacionDur))
-            },
-            exhalacion: exhalaDesde.map {
-                min(1, max(0, (t - $0) / LiquidEcosistemaMotion.exhalacionDur))
             })
     }
 

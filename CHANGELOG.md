@@ -20,6 +20,11 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **«Cómo llegué a esto» abre sin partículas de ningún lado / «How I got here» opens with no particles from anywhere.**
+  **ES** — Se retiró el soplo de motas del orbe al abrir el acta (su otra mitad, la siembra de la hoja, ya se había quitado). La hoja abre a papel directo, limpia.
+  **EN** — The orb's puff of motes on opening the acta was removed (its other half, the sheet's seeding, was already gone). The sheet opens on plain paper, clean.
+  ([EcosistemaPlan.swift](Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/EcosistemaPlan.swift), [LiquidEcosistema.swift](Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/LiquidEcosistema.swift))
+
 - **El eclipse ya no tiene junta: los dos vigías se funden en un solo frente / The eclipse has no seam: the two sentinels fuse into a single front.**
   **ES** — Cuando temperatura y respiración se alían («el eclipse»), antes se ciernían como dos cuerpos traslapados detrás del veredicto —con una junta visible—. Ahora **se funden en uno solo**, partícula a partícula, sin costura. Bajo la superficie es una idea elegante: una fusión de dos-en-uno se resuelve como la superposición de dos migraciones de igual conteo sobre un destino compartido, sin tocar el motor gráfico ni relajar la ley de materia continua.
   **EN** — When temperature and breathing ally («the eclipse»), they used to loom as two overlapping bodies behind the verdict — with a visible seam. They now **fuse into one**, particle by particle, seamless. Underneath it's an elegant idea: a two-into-one fusion resolves as the superposition of two equal-count migrations onto a shared destination, without touching the graphics engine or relaxing the continuous-matter law.
