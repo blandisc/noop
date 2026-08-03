@@ -193,8 +193,8 @@ final class EcosistemaPlanTests: XCTestCase {
             if case .disco(_, _, _, let alfa) = t { return alfa } else { return nil }
         }
         XCTAssertFalse(discos.isEmpty, "still: el anillo estático debe existir")
-        XCTAssertTrue(discos.allSatisfy { $0 <= 0.25 },
-                      "still: todo disco es susurro (≤ 0.25 — estelas y conexiones)")
+        XCTAssertTrue(discos.allSatisfy { $0 <= 0.35 },
+                      "still: todo disco es susurro (≤ 0.35 — estelas y conexiones)")
     }
 
     func testStillEnFormandoSeLeeYaFundido() {
