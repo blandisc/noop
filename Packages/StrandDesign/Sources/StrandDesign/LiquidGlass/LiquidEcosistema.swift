@@ -1131,6 +1131,9 @@ private struct EcosistemaCanvas: View {
             case .nube(let nube):
                 if soloEtiquetas { break }
                 dibujarNube(ctx: &ctx, nube: nube, t: t)
+            case .nubeMorfo(let a, let b, let mezcla):
+                if soloEtiquetas { break }
+                dibujarNubeMorfo(ctx: &ctx, a: a, b: b, mezcla: mezcla, t: t)
             case .disco(let centro, let radio, let tinta, let alfa):
                 if soloEtiquetas { break }
                 ctx.fill(circulo(centro, radio), with: .color(color(tinta).opacity(recorte(alfa))))
@@ -1189,6 +1192,30 @@ private struct EcosistemaCanvas: View {
         for (clave, path) in buckets {
             let alfa = (Double(clave % 16) + 0.5) / 12
             ctx.fill(path, with: .color(color(clases[clave] ?? .base, tinta: nube.tinta)
+                                            .opacity(min(1, alfa))))
+        }
+    }
+
+    /// El espejo Canvas de `vsNubeMorfo` (FER-19 · C.2): mismas direcciones, misma ley
+    /// (`particulaMorfo`), mismo bucketing que `dibujarNube` — migración por índice.
+    private func dibujarNubeMorfo(ctx: inout GraphicsContext, a: Sim.Nube, b: Sim.Nube,
+                                  mezcla: Double, t: TimeInterval) {
+        let dirs = Self.direcciones(a.n)
+        var buckets: [Int: Path] = [:]
+        var clases: [Int: Sim.ClaseParticula] = [:]
+        for i in 0..<a.cuenta {
+            let p = Sim.particulaMorfo(dir: dirs[i * a.paso], indice: i,
+                                       a: a, b: b, mezcla: mezcla, t: t)
+            let alfaIdx = min(11, max(0, Int(p.alfa * 12)))
+            let clave = claseIndice(p.clase) * 16 + alfaIdx
+            buckets[clave, default: Path()].addEllipse(in: CGRect(
+                x: p.pos.x - p.tamano, y: p.pos.y - p.tamano,
+                width: p.tamano * 2, height: p.tamano * 2))
+            clases[clave] = p.clase
+        }
+        for (clave, path) in buckets {
+            let alfa = (Double(clave % 16) + 0.5) / 12
+            ctx.fill(path, with: .color(color(clases[clave] ?? .base, tinta: a.tinta)
                                             .opacity(min(1, alfa))))
         }
     }

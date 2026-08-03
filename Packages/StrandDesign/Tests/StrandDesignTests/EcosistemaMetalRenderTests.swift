@@ -86,6 +86,7 @@ final class EcosistemaMetalRenderTests: XCTestCase {
 
         let recursos = EcosistemaMetal.Recursos(device: device, cola: cola,
                                                 nube: try pipeline("vsNube"),
+                                                nubeMorfo: try pipeline("vsNubeMorfo"),
                                                 atomo: try pipeline("vsAtomo"))
         let descriptor = MTLTextureDescriptor.texture2DDescriptor(
             pixelFormat: EcosistemaMetal.formato, width: Self.ancho, height: Self.alto,
@@ -253,6 +254,28 @@ final class EcosistemaMetalRenderTests: XCTestCase {
         // así que la señal real es ésa — no una inundación de ámbar.
         XCTAssertGreaterThan(con.calidez, sin.calidez * 1.05,
                              "el eclipse debe teñir de ámbar el casquete que mira al guardián")
+    }
+
+    /// El morfo (FER-19 · C.2) compila, pinta, es determinista y NO duplica materia:
+    /// el cuadro a media convergencia queda en el orden del asentado — el crossfade
+    /// viejo lo inflaba con una segunda esfera completa encima.
+    func testMorfoRenderizaDeterministaYConservaMateria() throws {
+        let antU = LiquidEcosistemaMotion.anticipacion * 0.6
+        // suave(0.79) ≈ 0.89 → convergencia ≈ 0.55: dentro de la ventana del morfo.
+        let t = antU + 0.79 * LiquidEcosistemaMotion.fusionDur
+        let plan = Sim.plan(t: t, escena: escena(fase: .uniendo(desde: 0)))
+        XCTAssertTrue(plan.contains {
+            if case .nubeMorfo = $0 { return true } else { return false }
+        }, "el instante elegido debe cruzar la ventana del morfo")
+        let a = try renderizar(escena: escena(fase: .uniendo(desde: 0)), t: t)
+        let b = try renderizar(escena: escena(fase: .uniendo(desde: 0)), t: t)
+        XCTAssertGreaterThan(a.tinta, 100, "el morfo pinta materia")
+        XCTAssertEqual(a.tinta, b.tinta, "mismo t ⇒ mismo cuadro (determinismo)")
+        let asentado = try renderizar(escena: escena(), t: 3)
+        XCTAssertLessThan(a.tinta, asentado.tinta * 1.25,
+                          "conservación: el morfo no duplica materia (adiós crossfade)")
+        XCTAssertGreaterThan(a.tinta, asentado.tinta * 0.5,
+                             "y tampoco la evapora")
     }
 
     /// Calibrando es otro plan entero (espirales + embrión): que también llegue a la GPU.

@@ -199,6 +199,81 @@ final class EcosistemaPlanTests: XCTestCase {
     /// Los uniformes se pasan con `setVertexBytes`: si el layout de Swift deja de calzar
     /// con el de `EcosistemaShaders.metal`, el shader lee campos corridos y no hay error —
     /// solo un héroe roto. Estos tamaños son el candado.
+    // MARK: Morfo (FER-19 · C.2 «Materia continua»)
+
+    private func nubeMorfable(rotacion: Double,
+                              centro: CGPoint = CGPoint(x: 100, y: 100)) -> Sim.Nube {
+        Sim.Nube(centro: centro, radio: 40, rotacion: rotacion, jitterAmp: 0.4, alfaK: 1,
+                 stretch: 0, nivel: 0.6, nivelBajo: false, capAmbar: false,
+                 n: G.nEsfera, paso: 1, tinta: .clima)
+    }
+
+    /// El contrato del morfo: en mezcla 0/1 es BIT-IGUAL a `particula` simple, y a 0.5
+    /// la posición/alfa son exactamente el punto medio (lerp lineal por índice).
+    func testMorfoEquivalenciaEnExtremosYLinealidad() {
+        let a = nubeMorfable(rotacion: 0.4)
+        let b = nubeMorfable(rotacion: 1.9, centro: CGPoint(x: 140, y: 90))
+        let dirs = Sim.fibonacci(G.nEsfera)
+        func simple(_ n: Sim.Nube, _ i: Int) -> Sim.Particula {
+            Sim.particula(dir: dirs[i], indice: i, centro: n.centro, radio: n.radio,
+                          rotacion: n.rotacion, jitterAmp: n.jitterAmp, t: 2,
+                          alfaK: n.alfaK, stretch: n.stretch, nivel: n.nivel,
+                          nivelMezcla: n.nivelMezcla, nivelBajo: n.nivelBajo,
+                          capAmbar: n.capAmbar)
+        }
+        for i in stride(from: 0, to: G.nEsfera, by: 37) {
+            let pa = simple(a, i), pb = simple(b, i)
+            XCTAssertEqual(Sim.particulaMorfo(dir: dirs[i], indice: i,
+                                              a: a, b: b, mezcla: 0, t: 2), pa)
+            XCTAssertEqual(Sim.particulaMorfo(dir: dirs[i], indice: i,
+                                              a: a, b: b, mezcla: 1, t: 2), pb)
+            let pm = Sim.particulaMorfo(dir: dirs[i], indice: i, a: a, b: b,
+                                        mezcla: 0.5, t: 2)
+            XCTAssertEqual(pm.pos.x, (pa.pos.x + pb.pos.x) / 2, accuracy: 1e-9)
+            XCTAssertEqual(pm.pos.y, (pa.pos.y + pb.pos.y) / 2, accuracy: 1e-9)
+            XCTAssertEqual(pm.alfa, (pa.alfa + pb.alfa) / 2, accuracy: 1e-12)
+        }
+    }
+
+    /// A media convergencia de la reunión el crossfade MURIÓ: exactamente una esfera
+    /// `.nube` (la 1) más un `.nubeMorfo` (la 2 migrando por índice) — ~600 instancias,
+    /// no 900 — con esfera fuente compartida y alfa pleno en ambas configs.
+    func testConvergenciaEmiteMorfoNoCrossfade() {
+        let fase = Sim.Fase.uniendo(desde: 0)
+        let antU = LiquidEcosistemaMotion.anticipacion * 0.6
+        var visto = false
+        for paso in 0...60 {
+            let t = antU + Double(paso) / 60 * LiquidEcosistemaMotion.fusionDur
+            let trazos = Sim.plan(t: t, escena: escena(fase: fase))
+            let morfos = trazos.compactMap { tr -> (Sim.Nube, Sim.Nube, Double)? in
+                if case .nubeMorfo(let a, let b, let m) = tr { return (a, b, m) }
+                return nil
+            }
+            guard let (a, b, m) = morfos.first, m > 0.1, m < 0.9 else { continue }
+            visto = true
+            XCTAssertEqual(morfos.count, 1)
+            XCTAssertEqual(a.n, b.n)
+            XCTAssertEqual(a.paso, b.paso)
+            XCTAssertEqual(a.alfaK, 1)
+            XCTAssertEqual(b.alfaK, 1)
+            let esferas = nubes(trazos).filter { $0.n == G.nEsfera }
+            XCTAssertEqual(esferas.count, 1, "una sola .nube de esfera: la nube 1")
+            XCTAssertTrue(esferas.allSatisfy { $0.alfaK == 1 }, "sin alfas de crossfade")
+        }
+        XCTAssertTrue(visto, "el barrido debió cruzar la ventana de convergencia")
+    }
+
+    /// Reduce Motion jamás ve un morfo: los cuadros asentados son configuraciones puras.
+    func testStillSinMorfo() {
+        for fase: Sim.Fase in [.viva(desde: 0), .separada, .uniendo(desde: 0),
+                               .separando(desde: 0), .formando(inicio: 0)] {
+            let trazos = Sim.plan(t: 3, escena: escena(fase: fase, still: true))
+            XCTAssertFalse(trazos.contains {
+                if case .nubeMorfo = $0 { return true } else { return false }
+            })
+        }
+    }
+
     func testLayoutDeLosUniformes() {
         XCTAssertEqual(MemoryLayout<EcosistemaFisicaU>.stride, 32)
         XCTAssertEqual(MemoryLayout<EcosistemaNubeU>.stride, 112)

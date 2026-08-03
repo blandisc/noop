@@ -66,6 +66,10 @@ public extension EcosistemaSimulacion {
     /// Un trazo del cuadro, en orden de pintado.
     enum Trazo: Equatable, Sendable {
         case nube(Nube)
+        /// MORFO de materia (FER-19 · C.2): la misma dirección `i` evaluada en la
+        /// config A y en la B con lerp por índice — migración, no crossfade.
+        /// Precondición: `a.n == b.n && a.paso == b.paso`.
+        case nubeMorfo(a: Nube, b: Nube, mezcla: Double)
         /// Disco lleno: chispa del destello, mota del tributo, espiral de la acreción.
         case disco(centro: CGPoint, radio: CGFloat, tinta: Tinta, alfa: Double)
         /// Anillo trazado (el destello del contacto). `grosor` en pt.
@@ -230,36 +234,33 @@ public extension EcosistemaSimulacion {
                 ? (e.niveles.indices.contains(i) ? e.niveles[i] : nil) : nil
             let bajoE = nivelE != nil && e.fuera.indices.contains(i) && e.fuera[i]
                 && e.coreo == .desgaste
-            let rotPropia = i == 0 ? t * LiquidEcosistemaMotion.rotacionEsfera : -t * 0.5
-            // La nube con su rotación propia se apaga conforme converge (solo la 2).
-            let alfaPropia = i == 1 ? flicker * (1 - convergencia) : flicker
-            if alfaPropia > 0.02 {
-                trazos.append(.nube(Nube(
-                    centro: centroEsfera,
-                    radio: CGFloat(radio),
-                    rotacion: rotPropia,
-                    jitterAmp: jitter,
-                    alfaK: alfaPropia,
-                    stretch: max(0, cuadro.stretch),
-                    nivel: nivelE, nivelMezcla: mezclaGauge,
-                    nivelBajo: bajoE,
-                    capAmbar: capAmbar,
-                    n: Geometria.nEsfera, paso: 1, tinta: .clima)))
+            func esfera(rotacion: Double) -> Nube {
+                Nube(centro: centroEsfera,
+                     radio: CGFloat(radio),
+                     rotacion: rotacion,
+                     jitterAmp: jitter,
+                     alfaK: flicker,
+                     stretch: max(0, cuadro.stretch),
+                     nivel: nivelE, nivelMezcla: mezclaGauge,
+                     nivelBajo: bajoE,
+                     capAmbar: capAmbar,
+                     n: Geometria.nEsfera, paso: 1, tinta: .clima)
             }
-            // La copia ALINEADA de la nube 2: entra con la convergencia y al fundirse
-            // queda mota a mota con la nube 1 — un solo enjambre.
-            if i == 1, convergencia > 0.02 {
-                trazos.append(.nube(Nube(
-                    centro: centroEsfera,
-                    radio: CGFloat(radio),
-                    rotacion: t * LiquidEcosistemaMotion.rotacionEsfera,
-                    jitterAmp: jitter,
-                    alfaK: flicker * convergencia,
-                    stretch: max(0, cuadro.stretch),
-                    nivel: nivelE, nivelMezcla: mezclaGauge,
-                    nivelBajo: bajoE,
-                    capAmbar: capAmbar,
-                    n: Geometria.nEsfera, paso: 1, tinta: .clima)))
+            let rotPropia = i == 0 ? t * LiquidEcosistemaMotion.rotacionEsfera : -t * 0.5
+            if i == 0 || convergencia <= 0.02 {
+                trazos.append(.nube(esfera(rotacion: rotPropia)))
+            } else if convergencia >= 0.98 {
+                // Fundida: la nube 2 quedó mota a mota con la 1 — un solo enjambre.
+                trazos.append(.nube(esfera(rotacion: t * LiquidEcosistemaMotion.rotacionEsfera)))
+            } else {
+                // MORFO real (FER-19 · C.2): las motas de la nube 2 MIGRAN por índice de
+                // su orientación propia a la alineada — antes esto era un crossfade de
+                // dos nubes superpuestas (900 instancias y materia duplicada en
+                // pantalla); ahora son 600 instancias y cada mota viaja de verdad.
+                trazos.append(.nubeMorfo(
+                    a: esfera(rotacion: rotPropia),
+                    b: esfera(rotacion: t * LiquidEcosistemaMotion.rotacionEsfera),
+                    mezcla: convergencia))
             }
         }
 

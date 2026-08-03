@@ -47,7 +47,7 @@ struct NubeU {
     uint   nivelBajo;
     uint   capAmbar;
     float  nivelMezcla;  // 0 = esfera plena · 1 = gauge pleno (funde el modo nivel)
-    uint   _pad1;
+    float  mezcla;       // morfo (FER-19): la porta el buffer A; vsNube la ignora
 };
 
 struct Atomo {
@@ -97,10 +97,16 @@ static inline float3 fibonacci(uint i, uint n) {
 
 // MARK: Nubes de partículas (el puerto de `particula(dir:indice:…)`)
 
-vertex VOut vsNube(uint vid [[vertex_id]],
-                   uint iid [[instance_id]],
-                   constant NubeU &u [[buffer(0)]],
-                   constant Fisica &f [[buffer(1)]]) {
+// La física de UNA partícula de nube, compartida por `vsNube` y `vsNubeMorfo` (FER-19):
+// una sola copia de la ley — dos copias divergen.
+struct NubeEval {
+    float2 centro;
+    float  tam;
+    float  alfa;
+    float4 color;
+};
+
+static NubeEval evalNube(constant NubeU &u, constant Fisica &f, uint iid) {
     // La partícula `i` toma la dirección `i·paso` de la esfera fuente, y conserva `i`
     // como índice de jitter (idéntico a enumerar la variante rala en el Canvas).
     float3 dir = fibonacci(iid * u.paso, u.n);
@@ -144,18 +150,54 @@ vertex VOut vsNube(uint vid [[vertex_id]],
         color = u.colorAmbar;
     }
 
+    NubeEval e;
+    e.centro = float2(sx, sy);
+    e.tam = tam;
+    e.alfa = alfa;
+    e.color = color;
+    return e;
+}
+
+// El quad de una partícula ya evaluada — cola común de los dos vértices de nube.
+static VOut quadNube(NubeEval e, uint vid, float2 lienzo) {
     float2 q = esquina(vid);
-    float2 centro = float2(sx, sy);
     VOut out;
-    out.position = aClip(centro + q * tam, u.lienzo);
+    out.position = aClip(e.centro + q * e.tam, lienzo);
     out.uv = q;
-    out.color = float4(color.rgb, min(1.0, max(0.0, alfa)) * color.a);
-    out.pt = centro + q * tam;
-    out.foco = centro;
-    out.radio = tam;
+    out.color = float4(e.color.rgb, min(1.0, max(0.0, e.alfa)) * e.color.a);
+    out.pt = e.centro + q * e.tam;
+    out.foco = e.centro;
+    out.radio = e.tam;
     out.radioIni = 0.0;
     out.grosor = 0.0;
     return out;
+}
+
+vertex VOut vsNube(uint vid [[vertex_id]],
+                   uint iid [[instance_id]],
+                   constant NubeU &u [[buffer(0)]],
+                   constant Fisica &f [[buffer(1)]]) {
+    return quadNube(evalNube(u, f, iid), vid, u.lienzo);
+}
+
+// MORFO (FER-19 · C.2 «Materia continua»): la MISMA dirección `iid` evaluada en la
+// config A (buffer 0, que además porta `mezcla`) y en la B (buffer 2), con lerp de
+// posición/tamaño/alfa por índice — migración real de materia, nunca crossfade.
+// Espejo exacto de `EcosistemaSimulacion.particulaMorfo`.
+vertex VOut vsNubeMorfo(uint vid [[vertex_id]],
+                        uint iid [[instance_id]],
+                        constant NubeU &a [[buffer(0)]],
+                        constant Fisica &f [[buffer(1)]],
+                        constant NubeU &b [[buffer(2)]]) {
+    NubeEval ea = evalNube(a, f, iid);
+    NubeEval eb = evalNube(b, f, iid);
+    float m = clamp(a.mezcla, 0.0, 1.0);
+    NubeEval e;
+    e.centro = mix(ea.centro, eb.centro, m);
+    e.tam = mix(ea.tam, eb.tam, m);
+    e.alfa = mix(ea.alfa, eb.alfa, m);
+    e.color = m < 0.5 ? ea.color : eb.color;
+    return quadNube(e, vid, a.lienzo);
 }
 
 // MARK: Átomos sueltos (chispas, motas, espirales, el anillo y el especular)

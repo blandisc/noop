@@ -728,6 +728,13 @@ identically:
   encodes *instanced* draws: one cloud is one draw and the vertex shader derives each particle from
   its index, so ~850 particles never cross the CPU/GPU boundary as data. Orbital **labels stay on the
   Canvas** on top — text remains real text with the design system's typography.
+- **Matter interpolates; it never crossfades (FER-16 / FER-19).** State transitions inside the hero
+  are *morphs over one particle population*: `Trazo.nubeMorfo(a:b:mezcla:)` evaluates the same
+  Fibonacci direction `i` under configuration A and B and lerps position/size/alpha per index —
+  `EcosistemaSimulacion.particulaMorfo` is the pure spec, `vsNubeMorfo` its GPU port (two `NubeU`
+  buffers; `mezcla` rides the former `_pad1`, stride stays 112). At `mezcla` 0/1 the morph is
+  bit-equal to the plain cloud — that equality is the tested contract. Cross-count morphs
+  (orb ↔ moon) stay out of scope until an index-remap policy exists (C.3).
 - **Nothing derived from the app's clock reaches the GPU as `Float`.** The hero's `t` is
   `timeIntervalSinceReferenceDate` (~8.07 × 10⁸ s); at that magnitude a `Float` ULP is tens of
   radians, which would freeze the rotation for ~53 s at a time and collapse 300 jitter phases into

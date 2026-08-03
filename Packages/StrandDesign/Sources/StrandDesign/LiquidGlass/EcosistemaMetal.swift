@@ -53,7 +53,8 @@ struct EcosistemaNubeU {
     var capAmbar: UInt32
     /// 0 = esfera plena · 1 = gauge pleno (funde el modo nivel; era `_pad0`).
     var nivelMezcla: Float = 1
-    var _pad1: UInt32 = 0
+    /// Mezcla del morfo (FER-19): la porta el buffer A; `vsNube` la ignora (era `_pad1`).
+    var mezcla: Float = 0
 }
 
 struct EcosistemaAtomoU {
@@ -143,6 +144,7 @@ final class EcosistemaMetal: ObservableObject {
         let device: MTLDevice
         let cola: MTLCommandQueue
         let nube: MTLRenderPipelineState
+        let nubeMorfo: MTLRenderPipelineState
         let atomo: MTLRenderPipelineState
     }
 
@@ -174,9 +176,11 @@ final class EcosistemaMetal: ObservableObject {
               let cola = device.makeCommandQueue(),
               let libreria = biblioteca(device),
               let nube = pipeline(device, libreria, vertex: "vsNube"),
+              let nubeMorfo = pipeline(device, libreria, vertex: "vsNubeMorfo"),
               let atomo = pipeline(device, libreria, vertex: "vsAtomo")
         else { return nil }
-        return Recursos(device: device, cola: cola, nube: nube, atomo: atomo)
+        return Recursos(device: device, cola: cola, nube: nube, nubeMorfo: nubeMorfo,
+                        atomo: atomo)
     }
 
     /// El shader viaja con extensión `.msl`, no `.metal`, A PROPÓSITO: Xcode compila
@@ -277,6 +281,21 @@ final class EcosistemaMetalRenderer: NSObject {
                 enc.setVertexBytes(&fisica, length: MemoryLayout<EcosistemaFisicaU>.stride, index: 1)
                 enc.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4,
                                    instanceCount: nube.cuenta)
+
+            // MORFO (FER-19): dos uniforms de nube — A en buffer 0 (porta la mezcla),
+            // B en buffer 2 — y `vsNubeMorfo` lerpa por índice. Misma cuenta que A.
+            case .nubeMorfo(let na, let nb, let mezcla):
+                vaciar()
+                var ua = uniforme(na, lienzo: lienzo)
+                ua.mezcla = Float(min(1, max(0, mezcla)))
+                var ub = uniforme(nb, lienzo: lienzo)
+                enc.setRenderPipelineState(recursos.nubeMorfo)
+                enc.setVertexBytes(&ua, length: MemoryLayout<EcosistemaNubeU>.stride, index: 0)
+                enc.setVertexBytes(&fisica, length: MemoryLayout<EcosistemaFisicaU>.stride,
+                                   index: 1)
+                enc.setVertexBytes(&ub, length: MemoryLayout<EcosistemaNubeU>.stride, index: 2)
+                enc.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4,
+                                   instanceCount: na.cuenta)
 
             case .disco(let centro, let radio, let tinta, let alfa):
                 agregar(EcosistemaAtomoU(color: teñir(tinta, alfa), centro: punto(centro),
