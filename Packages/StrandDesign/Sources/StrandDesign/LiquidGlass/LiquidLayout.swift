@@ -14,12 +14,17 @@ public enum LiquidSpace {
     public static let s150: CGFloat = 6
     /// 8 — gap del grid de tiles.
     public static let s200: CGFloat = 8
+    /// 10 — medio paso: gap entre módulos de «El Tablero» y su padding vertical interior (FER-28).
+    public static let s250: CGFloat = 10
     /// 12 — padding H de tile, separación entre bloques chicos.
     public static let s300: CGFloat = 12
-    /// 16 — padding H de pastilla.
+    /// 16 — padding H de pastilla / interior horizontal de módulo.
     public static let s400: CGFloat = 16
-    /// 22 — margen horizontal de pantalla.
+    /// 22 — margen horizontal de pantalla (legacy Liquid).
     public static let s550: CGFloat = 22
+    /// 24 — margen horizontal de la pantalla «El Tablero» (FER-28): un punto más de aire
+    /// lateral que el resto, para que los módulos de vidrio no rocen el bisel.
+    public static let s600: CGFloat = 24
     /// 32.
     public static let s800: CGFloat = 32
     /// 56 — safe-area top (velo de status).
@@ -44,6 +49,9 @@ public enum LiquidRadius {
     public static let control: CGFloat = 12
     /// 18 — tiles, tarjetas, contenedores de lista.
     public static let tarjeta: CGFloat = 18
+    /// 20 — módulos de vidrio de «El Tablero» (FER-28): un punto más que el tile para que la
+    /// aurora fina del filo tenga curva donde correr.
+    public static let modulo: CGFloat = 20
     /// 28 — sheets y modales (reservado).
     public static let hoja: CGFloat = 28
     /// 999 — botones, dock, barras, badges (en SwiftUI: `Capsule`).
@@ -96,6 +104,17 @@ public enum LiquidElevation {
         .init(color: tintaSombra.opacity(0.16), radius: 16, y: 12),
         .init(color: tintaSombra.opacity(0.08), radius: 3, y: 2),
     ]
+
+    /// `e/módulo` — la sombra de dos capas de un módulo de «El Tablero» (FER-28), por índice
+    /// de profundidad: contacto corto (tinta 5 %, radius 3, y 2) + ambiente que se alarga
+    /// conforme el módulo baja en la pila (tinta 7 %, radius 14, y 9 + índice × 1.5). El
+    /// radius ya viene convertido del blur CSS (≈ 2×): 6/28 px → 3/14 pt.
+    public static func modulo(index: Int) -> [LiquidShadowLayer] {
+        [
+            .init(color: tintaSombra.opacity(0.05), radius: 3, y: 2),
+            .init(color: tintaSombra.opacity(0.07), radius: 14, y: 9 + CGFloat(index) * 1.5),
+        ]
+    }
 }
 
 public extension View {

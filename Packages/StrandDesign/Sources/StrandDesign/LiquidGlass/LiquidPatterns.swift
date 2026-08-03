@@ -74,6 +74,17 @@ public enum LiquidAmbiente: Sendable, Equatable {
         }
     }
 
+    /// Las 4 masas pálidas de la plasta de «El Tablero» (FER-28) para este clima. Un solo
+    /// dial: la pantalla lee esto y `LiquidPlasta` las cruza con `ambienteCrossfade` (1.6 s).
+    public var plasta: [Color] {
+        switch self {
+        case .bien: return LiquidColor.plastaVerde
+        case .atencion: return LiquidColor.plastaAmbar
+        case .alerta: return LiquidColor.plastaRojo
+        case .neutro: return LiquidColor.plastaNeutra
+        }
+    }
+
     /// El neutro baja la intensidad a la mitad (calma, no celebración).
     var intensidad: Double { self == .neutro ? 0.5 : 1 }
 }
