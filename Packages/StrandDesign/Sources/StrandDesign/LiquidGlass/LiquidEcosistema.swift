@@ -519,14 +519,15 @@ public struct LiquidEcosistema: View {
         let juntas = guardian?.estado == .juntas
         let tempFuera = guardian?.estado == .tempFuera || juntas
         let respFuera = guardian?.estado == .respFuera || juntas
-        // La MISMA gramática que REPOSO/SUEÑO (revisión del dueño): título arriba del
-        // orbe, número centrado EN el orbe. Coordenadas locales del ZStack (alto 64,
-        // centrado en la y de los mini-orbes): título en 6, dato en 32 = centro.
+        // «Etiqueta de espécimen» espejo (revisión del dueño): títulos arriba del orbe;
+        // las CIFRAS hacia afuera — temperatura a la izquierda de su orbe, respiración
+        // a la derecha del suyo — conectadas por el puente de materia y por la
+        // formación que llega desde el lado del orbe.
         let contenido = ZStack {
             vigiaColumna(valor: guardian?.temp ?? "—", rotulo: rotulos.temperatura,
-                         fuera: tempFuera, x: G.guardianSeparado1.x)
+                         fuera: tempFuera, x: G.guardianSeparado1.x, lado: -1)
             vigiaColumna(valor: guardian?.resp ?? "—", rotulo: rotulos.respiracion,
-                         fuera: respFuera, x: G.guardianSeparado2.x)
+                         fuera: respFuera, x: G.guardianSeparado2.x, lado: 1)
         }
         .frame(width: G.lienzo.width, height: 64)
         .contentShape(Rectangle())
@@ -543,20 +544,35 @@ public struct LiquidEcosistema: View {
     }
 
     /// Una columna de vigía en coordenadas locales del ZStack del guardián separado.
+    /// «Etiqueta de espécimen» espejo (revisión del dueño): la cifra vive AL LADO de
+    /// su orbe, hacia afuera — temperatura a la izquierda, respiración a la derecha
+    /// (`lado` −1/+1) — sobre papel limpio y a tamaño pleno. La conexión se VE dos
+    /// veces: un puente de motas del limbo del orbe hacia la cifra, y la formación
+    /// misma, cuya materia llega DESDE el lado del orbe (`origenLado`).
     @ViewBuilder private func vigiaColumna(valor: String, rotulo: String, fuera: Bool,
-                                           x: CGFloat) -> some View {
+                                           x: CGFloat, lado: CGFloat) -> some View {
+        let rOrbe = Sim.Geometria.radioGuardianSeparado
+        let tinta = fuera ? LiquidColor.atencionTexto : LiquidColor.tinta900
+        let materia = fuera ? LiquidColor.atencionTexto : LiquidColor.azul
         Text(rotulo)
             .font(LiquidType.orbita).tracking(LiquidType.orbitaTracking)
             .fontWeight(.medium)
-            .foregroundStyle(fuera ? LiquidColor.atencionTexto : LiquidColor.tinta900)
+            .foregroundStyle(tinta)
             .fixedSize()
             .position(x: x, y: 6)
-        // Tinta NEGRA siempre (revisión del dueño: el azul no se leía contra el
-        // vigía azul); el ámbar queda solo para fuera-de-rango — semántica.
-        datoEnMotas(valor, paso: 2.8,
-                    color: fuera ? LiquidColor.atencionTexto : LiquidColor.tinta900,
-                    fallback: LiquidType.datoMenor)
-            .position(x: x, y: 32)
+        // El puente: tres motas del color del ORBE (su materia, no tinta) que gotean
+        // del limbo hacia la cifra — el cordón que dice «este número es mío».
+        ForEach(0..<3, id: \.self) { i in
+            Circle()
+                .fill(materia.opacity(0.55 - Double(i) * 0.15))
+                .frame(width: 4.0 - CGFloat(i) * 0.8)
+                .position(x: x + lado * (rOrbe + 3 + CGFloat(i) * 5), y: 32)
+        }
+        datoEnMotas(valor, paso: 2.8, color: tinta,
+                    fallback: LiquidType.datoMenor,
+                    origenLado: -lado)
+            .frame(width: 120, alignment: lado > 0 ? .leading : .trailing)
+            .position(x: x + lado * (rOrbe + 18 + 60), y: 32)
     }
 
     // (miniGuardian murió con la gramática de columnas: ver `vigiaColumna`.)
@@ -569,7 +585,8 @@ public struct LiquidEcosistema: View {
     /// valor no arranca con nada escribible (p. ej. «—» ya es escribible; un texto
     /// libre no), cae completo al texto de `fallback`.
     @ViewBuilder private func datoEnMotas(_ valor: String, paso: CGFloat, color: Color,
-                                          fallback: Font) -> some View {
+                                          fallback: Font,
+                                          origenLado: CGFloat = 0) -> some View {
         let corte = String(valor.prefix { DatoDeMotas.alfabeto.contains($0) })
             .trimmingCharacters(in: .whitespaces)
         let resto = String(valor.dropFirst(valor.prefix {
@@ -579,7 +596,7 @@ public struct LiquidEcosistema: View {
         } else {
             HStack(alignment: .center, spacing: paso * 1.4) {
                 DatoDeMotas(texto: corte, separada: esSeparadaEstable, paso: paso,
-                            color: color, fallback: fallback)
+                            color: color, fallback: fallback, origenLado: origenLado)
                 if !resto.isEmpty {
                     Text(verbatim: resto)
                         .font(LiquidType.captionLectura)
@@ -604,6 +621,10 @@ public struct LiquidEcosistema: View {
         var paso: CGFloat = 3.4
         let color: Color
         var fallback: Font = LiquidType.valorL
+        /// De que LADO llega la materia al formarse (y regresa al disolverse):
+        /// 0 = radial (las decisoras, sobre su propio orbe); +1 = desde la derecha;
+        /// -1 = desde la izquierda — los vigias, cuyo orbe vive a un costado.
+        var origenLado: CGFloat = 0
 
         /// El alfabeto de motas — lo que puede escribirse en partículas. Lo que no,
         /// es texto (la vista partidora `datoEnMotas` separa número de unidad).
@@ -689,7 +710,7 @@ public struct LiquidEcosistema: View {
                         let jy = CGFloat(cos(s * 7.1)) * paso * 0.10
                         let destino = CGPoint(x: x0 + CGFloat(c) * paso + jx,
                                               y: paso * 0.5 + CGFloat(f) * paso + jy)
-                        let rBase = paso * (0.40 + 0.05 * CGFloat((s * 3).rounded(.down)))
+                        let rBase = paso * (0.46 + 0.05 * CGFloat((s * 3).rounded(.down)))
                         // Dirección orbe→destino (la normal del limbo más cercano).
                         var dx = Double(destino.x - centroLocal.x)
                         var dy = Double(destino.y - centroLocal.y)
@@ -706,9 +727,12 @@ public struct LiquidEcosistema: View {
                             let u = min(1, max(0, (ahora.timeIntervalSince(d) - s * 0.08)
                                                / Self.durDisolucion))
                             let e = Sim.suave(u)
-                            let hacia = CGPoint(
-                                x: centroLocal.x + CGFloat(dx) * radioOrbe * 0.25,
-                                y: centroLocal.y + CGFloat(dy) * radioOrbe * 0.25)
+                            let hacia = origenLado == 0
+                                ? CGPoint(x: centroLocal.x + CGFloat(dx) * radioOrbe * 0.25,
+                                          y: centroLocal.y + CGFloat(dy) * radioOrbe * 0.25)
+                                : CGPoint(x: origenLado > 0 ? size.width + paso * 5
+                                                            : -paso * 5,
+                                          y: centroLocal.y + CGFloat(sin(s * 9)) * paso * 2)
                             pos = Sim.puntoLerp(destino, hacia, e)
                             // Remolino compartido en la caída: enjambre, no lluvia.
                             pos.x += CGFloat(-dy * sin(.pi * e)) * paso * (0.8 + 1.2 * s)
@@ -732,9 +756,14 @@ public struct LiquidEcosistema: View {
                                 // campo de flujo común — enjambre, no N teletransportes)
                                 // y sobrepaso que asienta (exigencia 2, backOut).
                                 let e = Sim.backOut(u)
-                                let origen = CGPoint(
-                                    x: centroLocal.x + CGFloat(dx) * radioOrbe * (0.62 + 0.25 * s),
-                                    y: centroLocal.y + CGFloat(dy) * radioOrbe * (0.62 + 0.25 * s) * 0.9)
+                                let origen = origenLado == 0
+                                    ? CGPoint(
+                                        x: centroLocal.x + CGFloat(dx) * radioOrbe * (0.62 + 0.25 * s),
+                                        y: centroLocal.y + CGFloat(dy) * radioOrbe * (0.62 + 0.25 * s) * 0.9)
+                                    : CGPoint(
+                                        x: origenLado > 0 ? size.width + paso * (4 + 6 * s)
+                                                          : -paso * (4 + 6 * s),
+                                        y: centroLocal.y + CGFloat(sin(s * 9)) * paso * 3)
                                 pos = Sim.puntoLerp(origen, destino, e)
                                 let bow = sin(.pi * min(1, e)) * paso * (1.1 + 1.5 * s)
                                 pos.x += CGFloat(-dy) * CGFloat(bow)
@@ -759,10 +788,12 @@ public struct LiquidEcosistema: View {
                             // leían): cada punto de tinta lleva su propio despeje — un
                             // bajo-punto claro apenas mayor. Crispa el glifo sobre
                             // cualquier fondo sin resucitar el pegote.
-                            let rH = r * 1.55
+                            // Halo reforzado (revisión del dueño: el número no brincaba
+                            // contra el orbe): 1.55->1.9 de radio y 0.72->0.86 de alfa.
+                            let rH = r * 1.9
                             ctx.fill(Path(ellipseIn: CGRect(x: pos.x - rH, y: pos.y - rH,
                                                             width: rH * 2, height: rH * 2)),
-                                     with: .color(.white.opacity(0.72 * alfa)))
+                                     with: .color(.white.opacity(0.86 * alfa)))
                             ctx.fill(Path(ellipseIn: CGRect(x: pos.x - r, y: pos.y - r,
                                                             width: r * 2, height: r * 2)),
                                      with: .color(color.opacity(alfa)))
