@@ -80,6 +80,24 @@ final class LiquidSheetHeaderA11yTests: XCTestCase {
             "SUEÑO")
     }
 
+    // MARK: F0.2 · el sello de la ventana entra al label (entre dato y origen)
+
+    /// Con sello: el orden es título, dato, sello, origen.
+    func test_sello_entraAlLabelEntreDatoYOrigen() {
+        XCTAssertEqual(
+            LiquidSheetHeader.a11yLabel(titulo: "VFC", numeral: "56", unidad: "ms",
+                                        sello: "HOY · 3 AGO", origen: "Apple Salud"),
+            "VFC, 56 ms, HOY · 3 AGO, Apple Salud")
+    }
+
+    /// Con «—» y sello: la unidad no se dice, el sello sí (la ventana sigue siendo info).
+    func test_sello_conSinDato_sinUnidad() {
+        XCTAssertEqual(
+            LiquidSheetHeader.a11yLabel(titulo: "VFC", numeral: "—", unidad: "ms",
+                                        sello: "HOY · 3 AGO", origen: "Apple Salud"),
+            "VFC, —, HOY · 3 AGO, Apple Salud")
+    }
+
     // MARK: El init compone el mismo label que la función estática
 
     /// El `init` es quien pasa el sufijo: si dejara de hacerlo, C1 volvería en silencio
