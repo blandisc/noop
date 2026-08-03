@@ -745,6 +745,13 @@ identically:
   continuity by construction. Under Reduce Motion, only the settled embryo. If calibration completes
   with the screen open, the embryo **graduates** live into the verdict orb via a same-count
   `nubeMorfo` (`Escena.graduacion`, anchored by the view) — the two decision spheres never appear.
+- **Sheet↔hero continuity is a two-halves illusion (FER-21 · C.4).** Tapping «Cómo llegué a esto»
+  makes the orb exhale ~18 motes toward the pill (`Escena.exhalacion`, pure plan), and the acta
+  sheet seeds a decorative constellation behind its header on open (`LiquidSiembraMotas`,
+  StrandDesign) that settles and fully dissolves — the sheet ends as pure paper. There is no
+  window-level overlay: each layer animates its own half and shared cadence sells the continuity.
+  Text-is-text stays law: only THE numeric datum is ever written in motes, and this sheet has none.
+  Reduce Motion (system flag or the preview override) disables both halves.
 - **Nothing derived from the app's clock reaches the GPU as `Float`.** The hero's `t` is
   `timeIntervalSinceReferenceDate` (~8.07 × 10⁸ s); at that magnitude a `Float` ULP is tens of
   radians, which would freeze the rotation for ~53 s at a time and collapse 300 jitter phases into

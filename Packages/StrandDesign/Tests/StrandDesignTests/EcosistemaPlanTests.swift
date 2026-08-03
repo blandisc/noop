@@ -376,4 +376,54 @@ final class EcosistemaPlanTests: XCTestCase {
         })
     }
 
+
+    // MARK: C.4 Exhalacion + siembra (FER-21)
+
+    /// El soplo hacia la pastilla: determinista, acotado, y solo en la ventana viva.
+    func testExhalacionDeterministaYAcotada() {
+        var e = escena(fase: .viva(desde: 0))
+        e.exhalacion = 0.5
+        let a = Sim.plan(t: 3, escena: e)
+        let b = Sim.plan(t: 3, escena: e)
+        XCTAssertEqual(a, b, "mismo (t, escena) => mismo plan")
+        // El soplo agrega discos extra respecto al mismo cuadro sin exhalar.
+        var e0 = escena(fase: .viva(desde: 0))
+        e0.exhalacion = nil
+        let sin = Sim.plan(t: 3, escena: e0)
+        func discos(_ tr: [Sim.Trazo]) -> Int {
+            tr.filter { if case .disco = $0 { return true } else { return false } }.count
+        }
+        let extra = discos(a) - discos(sin)
+        XCTAssertGreaterThan(extra, 0, "el soplo existe")
+        XCTAssertLessThanOrEqual(extra, 18, "presupuesto del soplo")
+        // Fuera de la ventana (0 o 1) el soplo no se fabrica.
+        e.exhalacion = 1
+        XCTAssertEqual(discos(Sim.plan(t: 3, escena: e)), discos(sin))
+    }
+
+    /// Reduce Motion jamas ve el soplo.
+    func testExhalacionStillNoExiste() {
+        var e = escena(fase: .viva(desde: 0), still: true)
+        e.exhalacion = 0.5
+        var e0 = escena(fase: .viva(desde: 0), still: true)
+        e0.exhalacion = nil
+        XCTAssertEqual(Sim.plan(t: 3, escena: e), Sim.plan(t: 3, escena: e0))
+    }
+
+    /// La constelacion de la siembra es pura: misma semilla => mismos puntos,
+    /// dentro del presupuesto y del lienzo normalizado.
+    func testSiembraPuntosDeterministasYAcotados() {
+        let a = LiquidSiembraMotas.puntos(semilla: 7, cuenta: 70)
+        let b = LiquidSiembraMotas.puntos(semilla: 7, cuenta: 70)
+        XCTAssertEqual(a, b)
+        XCTAssertEqual(a.count, 70)
+        for p in a {
+            XCTAssertTrue((0...1).contains(p.destinoX) && (0...1).contains(p.destinoY))
+            XCTAssertTrue((0...1).contains(p.origenX))
+            XCTAssertTrue(p.retraso >= 0 && p.retraso <= LiquidSiembraMotas.Receta.escalon)
+        }
+        XCTAssertNotEqual(a, LiquidSiembraMotas.puntos(semilla: 8, cuenta: 70),
+                          "semillas distintas => constelaciones distintas")
+    }
+
 }

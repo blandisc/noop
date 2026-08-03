@@ -186,6 +186,9 @@ public enum LiquidEcosistemaMotion {
     /// Graduación en vivo (FER-20, decisión del dueño): duración del morfo
     /// embrión → orbe cuando la base se completa con la pantalla abierta.
     public static let graduacionDur: Double = 1.4
+    /// C.4 (FER-21): duración del SOPLO del orbe al tocar «Cómo llegué a esto» — la
+    /// mitad-héroe de la ilusión en dos mitades. No bloquea la presentación del sheet.
+    public static let exhalacionDur: Double = 0.38
 
     // tributo (las lunas alimentan el orbe)
     /// Duración del viaje luna→orbe de cada mota del chorro (s).

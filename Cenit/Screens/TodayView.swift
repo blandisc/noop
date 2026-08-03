@@ -701,7 +701,7 @@ struct TodayView: View {
         // El acta del veredicto: la hoja que contesta la pregunta que el héroe provoca.
         .sheet(isPresented: $showVeredictoActa) {
             LiquidMetricSheet(tono: liquidActaTono, detent: .porContenido) {
-                LiquidActaVeredicto(liquidActa, onVerMas: {
+                LiquidActaVeredicto(liquidActa, siembra: true, onVerMas: {
                     showVeredictoActa = false
                     tabRouter.select(.body)
                 })
