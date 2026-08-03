@@ -20,6 +20,16 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **La hoja de Sueño se pone a la par de las demás: su número grande es la duración, y la regularidad estrena tarjeta / The Sleep sheet falls in line with the rest: its big number is duration, and regularity gets its own card.**
+  **ES** — Antes, el encabezado de Sueño mostraba dos datos apretados (duración | regularidad); ahora muestra un solo número grande —tu duración— igual que las otras ocho hojas, y la regularidad baja a su propia tarjeta con su explicación y una línea que la traduce («Muy regular», «Bastante regular», «Variable»). Las etapas de la noche siguen debajo.
+  **EN** — Before, the Sleep header crammed two figures (duration | regularity); now it shows a single large number — your duration — like the other eight sheets, and regularity moves to its own card with its explanation and a line that translates it («Very regular», «Fairly regular», «Variable»). The night's stages stay below.
+  ([LiquidMetricSheetView.swift](Cenit/Screens/Hoy/LiquidMetricSheetView.swift), [LiquidRegularityCard.swift](Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/LiquidRegularityCard.swift))
+
+- **Las gráficas de las hojas ahora se recorren con VoiceOver / The sheet charts are now navigable with VoiceOver.**
+  **ES** — Cada gráfica de tendencia publica su serie al rotor «Gráficas» de VoiceOver (audio graph): enfocando la gráfica y girando el rotor puedes recorrer noche por noche, fecha y valor, con la misma lectura que muestra el toque táctil. La etiqueta y el valor de siempre no cambian; el rotor es adicional.
+  **EN** — Each trend chart now exposes its series to VoiceOver's «Charts» rotor (audio graph): focus the chart, turn the rotor, and you can step night by night through date and value, read the same way the touch scrub reads them. The usual label and value are unchanged; the rotor is additional.
+  ([LiquidChartCore.swift](Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/LiquidChartCore.swift))
+
 - **Las hojas de detalle dicen lo mismo en todos lados, y ya no rotulan procedencia sin dato / Detail sheets now read the same everywhere, and no longer claim a source when there's no value.**
   **ES** — Trabajo interno de fondo: la frase de nivel, el formato y el origen de cada una de las 9 hojas de detalle ahora salen de un solo lugar (los mismos que ya usa el motor), en vez de estar copiados a mano en cada pantalla. El texto que ves es idéntico al de antes. El único cambio visible: cuando una métrica aún no tiene dato («—»), ya no aparece la etiqueta «Calculado» debajo — sin dato, sin procedencia.
   **EN** — Internal groundwork: each of the 9 detail sheets now gets its level phrase, number format and data source from one place (the same the engine already uses), instead of being hand-copied per screen. The text you see is identical to before. The one visible change: when a metric has no value yet («—»), the «Calculated» label no longer shows beneath it — no value, no provenance.
