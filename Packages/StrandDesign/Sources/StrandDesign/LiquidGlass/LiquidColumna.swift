@@ -25,15 +25,6 @@ public struct LiquidColumnaShell<Content: View>: View {
 
     @State private var taps = 0
 
-    /// Área tocable mínima (44 en producción; el arnés de comparación la puede bajar en DEBUG).
-    static var areaTocable: CGFloat {
-        #if DEBUG
-        return LiquidTableroDebug.areaTocable
-        #else
-        return 44
-        #endif
-    }
-
     public init(label: String, alignment: HorizontalAlignment = .leading,
                 a11yLabel: String, a11yHint: String = "Abre el detalle",
                 action: @escaping () -> Void, @ViewBuilder content: () -> Content) {
@@ -62,7 +53,10 @@ public struct LiquidColumnaShell<Content: View>: View {
                 Text(label).liquidDato().foregroundStyle(LiquidColor.tinta500)
                 content
             }
-            .frame(maxWidth: .infinity, minHeight: Self.areaTocable, alignment: frameAlignment)
+            // Sin piso de altura: cada columna abraza su contenido (pedido del dueño: un módulo
+            // de una línea no debe medir lo mismo que uno de tres). El área tocable la dan el
+            // ancho de la fila + el padding del módulo; VoiceOver la trata como botón igual.
+            .frame(maxWidth: .infinity, alignment: frameAlignment)
             .contentShape(Rectangle())
         }
         .buttonStyle(.liquidPress)

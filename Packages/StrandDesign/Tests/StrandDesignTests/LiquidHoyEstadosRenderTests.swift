@@ -14,10 +14,10 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
     func test_renderEstados() throws {
         for (nombre, model, fase) in Self.estados {
             let view = ZStack {
-                LiquidAmbientBackground.hoy(model.ambiente)
+                LiquidAmbientBackground.tablero(model.ambiente)
                 VStack(spacing: 0) {
                     LiquidHoyContent(model: model, ecosistemaFase: fase)
-                        .padding(.top, LiquidSpace.s800)
+                        .padding(.top, LiquidSpace.s550)
                     Spacer(minLength: 0)
                 }
             }
@@ -66,6 +66,7 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
                              confianza: "Confianza: 8 de 14 noches"),
             carga: .medida(pos: 62, zone: 2, status: "ALTA", ratio: "1.32", razon: 1.32, state: .atencion),
             metricas: base.metricas,
+            modulos: LiquidHoyModel.ejemploModulos,
             guardian: .init(label: "VIGILANDO", temp: "+0.1°", resp: "14 rpm", estado: .tranquilo),
             heroHint: base.heroHint,
             ambiente: .atencion,
@@ -89,6 +90,7 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
                              confianza: nil),
             carga: .medida(pos: 78, zone: 3, status: "MUY ALTA", ratio: "1.61", razon: 1.61, state: .atencion),
             metricas: base.metricas,
+            modulos: LiquidHoyModel.ejemploModulos,
             guardian: .init(label: "VIGILANDO", temp: "+0.1°", resp: "14 rpm", estado: .tranquilo),
             heroHint: base.heroHint,
             ambiente: .alerta,
@@ -110,6 +112,7 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
                             subtitle: "Sin noche grabada: esta lectura es menos precisa."),
             carga: .medida(pos: 51.5, zone: 1, status: "EN EQUILIBRIO", ratio: "1.03", razon: 1.03, state: .ok),
             metricas: base.metricas,
+            modulos: LiquidHoyModel.ejemploModulos,
             // «Una fuera»: solo la temperatura se tiñe; el héroe NO cambia.
             guardian: .init(label: "VIGILANDO", temp: "+0.9°", resp: "14 rpm", estado: .tempFuera),
             heroHint: base.heroHint,
@@ -131,6 +134,7 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
                             subtitle: "Noche 4 de 7 · tu rango se está formando"),
             carga: .calibrando(status: "CALIBRANDO"),
             metricas: base.metricas,
+            modulos: LiquidHoyModel.calibrandoModulos,
             guardian: .init(label: "VIGILANDO", temp: "—", resp: "—", estado: .tranquilo),
             heroHint: nil,
             ambiente: .neutro,
@@ -149,6 +153,7 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
                              confianza: nil),
             carga: .medida(pos: 51.5, zone: 1, status: "EN EQUILIBRIO", ratio: "1.03", razon: 1.03, state: .ok),
             metricas: base.metricas,
+            modulos: LiquidHoyModel.ejemploModulos,
             guardian: .init(label: "JUNTAS", temp: "+0.6°", resp: "19 rpm", estado: .juntas),
             heroHint: base.heroHint,
             ambiente: .atencion,

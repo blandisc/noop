@@ -42,12 +42,12 @@ public enum LiquidSpace {
     ///     el aire de ABAJO — que es exactamente lo que el mockup aprobado ya muestra.
     /// El alto reservado compacto = `ecosistemaAlto − recorteTop − acercaVeredicto`.
     public static let ecosistemaRecorteTop: CGFloat = 42
-    public static let ecosistemaAcercaVeredicto: CGFloat = 48
+    public static let ecosistemaAcercaVeredicto: CGFloat = 40
     /// Alto RESERVADO del héroe compacto: se fija directo (con `.frame(alignment: .top)`) para
     /// que el box ABRACE al contenido —orbe + veredicto + subtítulo + pastilla— sin espacio
     /// muerto abajo. Derivarlo de los recortes dejaba ~62 pt de aire reservado bajo la pastilla
     /// (el frame centrado); este valor + anclaje arriba lo eliminan y suben el módulo 1 pegado.
-    public static let ecosistemaAltoCompacto: CGFloat = 232
+    public static let ecosistemaAltoCompacto: CGFloat = 250
 
     /// Margen inferior del dock flotante. Negativo entra al área segura para pegarlo
     /// más al borde (pedido del dueño /inject: a 8 y a 0 seguía flotando muy arriba).

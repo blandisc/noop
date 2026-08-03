@@ -492,3 +492,35 @@ no migradas conservan la voz de §8.3 hasta que les toque.
   encendidas == el numeral (invariante de `RecoveryRules`, con test `testNumeralEqualsVisibleSumAcrossStates`).
   Los banners que F3 envía son presentacionales y no tocan esa descomposición, así que el invariante
   se conserva en todos los estados con numeral.
+
+### 8.8 «El Tablero» — evolución DNA de Hoy (FER-28)
+
+El rediseño de la mitad inferior de Hoy formaliza dos evoluciones del ADN, ambas acotadas a la
+pantalla Hoy (el resto del sistema no cambia). Misma disciplina que la excepción del vigía (FER-24):
+excepciones **conscientes y nombradas**, no una relajación general.
+
+- **Se retira «color solo en el dato» PARA HOY.** En «El Tablero» el color vive en tres capas, no
+  en una:
+  1. **Los valores** de cada métrica van teñidos con su tono 1:1 (`indigo` sueño, `rosa` FC,
+     `verde` carga, `ámbar` temp/esfuerzo, `teal` pasos, `cian` VFC, `azul` resp) — el dato manda,
+     y su color lo ancla a su casa.
+  2. **El ambiente** (la *plasta*, `LiquidPlasta`) es MONOCROMO del veredicto — una sola familia de
+     clima a la vez (verde/ámbar/rojo/neutro), a luminancia casi constante.
+  3. **Los filos** (`LiquidAuroraEdge`) llevan, insinuados, los tonos de LOS DATOS de su módulo.
+  La regla original («color solo en el dato», §8, regla 2) sigue vigente para las demás pantallas;
+  Hoy es la excepción nombrada, porque su trabajo es que un vistazo lea a la vez el veredicto (fondo)
+  y de dónde sale (datos teñidos).
+
+- **Doctrina sin-scroll de Hoy.** Con Dynamic Type por defecto, Hoy entera cabe SIN scroll en un
+  iPhone estándar (header + héroe + 4 módulos + dock). Para lograrlo sin tocar el arte del héroe
+  («El Ecosistema», FER-13), el héroe tiene una presentación **compacta** (`LiquidEcosistema.compacto`):
+  recorta el aire superior del lienzo y acerca el veredicto al orbe — exactamente la proporción que
+  ya mostraba el mock aprobado. Los módulos ABRAZAN su contenido (sin piso de altura fijo), así un
+  módulo de una línea (LO QUE ACOMPAÑA) no ocupa lo mismo que uno de tres. Con tallas **AX** vuelve
+  el scroll y los módulos apilan **1 dato por fila** (excepción honesta, como lo hace Apple).
+
+- **El dial-sello se aplana.** Sobre el suelo casi blanco nuevo (`fondoAlto/Bajo` = `#FEFEFD/#F3F4F2`),
+  el dial de 24 h deja la lente de vidrio pesada y las 24 marcas por un anillo fino + los arcos de
+  dato (noche índigo, día oro) + una aguja a la hora actual. El dato son los arcos; el chrome calla.
+
+Tokens/componentes nuevos y su spec cerrada viven en `LIQUID-GLASS.md` (§ El Tablero).

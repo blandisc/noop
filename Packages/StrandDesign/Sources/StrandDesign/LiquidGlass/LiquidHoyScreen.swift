@@ -1,18 +1,5 @@
 import SwiftUI
 
-#if DEBUG
-/// Hooks SOLO de render/comparación (FER-28): banderas para comparar variantes de diseño en
-/// el arnés de ImageRenderer sin recompilar por variante. No afectan producción.
-enum LiquidTableroDebug {
-    /// 0 = posicional (default) · 1 = todas centradas · 2 = mockup (orillas).
-    nonisolated(unsafe) static var alineacionModo = 0
-    /// Área tocable mínima de una columna (44 default; 40 para probar el fit).
-    nonisolated(unsafe) static var areaTocable: CGFloat = 44
-    /// Override del alto compacto del héroe para barrer el fit (nil = usa el token).
-    nonisolated(unsafe) static var altoCompactoOverride: CGFloat? = nil
-}
-#endif
-
 // MARK: - Liquid Glass · Pantalla Hoy (handoff §7.1 · FER-1045)
 //
 // Dos capas:
@@ -498,6 +485,8 @@ public struct LiquidHoyContent: View {
     /// SOLO tests/renders: fija la fase del Ecosistema (p. ej. `.separada`).
     let ecosistemaFase: EcosistemaSimulacion.Fase?
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     public init(model: LiquidHoyModel,
                 onTapMetric: ((String) -> Void)? = nil,
                 onTapSenal: ((String) -> Void)? = nil,
@@ -593,18 +582,36 @@ public struct LiquidHoyContent: View {
                      auroraPeriod: mod.auroraPeriod, auroraReverse: mod.auroraReverse) {
             VStack(alignment: .leading, spacing: LiquidSpace.s150) {
                 cabecera(mod)
-                HStack(alignment: .center, spacing: 0) {
-                    ForEach(Array(mod.columnas.enumerated()), id: \.element.id) { j, col in
-                        if j > 0 {
-                            // Aire alrededor del capilar (mockup: margen 12 pt) para que el
-                            // divisor quede centrado en el hueco y los datos no lo toquen.
-                            LiquidCapilar()
-                                .padding(.horizontal, LiquidSpace.s300)
-                                .padding(.vertical, 2)
+                if dynamicTypeSize >= .accessibility1 {
+                    // Tallas AX: los capilares y las columnas lado a lado truncan; el módulo
+                    // apila 1 dato por fila (excepción honesta, así lo hace Apple). Vuelve el
+                    // scroll (lo aporta el contenedor de la app / la pantalla de referencia).
+                    VStack(alignment: .leading, spacing: LiquidSpace.s150) {
+                        ForEach(Array(mod.columnas.enumerated()), id: \.element.id) { j, col in
+                            columnaView(col, align: .leading)
+                                .liquidOnda(index: colStart + j)
                         }
-                        columnaView(col, align: alineacion(indice: j, total: mod.columnas.count))
-                            .liquidOnda(index: colStart + j)
                     }
+                } else {
+                    HStack(alignment: .center, spacing: 0) {
+                        ForEach(Array(mod.columnas.enumerated()), id: \.element.id) { j, col in
+                            if j > 0 {
+                                // Aire alrededor del capilar (mockup: margen 12 pt) para que el
+                                // divisor quede centrado en el hueco y los datos no lo toquen.
+                                LiquidCapilar()
+                                    .padding(.horizontal, LiquidSpace.s300)
+                                    .padding(.vertical, 2)
+                            }
+                            // Todas centradas (decisión del dueño): título centrado sobre su
+                            // cifra, dato balanceado respecto a sus divisores.
+                            columnaView(col, align: .center)
+                                .liquidOnda(index: colStart + j)
+                        }
+                    }
+                    // El capilar es greedy vertical (maxHeight: .infinity para igualar la
+                    // columna más alta); sin esto, con columnas cortas (ACOMPAÑA) inflaba la
+                    // fila. `fixedSize` la hace abrazar el alto real de las columnas.
+                    .fixedSize(horizontal: false, vertical: true)
                 }
             }
         }
@@ -631,13 +638,6 @@ public struct LiquidHoyContent: View {
         case .carga: onTapCarga?()
         case .guardian: onTapGuardian?()
         }
-    }
-
-    /// Alineación de una columna: TODAS centradas en su celda (decisión del dueño, FER-28) —
-    /// cada título va centrado sobre su cifra y cada dato queda balanceado respecto a sus
-    /// divisores.
-    private func alineacion(indice: Int, total: Int) -> HorizontalAlignment {
-        .center
     }
 
     /// Una columna según su contenido: simple, sueño (dos-puntos tenue), carga (bullet) o par.

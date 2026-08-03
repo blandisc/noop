@@ -229,14 +229,6 @@ public struct LiquidEcosistema: View {
         compacto ? LiquidSpace.ecosistemaRecorteTop * escala : 0
     }
 
-    /// Alto reservado del héroe compacto (con override de debug para barrer el fit).
-    private var altoCompactoEfectivo: CGFloat {
-        #if DEBUG
-        if let o = LiquidTableroDebug.altoCompactoOverride { return o }
-        #endif
-        return LiquidSpace.ecosistemaAltoCompacto
-    }
-
     private var lienzo: some View {
         ZStack(alignment: .topLeading) {
             // Lector de ancho (una vía): el hueco reservado escala CON el lienzo — en un
@@ -258,7 +250,8 @@ public struct LiquidEcosistema: View {
                 // cambia, solo se presenta más apretado. El estado separado sigue librando.
                 .offset(y: -recorteCompacto)
         }
-        .frame(height: (compacto ? altoCompactoEfectivo : LiquidSpace.ecosistemaAlto) * escala,
+        .frame(height: (compacto ? LiquidSpace.ecosistemaAltoCompacto
+                                 : LiquidSpace.ecosistemaAlto) * escala,
                alignment: .top)
         .clipped()
         .modifier(EcosistemaVisibilidad { visible = $0 })
