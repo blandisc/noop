@@ -122,7 +122,7 @@ public struct LiquidVerMas: View {
                 .padding(.vertical, LiquidSpace.s300)
             }
             .buttonStyle(.liquidPress)
-            .liquidGlass(.pastilla)
+            .liquidGlass(.pastillaSolida)
             .accessibilityHint(Text(verbatim: hint ?? ""))
         } else {
             HStack {
