@@ -93,7 +93,7 @@ public struct LiquidSheetHeader: View {
     /// `inline` = va detrás del dato (necesita el respiro que la separa de la unidad);
     /// suelta arranca en el margen, alineada con el título.
     @ViewBuilder private func procedencia(inline: Bool) -> some View {
-        if origen == .calculado, origenEtiqueta != nil {
+        if origen?.esCalculado == true, origenEtiqueta != nil {
             LiquidOrigenDot()
         }
         if let origenEtiqueta {
