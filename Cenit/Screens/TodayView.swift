@@ -701,7 +701,10 @@ struct TodayView: View {
         // El acta del veredicto: la hoja que contesta la pregunta que el héroe provoca.
         .sheet(isPresented: $showVeredictoActa) {
             LiquidMetricSheet(tono: liquidActaTono, detent: .porContenido) {
-                LiquidActaVeredicto(liquidActa, siembra: true, onVerMas: {
+                // La siembra de motas del acta se APAGÓ (revisión del dueño 2026-08-03:
+                // fuera las partículas de esta hoja). El componente LiquidSiembraMotas
+                // queda en el DS (opt-in, default false) y la exhalación del héroe vive.
+                LiquidActaVeredicto(liquidActa, onVerMas: {
                     showVeredictoActa = false
                     tabRouter.select(.body)
                 })
