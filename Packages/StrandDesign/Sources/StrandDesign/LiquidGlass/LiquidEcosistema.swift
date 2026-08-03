@@ -90,6 +90,10 @@ public struct LiquidEcosistema: View {
     private let onSeparacion: (() -> Void)?
 
     @State private var fase: Sim.Fase?
+    /// Ancla de la GRADUACIÓN en vivo (FER-20): la base se completó con la pantalla
+    /// abierta (calibrando → veredicto) y el embrión madura al orbe con un morfo,
+    /// en vez del corte al ritual de fusión.
+    @State private var graduacionDesde: TimeInterval?
     @State private var escala: CGFloat = 1
     /// ¿El héroe está a la vista? (FER-14 #3) — fuera del viewport el reloj de 60 Hz se
     /// apaga. Arranca en `true`: si el héroe no vive dentro de un ScrollView el modifier
@@ -254,7 +258,29 @@ public struct LiquidEcosistema: View {
         .onChange(of: tituloVeredicto) { antes, ahora in
             guard ahora != nil, antes != ahora, fase != nil else { return }
             let t = Date().timeIntervalSinceReferenceDate
+            // Si la GRADUACIÓN acaba de anclar (calibrando→veredicto en vivo, FER-20),
+            // este flanco no corre el ritual de fusión: el morfo del embrión es el
+            // ritual. El guard cubre ambos órdenes de disparo de los dos onChange.
+            if let g = graduacionDesde, t - g < LiquidEcosistemaMotion.graduacionDur + 1 {
+                return
+            }
             fase = still ? .viva(desde: t) : .formando(inicio: t)
+            if fusionInicial { onFusionArrancada?() }
+            anunciarVeredicto()
+        }
+        // GRADUACIÓN en vivo (FER-20, decisión del dueño): si calibrando termina con la
+        // pantalla abierta y llega un veredicto con fusión, el embrión MADURA al orbe
+        // (morfo mismo-conteo) — las dos decisoras nunca aparecen. Con Reduce Motion,
+        // corte honesto al cuadro asentado.
+        .onChange(of: esCalibrando) { antes, ahora in
+            guard antes, !ahora, coreo.conFusion, fase != nil else { return }
+            let t = Date().timeIntervalSinceReferenceDate
+            if still {
+                fase = .viva(desde: t)
+            } else {
+                graduacionDesde = t
+                fase = .viva(desde: t + LiquidEcosistemaMotion.graduacionDur)
+            }
             if fusionInicial { onFusionArrancada?() }
             anunciarVeredicto()
         }
@@ -295,6 +321,7 @@ public struct LiquidEcosistema: View {
     private var escena: some View {
         ZStack(alignment: .topLeading) {
             EcosistemaEscenario(coreo: coreo, fase: fase ?? .viva(desde: 0),
+                                graduacionDesde: graduacionDesde,
                                 senales: senales, guardianJuntas: guardian?.estado == .juntas,
                                 guardianHueco: guardian == nil
                                     || (guardian?.temp == "—" && guardian?.resp == "—"),
@@ -309,6 +336,11 @@ public struct LiquidEcosistema: View {
     private func alternar() {
         guard coreo.separable, let actual = fase else { return }
         let ahora = Date().timeIntervalSinceReferenceDate
+        // Sin taps DURANTE la graduacion (FER-20): el morfo embrion-orbe dura ~1.4 s
+        // y un separar a medio morfo mezclaria dos coreografias.
+        if let g = graduacionDesde, ahora - g < LiquidEcosistemaMotion.graduacionDur {
+            return
+        }
         // La fase VENCIDA se resuelve a su sucesora antes de decidir: el primer tap
         // sobre un estado asentado siempre actúa (sin esto, `.separando` vencida se
         // re-etiquetaba `.separada` y el tap de unir moría — cazado en simulador).
@@ -971,6 +1003,8 @@ private struct EcosistemaEscenario: View {
 
     let coreo: Sim.Coreografia
     let fase: Sim.Fase
+    /// Ancla de la graduacion en vivo (FER-20) — nil = sin graduacion.
+    let graduacionDesde: TimeInterval?
     let senales: [LiquidHoyModel.Senal]
     let guardianJuntas: Bool
     let guardianHueco: Bool
@@ -1027,7 +1061,10 @@ private struct EcosistemaEscenario: View {
             niveles: (0..<2).map { senales.indices.contains($0) ? senales[$0].progress : nil },
             fuera: (0..<2).map { senales.indices.contains($0) && senales[$0].state == .atencion },
             guardianJuntas: guardianJuntas, guardianHueco: guardianHueco,
-            eclipse: eclipseProgreso(t: t))
+            eclipse: eclipseProgreso(t: t),
+            graduacion: graduacionDesde.map {
+                min(1, max(0, (t - $0) / LiquidEcosistemaMotion.graduacionDur))
+            })
     }
 
     private func eclipseProgreso(t: TimeInterval) -> Double {

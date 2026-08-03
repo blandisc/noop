@@ -180,6 +180,12 @@ public enum LiquidEcosistemaMotion {
     /// Ciclos de caída por segundo de cada espiral (caída completa ≈ 18.2 s).
     public static let acrecionCaida: Double = 0.055
     public static let acrecionGiro: Double = 0.45
+    /// C.3 (FER-20): fracción de la caída (`ph`) donde la espiral deja su ruta y FUNDE
+    /// hacia su partícula destino del embrión — el aterrizaje.
+    public static let acrecionAterrizaje: Double = 0.85
+    /// Graduación en vivo (FER-20, decisión del dueño): duración del morfo
+    /// embrión → orbe cuando la base se completa con la pantalla abierta.
+    public static let graduacionDur: Double = 1.4
 
     // tributo (las lunas alimentan el orbe)
     /// Duración del viaje luna→orbe de cada mota del chorro (s).

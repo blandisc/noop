@@ -258,4 +258,64 @@ final class EcosistemaSimulacionTests: XCTestCase {
         XCTAssertEqual(Sim.faseEfectiva(.separada, t: 99), .separada)
         XCTAssertEqual(Sim.faseEfectiva(.viva(desde: 2), t: 99), .viva(desde: 2))
     }
+
+    // MARK: C.3 Acrecion unificada (FER-20)
+
+    private var embrionPrueba: Sim.Nube {
+        Sim.Nube(centro: G.centro, radio: G.radioEmbrion, rotacion: 1.2, jitterAmp: 0.5,
+                 alfaK: 0.9, stretch: 0, nivel: 0.5, nivelBajo: false, capAmbar: false,
+                 n: G.nEsfera, paso: 1, tinta: .clima)
+    }
+
+    /// El contrato del aterrizaje: en ph -> 1 la mota COINCIDE con su particula del
+    /// embrion (misma t: rotacion, jitter y ola incluidos). Nada muere en el aire.
+    func test_acrecion_aterrizaEnParticulaDelEmbrion() {
+        let e = embrionPrueba
+        for i in [0, 7, 19, 33] {
+            // t tal que ph(i) este casi en 1: ph = frac(t*caida + i*0.0294).
+            let base = Double(i) * 0.0294
+            let t = (ceil(base) - base + 0.999) / LiquidEcosistemaMotion.acrecionCaida
+            let ph = (t * LiquidEcosistemaMotion.acrecionCaida + base)
+                .truncatingRemainder(dividingBy: 1)
+            XCTAssertGreaterThan(ph, 0.99, "el instante elegido debe estar aterrizando")
+            let m = Sim.motaAcrecion(i, t: t, embrion: e, nivel: 0.5)
+            let d = Sim.acrecionDestino(i, t: t, nivel: 0.5)
+            let pd = Sim.particula(dir: Sim.direccion(d, de: e.n), indice: d,
+                                   centro: e.centro, radio: e.radio, rotacion: e.rotacion,
+                                   jitterAmp: e.jitterAmp, t: t, alfaK: e.alfaK,
+                                   stretch: 0, nivel: e.nivel, nivelBajo: false)
+            XCTAssertEqual(m.pos.x, pd.pos.x, accuracy: 0.5)
+            XCTAssertEqual(m.pos.y, pd.pos.y, accuracy: 0.5)
+        }
+    }
+
+    /// El remapeo es determinista y SOLO alimenta materia liquida (prefijo fibonacci):
+    /// jamas vapor, y sin division por cero en los extremos de nivel.
+    func test_acrecionDestino_deterministaYSoloLiquido() {
+        for nivel in [0.0, 0.08, 0.5, 1.0] {
+            let nLiquido = max(1, Int(Double(G.nEsfera) * max(G.pisoNivel, min(1, nivel))))
+            for i in 0..<G.nEspirales {
+                for t in stride(from: 0.0, to: 400, by: 37.7) {
+                    let d = Sim.acrecionDestino(i, t: t, nivel: nivel)
+                    XCTAssertEqual(d, Sim.acrecionDestino(i, t: t, nivel: nivel))
+                    XCTAssertGreaterThanOrEqual(d, 0)
+                    XCTAssertLessThan(d, nLiquido, "nivel \(nivel): indice en vapor")
+                }
+            }
+        }
+    }
+
+    /// Antes del umbral de aterrizaje la mota ES la espiral clasica, intacta.
+    func test_acrecion_antesDelAterrizajeEsLaEspiral() {
+        let e = embrionPrueba
+        for i in [2, 11] {
+            let base = Double(i) * 0.0294
+            let t = (ceil(base) - base + 0.3) / LiquidEcosistemaMotion.acrecionCaida
+            let m = Sim.motaAcrecion(i, t: t, embrion: e, nivel: 0.5)
+            let cruda = Sim.espiral(i, t: t)
+            XCTAssertEqual(m.pos, cruda.pos)
+            XCTAssertEqual(m.alfa, cruda.alfa)
+        }
+    }
+
 }
