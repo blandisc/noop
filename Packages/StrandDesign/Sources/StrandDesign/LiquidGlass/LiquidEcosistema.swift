@@ -442,6 +442,8 @@ public struct LiquidEcosistema: View {
         // El destape espera a que las esferas estén aterrizando; la salida es inmediata
         // (las motas se disuelven de regreso mientras el contenedor se apaga).
         .opacity(esSeparadaEstable ? 1 : 0)
+        // Asentado sutil (ronda quirurgica): el valor no APARECE, se sienta.
+        .scaleEffect(esSeparadaEstable ? 1 : 0.97)
         .allowsHitTesting(esSeparadaEstable)
         .animation(still ? .easeInOut(duration: LiquidEcosistemaMotion.reduceMotionCrossfade)
                          : (esSeparadaEstable
@@ -582,7 +584,10 @@ public struct LiquidEcosistema: View {
             Text(fuera ? rotulos.vigiaFuera : rotulos.vigiaEnRango)
                 .font(LiquidType.captionLectura)
                 .foregroundStyle(fuera ? LiquidColor.atencionTexto : LiquidColor.tinta700)
-                .fixedSize()
+                // Sin fixedSize (ronda quirurgica): «Fuera de tu rango» rebasaba el
+                // lienzo por la izquierda; envuelto a 2 lineas cabe en la caja.
+                .lineLimit(2)
+                .multilineTextAlignment(lado > 0 ? .leading : .trailing)
         }
         .frame(width: 120, alignment: lado > 0 ? .leading : .trailing)
         .position(x: x + lado * (rOrbe + 18 + 60), y: 36)

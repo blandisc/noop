@@ -290,7 +290,10 @@ public extension EcosistemaSimulacion {
             trazos.append(.nube(Nube(
                 centro: Geometria.centro, radio: CGFloat(radio),
                 rotacion: t * LiquidEcosistemaMotion.rotacionEsfera,
-                jitterAmp: e.still ? 0 : e.coreo.jitter,
+                // El jitter escala con u (ronda quirúrgica): a radio 30 el mismo
+                // jitter absoluto era el doble RELATIVO — el fondo vibraba más que
+                // el frente, invirtiendo la jerarquía de energía.
+                jitterAmp: e.still ? 0 : e.coreo.jitter * (0.5 + 0.5 * u),
                 alfaK: alfaOrbe, stretch: 0,
                 nivel: nil, nivelBajo: false, capAmbar: capAmbar,
                 n: Geometria.nEsfera, paso: 1, tinta: .clima)))
@@ -410,7 +413,10 @@ public extension EcosistemaSimulacion {
         let d = max(1, (dx * dx + dy * dy).squareRoot())
         let a0 = Double(radioDesde) + 3
         let a1 = d - Double(radioOrbe) - 3
-        guard a1 > a0 + 6 else { return [] }
+        guard a1 > a0 + 2 else { return [] }
+        // FADE por cercanía (ronda quirúrgica): al cruzar la luna por la cara del
+        // orbe el cordón se DESVANECE — antes el guard lo cortaba en seco 2 frames.
+        let cercania = min(1, max(0, (a1 - a0) / 26))
         let ux = dx / d, uy = dy / d
         let tinta: Tinta = malo ? .negativo : .clima
         var trazos: [Trazo] = []
@@ -420,7 +426,7 @@ public extension EcosistemaSimulacion {
                 trazos.append(.disco(
                     centro: CGPoint(x: desde.x + CGFloat(ux * sd),
                                     y: desde.y + CGFloat(uy * sd)),
-                    radio: 1.4, tinta: tinta, alfa: 0.12 * sin(.pi * f)))
+                    radio: 1.4, tinta: tinta, alfa: 0.12 * sin(.pi * f) * cercania))
             }
             return trazos
         }
@@ -433,7 +439,7 @@ public extension EcosistemaSimulacion {
                                 y: desde.y + CGFloat(uy * sd)),
                 radio: 1.8 - CGFloat(f) * 0.7,
                 tinta: tinta,
-                alfa: 0.5 * sin(.pi * f)))
+                alfa: 0.5 * sin(.pi * f) * cercania))
         }
         return trazos
     }
@@ -449,17 +455,22 @@ public extension EcosistemaSimulacion {
         let d = max(1, (dx * dx + dy * dy).squareRoot())
         let a0 = Double(radioDesde) + 3
         let a1 = d - Double(radioOrbe) - 3
-        guard a1 > a0 + 6 else { return [] }
+        guard a1 > a0 + 2 else { return [] }
+        // FADE por cercanía + residuo (ronda quirúrgica): la línea se desvanece al
+        // acercarse el vigía a la cara del orbe, y el punto FINAL muere gradual por
+        // su fracción restante — antes nacía/moría en seco y la línea «reptaba».
+        let cercania = min(1, max(0, (a1 - a0) / 26))
         let ux = dx / d, uy = dy / d
         let pasoPunteado: Double = hueco ? 22 : 11
         var trazos: [Trazo] = []
         var sd = a0
         while sd <= a1 {
+            let residuo = min(1, (a1 - sd) / pasoPunteado)
             trazos.append(.disco(
                 centro: CGPoint(x: desde.x + CGFloat(ux * sd),
                                 y: desde.y + CGFloat(uy * sd)),
                 // 0.9/0.22 → 1.15/0.32 (revisión del dueño: la mirada no se veía).
-                radio: 1.15, tinta: .vigia, alfa: 0.32))
+                radio: 1.15, tinta: .vigia, alfa: 0.32 * cercania * residuo))
             sd += pasoPunteado
         }
         if alerta {
@@ -468,7 +479,8 @@ public extension EcosistemaSimulacion {
             trazos.append(.disco(
                 centro: CGPoint(x: desde.x + CGFloat(ux * sp),
                                 y: desde.y + CGFloat(uy * sp)),
-                radio: 2.4, tinta: .atencion, alfa: 0.85 * sin(.pi * f)))
+                radio: 2.4, tinta: .atencion,
+                alfa: 0.85 * sin(.pi * f) * cercania))
         }
         return trazos
     }
