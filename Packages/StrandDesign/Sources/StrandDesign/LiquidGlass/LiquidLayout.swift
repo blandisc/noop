@@ -6,14 +6,25 @@ import SwiftUI
 // no una decisión de pantalla.
 
 public enum LiquidSpace {
+    /// 1 — micro-gap: rótulo ↔ dato dentro de una columna, respiro superior del bullet de
+    /// carga. Paso fino de la escala (FER-31): existe porque la superficie lo pedía crudo.
+    public static let s025: CGFloat = 1
     /// 2 — gaps de segmentos de barra.
     public static let s050: CGFloat = 2
+    /// 3 — respiro EXTERIOR de la pastilla táctil (extiende el área a ≥44 sin engordar el
+    /// vidrio) y micro-padding vertical. Paso fino (FER-31).
+    public static let s075: CGFloat = 3
     /// 4.
     public static let s100: CGFloat = 4
+    /// 5 — gap rótulo ↔ ratio / diámetro y separación de los puntos de progreso. Paso fino (FER-31).
+    public static let s125: CGFloat = 5
     /// 6 — gota ↔ label.
     public static let s150: CGFloat = 6
     /// 8 — gap del grid de tiles.
     public static let s200: CGFloat = 8
+    /// 9 — padding vertical INTERIOR de la pastilla táctil (carga/guardián/fila del ecosistema):
+    /// el vidrio respira sin crecer y el toque llega a 44 con `s075` afuera. Paso fino (FER-31).
+    public static let s225: CGFloat = 9
     /// 10 — medio paso: gap entre módulos de «El Tablero» y su padding vertical interior (FER-28).
     public static let s250: CGFloat = 10
     /// 12 — padding H de tile, separación entre bloques chicos.
@@ -59,6 +70,9 @@ public enum LiquidSpace {
 // MARK: - Liquid Glass · Radios (handoff §4.4 — cinco tokens, ninguno más)
 
 public enum LiquidRadius {
+    /// 0.5 — hairline: el redondeo mínimo de un trazo de 1 pt (el capilar divisor) para que no
+    /// se lea como un pixel cuadrado. No es un radio de layout — es antialiasing de trazo (FER-31).
+    public static let hairline: CGFloat = 0.5
     /// 12 — swatches, chips de día, inputs.
     public static let control: CGFloat = 12
     /// 18 — tiles, tarjetas, contenedores de lista.
@@ -132,6 +146,13 @@ public enum LiquidElevation {
     public static let e3: [LiquidShadowLayer] = [
         .init(color: tintaSombra.opacity(0.16), radius: 16, y: 12),
         .init(color: tintaSombra.opacity(0.08), radius: 3, y: 2),
+    ]
+
+    /// `e/dial` — el sello del dial 24 h es PLANO, no lente (excepción consciente): una sola
+    /// sombra de contacto suave, deliberadamente más ligera que `e3`. Nivel nombrado (FER-31)
+    /// para que el `LiquidDialSeal` no lleve un arreglo de sombra ad-hoc inline.
+    public static let dial: [LiquidShadowLayer] = [
+        .init(color: tintaSombra.opacity(0.08), radius: 5, y: 3)
     ]
 
     /// `e/módulo` — la sombra de dos capas de un módulo de «El Tablero» (FER-28), por índice

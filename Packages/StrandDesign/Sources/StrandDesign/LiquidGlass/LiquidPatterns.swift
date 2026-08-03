@@ -182,7 +182,7 @@ struct LiquidAmbientOrbs: View {
 
     var body: some View {
         let still = reduceMotion || motionDisabled || ambientPaused
-        TimelineView(.animation(minimumInterval: 1.0 / 20.0, paused: still)) { context in
+        TimelineView(.animation(minimumInterval: LiquidMotion.intervaloAmbiente, paused: still)) { context in
             let t = still ? 0 : context.date.timeIntervalSinceReferenceDate
             ZStack {
                 ForEach(Array(orbs.enumerated()), id: \.offset) { index, orb in
@@ -233,7 +233,7 @@ public struct LiquidHoyAmbient: View {
                     .opacity(amb == ambiente ? 1 : 0)
             }
         }
-        .animation(.easeInOut(duration: LiquidEcosistemaMotion.ambienteCrossfade),
+        .animation(LiquidEcosistemaMotion.ambienteCrossfadeAnim,
                    value: ambiente)
         .ignoresSafeArea()
         .allowsHitTesting(false)
@@ -342,9 +342,7 @@ public struct LiquidDialSeal: View {
         }
         .frame(width: size, height: size)
         // Elevación LIGERA (plano, no lente): una sombra de contacto suave, nada de e/3.
-        .liquidShadow([
-            .init(color: LiquidColor.tinta900.opacity(0.08), radius: 5, y: 3),
-        ], silhouette: Circle())
+        .liquidShadow(LiquidElevation.dial, silhouette: Circle())
         // Decorativo para VoiceOver: la fecha ya vive en el kicker de la cabecera.
         .accessibilityHidden(true)
     }

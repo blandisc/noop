@@ -16,7 +16,7 @@ public struct LiquidCapilar: View {
     public var body: some View {
         // 4 paradas: transparent en los extremos, 8 % en el tramo central (0.18…0.82).
         // cornerRadius 0.5 redondea lo mínimo el 1 pt para que no se vea un pixel cuadrado.
-        RoundedRectangle(cornerRadius: 0.5)
+        RoundedRectangle(cornerRadius: LiquidRadius.hairline)
             .fill(
                 LinearGradient(
                     stops: [

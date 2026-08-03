@@ -101,6 +101,9 @@ public enum LiquidColor {
     public static let particulaAmbar = Color(hex: "#96501A")
     /// Partícula neutra: calibrando y el orbe del guardián tranquilo.
     public static let particulaNeutra = Color(hex: "#737670")
+    /// Partícula blanca: el realce especular puro de la simulación del orbe (tinta `.blanco`).
+    /// El sistema es dueño del blanco, no el componente de superficie (FER-31).
+    public static let particulaBlanca = Color.white
     /// El rojo CLARO del clima de alerta (par simétrico de `ambarClaro` — el ambiente de
     /// alerta usaba `rosa`, que es el tono 1:1 de FC en reposo, no un clima).
     public static let rojoClaro = Color(hex: "#E06C56")
@@ -133,6 +136,10 @@ public enum LiquidColor {
     public static let vidrioStreak = Color.white.opacity(0.55)
     /// `.5` — relleno lente/dial.
     public static let vidrioLente = Color.white.opacity(0.38)
+    /// `.35` — realce especular de la pastilla del selector del dock en la IMITACIÓN pre-iOS 26
+    /// (el vidrio nativo no la necesita). Nombrado (FER-31) para que el `LiquidTabBar` no lleve
+    /// `Color.white.opacity(...)` crudo.
+    public static let vidrioRealcePastilla = Color.white.opacity(0.35)
     /// `.46` — relleno pastilla. Subido de 0.32 para estabilizar el vidrio durante
     /// el arrastre de la hoja: menos backdrop = menos «blanqueo» al bajar (pedido del dueño).
     public static let vidrioPastilla = Color.white.opacity(0.46)

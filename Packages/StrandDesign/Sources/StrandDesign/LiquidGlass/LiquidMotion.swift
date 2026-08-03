@@ -30,10 +30,24 @@ public enum LiquidMotion {
     public static let gentle: Double = 0.42
     /// 560 ms — hojas modales, navegación.
     public static let sheetDuration: Double = 0.56
+    /// 180 ms — el spring del selector del dock persiguiendo la pestaña activa («más
+    /// responsivo», pedido del dueño /inject). Nombrado (FER-31).
+    public static let selectorDuration: Double = 0.18
+    /// 200 ms — el crossfade simple de la entrada bajo Reduce Motion (sin viaje ni stagger).
+    /// Nombrado (FER-31).
+    public static let entradaReduce: Double = 0.2
     /// 9 s — pulsos por cables, dashes.
     public static let flowPeriod: Double = 6
     /// 16–26 s — orbes de fondo (16, 21, 24 y 26 s usados en los ensambles).
     public static let driftPeriods: ClosedRange<Double> = 16...26
+
+    // MARK: Intervalos de refresco (TimelineView)
+
+    /// 20 fps — animaciones AMBIENTALES (plasta, capilares, aurora): el drift lento no necesita
+    /// más y ahorra batería. Constante nombrada (FER-31), no `1.0/20.0` mágico en cada vista.
+    public static let intervaloAmbiente: Double = 1.0 / 20.0
+    /// 60 fps — simulaciones PLENAS (partículas del orbe, siembra de motas). (FER-31)
+    public static let intervaloPleno: Double = 1.0 / 60.0
 
     // MARK: Easings
 
@@ -91,7 +105,7 @@ public enum LiquidMotion {
 
     /// `selector` — el vidrio del dock persigue la pestaña activa: spring corto y vivo
     /// (0.18 s glass-spring; «más responsivo», pedido del dueño /inject).
-    public static let selector = glassSpring(0.18)
+    public static let selector = glassSpring(selectorDuration)
 
     // MARK: Ambientales (fase determinista para TimelineView — nunca por debajo de 9 s)
 
@@ -157,6 +171,10 @@ public enum LiquidEcosistemaMotion {
     public static let palabraDur: Double = 0.70
     /// Crossfade bajo Reduce Motion (sustituye viaje/asentamiento).
     public static let reduceMotionCrossfade: Double = 0.3
+    /// Los crossfades ambiental / reduce-motion ya envueltos como `Animation` (FER-31): la curva
+    /// ease-in-out del crossfade vive en el contrato, no cruda en cada call site de la superficie.
+    public static var ambienteCrossfadeAnim: Animation { .easeInOut(duration: ambienteCrossfade) }
+    public static var reduceCrossfadeAnim: Animation { .easeInOut(duration: reduceMotionCrossfade) }
 
     // órbita (velocidades angulares rad/s + fases iniciales)
     public static let orbitaLuna1: Double = 0.85
@@ -287,7 +305,7 @@ private struct LiquidEntrada: ViewModifier {
                 guard !shown, !motionDisabled else { return }
                 if reduceMotion {
                     // Reduce Motion: crossfade simple, sin desplazamiento ni stagger.
-                    withAnimation(.easeInOut(duration: 0.2)) { shown = true }
+                    withAnimation(.easeInOut(duration: LiquidMotion.entradaReduce)) { shown = true }
                 } else {
                     let delay = baseDelay + Double(index) * LiquidMotion.entradaStagger
                     withAnimation(LiquidMotion.entrada.delay(delay)) { shown = true }

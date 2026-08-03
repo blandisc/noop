@@ -37,7 +37,7 @@ public struct LiquidGuardianFranja: View {
                 .textCase(.uppercase)
                 .foregroundStyle(stripTinted ? LiquidColor.atencionTexto : LiquidColor.tinta500)
             Spacer(minLength: 0)
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
+            HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s150) {
                 Text(model.temp)
                     .font(LiquidType.cargaRatio)
                     .foregroundStyle(tempTinted ? LiquidColor.atencionTexto : LiquidColor.tinta700)
@@ -53,13 +53,13 @@ public struct LiquidGuardianFranja: View {
         }
         // Mismo alto/vidrio/radio que `LiquidCargaEscala.fila` (par simétrico), + el área tocable
         // de ≥44 pt sin engordar el vidrio.
-        .padding(.vertical, 9)
+        .padding(.vertical, LiquidSpace.s225)
         .padding(.horizontal, LiquidSpace.s400)
         .liquidGlass(.pastilla)
         .overlay {
             if stripTinted { Capsule().fill(LiquidColor.atencion.opacity(0.10)) }
         }
-        .padding(.vertical, 3)
+        .padding(.vertical, LiquidSpace.s075)
         .contentShape(Rectangle())
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(verbatim: resolvedA11y))

@@ -63,7 +63,7 @@ public struct LiquidTabBar: View {
         } else {
             Capsule()
                 .fill(.ultraThinMaterial)
-                .overlay(Capsule().fill(Color.white.opacity(0.35)))
+                .overlay(Capsule().fill(LiquidColor.vidrioRealcePastilla))
                 .overlay(Capsule().strokeBorder(LiquidColor.vidrioBordePastilla, lineWidth: 0.5))
         }
     }
@@ -71,15 +71,17 @@ public struct LiquidTabBar: View {
     private func item(_ tab: LiquidTab) -> some View {
         let isActive = tab == active
         let color = isActive ? LiquidColor.tinta900 : LiquidColor.tinta500
-        return VStack(spacing: 3) {
+        return VStack(spacing: LiquidSpace.s075) {
             TabGlyph(tab: tab, color: color, showDot: isActive)
                 .frame(width: 22, height: 22)
             Text(tab.titulo)
                 .font(LiquidType.tab(active: isActive))
                 .foregroundStyle(color)
         }
-        .padding(.vertical, 4)
-        .frame(maxWidth: .infinity)
+        .padding(.vertical, LiquidSpace.s100)
+        // Piso táctil explícito del ítem del dock (eje 8: HIG 44 pt) — antes dependía de que el
+        // glifo + texto + padding sumaran ~45; ahora está garantizado (FER-31).
+        .frame(maxWidth: .infinity, minHeight: LiquidControl.hitTarget)
         .background {
             if isActive {
                 selectorPill
