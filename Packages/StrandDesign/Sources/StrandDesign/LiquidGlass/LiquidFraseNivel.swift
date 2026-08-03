@@ -24,6 +24,7 @@ public struct LiquidFraseNivel: View {
     private let conteo: String
     private let tono: Color
     private let sinLectura: String?
+    private let sello: String?
 
     /// - Parameters:
     ///   - nivel: el nombre YA localizado del nivel destacado («En tu base»); `nil` cuando
@@ -33,11 +34,15 @@ public struct LiquidFraseNivel: View {
     ///   - sinLectura: el texto que sustituye al nivel cuando `nivel` es `nil` («Hoy sin
     ///     lectura»), en tinta/500. Obligatorio en la práctica para todo caller que pueda
     ///     pasar `nivel: nil`.
-    public init(nivel: String?, conteo: String, tono: Color, sinLectura: String? = nil) {
+    ///   - sello: etiqueta corta de la ventana del dato («HOY · 3 AGO»), YA compuesta por
+    ///     el caller (contrato D3). Opcional: `nil` no pinta nada.
+    public init(nivel: String?, conteo: String, tono: Color,
+                sinLectura: String? = nil, sello: String? = nil) {
         self.nivel = nivel
         self.conteo = conteo
         self.tono = tono
         self.sinLectura = sinLectura
+        self.sello = sello
     }
 
     /// El tracking hermano del nivel: `valorL` no trae uno propio en `LiquidType` porque
@@ -48,12 +53,23 @@ public struct LiquidFraseNivel: View {
     public var body: some View {
         VStack(alignment: .leading, spacing: LiquidSpace.s100) {
             if let titulo = nivel ?? sinLectura {
-                Text(verbatim: titulo)
-                    .font(LiquidType.valorL)
-                    .tracking(Self.nivelTracking)
-                    .foregroundStyle(nivel != nil ? tono : LiquidColor.tinta500)
-                    // Escala con Dynamic Type y ENVUELVE: el nivel nunca se trunca.
-                    .fixedSize(horizontal: false, vertical: true)
+                HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s200) {
+                    Text(verbatim: titulo)
+                        .font(LiquidType.valorL)
+                        .tracking(Self.nivelTracking)
+                        .foregroundStyle(nivel != nil ? tono : LiquidColor.tinta500)
+                        // Escala con Dynamic Type y ENVUELVE: el nivel nunca se trunca.
+                        .fixedSize(horizontal: false, vertical: true)
+                    if let sello {
+                        Spacer(minLength: LiquidSpace.s200)
+                        Text(verbatim: sello)
+                            .font(LiquidType.captionLectura)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(nivel != nil ? tono : LiquidColor.tinta500)
+                            .lineLimit(1)
+                            .layoutPriority(1)
+                    }
+                }
             }
             Text(verbatim: conteo)
                 .font(LiquidType.cuerpo)
@@ -76,6 +92,11 @@ public struct LiquidFraseNivel: View {
         LiquidFraseNivel(nivel: "En tu base",
                          conteo: "12 de tus últimos 14 días",
                          tono: LiquidColor.cian)
+        // Con sello (F0.2): ventana del dato a la derecha del nivel.
+        LiquidFraseNivel(nivel: "En tu base",
+                         conteo: "12 de tus últimos 14 días",
+                         tono: LiquidColor.cian,
+                         sello: "MEDIA · 30 DÍAS")
         // Sin lectura hoy: el texto del caller, en tinta/500 (jamás en el tono).
         LiquidFraseNivel(nivel: nil,
                          conteo: "14 noches con datos en este rango",
