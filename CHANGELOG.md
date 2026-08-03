@@ -20,6 +20,11 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **Las hojas de detalle dicen lo mismo en todos lados, y ya no rotulan procedencia sin dato / Detail sheets now read the same everywhere, and no longer claim a source when there's no value.**
+  **ES** — Trabajo interno de fondo: la frase de nivel, el formato y el origen de cada una de las 9 hojas de detalle ahora salen de un solo lugar (los mismos que ya usa el motor), en vez de estar copiados a mano en cada pantalla. El texto que ves es idéntico al de antes. El único cambio visible: cuando una métrica aún no tiene dato («—»), ya no aparece la etiqueta «Calculado» debajo — sin dato, sin procedencia.
+  **EN** — Internal groundwork: each of the 9 detail sheets now gets its level phrase, number format and data source from one place (the same the engine already uses), instead of being hand-copied per screen. The text you see is identical to before. The one visible change: when a metric has no value yet («—»), the «Calculated» label no longer shows beneath it — no value, no provenance.
+  ([LiquidMetricSheetView.swift](Cenit/Screens/Hoy/LiquidMetricSheetView.swift), [MetricLevelPhrase.swift](Packages/StrandAnalytics/Sources/StrandAnalytics/MetricLevelPhrase.swift))
+
 - **Las hojas de detalle dejan de «parpadear» a blanco, y su selector de rango se afina / Metric detail sheets stop «flashing» white, and their range selector is refined.**
   **ES** — Al arrastrar una hoja de métrica, su tabla y el botón «Ver más» ya no saltaban de gris a blanco: las tarjetas internas ahora son papel opaco (el vidrio se reserva para la hoja, el dock y el orbe). El selector de rango (S/M/3M…) deja la vieja pastilla negra por una aguja de índice que se desliza. Por dentro se unificó de dónde salen los niveles de cada métrica —una sola escalera, la del motor— y se retiró código muerto.
   **EN** — Dragging a metric sheet no longer made its table and «See more» button jump from gray to white: the inner cards are now opaque paper (glass is reserved for the sheet, dock and orb). The range selector (S/M/3M…) drops the old black pill for a sliding index needle. Under the hood, each metric's levels now come from a single source — the engine — and dead code was removed.
