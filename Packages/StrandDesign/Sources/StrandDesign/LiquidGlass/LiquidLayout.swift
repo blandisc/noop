@@ -30,8 +30,9 @@ public enum LiquidSpace {
     /// murió con la fila de orbes y sus cables.
     public static let ecosistemaAlto: CGFloat = 324
 
-    /// Margen inferior del dock flotante.
-    public static let dockBottom: CGFloat = 8
+    /// Margen inferior del dock flotante. Negativo entra al área segura para pegarlo
+    /// más al borde (pedido del dueño /inject: a 8 y a 0 seguía flotando muy arriba).
+    public static let dockBottom: CGFloat = -22
     /// Margen lateral del dock flotante (absolute left/right 16 en el handoff).
     public static let dockSide: CGFloat = 16
 }

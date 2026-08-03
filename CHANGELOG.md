@@ -20,6 +20,11 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **El dock baja a su sitio / The dock settles to the bottom.**
+  **ES** — La barra flotante de pestañas quedaba visiblemente despegada del borde inferior. Ahora se asienta pegada abajo (entrando al área segura sin tapar el indicador de inicio).
+  **EN** — The floating tab dock hovered visibly above the bottom edge. It now sits flush at the bottom (into the safe area without covering the home indicator).
+  ([LiquidLayout.swift](Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/LiquidLayout.swift))
+
 - **Las hojas de resumen sueltan el color de fondo / Summary sheets drop their background wash.**
   **ES** — Cada hoja de métrica (VFC, estrés, sueño…) teñía todo su fondo con el color de la métrica y el vidrio de la tabla y el botón «se encendía» al arrastrarla. Ahora el fondo es papel y vidrio neutros — el único color vive en el dato — y el vidrio quedó estable durante el arrastre. **Qué significa para ti:** las hojas se leen igual de rápido pero más limpias, y bajar la hoja ya no produce ese destello blanco.
   **EN** — Each metric sheet (HRV, stress, sleep…) tinted its whole background with the metric's hue, and the table/button glass "lit up" while dragging. The background is now neutral paper and glass — color lives only in the datum — and the glass stays put during the drag.
