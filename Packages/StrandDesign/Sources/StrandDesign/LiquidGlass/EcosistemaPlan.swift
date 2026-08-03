@@ -105,16 +105,12 @@ public extension EcosistemaSimulacion {
         /// mismo-conteo (la ley C.2), no un corte al ritual de fusión. `nil` = sin
         /// graduación (el caso normal: el veredicto llega entre días).
         public var graduacion: Double?
-        /// Progreso 0…1 de la EXHALACIÓN (FER-21 · C.4): el orbe sopla materia hacia la
-        /// pastilla «Cómo llegué a esto» al tocarla — la mitad-héroe de la ilusión en
-        /// dos mitades (la hoja siembra la otra). `nil` = sin soplo.
-        public var exhalacion: Double?
 
         public init(coreo: Coreografia, fase: Fase, still: Bool,
                     niveles: [Double?], fuera: [Bool],
                     guardianJuntas: Bool, guardianHueco: Bool, eclipse: Double,
                     vigiaFuera: [Bool] = [false, false],
-                    graduacion: Double? = nil, exhalacion: Double? = nil) {
+                    graduacion: Double? = nil) {
             self.coreo = coreo
             self.fase = fase
             self.still = still
@@ -125,7 +121,6 @@ public extension EcosistemaSimulacion {
             self.eclipse = eclipse
             self.vigiaFuera = vigiaFuera
             self.graduacion = graduacion
-            self.exhalacion = exhalacion
         }
     }
 
@@ -370,16 +365,6 @@ public extension EcosistemaSimulacion {
                                       grosor: 1.2, tinta: .blanco,
                                       alfa: 0.5 * p * alfaFundida))
             }
-        }
-
-        // 5.7 · EXHALACIÓN (FER-21): RITUAL DEL VEREDICTO PLENO (FER-23, decisión del
-        // dueño). Gateada a `cuadro.fundida` a propósito: al tocar «Cómo llegué a esto»
-        // el orbe pleno sopla hacia la pastilla de donde sube la hoja. NO se fabrica en
-        // el estado separado — ahí el orbe está retrocedido y de fondo, y un soplo desde
-        // ahí competiría con los medidores. La pastilla vive en ambos estados, pero el
-        // gesto pertenece al veredicto, no a la exploración.
-        if let ex = e.exhalacion, ex > 0, ex < 1, !e.still, cuadro.fundida {
-            trazos += trazosExhalacion(t: t, progreso: ex, radio: CGFloat(radio))
         }
 
         // 6 · Cuerpos FRONTALES (z ≥ 0) + estelas frontales.
@@ -647,36 +632,6 @@ public extension EcosistemaSimulacion {
             trazos.append(.disco(centro: CGPoint(x: px, y: py),
                                  radio: EstelaOrbital.tamano * (0.7 + 0.5 * CGFloat(dep)),
                                  tinta: tinta, alfa: av * alfa))
-        }
-        return trazos
-    }
-
-    /// El SOPLO del orbe hacia la pastilla (FER-21): ~18 motas nacen en el limbo
-    /// inferior y vuelan hacia el punto de donde emerge la hoja (borde inferior,
-    /// centrado — la causalidad legible que eligió el dueño). Determinista; cada mota
-    /// escalona su salida y se apaga al llegar.
-    private static func trazosExhalacion(t: TimeInterval, progreso: Double,
-                                         radio: CGFloat) -> [Trazo] {
-        var trazos: [Trazo] = []
-        let destino = CGPoint(x: Geometria.centro.x, y: Geometria.lienzo.height + 12)
-        for k in 0..<18 {
-            let s = Double((k * 37) % 89) / 89
-            let p = min(1, max(0, (progreso * 1.35 - s * 0.35)))
-            guard p > 0, p < 1 else { continue }
-            // Nace en el casquete inferior del orbe (±0.55 rad alrededor de +π/2).
-            let ang = Double.pi / 2 + (s - 0.5) * 1.1
-            let origen = CGPoint(
-                x: Geometria.centro.x + CGFloat(cos(ang)) * radio,
-                y: Geometria.centro.y + CGFloat(sin(ang)) * radio * 0.96)
-            let e = suave(p)
-            let lat = sin(p * 2 * .pi + s * 6.28) * 3 * sin(.pi * p)
-            trazos.append(.disco(
-                centro: CGPoint(
-                    x: origen.x + (destino.x - origen.x) * CGFloat(e) + CGFloat(lat),
-                    y: origen.y + (destino.y - origen.y) * CGFloat(e)),
-                radio: 1.4 + CGFloat(s) * 1.2,
-                tinta: .clima,
-                alfa: sin(.pi * p) * 0.55))
         }
         return trazos
     }
