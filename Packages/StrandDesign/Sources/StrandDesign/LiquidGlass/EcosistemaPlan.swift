@@ -225,34 +225,45 @@ public extension EcosistemaSimulacion {
                              angulo: t * LiquidEcosistemaMotion.orbitaGuardian
                                  + LiquidEcosistemaMotion.faseGuardian + Double(g) * .pi,
                              radioBase: Geometria.radioGuardian)
-            if eclipse > 0, apertura < 0.02 {
-                let ec = suave(eclipse)
-                let destino = CGPoint(
-                    x: Geometria.centro.x + Geometria.eclipseOffset.width
-                        + CGFloat(g == 0 ? -18 : 18) + CGFloat(3 * sin(t * 0.9)),
-                    y: Geometria.centro.y + Geometria.eclipseOffset.height)
-                orb = Orbital(centro: puntoLerp(orb.centro, destino, ec),
-                              z: lerp(orb.z, -1, ec),
-                              radio: lerpCG(orb.radio,
-                                            Geometria.radioGuardianEclipse * 0.8,
-                                            CGFloat(ec)))
-            } else {
-                let esquina = g == 0 ? Geometria.guardianSeparado1
-                                     : Geometria.guardianSeparado2
-                var c = puntoLerp(orb.centro, esquina, apertura)
-                c.y -= CGFloat(sin(.pi * apertura) * (esSeparando ? 6 : 3.5))
-                orb = Orbital(centro: c,
-                              z: lerp(orb.z, 1, apertura),
-                              radio: orb.radio
-                                  + (Geometria.radioGuardianSeparado - orb.radio)
-                                  * CGFloat(apertura))
-            }
+            // FER-27: en eclipse ya NO se desplaza aquí — el vigía queda ORBITAL
+            // (config A del morfo) y la fusión 2→1 se resuelve superponiendo dos
+            // morfos mismo-conteo sobre un frente compartido (ver `frenteEclipse`).
+            // Fuera de eclipse: al separar vuela a su esquina.
+            let esquina = g == 0 ? Geometria.guardianSeparado1
+                                 : Geometria.guardianSeparado2
+            var c = puntoLerp(orb.centro, esquina, apertura)
+            c.y -= CGFloat(sin(.pi * apertura) * (esSeparando ? 6 : 3.5))
+            orb = Orbital(centro: c,
+                          z: lerp(orb.z, 1, apertura),
+                          radio: orb.radio
+                              + (Geometria.radioGuardianSeparado - orb.radio)
+                              * CGFloat(apertura))
             vigias.append(orb)
         }
         let vigiaAlerta: [Bool] = [
             e.guardianJuntas || (e.vigiaFuera.indices.contains(0) && e.vigiaFuera[0]),
             e.guardianJuntas || (e.vigiaFuera.indices.contains(1) && e.vigiaFuera[1]),
         ]
+        // FER-27 «fusión 2→1 = superposición de dos morfos mismo-conteo»: en eclipse
+        // pleno los dos vigías (nGuardian c/u) MORFAN a UN frente compartido detrás del
+        // orbe — un solo centro y una sola rotación, así en mezcla=1 los 70+70 coinciden
+        // partícula a partícula (un cuerpo, sin junta) y en mezcla=0 cada morfo es
+        // bit-igual a su vigía en órbita. alfaK a la mitad (0.42): dos morfos = ~0.85,
+        // la densidad de UN cuerpo, no el doble. La ley C.2 (a.n==b.n) queda intacta.
+        let enEclipse = eclipse > 0 && apertura < 0.02
+        let frenteEclipse: Nube? = enEclipse ? Nube(
+            centro: CGPoint(
+                x: Geometria.centro.x + Geometria.eclipseOffset.width
+                    + CGFloat(3 * sin(t * 0.9)),
+                y: Geometria.centro.y + Geometria.eclipseOffset.height),
+            radio: Geometria.radioGuardianEclipse * 0.8,
+            rotacion: t * 0.9,
+            // 0.72 por morfo (×2 coincidentes ≈ densidad fuerte de alarma, sin junta
+            // porque comparten frente); still = un cuerpo pleno.
+            jitterAmp: 0.4, alfaK: e.still ? 0.9 : 0.72, stretch: 0,
+            nivel: nil, nivelBajo: false, capAmbar: false,
+            n: Geometria.nGuardian, paso: e.guardianHueco ? 2 : 1,
+            tinta: .atencion) : nil
 
         // 1 · Las CONEXIONES — debajo de todos los cuerpos y SIEMPRE vivas.
         for (i, l) in lunas.enumerated() where !l.hueca {
@@ -277,9 +288,27 @@ public extension EcosistemaSimulacion {
         trazos += trazosEstelas(t: t, escena: e, lunas: lunasEstela,
                                 radioOrbe: CGFloat(radio), frente: false,
                                 alfa: alfaEstela)
-        for (g, v) in vigias.enumerated() where v.z < 0 {
-            trazos.append(nubeVigia(v, g: g, t: t, alerta: vigiaAlerta[g],
-                                    hueco: e.guardianHueco, eclipse: eclipse))
+        if enEclipse, let frente = frenteEclipse {
+            // El frente vive DETRÁS del orbe (se dibuja antes). Reduce Motion: un
+            // solo cuerpo plano; vivo: dos morfos que aterrizan en el mismo frente.
+            if e.still {
+                trazos.append(.nube(frente))
+            } else {
+                for g in 0..<2 {
+                    let depA = (vigias[g].z + 1) / 2
+                    let alfaA = (0.5 + 0.5 * depA) * (e.guardianHueco ? 0.55 : 0.95)
+                    let configA = guardianaNube(
+                        centro: vigias[g].centro, radio: vigias[g].radio, g: g, t: t,
+                        alfaK: alfaA, hueco: e.guardianHueco, tinta: .atencion)
+                    trazos.append(.nubeMorfo(a: configA, b: frente,
+                                             mezcla: suave(eclipse)))
+                }
+            }
+        } else {
+            for (g, v) in vigias.enumerated() where v.z < 0 {
+                trazos.append(nubeVigia(v, g: g, t: t, alerta: vigiaAlerta[g],
+                                        hueco: e.guardianHueco, eclipse: eclipse))
+            }
         }
         for l in lunas where l.orb.z < 0 {
             // alfa 1 SIEMPRE (revisión del dueño: con max(apertura, alfaFundida) las
@@ -358,9 +387,11 @@ public extension EcosistemaSimulacion {
             trazos += trazosLuna(t: t, luna: l, apertura: apertura,
                                  still: e.still, alfa: 1, rotuloAlfa: alfaFundida)
         }
-        for (g, v) in vigias.enumerated() where v.z >= 0 {
-            trazos.append(nubeVigia(v, g: g, t: t, alerta: vigiaAlerta[g],
-                                    hueco: e.guardianHueco, eclipse: eclipse))
+        if !enEclipse {
+            for (g, v) in vigias.enumerated() where v.z >= 0 {
+                trazos.append(nubeVigia(v, g: g, t: t, alerta: vigiaAlerta[g],
+                                        hueco: e.guardianHueco, eclipse: eclipse))
+            }
         }
         trazos += trazosEstelas(t: t, escena: e, lunas: lunasEstela,
                                 radioOrbe: CGFloat(radio), frente: true,
@@ -404,6 +435,18 @@ public extension EcosistemaSimulacion {
     }
 
     /// UN vigía (FER-22: dos de nacimiento — ya no hay guardián que se parta).
+    /// El constructor compartido de la nube de un vigía (config del morfo de eclipse
+    /// y de la nube suelta). La rotación depende de `g` (fases opuestas) — salvo el
+    /// frente de eclipse, que fija una sola rotación para que ambos morfos coincidan.
+    static func guardianaNube(centro: CGPoint, radio: CGFloat, g: Int, t: TimeInterval,
+                              alfaK: Double, hueco: Bool, tinta: Tinta) -> Nube {
+        Nube(centro: centro, radio: radio,
+             rotacion: g == 0 ? t * 0.9 : -t * 0.8,
+             jitterAmp: 0.4, alfaK: alfaK, stretch: 0,
+             nivel: nil, nivelBajo: false, capAmbar: false,
+             n: Geometria.nGuardian, paso: hueco ? 2 : 1, tinta: tinta)
+    }
+
     private static func nubeVigia(_ orb: Orbital, g: Int, t: TimeInterval,
                                   alerta: Bool, hueco: Bool,
                                   eclipse: Double) -> Trazo {
@@ -412,12 +455,8 @@ public extension EcosistemaSimulacion {
         let alfaK = eclipse > 0
             ? 0.85 * max(0.4, eclipse)
             : (0.5 + 0.5 * dep) * (hueco ? 0.55 : 0.95)
-        return .nube(Nube(
-            centro: orb.centro, radio: orb.radio,
-            rotacion: g == 0 ? t * 0.9 : -t * 0.8,
-            jitterAmp: 0.4, alfaK: alfaK, stretch: 0,
-            nivel: nil, nivelBajo: false, capAmbar: false,
-            n: Geometria.nGuardian, paso: hueco ? 2 : 1, tinta: tinta))
+        return .nube(guardianaNube(centro: orb.centro, radio: orb.radio, g: g, t: t,
+                                   alfaK: alfaK, hueco: hueco, tinta: tinta))
     }
 
     /// El CORDÓN de alimentación (FER-22): motas fluyendo de la decisora al orbe —

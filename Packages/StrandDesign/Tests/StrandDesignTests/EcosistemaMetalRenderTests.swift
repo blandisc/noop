@@ -50,6 +50,22 @@ final class EcosistemaMetalRenderTests: XCTestCase {
             }
             return suma
         }
+
+        /// Calidez (R/G) LOCAL dentro de un disco — para aislar el tono en la región que
+        /// mira al guardián sin que el orbe entero (ya ámbar en atención) lave la señal.
+        func calidez(cerca centro: CGPoint, radio: CGFloat) -> Float {
+            var r: Float = 0, g: Float = 0
+            for y in 0..<EcosistemaMetalRenderTests.alto {
+                for x in 0..<EcosistemaMetalRenderTests.ancho {
+                    let dx = CGFloat(x) - centro.x, dy = CGFloat(y) - centro.y
+                    if dx * dx + dy * dy <= radio * radio {
+                        let i = y * EcosistemaMetalRenderTests.ancho + x
+                        r += rojo[i]; g += verde[i]
+                    }
+                }
+            }
+            return r / max(g, .leastNonzeroMagnitude)
+        }
     }
 
     private func renderizar(escena: Sim.Escena, t: TimeInterval) throws -> Cuadro {
@@ -255,11 +271,15 @@ final class EcosistemaMetalRenderTests: XCTestCase {
     func testElCasqueteAmbarDelEclipseTiñeLaEsfera() throws {
         let sin = try renderizar(escena: escena(coreo: .atencion(eclipse: true), eclipse: 0), t: 3)
         let con = try renderizar(escena: escena(coreo: .atencion(eclipse: true), eclipse: 1), t: 3)
-        // Margen medido: +7.3 % (0.823 → 0.883). El casquete cubre solo el gajo que mira
-        // al guardián (x > 0.25 ∧ y < −0.15) y el especular blanco amortigua el cociente,
-        // así que la señal real es ésa — no una inundación de ámbar.
-        XCTAssertGreaterThan(con.calidez, sin.calidez * 1.05,
-                             "el eclipse debe teñir de ámbar el casquete que mira al guardián")
+        // FER-22 (decisión B) volvió ámbar TODO el orbe en atención, y FER-27 fusionó los
+        // dos vigías en UN frente centrado tras el orbe (hacia el guardián, eclipseOffset
+        // +30/−58). Medir la calidez GLOBAL ya no aísla la señal (el orbe ámbar la lava);
+        // se mide LOCAL en la región del frente, donde el eclipse SÍ agrega ámbar.
+        let capa = CGPoint(x: G.centro.x + Sim.Geometria.eclipseOffset.width,
+                           y: G.centro.y + Sim.Geometria.eclipseOffset.height)
+        XCTAssertGreaterThan(con.calidez(cerca: capa, radio: 26),
+                             sin.calidez(cerca: capa, radio: 26) * 1.05,
+                             "el eclipse tiñe de ámbar la región que mira al guardián")
     }
 
     /// El morfo (FER-19 · C.2) compila, pinta, es determinista y NO duplica materia:

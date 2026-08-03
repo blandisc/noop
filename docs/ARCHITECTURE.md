@@ -745,6 +745,7 @@ identically:
   continuity by construction. Under Reduce Motion, only the settled embryo. If calibration completes
   with the screen open, the embryo **graduates** live into the verdict orb via a same-count
   `nubeMorfo` (`Escena.graduacion`, anchored by the view) — the two decision spheres never appear.
+- **Cross-count fusion decomposes into same-count morphs (FER-27).** The C.2 law — `nubeMorfo` requires `a.n==b.n && a.paso==b.paso` — stays sacred. The eclipse's 2→1 need (two sentinels, `nGuardian` each, becoming one front) is met not by relaxing that precondition but by recognizing an equal-count 2→1 fusion as the **superposition of two same-count morphs** onto a shared destination cloud: `(A_j,B_j)→front_j`, remap identity. At `mezcla=1` both `nGuardian`-clouds coincide on the front (one body, no seam); at `mezcla=0` each is bit-equal to its orbiting sentinel; instance count is unchanged, so matter is conserved. General cross-count (`floor(i·nA/N)`) remains the documented reserve policy, unimplemented until a real `nA≠nB` case exists. Shader, Metal and uniforms are untouched — the whole change lives in the plan.
 - **The moons come forward; the orb never splits (FER-22).** The tap choreography inverted after
   the epic: the two decision moons — which already ARE the signals — travel to the stations and
   grow into the gauges (`nivelMezcla` = apertura reveals the liquid en route), while the verdict

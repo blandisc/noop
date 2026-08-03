@@ -166,6 +166,52 @@ final class EcosistemaPlanTests: XCTestCase {
         XCTAssertEqual(nubes(rojo).filter { $0.nivelBajo }.count, 1)
     }
 
+    // MARK: C.4 · Eclipse como fusión 2→1 (FER-27)
+
+    private func morfos(_ trazos: [Sim.Trazo]) -> [(Sim.Nube, Sim.Nube, Double)] {
+        trazos.compactMap { if case .nubeMorfo(let a, let b, let m) = $0 { return (a, b, m) }
+                            return nil }
+    }
+
+    /// En eclipse pleno, los DOS vigías morfan a UN frente compartido: dos .nubeMorfo
+    /// con la MISMA config B (mismo centro, radio y rotación) — un cuerpo, sin junta.
+    func testEclipseFusionaDosVigiasEnUnFrente() {
+        let trazos = Sim.plan(t: 3, escena: escena(guardianJuntas: true, eclipse: 1))
+        let ms = morfos(trazos)
+        XCTAssertEqual(ms.count, 2, "dos morfos: un vigía cada uno")
+        XCTAssertEqual(ms[0].1, ms[1].1, "misma config B: el frente compartido")
+        XCTAssertEqual(ms[0].1.n, G.nGuardian)
+        XCTAssertEqual(ms[0].1.paso, ms[1].1.paso, "precondición C.2: mismo paso")
+        // No queda ninguna .nube de vigía suelta (todo pasó por el morfo).
+        let vigiasSueltas = nubes(trazos).filter { $0.n == G.nGuardian }
+        XCTAssertTrue(vigiasSueltas.isEmpty, "en eclipse los vigías viven en el morfo")
+    }
+
+    /// La precondición C.2 se respeta: cada morfo del eclipse es mismo-conteo.
+    func testEclipseMorfosSonMismoConteo() {
+        let ms = morfos(Sim.plan(t: 5, escena: escena(guardianJuntas: true, eclipse: 1)))
+        for (a, b, _) in ms {
+            XCTAssertEqual(a.n, b.n, "a.n == b.n (ley C.2)")
+            XCTAssertEqual(a.paso, b.paso, "a.paso == b.paso (ley C.2)")
+        }
+    }
+
+    /// Reduce Motion en eclipse: UN frente plano, cero morfos.
+    func testEclipseEnStillSinMorfo() {
+        let trazos = Sim.plan(t: 3, escena: escena(still: true, guardianJuntas: true,
+                                                   eclipse: 1))
+        XCTAssertTrue(morfos(trazos).isEmpty, "still jamás ve un morfo")
+        let frentes = nubes(trazos).filter { $0.n == G.nGuardian }
+        XCTAssertEqual(frentes.count, 1, "un solo frente plano")
+    }
+
+    /// Sin eclipse, los vigías son dos .nube sueltas (no morfos).
+    func testSinEclipseLosVigiasSonNubesSueltas() {
+        let trazos = Sim.plan(t: 3, escena: escena())
+        XCTAssertTrue(morfos(trazos).isEmpty)
+        XCTAssertEqual(nubes(trazos).filter { $0.n == G.nGuardian }.count, 2)
+    }
+
     // MARK: Honestidad del dato
 
     /// FER-22: las lunas son cuerpos PERMANENTES — sin dato no desaparecen, se
