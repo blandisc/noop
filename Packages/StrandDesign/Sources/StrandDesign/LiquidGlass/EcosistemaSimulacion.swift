@@ -228,9 +228,9 @@ public enum EcosistemaSimulacion {
             let ant = LiquidEcosistemaMotion.anticipacion
             let tm = t - desde
             if tm < ant {
-                // Anticipación: sigue fundida, tomando aire (squeeze).
-                return Cuadro(u: 1, stretch: -LiquidEcosistemaMotion.squeeze * sin(.pi * tm / ant),
-                              settle: 0, bump: 0)
+                // Anticipación como COMPÁS, ya sin squeeze (revisión del dueño: el
+                // orbe «se doblaba» al arrancar): un latido de espera, cero deformación.
+                return Cuadro(u: 1, stretch: 0, settle: 0, bump: 0)
             }
             if tm < ant + dur {
                 // Apertura SEAMLESS (pulido /inject): smoothstep sin el backOut invertido
@@ -240,13 +240,13 @@ public enum EcosistemaSimulacion {
                 // (~⅓ del viaje) y muere antes de aterrizar — la energía tomada al
                 // inhalar se gasta en el arranque, no se evapora en la costura.
                 let pr = (tm - ant) / dur
-                let lanzamiento = LiquidEcosistemaMotion.fusionStretch * 0.35
-                    * sin(.pi * min(1, pr * 1.6)) * pow(1 - pr, 1.5)
-                return Cuadro(u: 1 - suave(pr), stretch: lanzamiento, settle: 0, bump: 0)
+                // Sin lanzamiento (revisión del dueño: cualquier stretch lee como
+                // doblez): viaje limpio — el carácter lo ponen el arco y las estelas.
+                return Cuadro(u: 1 - suave(pr), stretch: 0, settle: 0, bump: 0)
             }
-            // Aterrizaje con asentamiento: la fase conserva su timestamp hasta el
-            // próximo tap, así que el settle amortiguado sale gratis de `tm`.
-            return Cuadro(u: 0, stretch: 0, settle: settle(tm - ant - dur), bump: 0)
+            // Aterrizaje SECO (revisión del dueño: la oscilación del settle leía
+            // como parpadeo de los orbes al final): llegan y se quedan.
+            return Cuadro(u: 0, stretch: 0, settle: 0, bump: 0)
         case .separada:
             return Cuadro(u: 0, stretch: 0, settle: 0, bump: 0)
         case .uniendo(let desde):
@@ -257,10 +257,8 @@ public enum EcosistemaSimulacion {
             let antU = LiquidEcosistemaMotion.anticipacion * 0.6
             let tm = t - desde
             if tm < antU {
-                return Cuadro(u: 0,
-                              stretch: -LiquidEcosistemaMotion.squeeze * 0.7
-                                  * sin(.pi * tm / antU),
-                              settle: 0, bump: 0)
+                // Compás sin squeeze (revisión del dueño: nada de dobleces).
+                return Cuadro(u: 0, stretch: 0, settle: 0, bump: 0)
             }
             let tv = tm - antU
             if tv < dur {
@@ -270,12 +268,10 @@ public enum EcosistemaSimulacion {
                 return Cuadro(u: suave(pr), stretch: 0,
                               settle: 0, bump: bumpEn(suave(pr)) * 0.6)
             }
-            // Aterrizaje de la REUNIÓN casi sin settle (0.5 → 0.25, segunda pasada del
-            // dueño: aún se asomaba): apenas una exhalación — el carácter del cierre lo
-            // ponen la convergencia de enjambres y la respiración, no el rebote. El
-            // settle pleno queda solo para el ritual del intro.
-            return Cuadro(u: 1, stretch: 0,
-                          settle: settle(tv - dur) * 0.25, bump: 0)
+            // Aterrizaje SECO (tercera pasada del dueño: hasta 0.25 de settle leía
+            // como parpadeo): el cierre lo cuentan la convergencia de enjambres y la
+            // respiración. El settle pleno queda SOLO para el ritual del intro.
+            return Cuadro(u: 1, stretch: 0, settle: 0, bump: 0)
         }
     }
 

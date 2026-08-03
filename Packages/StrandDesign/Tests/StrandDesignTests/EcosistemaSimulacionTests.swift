@@ -73,10 +73,11 @@ final class EcosistemaSimulacionTests: XCTestCase {
 
     func test_cuadro_separando_conAnticipacion() {
         let fase = Sim.Fase.separando(desde: 50)
-        // La anticipación: sigue fundida pero con squeeze (stretch negativo).
+        // La anticipación es un COMPÁS, ya sin squeeze (revisión del dueño: cualquier
+        // deformación leía como «doblez»): sigue fundida, quieta, tomando el latido.
         let ant = Sim.cuadro(t: 50 + M.anticipacion * 0.5, fase: fase)
         XCTAssertEqual(ant.u, 1)
-        XCTAssertLessThan(ant.stretch, 0)
+        XCTAssertEqual(ant.stretch, 0)
         // Al terminar: separada limpia.
         let fin = Sim.cuadro(t: 50 + M.anticipacion + M.fusionDur + 0.01, fase: fase)
         XCTAssertEqual(fin.u, 0)
