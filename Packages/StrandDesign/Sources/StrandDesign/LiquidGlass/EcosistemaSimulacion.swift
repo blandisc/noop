@@ -371,6 +371,37 @@ public enum EcosistemaSimulacion {
         return Particula(pos: CGPoint(x: sx, y: sy), tamano: tam, alfa: alfa, clase: clase)
     }
 
+    // MARK: Morfo (FER-19 · C.2 «Materia continua»)
+
+    /// La ley del MORFO: la MISMA dirección `i` evaluada en la configuración A y en la
+    /// B, con lerp de posición/tamaño/alfa por índice — migración real de materia,
+    /// nunca crossfade. En mezcla 0/1 es BIT-IGUAL a `particula` simple (ese es el
+    /// contrato testeado). La clase es discreta (los backends bucketizan por clase):
+    /// gana la configuración dominante. Precondición del trazo: a.n == b.n && a.paso
+    /// == b.paso — misma esfera fuente, mismos índices.
+    public static func particulaMorfo(dir: SIMD3<Double>, indice: Int,
+                                      a: Nube, b: Nube, mezcla: Double,
+                                      t: TimeInterval) -> Particula {
+        let pa = particula(dir: dir, indice: indice, centro: a.centro, radio: a.radio,
+                           rotacion: a.rotacion, jitterAmp: a.jitterAmp, t: t,
+                           alfaK: a.alfaK, stretch: a.stretch, nivel: a.nivel,
+                           nivelMezcla: a.nivelMezcla, nivelBajo: a.nivelBajo,
+                           capAmbar: a.capAmbar)
+        if mezcla <= 0 { return pa }
+        let pb = particula(dir: dir, indice: indice, centro: b.centro, radio: b.radio,
+                           rotacion: b.rotacion, jitterAmp: b.jitterAmp, t: t,
+                           alfaK: b.alfaK, stretch: b.stretch, nivel: b.nivel,
+                           nivelMezcla: b.nivelMezcla, nivelBajo: b.nivelBajo,
+                           capAmbar: b.capAmbar)
+        if mezcla >= 1 { return pb }
+        return Particula(
+            pos: CGPoint(x: pa.pos.x + (pb.pos.x - pa.pos.x) * CGFloat(mezcla),
+                         y: pa.pos.y + (pb.pos.y - pa.pos.y) * CGFloat(mezcla)),
+            tamano: pa.tamano + (pb.tamano - pa.tamano) * CGFloat(mezcla),
+            alfa: pa.alfa + (pb.alfa - pa.alfa) * mezcla,
+            clase: mezcla < 0.5 ? pa.clase : pb.clase)
+    }
+
     // MARK: Órbitas (lunas y guardián — posiciones deterministas por t)
 
     public struct Orbital: Equatable, Sendable {
