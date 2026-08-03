@@ -1,6 +1,91 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "TODAY · %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "TODAY · %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "HOY · %@"
+          }
+        }
+      }
+    },
+    "AVG · %lld DAYS" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AVG · %lld DAYS"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MEDIA · %lld DÍAS"
+          }
+        }
+      }
+    },
+    "AVG · %lld NIGHTS" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AVG · %lld NIGHTS"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MEDIA · %lld NOCHES"
+          }
+        }
+      }
+    },
+    "AVG · 6 MONTHS" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AVG · 6 MONTHS"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MEDIA · 6 MESES"
+          }
+        }
+      }
+    },
+    "AVG · ALL" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AVG · ALL"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MEDIA · TODO"
+          }
+        }
+      }
+    },
     "reading.vsBase.hrv.below": {
       "extractionState": "manual",
       "localizations": {

@@ -503,10 +503,12 @@ struct LiquidMetricSheetView: View {
             // del tile). La regularidad ya no vive aquí; baja al slot como tarjeta.
             // Durante la carga (`isSleepLoading` → skeleton en el cuerpo) el numeral del
             // tile se conserva — la hoja no abre muda.
-            numeral: datoInfo.displayValue,
+            // F0.3 (FER-33): el numeral sigue la VENTANA del selector, y el sello dice cuál.
+            numeral: heroVentana.numeral,
             unidad: datoInfo.unit,
             sufijo: sufijo,
             numeralTono: tinte(datoInfo.headerTint),
+            sello: heroVentana.sello,
             origen: origen,
             origenEtiqueta: origenEtiqueta,
             // D1 · La explicación habla del dato que la hoja MUESTRA (`datoInfo`), no del
@@ -590,9 +592,6 @@ struct LiquidMetricSheetView: View {
                 LiquidReadingLine(frase, highlight: sleepReadingHighlight,
                                   highlightTone: tono)
             }
-            // Héroe → frase → selector → gráfica → tabla → Etapas → Regularidad → pie
-            // (levelsBlock = selector + gráfica + tabla; F4b cablea el slot de regularidad).
-            levelsBlock
             // D10 · La ventana solo se afirma cuando existe: el fallback diario de Apple
             // fabrica la noche con `startTs == endTs` y la hoja imprimía «6:00 → 6:00».
             // Tipado y fuera del call (trampa del type-checker con ternarios en builders).
@@ -606,24 +605,31 @@ struct LiquidMetricSheetView: View {
             let overlineNoche: String = nocheEsDeAnoche
                 ? String(localized: "Last night")
                 : String(localized: "Last recorded night · \(Self.diaCorto(Self.fecha(night.startTs)))")
-            // D10 · Y con las CUATRO etapas en 0 (mismo fallback) no hay noche que dibujar:
-            // la barra saldría hueca bajo un overline suelto y una leyenda vacía.
-            if sleepEtapasMedidas(night) {
-                LiquidStageBar(
-                    etapas: sleepEtapas(night),
-                    overline: overlineNoche,
-                    ventana: ventanaNoche)
+            // Héroe → frase → selector → gráfica → ETAPAS → REGULARIDAD → escalera → pie.
+            // F0.1 (FER-33): las dos tarjetas propias de Sueño bajan al HUECO del bloque de
+            // niveles. Antes colgaban después de la escalera porque no había dónde meterlas;
+            // el prototipo canónico las pone entre la gráfica y la escalera, y ahí van.
+            levelsBlock {
+                // D10 · Con las CUATRO etapas en 0 (fallback diario de Apple) no hay noche
+                // que dibujar: la barra saldría hueca bajo un overline suelto y una leyenda
+                // vacía.
+                if sleepEtapasMedidas(night) {
+                    LiquidStageBar(
+                        etapas: sleepEtapas(night),
+                        overline: overlineNoche,
+                        ventana: ventanaNoche)
+                }
+                // F4b · Regularidad como tarjeta propia (ya no en el héroe ni en
+                // `LiquidDobleDato`). `puntaje == nil` ⇒ «··» calibrando (lo maneja la tarjeta).
+                LiquidRegularityCard(
+                    titulo: String(localized: "Regularity"),
+                    puntaje: regularidadSueno,
+                    leyenda: regularidadLeyenda,
+                    tono: LiquidColor.indigo,
+                    explicacion: String(localized: "How steady your sleep schedule is: we take each night's midpoint (between falling asleep and waking) and measure how much it shifts night to night. Less drift, closer to 100."),
+                    infoMostrar: String(localized: "Show explanation"),
+                    infoOcultar: String(localized: "Hide explanation"))
             }
-            // F4b · Regularidad como tarjeta propia (ya no en el héroe ni en LiquidDobleDato).
-            // `puntaje == nil` ⇒ «··» calibrando (lo maneja la tarjeta).
-            LiquidRegularityCard(
-                titulo: String(localized: "Regularity"),
-                puntaje: regularidadSueno,
-                leyenda: regularidadLeyenda,
-                tono: LiquidColor.indigo,
-                explicacion: String(localized: "How steady your sleep schedule is: we take each night's midpoint (between falling asleep and waking) and measure how much it shifts night to night. Less drift, closer to 100."),
-                infoMostrar: String(localized: "Show explanation"),
-                infoOcultar: String(localized: "Hide explanation"))
         }
     }
 
@@ -1099,7 +1105,66 @@ struct LiquidMetricSheetView: View {
 
     // MARK: Niveles (F3a host + F3b explorador Liquid; paridad `levelsBlock` :716-742)
 
+    // MARK: F0.3 · El héroe sigue la ventana del selector (FER-33)
+
+    /// El numeral del héroe y su sello, según la ventana que el selector tenga puesta.
+    ///
+    /// En la semana el héroe es el dato de HOY —el que tocaste en el Tablero para llegar
+    /// aquí— y el sello lo fecha. En los rangos largos ese dato ya no describe lo que la
+    /// gráfica está contando: ahí el héroe pasa a ser la MEDIA de la ventana, y el sello
+    /// dice de cuál. Es el patrón de los prototipos canónicos, y la razón de ser del sello:
+    /// sin él, un numeral que cambia al mover el selector sería un número sin dueño.
+    ///
+    /// El scrub NO toca esto (contrato LIQUID-GLASS §11.3, «el héroe no cambia al hacer
+    /// scrub»): la cabeza del scrub vive en el popup de la gráfica. El rango sí; el scrub no.
+    private var heroVentana: (numeral: String?, sello: String?) {
+        let valores = levelsHost.window.values
+        guard levelsHost.levels != nil, levelsHost.range != .week, !valores.isEmpty else {
+            return (datoInfo.displayValue, selloHoy)
+        }
+        return (levelsValueFormat(ComparisonEngine.stat(valores).mean), selloMedia)
+    }
+
+    /// «HOY · 3 AGO». La fecha la compone la capa app (el DS no formatea fechas, contrato D3).
+    private var selloHoy: String {
+        String(localized: "TODAY · \(Self.diaCorto(Date()))")
+    }
+
+    /// «MEDIA · 30 DÍAS» / «MEDIA · 30 NOCHES» / … según el rango y si la métrica es nocturna.
+    private var selloMedia: String {
+        switch levelsHost.range {
+        case .week:
+            return selloHoy
+        case .month, .quarter, .year:
+            let dias: Int = levelsHost.range.days ?? 0
+            return nightly
+                ? String(localized: "AVG · \(dias) NIGHTS")
+                : String(localized: "AVG · \(dias) DAYS")
+        case .half:
+            return String(localized: "AVG · 6 MONTHS")
+        case .all:
+            return String(localized: "AVG · ALL")
+        }
+    }
+
+    /// Sin extras: el bloque de niveles tal cual, para las hojas que no enchufan nada.
     @ViewBuilder private var levelsBlock: some View {
+        levelsBlock(extras: { EmptyView() })
+    }
+
+    /// FER-33 · F0.1 — el bloque de niveles con un HUECO entre la gráfica y la escalera.
+    ///
+    /// Los componentes propios de una hoja (las Etapas y la Regularidad de Sueño, la colina
+    /// de Carga) colgaban DESPUÉS de todo el bloque, porque este era un `VStack` monolítico
+    /// y no había dónde meterlos; el diseño canónico los pone entre la gráfica y la
+    /// escalera. Abrir el hueco aquí lo resuelve para las nueve hojas de una vez, que es la
+    /// regla de la casa: se cambia la familia, no la pantalla.
+    ///
+    /// El hueco se emite en TODAS las ramas —incluidas la de carga y la del pozo— porque los
+    /// extras no dependen de la serie de niveles: si solo apareciera en la rama feliz, una
+    /// hoja perdería sus tarjetas propias justo cuando sus niveles no están listos.
+    @ViewBuilder private func levelsBlock<Extras: View>(
+        @ViewBuilder extras: () -> Extras) -> some View {
         if levelsHost.levels != nil,
            let d = levelsHost.clasificacion(today: datoInfo.levelsTodayValue) {
             let window = levelsHost.window
@@ -1113,11 +1178,13 @@ struct LiquidMetricSheetView: View {
                     // es una mentira momentánea (defecto heredado §13.24). Se omiten la
                     // frase y los conteos, y el instrumento espera en su esqueleto.
                     esqueletoNiveles
+                    extras()
                     nivelesLista(d, conteos: false)
                 } else {
                     if window.fellBack { avisoVentana(window) }
                     nivelesFrase(d)
                     nivelesGrafica(d, window: window)
+                    extras()
                     nivelesLista(d)
                 }
             }
@@ -1126,7 +1193,12 @@ struct LiquidMetricSheetView: View {
             // instrumento (paridad NIV-09: un pozo con presencia), en vez de degradarse a
             // una línea de letra chica que pesa menos que la nota al pie de abajo — y que
             // dejaba el cuerpo de la hoja VACÍO entre cabecera y pie.
-            pozoNiveles(String(localized: "Your levels come from your own baseline: a few more nights and they'll appear."))
+            VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+                pozoNiveles(String(localized: "Your levels come from your own baseline: a few more nights and they'll appear."))
+                extras()
+            }
+        } else {
+            extras()
         }
     }
 
