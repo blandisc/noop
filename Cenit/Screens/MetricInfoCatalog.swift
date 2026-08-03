@@ -83,19 +83,26 @@ struct MetricInfo: Identifiable {
 
 extension MetricInfo {
 
+    /// FER-29 · C1 — the ONE ladder per metric. The catalog's display bands are DERIVED from the
+    /// engine (`MetricLevels.displayBands`) instead of restated, so the levels table can never show a
+    /// number the engine doesn't have (the old «7–9 h» vs «420–510 min», spo2's phantom third band, the
+    /// residual closed «<= 18 rpm»). `value` is in the metric's OWN domain (sleep in MINUTES, spo2 in
+    /// %, …) and lights the active row through the SAME `activeIndex` the rest of the app uses.
+    private static func engineBands(_ metric: MetricLevels.FixedMetric, value: Double?) -> [Band] {
+        let display = MetricLevels.displayBands(for: metric)
+        let active = value.flatMap {
+            MetricLevels.activeIndex(for: $0, in: MetricLevels.levels(for: metric))
+        }
+        return display.enumerated().map { i, b in
+            Band(label: LocalizedStringKey(b.name), range: b.range,
+                 isActive: i == active, lower: b.lower, upper: b.upper)
+        }
+    }
+
     static func strain(_ value: Double?) -> MetricInfo {
-        // Bounds filled (FER-859) so the Detalle's history lanes derive from THIS ladder instead of
-        // restating the numbers — hero verdict, Niveles table and history stay one source.
-        let bands: [Band] = [
-            Band(label: "Rest / Light", range: "0 – 7",
-                 isActive: value.map { $0 < 7 } ?? false, lower: nil, upper: 7),
-            Band(label: "Moderate", range: "7 – 14",
-                 isActive: value.map { $0 >= 7 && $0 < 14 } ?? false, lower: 7, upper: 14),
-            Band(label: "Hard", range: "14 – 18",
-                 isActive: value.map { $0 >= 14 && $0 < 18 } ?? false, lower: 14, upper: 18),
-            Band(label: "Extreme", range: "18 – 21",
-                 isActive: value.map { $0 >= 18 } ?? false, lower: 18, upper: nil),
-        ]
+        // FER-29 · C1: five bands derived from the engine (rest/light/moderate/hard/extreme), so the
+        // top reads the engine's honest open «≥ 18» rather than the catalog's old closed «18 – 21».
+        let bands = engineBands(.strain, value: value)
         return MetricInfo(
             id: "strain",
             name: "Day Strain",
@@ -111,19 +118,10 @@ extension MetricInfo {
     }
 
     static func sleep(_ totalMinutes: Int?) -> MetricInfo {
-        let hours = totalMinutes.map { Double($0) / 60.0 }
-        let bands: [Band] = [
-            Band(label: "Short", range: "< 6 h",
-                 isActive: hours.map { $0 < 6 } ?? false, lower: nil, upper: 6),
-            Band(label: "Adequate", range: "6 – 7 h",
-                 isActive: hours.map { $0 >= 6 && $0 < 7 } ?? false, lower: 6, upper: 7),
-            // Half-open to match the chart's band math (TrendBand.contains): exactly 9.00 h reads as
-            // Extended in both the table and the chart's bracket, never one each. (FER-244)
-            Band(label: "Optimal", range: "7 – 9 h",
-                 isActive: hours.map { $0 >= 7 && $0 < 9 } ?? false, lower: 7, upper: 9),
-            Band(label: "Extended", range: "> 9 h",
-                 isActive: hours.map { $0 >= 9 } ?? false, lower: 9, upper: nil),
-        ]
+        // FER-29 · C1: ONE sleep ladder, the engine's — cuts in MINUTES (360/420/510) rendered as clock
+        // («< 6:00 / 6:00–7:00 / 7:00–8:30 / ≥ 8:30»). Kills the old catalog «7–9 h», which was a third,
+        // contradicting ladder next to the engine's minutes and `SleepDetailScreen`.
+        let bands = engineBands(.sleep, value: totalMinutes.map(Double.init))
         let display: String
         if let m = totalMinutes {
             let h = m / 60, min = m % 60
@@ -202,16 +200,10 @@ extension MetricInfo {
     /// the typical sleeping-adult ranges; respiration is most informative as a deviation from your own
     /// nightly norm, which the detail's normal-range band shows.
     static func respiratory(_ value: Double?) -> MetricInfo {
-        let bands: [Band] = [
-            Band(label: "Low", range: "< 12 rpm",
-                 isActive: value.map { $0 < 12 } ?? false, lower: nil, upper: 12),
-            Band(label: "Typical", range: "12 – 18 rpm",
-                 isActive: value.map { $0 >= 12 && $0 <= 18 } ?? false, lower: 12, upper: 18),
-            Band(label: "Elevated", range: "18 – 20 rpm",
-                 isActive: value.map { $0 > 18 && $0 <= 20 } ?? false, lower: 18, upper: 20),
-            Band(label: "High", range: "> 20 rpm",
-                 isActive: value.map { $0 > 20 } ?? false, lower: 20, upper: nil),
-        ]
+        // FER-29 · C1: the engine's two half-open bands (normal < 20 / elevated ≥ 20), which fixes the
+        // residual closed-interval bug — the old catalog lit «Typical» on an exact 20.0 while the
+        // half-open chart math counted it in «Elevated».
+        let bands = engineBands(.respiration, value: value)
         return MetricInfo(
             id: "resp_rate",
             name: "Respiratory Rate",
@@ -358,17 +350,9 @@ extension MetricInfo {
     }
 
     static func spo2(_ value: Double?) -> MetricInfo {
-        // Half-open bounds [lower, upper) so the chart's TrendBand math (FER-244) and the fixed-bands
-        // table agree on the edge: exactly 95.0% reads as Normal in both. The 95% floor is the typical
-        // healthy adult threshold; < 90% is hypoxemia. (FER-252)
-        let bands: [Band] = [
-            Band(label: "Normal", range: "95 – 100%",
-                 isActive: value.map { $0 >= 95 } ?? false, lower: 95, upper: nil),
-            Band(label: "Borderline", range: "90 – 94%",
-                 isActive: value.map { $0 >= 90 && $0 < 95 } ?? false, lower: 90, upper: 95),
-            Band(label: "Low", range: "< 90%",
-                 isActive: value.map { $0 < 90 } ?? false, lower: nil, upper: 90),
-        ]
+        // FER-29 · C1: the engine has TWO bands (low < 95 / normal ≥ 95), not the catalog's old three
+        // (Normal/Borderline/Low). A 92% was «Borderline» here and «Low» in the engine; now one ladder.
+        let bands = engineBands(.bloodOxygen, value: value)
         return MetricInfo(
             id: "spo2",
             name: "Blood Oxygen",
@@ -524,68 +508,9 @@ extension MetricInfo {
         )
     }
 
-    /// ⚠️ CÓDIGO MUERTO — decisión explícita del pase de copy (/inject 2026-07-23).
-    /// `MetricInfo.recovery` YA NO ES ALCANZABLE desde la app: `metricDetail` nunca se
-    /// asigna a `.recovery` (TodayView:1043-1074) y el único llamador vivo es el fixture
-    /// DEMO de `LiquidMetricSheetView`. Por eso su copy —el único que sigue nombrando el
-    /// score de recuperación y sus pesos exactos— quedó SIN reescribir: reescribir texto
-    /// muerto lo legitimaría. Lo honesto es BORRAR esta factory junto con su rama de la
-    /// hoja (`isRecoverySummary` / `recoveryContent` / `recoveryZoneMeter` /
-    /// `recoveryReadingText` / el «/ 100» / sus entradas de `LiquidSheetCopy`); no se hizo
-    /// en esta pasada porque es una amputación que no se puede compilar desde el paquete y
-    /// la sesión de recarga en caliente del dueño estaba viva. Pendiente para el CIERRE.
-    ///
-    /// Recovery (0–100) is a weighted composite, not a banded range, so it gets its own body:
-    /// a "See the method" disclosure (where the exact weights and the σ language live). While the
-    /// baseline is still seeding (`calibrationNights` non-nil) it shows honest progress instead of a
-    /// made-up number. The header numeral is tinted by the WHOOP recovery band (green ≥67 · yellow
-    /// 34–67 · red <34), mirroring TodayView's `recoveryDataColor`. (FER-108 / FER-162)
-    static func recovery(score: Int?, calibrationNights: Int?, nightsNeeded: Int) -> MetricInfo {
-        let disclaimer: LocalizedStringKey = "It's an estimate, not a diagnosis."
-
-        if let done = calibrationNights {
-            return MetricInfo(
-                id: "recovery",
-                name: "Recovery",
-                headline: "We can't score your recovery yet. We need at least \(nightsNeeded) nights of sleep to learn your baseline; you're at \(done) of \(nightsNeeded). We'd rather not show you a made-up number.",
-                displayValue: "\(done)/\(nightsNeeded)",
-                unit: nil,
-                headerTint: .neutral,
-                bands: [],
-                note: nil,
-                method: nil,
-                disclaimer: disclaimer,
-                calibration: Calibration(done: done, needed: nightsNeeded)
-            )
-        }
-
-        // WHOOP recovery bands → header tint (matches TodayView.recoveryDataColor): red <34,
-        // yellow 34–67, green ≥67.
-        let tint: Tint = score.map { s in
-            switch s {
-            case ..<34: return .bad
-            case ..<67: return .warn
-            default:    return .good
-            }
-        } ?? .neutral
-
-        return MetricInfo(
-            id: "recovery",
-            name: "Recovery",
-            headline: "Your recovery sums up how ready your body is today, from 0 to 100. It blends several signals from your night, your HRV above all, and compares them with your own average from recent weeks, not anyone else's.",
-            displayValue: score.map { "\($0)" } ?? "—",
-            unit: nil,
-            headerTint: tint,
-            bands: [],
-            note: nil,
-            method: Method(
-                prose: "Each signal becomes a score of how far above or below your personal average it sits (a z-score, in σ). They're averaged with fixed weights, HRV 60%, resting heart rate 20%, sleep 15%, skin temperature 10%, respiration 5%, and mapped onto a 0–100 scale, calibrated so a typical day lands near 58. If a signal is missing on a given night, its weight is shared among the others.",
-                citation: "A composite of z-scores through a logistic curve. HRV via RMSSD (Task Force, 1996)."
-            ),
-            disclaimer: disclaimer,
-            calibration: nil,
-            levelsMetric: .recovery,
-            levelsTodayValue: score.map(Double.init)
-        )
-    }
+    // FER-29 · C6 — `MetricInfo.recovery` (dead code) deleted. It was unreachable: `metricDetail`
+    // never assigned `.recovery`, so the only live caller was the demo fixture. It was also the one
+    // place that still named the recovery score and its exact verdict weights (60/20/15/10/5); leaving
+    // it as unreachable copy legitimised a surface the app no longer has. The `Calibration`/`disclaimer`
+    // fields on `MetricInfo` stay (harmless optionals) but no factory sets them now.
 }

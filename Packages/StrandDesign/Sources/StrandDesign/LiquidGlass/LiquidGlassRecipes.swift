@@ -2,9 +2,11 @@ import SwiftUI
 
 // MARK: - Liquid Glass · Recetas de vidrio (handoff §4.5)
 //
-// Cuatro recetas cerradas — velo / superficie / pastilla / lente — más la variante esférica
-// (SignalOrb, dial). Cada capa de vidrio es un stack: (a) blur con fondo, (b) borde con
-// inner-highlights, (c) opcional highlight especular. Se usan COMPLETAS, nunca blur suelto.
+// Recetas de vidrio — superficie / pastilla / lente — más variantes OPACAS
+// (superficieSolida / pastillaSolida) y la esférica (SignalOrb, dial). Cada capa de
+// vidrio es un stack: (a) blur con fondo, (b) borde con inner-highlights, (c) opcional
+// highlight especular. Se usan COMPLETAS, nunca blur suelto. Las sólidas omiten (a):
+// papel opaco + el mismo chrome (borde, highlight, sombra, radio).
 //
 // Calibración nativa (§8 del handoff): el backdrop-filter de CSS se aproxima con materiales
 // del sistema — `.ultraThinMaterial` para superficie/pastilla (blur 14–16) y `.thinMaterial`
@@ -22,12 +24,20 @@ public enum LiquidGlassRecipe: Sendable {
     case pastillaElevada
     /// Dock flotante (TabBar), elementos flotantes. r/pastilla + streak especular + e/3.
     case lente
+    /// Superficie OPACA (papel, sin blur ni glassEffect). Mismo radio/borde/highlight/sombra
+    /// que `.superficie`. Para tarjetas *dentro* de una hoja de vidrio: el vidrio-sobre-vidrio
+    /// muestreaba el backdrop y, al arrastrar la hoja, saltaba de gris a blanco (revisión
+    /// /inject del dueño). El vidrio real se reserva para la hoja, el dock y el orbe.
+    case superficieSolida
+    /// Pastilla OPACA (papel, sin blur ni glassEffect). Mismo chrome que `.pastilla`.
+    /// Misma razón que `.superficieSolida` — p. ej. «Ver más» dentro de la hoja de detalle.
+    case pastillaSolida
 }
 
 public extension View {
     /// Aplica una receta de vidrio completa (blur + fondo + borde + inner-highlight +
-    /// especular + sombra). La única puerta al vidrio: las pantallas jamás componen
-    /// materiales/blur a mano.
+    /// especular + sombra) o su variante opaca. La única puerta al vidrio: las pantallas
+    /// jamás componen materiales/blur a mano.
     @ViewBuilder
     func liquidGlass(_ recipe: LiquidGlassRecipe) -> some View {
         switch recipe {
@@ -67,6 +77,23 @@ public extension View {
                 highlightTop: 0.95, highlightBottom: 0.3,
                 streak: true,
                 shadow: LiquidElevation.e3))
+        case .superficieSolida:
+            // OPACO a propósito: sin material ni glassEffect (vidrio interno en hoja
+            // saltaba de gris a blanco al arrastrar — /inject dueño).
+            modifier(LiquidSolidLayer(
+                shape: RoundedRectangle(cornerRadius: LiquidRadius.tarjeta, style: .continuous),
+                fill: LiquidColor.papelAlto,
+                border: LiquidColor.vidrioBordeSuperficie,
+                highlightTop: 0.8, highlightBottom: 0.35,
+                shadow: LiquidElevation.e0))
+        case .pastillaSolida:
+            // OPACO a propósito: sin material ni glassEffect (misma razón que superficieSolida).
+            modifier(LiquidSolidLayer(
+                shape: Capsule(),
+                fill: LiquidColor.papelAlto,
+                border: LiquidColor.vidrioBordePastilla,
+                highlightTop: 0.8, highlightBottom: 0.0,
+                shadow: LiquidElevation.e0))
         }
     }
 }
@@ -154,6 +181,42 @@ private struct LiquidGlassLayer<S: InsettableShape>: ViewModifier {
             .clipShape(shape)
             // Elevación como GEOMETRÍA (silueta difuminada detrás): `.shadow` sobre material
             // proyecta el rectángulo de su capa de fondo, y compositingGroup no lo salva.
+            .liquidShadow(shadow, silhouette: shape)
+    }
+}
+
+/// Stack OPACO: papel sólido + el mismo chrome que el vidrio (borde, inner-highlight,
+/// sombra). Sin `.ultraThinMaterial`, sin `glassEffect`, sin muestreo de backdrop —
+/// el valor no cambia al arrastrar la hoja de detalle (F1a /inject dueño).
+private struct LiquidSolidLayer<S: InsettableShape>: ViewModifier {
+    let shape: S
+    let fill: Color
+    let border: Color
+    let highlightTop: Double
+    let highlightBottom: Double
+    let shadow: [LiquidShadowLayer]
+
+    func body(content: Content) -> some View {
+        content
+            .background { shape.fill(fill) }
+            .overlay {
+                shape
+                    .strokeBorder(
+                        LinearGradient(
+                            stops: [
+                                .init(color: .white.opacity(highlightTop), location: 0),
+                                .init(color: .white.opacity(highlightBottom), location: 1),
+                            ],
+                            startPoint: .topLeading, endPoint: .bottomTrailing),
+                        lineWidth: 1.5)
+                    .blur(radius: 0.5)
+                    .clipShape(shape)
+                    .allowsHitTesting(false)
+            }
+            .overlay {
+                shape.strokeBorder(border, lineWidth: 0.5).allowsHitTesting(false)
+            }
+            .clipShape(shape)
             .liquidShadow(shadow, silhouette: shape)
     }
 }
@@ -298,11 +361,20 @@ public struct LiquidSphere: View {
                 .font(LiquidType.titulo).foregroundStyle(LiquidColor.tinta900)
                 .padding(24).frame(maxWidth: .infinity)
                 .liquidGlass(.superficie)
+            Text("papel/superficieSolida")
+                .font(LiquidType.titulo).foregroundStyle(LiquidColor.tinta900)
+                .padding(24).frame(maxWidth: .infinity)
+                .liquidGlass(.superficieSolida)
             Text("vidrio/pastilla")
                 .font(LiquidType.boton).tracking(LiquidType.botonTracking)
                 .foregroundStyle(LiquidColor.tinta900)
                 .padding(.vertical, 12).frame(maxWidth: .infinity)
                 .liquidGlass(.pastilla)
+            Text("papel/pastillaSolida")
+                .font(LiquidType.boton).tracking(LiquidType.botonTracking)
+                .foregroundStyle(LiquidColor.tinta900)
+                .padding(.vertical, 12).frame(maxWidth: .infinity)
+                .liquidGlass(.pastillaSolida)
             Text("vidrio/lente")
                 .font(LiquidType.boton).tracking(LiquidType.botonTracking)
                 .foregroundStyle(LiquidColor.tinta900)

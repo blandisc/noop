@@ -178,8 +178,10 @@ struct TrainingLoadSheet: View {
                 numeralTono: tono,
                 // Calibrando (sin ratio): sin punto ni «últimos 28 días» — no hay ventana de
                 // 28 días todavía, y afirmarla junto al numeral «—» miente.
-                origen: model.acwr == nil ? nil : .calculado,
-                origenEtiqueta: model.acwr == nil ? nil : String(localized: "Apple Health · last 28 days"),
+                // FER-29 · C2: el ACWR es un CÁLCULO nuestro sobre la ventana de carga, no una
+                // lectura de Apple — origen `calculadoEnTelefono`, jamás la etiqueta «Apple Health».
+                origen: model.acwr == nil ? nil : .calculadoEnTelefono,
+                origenEtiqueta: model.acwr == nil ? nil : String(localized: "Calculated · last 28 days"),
                 explicacion: heroExplanation,
                 infoMostrar: String(localized: "Show explanation"),
                 infoOcultar: String(localized: "Hide explanation"))

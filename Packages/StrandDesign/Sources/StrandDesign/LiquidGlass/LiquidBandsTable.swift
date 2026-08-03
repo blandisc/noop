@@ -85,7 +85,7 @@ public struct LiquidBandsTable: View {
         // El clip va ANTES del vidrio: el wash de la fila activa respeta las esquinas
         // también en el camino nativo (glassEffect no recorta el contenido).
         .clipShape(RoundedRectangle(cornerRadius: LiquidRadius.tarjeta, style: .continuous))
-        .liquidGlass(.superficie)
+        .liquidGlass(.superficieSolida)
     }
 
     private func fila(_ f: Fila, apilada: Bool) -> some View {
