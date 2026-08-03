@@ -8,6 +8,7 @@ import CoreGraphics
 final class EcosistemaPlanTests: XCTestCase {
     typealias Sim = EcosistemaSimulacion
     typealias G = EcosistemaSimulacion.Geometria
+    typealias M = LiquidEcosistemaMotion
 
     private func escena(coreo: Sim.Coreografia = .enRango,
                         fase: Sim.Fase = .viva(desde: 0),
@@ -62,69 +63,87 @@ final class EcosistemaPlanTests: XCTestCase {
 
     // MARK: Fundida y viva
 
-    func testFundidaTraeDosEsferasElEspecularYLasDosLunas() {
+    /// FER-22: fundida trae UN solo orbe (jamás dos esferas encimadas) + especular +
+    /// las dos lunas decisoras + los dos vigías.
+    func testFundidaTraeUnOrbeElEspecularYLasDosLunas() {
         let trazos = Sim.plan(t: 3, escena: escena())
         let esferas = nubes(trazos).filter { $0.n == G.nEsfera }
-        XCTAssertEqual(esferas.count, 2)
-        XCTAssertEqual(esferas.map(\.paso), [1, 1])
-        // Fundida: las dos esferas comparten centro (el orbe).
+        XCTAssertEqual(esferas.count, 1, "un solo orbe: nunca se parte ni se dobla")
+        XCTAssertEqual(esferas[0].paso, 1)
         XCTAssertEqual(esferas[0].centro.x, G.centro.x, accuracy: 0.001)
-        XCTAssertEqual(esferas[1].centro.x, G.centro.x, accuracy: 0.001)
-        // Sin gauge: el nivel solo se lee en el estado separado.
+        XCTAssertEqual(esferas[0].alfaK, 1, accuracy: 0.001)
+        // Sin gauge: el nivel solo se lee camino a / en el estado separado.
         XCTAssertNil(esferas[0].nivel)
 
+        // FER-22: los vigías (dos, azules) no llevan rótulo orbital — sus títulos
+        // viven en los overlays del estado separado.
         XCTAssertEqual(rotulos(trazos).sorted { "\($0)" < "\($1)" },
-                       [Sim.RotuloOrbital.guardian, .reposo, .sueno]
+                       [Sim.RotuloOrbital.reposo, .sueno]
                         .sorted { "\($0)" < "\($1)" })
         XCTAssertTrue(trazos.contains { if case .halo = $0 { return true } else { return false } },
                       "el orbe fundido lleva su especular")
     }
 
-    /// El orden de pintado ES la coreografía: lo que va DETRÁS del orbe se encodea antes.
-    func testElGuardianDetrasSeDibujaAntesQueLasEsferas() {
-        // `faseGuardian` = 2.4 rad ⇒ sin(2.4) > 0 (al frente) y media órbita después, atrás.
+    /// El orden de pintado ES la coreografía: lo que va DETRÁS del orbe se encodea
+    /// antes. FER-22: DOS vigías en fases opuestas — cada uno se ordena por SU z.
+    func testCadaVigiaSeOrdenaPorSuProfundidad() {
         for t in stride(from: 0.0, to: 20.0, by: 0.25) {
             let trazos = Sim.plan(t: t, escena: escena())
-            guard let iEsfera = trazos.firstIndex(where: {
+            guard let iOrbe = trazos.firstIndex(where: {
                 if case .nube(let n) = $0 { return n.n == G.nEsfera } else { return false }
-            }) else { return XCTFail("siempre hay esferas decisoras") }
-            let iGuardian = trazos.firstIndex {
-                if case .nube(let n) = $0 { return n.n == G.nGuardian } else { return false }
+            }) else { return XCTFail("siempre hay orbe") }
+            let esperados = (0..<2).map { g in
+                Sim.orbita(G.orbitaGuardian,
+                           angulo: t * M.orbitaGuardian + M.faseGuardian
+                               + Double(g) * .pi,
+                           radioBase: G.radioGuardian)
             }
-            guard let iGuardian else { continue }
-            let z = Sim.guardian(t: t, eclipse: 0).z
-            if z < 0 {
-                XCTAssertLessThan(iGuardian, iEsfera, "z<0 ⇒ el guardián va detrás (t=\(t))")
-            } else {
-                XCTAssertGreaterThan(iGuardian, iEsfera, "z≥0 ⇒ el guardián va al frente (t=\(t))")
+            for (i, tr) in trazos.enumerated() {
+                guard case .nube(let n) = tr, n.n == G.nGuardian else { continue }
+                let z = esperados.min {
+                    hypot($0.centro.x - n.centro.x, $0.centro.y - n.centro.y)
+                        < hypot($1.centro.x - n.centro.x, $1.centro.y - n.centro.y)
+                }!.z
+                if z < 0 {
+                    XCTAssertLessThan(i, iOrbe, "z<0 => detrás del orbe (t=\(t))")
+                } else {
+                    XCTAssertGreaterThan(i, iOrbe, "z>=0 => al frente (t=\(t))")
+                }
             }
         }
     }
 
     // MARK: Separada
 
-    func testSeparadaAbreElGaugeYParteAlGuardianEnDos() {
+    /// FER-22: separado, LAS LUNAS SON LOS MEDIDORES — crecidas a radioSeparada en
+    /// p1/p2 con gauge pleno — y el orbe NUNCA se parte: sigue al centro, retrocedido.
+    func testSeparadaLasLunasSonLosMedidoresYElOrbeRetrocede() {
         let trazos = Sim.plan(t: 3, escena: escena(fase: .separada, fuera: [true, false]))
-        let esferas = nubes(trazos).filter { $0.n == G.nEsfera }
-        XCTAssertEqual(esferas.count, 2)
-        XCTAssertEqual(esferas[0].nivel, 0.7)
-        XCTAssertEqual(esferas[1].nivel, 0.6)
-        XCTAssertEqual(esferas[0].centro, G.p1)
-        XCTAssertEqual(esferas[1].centro, G.p2)
-        // El guardián se parte en dos mini-orbes y abandona su órbita.
-        let guardianes = nubes(trazos).filter { $0.n == G.nGuardian }
-        XCTAssertEqual(guardianes.count, 2)
-        XCTAssertEqual(Set(guardianes.map(\.centro)),
+        let medidores = nubes(trazos).filter { $0.n == G.nLuna }
+        XCTAssertEqual(medidores.count, 2)
+        XCTAssertEqual(medidores[0].centro, G.p1)
+        XCTAssertEqual(medidores[1].centro, G.p2)
+        XCTAssertEqual(medidores[0].radio, G.radioSeparada)
+        XCTAssertEqual(medidores[0].nivel, 0.7)
+        XCTAssertEqual(medidores[1].nivel, 0.6)
+        XCTAssertEqual(medidores[0].nivelMezcla, 1)
+        let orbes = nubes(trazos).filter { $0.n == G.nEsfera }
+        XCTAssertEqual(orbes.count, 1, "el orbe jamás se parte ni desaparece")
+        XCTAssertEqual(orbes[0].centro, G.centro)
+        XCTAssertLessThan(orbes[0].alfaK, 0.5, "retrocedido: tenue")
+        let vigias = nubes(trazos).filter { $0.n == G.nGuardian }
+        XCTAssertEqual(vigias.count, 2)
+        XCTAssertEqual(Set(vigias.map(\.centro)),
                        [G.guardianSeparado1, G.guardianSeparado2])
-        // Sin orbe fundido no hay lunas, ni especular.
-        XCTAssertTrue(nubes(trazos).filter { $0.n == G.nLuna }.isEmpty)
+        // Sin especular al fondo (el orbe retrocedido no brilla).
         XCTAssertFalse(trazos.contains { if case .halo = $0 { return true } else { return false } })
     }
 
-    /// El líquido rojo es de DESGASTE: en verde, una señal fuera de rango no tiñe el gauge.
-    func testLiquidoBajoSoloEnDesgaste() {
+    /// FER-22 (mapa de estados, decisión B): una decisora fuera de rango tiñe SU
+    /// líquido de rojo en CUALQUIER veredicto — la mala noticia viaja con su luna.
+    func testLiquidoRojoSiempreQueLaSenalEsteFuera() {
         let verde = Sim.plan(t: 1, escena: escena(fase: .separada, fuera: [true, false]))
-        XCTAssertFalse(nubes(verde).contains { $0.nivelBajo })
+        XCTAssertEqual(nubes(verde).filter { $0.nivelBajo }.count, 1)
         let rojo = Sim.plan(t: 1, escena: escena(coreo: .desgaste, fase: .separada,
                                                  fuera: [true, false]))
         XCTAssertEqual(nubes(rojo).filter { $0.nivelBajo }.count, 1)
@@ -132,10 +151,13 @@ final class EcosistemaPlanTests: XCTestCase {
 
     // MARK: Honestidad del dato
 
-    func testSinDatoEnNingunaSenalNoSeFabricanLunas() {
+    /// FER-22: las lunas son cuerpos PERMANENTES — sin dato no desaparecen, se
+    /// vuelven huecas (ralas). La honestidad vive en la densidad, no en la ausencia.
+    func testSinDatoLasLunasSonHuecasPeroExisten() {
         let trazos = Sim.plan(t: 3, escena: escena(niveles: [nil, nil]))
-        XCTAssertTrue(nubes(trazos).filter { $0.n == G.nLuna }.isEmpty)
-        XCTAssertFalse(rotulos(trazos).contains(.reposo))
+        let lunas = nubes(trazos).filter { $0.n == G.nLuna }
+        XCTAssertEqual(lunas.count, 2)
+        XCTAssertTrue(lunas.allSatisfy { $0.paso == 3 }, "sin dato = materia RALA")
     }
 
     func testUnaSolaSenalConDatoDejaLaOtraLunaHueca() {
@@ -171,8 +193,8 @@ final class EcosistemaPlanTests: XCTestCase {
             if case .disco(_, _, _, let alfa) = t { return alfa } else { return nil }
         }
         XCTAssertFalse(discos.isEmpty, "still: el anillo estático debe existir")
-        XCTAssertTrue(discos.allSatisfy { $0 <= 0.16 },
-                      "still: la estela es susurro (≤ 0.16 de alfa)")
+        XCTAssertTrue(discos.allSatisfy { $0 <= 0.25 },
+                      "still: todo disco es susurro (≤ 0.25 — estelas y conexiones)")
     }
 
     func testStillEnFormandoSeLeeYaFundido() {
@@ -235,32 +257,29 @@ final class EcosistemaPlanTests: XCTestCase {
         }
     }
 
-    /// A media convergencia de la reunión el crossfade MURIÓ: exactamente una esfera
-    /// `.nube` (la 1) más un `.nubeMorfo` (la 2 migrando por índice) — ~600 instancias,
-    /// no 900 — con esfera fuente compartida y alfa pleno en ambas configs.
-    func testConvergenciaEmiteMorfoNoCrossfade() {
-        let fase = Sim.Fase.uniendo(desde: 0)
-        let antU = LiquidEcosistemaMotion.anticipacion * 0.6
+    /// FER-22: a media apertura las LUNAS viajan — creciendo y revelando su gauge —
+    /// el orbe sigue entero al centro, y NO existe morfo alguno fuera de la graduación.
+    func testAperturaLasLunasViajanSinMorfo() {
+        let fase = Sim.Fase.separando(desde: 0)
+        let ant = LiquidEcosistemaMotion.anticipacion
         var visto = false
         for paso in 0...60 {
-            let t = antU + Double(paso) / 60 * LiquidEcosistemaMotion.fusionDur
+            let t = ant + Double(paso) / 60 * LiquidEcosistemaMotion.fusionDur
             let trazos = Sim.plan(t: t, escena: escena(fase: fase))
-            let morfos = trazos.compactMap { tr -> (Sim.Nube, Sim.Nube, Double)? in
-                if case .nubeMorfo(let a, let b, let m) = tr { return (a, b, m) }
-                return nil
-            }
-            guard let (a, b, m) = morfos.first, m > 0.1, m < 0.9 else { continue }
+            let medidores = nubes(trazos).filter { $0.n == G.nLuna }
+            guard let m = medidores.first,
+                  m.nivelMezcla > 0.2, m.nivelMezcla < 0.8 else { continue }
             visto = true
-            XCTAssertEqual(morfos.count, 1)
-            XCTAssertEqual(a.n, b.n)
-            XCTAssertEqual(a.paso, b.paso)
-            XCTAssertEqual(a.alfaK, 1)
-            XCTAssertEqual(b.alfaK, 1)
-            let esferas = nubes(trazos).filter { $0.n == G.nEsfera }
-            XCTAssertEqual(esferas.count, 1, "una sola .nube de esfera: la nube 1")
-            XCTAssertTrue(esferas.allSatisfy { $0.alfaK == 1 }, "sin alfas de crossfade")
+            XCTAssertEqual(medidores.count, 2)
+            XCTAssertGreaterThan(m.radio, G.radioLuna1)
+            XCTAssertLessThan(m.radio, G.radioSeparada)
+            XCTAssertEqual(nubes(trazos).filter { $0.n == G.nEsfera }.count, 1,
+                           "el orbe no se parte ni a medio viaje")
+            XCTAssertFalse(trazos.contains {
+                if case .nubeMorfo = $0 { return true } else { return false }
+            }, "sin morfos fuera de la graduación")
         }
-        XCTAssertTrue(visto, "el barrido debió cruzar la ventana de convergencia")
+        XCTAssertTrue(visto, "el barrido debió cruzar la ventana de apertura")
     }
 
     /// Reduce Motion jamás ve un morfo: los cuadros asentados son configuraciones puras.

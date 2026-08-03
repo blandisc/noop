@@ -93,6 +93,9 @@ public enum LiquidColor {
     public static let particulaVerde = Color(hex: "#10694E")
     /// Partícula en desgaste (rojo tinta, más profundo que `negativo`).
     public static let particulaRoja = Color(hex: "#963426")
+    /// FER-22 (decisión B del dueño): en ATENCIÓN el orbe mismo absorbe el ámbar —
+    /// la variante partícula del hue de atención, ahondada como sus hermanas.
+    public static let particulaAmbar = Color(hex: "#96501A")
     /// Partícula neutra: calibrando y el orbe del guardián tranquilo.
     public static let particulaNeutra = Color(hex: "#737670")
     /// El rojo CLARO del clima de alerta (par simétrico de `ambarClaro` — el ambiente de
@@ -226,6 +229,7 @@ public enum LiquidDeltaTone: Sendable {
                 .foregroundStyle(LiquidColor.tinta500)
             swatch("partícula · verde", LiquidColor.particulaVerde)
             swatch("partícula · roja", LiquidColor.particulaRoja)
+            swatch("partícula · ámbar", LiquidColor.particulaAmbar)
             swatch("partícula · neutra", LiquidColor.particulaNeutra)
             swatch("rojo claro · clima alerta", LiquidColor.rojoClaro)
         }
