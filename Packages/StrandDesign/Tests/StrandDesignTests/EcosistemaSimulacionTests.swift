@@ -93,12 +93,22 @@ final class EcosistemaSimulacionTests: XCTestCase {
     }
 
     /// La reunión es seamless: u jamás sobrepasa 1 (los centros no se cruzan) y el
-    /// viaje no lleva stretch (la deformación leía «chunky» — revisión de usuario).
-    func test_cuadro_uniendo_sinSobrepasoNiStretch() {
+    /// VIAJE no lleva stretch. La micro-anticipación previa (oleada «costuras»,
+    /// /inject 2026-08-02) sí lleva squeeze — es el gesto gemelo de la separación:
+    /// u se queda en 0 mientras las esferas toman aire, y solo entonces viajan.
+    func test_cuadro_uniendo_sinSobrepasoNiStretchEnViaje() {
         let fase = Sim.Fase.uniendo(desde: 0)
+        let antU = M.anticipacion * 0.6
+        // Anticipación: u clavada en 0, squeeze (stretch ≤ 0) permitido.
+        for paso in 0...10 {
+            let c = Sim.cuadro(t: Double(paso) / 10 * antU * 0.999, fase: fase)
+            XCTAssertEqual(c.u, 0, "en la anticipación aún no hay viaje")
+            XCTAssertLessThanOrEqual(c.stretch, 0, "la anticipación inhala, no estira")
+        }
+        // Viaje: monótono, sin sobrepaso, sin stretch.
         var previo = -1.0
         for paso in 0...40 {
-            let c = Sim.cuadro(t: Double(paso) / 40 * M.fusionDur, fase: fase)
+            let c = Sim.cuadro(t: antU + Double(paso) / 40 * M.fusionDur, fase: fase)
             XCTAssertGreaterThanOrEqual(c.u, 0)
             XCTAssertLessThanOrEqual(c.u, 1)
             XCTAssertGreaterThanOrEqual(c.u, previo, "u debe ser monótona (sin rebotes)")
@@ -236,9 +246,11 @@ final class EcosistemaSimulacionTests: XCTestCase {
         // A media separación sigue siendo separando (tap = completar al instante).
         XCTAssertEqual(Sim.faseEfectiva(.separando(desde: 0), t: viaje * 0.4),
                        .separando(desde: 0))
-        // Uniendo vencida → viva; formando vencida → viva.
-        XCTAssertEqual(Sim.faseEfectiva(.uniendo(desde: 0), t: M.fusionDur + 3),
-                       .viva(desde: M.fusionDur))
+        // Uniendo vencida → viva (el fin incluye la micro-anticipación de la reunión);
+        // formando vencida → viva.
+        XCTAssertEqual(Sim.faseEfectiva(.uniendo(desde: 0),
+                                        t: M.anticipacion * 0.6 + M.fusionDur + 3),
+                       .viva(desde: M.anticipacion * 0.6 + M.fusionDur))
         XCTAssertEqual(
             Sim.faseEfectiva(.formando(inicio: 0), t: M.fusionIntroEspera + M.fusionDur + 1),
             .viva(desde: M.fusionIntroEspera + M.fusionDur))

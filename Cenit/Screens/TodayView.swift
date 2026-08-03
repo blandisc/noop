@@ -644,14 +644,14 @@ struct TodayView: View {
         // el papel del tema. El velo de status corona la superficie Liquid, y las animaciones
         // ambientales se pausan fuera de `.active` (scenePhase → `liquidAmbientPaused`).
         .background {
-            if noSources {
+            if noSources && !liquidDemo {
                 PaperBackground()
             } else {
                 LiquidAmbientBackground.hoy(liquidAmbiente)
             }
         }
         .overlay(alignment: .top) {
-            if !noSources {
+            if !noSources || liquidDemo {
                 LiquidVeil(tone: liquidAmbiente.acento)
                     .frame(height: LiquidSpace.s1400)
                     .ignoresSafeArea(edges: .top)
@@ -740,7 +740,7 @@ struct TodayView: View {
                 // FER-1045 «Hoy Liquid»: la superficie normal es la composición Liquid Glass
                 // alimentada por el MISMO estado derivado (builder puro). El estado vacío
                 // (cero fuentes) conserva la superficie anterior intacta (criterio 7).
-                if noSources {
+                if noSources && !liquidDemo {
                     VStack(alignment: .leading, spacing: 0) {
                         // Bloque FIJO del instrumento (handoff «Hoy» 2026-07): header + héroe.
                         VStack(alignment: .leading, spacing: CenitMetrics.space1) {
@@ -998,7 +998,7 @@ struct TodayView: View {
     /// de HealthKit, así que la superficie cae honestamente al héroe de sueño; con esto se
     /// fuerza el estado de veredicto con los datos de muestra del ensamble para pulirlo en
     /// vivo. Computed a propósito: su cuerpo se voltea EN VIVO por inyección.
-    private var liquidDemo: Bool { true }   // demo /inject ENCENDIDO: pulido en vivo con datos de muestra
+    private var liquidDemo: Bool { false }  // demo /inject apagado: Hoy corre con datos reales
 
     /// El ambiente semántico que tiñe fondo y pulsos (verde/ámbar/rojo/neutro).
     private var liquidAmbiente: LiquidAmbiente {

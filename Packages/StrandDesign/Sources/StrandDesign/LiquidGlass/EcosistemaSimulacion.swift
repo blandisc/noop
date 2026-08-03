@@ -62,6 +62,11 @@ public enum EcosistemaSimulacion {
         /// Umbrales de fase del factor de unión.
         public static let umbralSeparada: Double = 0.06
         public static let umbralFundida: Double = 0.94
+        /// Desde dónde (en u) se FUNDE el séquito — lunas, estelas, especular — en la
+        /// escena (oleada «costuras» /inject): antes entraba todo en el último 6 % del
+        /// viaje (0.94→1) y leía como un pop al final; ahora se estrena a lo largo del
+        /// último quinto.
+        public static let umbralEstreno: Double = 0.82
         /// Embrión de calibrando.
         public static let radioEmbrion: CGFloat = 30
     }
@@ -192,7 +197,8 @@ public enum EcosistemaSimulacion {
                 + LiquidEcosistemaMotion.fusionDur
             return t >= fin ? .separada : fase
         case .uniendo(let desde):
-            let fin = desde + LiquidEcosistemaMotion.fusionDur
+            let fin = desde + LiquidEcosistemaMotion.anticipacion * 0.6
+                + LiquidEcosistemaMotion.fusionDur
             return t >= fin ? .viva(desde: fin) : fase
         case .viva, .separada:
             return fase
@@ -227,26 +233,49 @@ public enum EcosistemaSimulacion {
                               settle: 0, bump: 0)
             }
             if tm < ant + dur {
+                // Apertura SEAMLESS (pulido /inject): smoothstep sin el backOut invertido
+                // — que sobrepasaba en NEGATIVO (u < 0: radios extrapolados, centros más
+                // allá de su casa). El squeeze de la anticipación se LIBERA en un
+                // lanzamiento (oleada «costuras»): estiramiento sutil que pica temprano
+                // (~⅓ del viaje) y muere antes de aterrizar — la energía tomada al
+                // inhalar se gasta en el arranque, no se evapora en la costura.
                 let pr = (tm - ant) / dur
-                return Cuadro(u: 1 - backOut(pr),
-                              stretch: LiquidEcosistemaMotion.fusionStretch * sin(.pi * pr),
-                              settle: 0, bump: 0)
+                let lanzamiento = LiquidEcosistemaMotion.fusionStretch * 0.35
+                    * sin(.pi * min(1, pr * 1.6)) * pow(1 - pr, 1.5)
+                return Cuadro(u: 1 - suave(pr), stretch: lanzamiento, settle: 0, bump: 0)
             }
-            return Cuadro(u: 0, stretch: 0, settle: 0, bump: 0)
+            // Aterrizaje con asentamiento: la fase conserva su timestamp hasta el
+            // próximo tap, así que el settle amortiguado sale gratis de `tm`.
+            return Cuadro(u: 0, stretch: 0, settle: settle(tm - ant - dur), bump: 0)
         case .separada:
             return Cuadro(u: 0, stretch: 0, settle: 0, bump: 0)
         case .uniendo(let desde):
-            // Reunión SEAMLESS (revisión de usuario): smoothstep sin sobrepaso — los
-            // centros jamás se cruzan ni se infla el radio — y sin stretch (la
-            // deformación del viaje leía «chunky»). El carácter orgánico lo pone el
-            // settle amortiguado al aterrizar en `.viva`.
+            // Reunión con MICRO-ANTICIPACIÓN (pulido /inject): las esferas toman aire
+            // (squeeze breve) antes de viajar — el gesto gemelo de la separación, más
+            // corto. El viaje sigue smoothstep sin sobrepaso; el carácter orgánico lo
+            // pone el settle amortiguado al aterrizar en `.viva`.
+            let antU = LiquidEcosistemaMotion.anticipacion * 0.6
             let tm = t - desde
-            if tm < dur {
-                let pr = tm / dur
-                return Cuadro(u: suave(pr), stretch: 0,
-                              settle: 0, bump: bumpEn(suave(pr)))
+            if tm < antU {
+                return Cuadro(u: 0,
+                              stretch: -LiquidEcosistemaMotion.squeeze * 0.7
+                                  * sin(.pi * tm / antU),
+                              settle: 0, bump: 0)
             }
-            return cuadro(t: t, fase: .viva(desde: desde + dur))
+            let tv = tm - antU
+            if tv < dur {
+                let pr = tv / dur
+                // Bump al 60 %: con la reunificación de partículas el contacto ya se
+                // CUENTA solo — el destello pleno encima leía como brinco (revisión).
+                return Cuadro(u: suave(pr), stretch: 0,
+                              settle: 0, bump: bumpEn(suave(pr)) * 0.6)
+            }
+            // Aterrizaje de la REUNIÓN casi sin settle (0.5 → 0.25, segunda pasada del
+            // dueño: aún se asomaba): apenas una exhalación — el carácter del cierre lo
+            // ponen la convergencia de enjambres y la respiración, no el rebote. El
+            // settle pleno queda solo para el ritual del intro.
+            return Cuadro(u: 1, stretch: 0,
+                          settle: settle(tv - dur) * 0.25, bump: 0)
         }
     }
 
@@ -296,7 +325,8 @@ public enum EcosistemaSimulacion {
     public static func particula(dir: SIMD3<Double>, indice: Int, centro: CGPoint,
                                  radio: CGFloat, rotacion: Double, jitterAmp: Double,
                                  t: TimeInterval, alfaK: Double = 1, stretch: Double = 0,
-                                 nivel: Double? = nil, nivelBajo: Bool = false,
+                                 nivel: Double? = nil, nivelMezcla: Double = 1,
+                                 nivelBajo: Bool = false,
                                  capAmbar: Bool = false) -> Particula {
         let x = dir.x * cos(rotacion) + dir.z * sin(rotacion)
         let z = -dir.x * sin(rotacion) + dir.z * cos(rotacion)
@@ -313,20 +343,25 @@ public enum EcosistemaSimulacion {
         var clase: ClaseParticula = .base
 
         if let nivel {
-            // Modo gauge: y ∈ [−1 arriba, +1 abajo]; líquido si y > umbral.
+            // Modo gauge: y ∈ [−1 arriba, +1 abajo]; líquido si y > umbral. `nivelMezcla`
+            // FUNDE el gauge (0 = esfera plena, 1 = gauge pleno): durante el viaje de
+            // separación el nivel se revela gradualmente en vez de saltar de lleno al
+            // real en el último momento (revisión del dueño /inject). Espejo en .msl.
+            let m = max(0, min(1, nivelMezcla))
             let umbral = 1 - 2 * max(Geometria.pisoNivel, min(1, nivel))
             if y > umbral + Geometria.bandaMenisco {
                 clase = nivelBajo ? .liquidoBajo : .base
             } else if y > umbral - Geometria.bandaMenisco {
-                alfa *= 1.5
-                tam *= 1.2
+                alfa *= 1 + 0.5 * m
+                tam *= 1 + 0.2 * m
                 clase = nivelBajo ? .liquidoBajo : .menisco
                 // La ola del menisco: la superficie del líquido ondula (recetas del
                 // Ecosistema `nivelOnda*`; con t = 0 queda una ondulación estática).
                 sy += CGFloat(sin(Double(sx) * 0.09 + t * LiquidEcosistemaMotion.nivelOndaVelocidad)
-                              * LiquidEcosistemaMotion.nivelOndaAmplitud)
+                              * LiquidEcosistemaMotion.nivelOndaAmplitud * m)
             } else {
-                alfa *= 0.22
+                // El vapor a 0.12 (opción A «aire del gauge») — fundido por la mezcla.
+                alfa *= 1 - 0.88 * m
                 clase = .vapor
             }
         }
