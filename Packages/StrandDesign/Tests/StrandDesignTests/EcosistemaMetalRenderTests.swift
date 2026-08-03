@@ -154,14 +154,20 @@ final class EcosistemaMetalRenderTests: XCTestCase {
 
     /// Instancing: en separado las dos esferas se van a `p1` y `p2`, y el centro queda
     /// hueco. Es la prueba de que cada instancia lee SU dirección y no todas la misma.
-    func testSeparadaPintaDosLobulosYVaciaElCentro() throws {
+    /// FER-22: separado pinta los dos medidores Y el orbe retrocedido al centro —
+    /// presente pero tenue (antes este test exigía centro hueco: el orbe se partía).
+    func testSeparadaPintaDosLobulosYElOrbeRetrocedido() throws {
         let cuadro = try renderizar(escena: escena(fase: .separada), t: 3)
+        let fundida = try renderizar(escena: escena(), t: 3)
         let izq = cuadro.tinta(cerca: G.p1, radio: G.radioSeparada)
         let der = cuadro.tinta(cerca: G.p2, radio: G.radioSeparada)
-        let medio = cuadro.tinta(cerca: G.centro, radio: 20)
+        let medio = cuadro.tinta(cerca: G.centro, radio: G.radioOrbeFondo)
         XCTAssertGreaterThan(izq, 20)
         XCTAssertGreaterThan(der, 20)
-        XCTAssertLessThan(medio, min(izq, der) * 0.25, "el orbe se partió: el centro queda hueco")
+        XCTAssertGreaterThan(medio, 5, "el orbe sigue AHÍ, retrocedido")
+        XCTAssertLessThan(medio,
+                          fundida.tinta(cerca: G.centro, radio: G.radioOrbeFondo) * 0.7,
+                          "…pero claramente más tenue que fundido")
     }
 
     func testFundidaConcentraLaMateriaEnElOrbe() throws {
@@ -260,15 +266,16 @@ final class EcosistemaMetalRenderTests: XCTestCase {
     /// el cuadro a media convergencia queda en el orden del asentado — el crossfade
     /// viejo lo inflaba con una segunda esfera completa encima.
     func testMorfoRenderizaDeterministaYConservaMateria() throws {
-        let antU = LiquidEcosistemaMotion.anticipacion * 0.6
-        // suave(0.79) ≈ 0.89 → convergencia ≈ 0.55: dentro de la ventana del morfo.
-        let t = antU + 0.79 * LiquidEcosistemaMotion.fusionDur
-        let plan = Sim.plan(t: t, escena: escena(fase: .uniendo(desde: 0)))
+        // FER-22: el único morfo vivo es la GRADUACIÓN del embrión (FER-20).
+        var esc = escena(fase: .viva(desde: 0))
+        esc.graduacion = 0.5
+        let t = 3.0
+        let plan = Sim.plan(t: t, escena: esc)
         XCTAssertTrue(plan.contains {
             if case .nubeMorfo = $0 { return true } else { return false }
-        }, "el instante elegido debe cruzar la ventana del morfo")
-        let a = try renderizar(escena: escena(fase: .uniendo(desde: 0)), t: t)
-        let b = try renderizar(escena: escena(fase: .uniendo(desde: 0)), t: t)
+        }, "la graduación debe emitir su morfo")
+        let a = try renderizar(escena: esc, t: t)
+        let b = try renderizar(escena: esc, t: t)
         XCTAssertGreaterThan(a.tinta, 100, "el morfo pinta materia")
         XCTAssertEqual(a.tinta, b.tinta, "mismo t ⇒ mismo cuadro (determinismo)")
         let asentado = try renderizar(escena: escena(), t: 3)

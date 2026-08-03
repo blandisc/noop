@@ -69,6 +69,9 @@ public enum EcosistemaSimulacion {
         public static let umbralEstreno: Double = 0.82
         /// Embrión de calibrando.
         public static let radioEmbrion: CGFloat = 30
+        /// El orbe RETROCEDIDO del estado separado (FER-22): chico y tenue al fondo,
+        /// entre las estaciones — jamás ausente, jamás partido.
+        public static let radioOrbeFondo: CGFloat = 30
     }
 
     // MARK: Easings (la matemática de las recetas de `LiquidEcosistemaMotion`)

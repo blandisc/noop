@@ -745,6 +745,17 @@ identically:
   continuity by construction. Under Reduce Motion, only the settled embryo. If calibration completes
   with the screen open, the embryo **graduates** live into the verdict orb via a same-count
   `nubeMorfo` (`Escena.graduacion`, anchored by the view) — the two decision spheres never appear.
+- **The moons come forward; the orb never splits (FER-22).** The tap choreography inverted after
+  the epic: the two decision moons — which already ARE the signals — travel to the stations and
+  grow into the gauges (`nivelMezcla` = apertura reveals the liquid en route), while the verdict
+  orb recedes (small, dim, `radioOrbeFondo`) yet never disappears or splits. The sentinels are TWO
+  moons by birth (opposite phases on the outer orbit) — there is no «guardian that splits». The
+  connections live in BOTH states with two grammars: a flowing mote cord (deciders feed the
+  verdict; red when out of range) and a static dotted gaze per sentinel (watching transfers no
+  matter; an amber pulse runs the line only when alerting). In Atención the orb itself absorbs the
+  amber (`particulaAmbar`, owner's call). Sphere-pair fusion, its convergence morph and the
+  contact flash are gone; `nubeMorfo` survives solely for the embryo graduation. Numbers are solid
+  type again — matter draws matter, ink writes data.
 - **Sheet↔hero continuity is a two-halves illusion (FER-21 · C.4).** Tapping «Cómo llegué a esto»
   makes the orb exhale ~18 motes toward the pill (`Escena.exhalacion`, pure plan), and the acta
   sheet seeds a decorative constellation behind its header on open (`LiquidSiembraMotas`,

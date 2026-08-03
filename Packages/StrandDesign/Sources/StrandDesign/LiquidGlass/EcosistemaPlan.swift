@@ -95,6 +95,9 @@ public extension EcosistemaSimulacion {
         public var fuera: [Bool]
         public var guardianJuntas: Bool
         public var guardianHueco: Bool
+        /// ¿CADA vigía está fuera de rango? (temperatura, respiración) — enciende su
+        /// pulso ámbar en la mirada (FER-22). `guardianJuntas` sigue mandando eclipse.
+        public var vigiaFuera: [Bool]
         /// Progreso del eclipse 0…1 — lo ancla la vista (el guardián tarda `eclipseDur`).
         public var eclipse: Double
         /// Progreso 0…1 de la GRADUACIÓN en vivo (FER-20): la base se completó con la
@@ -110,6 +113,7 @@ public extension EcosistemaSimulacion {
         public init(coreo: Coreografia, fase: Fase, still: Bool,
                     niveles: [Double?], fuera: [Bool],
                     guardianJuntas: Bool, guardianHueco: Bool, eclipse: Double,
+                    vigiaFuera: [Bool] = [false, false],
                     graduacion: Double? = nil, exhalacion: Double? = nil) {
             self.coreo = coreo
             self.fase = fase
@@ -119,6 +123,7 @@ public extension EcosistemaSimulacion {
             self.guardianJuntas = guardianJuntas
             self.guardianHueco = guardianHueco
             self.eclipse = eclipse
+            self.vigiaFuera = vigiaFuera
             self.graduacion = graduacion
             self.exhalacion = exhalacion
         }
@@ -135,6 +140,15 @@ public extension EcosistemaSimulacion {
     // MARK: El plan
 
     /// La secuencia de trazos del instante `t`. Determinista: (t, escena) → [Trazo].
+    ///
+    /// FER-22 «las lunas se adelantan»: el orbe del veredicto JAMÁS se parte. Las
+    /// cuatro orbitantes (reposo, sueño y los DOS vigías de nacimiento) son cuerpos
+    /// permanentes: al separar, las decisoras viajan al frente y crecen hasta sus
+    /// estaciones —revelando su gauge en el camino— y cada vigía vuela a SU esquina,
+    /// mientras el orbe retrocede: chico y tenue al fondo, nunca ausente. El intro usa
+    /// la misma física en reversa. Las CONEXIONES viven siempre: cordón que fluye (las
+    /// decisoras alimentan; rojo si votaron mal) y mirada punteada (los vigías vigilan;
+    /// pulso ámbar solo al alertar). Dos verbos, dos dibujos.
     static func plan(t: TimeInterval, escena e: Escena) -> [Trazo] {
         if case .calibrando(let noche, let total) = e.coreo {
             return planAcrecion(t: t, still: e.still, noche: noche, total: total)
@@ -144,172 +158,142 @@ public extension EcosistemaSimulacion {
         let eclipse = e.eclipse
         let flicker = e.coreo == .desgaste && !e.still
             ? 0.9 + 0.1 * sin(t * LiquidEcosistemaMotion.flickerDesgaste) : 1.0
-        // Rampa de estreno del séquito: lunas/guardián/especular/estelas se FUNDEN en la
-        // escena a lo largo del último quinto del viaje (u 0.82→1, oleada «costuras») —
-        // antes entraban en el 6 % final y leían como pop.
+        // Apertura 0 = fundido → 1 = separado: el eje de toda la coreografía.
+        let u = min(1, max(0, cuadro.u))
+        let apertura = suave(1 - u)
+        // Rampa de estreno (estelas, especular, rótulos orbitales, destello de limbo).
         var alfaFundida = min(1, max(0, (cuadro.u - Geometria.umbralEstreno)
                                      / (1 - Geometria.umbralEstreno)))
-        // GRADUACIÓN en vivo (FER-20): mientras el embrión madura al orbe, el séquito
-        // entra al compás de la maduración, no de golpe con u = 1.
         let graduando = !e.still && e.coreo.conFusion
             && (e.graduacion.map { $0 < 1 } ?? false)
         if graduando, let g = e.graduacion {
             alfaFundida = min(alfaFundida, suave(g))
         }
 
-        // El radio del orbe se deriva antes de dibujar: las estelas orbitales lo
-        // necesitan para ocultarse al pasar DETRÁS del orbe.
-        let radio = (lerp(Double(Geometria.radioSeparada), Double(e.coreo.radioOrbe),
-                          min(1, cuadro.u))
-                     * (1 + 0.02 * sin(t * LiquidEcosistemaMotion.respiracionEsfera) * cuadro.u)
-                     + cuadro.settle) * (1 + min(0, cuadro.stretch))
+        // El orbe principal: siempre al centro. Pleno al frente cuando está fundido;
+        // al separar RETROCEDE — más chico y más tenue — pero jamás se parte.
+        let radio = lerp(Double(Geometria.radioOrbeFondo), Double(e.coreo.radioOrbe), u)
+            * (1 + 0.02 * sin(t * LiquidEcosistemaMotion.respiracionEsfera) * u)
+            + cuadro.settle
+        let alfaOrbe = lerp(0.38, 1, u) * flicker
+        let capAmbar = eclipse > 0.5
 
-        // 0 · Lunas (posiciones): una por señal — HUECA si su eje no tiene dato, con
-        // CASQUETE ámbar si su eje está fuera. Si NINGUNA señal tiene dato no se
-        // fabrican lunas, ni huecas. (Se derivan antes del pintado: las estelas
-        // orbitales las leen.)
-        var lunas: [(orb: Orbital, rotulo: RotuloOrbital, rotK: Double, hueca: Bool, fuera: Bool)] = []
-        let algunaConDato = e.niveles.prefix(2).contains { $0 != nil }
-        // C.1 «Materia continua» (FER-16): el séquito NACE del limbo del orbe — cada
-        // luna emerge de la superficie que mira a su lugar orbital y VIAJA a su órbita
-        // durante el estreno, creciendo en el camino. La reversa (separar) la regresa
-        // al cuerpo. Nada aparece por alpha puro: la materia se reconfigura.
-        let emergencia = suave(alfaFundida)
-        func emerger(_ o: Orbital) -> Orbital {
-            guard emergencia < 1 else { return o }
-            var o2 = o
-            let dxl = Double(o.centro.x - Geometria.centro.x)
-            let dyl = Double(o.centro.y - Geometria.centro.y)
-            let dl = max(1, (dxl * dxl + dyl * dyl).squareRoot())
-            let limbo = CGPoint(x: Geometria.centro.x + CGFloat(dxl / dl) * CGFloat(radio),
-                                y: Geometria.centro.y + CGFloat(dyl / dl) * CGFloat(radio) * 0.96)
-            o2.centro = puntoLerp(limbo, o.centro, emergencia)
-            o2.radio *= CGFloat(0.35 + 0.65 * emergencia)
-            return o2
+        // 0 · Las DECISORAS: cuerpos permanentes que fusionan órbita ↔ estación con la
+        // apertura, creciendo (13/11 → 34) y ganando su gauge de nivel en el camino.
+        var lunas: [(orb: Orbital, rotulo: RotuloOrbital, rotK: Double, hueca: Bool,
+                     fuera: Bool, nivel: Double?)] = []
+        for i in 0..<2 {
+            let orbital = luna(i + 1, t: t, desgaste: e.coreo == .desgaste)
+            let estacion = i == 0 ? Geometria.p1 : Geometria.p2
+            var c = puntoLerp(orbital.centro, estacion, apertura)
+            c.y -= CGFloat(sin(.pi * apertura) * 9)   // el viaje arquea
+            lunas.append((orb: Orbital(
+                              centro: c,
+                              z: lerp(orbital.z, 1, apertura),
+                              radio: orbital.radio
+                                  + (Geometria.radioSeparada - orbital.radio)
+                                  * CGFloat(apertura)),
+                          rotulo: i == 0 ? .reposo : .sueno,
+                          rotK: i == 0 ? LiquidEcosistemaMotion.rotacionLuna1
+                                       : LiquidEcosistemaMotion.rotacionLuna2,
+                          hueca: !(e.niveles.indices.contains(i) && e.niveles[i] != nil),
+                          fuera: e.fuera.indices.contains(i) && e.fuera[i],
+                          nivel: e.niveles.indices.contains(i) ? e.niveles[i] : nil))
         }
-        if alfaFundida > 0.01, algunaConDato {
-            for i in 0..<min(2, e.niveles.count) {
-                lunas.append((orb: emerger(luna(i + 1, t: t, desgaste: e.coreo == .desgaste)),
-                              rotulo: i == 0 ? .reposo : .sueno,
-                              rotK: i == 0 ? LiquidEcosistemaMotion.rotacionLuna1
-                                           : LiquidEcosistemaMotion.rotacionLuna2,
-                              hueca: e.niveles[i] == nil,
-                              fuera: e.fuera.indices.contains(i) && e.fuera[i]))
+
+        // 0b · Los VIGÍAS: DOS lunas de nacimiento (temperatura · respiración) en la
+        // órbita externa, fases opuestas (FER-22: ya no hay «guardián que se parte»).
+        // Al separar, cada una vuela a su esquina; en eclipse ambas se ciernen detrás.
+        var vigias: [Orbital] = []
+        for g in 0..<2 {
+            var orb = orbita(Geometria.orbitaGuardian,
+                             angulo: t * LiquidEcosistemaMotion.orbitaGuardian
+                                 + LiquidEcosistemaMotion.faseGuardian + Double(g) * .pi,
+                             radioBase: Geometria.radioGuardian)
+            if eclipse > 0, apertura < 0.02 {
+                let ec = suave(eclipse)
+                let destino = CGPoint(
+                    x: Geometria.centro.x + Geometria.eclipseOffset.width
+                        + CGFloat(g == 0 ? -14 : 14) + CGFloat(3 * sin(t * 0.9)),
+                    y: Geometria.centro.y + Geometria.eclipseOffset.height)
+                orb = Orbital(centro: puntoLerp(orb.centro, destino, ec),
+                              z: lerp(orb.z, -1, ec),
+                              radio: lerpCG(orb.radio,
+                                            Geometria.radioGuardianEclipse * 0.8,
+                                            CGFloat(ec)))
+            } else {
+                let esquina = g == 0 ? Geometria.guardianSeparado1
+                                     : Geometria.guardianSeparado2
+                var c = puntoLerp(orb.centro, esquina, apertura)
+                c.y -= CGFloat(sin(.pi * apertura) * 6)
+                orb = Orbital(centro: c,
+                              z: lerp(orb.z, 1, apertura),
+                              radio: orb.radio
+                                  + (Geometria.radioGuardianSeparado - orb.radio)
+                                  * CGFloat(apertura))
+            }
+            vigias.append(orb)
+        }
+        let vigiaAlerta: [Bool] = [
+            e.guardianJuntas || (e.vigiaFuera.indices.contains(0) && e.vigiaFuera[0]),
+            e.guardianJuntas || (e.vigiaFuera.indices.contains(1) && e.vigiaFuera[1]),
+        ]
+
+        // 1 · Las CONEXIONES — debajo de todos los cuerpos y SIEMPRE vivas.
+        for (i, l) in lunas.enumerated() where !l.hueca {
+            trazos += trazosCordon(t: t, desde: l.orb.centro, radioDesde: l.orb.radio,
+                                   radioOrbe: CGFloat(radio),
+                                   semilla: Double(i) * 0.4,
+                                   malo: l.fuera, still: e.still)
+        }
+        if eclipse <= 0.5 {
+            for (g, v) in vigias.enumerated() {
+                trazos += trazosMirada(t: t, desde: v.centro, radioDesde: v.radio,
+                                       radioOrbe: CGFloat(radio),
+                                       alerta: vigiaAlerta[g] && !e.still,
+                                       hueco: e.guardianHueco)
             }
         }
 
-        // 1 · El guardián atrás (órbita con z<0, o el eclipse asomándose). En separado el
-        // orbital NO se dibuja: el guardián «se partió» en sus dos mini-orbes. También
-        // EMERGE del limbo (C.1, FER-16) — salvo en eclipse, donde su viaje es otro.
-        let orbGuardian = eclipse > 0 ? guardian(t: t, eclipse: eclipse)
-                                      : emerger(guardian(t: t, eclipse: 0))
-        if !cuadro.separada, orbGuardian.z < 0 || eclipse > 0.5 {
-            trazos += trazosGuardian(t: t, orb: orbGuardian, eclipse: eclipse,
-                                     hueco: e.guardianHueco,
-                                     alfa: eclipse > 0 ? 1 : alfaFundida)
-        }
-
-        // 1.5 · Estelas orbitales, mitad TRASERA («el sistema orbital», /inject): la
-        // órbita revelada por la estela de cometa de su cuerpo — hereda la profundidad
-        // (z) y desaparece tras el disco del orbe. Sustituyen al tributo: la conexión
-        // de los cuatro cuerpos es gravedad compartida, no manguera.
-        trazos += trazosEstelas(t: t, escena: e, lunas: lunas,
+        // 2 · Estelas (solo mientras se orbita) + cuerpos TRASEROS (z < 0).
+        let alfaEstela = alfaFundida * alfaFundida * (1 - apertura)
+        let lunasEstela = lunas.map { (orb: $0.orb, rotulo: $0.rotulo, rotK: $0.rotK,
+                                       hueca: $0.hueca, fuera: $0.fuera) }
+        trazos += trazosEstelas(t: t, escena: e, lunas: lunasEstela,
                                 radioOrbe: CGFloat(radio), frente: false,
-                                alfa: alfaFundida * alfaFundida)
-
-        // 2 · Lunas atrás (z<0).
+                                alfa: alfaEstela)
+        for (g, v) in vigias.enumerated() where v.z < 0 {
+            trazos.append(nubeVigia(v, g: g, t: t, alerta: vigiaAlerta[g],
+                                    hueco: e.guardianHueco, eclipse: eclipse))
+        }
         for l in lunas where l.orb.z < 0 {
-            trazos += trazosLuna(t: t, luna: l, still: e.still, alfa: alfaFundida)
+            trazos += trazosLuna(t: t, luna: l, apertura: apertura,
+                                 still: e.still, alfa: max(apertura, alfaFundida))
         }
 
-        // 3 · Las esferas decisoras (separadas / viajando / fundidas).
-        let capAmbar = eclipse > 0.5 && cuadro.fundida
-        let jitter = e.still ? 0 : e.coreo.jitter
-        let sep = cuadro.separada
-        // El viaje ARQUEA (pulido /inject): las esferas no corren por un riel recto —
-        // se elevan apenas a media ruta, como cuerpos con peso. Cero en los extremos.
-        let arco = CGFloat(sin(.pi * min(1, max(0, cuadro.u))) * 9)
-        // El nivel se REVELA gradual durante los viajes de separar/unir (revisión del
-        // dueño: saltaba de esfera llena al nivel real en el último momento). En
-        // formando/viva el gauge solo existe plenamente separado (comportamiento
-        // clásico del intro).
-        let mezclaGauge: Double
-        switch e.fase {
-        case .separando, .uniendo, .separada:
-            mezclaGauge = 1 - suave(min(1, cuadro.u / 0.85))
-        case .formando, .viva:
-            mezclaGauge = sep ? 1 : 0
-        }
-        // REUNIFICACIÓN de partículas (pedido del dueño: «que sean las partículas
-        // reunificándose», no dos figuras que se traslapan): en el último cuarto del
-        // viaje la nube 2 CONVERGE a la orientación de la nube 1 — los dos enjambres
-        // se entrelazan hasta quedar alineados mota a mota; al separar se des-fasan.
-        let convergencia = suave(min(1, max(0, (cuadro.u - 0.75) / 0.25)))
+        // 3 · EL ORBE (o su graduación: el embrión madurando en vivo, FER-20).
         if graduando, let g = e.graduacion {
-            // GRADUACIÓN (FER-20, decisión del dueño): el embrión de calibrando madura
-            // EN VIVO al orbe del veredicto — un `nubeMorfo` mismo-conteo (la ley C.2:
-            // ambos son la esfera fibonacci de nEsfera). Las dos decisoras nunca
-            // aparecen: el veredicto llega como maduración, no como fusión.
-            let embrion = Nube(
-                centro: Geometria.centro, radio: Geometria.radioEmbrion,
-                rotacion: t * 0.35, jitterAmp: 0.5, alfaK: 0.9, stretch: 0,
-                nivel: nil, nivelBajo: false, capAmbar: false,
-                n: Geometria.nEsfera, paso: 1, tinta: .clima)
-            let orbe = Nube(
-                centro: Geometria.centro, radio: CGFloat(radio),
-                rotacion: t * LiquidEcosistemaMotion.rotacionEsfera,
-                jitterAmp: jitter, alfaK: flicker, stretch: 0,
-                nivel: nil, nivelBajo: false, capAmbar: capAmbar,
-                n: Geometria.nEsfera, paso: 1, tinta: .clima)
+            let embrion = Nube(centro: Geometria.centro, radio: Geometria.radioEmbrion,
+                               rotacion: t * 0.35, jitterAmp: 0.5, alfaK: 0.9, stretch: 0,
+                               nivel: nil, nivelBajo: false, capAmbar: false,
+                               n: Geometria.nEsfera, paso: 1, tinta: .clima)
+            let orbe = Nube(centro: Geometria.centro, radio: CGFloat(radio),
+                            rotacion: t * LiquidEcosistemaMotion.rotacionEsfera,
+                            jitterAmp: e.still ? 0 : e.coreo.jitter, alfaK: flicker,
+                            stretch: 0, nivel: nil, nivelBajo: false, capAmbar: capAmbar,
+                            n: Geometria.nEsfera, paso: 1, tinta: .clima)
             trazos.append(.nubeMorfo(a: embrion, b: orbe, mezcla: suave(g)))
         } else {
-        for i in 0..<2 {
-            let origen = i == 0 ? Geometria.p1 : Geometria.p2
-            var centroEsfera = puntoLerp(origen, Geometria.centro, cuadro.u)
-            centroEsfera.y -= arco
-            let nivelE: Double? = mezclaGauge > 0.02
-                ? (e.niveles.indices.contains(i) ? e.niveles[i] : nil) : nil
-            let bajoE = nivelE != nil && e.fuera.indices.contains(i) && e.fuera[i]
-                && e.coreo == .desgaste
-            func esfera(rotacion: Double) -> Nube {
-                Nube(centro: centroEsfera,
-                     radio: CGFloat(radio),
-                     rotacion: rotacion,
-                     jitterAmp: jitter,
-                     alfaK: flicker,
-                     stretch: max(0, cuadro.stretch),
-                     nivel: nivelE, nivelMezcla: mezclaGauge,
-                     nivelBajo: bajoE,
-                     capAmbar: capAmbar,
-                     n: Geometria.nEsfera, paso: 1, tinta: .clima)
-            }
-            let rotPropia = i == 0 ? t * LiquidEcosistemaMotion.rotacionEsfera : -t * 0.5
-            if i == 0 || convergencia <= 0.02 {
-                trazos.append(.nube(esfera(rotacion: rotPropia)))
-            } else if convergencia >= 0.98 {
-                // Fundida: la nube 2 quedó mota a mota con la 1 — un solo enjambre.
-                trazos.append(.nube(esfera(rotacion: t * LiquidEcosistemaMotion.rotacionEsfera)))
-            } else {
-                // MORFO real (FER-19 · C.2): las motas de la nube 2 MIGRAN por índice de
-                // su orientación propia a la alineada — antes esto era un crossfade de
-                // dos nubes superpuestas (900 instancias y materia duplicada en
-                // pantalla); ahora son 600 instancias y cada mota viaja de verdad.
-                trazos.append(.nubeMorfo(
-                    a: esfera(rotacion: rotPropia),
-                    b: esfera(rotacion: t * LiquidEcosistemaMotion.rotacionEsfera),
-                    mezcla: convergencia))
-            }
-        }
+            trazos.append(.nube(Nube(
+                centro: Geometria.centro, radio: CGFloat(radio),
+                rotacion: t * LiquidEcosistemaMotion.rotacionEsfera,
+                jitterAmp: e.still ? 0 : e.coreo.jitter,
+                alfaK: alfaOrbe, stretch: 0,
+                nivel: nil, nivelBajo: false, capAmbar: capAmbar,
+                n: Geometria.nEsfera, paso: 1, tinta: .clima)))
         }
 
-        // 4 · Destello + chispas del contacto. Gate bajísimo (0.25 → 0.02, pulido del
-        // brinco): el alfa ya es ∝ bump, así que el anillo se DESVANECE solo en vez de
-        // cortarse en seco con ~20 % de alfa restante al final del viaje.
-        if cuadro.bump > 0.02, !e.still {
-            trazos += trazosDestello(t: t, bump: cuadro.bump, radio: CGFloat(radio))
-        }
-
-        // 5 · Especular del orbe fundido (entra con la rampa de estreno, no de golpe).
+        // 4 · Especular del orbe (se apaga al retroceder).
         if alfaFundida > 0.01 {
             let r = CGFloat(radio)
             trazos.append(.halo(centro: Geometria.centro, radio: r * 1.05,
@@ -318,11 +302,8 @@ public extension EcosistemaSimulacion {
                                 radioIni: 3, tinta: .blanco, alfa: 0.5 * alfaFundida))
         }
 
-        // 5.5 · El destello del LIMBO (la historia del tributo, contada por física):
-        // máximo justo cuando la luna CRUZA el borde del orbe — entrando o saliendo de
-        // su cara — que es donde el ojo ya la está siguiendo. (El intento anterior
-        // pulsaba en z máximo: la luna quedaba ENCIMA de la cara y se tapaba sola.)
-        if cuadro.fundida, !e.still {
+        // 5 · Destello de LIMBO: la luna que cruza el borde del orbe (solo orbitando).
+        if apertura < 0.02, !e.still {
             let r = CGFloat(radio)
             for l in lunas where !l.hueca {
                 let dx = l.orb.centro.x - Geometria.centro.x
@@ -331,68 +312,33 @@ public extension EcosistemaSimulacion {
                 let cruce = exp(-pow(Double(d - r) / EstelaOrbital.cruceAncho, 2))
                 let p = cruce * (l.orb.z > 0 ? 1 : 0.35)
                 guard p > 0.06 else { continue }
-                // El punto del limbo hacia la luna: ahí brilla el casquete y se
-                // expande una onda — la superficie ACUSA el paso de la señal.
-                let s = CGPoint(x: Geometria.centro.x + dx / d * r,
-                                y: Geometria.centro.y + dy / d * r)
-                trazos.append(.halo(centro: s, radio: r * 0.5, foco: s, radioIni: 1.5,
+                let sp = CGPoint(x: Geometria.centro.x + dx / d * r,
+                                 y: Geometria.centro.y + dy / d * r)
+                trazos.append(.halo(centro: sp, radio: r * 0.5, foco: sp, radioIni: 1.5,
                                     tinta: .clima, alfa: 0.42 * p * alfaFundida))
-                trazos.append(.anillo(centro: s, radio: 7 + CGFloat(1 - p) * 9,
+                trazos.append(.anillo(centro: sp, radio: 7 + CGFloat(1 - p) * 9,
                                       grosor: 1.2, tinta: .blanco,
                                       alfa: 0.5 * p * alfaFundida))
             }
         }
 
-        // 5.7 · EXHALACIÓN (FER-21 · C.4): al tocar «Cómo llegué a esto» el orbe sopla
-        // un puñado de motas hacia la pastilla (abajo, de donde nace la hoja) — la
-        // mitad-héroe de la ilusión; la hoja siembra la suya al abrir. Con Reduce
-        // Motion no hay soplo.
+        // 5.7 · EXHALACIÓN (FER-21) — sin cambios.
         if let ex = e.exhalacion, ex > 0, ex < 1, !e.still, cuadro.fundida {
             trazos += trazosExhalacion(t: t, progreso: ex, radio: CGFloat(radio))
         }
 
-        // 6 · Lunas al frente + guardián al frente (órbita con z≥0, sin eclipse).
+        // 6 · Cuerpos FRONTALES (z ≥ 0) + estelas frontales.
         for l in lunas where l.orb.z >= 0 {
-            trazos += trazosLuna(t: t, luna: l, still: e.still, alfa: alfaFundida)
+            trazos += trazosLuna(t: t, luna: l, apertura: apertura,
+                                 still: e.still, alfa: max(apertura, alfaFundida))
         }
-        if orbGuardian.z >= 0, eclipse <= 0.5, cuadro.fundida, !cuadro.separada {
-            trazos += trazosGuardian(t: t, orb: orbGuardian, eclipse: eclipse,
-                                     hueco: e.guardianHueco, alfa: alfaFundida)
+        for (g, v) in vigias.enumerated() where v.z >= 0 {
+            trazos.append(nubeVigia(v, g: g, t: t, alerta: vigiaAlerta[g],
+                                    hueco: e.guardianHueco, eclipse: eclipse))
         }
-
-        // 6.5 · Estelas orbitales, mitad FRONTAL: cruzan por delante del orbe, como sus
-        // cuerpos (que también le pasan por la cara cuando z ≥ 0).
-        trazos += trazosEstelas(t: t, escena: e, lunas: lunas,
+        trazos += trazosEstelas(t: t, escena: e, lunas: lunasEstela,
                                 radioOrbe: CGFloat(radio), frente: true,
-                                alfa: alfaFundida * alfaFundida)
-
-        // 7 · El guardián se PARTE en sus dos vigías — y regresa. Viaje CONTINUO entre su
-        // posición orbital y las dos esquinas (pulido /inject: antes los mini-orbes
-        // aparecían de golpe mientras el orbital solo se esfumaba). En formando/viva el
-        // comportamiento clásico (solo el estado plenamente separado los muestra).
-        let faseSep: Double
-        switch e.fase {
-        case .separando, .separada, .uniendo: faseSep = 1 - suave(min(1, max(0, cuadro.u)))
-        case .formando, .viva: faseSep = sep ? 1 : 0
-        }
-        if faseSep > 0.02 {
-            let tinta: Tinta = e.guardianJuntas ? .atencion : .vigia
-            for (k, esquina) in [Geometria.guardianSeparado1, Geometria.guardianSeparado2].enumerated() {
-                // El viaje de los vigías también ARQUEA (exigencia 4 del pulido: ningún
-                // cuerpo de esta escena corre por riel recto).
-                var centroVigia = puntoLerp(orbGuardian.centro, esquina, faseSep)
-                centroVigia.y -= CGFloat(sin(.pi * faseSep) * 6)
-                trazos.append(.nube(Nube(
-                    centro: centroVigia,
-                    radio: Geometria.radioGuardian
-                        + (Geometria.radioGuardianSeparado - Geometria.radioGuardian)
-                        * CGFloat(faseSep),
-                    rotacion: k == 0 ? t * 0.9 : -t * 0.8,
-                    jitterAmp: 0.4, alfaK: 0.9 * (0.35 + 0.65 * faseSep), stretch: 0,
-                    nivel: nil, nivelBajo: false, capAmbar: false,
-                    n: Geometria.nGuardian, paso: 1, tinta: tinta)))
-            }
-        }
+                                alfa: alfaEstela)
         return trazos
     }
 
@@ -400,41 +346,124 @@ public extension EcosistemaSimulacion {
 
     private static func trazosLuna(
         t: TimeInterval,
-        luna l: (orb: Orbital, rotulo: RotuloOrbital, rotK: Double, hueca: Bool, fuera: Bool),
-        still: Bool, alfa: Double) -> [Trazo] {
+        luna l: (orb: Orbital, rotulo: RotuloOrbital, rotK: Double, hueca: Bool,
+                 fuera: Bool, nivel: Double?),
+        apertura: Double, still: Bool, alfa: Double) -> [Trazo] {
         var trazos: [Trazo] = []
         let dep = (l.orb.z + 1) / 2
-        // El tributo se retiró («el sistema orbital», /inject): la conexión luna→orbe la
-        // cuentan ahora la estela orbital y el pulso de perihelio, no un chorro.
-        _ = still
+        // El gauge se revela con la apertura (nivelMezcla): en órbita la luna es
+        // materia pura; camino a su estación se vuelve el medidor. Fuera de rango,
+        // el líquido va ROJO (mapa de estados FER-22) — en cualquier veredicto.
         trazos.append(.nube(Nube(
             centro: l.orb.centro, radio: l.orb.radio, rotacion: t * l.rotK,
             jitterAmp: 0.4,
             alfaK: (0.5 + 0.5 * dep) * (l.hueca ? 0.45 : 1) * alfa,
-            stretch: 0, nivel: nil, nivelBajo: false, capAmbar: l.fuera,
+            stretch: 0,
+            nivel: apertura > 0.02 ? l.nivel : nil,
+            nivelMezcla: apertura,
+            nivelBajo: l.fuera,
+            capAmbar: false,
             n: Geometria.nLuna, paso: l.hueca ? 3 : 1, tinta: .clima)))
-        trazos.append(.rotulo(l.rotulo,
-                              en: CGPoint(x: l.orb.centro.x, y: l.orb.centro.y + l.orb.radio + 13),
-                              alfa: (0.35 + 0.5 * dep) * alfa))
+        // El rótulo orbital CEDE a los overlays al parquearse (allí viven las
+        // etiquetas de estación con su valor sólido).
+        let alfaRotulo = (0.35 + 0.5 * dep) * alfa * (1 - apertura)
+        if alfaRotulo > 0.02 {
+            trazos.append(.rotulo(l.rotulo,
+                                  en: CGPoint(x: l.orb.centro.x,
+                                              y: l.orb.centro.y + l.orb.radio + 13),
+                                  alfa: alfaRotulo))
+        }
         return trazos
     }
 
-    private static func trazosGuardian(t: TimeInterval, orb: Orbital, eclipse: Double,
-                                       hueco: Bool, alfa: Double) -> [Trazo] {
+    /// UN vigía (FER-22: dos de nacimiento — ya no hay guardián que se parta).
+    private static func nubeVigia(_ orb: Orbital, g: Int, t: TimeInterval,
+                                  alerta: Bool, hueco: Bool,
+                                  eclipse: Double) -> Trazo {
         let dep = (orb.z + 1) / 2
-        let tinta: Tinta = eclipse > 0 ? .atencion : .vigia
-        let alfaK = (eclipse > 0 ? 0.85 * max(0.4, eclipse) : (0.4 + 0.6 * dep) * 0.75)
-            * (hueco ? 0.55 : 1) * alfa
-        var trazos: [Trazo] = [.nube(Nube(
+        let tinta: Tinta = (alerta || eclipse > 0) ? .atencion : .vigia
+        let alfaK = eclipse > 0
+            ? 0.85 * max(0.4, eclipse)
+            : (0.5 + 0.5 * dep) * (hueco ? 0.55 : 0.95)
+        return .nube(Nube(
             centro: orb.centro, radio: orb.radio,
-            rotacion: t * LiquidEcosistemaMotion.rotacionGuardian,
+            rotacion: g == 0 ? t * 0.9 : -t * 0.8,
             jitterAmp: 0.4, alfaK: alfaK, stretch: 0,
             nivel: nil, nivelBajo: false, capAmbar: false,
-            n: Geometria.nGuardian, paso: hueco ? 2 : 1, tinta: tinta))]
-        if eclipse < 0.5 {
-            trazos.append(.rotulo(.guardian,
-                                  en: CGPoint(x: orb.centro.x, y: orb.centro.y + orb.radio + 13),
-                                  alfa: dep * 0.8 * alfa))
+            n: Geometria.nGuardian, paso: hueco ? 2 : 1, tinta: tinta))
+    }
+
+    /// El CORDÓN de alimentación (FER-22): motas fluyendo de la decisora al orbe —
+    /// siempre vivo (órbita, viaje y estación). Rojo cuando la señal votó mal: el
+    /// flujo no se detiene (votar es su naturaleza), cambia la noticia que lleva.
+    /// Con Reduce Motion: dos motas ASENTADAS, sin flujo (cuadro honesto).
+    private static func trazosCordon(t: TimeInterval, desde: CGPoint,
+                                     radioDesde: CGFloat, radioOrbe: CGFloat,
+                                     semilla: Double, malo: Bool,
+                                     still: Bool) -> [Trazo] {
+        let dx = Double(Geometria.centro.x - desde.x)
+        let dy = Double(Geometria.centro.y - desde.y)
+        let d = max(1, (dx * dx + dy * dy).squareRoot())
+        let a0 = Double(radioDesde) + 3
+        let a1 = d - Double(radioOrbe) - 3
+        guard a1 > a0 + 6 else { return [] }
+        let ux = dx / d, uy = dy / d
+        let tinta: Tinta = malo ? .negativo : .clima
+        var trazos: [Trazo] = []
+        if still {
+            for f in [0.35, 0.7] {
+                let sd = a0 + (a1 - a0) * f
+                trazos.append(.disco(
+                    centro: CGPoint(x: desde.x + CGFloat(ux * sd),
+                                    y: desde.y + CGFloat(uy * sd)),
+                    radio: 1.4, tinta: tinta, alfa: 0.12 * sin(.pi * f)))
+            }
+            return trazos
+        }
+        for k in 0..<4 {
+            let f = (t * 0.5 + Double(k) * 0.25 + semilla)
+                .truncatingRemainder(dividingBy: 1)
+            let sd = a0 + (a1 - a0) * f
+            trazos.append(.disco(
+                centro: CGPoint(x: desde.x + CGFloat(ux * sd),
+                                y: desde.y + CGFloat(uy * sd)),
+                radio: 1.8 - CGFloat(f) * 0.7,
+                tinta: tinta,
+                alfa: 0.5 * sin(.pi * f)))
+        }
+        return trazos
+    }
+
+    /// La MIRADA del vigía (FER-22): punteado ESTÁTICO hacia el orbe — vigila, no
+    /// entrega materia. Solo al alertar (fuera de rango) un pulso ámbar corre por la
+    /// línea: así habla un vigía. Hueco = punteado más ralo.
+    private static func trazosMirada(t: TimeInterval, desde: CGPoint,
+                                     radioDesde: CGFloat, radioOrbe: CGFloat,
+                                     alerta: Bool, hueco: Bool) -> [Trazo] {
+        let dx = Double(Geometria.centro.x - desde.x)
+        let dy = Double(Geometria.centro.y - desde.y)
+        let d = max(1, (dx * dx + dy * dy).squareRoot())
+        let a0 = Double(radioDesde) + 3
+        let a1 = d - Double(radioOrbe) - 3
+        guard a1 > a0 + 6 else { return [] }
+        let ux = dx / d, uy = dy / d
+        let pasoPunteado: Double = hueco ? 22 : 11
+        var trazos: [Trazo] = []
+        var sd = a0
+        while sd <= a1 {
+            trazos.append(.disco(
+                centro: CGPoint(x: desde.x + CGFloat(ux * sd),
+                                y: desde.y + CGFloat(uy * sd)),
+                radio: 0.9, tinta: .vigia, alfa: 0.22))
+            sd += pasoPunteado
+        }
+        if alerta {
+            let f = (t * 0.9).truncatingRemainder(dividingBy: 1)
+            let sp = a0 + (a1 - a0) * f
+            trazos.append(.disco(
+                centro: CGPoint(x: desde.x + CGFloat(ux * sp),
+                                y: desde.y + CGFloat(uy * sp)),
+                radio: 2.4, tinta: .atencion, alfa: 0.85 * sin(.pi * f)))
         }
         return trazos
     }
@@ -485,16 +514,19 @@ public extension EcosistemaSimulacion {
                              radioOrbe: radioOrbe, still: e.still, ralo: l.hueca,
                              pulso: pulso, frente: frente, alfa: alfa)
         }
-        // El guardián también deja estela — SU órbita vacía es la alerta: al partir al
-        // eclipse la estela se apaga. Sin dato (hueco), estela rala.
+        // Los DOS vigías también dejan estela (FER-22: fases opuestas en la órbita
+        // externa) — al partir al eclipse se apagan. Sin dato (hueco), estela rala.
         if e.eclipse < 0.5 {
             let alfaG = alfa * max(0, 1 - e.eclipse * 2) * 0.8
-            trazos += estela(o: Geometria.orbitaGuardian,
-                             angulo: t * LiquidEcosistemaMotion.orbitaGuardian
-                                 + LiquidEcosistemaMotion.faseGuardian,
-                             wobble: 0, tinta: .vigia, radioOrbe: radioOrbe,
-                             still: e.still, ralo: e.guardianHueco, pulso: 0,
-                             frente: frente, alfa: alfaG)
+            for g in 0..<2 {
+                trazos += estela(o: Geometria.orbitaGuardian,
+                                 angulo: t * LiquidEcosistemaMotion.orbitaGuardian
+                                     + LiquidEcosistemaMotion.faseGuardian
+                                     + Double(g) * .pi,
+                                 wobble: 0, tinta: .vigia, radioOrbe: radioOrbe,
+                                 still: e.still, ralo: e.guardianHueco, pulso: 0,
+                                 frente: frente, alfa: alfaG)
+            }
         }
         return trazos
     }
@@ -561,20 +593,6 @@ public extension EcosistemaSimulacion {
                 radio: 1.4 + CGFloat(s) * 1.2,
                 tinta: .clima,
                 alfa: sin(.pi * p) * 0.55))
-        }
-        return trazos
-    }
-
-    private static func trazosDestello(t: TimeInterval, bump: Double, radio: CGFloat) -> [Trazo] {
-        let r = radio + 6 + CGFloat(bump) * 10
-        var trazos: [Trazo] = [.anillo(centro: Geometria.centro, radio: r, grosor: 1.5,
-                                       tinta: .blanco, alfa: bump * 0.8)]
-        for k in 0..<8 {
-            let a = Double(k) / 8 * 2 * .pi + t
-            let sr = Double(radio) + 10 + bump * 22
-            trazos.append(.disco(centro: CGPoint(x: Geometria.centro.x + CGFloat(cos(a) * sr),
-                                                 y: Geometria.centro.y + CGFloat(sin(a) * sr * 0.9)),
-                                 radio: 1.3, tinta: .blanco, alfa: bump * 0.75))
         }
         return trazos
     }
