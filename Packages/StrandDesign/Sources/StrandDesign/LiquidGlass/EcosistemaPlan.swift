@@ -175,7 +175,16 @@ public extension EcosistemaSimulacion {
         let radio = lerp(Double(Geometria.radioOrbeFondo), Double(e.coreo.radioOrbe), u)
             * (1 + 0.02 * sin(t * LiquidEcosistemaMotion.respiracionEsfera) * u)
             + cuadro.settle
-        let alfaOrbe = lerp(0.38, 1, u) * flicker
+        // Ronda de carácter: retrocedido, el orbe ADEMÁS baja 7 pt y afloja a 0.30 —
+        // despeja el eje de lectura reposo↔sueño sin perder presencia.
+        let centroOrbe = CGPoint(x: Geometria.centro.x,
+                                 y: Geometria.centro.y + CGFloat(apertura * 7))
+        let alfaOrbe = lerp(0.30, 1, u) * flicker
+        // Arco ASIMÉTRICO (ronda de carácter): la ida levanta más que el regreso —
+        // los cuerpos reales no deshacen su trayectoria en espejo.
+        let esSeparando: Bool = { if case .separando = e.fase { return true }
+                                  return false }()
+        let alturaArco: Double = esSeparando ? 9 : 5
         let capAmbar = eclipse > 0.5
 
         // 0 · Las DECISORAS: cuerpos permanentes que fusionan órbita ↔ estación con la
@@ -186,7 +195,7 @@ public extension EcosistemaSimulacion {
             let orbital = luna(i + 1, t: t, desgaste: e.coreo == .desgaste)
             let estacion = i == 0 ? Geometria.p1 : Geometria.p2
             var c = puntoLerp(orbital.centro, estacion, apertura)
-            c.y -= CGFloat(sin(.pi * apertura) * 9)   // el viaje arquea
+            c.y -= CGFloat(sin(.pi * apertura) * alturaArco)   // el viaje arquea
             lunas.append((orb: Orbital(
                               centro: c,
                               z: lerp(orbital.z, 1, apertura),
@@ -214,7 +223,7 @@ public extension EcosistemaSimulacion {
                 let ec = suave(eclipse)
                 let destino = CGPoint(
                     x: Geometria.centro.x + Geometria.eclipseOffset.width
-                        + CGFloat(g == 0 ? -14 : 14) + CGFloat(3 * sin(t * 0.9)),
+                        + CGFloat(g == 0 ? -18 : 18) + CGFloat(3 * sin(t * 0.9)),
                     y: Geometria.centro.y + Geometria.eclipseOffset.height)
                 orb = Orbital(centro: puntoLerp(orb.centro, destino, ec),
                               z: lerp(orb.z, -1, ec),
@@ -225,7 +234,7 @@ public extension EcosistemaSimulacion {
                 let esquina = g == 0 ? Geometria.guardianSeparado1
                                      : Geometria.guardianSeparado2
                 var c = puntoLerp(orb.centro, esquina, apertura)
-                c.y -= CGFloat(sin(.pi * apertura) * 6)
+                c.y -= CGFloat(sin(.pi * apertura) * (esSeparando ? 6 : 3.5))
                 orb = Orbital(centro: c,
                               z: lerp(orb.z, 1, apertura),
                               radio: orb.radio
@@ -242,14 +251,14 @@ public extension EcosistemaSimulacion {
         // 1 · Las CONEXIONES — debajo de todos los cuerpos y SIEMPRE vivas.
         for (i, l) in lunas.enumerated() where !l.hueca {
             trazos += trazosCordon(t: t, desde: l.orb.centro, radioDesde: l.orb.radio,
-                                   radioOrbe: CGFloat(radio),
+                                   hacia: centroOrbe, radioOrbe: CGFloat(radio),
                                    semilla: Double(i) * 0.4,
                                    malo: l.fuera, still: e.still)
         }
         if eclipse <= 0.5 {
             for (g, v) in vigias.enumerated() {
                 trazos += trazosMirada(t: t, desde: v.centro, radioDesde: v.radio,
-                                       radioOrbe: CGFloat(radio),
+                                       hacia: centroOrbe, radioOrbe: CGFloat(radio),
                                        alerta: vigiaAlerta[g] && !e.still,
                                        hueco: e.guardianHueco)
             }
@@ -288,7 +297,7 @@ public extension EcosistemaSimulacion {
             trazos.append(.nubeMorfo(a: embrion, b: orbe, mezcla: suave(g)))
         } else {
             trazos.append(.nube(Nube(
-                centro: Geometria.centro, radio: CGFloat(radio),
+                centro: centroOrbe, radio: CGFloat(radio),
                 rotacion: t * LiquidEcosistemaMotion.rotacionEsfera,
                 // El jitter escala con u (ronda quirúrgica): a radio 30 el mismo
                 // jitter absoluto era el doble RELATIVO — el fondo vibraba más que
@@ -405,11 +414,12 @@ public extension EcosistemaSimulacion {
     /// flujo no se detiene (votar es su naturaleza), cambia la noticia que lleva.
     /// Con Reduce Motion: dos motas ASENTADAS, sin flujo (cuadro honesto).
     private static func trazosCordon(t: TimeInterval, desde: CGPoint,
-                                     radioDesde: CGFloat, radioOrbe: CGFloat,
+                                     radioDesde: CGFloat, hacia: CGPoint,
+                                     radioOrbe: CGFloat,
                                      semilla: Double, malo: Bool,
                                      still: Bool) -> [Trazo] {
-        let dx = Double(Geometria.centro.x - desde.x)
-        let dy = Double(Geometria.centro.y - desde.y)
+        let dx = Double(hacia.x - desde.x)
+        let dy = Double(hacia.y - desde.y)
         let d = max(1, (dx * dx + dy * dy).squareRoot())
         let a0 = Double(radioDesde) + 3
         let a1 = d - Double(radioOrbe) - 3
@@ -448,10 +458,11 @@ public extension EcosistemaSimulacion {
     /// entrega materia. Solo al alertar (fuera de rango) un pulso ámbar corre por la
     /// línea: así habla un vigía. Hueco = punteado más ralo.
     private static func trazosMirada(t: TimeInterval, desde: CGPoint,
-                                     radioDesde: CGFloat, radioOrbe: CGFloat,
+                                     radioDesde: CGFloat, hacia: CGPoint,
+                                     radioOrbe: CGFloat,
                                      alerta: Bool, hueco: Bool) -> [Trazo] {
-        let dx = Double(Geometria.centro.x - desde.x)
-        let dy = Double(Geometria.centro.y - desde.y)
+        let dx = Double(hacia.x - desde.x)
+        let dy = Double(hacia.y - desde.y)
         let d = max(1, (dx * dx + dy * dy).squareRoot())
         let a0 = Double(radioDesde) + 3
         let a1 = d - Double(radioOrbe) - 3
@@ -473,14 +484,20 @@ public extension EcosistemaSimulacion {
                 radio: 1.15, tinta: .vigia, alfa: 0.32 * cercania * residuo))
             sd += pasoPunteado
         }
+        // Pulso con DESCANSO (ronda de carácter): ciclo de 2.4 s y el pulso viaja
+        // solo el primer tercio — una alerta que respira, no una que taladra
+        // (el continuo de 0.9 s pulsaba ~66 veces/min, para siempre).
         if alerta {
-            let f = (t * 0.9).truncatingRemainder(dividingBy: 1)
-            let sp = a0 + (a1 - a0) * f
-            trazos.append(.disco(
-                centro: CGPoint(x: desde.x + CGFloat(ux * sp),
-                                y: desde.y + CGFloat(uy * sp)),
-                radio: 2.4, tinta: .atencion,
-                alfa: 0.85 * sin(.pi * f) * cercania))
+            let ciclo = (t / 2.4).truncatingRemainder(dividingBy: 1)
+            if ciclo < 1.0 / 3 {
+                let f = ciclo * 3
+                let sp = a0 + (a1 - a0) * f
+                trazos.append(.disco(
+                    centro: CGPoint(x: desde.x + CGFloat(ux * sp),
+                                    y: desde.y + CGFloat(uy * sp)),
+                    radio: 2.4, tinta: .atencion,
+                    alfa: 0.85 * sin(.pi * f) * cercania))
+            }
         }
         return trazos
     }

@@ -129,7 +129,9 @@ final class EcosistemaPlanTests: XCTestCase {
         XCTAssertEqual(medidores[0].nivelMezcla, 1)
         let orbes = nubes(trazos).filter { $0.n == G.nEsfera }
         XCTAssertEqual(orbes.count, 1, "el orbe jamás se parte ni desaparece")
-        XCTAssertEqual(orbes[0].centro, G.centro)
+        XCTAssertEqual(orbes[0].centro.x, G.centro.x)
+        XCTAssertEqual(orbes[0].centro.y, G.centro.y + 7, accuracy: 0.001,
+                       "retrocedido baja 7 pt: despeja el eje reposo↔sueño")
         XCTAssertLessThan(orbes[0].alfaK, 0.5, "retrocedido: tenue")
         let vigias = nubes(trazos).filter { $0.n == G.nGuardian }
         XCTAssertEqual(vigias.count, 2)
