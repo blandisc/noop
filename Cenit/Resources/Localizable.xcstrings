@@ -51469,6 +51469,74 @@
           }
         }
       }
+    },
+    "Still learning your rhythm": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Still learning your rhythm"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún conociendo tu ritmo"
+          }
+        }
+      }
+    },
+    "Very regular · your body knows when to sleep": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Very regular · your body knows when to sleep"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Muy regular · tu cuerpo sabe cuándo dormir"
+          }
+        }
+      }
+    },
+    "Fairly regular": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fairly regular"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bastante regular"
+          }
+        }
+      }
+    },
+    "Variable · your schedule shifts a lot": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Variable · your schedule shifts a lot"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Variable · tu horario cambia mucho"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

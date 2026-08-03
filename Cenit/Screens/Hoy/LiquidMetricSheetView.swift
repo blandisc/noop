@@ -300,7 +300,7 @@ struct LiquidMetricSheetView: View {
     private var isSleepRich: Bool { datoInfo.id == "sleep" && nocheSueno != nil }
 
     /// La noche que la hoja PINTA: la de muestra en demo, la real (inyectada por TodayView)
-    /// si no. Un solo hogar para las tres lecturas (`isSleepRich`, doble dato, etapas).
+    /// si no. Un solo hogar para las lecturas (`isSleepRich`, etapas, regularidad).
     private var nocheSueno: SleepDetailModel.Night? {
         if demo { return Self.demoNoche() }
         return sleepDetail?.night
@@ -499,12 +499,11 @@ struct LiquidMetricSheetView: View {
             icono: glifo,
             titulo: tituloHoja,
             tono: tono,
-            // La variante rica de sueño (y su skeleton) reemplazan el numeral con el
-            // doble dato (paridad :333).
-            // Pasada UX H3: durante la carga la hoja de sueño abría SIN número — el usuario
-            // tocaba «7:20» y llegaba a una pantalla muda. Solo la variante rica lo cede al
-            // doble dato; mientras carga se conserva el numeral que venía del tile.
-            numeral: isSleepRich ? nil : datoInfo.displayValue,
+            // F4b · Héroe idéntico a las otras 8: el numeral de duración (reloj «7:12»
+            // del tile). La regularidad ya no vive aquí; baja al slot como tarjeta.
+            // Durante la carga (`isSleepLoading` → skeleton en el cuerpo) el numeral del
+            // tile se conserva — la hoja no abre muda.
+            numeral: datoInfo.displayValue,
             unidad: datoInfo.unit,
             sufijo: sufijo,
             numeralTono: tinte(datoInfo.headerTint),
@@ -581,44 +580,19 @@ struct LiquidMetricSheetView: View {
         levelsBlock
     }
 
-    // MARK: Sueño rica (§1.3 — doble dato + lectura + etapas + niveles)
+    // MARK: Sueño rica (§1.3 — lectura + niveles + etapas + regularidad)
 
     @ViewBuilder private var sleepContent: some View {
         if let night = nocheSueno {
-            // El ⓘ de regularidad (L5.2): la métrica más opaca de la hoja explica su propio
-            // método sin abrir otra pantalla; con «··» VoiceOver dice la frase honesta.
-            let regularidad: String = regularidadSueno.map { (s: Int) -> String in "\(s)" } ?? "··"
-            // Tipado explícito y fuera del call: el type-checker de iOS revienta con
-            // ternarios sin ancla dentro de un builder (trampa documentada del repo).
-            let a11yRegularidad: String? = regularidadSueno == nil
-                ? String(localized: "not enough nights yet")
-                : nil
-            // Pasada UX H3: el MISMO número que mostró el tile (`displayValue`), no la
-            // suma de etapas por otro camino — decían 7:20 y 7:12 para la misma noche.
-            // B5 · Y en el MISMO formato: el catálogo escribe «7h 12m» mientras el tile
-            // (`LiquidHoyBuilder.sleepClockText`), el eje (`levelsValueFormat`) y el chip
-            // del scrub dicen «7:12». Se formatea caller-side desde los MISMOS minutos que
-            // clasifican la noche, sin tocar `MetricInfoCatalog` (el tile lo comparte). Sin
-            // minutos, el string del catálogo tal cual. Fuera del call y tipado: trampa del
-            // type-checker con expresiones mixtas dentro de un builder.
-            let dormido: String = datoInfo.levelsTodayValue.map(Self.sleepHM)
-                ?? datoInfo.displayValue
-            LiquidDobleDato(
-                principal: (valor: dormido,
-                            etiqueta: String(localized: "hours asleep")),
-                secundario: (valor: regularidad,
-                             etiqueta: String(localized: "regularity")),
-                tono: tono,
-                secundarioInfo: String(localized: "How steady your sleep schedule is: we take each night's midpoint (between falling asleep and waking) and measure how much it shifts night to night. Less drift, closer to 100."),
-                secundarioA11y: a11yRegularidad,
-                infoMostrar: String(localized: "Show explanation"),
-                infoOcultar: String(localized: "Hide explanation"))
             if let frase = sleepReadingText {
                 // Pedido del dueño (/inject): la frase clave en negrita, como en las demás
                 // hojas — la lectura de sueño era la única que salía toda en peso normal.
                 LiquidReadingLine(frase, highlight: sleepReadingHighlight,
                                   highlightTone: tono)
             }
+            // Héroe → frase → selector → gráfica → tabla → Etapas → Regularidad → pie
+            // (levelsBlock = selector + gráfica + tabla; F4b cablea el slot de regularidad).
+            levelsBlock
             // D10 · La ventana solo se afirma cuando existe: el fallback diario de Apple
             // fabrica la noche con `startTs == endTs` y la hoja imprimía «6:00 → 6:00».
             // Tipado y fuera del call (trampa del type-checker con ternarios en builders).
@@ -640,11 +614,33 @@ struct LiquidMetricSheetView: View {
                     overline: overlineNoche,
                     ventana: ventanaNoche)
             }
-            // `LiquidLaneLabel` RETIRADO (L3.3): la frase display de los niveles ya dice el
-            // nombre del carril en grande — la pastilla lo repetía dos bloques más abajo.
-            levelsBlock
-            // «Para esta noche» RETIRADO (decisión del dueño, /inject 2026-07-23):
-            // la hoja de sueño cierra con los niveles.
+            // F4b · Regularidad como tarjeta propia (ya no en el héroe ni en LiquidDobleDato).
+            // `puntaje == nil` ⇒ «··» calibrando (lo maneja la tarjeta).
+            LiquidRegularityCard(
+                titulo: String(localized: "Regularity"),
+                puntaje: regularidadSueno,
+                leyenda: regularidadLeyenda,
+                tono: LiquidColor.indigo,
+                explicacion: String(localized: "How steady your sleep schedule is: we take each night's midpoint (between falling asleep and waking) and measure how much it shifts night to night. Less drift, closer to 100."),
+                infoMostrar: String(localized: "Show explanation"),
+                infoOcultar: String(localized: "Hide explanation"))
+        }
+    }
+
+    /// F4b · Leyenda de la tarjeta de regularidad. Mismos cortes que
+    /// `SleepDetailScreen.regularityWordText` (80+ / 55–79 / <55); con `nil` la tarjeta
+    /// calibra y la frase es honesta.
+    private var regularidadLeyenda: String {
+        guard let s = regularidadSueno else {
+            return String(localized: "Still learning your rhythm")
+        }
+        switch s {
+        case 80...:
+            return String(localized: "Very regular · your body knows when to sleep")
+        case 55..<80:
+            return String(localized: "Fairly regular")
+        default:
+            return String(localized: "Variable · your schedule shifts a lot")
         }
     }
 
