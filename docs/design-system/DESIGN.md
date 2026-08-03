@@ -443,6 +443,14 @@ no migradas conservan la voz de §8.3 hasta que les toque.
   (b) los **chips troquel** de Descanso/Nota llevan su hue SOLO en el icono (reloj ember, lápiz
   teal — propuesta B aprobada): el único color del chip es ese glifo; el valor va en tinta.
   Ambas son excepciones nombradas a la regla 2 («color solo en el dato»), como `keyCap`.
+- **Excepción del AZUL del vigía (FER-22, dueño):** en «El Ecosistema» de Hoy, los dos vigías
+  (temperatura y respiración) hablan en `LiquidColor.azul` —orbe, estela, mirada y su dato— para
+  que se lean como UNA familia: «lo que vigila». Es una excepción CONSCIENTE al mapeo 1:1 de
+  tonos de dato: `azul` es el hue 1:1 de *respiración* como métrica, así que en la misma pantalla
+  conviven el tile RESPIRACIÓN azul y dos vigías azules (uno de ellos es temperatura, cuyo tile
+  es ámbar). Se acepta porque en el héroe el vigía es un ROL (vigilar), no la métrica: el azul
+  agrupa el rol, no colisiona con el dato. No se acuñó un token nuevo (evita proliferar la
+  paleta); si un día el rol necesita voz propia, ahí sí un `azulVigia`.
 - **Aprendizajes del canvas de la sesión de fuerza (2026-07, ley para pantallas nuevas):**
   1. **Los números vivos RUEDAN.** Todo numeral que cambia solo en pantalla (relojes, contadores,
      countdown) lleva `contentTransition(.numericText())` — los dígitos ruedan, nunca parpadean;
