@@ -1,5 +1,18 @@
 import SwiftUI
 
+#if DEBUG
+/// Hooks SOLO de render/comparación (FER-28): banderas para comparar variantes de diseño en
+/// el arnés de ImageRenderer sin recompilar por variante. No afectan producción.
+enum LiquidTableroDebug {
+    /// 0 = posicional (default) · 1 = todas centradas · 2 = mockup (orillas).
+    nonisolated(unsafe) static var alineacionModo = 0
+    /// Área tocable mínima de una columna (44 default; 40 para probar el fit).
+    nonisolated(unsafe) static var areaTocable: CGFloat = 44
+    /// Override del alto compacto del héroe para barrer el fit (nil = usa el token).
+    nonisolated(unsafe) static var altoCompactoOverride: CGFloat? = nil
+}
+#endif
+
 // MARK: - Liquid Glass · Pantalla Hoy (handoff §7.1 · FER-1045)
 //
 // Dos capas:
@@ -157,6 +170,79 @@ public struct LiquidHoyModel: Sendable {
         }
     }
 
+    // MARK: Los 4 módulos de «El Tablero» (FER-28)
+
+    /// Una COLUMNA de dato dentro de un módulo: su rótulo, su tono 1:1, su contenido (simple,
+    /// sueño con dos-puntos tenue, carga con bullet-graph, o par teñido tipo «VIGILANDO»), a
+    /// dónde navega su tap y su etiqueta de VoiceOver YA compuesta.
+    public struct Columna: Sendable, Identifiable {
+        /// A qué hoja abre el tap — reusa las hojas de hoy (no se crean nuevas).
+        public enum Destino: Sendable { case metrica(String), carga, guardian }
+        /// Alineación de la columna en su celda (las columnas `.der` del mockup van a la derecha).
+        public enum Alineacion: Sendable { case izq, der }
+        /// La forma del valor de la columna.
+        public enum Contenido: Sendable {
+            /// Valor teñido 1:1 + unidad + una línea de detalle (verde si `mejora`).
+            case simple(value: String, unit: String, detail: String, mejora: Bool)
+            /// Sueño: los dígitos mandan, los dos-puntos van en regular tinta/700.
+            case sueno(horas: String, minutos: String, unit: String, detail: String)
+            /// Carga: bullet-graph `LiquidCargaEscala` en densidad de bloque.
+            case carga(razon: Double?, status: String, state: LiquidSignalState, calibrando: Bool)
+            /// Par teñido separado por un punto («+0.1°» ámbar · «14 rpm» azul).
+            case par(v1: String, tone1: Color, v2: String, tone2: Color)
+        }
+
+        public let id: String
+        public let label: String
+        public let tone: Color
+        public let alineacion: Alineacion
+        public let contenido: Contenido
+        public let destino: Destino
+        /// VoiceOver YA compuesto: «{dato}, {valor}, {delta}[, {valencia}]».
+        public let a11yLabel: String
+        public let a11yHint: String
+
+        public init(id: String, label: String, tone: Color, alineacion: Alineacion = .izq,
+                    contenido: Contenido, destino: Destino, a11yLabel: String,
+                    a11yHint: String = "Abre el detalle") {
+            self.id = id
+            self.label = label
+            self.tone = tone
+            self.alineacion = alineacion
+            self.contenido = contenido
+            self.destino = destino
+            self.a11yLabel = a11yLabel
+            self.a11yHint = a11yHint
+        }
+    }
+
+    /// Un MÓDULO de vidrio: su cabecera-kicker (solo el rótulo — «silencio por defecto»), la
+    /// palabra única de ámbar cuando un dato sale de rango (`atencion`), los tonos+periodo de
+    /// su aurora fina, y sus columnas.
+    public struct Modulo: Sendable, Identifiable {
+        public let id: String
+        public let kicker: String
+        /// UNA palabra en ámbar en la cabecera cuando un dato del módulo sale de rango
+        /// («temp. alta»). `nil` = día bueno, la cabecera calla.
+        public let atencion: String?
+        public let auroraTones: [Color]
+        public let auroraPeriod: Double
+        public let auroraReverse: Bool
+        public let columnas: [Columna]
+
+        public init(id: String, kicker: String, atencion: String? = nil,
+                    auroraTones: [Color], auroraPeriod: Double, auroraReverse: Bool = false,
+                    columnas: [Columna]) {
+            self.id = id
+            self.kicker = kicker
+            self.atencion = atencion
+            self.auroraTones = auroraTones
+            self.auroraPeriod = auroraPeriod
+            self.auroraReverse = auroraReverse
+            self.columnas = columnas
+        }
+    }
+
     public let kicker: String
     public let dial: Dial
     public let senales: [Senal]
@@ -167,6 +253,9 @@ public struct LiquidHoyModel: Sendable {
     /// muestra); con al menos una lectura va SIEMPRE visible, debajo de la carga.
     public let guardian: Guardian?
     public let metricas: [Metrica]
+    /// Los 4 módulos de «El Tablero» (FER-28) — la mitad inferior de Hoy. Vacío = el content
+    /// no dibuja tablero (compat con consumidores previos al rediseño).
+    public let modulos: [Modulo]
     /// Hint de VoiceOver del héroe («Abre el detalle»), YA localizado. `nil` = sin hint.
     /// Orbes y barra de carga lo reutilizan (revote /inject: navegan igual que el héroe).
     public let heroHint: String?
@@ -187,10 +276,11 @@ public struct LiquidHoyModel: Sendable {
     public let rotulos: EcosistemaRotulos
 
     public init(kicker: String, dial: Dial, senales: [Senal], hero: Hero, carga: Carga?,
-                metricas: [Metrica], guardian: Guardian? = nil, heroHint: String? = nil,
-                ambiente: LiquidAmbiente = .bien, cargaLabel: String = "CARGA",
-                kickerA11y: String? = nil, heroPuerta: String? = nil,
-                calibracion: Calibracion? = nil, rotulos: EcosistemaRotulos = .base) {
+                metricas: [Metrica], modulos: [Modulo] = [], guardian: Guardian? = nil,
+                heroHint: String? = nil, ambiente: LiquidAmbiente = .bien,
+                cargaLabel: String = "CARGA", kickerA11y: String? = nil,
+                heroPuerta: String? = nil, calibracion: Calibracion? = nil,
+                rotulos: EcosistemaRotulos = .base) {
         self.cargaLabel = cargaLabel
         self.kickerA11y = kickerA11y
         self.kicker = kicker
@@ -200,6 +290,7 @@ public struct LiquidHoyModel: Sendable {
         self.carga = carga
         self.guardian = guardian
         self.metricas = metricas
+        self.modulos = modulos
         self.heroHint = heroHint
         self.ambiente = ambiente
         self.heroPuerta = heroPuerta
@@ -243,8 +334,152 @@ public struct LiquidHoyModel: Sendable {
                   delta: "−0.5 vs tu base", deltaTone: .up,
                   tone: LiquidColor.verdePrimario, icon: .estres),
         ],
+        modulos: ejemploModulos,
         guardian: .init(label: "VIGILANDO", temp: "+0.1°", resp: "14 rpm", estado: .tranquilo),
         heroPuerta: "Cómo llegué a esto")
+
+    /// Los 4 módulos de muestra (datos del mockup canónico «El Tablero»).
+    public static let ejemploModulos: [Modulo] = [
+        .init(id: "veredicto", kicker: "LO QUE INFORMA TU VEREDICTO",
+              auroraTones: [LiquidColor.indigo, LiquidColor.rosa, LiquidColor.verdePrimario],
+              auroraPeriod: 44, auroraReverse: false,
+              columnas: [
+                .init(id: "sleep", label: "SUEÑO", tone: LiquidColor.indigo, alineacion: .izq,
+                      contenido: .sueno(horas: "7", minutos: "20", unit: "h",
+                                        detail: "20:00 → 4:00"),
+                      destino: .metrica("sleep"),
+                      a11yLabel: "Sueño, 7 horas 20 minutos, de 20:00 a 4:00"),
+                .init(id: "rhr", label: "FC REPOSO", tone: LiquidColor.rosa, alineacion: .der,
+                      contenido: .simple(value: "52", unit: "lpm", detail: "en tu rango",
+                                         mejora: false),
+                      destino: .metrica("rhr"),
+                      a11yLabel: "FC en reposo, 52 lpm, en tu rango"),
+              ]),
+        .init(id: "acompana", kicker: "LO QUE ACOMPAÑA",
+              auroraTones: [LiquidColor.verdePrimario, LiquidColor.ambar, LiquidColor.azul],
+              auroraPeriod: 52, auroraReverse: true,
+              columnas: [
+                .init(id: "carga", label: "CARGA", tone: LiquidColor.verdePrimario,
+                      alineacion: .izq,
+                      contenido: .carga(razon: 1.03, status: "EN EQUILIBRIO", state: .ok,
+                                        calibrando: false),
+                      destino: .carga, a11yLabel: "Carga, 1.03, en equilibrio"),
+                .init(id: "vigilando", label: "VIGILANDO", tone: LiquidColor.tinta500,
+                      alineacion: .der,
+                      contenido: .par(v1: "+0.1°", tone1: LiquidColor.ambar,
+                                      v2: "14 rpm", tone2: LiquidColor.azul),
+                      destino: .guardian,
+                      a11yLabel: "Vigilando, temperatura +0.1 grados, respiración 14 rpm"),
+              ]),
+        .init(id: "dia", kicker: "EL DÍA",
+              auroraTones: [LiquidColor.ambar, LiquidColor.teal, LiquidColor.verdePrimario],
+              auroraPeriod: 38, auroraReverse: false,
+              columnas: [
+                .init(id: "strain", label: "ESFUERZO", tone: LiquidColor.ambar, alineacion: .izq,
+                      contenido: .simple(value: "10.0", unit: "", detail: "−0.7 vs base",
+                                         mejora: false),
+                      destino: .metrica("strain"),
+                      a11yLabel: "Esfuerzo, 10.0, −0.7 contra tu base"),
+                .init(id: "steps", label: "PASOS", tone: LiquidColor.teal, alineacion: .izq,
+                      contenido: .simple(value: "8,432", unit: "", detail: "+612", mejora: true),
+                      destino: .metrica("steps"),
+                      a11yLabel: "Pasos, 8,432, +612 contra tu base"),
+                .init(id: "stress", label: "ESTRÉS", tone: LiquidColor.verdePrimario,
+                      alineacion: .der,
+                      contenido: .simple(value: "1.2", unit: "/3", detail: "−0.5", mejora: true),
+                      destino: .metrica("stress"),
+                      a11yLabel: "Estrés, 1.2 de 3, −0.5 contra tu base"),
+              ]),
+        .init(id: "noche", kicker: "LA NOCHE",
+              auroraTones: [LiquidColor.cian, LiquidColor.ambar, LiquidColor.azul],
+              auroraPeriod: 58, auroraReverse: true,
+              columnas: [
+                .init(id: "hrv", label: "VFC", tone: LiquidColor.cian, alineacion: .izq,
+                      contenido: .simple(value: "56", unit: "ms", detail: "+2 vs base",
+                                         mejora: true),
+                      destino: .metrica("hrv"),
+                      a11yLabel: "VFC, 56 ms, +2 contra tu base"),
+                .init(id: "skintemp", label: "TEMP. PIEL", tone: LiquidColor.ambar,
+                      alineacion: .izq,
+                      contenido: .simple(value: "+0.1", unit: "°C", detail: "en base",
+                                         mejora: false),
+                      destino: .metrica("skintemp"),
+                      a11yLabel: "Temperatura de piel, +0.1 grados, en base"),
+                .init(id: "resp", label: "RESP.", tone: LiquidColor.azul, alineacion: .der,
+                      contenido: .simple(value: "14.5", unit: "rpm", detail: "en base",
+                                         mejora: false),
+                      destino: .metrica("resp"),
+                      a11yLabel: "Respiración, 14.5 rpm, en base"),
+              ]),
+    ]
+
+    /// Módulos en CALIBRANDO: los valores existen, pero sin base los deltas dicen «aún sin
+    /// base» y la carga va apagada. La plasta acompaña NEUTRA (no finge veredicto verde).
+    public static let calibrandoModulos: [Modulo] = [
+        .init(id: "veredicto", kicker: "LO QUE INFORMA TU VEREDICTO",
+              auroraTones: [LiquidColor.indigo, LiquidColor.rosa, LiquidColor.tinta500],
+              auroraPeriod: 44,
+              columnas: [
+                .init(id: "sleep", label: "SUEÑO", tone: LiquidColor.indigo,
+                      contenido: .sueno(horas: "7", minutos: "20", unit: "h",
+                                        detail: "20:00 → 4:00"),
+                      destino: .metrica("sleep"),
+                      a11yLabel: "Sueño, 7 horas 20 minutos, de 20:00 a 4:00"),
+                .init(id: "rhr", label: "FC REPOSO", tone: LiquidColor.rosa, alineacion: .der,
+                      contenido: .simple(value: "52", unit: "lpm", detail: "aún sin base",
+                                         mejora: false),
+                      destino: .metrica("rhr"), a11yLabel: "FC en reposo, 52 lpm, aún sin base"),
+              ]),
+        .init(id: "acompana", kicker: "LO QUE ACOMPAÑA",
+              auroraTones: [LiquidColor.tinta500, LiquidColor.ambar, LiquidColor.azul],
+              auroraPeriod: 52, auroraReverse: true,
+              columnas: [
+                .init(id: "carga", label: "CARGA", tone: LiquidColor.tinta500,
+                      contenido: .carga(razon: nil, status: "CALIBRANDO", state: .ok,
+                                        calibrando: true),
+                      destino: .carga, a11yLabel: "Carga, calibrando"),
+                .init(id: "vigilando", label: "VIGILANDO", tone: LiquidColor.tinta500,
+                      alineacion: .der,
+                      contenido: .par(v1: "—", tone1: LiquidColor.tinta500,
+                                      v2: "—", tone2: LiquidColor.tinta500),
+                      destino: .guardian, a11yLabel: "Vigilando, sin lectura"),
+              ]),
+        .init(id: "dia", kicker: "EL DÍA",
+              auroraTones: [LiquidColor.ambar, LiquidColor.teal, LiquidColor.tinta500],
+              auroraPeriod: 38,
+              columnas: [
+                .init(id: "strain", label: "ESFUERZO", tone: LiquidColor.ambar,
+                      contenido: .simple(value: "10.0", unit: "", detail: "aún sin base",
+                                         mejora: false),
+                      destino: .metrica("strain"), a11yLabel: "Esfuerzo, 10.0, aún sin base"),
+                .init(id: "steps", label: "PASOS", tone: LiquidColor.teal,
+                      contenido: .simple(value: "8,432", unit: "", detail: "aún sin base",
+                                         mejora: false),
+                      destino: .metrica("steps"), a11yLabel: "Pasos, 8,432, aún sin base"),
+                .init(id: "stress", label: "ESTRÉS", tone: LiquidColor.tinta500, alineacion: .der,
+                      contenido: .simple(value: "1.2", unit: "/3", detail: "aún sin base",
+                                         mejora: false),
+                      destino: .metrica("stress"), a11yLabel: "Estrés, 1.2 de 3, aún sin base"),
+              ]),
+        .init(id: "noche", kicker: "LA NOCHE",
+              auroraTones: [LiquidColor.cian, LiquidColor.ambar, LiquidColor.azul],
+              auroraPeriod: 58, auroraReverse: true,
+              columnas: [
+                .init(id: "hrv", label: "VFC", tone: LiquidColor.cian,
+                      contenido: .simple(value: "56", unit: "ms", detail: "aún sin base",
+                                         mejora: false),
+                      destino: .metrica("hrv"), a11yLabel: "VFC, 56 ms, aún sin base"),
+                .init(id: "skintemp", label: "TEMP. PIEL", tone: LiquidColor.ambar,
+                      contenido: .simple(value: "+0.1", unit: "°C", detail: "aún sin base",
+                                         mejora: false),
+                      destino: .metrica("skintemp"),
+                      a11yLabel: "Temperatura de piel, +0.1 grados, aún sin base"),
+                .init(id: "resp", label: "RESP.", tone: LiquidColor.azul, alineacion: .der,
+                      contenido: .simple(value: "14.5", unit: "rpm", detail: "aún sin base",
+                                         mejora: false),
+                      destino: .metrica("resp"), a11yLabel: "Respiración, 14.5 rpm, aún sin base"),
+              ]),
+    ]
 }
 
 // MARK: - Contenido componible
@@ -318,86 +553,142 @@ public struct LiquidHoyContent: View {
                 senales: model.senales, hero: model.hero, guardian: model.guardian,
                 ambiente: model.ambiente, calibracion: model.calibracion,
                 rotulos: model.rotulos, heroPuerta: model.heroPuerta,
-                heroHint: model.heroHint, mostrarHintSeparar: mostrarHintSeparar,
+                heroHint: model.heroHint,
+                mostrarHintSeparar: mostrarHintSeparar && model.modulos.isEmpty,
                 fusionInicial: fusionInicial, faseForzada: ecosistemaFase,
+                compacto: !model.modulos.isEmpty,
                 onTapVeredicto: onTapHero, onTapSenal: onTapSenal,
                 onTapGuardian: onTapGuardian,
                 onFusionArrancada: onFusionArrancada, onSeparacion: onSeparacion)
                 .padding(.top, LiquidSpace.s150)
                 .liquidEntrada(index: 1)
 
-            if model.carga != nil {
-                carga
-                    .padding(.top, LiquidSpace.s300)
-                    .liquidEntrada(index: 2)
+            // «El Tablero» (FER-28): los 4 módulos de vidrio sustituyen al grid de tiles +
+            // las franjas de carga/guardián. La onda de apertura corre POR COLUMNA (orden de
+            // lectura) con un índice global que cruza los módulos.
+            ForEach(Array(indexadoModulos), id: \.modulo.id) { entry in
+                moduloView(entry.modulo, index: entry.moduleIndex, colStart: entry.colStart)
+                    .padding(.top, LiquidSpace.s200)
             }
+        }
+        .padding(.horizontal, LiquidSpace.s600)
+    }
 
-            // La franja del guardián (FER-1047): par simétrico bajo la carga (mismo vidrio/alto).
-            // Gap corto (s150) cuando acompaña a la carga para que el ojo las lea juntas; s300 si
-            // la carga no está, para no pegarse al héroe/grid.
-            if let guardian = model.guardian {
-                franjaGuardianTocable(guardian)
-                    .padding(.top, model.carga != nil ? LiquidSpace.s150 : LiquidSpace.s300)
-                    .liquidEntrada(index: 2)
-            }
+    /// Los módulos con su índice de módulo y el índice global de su primera columna (para la
+    /// cascada de la onda de apertura, que es continua entre módulos).
+    private var indexadoModulos: [(modulo: LiquidHoyModel.Modulo, moduleIndex: Int, colStart: Int)] {
+        var out: [(LiquidHoyModel.Modulo, Int, Int)] = []
+        var col = 0
+        for (i, m) in model.modulos.enumerated() {
+            out.append((m, i, col))
+            col += m.columnas.count
+        }
+        return out
+    }
 
-            LazyVGrid(columns: [
-                GridItem(.flexible(), spacing: LiquidSpace.s200),
-                GridItem(.flexible()),
-            ], spacing: LiquidSpace.s200) {
-                ForEach(Array(model.metricas.enumerated()), id: \.element.id) { i, m in
-                    LiquidMetricTile(
-                        label: m.label, value: m.value, unit: m.unit, delta: m.delta,
-                        deltaTone: m.deltaTone, tone: m.tone, icon: m.icon, origen: m.origen,
-                        a11yValencia: m.a11yValencia, a11yOrigen: m.a11yOrigen,
-                        action: onTapMetric.map { tap in { tap(m.id) } })
-                        .liquidEntrada(index: 3 + i)
+    /// Un módulo de vidrio: cabecera-kicker (con la palabra de ámbar cuando algo sale de
+    /// rango) + sus columnas separadas por capilares.
+    private func moduloView(_ mod: LiquidHoyModel.Modulo, index: Int, colStart: Int) -> some View {
+        LiquidModulo(index: index, auroraTones: mod.auroraTones,
+                     auroraPeriod: mod.auroraPeriod, auroraReverse: mod.auroraReverse) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s150) {
+                cabecera(mod)
+                HStack(alignment: .center, spacing: 0) {
+                    ForEach(Array(mod.columnas.enumerated()), id: \.element.id) { j, col in
+                        if j > 0 {
+                            // Aire alrededor del capilar (mockup: margen 12 pt) para que el
+                            // divisor quede centrado en el hueco y los datos no lo toquen.
+                            LiquidCapilar()
+                                .padding(.horizontal, LiquidSpace.s300)
+                                .padding(.vertical, 2)
+                        }
+                        columnaView(col, align: alineacion(indice: j, total: mod.columnas.count))
+                            .liquidOnda(index: colStart + j)
+                    }
                 }
             }
-            // s300 (revote /inject): la barra de carga NO es una fila del grid — el gap
-            // hacia los tiles debe ser mayor que el gap interno del grid (s200).
-            .padding(.top, LiquidSpace.s300)
-        }
-        .padding(.horizontal, LiquidSpace.s550)
-    }
-
-    @ViewBuilder
-    private var carga: some View {
-        switch model.carga {
-        case .medida(_, _, let status, _, let razon, let state):
-            cargaTocable(LiquidCargaEscala(razon: razon, estado: state, rotulo: status,
-                                           densidad: .fila, eje: model.cargaLabel))
-        case .calibrando(let status):
-            cargaTocable(LiquidCargaEscala(razon: nil, rotulo: status, densidad: .fila,
-                                           calibrando: true, eje: model.cargaLabel))
-        case nil:
-            EmptyView()
         }
     }
 
-    /// La franja del guardián abre su hoja de explicación (FER-10, revisión de usuario):
-    /// «¿qué es VIGILANDO?» merece respuesta a un tap, igual que la carga.
+    /// La cabecera del módulo: SOLO el rótulo en día bueno («silencio por defecto»); cuando un
+    /// dato sale de rango, recupera UNA palabra en ámbar (nunca solo color).
     @ViewBuilder
-    private func franjaGuardianTocable(_ guardian: LiquidHoyModel.Guardian) -> some View {
-        if let onTapGuardian {
-            Button(action: onTapGuardian) { LiquidGuardianFranja(guardian) }
-                .buttonStyle(.liquidPress)
-                .accessibilityHint(Text(verbatim: model.heroHint ?? ""))
+    private func cabecera(_ mod: LiquidHoyModel.Modulo) -> some View {
+        if let atencion = mod.atencion {
+            HStack(spacing: LiquidSpace.s150) {
+                Text(mod.kicker).liquidRegla().foregroundStyle(LiquidColor.tinta500)
+                Text(atencion).liquidRegla().foregroundStyle(LiquidColor.atencionTexto)
+            }
         } else {
-            LiquidGuardianFranja(guardian)
+            Text(mod.kicker).liquidRegla().foregroundStyle(LiquidColor.tinta500)
         }
     }
 
-    /// La escala de carga navega igual que el héroe (revote /inject). El bullet-graph
-    /// aporta su propio vidrio y área tocable; aquí solo lo hacemos botón cuando hay destino.
+    /// Despacha el tap de una columna a la hoja existente de su destino (no crea hojas nuevas).
+    private func tap(_ destino: LiquidHoyModel.Columna.Destino) {
+        switch destino {
+        case .metrica(let id): onTapMetric?(id)
+        case .carga: onTapCarga?()
+        case .guardian: onTapGuardian?()
+        }
+    }
+
+    /// Alineación de una columna: TODAS centradas en su celda (decisión del dueño, FER-28) —
+    /// cada título va centrado sobre su cifra y cada dato queda balanceado respecto a sus
+    /// divisores.
+    private func alineacion(indice: Int, total: Int) -> HorizontalAlignment {
+        .center
+    }
+
+    /// Una columna según su contenido: simple, sueño (dos-puntos tenue), carga (bullet) o par.
     @ViewBuilder
-    private func cargaTocable(_ escala: LiquidCargaEscala) -> some View {
-        if let onTapCarga {
-            Button(action: onTapCarga) { escala }
-                .buttonStyle(.liquidPress)
-                .accessibilityHint(Text(verbatim: model.heroHint ?? ""))
-        } else {
-            escala
+    private func columnaView(_ col: LiquidHoyModel.Columna, align: HorizontalAlignment) -> some View {
+        switch col.contenido {
+        case .simple(let value, let unit, let detail, let mejora):
+            LiquidColumna(label: col.label, value: value, unit: unit, detail: detail,
+                          detailImproves: mejora, tone: col.tone, alignment: align,
+                          action: { tap(col.destino) })
+
+        case .sueno(let horas, let minutos, let unit, let detail):
+            LiquidColumnaShell(label: col.label, alignment: align, a11yLabel: col.a11yLabel,
+                               a11yHint: col.a11yHint, action: { tap(col.destino) }) {
+                VStack(alignment: align, spacing: 1) {
+                    HStack(alignment: .firstTextBaseline, spacing: 0) {
+                        Text(horas).font(LiquidType.valorL).foregroundStyle(col.tone)
+                        Text(":").font(LiquidType.valorL).fontWeight(.regular)
+                            .foregroundStyle(LiquidColor.tinta700)
+                        Text(minutos).font(LiquidType.valorL).foregroundStyle(col.tone)
+                        if !unit.isEmpty {
+                            Text(" \(unit)").font(LiquidType.unidad)
+                                .foregroundStyle(LiquidColor.tinta500)
+                        }
+                    }
+                    .lineLimit(1)
+                    if !detail.isEmpty {
+                        Text(detail).font(LiquidType.captionLectura)
+                            .foregroundStyle(LiquidColor.tinta500)
+                    }
+                }
+            }
+
+        case .carga(let razon, let status, let state, let calibrando):
+            LiquidColumnaShell(label: col.label, alignment: align, a11yLabel: col.a11yLabel,
+                               a11yHint: col.a11yHint, action: { tap(col.destino) }) {
+                LiquidCargaEscala(razon: razon, estado: state, rotulo: status,
+                                  densidad: .modulo, calibrando: calibrando, eje: col.label)
+                    .padding(.top, 1)
+            }
+
+        case .par(let v1, let tone1, let v2, let tone2):
+            LiquidColumnaShell(label: col.label, alignment: align, a11yLabel: col.a11yLabel,
+                               a11yHint: col.a11yHint, action: { tap(col.destino) }) {
+                HStack(spacing: 4) {
+                    Text(v1).font(LiquidType.datoMenor).foregroundStyle(tone1)
+                    Text("·").font(LiquidType.datoMenor).foregroundStyle(LiquidColor.tinta500)
+                    Text(v2).font(LiquidType.datoMenor).foregroundStyle(tone2)
+                }
+                .lineLimit(1)
+            }
         }
     }
 }
@@ -424,7 +715,7 @@ public struct LiquidHoyScreen: View {
 
     public var body: some View {
         ZStack {
-            LiquidAmbientBackground.hoy(model.ambiente)
+            LiquidAmbientBackground.tablero(model.ambiente)
             if scrolls {
                 ScrollView(.vertical, showsIndicators: false) { column }
             } else {
@@ -487,6 +778,7 @@ public struct LiquidHoyScreen: View {
                         subtitle: "Noche 4 de 7 · tu rango se está formando"),
         carga: .calibrando(status: "CALIBRANDO"),
         metricas: LiquidHoyModel.ejemplo.metricas,
+        modulos: LiquidHoyModel.calibrandoModulos,
         guardian: .init(label: "VIGILANDO", temp: "—", resp: "—", estado: .tranquilo),
         ambiente: .neutro,
         calibracion: .init(noche: 4, total: 7)))

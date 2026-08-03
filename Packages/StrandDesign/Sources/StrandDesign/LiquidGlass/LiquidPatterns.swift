@@ -303,70 +303,69 @@ public struct LiquidDialSeal: View {
         if nightTo <= nightFrom { nightTo += 360 }
         let markerAngle = angle(marker) * .pi / 180
 
+        let inset = (size - 2 * r) / 2
         return ZStack {
-            // Vidrio del sello (blur 14 / blanco .5 / borde .9 / especular chico).
-            Circle().fill(.ultraThinMaterial)
-            Circle().fill(LiquidColor.vidrioLente)
-            Circle()
-                .strokeBorder(
-                    LinearGradient(
-                        stops: [
-                            .init(color: .white.opacity(0.95), location: 0),
-                            .init(color: LiquidColor.tinta900.opacity(0.05), location: 1),
-                        ],
-                        startPoint: .topLeading, endPoint: .bottomTrailing),
-                    lineWidth: 1.5)
-                .blur(radius: 0.5)
-                .clipShape(Circle())
-            Circle().strokeBorder(LiquidColor.vidrioBordeFuerte, lineWidth: 0.5)
-            Ellipse()
-                .fill(RadialGradient(colors: [.white.opacity(0.95), .white.opacity(0)],
-                                     center: .center, startRadius: 0, endRadius: size * 0.21))
-                .frame(width: size * 0.42, height: size * 0.24)
-                .position(x: size * 0.18 + size * 0.21, y: size * 0.08 + size * 0.12)
-            // Dial: marcas 24 h + track + arco solar (día) + arco de noche + medianoche +
-            // marcador — la lectura del DiurnalDial dicha en vidrio.
-            DialTicks(majors: false)
-                .stroke(LiquidColor.tinta900.opacity(0.12), lineWidth: 0.7)
-            DialTicks(majors: true)
-                .stroke(LiquidColor.tinta900.opacity(0.25), lineWidth: 1)
+            // «El Tablero» (FER-28): el dial evoluciona a plano y ligero —adiós lente de
+            // vidrio pesada, especular y 24 marcas—. Cara casi blanca + un anillo de tinta
+            // fino, para que respire sobre el suelo claro nuevo. El dato son los arcos.
+            Circle().fill(LiquidColor.fondoAlto.opacity(0.55))
+            Circle().strokeBorder(LiquidColor.tinta900.opacity(0.14), lineWidth: 1.2)
+            // Track del día completo, tenue.
             DialArc(from: 0, to: 360)
-                .stroke(LiquidColor.tinta900.opacity(0.14), lineWidth: 2)
-                .padding((size - 2 * r) / 2)
+                .stroke(LiquidColor.tinta900.opacity(0.09), lineWidth: 2)
+                .padding(inset)
             if let sol {
                 // El día según el sol real: amanecer → atardecer, en oro.
                 DialArc(from: angle(sol.start), to: angle(sol.end) <= angle(sol.start)
                         ? angle(sol.end) + 360 : angle(sol.end))
                     .stroke(LiquidColor.oro, style: StrokeStyle(lineWidth: 2.4, lineCap: .round))
-                    .padding((size - 2 * r) / 2)
+                    .padding(inset)
             } else if night != nil {
                 // Sin ventana solar (caso polar): el día como complemento de la noche, en tinta.
                 DialArc(from: nightTo, to: nightFrom + 360)
                     .stroke(LiquidColor.tinta900, style: StrokeStyle(lineWidth: 2.4, lineCap: .round))
-                    .padding((size - 2 * r) / 2)
+                    .padding(inset)
             }
             if night != nil {
+                // La noche REAL de anoche en índigo — el mismo dato que el módulo 1.
                 DialArc(from: nightFrom, to: nightTo)
                     .stroke(LiquidColor.indigo, style: StrokeStyle(lineWidth: 2.4, lineCap: .round))
-                    .padding((size - 2 * r) / 2)
-                Circle().fill(LiquidColor.papelAlto)
-                    .frame(width: size * 0.045, height: size * 0.045)
+                    .padding(inset)
+                // Medianoche arriba: una muesca fina de tinta.
+                Capsule().fill(LiquidColor.tinta900.opacity(0.3))
+                    .frame(width: 1, height: size * 0.10)
                     .position(x: size / 2, y: size / 2 - r)
             }
-            Circle().fill(LiquidColor.verdePrimario)
-                .overlay(Circle().strokeBorder(Color.white, lineWidth: 1))
-                .frame(width: size * 0.117, height: size * 0.117)
-                .position(x: size / 2 + r * CGFloat(cos(markerAngle)),
-                          y: size / 2 + r * CGFloat(sin(markerAngle)))
+            // Aguja a la hora actual: un hilo de tinta del riel hacia el centro + su puntita
+            // verde (el «ahora», único guiño de color vivo — el resto es dato).
+            aguja(markerAngle: markerAngle, r: r)
         }
         .frame(width: size, height: size)
-        // Elevación como geometría (misma regla que las recetas: nada de .shadow sobre material).
+        // Elevación LIGERA (plano, no lente): una sombra de contacto suave, nada de e/3.
         .liquidShadow([
-            .init(color: LiquidColor.tinta900.opacity(0.14), radius: 16, y: 12),
-            .init(color: LiquidColor.tinta900.opacity(0.07), radius: 3, y: 2),
+            .init(color: LiquidColor.tinta900.opacity(0.08), radius: 5, y: 3),
         ], silhouette: Circle())
         // Decorativo para VoiceOver: la fecha ya vive en el kicker de la cabecera.
         .accessibilityHidden(true)
+    }
+
+    /// La aguja de la hora actual: un hilo de tinta que va del riel hacia adentro, rematado
+    /// por un punto verde («ahora»). Plana, sin vidrio.
+    private func aguja(markerAngle: Double, r: CGFloat) -> some View {
+        let cx = size / 2, cy = size / 2
+        let x = cx + r * CGFloat(cos(markerAngle))
+        let y = cy + r * CGFloat(sin(markerAngle))
+        return ZStack {
+            Path { p in
+                p.move(to: CGPoint(x: cx + r * 0.5 * CGFloat(cos(markerAngle)),
+                                   y: cy + r * 0.5 * CGFloat(sin(markerAngle))))
+                p.addLine(to: CGPoint(x: x, y: y))
+            }
+            .stroke(LiquidColor.tinta700, style: StrokeStyle(lineWidth: 1.4, lineCap: .round))
+            Circle().fill(LiquidColor.verdePrimario)
+                .frame(width: size * 0.10, height: size * 0.10)
+                .position(x: x, y: y)
+        }
     }
 }
 

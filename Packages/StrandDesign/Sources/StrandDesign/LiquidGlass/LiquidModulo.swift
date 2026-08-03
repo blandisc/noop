@@ -44,7 +44,7 @@ public struct LiquidModulo<Content: View>: View {
 
     public var body: some View {
         content
-            .padding(.vertical, LiquidSpace.s250)
+            .padding(.vertical, LiquidSpace.s200)
             .padding(.horizontal, LiquidSpace.s400)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background { glass }

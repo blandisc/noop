@@ -106,6 +106,9 @@ public struct LiquidEcosistema: View {
     /// nunca dispara y el default honesto es «visible».
     @State private var visible = true
     private let faseForzada: Sim.Fase?
+    /// «El Tablero» (FER-28): presentación compacta — reserva `ecosistemaAltoCompacto` y sube
+    /// el lienzo recortando su aire superior, sin tocar el arte. Default `false` = héroe pleno.
+    private let compacto: Bool
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.liquidMotionDisabled) private var motionDisabled
@@ -117,13 +120,14 @@ public struct LiquidEcosistema: View {
                 calibracion: LiquidHoyModel.Calibracion?, rotulos: EcosistemaRotulos,
                 heroPuerta: String? = nil, heroHint: String? = nil,
                 mostrarHintSeparar: Bool = true, fusionInicial: Bool = false,
+                compacto: Bool = false,
                 onTapVeredicto: (() -> Void)? = nil, onTapSenal: ((String) -> Void)? = nil,
                 onTapGuardian: (() -> Void)? = nil,
                 onFusionArrancada: (() -> Void)? = nil, onSeparacion: (() -> Void)? = nil) {
         self.init(senales: senales, hero: hero, guardian: guardian, ambiente: ambiente,
                   calibracion: calibracion, rotulos: rotulos, heroPuerta: heroPuerta,
                   heroHint: heroHint, mostrarHintSeparar: mostrarHintSeparar,
-                  fusionInicial: fusionInicial, faseForzada: nil,
+                  fusionInicial: fusionInicial, faseForzada: nil, compacto: compacto,
                   onTapVeredicto: onTapVeredicto, onTapSenal: onTapSenal,
                   onTapGuardian: onTapGuardian,
                   onFusionArrancada: onFusionArrancada, onSeparacion: onSeparacion)
@@ -135,10 +139,11 @@ public struct LiquidEcosistema: View {
          calibracion: LiquidHoyModel.Calibracion?, rotulos: EcosistemaRotulos,
          heroPuerta: String? = nil, heroHint: String? = nil,
          mostrarHintSeparar: Bool = true, fusionInicial: Bool = false,
-         faseForzada: Sim.Fase?,
+         faseForzada: Sim.Fase?, compacto: Bool = false,
          onTapVeredicto: (() -> Void)? = nil, onTapSenal: ((String) -> Void)? = nil,
          onTapGuardian: (() -> Void)? = nil,
          onFusionArrancada: (() -> Void)? = nil, onSeparacion: (() -> Void)? = nil) {
+        self.compacto = compacto
         self.senales = senales
         self.hero = hero
         self.guardian = guardian
@@ -217,6 +222,21 @@ public struct LiquidEcosistema: View {
         }
     }
 
+    /// Cuánto sube el lienzo en modo compacto (SOLO el aire superior recortado), escalado con
+    /// el lienzo. El aire de ABAJO lo recorta el jalón del veredicto (`acercaVeredicto`). 0 en
+    /// modo pleno.
+    private var recorteCompacto: CGFloat {
+        compacto ? LiquidSpace.ecosistemaRecorteTop * escala : 0
+    }
+
+    /// Alto reservado del héroe compacto (con override de debug para barrer el fit).
+    private var altoCompactoEfectivo: CGFloat {
+        #if DEBUG
+        if let o = LiquidTableroDebug.altoCompactoOverride { return o }
+        #endif
+        return LiquidSpace.ecosistemaAltoCompacto
+    }
+
     private var lienzo: some View {
         ZStack(alignment: .topLeading) {
             // Lector de ancho (una vía): el hueco reservado escala CON el lienzo — en un
@@ -234,8 +254,13 @@ public struct LiquidEcosistema: View {
                        height: Sim.Geometria.lienzo.height)
                 .scaleEffect(escala, anchor: .top)
                 .frame(maxWidth: .infinity)
+                // Compacto (FER-28): sube el lienzo recortando su aire superior — el arte no
+                // cambia, solo se presenta más apretado. El estado separado sigue librando.
+                .offset(y: -recorteCompacto)
         }
-        .frame(height: LiquidSpace.ecosistemaAlto * escala)
+        .frame(height: (compacto ? altoCompactoEfectivo : LiquidSpace.ecosistemaAlto) * escala,
+               alignment: .top)
+        .clipped()
         .modifier(EcosistemaVisibilidad { visible = $0 })
         .onAppear {
             guard fase == nil else { return }
@@ -449,10 +474,12 @@ public struct LiquidEcosistema: View {
                                        + LiquidEcosistemaMotion.fusionDur * 0.45)
                             : LiquidMotion.glassOut(LiquidMotion.quick)),
                    value: esSeparadaEstable)
-        // La palabra del veredicto (abajo, centrada) — se oculta en separado.
+        // La palabra del veredicto (abajo, centrada) — se oculta en separado. En compacto
+        // (FER-28) sube `acercaVeredicto` hacia el orbe (recorta el aire de abajo).
         palabra
             .frame(width: G.lienzo.width)
-            .frame(height: G.lienzo.height - 34, alignment: .bottom)
+            .frame(height: G.lienzo.height - 34
+                   - (compacto ? LiquidSpace.ecosistemaAcercaVeredicto : 0), alignment: .bottom)
             .opacity(esSeparadaEstable ? 0 : 1)
             // La palabra es puro texto (la puerta vive aparte): NUNCA intercepta el tap
             // del lienzo — tocar el veredicto también separa (Grok #1).
@@ -471,7 +498,8 @@ public struct LiquidEcosistema: View {
         if let heroPuerta {
             botonPuerta(heroPuerta)
                 .frame(width: G.lienzo.width)
-                .frame(height: G.lienzo.height, alignment: .bottom)
+                .frame(height: G.lienzo.height
+                       - (compacto ? LiquidSpace.ecosistemaAcercaVeredicto : 0), alignment: .bottom)
         }
     }
 

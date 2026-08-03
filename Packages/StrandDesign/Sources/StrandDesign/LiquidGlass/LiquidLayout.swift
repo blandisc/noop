@@ -34,6 +34,20 @@ public enum LiquidSpace {
     /// de partículas + la palabra del veredicto. Sustituye a `senalesAlto` (140), que
     /// murió con la fila de orbes y sus cables.
     public static let ecosistemaAlto: CGFloat = 324
+    /// La compresión COMPACTA del héroe para «El Tablero» (FER-28), en dos recortes que NO
+    /// tocan el arte ni el shader —solo la presentación—:
+    ///   · `ecosistemaRecorteTop` sube el lienzo recortando el aire SUPERIOR (el estado
+    ///     separado sigue librando la cabecera: sus etiquetas viven en y≈74, verificado);
+    ///   · `ecosistemaAcercaVeredicto` jala el veredicto + la puerta HACIA el orbe, recortando
+    ///     el aire de ABAJO — que es exactamente lo que el mockup aprobado ya muestra.
+    /// El alto reservado compacto = `ecosistemaAlto − recorteTop − acercaVeredicto`.
+    public static let ecosistemaRecorteTop: CGFloat = 42
+    public static let ecosistemaAcercaVeredicto: CGFloat = 48
+    /// Alto RESERVADO del héroe compacto: se fija directo (con `.frame(alignment: .top)`) para
+    /// que el box ABRACE al contenido —orbe + veredicto + subtítulo + pastilla— sin espacio
+    /// muerto abajo. Derivarlo de los recortes dejaba ~62 pt de aire reservado bajo la pastilla
+    /// (el frame centrado); este valor + anclaje arriba lo eliminan y suben el módulo 1 pegado.
+    public static let ecosistemaAltoCompacto: CGFloat = 232
 
     /// Margen inferior del dock flotante. Negativo entra al área segura para pegarlo
     /// más al borde (pedido del dueño /inject: a 8 y a 0 seguía flotando muy arriba).
