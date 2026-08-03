@@ -40,6 +40,10 @@ public enum LiquidMotion {
     public static let flowPeriod: Double = 6
     /// 16–26 s — orbes de fondo (16, 21, 24 y 26 s usados en los ensambles).
     public static let driftPeriods: ClosedRange<Double> = 16...26
+    /// 9 s: latido de la plasta de la hoja (escala 1 → 1.1 → 1, ciclo completo).
+    public static let plastaLatidoPeriod: Double = 9
+    /// 26 s: deriva de la masa secundaria de la plasta de la hoja (ciclo completo 0 → offset → 0).
+    public static let plastaDerivaPeriod: Double = 26
 
     // MARK: Intervalos de refresco (TimelineView)
 
