@@ -343,7 +343,12 @@ public extension EcosistemaSimulacion {
             }
         }
 
-        // 5.7 · EXHALACIÓN (FER-21) — sin cambios.
+        // 5.7 · EXHALACIÓN (FER-21): RITUAL DEL VEREDICTO PLENO (FER-23, decisión del
+        // dueño). Gateada a `cuadro.fundida` a propósito: al tocar «Cómo llegué a esto»
+        // el orbe pleno sopla hacia la pastilla de donde sube la hoja. NO se fabrica en
+        // el estado separado — ahí el orbe está retrocedido y de fondo, y un soplo desde
+        // ahí competiría con los medidores. La pastilla vive en ambos estados, pero el
+        // gesto pertenece al veredicto, no a la exploración.
         if let ex = e.exhalacion, ex > 0, ex < 1, !e.still, cuadro.fundida {
             trazos += trazosExhalacion(t: t, progreso: ex, radio: CGFloat(radio))
         }

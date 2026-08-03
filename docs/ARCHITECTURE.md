@@ -762,7 +762,10 @@ identically:
   StrandDesign) that settles and fully dissolves — the sheet ends as pure paper. There is no
   window-level overlay: each layer animates its own half and shared cadence sells the continuity.
   Text-is-text stays law: only THE numeric datum is ever written in motes, and this sheet has none.
-  Reduce Motion (system flag or the preview override) disables both halves.
+  Reduce Motion (system flag or the preview override) disables both halves. The exhalation is a
+  ritual of the FULL verdict (FER-23): it fires only from the fused orb (`cuadro.fundida`), never
+  from the retreated orb of the separated state, where a puff would compete with the gauges — the
+  pill lives in both states, but the gesture belongs to the verdict, not to exploration.
 - **Nothing derived from the app's clock reaches the GPU as `Float`.** The hero's `t` is
   `timeIntervalSinceReferenceDate` (~8.07 × 10⁸ s); at that magnitude a `Float` ULP is tens of
   radians, which would freeze the rotation for ~53 s at a time and collapse 300 jitter phases into
