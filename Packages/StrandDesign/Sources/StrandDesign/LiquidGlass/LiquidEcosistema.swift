@@ -226,7 +226,11 @@ public struct LiquidEcosistema: View {
     /// el lienzo. El aire de ABAJO lo recorta el jalón del veredicto (`acercaVeredicto`). 0 en
     /// modo pleno.
     private var recorteCompacto: CGFloat {
-        compacto ? LiquidSpace.ecosistemaRecorteTop * escala : 0
+        // En SEPARADO el contenido sube (las etiquetas «en tu rango» viven ARRIBA de las esferas):
+        // jalar el aire superior le recorta la cabeza al hero. El estado separado no lleva veredicto
+        // abajo, así que ahí NO jalamos — el recorte de altura se come el aire de abajo, vacío.
+        guard compacto, !esSeparadaEstable else { return 0 }
+        return LiquidSpace.ecosistemaRecorteTop * escala
     }
 
     private var lienzo: some View {

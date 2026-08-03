@@ -128,6 +128,10 @@ public struct LiquidColumna: View {
                     Text(detail).font(LiquidType.captionLectura)
                         .foregroundStyle(detailImproves ? LiquidColor.verdeProfundo
                                                          : LiquidColor.tinta500)
+                        // Una sola línea en ES e inglés aun en los módulos de 3 columnas: el
+                        // «vs tu base / vs your baseline» se encoge lo mínimo antes que partirse.
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
                 }
             }
         }
