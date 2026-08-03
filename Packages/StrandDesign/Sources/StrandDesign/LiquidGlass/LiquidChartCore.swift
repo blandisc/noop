@@ -77,6 +77,96 @@ enum LiquidChartA11y {
     }
 }
 
+// MARK: - Rotor «Gráficas» / audio graph (FER-29 · AXChartDescriptor)
+
+/// Publica la serie del plot al rotor de gráficas de VoiceOver (audio graph). Reusa los
+/// mismos closures de formato del scrub para que cada punto se lea con la MISMA cabeza
+/// que el popup táctil y el `accessibilityValue` (contrato D3: el DS no inventa formatos).
+///
+/// **Cómo probarlo (iPhone):** VoiceOver ON → enfoca la gráfica → rotor (giro de dos
+/// dedos) → elige «Gráficas» → desliza un dedo arriba/abajo para recorrer fecha → valor.
+/// El label/value de la gráfica siguen intactos; el rotor es ADICIONAL.
+///
+/// Interno (no `private`) para poder verificar en frío `makeChartDescriptor()` sin
+/// montar VoiceOver en el host de tests.
+struct LiquidChartAXDescriptor: AXChartDescriptorRepresentable {
+    let puntos: [(fecha: Date, valor: Double)]
+    let dominio: ClosedRange<Double>
+    var formatoValorScrub: ((Double) -> String)? = nil
+    var formatoFechaScrub: ((Date) -> String)? = nil
+    var formatoFechaEje: ((Date) -> String)? = nil
+    var formatoScrub: ((Double, Date) -> String)? = nil
+
+    func makeChartDescriptor() -> AXChartDescriptor {
+        let categorias: [String] = Self.categoriasUnicas(puntos.map { formatearFecha($0.fecha) })
+        let xAxis = AXCategoricalDataAxisDescriptor(title: "", categoryOrder: categorias)
+        let yAxis = AXNumericDataAxisDescriptor(
+            title: "",
+            range: dominio.lowerBound...dominio.upperBound,
+            gridlinePositions: [],
+            valueDescriptionProvider: { [formatoValorScrub] (v: Double) -> String in
+                if let f = formatoValorScrub { return f(v) }
+                // Sin formato de valor: el número crudo. La etiqueta por punto (si hay
+                // `formatoScrub`) carga la frase compuesta completa.
+                return String(format: "%g", v)
+            }
+        )
+        let puntosDatos: [AXDataPoint] = zip(puntos, categorias).map { (p, cat) in
+            // Misma cabeza que `valorA11y` / popup: frase compuesta del caller si existe.
+            let label: String? = {
+                if let f = formatoScrub { return f(p.valor, p.fecha) }
+                if let f = formatoValorScrub { return f(p.valor) }
+                return nil
+            }()
+            return AXDataPoint(x: cat, y: p.valor, label: label)
+        }
+        let serie = AXDataSeriesDescriptor(name: "", isContinuous: true, dataPoints: puntosDatos)
+        return AXChartDescriptor(
+            title: nil,
+            summary: nil,
+            xAxis: xAxis,
+            yAxis: yAxis,
+            additionalAxes: [],
+            series: [serie]
+        )
+    }
+
+    /// Fecha del eje X: popup del scrub → eje dibujado → fecha corta local (último recurso
+    /// honesto; el DS no conoce locales del producto).
+    private func formatearFecha(_ d: Date) -> String {
+        if let f = formatoFechaScrub { return f(d) }
+        if let f = formatoFechaEje { return f(d) }
+        let fmt = DateFormatter()
+        fmt.dateStyle = .short
+        fmt.timeStyle = .none
+        return fmt.string(from: d)
+    }
+
+    /// El eje categórico exige categorías únicas; dos puntos con la misma etiqueta de
+    /// fecha (p. ej. mismo día en series horarias mal formateadas) se desambiguán con un
+    /// sufijo, para no colapsar puntos en el rotor.
+    private static func categoriasUnicas(_ base: [String]) -> [String] {
+        var vistas: [String: Int] = [:]
+        return base.map { cat in
+            let n = vistas[cat, default: 0]
+            vistas[cat] = n + 1
+            return n == 0 ? cat : "\(cat) (\(n + 1))"
+        }
+    }
+}
+
+/// Aplica el descriptor solo cuando hay serie; una serie vacía no publica rotor vacío.
+private extension View {
+    @ViewBuilder
+    func liquidChartAXDescriptor(_ descriptor: LiquidChartAXDescriptor?) -> some View {
+        if let descriptor {
+            self.accessibilityChartDescriptor(descriptor)
+        } else {
+            self
+        }
+    }
+}
+
 // MARK: - Popup del scrub (reemplaza el chip cápsula negro)
 
 /// La pieza que nombra el punto scrubbeado: gota del color de SU banda + valor + fecha,
@@ -367,6 +457,17 @@ struct LiquidChartPlot: View {
                 withAnimation(LiquidMotion.entrada) { entrado = true }
             }
         }
+        // FER-29 · rotor «Gráficas» (audio graph). ADICIONAL al label/value del caller;
+        // no se publica con serie vacía. `.cargando`/`.vacio` no llegan aquí (el plot
+        // solo se monta en la rama `.datos` de las envolturas).
+        .liquidChartAXDescriptor(puntos.isEmpty ? nil : LiquidChartAXDescriptor(
+            puntos: puntos,
+            dominio: dominio,
+            formatoValorScrub: formatoValorScrub,
+            formatoFechaScrub: formatoFechaScrub,
+            formatoFechaEje: formatoFechaEje,
+            formatoScrub: formatoScrub
+        ))
     }
 
     // MARK: Geometría
@@ -769,6 +870,10 @@ struct LiquidChartCargando: View {
 }
 
 #if DEBUG
+// Preview del plot + pozos. FER-29: el plot publica `AXChartDescriptor` (rotor «Gráficas»).
+// Con VoiceOver: enfoca la gráfica → rotor → «Gráficas» → recorre punto a punto
+// (fecha → valor con la misma cabeza que el popup del scrub). Label/value del caller
+// no se reemplazan — el rotor es adicional. `.cargando`/`.vacio` no llevan descriptor.
 #Preview("Liquid · Chart core (plot + pozos)") {
     let bandas: [LiquidChartBanda] = [
         .init(lo: 71, hi: nil, color: LiquidColor.positivo, activa: false),
@@ -794,7 +899,7 @@ struct LiquidChartCargando: View {
     }
     return VStack(alignment: .leading, spacing: LiquidSpace.s400) {
         // Plot con banda activa iluminada + eje de fechas + puntos por dato + joya +
-        // scrub asentado en un índice fijo.
+        // scrub asentado en un índice fijo + AXChartDescriptor (rotor Gráficas).
         LiquidChartPlot(puntos: puntos, bandas: bandas, dominio: 30...95,
                         ticksY: [(71, "71"), (49, "49")], tono: LiquidColor.cian,
                         puntoHoy: (puntos[13].fecha, puntos[13].valor), hoyAnillo: false,
@@ -803,6 +908,8 @@ struct LiquidChartCargando: View {
                         formatoFechaScrub: popupFecha,
                         formatoFechaEje: ejeFmt,
                         alto: LiquidChartAlto.explorador, scrubFijo: 7)
+            .accessibilityLabel(Text(verbatim: "VFC, demo 14 días"))
+            .accessibilityValue(Text(verbatim: "56 ms"))
             .liquidGlass(.superficie)
         LiquidChartCargando(alto: LiquidChartAlto.trend)
         LiquidChartVacio(mensaje: "Sin lecturas en este rango.", alto: LiquidChartAlto.trend)
