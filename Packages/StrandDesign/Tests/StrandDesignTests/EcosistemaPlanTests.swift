@@ -323,4 +323,57 @@ final class EcosistemaPlanTests: XCTestCase {
         XCTAssertEqual(r, Double.pi, accuracy: 1e-9)
         XCTAssertEqual(Sim.fase(0), 0)
     }
+
+    // MARK: C.3 Acrecion unificada + graduacion (FER-20)
+
+    /// Reduce Motion en calibrando = SOLO el embrion asentado: cero motas cayendo
+    /// (congelarlas a media caida era un cuadro deshonesto).
+    func testAcrecionStillSoloEmbrion() {
+        let quieto = Sim.plan(t: 5, escena: escena(coreo: .calibrando(noche: 3, total: 7),
+                                                   still: true))
+        XCTAssertFalse(quieto.contains { if case .disco = $0 { return true } else { return false } })
+        XCTAssertEqual(nubes(quieto).count, 1)
+    }
+
+    /// El embrion usa la MISMA esfera fuente del veredicto (continuidad entre dias por
+    /// construccion) y el plan vivo trae exactamente nEspirales motas.
+    func testEmbrionEsLaEsferaDelVeredicto() {
+        let vivo = Sim.plan(t: 5, escena: escena(coreo: .calibrando(noche: 3, total: 7)))
+        let embrion = nubes(vivo)[0]
+        XCTAssertEqual(embrion.n, G.nEsfera)
+        XCTAssertEqual(embrion.paso, 1)
+        XCTAssertEqual(embrion.centro, G.centro)
+        let discos = vivo.filter { if case .disco = $0 { return true } else { return false } }
+        XCTAssertEqual(discos.count, G.nEspirales)
+    }
+
+    /// La graduacion en vivo es UN morfo embrion->orbe (mismo conteo, la ley C.2):
+    /// las dos decisoras nunca aparecen, y el sequito entra al compas de g.
+    func testGraduacionEsMorfoDelEmbrionAlOrbe() {
+        var e = escena(fase: .viva(desde: 0))
+        e.graduacion = 0.5
+        let trazos = Sim.plan(t: 3, escena: e)
+        let morfos = trazos.compactMap { tr -> (Sim.Nube, Sim.Nube, Double)? in
+            if case .nubeMorfo(let a, let b, let m) = tr { return (a, b, m) }
+            return nil
+        }
+        XCTAssertEqual(morfos.count, 1)
+        let (a, b, _) = morfos[0]
+        XCTAssertEqual(a.radio, G.radioEmbrion, "la config A es el embrion")
+        XCTAssertGreaterThan(b.radio, 40, "la config B es el orbe del veredicto")
+        XCTAssertEqual(a.n, b.n)
+        XCTAssertTrue(nubes(trazos).filter { $0.n == G.nEsfera }.isEmpty,
+                      "las decisoras nunca aparecen durante la graduacion")
+    }
+
+    /// Con Reduce Motion la graduacion no existe: corte honesto al cuadro asentado.
+    func testGraduacionStillEsCorteHonesto() {
+        var e = escena(fase: .viva(desde: 0), still: true)
+        e.graduacion = 0.5
+        let trazos = Sim.plan(t: 3, escena: e)
+        XCTAssertFalse(trazos.contains {
+            if case .nubeMorfo = $0 { return true } else { return false }
+        })
+    }
+
 }

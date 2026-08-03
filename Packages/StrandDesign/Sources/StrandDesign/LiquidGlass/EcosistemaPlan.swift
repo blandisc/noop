@@ -97,10 +97,16 @@ public extension EcosistemaSimulacion {
         public var guardianHueco: Bool
         /// Progreso del eclipse 0…1 — lo ancla la vista (el guardián tarda `eclipseDur`).
         public var eclipse: Double
+        /// Progreso 0…1 de la GRADUACIÓN en vivo (FER-20): la base se completó con la
+        /// pantalla abierta y el embrión madura al orbe del veredicto — un morfo
+        /// mismo-conteo (la ley C.2), no un corte al ritual de fusión. `nil` = sin
+        /// graduación (el caso normal: el veredicto llega entre días).
+        public var graduacion: Double?
 
         public init(coreo: Coreografia, fase: Fase, still: Bool,
                     niveles: [Double?], fuera: [Bool],
-                    guardianJuntas: Bool, guardianHueco: Bool, eclipse: Double) {
+                    guardianJuntas: Bool, guardianHueco: Bool, eclipse: Double,
+                    graduacion: Double? = nil) {
             self.coreo = coreo
             self.fase = fase
             self.still = still
@@ -109,6 +115,7 @@ public extension EcosistemaSimulacion {
             self.guardianJuntas = guardianJuntas
             self.guardianHueco = guardianHueco
             self.eclipse = eclipse
+            self.graduacion = graduacion
         }
     }
 
@@ -135,8 +142,15 @@ public extension EcosistemaSimulacion {
         // Rampa de estreno del séquito: lunas/guardián/especular/estelas se FUNDEN en la
         // escena a lo largo del último quinto del viaje (u 0.82→1, oleada «costuras») —
         // antes entraban en el 6 % final y leían como pop.
-        let alfaFundida = min(1, max(0, (cuadro.u - Geometria.umbralEstreno)
+        var alfaFundida = min(1, max(0, (cuadro.u - Geometria.umbralEstreno)
                                      / (1 - Geometria.umbralEstreno)))
+        // GRADUACIÓN en vivo (FER-20): mientras el embrión madura al orbe, el séquito
+        // entra al compás de la maduración, no de golpe con u = 1.
+        let graduando = !e.still && e.coreo.conFusion
+            && (e.graduacion.map { $0 < 1 } ?? false)
+        if graduando, let g = e.graduacion {
+            alfaFundida = min(alfaFundida, suave(g))
+        }
 
         // El radio del orbe se deriva antes de dibujar: las estelas orbitales lo
         // necesitan para ocultarse al pasar DETRÁS del orbe.
@@ -226,6 +240,24 @@ public extension EcosistemaSimulacion {
         // viaje la nube 2 CONVERGE a la orientación de la nube 1 — los dos enjambres
         // se entrelazan hasta quedar alineados mota a mota; al separar se des-fasan.
         let convergencia = suave(min(1, max(0, (cuadro.u - 0.75) / 0.25)))
+        if graduando, let g = e.graduacion {
+            // GRADUACIÓN (FER-20, decisión del dueño): el embrión de calibrando madura
+            // EN VIVO al orbe del veredicto — un `nubeMorfo` mismo-conteo (la ley C.2:
+            // ambos son la esfera fibonacci de nEsfera). Las dos decisoras nunca
+            // aparecen: el veredicto llega como maduración, no como fusión.
+            let embrion = Nube(
+                centro: Geometria.centro, radio: Geometria.radioEmbrion,
+                rotacion: t * 0.35, jitterAmp: 0.5, alfaK: 0.9, stretch: 0,
+                nivel: nil, nivelBajo: false, capAmbar: false,
+                n: Geometria.nEsfera, paso: 1, tinta: .clima)
+            let orbe = Nube(
+                centro: Geometria.centro, radio: CGFloat(radio),
+                rotacion: t * LiquidEcosistemaMotion.rotacionEsfera,
+                jitterAmp: jitter, alfaK: flicker, stretch: 0,
+                nivel: nil, nivelBajo: false, capAmbar: capAmbar,
+                n: Geometria.nEsfera, paso: 1, tinta: .clima)
+            trazos.append(.nubeMorfo(a: embrion, b: orbe, mezcla: suave(g)))
+        } else {
         for i in 0..<2 {
             let origen = i == 0 ? Geometria.p1 : Geometria.p2
             var centroEsfera = puntoLerp(origen, Geometria.centro, cuadro.u)
@@ -262,6 +294,7 @@ public extension EcosistemaSimulacion {
                     b: esfera(rotacion: t * LiquidEcosistemaMotion.rotacionEsfera),
                     mezcla: convergencia))
             }
+        }
         }
 
         // 4 · Destello + chispas del contacto. Gate bajísimo (0.25 → 0.02, pulido del
@@ -505,18 +538,27 @@ public extension EcosistemaSimulacion {
 
     private static func planAcrecion(t: TimeInterval, still: Bool,
                                      noche: Int, total: Int) -> [Trazo] {
-        var trazos: [Trazo] = (0..<Geometria.nEspirales).map { i in
-            let m = espiral(i, t: t)
-            return .disco(centro: m.pos, radio: m.tamano, tinta: .clima, alfa: m.alfa)
-        }
-        // El embrión: solo sus franjas de abajo pobladas (noche/total), respirando apenas.
-        trazos.append(.nube(Nube(
+        let nivel = total > 0 ? Double(noche) / Double(total) : 0
+        // El embrión PRIMERO como config (es el blanco de los aterrizajes, C.3): solo
+        // sus franjas de abajo pobladas (noche/total), respirando apenas. Usa la MISMA
+        // esfera fuente del veredicto (nEsfera, centro) — continuidad por construcción.
+        let embrion = Nube(
             centro: Geometria.centro,
             radio: Geometria.radioEmbrion + CGFloat(still ? 0 : 1.6 * sin(t * 0.8)),
             rotacion: t * 0.35, jitterAmp: still ? 0 : 0.5, alfaK: 0.9, stretch: 0,
-            nivel: total > 0 ? Double(noche) / Double(total) : 0,
-            nivelBajo: false, capAmbar: false,
-            n: Geometria.nEsfera, paso: 1, tinta: .clima)))
+            nivel: nivel, nivelBajo: false, capAmbar: false,
+            n: Geometria.nEsfera, paso: 1, tinta: .clima)
+        // C.3 «Acreción unificada» (FER-20): cada mota ATERRIZA en su partícula del
+        // embrión (motaAcrecion) — nada se desvanece en el aire. Con Reduce Motion,
+        // SOLO el embrión asentado: congelar motas a media caída era deshonesto.
+        var trazos: [Trazo] = []
+        if !still {
+            trazos = (0..<Geometria.nEspirales).map { i in
+                let m = motaAcrecion(i, t: t, embrion: embrion, nivel: nivel)
+                return .disco(centro: m.pos, radio: m.tamano, tinta: .clima, alfa: m.alfa)
+            }
+        }
+        trazos.append(.nube(embrion))
         return trazos
     }
 

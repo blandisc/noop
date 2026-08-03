@@ -735,6 +735,16 @@ identically:
   buffers; `mezcla` rides the former `_pad1`, stride stays 112). At `mezcla` 0/1 the morph is
   bit-equal to the plain cloud — that equality is the tested contract. Cross-count morphs
   (orb ↔ moon) stay out of scope until an index-remap policy exists (C.3).
+- **Accretion is unified matter (FER-20 · C.3).** While calibrating, the 34 spirals do not die in
+  midair: each mote lands exactly on `particula(dir, embryo, t)` — its death is the birth of sphere
+  matter. The 34↔300 remap policy is deterministic: spiral `i` on fall-cycle `c` feeds fibonacci
+  index `(i + 34·c) mod nLiquido`, where `nLiquido` is the liquid fibonacci prefix
+  (`nivel = noche/total`, 8 % floor) — accreted matter IS the accumulated liquid, never vapor.
+  Cross-count lives in the choreography (`planAcrecion` + `motaAcrecion`); the `nubeMorfo` law stays
+  same-count. The embryo shares the verdict sphere's config (`nEsfera`, `centro`): cross-day
+  continuity by construction. Under Reduce Motion, only the settled embryo. If calibration completes
+  with the screen open, the embryo **graduates** live into the verdict orb via a same-count
+  `nubeMorfo` (`Escena.graduacion`, anchored by the view) — the two decision spheres never appear.
 - **Nothing derived from the app's clock reaches the GPU as `Float`.** The hero's `t` is
   `timeIntervalSinceReferenceDate` (~8.07 × 10⁸ s); at that magnitude a `Float` ULP is tens of
   radians, which would freeze the rotation for ~53 s at a time and collapse 300 jitter phases into

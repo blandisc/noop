@@ -288,13 +288,17 @@ public enum EcosistemaSimulacion {
 
     /// `n` direcciones unitarias distribuidas uniformemente (espiral de Fibonacci).
     public static func fibonacci(_ n: Int) -> [SIMD3<Double>] {
+        (0..<n).map { direccion($0, de: n) }
+    }
+
+    /// UNA dirección fibonacci en forma cerrada — la misma fórmula del arreglo y del
+    /// shader, para pedir un índice suelto sin fabricar la esfera entera (C.3).
+    public static func direccion(_ i: Int, de n: Int) -> SIMD3<Double> {
         let dorado = Double.pi * (3 - 5.0.squareRoot())
-        return (0..<n).map { i in
-            let y = 1 - 2 * (Double(i) + 0.5) / Double(n)
-            let r = (1 - y * y).squareRoot()
-            let th = dorado * Double(i)
-            return SIMD3(cos(th) * r, y, sin(th) * r)
-        }
+        let y = 1 - 2 * (Double(i) + 0.5) / Double(n)
+        let r = (1 - y * y).squareRoot()
+        let th = dorado * Double(i)
+        return SIMD3(cos(th) * r, y, sin(th) * r)
     }
 
     // MARK: Partícula (⭐ la función que ES la spec del shader de Fase B)
@@ -485,6 +489,45 @@ public enum EcosistemaSimulacion {
         public var pos: CGPoint
         public var alfa: Double
         public var tamano: CGFloat
+    }
+
+    /// C.3 «Acreción unificada» (FER-20): la POLÍTICA DE REMAPEO 34↔300. La espiral `i`
+    /// en su ciclo de caída `c` alimenta el índice fibonacci `(i + 34·c) mod nLiquido` —
+    /// SOLO el prefijo líquido de la esfera (`nivel`, piso 8 %): la materia acretada ES
+    /// el líquido acumulado, jamás vapor. Determinista: (i, t, nivel) → índice.
+    public static func acrecionDestino(_ i: Int, t: TimeInterval, nivel: Double) -> Int {
+        let ciclo = Int((t * LiquidEcosistemaMotion.acrecionCaida
+                         + Double(i) * 0.0294).rounded(.down))
+        let nLiquido = max(1, Int(Double(Geometria.nEsfera)
+                                  * max(Geometria.pisoNivel, min(1, nivel))))
+        // El ciclo puede ser negativo con t chico; el módulo se normaliza a [0, n).
+        let crudo = (i + Geometria.nEspirales * ciclo) % nLiquido
+        return crudo < 0 ? crudo + nLiquido : crudo
+    }
+
+    /// La mota `i` de la acreción CON aterrizaje (C.3): espiral clásica hasta
+    /// `ph = acrecionAterrizaje`, y de ahí FUNDE posición/alfa/tamaño hacia
+    /// `particula(destino, embrión, t)` — su muerte es el nacimiento de materia de la
+    /// esfera; ninguna mota se desvanece en el aire.
+    public static func motaAcrecion(_ i: Int, t: TimeInterval, embrion: Nube,
+                                    nivel: Double) -> Mota {
+        let cruda = espiral(i, t: t)
+        let ph = (t * LiquidEcosistemaMotion.acrecionCaida + Double(i) * 0.0294)
+            .truncatingRemainder(dividingBy: 1)
+        let desde = LiquidEcosistemaMotion.acrecionAterrizaje
+        guard ph > desde else { return cruda }
+        let destino = acrecionDestino(i, t: t, nivel: nivel)
+        let p = particula(dir: direccion(destino, de: embrion.n), indice: destino,
+                          centro: embrion.centro, radio: embrion.radio,
+                          rotacion: embrion.rotacion, jitterAmp: embrion.jitterAmp,
+                          t: t, alfaK: embrion.alfaK, stretch: embrion.stretch,
+                          nivel: embrion.nivel, nivelMezcla: embrion.nivelMezcla,
+                          nivelBajo: embrion.nivelBajo, capAmbar: embrion.capAmbar)
+        let u = suave((ph - desde) / (1 - desde))
+        return Mota(pos: CGPoint(x: cruda.pos.x + (p.pos.x - cruda.pos.x) * CGFloat(u),
+                                 y: cruda.pos.y + (p.pos.y - cruda.pos.y) * CGFloat(u)),
+                    alfa: cruda.alfa + (p.alfa - cruda.alfa) * u,
+                    tamano: cruda.tamano + (p.tamano - cruda.tamano) * CGFloat(u))
     }
 
     /// La espiral `i` (0..<nEspirales) en el instante `t`: nace en el borde y cae al
