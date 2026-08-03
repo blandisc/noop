@@ -119,7 +119,6 @@ struct LiquidMetricSheetView: View {
         case "resp_rate": return .respiratory(14)
         case "stress":    return .stress(1.2)
         case "heart_rate": return .heartRate(avgBpm: 62)
-        case "recovery":  return .recovery(score: 78, calibrationNights: nil, nightsNeeded: 4)
         case "vo2max":    return .vo2max(42)
         // D2 · Las 5 submétricas del Detalle de Sueño caían al `default` (VFC), así que la
         // variante CLÁSICA —trend de 14 días + tabla de bandas— era inalcanzable en la app
@@ -286,9 +285,6 @@ struct LiquidMetricSheetView: View {
 
     // MARK: Variantes (paridad `summaryBranch` :170-182 + skeleton F5)
 
-    private var isRecoverySummary: Bool {
-        datoInfo.id == "recovery" && datoInfo.calibration == nil && datoInfo.displayValue != "—"
-    }
     private static let vitalTemplateIDs: Set<String> =
         ["hrv", "rhr", "spo2", "skin_temp", "steps", "stress", "resp_rate"]
     private var isVitalTemplate: Bool {
@@ -318,9 +314,7 @@ struct LiquidMetricSheetView: View {
     private var isStrainSummary: Bool { datoInfo.id == "strain" && datoInfo.displayValue != "—" }
 
     @ViewBuilder private var cuerpo: some View {
-        if isRecoverySummary {
-            recoveryContent
-        } else if isVitalTemplate {
+        if isVitalTemplate {
             vitalContent
         } else if isSleepLoading {
             LiquidSheetSkeleton(a11yCargando: String(localized: "Loading"))
@@ -422,9 +416,8 @@ struct LiquidMetricSheetView: View {
 
     // MARK: Cabecera
 
-    /// Recovery y strain: «/ 100» · «/ 21» solo con score real (paridad :369-373).
+    /// Strain: «/ 21» solo con score real (paridad :369-373). (Recovery ya no tiene hoja — C6.)
     private var sufijo: String? {
-        if datoInfo.id == "recovery" { return isRecoverySummary ? "/ 100" : nil }
         if datoInfo.id == "strain" { return datoInfo.displayValue != "—" ? "/ 21" : nil }
         return nil
     }
@@ -495,52 +488,10 @@ struct LiquidMetricSheetView: View {
             infoOcultar: String(localized: "Hide explanation"))
     }
 
-    // MARK: Recovery (§1.1 — lectura + medidor de zonas + niveles)
-
-    @ViewBuilder private var recoveryContent: some View {
-        if let frase = recoveryReadingText {
-            LiquidReadingLine(frase, highlightTone: tinteTexto(datoInfo.headerTint))
-        }
-        recoveryZoneMeter
-        levelsBlock
-    }
-
-    /// Paridad `recoveryReadingText` (:615-622) — mismas claves.
-    private var recoveryReadingText: String? {
-        switch datoInfo.headerTint {
-        case .good: return String(localized: "Above your baseline, ready for a strong day.")
-        case .warn: return String(localized: "Recovering, train but keep it controlled.")
-        case .bad:  return String(localized: "Low, prioritize rest today.")
-        default:    return nil
-        }
-    }
-
-    /// Paridad `recoveryZoneMeter` (:629-659): las 5 zonas canónicas de `MetricLevels`
-    /// (pesos 25/25/20/18/12) sobre los 3 roles de color, tick en score/100 y rótulos
-    /// del único hogar clave→nombre (FER-731/638).
-    private var recoveryZoneMeter: some View {
-        let niveles = MetricLevels.levels(for: .recovery)
-        let score = datoInfo.levelsTodayValue ?? 0
-        let activo = MetricLevels.activeIndex(for: score, in: niveles)
-        let segmentos = niveles.enumerated().map { (i, lvl) in
-            LiquidZoneMeter.Segmento(
-                peso: (lvl.upper ?? 100) - (lvl.lower ?? 0),
-                color: Self.zonaColor(i),
-                activa: i == activo,
-                etiqueta: nombreNivel(lvl.key).localizedUppercase)
-        }
-        return LiquidZoneMeter(segmentos: segmentos, fraccion: score / 100)
-    }
-
-    /// Paridad `recoveryZoneColor` (:645-651): agotado/bajo → negativo, moderado →
-    /// atención, alto/pleno → positivo — 5 zonas sobre 3 roles, sin tokens nuevos.
-    private static func zonaColor(_ index: Int) -> Color {
-        switch index {
-        case 0, 1: return LiquidColor.negativo
-        case 2:    return LiquidColor.atencion
-        default:   return LiquidColor.positivo
-        }
-    }
+    // FER-29 · C6 — the recovery sheet body (recoveryContent / recoveryReadingText /
+    // recoveryZoneMeter / zonaColor) is deleted along with `MetricInfo.recovery`: the branch was
+    // unreachable (`metricDetail` never routes to recovery) and it was the last place restating the
+    // recovery score's zone weights.
 
     // MARK: Vital-template (§1.2 — lectura + niveles + patrón)
 
@@ -1561,7 +1512,6 @@ private enum LiquidSheetCopy {
         case "stress":            return String(localized: "Stress")
         case "spo2":              return String(localized: "Blood Oxygen")
         case "heart_rate":        return String(localized: "Heart Rate")
-        case "recovery":          return String(localized: "Recovery")
         case "vo2max":            return String(localized: "VO₂ Max")
         case "sleep_performance": return String(localized: "Performance")
         case "sleep_efficiency":  return String(localized: "Efficiency")
@@ -1581,11 +1531,8 @@ private enum LiquidSheetCopy {
         }
     }
 
-    /// `info.headline` — mismas claves; recovery calibrando replica la interpolación.
+    /// `info.headline` — mismas claves.
     static func headline(_ info: MetricInfo) -> String {
-        if info.id == "recovery", let cal = info.calibration {
-            return String(localized: "We can't score your recovery yet. We need at least \(cal.needed) nights of sleep to learn your baseline; you're at \(cal.done) of \(cal.needed). We'd rather not show you a made-up number.")
-        }
         switch info.id {
         case "strain":
             return String(localized: "Cardiovascular load scored 0–21. Each second of the day your heart rate is recorded, it's assigned to a zone (1–5). Higher zones carry more weight. The total is compressed logarithmically so 21 represents a theoretical maximum: a full day at peak intensity.")
@@ -1619,8 +1566,6 @@ private enum LiquidSheetCopy {
             return String(localized: "Your autonomic load today, from 0 to 3. We estimate it by comparing today's resting heart rate and HRV with your own 30-day baseline: a higher-than-usual resting HR and a lower-than-usual HRV both push the number up: classic signs your body is activated.")
         case "heart_rate":
             return String(localized: "Your heart rate across the day, averaged in 5-minute buckets.")
-        case "recovery":
-            return String(localized: "Your recovery sums up how ready your body is today, from 0 to 100. It blends several signals from your night, your HRV above all, and compares them with your own average from recent weeks, not anyone else's.")
         default:
             return ""
         }
@@ -1700,9 +1645,6 @@ private enum LiquidSheetCopy {
         case "heart_rate":
             return (String(localized: "We average your heart rate in 5-minute buckets across the day, from midnight. Your resting heart rate, the low while you sleep, is its own metric. The zones split the day by how hard your heart worked, as a percentage of your estimated maximum heart rate (zone 1 is 50–60%, zone 5 is 90–100%)."),
                     String(localized: "Max HR estimated by Tanaka et al. (2001): 208 − 0.7 × age."))
-        case "recovery":
-            return (String(localized: "Each signal becomes a score of how far above or below your personal average it sits (a z-score, in σ). They're averaged with fixed weights, HRV 60%, resting heart rate 20%, sleep 15%, skin temperature 10%, respiration 5%, and mapped onto a 0–100 scale, calibrated so a typical day lands near 58. If a signal is missing on a given night, its weight is shared among the others."),
-                    String(localized: "A composite of z-scores through a logistic curve. HRV via RMSSD (Task Force, 1996)."))
         default:
             return nil
         }

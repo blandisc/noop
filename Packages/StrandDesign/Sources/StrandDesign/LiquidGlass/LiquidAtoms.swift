@@ -74,11 +74,37 @@ public struct LiquidDeltaCaption: View {
     }
 }
 
-/// Origen del dato de un tile (paridad con el SourceChip FER-878 en mundo Apple-only):
-/// medido por Apple Salud, o calculado/estimado por Cénit (p. ej. pasos estimados FER-663).
+/// Origen del dato en una superficie Liquid — el vocabulario CERRADO de procedencia (FER-29 · C2).
+///
+/// El tipo no nombra «Apple» en su lógica; la etiqueta localizada («Apple Salud», «Apple Watch»,
+/// «Calculado») la pasa el caller. Regla dura: nunca mezclar un dato CALCULADO con una etiqueta de
+/// medición (el bug de Carga, que rotulaba «Apple Health» sobre un cálculo nuestro); nunca la palabra
+/// «Band» en estas superficies.
+///
+/// Los dos casos originales (`medido`/`calculado`) son el vocabulario LEGADO de los tiles de «Hoy»
+/// (FER-28) y se conservan para no tocar esa superficie fuera de alcance. Las hojas de detalle migran
+/// al vocabulario cerrado de abajo (`appleSalud`/`appleWatch`/`calculadoEnTelefono`/`sinOrigen`) en F1;
+/// `esCalculado` unifica el comportamiento del punto de procedencia entre ambos mundos mientras coexisten.
 public enum LiquidOrigen: Sendable, Equatable {
+    // Vocabulario legado (tiles de «Hoy», FER-28) — no extender a superficies nuevas.
     case medido
     case calculado
+
+    // Vocabulario cerrado de las hojas (FER-29 · C2).
+    /// Lectura directa de Apple Salud (fuente no afirmable como el Watch).
+    case appleSalud
+    /// Medido por el Apple Watch (cuando la procedencia sí se puede afirmar).
+    case appleWatch
+    /// Derivado en el teléfono por Cénit (recovery/strain/stress, carga ACWR): NUNCA etiqueta de Apple.
+    case calculadoEnTelefono
+    /// Sin dato / calibrando: no se afirma procedencia (numeral «—»/«··»).
+    case sinOrigen
+
+    /// ¿Es un dato calculado por Cénit? (legado `.calculado` o el cerrado `.calculadoEnTelefono`.)
+    /// El punto de procedencia marca SOLO lo calculado; lo medido se dice con la etiqueta, sin punto.
+    public var esCalculado: Bool {
+        self == .calculado || self == .calculadoEnTelefono
+    }
 }
 
 /// El punto de origen que marca un dato CALCULADO junto a su delta; la leyenda bajo la
