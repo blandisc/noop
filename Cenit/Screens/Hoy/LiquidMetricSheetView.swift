@@ -555,6 +555,8 @@ struct LiquidMetricSheetView: View {
     /// «MEDIA · 30 días» el numeral decía la media pero la palabra de abajo nombraba la banda
     /// de HOY: la hoja se contradecía en cuanto tu día se salía de tu promedio. La pastilla
     /// «· hoy» de la escalera sí marca el día real —vive en `indiceDeHoy`, intacto—.
+    /// (Otra sesión —FER-33/Carga— llegó al mismo fix en paralelo; la hoja de Carga ya lo
+    /// hacía bien y era la excepción.)
     private var activeLevelKey: String? {
         guard let levels = levelsHost.levels, let v = valorMostrado,
               let idx = MetricLevels.activeIndex(for: v, in: levels) else { return nil }

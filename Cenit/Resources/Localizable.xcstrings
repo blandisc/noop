@@ -1,6 +1,108 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "your last %lld nights" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "your last %lld nights"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tus últimas %lld noches"
+          }
+        }
+      }
+    },
+    "Reading your night" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reading your night"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leyendo tu noche"
+          }
+        }
+      }
+    },
+    "One moment: I'm still reading your signals." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One moment: I'm still reading your signals."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un momento: todavía estoy leyendo tus señales."
+          }
+        }
+      }
+    },
+    "Only one signal" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only one signal"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Solo una señal"
+          }
+        }
+      }
+    },
+    "Last night I only read one of your two signals. The guardian needs both before it can say anything." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last night I only read one of your two signals. The guardian needs both before it can say anything."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anoche solo leí una de tus dos señales. El guardián necesita las dos antes de poder decir algo."
+          }
+        }
+      }
+    },
+    "your last 14 nights" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "your last 14 nights"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tus últimas 14 noches"
+          }
+        }
+      }
+    },
     "AVG · 1 YEAR" : {
       "extractionState" : "manual",
       "localizations" : {

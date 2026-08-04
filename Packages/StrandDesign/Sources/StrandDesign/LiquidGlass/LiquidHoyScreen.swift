@@ -110,7 +110,7 @@ public struct LiquidHoyModel: Sendable {
         /// - `sinLectura`: anoche no hubo ninguna de las dos señales (la hoja NO afirma «en patrón»).
         /// - `conociendote`: hay lecturas pero aún no hay patrón propio que comparar.
         public enum Estado: Sendable, Equatable {
-            case tranquilo, tempFuera, respFuera, juntas, sinLectura, conociendote
+            case tranquilo, tempFuera, respFuera, juntas, sinLectura, conociendote, incompleto
         }
         /// Rótulo YA localizado: «VIGILANDO» en tranquilo/una, «JUNTAS» cuando ambas se salen.
         public let label: String
