@@ -460,12 +460,12 @@ struct LiquidMetricSheetView: View {
 
     /// FER-29 · C2 — la procedencia en el VOCABULARIO CERRADO (`LiquidOrigen`), por métrica,
     /// según el blueprint: sleep/hrv/rhr/steps/spo2 = appleSalud · strain/stress = calculado
-    /// en el teléfono · skin_temp/resp_rate = appleWatch. El sello (punto) solo marca lo
-    /// CALCULADO (`esCalculado`), igual que el legado — el texto lo dice `origenEtiqueta`.
+    /// en el teléfono · skin_temp/resp_rate = appleWatch. La consume `origenChipVista`, que
+    /// pinta el chip de procedencia DENTRO de «Cómo se calcula» (el pie).
     ///
     /// Contrato 2: NUNCA se afirma procedencia sobre un numeral «—». Sin dato ⇒ `sinOrigen`,
-    /// y `origenEtiqueta` calla — así la clase calculada deja de rotular «Calculated» sobre
-    /// «—» (antes lo hacía). `TrainingLoadSheet` ya usa `.calculadoEnTelefono` (no se toca).
+    /// y el chip no se pinta — así la clase calculada deja de rotular «Calculated» sobre «—»
+    /// (antes lo hacía). `TrainingLoadSheet` ya usa `.calculadoEnTelefono` (no se toca).
     private var origen: LiquidOrigen {
         guard datoInfo.displayValue != "—" else { return .sinOrigen }
         if isStrainEstimado { return .appleSalud }
@@ -474,18 +474,6 @@ struct LiquidMetricSheetView: View {
         case "skin_temp", "resp_rate":       return .appleWatch
         default:                             return .appleSalud   // sleep, hrv, rhr, steps, spo2
         }
-    }
-
-    /// El texto del sello — copy HONESTO del caller (sin cambio de string). Sobre «—» calla
-    /// (contrato 2); para lo medido solo aparece cuando el valor vino de Apple (`origenApple`).
-    private var origenEtiqueta: String? {
-        guard datoInfo.displayValue != "—" else { return nil }
-        if isStrainEstimado { return String(localized: "Apple Health") }
-        if ["recovery", "strain", "stress"].contains(datoInfo.id) {
-            return String(localized: "Calculated")
-        }
-        if origenApple { return String(localized: "Apple Health") }
-        return nil
     }
 
     /// D8 · El título de la hoja. Con esfuerzo estimado dice lo mismo que el tile («Carga
@@ -509,8 +497,13 @@ struct LiquidMetricSheetView: View {
             sufijo: sufijo,
             numeralTono: tinte(datoInfo.headerTint),
             sello: heroVentana.sello,
-            origen: origen,
-            origenEtiqueta: origenEtiqueta,
+            // FER-29 · La procedencia YA NO viaja en el héroe: baja al chip del pie, DENTRO
+            // de «Cómo se calcula» (mock canónico). El héroe es solo valor + unidad + frase
+            // + sello de la ventana, idéntico para las 9 métricas. (Revierte la decisión
+            // /inject 2026-07-23 de rotular el origen en la cabecera; el nuevo mock lo pone
+            // abajo, en el chip.)
+            origen: nil,
+            origenEtiqueta: nil,
             // D1 · La explicación habla del dato que la hoja MUESTRA (`datoInfo`), no del
             // real: con el fixture de demo la cabecera decía «56 ms» y la explicación
             // describía otra métrica. Fuera de demo `datoInfo == info` (no-op).
@@ -1117,9 +1110,28 @@ struct LiquidMetricSheetView: View {
     ///
     /// El scrub NO toca esto (contrato LIQUID-GLASS §11.3, «el héroe no cambia al hacer
     /// scrub»): la cabeza del scrub vive en el popup de la gráfica. El rango sí; el scrub no.
+    /// El valor que el héroe está MOSTRANDO: la media de la ventana en los rangos largos, el
+    /// dato de hoy en la semana. Todo lo que describe al héroe —la frase de nivel, el titular
+    /// de la tarjeta y la fila encendida de la escalera— tiene que clasificarse contra ESTE
+    /// valor, no contra el de hoy: si el numeral dice la media y la palabra de abajo nombra la
+    /// banda de hoy, la hoja se contradice sola en cuanto tu día se sale de tu promedio.
+    private var valorMostrado: Double? {
+        let valores = levelsHost.window.values
+        guard mostrandoMedia, !valores.isEmpty else { return datoInfo.levelsTodayValue }
+        return ComparisonEngine.stat(valores).mean
+    }
+
+    /// ¿El héroe está mostrando la media de la ventana (y no el dato de hoy)?
+    /// Se decide con el rango EFECTIVO de la ventana, no con el seleccionado: cuando la
+    /// ventana se auto-ensancha porque no había días suficientes, el sello tiene que decir la
+    /// ventana que de verdad se promedió.
+    private var mostrandoMedia: Bool {
+        levelsHost.levels != nil && levelsHost.window.range != .week
+    }
+
     private var heroVentana: (numeral: String?, sello: String?) {
         let valores = levelsHost.window.values
-        guard levelsHost.levels != nil, levelsHost.range != .week, !valores.isEmpty else {
+        guard mostrandoMedia, !valores.isEmpty else {
             return (datoInfo.displayValue, selloHoy)
         }
         return (levelsValueFormat(ComparisonEngine.stat(valores).mean), selloMedia)
@@ -1130,18 +1142,24 @@ struct LiquidMetricSheetView: View {
         String(localized: "TODAY · \(Self.diaCorto(Date()))")
     }
 
-    /// «MEDIA · 30 DÍAS» / «MEDIA · 30 NOCHES» / … según el rango y si la métrica es nocturna.
+    /// «MEDIA · 30 DÍAS» / «MEDIA · 30 NOCHES» / «MEDIA · 6 MESES» / «MEDIA · 1 AÑO» /
+    /// «MEDIA · TODO», según la ventana EFECTIVA y si la métrica es nocturna.
+    ///
+    /// Los rangos largos se nombran por su unidad natural, no por su cuenta de días: «1 año»
+    /// se lee, «365 días» se calcula. Por eso medio año y año tienen su propia frase.
     private var selloMedia: String {
-        switch levelsHost.range {
+        switch levelsHost.window.range {
         case .week:
             return selloHoy
-        case .month, .quarter, .year:
-            let dias: Int = levelsHost.range.days ?? 0
+        case .month, .quarter:
+            let dias: Int = levelsHost.window.range.days ?? 0
             return nightly
                 ? String(localized: "AVG · \(dias) NIGHTS")
                 : String(localized: "AVG · \(dias) DAYS")
         case .half:
             return String(localized: "AVG · 6 MONTHS")
+        case .year:
+            return String(localized: "AVG · 1 YEAR")
         case .all:
             return String(localized: "AVG · ALL")
         }
@@ -1166,7 +1184,10 @@ struct LiquidMetricSheetView: View {
     @ViewBuilder private func levelsBlock<Extras: View>(
         @ViewBuilder extras: () -> Extras) -> some View {
         if levelsHost.levels != nil,
-           let d = levelsHost.clasificacion(today: datoInfo.levelsTodayValue) {
+           // F0.3 · Se clasifica contra el valor que el héroe MUESTRA (la media en los rangos
+           // largos), no contra el de hoy: así la frase de nivel, el titular y la fila
+           // encendida de la escalera hablan del mismo número que está arriba.
+           let d = levelsHost.clasificacion(today: valorMostrado) {
             let window = levelsHost.window
             VStack(alignment: .leading, spacing: LiquidSpace.s300) {
                 LiquidRangeSelector(opciones: ExploreRange.allCases.map(\.label),
@@ -1521,32 +1542,82 @@ struct LiquidMetricSheetView: View {
     // (`nota(_:)` re-deriva la variante con/sin dato de `displayValue == "—"`). Fuera de
     // demo `datoInfo == info`: el cambio es un no-op en producción.
     @ViewBuilder private var pie: some View {
-        if let metodo = LiquidSheetCopy.metodo(datoInfo) {
+        // FER-29 · «Cómo se calcula» — UN solo bloque para las 9 hojas (mock canónico), con
+        // dos rellenos: MÉTODO (prosa + cita) cuando hay fórmula, o NOTA de procedencia
+        // cuando es lectura directa. El chip de origen (Apple Salud / Calculado en el
+        // teléfono) va SIEMPRE dentro. Antes, unas hojas mostraban método plegable y otras
+        // una nota suelta sin título (o nada): esa inconsistencia era el defecto.
+        let metodo = LiquidSheetCopy.metodo(datoInfo)
+        if metodo != nil || comoSeObtuvoProsa != nil {
             LiquidMetodo(title: String(localized: "How it's calculated"),
                          // D11 (B6) · Etiquetas propias de VoiceOver: antes leía «Cómo se
                          // calcula, uno». Distintas de las del ⓘ de la cabecera a propósito
                          // — son dos plegables diferentes en la misma hoja.
                          mostrar: String(localized: "Show method"),
                          ocultar: String(localized: "Hide method")) {
-                LiquidNotaLine(metodo.prosa)
-                if let cita = metodo.cita {
-                    LiquidNotaLine(cita)
+                if let metodo {
+                    LiquidNotaLine(metodo.prosa)
+                    if let cita = metodo.cita { LiquidNotaLine(cita) }
+                    // El matiz/caveat de las métricas con fórmula acompaña al método DENTRO
+                    // del mismo bloque (antes colgaba como nota suelta bajo el plegable).
+                    if let nota = LiquidSheetCopy.nota(datoInfo) { LiquidNotaLine(nota) }
+                } else if let prosa = comoSeObtuvoProsa {
+                    LiquidNotaLine(prosa)
                 }
+                origenChipVista
             }
         }
         // D1 · `appleConnectHint` lo resuelve TodayView contra el `info` REAL, así que en
         // demo el aviso salía junto a un dato visible («conéctalo desde Hoy» bajo «56 ms»).
+        // Es un aviso ACCIONABLE: conserva su superficie propia, aparte del bloque de arriba.
         if appleConnectHint && !demo {
             avisoConectarApple
-        } else if let nota = LiquidSheetCopy.nota(datoInfo) {
-            LiquidNotaLine(nota)
         }
         if let disclaimer = LiquidSheetCopy.disclaimer(datoInfo) {
             LiquidNotaLine(disclaimer)
         }
-        // Línea de procedencia del pie RETIRADA (decisión del dueño /inject 2026-07-23):
-        // el origen ya se dice arriba, en la etiqueta del header («Apple Salud · anoche»).
         if let onSeeMore { verMas(onSeeMore) }
+    }
+
+    /// FER-29 · La prosa de «cómo se obtuvo» para las hojas de LECTURA DIRECTA (sin fórmula):
+    /// la nota del modelo si la trae (rhr, submétricas de sueño), o la procedencia sintetizada
+    /// para las dos que el modelo no cubre (sueño, esfuerzo). Las métricas con fórmula usan su
+    /// método en el pie, no esta prosa.
+    private var comoSeObtuvoProsa: String? {
+        if let nota = LiquidSheetCopy.nota(datoInfo) { return nota }
+        switch datoInfo.id {
+        case "sleep":
+            return String(localized: "Hours and stages come from your Apple Watch when you wear it to sleep; without it, Cénit uses total sleep time from Apple Health, without stages.")
+        case "strain":
+            // D8 · Coherente con el chip: el estimado ES la carga que midió Apple (FER-883),
+            // no un cálculo de Cénit.
+            return isStrainEstimado
+                ? String(localized: "Today's figure is Apple Health's own workout estimate, not Cénit's calculation.")
+                : String(localized: "Cénit works it out on your phone from your heart rate through the day: each second is placed in a zone (1–5) and the total is compressed onto a 0–21 scale.")
+        default:
+            return nil
+        }
+    }
+
+    /// FER-29 · El chip de procedencia dentro de «Cómo se calcula». Honestidad (D1/B7): sobre
+    /// un dato de Apple solo se afirma Apple cuando el valor VINO de Apple (`origenApple`);
+    /// lo calculado lleva su propio chip. Sobre «—» (`.sinOrigen`) no se pinta chip.
+    @ViewBuilder private var origenChipVista: some View {
+        switch origen {
+        case .appleSalud where origenApple || isStrainEstimado:
+            LiquidOrigenChip(glyph: .corazon, badgeTono: LiquidColor.rosa,
+                             etiqueta: String(localized: "Apple Health"),
+                             sufijo: String(localized: "on your device"))
+        case .appleWatch where origenApple:
+            LiquidOrigenChip(glyph: .corazon, badgeTono: LiquidColor.rosa,
+                             etiqueta: String(localized: "Apple Watch"),
+                             sufijo: String(localized: "on your device"))
+        case .calculadoEnTelefono, .calculado:
+            LiquidOrigenChip(glyph: .rayo, badgeTono: LiquidColor.tinta500,
+                             etiqueta: String(localized: "Calculated on your phone"))
+        default:
+            EmptyView()
+        }
     }
 
     /// D5 · El ÚNICO aviso accionable de la hoja: «esto puede venir de Apple Salud y no

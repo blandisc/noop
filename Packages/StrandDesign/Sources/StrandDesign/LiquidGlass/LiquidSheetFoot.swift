@@ -64,6 +64,56 @@ public struct LiquidMetodo<Content: View>: View {
     }
 }
 
+/// FER-29 · El chip de procedencia que vive DENTRO del bloque «Cómo se calcula» (mock
+/// canónico `sheet-generica-final` / `sheet-sueno-final`): una pastilla de papel con una
+/// gota-badge (el glifo de la fuente en blanco sobre un cuadro del tono) + la etiqueta de
+/// procedencia y un sufijo tenue. El DS no nombra «Apple»: la etiqueta y el sufijo llegan
+/// YA localizados del caller (mismo contrato cerrado que `LiquidOrigen`). Es cromo, no
+/// dato: tamaño fijo. Se lee como UN elemento en VoiceOver (el badge es decorativo).
+public struct LiquidOrigenChip: View {
+    private let glyph: LiquidIcon.Glyph
+    private let badgeTono: Color
+    private let etiqueta: String
+    private let sufijo: String?
+
+    /// Geometría interna del badge (contrato §5: candidato menor, no token del sistema).
+    private static let badge: CGFloat = 16
+    private static let badgeGlifo: CGFloat = 9
+
+    public init(glyph: LiquidIcon.Glyph, badgeTono: Color,
+                etiqueta: String, sufijo: String? = nil) {
+        self.glyph = glyph
+        self.badgeTono = badgeTono
+        self.etiqueta = etiqueta
+        self.sufijo = sufijo
+    }
+
+    public var body: some View {
+        HStack(spacing: LiquidSpace.s150) {
+            RoundedRectangle(cornerRadius: LiquidSpace.s100, style: .continuous)
+                .fill(badgeTono)
+                .frame(width: Self.badge, height: Self.badge)
+                .overlay(LiquidIcon(glyph, size: Self.badgeGlifo, color: .white))
+                .accessibilityHidden(true)
+            HStack(spacing: LiquidSpace.s100) {
+                Text(verbatim: etiqueta)
+                    .foregroundStyle(LiquidColor.tinta700)
+                if let sufijo {
+                    Text(verbatim: "·").foregroundStyle(LiquidColor.tinta500)
+                    Text(verbatim: sufijo).foregroundStyle(LiquidColor.tinta500)
+                }
+            }
+            .font(LiquidType.captionLectura)
+        }
+        .padding(.leading, LiquidSpace.s150)
+        .padding(.trailing, LiquidSpace.s300)
+        .padding(.vertical, LiquidSpace.s125)
+        .background(LiquidColor.papelAlto.opacity(0.65), in: Capsule(style: .continuous))
+        .overlay(Capsule(style: .continuous).strokeBorder(LiquidColor.tinta10, lineWidth: 1))
+        .accessibilityElement(children: .combine)
+    }
+}
+
 /// Nota corta del pie (nota de método, o la línea de conectar Apple Salud).
 ///
 /// El `tono` es tinta quieta por defecto — la nota acompaña, no llama. El caller solo lo
@@ -148,79 +198,6 @@ public struct LiquidVerMas: View {
     }
 }
 
-/// La procedencia del dato como pastilla, para vivir DENTRO del plegable del pie
-/// (`LiquidMetodo`), nunca colgada del héroe. Contrato C2 de FER-29: el vocabulario de
-/// origen es cerrado y la etiqueta llega YA localizada del caller.
-public struct LiquidOrigenChip: View {
-    private let origen: LiquidOrigen
-    private let texto: String
-    private let calificador: String?
-
-    /// - Parameters:
-    ///   - origen: decide la MARCA (la pastilla no compone texto a partir de él).
-    ///   - texto: la etiqueta principal YA localizada («Apple Salud», «Calculado en tu iPhone»).
-    ///   - calificador: la coletilla tenue YA localizada («anoche», «últimos 28 días»); `nil` la omite.
-    public init(origen: LiquidOrigen, texto: String, calificador: String? = nil) {
-        self.origen = origen
-        self.texto = texto
-        self.calificador = calificador
-    }
-
-    public var body: some View {
-        if origen == .sinOrigen && texto.isEmpty {
-            EmptyView()
-        } else {
-            HStack(spacing: LiquidSpace.s150) {
-                if let marca = marca {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous)
-                            .fill(marca.fill)
-                        LiquidIcon(marca.glyph, size: 9, color: LiquidColor.papelAlto)
-                    }
-                    .frame(width: 16, height: 16)
-                    .accessibilityHidden(true)
-                }
-                Text(verbatim: texto)
-                    .font(LiquidType.captionLectura)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(LiquidColor.tinta700)
-                if let calificador {
-                    // Punto medio U+00B7 entre etiqueta y coletilla (no guion ni em-dash).
-                    Text(verbatim: "· \(calificador)")
-                        .font(LiquidType.captionLectura)
-                        .fontWeight(.regular)
-                        .foregroundStyle(LiquidColor.tinta500)
-                }
-            }
-            .padding(.vertical, LiquidSpace.s150)
-            .padding(.horizontal, LiquidSpace.s300)
-            .liquidGlass(.pastillaSolida)
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel(Text(verbatim: etiquetaAccesibilidad))
-        }
-    }
-
-    /// Marca de la fuente: rosa + corazón para lo medido/Apple; indigo + rayo para lo
-    /// calculado en el teléfono. `.sinOrigen` no pinta marca.
-    private var marca: (fill: Color, glyph: LiquidIcon.Glyph)? {
-        switch origen {
-        case .appleSalud, .appleWatch, .medido:
-            return (LiquidColor.rosa, .corazon)
-        case .calculadoEnTelefono, .calculado:
-            return (LiquidColor.indigo, .rayo)
-        case .sinOrigen:
-            return nil
-        }
-    }
-
-    private var etiquetaAccesibilidad: String {
-        if let calificador {
-            return "\(texto), \(calificador)"
-        }
-        return texto
-    }
-}
-
 #if DEBUG
 #Preview("Liquid · SheetFoot") {
     VStack(alignment: .leading, spacing: LiquidSpace.s550) {
@@ -230,7 +207,12 @@ public struct LiquidOrigenChip: View {
                      mostrar: "Ver cómo se calcula",
                      ocultar: "Ocultar cómo se calcula") {
             LiquidNotaLine("SDNN sobre los latidos nocturnos, comparado contra tu base de 21 noches (Task Force, 1996).")
+            LiquidOrigenChip(glyph: .corazon, badgeTono: LiquidColor.rosa,
+                             etiqueta: "Apple Salud", sufijo: "en tu dispositivo")
         }
+        // El chip calculado (esfuerzo/estrés): badge tenue, sin sufijo.
+        LiquidOrigenChip(glyph: .rayo, badgeTono: LiquidColor.tinta500,
+                         etiqueta: "Calculado en el teléfono")
         LiquidNotaLine("Conecta Apple Salud para ver tu VFC aquí.")
         LiquidNotaLine("Se muestran los últimos 47 días.", tono: LiquidColor.atencionTexto)
         LiquidVerMas(title: "Ver más en Tendencias", hint: "Abre el detalle completo",
@@ -242,24 +224,4 @@ public struct LiquidOrigenChip: View {
     .background(LiquidSheetFondo(tone: LiquidColor.cian))
 }
 
-#Preview("Liquid · OrigenChip") {
-    VStack(alignment: .leading, spacing: LiquidSpace.s400) {
-        LiquidOrigenChip(origen: .appleSalud, texto: "Apple Salud", calificador: "anoche")
-        LiquidOrigenChip(origen: .appleWatch, texto: "Apple Watch")
-        LiquidOrigenChip(origen: .calculadoEnTelefono, texto: "Calculado en tu iPhone",
-                         calificador: "últimos 28 días")
-        // En su sitio natural: dentro del plegable del pie.
-        LiquidMetodo(title: "Cómo se calcula",
-                     mostrar: "Ver cómo se calcula",
-                     ocultar: "Ocultar cómo se calcula") {
-            VStack(alignment: .leading, spacing: LiquidSpace.s300) {
-                LiquidNotaLine("Se mide de noche con la frecuencia cardiaca de tu Apple Watch; cuando no lo usas al dormir, Cénit usa la frecuencia en reposo de Apple Salud.")
-                LiquidOrigenChip(origen: .appleSalud, texto: "Apple Salud",
-                                 calificador: "en tu dispositivo")
-            }
-        }
-    }
-    .padding(LiquidSpace.s550)
-    .background(LiquidSheetFondo(tone: LiquidColor.cian))
-}
 #endif
