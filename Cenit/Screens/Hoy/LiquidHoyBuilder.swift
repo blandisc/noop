@@ -1656,7 +1656,7 @@ enum LiquidHoyBuilder {
         fromApple == true ? .medido : .calculado
     }
 
-    // MARK: Formatters (ports de TodayViewSupport)
+    // MARK: Formatters de sueño (fuente única; las copias muertas de TodayViewSupport se borraron · F2)
 
     /// «7:20» — sueño en formato reloj.
     static func sleepClockText(_ mins: Double) -> String {

@@ -102,23 +102,9 @@ extension TodayView {
     /// ¿Horario diurno (8–22)? Puro reloj: no gritamos «banda desconectada» mientras duermes.
     var isDaytime: Bool { clockHourNow >= 8 && clockHourNow < 22 }
 
-    /// Sueño en formato reloj del handoff: «7:12» (horas:minutos dormidos).
-    func sleepClockText(_ mins: Double) -> String {
-        String(format: "%d:%02d", Int(mins) / 60, Int(mins) % 60)
-    }
-
     /// Los ≤7 valores válidos más recientes de una métrica sobre los días de base: su ventana de media.
     func history(_ days: [DailyMetric], _ pick: (DailyMetric) -> Double?) -> [Double] {
         Array(days.compactMap(pick).suffix(7))
     }
 
-    /// Δ de sueño en unidades de una letra: «18m» bajo una hora, «1h 5m» a partir de una (FER-575 follow-up:
-    /// «18 min» era más ancho que «+27» y el `minimumScaleFactor` encogía solo el delta de sueño).
-    func sleepDeltaText(_ minutes: Double) -> String {
-        let m = Int(minutes.rounded())
-        return m >= 60 ? "\(m / 60)h \(m % 60)m" : "\(m)m"
-    }
-
-    /// Thousands-grouped integer string (steps / calories).
-    func intString(_ v: Double) -> String { StrandFormat.groupedInt(v) }
 }
