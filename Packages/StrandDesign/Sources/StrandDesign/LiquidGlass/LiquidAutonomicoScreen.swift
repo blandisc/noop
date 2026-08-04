@@ -279,6 +279,16 @@ public struct LiquidSignalList<Mini: View>: View {
     }
 }
 
+/// Geometría de la marca de `LiquidSignalRow` (file-level: los tipos genéricos no admiten
+/// `static let` almacenados, ni siquiera en enums anidados).
+private enum LiquidSignalMarcaGeo {
+    /// Gota de señal (misma caja que la gota de tile por defecto).
+    static let gotaSize: CGFloat = 24
+    static let gotaIconSize: CGFloat = 13
+    /// Punto del eje autonómico (riel de estado).
+    static let puntoDiametro: CGFloat = 8
+}
+
 /// Una fila de señal: marca + nombre · (estado/voto o valor teñido), con la señal FUERA
 /// iluminada al wash ámbar de la familia y su marca activa. Bajo la fila, nota y mini-gráfica
 /// opcionales. NO es tocable: el desglose no navega a ningún lado.
@@ -357,23 +367,15 @@ public struct LiquidSignalRow<Mini: View>: View {
                                : Color.clear)
     }
 
-    /// Geometría de la marca (enum anidado: los genéricos no admiten `static let` almacenado).
-    private enum MarcaGeo {
-        /// Gota de señal (misma caja que la gota de tile por defecto).
-        static let gotaSize: CGFloat = 24
-        static let gotaIconSize: CGFloat = 13
-        /// Punto del eje autonómico (riel de estado).
-        static let puntoDiametro: CGFloat = 8
-    }
-
     private var marcaAncho: CGFloat {
-        fila.icono != nil ? MarcaGeo.gotaSize : MarcaGeo.puntoDiametro
+        fila.icono != nil ? LiquidSignalMarcaGeo.gotaSize : LiquidSignalMarcaGeo.puntoDiametro
     }
 
     @ViewBuilder private var marca: some View {
         if let icono = fila.icono {
             LiquidIconDrop(icono, tone: fila.iconoTono ?? LiquidColor.tinta500,
-                           size: MarcaGeo.gotaSize, iconSize: MarcaGeo.gotaIconSize)
+                           size: LiquidSignalMarcaGeo.gotaSize,
+                           iconSize: LiquidSignalMarcaGeo.gotaIconSize)
                 .overlay {
                     if fila.anillo {
                         Circle()
@@ -385,7 +387,8 @@ public struct LiquidSignalRow<Mini: View>: View {
         } else {
             Circle()
                 .fill(fila.fuera ? LiquidColor.atencion : LiquidColor.tinta10)
-                .frame(width: MarcaGeo.puntoDiametro, height: MarcaGeo.puntoDiametro)
+                .frame(width: LiquidSignalMarcaGeo.puntoDiametro,
+                       height: LiquidSignalMarcaGeo.puntoDiametro)
         }
     }
 }
