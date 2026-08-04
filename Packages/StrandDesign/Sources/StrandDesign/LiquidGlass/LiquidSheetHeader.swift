@@ -126,18 +126,6 @@ public struct LiquidSheetHeader: View {
 
     public var body: some View {
         VStack(alignment: .leading, spacing: LiquidSpace.s150) {
-            // #inject · La ventana del dato («HOY · 4 AGO» en la semana, «MEDIA · 30 NOCHES»
-            // en los rangos largos) sube a un overline a la IZQUIERDA, sobre el título —
-            // pedido del dueño: la fecha ya no cuelga a la derecha del numeral (donde no le
-            // gustaba), sino que encabeza la hoja y cambia con el selector. Muda para
-            // VoiceOver: ya viaja dentro del label compuesto del dato.
-            if let sello {
-                Text(verbatim: sello)
-                    .font(LiquidType.captionLectura)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(LiquidColor.tinta500)
-                    .accessibilityHidden(true)
-            }
             HStack(spacing: LiquidSpace.s150) {
                 if let icono {
                     // Gota de HOJA: 34×34, glifo 16, tono al 12% (mock `.drop`), más grande
@@ -187,8 +175,18 @@ public struct LiquidSheetHeader: View {
                             .foregroundStyle(LiquidColor.tinta500)
                     }
                     procedencia(inline: true)
-                    // #inject · El sello ya NO va aquí (derecha del numeral): subió a un
-                    // overline sobre el título. Ver arriba.
+                    // #inject r2 · El sello vuelve a la DERECHA del numeral (como el mock),
+                    // pero un paso más grande que la caption con la que nació («la fecha se
+                    // veía muy pequeña» — dueño): footnote/semibold, en tinta/500 — neutral,
+                    // porque el color es solo del dato (ADN) y la ventana es metadato.
+                    if let sello {
+                        Spacer(minLength: LiquidSpace.s200)
+                        Text(verbatim: sello)
+                            .font(LiquidType.filaRango)
+                            .foregroundStyle(LiquidColor.tinta500)
+                            .lineLimit(1)
+                            .layoutPriority(1)
+                    }
                 }
                 .lineLimit(limiteNumeral)
                 // B3 · el dato dominante es UNA sola parada de VoiceOver: numeral, unidad,
@@ -285,6 +283,10 @@ struct LiquidInfoBoton: View {
     /// ERA el indicador de estado); sin él (default) se queda en tinta/500 en ambos estados,
     /// que es el comportamiento que ya tiene `LiquidDobleDato`.
     var tono: Color? = nil
+    /// #inject r2 · Variante COMPACTA: glifo de 12 (vs 15) para cuando el ⓘ viaja pegado a
+    /// un overline de caja alta (Regularidad) — a 15 pesaba igual que las letras del título
+    /// y se leía como una letra más. El target táctil sigue siendo 44 pt.
+    var compacto: Bool = false
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -305,10 +307,14 @@ struct LiquidInfoBoton: View {
             alternar()
         } label: {
             Image(systemName: "info.circle")
-                .font(LiquidType.infoGlifo)
+                .font(compacto ? LiquidType.infoGlifoCompacto : LiquidType.infoGlifo)
                 .foregroundStyle(abierto ? (tono ?? LiquidColor.tinta500) : LiquidColor.tinta500)
-                .frame(minWidth: 44, minHeight: 44, alignment: alineacion)
-                .contentShape(Rectangle())
+                // Compacto: marco visual de 24 para no inflar la fila del overline; el
+                // target táctil sigue siendo ~44 vía el contentShape expandido (inset
+                // negativo) — el piso HIG no se negocia, solo deja de ocupar layout.
+                .frame(minWidth: compacto ? 24 : 44, minHeight: compacto ? 24 : 44,
+                       alignment: alineacion)
+                .contentShape(Rectangle().inset(by: compacto ? -10 : 0))
         }
         .buttonStyle(.liquidPress)
 

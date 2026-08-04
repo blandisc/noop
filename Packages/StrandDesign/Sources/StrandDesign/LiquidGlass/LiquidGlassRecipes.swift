@@ -291,14 +291,16 @@ public struct LiquidSheetFondo: View {
 
     public var body: some View {
         ZStack {
-            // VIDRIO DE VERDAD (pedido del dueño /inject, 2ª ronda): en iOS 26 el vidrio
-            // NATIVO — refracción y lensing reales del sistema, lo mismo que usan el dock
-            // y los tiles. Antes era material + un velo casi opaco (0.82) que lo mataba.
-            if #available(iOS 26.0, macOS 26.0, watchOS 26.0, *), !motionDisabled {
-                Color.clear.glassEffect(.regular, in: Rectangle())
-            } else {
-                Rectangle().fill(.ultraThinMaterial)
-            }
+            // PAPEL DEL MOCK (#inject r2, decisión del dueño 2026-08-04 — revierte el
+            // «vidrio de verdad» de la ronda anterior): el fondo de la hoja es papel
+            // sólido con degradado, como el mock canónico (`sheet-sueno.html` §.sheet:
+            // linear-gradient #FEFEFD→#F3F4F2). El vidrio vivo re-muestreaba la pantalla
+            // en movimiento al arrastrar la hoja y las tarjetas opacas no lo seguían —
+            // esa des-sincronía se leía como una «sombra» barata. Papel opaco = artefacto
+            // imposible por construcción; la profundidad la siguen dando plasta, velo y
+            // filo especular.
+            LinearGradient(colors: [LiquidColor.fondoAlto, LiquidColor.fondoBajo],
+                           startPoint: .top, endPoint: .bottom)
             // Plasta monocroma: DESPUÉS del vidrio, ANTES del velo. El velo la suaviza
             // como luz bajo el papel (no mancha encima). Compuesta aquí (no reusa
             // `LiquidPlasta`: esa es el fondo completo de Hoy, 4 masas + suelo + viñeta).

@@ -63,19 +63,35 @@ public struct LiquidRegularityCard: View {
         puntaje.map(String.init) ?? "··"
     }
 
+    /// #inject r2 · La leyenda partida en «palabra · detalle»: la palabra-veredicto («Muy
+    /// regular») pesa en semibold/tinta900 y el detalle queda en tinta/500 — jerarquía
+    /// sin sumar color (el único dato en color es el puntaje). Acepta « · » y « — » como
+    /// separador; sin separador, todo es palabra.
+    private var leyendaPartes: (palabra: String, detalle: String?) {
+        for sep in [" · ", " — "] {
+            if let r = leyenda.range(of: sep) {
+                return (String(leyenda[..<r.lowerBound]), String(leyenda[r.upperBound...]))
+            }
+        }
+        return (leyenda, nil)
+    }
+
     public var body: some View {
-        VStack(alignment: .leading, spacing: LiquidSpace.s300) {
-            HStack(alignment: .center, spacing: LiquidSpace.s200) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s250) {
+            HStack(alignment: .center, spacing: LiquidSpace.s150) {
                 Text(verbatim: titulo)
                     .liquidLabel()
                     .foregroundStyle(LiquidColor.tinta500)
                     // El título entra al label compuesto del bloque de dato; no es parada
                     // propia (mismo patrón B3 de `LiquidSheetHeader`).
                     .accessibilityHidden(true)
+                // #inject r2 · ⓘ compacto: a 15 pesaba lo mismo que las letras del
+                // overline y «se leía como una letra más» (dueño). El marco de 24 ya no
+                // infla la fila; el target táctil sigue ~44 (contentShape expandido).
                 LiquidInfoBoton(abierto: $explicacionAbierta,
                                 mostrar: infoMostrar, ocultar: infoOcultar,
                                 rotulo: titulo, alineacion: .leading,
-                                tono: tono)
+                                tono: tono, compacto: true)
                 Spacer(minLength: LiquidSpace.s200)
                 Text(verbatim: textoPuntaje)
                     .font(LiquidType.valorL)
@@ -86,9 +102,12 @@ public struct LiquidRegularityCard: View {
             // Una sola parada de VoiceOver para el bloque de lectura: título + puntaje +
             // leyenda. El `accessibilityLabel` sustituye el texto visible (no se oye dos
             // veces). El ⓘ es hermano, no hijo de este elemento.
-            Text(verbatim: leyenda)
+            (Text(verbatim: leyendaPartes.palabra)
+                .fontWeight(.semibold)
+                .foregroundStyle(LiquidColor.tinta900)
+             + Text(verbatim: leyendaPartes.detalle.map { " · \($0)" } ?? "")
+                .foregroundStyle(LiquidColor.tinta500))
                 .font(.system(size: lecturaSize))
-                .foregroundStyle(LiquidColor.tinta700)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityLabel(Text(verbatim: a11y))
             if explicacionAbierta {
