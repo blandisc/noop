@@ -323,18 +323,18 @@ enum LiquidHoyBuilder {
             if prep == nil {
                 return (nil,
                         String(localized: "Reading your night"),
-                        String(localized: "One moment: I'm still reading your signals."),
+                        String(localized: "One moment — the guardian is still reading your signals."),
                         nil, false, false)
             }
             return (nil,
                     String(localized: "Only one signal"),
-                    String(localized: "Last night I only read one of your two signals. The guardian needs both before it can say anything."),
+                    String(localized: "Last night only one of your two signals came through. The guardian needs both before it can say anything."),
                     nil, false, false)
         case .conociendote:
             // Misma clave que el héroe calibrando (`hero.title.calibrando` → «Conociéndote»).
             return (nil,
                     String(localized: "hero.title.calibrando", defaultValue: "Getting to know you"),
-                    String(localized: "I need a few of your nights to learn your pattern."),
+                    String(localized: "The guardian needs a few nights to learn your pattern."),
                     String(localized: "In the meantime, readings are shown without comparison."),
                     false, false)
         }

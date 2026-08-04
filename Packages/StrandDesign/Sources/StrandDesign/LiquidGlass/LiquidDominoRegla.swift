@@ -197,7 +197,10 @@ public struct LiquidDominoRegla: View {
         let bottom = laneYs[laneYs.count - 1] + Self.puntoDiametro / 2 + Self.cercoPadV
         let rect = CGRect(x: left, y: top, width: right - left, height: bottom - top)
         return RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous)
-            .fill(LiquidColor.atencion.opacity(LiquidChart.filaActivaAlfa))
+            // #inject r6 · Un escalón BAJO el wash de la fila de datos medida (revisión
+            // UI-agent M5): el dominó EXPLICA la regla, no debe pesar igual que el dato que
+            // de verdad se midió. El borde `atencion` pleno conserva la lectura «esto pasó».
+            .fill(LiquidColor.atencion.opacity(LiquidChart.filaResaltadaAlfa))
             .overlay(
                 RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous)
                     .strokeBorder(LiquidColor.atencion, lineWidth: Self.cercoBorde)
