@@ -173,6 +173,10 @@ public struct LiquidDominoRegla: View {
                                 .font(LiquidType.caption)
                                 .foregroundStyle(LiquidColor.tinta500)
                                 .lineLimit(1)
+                                // A Dynamic Type grande / es-MX largo el par encoge en vez
+                                // de desbordar el filo de la tarjeta (revisión Grok r2).
+                                .minimumScaleFactor(0.7)
+                                .allowsTightening(true)
                         }
                     }
                     .frame(width: geo.size.width, alignment: .trailing)

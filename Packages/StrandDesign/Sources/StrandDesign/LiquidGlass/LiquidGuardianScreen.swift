@@ -274,6 +274,10 @@ public struct LiquidGuardianScreen: View {
                 .font(LiquidType.captionLectura)
                 .foregroundStyle(LiquidColor.tinta500)
                 .fixedSize(horizontal: false, vertical: true)
+                // #inject r6 · Al lado DERECHO del módulo (pedido del dueño): la leyenda de
+                // ventana («tus últimas 14 noches») cierra la tarjeta por la derecha, no
+                // compite con la lectura que arranca a la izquierda.
+                .frame(maxWidth: .infinity, alignment: .trailing)
                 .accessibilityHidden(true)
         }
     }

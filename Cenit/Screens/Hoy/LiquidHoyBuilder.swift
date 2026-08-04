@@ -247,7 +247,8 @@ enum LiquidHoyBuilder {
         }()
 
         return LiquidGuardianHoja(
-            titulo: String(localized: "The guardian"),
+            // #inject r6 · «Guardian» a secas (decisión del dueño: le gusta más sin artículo).
+            titulo: String(localized: "Guardian"),
             explicacion: String(localized: "It watches two signals from your night, your skin temperature and your breathing, against your own pattern from recent weeks. It doesn't vote on your verdict: it only pushes toward a lighter day when both drift out together. An approximation, not a diagnosis."),
             infoMostrar: String(localized: "Show explanation"),
             infoOcultar: String(localized: "Hide explanation"),
