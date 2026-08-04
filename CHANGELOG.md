@@ -20,6 +20,11 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **Todas las hojas de detalle explican igual «cómo se obtuvo», con el sello de origen dentro / Every detail sheet now explains «how it was obtained» the same way, with the source badge inside.**
+  **ES** — Antes, unas hojas mostraban un desplegable «Cómo se calcula» y otras solo una nota suelta (o nada), y el origen del dato colgaba del número grande. Ahora las nueve hojas usan el mismo bloque «Cómo se calcula»: el método con su cita cuando hay fórmula, o de dónde viene el dato cuando es una lectura directa, y adentro un sello de procedencia («Apple Salud · en tu dispositivo» o «Calculado en el teléfono»). El héroe queda solo con el número, su unidad y la frase de nivel.
+  **EN** — Before, some sheets showed a «How it's calculated» disclosure and others just a loose note (or nothing), and the data's source hung off the big number. Now all nine sheets use the same «How it's calculated» block: the method with its citation when there's a formula, or where the data comes from when it's a direct reading, with a provenance badge inside («Apple Health · on your device» or «Calculated on your phone»). The hero keeps only the number, its unit and the level phrase.
+  ([LiquidMetricSheetView.swift](Cenit/Screens/Hoy/LiquidMetricSheetView.swift), [LiquidSheetFoot.swift](Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/LiquidSheetFoot.swift))
+
 - **La hoja de Sueño se pone a la par de las demás: su número grande es la duración, y la regularidad estrena tarjeta / The Sleep sheet falls in line with the rest: its big number is duration, and regularity gets its own card.**
   **ES** — Antes, el encabezado de Sueño mostraba dos datos apretados (duración | regularidad); ahora muestra un solo número grande —tu duración— igual que las otras ocho hojas, y la regularidad baja a su propia tarjeta con su explicación y una línea que la traduce («Muy regular», «Bastante regular», «Variable»). Las etapas de la noche siguen debajo.
   **EN** — Before, the Sleep header crammed two figures (duration | regularity); now it shows a single large number — your duration — like the other eight sheets, and regularity moves to its own card with its explanation and a line that translates it («Very regular», «Fairly regular», «Variable»). The night's stages stay below.
