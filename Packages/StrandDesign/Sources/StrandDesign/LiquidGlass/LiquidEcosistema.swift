@@ -1156,7 +1156,9 @@ private struct EcosistemaListado: View {
                 let fueraGuardian: Bool = {
                     switch guardian.estado {
                     case .tempFuera, .respFuera, .juntas: return true
-                    case .tranquilo, .sinLectura, .conociendote: return false
+                    // `.incompleto` no es «fuera»: es «todavía no sé». Se lista explícito
+                    // para que el compilador vuelva a avisar si el enum crece otra vez.
+                    case .tranquilo, .sinLectura, .conociendote, .incompleto: return false
                     }
                 }()
                 let filaGuardian = fila(rotulos.guardian,
