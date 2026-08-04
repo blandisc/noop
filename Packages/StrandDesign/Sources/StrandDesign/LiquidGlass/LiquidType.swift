@@ -99,6 +99,11 @@ public enum LiquidType {
     /// Glifo ⓘ de cabecera de hoja — 15 SF (QA F1-D5: fuera del inline).
     public static let infoGlifo = Font.system(size: 15)
 
+    /// Glifo ⓘ COMPACTO — 12 SF: para cuando el ⓘ viaja pegado a un overline de caja alta
+    /// (Regularidad); a 15 pesaba lo mismo que las letras del título y se leía como una
+    /// letra más (#inject r2, pedido del dueño).
+    public static let infoGlifoCompacto = Font.system(size: 12)
+
     /// `lectura/hoja` — 14 SF, base del texto de lectura de la hoja de resumen (readings,
     /// subtítulo del héroe). Los consumidores lo escalan con @ScaledMetric(relativeTo:
     /// .footnote) — acuñado en el revote adversarial F2 (adiós 14 inline).

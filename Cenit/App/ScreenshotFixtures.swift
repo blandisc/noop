@@ -221,7 +221,44 @@ enum ScreenshotFixtures {
             days: days, strainByDay: [:], trend: nil, asOf: Repository.localDayKey(today)))
 
         // Publish the dashboard last — single refreshSeq bump, drives loadAll.
-        model.repo.setDashboard(days: days, preparedness: preparedness)
+        // #inject · `sleeps` enciende la ruta RICA de la hoja de Sueño en el simulador
+        // (ventana acostarse→despertar, etapas medidas y regularidad con puntaje). Sin ellas
+        // la hoja cae a su fallback clásico —sin etapas ni regularidad—, que es lo que el
+        // dueño reportó «faltando». Solo el fixture de screenshots (DEBUG/sim).
+        // #inject · `appleHealthDays`: los días del fixture SON datos «de Apple Salud»
+        // (axioma Apple-only) — sin marcarlos, `fromApple` resolvía false y el pie de las
+        // hojas perdía su chip de procedencia («Apple Salud · en tu dispositivo»).
+        model.repo.setDashboard(days: days,
+                                sleeps: Self.syntheticSleepSessions(days: days),
+                                appleHealthDays: Set(days.map(\.day)),
+                                preparedness: preparedness)
+    }
+
+    /// #inject · Una sesión de sueño por noche del dashboard, para que `SleepDetailModel.build`
+    /// arme una noche RICA (ventana real + etapas + regularidad). Acostarse ~23:00 con una
+    /// deriva chica noche a noche (regularidad alta); las etapas salen de los minutos del día.
+    private static func syntheticSleepSessions(days: [DailyMetric]) -> [CachedSleepSession] {
+        days.enumerated().compactMap { (idx, d) -> CachedSleepSession? in
+            // Medianoche LOCAL del día (revisión adversarial DeepSeek): `parseDayKey`
+            // devuelve medianoche UTC — con ella, en UTC−6 la «acostada 23:00» salía 17:00.
+            // El day key es una fecha civil local: se re-arma en el calendario local.
+            let parts = d.day.split(separator: "-").compactMap { Int($0) }
+            guard parts.count == 3,
+                  let localMidnight = Calendar.current.date(from: DateComponents(
+                      year: parts[0], month: parts[1], day: parts[2])) else { return nil }
+            let midnight = Int(localMidnight.timeIntervalSince1970)
+            let drift = (idx % 3 - 1) * 12 * 60                 // −12 · 0 · +12 min noche a noche
+            let onset = midnight - 3600 + drift                 // ~23:00 local de la noche anterior
+            let total = max(3600, Int(d.totalSleepMin ?? 445) * 60)   // piso defensivo (endTs > startTs)
+            let deep = Int(d.deepMin ?? 95), rem = Int(d.remMin ?? 110)
+            let light = Int(d.lightMin ?? 235), awake = 28
+            let stages = "{\"deep\":\(deep),\"rem\":\(rem),\"light\":\(light),\"awake\":\(awake)}"
+            // La VENTANA en cama = dormido + despierto (revisión Grok): sin sumar `awake`,
+            // las etapas exceden el reloj acostarse→despertar por 28 min cada noche.
+            return CachedSleepSession(startTs: onset, endTs: onset + total + awake * 60,
+                                      efficiency: d.efficiency, restingHr: d.restingHr,
+                                      avgHrv: d.avgHrv, stagesJSON: stages)
+        }
     }
 
     /// Six recent sessions (newest first by start time) for the Workouts strip on Today.

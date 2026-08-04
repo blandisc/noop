@@ -48,8 +48,12 @@ public struct LiquidMetodo<Content: View>: View {
                     LiquidIcon(.chevron, size: 9, color: LiquidColor.tinta500)
                         .rotationEffect(.degrees(open ? 90 : 0))
                     Text(title)
-                        .font(LiquidType.captionLectura)
-                        .foregroundStyle(LiquidColor.tinta500)
+                        // #inject r4 · Sube de caption (10.5) a footnote/semibold: «Cómo se
+                        // calcula» es un CONTROL tocable, no letra chica — a caption se
+                        // perdía (dueño). Mock `.metodo{12px/600}`; tinta700 para que se
+                        // lea como acción sin competir con los datos.
+                        .font(LiquidType.filaRango)
+                        .foregroundStyle(LiquidColor.tinta700)
                     Spacer(minLength: 0)
                 }
                 .contentShape(Rectangle())

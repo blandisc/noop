@@ -111,6 +111,27 @@ public struct LiquidSheetHeader: View {
         }
     }
 
+    /// #inject · Numeral con el separador «:» en tinta/700. Sin «:» (o «—») es un solo run
+    /// del tono que ya usaba (numeralTono para el dato, tinta500 para el guion). Con «:»
+    /// (reloj de sueño «7:25») los dígitos van en el tono y los dos puntos en tinta/700,
+    /// fiel al mock: color en el dato, la puntuación en gris.
+    /// El tono dicho para TEXTO CHICO: el ámbar de dato (#C4631F) mide ~3.8:1 sobre papel
+    /// — bajo AA para footnote — y baja a su hermano de lectura `atencionTexto` (6.1:1).
+    /// Mismo criterio que `LiquidLevelRow.tonoRotulo`; los demás tonos ya pasan.
+    static func tonoTexto(_ tono: Color) -> Color {
+        (tono == LiquidColor.ambar || tono == LiquidColor.atencion)
+            ? LiquidColor.atencionTexto : tono
+    }
+
+    static func numeralText(_ s: String, tono: Color) -> Text {
+        guard s != "—" else { return Text(s).foregroundStyle(LiquidColor.tinta500) }
+        guard s.contains(":") else { return Text(s).foregroundStyle(tono) }
+        return s.reduce(Text(verbatim: "")) { acc, ch in
+            acc + Text(verbatim: String(ch))
+                .foregroundStyle(ch == ":" ? LiquidColor.tinta700 : tono)
+        }
+    }
+
     public var body: some View {
         VStack(alignment: .leading, spacing: LiquidSpace.s150) {
             HStack(spacing: LiquidSpace.s150) {
@@ -145,29 +166,41 @@ public struct LiquidSheetHeader: View {
                 }
             }
             if let numeral {
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text(numeral)
-                        .font(LiquidType.numeralHoja)
-                        .foregroundStyle(numeral == "—" ? LiquidColor.tinta500 : numeralTono)
-                    if let unidad, numeral != "—" {
-                        Text(unidad)
-                            .font(LiquidType.numeralHojaUnidad)
-                            .foregroundStyle(LiquidColor.tinta500)
+                // #inject r3 · El sello va CENTRADO verticalmente contra el numeral (mock
+                // proto-v2 `.hero`) y habla en el TONO de la hoja (`.when{color:var(--tono)}`,
+                // pedido del dueño). El numeral y su séquito (unidad/sufijo/procedencia)
+                // conservan su baseline propia en el sub-stack.
+                HStack(alignment: .center, spacing: 4) {
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        // #inject · El separador «:» del reloj (sueño «7:25») baja a tinta/700
+                        // como en el mock: los dígitos mandan en el hue, los dos puntos son
+                        // solo puntuación. Las demás métricas (sin «:») no cambian.
+                        Self.numeralText(numeral, tono: numeralTono)
+                            .font(LiquidType.numeralHoja)
+                        if let unidad, numeral != "—" {
+                            Text(unidad)
+                                .font(LiquidType.numeralHojaUnidad)
+                                .foregroundStyle(LiquidColor.tinta500)
+                        }
+                        if let sufijo, numeral != "—" {
+                            Text(sufijo)
+                                .font(LiquidType.numeralHojaUnidad)
+                                .foregroundStyle(LiquidColor.tinta500)
+                        }
+                        procedencia(inline: true)
                     }
-                    if let sufijo, numeral != "—" {
-                        Text(sufijo)
-                            .font(LiquidType.numeralHojaUnidad)
-                            .foregroundStyle(LiquidColor.tinta500)
-                    }
-                    procedencia(inline: true)
+                    // «El numeral manda» también en layout (revisión adversarial DeepSeek):
+                    // bajo presión de ancho, el que cede/trunca es el sello — nunca el dato.
+                    .layoutPriority(1)
                     if let sello {
                         Spacer(minLength: LiquidSpace.s200)
                         Text(verbatim: sello)
-                            .font(LiquidType.captionLectura)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(numeralTono)
+                            .font(LiquidType.filaRango)
+                            // Tono del sello con el ámbar DEMOTADO a su voz de texto
+                            // (revisión adversarial: el ámbar crudo mide 3.8:1 en footnote,
+                            // bajo el 4.5:1 de AA — mismo fix que `LiquidLevelRow.tonoRotulo`).
+                            .foregroundStyle(Self.tonoTexto(numeralTono))
                             .lineLimit(1)
-                            .layoutPriority(1)
                     }
                 }
                 .lineLimit(limiteNumeral)
@@ -265,6 +298,10 @@ struct LiquidInfoBoton: View {
     /// ERA el indicador de estado); sin él (default) se queda en tinta/500 en ambos estados,
     /// que es el comportamiento que ya tiene `LiquidDobleDato`.
     var tono: Color? = nil
+    /// #inject r2 · Variante COMPACTA: glifo de 12 (vs 15) para cuando el ⓘ viaja pegado a
+    /// un overline de caja alta (Regularidad) — a 15 pesaba igual que las letras del título
+    /// y se leía como una letra más. El target táctil sigue siendo 44 pt.
+    var compacto: Bool = false
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -285,10 +322,14 @@ struct LiquidInfoBoton: View {
             alternar()
         } label: {
             Image(systemName: "info.circle")
-                .font(LiquidType.infoGlifo)
+                .font(compacto ? LiquidType.infoGlifoCompacto : LiquidType.infoGlifo)
                 .foregroundStyle(abierto ? (tono ?? LiquidColor.tinta500) : LiquidColor.tinta500)
-                .frame(minWidth: 44, minHeight: 44, alignment: alineacion)
-                .contentShape(Rectangle())
+                // Compacto: marco visual de 24 para no inflar la fila del overline; el
+                // target táctil sigue siendo ~44 vía el contentShape expandido (inset
+                // negativo) — el piso HIG no se negocia, solo deja de ocupar layout.
+                .frame(minWidth: compacto ? 24 : 44, minHeight: compacto ? 24 : 44,
+                       alignment: alineacion)
+                .contentShape(Rectangle().inset(by: compacto ? -10 : 0))
         }
         .buttonStyle(.liquidPress)
 

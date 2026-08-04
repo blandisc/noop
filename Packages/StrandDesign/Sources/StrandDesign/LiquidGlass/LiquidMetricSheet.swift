@@ -61,9 +61,11 @@ public struct LiquidMetricSheet<Content: View>: View {
 
     public var body: some View {
         ScrollView(.vertical, showsIndicators: false) {
-            // Ritmo (pasada UI H4): los BLOQUES respiran más que lo de adentro — s550
-            // entre bloques contra los s150/s300 internos. Un gap uniforme leía plano.
-            VStack(alignment: .leading, spacing: LiquidSpace.s550) {
+            // Ritmo (pasada UI H4 → ajuste r3): los BLOQUES respiran más que lo de adentro
+            // — s400 entre bloques contra los s150/s300 internos. El s550 original dejaba
+            // a la frase-veredicto flotando con «mucho espacio arriba y abajo» (dueño);
+            // el mock lleva 9/18px alrededor de la frase, más cerca de 16 que de 22.
+            VStack(alignment: .leading, spacing: LiquidSpace.s400) {
                 content
             }
             .padding(LiquidSpace.s550)

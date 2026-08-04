@@ -63,19 +63,57 @@ public struct LiquidRegularityCard: View {
         puntaje.map(String.init) ?? "··"
     }
 
+    /// #inject r2 · La leyenda partida en «palabra · detalle»: la palabra-veredicto («Muy
+    /// regular») pesa en semibold/tinta900 y el detalle queda en tinta/500 — jerarquía
+    /// sin sumar color (el único dato en color es el puntaje). Acepta « · » y « — » como
+    /// separador; sin separador, todo es palabra.
+    private var leyendaPartes: (palabra: String, detalle: String?) {
+        for sep in [" · ", " — "] {
+            if let r = leyenda.range(of: sep) {
+                return (String(leyenda[..<r.lowerBound]), String(leyenda[r.upperBound...]))
+            }
+        }
+        return (leyenda, nil)
+    }
+
     public var body: some View {
-        VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s250) {
+            // #inject r4 · Columna de texto a la izquierda (overline + palabra-veredicto)
+            // y el puntaje CENTRADO verticalmente contra las dos líneas (dueño: «el 88 más
+            // centrado, y subir la palabra — hay un espacio vacío»). La tarjeta ya no deja
+            // aire muerto bajo la leyenda.
             HStack(alignment: .center, spacing: LiquidSpace.s200) {
-                Text(verbatim: titulo)
-                    .liquidLabel()
-                    .foregroundStyle(LiquidColor.tinta500)
-                    // El título entra al label compuesto del bloque de dato; no es parada
-                    // propia (mismo patrón B3 de `LiquidSheetHeader`).
-                    .accessibilityHidden(true)
-                LiquidInfoBoton(abierto: $explicacionAbierta,
-                                mostrar: infoMostrar, ocultar: infoOcultar,
-                                rotulo: titulo, alineacion: .leading,
-                                tono: tono)
+                VStack(alignment: .leading, spacing: LiquidSpace.s100) {
+                    // s200 (no s150): el target táctil expandido del ⓘ compacto sobresale
+                    // 10 pt de su marco — con 6 pt invadía la cola del título (revisión).
+                    HStack(alignment: .center, spacing: LiquidSpace.s200) {
+                        Text(verbatim: titulo)
+                            .liquidLabel()
+                            .foregroundStyle(LiquidColor.tinta500)
+                            // El título entra al label compuesto del bloque de dato; no es
+                            // parada propia (mismo patrón B3 de `LiquidSheetHeader`).
+                            .accessibilityHidden(true)
+                        // #inject r2 · ⓘ compacto: a 15 pesaba lo mismo que las letras del
+                        // overline y «se leía como una letra más» (dueño). El marco de 24
+                        // no infla la fila; el target sigue ~44 (contentShape expandido).
+                        LiquidInfoBoton(abierto: $explicacionAbierta,
+                                        mostrar: infoMostrar, ocultar: infoOcultar,
+                                        rotulo: titulo, alineacion: .leading,
+                                        tono: tono, compacto: true)
+                    }
+                    // Una sola parada de VoiceOver para el bloque de lectura: título +
+                    // puntaje + leyenda (el label compuesto vive aquí). Calibrando no
+                    // grita: sin puntaje, la leyenda va en peso normal — el semibold es
+                    // para la palabra-VEREDICTO (revisión adversarial Grok).
+                    (Text(verbatim: leyendaPartes.palabra)
+                        .fontWeight(calibrando ? .regular : .semibold)
+                        .foregroundStyle(calibrando ? LiquidColor.tinta700 : LiquidColor.tinta900)
+                     + Text(verbatim: leyendaPartes.detalle.map { " · \($0)" } ?? "")
+                        .foregroundStyle(LiquidColor.tinta500))
+                        .font(.system(size: lecturaSize))
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityLabel(Text(verbatim: a11y))
+                }
                 Spacer(minLength: LiquidSpace.s200)
                 Text(verbatim: textoPuntaje)
                     .font(LiquidType.valorL)
@@ -83,14 +121,6 @@ public struct LiquidRegularityCard: View {
                     .foregroundStyle(calibrando ? LiquidColor.tinta500 : tono)
                     .accessibilityHidden(true)
             }
-            // Una sola parada de VoiceOver para el bloque de lectura: título + puntaje +
-            // leyenda. El `accessibilityLabel` sustituye el texto visible (no se oye dos
-            // veces). El ⓘ es hermano, no hijo de este elemento.
-            Text(verbatim: leyenda)
-                .font(.system(size: lecturaSize))
-                .foregroundStyle(LiquidColor.tinta700)
-                .fixedSize(horizontal: false, vertical: true)
-                .accessibilityLabel(Text(verbatim: a11y))
             if explicacionAbierta {
                 // Voz de LECTURA, como el plegado de `LiquidSheetHeader`.
                 Text(verbatim: explicacion)
@@ -114,7 +144,7 @@ public struct LiquidRegularityCard: View {
         LiquidRegularityCard(
             titulo: "Regularidad",
             puntaje: 82,
-            leyenda: "Muy regular — tu cuerpo sabe cuándo dormir",
+            leyenda: "Muy regular · tu cuerpo sabe cuándo dormir",
             tono: LiquidColor.indigo,
             explicacion: "La regularidad mide cuánto se mueve el punto medio de tu sueño de una noche a otra (entre dormirte y despertar): predice tu salud mejor que las horas totales. Las siestas no cuentan.",
             infoMostrar: "Mostrar explicación",
@@ -139,7 +169,7 @@ public struct LiquidRegularityCard: View {
     LiquidRegularityCard(
         titulo: "Regularidad",
         puntaje: 82,
-        leyenda: "Muy regular — tu cuerpo sabe cuándo dormir",
+        leyenda: "Muy regular · tu cuerpo sabe cuándo dormir",
         tono: LiquidColor.indigo,
         explicacion: "La regularidad mide cuánto se mueve el punto medio de tu sueño de una noche a otra (entre dormirte y despertar): predice tu salud mejor que las horas totales. Las siestas no cuentan.",
         infoMostrar: "Mostrar explicación",

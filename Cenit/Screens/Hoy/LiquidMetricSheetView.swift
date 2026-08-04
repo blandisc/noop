@@ -365,7 +365,10 @@ struct LiquidMetricSheetView: View {
     }
 
     private var cabecera: some View {
-        LiquidSheetHeader(
+        // Una sola lectura de `heroVentana` por render (revisión adversarial Grok): cada
+        // acceso camina `levelsHost.window`, el gasto que ya costó caro en FER-216/FER-1040.
+        let hv = heroVentana
+        return LiquidSheetHeader(
             icono: glifo,
             titulo: tituloHoja,
             tono: tono,
@@ -374,7 +377,7 @@ struct LiquidMetricSheetView: View {
             // Durante la carga (`isSleepLoading` → skeleton en el cuerpo) el numeral del
             // tile se conserva — la hoja no abre muda.
             // F0.3 (FER-33): el numeral sigue la VENTANA del selector, y el sello dice cuál.
-            numeral: heroVentana.numeral,
+            numeral: hv.numeral,
             // Sueño cuelga la unidad «h» del reloj «7:25» (mock de sueño); las demás hojas
             // usan la unidad de su catálogo. FER-29 fidelidad (auditoría 2026-08-03).
             unidad: datoInfo.id == "sleep" ? String(localized: "h") : datoInfo.unit,
@@ -384,9 +387,10 @@ struct LiquidMetricSheetView: View {
             // auditoría 2026-08-03): «no me gusta la fecha en el título a la derecha, y cómo
             // se calcula es inconsistente» —el sello alternaba entre FECHA («HOY · 3 AGO») en
             // la semana y DESCRIPTOR DE VENTANA («MEDIA · 30 DÍAS») en rangos largos, dos
-            // gramáticas distintas en el mismo lugar—. La ventana ya la dice el selector
-            // (S/M/3M…) encendido; el héroe queda limpio: nombre + numeral + unidad + frase.
-            sello: nil,
+            // gramáticas distintas en el mismo lugar—. #inject: el dueño lo repide, pero
+            // ARRIBA a la izquierda (overline sobre el título), no a la derecha del numeral;
+            // cambia con el selector (semana → «HOY · 4 AGO», mes/3M → «MEDIA · N NOCHES»).
+            sello: hv.sello,
             // FER-29 · La procedencia YA NO viaja en el héroe: baja al chip del pie, DENTRO
             // de «Cómo se calcula» (mock canónico). El héroe es solo valor + unidad + frase
             // + sello de la ventana, idéntico para las 9 métricas. (Revierte la decisión
@@ -553,13 +557,15 @@ struct LiquidMetricSheetView: View {
         guard let s = regularidadSueno else {
             return String(localized: "Still learning your rhythm")
         }
+        // #inject r4 · Solo la palabra-veredicto, sin coletilla (dueño: «te crea esa doble
+        // línea») — el puntaje 88 y la palabra ya lo dicen todo; el detalle vive en el ⓘ.
         switch s {
         case 80...:
-            return String(localized: "Very regular · your body knows when to sleep")
+            return String(localized: "Very regular")
         case 55..<80:
             return String(localized: "Fairly regular")
         default:
-            return String(localized: "Variable · your schedule shifts a lot")
+            return String(localized: "Variable")
         }
     }
 
@@ -1269,7 +1275,7 @@ struct LiquidMetricSheetView: View {
                                  activa: i == highlight)
             },
             dominio: dominio,
-            ticksY: nivelesMarcasY(d, dominio: dominio),
+            ticksY: nivelesMarcasY(d, dominio: dominio, valores: window.values),
             tono: tono,
             // Hoy = el último punto dibujado (paridad marksLastPoint/markedPointHollow
             // :144-145): anillo hueco mientras exploras un nivel que no es el de hoy.
@@ -1337,12 +1343,27 @@ struct LiquidMetricSheetView: View {
     /// cada tick es ruido de gráfica y la canaleta se ensancha por la etiqueta más larga.
     /// El signo de temperatura de piel lo trae ya `levelsValueFormat` («+0.4»).
     private func nivelesMarcasY(_ d: MetricLevels.Classification,
-                                dominio: ClosedRange<Double>)
+                                dominio: ClosedRange<Double>,
+                                valores: [Double])
         -> [(valor: Double, etiqueta: String)] {
         // Solo las marcas que CAEN en el dominio visible (/inject): al acotar el dominio,
         // los umbrales de fuera se dibujaban pegados al borde y el eje mentía («18» en una
         // gráfica que llega a 14.5).
-        let ticks: [Double] = nivelesTicks(d).filter { dominio.contains($0) }
+        var ticks: [Double] = nivelesTicks(d).filter { dominio.contains($0) }
+        // #inject r3 · «Más elementos en el eje Y» (dueño): además de los umbrales, la
+        // CIMA y el PISO reales de la serie entran como marcas — el lector puede fechar
+        // hasta dónde llegó la curva. Extremos de los DATOS, no del dominio: el dominio
+        // trae 10-12 % de respiro y etiquetarlo pondría números que ninguna noche tocó
+        // (revisión adversarial Grok). Solo si no pisan una marca existente (≥ 6 %).
+        let span = dominio.upperBound - dominio.lowerBound
+        if span > 0, let lo = valores.min(), let hi = valores.max() {
+            for extremo in [lo, hi]
+            where dominio.contains(extremo)
+                && !ticks.contains(where: { abs($0 - extremo) < span * 0.06 }) {
+                ticks.append(extremo)
+            }
+            ticks.sort()
+        }
         let ultimo: Int = ticks.count - 1
         return ticks.indices.map { (i: Int) -> (valor: Double, etiqueta: String) in
             let v: Double = ticks[i]

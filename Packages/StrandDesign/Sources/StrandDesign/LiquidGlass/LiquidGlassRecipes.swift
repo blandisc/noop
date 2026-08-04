@@ -82,7 +82,9 @@ public extension View {
             // saltaba de gris a blanco al arrastrar — /inject dueño).
             modifier(LiquidSolidLayer(
                 shape: RoundedRectangle(cornerRadius: LiquidRadius.tarjeta, style: .continuous),
-                fill: LiquidColor.papelAlto,
+                // #inject r3 · Blanco puro del mock (`.card{background:#FFFFFF}`), no el
+                // papel cálido de pantalla — pedido del dueño («se ven cálidos»).
+                fill: LiquidColor.papelTarjeta,
                 border: LiquidColor.vidrioBordeSuperficie,
                 highlightTop: 0.8, highlightBottom: 0.35,
                 shadow: LiquidElevation.e0))
@@ -90,7 +92,9 @@ public extension View {
             // OPACO a propósito: sin material ni glassEffect (misma razón que superficieSolida).
             modifier(LiquidSolidLayer(
                 shape: Capsule(),
-                fill: LiquidColor.papelAlto,
+                // #inject r3 · Mismo blanco de tarjeta que `.superficieSolida` (mock
+                // `.vermas{background:#FFFFFF}`).
+                fill: LiquidColor.papelTarjeta,
                 border: LiquidColor.vidrioBordePastilla,
                 highlightTop: 0.8, highlightBottom: 0.0,
                 shadow: LiquidElevation.e0))
@@ -291,21 +295,24 @@ public struct LiquidSheetFondo: View {
 
     public var body: some View {
         ZStack {
-            // VIDRIO DE VERDAD (pedido del dueño /inject, 2ª ronda): en iOS 26 el vidrio
-            // NATIVO — refracción y lensing reales del sistema, lo mismo que usan el dock
-            // y los tiles. Antes era material + un velo casi opaco (0.82) que lo mataba.
-            if #available(iOS 26.0, macOS 26.0, watchOS 26.0, *), !motionDisabled {
-                Color.clear.glassEffect(.regular, in: Rectangle())
-            } else {
-                Rectangle().fill(.ultraThinMaterial)
-            }
+            // PAPEL DEL MOCK (#inject r2, decisión del dueño 2026-08-04 — revierte el
+            // «vidrio de verdad» de la ronda anterior): el fondo de la hoja es papel
+            // sólido con degradado, como el mock canónico (`sheet-sueno.html` §.sheet:
+            // linear-gradient #FEFEFD→#F3F4F2). El vidrio vivo re-muestreaba la pantalla
+            // en movimiento al arrastrar la hoja y las tarjetas opacas no lo seguían —
+            // esa des-sincronía se leía como una «sombra» barata. Papel opaco = artefacto
+            // imposible por construcción; la profundidad la siguen dando plasta, velo y
+            // filo especular.
+            LinearGradient(colors: [LiquidColor.fondoAlto, LiquidColor.fondoBajo],
+                           startPoint: .top, endPoint: .bottom)
             // Plasta monocroma: DESPUÉS del vidrio, ANTES del velo. El velo la suaviza
             // como luz bajo el papel (no mancha encima). Compuesta aquí (no reusa
             // `LiquidPlasta`: esa es el fondo completo de Hoy, 4 masas + suelo + viñeta).
             if plasta, let tone {
                 sheetPlasta(tone: tone)
             }
-            // El velo baja a la mitad: sostiene el contraste del texto sin tapar el vidrio.
+            // El velo suaviza la PLASTA (sobre el papel liso es un no-op: mismo color a
+            // mismo color). Sostiene el contraste del texto donde la mancha de tono vive.
             // El velo NO adelgaza hacia abajo (pasada UI H1): el acento ya se apaga solo,
             // y sumar los dos dejaba el pie —lista de niveles y notas de 10.5— con el
             // suelo de blanco más delgado de la hoja.
