@@ -144,8 +144,6 @@ enum LiquidHoyBuilder {
         var now: Date = Date()
         var calendar: Calendar = .current
         var locale: Locale = .current
-        /// Noches con lectura de temperatura en la ventana (para la barra de calibración).
-        var nochesTemp: Int? = nil
     }
 
     /// La hoja del guardián (FER-33 · F3): contesta «¿qué es VIGILANDO?» con la familia
@@ -167,19 +165,32 @@ enum LiquidHoyBuilder {
         //   (abierta por abajo, techo 20 rpm). El motor juzga por z-score de la base
         //   personal; sin exponer mean/sd al UI, esta es la aproximación limpia de la
         //   misma hoja de métrica (se reporta en el PR).
+        // TEMPERATURA: el corte del motor es ABSOLUTO sobre la desviación contra TU base
+        // (`skinTempDevC` ya es «cuánto te saliste de lo tuyo»), así que ±thermalOutC ES tu
+        // patrón, dicho con el mismo número que usa el centinela para marcar.
         let tempBand = -Preparedness.Config.default.thermalOutC
             ... Preparedness.Config.default.thermalOutC
-        let respBand: ClosedRange<Double>? = 12...20
+        // RESPIRACIÓN: SIN banda, a propósito. El motor la juzga por z-score contra TU base
+        // personal, y esa base no está expuesta al UI. Aquí vivía «12...20», que es la tabla
+        // POBLACIONAL del catálogo de niveles — dibujarla bajo el rótulo «la banda es tu
+        // patrón», dos dedos arriba de un método que promete «no contra tablas de población»,
+        // era afirmar lo contrario de lo que el motor hace. Con base estrecha, una noche podía
+        // caer DENTRO de la banda dibujada y FUERA para el dominó, en la misma pantalla.
+        // Sin banda la línea sigue contando su historia y nadie miente. (FER-33, gate /qa D1.)
+        let respBand: ClosedRange<Double>? = nil
 
+        // Calibrando, NINGUNA banda: la nota dice «las lecturas se muestran sin comparación»
+        // y pintar el corredor de comparación al lado la desmentía. (gate /qa D4.)
+        let comparando = estado != .conociendote
         let tempSerie = serieMini(
-            puntos: i.tempTrend, banda: tempBand,
+            puntos: i.tempTrend, banda: comparando ? tempBand : nil,
             sinDatoAnoche: sinDatoAnoche || i.guardian?.temp == "—",
             fmtValor: { String(format: "%+.1f°", $0) },
             fmtFecha: popupFechaFmt(locale: i.locale),
             a11y: String(localized: "Skin temperature, last 14 nights"),
             vacio: String(localized: "No readings yet."))
         let respSerie = serieMini(
-            puntos: i.respTrend, banda: respBand,
+            puntos: i.respTrend, banda: comparando ? respBand : nil,
             sinDatoAnoche: sinDatoAnoche || i.guardian?.resp == "—",
             fmtValor: { "\(Int($0.rounded())) \(String(localized: "rpm"))" },
             fmtFecha: popupFechaFmt(locale: i.locale),
@@ -205,7 +216,12 @@ enum LiquidHoyBuilder {
 
         let calibracion: LiquidGuardianHoja.Calibracion? = {
             guard estado == .conociendote else { return nil }
-            let hechas = i.nochesTemp ?? i.prep?.autonomicNights ?? 0
+            // La barra cuenta lo que de verdad construye la base que falta: noches CON lectura
+            // de respiración. Antes contaba noches de temperatura —otra señal, que ni siquiera
+            // necesita base— así que podía llenarse del todo sin que el estado cambiara nunca.
+            let hechas = i.prep.map { p in
+                p.sentinelHistory.suffix(14).filter { !$0.respMissing }.count
+            } ?? 0
             let necesarias = 14
             let leyenda = String(format: String(localized: "%lld of %lld nights"),
                                  hechas, necesarias)
@@ -746,8 +762,25 @@ enum LiquidHoyBuilder {
                          estado: .sinLectura, a11y: a11y)
         }
 
-        // Sin patrón propio todavía: lecturas sí, comparación no.
-        if prep?.maturity == .calibrating {
+        // «Conociéndote»: el guardián solo puede empujar cuando las DOS señales se salen
+        // JUNTAS, y la respiración es la única de las dos que necesita una base tuya para
+        // poder juzgarse (el corte de temperatura es absoluto). Mientras el motor no pueda
+        // juzgarla, el guardián no puede hacer su trabajo — y eso es exactamente lo que hay
+        // que decir.
+        //
+        // Antes esto se decidía con `prep.maturity`, que es la madurez de la base de tu PULSO
+        // EN REPOSO: una tercera señal, que el guardián ni siquiera vigila. Podía tapar un
+        // «juntas» real (el chequeo retorna antes de calcular las señales) y llenaba una barra
+        // que contaba noches de TEMPERATURA mientras el estado lo decidía otra cosa: una barra
+        // que podía leer «14 de 14» y seguir diciendo «Conociéndote». (FER-33, gate /qa D3.)
+        let respSinBase: Bool = {
+            if let ultima = prep?.sentinelHistory.last {
+                return !ultima.respJudged && !ultima.respMissing
+            }
+            // Sin historial (ruta de baja señal) no hay nada mejor que decir.
+            return prep?.maturity == .calibrating
+        }()
+        if respSinBase {
             let label = String(localized: "Watching")
             let palabra = String(localized: "hero.title.calibrando",
                                  defaultValue: "Getting to know you")
@@ -757,9 +790,10 @@ enum LiquidHoyBuilder {
         }
 
         let tempHigh = prep?.drivers.first { $0.axis == .thermal }?.state == .high
-        let respBadZ = Preparedness.Config.default.respBadZ
-        let respHigh = prep?.signals.first { $0.signal == .resp }?.orientedZ
-            .map { -$0 >= respBadZ } ?? false
+        // La respiración se marca con el juicio del MOTOR, no re-derivando el corte aquí: si
+        // no la pudo juzgar, «no marcada» no es «en rango». Es la misma regla que ya respeta
+        // el dominó, y la que hacía falta para que el héroe no la contradijera. (gate /qa D2.)
+        let respHigh = prep?.sentinelHistory.last.map { $0.respOut } ?? false
 
         let estado: LiquidHoyModel.Guardian.Estado
         switch (tempHigh, respHigh) {

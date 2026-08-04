@@ -286,6 +286,78 @@ final class LiquidHoyBuilderTests: XCTestCase {
         XCTAssertFalse(hoja.enPatron)
     }
 
+    // MARK: El guardián no puede afirmar más de lo que el motor sabe (FER-33 · gate /qa)
+    //
+    // Los cuatro defectos que el verificador encontró EN PRODUCCIÓN eran la misma familia: la
+    // hoja decía cosas que el motor no sostiene. Sin estos tests, esa clase de defecto vuelve
+    // — es exactamente lo que pasó con el `?? .tranquilo` original.
+
+    /// Una noche del centinela, para armar historiales a mano.
+    private func noche(_ day: String, tempOut: Bool = false, respOut: Bool = false,
+                       tempMissing: Bool = false, respMissing: Bool = false,
+                       respJudged: Bool = true, gapBefore: Bool = false)
+    -> Preparedness.SentinelNight {
+        .init(day: day, tempOut: tempOut, respOut: respOut,
+              tempMissing: tempMissing, respMissing: respMissing,
+              respJudged: respJudged, gapBefore: gapBefore)
+    }
+
+    /// Arma un `Read` mínimo con el historial del centinela que se quiera probar.
+    private func prep(_ historial: [Preparedness.SentinelNight],
+                      maturity: BaselineStatus = .trusted) -> Preparedness.Read {
+        .init(verdict: .full, drivers: [], signalsPresent: 2, signalsTotal: 3,
+              maturity: maturity, autonomicNights: 20, trend: nil,
+              sentinel: nil, sentinelHistory: historial)
+    }
+
+    private func hoja(_ historial: [Preparedness.SentinelNight],
+                      guardian: LiquidHoyModel.Guardian?) -> LiquidGuardianHoja {
+        LiquidHoyBuilder.guardianHoja(.init(guardian: guardian, prep: prep(historial)))
+    }
+
+    /// Con la respiración SIN base usable, el guardián no puede hacer su trabajo (su regla
+    /// necesita las dos señales), así que dice «Conociéndote» — y NO se apoya en la madurez
+    /// de la base del pulso en reposo, que es otra señal que ni siquiera vigila.
+    func test_guardian_respiracionSinBase_diceConociendote() {
+        let g = LiquidHoyBuilder.guardian(
+            prep: prep([noche("2026-06-20", respJudged: false)]),
+            thermalDeviation: 0.1, resp: nil)
+        XCTAssertEqual(g?.estado, .conociendote,
+                       "sin base de respiración el guardián no puede empujar")
+    }
+
+    /// La madurez del pulso en reposo NO decide este estado: es otra señal.
+    func test_guardian_madurezDeOtraSenal_noDecideConociendote() {
+        let g = LiquidHoyBuilder.guardian(
+            prep: prep([noche("2026-06-20", respJudged: true)], maturity: .calibrating),
+            thermalDeviation: 0.1, resp: nil)
+        XCTAssertNotEqual(g?.estado, .conociendote,
+                          "con la respiración juzgable, el guardián sí puede hablar")
+    }
+
+    /// La respiración NUNCA lleva banda: el motor la juzga contra tu propia base, que no está
+    /// expuesta al UI. Dibujar la tabla poblacional (12-20 rpm) bajo el rótulo «la banda es tu
+    /// patrón» contradecía al método de la misma hoja.
+    func test_guardian_respiracionNuncaDibujaBandaPoblacional() {
+        let g = LiquidHoyBuilder.guardian(prep: prep([noche("2026-06-20")]),
+                                          thermalDeviation: 0.1, resp: nil)
+        let h = hoja([noche("2026-06-20")], guardian: g)
+        XCTAssertNil(h.resp.serie?.banda,
+                     "12-20 rpm es tabla de población, no tu patrón")
+        XCTAssertNotNil(h.temp.serie?.banda,
+                        "la de temperatura SÍ: su corte es absoluto sobre TU desviación")
+    }
+
+    /// Calibrando NO dibuja corredor de comparación: la nota dice «se muestran sin
+    /// comparación» y pintar la banda al lado la desmentía.
+    func test_guardian_calibrando_sinBandaDeComparacion() {
+        let hist = [noche("2026-06-20", respJudged: false)]
+        let g = LiquidHoyBuilder.guardian(prep: prep(hist), thermalDeviation: 0.1, resp: nil)
+        let h = hoja(hist, guardian: g)
+        XCTAssertNil(h.temp.serie?.banda, "sin comparación no se pinta el corredor")
+        XCTAssertNil(h.resp.serie?.banda)
+    }
+
     // MARK: Carga — mismo mapeo que la franja
 
     func test_carga_mapeoACWR() {
