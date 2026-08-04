@@ -178,7 +178,7 @@ public struct LiquidLevelsList: View {
         // El clip va ANTES del vidrio (igual que `LiquidBandsTable`): el wash de la fila
         // activa respeta las esquinas también en el camino nativo.
         .clipShape(RoundedRectangle(cornerRadius: LiquidRadius.tarjeta, style: .continuous))
-        .liquidGlass(.superficie)
+        .liquidGlass(.superficieSolida)
     }
 }
 

@@ -54,7 +54,7 @@ public struct LiquidCalibracionCard: View {
         }
         .padding(LiquidSpace.s400)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .liquidGlass(.superficie)
+        .liquidGlass(.superficieSolida)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(verbatim: "\(titulo), \(leyenda)"))
     }

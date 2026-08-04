@@ -41,7 +41,7 @@ public struct LiquidModeTile: View {
         .padding(.horizontal, LiquidSpace.s100)
         .padding(.bottom, LiquidSpace.s200)
         .frame(maxWidth: .infinity, minHeight: 64)
-        .liquidGlass(.superficie)
+        .liquidGlass(.superficie) // token-exempt: tile de Hoy, no vive dentro de una hoja
     }
 }
 

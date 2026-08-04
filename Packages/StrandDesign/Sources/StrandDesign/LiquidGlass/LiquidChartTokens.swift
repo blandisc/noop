@@ -192,7 +192,7 @@ public enum LiquidChart {
                 .offset(x: 74, y: 2)
         }
         .frame(width: 220, height: 80)
-        .liquidGlass(.superficie)
+        .liquidGlass(.superficie) // token-exempt: preview, fuera de una hoja
     }
     .padding(LiquidSpace.s550)
     .background(LiquidColor.papelGradient)

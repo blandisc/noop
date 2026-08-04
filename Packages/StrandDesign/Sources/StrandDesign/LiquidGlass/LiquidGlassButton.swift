@@ -68,7 +68,7 @@ public struct LiquidGlassButton: View {
         case .glass:
             text
                 .foregroundStyle(LiquidColor.tinta900)
-                .liquidGlass(.pastilla)
+                .liquidGlass(.pastilla) // token-exempt: boton de pantalla, no de hoja
         case .quiet:
             text
                 .foregroundStyle(LiquidColor.verdeProfundo)

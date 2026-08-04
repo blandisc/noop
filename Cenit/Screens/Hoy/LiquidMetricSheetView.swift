@@ -1651,7 +1651,7 @@ struct LiquidMetricSheetView: View {
         }
         .padding(LiquidSpace.s300)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .liquidGlass(.superficie)
+        .liquidGlass(.superficieSolida)
     }
 
     /// «Ver más» (paridad `seeMoreLink` :1186-1231): ancho completo hacia Tendencias

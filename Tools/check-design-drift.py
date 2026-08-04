@@ -30,7 +30,7 @@ DEFAULT_ROOTS = ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/AI"
 DESIGN_PKG = "Packages/StrandDesign"
 EXEMPT = re.compile(r"//\s*token-exempt\b")
 
-ALL_RULES = ["no-hex", "no-adhoc-font", "no-radius-literal", "no-opacity-literal", "no-emdash-string", "no-raw-shadow"]
+ALL_RULES = ["no-hex", "no-adhoc-font", "no-radius-literal", "no-opacity-literal", "no-emdash-string", "no-raw-shadow", "no-sheet-glass"]
 
 # no-emdash-string: an em-dash (—, U+2014) inside a user-facing Swift string literal. ADN copy rule
 # (FER-878): on-screen copy uses «:», «·» or a comma, never an em-dash. Scoped to STRING LITERALS so the
@@ -64,6 +64,13 @@ RE_OPACITY = re.compile(r"\.opacity\(\s*[0-9.]")
 # a hand-rolled drop shadow in a screen should either use it or be a documented exception. Deliberate
 # non-standard shadows (the thermal receipt, upward-casting sheets, ambient glows) carry `// token-exempt:`.
 RE_SHADOW = re.compile(r"\.shadow\(")
+# no-sheet-glass: `.liquidGlass(.superficie)` / `.pastilla` en una superficie INTERNA de hoja.
+# Es el defecto de las «tablas grises» (FER-29/FER-33): esas recetas muestrean el fondo, y dentro
+# de una hoja —que ya es vidrio— el resultado salta de gris a blanco al arrastrarla. Las tarjetas
+# internas van en PAPEL OPACO (`.superficieSolida` / `.pastillaSolida`); el vidrio de verdad se
+# reserva para la hoja misma (`LiquidSheetFondo`), el dock y el orbe. Nada lo detectaba, y por eso
+# se coló tres veces. Una superficie que de verdad quiera vidrio lleva `// token-exempt:` con la razón.
+RE_SHEET_GLASS = re.compile(r"\.liquidGlass\(\.(superficie|pastilla)\)")
 
 RULE_PATTERNS = {
     "no-hex": RE_HEX,
@@ -71,6 +78,7 @@ RULE_PATTERNS = {
     "no-radius-literal": RE_RADIUS,
     "no-opacity-literal": RE_OPACITY,
     "no-raw-shadow": RE_SHADOW,
+    "no-sheet-glass": RE_SHEET_GLASS,
 }
 
 

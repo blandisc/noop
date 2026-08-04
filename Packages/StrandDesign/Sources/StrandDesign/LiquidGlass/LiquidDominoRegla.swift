@@ -377,7 +377,7 @@ private func previewBloque<Content: View>(titulo: String,
         content()
             .padding(LiquidSpace.s400)
             .frame(maxWidth: .infinity)
-            .liquidGlass(.superficie)
+            .liquidGlass(.superficie) // token-exempt: preview, fuera de una hoja
     }
 }
 #endif

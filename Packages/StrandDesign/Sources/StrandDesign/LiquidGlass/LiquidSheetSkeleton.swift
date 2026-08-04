@@ -70,7 +70,7 @@ public struct LiquidSheetSkeleton: View {
                 }
             }
             .clipShape(RoundedRectangle(cornerRadius: LiquidRadius.tarjeta, style: .continuous))
-            .liquidGlass(.superficie)
+            .liquidGlass(.superficieSolida)
     }
 
     /// El streak que viaja: banda especular (blanco de vidrio) que cruza el bloque una

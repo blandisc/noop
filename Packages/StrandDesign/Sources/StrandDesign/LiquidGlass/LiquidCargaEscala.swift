@@ -200,7 +200,7 @@ public struct LiquidCargaEscala: View {
         }
         .padding(.vertical, LiquidSpace.s225)
         .padding(.horizontal, LiquidSpace.s400)
-        .liquidGlass(.pastilla)
+        .liquidGlass(.pastilla) // token-exempt: escala de Hoy, no vive dentro de una hoja
         // Área tocable ≥ 44 pt sin engordar el vidrio (paridad con LiquidCargaBar).
         .padding(.vertical, LiquidSpace.s075)
         .contentShape(Rectangle())

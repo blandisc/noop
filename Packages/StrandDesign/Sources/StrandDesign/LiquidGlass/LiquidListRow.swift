@@ -73,7 +73,7 @@ public struct LiquidListCard<Content: View>: View {
         VStack(spacing: 0) { content }
             .padding(.vertical, LiquidSpace.s050)
             .padding(.horizontal, 14)
-            .liquidGlass(.superficie)
+            .liquidGlass(.superficie) // token-exempt: fila de lista de pantalla, no de hoja
     }
 }
 
