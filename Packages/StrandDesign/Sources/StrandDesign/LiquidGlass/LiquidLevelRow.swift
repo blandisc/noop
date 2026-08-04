@@ -22,6 +22,9 @@ public struct LiquidLevelRow: View {
     private let conteo: String
     private let esHoy: Bool
     private let activa: Bool
+    /// Eco del scrub: la fila del nivel bajo el dedo recibe un wash tenue mientras arrastras
+    /// sobre la gráfica (mock `.lvl.hit`, `filaResaltadaAlfa`). `activa` gana si ambas.
+    private let resaltada: Bool
     private let tono: Color
     private let hoyEtiqueta: String?
     private let a11yHint: String?
@@ -35,7 +38,7 @@ public struct LiquidLevelRow: View {
     private var etiquetaPt: CGFloat = 14
 
     public init(etiqueta: String, rango: String, conteo: String,
-                esHoy: Bool, activa: Bool, tono: Color,
+                esHoy: Bool, activa: Bool, resaltada: Bool = false, tono: Color,
                 hoyEtiqueta: String? = nil,
                 a11yHint: String? = nil, onTap: @escaping () -> Void) {
         self.etiqueta = etiqueta
@@ -43,6 +46,7 @@ public struct LiquidLevelRow: View {
         self.conteo = conteo
         self.esHoy = esHoy
         self.activa = activa
+        self.resaltada = resaltada
         self.tono = tono
         self.hoyEtiqueta = hoyEtiqueta
         self.a11yHint = a11yHint
@@ -85,8 +89,9 @@ public struct LiquidLevelRow: View {
             .padding(.vertical, LiquidSpace.s300)
             .frame(maxWidth: .infinity)
             .frame(minHeight: 44)
-            // I1 en la lista: la fila activa se ilumina con el tono (rango 10-16 % del épico).
-            .background(activa ? tono.opacity(LiquidChart.filaActivaAlfa) : Color.clear)
+            // I1 en la lista: la fila activa se ilumina con el tono (rango 10-16 % del épico);
+            // la resaltada por scrub, con un wash más tenue (eco tabla↔gráfica); activa gana.
+            .background(washFila)
             .contentShape(Rectangle())
         }
         .buttonStyle(.liquidPress)
@@ -104,6 +109,14 @@ public struct LiquidLevelRow: View {
     private var tonoRotulo: Color {
         (tono == LiquidColor.ambar || tono == LiquidColor.atencion)
             ? LiquidColor.atencionTexto : tono
+    }
+
+    /// El wash de la fila: `activa` manda (I1, wash fuerte); `resaltada && !activa` es el eco
+    /// tenue del scrub; si nada, transparente. Mismo orden que `LiquidBandsTable`.
+    private var washFila: Color {
+        if activa { return tono.opacity(LiquidChart.filaActivaAlfa) }
+        if resaltada { return tono.opacity(LiquidChart.filaResaltadaAlfa) }
+        return .clear
     }
 
     /// El marcador de índice de la fila: una BARRA VERTICAL, no un círculo. Paridad del mock
@@ -141,12 +154,13 @@ public struct LiquidLevelsList: View {
         public let conteo: String
         public let esHoy: Bool
         public let activa: Bool
+        public let resaltada: Bool
         public let hoyEtiqueta: String?
         public let a11yHint: String?
         public let onTap: () -> Void
 
         public init(etiqueta: String, rango: String, conteo: String,
-                    esHoy: Bool = false, activa: Bool = false,
+                    esHoy: Bool = false, activa: Bool = false, resaltada: Bool = false,
                     hoyEtiqueta: String? = nil, a11yHint: String? = nil,
                     onTap: @escaping () -> Void = {}) {
             self.etiqueta = etiqueta
@@ -154,6 +168,7 @@ public struct LiquidLevelsList: View {
             self.conteo = conteo
             self.esHoy = esHoy
             self.activa = activa
+            self.resaltada = resaltada
             self.hoyEtiqueta = hoyEtiqueta
             self.a11yHint = a11yHint
             self.onTap = onTap
@@ -172,7 +187,8 @@ public struct LiquidLevelsList: View {
         VStack(spacing: 0) {
             ForEach(Array(filas.enumerated()), id: \.offset) { (i: Int, f: Fila) in
                 LiquidLevelRow(etiqueta: f.etiqueta, rango: f.rango, conteo: f.conteo,
-                               esHoy: f.esHoy, activa: f.activa, tono: tono,
+                               esHoy: f.esHoy, activa: f.activa, resaltada: f.resaltada,
+                               tono: tono,
                                hoyEtiqueta: f.hoyEtiqueta, a11yHint: f.a11yHint,
                                onTap: f.onTap)
                 if i < filas.count - 1 {

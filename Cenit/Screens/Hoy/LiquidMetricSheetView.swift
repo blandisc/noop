@@ -48,6 +48,10 @@ struct LiquidMetricSheetView: View {
     /// El nivel que el usuario explora en la lista (nil = el de hoy) — paridad
     /// `MetricLevelsExplorer.selectedLevelIndex`.
     @State private var nivelExplorado: Int? = nil
+    /// Eco tabla↔gráfica (auditoría 2026-08-03): el valor del punto bajo el dedo mientras
+    /// arrastras sobre la gráfica; `nil` al soltar. Resalta la fila de la escalera cuyo rango
+    /// lo contiene (mock `.lvl.hit`). NO toca el héroe (contrato §11.3, el scrub es local).
+    @State private var scrubValor: Double? = nil
     @State private var heartRateCurve: [TrendPoint] = []
     @State private var heartRateLoading = false
     @State private var trendData: [TrendPoint] = []
@@ -1404,6 +1408,8 @@ struct LiquidMetricSheetView: View {
             // (paridad `GraficaRangos`). Antes se apagaban con la sola existencia de una
             // lectura de hoy, sin que nadie hubiera pedido nada.
             atenuarFuera: nivelExplorado != nil,
+            // Eco tabla↔gráfica: el valor bajo el dedo resalta la fila de su nivel.
+            onScrubValor: { self.scrubValor = $0 },
             estadoVacio: String(localized: "No readings in this range."),
             a11yLabel: tituloHoja)
     }
@@ -1474,6 +1480,13 @@ struct LiquidMetricSheetView: View {
         let highlight: Int? = nivelDestacado(d)
         let hoyRotulo: String = String(localized: "· today")
         let hint: String = String(localized: "Highlights this level on the chart")
+        // Eco del scrub: qué carril contiene el valor bajo el dedo (rango half-open, igual
+        // que la clasificación). `nil` cuando no hay scrub. La fila activa gana el wash.
+        let resaltadaIdx: Int? = scrubValor.flatMap { (v: Double) -> Int? in
+            d.levels.firstIndex { lvl in
+                (lvl.lower.map { v >= $0 } ?? true) && (lvl.upper.map { v < $0 } ?? true)
+            }
+        }
         let filas: [LiquidLevelsList.Fila] = d.levels.indices
             .map { (i: Int) -> LiquidLevelsList.Fila in
                 let nivel: MetricLevels.Level = d.levels[i]
@@ -1488,6 +1501,7 @@ struct LiquidMetricSheetView: View {
                     // distintas. Ambas informaciones son ciertas y se ven a la vez.
                     esHoy: i == indiceDeHoy,
                     activa: i == highlight,
+                    resaltada: i == resaltadaIdx,
                     // El rótulo que marca EN LA LISTA dónde cayó hoy (clave existente).
                     hoyEtiqueta: hoyRotulo,
                     a11yHint: hint,
