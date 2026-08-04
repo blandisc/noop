@@ -9,8 +9,11 @@ import Foundation
 //
 // La carga de entrenamiento (ACWR) entra a «Hoy» como una FRANJA fija bajo las pestañas que al
 // tocarla abre esta HOJA. La hoja se migró al sistema Liquid Glass v1: se compone sobre el
-// cascarón `LiquidMetricSheet` (patrón `LiquidActaVeredicto`) con header → lectura → colina
-// (`LiquidHill`) → historial (`LiquidGraficaNiveles`) → método. Toda la matemática viene de
+// cascarón `LiquidMetricSheet` con las piezas COMPARTIDAS de la familia (FER-33 · F2):
+// header con sello → frase de nivel → colina (`LiquidHill`, en el hueco: es su firma) →
+// selector → tarjeta de gráfica (`LiquidFraseNivel` + `LiquidGraficaNiveles` +
+// `LiquidResumenVentana`) → escalera (`LiquidLevelsList`) → pie con chip de origen.
+// Toda la matemática viene de
 // `ReadinessEngine` (umbrales 0.8 / 1.3 / 1.5 intactos); estas vistas solo presentan `acwr`,
 // `acwrSeries` y `loadBand`. La FRANJA sigue en «Instrumento» (su equivalente Liquid vive en
 // la Hoy Liquid); esta migración es de la HOJA.
@@ -310,13 +313,34 @@ struct TrainingLoadSheet: View {
             VStack(alignment: .leading, spacing: LiquidSpace.s300) {
                 LiquidRangeSelector(opciones: ExploreRange.allCases.map(\.label),
                                     seleccion: rangeSeleccion)
-                if window.fellBack {
-                    avisoVentana(window)
+                if cargando {
+                    // La serie llega en el `.task`, o sea DESPUÉS del primer render. Sin este
+                    // gate, durante un frame la hoja afirma «0 días con datos en este rango»,
+                    // cuatro filas con «0 días» y Promedio/Rango en «—»: una mentira momentánea
+                    // sobre datos que sí existen. Los cortes SÍ se conocen (son umbrales), así
+                    // que la escalera se muestra sin conteos y el instrumento espera.
+                    esqueletoGrafica
+                    nivelesLista(d, conteos: false)
+                } else {
+                    if window.fellBack {
+                        avisoVentana(window)
+                    }
+                    tarjetaGrafica(d, window: window)
+                    nivelesLista(d)
                 }
-                tarjetaGrafica(d, window: window)
-                nivelesLista(d)
             }
         }
+    }
+
+    /// ¿La serie de niveles sigue en camino? Mismo gate que el compositor de las otras ocho.
+    private var cargando: Bool { !levelsHost.cargado }
+
+    /// El pozo del instrumento mientras la serie viene en camino: el mismo alto que la
+    /// gráfica, para que la hoja no cambie de tamaño cuando lleguen los datos.
+    private var esqueletoGrafica: some View {
+        LiquidGraficaNiveles(puntos: [], bandas: [], dominio: 0.45...1.9, ticksY: [],
+                             tono: tono, estado: .cargando, estadoVacio: "",
+                             a11yLabel: String(localized: "Training load history"))
     }
 
     /// Índice del selector ⇄ `ExploreRange` del host; cambiar de rango limpia la exploración.
@@ -393,10 +417,17 @@ struct TrainingLoadSheet: View {
             ])
         }
         .padding(LiquidSpace.s400)
-        .liquidGlass(.superficie)
+        // PAPEL OPACO, no vidrio: es una tarjeta INTERNA de la hoja, y el vidrio sobre vidrio
+        // es el defecto que hacía saltar las tablas de gris a blanco al arrastrar la hoja.
+        // Mismo criterio que `LiquidRegularityCard` y `LiquidBandsTable`.
+        .liquidGlass(.superficieSolida)
     }
 
-    private func nivelesLista(_ d: MetricLevels.Classification) -> some View {
+    /// `conteos: false` mientras la serie viene en camino: los cortes se conocen (son
+    /// umbrales), los conteos no. Imprimir «0 días» en cada fila desde el primer frame es
+    /// una mentira momentánea sobre datos que sí existen.
+    private func nivelesLista(_ d: MetricLevels.Classification,
+                              conteos: Bool = true) -> some View {
         let highlight = nivelDestacado(d)
         let hoyRotulo = String(localized: "· today")
         let hint = String(localized: "Highlights this level on the chart")
@@ -405,7 +436,7 @@ struct TrainingLoadSheet: View {
             return LiquidLevelsList.Fila(
                 etiqueta: nombreNivel(nivel.key),
                 rango: rangoNivel(nivel),
-                conteo: conteoLabel(d.counts[i]),
+                conteo: conteos ? conteoLabel(d.counts[i]) : "",
                 esHoy: i == indiceDeHoy,
                 activa: i == highlight,
                 hoyEtiqueta: hoyRotulo,
