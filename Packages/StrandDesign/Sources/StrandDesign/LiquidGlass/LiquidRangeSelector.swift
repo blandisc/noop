@@ -71,7 +71,9 @@ public struct LiquidRangeSelector: View {
     private func labelSegmento(texto: String, activo: Bool) -> some View {
         VStack(spacing: 0) {
             Text(verbatim: texto)
-                .font(LiquidType.microEstado)
+                // 13/600 (mock `.rango {13px/600}`), no `microEstado` (10.5): el selector
+                // se leía enano frente a la escalera (auditoría 2026-08-03).
+                .font(LiquidType.filaRango)
                 .foregroundStyle(activo ? LiquidColor.tinta900 : LiquidColor.tinta500)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             tickIndice(activo: activo)

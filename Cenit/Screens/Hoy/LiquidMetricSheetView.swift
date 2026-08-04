@@ -493,7 +493,9 @@ struct LiquidMetricSheetView: View {
             // tile se conserva — la hoja no abre muda.
             // F0.3 (FER-33): el numeral sigue la VENTANA del selector, y el sello dice cuál.
             numeral: heroVentana.numeral,
-            unidad: datoInfo.unit,
+            // Sueño cuelga la unidad «h» del reloj «7:25» (mock de sueño); las demás hojas
+            // usan la unidad de su catálogo. FER-29 fidelidad (auditoría 2026-08-03).
+            unidad: datoInfo.id == "sleep" ? String(localized: "h") : datoInfo.unit,
             sufijo: sufijo,
             numeralTono: tinte(datoInfo.headerTint),
             // FER-29 · Sin fecha/sello a la derecha del numeral (decisión del dueño,

@@ -115,7 +115,9 @@ public struct LiquidSheetHeader: View {
         VStack(alignment: .leading, spacing: LiquidSpace.s150) {
             HStack(spacing: LiquidSpace.s150) {
                 if let icono {
-                    LiquidIconDrop(icono, tone: tono)
+                    // Gota de HOJA: 34×34, glifo 16, tono al 12% (mock `.drop`), más grande
+                    // que la gota de tile (24/14/10%) — auditoría de fidelidad 2026-08-03.
+                    LiquidIconDrop(icono, tone: tono, size: 34, iconSize: 16, fillAlpha: 0.12)
                 }
                 // El nombre de la métrica manda más (pedido del dueño /inject): sube del
                 // rótulo chico al título del sistema, en tinta plena.

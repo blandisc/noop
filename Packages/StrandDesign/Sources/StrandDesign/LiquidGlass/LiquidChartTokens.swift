@@ -15,9 +15,9 @@ public enum LiquidChart {
 
     // MARK: Trazo
 
-    /// Grosor de la línea de serie. El mock canónico traza a 2.2 (`#line{stroke-width:2.2}`);
-    /// 2.0 le da cuerpo a la curva sin ahogar las series densas (auditoría 2026-08-03).
-    public static let lineaAncho: CGFloat = 2.0
+    /// Grosor de la línea de serie — 2.2, paridad exacta del mock (`#line{stroke-width:2.2}`,
+    /// auditoría 2026-08-03; venía de 1.6→2.0→2.2).
+    public static let lineaAncho: CGFloat = 2.2
     /// Grosor de la línea tenue (media móvil, serie secundaria).
     public static let lineaSecundariaAncho: CGFloat = 1.2
     /// Alfa de la retícula/grid sobre el vidrio.

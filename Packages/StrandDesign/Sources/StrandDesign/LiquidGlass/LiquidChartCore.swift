@@ -56,10 +56,13 @@ public struct LiquidChartBanda: Sendable {
 
 // MARK: - Altos de gráfica (paridad Instrumento, contrato §5 «candidatos menores»)
 
-/// Altos de la familia: 168 explorador, 140 trend 14d, 260 curva FC, 32 mini (renglón del
+/// Altos de la familia: 144 explorador, 140 trend 14d, 260 curva FC, 32 mini (renglón del
 /// guardián: banda + línea + joya + scrub, sin título ni ejes).
 enum LiquidChartAlto {
-    static let explorador: CGFloat = 168
+    /// Explorador de niveles. 168→144 (auditoría Grok+DeepSeek 2026-08-03): a 168 la tarjeta
+    /// de nivel+plot dominaba la hoja; el mock la traza a ~130 de área útil (+ franja de eje).
+    /// Debe ir de la mano con `LiquidSheetSkeleton.Alto.grafica`, o la hoja brinca al cargar.
+    static let explorador: CGFloat = 144
     static let trend: CGFloat = 140
     static let curvaFC: CGFloat = 260
     static let mini: CGFloat = 32

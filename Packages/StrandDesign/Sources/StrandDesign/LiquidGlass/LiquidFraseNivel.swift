@@ -55,7 +55,7 @@ public struct LiquidFraseNivel: View {
             if let titulo = nivel ?? sinLectura {
                 HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s200) {
                     Text(verbatim: titulo)
-                        .font(LiquidType.valorL)
+                        .font(LiquidType.nivelTitulo)
                         .tracking(Self.nivelTracking)
                         .foregroundStyle(nivel != nil ? tono : LiquidColor.tinta500)
                         // Escala con Dynamic Type y ENVUELVE: el nivel nunca se trunca.

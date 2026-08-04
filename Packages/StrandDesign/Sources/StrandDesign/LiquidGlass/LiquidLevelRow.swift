@@ -30,8 +30,9 @@ public struct LiquidLevelRow: View {
     /// La etiqueta escala con Dynamic Type como su rango y su conteo (`captionLectura`,
     /// relativo a `.caption2`). Con el `LiquidType.cuerpo` fijo de antes, a tamaños AX el
     /// nombre del carril terminaba MÁS CHICO que el número que lo acompaña.
+    // 14 base (mock `.lvl .nm {14px}`), 12.5→14 (auditoría 2026-08-03). Escala con Dynamic Type.
     @ScaledMetric(relativeTo: .footnote)
-    private var etiquetaPt: CGFloat = LiquidType.cuerpoLecturaBase
+    private var etiquetaPt: CGFloat = 14
 
     public init(etiqueta: String, rango: String, conteo: String,
                 esHoy: Bool, activa: Bool, tono: Color,
@@ -66,14 +67,18 @@ public struct LiquidLevelRow: View {
                     }
                 }
                 Spacer(minLength: LiquidSpace.s200)
+                // Rango 13/600 tinta700 y conteo 12 tinta500 — SIEMPRE, aunque la fila esté
+                // activa (mock `.lvl .rng {13/600 tinta700}`, `.lvl .cnt {12 tinta500}`; la
+                // fila activa se distingue por la etiqueta en bold+tinta900, el tick y el wash,
+                // no por teñir sus números de tinta900). Auditoría Grok+DeepSeek 2026-08-03.
                 Text(verbatim: rango)
-                    .font(LiquidType.captionLectura)
+                    .font(LiquidType.filaRango)
                     .monospacedDigit()
-                    .foregroundStyle(activa ? LiquidColor.tinta900 : LiquidColor.tinta500)
+                    .foregroundStyle(LiquidColor.tinta700)
                 Text(verbatim: conteo)
-                    .font(LiquidType.captionLectura)
+                    .font(LiquidType.filaConteo)
                     .monospacedDigit()
-                    .foregroundStyle(activa ? LiquidColor.tinta900 : LiquidColor.tinta500)
+                    .foregroundStyle(LiquidColor.tinta500)
                     .frame(minWidth: 52, alignment: .trailing)
             }
             .padding(.horizontal, LiquidSpace.s400)
@@ -107,7 +112,9 @@ public struct LiquidLevelRow: View {
     /// La barra se centra en una columna de 8 pt: el mismo ancho que ocupaba el círculo, para
     /// no correr el texto ni la sangría del separador de `LiquidLevelsList`.
     @ViewBuilder private var punto: some View {
-        let esTono: Bool = activa || esHoy
+        // Tick del tono SOLO en la fila activa (mock `.lvl.on .tick`); el día se marca con el
+        // rótulo «· hoy» aparte, no tiñendo su tick (auditoría 2026-08-03).
+        let esTono: Bool = activa
         RoundedRectangle(cornerRadius: 1, style: .continuous)
             .fill(esTono ? tono : LiquidColor.tinta10)
             .frame(width: activa ? 2.5 : 2, height: activa ? 17 : 14)

@@ -52,6 +52,12 @@ public enum LiquidType {
     /// protagonista no puede escalar menos que su delta.
     public static let valorL = InstrumentoType.groteskNumber(22, relativeTo: .title3)
 
+    /// `nivel/título` — 18/700, escala. El nombre del nivel destacado en la tarjeta de la
+    /// gráfica (mock `.titfila {18px/700}`); más chico que `valorL` (22) para no competir con
+    /// el numeral del héroe (52). Auditoría de fidelidad Grok+DeepSeek 2026-08-03.
+    public static let nivelTitulo = InstrumentoType.grotesk(18, weight: .bold,
+                                                            relativeTo: .title3)
+
     /// `valor/l · separador` — el mismo `valorL` en peso REGULAR: los dos-puntos del tiempo de
     /// sueño («7:20») se leen como separador tenue, no como dígito. Token (FER-31) en vez de un
     /// `.fontWeight(.regular)` inline sobre `valorL`.
@@ -112,6 +118,14 @@ public enum LiquidType {
     /// Se publica la BASE en puntos y el consumidor la escala con
     /// `@ScaledMetric(relativeTo: .footnote)`, el mismo patrón de `lecturaHojaBase`.
     public static let cuerpoLecturaBase: CGFloat = 12.5
+
+    /// Rango de la fila de nivel — 13/semibold, escala (relativo a `.footnote`). Mock
+    /// `.lvl .rng {13px/600}`. También lo usan los segmentos del selector de rango
+    /// (`.rango {13px/600}`). Auditoría de fidelidad 2026-08-03: antes `captionLectura` (10.5).
+    public static let filaRango = Font.system(.footnote, weight: .semibold)
+    /// Conteo de la fila de nivel — 12/regular, escala (relativo a `.caption`). Mock
+    /// `.lvl .cnt {12px/400}`. Auditoría 2026-08-03: antes `captionLectura` (10.5).
+    public static let filaConteo = Font.system(.caption)
 
     /// `unidad` — SF 400 11, color tinta/500. «ms», «lpm», «min» junto a valores.
     public static let unidad = Font.system(size: 11)
