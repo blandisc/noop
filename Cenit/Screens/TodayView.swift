@@ -15,14 +15,15 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 // Composition (top → bottom), all inside `iosBody`:
 //   (a) HEADER — date · strap battery · live BPM (tap → Latidos) · the 34pt `DialSeal` (the 24h
 //                signature AND the pull-to-refresh spinner), plus the freshness line (`headerBlock`).
-//   (b) HERO   — last night's SLEEP as the dominant numeral + the «cómo vienes» autonomic-trend card
-//                (`appleTrendHero`). FER-1029: this is the ONLY hero. The 0–100 recovery verdict numeral
-//                (band era) was retired — `repo.today.recovery` is always nil on Apple-only, so it was
-//                unreachable dead code. The big `DiurnalDial` was retired earlier; the 24h lives in the
-//                header seal.
-//   (c) SEÑALES — the single surface (`senalesPage`): the training-load strip + the 2×4 tile grid with
-//                sparkbands (`iosMetricsSection`). FER-1039: the SEÑALES/BRIEF tabs, the 2-page pager and
-//                the «en espera» brief were retired — Hoy is one surface, no verdict/brief left to page to.
+//   (b) HERO   — last night's SLEEP as the dominant numeral (`appleTrendHero`). FER-1029: this is the
+//                ONLY hero. The 0–100 recovery verdict (band era) and the classic «Preparación» hero
+//                (verdict word + needles) were retired as unreachable dead code (FER-35). The big
+//                `DiurnalDial` was retired earlier; the 24h lives in the header seal.
+//   (c) SEÑALES — the classic surface (`senalesPage`) now renders ONLY in the empty state (`noSources`):
+//                the training-load strip + the «connect Apple Health» card. FER-1039 retired the
+//                SEÑALES/BRIEF tabs and the pager; FER-35 removed the 2×4 tile grid (`iosMetricsSection`)
+//                as unreachable dead code. With data, the surface is `liquidSurface` (the Liquid Glass
+//                composition), not this branch.
 //
 // Pull-to-refresh: the seal winds up with the pull and spins while syncing; the tile values settle
 // straight to their numbers (no count-up or reveal sequence on completion).
@@ -242,8 +243,6 @@ struct TodayView: View {
     @State private var trainingLoadItem: TrainingLoadItem? = nil
 
 
-    // THE single grid definition — every tile group reuses it so margins line up.
-    private let grid = [GridItem(.adaptive(minimum: 168), spacing: CenitMetrics.gap)]
 
     // MARK: - Memoización de conteos derivados (FER-172)
     //
@@ -1154,8 +1153,8 @@ struct TodayView: View {
         return inputs
     }
 
-    /// Pasos del tile (port del bloque de `iosMetricsSection`): Apple fresco primero; sin
-    /// conteo real cae a la estimación on-device (FER-663), rotulada y con origen calculado.
+    /// Pasos para la superficie Liquid: Apple fresco primero; sin conteo real cae a la estimación
+    /// on-device (FER-663), rotulada y con origen calculado.
     private func liquidSteps() -> (value: Double?, estimated: Bool, raw: Int?) {
         let cutoff = Repository.localDayKey(Calendar.current.date(byAdding: .day, value: -13, to: Date()) ?? Date())
         let fresh = appleDays.last(where: { $0.day >= cutoff })?.steps
@@ -1223,9 +1222,10 @@ struct TodayView: View {
 
     // MARK: - Héroe «Instrumento diurno» (FER-160 · FER-1008/FER-1029)
     //
-    // Apple-only: el héroe es el SUEÑO de anoche (número dominante) + la tarjeta de tendencia autonómica.
-    // El veredicto 0–100 estilo-banda y sus estados narrados pre-lectura (calibrando / en espera) se
-    // retiraron con la banda y el brief (FER-1039); el numeral de sueño se basta solo.
+    // Apple-only: el héroe es el SUEÑO de anoche (número dominante). El veredicto 0–100 estilo-banda y
+    // sus estados narrados pre-lectura (calibrando / en espera) se retiraron con la banda y el brief
+    // (FER-1039); la tarjeta de tendencia autonómica vivía en el héroe «Preparación», retirado como
+    // código muerto (FER-35). El numeral de sueño se basta solo.
 
 
     // El único héroe de la superficie clásica (estado sin fuentes): el sueño de anoche como número
@@ -1270,10 +1270,11 @@ struct TodayView: View {
         .accessibilityHint(Text("Opens the sleep detail"))
     }
 
-    // MARK: - SEÑALES (única superficie de Hoy)
+    // MARK: - SEÑALES (superficie clásica · solo estado vacío)
 
-    /// SEÑALES — la única superficie de Hoy (FER-1039): la franja de carga + la retícula 2×4 de tiles; o
-    /// la tarjeta de fuentes si no hay ninguna (FER-364).
+    /// SEÑALES — la superficie CLÁSICA, que ya solo se pinta en el estado sin fuentes (`noSources`):
+    /// la franja de carga (si la hay) + la tarjeta de «conectar Apple Health» (FER-364). La retícula 2×4
+    /// de tiles se retiró por inalcanzable (FER-35); con datos, la superficie es `liquidSurface`.
     @ViewBuilder private var senalesPage: some View {
         VStack(alignment: .leading, spacing: CenitMetrics.space2) {
             // Franja de carga (FER-705 · handoff «Carga»): vive DENTRO de Señales, así que pertenece solo a
