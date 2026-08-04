@@ -148,7 +148,7 @@ struct TodayView: View {
     // — corre UNA vez por día LOCAL (dayKey local, no UTC: trampa conocida de la fila
     // fantasma). El hint «Toca para separar» se retira tras 3 separaciones acumuladas.
     @AppStorage("today.ecosistemaFusionDay") private var ecosistemaFusionDay = ""
-    /// La hoja del guardián («¿qué es VIGILANDO?», FER-10).
+    /// La hoja del guardián («¿qué es VIGILANDO?», FER-10 / FER-33 · F3).
     @State private var showGuardianHoja = false
     @AppStorage("today.ecosistemaSeparaciones") private var ecosistemaSeparaciones = 0
 
@@ -702,13 +702,15 @@ struct TodayView: View {
             }
             .preferredColorScheme(.light)
         }
-        // La hoja del guardián: qué vigila (temp + respiración) y por qué no vota.
+        // La hoja del guardián: qué vigila (temp + respiración) y por qué no vota (FER-33 · F3).
         .sheet(isPresented: $showGuardianHoja) {
-            LiquidMetricSheet(
-                tono: liquidOutput.model.guardian?.estado == .juntas
-                    ? LiquidColor.atencion : LiquidColor.tinta700,
-                detent: .medio) {
-                LiquidGuardianScreen(LiquidHoyBuilder.guardianHoja(liquidOutput.model.guardian))
+            let inputs = liquidGuardianInputs
+            LiquidMetricSheet(tono: LiquidHoyBuilder.guardianHoja(inputs).tono,
+                              detent: .porContenido) {
+                LiquidGuardianHojaHost(
+                    inputs: inputs,
+                    tempLoader: trendLoader(for: "skin_temp"),
+                    respLoader: trendLoader(for: "resp_rate"))
             }
             .preferredColorScheme(.light)
         }
@@ -1043,6 +1045,20 @@ struct TodayView: View {
         if liquidDemo { return LiquidColor.verdePrimario }
         #endif
         return LiquidHoyBuilder.autonomicoTono(repo.todayPreparedness)
+    }
+
+    /// Entradas de la hoja del guardián (las series las carga el host al aparecer).
+    private var liquidGuardianInputs: LiquidHoyBuilder.GuardianHojaInputs {
+        let nochesTemp = repo.displayDays.suffix(14).compactMap(\.skinTempDevC).count
+        return .init(
+            guardian: liquidOutput.model.guardian,
+            prep: repo.todayPreparedness,
+            tempTrend: [],
+            respTrend: [],
+            now: Date(),
+            calendar: .current,
+            locale: .current,
+            nochesTemp: nochesTemp)
     }
 
     @ViewBuilder private var liquidSurface: some View {
@@ -2008,6 +2024,9 @@ struct TodayView: View {
         case "rhr":       pick = { $0.restingHr.map(Double.init) }
         case "spo2":      pick = { $0.spo2Pct }
         case "skin_temp": pick = { $0.skinTempDevC }
+        // FER-33 · F3: sin este case, NINGUNA hoja podía dibujar serie de respiración
+        // (caía al default → nil). Mismo campo que `levelsSeriesLoader`.
+        case "resp_rate": pick = { $0.respRateBpm }
         case "steps":     pick = { $0.steps.map(Double.init) }
         default:          return nil   // strain (verdict + levels only) and anything else: no 14-day trend
         }
@@ -2183,6 +2202,38 @@ struct TodayView: View {
         }
     }
 
+}
+
+// MARK: - Host de la hoja del guardián (FER-33 · F3)
+//
+// Carga las series de 14 noches al aparecer y recompone la hoja. Vive DENTRO del
+// cascarón `LiquidMetricSheet` para que su `@State` actualice las mini-gráficas sin
+// reabrir la hoja.
+
+private struct LiquidGuardianHojaHost: View {
+    let inputs: LiquidHoyBuilder.GuardianHojaInputs
+    let tempLoader: (() async -> [TrendPoint])?
+    let respLoader: (() async -> [TrendPoint])?
+
+    @State private var tempTrend: [(fecha: Date, valor: Double)] = []
+    @State private var respTrend: [(fecha: Date, valor: Double)] = []
+
+    var body: some View {
+        var i = inputs
+        i.tempTrend = tempTrend
+        i.respTrend = respTrend
+        return LiquidGuardianScreen(LiquidHoyBuilder.guardianHoja(i))
+            .task {
+                if let load = tempLoader {
+                    let pts = await load()
+                    tempTrend = pts.map { (fecha: $0.date, valor: $0.value) }
+                }
+                if let load = respLoader {
+                    let pts = await load()
+                    respTrend = pts.map { (fecha: $0.date, valor: $0.value) }
+                }
+            }
+    }
 }
 
 // MARK: - Preview

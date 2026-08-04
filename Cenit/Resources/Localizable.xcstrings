@@ -51741,6 +51741,550 @@
           }
         }
       }
+    },
+    "Inside your pattern": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inside your pattern"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dentro de tu patrón"
+          }
+        }
+      }
+    },
+    "Your two night signals woke up where they always do.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your two night signals woke up where they always do."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tus dos señales de la noche amanecieron donde siempre."
+          }
+        }
+      }
+    },
+    "One signal out": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One signal out"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Una señal fuera"
+          }
+        }
+      }
+    },
+    "Your temperature woke up outside your pattern; breathing, where it always does.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your temperature woke up outside your pattern; breathing, where it always does."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu temperatura amaneció fuera de tu patrón; la respiración, donde siempre."
+          }
+        }
+      }
+    },
+    "Your breathing woke up outside your pattern; temperature, where it always does.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your breathing woke up outside your pattern; temperature, where it always does."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu respiración amaneció fuera de tu patrón; la temperatura, donde siempre."
+          }
+        }
+      }
+    },
+    "A single one can be the room, the blanket, or the night. The guardian waits.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A single one can be the room, the blanket, or the night. The guardian waits."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Una sola puede ser el cuarto, la cobija o la noche. El guardián espera."
+          }
+        }
+      }
+    },
+    "Both out": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Both out"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Juntas, fuera"
+          }
+        }
+      }
+    },
+    "Your two signals woke up outside your pattern, for a second night.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your two signals woke up outside your pattern, for a second night."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tus dos señales amanecieron fuera de tu patrón, por segunda noche."
+          }
+        }
+      }
+    },
+    "Your two signals woke up outside your pattern together.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your two signals woke up outside your pattern together."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tus dos señales amanecieron fuera de tu patrón juntas."
+          }
+        }
+      }
+    },
+    "The guardian doesn't diagnose: it only eases your pace.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The guardian doesn't diagnose: it only eases your pace."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El guardián no diagnostica: solo te baja el ritmo."
+          }
+        }
+      }
+    },
+    "With no night recorded, the guardian has nothing to compare against.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "With no night recorded, the guardian has nothing to compare against."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin noche grabada, el guardián no tiene contra qué comparar."
+          }
+        }
+      }
+    },
+    "Sleep with your Apple Watch and tomorrow it watches again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sleep with your Apple Watch and tomorrow it watches again."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duerme con tu Apple Watch y mañana vuelve a vigilar."
+          }
+        }
+      }
+    },
+    "I need a few of your nights to learn your pattern.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I need a few of your nights to learn your pattern."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Necesito unas noches tuyas para aprender tu patrón."
+          }
+        }
+      }
+    },
+    "In the meantime, readings are shown without comparison.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In the meantime, readings are shown without comparison."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mientras tanto, las lecturas se muestran sin comparación."
+          }
+        }
+      }
+    },
+    "Learning your pattern": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Learning your pattern"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aprendiendo tu patrón"
+          }
+        }
+      }
+    },
+    "It watches two signals from your night, your skin temperature and your breathing, against your own pattern from recent weeks. It doesn't vote on your verdict: it only pushes toward a lighter day when both drift out together. An approximation, not a diagnosis.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It watches two signals from your night, your skin temperature and your breathing, against your own pattern from recent weeks. It doesn't vote on your verdict: it only pushes toward a lighter day when both drift out together. An approximation, not a diagnosis."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vigila dos señales de tu noche, tu temperatura de piel y tu respiración, contra tu propio patrón de las últimas semanas. No vota tu veredicto: solo lo empuja hacia un día más leve cuando las dos se salen juntas. Es una aproximación, no un diagnóstico."
+          }
+        }
+      }
+    },
+    "your last 14 nights · the band is your pattern": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "your last 14 nights · the band is your pattern"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tus últimas 14 noches · la banda es tu patrón"
+          }
+        }
+      }
+    },
+    "THE RULE": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "THE RULE"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "LA REGLA"
+          }
+        }
+      }
+    },
+    "A single signal out never pushes your day. Only the pair, two nights in a row.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A single signal out never pushes your day. Only the pair, two nights in a row."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Una sola señal fuera nunca empuja tu día. Solo la pareja, dos noches seguidas."
+          }
+        }
+      }
+    },
+    "Only the pair, two nights in a row.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only the pair, two nights in a row."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solo la pareja, dos noches seguidas."
+          }
+        }
+      }
+    },
+    "How it was obtained": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How it was obtained"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cómo se obtuvo"
+          }
+        }
+      }
+    },
+    "Both signals are read from your Apple Watch while you sleep and compared against your own pattern from recent weeks, not population tables. An isolated deviation is ignored on purpose: a warm room or an extra blanket can produce it alone.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Both signals are read from your Apple Watch while you sleep and compared against your own pattern from recent weeks, not population tables. An isolated deviation is ignored on purpose: a warm room or an extra blanket can produce it alone."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Las dos señales se leen de tu Apple Watch mientras duermes y se comparan contra tu propio patrón de las últimas semanas, no contra tablas de población. Una desviación aislada se ignora a propósito: un cuarto caliente o una cobija de más la producen solas."
+          }
+        }
+      }
+    },
+    "Skin temperature, last 14 nights": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skin temperature, last 14 nights"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Temperatura de piel, últimas 14 noches"
+          }
+        }
+      }
+    },
+    "Breathing, last 14 nights": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Breathing, last 14 nights"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Respiración, últimas 14 noches"
+          }
+        }
+      }
+    },
+    "No readings yet.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No readings yet."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin lecturas todavía."
+          }
+        }
+      }
+    },
+    "outside your pattern": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "outside your pattern"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "fuera de tu patrón"
+          }
+        }
+      }
+    },
+    "inside your pattern": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "inside your pattern"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "en tu patrón"
+          }
+        }
+      }
+    },
+    "night before last": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "night before last"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "anteanoche"
+          }
+        }
+      }
+    },
+    "lighter day": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "lighter day"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "día más leve"
+          }
+        }
+      }
+    },
+    "Your day was pushed to a lighter one.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your day was pushed to a lighter one."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu día se empujó a uno más leve."
+          }
+        }
+      }
+    },
+    "out": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "out"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "fuera"
+          }
+        }
+      }
+    },
+    "in pattern": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "in pattern"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "en patrón"
+          }
+        }
+      }
     }
   },
   "version": "1.1"
