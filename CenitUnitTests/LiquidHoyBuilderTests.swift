@@ -388,9 +388,10 @@ final class LiquidHoyBuilderTests: XCTestCase {
     /// Sin NINGUNA lectura sí es «sin lectura anoche»: ese caso no se tocó.
     func test_guardian_ningunaLectura_sigueSiendoSinLectura() {
         let g = LiquidHoyBuilder.guardian(prep: prep([]), thermalDeviation: nil, resp: nil)
-        XCTAssertNil(g, "sin ninguna de las dos el guardián no se arma")
-        let h = LiquidHoyBuilder.guardianHoja(.init(guardian: nil, prep: nil))
+        XCTAssertEqual(g?.estado, .sinLectura, "sin ninguna de las dos, ese y no otro")
+        let h = hoja([], guardian: g)
         XCTAssertEqual(h.sinLectura, String(localized: "No reading last night"))
+        XCTAssertNil(h.nivel, "y sin palabra de patrón")
     }
 
     // MARK: Carga — mismo mapeo que la franja

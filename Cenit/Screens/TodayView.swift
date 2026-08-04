@@ -475,6 +475,19 @@ struct TodayView: View {
     /// through `.sheet`'s fresh environment) and deciding the "connect Apple Salud" hint: shown only
     /// for Apple-sourceable metrics that aren't connected and have no value yet — strap-only metrics
     /// (strain, heart rate) never get it. The connect action itself stays in Today. (FER-162)
+    /// ¿Los pasos que se muestran hoy vienen de una ESTIMACIÓN en el teléfono y no de un
+    /// conteo real de Apple? El tile ya lo rotulaba «est.», pero la hoja del mismo dato
+    /// afirmaba Apple Salud sin mirar: dos superficies del mismo número diciendo procedencias
+    /// distintas. Vive aquí, en un solo lugar, para que no puedan volver a divergir.
+    /// (Revisión Grok r3 · I3.)
+    private var pasosEstimadosHoy: Bool {
+        let corte = Repository.localDayKey(
+            Calendar.current.date(byAdding: .day, value: -13, to: Date()) ?? Date())
+        let real = appleDays.last(where: { $0.day >= corte })?.steps
+        guard real == nil else { return false }
+        return stepsEst.last(where: { $0.day >= corte }) != nil
+    }
+
     private func metricSheet(for info: MetricInfo) -> some View {
         // Temp. de piel y respiración también las mide el Apple Watch (los tiles ya las
         // resuelven así), así que entran a la pista «conecta Apple Salud» igual que el resto.
@@ -487,7 +500,10 @@ struct TodayView: View {
         // Apple-only. Strap-only (esfuerzo, FC, recuperación, estrés) → false. Sólo se badgea cuando hay valor.
         let fromApple: Bool = {
             switch info.id {
-            case "steps": return true
+            // Un día sin conteo real de Apple se estima en el teléfono, y el tile ya lo marca
+            // «est.». La hoja del MISMO dato afirmaba Apple sin mirar: dos superficies del
+            // mismo número diciendo procedencias distintas. (Revisión Grok r3 · I3.)
+            case "steps": return !pasosEstimadosHoy
             case "hrv":   return latestFromDisplay { $0.avgHrv }?.fromApple == true
             case "rhr":   return latestFromDisplay { $0.restingHr.map(Double.init) }?.fromApple == true
             // Sueño es day-scoped (todayOnly, FER-341): la tarjeta muestra SÓLO el valor de hoy, así que el

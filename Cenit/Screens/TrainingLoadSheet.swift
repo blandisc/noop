@@ -519,11 +519,15 @@ struct TrainingLoadSheet: View {
         ]
     }
 
-    /// El tono de la hoja = el color del punto de la colina para la banda de hoy (un solo mapeo
-    /// de color en la hoja). Calibrando → tinta neutra.
+    /// El tono de la hoja = el color de la banda del valor que la hoja MUESTRA (un solo mapeo
+    /// de color). Calibrando → tinta neutra.
+    ///
+    /// Seguía siempre al ACWR de hoy, así que en rango largo la frase decía «Subiendo» y la
+    /// hoja entera —numeral incluido— se pintaba del verde de hoy: el color contradecía a la
+    /// palabra. (Revisión Grok r3 · I2.)
     private var tono: Color {
-        guard let band = model.band else { return LiquidColor.tinta500 }
-        return hillColor(band)
+        guard let v = valorMostrado else { return LiquidColor.tinta500 }
+        return hillColor(ReadinessEngine.loadBand(forACWR: v))
     }
 
     /// El tono para TEXTO CHICO (la lectura honesta): el ámbar de dato falla AA sobre vidrio,
@@ -573,7 +577,7 @@ struct TrainingLoadSheet: View {
 
     /// ⓘ: 7 vs 28, 1.0 = usual, banda de balance, hedge. La jerga ACWR se queda en el método.
     private var heroExplanation: String {
-        String(localized: "We compare your average strain over the last ~7 days against your last ~28. 1.0 means you trained exactly your usual; 0.8 to 1.3 reads as balance. It's context for your recovery, not an injury prediction.")
+        String(localized: "We compare your average strain over the last ~7 days against your last ~28. 1.0 means you trained about your usual; 0.8 to 1.3 reads as balance. It's context for your recovery, not an injury prediction.")
     }
 
     private var methodProse: String {
