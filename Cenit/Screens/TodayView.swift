@@ -451,29 +451,20 @@ struct TodayView: View {
                 .recEntranceGate()
             }
             .sheet(item: $trainingLoadItem) { item in
-                // Hoja «Carga de entrenamiento» (FER-705 · handoff «Carga») — tema explícito (no cruza `.sheet`),
-                // sin NavigationStack anidado (FER-171). «Tu patrón» y «Ver más en Tendencias» llegan como
-                // closures que despachan por el `TabRouter` (Patrones / Cuerpo).
+                // Hoja «Carga de entrenamiento» (FER-705 · handoff «Carga» · FER-33 F2) —
+                // tema explícito (no cruza `.sheet`), sin NavigationStack anidado (FER-171).
+                // «Ver más en Tendencias» despacha al tab Cuerpo vía `TabRouter`.
                 TrainingLoadSheet(model: item.model, theme: theme,
-                                  patternText: item.patternText,
-                                  onSeePattern: item.onSeePattern,
                                   onSeeTrends: item.onSeeTrends)
                     .recEntranceGate()
             }
             .enableInjection()   // Inject: ver la nota en `inject` arriba (no-op en Release)
     }
 
-    /// Arma la hoja de carga desde la franja: engancha «Tu patrón» al hallazgo de carga (si existe, de la
-    /// misma fuente que Patrones) y «Ver más en Tendencias» al tab Cuerpo, ambos vía `TabRouter`.
+    /// Arma la hoja de carga desde la franja: «Ver más en Tendencias» al tab Cuerpo vía `TabRouter`.
+    /// El hallazgo de carga sigue vivo en Patrones; ya no se asoma en esta hoja (FER-33 · F2).
     private func makeTrainingLoadItem(_ model: TrainingLoadModel) -> TrainingLoadItem {
-        let loadInsight = insights.first { $0.kind == .trainingLoad }
-        return TrainingLoadItem(
-            model: model,
-            patternText: loadInsight?.reading,
-            // FER-992: CTA to Patrones off — re-enable:
-            // onSeePattern: loadInsight.map { i in { tabRouter.openInsight(key: InsightFreshness.key(for: i)) } },
-            onSeePattern: nil,
-            onSeeTrends: { tabRouter.select(.body) })
+        TrainingLoadItem(model: model, onSeeTrends: { tabRouter.select(.body) })
     }
 
     private var platformBody: some View {

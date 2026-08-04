@@ -30,6 +30,10 @@ final class MetricLevelsHostModel {
     private let metricID: String
     private let levelsMetric: MetricLevels.FixedMetric?
     private let levelsRelative: Bool
+    /// Niveles fijos armados en el call site (Carga / FER-33 F2). Cuando hay, ganan sobre
+    /// `levelsMetric` y `levelsRelative` — evita meter un `case load` en `FixedMetric` y
+    /// duplicar los cortes 0.8/1.3/1.5 del motor.
+    private let fixedLevels: [MetricLevels.Level]?
 
     /// Misma parametrización que `MetricInfo`: `levelsMetric` = umbrales fijos (FER-570);
     /// `levelsRelative` = banda personal de HRV desde la base propia (FER-619).
@@ -37,6 +41,16 @@ final class MetricLevelsHostModel {
         self.metricID = metricID
         self.levelsMetric = levelsMetric
         self.levelsRelative = levelsRelative
+        self.fixedLevels = nil
+    }
+
+    /// Niveles fijos construidos por el caller (Carga: cortes de `ReadinessEngine` leídos
+    /// en el call site). Misma serie parseada / ventana / clasificación que el resto.
+    init(metricID: String, fixedLevels: [MetricLevels.Level]) {
+        self.metricID = metricID
+        self.levelsMetric = nil
+        self.levelsRelative = false
+        self.fixedLevels = fixedLevels
     }
 
     /// Carga la serie completa (el `levelsSeriesLoader` de siempre) parseando cada día a
@@ -64,6 +78,7 @@ final class MetricLevelsHostModel {
     }
 
     private func compute() -> [MetricLevels.Level]? {
+        if let fixedLevels { return fixedLevels }
         if let metric = levelsMetric { return MetricLevels.levels(for: metric) }
         guard levelsRelative else { return nil }
         // HRV: banda multiplicativa desde la base log-normal propia (exp(lnBase ± σ) → ms),
