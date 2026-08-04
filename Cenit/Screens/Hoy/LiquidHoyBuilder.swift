@@ -261,7 +261,7 @@ enum LiquidHoyBuilder {
             reglaClave: String(localized: "Only the pair, two nights in a row."),
             domino: dominoGuardian(prep: i.prep, estado: estado),
             metodo: .init(
-                titulo: String(localized: "How it was obtained"),
+                titulo: String(localized: "How it's calculated"),   // #inject r5 · unifica el pie con la familia (era «How it was obtained»)
                 mostrar: String(localized: "Show method"),
                 ocultar: String(localized: "Hide method"),
                 nota: String(localized: "Both signals are read from your Apple Watch while you sleep and compared against your own pattern from recent weeks, not population tables. An isolated deviation is ignored on purpose: a warm room or an extra blanket can produce it alone."),
