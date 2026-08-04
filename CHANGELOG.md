@@ -20,6 +20,10 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **Las hojas de detalle recuperan su luz, fechan su número y dicen de dónde salió / The detail sheets get their light back, date their number, and say where it came from.**
+  **ES** — Cada hoja late ahora con la luz de su propia métrica detrás del número, como el orbe de Hoy. El número grande viene fechado («HOY · 3 AGO»), y al cambiar de rango pasa a ser el promedio de lo que estás viendo («MEDIA · 30 DÍAS») en vez de quedarse en el dato de hoy sin avisar; arrastrar el dedo por la gráfica sigue sin moverlo. Y la procedencia del dato baja del encabezado a «Cómo se calcula», donde queda como una pastilla que dice si lo midió Apple Salud o lo calculó tu iPhone.
+  **EN** — Every sheet now breathes with its own metric's light behind the number, like the Today orb. The big number is dated («TODAY · 3 AUG»), and switching range turns it into the average of what you're looking at («AVG · 30 DAYS») instead of silently staying on today's figure; dragging across the chart still leaves it alone. And where the data came from moves out of the header into «How it's calculated», as a chip that says whether Apple Health measured it or your iPhone computed it.
+
 - **La hoja de Sueño se pone a la par de las demás: su número grande es la duración, y la regularidad estrena tarjeta / The Sleep sheet falls in line with the rest: its big number is duration, and regularity gets its own card.**
   **ES** — Antes, el encabezado de Sueño mostraba dos datos apretados (duración | regularidad); ahora muestra un solo número grande —tu duración— igual que las otras ocho hojas, y la regularidad baja a su propia tarjeta con su explicación y una línea que la traduce («Muy regular», «Bastante regular», «Variable»). Las etapas de la noche siguen debajo.
   **EN** — Before, the Sleep header crammed two figures (duration | regularity); now it shows a single large number — your duration — like the other eight sheets, and regularity moves to its own card with its explanation and a line that translates it («Very regular», «Fairly regular», «Variable»). The night's stages stay below.
