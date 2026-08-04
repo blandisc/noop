@@ -27,6 +27,8 @@ public struct MetricFormat: Sendable, Equatable {
         case integerGrouped
         /// One decimal place: 10 → «10.0», 14.24 → «14.2».
         case decimal1
+        /// Two decimal places: 1.03 → «1.03», 0.9 → «0.90» (training-load ACWR).
+        case decimal2
         /// One decimal place, always signed: 0.4 → «+0.4», −0.4 → «−0.4» (skin-temp deviation).
         case signedDecimal1
         /// Minutes rendered as clock time: 432 → «7:12», 360 → «6:00» (sleep).
@@ -100,6 +102,8 @@ public struct MetricFormat: Sendable, Equatable {
             return grouped(Int(value.rounded()))
         case .decimal1:
             return String(format: "%.1f", value)
+        case .decimal2:
+            return String(format: "%.2f", value)
         case .signedDecimal1:
             // Force the sign, then normalise the minus to a real «−» so the guard/typography match.
             return String(format: "%+.1f", value).replacingOccurrences(of: "-", with: "−")

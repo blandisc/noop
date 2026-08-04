@@ -34,9 +34,6 @@ struct TrainingLoadModel: Sendable {
 struct TrainingLoadItem: Identifiable {
     let id = UUID()
     let model: TrainingLoadModel
-    /// «Tu patrón» (opcional, solo desde «Hoy»): el texto del hallazgo de carga + a dónde lleva «Ver patrón →».
-    var patternText: String? = nil
-    var onSeePattern: (() -> Void)? = nil
     /// «Ver más en Tendencias» (opcional, solo desde «Hoy»; redundante desde la propia Tendencias).
     var onSeeTrends: (() -> Void)? = nil
 }
@@ -147,75 +144,145 @@ struct TrainingLoadStrip: View {
     }
 }
 
-// MARK: - Hoja «Carga de entrenamiento» — Liquid Glass (composición sobre LiquidMetricSheet)
+// MARK: - Hoja «Carga de entrenamiento» — Liquid Glass (familia, FER-33 · F2)
 
 struct TrainingLoadSheet: View {
     let model: TrainingLoadModel
     /// Tema «Instrumento» retenido por compatibilidad con los call sites (la hoja Liquid ya no
     /// lo usa: el cascarón `LiquidMetricSheet` pone su propio fondo). No se referencia.
     var theme: InstrumentoTheme = .base
-    /// «Tu patrón» (solo desde «Hoy»): el hallazgo de carga + a dónde lleva «Ver patrón →».
-    var patternText: String? = nil
-    var onSeePattern: (() -> Void)? = nil
     /// «Ver más en Tendencias» (solo desde «Hoy»).
     var onSeeTrends: (() -> Void)? = nil
 
     @Environment(\.dismiss) private var dismiss
-    /// El periodo del historial (S/M/3M/6M/1A/TODO).
-    @State private var range: ExploreRange = .month
-    /// Serie ACWR con día parseado una sola vez (lección FER-216).
-    @State private var parsed: [(day: String, date: Date?, value: Double)] = []
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.liquidMotionDisabled) private var motionDisabled
+
+    /// Host de niveles: serie parseada una vez + ventana por rango (paridad del compositor).
+    @State private var levelsHost: MetricLevelsHostModel
+    /// El nivel que el usuario explora en la escalera (nil = el del valor mostrado).
+    @State private var nivelExplorado: Int? = nil
+
+    /// Formateador del sistema: numeral a 2 decimales, cotas a 1 (0.8 / 1.3 / 1.5).
+    private static let format = MetricFormat(
+        valueStyle: .decimal2, boundaryStyle: .decimal1, unit: nil)
+
+    /// Los cuatro niveles de carga, armados en el call site desde las constantes del motor.
+    /// Claves = `LoadBand.rawValue` (coinciden con `MetricLevelPhrase` / `reading.vsBase.load.*`).
+    private static var loadLevels: [MetricLevels.Level] {
+        let lo = ReadinessEngine.acwrSweetSpotLow
+        let hi = ReadinessEngine.acwrSweetSpotHigh
+        let spike = ReadinessEngine.acwrSpikeAt
+        return [
+            .init(key: ReadinessEngine.LoadBand.rampingDown.rawValue, lower: nil, upper: lo),
+            .init(key: ReadinessEngine.LoadBand.sweetSpot.rawValue, lower: lo, upper: hi),
+            .init(key: ReadinessEngine.LoadBand.buildingFast.rawValue, lower: hi, upper: spike),
+            .init(key: ReadinessEngine.LoadBand.spiking.rawValue, lower: spike, upper: nil),
+        ]
+    }
+
+    init(model: TrainingLoadModel,
+         theme: InstrumentoTheme = .base,
+         onSeeTrends: (() -> Void)? = nil) {
+        self.model = model
+        self.theme = theme
+        self.onSeeTrends = onSeeTrends
+        _levelsHost = State(initialValue: MetricLevelsHostModel(
+            metricID: "load", fixedLevels: Self.loadLevels))
+    }
 
     // MARK: - Body
 
     var body: some View {
         LiquidMetricSheet(tono: tono, detent: .porContenido) {
-            LiquidSheetHeader(
-                icono: .carga,
-                titulo: String(localized: "Training load"),
-                tono: tono,
-                numeral: model.acwr.map(fmt) ?? "—",
-                numeralTono: tono,
-                // Calibrando (sin ratio): sin punto ni «últimos 28 días» — no hay ventana de
-                // 28 días todavía, y afirmarla junto al numeral «—» miente.
-                // FER-29 · C2: el ACWR es un CÁLCULO nuestro sobre la ventana de carga, no una
-                // lectura de Apple — origen `calculadoEnTelefono`, jamás la etiqueta «Apple Health».
-                origen: model.acwr == nil ? nil : .calculadoEnTelefono,
-                origenEtiqueta: model.acwr == nil ? nil : String(localized: "Calculated · last 28 days"),
-                explicacion: heroExplanation,
-                infoMostrar: String(localized: "Show explanation"),
-                infoOcultar: String(localized: "Hide explanation"))
-
-            if let acwr = model.acwr, let band = model.band {
-                LiquidReadingLine(readingText(band), highlight: readingHighlight(band),
-                                  highlightTone: tonoTexto)
-                colina(acwr: acwr)
-                historial
-                if let onSeeTrends {
-                    LiquidVerMas(title: String(localized: "See more in Trends"),
-                                 hint: String(localized: "Opens the detail"),
-                                 tone: tono, anchoCompleto: true) { dismiss(); onSeeTrends() }
+            cabecera
+            if let acwr = model.acwr {
+                // Frase y tono siguen el valor que el héroe MUESTRA (hoy en S, media en
+                // rangos largos) — no el de hoy a ciegas.
+                if let band = valorMostrado.map(ReadinessEngine.loadBand(forACWR:)) {
+                    LiquidReadingLine(readingText(band), highlightTone: tonoTexto)
                 }
+                colina(acwr: acwr)
+                explorador
             } else {
                 LiquidReadingLine(String(localized: "I need about two weeks of recorded strain to read your load."),
                                   highlight: String(localized: "two weeks of recorded strain"),
                                   highlightTone: LiquidColor.tinta900)
                 colina(acwr: nil)
             }
-
-            LiquidMetodo(title: String(localized: "How it's calculated"),
-                         mostrar: String(localized: "Show method"),
-                         ocultar: String(localized: "Hide method")) {
-                LiquidNotaLine(methodProse)
-            }
+            pie
         }
         .task {
-            range = .month
-            parsed = chartSeriesPairs.map { ($0.day, Repository.parseDayKey($0.day), $0.value) }
+            levelsHost.load(rows: chartSeriesPairs)
         }
     }
 
-    // MARK: - La colina (instrumento firma)
+    // MARK: - Cabecera (sello de ventana; procedencia baja al pie)
+
+    private var cabecera: some View {
+        LiquidSheetHeader(
+            icono: .carga,
+            titulo: String(localized: "Training load"),
+            tono: tono,
+            numeral: heroVentana.numeral,
+            numeralTono: tono,
+            sello: heroVentana.sello,
+            // FER-33 · F2: la procedencia YA NO viaja en el héroe — va al chip del pie.
+            origen: nil,
+            origenEtiqueta: nil,
+            explicacion: heroExplanation,
+            infoMostrar: String(localized: "Show explanation"),
+            infoOcultar: String(localized: "Hide explanation"))
+    }
+
+    // MARK: - Héroe por ventana (réplica de LiquidMetricSheetView · F0.3)
+
+    /// El valor que el héroe está MOSTRANDO: la media de la ventana en rangos largos, el
+    /// dato de hoy en la semana. Frase, titular de tarjeta y fila encendida clasifican
+    /// contra ESTE valor.
+    private var valorMostrado: Double? {
+        let w = levelsHost.window
+        guard levelsHost.levels != nil, w.range != .week, !w.values.isEmpty else {
+            return model.acwr
+        }
+        return ComparisonEngine.stat(w.values).mean
+    }
+
+    private var heroVentana: (numeral: String?, sello: String?) {
+        let w = levelsHost.window
+        guard levelsHost.levels != nil, w.range != .week, !w.values.isEmpty else {
+            return (model.acwr.map(Self.format.numeral) ?? "—", selloHoy)
+        }
+        return (Self.format.numeral(ComparisonEngine.stat(w.values).mean), selloMedia(w.range))
+    }
+
+    private var selloHoy: String {
+        String(localized: "TODAY · \(Self.diaCorto(Date()))")
+    }
+
+    private func selloMedia(_ rango: ExploreRange) -> String {
+        switch rango {
+        case .week:
+            return selloHoy
+        case .month, .quarter:
+            let dias: Int = rango.days ?? 0
+            return String(localized: "AVG · \(dias) DAYS")
+        case .half:
+            return String(localized: "AVG · 6 MONTHS")
+        case .year:
+            return String(localized: "AVG · 1 YEAR")
+        case .all:
+            return String(localized: "AVG · ALL")
+        }
+    }
+
+    /// En qué fila de la escalera cayó HOY — independiente del valor del héroe.
+    private var indiceDeHoy: Int? {
+        guard let levels = levelsHost.levels, let v = model.acwr else { return nil }
+        return MetricLevels.activeIndex(for: v, in: levels)
+    }
+
+    // MARK: - La colina (instrumento firma; interior intacto)
 
     private func colina(acwr: Double?) -> some View {
         LiquidHill(
@@ -223,7 +290,8 @@ struct TrainingLoadSheet: View {
             zonas: zonasCarga(),
             maximo: LoadScale.max,
             referencia: 1.0,
-            ticks: hillTicks,
+            // Valores y copy coinciden con `ticksPorDefecto` (0.8 / 1.0 / 1.3 / 1.5).
+            ticks: LiquidCargaEscala.ticksPorDefecto,
             titulo: String(localized: "The hill"),
             hint: String(localized: "Drag to explore"),
             hoyEtiqueta: String(localized: "TODAY"),
@@ -231,79 +299,173 @@ struct TrainingLoadSheet: View {
             calibrandoTitulo: String(localized: "BUILDING YOUR USUAL"),
             calibrandoAncla: String(localized: "Log a few workouts with heart rate on your Apple Watch and this read will appear."),
             a11yTitulo: String(localized: "The hill"),
-            a11yValor: { r, z in "\(fmt(r)), \(z.lowercased())" })
+            a11yValor: { r, z in "\(Self.format.numeral(r)), \(z.lowercased())" })
     }
 
-    // MARK: - Historial (LiquidRangeSelector + LiquidGraficaNiveles + tiles)
+    // MARK: - Explorador (selector + tarjeta gráfica + escalera)
 
-    private var historial: some View {
-        let window = MetricWindowMath.make(parsed, selected: range)
-        let stat = ComparisonEngine.stat(window.values)
+    @ViewBuilder private var explorador: some View {
+        if let d = levelsHost.clasificacion(today: valorMostrado) {
+            let window = levelsHost.window
+            VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+                LiquidRangeSelector(opciones: ExploreRange.allCases.map(\.label),
+                                    seleccion: rangeSeleccion)
+                if window.fellBack {
+                    avisoVentana(window)
+                }
+                tarjetaGrafica(d, window: window)
+                nivelesLista(d)
+            }
+        }
+    }
+
+    /// Índice del selector ⇄ `ExploreRange` del host; cambiar de rango limpia la exploración.
+    private var rangeSeleccion: Binding<Int> {
+        Binding(
+            get: { ExploreRange.allCases.firstIndex(of: levelsHost.range) ?? 0 },
+            set: { idx in
+                levelsHost.range = ExploreRange.allCases[idx]
+                nivelExplorado = nil
+            })
+    }
+
+    private func nivelDestacado(_ d: MetricLevels.Classification) -> Int? {
+        if let s = nivelExplorado, d.levels.indices.contains(s) { return s }
+        return d.activeIndex
+    }
+
+    /// Tarjeta de la gráfica: titular (`LiquidFraseNivel`) + `LiquidGraficaNiveles` +
+    /// pie de cifras (`LiquidResumenVentana`). Sin rótulo «Tu historial».
+    private func tarjetaGrafica(_ d: MetricLevels.Classification,
+                                window: MetricWindow) -> some View {
+        let highlight = nivelDestacado(d)
         let puntos = MetricWindowMath
             .decimatedPoints(rows: window.rows, values: window.values, maxPoints: 80)
             .map { (fecha: $0.date, valor: $0.value) }
+        let stat = ComparisonEngine.stat(window.values)
+        let nombre: String? = highlight.map { nombreNivel(d.levels[$0].key) }
+        let conteo: String = {
+            guard let i = highlight, d.total > 0 else {
+                return String(localized: "\(d.total) days with data in this range")
+            }
+            return String(localized: "\(d.counts[i]) of your last \(d.total) days")
+        }()
+        // Bandas DERIVADAS de la misma lista de niveles que la escalera (no se desfasen).
+        let bandas: [LiquidChartBanda] = d.levels.enumerated().map { (i, lvl) in
+            LiquidChartBanda(lo: lvl.lower, hi: lvl.upper, color: tono,
+                             activa: i == highlight)
+        }
         return VStack(alignment: .leading, spacing: LiquidSpace.s300) {
-            Text(String(localized: "Your history"))
-                .font(LiquidType.label).tracking(LiquidType.labelTracking)
-                .textCase(.uppercase)
-                .foregroundStyle(LiquidColor.tinta500)
-            LiquidRangeSelector(opciones: ExploreRange.allCases.map(\.label), seleccion: rangeIndex)
+            LiquidFraseNivel(nivel: nombre,
+                             conteo: conteo,
+                             tono: tono,
+                             sinLectura: String(localized: "No reading today"))
             LiquidGraficaNiveles(
                 puntos: puntos,
-                bandas: historialBandas,
+                bandas: bandas,
                 dominio: 0.45...1.9,
-                ticksY: [(ReadinessEngine.acwrSpikeAt, cutLabel(ReadinessEngine.acwrSpikeAt)),
-                         (1.0, "1.0"),
-                         (ReadinessEngine.acwrSweetSpotLow, cutLabel(ReadinessEngine.acwrSweetSpotLow))],
+                ticksY: [
+                    (ReadinessEngine.acwrSpikeAt, Self.format.boundary(ReadinessEngine.acwrSpikeAt)),
+                    (1.0, Self.format.boundary(1.0)),
+                    (ReadinessEngine.acwrSweetSpotLow,
+                     Self.format.boundary(ReadinessEngine.acwrSweetSpotLow)),
+                ],
                 tono: tono,
-                puntoHoy: puntos.last,
-                formatoScrub: { v, _ in fmt(v) },
-                formatoValorScrub: { fmt($0) },
-                formatoFechaScrub: { Self.fechaCorta.string(from: $0) },
-                formatoFechaEje: { Self.fechaCorta.string(from: $0) },
+                puntoHoy: indiceDeHoy != nil ? puntos.last : nil,
+                hoyAnillo: nivelExplorado != nil && nivelExplorado != indiceDeHoy,
+                formatoScrub: { v, f in "\(Self.format.numeral(v)) · \(Self.diaCorto(f))" },
+                formatoValorScrub: { Self.format.numeral($0) },
+                formatoFechaScrub: { Self.popupDiaFmt.string(from: $0) },
+                formatoFechaEje: Self.ejeFechaFmt(puntos),
+                atenuarFuera: nivelExplorado != nil,
                 estadoVacio: String(localized: "Not enough days in this range to draw a trend."),
                 a11yLabel: String(localized: "Training load history"))
-            HStack(spacing: LiquidSpace.s200) {
-                statTile(String(localized: "Average"), fmt(stat.mean))
-                statTile(String(localized: "Range"), "\(fmt(stat.min))–\(fmt(stat.max))")
-                statTile(String(localized: "Today"), model.acwr.map(fmt) ?? "—", tono: model.acwr == nil ? nil : tono)
-            }
-            if let patternText, !patternText.isEmpty {
-                LiquidNotaLine(patternText)
-            }
+            LiquidResumenVentana(celdas: [
+                .init(rotulo: String(localized: "Average"),
+                      valor: window.values.isEmpty ? "—" : Self.format.numeral(stat.mean)),
+                .init(rotulo: String(localized: "Range"),
+                      valor: window.values.isEmpty
+                        ? "—"
+                        : "\(Self.format.numeral(stat.min))–\(Self.format.numeral(stat.max))"),
+                .init(rotulo: String(localized: "Today"),
+                      valor: model.acwr.map(Self.format.numeral) ?? "—",
+                      tono: model.acwr == nil ? nil : tono),
+            ])
         }
-    }
-
-    private var historialBandas: [LiquidChartBanda] {
-        let lo = ReadinessEngine.acwrSweetSpotLow
-        let hi = ReadinessEngine.acwrSweetSpotHigh
-        let spike = ReadinessEngine.acwrSpikeAt
-        let today = model.band
-        return [
-            LiquidChartBanda(lo: spike, hi: nil, color: LiquidColor.negativo, activa: today == .spiking),
-            LiquidChartBanda(lo: hi, hi: spike, color: LiquidColor.atencion, activa: today == .buildingFast),
-            LiquidChartBanda(lo: lo, hi: hi, color: LiquidColor.verdePrimario, activa: today == .sweetSpot),
-            LiquidChartBanda(lo: nil, hi: lo, color: LiquidColor.tinta500, activa: today == .rampingDown),
-        ]
-    }
-
-    private func statTile(_ label: String, _ value: String, tono: Color? = nil) -> some View {
-        VStack(alignment: .leading, spacing: LiquidSpace.s150) {
-            Text(verbatim: label)
-                .font(LiquidType.label).tracking(LiquidType.labelTracking).textCase(.uppercase)
-                .foregroundStyle(LiquidColor.tinta500)
-            Text(verbatim: value)
-                .font(LiquidType.valorL)
-                .foregroundStyle(tono ?? LiquidColor.tinta700)
-                // El RANGO («0.90–1.66») partía en dos líneas y desnivelaba el trío
-                // (revisión de usuario en simulador): una línea, auto-escalada.
-                .lineLimit(1)
-                .minimumScaleFactor(0.65)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.vertical, LiquidSpace.s200)
-        .padding(.horizontal, LiquidSpace.s300)
+        .padding(LiquidSpace.s400)
         .liquidGlass(.superficie)
+    }
+
+    private func nivelesLista(_ d: MetricLevels.Classification) -> some View {
+        let highlight = nivelDestacado(d)
+        let hoyRotulo = String(localized: "· today")
+        let hint = String(localized: "Highlights this level on the chart")
+        let filas: [LiquidLevelsList.Fila] = d.levels.indices.map { i in
+            let nivel = d.levels[i]
+            return LiquidLevelsList.Fila(
+                etiqueta: nombreNivel(nivel.key),
+                rango: rangoNivel(nivel),
+                conteo: conteoLabel(d.counts[i]),
+                esHoy: i == indiceDeHoy,
+                activa: i == highlight,
+                hoyEtiqueta: hoyRotulo,
+                a11yHint: hint,
+                onTap: {
+                    if reduceMotion || motionDisabled {
+                        nivelExplorado = (nivelExplorado == i) ? nil : i
+                    } else {
+                        withAnimation(LiquidMotion.lift) {
+                            nivelExplorado = (nivelExplorado == i) ? nil : i
+                        }
+                    }
+                })
+        }
+        return LiquidLevelsList(filas: filas, tono: tono)
+    }
+
+    private func nombreNivel(_ key: String) -> String {
+        // NO `MetricLevels.name(for:)`: las claves de carga no están en ese mapa.
+        ReadinessEngine.LoadBand(rawValue: key)?.shortLabel ?? key
+    }
+
+    private func rangoNivel(_ nivel: MetricLevels.Level) -> String {
+        switch (nivel.lower, nivel.upper) {
+        case let (nil, hi?):  return "< \(Self.format.boundary(hi))"
+        case let (lo?, nil):  return "≥ \(Self.format.boundary(lo))"
+        case let (lo?, hi?):  return "\(Self.format.boundary(lo))–\(Self.format.boundary(hi))"
+        case (nil, nil):      return ""
+        }
+    }
+
+    private func conteoLabel(_ n: Int) -> String {
+        n == 1 ? String(localized: "\(n) day") : String(localized: "\(n) days")
+    }
+
+    @ViewBuilder private func avisoVentana(_ window: MetricWindow) -> some View {
+        let dias: Int = window.range.days ?? window.rows.count
+        LiquidNotaLine(String(localized: "Showing the last \(dias) days"),
+                       tono: LiquidColor.atencionTexto)
+    }
+
+    // MARK: - Pie (método + chip de origen + ver más)
+
+    @ViewBuilder private var pie: some View {
+        LiquidMetodo(title: String(localized: "How it's calculated"),
+                     mostrar: String(localized: "Show method"),
+                     ocultar: String(localized: "Hide method")) {
+            LiquidNotaLine(methodProse)
+            // Chip DENTRO del plegable (patrón `origenChipVista` del compositor).
+            // Carga es un CÁLCULO en el teléfono, no una lectura de Apple.
+            if model.acwr != nil {
+                LiquidOrigenChip(glyph: .rayo, badgeTono: LiquidColor.tinta500,
+                                 etiqueta: String(localized: "Calculated on your phone"))
+            }
+        }
+        if let onSeeTrends {
+            LiquidVerMas(title: String(localized: "See more in Trends"),
+                         hint: String(localized: "Opens the detail"),
+                         tone: tono, anchoCompleto: true) { dismiss(); onSeeTrends() }
+        }
     }
 
     // MARK: - Zonas de la colina (colores de la excepción sancionada)
@@ -324,13 +486,6 @@ struct TrainingLoadSheet: View {
             .init(lo: spike, hi: LoadScale.max, color: LiquidColor.negativo,
                   etiqueta: bandWord(.spiking), ancla: anchorText(.spiking)),
         ]
-    }
-
-    private var hillTicks: [LiquidCargaEscala.Tick] {
-        [.init(valor: ReadinessEngine.acwrSweetSpotLow, etiqueta: cutLabel(ReadinessEngine.acwrSweetSpotLow)),
-         .init(valor: 1.0, etiqueta: "1.0"),
-         .init(valor: ReadinessEngine.acwrSweetSpotHigh, etiqueta: cutLabel(ReadinessEngine.acwrSweetSpotHigh)),
-         .init(valor: ReadinessEngine.acwrSpikeAt, etiqueta: cutLabel(ReadinessEngine.acwrSpikeAt))]
     }
 
     /// El tono de la hoja = el color del punto de la colina para la banda de hoy (un solo mapeo
@@ -360,8 +515,8 @@ struct TrainingLoadSheet: View {
     }
 
     private func anchorText(_ band: ReadinessEngine.LoadBand) -> String {
-        let lo = cutLabel(ReadinessEngine.acwrSweetSpotLow)
-        let hi = cutLabel(ReadinessEngine.acwrSweetSpotHigh)
+        let lo = Self.format.boundary(ReadinessEngine.acwrSweetSpotLow)
+        let hi = Self.format.boundary(ReadinessEngine.acwrSweetSpotHigh)
         switch band {
         case .rampingDown:
             return String(localized: "Less than your body is used to: the uphill slope.")
@@ -385,15 +540,6 @@ struct TrainingLoadSheet: View {
         return String(localized: String.LocalizationValue(clave))
     }
 
-    private func readingHighlight(_ band: ReadinessEngine.LoadBand) -> String {
-        switch band {
-        case .rampingDown:  String(localized: "Less than your body is used to")
-        case .sweetSpot:    String(localized: "In line with what your body is used to")
-        case .buildingFast: String(localized: "More than your body is used to")
-        case .spiking:      String(localized: "Well above what your body is used to")
-        }
-    }
-
     /// ⓘ: 7 vs 28, 1.0 = usual, banda de balance, hedge. La jerga ACWR se queda en el método.
     private var heroExplanation: String {
         String(localized: "We compare your average strain over the last ~7 days against your last ~28. 1.0 means you trained exactly your usual; 0.8 to 1.3 reads as balance. It's context for your recovery, not an injury prediction.")
@@ -405,12 +551,6 @@ struct TrainingLoadSheet: View {
 
     // MARK: - Datos derivados
 
-    /// El índice del selector ⇄ `ExploreRange`.
-    private var rangeIndex: Binding<Int> {
-        Binding(get: { ExploreRange.allCases.firstIndex(of: range) ?? 0 },
-                set: { range = ExploreRange.allCases[$0] })
-    }
-
     /// Serie de ratios por día: recomputa desde `days` cuando hay (ventana larga para el selector);
     /// cae a la serie precomputada (28) del modelo.
     private var chartSeriesPairs: [(day: String, value: Double)] {
@@ -419,18 +559,30 @@ struct TrainingLoadSheet: View {
             .map { (day: $0.day, value: $0.ratio) }
     }
 
-    /// Ratio con dos decimales en todos lados.
-    private func fmt(_ v: Double) -> String { String(format: "%.2f", v) }
+    // MARK: - Fechas (mismas plantillas del compositor)
 
-    /// Un decimal para las marcas de corte (0.8 / 1.3 / 1.5) desde las constantes del motor.
-    private func cutLabel(_ v: Double) -> String { String(format: "%.1f", v) }
-
-    /// Formato de fecha corta para el scrub y el eje del historial.
-    private static let fechaCorta: DateFormatter = {
-        let f = DateFormatter()
-        f.setLocalizedDateFormatFromTemplate("dMMM")
-        return f
+    private static let ejeDiaFmt: DateFormatter = {
+        let f = DateFormatter(); f.setLocalizedDateFormatFromTemplate("dMMM"); return f
     }()
+    private static let ejeMesFmt: DateFormatter = {
+        let f = DateFormatter(); f.setLocalizedDateFormatFromTemplate("MMMyy"); return f
+    }()
+    private static let popupDiaFmt: DateFormatter = {
+        let f = DateFormatter(); f.setLocalizedDateFormatFromTemplate("EEEdMMM"); return f
+    }()
+
+    private static func diaCorto(_ date: Date) -> String { ejeDiaFmt.string(from: date) }
+
+    private static func ejeFechaFmt(_ puntos: [(fecha: Date, valor: Double)]) -> (Date) -> String {
+        let primero = puntos.first?.fecha
+        let ultimo = puntos.last?.fecha
+        var largo = false
+        if let a = primero, let b = ultimo {
+            largo = b.timeIntervalSince(a) > 300 * 86_400
+        }
+        let fmt = largo ? ejeMesFmt : ejeDiaFmt
+        return { fmt.string(from: $0) }
+    }
 }
 
 // MARK: - Preview
@@ -445,10 +597,9 @@ private func demoDays(strainCurve: (Int) -> Double) -> [DailyMetric] {
     }
 }
 
-private func cargaPreview(_ model: TrainingLoadModel, pattern: String? = nil) -> some View {
+private func cargaPreview(_ model: TrainingLoadModel) -> some View {
     Color.clear.sheet(isPresented: .constant(true)) {
-        TrainingLoadSheet(model: model, patternText: pattern,
-                          onSeePattern: {}, onSeeTrends: {})
+        TrainingLoadSheet(model: model, onSeeTrends: {})
     }
 }
 
@@ -456,8 +607,7 @@ private func cargaPreview(_ model: TrainingLoadModel, pattern: String? = nil) ->
     cargaPreview(TrainingLoadModel(
         acwr: 1.03,
         series: (0..<28).map { (day: "d\($0)", value: 0.9 + 0.4 * sin(Double($0) / 5)) },
-        days: demoDays { 10 + 3 * sin(Double($0) / 5) }),
-        pattern: "Tus semanas en equilibrio terminan con mejor recuperación el lunes.")
+        days: demoDays { 10 + 3 * sin(Double($0) / 5) }))
 }
 
 #Preview("Carga · sobrecarga") {
