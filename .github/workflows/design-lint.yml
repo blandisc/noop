@@ -38,3 +38,5 @@ jobs:
         run: python3 Tools/check-design-drift.py --rules no-emdash-string Cenit/Screens Cenit/Onboarding
       - name: Design-drift linter — no raw shadow, use StrandElevation (migrated screens)
         run: python3 Tools/check-design-drift.py --rules no-raw-shadow Cenit/Screens
+      - name: Sin vidrio dentro de una hoja (papel opaco)
+        run: python3 Tools/check-design-drift.py --rules no-sheet-glass Packages/StrandDesign/Sources Cenit CenitApp CenitShared CenitWidgets

@@ -97,7 +97,7 @@ public struct LiquidCargaBar: View {
         }
         .padding(.vertical, 9)
         .padding(.horizontal, LiquidSpace.s400)
-        .liquidGlass(.pastilla)
+        .liquidGlass(.pastilla) // token-exempt: franja de Hoy, no vive dentro de una hoja
         // Área tocable ≥ 44 pt sin engordar el vidrio (pasada UX).
         .padding(.vertical, 3)
         .contentShape(Rectangle())

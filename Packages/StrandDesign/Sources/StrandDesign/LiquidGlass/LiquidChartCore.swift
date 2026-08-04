@@ -911,7 +911,7 @@ struct LiquidChartCargando: View {
                         alto: LiquidChartAlto.explorador, scrubFijo: 7)
             .accessibilityLabel(Text(verbatim: "VFC, demo 14 días"))
             .accessibilityValue(Text(verbatim: "56 ms"))
-            .liquidGlass(.superficie)
+            .liquidGlass(.superficie) // token-exempt: preview, fuera de una hoja
         LiquidChartCargando(alto: LiquidChartAlto.trend)
         LiquidChartVacio(mensaje: "Sin lecturas en este rango.", alto: LiquidChartAlto.trend)
     }

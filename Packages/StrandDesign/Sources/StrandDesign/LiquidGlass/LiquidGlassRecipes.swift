@@ -435,7 +435,7 @@ public struct LiquidSphere: View {
             Text("vidrio/superficie")
                 .font(LiquidType.titulo).foregroundStyle(LiquidColor.tinta900)
                 .padding(24).frame(maxWidth: .infinity)
-                .liquidGlass(.superficie)
+                .liquidGlass(.superficie) // token-exempt: preview, fuera de una hoja
             Text("papel/superficieSolida")
                 .font(LiquidType.titulo).foregroundStyle(LiquidColor.tinta900)
                 .padding(24).frame(maxWidth: .infinity)
@@ -444,7 +444,7 @@ public struct LiquidSphere: View {
                 .font(LiquidType.boton).tracking(LiquidType.botonTracking)
                 .foregroundStyle(LiquidColor.tinta900)
                 .padding(.vertical, 12).frame(maxWidth: .infinity)
-                .liquidGlass(.pastilla)
+                .liquidGlass(.pastilla) // token-exempt: preview, fuera de una hoja
             Text("papel/pastillaSolida")
                 .font(LiquidType.boton).tracking(LiquidType.botonTracking)
                 .foregroundStyle(LiquidColor.tinta900)

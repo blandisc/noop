@@ -143,7 +143,7 @@ public struct LiquidHill: View {
         }
         .padding(LiquidSpace.s400)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .liquidGlass(.superficie)
+        .liquidGlass(.superficieSolida)
     }
 
     // MARK: Cabecera

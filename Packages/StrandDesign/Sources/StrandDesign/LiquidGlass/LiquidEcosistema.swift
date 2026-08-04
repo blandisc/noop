@@ -1240,7 +1240,7 @@ private struct EcosistemaListado: View {
         }
         .padding(.vertical, LiquidSpace.s225)
         .padding(.horizontal, LiquidSpace.s400)
-        .liquidGlass(.pastilla)
+        .liquidGlass(.pastilla) // token-exempt: pastilla del heroe de Hoy, sobre el orbe
     }
 }
 

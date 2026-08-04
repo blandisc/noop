@@ -417,7 +417,7 @@ public extension View {
                             .font(LiquidType.boton).tracking(LiquidType.botonTracking)
                             .foregroundStyle(LiquidColor.tinta900)
                             .padding(.vertical, 14).frame(maxWidth: .infinity)
-                            .liquidGlass(.superficie)
+                            .liquidGlass(.superficie) // token-exempt: preview, fuera de una hoja
                     }
                     .buttonStyle(.liquidPress)
                     .liquidEntrada(index: i)

@@ -87,7 +87,7 @@ public struct LiquidMetricTile: View {
         .padding(.vertical, 7)
         .padding(.horizontal, LiquidSpace.s300)
         .frame(maxWidth: .infinity, minHeight: 66, alignment: .topLeading)
-        .liquidGlass(.superficie)
+        .liquidGlass(.superficie) // token-exempt: tile de Hoy, no vive dentro de una hoja
         // TODO el tile es tocable, no solo donde hay pixel dibujado (/inject 2026-07-23):
         // sin `contentShape` el botón solo recibe toques sobre el texto/gota.
         .contentShape(RoundedRectangle(cornerRadius: LiquidRadius.tarjeta, style: .continuous))
