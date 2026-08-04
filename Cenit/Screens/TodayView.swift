@@ -364,7 +364,9 @@ struct TodayView: View {
                     SupportModalOverlay(isPresented: $showingSupport)
                 }
             }
-            .animation(.easeOut(duration: 0.18), value: showingSupport)
+            // FER-38: la aparición del panel de soporte usa el token de fade del DS (antes una curva
+            // `easeOut(0.18)` suelta) y ahora respeta Reduce Motion vía `StrandMotion.gated`.
+            .animation(StrandMotion.gated(StrandMotion.fade, reduceMotion), value: showingSupport)
             // The summary sheet. On dismiss, run any pending "Ver más" hand-off (FER-251): presenting the
             // rich detail only AFTER this one is gone avoids SwiftUI swallowing a sheet-over-sheet present.
             // A plain swipe-to-close leaves `pendingSeeMore` nil, so nothing extra happens.
@@ -1237,28 +1239,35 @@ struct TodayView: View {
     /// se retiró). Toca → detalle de sueño.
     @ViewBuilder private var appleTrendHero: some View {
         let sleepMin = resolveMeasured(todayOnly: true) { $0.totalSleepMin }?.value
-        VStack(alignment: .leading, spacing: CenitMetrics.space1) {
-            Text("LAST NIGHT'S SLEEP").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            if let sleepMin, sleepMin > 0 {
-                let h = Int(sleepMin) / 60, m = Int(sleepMin) % 60
-                HStack(alignment: .firstTextBaseline, spacing: 2) {
-                    Text("\(h)").font(StrandFont.number(64)).foregroundStyle(theme.ink)
-                    Text("h ").font(StrandFont.number(28)).foregroundStyle(theme.inkSecondary)
-                    Text("\(m)").font(StrandFont.number(64)).foregroundStyle(theme.ink)
-                    Text("m").font(StrandFont.number(28)).foregroundStyle(theme.inkSecondary)
+        // FER-38: es un control accionable (abre el Detalle de Sueño), así que va como `Button`
+        // —no `onTapGesture`— para que VoiceOver anuncie el rol de botón y la pista, y para la
+        // afordancia nativa de presión. `.plain` conserva el look «Instrumento» (sin chrome).
+        Button {
+            metricDetail = .sleep(resolveMeasured(todayOnly: true) { $0.totalSleepMin }.map { Int($0.value.rounded()) })
+        } label: {
+            VStack(alignment: .leading, spacing: CenitMetrics.space1) {
+                Text("LAST NIGHT'S SLEEP").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                if let sleepMin, sleepMin > 0 {
+                    let h = Int(sleepMin) / 60, m = Int(sleepMin) % 60
+                    HStack(alignment: .firstTextBaseline, spacing: 2) {
+                        Text("\(h)").font(StrandFont.number(64)).foregroundStyle(theme.ink)
+                        Text("h ").font(StrandFont.number(28)).foregroundStyle(theme.inkSecondary)
+                        Text("\(m)").font(StrandFont.number(64)).foregroundStyle(theme.ink)
+                        Text("m").font(StrandFont.number(28)).foregroundStyle(theme.inkSecondary)
+                    }
+                    .lineLimit(1).minimumScaleFactor(0.6)
+                    Text(sleepMin >= 420 ? LocalizedStringKey("You slept well") : LocalizedStringKey("Sleep was short"))
+                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                } else {
+                    Text("—").font(StrandFont.number(64)).foregroundStyle(theme.inkTertiary)
+                    Text("No sleep recorded last night").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 }
-                .lineLimit(1).minimumScaleFactor(0.6)
-                Text(sleepMin >= 420 ? LocalizedStringKey("You slept well") : LocalizedStringKey("Sleep was short"))
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-            } else {
-                Text("—").font(StrandFont.number(64)).foregroundStyle(theme.inkTertiary)
-                Text("No sleep recorded last night").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .contentShape(Rectangle())
-        .onTapGesture { metricDetail = .sleep(resolveMeasured(todayOnly: true) { $0.totalSleepMin }.map { Int($0.value.rounded()) }) }
-        .accessibilityElement(children: .combine)
+        .buttonStyle(.plain)
+        .accessibilityHint(Text("Opens the sleep detail"))
     }
 
     // MARK: - SEÑALES (única superficie de Hoy)
@@ -1720,6 +1729,39 @@ private struct LiquidGuardianHojaHost: View {
         #endif
         .frame(width: 920, height: 940)
         .preferredColorScheme(.light)
+}
+
+// FER-38: la MISMA superficie viva al tamaño de texto más grande (AX5). Ejercita Dynamic Type
+// en el canvas para cazar truncados/aplastamientos antes de que lleguen al iPhone (deuda de
+// ACCESIBILIDAD.md: no había snapshot que estirara la superficie a AX5).
+#Preview("Texto grande · AX5") {
+    let repo = Repository(deviceId: "preview")
+    let cal = Calendar(identifier: .gregorian)
+    let today = cal.startOfDay(for: Date())
+    var sample: [DailyMetric] = []
+    for i in stride(from: 39, through: 0, by: -1) {
+        let date = cal.date(byAdding: .day, value: -i, to: today)!
+        let phase = Double(i)
+        let total = 380 + 70 * sin(phase / 6.0)
+        sample.append(DailyMetric(
+            day: Repository.dayString(date), totalSleepMin: total, efficiency: 88,
+            deepMin: 95, remMin: 110, lightMin: total - 200, disturbances: 4,
+            restingHr: 50 + (i % 6), avgHrv: 58 + 16 * sin(phase / 4.0),
+            recovery: 60, strain: 10, exerciseCount: i % 3,
+            spo2Pct: 96, skinTempDevC: 33.4, respRateBpm: 14.6))
+    }
+    repo.setDashboard(days: sample)
+
+    return TodayView()
+        .environmentObject(repo)
+        .environmentObject(TabRouter())
+        #if os(iOS)
+        .environment(AppModel.preview)
+        .environmentObject(HealthKitBridge(repo: repo, appleDeviceId: "preview-apple", noopDeviceId: "preview"))
+        #endif
+        .frame(width: 920, height: 940)
+        .preferredColorScheme(.light)
+        .dynamicTypeSize(.accessibility5)
 }
 #endif
 
