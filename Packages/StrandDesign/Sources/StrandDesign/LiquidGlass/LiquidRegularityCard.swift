@@ -78,22 +78,42 @@ public struct LiquidRegularityCard: View {
 
     public var body: some View {
         VStack(alignment: .leading, spacing: LiquidSpace.s250) {
-            // s200 (no s150): el target táctil expandido del ⓘ compacto sobresale 10 pt de
-            // su marco — con 6 pt de gap invadía la cola del título (revisión adversarial).
+            // #inject r4 · Columna de texto a la izquierda (overline + palabra-veredicto)
+            // y el puntaje CENTRADO verticalmente contra las dos líneas (dueño: «el 88 más
+            // centrado, y subir la palabra — hay un espacio vacío»). La tarjeta ya no deja
+            // aire muerto bajo la leyenda.
             HStack(alignment: .center, spacing: LiquidSpace.s200) {
-                Text(verbatim: titulo)
-                    .liquidLabel()
-                    .foregroundStyle(LiquidColor.tinta500)
-                    // El título entra al label compuesto del bloque de dato; no es parada
-                    // propia (mismo patrón B3 de `LiquidSheetHeader`).
-                    .accessibilityHidden(true)
-                // #inject r2 · ⓘ compacto: a 15 pesaba lo mismo que las letras del
-                // overline y «se leía como una letra más» (dueño). El marco de 24 ya no
-                // infla la fila; el target táctil sigue ~44 (contentShape expandido).
-                LiquidInfoBoton(abierto: $explicacionAbierta,
-                                mostrar: infoMostrar, ocultar: infoOcultar,
-                                rotulo: titulo, alineacion: .leading,
-                                tono: tono, compacto: true)
+                VStack(alignment: .leading, spacing: LiquidSpace.s100) {
+                    // s200 (no s150): el target táctil expandido del ⓘ compacto sobresale
+                    // 10 pt de su marco — con 6 pt invadía la cola del título (revisión).
+                    HStack(alignment: .center, spacing: LiquidSpace.s200) {
+                        Text(verbatim: titulo)
+                            .liquidLabel()
+                            .foregroundStyle(LiquidColor.tinta500)
+                            // El título entra al label compuesto del bloque de dato; no es
+                            // parada propia (mismo patrón B3 de `LiquidSheetHeader`).
+                            .accessibilityHidden(true)
+                        // #inject r2 · ⓘ compacto: a 15 pesaba lo mismo que las letras del
+                        // overline y «se leía como una letra más» (dueño). El marco de 24
+                        // no infla la fila; el target sigue ~44 (contentShape expandido).
+                        LiquidInfoBoton(abierto: $explicacionAbierta,
+                                        mostrar: infoMostrar, ocultar: infoOcultar,
+                                        rotulo: titulo, alineacion: .leading,
+                                        tono: tono, compacto: true)
+                    }
+                    // Una sola parada de VoiceOver para el bloque de lectura: título +
+                    // puntaje + leyenda (el label compuesto vive aquí). Calibrando no
+                    // grita: sin puntaje, la leyenda va en peso normal — el semibold es
+                    // para la palabra-VEREDICTO (revisión adversarial Grok).
+                    (Text(verbatim: leyendaPartes.palabra)
+                        .fontWeight(calibrando ? .regular : .semibold)
+                        .foregroundStyle(calibrando ? LiquidColor.tinta700 : LiquidColor.tinta900)
+                     + Text(verbatim: leyendaPartes.detalle.map { " · \($0)" } ?? "")
+                        .foregroundStyle(LiquidColor.tinta500))
+                        .font(.system(size: lecturaSize))
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityLabel(Text(verbatim: a11y))
+                }
                 Spacer(minLength: LiquidSpace.s200)
                 Text(verbatim: textoPuntaje)
                     .font(LiquidType.valorL)
@@ -101,20 +121,6 @@ public struct LiquidRegularityCard: View {
                     .foregroundStyle(calibrando ? LiquidColor.tinta500 : tono)
                     .accessibilityHidden(true)
             }
-            // Una sola parada de VoiceOver para el bloque de lectura: título + puntaje +
-            // leyenda. El `accessibilityLabel` sustituye el texto visible (no se oye dos
-            // veces). El ⓘ es hermano, no hijo de este elemento.
-            // Calibrando no grita: sin puntaje, la leyenda («Aún conociendo tu ritmo») va
-            // en peso normal — el semibold es para la palabra-VEREDICTO, y calibrando no
-            // ha emitido ninguno (revisión adversarial Grok).
-            (Text(verbatim: leyendaPartes.palabra)
-                .fontWeight(calibrando ? .regular : .semibold)
-                .foregroundStyle(calibrando ? LiquidColor.tinta700 : LiquidColor.tinta900)
-             + Text(verbatim: leyendaPartes.detalle.map { " · \($0)" } ?? "")
-                .foregroundStyle(LiquidColor.tinta500))
-                .font(.system(size: lecturaSize))
-                .fixedSize(horizontal: false, vertical: true)
-                .accessibilityLabel(Text(verbatim: a11y))
             if explicacionAbierta {
                 // Voz de LECTURA, como el plegado de `LiquidSheetHeader`.
                 Text(verbatim: explicacion)
