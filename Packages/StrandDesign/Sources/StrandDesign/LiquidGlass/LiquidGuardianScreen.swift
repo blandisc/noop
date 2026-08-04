@@ -291,9 +291,9 @@ public struct LiquidGuardianScreen: View {
             guard let b = s.banda else { return [] }
             return [.init(lo: b.lowerBound, hi: b.upperBound, color: tono, activa: true)]
         }()
-        let estado: LiquidChartEstado = s.puntos.count > 1
-            ? .datos
-            : .vacio(s.vacio)
+        // Con UNA sola lectura ya hay algo que enseñar: exigir dos decía «Aún sin lecturas»
+        // sobre una noche que sí existe. (Revisión DeepSeek D2.)
+        let estado: LiquidChartEstado = s.puntos.isEmpty ? .vacio(s.vacio) : .datos
         LiquidTrendChart(
             titulo: "",
             puntos: s.puntos,

@@ -204,14 +204,14 @@ enum LiquidHoyBuilder {
             etiqueta: String(localized: "Skin temperature"),
             valor: tempVal, tono: LiquidColor.ambar, fuera: tempFuera,
             icono: .termo,
-            a11y: a11ySenal(String(localized: "Skin temperature"), tempVal, fuera: tempFuera),
+            a11y: a11ySenal(String(localized: "Skin temperature"), tempVal, fuera: tempFuera, comparando: comparando),
             serie: tempSerie)
         let resp = LiquidGuardianHoja.Senal(
             id: "resp",
             etiqueta: String(localized: "Breathing"),
             valor: respVal, tono: LiquidColor.azul, fuera: respFuera,
             icono: .resp,
-            a11y: a11ySenal(String(localized: "Breathing"), respVal, fuera: respFuera),
+            a11y: a11ySenal(String(localized: "Breathing"), respVal, fuera: respFuera, comparando: comparando),
             serie: respSerie)
 
         let calibracion: LiquidGuardianHoja.Calibracion? = {
@@ -222,7 +222,11 @@ enum LiquidHoyBuilder {
             let hechas = i.prep.map { p in
                 p.sentinelHistory.suffix(14).filter { !$0.respMissing }.count
             } ?? 0
-            let necesarias = 14
+            // El estado sale en cuanto la base de respiración es USABLE, y eso pasa en la
+            // semilla del motor, no a las 14 noches. Con 14 la barra se estancaba cerca de
+            // 4/14 y nunca llegaba al final: una barra que promete un viaje más largo del que
+            // hace. (Revisión Grok H3 · DeepSeek D1.)
+            let necesarias = Baselines.minNightsSeed
             let leyenda = String(format: String(localized: "%lld of %lld nights"),
                                  hechas, necesarias)
             return .init(
@@ -239,7 +243,7 @@ enum LiquidHoyBuilder {
             nivel: nivel, sinLectura: sinLectura, conteo: conteo,
             sello: sello, enPatron: enPatron,
             temp: temp, resp: resp,
-            pieTarjeta: String(localized: "your last 14 nights · the band is your pattern"),
+            pieTarjeta: String(localized: "your last 14 nights"),
             nota: nota, notaAvisa: notaAvisa,
             reglaKicker: String(localized: "THE RULE"),
             reglaTexto: String(localized: "A single signal out never pushes your day. Only the pair, two nights in a row."),
@@ -312,11 +316,16 @@ enum LiquidHoyBuilder {
         }
     }
 
-    private static func a11ySenal(_ nombre: String, _ valor: String, fuera: Bool) -> String {
+    /// `comparando: false` mientras el guardián todavía aprende tu patrón: ahí la hoja dice
+    /// «se muestran sin comparación», y VoiceOver no puede rematar cada señal con «en tu
+    /// patrón» — quien ve y quien oye recibirían cosas distintas. (Revisión DeepSeek H2.)
+    private static func a11ySenal(_ nombre: String, _ valor: String, fuera: Bool,
+                                  comparando: Bool = true) -> String {
         let base = "\(nombre), \(valor)"
         if valor == "—" {
             return "\(base), \(String(localized: "no reading"))"
         }
+        if !comparando { return base }
         return fuera
             ? "\(base), \(String(localized: "outside your pattern"))"
             : "\(base), \(String(localized: "inside your pattern"))"
@@ -393,9 +402,12 @@ enum LiquidHoyBuilder {
         let streak = prep?.sentinel?.streakNights ?? 0
         let gapEnCerco: Bool = {
             guard hist.count >= 2 else { return false }
-            // Si la última noche trae gapBefore, no es contigua a la anterior.
-            return hist.suffix(2).dropFirst().contains(where: \.gapBefore)
-                || hist.suffix(1).contains(where: \.gapBefore)
+            // El cerco abarca las DOS últimas noches, así que lo que puede romperlo es el
+            // hueco de la ÚLTIMA contra su anterior: `gapBefore` de la última. Mirar también
+            // el de la penúltima apagaba el cerco por un hueco que cae FUERA de él, y el
+            // diagrama contradecía al héroe («por segunda noche») en la misma pantalla.
+            // (Revisión DeepSeek H1.)
+            return hist.last?.gapBefore ?? false
         }()
         let encendida = estado == .juntas && streak >= 2 && !gapEnCerco
 
@@ -754,8 +766,15 @@ enum LiquidHoyBuilder {
         let tempStr = thermalDeviation.map { String(format: "%+.1f°", $0) } ?? "—"
         let respStr = resp.map { "\(Int($0.value.rounded())) \(String(localized: "rpm"))" } ?? "—"
 
-        // Sin ninguna de las dos lecturas: el guardián se muestra vacío, no «en patrón».
-        if thermalDeviation == nil && resp == nil {
+        // El guardián compara contra TU patrón, y quien lo calcula es el motor: sin `prep` no
+        // hay comparación que afirmar. Pasaba en el primer pintado (el veredicto solo sale del
+        // refresh completo), y con una lectura de temperatura presente la hoja caía a
+        // «Dentro de tu patrón» en verde — el defecto exacto que este épico vino a matar,
+        // vivo todavía en el arranque en frío. (Revisión Grok H1 · DeepSeek H3.)
+        //
+        // Y basta con que FALTE UNA de las dos: la hoja dice «tus dos señales», así que con
+        // una en «—» estaba contando algo que no leyó.
+        if prep == nil || thermalDeviation == nil || resp == nil {
             let label = String(localized: "Watching")
             let a11y = String(localized: "Guardian: no readings today")
             return .init(label: label, temp: tempStr, resp: respStr,

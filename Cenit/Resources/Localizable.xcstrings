@@ -1,6 +1,23 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "your last 14 nights" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "your last 14 nights"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tus últimas 14 noches"
+          }
+        }
+      }
+    },
     "AVG · 1 YEAR" : {
       "extractionState" : "manual",
       "localizations" : {
