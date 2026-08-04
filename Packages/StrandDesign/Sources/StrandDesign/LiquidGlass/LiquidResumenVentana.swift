@@ -74,7 +74,9 @@ public struct LiquidResumenVentana: View {
                 .textCase(.uppercase)
                 .foregroundStyle(LiquidColor.tinta500)
             Text(celda.valor)
-                .font(LiquidType.valorL)
+                // #inject r5 · `valorM` (17), no `valorL` (22): el tri-stat es contexto
+                // secundario, no compite con el numeral héroe (pedido del dueño).
+                .font(LiquidType.valorM)
                 .monospacedDigit()
                 .foregroundStyle(celda.tono ?? LiquidColor.tinta700)
                 .lineLimit(1)

@@ -203,7 +203,12 @@ struct TrainingLoadSheet: View {
                 // Frase y tono siguen el valor que el héroe MUESTRA (hoy en S, media en
                 // rangos largos) — no el de hoy a ciegas.
                 if let band = valorMostrado.map(ReadinessEngine.loadBand(forACWR:)) {
-                    LiquidReadingLine(readingText(band), highlightTone: tonoTexto)
+                    // #inject r5 · Solo la cláusula-veredicto, TODA en verde (pedido del
+                    // dueño: «simplifica el copy y deja solo verde»). La coletilla («en línea
+                    // con lo de siempre») sobra; al pasar la frase corta como su propio
+                    // `highlight`, `LiquidReadingLine` la pinta entera en el tono.
+                    let corto = Self.verdicto(readingText(band))
+                    LiquidReadingLine(corto, highlight: corto, highlightTone: tonoTexto)
                 }
                 colina(acwr: acwr)
                 explorador
@@ -594,6 +599,13 @@ struct TrainingLoadSheet: View {
     /// Frase de veredicto bajo el numeral. Descriptiva, sin imperativo. FER-29 · contrato 4:
     /// el copy vive en el catálogo bajo `reading.vsBase.load.*`; `LoadBand.rawValue`
     /// coincide 1:1 con las claves de nivel de `MetricLevelPhrase`.
+    /// #inject r5 · La cláusula-veredicto de una frase de lectura (hasta la primera coma;
+    /// sin el punto final) — el copy corto que la hoja pinta entero en el tono.
+    private static func verdicto(_ t: String) -> String {
+        if let coma = t.firstIndex(of: ",") { return String(t[..<coma]) }
+        return t.hasSuffix(".") ? String(t.dropLast()) : t
+    }
+
     private func readingText(_ band: ReadinessEngine.LoadBand) -> String {
         let clave = MetricLevelPhrase.key(metricID: "load", levelKey: band.rawValue)
             ?? "reading.vsBase.load.\(band.rawValue)"   // fallback defensivo; los rawValue coinciden 1:1

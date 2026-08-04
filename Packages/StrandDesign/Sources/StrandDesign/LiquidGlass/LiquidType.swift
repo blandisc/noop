@@ -51,6 +51,10 @@ public enum LiquidType {
     /// dato manda en el tile). Escala con Dynamic Type (revote /inject): el dato
     /// protagonista no puede escalar menos que su delta.
     public static let valorL = InstrumentoType.groteskNumber(22, relativeTo: .title3)
+    /// `valor/m` — 17: cifras SECUNDARIAS de una tira de resumen (Promedio/Rango/Hoy del
+    /// tri-stat de Carga), más chicas que `valorL` para no competir con el numeral héroe
+    /// (#inject r5, pedido del dueño: «reduce el tamaño de la fuente»).
+    public static let valorM = InstrumentoType.groteskNumber(17, relativeTo: .body)
 
     /// `nivel/título` — 18/700, escala. El nombre del nivel destacado en la tarjeta de la
     /// gráfica (mock `.titfila {18px/700}`); más chico que `valorL` (22) para no competir con
