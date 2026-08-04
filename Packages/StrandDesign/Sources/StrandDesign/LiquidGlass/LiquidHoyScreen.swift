@@ -105,7 +105,13 @@ public struct LiquidHoyModel: Sendable {
     /// dato en ámbar, el veredicto NO cambia — mata el falso positivo del cuarto caliente), y las
     /// dos JUNTAS (la franja se tiñe y el centinela sí empuja el veredicto).
     public struct Guardian: Sendable {
-        public enum Estado: Sendable, Equatable { case tranquilo, tempFuera, respFuera, juntas }
+        /// Estados del guardián (FER-33 · F3).
+        /// - `tranquilo` / `tempFuera` / `respFuera` / `juntas`: con lecturas y base.
+        /// - `sinLectura`: anoche no hubo ninguna de las dos señales (la hoja NO afirma «en patrón»).
+        /// - `conociendote`: hay lecturas pero aún no hay patrón propio que comparar.
+        public enum Estado: Sendable, Equatable {
+            case tranquilo, tempFuera, respFuera, juntas, sinLectura, conociendote
+        }
         /// Rótulo YA localizado: «VIGILANDO» en tranquilo/una, «JUNTAS» cuando ambas se salen.
         public let label: String
         /// Temp y resp YA formateadas («+0.1°» · «14 rpm»); «—» cuando no hay lectura hoy.

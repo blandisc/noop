@@ -20,6 +20,11 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **La hoja del guardián entra a la familia / The guardian sheet joins the family.**
+  **ES** — La columna VIGILANDO abre una hoja reconstruida: un solo título («El guardián»), la palabra del estado con fecha de anoche, el par de señales (temperatura y respiración) con mini-gráficas de 14 noches y scrub, y un diagrama de dominó que demuestra la regla —una sola señal fuera no empuja; solo la pareja, dos noches seguidas—. Cinco estados honestos (en patrón, una fuera, juntas, sin lectura, conociéndote): sin lecturas ya no afirma «dentro de tu patrón». Pie con procedencia Apple Salud · anoche.
+  **EN** — The WATCHING column opens a rebuilt sheet: a single title («The guardian»), the state word with last night's date, the pair of signals (temperature and breathing) with 14-night mini-charts and scrub, and a domino diagram that demonstrates the rule —one signal out never pushes; only the pair, two nights in a row—. Five honest states (in pattern, one out, both out, no reading, getting to know you): without readings it no longer claims «inside your pattern». Footer with Apple Health · last night provenance.
+  ([LiquidGuardianScreen.swift](Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/LiquidGuardianScreen.swift), [LiquidHoyBuilder.swift](Cenit/Screens/Hoy/LiquidHoyBuilder.swift))
+
 - **Las hojas de detalle recuperan su luz y fechan su número / The detail sheets get their light back and date their number.**
   **ES** — Cada hoja late ahora con la luz de su propia métrica detrás del número, como el orbe de Hoy. Y el número grande viene fechado («HOY · 3 AGO»): al cambiar de rango pasa a ser el promedio de lo que estás viendo («MEDIA · 30 DÍAS») en vez de quedarse en el dato de hoy sin avisar; arrastrar el dedo por la gráfica sigue sin moverlo.
   **EN** — Every sheet now breathes with its own metric's light behind the number, like the Today orb. And the big number is dated («TODAY · 3 AUG»): switching range turns it into the average of what you're looking at («AVG · 30 DAYS») instead of silently staying on today's figure; dragging across the chart still leaves it alone.

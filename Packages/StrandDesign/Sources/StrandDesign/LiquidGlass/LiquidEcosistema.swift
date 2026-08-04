@@ -1153,9 +1153,15 @@ private struct EcosistemaListado: View {
                 filaSenal(senal, etiqueta: i == 0 ? rotulos.reposo : rotulos.sueno)
             }
             if let guardian {
+                let fueraGuardian: Bool = {
+                    switch guardian.estado {
+                    case .tempFuera, .respFuera, .juntas: return true
+                    case .tranquilo, .sinLectura, .conociendote: return false
+                    }
+                }()
                 let filaGuardian = fila(rotulos.guardian,
                                         valor: "\(guardian.temp) · \(guardian.resp)",
-                                        fuera: guardian.estado != .tranquilo)
+                                        fuera: fueraGuardian)
                 if let onTapGuardian {
                     Button(action: onTapGuardian) { filaGuardian }
                         .buttonStyle(.liquidPress)

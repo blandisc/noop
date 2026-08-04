@@ -134,36 +134,307 @@ enum LiquidHoyBuilder {
         return Output(model: model, heroRoute: route)
     }
 
-    /// La hoja del guardián (FER-10, revisión de usuario): contesta «¿qué es VIGILANDO?»
-    /// con la regla del centinela — vigila, no vota; solo en pareja empuja. Jamás
-    /// «enfermedad».
+    /// Entradas de la hoja del guardián (FER-33 · F3): series de 14 noches + historial
+    /// del centinela ya votado por el motor. El builder NO recalcula cortes.
+    struct GuardianHojaInputs {
+        var guardian: LiquidHoyModel.Guardian?
+        var prep: Preparedness.Read?
+        var tempTrend: [(fecha: Date, valor: Double)] = []
+        var respTrend: [(fecha: Date, valor: Double)] = []
+        var now: Date = Date()
+        var calendar: Calendar = .current
+        var locale: Locale = .current
+        /// Noches con lectura de temperatura en la ventana (para la barra de calibración).
+        var nochesTemp: Int? = nil
+    }
+
+    /// La hoja del guardián (FER-33 · F3): contesta «¿qué es VIGILANDO?» con la familia
+    /// de hojas (header, héroe-palabra, par vigilado con mini-gráficas, dominó, método).
+    /// Jamás «enfermedad». Sin lecturas **no** afirma «dentro de tu patrón».
+    static func guardianHoja(_ i: GuardianHojaInputs) -> LiquidGuardianHoja {
+        let estado = i.guardian?.estado ?? .sinLectura
+        let (nivel, sinLectura, conteo, nota, notaAvisa, enPatron) =
+            copyGuardian(estado: estado, guardian: i.guardian, prep: i.prep)
+        let sello = selloAnoche(now: i.now, calendar: i.calendar, locale: i.locale)
+        let tempFuera = estado == .tempFuera || estado == .juntas
+        let respFuera = estado == .respFuera || estado == .juntas
+        let sinDatoAnoche = estado == .sinLectura
+
+        // Banda del patrón en las mini-gráficas:
+        // · temp: el corte absoluto del centinela (`thermalOutC`, ya público) — lo que el
+        //   motor usa para marcar fuera; no se recalcula.
+        // · resp: la banda «normal» del catálogo de niveles de la hoja de respiración
+        //   (abierta por abajo, techo 20 rpm). El motor juzga por z-score de la base
+        //   personal; sin exponer mean/sd al UI, esta es la aproximación limpia de la
+        //   misma hoja de métrica (se reporta en el PR).
+        let tempBand = -Preparedness.Config.default.thermalOutC
+            ... Preparedness.Config.default.thermalOutC
+        let respBand: ClosedRange<Double>? = 12...20
+
+        let tempSerie = serieMini(
+            puntos: i.tempTrend, banda: tempBand,
+            sinDatoAnoche: sinDatoAnoche || i.guardian?.temp == "—",
+            fmtValor: { String(format: "%+.1f°", $0) },
+            fmtFecha: popupFechaFmt(locale: i.locale),
+            a11y: String(localized: "Skin temperature, last 14 nights"),
+            vacio: String(localized: "No readings yet."))
+        let respSerie = serieMini(
+            puntos: i.respTrend, banda: respBand,
+            sinDatoAnoche: sinDatoAnoche || i.guardian?.resp == "—",
+            fmtValor: { "\(Int($0.rounded())) \(String(localized: "rpm"))" },
+            fmtFecha: popupFechaFmt(locale: i.locale),
+            a11y: String(localized: "Breathing, last 14 nights"),
+            vacio: String(localized: "No readings yet."))
+
+        let tempVal = i.guardian?.temp ?? "—"
+        let respVal = i.guardian?.resp ?? "—"
+        let temp = LiquidGuardianHoja.Senal(
+            id: "temp",
+            etiqueta: String(localized: "Skin temperature"),
+            valor: tempVal, tono: LiquidColor.ambar, fuera: tempFuera,
+            icono: .termo,
+            a11y: a11ySenal(String(localized: "Skin temperature"), tempVal, fuera: tempFuera),
+            serie: tempSerie)
+        let resp = LiquidGuardianHoja.Senal(
+            id: "resp",
+            etiqueta: String(localized: "Breathing"),
+            valor: respVal, tono: LiquidColor.azul, fuera: respFuera,
+            icono: .resp,
+            a11y: a11ySenal(String(localized: "Breathing"), respVal, fuera: respFuera),
+            serie: respSerie)
+
+        let calibracion: LiquidGuardianHoja.Calibracion? = {
+            guard estado == .conociendote else { return nil }
+            let hechas = i.nochesTemp ?? i.prep?.autonomicNights ?? 0
+            let necesarias = 14
+            let leyenda = String(format: String(localized: "%lld of %lld nights"),
+                                 hechas, necesarias)
+            return .init(
+                titulo: String(localized: "Learning your pattern"),
+                leyenda: leyenda,
+                hechas: hechas, necesarias: necesarias)
+        }()
+
+        return LiquidGuardianHoja(
+            titulo: String(localized: "The guardian"),
+            explicacion: String(localized: "It watches two signals from your night, your skin temperature and your breathing, against your own pattern from recent weeks. It doesn't vote on your verdict: it only pushes toward a lighter day when both drift out together. An approximation, not a diagnosis."),
+            infoMostrar: String(localized: "Show explanation"),
+            infoOcultar: String(localized: "Hide explanation"),
+            nivel: nivel, sinLectura: sinLectura, conteo: conteo,
+            sello: sello, enPatron: enPatron,
+            temp: temp, resp: resp,
+            pieTarjeta: String(localized: "your last 14 nights · the band is your pattern"),
+            nota: nota, notaAvisa: notaAvisa,
+            reglaKicker: String(localized: "THE RULE"),
+            reglaTexto: String(localized: "A single signal out never pushes your day. Only the pair, two nights in a row."),
+            reglaClave: String(localized: "Only the pair, two nights in a row."),
+            domino: dominoGuardian(prep: i.prep, estado: estado),
+            metodo: .init(
+                titulo: String(localized: "How it was obtained"),
+                mostrar: String(localized: "Show method"),
+                ocultar: String(localized: "Hide method"),
+                nota: String(localized: "Both signals are read from your Apple Watch while you sleep and compared against your own pattern from recent weeks, not population tables. An isolated deviation is ignored on purpose: a warm room or an extra blanket can produce it alone."),
+                origenEtiqueta: String(localized: "Apple Health"),
+                origenSufijo: String(localized: "last night")),
+            calibracion: calibracion)
+    }
+
+    /// Atajo de compatibilidad: hoja sin series (previews / callers viejos).
     static func guardianHoja(_ guardian: LiquidHoyModel.Guardian?) -> LiquidGuardianHoja {
-        let estado = guardian?.estado ?? .tranquilo
-        let ahora: String
+        guardianHoja(GuardianHojaInputs(guardian: guardian, prep: nil))
+    }
+
+    // MARK: Guardián · copy y series (F3)
+
+    private static func copyGuardian(
+        estado: LiquidHoyModel.Guardian.Estado,
+        guardian: LiquidHoyModel.Guardian?,
+        prep: Preparedness.Read?
+    ) -> (nivel: String?, sinLectura: String?, conteo: String,
+          nota: String?, notaAvisa: Bool, enPatron: Bool) {
         switch estado {
         case .tranquilo:
-            ahora = String(localized: "Right now: inside your pattern.")
+            return (String(localized: "Inside your pattern"),
+                    nil,
+                    String(localized: "Your two night signals woke up where they always do."),
+                    nil, false, true)
         case .tempFuera:
-            ahora = String(localized: "Right now: only your temperature is off; your verdict doesn't change.")
+            return (String(localized: "One signal out"),
+                    nil,
+                    String(localized: "Your temperature woke up outside your pattern; breathing, where it always does."),
+                    String(localized: "A single one can be the room, the blanket, or the night. The guardian waits."),
+                    false, false)
         case .respFuera:
-            ahora = String(localized: "Right now: only your breathing is off; your verdict doesn't change.")
+            return (String(localized: "One signal out"),
+                    nil,
+                    String(localized: "Your breathing woke up outside your pattern; temperature, where it always does."),
+                    String(localized: "A single one can be the room, the blanket, or the night. The guardian waits."),
+                    false, false)
         case .juntas:
-            // El veredicto MOSTRADO pasa por histéresis de 2 días (Preparedness.Config
-            // .hysteresisDays): un solo día en pareja cuenta, pero no voltea — la hoja
-            // no puede afirmar el empujón como hecho (gate CSO G1).
-            ahora = String(localized: "Right now: both moved out together. That counts as one signal out; your verdict changes if it repeats two days in a row.")
+            let streak = prep?.sentinel?.streakNights ?? 0
+            let conteo = streak >= 2
+                ? String(localized: "Your two signals woke up outside your pattern, for a second night.")
+                : String(localized: "Your two signals woke up outside your pattern together.")
+            return (String(localized: "Both out"),
+                    nil,
+                    conteo,
+                    String(localized: "The guardian doesn't diagnose: it only eases your pace."),
+                    true, false)
+        case .sinLectura:
+            return (nil,
+                    String(localized: "No reading last night"),
+                    String(localized: "With no night recorded, the guardian has nothing to compare against."),
+                    String(localized: "Sleep with your Apple Watch and tomorrow it watches again."),
+                    false, false)
+        case .conociendote:
+            return (nil,
+                    String(localized: "Getting to know you"),
+                    String(localized: "I need a few of your nights to learn your pattern."),
+                    String(localized: "In the meantime, readings are shown without comparison."),
+                    false, false)
         }
-        return LiquidGuardianHoja(
-            kicker: String(localized: "Watching").uppercased(),
-            titulo: String(localized: "The guardian"),
-            intro: String(localized: "Your nightly skin temperature and breathing, watched against your own pattern."),
-            filaTemp: (String(localized: "Temperature"), guardian?.temp ?? "—",
-                       estado == .tempFuera || estado == .juntas),
-            filaResp: (String(localized: "Breathing"), guardian?.resp ?? "—",
-                       estado == .respFuera || estado == .juntas),
-            estadoAhora: ahora,
-            reglaTitulo: String(localized: "It watches; it doesn't vote."),
-            reglaCuerpo: String(localized: "One signal off your pattern never changes your verdict: a warm room or an extra blanket can move it on its own. Only when both move out together, two days in a row, does the guardian push your day to a lighter one. It never diagnoses anything."))
+    }
+
+    private static func a11ySenal(_ nombre: String, _ valor: String, fuera: Bool) -> String {
+        let base = "\(nombre), \(valor)"
+        if valor == "—" {
+            return "\(base), \(String(localized: "no reading"))"
+        }
+        return fuera
+            ? "\(base), \(String(localized: "outside your pattern"))"
+            : "\(base), \(String(localized: "inside your pattern"))"
+    }
+
+    /// Sello del héroe: «ANOCHE · 3 AGO». El DS no formatea fechas (contrato D3).
+    static func selloAnoche(now: Date, calendar: Calendar, locale: Locale) -> String {
+        let anoche = String(localized: "last night").uppercased(with: locale)
+        let formatter = DateFormatter()
+        formatter.calendar = calendar
+        formatter.locale = locale
+        formatter.setLocalizedDateFormatFromTemplate("dMMM")
+        // La noche que vigila es la de anoche (la que alimenta el veredicto de hoy).
+        let ref = calendar.date(byAdding: .day, value: -1, to: now) ?? now
+        let fecha = formatter.string(from: ref).uppercased(with: locale)
+        return "\(anoche) · \(fecha)"
+    }
+
+    private static func popupFechaFmt(locale: Locale) -> @Sendable (Date) -> String {
+        let f = DateFormatter()
+        f.locale = locale
+        f.setLocalizedDateFormatFromTemplate("EEEdMMM")
+        return { f.string(from: $0) }
+    }
+
+    private static func serieMini(
+        puntos: [(fecha: Date, valor: Double)],
+        banda: ClosedRange<Double>?,
+        sinDatoAnoche: Bool,
+        fmtValor: @escaping @Sendable (Double) -> String,
+        fmtFecha: @escaping @Sendable (Date) -> String,
+        a11y: String,
+        vacio: String
+    ) -> LiquidGuardianHoja.SerieMini {
+        let vals = puntos.map(\.valor)
+        let lo: Double
+        let hi: Double
+        if let b = banda {
+            let pad = max(0.2, (b.upperBound - b.lowerBound) * 0.25)
+            let dataLo = vals.min() ?? b.lowerBound
+            let dataHi = vals.max() ?? b.upperBound
+            lo = min(b.lowerBound, dataLo) - pad
+            hi = max(b.upperBound, dataHi) + pad
+        } else if let vmin = vals.min(), let vmax = vals.max() {
+            let pad = max(0.2, (vmax - vmin) * 0.15)
+            lo = vmin - pad; hi = vmax + pad
+        } else {
+            lo = 0; hi = 1
+        }
+        let dominio = lo...max(hi, lo + 0.1)
+        let puntoHoy = puntos.last.map { (fecha: $0.fecha, valor: $0.valor) }
+        return .init(
+            puntos: puntos, banda: banda, dominio: dominio,
+            puntoHoy: puntoHoy, hoyAnillo: sinDatoAnoche,
+            a11yLabel: a11y,
+            formatoValor: fmtValor, formatoFecha: fmtFecha, vacio: vacio)
+    }
+
+    /// Dominó alimentado SOLO de `Preparedness.Read.sentinelHistory` (FER-33 · F1).
+    /// Prohibido recalcular cortes del centinela en la capa app.
+    private static func dominoGuardian(
+        prep: Preparedness.Read?,
+        estado: LiquidHoyModel.Guardian.Estado
+    ) -> LiquidGuardianHoja.Domino {
+        let hist = Array((prep?.sentinelHistory ?? []).suffix(5))
+        // Rellenar a 5 por la izquierda con .sinDato si el historial es más corto.
+        let pad = max(0, 5 - hist.count)
+        let tempPts: [LiquidDominoRegla.Punto] =
+            Array(repeating: .sinDato, count: pad) + hist.map(puntoTemp)
+        let respPts: [LiquidDominoRegla.Punto] =
+            Array(repeating: .sinDato, count: pad) + hist.map(puntoResp)
+
+        // Cerco solo en «juntas» con racha ≥ 2, y NUNCA a través de un hueco de calendario.
+        let streak = prep?.sentinel?.streakNights ?? 0
+        let gapEnCerco: Bool = {
+            guard hist.count >= 2 else { return false }
+            // Si la última noche trae gapBefore, no es contigua a la anterior.
+            return hist.suffix(2).dropFirst().contains(where: \.gapBefore)
+                || hist.suffix(1).contains(where: \.gapBefore)
+        }()
+        let encendida = estado == .juntas && streak >= 2 && !gapEnCerco
+
+        let a11y = a11yDomino(temp: tempPts, resp: respPts, encendida: encendida)
+        return .init(
+            carriles: [
+                .init(id: "temp", icono: .termo, tono: LiquidColor.ambar,
+                      noches: tempPts, a11y: String(localized: "Skin temperature")),
+                .init(id: "resp", icono: .resp, tono: LiquidColor.azul,
+                      noches: respPts, a11y: String(localized: "Breathing")),
+            ],
+            cercoUltimas: encendida ? 2 : nil,
+            etiquetas: [String(localized: "night before last"),
+                        String(localized: "last night")],
+            consecuencia: String(localized: "lighter day"),
+            encendida: encendida,
+            a11yLabel: a11y)
+    }
+
+    private static func puntoTemp(_ n: Preparedness.SentinelNight) -> LiquidDominoRegla.Punto {
+        if n.tempMissing { return .sinDato }
+        return n.tempOut ? .fuera : .dentro
+    }
+
+    private static func puntoResp(_ n: Preparedness.SentinelNight) -> LiquidDominoRegla.Punto {
+        // respOut == false con respJudged == false es «el motor no la pudo juzgar»,
+        // NO «está en rango». Pintarla tranquila dibujaría calma donde el motor dijo «no sé».
+        if n.respMissing || !n.respJudged { return .sinDato }
+        return n.respOut ? .fuera : .dentro
+    }
+
+    private static func a11yDomino(temp: [LiquidDominoRegla.Punto],
+                                  resp: [LiquidDominoRegla.Punto],
+                                  encendida: Bool) -> String {
+        func carril(_ nombre: String, _ pts: [LiquidDominoRegla.Punto]) -> String {
+            let tail = Array(pts.suffix(2))
+            let labels = [String(localized: "night before last"),
+                          String(localized: "last night")]
+            var bits: [String] = []
+            for (p, lab) in zip(tail, labels.suffix(tail.count)) {
+                switch p {
+                case .fuera: bits.append("\(String(localized: "out")) \(lab)")
+                case .dentro: bits.append("\(String(localized: "in pattern")) \(lab)")
+                case .sinDato: bits.append("\(String(localized: "no data")) \(lab)")
+                }
+            }
+            return "\(nombre): \(bits.joined(separator: ", "))."
+        }
+        var parts = [
+            carril(String(localized: "Skin temperature"), temp),
+            carril(String(localized: "Breathing"), resp),
+        ]
+        if encendida {
+            parts.append(String(localized: "Your day was pushed to a lighter one."))
+        }
+        return parts.joined(separator: " ")
     }
 
     /// Los rótulos del Ecosistema (FER-10) desde el catálogo, en caja alta del locale.
@@ -448,17 +719,40 @@ enum LiquidHoyBuilder {
         return out
     }
 
-    /// La franja del guardián (FER-1047): temp + respiración, SIEMPRE visible bajo la carga.
-    /// Refleja EXACTAMENTE los cortes del centinela del motor, leídos de `Preparedness.Read` sin
-    /// tocar su API: temp fuera ⇔ el driver térmico votó `.high` (`skinTempDevC ≥ thermalOutC`,
-    /// ya con el descuento lúteo del día); resp fuera ⇔ la z orientada de la respiración cruza
-    /// `respBadZ`. `.juntas` ⇔ ambas ⇔ `sentinelOut` — el único caso en que el centinela empuja
-    /// el veredicto. Una sola fuera NO cambia el veredicto (mata el falso positivo del cuarto
-    /// caliente): el diseño enseña esa regla sin explicarla. Nunca dice «enfermedad».
+    /// El guardián (FER-1047 / FER-33 · F3): temp + respiración, SIEMPRE visible en la
+    /// columna VIGILANDO. Refleja EXACTAMENTE los cortes del centinela del motor, leídos de
+    /// `Preparedness.Read` sin tocar su API: temp fuera ⇔ el driver térmico votó `.high`;
+    /// resp fuera ⇔ la z orientada de la respiración cruza `respBadZ`. `.juntas` ⇔ ambas —
+    /// el único caso en que el centinela empuja el veredicto. Una sola fuera NO cambia el
+    /// veredicto. Nunca dice «enfermedad».
+    ///
+    /// Estados nuevos (F3, defectos reales corregidos):
+    /// - `.sinLectura`: anoche no hubo ninguna de las dos señales — la hoja **no** afirma
+    ///   «dentro de tu patrón».
+    /// - `.conociendote`: aproximación con `prep.maturity == .calibrating` (madurez de la
+    ///   base autonómica, la señal pública más limpia; no hay contador de noches de temp
+    ///   expuesto aparte). Reportado en el PR.
     static func guardian(prep: Preparedness.Read?, thermalDeviation: Double?,
                          resp: Lectura?) -> LiquidHoyModel.Guardian? {
-        // Sin ninguna de las dos lecturas no hay nada que vigilar (no se muestra).
-        guard thermalDeviation != nil || resp != nil else { return nil }
+        let tempStr = thermalDeviation.map { String(format: "%+.1f°", $0) } ?? "—"
+        let respStr = resp.map { "\(Int($0.value.rounded())) \(String(localized: "rpm"))" } ?? "—"
+
+        // Sin ninguna de las dos lecturas: el guardián se muestra vacío, no «en patrón».
+        if thermalDeviation == nil && resp == nil {
+            let label = String(localized: "Watching")
+            let a11y = String(localized: "Guardian: no readings today")
+            return .init(label: label, temp: tempStr, resp: respStr,
+                         estado: .sinLectura, a11y: a11y)
+        }
+
+        // Sin patrón propio todavía: lecturas sí, comparación no.
+        if prep?.maturity == .calibrating {
+            let label = String(localized: "Watching")
+            let a11y = "\(String(localized: "Getting to know you")) \(tempStr), \(respStr)"
+            return .init(label: label, temp: tempStr, resp: respStr,
+                         estado: .conociendote, a11y: a11y)
+        }
+
         let tempHigh = prep?.drivers.first { $0.axis == .thermal }?.state == .high
         let respBadZ = Preparedness.Config.default.respBadZ
         let respHigh = prep?.signals.first { $0.signal == .resp }?.orientedZ
@@ -472,14 +766,8 @@ enum LiquidHoyBuilder {
         case (false, false): estado = .tranquilo
         }
 
-        let tempStr = thermalDeviation.map { String(format: "%+.1f°", $0) } ?? "—"
-        let respStr = resp.map { "\(Int($0.value.rounded())) \(String(localized: "rpm"))" } ?? "—"
-
-        // FER-12: la RACHA del centinela (FER-8) enriquece el rótulo cuando ambas llevan >= 2 noches
-        // JUNTAS. Número factual, sin adjetivos de gravedad; la salience NO crece con N (el tinte de la
-        // franja es el mismo para 1 o 3 noches — solo se agrega el conteo, DNA «color solo en el dato»).
-        // Gated en `.corroborated` del motor (la fuente autoritativa de la racha), no en la derivación
-        // visual del estado, así que un desajuste imposible nunca muestra un conteo espurio.
+        // FER-12: la RACHA del centinela enriquece el rótulo cuando ambas llevan >= 2 noches
+        // JUNTAS. Número factual; la salience NO crece con N. Gated en `.corroborated`.
         let streak: Int = {
             guard estado == .juntas, let s = prep?.sentinel, s.state == .corroborated else { return 0 }
             return s.streakNights
@@ -490,11 +778,9 @@ enum LiquidHoyBuilder {
         case .juntas:
             label = streak >= 2 ? "\(String(localized: "Together")) · \(streak) \(nightsWord)"
                                 : String(localized: "Together")
-        default:
+        case .tranquilo, .tempFuera, .respFuera, .sinLectura, .conociendote:
             label = String(localized: "Watching")
         }
-        // VoiceOver: honesto, jamás «enfermedad» ni diagnóstico. La frase corroborada solo aparece
-        // cuando ambas se salieron JUNTAS (el caso en que sí cuenta); con racha, agrega el conteo.
         let prefijo: String
         if estado == .juntas {
             let base = String(localized: "Your temperature and breathing moved out of your pattern together.")
@@ -1196,6 +1482,8 @@ enum LiquidHoyBuilder {
         func vigilando() -> LiquidHoyModel.Columna {
             let g = guardian
             let label = g?.label ?? up(String(localized: "Watching"))
+            // Solo temp/resp fuera o juntas tiñen de atención; sinLectura/conociéndote
+            // se quedan en el hue 1:1 de la señal (ámbar/azul), sin gritar.
             let tempTone = (g?.estado == .tempFuera || g?.estado == .juntas)
                 ? LiquidColor.atencion : LiquidColor.ambar
             let respTone = (g?.estado == .respFuera || g?.estado == .juntas)

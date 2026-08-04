@@ -175,88 +175,204 @@ public struct LiquidAutonomicoScreen: View {
 
 // MARK: - La lista de señales (el chrome que las vuelve una tabla)
 
-/// Las tres filas del eje dentro de su superficie de vidrio: separadores sangrados tras el punto,
-/// esquinas del DS. Hermana de `LiquidLevelsList` pero con filas NO tocables y columna de voto.
-struct LiquidSignalList: View {
-    let senales: [LiquidAutonomico.Senal]
+/// Fila de señal reutilizable (eje autonómico + guardián): marca + nombre + columna derecha,
+/// wash ámbar cuando está fuera, hit target ≥44, a11y compuesto del caller. NO navega.
+///
+/// La marca puede ser el punto del eje autonómico o la gota-icono del guardián (con anillo
+/// cuando esa señal amaneció fuera). El valor teñido 1:1 y el hueco de la mini-gráfica son
+/// opcionales: el eje no los usa; el guardián sí.
+public struct LiquidSignalFila: Sendable, Identifiable {
+    public let id: String
+    public let etiqueta: String
+    /// Texto de estado a la derecha del nombre («En tu rango»). `nil` = no se pinta.
+    public let estado: String?
+    /// Columna secundaria («40 %», «referencia»). `nil` = no se pinta.
+    public let voto: String?
+    /// Valor teñido 1:1 a la derecha («+0.4°», «14 rpm»). `nil` = no se pinta.
+    public let valor: String?
+    /// Tono del valor (hue 1:1 de la señal). Solo aplica si hay `valor`.
+    public let valorTono: Color?
+    public let fuera: Bool
+    public let nota: String?
+    public let a11y: String
+    /// `nil` = punto del eje; con glifo = gota del guardián.
+    public let icono: LiquidIcon.Glyph?
+    public let iconoTono: Color?
+    /// Anillo ámbar alrededor de la gota cuando la señal amaneció fuera.
+    public let anillo: Bool
 
-    var body: some View {
+    public init(id: String, etiqueta: String, estado: String? = nil, voto: String? = nil,
+                valor: String? = nil, valorTono: Color? = nil, fuera: Bool,
+                nota: String? = nil, a11y: String,
+                icono: LiquidIcon.Glyph? = nil, iconoTono: Color? = nil,
+                anillo: Bool = false) {
+        self.id = id
+        self.etiqueta = etiqueta
+        self.estado = estado
+        self.voto = voto
+        self.valor = valor
+        self.valorTono = valorTono
+        self.fuera = fuera
+        self.nota = nota
+        self.a11y = a11y
+        self.icono = icono
+        self.iconoTono = iconoTono
+        self.anillo = anillo
+    }
+
+    /// Proyección del modelo del eje autonómico.
+    public init(_ senal: LiquidAutonomico.Senal) {
+        self.init(id: senal.id, etiqueta: senal.etiqueta, estado: senal.estado,
+                  voto: senal.voto, fuera: senal.fuera, nota: senal.nota, a11y: senal.a11y)
+    }
+}
+
+/// Las filas del eje/guardián dentro de su superficie de papel: separadores sangrados tras
+/// la marca, esquinas del DS. Hermana de `LiquidLevelsList` pero con filas NO tocables.
+/// Papel opaco (`.superficieSolida`) — las tarjetas internas de la hoja no muestrean el fondo.
+public struct LiquidSignalList<Mini: View>: View {
+    private let filas: [LiquidSignalFila]
+    private let auroraTones: [Color]?
+    private let mini: (LiquidSignalFila) -> Mini
+
+    /// Lista del eje autonómico (sin mini-gráfica, sin aurora).
+    public init(senales: [LiquidAutonomico.Senal]) where Mini == EmptyView {
+        self.filas = senales.map(LiquidSignalFila.init)
+        self.auroraTones = nil
+        self.mini = { _ in EmptyView() }
+    }
+
+    /// Lista genérica (guardián): filas + mini-gráfica opcional por fila + filo de aurora.
+    public init(filas: [LiquidSignalFila],
+                auroraTones: [Color]? = nil,
+                @ViewBuilder mini: @escaping (LiquidSignalFila) -> Mini) {
+        self.filas = filas
+        self.auroraTones = auroraTones
+        self.mini = mini
+    }
+
+    public var body: some View {
         VStack(spacing: 0) {
-            ForEach(Array(senales.enumerated()), id: \.element.id) { (i, s) in
-                LiquidSignalRow(senal: s)
-                if i < senales.count - 1 {
+            ForEach(Array(filas.enumerated()), id: \.element.id) { (i, f) in
+                LiquidSignalRow(fila: f, mini: { mini(f) })
+                if i < filas.count - 1 {
                     Rectangle()
                         .fill(LiquidColor.tinta10)
                         .frame(height: 1)
-                        // Sangría: margen de la fila + el punto + su gap, para que la línea
-                        // arranque bajo el TEXTO y la columna de puntos se lea como un riel.
-                        .padding(.leading, LiquidSpace.s400 + 8 + LiquidSpace.s300)
+                        // Sangría: margen + marca (gota 24 o punto 8) + gap.
+                        .padding(.leading, LiquidSpace.s400 + marcaAncho(f) + LiquidSpace.s300)
                 }
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: LiquidRadius.tarjeta, style: .continuous))
-        .liquidGlass(.superficie)
+        .liquidGlass(.superficieSolida)
+        .overlay {
+            if let tones = auroraTones, !tones.isEmpty {
+                LiquidAuroraEdge(tones: tones, period: 44, radius: LiquidRadius.tarjeta)
+            }
+        }
+    }
+
+    private func marcaAncho(_ f: LiquidSignalFila) -> CGFloat {
+        f.icono != nil ? 24 : 8
     }
 }
 
-/// Una fila de señal: punto + nombre · estado · voto, con la señal FUERA iluminada al 12 % de
-/// ámbar (mismo rango que `LiquidBandsTable`/`LiquidLevelRow`) y su punto lleno; las que están en
-/// rango quedan en gris — color solo en la que se salió. Bajo la fila, una nota opcional (la
-/// respiración que cruzó sola). NO es tocable: el desglose no navega a ningún lado.
-struct LiquidSignalRow: View {
-    let senal: LiquidAutonomico.Senal
+/// Una fila de señal: marca + nombre · (estado/voto o valor teñido), con la señal FUERA
+/// iluminada al wash ámbar de la familia y su marca activa. Bajo la fila, nota y mini-gráfica
+/// opcionales. NO es tocable: el desglose no navega a ningún lado.
+public struct LiquidSignalRow<Mini: View>: View {
+    private let fila: LiquidSignalFila
+    private let mini: Mini
 
     /// El nombre escala con Dynamic Type junto a su estado y su voto (`captionLectura`), para que a
     /// tamaños AX no quede más chico que el número que lo acompaña. Mismo token que `LiquidLevelRow`.
     @ScaledMetric(relativeTo: .footnote)
     private var etiquetaPt: CGFloat = LiquidType.cuerpoLecturaBase
 
-    /// El ámbar de atención para texto chico (AA): el estado «fuera» y el voto de la fila que se
-    /// salió se leen en `atencionTexto`, no en el ámbar crudo (mismo criterio que `LiquidLevelRow`).
-    private var tintaEstado: Color { senal.fuera ? LiquidColor.atencionTexto : LiquidColor.tinta500 }
+    /// El ámbar de atención para texto chico (AA): el estado «fuera» se lee en `atencionTexto`,
+    /// no en el ámbar crudo (mismo criterio que `LiquidLevelRow`).
+    private var tintaEstado: Color { fila.fuera ? LiquidColor.atencionTexto : LiquidColor.tinta500 }
 
-    var body: some View {
+    public init(fila: LiquidSignalFila, @ViewBuilder mini: () -> Mini) {
+        self.fila = fila
+        self.mini = mini()
+    }
+
+    public init(senal: LiquidAutonomico.Senal) where Mini == EmptyView {
+        self.init(fila: LiquidSignalFila(senal), mini: { EmptyView() })
+    }
+
+    public var body: some View {
         VStack(alignment: .leading, spacing: LiquidSpace.s150) {
-            HStack(spacing: LiquidSpace.s300) {
-                punto
-                Text(verbatim: senal.etiqueta)
-                    .font(.system(size: etiquetaPt))
-                    .fontWeight(senal.fuera ? .semibold : .regular)
-                    .foregroundStyle(senal.fuera ? LiquidColor.tinta900 : LiquidColor.tinta700)
-                Spacer(minLength: LiquidSpace.s200)
-                Text(verbatim: senal.estado)
-                    .font(LiquidType.captionLectura)
-                    .foregroundStyle(tintaEstado)
-                if let voto = senal.voto {
-                    Text(verbatim: voto)
-                        .font(LiquidType.captionLectura)
-                        .monospacedDigit()
-                        .foregroundStyle(senal.fuera ? LiquidColor.tinta900 : LiquidColor.tinta500)
-                        .frame(minWidth: 44, alignment: .trailing)
+            // Cabecera de la fila: UN elemento de a11y (label compuesto del caller). La
+            // mini-gráfica vive FUERA para heredar su propio descriptor de gráfica.
+            VStack(alignment: .leading, spacing: LiquidSpace.s150) {
+                HStack(spacing: LiquidSpace.s300) {
+                    marca
+                    Text(verbatim: fila.etiqueta)
+                        .font(.system(size: etiquetaPt))
+                        .fontWeight(fila.fuera ? .semibold : .regular)
+                        .foregroundStyle(fila.fuera ? LiquidColor.tinta900 : LiquidColor.tinta700)
+                    Spacer(minLength: LiquidSpace.s200)
+                    if let valor = fila.valor {
+                        Text(verbatim: valor)
+                            .font(LiquidType.datoMenor)
+                            .monospacedDigit()
+                            .foregroundStyle(fila.valorTono ?? LiquidColor.tinta700)
+                    } else {
+                        if let estado = fila.estado {
+                            Text(verbatim: estado)
+                                .font(LiquidType.captionLectura)
+                                .foregroundStyle(tintaEstado)
+                        }
+                        if let voto = fila.voto {
+                            Text(verbatim: voto)
+                                .font(LiquidType.captionLectura)
+                                .monospacedDigit()
+                                .foregroundStyle(fila.fuera ? LiquidColor.tinta900 : LiquidColor.tinta500)
+                                .frame(minWidth: 44, alignment: .trailing)
+                        }
+                    }
+                }
+                if let nota = fila.nota {
+                    LiquidNotaLine(nota, tono: LiquidColor.atencionTexto)
+                        .padding(.leading, marcaAncho + LiquidSpace.s300)
                 }
             }
-            if let nota = senal.nota {
-                LiquidNotaLine(nota, tono: LiquidColor.atencionTexto)
-                    // Alineada con el TEXTO de la fila (tras el punto y su gap).
-                    .padding(.leading, 8 + LiquidSpace.s300)
-            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(minHeight: LiquidControl.hitTarget)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text(verbatim: fila.a11y))
+
+            mini
+                .padding(.leading, marcaAncho + LiquidSpace.s300)
         }
         .padding(.horizontal, LiquidSpace.s400)
         .padding(.vertical, LiquidSpace.s300)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(minHeight: 44)
         // La fila FUERA se ilumina con el ámbar (rango 10-16 % del épico). Las demás, gris.
-        .background(senal.fuera ? LiquidColor.atencion.opacity(LiquidChart.filaActivaAlfa)
-                                : Color.clear)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(verbatim: senal.a11y))
+        .background(fila.fuera ? LiquidColor.atencion.opacity(LiquidChart.filaActivaAlfa)
+                               : Color.clear)
     }
 
-    /// El punto de la señal: lleno de ámbar cuando está fuera; tenue si está en rango.
-    @ViewBuilder private var punto: some View {
-        Circle()
-            .fill(senal.fuera ? LiquidColor.atencion : LiquidColor.tinta10)
-            .frame(width: 8, height: 8)
+    private var marcaAncho: CGFloat { fila.icono != nil ? 24 : 8 }
+
+    @ViewBuilder private var marca: some View {
+        if let icono = fila.icono {
+            LiquidIconDrop(icono, tone: fila.iconoTono ?? LiquidColor.tinta500,
+                           size: 24, iconSize: 13)
+                .overlay {
+                    if fila.anillo {
+                        Circle()
+                            .strokeBorder(LiquidColor.atencion.opacity(0.45), lineWidth: 1.5)
+                    }
+                }
+        } else {
+            Circle()
+                .fill(fila.fuera ? LiquidColor.atencion : LiquidColor.tinta10)
+                .frame(width: 8, height: 8)
+        }
     }
 }
 

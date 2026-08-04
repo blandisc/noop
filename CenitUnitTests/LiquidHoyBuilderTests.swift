@@ -267,10 +267,23 @@ final class LiquidHoyBuilderTests: XCTestCase {
         XCTAssertEqual(juntas(streak: 1)?.label, String(localized: "Together"))
     }
 
-    func test_guardian_sinLecturas_noSeMuestra() {
-        XCTAssertNil(LiquidHoyBuilder.guardian(prep: nil, thermalDeviation: nil, resp: nil))
-        // Con al menos una lectura, se muestra (siempre visible).
+    func test_guardian_sinLecturas_estadoSinLectura() {
+        // FER-33 · F3: sin lecturas el guardián SE MUESTRA, pero en `.sinLectura` — la
+        // hoja ya no cae a `.tranquilo` y no afirma «dentro de tu patrón».
+        let g = LiquidHoyBuilder.guardian(prep: nil, thermalDeviation: nil, resp: nil)
+        XCTAssertEqual(g?.estado, .sinLectura)
+        XCTAssertEqual(g?.temp, "—")
+        XCTAssertEqual(g?.resp, "—")
+        // Con al menos una lectura, se muestra con otro estado.
         XCTAssertNotNil(LiquidHoyBuilder.guardian(prep: nil, thermalDeviation: 0.1, resp: nil))
+    }
+
+    func test_guardianHoja_sinLecturas_noAfirmaEnPatron() {
+        let g = LiquidHoyBuilder.guardian(prep: nil, thermalDeviation: nil, resp: nil)
+        let hoja = LiquidHoyBuilder.guardianHoja(g)
+        XCTAssertNil(hoja.nivel, "sin lecturas no hay palabra de patrón")
+        XCTAssertEqual(hoja.sinLectura, String(localized: "No reading last night"))
+        XCTAssertFalse(hoja.enPatron)
     }
 
     // MARK: Carga — mismo mapeo que la franja
