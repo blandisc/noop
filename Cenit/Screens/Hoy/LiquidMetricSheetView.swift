@@ -533,9 +533,16 @@ struct LiquidMetricSheetView: View {
         }
     }
 
-    /// El nivel activo de la lectura de hoy (paridad `activeLevelKey` :425-429).
+    /// El nivel del valor que la hoja MUESTRA — la media de la ventana en rangos largos, el
+    /// dato de hoy en la semana.
+    ///
+    /// Clasificaba siempre el valor de hoy, así que en rango largo el número grande decía la
+    /// media y la frase de justo debajo nombraba la banda de hoy: dos afirmaciones distintas
+    /// sobre el mismo hueco de pantalla. La escalera y el titular de la tarjeta ya se habían
+    /// corregido; esta línea se quedó atrás, y es la que va pegada al número.
+    /// (Revisión Grok r3 · C1. La hoja de Carga ya lo hacía bien: era la excepción.)
     private var activeLevelKey: String? {
-        guard let levels = levelsHost.levels, let v = datoInfo.levelsTodayValue,
+        guard let levels = levelsHost.levels, let v = valorMostrado,
               let idx = MetricLevels.activeIndex(for: v, in: levels) else { return nil }
         return levels[idx].key
     }
