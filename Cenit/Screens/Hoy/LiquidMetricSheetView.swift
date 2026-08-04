@@ -365,7 +365,10 @@ struct LiquidMetricSheetView: View {
     }
 
     private var cabecera: some View {
-        LiquidSheetHeader(
+        // Una sola lectura de `heroVentana` por render (revisión adversarial Grok): cada
+        // acceso camina `levelsHost.window`, el gasto que ya costó caro en FER-216/FER-1040.
+        let hv = heroVentana
+        return LiquidSheetHeader(
             icono: glifo,
             titulo: tituloHoja,
             tono: tono,
@@ -374,7 +377,7 @@ struct LiquidMetricSheetView: View {
             // Durante la carga (`isSleepLoading` → skeleton en el cuerpo) el numeral del
             // tile se conserva — la hoja no abre muda.
             // F0.3 (FER-33): el numeral sigue la VENTANA del selector, y el sello dice cuál.
-            numeral: heroVentana.numeral,
+            numeral: hv.numeral,
             // Sueño cuelga la unidad «h» del reloj «7:25» (mock de sueño); las demás hojas
             // usan la unidad de su catálogo. FER-29 fidelidad (auditoría 2026-08-03).
             unidad: datoInfo.id == "sleep" ? String(localized: "h") : datoInfo.unit,
@@ -384,9 +387,10 @@ struct LiquidMetricSheetView: View {
             // auditoría 2026-08-03): «no me gusta la fecha en el título a la derecha, y cómo
             // se calcula es inconsistente» —el sello alternaba entre FECHA («HOY · 3 AGO») en
             // la semana y DESCRIPTOR DE VENTANA («MEDIA · 30 DÍAS») en rangos largos, dos
-            // gramáticas distintas en el mismo lugar—. La ventana ya la dice el selector
-            // (S/M/3M…) encendido; el héroe queda limpio: nombre + numeral + unidad + frase.
-            sello: nil,
+            // gramáticas distintas en el mismo lugar—. #inject: el dueño lo repide, pero
+            // ARRIBA a la izquierda (overline sobre el título), no a la derecha del numeral;
+            // cambia con el selector (semana → «HOY · 4 AGO», mes/3M → «MEDIA · N NOCHES»).
+            sello: hv.sello,
             // FER-29 · La procedencia YA NO viaja en el héroe: baja al chip del pie, DENTRO
             // de «Cómo se calcula» (mock canónico). El héroe es solo valor + unidad + frase
             // + sello de la ventana, idéntico para las 9 métricas. (Revierte la decisión

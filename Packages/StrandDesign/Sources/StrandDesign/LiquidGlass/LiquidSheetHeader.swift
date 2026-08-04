@@ -111,8 +111,33 @@ public struct LiquidSheetHeader: View {
         }
     }
 
+    /// #inject · Numeral con el separador «:» en tinta/700. Sin «:» (o «—») es un solo run
+    /// del tono que ya usaba (numeralTono para el dato, tinta500 para el guion). Con «:»
+    /// (reloj de sueño «7:25») los dígitos van en el tono y los dos puntos en tinta/700,
+    /// fiel al mock: color en el dato, la puntuación en gris.
+    static func numeralText(_ s: String, tono: Color) -> Text {
+        guard s != "—" else { return Text(s).foregroundStyle(LiquidColor.tinta500) }
+        guard s.contains(":") else { return Text(s).foregroundStyle(tono) }
+        return s.reduce(Text(verbatim: "")) { acc, ch in
+            acc + Text(verbatim: String(ch))
+                .foregroundStyle(ch == ":" ? LiquidColor.tinta700 : tono)
+        }
+    }
+
     public var body: some View {
         VStack(alignment: .leading, spacing: LiquidSpace.s150) {
+            // #inject · La ventana del dato («HOY · 4 AGO» en la semana, «MEDIA · 30 NOCHES»
+            // en los rangos largos) sube a un overline a la IZQUIERDA, sobre el título —
+            // pedido del dueño: la fecha ya no cuelga a la derecha del numeral (donde no le
+            // gustaba), sino que encabeza la hoja y cambia con el selector. Muda para
+            // VoiceOver: ya viaja dentro del label compuesto del dato.
+            if let sello {
+                Text(verbatim: sello)
+                    .font(LiquidType.captionLectura)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(LiquidColor.tinta500)
+                    .accessibilityHidden(true)
+            }
             HStack(spacing: LiquidSpace.s150) {
                 if let icono {
                     // Gota de HOJA: 34×34, glifo 16, tono al 12% (mock `.drop`), más grande
@@ -146,9 +171,11 @@ public struct LiquidSheetHeader: View {
             }
             if let numeral {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text(numeral)
+                    // #inject · El separador «:» del reloj (sueño «7:25») baja a tinta/700
+                    // como en el mock: los dígitos mandan en el hue, los dos puntos son solo
+                    // puntuación. Las demás métricas (sin «:») no cambian.
+                    Self.numeralText(numeral, tono: numeralTono)
                         .font(LiquidType.numeralHoja)
-                        .foregroundStyle(numeral == "—" ? LiquidColor.tinta500 : numeralTono)
                     if let unidad, numeral != "—" {
                         Text(unidad)
                             .font(LiquidType.numeralHojaUnidad)
@@ -160,15 +187,8 @@ public struct LiquidSheetHeader: View {
                             .foregroundStyle(LiquidColor.tinta500)
                     }
                     procedencia(inline: true)
-                    if let sello {
-                        Spacer(minLength: LiquidSpace.s200)
-                        Text(verbatim: sello)
-                            .font(LiquidType.captionLectura)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(numeralTono)
-                            .lineLimit(1)
-                            .layoutPriority(1)
-                    }
+                    // #inject · El sello ya NO va aquí (derecha del numeral): subió a un
+                    // overline sobre el título. Ver arriba.
                 }
                 .lineLimit(limiteNumeral)
                 // B3 · el dato dominante es UNA sola parada de VoiceOver: numeral, unidad,

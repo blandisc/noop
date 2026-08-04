@@ -91,7 +91,19 @@ public struct LiquidLevelRow: View {
             .frame(minHeight: 44)
             // I1 en la lista: la fila activa se ilumina con el tono (rango 10-16 % del épico);
             // la resaltada por scrub, con un wash más tenue (eco tabla↔gráfica); activa gana.
-            .background(washFila)
+            // #inject · El resalte deja de ser un rectángulo a sangre y pasa a una PÍLDORA
+            // inset y redondeada (r=control 12, mock `.lvl.on{border-radius:12}`): flota con
+            // respiro a los lados y arriba/abajo, más refinada. La zona tocable sigue a sangre.
+            .background(
+                RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous)
+                    .fill(washFila)
+                    // #inject · Pedido del dueño: la píldora abarca más a la derecha (se
+                    // cortaba muy cerca de «N nights»); margen izquierdo refinado, derecho
+                    // más corto para que el resalte casi alcance el conteo.
+                    .padding(.leading, LiquidSpace.s300)
+                    .padding(.trailing, LiquidSpace.s100)
+                    .padding(.vertical, LiquidSpace.s100)
+            )
             .contentShape(Rectangle())
         }
         .buttonStyle(.liquidPress)
@@ -191,7 +203,10 @@ public struct LiquidLevelsList: View {
                                tono: tono,
                                hoyEtiqueta: f.hoyEtiqueta, a11yHint: f.a11yHint,
                                onTap: f.onTap)
-                if i < filas.count - 1 {
+                // #inject · El separador NO se dibuja pegado a la fila activa (mock
+                // `.lvl.on + .lvl{border-top-color:transparent}`): la píldora del resalte
+                // flota limpia, sin una línea rozándole el filo arriba o abajo.
+                if i < filas.count - 1, !filas[i].activa, !filas[i + 1].activa {
                     // Sangría: margen de la fila + el punto + su gap, para que la línea
                     // arranque bajo el TEXTO y la columna de puntos se lea como un riel.
                     Rectangle()
