@@ -540,6 +540,17 @@ struct LiquidMetricSheetView: View {
         return levels[idx].key
     }
 
+    /// F0.3 · En qué fila de la escalera cayó HOY — independiente de lo que el héroe muestre.
+    ///
+    /// La escalera dice dos cosas a la vez y las dos son ciertas: cuál fila describe el número
+    /// grande (la ENCENDIDA, que en rangos largos es la de la media) y dónde cayó tu día (la
+    /// pastilla «· hoy»). Colgar «· hoy» de la fila encendida las confundía en una sola y hacía
+    /// que la escalera marcara como «hoy» la banda del promedio.
+    private var indiceDeHoy: Int? {
+        guard let levels = levelsHost.levels, let v = datoInfo.levelsTodayValue else { return nil }
+        return MetricLevels.activeIndex(for: v, in: levels)
+    }
+
     /// La lectura de nivel de hoy (FER-29 · contrato 4): una sola tabla de datos
     /// (`MetricLevelPhrase`) keyeada por `(metricID, levelKey)` reemplaza los 26 `case`
     /// dispersos. `activeLevelKey` entrega la MISMA clave de nivel que el switch consumía
@@ -1115,26 +1126,27 @@ struct LiquidMetricSheetView: View {
     /// de la tarjeta y la fila encendida de la escalera— tiene que clasificarse contra ESTE
     /// valor, no contra el de hoy: si el numeral dice la media y la palabra de abajo nombra la
     /// banda de hoy, la hoja se contradice sola en cuanto tu día se sale de tu promedio.
+    ///
+    /// `levelsHost.window` es una propiedad COMPUTADA que recorre la serie para resolver la
+    /// ventana efectiva, así que se toma UNA vez por acceso y se deriva todo de ella: leerla
+    /// varias veces por render es el gasto que ya costó caro en FER-216/FER-1040.
     private var valorMostrado: Double? {
-        let valores = levelsHost.window.values
-        guard mostrandoMedia, !valores.isEmpty else { return datoInfo.levelsTodayValue }
-        return ComparisonEngine.stat(valores).mean
-    }
-
-    /// ¿El héroe está mostrando la media de la ventana (y no el dato de hoy)?
-    /// Se decide con el rango EFECTIVO de la ventana, no con el seleccionado: cuando la
-    /// ventana se auto-ensancha porque no había días suficientes, el sello tiene que decir la
-    /// ventana que de verdad se promedió.
-    private var mostrandoMedia: Bool {
-        levelsHost.levels != nil && levelsHost.window.range != .week
+        let w = levelsHost.window
+        guard levelsHost.levels != nil, w.range != .week, !w.values.isEmpty else {
+            return datoInfo.levelsTodayValue
+        }
+        return ComparisonEngine.stat(w.values).mean
     }
 
     private var heroVentana: (numeral: String?, sello: String?) {
-        let valores = levelsHost.window.values
-        guard mostrandoMedia, !valores.isEmpty else {
+        let w = levelsHost.window
+        // El rango EFECTIVO manda, no el seleccionado: cuando la ventana se auto-ensancha
+        // porque no había días suficientes, el sello tiene que decir la que de verdad se
+        // promedió.
+        guard levelsHost.levels != nil, w.range != .week, !w.values.isEmpty else {
             return (datoInfo.displayValue, selloHoy)
         }
-        return (levelsValueFormat(ComparisonEngine.stat(valores).mean), selloMedia)
+        return (levelsValueFormat(ComparisonEngine.stat(w.values).mean), selloMedia(w.range))
     }
 
     /// «HOY · 3 AGO». La fecha la compone la capa app (el DS no formatea fechas, contrato D3).
@@ -1147,12 +1159,12 @@ struct LiquidMetricSheetView: View {
     ///
     /// Los rangos largos se nombran por su unidad natural, no por su cuenta de días: «1 año»
     /// se lee, «365 días» se calcula. Por eso medio año y año tienen su propia frase.
-    private var selloMedia: String {
-        switch levelsHost.window.range {
+    private func selloMedia(_ rango: ExploreRange) -> String {
+        switch rango {
         case .week:
             return selloHoy
         case .month, .quarter:
-            let dias: Int = levelsHost.window.range.days ?? 0
+            let dias: Int = rango.days ?? 0
             return nightly
                 ? String(localized: "AVG · \(dias) NIGHTS")
                 : String(localized: "AVG · \(dias) DAYS")
@@ -1331,8 +1343,11 @@ struct LiquidMetricSheetView: View {
             tono: tono,
             // Hoy = el último punto dibujado (paridad marksLastPoint/markedPointHollow
             // :144-145): anillo hueco mientras exploras un nivel que no es el de hoy.
-            puntoHoy: d.activeIndex != nil ? puntos.last : nil,
-            hoyAnillo: nivelExplorado != nil && nivelExplorado != d.activeIndex,
+            // La joya de hoy se enciende porque HOY tiene lectura, no porque la clasificación
+            // tenga un nivel activo: al mostrar la media, `activeIndex` existe siempre y la
+            // joya se prendía sobre el último punto aunque hoy no hubiera dato.
+            puntoHoy: indiceDeHoy != nil ? puntos.last : nil,
+            hoyAnillo: nivelExplorado != nil && nivelExplorado != indiceDeHoy,
             formatoScrub: { (v: Double, f: Date) in
                 "\(self.scrubValor(v)) · \(Self.diaCorto(f))"
             },
@@ -1422,7 +1437,10 @@ struct LiquidMetricSheetView: View {
                     // D7 · Sin serie todavía, la columna queda VACÍA (su ancho mínimo ya
                     // está reservado, así que no salta cuando llegan los conteos).
                     conteo: conteos ? conteoLabel(d.counts[i]) : "",
-                    esHoy: i == d.activeIndex,
+                    // La pastilla «· hoy» marca dónde cayó TU DÍA, no la fila que el héroe
+                    // describe: en rango largo el héroe es la media y las dos filas pueden ser
+                    // distintas. Ambas informaciones son ciertas y se ven a la vez.
+                    esHoy: i == indiceDeHoy,
                     activa: i == highlight,
                     // El rótulo que marca EN LA LISTA dónde cayó hoy (clave existente).
                     hoyEtiqueta: hoyRotulo,
