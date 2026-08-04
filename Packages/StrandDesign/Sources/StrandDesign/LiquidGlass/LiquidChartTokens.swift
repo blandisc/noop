@@ -42,6 +42,11 @@ public enum LiquidChart {
     /// Wash de FILA resaltada (eco del scrub tabla↔gráfica): más tenue que `filaActivaAlfa`.
     /// Solo aplica cuando la fila NO es la activa de hoy.
     public static let filaResaltadaAlfa: Double = 0.055
+    /// Anillo de la gota-marca cuando la señal amaneció fuera (guardián / filas de señal;
+    /// paridad del mockup sheet-guardian-final: rgba ámbar al 45 %).
+    public static let marcaAnilloAlfa: Double = 0.45
+    /// Grosor del anillo de la gota-marca «fuera».
+    public static let marcaAnilloBorde: CGFloat = 1.5
 
     // MARK: Scrub (I2 — regla vertical + anillo)
 

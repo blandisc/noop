@@ -287,8 +287,9 @@ enum LiquidHoyBuilder {
                     String(localized: "Sleep with your Apple Watch and tomorrow it watches again."),
                     false, false)
         case .conociendote:
+            // Misma clave que el héroe calibrando (`hero.title.calibrando` → «Conociéndote»).
             return (nil,
-                    String(localized: "Getting to know you"),
+                    String(localized: "hero.title.calibrando", defaultValue: "Getting to know you"),
                     String(localized: "I need a few of your nights to learn your pattern."),
                     String(localized: "In the meantime, readings are shown without comparison."),
                     false, false)
@@ -748,7 +749,9 @@ enum LiquidHoyBuilder {
         // Sin patrón propio todavía: lecturas sí, comparación no.
         if prep?.maturity == .calibrating {
             let label = String(localized: "Watching")
-            let a11y = "\(String(localized: "Getting to know you")) \(tempStr), \(respStr)"
+            let palabra = String(localized: "hero.title.calibrando",
+                                 defaultValue: "Getting to know you")
+            let a11y = "\(palabra) \(tempStr), \(respStr)"
             return .init(label: label, temp: tempStr, resp: respStr,
                          estado: .conociendote, a11y: a11y)
         }

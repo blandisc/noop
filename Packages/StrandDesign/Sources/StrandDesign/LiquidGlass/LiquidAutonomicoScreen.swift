@@ -274,6 +274,7 @@ public struct LiquidSignalList<Mini: View>: View {
     }
 
     private func marcaAncho(_ f: LiquidSignalFila) -> CGFloat {
+        // Misma geometría que `LiquidSignalRow` (gota 24 / punto 8).
         f.icono != nil ? 24 : 8
     }
 }
@@ -356,22 +357,30 @@ public struct LiquidSignalRow<Mini: View>: View {
                                : Color.clear)
     }
 
-    private var marcaAncho: CGFloat { fila.icono != nil ? 24 : 8 }
+    /// Gota de señal (misma caja que la gota de tile por defecto).
+    private static let gotaSize: CGFloat = 24
+    private static let gotaIconSize: CGFloat = 13
+    /// Punto del eje autonómico (riel de estado).
+    private static let puntoDiametro: CGFloat = 8
+
+    private var marcaAncho: CGFloat { fila.icono != nil ? Self.gotaSize : Self.puntoDiametro }
 
     @ViewBuilder private var marca: some View {
         if let icono = fila.icono {
             LiquidIconDrop(icono, tone: fila.iconoTono ?? LiquidColor.tinta500,
-                           size: 24, iconSize: 13)
+                           size: Self.gotaSize, iconSize: Self.gotaIconSize)
                 .overlay {
                     if fila.anillo {
                         Circle()
-                            .strokeBorder(LiquidColor.atencion.opacity(0.45), lineWidth: 1.5)
+                            .strokeBorder(
+                                LiquidColor.atencion.opacity(LiquidChart.marcaAnilloAlfa),
+                                lineWidth: LiquidChart.marcaAnilloBorde)
                     }
                 }
         } else {
             Circle()
                 .fill(fila.fuera ? LiquidColor.atencion : LiquidColor.tinta10)
-                .frame(width: 8, height: 8)
+                .frame(width: Self.puntoDiametro, height: Self.puntoDiametro)
         }
     }
 }
