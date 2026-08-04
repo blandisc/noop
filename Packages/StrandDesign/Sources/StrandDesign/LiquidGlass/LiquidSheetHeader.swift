@@ -2,8 +2,8 @@ import SwiftUI
 
 // MARK: - Liquid Glass · Cabecera de hoja de resumen (épico hoja Liquid, F1)
 //
-// La cabecera ÚNICA de todas las variantes de la hoja: gota del icono (24, mismo átomo que
-// los tiles) + rótulo en caja alta + ⓘ que pliega/despliega la explicación, y debajo el
+// La cabecera ÚNICA de todas las variantes de la hoja: gota del icono (34/16/12%, la variante
+// de HOJA del átomo) + rótulo en caja alta + ⓘ que pliega/despliega la explicación, y debajo el
 // DATO héroe (`numeralHoja`) con unidad, sufijo («/ 100») y el punto de origen con su
 // etiqueta. Reemplaza al header bifurcado de MetricInfoSheet en el cutover F6.
 //

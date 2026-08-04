@@ -6,7 +6,7 @@ import SwiftUI
 // comportamiento NUEVO (§1.3 del contrato: hoy la hoja cae al layout clásico, sin
 // skeleton). Cuatro bloques redacted en vidrio (`.superficie`) con las alturas
 // aproximadas del contenido rico: doble dato, línea de lectura, barra de etapas y
-// gráfica de niveles (168, el alto del explorador — contrato §5).
+// gráfica de niveles (144, el alto del explorador — contrato §5).
 //
 // Shimmer sobrio SOLO en movimiento permitido: un streak que viaja por los bloques con
 // la cadencia `flow` del sistema (la gramática de «pulsos que viajan», `LiquidMotion`).
