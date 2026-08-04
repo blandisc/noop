@@ -2,8 +2,8 @@ import SwiftUI
 
 // MARK: - Liquid Glass · Cabecera de hoja de resumen (épico hoja Liquid, F1)
 //
-// La cabecera ÚNICA de todas las variantes de la hoja: gota del icono (24, mismo átomo que
-// los tiles) + rótulo en caja alta + ⓘ que pliega/despliega la explicación, y debajo el
+// La cabecera ÚNICA de todas las variantes de la hoja: gota del icono (34/16/12%, la variante
+// de HOJA del átomo) + rótulo en caja alta + ⓘ que pliega/despliega la explicación, y debajo el
 // DATO héroe (`numeralHoja`) con unidad, sufijo («/ 100») y el punto de origen con su
 // etiqueta. Reemplaza al header bifurcado de MetricInfoSheet en el cutover F6.
 //
@@ -115,7 +115,9 @@ public struct LiquidSheetHeader: View {
         VStack(alignment: .leading, spacing: LiquidSpace.s150) {
             HStack(spacing: LiquidSpace.s150) {
                 if let icono {
-                    LiquidIconDrop(icono, tone: tono)
+                    // Gota de HOJA: 34×34, glifo 16, tono al 12% (mock `.drop`), más grande
+                    // que la gota de tile (24/14/10%) — auditoría de fidelidad 2026-08-03.
+                    LiquidIconDrop(icono, tone: tono, size: 34, iconSize: 16, fillAlpha: 0.12)
                 }
                 // El nombre de la métrica manda más (pedido del dueño /inject): sube del
                 // rótulo chico al título del sistema, en tinta plena.
@@ -123,7 +125,10 @@ public struct LiquidSheetHeader: View {
                 // volvían un banner que le ganaba el foco al dato. El numeral manda.
                 Text(titulo)
                     .font(LiquidType.tituloHoja)
-                    .foregroundStyle(LiquidColor.tinta700)
+                    // Mock canónico: el nombre de la métrica va en tinta plena (`tinta900`),
+                    // no en la secundaria (auditoría de fidelidad 2026-08-03). El numeral
+                    // sigue mandando por TAMAÑO (52 vs 17), no por contraste.
+                    .foregroundStyle(LiquidColor.tinta900)
                     // B3 · con numeral, el título ya va DENTRO del label compuesto de la
                     // fila del dato («VFC, 56 ms, Apple Salud», que empieza por él):
                     // dejarlo como parada propia lo dice dos veces. Sin numeral, esta ES

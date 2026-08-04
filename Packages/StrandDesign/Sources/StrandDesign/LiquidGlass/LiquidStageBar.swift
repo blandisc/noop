@@ -40,8 +40,9 @@ public struct LiquidStageBar: View {
     /// accesibilidad se acomoda en rejilla 2×2 (mismos items, dos columnas).
     @Environment(\.dynamicTypeSize) private var tamanoTexto
 
-    /// Alto de la barra — geometría interna del componente (paridad `SleepStageBar`).
-    private let altoBarra: CGFloat = 24
+    /// Alto de la barra — geometría interna del componente. 24→12 (auditoría de fidelidad
+    /// 2026-08-03: el mock traza `.stbar {height:12px}`).
+    private let altoBarra: CGFloat = 12
 
     /// B7 · `ventana` es OPCIONAL: el fallback diario de Apple fabrica noches con
     /// `startTs == endTs`, y el caller que no puede afirmar un horario real pasa `nil` en vez
@@ -134,12 +135,14 @@ public struct LiquidStageBar: View {
 
     private func item(_ etapa: Etapa) -> some View {
         HStack(spacing: LiquidSpace.s100) {
-            Circle()
+            // Swatch CUADRADO 8×8 (mock `.stleg i {8×8; border-radius:2}`), no un círculo de 5.
+            RoundedRectangle(cornerRadius: 2, style: .continuous)
                 .fill(etapa.color)
-                .frame(width: 5, height: 5)
+                .frame(width: 8, height: 8)
+            // Sentence case («Profundo», «REM»), no MAYÚSCULAS: el mock reserva la caja alta
+            // para el overline de sección, no para las etiquetas de la leyenda.
             Text(verbatim: etapa.etiqueta)
                 .font(LiquidType.microEstado)
-                .textCase(.uppercase)
                 .foregroundStyle(LiquidColor.tinta500)
             Text(verbatim: etapa.duracion)
                 .font(LiquidType.captionLectura)

@@ -15,18 +15,19 @@ public enum LiquidChart {
 
     // MARK: Trazo
 
-    /// Grosor de la línea de serie.
-    public static let lineaAncho: CGFloat = 1.6
+    /// Grosor de la línea de serie — 2.2, paridad exacta del mock (`#line{stroke-width:2.2}`,
+    /// auditoría 2026-08-03; venía de 1.6→2.0→2.2).
+    public static let lineaAncho: CGFloat = 2.2
     /// Grosor de la línea tenue (media móvil, serie secundaria).
     public static let lineaSecundariaAncho: CGFloat = 1.2
     /// Alfa de la retícula/grid sobre el vidrio.
     public static let gridAlfa: Double = 0.10
-    /// El punto final de la serie: la JOYA (mismo lenguaje que el orbe).
+    /// El punto final de la serie: la JOYA DE HOY (mismo lenguaje que el orbe).
     public static let endpointRadio: CGFloat = 3.6   // > puntoDatoRadio 3.0 (pasada UI H5: la jerarquía estaba invertida)
-    /// Grosor del borde de la joya del endpoint. El COLOR es `LiquidColor.papelAlto` (el
-    /// papel del contenedor), el mismo del anillo del scrub y del anillo de «hoy» — nunca
-    /// blanco duro.
-    public static let endpointBorde: CGFloat = 1.2
+    /// Grosor del filo del TONO que ribetea la joya de hoy. El relleno es `papelAlto` (el
+    /// papel casi-blanco del contenedor) y el filo es el tono, paridad del mock canónico
+    /// (`.dot.today{fill:#fff;stroke:var(--tono);stroke-width:2}`, auditoría 2026-08-03).
+    public static let endpointBorde: CGFloat = 2
 
     // MARK: Bandas (I1 — luminosidad de lo seleccionado)
 
@@ -171,8 +172,8 @@ public enum LiquidChart {
                 .frame(width: LiquidChart.scrubAnilloDiametro,
                        height: LiquidChart.scrubAnilloDiametro)
                 .offset(x: 135, y: 25)
-            Circle().fill(hue)
-                .overlay(Circle().strokeBorder(LiquidColor.papelAlto,
+            Circle().fill(LiquidColor.papelAlto)
+                .overlay(Circle().strokeBorder(hue,
                                                lineWidth: LiquidChart.endpointBorde))
                 .frame(width: LiquidChart.endpointRadio * 2,
                        height: LiquidChart.endpointRadio * 2)

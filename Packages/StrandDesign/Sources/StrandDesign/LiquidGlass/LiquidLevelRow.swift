@@ -22,6 +22,9 @@ public struct LiquidLevelRow: View {
     private let conteo: String
     private let esHoy: Bool
     private let activa: Bool
+    /// Eco del scrub: la fila del nivel bajo el dedo recibe un wash tenue mientras arrastras
+    /// sobre la gráfica (mock `.lvl.hit`, `filaResaltadaAlfa`). `activa` gana si ambas.
+    private let resaltada: Bool
     private let tono: Color
     private let hoyEtiqueta: String?
     private let a11yHint: String?
@@ -30,11 +33,12 @@ public struct LiquidLevelRow: View {
     /// La etiqueta escala con Dynamic Type como su rango y su conteo (`captionLectura`,
     /// relativo a `.caption2`). Con el `LiquidType.cuerpo` fijo de antes, a tamaños AX el
     /// nombre del carril terminaba MÁS CHICO que el número que lo acompaña.
+    // 14 base (mock `.lvl .nm {14px}`), 12.5→14 (auditoría 2026-08-03). Escala con Dynamic Type.
     @ScaledMetric(relativeTo: .footnote)
-    private var etiquetaPt: CGFloat = LiquidType.cuerpoLecturaBase
+    private var etiquetaPt: CGFloat = 14
 
     public init(etiqueta: String, rango: String, conteo: String,
-                esHoy: Bool, activa: Bool, tono: Color,
+                esHoy: Bool, activa: Bool, resaltada: Bool = false, tono: Color,
                 hoyEtiqueta: String? = nil,
                 a11yHint: String? = nil, onTap: @escaping () -> Void) {
         self.etiqueta = etiqueta
@@ -42,6 +46,7 @@ public struct LiquidLevelRow: View {
         self.conteo = conteo
         self.esHoy = esHoy
         self.activa = activa
+        self.resaltada = resaltada
         self.tono = tono
         self.hoyEtiqueta = hoyEtiqueta
         self.a11yHint = a11yHint
@@ -57,7 +62,7 @@ public struct LiquidLevelRow: View {
                 HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s150) {
                     Text(verbatim: etiqueta)
                         .font(.system(size: etiquetaPt))
-                        .fontWeight(activa ? .semibold : .regular)
+                        .fontWeight(activa ? .bold : .regular)
                         .foregroundStyle(activa ? LiquidColor.tinta900 : LiquidColor.tinta700)
                     if esHoy, let hoyEtiqueta {
                         Text(verbatim: hoyEtiqueta)
@@ -66,22 +71,27 @@ public struct LiquidLevelRow: View {
                     }
                 }
                 Spacer(minLength: LiquidSpace.s200)
+                // Rango 13/600 tinta700 y conteo 12 tinta500 — SIEMPRE, aunque la fila esté
+                // activa (mock `.lvl .rng {13/600 tinta700}`, `.lvl .cnt {12 tinta500}`; la
+                // fila activa se distingue por la etiqueta en bold+tinta900, el tick y el wash,
+                // no por teñir sus números de tinta900). Auditoría Grok+DeepSeek 2026-08-03.
                 Text(verbatim: rango)
-                    .font(LiquidType.captionLectura)
+                    .font(LiquidType.filaRango)
                     .monospacedDigit()
-                    .foregroundStyle(activa ? LiquidColor.tinta900 : LiquidColor.tinta500)
+                    .foregroundStyle(LiquidColor.tinta700)
                 Text(verbatim: conteo)
-                    .font(LiquidType.captionLectura)
+                    .font(LiquidType.filaConteo)
                     .monospacedDigit()
-                    .foregroundStyle(activa ? LiquidColor.tinta900 : LiquidColor.tinta500)
-                    .frame(minWidth: 50, alignment: .trailing)
+                    .foregroundStyle(LiquidColor.tinta500)
+                    .frame(minWidth: 52, alignment: .trailing)
             }
             .padding(.horizontal, LiquidSpace.s400)
             .padding(.vertical, LiquidSpace.s300)
             .frame(maxWidth: .infinity)
             .frame(minHeight: 44)
-            // I1 en la lista: la fila activa se ilumina con el tono (rango 10-16 % del épico).
-            .background(activa ? tono.opacity(LiquidChart.filaActivaAlfa) : Color.clear)
+            // I1 en la lista: la fila activa se ilumina con el tono (rango 10-16 % del épico);
+            // la resaltada por scrub, con un wash más tenue (eco tabla↔gráfica); activa gana.
+            .background(washFila)
             .contentShape(Rectangle())
         }
         .buttonStyle(.liquidPress)
@@ -101,14 +111,27 @@ public struct LiquidLevelRow: View {
             ? LiquidColor.atencionTexto : tono
     }
 
-    /// El punto del nivel: lleno del tono cuando la fila está activa; ANILLO hueco cuando es
-    /// el nivel de hoy pero exploras otro (paridad del dot del explorador); tenue si no.
+    /// El wash de la fila: `activa` manda (I1, wash fuerte); `resaltada && !activa` es el eco
+    /// tenue del scrub; si nada, transparente. Mismo orden que `LiquidBandsTable`.
+    private var washFila: Color {
+        if activa { return tono.opacity(LiquidChart.filaActivaAlfa) }
+        if resaltada { return tono.opacity(LiquidChart.filaResaltadaAlfa) }
+        return .clear
+    }
+
+    /// El marcador de índice de la fila: una BARRA VERTICAL, no un círculo. Paridad del mock
+    /// canónico (`.lvl .tick`: barra 2×14, activa 2.5×17 del tono; auditoría Grok+DeepSeek
+    /// 2026-08-03). Del tono cuando la fila es la activa o la de hoy; tenue (tinta10) si no.
+    /// La barra se centra en una columna de 8 pt: el mismo ancho que ocupaba el círculo, para
+    /// no correr el texto ni la sangría del separador de `LiquidLevelsList`.
     @ViewBuilder private var punto: some View {
-        if esHoy && !activa {
-            Circle().strokeBorder(tono, lineWidth: 2).frame(width: 8, height: 8)
-        } else {
-            Circle().fill(activa ? tono : LiquidColor.tinta10).frame(width: 8, height: 8)
-        }
+        // Tick del tono SOLO en la fila activa (mock `.lvl.on .tick`); el día se marca con el
+        // rótulo «· hoy» aparte, no tiñendo su tick (auditoría 2026-08-03).
+        let esTono: Bool = activa
+        RoundedRectangle(cornerRadius: 1, style: .continuous)
+            .fill(esTono ? tono : LiquidColor.tinta10)
+            .frame(width: activa ? 2.5 : 2, height: activa ? 17 : 14)
+            .frame(width: 8)
     }
 }
 
@@ -131,12 +154,13 @@ public struct LiquidLevelsList: View {
         public let conteo: String
         public let esHoy: Bool
         public let activa: Bool
+        public let resaltada: Bool
         public let hoyEtiqueta: String?
         public let a11yHint: String?
         public let onTap: () -> Void
 
         public init(etiqueta: String, rango: String, conteo: String,
-                    esHoy: Bool = false, activa: Bool = false,
+                    esHoy: Bool = false, activa: Bool = false, resaltada: Bool = false,
                     hoyEtiqueta: String? = nil, a11yHint: String? = nil,
                     onTap: @escaping () -> Void = {}) {
             self.etiqueta = etiqueta
@@ -144,6 +168,7 @@ public struct LiquidLevelsList: View {
             self.conteo = conteo
             self.esHoy = esHoy
             self.activa = activa
+            self.resaltada = resaltada
             self.hoyEtiqueta = hoyEtiqueta
             self.a11yHint = a11yHint
             self.onTap = onTap
@@ -162,7 +187,8 @@ public struct LiquidLevelsList: View {
         VStack(spacing: 0) {
             ForEach(Array(filas.enumerated()), id: \.offset) { (i: Int, f: Fila) in
                 LiquidLevelRow(etiqueta: f.etiqueta, rango: f.rango, conteo: f.conteo,
-                               esHoy: f.esHoy, activa: f.activa, tono: tono,
+                               esHoy: f.esHoy, activa: f.activa, resaltada: f.resaltada,
+                               tono: tono,
                                hoyEtiqueta: f.hoyEtiqueta, a11yHint: f.a11yHint,
                                onTap: f.onTap)
                 if i < filas.count - 1 {

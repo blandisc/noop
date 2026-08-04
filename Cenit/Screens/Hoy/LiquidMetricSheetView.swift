@@ -48,6 +48,10 @@ struct LiquidMetricSheetView: View {
     /// El nivel que el usuario explora en la lista (nil = el de hoy) — paridad
     /// `MetricLevelsExplorer.selectedLevelIndex`.
     @State private var nivelExplorado: Int? = nil
+    /// Eco tabla↔gráfica (auditoría 2026-08-03): el valor del punto bajo el dedo mientras
+    /// arrastras sobre la gráfica; `nil` al soltar. Resalta la fila de la escalera cuyo rango
+    /// lo contiene (mock `.lvl.hit`). NO toca el héroe (contrato §11.3, el scrub es local).
+    @State private var scrubValor: Double? = nil
     @State private var heartRateCurve: [TrendPoint] = []
     @State private var heartRateLoading = false
     @State private var trendData: [TrendPoint] = []
@@ -493,10 +497,18 @@ struct LiquidMetricSheetView: View {
             // tile se conserva — la hoja no abre muda.
             // F0.3 (FER-33): el numeral sigue la VENTANA del selector, y el sello dice cuál.
             numeral: heroVentana.numeral,
-            unidad: datoInfo.unit,
+            // Sueño cuelga la unidad «h» del reloj «7:25» (mock de sueño); las demás hojas
+            // usan la unidad de su catálogo. FER-29 fidelidad (auditoría 2026-08-03).
+            unidad: datoInfo.id == "sleep" ? String(localized: "h") : datoInfo.unit,
             sufijo: sufijo,
             numeralTono: tinte(datoInfo.headerTint),
-            sello: heroVentana.sello,
+            // FER-29 · Sin fecha/sello a la derecha del numeral (decisión del dueño,
+            // auditoría 2026-08-03): «no me gusta la fecha en el título a la derecha, y cómo
+            // se calcula es inconsistente» —el sello alternaba entre FECHA («HOY · 3 AGO») en
+            // la semana y DESCRIPTOR DE VENTANA («MEDIA · 30 DÍAS») en rangos largos, dos
+            // gramáticas distintas en el mismo lugar—. La ventana ya la dice el selector
+            // (S/M/3M…) encendido; el héroe queda limpio: nombre + numeral + unidad + frase.
+            sello: nil,
             // FER-29 · La procedencia YA NO viaja en el héroe: baja al chip del pie, DENTRO
             // de «Cómo se calcula» (mock canónico). El héroe es solo valor + unidad + frase
             // + sello de la ventana, idéntico para las 9 métricas. (Revierte la decisión
@@ -533,14 +545,18 @@ struct LiquidMetricSheetView: View {
         }
     }
 
-    /// El nivel del valor que la hoja MUESTRA — la media de la ventana en rangos largos, el
-    /// dato de hoy en la semana.
+    /// El nivel que describe el HÉROE — clasificado contra `valorMostrado`, el mismo número
+    /// que el numeral enseña (la media en rangos largos, el dato de hoy en la semana), NO
+    /// contra el de hoy a secas.
     ///
-    /// Clasificaba siempre el valor de hoy, así que en rango largo el número grande decía la
-    /// media y la frase de justo debajo nombraba la banda de hoy: dos afirmaciones distintas
-    /// sobre el mismo hueco de pantalla. La escalera y el titular de la tarjeta ya se habían
-    /// corregido; esta línea se quedó atrás, y es la que va pegada al número.
-    /// (Revisión Grok r3 · C1. La hoja de Carga ya lo hacía bien: era la excepción.)
+    /// FER-29 · Fidelidad (auditoría Grok 2026-08-03): la frase de lectura bajo el héroe era
+    /// la única pieza que seguía clasificándose por `levelsTodayValue` mientras el numeral, la
+    /// frase de nivel y la fila encendida ya seguían la ventana (`valorMostrado`). Al pasar a
+    /// «MEDIA · 30 días» el numeral decía la media pero la palabra de abajo nombraba la banda
+    /// de HOY: la hoja se contradecía en cuanto tu día se salía de tu promedio. La pastilla
+    /// «· hoy» de la escalera sí marca el día real —vive en `indiceDeHoy`, intacto—.
+    /// (Otra sesión —FER-33/Carga— llegó al mismo fix en paralelo; la hoja de Carga ya lo
+    /// hacía bien y era la excepción.)
     private var activeLevelKey: String? {
         guard let levels = levelsHost.levels, let v = valorMostrado,
               let idx = MetricLevels.activeIndex(for: v, in: levels) else { return nil }
@@ -625,10 +641,18 @@ struct LiquidMetricSheetView: View {
                 // que dibujar: la barra saldría hueca bajo un overline suelto y una leyenda
                 // vacía.
                 if sleepEtapasMedidas(night) {
+                    // FER-29 · Etapas en tarjeta de papel propia, como Regularidad y como el
+                    // mock canónico de sueño (auditoría 2026-08-03): antes la barra flotaba
+                    // sobre el fondo de la hoja bajo un overline suelto, sin superficie.
                     LiquidStageBar(
                         etapas: sleepEtapas(night),
                         overline: overlineNoche,
                         ventana: ventanaNoche)
+                    .padding(LiquidSpace.s400)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .clipShape(RoundedRectangle(cornerRadius: LiquidRadius.tarjeta,
+                                                style: .continuous))
+                    .liquidGlass(.superficieSolida)
                 }
                 // F4b · Regularidad como tarjeta propia (ya no en el héroe ni en
                 // `LiquidDobleDato`). `puntaje == nil` ⇒ «··» calibrando (lo maneja la tarjeta).
@@ -713,7 +737,11 @@ struct LiquidMetricSheetView: View {
     private var sleepReadingText: String? {
         guard let key = activeLevelKey,
               let baseKey = MetricLevelPhrase.key(metricID: "sleep", levelKey: key) else { return nil }
+        // «anoche» solo cuando el héroe muestra la noche REAL (semana). En rangos largos la
+        // clave viene de la MEDIA de la ventana (`valorMostrado`), así que fechar esa lectura
+        // como «anoche» mentiría (auditoría 2026-08-03).
         let usaAnoche = nocheEsDeAnoche && (key == "short" || key == "extended")
+            && levelsHost.window.range == .week
         let clave = usaAnoche ? baseKey + ".lastNight" : baseKey
         return String(localized: String.LocalizationValue(clave))
     }
@@ -1151,6 +1179,12 @@ struct LiquidMetricSheetView: View {
         // porque no había días suficientes, el sello tiene que decir la que de verdad se
         // promedió.
         guard levelsHost.levels != nil, w.range != .week, !w.values.isEmpty else {
+            // Sueño en la semana: reloj «7:12» (el mismo formato del eje Y y de los rangos de
+            // las filas), no el «7h 12m» del tile —el numeral y su escala tienen que hablar
+            // igual (auditoría 2026-08-03)—.
+            if datoInfo.id == "sleep", let v = datoInfo.levelsTodayValue {
+                return (levelsValueFormat(v), selloHoy)
+            }
             return (datoInfo.displayValue, selloHoy)
         }
         return (levelsValueFormat(ComparisonEngine.stat(w.values).mean), selloMedia(w.range))
@@ -1222,8 +1256,19 @@ struct LiquidMetricSheetView: View {
                     nivelesLista(d, conteos: false)
                 } else {
                     if window.fellBack { avisoVentana(window) }
-                    nivelesFrase(d)
-                    nivelesGrafica(d, window: window)
+                    // FER-29 · Fidelidad (auditoría Grok+DeepSeek 2026-08-03): el título de
+                    // nivel + su conteo + el plot viven DENTRO de una tarjeta de papel, como
+                    // en el mock canónico (`.card`) y como ya hace Carga (`tarjetaGrafica`).
+                    // Antes flotaban sueltos sobre el fondo de la hoja, sin superficie.
+                    VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+                        nivelesFrase(d)
+                        nivelesGrafica(d, window: window)
+                    }
+                    .padding(LiquidSpace.s400)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .clipShape(RoundedRectangle(cornerRadius: LiquidRadius.tarjeta,
+                                                style: .continuous))
+                    .liquidGlass(.superficieSolida)
                     extras()
                     nivelesLista(d)
                 }
@@ -1365,6 +1410,8 @@ struct LiquidMetricSheetView: View {
             // (paridad `GraficaRangos`). Antes se apagaban con la sola existencia de una
             // lectura de hoy, sin que nadie hubiera pedido nada.
             atenuarFuera: nivelExplorado != nil,
+            // Eco tabla↔gráfica: el valor bajo el dedo resalta la fila de su nivel.
+            onScrubValor: { self.scrubValor = $0 },
             estadoVacio: String(localized: "No readings in this range."),
             a11yLabel: tituloHoja)
     }
@@ -1435,6 +1482,13 @@ struct LiquidMetricSheetView: View {
         let highlight: Int? = nivelDestacado(d)
         let hoyRotulo: String = String(localized: "· today")
         let hint: String = String(localized: "Highlights this level on the chart")
+        // Eco del scrub: qué carril contiene el valor bajo el dedo (rango half-open, igual
+        // que la clasificación). `nil` cuando no hay scrub. La fila activa gana el wash.
+        let resaltadaIdx: Int? = scrubValor.flatMap { (v: Double) -> Int? in
+            d.levels.firstIndex { lvl in
+                (lvl.lower.map { v >= $0 } ?? true) && (lvl.upper.map { v < $0 } ?? true)
+            }
+        }
         let filas: [LiquidLevelsList.Fila] = d.levels.indices
             .map { (i: Int) -> LiquidLevelsList.Fila in
                 let nivel: MetricLevels.Level = d.levels[i]
@@ -1449,6 +1503,7 @@ struct LiquidMetricSheetView: View {
                     // distintas. Ambas informaciones son ciertas y se ven a la vez.
                     esHoy: i == indiceDeHoy,
                     activa: i == highlight,
+                    resaltada: i == resaltadaIdx,
                     // El rótulo que marca EN LA LISTA dónde cayó hoy (clave existente).
                     hoyEtiqueta: hoyRotulo,
                     a11yHint: hint,

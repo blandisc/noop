@@ -6,7 +6,7 @@ import SwiftUI
 // comportamiento NUEVO (§1.3 del contrato: hoy la hoja cae al layout clásico, sin
 // skeleton). Cuatro bloques redacted en vidrio (`.superficie`) con las alturas
 // aproximadas del contenido rico: doble dato, línea de lectura, barra de etapas y
-// gráfica de niveles (168, el alto del explorador — contrato §5).
+// gráfica de niveles (144, el alto del explorador — contrato §5).
 //
 // Shimmer sobrio SOLO en movimiento permitido: un streak que viaja por los bloques con
 // la cadencia `flow` del sistema (la gramática de «pulsos que viajan», `LiquidMotion`).
@@ -30,10 +30,10 @@ public struct LiquidSheetSkeleton: View {
         static let dobleDato: CGFloat = 72
         /// Línea de lectura (una frase corta).
         static let lectura: CGFloat = 20
-        /// Barra de etapas: overline + barra 24 + leyenda.
-        static let etapas: CGFloat = 64
-        /// Gráfica de niveles (alto del explorador).
-        static let grafica: CGFloat = 168
+        /// Barra de etapas: overline + barra 12 + leyenda (barra 24→12, auditoría 2026-08-03).
+        static let etapas: CGFloat = 52
+        /// Gráfica de niveles (alto del explorador — debe igualar `LiquidChartAlto.explorador`).
+        static let grafica: CGFloat = 144
     }
 
     public init(a11yCargando: String) {

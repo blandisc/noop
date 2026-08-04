@@ -7,10 +7,10 @@ import SwiftUI
 // ticks ya formateados, mensaje de vacío ya localizado); la vista solo pinta y scrubbea.
 //
 //   · I1 — banda activa iluminada (washes 8/16/3, `LiquidChart.banda*Alfa`).
-//   · I2 — scrub con regla vertical + anillo del color de su banda + chip negro
+//   · I2 — scrub con regla vertical + anillo del color de su banda + popup rectangular
 //          (mismo gesto/snap/háptica que `GraficaRangos`, vía las piezas públicas).
-//   · Joya endpoint en `puntoHoy`; `hoyAnillo` la vuelve anillo hueco mientras el
-//     usuario explora otro nivel (paridad `markedPointHollow`).
+//   · Joya de HOY en `puntoHoy`: papel + filo del tono, marcador fijo; `hoyAnillo` la
+//     agranda a anillo mientras el usuario explora otro nivel (paridad `markedPointHollow`).
 
 public struct LiquidGraficaNiveles: View {
 
@@ -40,6 +40,9 @@ public struct LiquidGraficaNiveles: View {
     /// plena (la banda activa se dice solo con su wash, I1). Se enciende cuando el usuario
     /// EXPLORA un nivel, que es cuando `GraficaRangos` apaga.
     private let atenuarFuera: Bool
+    /// Eco tabla↔gráfica: publica el VALOR del punto bajo el dedo (o `nil` al soltar) para que
+    /// el caller resalte la fila de la escalera cuyo rango lo contiene (mock `.lvl.hit`).
+    private let onScrubValor: ((Double?) -> Void)?
     /// SOLO previews/arnés: overlay de scrub asentado en un índice fijo.
     var scrubFijo: Int? = nil
 
@@ -59,6 +62,7 @@ public struct LiquidGraficaNiveles: View {
                 formatoFechaScrub: ((Date) -> String)? = nil,
                 formatoFechaEje: ((Date) -> String)? = nil,
                 atenuarFuera: Bool = false,
+                onScrubValor: ((Double?) -> Void)? = nil,
                 estado: LiquidChartEstado = .datos,
                 estadoVacio: String,
                 a11yLabel: String) {
@@ -74,6 +78,7 @@ public struct LiquidGraficaNiveles: View {
         self.formatoFechaScrub = formatoFechaScrub
         self.formatoFechaEje = formatoFechaEje
         self.atenuarFuera = atenuarFuera
+        self.onScrubValor = onScrubValor
         self.estado = estado
         self.estadoVacio = estadoVacio
         self.a11yLabel = a11yLabel
@@ -105,7 +110,10 @@ public struct LiquidGraficaNiveles: View {
                                 atenuarFuera: atenuarFuera,
                                 alto: LiquidChartAlto.explorador,
                                 scrubFijo: scrubFijo,
-                                onScrub: { (i: Int?) in iScrub = i })
+                                onScrub: { (i: Int?) in
+                                    iScrub = i
+                                    onScrubValor?(i.map { puntos[$0].valor })
+                                })
                 } else {
                     LiquidChartVacio(mensaje: estadoVacio, alto: LiquidChartAlto.explorador)
                 }

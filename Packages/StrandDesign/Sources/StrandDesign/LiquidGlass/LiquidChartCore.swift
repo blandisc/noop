@@ -56,10 +56,13 @@ public struct LiquidChartBanda: Sendable {
 
 // MARK: - Altos de gráfica (paridad Instrumento, contrato §5 «candidatos menores»)
 
-/// Altos de la familia: 168 explorador, 140 trend 14d, 260 curva FC, 32 mini (renglón del
+/// Altos de la familia: 144 explorador, 140 trend 14d, 260 curva FC, 32 mini (renglón del
 /// guardián: banda + línea + joya + scrub, sin título ni ejes).
 enum LiquidChartAlto {
-    static let explorador: CGFloat = 168
+    /// Explorador de niveles. 168→144 (auditoría Grok+DeepSeek 2026-08-03): a 168 la tarjeta
+    /// de nivel+plot dominaba la hoja; el mock la traza a ~130 de área útil (+ franja de eje).
+    /// Debe ir de la mano con `LiquidSheetSkeleton.Alto.grafica`, o la hoja brinca al cargar.
+    static let explorador: CGFloat = 144
     static let trend: CGFloat = 140
     static let curvaFC: CGFloat = 260
     static let mini: CGFloat = 32
@@ -765,13 +768,15 @@ struct LiquidChartPlot: View {
                     .offset(x: px - LiquidChart.scrubAnilloDiametro / 2,
                             y: py - LiquidChart.scrubAnilloDiametro / 2)
             } else {
-                // La joya del endpoint (mismo lenguaje que el orbe). El borde es el PAPEL
-                // del contenedor, no blanco duro: el anillo del scrub y el anillo de «hoy»
-                // ya usan `papelAlto`, y sobre el vidrio el blanco puro se veía recortado.
+                // La JOYA DE HOY: papel (casi-blanco) relleno + filo del tono. Fidelidad al
+                // mock canónico (`.dot.today{fill:#fff;stroke:var(--tono)}`, auditoría
+                // Grok+DeepSeek 2026-08-03): hoy es SIEMPRE una joya blanca ribeteada del
+                // tono, un marcador fijo distinto de los puntos de dato —no un punto relleno
+                // del tono, indistinguible del resto—. Antes se invertía (relleno del tono,
+                // borde de papel) y solo al explorar otro nivel se volvía anillo.
                 Circle()
-                    .fill(tono)
-                    .overlay(Circle().strokeBorder(LiquidColor.papelAlto,
-                                                   lineWidth: LiquidChart.endpointBorde))
+                    .fill(LiquidColor.papelAlto)
+                    .overlay(Circle().strokeBorder(tono, lineWidth: LiquidChart.endpointBorde))
                     .frame(width: LiquidChart.endpointRadio * 2,
                            height: LiquidChart.endpointRadio * 2)
                     .offset(x: px - LiquidChart.endpointRadio,

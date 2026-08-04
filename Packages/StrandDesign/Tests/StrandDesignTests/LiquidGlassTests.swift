@@ -196,8 +196,10 @@ final class LiquidGlassTests: XCTestCase {
     /// duro: junto a un numeral que sí crecía, en `.xxxLarge` la unidad se quedaba enana.
     /// El test fija el estilo relativo, que es lo que macOS sí puede verificar (el escalado
     /// real solo se ve en el canvas de iOS: `ImageRenderer` de AppKit no escala fuentes).
+    /// Fidelidad 2026-08-03: `.footnote` (13) → `.title3` (~20) para acompañar el numeral de
+    /// 52 (el mock pide unidad de 19); sigue siendo un estilo relativo que escala.
     func test_type_unidadDelNumeralEscala() {
-        XCTAssertEqual(LiquidType.numeralHojaUnidad, Font.system(.footnote))
+        XCTAssertEqual(LiquidType.numeralHojaUnidad, Font.system(.title3))
     }
 
     // MARK: Contrato de motion
