@@ -38825,6 +38825,108 @@
         }
       }
     },
+    "Apple Watch": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Watch"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Watch"
+          }
+        }
+      }
+    },
+    "on your device": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "on your device"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "en tu dispositivo"
+          }
+        }
+      }
+    },
+    "Calculated on your phone": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calculated on your phone"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calculado en el teléfono"
+          }
+        }
+      }
+    },
+    "Hours and stages come from your Apple Watch when you wear it to sleep; without it, Cénit uses total sleep time from Apple Health, without stages.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hours and stages come from your Apple Watch when you wear it to sleep; without it, Cénit uses total sleep time from Apple Health, without stages."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Las horas y las fases vienen de tu Apple Watch cuando lo llevas puesto al dormir; sin él, Cénit usa el tiempo total de sueño de Apple Salud, sin fases."
+          }
+        }
+      }
+    },
+    "Cénit works it out on your phone from your heart rate through the day: each second is placed in a zone (1–5) and the total is compressed onto a 0–21 scale.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cénit works it out on your phone from your heart rate through the day: each second is placed in a zone (1–5) and the total is compressed onto a 0–21 scale."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cénit lo calcula en tu teléfono a partir de tu frecuencia cardiaca del día: cada segundo se asigna a una zona (1–5) y el total se comprime a una escala de 0 a 21."
+          }
+        }
+      }
+    },
+    "Today's figure is Apple Health's own workout estimate, not Cénit's calculation.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today's figure is Apple Health's own workout estimate, not Cénit's calculation."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El dato de hoy es el estimado de entrenamiento de Apple Salud, no un cálculo de Cénit."
+          }
+        }
+      }
+    },
     "Showing the last %@ days": {},
     "Showing the last %lld days": {
       "extractionState": "manual",
