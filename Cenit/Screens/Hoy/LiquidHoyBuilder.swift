@@ -181,7 +181,14 @@ enum LiquidHoyBuilder {
 
         // Calibrando, NINGUNA banda: la nota dice «las lecturas se muestran sin comparación»
         // y pintar el corredor de comparación al lado la desmentía. (gate /qa D4.)
-        let comparando = estado != .conociendote
+        // «Comparando» solo en los estados donde el motor de verdad comparó: en los demás la
+        // hoja muestra lecturas crudas, y ni el corredor ni VoiceOver pueden insinuar patrón.
+        let comparando: Bool = {
+            switch estado {
+            case .tranquilo, .tempFuera, .respFuera, .juntas: return true
+            case .sinLectura, .conociendote, .incompleto:     return false
+            }
+        }()
         let tempSerie = serieMini(
             puntos: i.tempTrend, banda: comparando ? tempBand : nil,
             sinDatoAnoche: sinDatoAnoche || i.guardian?.temp == "—",
@@ -219,14 +226,18 @@ enum LiquidHoyBuilder {
             // La barra cuenta lo que de verdad construye la base que falta: noches CON lectura
             // de respiración. Antes contaba noches de temperatura —otra señal, que ni siquiera
             // necesita base— así que podía llenarse del todo sin que el estado cambiara nunca.
-            let hechas = i.prep.map { p in
-                p.sentinelHistory.suffix(14).filter { !$0.respMissing }.count
-            } ?? 0
+            // Acotado a la meta: el criterio de salida del motor (`respJudged`) no es
+            // exactamente «noches con lectura», así que el conteo podía pasarse y la barra
+            // decía «5 de 4». (Revisión Grok r2 · N2.)
+            let necesariasBase = Baselines.minNightsSeed
+            let hechas = min(necesariasBase, i.prep.map { p in
+                p.sentinelHistory.suffix(necesariasBase).filter { !$0.respMissing }.count
+            } ?? 0)
             // El estado sale en cuanto la base de respiración es USABLE, y eso pasa en la
             // semilla del motor, no a las 14 noches. Con 14 la barra se estancaba cerca de
             // 4/14 y nunca llegaba al final: una barra que promete un viaje más largo del que
             // hace. (Revisión Grok H3 · DeepSeek D1.)
-            let necesarias = Baselines.minNightsSeed
+            let necesarias = necesariasBase
             let leyenda = String(format: String(localized: "%lld of %lld nights"),
                                  hechas, necesarias)
             return .init(
@@ -243,7 +254,7 @@ enum LiquidHoyBuilder {
             nivel: nivel, sinLectura: sinLectura, conteo: conteo,
             sello: sello, enPatron: enPatron,
             temp: temp, resp: resp,
-            pieTarjeta: String(localized: "your last 14 nights"),
+            pieTarjeta: pieVentana(prep: i.prep),
             nota: nota, notaAvisa: notaAvisa,
             reglaKicker: String(localized: "THE RULE"),
             reglaTexto: String(localized: "A single signal out never pushes your day. Only the pair, two nights in a row."),
@@ -306,6 +317,18 @@ enum LiquidHoyBuilder {
                     String(localized: "With no night recorded, the guardian has nothing to compare against."),
                     String(localized: "Sleep with your Apple Watch and tomorrow it watches again."),
                     false, false)
+        case .incompleto:
+            // Dos razones distintas, una sola cosa que decir: todavía no hay juicio completo.
+            if prep == nil {
+                return (nil,
+                        String(localized: "Reading your night"),
+                        String(localized: "One moment: I'm still reading your signals."),
+                        nil, false, false)
+            }
+            return (nil,
+                    String(localized: "Only one signal"),
+                    String(localized: "Last night I only read one of your two signals. The guardian needs both before it can say anything."),
+                    nil, false, false)
         case .conociendote:
             // Misma clave que el héroe calibrando (`hero.title.calibrando` → «Conociéndote»).
             return (nil,
@@ -329,6 +352,15 @@ enum LiquidHoyBuilder {
         return fuera
             ? "\(base), \(String(localized: "outside your pattern"))"
             : "\(base), \(String(localized: "inside your pattern"))"
+    }
+
+    /// El pie de la tarjeta del par: dice cuántas noches hay DE VERDAD detrás de las
+    /// mini-gráficas. Estaba fijo en «tus últimas 14 noches» incluso sin serie o con historial
+    /// corto, que es afirmar una ventana que no existe. (Revisión Grok r2 · N3.)
+    private static func pieVentana(prep: Preparedness.Read?) -> String {
+        let n = min(14, prep?.sentinelHistory.count ?? 0)
+        guard n > 1 else { return "" }
+        return String(format: String(localized: "your last %lld nights"), n)
     }
 
     /// Sello del héroe: «ANOCHE · 3 AGO». El DS no formatea fechas (contrato D3).
@@ -774,11 +806,24 @@ enum LiquidHoyBuilder {
         //
         // Y basta con que FALTE UNA de las dos: la hoja dice «tus dos señales», así que con
         // una en «—» estaba contando algo que no leyó.
-        if prep == nil || thermalDeviation == nil || resp == nil {
+        // Tres verdades DISTINTAS que la ronda 1 había colapsado en una sola. Decir «sin
+        // lectura anoche» sobre una pantalla que muestra una temperatura es otra mentira,
+        // solo que en la dirección contraria. (Revisión DeepSeek r2 · A1/C1.)
+        if thermalDeviation == nil && resp == nil {
+            // Nada que leer: la única en la que «sin lectura anoche» es cierto.
             let label = String(localized: "Watching")
             let a11y = String(localized: "Guardian: no readings today")
             return .init(label: label, temp: tempStr, resp: respStr,
                          estado: .sinLectura, a11y: a11y)
+        }
+        if prep == nil || thermalDeviation == nil || resp == nil {
+            // Hay lectura, pero el guardián no puede cerrar su juicio: o falta una de las dos
+            // señales (su regla necesita el par), o el motor todavía no ha calculado (primer
+            // pintado). Se muestran los valores que sí hay, sin afirmar patrón.
+            let label = String(localized: "Watching")
+            let a11y = "\(tempStr), \(respStr)"
+            return .init(label: label, temp: tempStr, resp: respStr,
+                         estado: .incompleto, a11y: a11y)
         }
 
         // «Conociéndote»: el guardián solo puede empujar cuando las DOS señales se salen
@@ -834,7 +879,7 @@ enum LiquidHoyBuilder {
         case .juntas:
             label = streak >= 2 ? "\(String(localized: "Together")) · \(streak) \(nightsWord)"
                                 : String(localized: "Together")
-        case .tranquilo, .tempFuera, .respFuera, .sinLectura, .conociendote:
+        case .tranquilo, .tempFuera, .respFuera, .sinLectura, .conociendote, .incompleto:
             label = String(localized: "Watching")
         }
         let prefijo: String

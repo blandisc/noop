@@ -319,9 +319,11 @@ final class LiquidHoyBuilderTests: XCTestCase {
     /// necesita las dos señales), así que dice «Conociéndote» — y NO se apoya en la madurez
     /// de la base del pulso en reposo, que es otra señal que ni siquiera vigila.
     func test_guardian_respiracionSinBase_diceConociendote() {
+        // Con lectura de respiración pero SIN base usable: el guardián tiene el par, lo que
+        // no tiene es contra qué compararlo.
         let g = LiquidHoyBuilder.guardian(
             prep: prep([noche("2026-06-20", respJudged: false)]),
-            thermalDeviation: 0.1, resp: nil)
+            thermalDeviation: 0.1, resp: .init(14))
         XCTAssertEqual(g?.estado, .conociendote,
                        "sin base de respiración el guardián no puede empujar")
     }
@@ -330,7 +332,7 @@ final class LiquidHoyBuilderTests: XCTestCase {
     func test_guardian_madurezDeOtraSenal_noDecideConociendote() {
         let g = LiquidHoyBuilder.guardian(
             prep: prep([noche("2026-06-20", respJudged: true)], maturity: .calibrating),
-            thermalDeviation: 0.1, resp: nil)
+            thermalDeviation: 0.1, resp: .init(14))
         XCTAssertNotEqual(g?.estado, .conociendote,
                           "con la respiración juzgable, el guardián sí puede hablar")
     }
@@ -340,7 +342,8 @@ final class LiquidHoyBuilderTests: XCTestCase {
     /// patrón» contradecía al método de la misma hoja.
     func test_guardian_respiracionNuncaDibujaBandaPoblacional() {
         let g = LiquidHoyBuilder.guardian(prep: prep([noche("2026-06-20")]),
-                                          thermalDeviation: 0.1, resp: nil)
+                                          thermalDeviation: 0.1,
+                                          resp: .init(14))
         let h = hoja([noche("2026-06-20")], guardian: g)
         XCTAssertNil(h.resp.serie?.banda,
                      "12-20 rpm es tabla de población, no tu patrón")
@@ -352,10 +355,42 @@ final class LiquidHoyBuilderTests: XCTestCase {
     /// comparación» y pintar la banda al lado la desmentía.
     func test_guardian_calibrando_sinBandaDeComparacion() {
         let hist = [noche("2026-06-20", respJudged: false)]
-        let g = LiquidHoyBuilder.guardian(prep: prep(hist), thermalDeviation: 0.1, resp: nil)
+        let g = LiquidHoyBuilder.guardian(prep: prep(hist), thermalDeviation: 0.1,
+                                          resp: .init(14))
         let h = hoja(hist, guardian: g)
         XCTAssertNil(h.temp.serie?.banda, "sin comparación no se pinta el corredor")
         XCTAssertNil(h.resp.serie?.banda)
+    }
+
+    /// Con UNA sola señal no puede decir «sin lectura anoche» —hay una lectura en pantalla—
+    /// ni afirmar patrón: su regla necesita el par.
+    func test_guardian_unaSolaSenal_niSinLecturaNiPatron() {
+        let g = LiquidHoyBuilder.guardian(prep: prep([noche("2026-06-20")]),
+                                          thermalDeviation: 0.4, resp: nil)
+        XCTAssertEqual(g?.estado, .incompleto)
+        let h = hoja([noche("2026-06-20")], guardian: g)
+        XCTAssertNil(h.nivel, "sin el par no hay palabra de patrón")
+        XCTAssertNotEqual(h.sinLectura, String(localized: "No reading last night"),
+                          "hay una lectura: no puede decir que no hubo noche")
+    }
+
+    /// Sin motor todavía (primer pintado) hay lecturas pero no comparación: no puede decir
+    /// verde, y tampoco que no hubo noche.
+    func test_guardian_sinMotor_noAfirmaPatron() {
+        let g = LiquidHoyBuilder.guardian(prep: nil, thermalDeviation: 0.1,
+                                          resp: .init(14))
+        XCTAssertEqual(g?.estado, .incompleto)
+        let h = hoja([], guardian: g)
+        XCTAssertNil(h.nivel)
+        XCTAssertFalse(h.enPatron)
+    }
+
+    /// Sin NINGUNA lectura sí es «sin lectura anoche»: ese caso no se tocó.
+    func test_guardian_ningunaLectura_sigueSiendoSinLectura() {
+        let g = LiquidHoyBuilder.guardian(prep: prep([]), thermalDeviation: nil, resp: nil)
+        XCTAssertNil(g, "sin ninguna de las dos el guardián no se arma")
+        let h = LiquidHoyBuilder.guardianHoja(.init(guardian: nil, prep: nil))
+        XCTAssertEqual(h.sinLectura, String(localized: "No reading last night"))
     }
 
     // MARK: Carga — mismo mapeo que la franja

@@ -43,10 +43,14 @@ public struct LiquidCalibracionCard: View {
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     Capsule().fill(LiquidColor.tinta10).frame(height: LiquidSpace.s150)
+                    // Clamp a la pista: ningún caller debería mandar `hechas > necesarias`,
+                    // pero si lo hace, una cápsula más ancha que su riel es un defecto visible
+                    // y el componente puede impedirlo solo. (Revisión Grok r2 · N2.)
                     Capsule().fill(tono)
-                        .frame(width: max(LiquidSpace.s150,
-                                          geo.size.width * CGFloat(hechas)
-                                              / CGFloat(max(necesarias, 1))),
+                        .frame(width: min(geo.size.width,
+                                          max(LiquidSpace.s150,
+                                              geo.size.width * CGFloat(hechas)
+                                                  / CGFloat(max(necesarias, 1)))),
                                height: LiquidSpace.s150)
                 }
             }
