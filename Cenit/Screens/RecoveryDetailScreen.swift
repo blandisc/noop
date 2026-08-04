@@ -278,8 +278,11 @@ struct RecoveryDetailScreen: View {
                 TileSurface(label: String(localized: "Steadiness"),
                             value: consistency.map { consistencyWord($0) } ?? "—",
                             theme: theme)
+                // Sin ~2 semanas de esfuerzo la carga no se puede leer, y un «—» mudo no
+                // distingue «no tengo dato» de «todavía te estoy conociendo». Dice la misma
+                // palabra que el resto de la app (FER-33 · F5.4).
                 TileSurface(label: String(localized: "Load"),
-                            value: model.load?.bandLabel ?? "—",
+                            value: model.load?.bandLabel ?? String(localized: "Calibrating"),
                             valueColor: model.load.map { flagColor($0.bandFlag) },
                             theme: theme)
             }
