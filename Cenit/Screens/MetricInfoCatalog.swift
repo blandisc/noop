@@ -10,19 +10,22 @@ import StrandAnalytics
 /// theme (FER-162), so the same model recolours by time of day on warm paper.
 struct MetricInfo: Identifiable {
     let id: String
-    let name: LocalizedStringKey
-    let headline: LocalizedStringKey
+    // FER-39 (F13): el copy se guarda como `LocalizedStringResource` (no `LocalizedStringKey`): sirve
+    // igual en `Text(...)` (localiza con la misma clave del catálogo) Y se puede resolver a `String`
+    // vía `String(localized:)` para la hoja Liquid, que antes lo replicaba a mano en `LiquidSheetCopy`.
+    let name: LocalizedStringResource
+    let headline: LocalizedStringResource
     let displayValue: String
     let unit: String?
     /// How the header numeral is tinted, resolved against the theme by the sheet.
     let headerTint: Tint
     let bands: [Band]
-    let note: LocalizedStringKey?
+    let note: LocalizedStringResource?
 
     // Progressive-disclosure extras for composite metrics (Recovery; reused by HRV in FER-109).
     // All optional with defaults so the band-based factories above stay untouched.
     var method: Method? = nil
-    var disclaimer: LocalizedStringKey? = nil
+    var disclaimer: LocalizedStringResource? = nil
     var calibration: Calibration? = nil
 
     /// When set, the summary sheet renders the F6 levels instrument (`MetricLevelsExplorer`: a tappable
@@ -67,8 +70,8 @@ struct MetricInfo: Identifiable {
 
     /// The "See the method" disclosure: plain-language prose plus an optional citation line.
     struct Method {
-        let prose: LocalizedStringKey
-        let citation: LocalizedStringKey?
+        let prose: LocalizedStringResource
+        let citation: LocalizedStringResource?
     }
 
     /// Cold-start: recovery isn't scored yet, so show progress toward the seed gate instead

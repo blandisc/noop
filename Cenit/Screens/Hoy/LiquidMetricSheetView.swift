@@ -20,10 +20,10 @@ import StrandAnalytics
 //    strain/heart_rate/trend/niveles (el cascarón mide su alto), .medio para el resto.
 //  · Niveles — `MetricLevelsHostModel` (F3a, paridad numérica testeada) + explorador
 //    Liquid (F3b: selector I3, gráfica I1/I2, filas `LiquidLevelRow`).
-//  · Copy — TODA frase con `String(localized:)` sobre las MISMAS claves literales que
-//    MetricInfoSheet/MetricInfoCatalog (ver `LiquidSheetCopy` abajo: los modelos llevan
-//    `LocalizedStringKey`, del que no se puede extraer la clave, así que el compositor
-//    replica la clave literal; F6 puede migrar `MetricInfo` a `String` y borrar el mapa).
+//  · Copy — el título/headline/nota/método/disclaimer salen DIRECTO de `MetricInfo`, que ahora
+//    guarda su copy como `LocalizedStringResource` (FER-39 · F13): se resuelve a `String` con
+//    `String(localized:)` sin duplicar claves. El viejo `LiquidSheetCopy` (que replicaba a mano
+//    las claves del catálogo) se borró.
 //
 // CERO `InstrumentoTheme` en este archivo.
 
@@ -361,7 +361,7 @@ struct LiquidMetricSheetView: View {
     /// D8 · El título de la hoja. Con esfuerzo estimado dice lo mismo que el tile («Carga
     /// del día»), clave que ya existe en el catálogo (`LiquidHoyBuilder`).
     private var tituloHoja: String {
-        isStrainEstimado ? String(localized: "Day load") : LiquidSheetCopy.titulo(datoInfo.id)
+        isStrainEstimado ? String(localized: "Day load") : String(localized: datoInfo.name)
     }
 
     private var cabecera: some View {
@@ -397,7 +397,7 @@ struct LiquidMetricSheetView: View {
             // D1 · La explicación habla del dato que la hoja MUESTRA (`datoInfo`), no del
             // real: con el fixture de demo la cabecera decía «56 ms» y la explicación
             // describía otra métrica. Fuera de demo `datoInfo == info` (no-op).
-            explicacion: LiquidSheetCopy.headline(datoInfo),
+            explicacion: String(localized: datoInfo.headline),
             // L5.1 — el ⓘ se nombra solo en VoiceOver (antes leía «VFC, uno»).
             infoMostrar: String(localized: "Show explanation"),
             infoOcultar: String(localized: "Hide explanation"))
@@ -989,7 +989,7 @@ struct LiquidMetricSheetView: View {
             formatoFechaScrub: popupFecha,
             formatoFechaEje: ejeFmt,
             estado: curvaEstado,
-            a11yLabel: LiquidSheetCopy.titulo("heart_rate"))
+            a11yLabel: String(localized: "Heart Rate"))
     }
 
     /// Estados de la curva (paridad :924-928) — fuera del call para no anidar ternarios
@@ -1505,7 +1505,10 @@ struct LiquidMetricSheetView: View {
         // cuando es lectura directa. El chip de origen (Apple Salud / Calculado en el
         // teléfono) va SIEMPRE dentro. Antes, unas hojas mostraban método plegable y otras
         // una nota suelta sin título (o nada): esa inconsistencia era el defecto.
-        let metodo = LiquidSheetCopy.metodo(datoInfo)
+        // F13: el método sale directo del catálogo (`info.method`) resuelto a String; antes lo
+        // replicaba `LiquidSheetCopy.metodo`, borrado.
+        let metodo = datoInfo.method.map { (prosa: String(localized: $0.prose),
+                                            cita: $0.citation.map { String(localized: $0) }) }
         if metodo != nil || comoSeObtuvoProsa != nil {
             LiquidMetodo(title: String(localized: "How it's calculated"),
                          // D11 (B6) · Etiquetas propias de VoiceOver: antes leía «Cómo se
@@ -1518,7 +1521,7 @@ struct LiquidMetricSheetView: View {
                     if let cita = metodo.cita { LiquidNotaLine(cita) }
                     // El matiz/caveat de las métricas con fórmula acompaña al método DENTRO
                     // del mismo bloque (antes colgaba como nota suelta bajo el plegable).
-                    if let nota = LiquidSheetCopy.nota(datoInfo) { LiquidNotaLine(nota) }
+                    if let nota = datoInfo.note.map({ String(localized: $0) }) { LiquidNotaLine(nota) }
                 } else if let prosa = comoSeObtuvoProsa {
                     LiquidNotaLine(prosa)
                 }
@@ -1531,7 +1534,7 @@ struct LiquidMetricSheetView: View {
         if appleConnectHint && !demo {
             avisoConectarApple
         }
-        if let disclaimer = LiquidSheetCopy.disclaimer(datoInfo) {
+        if let disclaimer = datoInfo.disclaimer.map({ String(localized: $0) }) {
             LiquidNotaLine(disclaimer)
         }
         if let onSeeMore { verMas(onSeeMore) }
@@ -1542,7 +1545,7 @@ struct LiquidMetricSheetView: View {
     /// para las dos que el modelo no cubre (sueño, esfuerzo). Las métricas con fórmula usan su
     /// método en el pie, no esta prosa.
     private var comoSeObtuvoProsa: String? {
-        if let nota = LiquidSheetCopy.nota(datoInfo) { return nota }
+        if let nota = datoInfo.note.map({ String(localized: $0) }) { return nota }
         switch datoInfo.id {
         case "sleep":
             return String(localized: "Hours and stages come from your Apple Watch when you wear it to sleep; without it, Cénit uses total sleep time from Apple Health, without stages.")
