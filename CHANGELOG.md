@@ -20,6 +20,10 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **Las hojas de detalle recuperan su luz y fechan su número / The detail sheets get their light back and date their number.**
+  **ES** — Cada hoja late ahora con la luz de su propia métrica detrás del número, como el orbe de Hoy. Y el número grande viene fechado («HOY · 3 AGO»): al cambiar de rango pasa a ser el promedio de lo que estás viendo («MEDIA · 30 DÍAS») en vez de quedarse en el dato de hoy sin avisar; arrastrar el dedo por la gráfica sigue sin moverlo.
+  **EN** — Every sheet now breathes with its own metric's light behind the number, like the Today orb. And the big number is dated («TODAY · 3 AUG»): switching range turns it into the average of what you're looking at («AVG · 30 DAYS») instead of silently staying on today's figure; dragging across the chart still leaves it alone.
+
 - **Todas las hojas de detalle explican igual «cómo se obtuvo», con el sello de origen dentro / Every detail sheet now explains «how it was obtained» the same way, with the source badge inside.**
   **ES** — Antes, unas hojas mostraban un desplegable «Cómo se calcula» y otras solo una nota suelta (o nada), y el origen del dato colgaba del número grande. Ahora las nueve hojas usan el mismo bloque «Cómo se calcula»: el método con su cita cuando hay fórmula, o de dónde viene el dato cuando es una lectura directa, y adentro un sello de procedencia («Apple Salud · en tu dispositivo» o «Calculado en el teléfono»). El héroe queda solo con el número, su unidad y la frase de nivel.
   **EN** — Before, some sheets showed a «How it's calculated» disclosure and others just a loose note (or nothing), and the data's source hung off the big number. Now all nine sheets use the same «How it's calculated» block: the method with its citation when there's a formula, or where the data comes from when it's a direct reading, with a provenance badge inside («Apple Health · on your device» or «Calculated on your phone»). The hero keeps only the number, its unit and the level phrase.

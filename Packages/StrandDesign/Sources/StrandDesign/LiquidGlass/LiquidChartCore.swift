@@ -56,12 +56,13 @@ public struct LiquidChartBanda: Sendable {
 
 // MARK: - Altos de gráfica (paridad Instrumento, contrato §5 «candidatos menores»)
 
-/// Los tres altos de la hoja: 168 explorador (`MetricLevelsExplorer:137`), 140 trend 14d
-/// (`MetricInfoSheet:1001`), 260 curva FC (`MetricInfoSheet:914`).
+/// Altos de la familia: 168 explorador, 140 trend 14d, 260 curva FC, 32 mini (renglón del
+/// guardián: banda + línea + joya + scrub, sin título ni ejes).
 enum LiquidChartAlto {
     static let explorador: CGFloat = 168
     static let trend: CGFloat = 140
     static let curvaFC: CGFloat = 260
+    static let mini: CGFloat = 32
 }
 
 // MARK: - Índice que lee VoiceOver

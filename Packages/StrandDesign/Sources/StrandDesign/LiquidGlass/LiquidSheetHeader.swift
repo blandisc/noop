@@ -20,6 +20,7 @@ public struct LiquidSheetHeader: View {
     private let unidad: String?
     private let sufijo: String?
     private let numeralTono: Color
+    private let sello: String?
     private let origen: LiquidOrigen?
     private let origenEtiqueta: String?
     private let explicacion: String?
@@ -44,9 +45,13 @@ public struct LiquidSheetHeader: View {
     /// («Mostrar explicación» / «Ocultar explicación»), YA localizadas por el caller — el DS
     /// no conoce locales. Si llegan `nil` el label cae al rótulo del dato, para que ningún
     /// caller sin migrar pierda su a11y en silencio.
+    ///
+    /// `sello` · etiqueta corta de la ventana del dato («HOY · 3 AGO», «MEDIA · 30 DÍAS»),
+    /// YA compuesta y localizada por el caller (contrato D3: el DS no formatea fechas).
     public init(icono: LiquidIcon.Glyph?, titulo: String, tono: Color,
                 numeral: String?, unidad: String? = nil, sufijo: String? = nil,
-                numeralTono: Color? = nil, origen: LiquidOrigen? = nil,
+                numeralTono: Color? = nil, sello: String? = nil,
+                origen: LiquidOrigen? = nil,
                 origenEtiqueta: String? = nil, explicacion: String? = nil,
                 infoMostrar: String? = nil, infoOcultar: String? = nil,
                 a11yLabel: String? = nil) {
@@ -57,6 +62,7 @@ public struct LiquidSheetHeader: View {
         self.unidad = unidad
         self.sufijo = sufijo
         self.numeralTono = numeralTono ?? tono
+        self.sello = sello
         self.origen = origen
         self.origenEtiqueta = origenEtiqueta
         self.explicacion = explicacion
@@ -64,6 +70,7 @@ public struct LiquidSheetHeader: View {
         self.infoOcultar = infoOcultar
         self.a11y = a11yLabel ?? Self.a11yLabel(titulo: titulo, numeral: numeral,
                                                 unidad: unidad, sufijo: sufijo,
+                                                sello: sello,
                                                 origen: origenEtiqueta)
     }
 
@@ -148,6 +155,15 @@ public struct LiquidSheetHeader: View {
                             .foregroundStyle(LiquidColor.tinta500)
                     }
                     procedencia(inline: true)
+                    if let sello {
+                        Spacer(minLength: LiquidSpace.s200)
+                        Text(verbatim: sello)
+                            .font(LiquidType.captionLectura)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(numeralTono)
+                            .lineLimit(1)
+                            .layoutPriority(1)
+                    }
                 }
                 .lineLimit(limiteNumeral)
                 // B3 · el dato dominante es UNA sola parada de VoiceOver: numeral, unidad,
@@ -183,8 +199,8 @@ public struct LiquidSheetHeader: View {
         .accessibilityElement(children: .contain)
     }
 
-    /// «{titulo}, {numeral} {unidad} {sufijo}[, {origen}]» — contrato de VoiceOver
-    /// (testeable en frío).
+    /// «{titulo}, {numeral} {unidad} {sufijo}[, {sello}][, {origen}]» — contrato de
+    /// VoiceOver (testeable en frío).
     ///
     /// C1 · El `sufijo` («/ 21», «/ 100») entra al label. La hoja vieja lo tenía como `Text`
     /// suelto —una parada fea, pero la escala SÍ se oía—; al fusionar la fila del dato en una
@@ -194,8 +210,12 @@ public struct LiquidSheetHeader: View {
     ///
     /// C2 · Con `numeral == "—"` el CUERPO ya oculta unidad y sufijo; la voz los seguía
     /// concatenando y decía «VFC, — ms» sobre una pantalla que solo muestra «—». Mismo guard.
+    /// El sello SÍ se dice con «—»: «sin lectura» también pertenece a una ventana.
+    ///
+    /// F0.2 · `sello` (ventana del dato) va ENTRE el dato y el origen.
     static func a11yLabel(titulo: String, numeral: String?, unidad: String?,
-                          sufijo: String? = nil, origen: String?) -> String {
+                          sufijo: String? = nil, sello: String? = nil,
+                          origen: String?) -> String {
         var parts = [titulo]
         if let numeral {
             var dato = numeral
@@ -205,6 +225,7 @@ public struct LiquidSheetHeader: View {
             }
             parts.append(dato)
         }
+        if let sello { parts.append(sello) }
         if let origen { parts.append(origen) }
         return parts.joined(separator: ", ")
     }
@@ -280,10 +301,15 @@ struct LiquidInfoBoton: View {
                           explicacion: "La variación entre latidos mientras duermes — tu señal más temprana de recuperación.",
                           infoMostrar: "Mostrar explicación",
                           infoOcultar: "Ocultar explicación")
+        // Con sello (F0.2): ventana del dato a la derecha del numeral.
+        LiquidSheetHeader(icono: .onda, titulo: "VFC", tono: LiquidColor.cian,
+                          numeral: "56", unidad: "ms", sello: "HOY · 3 AGO",
+                          origenEtiqueta: "Apple Salud · anoche")
         // ⓘ sin etiquetas: el label cae al rótulo del dato, mismo target 44.
         LiquidSheetHeader(icono: nil, titulo: "RECUPERACIÓN", tono: LiquidColor.verdePrimario,
                           numeral: "78", sufijo: "/ 100",
-                          numeralTono: LiquidColor.verdeProfundo, origen: .calculado,
+                          numeralTono: LiquidColor.verdeProfundo, sello: "MEDIA · 30 DÍAS",
+                          origen: .calculado,
                           explicacion: "Qué tan listo amaneció tu cuerpo.")
         LiquidSheetHeader(icono: .llama, titulo: "ESFUERZO", tono: LiquidColor.ambar,
                           numeral: "10.0", origen: .calculado)

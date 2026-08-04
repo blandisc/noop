@@ -534,8 +534,18 @@ internas, contratos C1–C6, plantilla y componentes — en
 
 Reglas de superficie (reafirmación):
 
-- **Héroe idéntico para las 9:** valor + unidad + frase de nivel; **sin fecha**, **sin doble-dato**
-  en el héroe.
+- **Héroe idéntico para las 9:** valor + unidad + frase de nivel + **sello de la ventana**;
+  **sin doble-dato** en el héroe.
+  - El sello dice A QUÉ VENTANA pertenece el numeral: «HOY · 3 AGO» en la semana,
+    «MEDIA · 30 DÍAS» en los rangos largos. Sin él, un numeral que cambia al mover el
+    selector sería un número sin dueño.
+  - **La regla es «la fecha no cambia con el scrub», no «no hay fecha»** (FER-33). Esta línea
+    decía «sin fecha» y contradecía a los tres prototipos canónicos, que sí la pintan; lo que
+    el dueño decidió fue que el héroe y su fecha son ESTÁTICOS frente al scrub. El rango sí
+    los mueve; el scrub no.
+- **El héroe sigue la ventana del selector:** en la semana es el dato de hoy; en los rangos
+  largos es la **media** de la ventana visible, y la frase de nivel, el titular de la gráfica
+  y la fila activa de la escalera siguen ese mismo valor.
 - **Color solo en el dato** + plasta monocroma del tono de la métrica (no cajas teñidas).
 - **Papel opaco** en tarjetas internas (tabla de bandas, pie, Regularidad…):
   `.liquidGlass(.superficieSolida)` / `.pastillaSolida`. El vidrio real queda en la hoja

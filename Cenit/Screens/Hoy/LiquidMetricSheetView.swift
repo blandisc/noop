@@ -491,14 +491,17 @@ struct LiquidMetricSheetView: View {
             // del tile). La regularidad ya no vive aquí; baja al slot como tarjeta.
             // Durante la carga (`isSleepLoading` → skeleton en el cuerpo) el numeral del
             // tile se conserva — la hoja no abre muda.
-            numeral: datoInfo.displayValue,
+            // F0.3 (FER-33): el numeral sigue la VENTANA del selector, y el sello dice cuál.
+            numeral: heroVentana.numeral,
             unidad: datoInfo.unit,
             sufijo: sufijo,
             numeralTono: tinte(datoInfo.headerTint),
+            sello: heroVentana.sello,
             // FER-29 · La procedencia YA NO viaja en el héroe: baja al chip del pie, DENTRO
-            // de «Cómo se calcula» (mock canónico). El héroe es solo valor + unidad + frase,
-            // idéntico para las 9 métricas. (Revierte la decisión /inject 2026-07-23 de
-            // rotular el origen en la cabecera; el nuevo mock lo pone abajo, en el chip.)
+            // de «Cómo se calcula» (mock canónico). El héroe es solo valor + unidad + frase
+            // + sello de la ventana, idéntico para las 9 métricas. (Revierte la decisión
+            // /inject 2026-07-23 de rotular el origen en la cabecera; el nuevo mock lo pone
+            // abajo, en el chip.)
             origen: nil,
             origenEtiqueta: nil,
             // D1 · La explicación habla del dato que la hoja MUESTRA (`datoInfo`), no del
@@ -535,6 +538,17 @@ struct LiquidMetricSheetView: View {
         guard let levels = levelsHost.levels, let v = datoInfo.levelsTodayValue,
               let idx = MetricLevels.activeIndex(for: v, in: levels) else { return nil }
         return levels[idx].key
+    }
+
+    /// F0.3 · En qué fila de la escalera cayó HOY — independiente de lo que el héroe muestre.
+    ///
+    /// La escalera dice dos cosas a la vez y las dos son ciertas: cuál fila describe el número
+    /// grande (la ENCENDIDA, que en rangos largos es la de la media) y dónde cayó tu día (la
+    /// pastilla «· hoy»). Colgar «· hoy» de la fila encendida las confundía en una sola y hacía
+    /// que la escalera marcara como «hoy» la banda del promedio.
+    private var indiceDeHoy: Int? {
+        guard let levels = levelsHost.levels, let v = datoInfo.levelsTodayValue else { return nil }
+        return MetricLevels.activeIndex(for: v, in: levels)
     }
 
     /// La lectura de nivel de hoy (FER-29 · contrato 4): una sola tabla de datos
@@ -582,9 +596,6 @@ struct LiquidMetricSheetView: View {
                 LiquidReadingLine(frase, highlight: sleepReadingHighlight,
                                   highlightTone: tono)
             }
-            // Héroe → frase → selector → gráfica → tabla → Etapas → Regularidad → pie
-            // (levelsBlock = selector + gráfica + tabla; F4b cablea el slot de regularidad).
-            levelsBlock
             // D10 · La ventana solo se afirma cuando existe: el fallback diario de Apple
             // fabrica la noche con `startTs == endTs` y la hoja imprimía «6:00 → 6:00».
             // Tipado y fuera del call (trampa del type-checker con ternarios en builders).
@@ -598,24 +609,31 @@ struct LiquidMetricSheetView: View {
             let overlineNoche: String = nocheEsDeAnoche
                 ? String(localized: "Last night")
                 : String(localized: "Last recorded night · \(Self.diaCorto(Self.fecha(night.startTs)))")
-            // D10 · Y con las CUATRO etapas en 0 (mismo fallback) no hay noche que dibujar:
-            // la barra saldría hueca bajo un overline suelto y una leyenda vacía.
-            if sleepEtapasMedidas(night) {
-                LiquidStageBar(
-                    etapas: sleepEtapas(night),
-                    overline: overlineNoche,
-                    ventana: ventanaNoche)
+            // Héroe → frase → selector → gráfica → ETAPAS → REGULARIDAD → escalera → pie.
+            // F0.1 (FER-33): las dos tarjetas propias de Sueño bajan al HUECO del bloque de
+            // niveles. Antes colgaban después de la escalera porque no había dónde meterlas;
+            // el prototipo canónico las pone entre la gráfica y la escalera, y ahí van.
+            levelsBlock {
+                // D10 · Con las CUATRO etapas en 0 (fallback diario de Apple) no hay noche
+                // que dibujar: la barra saldría hueca bajo un overline suelto y una leyenda
+                // vacía.
+                if sleepEtapasMedidas(night) {
+                    LiquidStageBar(
+                        etapas: sleepEtapas(night),
+                        overline: overlineNoche,
+                        ventana: ventanaNoche)
+                }
+                // F4b · Regularidad como tarjeta propia (ya no en el héroe ni en
+                // `LiquidDobleDato`). `puntaje == nil` ⇒ «··» calibrando (lo maneja la tarjeta).
+                LiquidRegularityCard(
+                    titulo: String(localized: "Regularity"),
+                    puntaje: regularidadSueno,
+                    leyenda: regularidadLeyenda,
+                    tono: LiquidColor.indigo,
+                    explicacion: String(localized: "How steady your sleep schedule is: we take each night's midpoint (between falling asleep and waking) and measure how much it shifts night to night. Less drift, closer to 100."),
+                    infoMostrar: String(localized: "Show explanation"),
+                    infoOcultar: String(localized: "Hide explanation"))
             }
-            // F4b · Regularidad como tarjeta propia (ya no en el héroe ni en LiquidDobleDato).
-            // `puntaje == nil` ⇒ «··» calibrando (lo maneja la tarjeta).
-            LiquidRegularityCard(
-                titulo: String(localized: "Regularity"),
-                puntaje: regularidadSueno,
-                leyenda: regularidadLeyenda,
-                tono: LiquidColor.indigo,
-                explicacion: String(localized: "How steady your sleep schedule is: we take each night's midpoint (between falling asleep and waking) and measure how much it shifts night to night. Less drift, closer to 100."),
-                infoMostrar: String(localized: "Show explanation"),
-                infoOcultar: String(localized: "Hide explanation"))
         }
     }
 
@@ -1091,9 +1109,97 @@ struct LiquidMetricSheetView: View {
 
     // MARK: Niveles (F3a host + F3b explorador Liquid; paridad `levelsBlock` :716-742)
 
+    // MARK: F0.3 · El héroe sigue la ventana del selector (FER-33)
+
+    /// El numeral del héroe y su sello, según la ventana que el selector tenga puesta.
+    ///
+    /// En la semana el héroe es el dato de HOY —el que tocaste en el Tablero para llegar
+    /// aquí— y el sello lo fecha. En los rangos largos ese dato ya no describe lo que la
+    /// gráfica está contando: ahí el héroe pasa a ser la MEDIA de la ventana, y el sello
+    /// dice de cuál. Es el patrón de los prototipos canónicos, y la razón de ser del sello:
+    /// sin él, un numeral que cambia al mover el selector sería un número sin dueño.
+    ///
+    /// El scrub NO toca esto (contrato LIQUID-GLASS §11.3, «el héroe no cambia al hacer
+    /// scrub»): la cabeza del scrub vive en el popup de la gráfica. El rango sí; el scrub no.
+    /// El valor que el héroe está MOSTRANDO: la media de la ventana en los rangos largos, el
+    /// dato de hoy en la semana. Todo lo que describe al héroe —la frase de nivel, el titular
+    /// de la tarjeta y la fila encendida de la escalera— tiene que clasificarse contra ESTE
+    /// valor, no contra el de hoy: si el numeral dice la media y la palabra de abajo nombra la
+    /// banda de hoy, la hoja se contradice sola en cuanto tu día se sale de tu promedio.
+    ///
+    /// `levelsHost.window` es una propiedad COMPUTADA que recorre la serie para resolver la
+    /// ventana efectiva, así que se toma UNA vez por acceso y se deriva todo de ella: leerla
+    /// varias veces por render es el gasto que ya costó caro en FER-216/FER-1040.
+    private var valorMostrado: Double? {
+        let w = levelsHost.window
+        guard levelsHost.levels != nil, w.range != .week, !w.values.isEmpty else {
+            return datoInfo.levelsTodayValue
+        }
+        return ComparisonEngine.stat(w.values).mean
+    }
+
+    private var heroVentana: (numeral: String?, sello: String?) {
+        let w = levelsHost.window
+        // El rango EFECTIVO manda, no el seleccionado: cuando la ventana se auto-ensancha
+        // porque no había días suficientes, el sello tiene que decir la que de verdad se
+        // promedió.
+        guard levelsHost.levels != nil, w.range != .week, !w.values.isEmpty else {
+            return (datoInfo.displayValue, selloHoy)
+        }
+        return (levelsValueFormat(ComparisonEngine.stat(w.values).mean), selloMedia(w.range))
+    }
+
+    /// «HOY · 3 AGO». La fecha la compone la capa app (el DS no formatea fechas, contrato D3).
+    private var selloHoy: String {
+        String(localized: "TODAY · \(Self.diaCorto(Date()))")
+    }
+
+    /// «MEDIA · 30 DÍAS» / «MEDIA · 30 NOCHES» / «MEDIA · 6 MESES» / «MEDIA · 1 AÑO» /
+    /// «MEDIA · TODO», según la ventana EFECTIVA y si la métrica es nocturna.
+    ///
+    /// Los rangos largos se nombran por su unidad natural, no por su cuenta de días: «1 año»
+    /// se lee, «365 días» se calcula. Por eso medio año y año tienen su propia frase.
+    private func selloMedia(_ rango: ExploreRange) -> String {
+        switch rango {
+        case .week:
+            return selloHoy
+        case .month, .quarter:
+            let dias: Int = rango.days ?? 0
+            return nightly
+                ? String(localized: "AVG · \(dias) NIGHTS")
+                : String(localized: "AVG · \(dias) DAYS")
+        case .half:
+            return String(localized: "AVG · 6 MONTHS")
+        case .year:
+            return String(localized: "AVG · 1 YEAR")
+        case .all:
+            return String(localized: "AVG · ALL")
+        }
+    }
+
+    /// Sin extras: el bloque de niveles tal cual, para las hojas que no enchufan nada.
     @ViewBuilder private var levelsBlock: some View {
+        levelsBlock(extras: { EmptyView() })
+    }
+
+    /// FER-33 · F0.1 — el bloque de niveles con un HUECO entre la gráfica y la escalera.
+    ///
+    /// Los componentes propios de una hoja (las Etapas y la Regularidad de Sueño, la colina
+    /// de Carga) colgaban DESPUÉS de todo el bloque, porque este era un `VStack` monolítico
+    /// y no había dónde meterlos; el diseño canónico los pone entre la gráfica y la
+    /// escalera. Abrir el hueco aquí lo resuelve para las nueve hojas de una vez, que es la
+    /// regla de la casa: se cambia la familia, no la pantalla.
+    ///
+    /// El hueco se emite en TODAS las ramas —incluidas la de carga y la del pozo— porque los
+    /// extras no dependen de la serie de niveles: si solo apareciera en la rama feliz, una
+    /// hoja perdería sus tarjetas propias justo cuando sus niveles no están listos.
+    @ViewBuilder private func levelsBlock<Extras: View>(
+        @ViewBuilder extras: () -> Extras) -> some View {
         if levelsHost.levels != nil,
-           let d = levelsHost.clasificacion(today: datoInfo.levelsTodayValue) {
+           // F0.3 · Se clasifica contra el valor que el héroe MUESTRA (la media en los rangos
+           // largos), no contra el de hoy: así la frase de nivel, el titular y la fila
+           // encendida de la escalera hablan del mismo número que está arriba.
+           let d = levelsHost.clasificacion(today: valorMostrado) {
             let window = levelsHost.window
             VStack(alignment: .leading, spacing: LiquidSpace.s300) {
                 LiquidRangeSelector(opciones: ExploreRange.allCases.map(\.label),
@@ -1105,11 +1211,13 @@ struct LiquidMetricSheetView: View {
                     // es una mentira momentánea (defecto heredado §13.24). Se omiten la
                     // frase y los conteos, y el instrumento espera en su esqueleto.
                     esqueletoNiveles
+                    extras()
                     nivelesLista(d, conteos: false)
                 } else {
                     if window.fellBack { avisoVentana(window) }
                     nivelesFrase(d)
                     nivelesGrafica(d, window: window)
+                    extras()
                     nivelesLista(d)
                 }
             }
@@ -1118,7 +1226,12 @@ struct LiquidMetricSheetView: View {
             // instrumento (paridad NIV-09: un pozo con presencia), en vez de degradarse a
             // una línea de letra chica que pesa menos que la nota al pie de abajo — y que
             // dejaba el cuerpo de la hoja VACÍO entre cabecera y pie.
-            pozoNiveles(String(localized: "Your levels come from your own baseline: a few more nights and they'll appear."))
+            VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+                pozoNiveles(String(localized: "Your levels come from your own baseline: a few more nights and they'll appear."))
+                extras()
+            }
+        } else {
+            extras()
         }
     }
 
@@ -1230,8 +1343,11 @@ struct LiquidMetricSheetView: View {
             tono: tono,
             // Hoy = el último punto dibujado (paridad marksLastPoint/markedPointHollow
             // :144-145): anillo hueco mientras exploras un nivel que no es el de hoy.
-            puntoHoy: d.activeIndex != nil ? puntos.last : nil,
-            hoyAnillo: nivelExplorado != nil && nivelExplorado != d.activeIndex,
+            // La joya de hoy se enciende porque HOY tiene lectura, no porque la clasificación
+            // tenga un nivel activo: al mostrar la media, `activeIndex` existe siempre y la
+            // joya se prendía sobre el último punto aunque hoy no hubiera dato.
+            puntoHoy: indiceDeHoy != nil ? puntos.last : nil,
+            hoyAnillo: nivelExplorado != nil && nivelExplorado != indiceDeHoy,
             formatoScrub: { (v: Double, f: Date) in
                 "\(self.scrubValor(v)) · \(Self.diaCorto(f))"
             },
@@ -1321,7 +1437,10 @@ struct LiquidMetricSheetView: View {
                     // D7 · Sin serie todavía, la columna queda VACÍA (su ancho mínimo ya
                     // está reservado, así que no salta cuando llegan los conteos).
                     conteo: conteos ? conteoLabel(d.counts[i]) : "",
-                    esHoy: i == d.activeIndex,
+                    // La pastilla «· hoy» marca dónde cayó TU DÍA, no la fila que el héroe
+                    // describe: en rango largo el héroe es la media y las dos filas pueden ser
+                    // distintas. Ambas informaciones son ciertas y se ven a la vez.
+                    esHoy: i == indiceDeHoy,
                     activa: i == highlight,
                     // El rótulo que marca EN LA LISTA dónde cayó hoy (clave existente).
                     hoyEtiqueta: hoyRotulo,

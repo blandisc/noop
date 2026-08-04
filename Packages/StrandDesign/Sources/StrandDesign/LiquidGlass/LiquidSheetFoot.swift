@@ -2,8 +2,9 @@ import SwiftUI
 
 // MARK: - Liquid Glass · Pie de hoja de resumen (épico hoja Liquid, F1/F6)
 //
-// Los tres remates del pie, como componentes independientes (la hoja los compone en orden):
+// Los remates del pie, como componentes independientes (la hoja los compone en orden):
 //   · `LiquidMetodo` — «Cómo se calcula» plegable (prosa + cita), transparencia matemática.
+//   · `LiquidOrigenChip` — pastilla de procedencia DENTRO del plegable (FER-33 · F0.4a).
 //   · `LiquidNotaLine` — nota corta / línea de conectar Apple Salud.
 //   · `LiquidVerMas` — el enlace al detalle rico; ancho completo con el glifo de Tendencias
 //     cuando la métrica vive en niveles, compacto a la derecha si no.
@@ -222,4 +223,5 @@ public struct LiquidVerMas: View {
     .padding(LiquidSpace.s550)
     .background(LiquidSheetFondo(tone: LiquidColor.cian))
 }
+
 #endif

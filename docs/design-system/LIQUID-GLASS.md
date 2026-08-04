@@ -329,16 +329,36 @@ Estructura única de toda sheet (orden vertical). Cada pieza es un componente co
 | Pieza | Rol |
 |---|---|
 | `LiquidMetricSheet` | Shell de la hoja (presentación, fondo, detents). |
-| `LiquidSheetHeader` | Cabecera; **incluye el héroe** (valor + unidad + frase de nivel), **idéntico para las 9**: sin fecha, sin doble-dato en el héroe. |
+| `LiquidSheetFondo` | Fondo de la hoja: vidrio nativo + **plasta monocroma del tono** (2 masas, latido de 9 s) + velo de papel + especular. `plasta: false` la apaga; `tone == nil` no la pinta. Congelada con Reduce Motion. |
+| `LiquidSheetHeader` | Cabecera; **incluye el héroe** (valor + unidad + frase de nivel + `sello`), **idéntico para las 9**: sin doble-dato en el héroe. |
+| `LiquidFraseNivel` | El héroe de las hojas cuyo dato es una PALABRA (acta, autonómico, guardián). También acepta `sello`. |
 | `LiquidRangeSelector` | Selector de rango (segmentos de texto + tick del tono). |
-| `LiquidTrendChart` | Tendencia: joya de hoy + scrub + corredor sano. El héroe no cambia al hacer scrub. |
+| `LiquidTrendChart` | Tendencia: joya de hoy + scrub + corredor sano. **El héroe no cambia al hacer scrub** (el rango sí lo mueve; ver §11.4). |
 | `LiquidBandsTable` | Tabla de niveles/bandas sobre **papel** (`.superficieSolida`). |
-| `LiquidSheetFoot` | Pie: «Cómo se obtuvo» (C3) + chip de origen (C2) + CTA «Ver más…» (`.pastillaSolida`). |
+| `LiquidResumenVentana` | Pie de la tarjeta de gráfica: 2-3 cifras de la ventana (Promedio · Rango · Hoy) en columnas con **capilares**. Sin superficie propia, no tocable. |
+| `LiquidSheetFoot` | Pie: «Cómo se obtuvo» (C3) + `LiquidOrigenChip` (C2) + CTA «Ver más…» (`.pastillaSolida`). |
+| `LiquidOrigenChip` | La procedencia como pastilla, **dentro** del plegable del pie — nunca colgada del héroe. |
 
-**Slot opcional de Sueño** (componen, no forkean el shell):
+**El hueco (slot) de la plantilla.** El bloque de niveles emite un hueco `@ViewBuilder`
+**entre la gráfica y la escalera**: ahí van los componentes propios de cada hoja. Se emite en
+todas las ramas (con datos, cargando y pozo), porque los extras no dependen de la serie de
+niveles. Quien enchufa hoy:
 
-- `LiquidStageBar` — Etapas (barra apilada + leyenda / ventana horaria)
-- `LiquidRegularityCard` — Regularidad (tarjeta de papel)
+- **Sueño** — `LiquidStageBar` (Etapas) + `LiquidRegularityCard` (Regularidad)
+- **Carga** — `LiquidHill` (la colina) + `LiquidResumenVentana`
+- **El guardián** — la tarjeta del par vigilado + `LiquidDominoRegla`
 
 Color en la sheet: **solo en el dato** + plasta monocroma del tono de la métrica (no cajas
 coloreadas). Ver nota en `DESIGN.md` §8.9.
+
+### 11.4 El héroe y la ventana (FER-33)
+
+El numeral del héroe **sigue el selector de rango**: en la semana es el dato de hoy, con
+sello «HOY · 3 AGO»; en los rangos largos es la **media de la ventana visible**, con sello
+«MEDIA · 30 DÍAS» (o «NOCHES» en las métricas nocturnas), «MEDIA · 6 MESES», «MEDIA · TODO».
+La frase de nivel, el titular de la tarjeta de gráfica y la fila activa de la escalera siguen
+ese mismo valor.
+
+El **scrub no toca el héroe**: la cabeza del scrub vive en el popup de la gráfica. Rango sí,
+scrub no. (Esta es la lectura correcta de la regla que antes se escribía como «héroe sin
+fecha»; ver `DESIGN.md` §8.9.)

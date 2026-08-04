@@ -13,6 +13,8 @@ public struct LiquidIcon: View {
         case luna, onda, corazon, llama, pasos, termo, resp, estres
         // Carga de entrenamiento (hoja de Carga) — se dibuja como SF Symbol (pesa).
         case carga
+        // Guardián (cabecera de la hoja) — SF Symbol `shield`, path de catálogo.
+        case escudo
         // Señales (SignalOrb) — viewBox 16, stroke 1.5.
         case ondaSenal, lunaSenal, termoSenal
         // Modos de entrenamiento (ModeTile) — viewBox 16, stroke 1.5.
@@ -53,6 +55,7 @@ public struct LiquidIcon: View {
         case .resp: "lungs"
         case .estres: "waveform.path"
         case .carga: "dumbbell"
+        case .escudo: "shield"
         default: nil
         }
     }
@@ -187,6 +190,12 @@ extension LiquidIcon.Glyph {
             return Spec(viewBox: 16, strokeWidth: 1.6, paths: [
                 "M3 5.5v5M5.5 4v8M10.5 4v8M13 5.5v5",
                 "M1.5 8h1.5M5.5 8h5M13 8h1.5",
+            ])
+        // `.escudo` se dibuja como SF Symbol (`shield`); el path mantiene el invariante
+        // del catálogo (path no vacío en viewBox) para LiquidGlassTests.
+        case .escudo:
+            return Spec(viewBox: 16, strokeWidth: 1.6, paths: [
+                "M8 1.5l5.5 2v4.2c0 3.4-2.3 5.8-5.5 6.8-3.2-1-5.5-3.4-5.5-6.8V3.5z",
             ])
 
         // MARK: Señales (viewBox 16, sw 1.8) — familia FINAL elegida por el dueño
