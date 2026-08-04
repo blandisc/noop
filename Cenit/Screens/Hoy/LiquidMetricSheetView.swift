@@ -557,13 +557,15 @@ struct LiquidMetricSheetView: View {
         guard let s = regularidadSueno else {
             return String(localized: "Still learning your rhythm")
         }
+        // #inject r4 · Solo la palabra-veredicto, sin coletilla (dueño: «te crea esa doble
+        // línea») — el puntaje 88 y la palabra ya lo dicen todo; el detalle vive en el ⓘ.
         switch s {
         case 80...:
-            return String(localized: "Very regular · your body knows when to sleep")
+            return String(localized: "Very regular")
         case 55..<80:
             return String(localized: "Fairly regular")
         default:
-            return String(localized: "Variable · your schedule shifts a lot")
+            return String(localized: "Variable")
         }
     }
 
