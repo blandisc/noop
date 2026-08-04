@@ -42741,19 +42741,19 @@
         }
       }
     },
-    "The ratio compares your average load over the last ~7 days against your last ~28: what science calls ACWR (acute:chronic). 1.0 is training exactly your usual; 0.8 to 1.3 reads as balance (Gabbett 2016). It's a debated heuristic and does not predict injuries (Impellizzeri 2020).": {
+    "The ratio compares your average load over the last ~7 days against your last ~28: what science calls ACWR (acute:chronic). 1.0 is training about your usual; 0.8 to 1.3 reads as balance (Gabbett 2016). It's a debated heuristic and does not predict injuries (Impellizzeri 2020).": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The ratio compares your average load over the last ~7 days against your last ~28: what science calls ACWR (acute:chronic). 1.0 is training exactly your usual; 0.8 to 1.3 reads as balance (Gabbett 2016). It's a debated heuristic and does not predict injuries (Impellizzeri 2020)."
+            "value": "The ratio compares your average load over the last ~7 days against your last ~28: what science calls ACWR (acute:chronic). 1.0 is training about your usual; 0.8 to 1.3 reads as balance (Gabbett 2016). It's a debated heuristic and does not predict injuries (Impellizzeri 2020)."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "El ratio compara tu carga media de los últimos ~7 días contra tus últimos ~28: lo que la ciencia llama ACWR (agudo:crónico). 1.0 es entrenar exactamente lo habitual; 0.8 a 1.3 se lee como equilibrio (Gabbett 2016). Es una heurística debatida y no predice lesiones (Impellizzeri 2020)."
+            "value": "El ratio compara tu carga media de los últimos ~7 días contra tus últimos ~28: lo que la ciencia llama ACWR (agudo:crónico). 1.0 es entrenar más o menos lo habitual; 0.8 a 1.3 se lee como equilibrio (Gabbett 2016). Es una heurística debatida y no predice lesiones (Impellizzeri 2020)."
           }
         }
       }
@@ -46304,19 +46304,19 @@
         }
       }
     },
-    "We compare your average strain over the last ~7 days against your last ~28. 1.0 means you trained exactly your usual; 0.8 to 1.3 reads as balance. It's context for your recovery, not an injury prediction.": {
+    "We compare your average strain over the last ~7 days against your last ~28. 1.0 means you trained about your usual; 0.8 to 1.3 reads as balance. It's context for your recovery, not an injury prediction.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "We compare your average strain over the last ~7 days against your last ~28. 1.0 means you trained exactly your usual; 0.8 to 1.3 reads as balance. It's context for your recovery, not an injury prediction."
+            "value": "We compare your average strain over the last ~7 days against your last ~28. 1.0 means you trained about your usual; 0.8 to 1.3 reads as balance. It's context for your recovery, not an injury prediction."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Comparamos tu esfuerzo promedio de los últimos ~7 días contra tus últimos ~28. 1.0 significa que entrenaste exactamente lo habitual; 0.8 a 1.3 se lee como equilibrio. Es contexto para tu recuperación, no predice lesiones."
+            "value": "Comparamos tu esfuerzo promedio de los últimos ~7 días contra tus últimos ~28. 1.0 significa que entrenaste más o menos lo habitual; 0.8 a 1.3 se lee como equilibrio. Es contexto para tu recuperación, no predice lesiones."
           }
         }
       }
