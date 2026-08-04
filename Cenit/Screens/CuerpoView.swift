@@ -677,7 +677,7 @@ private struct CuerpoLanding: View {
                         Text("\(String(format: "%.2f", acwr)) · recent vs. your usual")
                             .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     } else {
-                        Text("Needs about 2 weeks of recorded strain")
+                        Text("I need about two weeks of recorded strain to read your load.")
                             .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     }
                 }

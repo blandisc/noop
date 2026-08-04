@@ -299,8 +299,8 @@ struct TrainingLoadSheet: View {
             hint: String(localized: "Drag to explore"),
             hoyEtiqueta: String(localized: "TODAY"),
             calibrando: acwr == nil,
-            calibrandoTitulo: String(localized: "BUILDING YOUR USUAL"),
-            calibrandoAncla: String(localized: "Log a few workouts with heart rate on your Apple Watch and this read will appear."),
+            calibrandoTitulo: String(localized: "Calibrating"),
+            calibrandoAncla: String(localized: "I need about two weeks of recorded strain to read your load."),
             a11yTitulo: String(localized: "The hill"),
             a11yValor: { r, z in "\(Self.format.numeral(r)), \(z.lowercased())" })
     }
