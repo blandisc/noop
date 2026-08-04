@@ -1049,7 +1049,6 @@ struct TodayView: View {
 
     /// Entradas de la hoja del guardián (las series las carga el host al aparecer).
     private var liquidGuardianInputs: LiquidHoyBuilder.GuardianHojaInputs {
-        let nochesTemp = repo.displayDays.suffix(14).compactMap(\.skinTempDevC).count
         return .init(
             guardian: liquidOutput.model.guardian,
             prep: repo.todayPreparedness,
@@ -1057,8 +1056,7 @@ struct TodayView: View {
             respTrend: [],
             now: Date(),
             calendar: .current,
-            locale: .current,
-            nochesTemp: nochesTemp)
+            locale: .current)
     }
 
     @ViewBuilder private var liquidSurface: some View {
