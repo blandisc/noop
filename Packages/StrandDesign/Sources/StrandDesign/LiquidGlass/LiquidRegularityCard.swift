@@ -78,7 +78,9 @@ public struct LiquidRegularityCard: View {
 
     public var body: some View {
         VStack(alignment: .leading, spacing: LiquidSpace.s250) {
-            HStack(alignment: .center, spacing: LiquidSpace.s150) {
+            // s200 (no s150): el target táctil expandido del ⓘ compacto sobresale 10 pt de
+            // su marco — con 6 pt de gap invadía la cola del título (revisión adversarial).
+            HStack(alignment: .center, spacing: LiquidSpace.s200) {
                 Text(verbatim: titulo)
                     .liquidLabel()
                     .foregroundStyle(LiquidColor.tinta500)
@@ -102,9 +104,12 @@ public struct LiquidRegularityCard: View {
             // Una sola parada de VoiceOver para el bloque de lectura: título + puntaje +
             // leyenda. El `accessibilityLabel` sustituye el texto visible (no se oye dos
             // veces). El ⓘ es hermano, no hijo de este elemento.
+            // Calibrando no grita: sin puntaje, la leyenda («Aún conociendo tu ritmo») va
+            // en peso normal — el semibold es para la palabra-VEREDICTO, y calibrando no
+            // ha emitido ninguno (revisión adversarial Grok).
             (Text(verbatim: leyendaPartes.palabra)
-                .fontWeight(.semibold)
-                .foregroundStyle(LiquidColor.tinta900)
+                .fontWeight(calibrando ? .regular : .semibold)
+                .foregroundStyle(calibrando ? LiquidColor.tinta700 : LiquidColor.tinta900)
              + Text(verbatim: leyendaPartes.detalle.map { " · \($0)" } ?? "")
                 .foregroundStyle(LiquidColor.tinta500))
                 .font(.system(size: lecturaSize))
@@ -133,7 +138,7 @@ public struct LiquidRegularityCard: View {
         LiquidRegularityCard(
             titulo: "Regularidad",
             puntaje: 82,
-            leyenda: "Muy regular — tu cuerpo sabe cuándo dormir",
+            leyenda: "Muy regular · tu cuerpo sabe cuándo dormir",
             tono: LiquidColor.indigo,
             explicacion: "La regularidad mide cuánto se mueve el punto medio de tu sueño de una noche a otra (entre dormirte y despertar): predice tu salud mejor que las horas totales. Las siestas no cuentan.",
             infoMostrar: "Mostrar explicación",
@@ -158,7 +163,7 @@ public struct LiquidRegularityCard: View {
     LiquidRegularityCard(
         titulo: "Regularidad",
         puntaje: 82,
-        leyenda: "Muy regular — tu cuerpo sabe cuándo dormir",
+        leyenda: "Muy regular · tu cuerpo sabe cuándo dormir",
         tono: LiquidColor.indigo,
         explicacion: "La regularidad mide cuánto se mueve el punto medio de tu sueño de una noche a otra (entre dormirte y despertar): predice tu salud mejor que las horas totales. Las siestas no cuentan.",
         infoMostrar: "Mostrar explicación",

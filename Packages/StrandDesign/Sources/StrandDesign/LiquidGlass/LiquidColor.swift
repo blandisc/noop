@@ -35,6 +35,10 @@ public enum LiquidColor {
     public static let papelBajo = Color(hex: "#F0EDE4")
     /// Relleno del vidrio/lente (dock) — #FBF9F2 al 50 %.
     public static let papelDock = Color(hex: "#FBF9F2").opacity(0.38)
+    /// Tarjeta de HOJA — blanco puro (mock canónico `.card{background:#FFFFFF}`): las
+    /// tarjetas internas de las hojas van en blanco, no en el papel cálido de pantalla
+    /// (#inject r3, pedido del dueño: «los elementos deberían ser blancos»).
+    public static let papelTarjeta = Color(hex: "#FFFFFF")
 
     /// El degradado de pantalla papel/alto → papel/bajo (fondo base de toda pantalla Liquid).
     public static let papelGradient = LinearGradient(

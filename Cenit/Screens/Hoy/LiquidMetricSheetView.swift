@@ -1273,7 +1273,7 @@ struct LiquidMetricSheetView: View {
                                  activa: i == highlight)
             },
             dominio: dominio,
-            ticksY: nivelesMarcasY(d, dominio: dominio),
+            ticksY: nivelesMarcasY(d, dominio: dominio, valores: window.values),
             tono: tono,
             // Hoy = el último punto dibujado (paridad marksLastPoint/markedPointHollow
             // :144-145): anillo hueco mientras exploras un nivel que no es el de hoy.
@@ -1341,12 +1341,27 @@ struct LiquidMetricSheetView: View {
     /// cada tick es ruido de gráfica y la canaleta se ensancha por la etiqueta más larga.
     /// El signo de temperatura de piel lo trae ya `levelsValueFormat` («+0.4»).
     private func nivelesMarcasY(_ d: MetricLevels.Classification,
-                                dominio: ClosedRange<Double>)
+                                dominio: ClosedRange<Double>,
+                                valores: [Double])
         -> [(valor: Double, etiqueta: String)] {
         // Solo las marcas que CAEN en el dominio visible (/inject): al acotar el dominio,
         // los umbrales de fuera se dibujaban pegados al borde y el eje mentía («18» en una
         // gráfica que llega a 14.5).
-        let ticks: [Double] = nivelesTicks(d).filter { dominio.contains($0) }
+        var ticks: [Double] = nivelesTicks(d).filter { dominio.contains($0) }
+        // #inject r3 · «Más elementos en el eje Y» (dueño): además de los umbrales, la
+        // CIMA y el PISO reales de la serie entran como marcas — el lector puede fechar
+        // hasta dónde llegó la curva. Extremos de los DATOS, no del dominio: el dominio
+        // trae 10-12 % de respiro y etiquetarlo pondría números que ninguna noche tocó
+        // (revisión adversarial Grok). Solo si no pisan una marca existente (≥ 6 %).
+        let span = dominio.upperBound - dominio.lowerBound
+        if span > 0, let lo = valores.min(), let hi = valores.max() {
+            for extremo in [lo, hi]
+            where dominio.contains(extremo)
+                && !ticks.contains(where: { abs($0 - extremo) < span * 0.06 }) {
+                ticks.append(extremo)
+            }
+            ticks.sort()
+        }
         let ultimo: Int = ticks.count - 1
         return ticks.indices.map { (i: Int) -> (valor: Double, etiqueta: String) in
             let v: Double = ticks[i]
