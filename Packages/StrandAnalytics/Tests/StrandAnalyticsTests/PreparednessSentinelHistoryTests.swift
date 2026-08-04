@@ -157,6 +157,65 @@ final class PreparednessSentinelHistoryTests: XCTestCase {
         XCTAssertTrue(r.sentinelHistory.isEmpty)
     }
 
+    // MARK: «No lo pude juzgar» no puede leerse como «en rango» (hallazgo del gate numérico)
+
+    func testRespiracionSinBaseNoSeConfundeConEnRango() throws {
+        // Una respiración absurda en la CABEZA de la ventana, donde la base todavía no es
+        // usable: el motor no la marca, pero tampoco la aprueba. Sin `respJudged`, esta noche
+        // se serializa idéntica a una tranquila y el diagrama del guardián dibujaría calma
+        // donde el motor dijo «no sé».
+        let days = [dm("2026-06-01", resp: 35, temp: 0.0)] + baseline().dropFirst()
+        let r = read(days, asOf: "2026-06-20")
+        let primera = try XCTUnwrap(r.sentinelHistory.first)
+        XCTAssertEqual(primera.day, "2026-06-01")
+        XCTAssertFalse(primera.respOut, "sin base usable el motor no marca")
+        XCTAssertFalse(primera.respMissing, "sí hubo lectura")
+        XCTAssertFalse(primera.respJudged, "pero NO fue juzgada: la UI no puede pintarla tranquila")
+    }
+
+    func testRespiracionConBaseMaduraSiEstaJuzgada() throws {
+        let r = read(baseline() + [quiet("2026-06-21")], asOf: "2026-06-21")
+        let last = try XCTUnwrap(r.sentinelHistory.last)
+        XCTAssertTrue(last.respJudged)
+        XCTAssertFalse(last.respOut)
+    }
+
+    func testTemperaturaNoNecesitaGemelo() throws {
+        // El corte de temperatura es absoluto (°C de desviación), así que toda lectura es
+        // juzgable: la asimetría de la API es deliberada, no un olvido.
+        let days = [dm("2026-06-01", resp: nil, temp: 0.9)] + baseline().dropFirst()
+        let r = read(days, asOf: "2026-06-20")
+        let primera = try XCTUnwrap(r.sentinelHistory.first)
+        XCTAssertTrue(primera.tempOut, "sin base y aun así marcada: el corte no depende de baseline")
+    }
+
+    // MARK: Un hueco de calendario no puede dibujarse como racha
+
+    func testHuecoDeCalendarioSeMarca() throws {
+        // El centinela rompe la racha cuando faltan noches; si el historial no lo dijera, un
+        // diagrama equiespaciado mostraría como seguidas dos noches separadas por días.
+        let days = baseline() + [corroborated("2026-06-21"), corroborated("2026-06-25")]
+        let r = read(days, asOf: "2026-06-25")
+        let ultima = try XCTUnwrap(r.sentinelHistory.last)
+        XCTAssertTrue(ultima.gapBefore, "del 21 al 25 hay hueco")
+        let s = try XCTUnwrap(r.sentinel)
+        XCTAssertEqual(s.streakNights, 1, "y la racha del motor tampoco lo cruza")
+    }
+
+    func testNochesContiguasNoMarcanHueco() throws {
+        let days = baseline() + [corroborated("2026-06-21"), corroborated("2026-06-22")]
+        let r = read(days, asOf: "2026-06-22")
+        let ultima = try XCTUnwrap(r.sentinelHistory.last)
+        XCTAssertFalse(ultima.gapBefore)
+        XCTAssertEqual(try XCTUnwrap(r.sentinel).streakNights, 2)
+    }
+
+    func testLaPrimeraNocheNoInventaHueco() throws {
+        let r = read(baseline() + [quiet("2026-06-21")], asOf: "2026-06-21")
+        let primera = try XCTUnwrap(r.sentinelHistory.first)
+        XCTAssertFalse(primera.gapBefore, "sin predecesora no hay hueco que afirmar")
+    }
+
     // MARK: The addition is inert for the vote
 
     func testHistoryDoesNotChangeTheVerdict() {

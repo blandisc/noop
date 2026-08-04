@@ -228,11 +228,22 @@ public enum Preparedness {
     /// One night as the sentinel judged it, surfaced on `Read.sentinelHistory` (FER-33).
     ///
     /// `tempOut`/`respOut` carry the engine's own verdict for that night, identical to the flags
-    /// the forward pass feeds to the streak. `false` means "the engine did not flag it" — which
-    /// covers both "in range" and "could not be judged yet" (no usable baseline); it is never a
-    /// claim that the signal is fine. `tempMissing`/`respMissing` say the night simply had no
-    /// reading for that signal, which a UI must distinguish from "in range" (a hollow mark, not
-    /// a quiet one).
+    /// the forward pass feeds to the streak. `tempMissing`/`respMissing` say the night simply had
+    /// no reading for that signal.
+    ///
+    /// **Why `respJudged` exists.** Respiration is judged against your own baseline, so a night can
+    /// have a perfectly good reading that the engine still could not evaluate — the baseline was not
+    /// usable yet (the head of every window) or had gone stale. In that case `respOut` is `false`,
+    /// which means "not flagged", NOT "in range". Without this flag a drawing would render such a
+    /// night exactly like a calm one, and the sheet would show quiet where the engine said "I don't
+    /// know". Temperature needs no twin: its cut is absolute (a fixed °C deviation), so a reading is
+    /// always judgeable — hence the deliberate asymmetry.
+    ///
+    /// **Why `gapBefore` exists.** `Input.days` is not calendar-filled: a night with no row is
+    /// ABSENT, not nil. `sentinelStreak` knows this and breaks a streak across a calendar gap. A UI
+    /// that lays these entries out evenly would draw two nights separated by a week as adjacent, and
+    /// show a run the engine already broke. This flag makes that contradiction impossible to render
+    /// by accident.
     public struct SentinelNight: Sendable, Equatable {
         /// Local civil day, "yyyy-MM-dd".
         public let day: String
@@ -240,10 +251,18 @@ public enum Preparedness {
         public let respOut: Bool
         public let tempMissing: Bool
         public let respMissing: Bool
+        /// `false` when respiration could not be evaluated (no usable baseline yet, or stale), even
+        /// though a reading may exist. A UI must not draw this as "in range".
+        public let respJudged: Bool
+        /// `true` when the previous night in the window is NOT the immediately preceding calendar
+        /// day (or this is the first entry with a predecessor missing). A streak cannot cross it.
+        public let gapBefore: Bool
         public init(day: String, tempOut: Bool, respOut: Bool,
-                    tempMissing: Bool, respMissing: Bool) {
+                    tempMissing: Bool, respMissing: Bool,
+                    respJudged: Bool, gapBefore: Bool) {
             self.day = day; self.tempOut = tempOut; self.respOut = respOut
             self.tempMissing = tempMissing; self.respMissing = respMissing
+            self.respJudged = respJudged; self.gapBefore = gapBefore
         }
     }
 
@@ -465,18 +484,37 @@ public enum Preparedness {
                     signalsPresent: signalsPresent, signalsTotal: 3,
                     maturity: maturity, autonomicNights: autonomicNights, trend: input.trend?.direction,
                     sentinel: sentinelStreak(ordered: ordered, raws: raws),
-                    sentinelHistory: sentinelNights(ordered: ordered, raws: raws))
+                    sentinelHistory: sentinelNights(ordered: ordered, raws: raws,
+                                                    priorStates: priorStates))
     }
 
     /// The per-night sentinel signals for the whole window (FER-33). Pure projection of the
     /// forward pass that already ran: zero extra math, so the diagram the guardian draws and the
     /// streak that drives its copy can never disagree.
-    private static func sentinelNights(ordered: [DailyMetric], raws: [RawDay]) -> [SentinelNight] {
-        zip(ordered, raws).map { day, raw in
-            SentinelNight(day: day.day,
-                          tempOut: raw.tempOut, respOut: raw.respOut,
-                          tempMissing: day.skinTempDevC == nil,
-                          respMissing: day.respRateBpm == nil)
+    ///
+    /// `respJudged` and `gapBefore` are the two flags that make that guarantee hold on screen
+    /// rather than only in principle — see `SentinelNight` for why each exists.
+    private static func sentinelNights(ordered: [DailyMetric], raws: [RawDay],
+                                       priorStates: PriorStates) -> [SentinelNight] {
+        ordered.indices.map { i in
+            let day = ordered[i]
+            let raw = raws[i]
+            // Same gate `orientedZ` applies to respiration: without a usable baseline the engine
+            // has no opinion, and "no opinion" must not read as "in range".
+            let respJudged = (priorStates.resp?[i].usable ?? false) && day.respRateBpm != nil
+            // Calendar contiguity, by civil date — the same test `sentinelStreak` uses to break a
+            // run (`Input.days` is not calendar-filled, so a missing night is an ABSENT row).
+            let gapBefore: Bool = {
+                guard i > 0,
+                      let ePrev = ComparisonEngine.epochDay(of: ordered[i - 1].day),
+                      let eThis = ComparisonEngine.epochDay(of: day.day) else { return false }
+                return eThis - ePrev != 1
+            }()
+            return SentinelNight(day: day.day,
+                                 tempOut: raw.tempOut, respOut: raw.respOut,
+                                 tempMissing: day.skinTempDevC == nil,
+                                 respMissing: day.respRateBpm == nil,
+                                 respJudged: respJudged, gapBefore: gapBefore)
         }
     }
 
