@@ -330,13 +330,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Less than your body is used to these days."
+            "value": "Easing off, less than you're used to."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Menos de lo que tu cuerpo acostumbra estos días."
+            "value": "Bajando, menos que tu costumbre."
           }
         }
       }
@@ -347,13 +347,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "In line with what your body is used to."
+            "value": "In balance, in line with what you're used to."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Va en línea con lo que tu cuerpo acostumbra."
+            "value": "En equilibrio, va en línea con tu costumbre."
           }
         }
       }
@@ -364,13 +364,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "More than your body is used to these days."
+            "value": "Ramping up, more than you're used to."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Más de lo que tu cuerpo acostumbra estos días."
+            "value": "Subiendo, más que tu costumbre."
           }
         }
       }
@@ -381,13 +381,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Well above what your body is used to."
+            "value": "Ramping fast, well above what you're used to."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Muy por encima de lo que tu cuerpo acostumbra."
+            "value": "Subiendo rápido, bastante por encima de tu costumbre."
           }
         }
       }
