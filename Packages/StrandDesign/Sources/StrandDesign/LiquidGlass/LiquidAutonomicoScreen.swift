@@ -357,18 +357,23 @@ public struct LiquidSignalRow<Mini: View>: View {
                                : Color.clear)
     }
 
-    /// Gota de señal (misma caja que la gota de tile por defecto).
-    private static let gotaSize: CGFloat = 24
-    private static let gotaIconSize: CGFloat = 13
-    /// Punto del eje autonómico (riel de estado).
-    private static let puntoDiametro: CGFloat = 8
+    /// Geometría de la marca (enum anidado: los genéricos no admiten `static let` almacenado).
+    private enum MarcaGeo {
+        /// Gota de señal (misma caja que la gota de tile por defecto).
+        static let gotaSize: CGFloat = 24
+        static let gotaIconSize: CGFloat = 13
+        /// Punto del eje autonómico (riel de estado).
+        static let puntoDiametro: CGFloat = 8
+    }
 
-    private var marcaAncho: CGFloat { fila.icono != nil ? Self.gotaSize : Self.puntoDiametro }
+    private var marcaAncho: CGFloat {
+        fila.icono != nil ? MarcaGeo.gotaSize : MarcaGeo.puntoDiametro
+    }
 
     @ViewBuilder private var marca: some View {
         if let icono = fila.icono {
             LiquidIconDrop(icono, tone: fila.iconoTono ?? LiquidColor.tinta500,
-                           size: Self.gotaSize, iconSize: Self.gotaIconSize)
+                           size: MarcaGeo.gotaSize, iconSize: MarcaGeo.gotaIconSize)
                 .overlay {
                     if fila.anillo {
                         Circle()
@@ -380,7 +385,7 @@ public struct LiquidSignalRow<Mini: View>: View {
         } else {
             Circle()
                 .fill(fila.fuera ? LiquidColor.atencion : LiquidColor.tinta10)
-                .frame(width: Self.puntoDiametro, height: Self.puntoDiametro)
+                .frame(width: MarcaGeo.puntoDiametro, height: MarcaGeo.puntoDiametro)
         }
     }
 }
