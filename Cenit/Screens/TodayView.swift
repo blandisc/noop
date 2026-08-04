@@ -480,13 +480,7 @@ struct TodayView: View {
     /// afirmaba Apple Salud sin mirar: dos superficies del mismo número diciendo procedencias
     /// distintas. Vive aquí, en un solo lugar, para que no puedan volver a divergir.
     /// (Revisión Grok r3 · I3.)
-    private var pasosEstimadosHoy: Bool {
-        let corte = Repository.localDayKey(
-            Calendar.current.date(byAdding: .day, value: -13, to: Date()) ?? Date())
-        let real = appleDays.last(where: { $0.day >= corte })?.steps
-        guard real == nil else { return false }
-        return stepsEst.last(where: { $0.day >= corte }) != nil
-    }
+    private var pasosEstimadosHoy: Bool { liquidSteps().estimated }
 
     private func metricSheet(for info: MetricInfo) -> some View {
         // Temp. de piel y respiración también las mide el Apple Watch (los tiles ya las
@@ -1580,12 +1574,11 @@ struct TodayView: View {
         // Pasos: Apple Salud primero; acota a la ventana de 14 días para no mostrar pasos rancios bajo
         // un tile de "hoy". Sin conteo real, cae a la ESTIMACIÓN on-device de la WHOOP 4.0 (steps_est,
         // FER-663) — el real siempre gana; la estimación solo llena el hueco, rotulada «est.».
-        let stepsCutoff = Repository.localDayKey(Calendar.current.date(byAdding: .day, value: -13, to: Date()) ?? Date())
-        let stepsFresh  = appleDays.last(where: { $0.day >= stepsCutoff })?.steps
-        let stepsEstFresh = stepsFresh == nil
-            ? stepsEst.last(where: { $0.day >= stepsCutoff }).map { Int($0.value.rounded()) }
-            : nil
-        let stepsT      = (stepsFresh ?? stepsEstFresh).map(Double.init)
+        // Una sola resolución de pasos para toda la pantalla: el tile, la hoja y el badge de
+        // procedencia leen lo mismo, así que no pueden contradecirse. (Revisión DeepSeek r4.)
+        let pasos = liquidSteps()
+        let stepsEstFresh: Int? = pasos.estimated ? pasos.raw : nil
+        let stepsT      = pasos.value
         let stressT     = stress?.score
         let respR       = latestFromDisplay { $0.respRateBpm }
         // Base para la media de 7 días de cada tile (FER-258): días anteriores a hoy, ordenados,
@@ -1658,7 +1651,7 @@ struct TodayView: View {
                     source: stepsEstimated ? .calculated : .apple,
                     context: tileContext(today: stepsT, history: stepsTileHistory,
                                          betterHigher: true, deadband: 100, positive: positiveDelta) { intString($0) }
-                )) { metricDetail = .steps(stepsFresh ?? stepsEstFresh) }
+                )) { metricDetail = .steps(pasos.raw) }
                 // Temperatura de piel — desviación (°C) vs tu base; sin valencia simple (lo sano es estar
                 // cerca de tu base, no «más = mejor»), así que Δ en tinta neutra. Valor con signo (+0.3).
                 metricTile(TodayMetricTile(
@@ -2116,10 +2109,7 @@ struct TodayView: View {
 
     /// Today's step total from the Apple daily rows, within the same freshness window the tile uses, so
     /// «Ver más» opens the steps detail on the value the tile shows. (FER-254)
-    private var freshSteps: Int? {
-        let cutoff = Repository.localDayKey(Calendar.current.date(byAdding: .day, value: -13, to: Date()) ?? Date())
-        return appleDays.last(where: { $0.day >= cutoff })?.steps
-    }
+    private var freshSteps: Int? { liquidSteps().estimated ? nil : liquidSteps().raw }
 
     /// The FULL daily series (oldest → newest) for a vital — the detail carries its own range selector,
     /// so it needs all history, not just the trailing window.
