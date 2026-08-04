@@ -123,7 +123,10 @@ public struct LiquidSheetHeader: View {
                 // volvían un banner que le ganaba el foco al dato. El numeral manda.
                 Text(titulo)
                     .font(LiquidType.tituloHoja)
-                    .foregroundStyle(LiquidColor.tinta700)
+                    // Mock canónico: el nombre de la métrica va en tinta plena (`tinta900`),
+                    // no en la secundaria (auditoría de fidelidad 2026-08-03). El numeral
+                    // sigue mandando por TAMAÑO (52 vs 17), no por contraste.
+                    .foregroundStyle(LiquidColor.tinta900)
                     // B3 · con numeral, el título ya va DENTRO del label compuesto de la
                     // fila del dato («VFC, 56 ms, Apple Salud», que empieza por él):
                     // dejarlo como parada propia lo dice dos veces. Sin numeral, esta ES

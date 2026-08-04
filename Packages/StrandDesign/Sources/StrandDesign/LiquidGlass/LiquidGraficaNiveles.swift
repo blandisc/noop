@@ -7,10 +7,10 @@ import SwiftUI
 // ticks ya formateados, mensaje de vacío ya localizado); la vista solo pinta y scrubbea.
 //
 //   · I1 — banda activa iluminada (washes 8/16/3, `LiquidChart.banda*Alfa`).
-//   · I2 — scrub con regla vertical + anillo del color de su banda + chip negro
+//   · I2 — scrub con regla vertical + anillo del color de su banda + popup rectangular
 //          (mismo gesto/snap/háptica que `GraficaRangos`, vía las piezas públicas).
-//   · Joya endpoint en `puntoHoy`; `hoyAnillo` la vuelve anillo hueco mientras el
-//     usuario explora otro nivel (paridad `markedPointHollow`).
+//   · Joya de HOY en `puntoHoy`: papel + filo del tono, marcador fijo; `hoyAnillo` la
+//     agranda a anillo mientras el usuario explora otro nivel (paridad `markedPointHollow`).
 
 public struct LiquidGraficaNiveles: View {
 

@@ -57,7 +57,7 @@ public struct LiquidLevelRow: View {
                 HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s150) {
                     Text(verbatim: etiqueta)
                         .font(.system(size: etiquetaPt))
-                        .fontWeight(activa ? .semibold : .regular)
+                        .fontWeight(activa ? .bold : .regular)
                         .foregroundStyle(activa ? LiquidColor.tinta900 : LiquidColor.tinta700)
                     if esHoy, let hoyEtiqueta {
                         Text(verbatim: hoyEtiqueta)
@@ -74,7 +74,7 @@ public struct LiquidLevelRow: View {
                     .font(LiquidType.captionLectura)
                     .monospacedDigit()
                     .foregroundStyle(activa ? LiquidColor.tinta900 : LiquidColor.tinta500)
-                    .frame(minWidth: 50, alignment: .trailing)
+                    .frame(minWidth: 52, alignment: .trailing)
             }
             .padding(.horizontal, LiquidSpace.s400)
             .padding(.vertical, LiquidSpace.s300)
@@ -101,14 +101,17 @@ public struct LiquidLevelRow: View {
             ? LiquidColor.atencionTexto : tono
     }
 
-    /// El punto del nivel: lleno del tono cuando la fila está activa; ANILLO hueco cuando es
-    /// el nivel de hoy pero exploras otro (paridad del dot del explorador); tenue si no.
+    /// El marcador de índice de la fila: una BARRA VERTICAL, no un círculo. Paridad del mock
+    /// canónico (`.lvl .tick`: barra 2×14, activa 2.5×17 del tono; auditoría Grok+DeepSeek
+    /// 2026-08-03). Del tono cuando la fila es la activa o la de hoy; tenue (tinta10) si no.
+    /// La barra se centra en una columna de 8 pt: el mismo ancho que ocupaba el círculo, para
+    /// no correr el texto ni la sangría del separador de `LiquidLevelsList`.
     @ViewBuilder private var punto: some View {
-        if esHoy && !activa {
-            Circle().strokeBorder(tono, lineWidth: 2).frame(width: 8, height: 8)
-        } else {
-            Circle().fill(activa ? tono : LiquidColor.tinta10).frame(width: 8, height: 8)
-        }
+        let esTono: Bool = activa || esHoy
+        RoundedRectangle(cornerRadius: 1, style: .continuous)
+            .fill(esTono ? tono : LiquidColor.tinta10)
+            .frame(width: activa ? 2.5 : 2, height: activa ? 17 : 14)
+            .frame(width: 8)
     }
 }
 

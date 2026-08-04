@@ -64,14 +64,17 @@ public enum LiquidType {
         .system(size: size * 0.78, weight: .semibold)
     }
 
-    /// `numeral/hoja` — 34/700 tabular, escala con Dynamic Type. El dato héroe de la
+    /// `numeral/hoja` — 52/700 tabular, escala con Dynamic Type. El dato héroe de la
     /// hoja de resumen (épico hoja Liquid, F0): manda sobre todo lo demás de la hoja.
-    public static let numeralHoja = InstrumentoType.groteskNumber(34, relativeTo: .largeTitle)
-    /// Unidad junto al numeral de hoja — 13 en el tamaño base, tinta/500. ESCALA con
-    /// Dynamic Type (B4): el numeral es `.largeTitle` relativo, así que una unidad fija
-    /// se quedaba enana junto a un numeral inflado. `.footnote` = 13 pt en `.large`,
-    /// paridad exacta con el viejo `StrandFont.unit`.
-    public static let numeralHojaUnidad = Font.system(.footnote)
+    /// Auditoría de fidelidad (2026-08-03, Grok+DeepSeek convergentes): el mock canónico
+    /// pone el numeral en 56 px y con 34 la jerarquía se aplanaba —el dato no mandaba—.
+    /// 52 respeta el line-height tenso de Grotesk sin desbordar la hoja en Dynamic Type.
+    public static let numeralHoja = InstrumentoType.groteskNumber(52, relativeTo: .largeTitle)
+    /// Unidad junto al numeral de hoja — ~20 en el tamaño base, tinta/500. ESCALA con
+    /// Dynamic Type: el numeral es `.largeTitle` relativo, así que una unidad fija se
+    /// quedaba enana junto a un numeral inflado. `.title3` = 20 pt en `.large` (el mock
+    /// pide 19); antes era `.footnote` (13) y contra el numeral de 52 desaparecía.
+    public static let numeralHojaUnidad = Font.system(.title3)
 
     /// `título/hoja` — 17/700, escala con Dynamic Type. El nombre de la métrica en la
     /// cabecera de la hoja de resumen: manda sobre los títulos de sección (pasada UX H6;

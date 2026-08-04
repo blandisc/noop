@@ -496,7 +496,13 @@ struct LiquidMetricSheetView: View {
             unidad: datoInfo.unit,
             sufijo: sufijo,
             numeralTono: tinte(datoInfo.headerTint),
-            sello: heroVentana.sello,
+            // FER-29 · Sin fecha/sello a la derecha del numeral (decisión del dueño,
+            // auditoría 2026-08-03): «no me gusta la fecha en el título a la derecha, y cómo
+            // se calcula es inconsistente» —el sello alternaba entre FECHA («HOY · 3 AGO») en
+            // la semana y DESCRIPTOR DE VENTANA («MEDIA · 30 DÍAS») en rangos largos, dos
+            // gramáticas distintas en el mismo lugar—. La ventana ya la dice el selector
+            // (S/M/3M…) encendido; el héroe queda limpio: nombre + numeral + unidad + frase.
+            sello: nil,
             // FER-29 · La procedencia YA NO viaja en el héroe: baja al chip del pie, DENTRO
             // de «Cómo se calcula» (mock canónico). El héroe es solo valor + unidad + frase
             // + sello de la ventana, idéntico para las 9 métricas. (Revierte la decisión
@@ -533,9 +539,18 @@ struct LiquidMetricSheetView: View {
         }
     }
 
-    /// El nivel activo de la lectura de hoy (paridad `activeLevelKey` :425-429).
+    /// El nivel que describe el HÉROE — clasificado contra `valorMostrado`, el mismo número
+    /// que el numeral enseña (la media en rangos largos, el dato de hoy en la semana), NO
+    /// contra el de hoy a secas.
+    ///
+    /// FER-29 · Fidelidad (auditoría Grok 2026-08-03): la frase de lectura bajo el héroe era
+    /// la única pieza que seguía clasificándose por `levelsTodayValue` mientras el numeral, la
+    /// frase de nivel y la fila encendida ya seguían la ventana (`valorMostrado`). Al pasar a
+    /// «MEDIA · 30 días» el numeral decía la media pero la palabra de abajo nombraba la banda
+    /// de HOY: la hoja se contradecía en cuanto tu día se salía de tu promedio. La pastilla
+    /// «· hoy» de la escalera sí marca el día real —vive en `indiceDeHoy`, intacto—.
     private var activeLevelKey: String? {
-        guard let levels = levelsHost.levels, let v = datoInfo.levelsTodayValue,
+        guard let levels = levelsHost.levels, let v = valorMostrado,
               let idx = MetricLevels.activeIndex(for: v, in: levels) else { return nil }
         return levels[idx].key
     }
@@ -618,10 +633,18 @@ struct LiquidMetricSheetView: View {
                 // que dibujar: la barra saldría hueca bajo un overline suelto y una leyenda
                 // vacía.
                 if sleepEtapasMedidas(night) {
+                    // FER-29 · Etapas en tarjeta de papel propia, como Regularidad y como el
+                    // mock canónico de sueño (auditoría 2026-08-03): antes la barra flotaba
+                    // sobre el fondo de la hoja bajo un overline suelto, sin superficie.
                     LiquidStageBar(
                         etapas: sleepEtapas(night),
                         overline: overlineNoche,
                         ventana: ventanaNoche)
+                    .padding(LiquidSpace.s400)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .clipShape(RoundedRectangle(cornerRadius: LiquidRadius.tarjeta,
+                                                style: .continuous))
+                    .liquidGlass(.superficieSolida)
                 }
                 // F4b · Regularidad como tarjeta propia (ya no en el héroe ni en
                 // `LiquidDobleDato`). `puntaje == nil` ⇒ «··» calibrando (lo maneja la tarjeta).
@@ -706,7 +729,11 @@ struct LiquidMetricSheetView: View {
     private var sleepReadingText: String? {
         guard let key = activeLevelKey,
               let baseKey = MetricLevelPhrase.key(metricID: "sleep", levelKey: key) else { return nil }
+        // «anoche» solo cuando el héroe muestra la noche REAL (semana). En rangos largos la
+        // clave viene de la MEDIA de la ventana (`valorMostrado`), así que fechar esa lectura
+        // como «anoche» mentiría (auditoría 2026-08-03).
         let usaAnoche = nocheEsDeAnoche && (key == "short" || key == "extended")
+            && levelsHost.window.range == .week
         let clave = usaAnoche ? baseKey + ".lastNight" : baseKey
         return String(localized: String.LocalizationValue(clave))
     }
@@ -1144,6 +1171,12 @@ struct LiquidMetricSheetView: View {
         // porque no había días suficientes, el sello tiene que decir la que de verdad se
         // promedió.
         guard levelsHost.levels != nil, w.range != .week, !w.values.isEmpty else {
+            // Sueño en la semana: reloj «7:12» (el mismo formato del eje Y y de los rangos de
+            // las filas), no el «7h 12m» del tile —el numeral y su escala tienen que hablar
+            // igual (auditoría 2026-08-03)—.
+            if datoInfo.id == "sleep", let v = datoInfo.levelsTodayValue {
+                return (levelsValueFormat(v), selloHoy)
+            }
             return (datoInfo.displayValue, selloHoy)
         }
         return (levelsValueFormat(ComparisonEngine.stat(w.values).mean), selloMedia(w.range))
@@ -1215,8 +1248,19 @@ struct LiquidMetricSheetView: View {
                     nivelesLista(d, conteos: false)
                 } else {
                     if window.fellBack { avisoVentana(window) }
-                    nivelesFrase(d)
-                    nivelesGrafica(d, window: window)
+                    // FER-29 · Fidelidad (auditoría Grok+DeepSeek 2026-08-03): el título de
+                    // nivel + su conteo + el plot viven DENTRO de una tarjeta de papel, como
+                    // en el mock canónico (`.card`) y como ya hace Carga (`tarjetaGrafica`).
+                    // Antes flotaban sueltos sobre el fondo de la hoja, sin superficie.
+                    VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+                        nivelesFrase(d)
+                        nivelesGrafica(d, window: window)
+                    }
+                    .padding(LiquidSpace.s400)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .clipShape(RoundedRectangle(cornerRadius: LiquidRadius.tarjeta,
+                                                style: .continuous))
+                    .liquidGlass(.superficieSolida)
                     extras()
                     nivelesLista(d)
                 }
