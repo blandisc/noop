@@ -201,7 +201,12 @@ public struct LiquidOrbeEntrada: View {
         // El teñido es UN color por frame, interpolado en sRGB del gris neutro al clima. La
         // alternativa —dos nubes superpuestas cruzándose en opacidad— deja al orbe perdiendo
         // densidad justo a medio teñido, que es el instante que más se mira.
-        let tinta = LiquidColor.particulaTeñida(hacia: climaFijado.particulaRGB, k: c.tinte)
+        // Con «Reducir movimiento» el clima se lee EN VIVO: no hay revelación que proteger —el
+        // orbe aparece ya asentado y teñido— así que esperar a fijarlo solo retrasaría el color
+        // sin ganar nada. Con la coreografía completa sí se usa el valor fijado, que es lo que
+        // impide que un veredicto tardío salte de color a media revelación.
+        let ambiente = sinViaje ? clima() : climaFijado
+        let tinta = LiquidColor.particulaTeñida(hacia: ambiente.particulaRGB, k: c.tinte)
 
         let grupos = (0..<G.corrientes).map { corriente -> GrupoDeOrbe in
             let d = c.desvios[corriente]

@@ -799,13 +799,19 @@ public struct LiquidHoyScreen: View {
         ],
         hero: .demotado(kicker: "PREPARACIÓN",
                         title: "Conociéndote",
-                        subtitle: "Noche 4 de 7 · tu rango se está formando"),
+                        // El motor siembra su base con 4 noches (`Baselines.minNightsSeed`); este
+                        // preview prometía 7. Un preview que promete un número que la app no
+                        // usa es lo que alguien acaba aprobando.
+                        subtitle: "Noche 3 de 4 · tu rango se está formando"),
         carga: .calibrando(status: "CALIBRANDO"),
         metricas: LiquidHoyModel.ejemplo.metricas,
         modulos: LiquidHoyModel.calibrandoModulos,
-        guardian: .init(label: "VIGILANDO", temp: "—", resp: "—", estado: .tranquilo),
+        // `.sinLectura`, no `.tranquilo`: con las DOS lecturas en «—» el builder nunca
+        // devuelve tranquilo — afirmar «dentro de tu patrón» sobre dos guiones es
+        // exactamente la calma falsa que el guardián vino a matar.
+        guardian: .init(label: "VIGILANDO", temp: "—", resp: "—", estado: .sinLectura),
         ambiente: .neutro,
-        calibracion: .init(noche: 4, total: 7)))
+        calibracion: .init(noche: 3, total: 4)))
         .frame(width: 402, height: 874)
         .environment(\.liquidMotionDisabled, true)
 }

@@ -2,11 +2,35 @@ import XCTest
 import SwiftUI
 @testable import StrandDesign
 
-/// Arnés de renders de los estados canónicos del héroe (FER-1045 → FER-10 «El Ecosistema»):
-/// escribe un PNG por estado a /tmp/noop-liquid/ para verificación visual del dueño.
-/// Con `liquidMotionDisabled` el Ecosistema dibuja su cuadro canónico t = 0 (determinista
-/// para ImageRenderer, que no dispara onAppear).
+/// Arnés de renders de los estados de «Hoy»: escribe un PNG por estado a /tmp/noop-liquid/
+/// para verificación visual del dueño. Con `liquidMotionDisabled` el Ecosistema dibuja su
+/// cuadro canónico t = 0 (determinista para ImageRenderer, que no dispara onAppear).
 /// Run: swift test --filter LiquidHoyEstadosRenderTests
+///
+/// ESTE ARCHIVO ES EL MAPA DE ESTADOS. Vive aquí, y no en un documento aparte, porque lo que
+/// enumera es exactamente lo que renderiza: un mapa en markdown se desfasa en silencio, éste
+/// no compila si un estado deja de existir. Cada uno con la condición EXACTA que lo dispara:
+///
+///   0 · orbe dormido      `noSources`: sin datos de Salud Y sin permiso. No pasa por el héroe.
+///   12 · entrada          `LiquidOrbeEntrada`, el overlay de arranque. Tampoco pasa por el héroe.
+///   8 · leyendo tu noche  `prep == nil && verdictPending` (primer pintado, aún cargando).
+///   13 · recién conectado con permiso, `nights == 0` → «Noche 0 de 4».
+///   5 · conociéndote      con permiso, `0 < nights < Baselines.minNightsSeed` (4).
+///   11 · provisional      veredicto real con `nights < minNightsTrust` (14) → línea de confianza.
+///   1 · en rango          `verdict == .full`, anclado a una noche.
+///   2 · hoy ve leve       `verdict == .caution` (un eje fuera, o el par del guardián).
+///   3 · recupera          `verdict == .easy` (≥ 2 ejes fuera, o ámbar + tendencia a la baja).
+///   7 · eclipse           subcaso de 2/3: `sentinel == .corroborated` (temp Y resp juntas).
+///   6 · separado          cualquiera de los anteriores con la fase del Ecosistema en `.separada`.
+///   4 · lectura de día    veredicto SIN noche grabada (`isNightAnchored == false`).
+///   10 · sin lectura hoy  sin veredicto, con permiso, `nights >= 4` (la base ya está sembrada).
+///   9 · sin permiso       `healthConnected == false` Y `noSources == false` (datos sin la marca
+///                         de conectado; p. ej. tras restaurar un respaldo).
+///
+/// FALTA UNO, a propósito, y está levantado como deuda en FER-47: «lectura de día CON el
+/// guardián en pareja». El motor sí baja el veredicto, pero `lecturaDeDia()` ignora el
+/// centinela y afirma «tus señales de día están en tu rango» mientras el guardián dice JUNTAS.
+/// No se renderiza aquí porque renderizarlo sería bendecir una pantalla que se contradice.
 final class LiquidHoyEstadosRenderTests: XCTestCase {
 
     #if os(macOS)
@@ -46,9 +70,10 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
     /// datos: el estado sin ni una fuente (el orbe DORMIDO) y el cuadro final de la entrada
     /// (FER-41).
     ///
-    /// OJO al leer el PNG de la entrada: sale en GRIS, y no es un defecto. `ImageRenderer` no
-    /// ejecuta `.task`, y es ahí donde la entrada lee el veredicto y fija su color — así que en
-    /// el render se queda con el neutro con el que arranca. En el teléfono sí se tiñe.
+    /// La entrada se renderiza con el movimiento desactivado, que es el camino de «Reducir
+    /// movimiento»: ahí el clima se lee en vivo, así que el PNG SÍ sale teñido de su veredicto
+    /// (antes salía gris porque `ImageRenderer` no ejecuta `.task`, donde el camino normal lo
+    /// fija).
     #if os(macOS)
     @MainActor
     func test_renderEstadoVacioYEntrada() throws {
@@ -138,7 +163,9 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
             ],
             hero: .veredicto(title: "Recupera", highlight: "Recupera",
                              highlightTone: LiquidColor.negativo,
-                             subtitle: "Tu pulso en reposo pasó la noche alto.",
+                             // El eje autonómico es una z ORIENTADA: `autonomicAxis` solo produce `.low`,
+                             // así que el builder jamás dice «alto» de esta señal.
+                             subtitle: "Tu señal autonómica quedó abajo de tu rango.",
                              confianza: nil),
             carga: .medida(pos: 78, zone: 3, status: "MUY ALTA", ratio: "1.61", razon: 1.61, state: .atencion),
             metricas: base.metricas,
@@ -185,9 +212,9 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
                             title: "Conociéndote",
                             subtitle: "Noche 3 de 4 · tu rango se está formando"),
             carga: .calibrando(status: "CALIBRANDO"),
-            metricas: base.metricas,
-            modulos: LiquidHoyModel.calibrandoModulos,
-            guardian: .init(label: "VIGILANDO", temp: "—", resp: "—", estado: .tranquilo),
+            metricas: metricasSinHoy(base.metricas),
+            modulos: modulosSinHoy(LiquidHoyModel.calibrandoModulos),
+            guardian: .init(label: "VIGILANDO", temp: "—", resp: "—", estado: .sinLectura),
             heroHint: nil,
             ambiente: .neutro,
             heroPuerta: "Cómo llegué a esto",
@@ -201,7 +228,7 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
             senales: base.senales,
             hero: .veredicto(title: "Hoy ve leve", highlight: "leve",
                              highlightTone: LiquidColor.atencion,
-                             subtitle: "Algo se salió de tu patrón: temperatura y respiración se movieron juntas.",
+                             subtitle: "Tu temperatura y tu respiración se salieron juntas de tu patrón.",
                              confianza: nil),
             carga: .medida(pos: 51.5, zone: 1, status: "EN EQUILIBRIO", ratio: "1.03", razon: 1.03, state: .ok),
             metricas: base.metricas,
@@ -245,6 +272,26 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
             }
         }
 
+
+        /// El tablero cuando NO HAY NADA que mostrar: cero noches en el banco. Distinto de
+        /// `modulosSinHoy`, que solo vacía el sueño porque las demás señales sí pueden venir
+        /// de otro día. Aquí no hay «otro día» del que venir. Sin esto, la pantalla del
+        /// instante siguiente a conceder Salud enseñaba una VFC de 56 ms como lectura real.
+        func modulosSinDatos(_ base: [LiquidHoyModel.Modulo]) -> [LiquidHoyModel.Modulo] {
+            base.map { mod in
+                .init(id: mod.id, kicker: mod.kicker, auroraTones: mod.auroraTones,
+                      auroraPeriod: mod.auroraPeriod, auroraReverse: mod.auroraReverse,
+                      columnas: mod.columnas.map { col in
+                    if case .carga = col.contenido { return col }
+                    return .init(id: col.id, label: col.label, tone: LiquidColor.tinta500,
+                                 alineacion: col.alineacion,
+                                 contenido: .simple(value: "—", unit: "", detail: "", mejora: false),
+                                 destino: col.destino,
+                                 a11yLabel: "\(col.label), sin dato")
+                })
+            }
+        }
+
         // 8 · «Leyendo tu noche…»: el primer pintado, antes de que el refresh complete el
         // veredicto. Decirle «no conozco tu base» a alguien con años de historia sería falso.
         let leyendo = LiquidHoyModel(
@@ -259,9 +306,9 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
             hero: .demotado(kicker: "PREPARACIÓN", title: "Leyendo tu noche…",
                             subtitle: "Un momento."),
             carga: .calibrando(status: "CALIBRANDO"),
-            metricas: base.metricas,
-            modulos: LiquidHoyModel.calibrandoModulos,
-            guardian: .init(label: "VIGILANDO", temp: "—", resp: "—", estado: .tranquilo),
+            metricas: metricasSinHoy(base.metricas),
+            modulos: modulosSinHoy(LiquidHoyModel.calibrandoModulos),
+            guardian: .init(label: "VIGILANDO", temp: "—", resp: "—", estado: .sinLectura),
             heroHint: nil,
             ambiente: .neutro,
             heroPuerta: "Cómo llegué a esto")
@@ -280,12 +327,14 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
             hero: .demotado(kicker: "PREPARACIÓN", title: "Aún no conozco tu base",
                             subtitle: "Conecta Apple Salud en Ajustes y tu veredicto diario aparecerá aquí."),
             carga: .calibrando(status: "CALIBRANDO"),
-            metricas: base.metricas,
-            modulos: LiquidHoyModel.calibrandoModulos,
-            guardian: .init(label: "VIGILANDO", temp: "—", resp: "—", estado: .tranquilo),
+            metricas: metricasSinHoy(base.metricas),
+            modulos: modulosSinHoy(LiquidHoyModel.calibrandoModulos),
+            guardian: .init(label: "VIGILANDO", temp: "—", resp: "—", estado: .sinLectura),
             heroHint: nil,
             ambiente: .neutro,
-            heroPuerta: "Cómo llegué a esto")
+            // Sin permiso la ruta del héroe es `.salud`, y el builder le pone ESA puerta:
+            // la única salida real es conceder el permiso, no explicar un veredicto que no hay.
+            heroPuerta: "Conectar Salud")
 
         // 10 · «Sin lectura de hoy»: la base YA está formada; lo que falta es la lectura de
         // hoy. Sin contador a propósito — decir «se está formando» con los puntos llenos
@@ -327,6 +376,31 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
             ambiente: .bien,
             heroPuerta: "Cómo llegué a esto")
 
+
+        // 13 · RECIÉN CONECTADO: hay permiso pero todavía cero noches en el banco. Es la
+        // pantalla del instante siguiente a conceder Salud, y la única que enseña el contador
+        // en cero. `calibracionConteo` lo clampa a (0, minNightsSeed), así que «Noche 0 de 4»
+        // es literalmente lo que dice la app.
+        let recienConectado = LiquidHoyModel(
+            kicker: base.kicker,
+            dial: .init(night: nil, sol: (start: 6.8, end: 20.3), marker: 10),
+            senales: [
+                .init(id: "autonomico", label: "EN REPOSO", caption: "SIN DATOS",
+                      progress: nil, icon: .ondaSenal, state: .ok),
+                .init(id: "sueno", label: "SUEÑO", caption: "SIN DATOS",
+                      progress: nil, icon: .lunaSenal, state: .ok),
+            ],
+            hero: .demotado(kicker: "PREPARACIÓN", title: "Conociéndote",
+                            subtitle: "Noche 0 de 4 · tu rango se está formando"),
+            carga: .calibrando(status: "CALIBRANDO"),
+            metricas: metricasSinHoy(base.metricas),
+            modulos: modulosSinDatos(LiquidHoyModel.calibrandoModulos),
+            guardian: .init(label: "VIGILANDO", temp: "—", resp: "—", estado: .sinLectura),
+            heroHint: nil,
+            ambiente: .neutro,
+            heroPuerta: "Cómo llegué a esto",
+            calibracion: .init(noche: 0, total: 4))
+
         return [("1_verde", base, nil),
                 ("2_ambar", ambar, nil),
                 ("3_rojo", rojo, nil),
@@ -337,6 +411,7 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
                 ("8_leyendo", leyendo, nil),
                 ("9_sin_permiso", sinPermiso, nil),
                 ("10_sin_lectura", sinLectura, nil),
-                ("11_provisional", provisional, nil)]
+                ("11_provisional", provisional, nil),
+                ("13_recien_conectado", recienConectado, nil)]
     }()
 }
