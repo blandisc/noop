@@ -196,8 +196,8 @@ extension MetricInfo {
             bands: bands,
             note: "Measured overnight from your Apple Watch's heart rate; when it isn't worn to sleep, Cénit uses Apple Health's resting heart rate instead.",
             levelsMetric: .restingHR,
-            levelsTodayValue: value.map(Double.init),
-            bandsCaption: "Population reference, not your verdict. These ranges are a rough fitness guide and shift with age and sex; your daily read compares you against your own baseline, not against these bands."
+            bandsCaption: "Population reference, not your verdict. These ranges are a rough fitness guide and shift with age and sex; your daily read compares you against your own baseline, not against these bands.",
+            levelsTodayValue: value.map(Double.init)
         )
     }
 
