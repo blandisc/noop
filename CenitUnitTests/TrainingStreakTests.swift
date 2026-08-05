@@ -37,7 +37,10 @@ final class TrainingStreakTests: XCTestCase {
             session(daysAgo: 2, hour: 23, now: now, cal: cal, id: "wed-late"),  // 23:30 local still Wednesday
             session(daysAgo: 0, hour: 7, now: now, cal: cal, id: "fri"),
         ]
-        let streak = TrainingStreak.streak(sessions: sessions, split: split, now: now)
+        // El calendario se INYECTA: las fechas se arman en CDMX, así que el bucketeo por día local
+        // tiene que usar ese mismo calendario. Sin esto la prueba pasaba en CDMX y fallaba en UTC
+        // (la sesión de 19:30 cae al día siguiente y parte la racha) — lo cazó CI (FER-50).
+        let streak = TrainingStreak.streak(sessions: sessions, split: split, now: now, calendar: cal)
         XCTAssertGreaterThanOrEqual(streak, 3, "Mon+Wed+Fri fulfilled — rest days must not cut the run")
     }
 
@@ -52,7 +55,7 @@ final class TrainingStreakTests: XCTestCase {
             session(daysAgo: 4, hour: 19, now: now, cal: cal, id: "mon"),
             session(daysAgo: 0, hour: 7, now: now, cal: cal, id: "fri"),
         ]
-        let streak = TrainingStreak.streak(sessions: sessions, split: split, now: now)
+        let streak = TrainingStreak.streak(sessions: sessions, split: split, now: now, calendar: cal)
         // La racha cuenta DÍAS cumplidos, no días de entreno: el jueves es descanso del plan y cuenta
         // igual que el viernes entrenado (es la misma regla que fija `testStreak…RestDaysRideThrough`,
         // y está documentada en `WeeklySplit.adherenceStreak`). Así que el miércoles fallado corta en
@@ -75,9 +78,9 @@ final class TrainingStreakTests: XCTestCase {
     /// como «descanso cumplido», y el tope de la ventana se presentaba como logro a quien nunca
     /// configuró un plan.
     func testEmptySplitHasNoStreak() {
-        XCTAssertEqual(TrainingStreak.streak(sessions: [], split: [:], now: Date()), 0)
+        XCTAssertEqual(TrainingStreak.streak(sessions: [], split: [:], now: Date(), calendar: cal), 0)
         // Y tampoco aparece por tener sesiones sueltas sin plan que las respalde.
         let suelta = session(daysAgo: 0, hour: 7, now: Date(), cal: cal, id: "suelta")
-        XCTAssertEqual(TrainingStreak.streak(sessions: [suelta], split: [:], now: Date()), 0)
+        XCTAssertEqual(TrainingStreak.streak(sessions: [suelta], split: [:], now: Date(), calendar: cal), 0)
     }
 }
