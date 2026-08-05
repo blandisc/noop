@@ -74,6 +74,11 @@ enum LiquidHoyBuilder {
         /// dice que está leyendo, NO que no conoce tu base — a alguien con años de historia esa frase
         /// sería falsa, y aparecería en cada arranque en frío.
         var verdictPending: Bool = false
+        /// La noche que esta pantalla llama «hoy» (`Repository.localDayKey`). El guardián solo
+        /// afirma patrón cuando la última noche que el centinela juzgó ES esta — sin coincidencia
+        /// (o sin sello) vigila en `.incompleto`, para no mezclar valores de hoy con un juicio de
+        /// otra noche (FER-42).
+        var nightKey: String? = nil
         /// Ventana de la sesión de sueño de anoche en horas locales 0–24 (nil = sin sesión).
         var night: (start: Double, end: Double)?
         /// Amanecer/atardecer locales en horas reloj (SolarClock; nil = caso polar).
@@ -103,7 +108,8 @@ enum LiquidHoyBuilder {
                                               verdictPending: i.verdictPending)
         let ms = metricas(i)
         let cargaM = carga(i.trainingLoad, locale: i.locale)
-        let guardianM = guardian(prep: i.preparedness, thermalDeviation: i.thermalDeviation, resp: i.resp)
+        let guardianM = guardian(prep: i.preparedness, thermalDeviation: i.thermalDeviation,
+                                 resp: i.resp, nightKey: i.nightKey)
         let model = LiquidHoyModel(
             kicker: kicker(now: i.now, calendar: i.calendar, locale: i.locale),
             dial: .init(night: i.night, sol: i.sol,
@@ -798,8 +804,12 @@ enum LiquidHoyBuilder {
     /// - `.conociendote`: aproximación con `prep.maturity == .calibrating` (madurez de la
     ///   base autonómica, la señal pública más limpia; no hay contador de noches de temp
     ///   expuesto aparte). Reportado en el PR.
+    /// - FER-42 · `nightKey` (sin default, a propósito): la noche que la pantalla llama «hoy».
+    ///   Todo estado que afirma patrón (`.tranquilo/.tempFuera/.respFuera/.juntas` y el
+    ///   `.conociendote` que lee la última noche) exige que la última noche juzgada sea ESA;
+    ///   si no coincide (o no hay sello), el guardián vigila en `.incompleto`.
     static func guardian(prep: Preparedness.Read?, thermalDeviation: Double?,
-                         resp: Lectura?) -> LiquidHoyModel.Guardian? {
+                         resp: Lectura?, nightKey: String?) -> LiquidHoyModel.Guardian? {
         let tempStr = thermalDeviation.map { String(format: "%+.1f°", $0) } ?? "—"
         let respStr = resp.map { "\(Int($0.value.rounded())) \(String(localized: "rpm"))" } ?? "—"
 
@@ -831,6 +841,21 @@ enum LiquidHoyBuilder {
                          estado: .incompleto, a11y: a11y)
         }
 
+        // FER-42 · Sello de noche: el juicio del centinela es de UNA noche concreta
+        // (`sentinelHistory.last`). Si esa noche no es la que esta pantalla llama «hoy»,
+        // los valores mostrados (de hoy) y el juicio (de otra noche) serían de noches
+        // distintas — pasaba con un `prep` viejo tras medianoche, antes del primer
+        // recálculo del día. Sin sello que verificar (nightKey nil) o sin ninguna noche
+        // juzgada, mismo trato: vigilar sin afirmar patrón. En el caso feliz cuadra por
+        // construcción: `Preparedness.evaluate` exige `ordered.last.day == asOf`.
+        guard let nightKey, let ultimaNoche = prep?.sentinelHistory.last,
+              ultimaNoche.day == nightKey else {
+            let label = String(localized: "Watching")
+            let a11y = "\(tempStr), \(respStr)"
+            return .init(label: label, temp: tempStr, resp: respStr,
+                         estado: .incompleto, a11y: a11y)
+        }
+
         // «Conociéndote»: el guardián solo puede empujar cuando las DOS señales se salen
         // JUNTAS, y la respiración es la única de las dos que necesita una base tuya para
         // poder juzgarse (el corte de temperatura es absoluto). Mientras el motor no pueda
@@ -842,13 +867,9 @@ enum LiquidHoyBuilder {
         // «juntas» real (el chequeo retorna antes de calcular las señales) y llenaba una barra
         // que contaba noches de TEMPERATURA mientras el estado lo decidía otra cosa: una barra
         // que podía leer «14 de 14» y seguir diciendo «Conociéndote». (FER-33, gate /qa D3.)
-        let respSinBase: Bool = {
-            if let ultima = prep?.sentinelHistory.last {
-                return !ultima.respJudged && !ultima.respMissing
-            }
-            // Sin historial (ruta de baja señal) no hay nada mejor que decir.
-            return prep?.maturity == .calibrating
-        }()
+        // (El sello de arriba garantiza `ultimaNoche`; el fallback por madurez que vivía aquí
+        // murió con él — sin noche juzgada ya no se llega a este punto.)
+        let respSinBase = !ultimaNoche.respJudged && !ultimaNoche.respMissing
         if respSinBase {
             let label = String(localized: "Watching")
             let palabra = String(localized: "hero.title.calibrando",
@@ -862,7 +883,7 @@ enum LiquidHoyBuilder {
         // La respiración se marca con el juicio del MOTOR, no re-derivando el corte aquí: si
         // no la pudo juzgar, «no marcada» no es «en rango». Es la misma regla que ya respeta
         // el dominó, y la que hacía falta para que el héroe no la contradijera. (gate /qa D2.)
-        let respHigh = prep?.sentinelHistory.last.map { $0.respOut } ?? false
+        let respHigh = ultimaNoche.respOut
 
         let estado: LiquidHoyModel.Guardian.Estado
         switch (tempHigh, respHigh) {

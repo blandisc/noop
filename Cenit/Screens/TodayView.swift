@@ -415,7 +415,7 @@ struct TodayView: View {
                         : nil,
                     intradayCurveLoader: spec.blocks.contains(.intradayCurve) ? { hrPoints } : nil,
                     hrMax: Double(model.profile.hrMax),
-                    restingHR: resolveMeasured { $0.restingHr.map(Double.init) }?.value,
+                    restingHR: resolveMeasured(todayOnly: true) { $0.restingHr.map(Double.init) }?.value,
                     todayKey: Repository.localDayKey(Date())
                 )
                 .recEntranceGate()
@@ -455,29 +455,29 @@ struct TodayView: View {
         let appleCapable = ["sleep", "hrv", "rhr", "spo2", "steps",
                             "skin_temp", "resp_rate"].contains(info.id)
         let notConnected = health.auth != .authorized && health.auth != .unavailable
-        // ¿El valor que se muestra vino de Apple Salud (no del strap)? MISMA resolución que el tile de Hoy,
-        // por métrica: HRV/FCrep/SpO₂ usan `latestFromDisplay` (el último de la gráfica, FER-546) y Sueño
-        // `resolveMeasured(todayOnly:)` — así el badge coincide con el valor mostrado. Los pasos son
-        // Apple-only. Strap-only (esfuerzo, FC, recuperación, estrés) → false. Sólo se badgea cuando hay valor.
+        // ¿El valor que se muestra vino de Apple Salud (no del strap)? MISMA resolución que el tile de Hoy:
+        // TODAS las vitales se resuelven `resolveMeasured(todayOnly:)` (FER-42: un solo resolutor, solo hoy)
+        // — así el badge coincide con el valor mostrado. Los pasos son Apple-only. Strap-only (esfuerzo,
+        // FC, recuperación, estrés) → false. Sólo se badgea cuando hay valor.
         let fromApple: Bool = {
             switch info.id {
             // Un día sin conteo real de Apple se estima en el teléfono, y el tile ya lo marca
             // «est.». La hoja del MISMO dato afirmaba Apple sin mirar: dos superficies del
             // mismo número diciendo procedencias distintas. (Revisión Grok r3 · I3.)
             case "steps": return !pasosEstimadosHoy
-            case "hrv":   return latestFromDisplay { $0.avgHrv }?.fromApple == true
-            case "rhr":   return latestFromDisplay { $0.restingHr.map(Double.init) }?.fromApple == true
+            case "hrv":   return resolveMeasured(todayOnly: true) { $0.avgHrv }?.fromApple == true
+            case "rhr":   return resolveMeasured(todayOnly: true) { $0.restingHr.map(Double.init) }?.fromApple == true
             // Sueño es day-scoped (todayOnly, FER-341): la tarjeta muestra SÓLO el valor de hoy, así que el
             // badge de fuente debe resolverse igual. Sin todayOnly caía al strap de AYER (no-Apple) y el
             // corazón desaparecía dentro de la tarjeta aunque el número mostrado SÍ venía de Apple Salud.
             case "sleep": return resolveMeasured(todayOnly: true) { $0.totalSleepMin }?.fromApple == true
-            case "spo2":  return latestFromDisplay { $0.spo2Pct }?.fromApple == true
+            case "spo2":  return resolveMeasured(todayOnly: true) { $0.spo2Pct }?.fromApple == true
             // Temp. de piel y respiración caían al `default` y la hoja se quedaba SIN sello
             // aunque el dato viniera de Apple Salud. Se resuelven igual que sus tiles
             // (:1519 y :1529), nunca con un `true` fijo. Los ids son los de `MetricInfo`
             // («skin_temp» / «resp_rate»), NO los de la superficie Liquid («skintemp» / «resp»).
-            case "skin_temp": return latestFromDisplay { $0.skinTempDevC }?.fromApple == true
-            case "resp_rate": return latestFromDisplay { $0.respRateBpm }?.fromApple == true
+            case "skin_temp": return resolveMeasured(todayOnly: true) { $0.skinTempDevC }?.fromApple == true
+            case "resp_rate": return resolveMeasured(todayOnly: true) { $0.respRateBpm }?.fromApple == true
             default:      return false
             }
         }()
@@ -505,6 +505,8 @@ struct TodayView: View {
     /// Today's resting HR for the «mapa del día» (resolved, with the engine's default as the floor) — the
     /// one input the shared `StressDayMapPresenter` can't derive itself. Same resolution Cuerpo uses. (FER-452)
     private var stressRestingHR: Double {
+        // FER-42: ruta de MOTOR, no de display — conserva a propósito la ventana hoy/ayer
+        // (un mapa de estrés sin FC en reposo fresca degrada peor que usar la de ayer).
         resolveMeasured { $0.restingHr.map(Double.init) }?.value ?? StrainScorer.defaultRestingHR
     }
 
@@ -549,21 +551,21 @@ struct TodayView: View {
                 stressDetail = StressDetailItem(model: stress)
             }
         case "hrv":
-            present = { metricSpec = .hrv(resolveMeasured { $0.avgHrv }?.value) }
+            present = { metricSpec = .hrv(resolveMeasured(todayOnly: true) { $0.avgHrv }?.value) }
         case "rhr":
-            present = { metricSpec = .restingHR(resolveMeasured { $0.restingHr.map(Double.init) }
+            present = { metricSpec = .restingHR(resolveMeasured(todayOnly: true) { $0.restingHr.map(Double.init) }
                 .map { Int($0.value.rounded()) }) }
         case "heart_rate":
             present = { metricSpec = .heartRate(hrTodayAvg) }
         case "steps":
             present = { metricSpec = .steps(freshSteps) }
         case "spo2":
-            present = { metricSpec = .spo2(resolveMeasured { $0.spo2Pct }?.value) }
+            present = { metricSpec = .spo2(resolveMeasured(todayOnly: true) { $0.spo2Pct }?.value) }
         case "skin_temp":
             // Skin temp has its own rich Detalle (`SkinTempDetailScreen`, the SAME Cuerpo opens), not the
             // generic `MetricDetailScreen`, so «Ver más» presents its dedicated item. (FER-763)
             present = {
-                let r = resolveMeasured { $0.skinTempDevC }
+                let r = resolveMeasured(todayOnly: true) { $0.skinTempDevC }
                 skinTempDetail = SkinTempDetailItem(model: SkinTempDetailModel.build(
                     latest: r?.value,
                     series: repo.displayDays.compactMap { row in row.skinTempDevC.map { (row.day, $0) } }
@@ -1058,22 +1060,24 @@ struct TodayView: View {
         // debe decir que está leyendo — no «no conozco tu base», que a alguien con años de historia
         // es falso y saldría en CADA arranque en frío.
         inputs.verdictPending = repo.todayPreparedness == nil && !repo.fullyLoaded
-        inputs.thermalDeviation = latestFromDisplay({ $0.skinTempDevC })?.value
+        // FER-42: sello de noche del guardián — su juicio solo vale para la noche actual.
+        inputs.nightKey = Repository.localDayKey(Date())
+        inputs.thermalDeviation = resolveMeasured(todayOnly: true, { $0.skinTempDevC })?.value
         inputs.trainingLoad = trainingLoad
         inputs.sleep = resolveMeasured(todayOnly: true, { $0.totalSleepMin })
             .map { .init($0.value, fromApple: $0.fromApple) }
-        inputs.hrv = latestFromDisplay({ $0.avgHrv })
+        inputs.hrv = resolveMeasured(todayOnly: true, { $0.avgHrv })
             .map { .init($0.value, fromApple: $0.fromApple) }
-        inputs.rhr = latestFromDisplay({ $0.restingHr.map(Double.init) })
+        inputs.rhr = resolveMeasured(todayOnly: true, { $0.restingHr.map(Double.init) })
             .map { .init($0.value, fromApple: $0.fromApple) }
         inputs.strain = model.displayedDayStrain
         inputs.strainEstimated = repo.isStrainEstimated(repo.today?.day ?? Repository.localDayKey(Date()))
         let steps = liquidSteps()
         inputs.steps = steps.value
         inputs.stepsEstimated = steps.estimated
-        inputs.skinTemp = latestFromDisplay({ $0.skinTempDevC })
+        inputs.skinTemp = resolveMeasured(todayOnly: true, { $0.skinTempDevC })
             .map { .init($0.value, fromApple: $0.fromApple) }
-        inputs.resp = latestFromDisplay({ $0.respRateBpm })
+        inputs.resp = resolveMeasured(todayOnly: true, { $0.respRateBpm })
             .map { .init($0.value, fromApple: $0.fromApple) }
         inputs.stress = stress?.score
         let base = baselineDays()
@@ -1109,18 +1113,18 @@ struct TodayView: View {
             metricDetail = .sleep(resolveMeasured(todayOnly: true) { $0.totalSleepMin }
                 .map { Int($0.value.rounded()) })
         case "hrv":
-            metricDetail = .hrv(latestFromDisplay { $0.avgHrv }?.value)
+            metricDetail = .hrv(resolveMeasured(todayOnly: true) { $0.avgHrv }?.value)
         case "rhr":
-            metricDetail = .restingHR(latestFromDisplay({ $0.restingHr.map(Double.init) })
+            metricDetail = .restingHR(resolveMeasured(todayOnly: true) { $0.restingHr.map(Double.init) }
                 .map { Int($0.value.rounded()) })
         case "strain":
             metricDetail = .strain(model.displayedDayStrain)
         case "steps":
             metricDetail = .steps(liquidSteps().raw)
         case "skintemp":
-            metricDetail = .skinTemp(latestFromDisplay({ $0.skinTempDevC })?.value)
+            metricDetail = .skinTemp(resolveMeasured(todayOnly: true) { $0.skinTempDevC }?.value)
         case "resp":
-            metricDetail = .respiratory(latestFromDisplay({ $0.respRateBpm })?.value)
+            metricDetail = .respiratory(resolveMeasured(todayOnly: true) { $0.respRateBpm }?.value)
         case "stress":
             metricDetail = .stress(stress?.score)
         default:
@@ -1139,7 +1143,7 @@ struct TodayView: View {
             metricDetail = .sleep(resolveMeasured(todayOnly: true) { $0.totalSleepMin }
                 .map { Int($0.value.rounded()) })
         case "termico":
-            metricDetail = .skinTemp(latestFromDisplay({ $0.skinTempDevC })?.value)
+            metricDetail = .skinTemp(resolveMeasured(todayOnly: true) { $0.skinTempDevC }?.value)
         default:
             break
         }
@@ -1423,24 +1427,11 @@ struct TodayView: View {
     /// Last night's companion vitals (respiration + resting HR) for the detail's "Vitales de la noche".
     private func loadNightVitals() async -> MetricDetailScreen.NightVitals {
         MetricDetailScreen.NightVitals(
-            respiration: resolveMeasured { $0.respRateBpm }?.value,
-            restingHR: resolveMeasured { $0.restingHr.map(Double.init) }?.value)
+            respiration: resolveMeasured(todayOnly: true) { $0.respRateBpm }?.value,
+            restingHR: resolveMeasured(todayOnly: true) { $0.restingHr.map(Double.init) }?.value)
     }
 
     // MARK: - Derived text
-
-    /// FER-546: the value a measured tile (HRV / resting HR / SpO₂) shows MUST match the LAST point of its
-    /// own 14-day chart — both read `repo.displayDays` (the layered Apple-base + strap source `loadTrend`
-    /// plots) — so the big number and the graph never disagree. Returns the most recent `displayDays` row
-    /// within the chart's 14-day window that has a value, plus whether that day is Apple-sourced (so the tile
-    /// badges it right). Distinct from `resolveMeasured` (strap-first, capped at yesterday), which still feeds
-    /// the recovery / stress path — `latestFromDisplay` only governs the measured tiles + their summary sheet.
-    private func latestFromDisplay(_ pick: (DailyMetric) -> Double?) -> (value: Double, fromApple: Bool)? {
-        let cutoff = Repository.localDayKey(Calendar.current.date(byAdding: .day, value: -13, to: Date()) ?? Date())
-        let candidates = repo.displayDays.filter { $0.day >= cutoff && pick($0) != nil }
-        guard let row = candidates.max(by: { $0.day < $1.day }), let v = pick(row) else { return nil }
-        return (v, repo.appleHealthDays.contains(row.day))
-    }
 
     /// Resolve a measured signal (HRV / sleep / resting HR / SpO₂) for the Today tiles. Today's row
     /// wins; otherwise the most recent value within the freshness window (today/yesterday) so a fresh
@@ -1448,8 +1439,11 @@ struct TodayView: View {
     /// a "Today" header would misrepresent it (same spirit as the #23/#49 trailing-window fixes).
     /// `fromApple` flags Apple-sourced values so the row badges them instead of passing them off as a
     /// live strap reading. Returns nil when nothing fresh exists → the row placeholders. (FER-62 follow-up)
-    /// `todayOnly` drops the yesterday fallback: a day-scoped tile (Sueño) shows ONLY today's value, so it
-    /// never passes yesterday's off as today's at the midnight boundary (FER-341).
+    /// `todayOnly` drops the yesterday fallback: a day-scoped surface shows ONLY today's value, so it
+    /// never passes yesterday's off as today's at the midnight boundary (FER-341). FER-42: TODA superficie
+    /// de display (tiles, hojas, «Ver más», badges de origen) resuelve `todayOnly: true` — este es el ÚNICO
+    /// resolutor de vitales de Hoy (adiós `latestFromDisplay`, que enseñaba hasta 14 días viejos como «hoy»);
+    /// la ventana hoy/ayer queda solo para rutas de motor (`stressRestingHR`).
     private func resolveMeasured(todayOnly: Bool = false,
                                  _ pick: (DailyMetric) -> Double?) -> (value: Double, fromApple: Bool)? {
         let todayKey = Repository.localDayKey(Date())
@@ -1479,10 +1473,10 @@ struct TodayView: View {
     /// (intraday, band-only) and Steps stay unsealed.
     private func todayVitalFromApple(_ key: String) -> Bool {
         switch key {
-        case "hrv":       return resolveMeasured { $0.avgHrv }?.fromApple == true
-        case "rhr":       return resolveMeasured { $0.restingHr.map(Double.init) }?.fromApple == true
-        case "spo2":      return resolveMeasured { $0.spo2Pct }?.fromApple == true
-        case "resp_rate": return resolveMeasured { $0.respRateBpm }?.fromApple == true
+        case "hrv":       return resolveMeasured(todayOnly: true) { $0.avgHrv }?.fromApple == true
+        case "rhr":       return resolveMeasured(todayOnly: true) { $0.restingHr.map(Double.init) }?.fromApple == true
+        case "spo2":      return resolveMeasured(todayOnly: true) { $0.spo2Pct }?.fromApple == true
+        case "resp_rate": return resolveMeasured(todayOnly: true) { $0.respRateBpm }?.fromApple == true
         default:          return false
         }
     }
