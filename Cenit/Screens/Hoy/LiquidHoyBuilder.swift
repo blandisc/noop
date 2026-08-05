@@ -1061,9 +1061,13 @@ enum LiquidHoyBuilder {
                 ? String(localized: "learning your base")
                 : String(localized: "resting HR · against your base")
         } else {
+            // FER-44 (gate /cso): el sueño se juzga contra el rango RECOMENDADO de salud
+            // (piso poblacional ~7h, Hirshkowitz 2015), NO contra base personal — usar base
+            // personal de sueño-logrado normalizaría la privación crónica (Van Dongen 2003).
+            // El copy lo dice como GUÍA, no como «mínimo» arbitrario de la app.
             sub = estado.hasData
-                ? String(localized: "last night · against a fixed minimum")
-                : String(localized: "against a fixed minimum")
+                ? String(localized: "last night · vs. the recommended range")
+                : String(localized: "vs. the recommended range")
         }
 
         let palabra: String
