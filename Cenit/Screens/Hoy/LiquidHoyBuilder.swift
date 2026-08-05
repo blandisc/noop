@@ -86,7 +86,6 @@ enum LiquidHoyBuilder {
     /// A dónde navega el tap del héroe — el MISMO destino que hoy (paridad).
     enum HeroRoute: Equatable {
         case autonomic   // veredicto y lectura de día → hoja autonómica
-        case sleep       // fallback de sueño → detalle de sueño
         case salud       // sin permiso de Salud: la puerta abre el flujo de conexión (FER-10)
     }
 
@@ -98,7 +97,7 @@ enum LiquidHoyBuilder {
     // MARK: Build
 
     static func build(_ i: Inputs) -> Output {
-        let (hero, route, calibracion) = hero(prep: i.preparedness, sleepMin: i.sleep?.value,
+        let (hero, route, calibracion) = hero(prep: i.preparedness,
                                               nights: i.preparedness?.autonomicNights ?? 0,
                                               healthConnected: i.healthConnected,
                                               verdictPending: i.verdictPending)
@@ -565,7 +564,7 @@ enum LiquidHoyBuilder {
 
     // MARK: Héroe (tabla canónica — port literal de `TodayView.heroBlock`)
 
-    static func hero(prep: Preparedness.Read?, sleepMin: Double?, nights: Int,
+    static func hero(prep: Preparedness.Read?, nights: Int,
                      healthConnected: Bool = true, verdictPending: Bool = false)
         -> (LiquidHoyModel.Hero, HeroRoute, LiquidHoyModel.Calibracion?) {
         // Todavía calculando (primer pintado): el veredicto solo sale del refresh completo. Decirle
@@ -586,7 +585,7 @@ enum LiquidHoyBuilder {
         // Decisión del dueño (sesión /inject 2026-07-22): sin veredicto NO se disfraza el
         // héroe con otro dato. FER-10: con Salud conectada, el estado sin-base es la
         // ACRECIÓN del Ecosistema («Conociéndote · Noche n de m»).
-        let heroFallback = suenoFallback(sleepMin: sleepMin, nights: nights,
+        let heroFallback = suenoFallback(nights: nights,
                                          healthConnected: healthConnected)
         let calibracion: LiquidHoyModel.Calibracion? = healthConnected
             ? {
@@ -682,13 +681,9 @@ enum LiquidHoyBuilder {
 
     /// Renglón 5 (`lowSignal` ∨ `prep == nil`): «aún sin datos suficientes» — SIEMPRE,
     /// haya o no sueño grabado (decisión del dueño: el héroe de sueño de anoche se retiró;
-    /// el sueño vive en su tile y su detalle). El parámetro `sleepMin` queda ignorado y se
-    /// limpia de la firma en el cierre de la sesión (quitar parámetros no es inyectable).
-    // TODO(/inject cierre): mover este copy al String Catalog (clave EN + es-MX) y limpiar
-    // la firma + el caso `.sleep` de HeroRoute.
-    private static func suenoFallback(sleepMin: Double?, nights: Int,
+    /// el sueño vive en su tile y su detalle).
+    private static func suenoFallback(nights: Int,
                                       healthConnected: Bool) -> LiquidHoyModel.Hero {
-        _ = sleepMin
         // Sin permiso de Salud, «duerme con tu Watch» es una instrucción imposible: el
         // único camino real es conceder el permiso (revote /inject).
         guard healthConnected else {
