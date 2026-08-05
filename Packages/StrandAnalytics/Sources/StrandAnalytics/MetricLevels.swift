@@ -135,7 +135,12 @@ public enum MetricLevels {
                 Level(key: "extreme",   lower: 18,  upper: nil),
             ]
         case .restingHR:
-            // Rango de atleta <50 · Baja 50–60 · Típica 60–80 · Alta ≥80.
+            // Rango de atleta <50 · Baja 50–60 · Típica 60–80 · Alta ≥80. Escalera POBLACIONAL (el
+            // veredicto compara contra tu propia base, no contra esto): la AHA fija el normal adulto
+            // en 60–100 lpm y los atletas cerca de 40; Quer et al. 2020 (PLOS ONE 15(2):e0227709,
+            // n=92,457, wearable de muñeca) sitúa el 95% central en 50–80 lpm (hombres) y 53–82
+            // (mujeres), y reporta que la FC en reposo cambia con edad y sexo. Por eso el nivel alto
+            // se llama «Alta» y no «Elevada»: >80 sigue dentro del normal clínico (FER-43, gate /cso).
             return [
                 Level(key: "rhrAthlete", lower: nil, upper: 50),
                 Level(key: "rhrLow",     lower: 50,  upper: 60),

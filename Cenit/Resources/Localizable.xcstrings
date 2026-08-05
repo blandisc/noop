@@ -256,70 +256,70 @@
         }
       }
     },
-    "reading.vsBase.rhr.rhrAthlete": {
+    "reading.vsPopulation.rhr.rhrAthlete": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Very low, athlete range."
+            "value": "Below the typical range, common in athletes."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Muy baja, rango de atleta."
+            "value": "Por debajo del rango típico, común en atletas."
           }
         }
       }
     },
-    "reading.vsBase.rhr.rhrLow": {
+    "reading.vsPopulation.rhr.rhrLow": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Low, a strong sign."
+            "value": "At the low end of the typical range."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Baja, buena señal."
+            "value": "En la parte baja del rango típico."
           }
         }
       }
     },
-    "reading.vsBase.rhr.rhrTypical": {
+    "reading.vsPopulation.rhr.rhrTypical": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "In a normal range."
+            "value": "In the typical range."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "En un rango normal."
+            "value": "En el rango típico."
           }
         }
       }
     },
-    "reading.vsBase.rhr.rhrHigher": {
+    "reading.vsPopulation.rhr.rhrHigher": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Above your usual, worth a look."
+            "value": "Above the typical range."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Por encima de lo usual, vale la pena mirarlo."
+            "value": "Por encima del rango típico."
           }
         }
       }
@@ -51821,7 +51821,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu frecuencia cardiaca en reposo es qué tanto trabaja tu corazón cuando tu cuerpo está en completo reposo. Quien está en mejor forma suele tenerla más baja, aunque también influyen la edad, la genética y algunos medicamentos. Cénit la compara con tu propia norma como parte de tu veredicto del día: una subida por encima de lo habitual suele aparecer cuando estás agotado, dormiste mal o tu cuerpo está peleando algo. Por sí sola es una señal ruidosa, así que pesa más junto con tus demás señales."
+            "value": "Tu frecuencia cardiaca en reposo es qué tanto trabaja tu corazón cuando tu cuerpo está en completo reposo. Quien está en mejor forma suele tenerla más baja, aunque también influyen la edad, la genética y algunos medicamentos. Cénit la compara con tu propia norma como parte de tu veredicto del día: una subida por encima de lo habitual suele aparecer cuando el cuerpo viene cansado, dormiste mal o está peleando algo. Por sí sola es una señal ruidosa, así que pesa más junto con tus demás señales."
           }
         }
       }

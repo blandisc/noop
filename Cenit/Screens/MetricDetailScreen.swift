@@ -381,8 +381,13 @@ struct MetricDetailScreen: View {
             deltaColor: pct.map { trendDeltaColor($0) },
             countUnit: "n",
             anchorMedia: anchorMedia,
+            // FER-43 (gate /cso): el detalle rico dibuja las MISMAS bandas poblacionales que la hoja,
+            // así que hereda su rótulo. Sin esto, «Ver más» presentaba la escalera de población sin
+            // decir que no es el criterio del veredicto.
             anchorRangos: bands.isEmpty ? nil
-                : String(localized: "How many days of the period fell in each band. Tap one to see its days on the chart."),
+                : [String(localized: "How many days of the period fell in each band. Tap one to see its days on the chart."),
+                   spec.info.bandsCaption.map { String(localized: $0) }]
+                    .compactMap { $0 }.joined(separator: " "),
             scrub: true,
             labels: labels,
             fmt: { fmt($0) },

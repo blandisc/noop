@@ -231,6 +231,20 @@ final class MetricLevelsTests: XCTestCase {
         XCTAssertEqual(names, ["Depleted", "Low", "Moderate", "High", "Peak"])
     }
 
+    /// FER-43: los 4 niveles de FC en reposo NO devuelven inglés plano — devuelven su CLAVE de
+    /// catálogo, porque el es necesita género («Baja/Típica/Alta», la frecuencia) y las claves
+    /// compartidas «normal»/«elevated» siguen sirviendo a respiración, SpO₂ y temperatura de piel.
+    /// Sin esta prueba, un regreso a «Athlete»/«Normal» dejaría el test de umbrales verde y rompería
+    /// el género en español sin CI en rojo (hallazgo adversarial de Grok).
+    func testRestingHRLevelNamesResolveThroughTheCatalog() {
+        let names = MetricLevels.levels(for: .restingHR).map { MetricLevels.name(for: $0.key) }
+        XCTAssertEqual(names, ["level.rhr.athlete", "level.rhr.low",
+                               "level.rhr.typical", "level.rhr.higher"])
+        // Las claves compartidas NO se movieron: siguen dando su etiqueta en inglés.
+        XCTAssertEqual(MetricLevels.name(for: "normal"), "Normal")
+        XCTAssertEqual(MetricLevels.name(for: "elevated"), "Elevated")
+    }
+
     /// Unknown keys echo back verbatim (the old per-screen `default` behaviour), so a new level key
     /// degrades to its raw key instead of crashing or vanishing.
     func testUnknownKeyEchoesBack() {
