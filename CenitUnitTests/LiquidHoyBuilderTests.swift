@@ -229,7 +229,7 @@ final class LiquidHoyBuilderTests: XCTestCase {
     func test_guardian_tranquilo_ceroColor() {
         let g = LiquidHoyBuilder.guardian(
             prep: readConResp(thermal: .inRange, respOrientedZ: 0.3),
-            thermalDeviation: 0.1, resp: .init(14))
+            thermalDeviation: 0.1, resp: .init(14), nightKey: "2026-08-03")
         XCTAssertEqual(g?.estado, .tranquilo)
         XCTAssertEqual(g?.temp, "+0.1°")
         XCTAssertEqual(g?.resp, "14 rpm")
@@ -240,14 +240,14 @@ final class LiquidHoyBuilderTests: XCTestCase {
         // NO deja votar al centinela con una sola señal (el veredicto se decide aparte).
         let soloTemp = LiquidHoyBuilder.guardian(
             prep: readConResp(thermal: .high, respOrientedZ: 0.0),
-            thermalDeviation: 0.9, resp: .init(14))
+            thermalDeviation: 0.9, resp: .init(14), nightKey: "2026-08-03")
         XCTAssertEqual(soloTemp?.estado, .tempFuera)
 
         // Respiración alta (z orientada ≤ −respBadZ) pero temp en rango → solo resp fuera.
         let badZ = Preparedness.Config.default.respBadZ
         let soloResp = LiquidHoyBuilder.guardian(
             prep: readConResp(thermal: .inRange, respOrientedZ: -badZ),
-            thermalDeviation: 0.1, resp: .init(19))
+            thermalDeviation: 0.1, resp: .init(19), nightKey: "2026-08-03")
         XCTAssertEqual(soloResp?.estado, .respFuera)
     }
 
@@ -255,7 +255,7 @@ final class LiquidHoyBuilderTests: XCTestCase {
         let badZ = Preparedness.Config.default.respBadZ
         let g = LiquidHoyBuilder.guardian(
             prep: readConResp(thermal: .high, respOrientedZ: -badZ - 0.1),
-            thermalDeviation: 0.9, resp: .init(19))
+            thermalDeviation: 0.9, resp: .init(19), nightKey: "2026-08-03")
         XCTAssertEqual(g?.estado, .juntas, "temp + resp fuera JUNTAS = el centinela del motor")
     }
 
@@ -268,7 +268,7 @@ final class LiquidHoyBuilderTests: XCTestCase {
                                               watchingSignal: nil, tempOut: true, respOut: true)
             return LiquidHoyBuilder.guardian(
                 prep: readConResp(thermal: .high, respOrientedZ: -badZ - 0.1, sentinel: s),
-                thermalDeviation: 0.9, resp: .init(19))
+                thermalDeviation: 0.9, resp: .init(19), nightKey: "2026-08-03")
         }
         let g3 = juntas(streak: 3)
         XCTAssertEqual(g3?.estado, .juntas)
@@ -281,16 +281,16 @@ final class LiquidHoyBuilderTests: XCTestCase {
     func test_guardian_sinLecturas_estadoSinLectura() {
         // FER-33 · F3: sin lecturas el guardián SE MUESTRA, pero en `.sinLectura` — la
         // hoja ya no cae a `.tranquilo` y no afirma «dentro de tu patrón».
-        let g = LiquidHoyBuilder.guardian(prep: nil, thermalDeviation: nil, resp: nil)
+        let g = LiquidHoyBuilder.guardian(prep: nil, thermalDeviation: nil, resp: nil, nightKey: nil)
         XCTAssertEqual(g?.estado, .sinLectura)
         XCTAssertEqual(g?.temp, "—")
         XCTAssertEqual(g?.resp, "—")
         // Con al menos una lectura, se muestra con otro estado.
-        XCTAssertNotNil(LiquidHoyBuilder.guardian(prep: nil, thermalDeviation: 0.1, resp: nil))
+        XCTAssertNotNil(LiquidHoyBuilder.guardian(prep: nil, thermalDeviation: 0.1, resp: nil, nightKey: nil))
     }
 
     func test_guardianHoja_sinLecturas_noAfirmaEnPatron() {
-        let g = LiquidHoyBuilder.guardian(prep: nil, thermalDeviation: nil, resp: nil)
+        let g = LiquidHoyBuilder.guardian(prep: nil, thermalDeviation: nil, resp: nil, nightKey: nil)
         let hoja = LiquidHoyBuilder.guardianHoja(g)
         XCTAssertNil(hoja.nivel, "sin lecturas no hay palabra de patrón")
         XCTAssertEqual(hoja.sinLectura, String(localized: "No reading last night"))
@@ -334,7 +334,7 @@ final class LiquidHoyBuilderTests: XCTestCase {
         // no tiene es contra qué compararlo.
         let g = LiquidHoyBuilder.guardian(
             prep: prep([noche("2026-06-20", respJudged: false)]),
-            thermalDeviation: 0.1, resp: .init(14))
+            thermalDeviation: 0.1, resp: .init(14), nightKey: "2026-06-20")
         XCTAssertEqual(g?.estado, .conociendote,
                        "sin base de respiración el guardián no puede empujar")
     }
@@ -343,7 +343,7 @@ final class LiquidHoyBuilderTests: XCTestCase {
     func test_guardian_madurezDeOtraSenal_noDecideConociendote() {
         let g = LiquidHoyBuilder.guardian(
             prep: prep([noche("2026-06-20", respJudged: true)], maturity: .calibrating),
-            thermalDeviation: 0.1, resp: .init(14))
+            thermalDeviation: 0.1, resp: .init(14), nightKey: "2026-06-20")
         XCTAssertNotEqual(g?.estado, .conociendote,
                           "con la respiración juzgable, el guardián sí puede hablar")
     }
@@ -354,7 +354,7 @@ final class LiquidHoyBuilderTests: XCTestCase {
     func test_guardian_respiracionNuncaDibujaBandaPoblacional() {
         let g = LiquidHoyBuilder.guardian(prep: prep([noche("2026-06-20")]),
                                           thermalDeviation: 0.1,
-                                          resp: .init(14))
+                                          resp: .init(14), nightKey: "2026-06-20")
         let h = hoja([noche("2026-06-20")], guardian: g)
         XCTAssertNil(h.resp.serie?.banda,
                      "12-20 rpm es tabla de población, no tu patrón")
@@ -367,7 +367,7 @@ final class LiquidHoyBuilderTests: XCTestCase {
     func test_guardian_calibrando_sinBandaDeComparacion() {
         let hist = [noche("2026-06-20", respJudged: false)]
         let g = LiquidHoyBuilder.guardian(prep: prep(hist), thermalDeviation: 0.1,
-                                          resp: .init(14))
+                                          resp: .init(14), nightKey: "2026-06-20")
         let h = hoja(hist, guardian: g)
         XCTAssertNil(h.temp.serie?.banda, "sin comparación no se pinta el corredor")
         XCTAssertNil(h.resp.serie?.banda)
@@ -377,7 +377,7 @@ final class LiquidHoyBuilderTests: XCTestCase {
     /// ni afirmar patrón: su regla necesita el par.
     func test_guardian_unaSolaSenal_niSinLecturaNiPatron() {
         let g = LiquidHoyBuilder.guardian(prep: prep([noche("2026-06-20")]),
-                                          thermalDeviation: 0.4, resp: nil)
+                                          thermalDeviation: 0.4, resp: nil, nightKey: "2026-06-20")
         XCTAssertEqual(g?.estado, .incompleto)
         let h = hoja([noche("2026-06-20")], guardian: g)
         XCTAssertNil(h.nivel, "sin el par no hay palabra de patrón")
@@ -389,16 +389,35 @@ final class LiquidHoyBuilderTests: XCTestCase {
     /// verde, y tampoco que no hubo noche.
     func test_guardian_sinMotor_noAfirmaPatron() {
         let g = LiquidHoyBuilder.guardian(prep: nil, thermalDeviation: 0.1,
-                                          resp: .init(14))
+                                          resp: .init(14), nightKey: nil)
         XCTAssertEqual(g?.estado, .incompleto)
         let h = hoja([], guardian: g)
         XCTAssertNil(h.nivel)
         XCTAssertFalse(h.enPatron)
     }
 
+    /// FER-42 · Sello de noche: un `prep` viejo (la última noche juzgada NO es la que la
+    /// pantalla llama «hoy») no puede afirmar patrón — ni verde ni fuera. Pasaba tras
+    /// medianoche, antes del primer recálculo del día: valores de hoy con juicio de ayer.
+    func test_guardian_nocheVieja_noAfirmaPatron() {
+        let g = LiquidHoyBuilder.guardian(
+            prep: readConResp(thermal: .inRange, respOrientedZ: 0.3),   // su noche: 2026-08-03
+            thermalDeviation: 0.1, resp: .init(14), nightKey: "2026-08-04")
+        XCTAssertEqual(g?.estado, .incompleto,
+                       "juicio de otra noche + valores de hoy = vigilar, no afirmar")
+    }
+
+    /// FER-42 · Sin ninguna noche juzgada (historial vacío) tampoco hay juicio que sellar:
+    /// con lecturas presentes se vigila, sin caer a «dentro de tu patrón».
+    func test_guardian_sinNocheJuzgada_conLecturas_noAfirmaPatron() {
+        let g = LiquidHoyBuilder.guardian(prep: prep([]), thermalDeviation: 0.1,
+                                          resp: .init(14), nightKey: "2026-08-04")
+        XCTAssertEqual(g?.estado, .incompleto)
+    }
+
     /// Sin NINGUNA lectura sí es «sin lectura anoche»: ese caso no se tocó.
     func test_guardian_ningunaLectura_sigueSiendoSinLectura() {
-        let g = LiquidHoyBuilder.guardian(prep: prep([]), thermalDeviation: nil, resp: nil)
+        let g = LiquidHoyBuilder.guardian(prep: prep([]), thermalDeviation: nil, resp: nil, nightKey: nil)
         XCTAssertEqual(g?.estado, .sinLectura, "sin ninguna de las dos, ese y no otro")
         let h = hoja([], guardian: g)
         XCTAssertEqual(h.sinLectura, String(localized: "No reading last night"))

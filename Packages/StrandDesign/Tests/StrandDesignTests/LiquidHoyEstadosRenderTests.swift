@@ -241,12 +241,14 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
 
 
         /// Las métricas tal como quedan cuando HOY no tiene fila. No es una licencia del
-        /// arnés: `TodayView` resuelve el sueño con `todayOnly` —así que cae a «—»— y el
-        /// ritmo en reposo, la temperatura y la respiración con `latestFromDisplay`, que
-        /// acepta hasta 13 días atrás. La asimetría que se ve aquí es la de producción.
+        /// arnés: desde FER-42 TODAS las vitales van por el ÚNICO resolutor `resolveMeasured`
+        /// con `todayOnly` — sueño, VFC, FC en reposo, temperatura y respiración caen a «—»
+        /// parejo (adiós `latestFromDisplay`, que aceptaba hasta 13 días atrás). Pasos,
+        /// esfuerzo y estrés conservan sus rutas propias (estimación/strap), que no son
+        /// historia disfrazada de hoy.
         func metricasSinHoy(_ base: [LiquidHoyModel.Metrica]) -> [LiquidHoyModel.Metrica] {
             base.map { m in
-                guard m.id == "sleep" else { return m }
+                guard ["sleep", "hrv", "rhr", "skintemp", "resp"].contains(m.id) else { return m }
                 return .init(id: m.id, label: m.label, value: "—", unit: "",
                              delta: "", tone: m.tone, icon: m.icon)
             }
@@ -258,16 +260,16 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
         /// en sí, la razón por la que el arnés puede desfasarse de producción sin avisar.)
         func modulosSinHoy(_ base: [LiquidHoyModel.Modulo]) -> [LiquidHoyModel.Modulo] {
             base.map { mod in
-                guard mod.id == "veredicto" else { return mod }
-                return .init(id: mod.id, kicker: mod.kicker, auroraTones: mod.auroraTones,
-                             auroraPeriod: mod.auroraPeriod, auroraReverse: mod.auroraReverse,
-                             columnas: mod.columnas.map { col in
-                    guard col.id == "sleep" else { return col }
+                .init(id: mod.id, kicker: mod.kicker, auroraTones: mod.auroraTones,
+                      auroraPeriod: mod.auroraPeriod, auroraReverse: mod.auroraReverse,
+                      columnas: mod.columnas.map { col in
+                    // FER-42: las mismas cinco vitales `todayOnly` que `metricasSinHoy`.
+                    guard ["sleep", "hrv", "rhr", "skintemp", "resp"].contains(col.id) else { return col }
                     return .init(id: col.id, label: col.label, tone: LiquidColor.tinta500,
                                  alineacion: col.alineacion,
                                  contenido: .simple(value: "—", unit: "", detail: "", mejora: false),
                                  destino: col.destino,
-                                 a11yLabel: "Sueño, sin dato de hoy")
+                                 a11yLabel: "\(col.label), sin dato de hoy")
                 })
             }
         }
