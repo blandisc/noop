@@ -24335,6 +24335,40 @@
         }
       }
     },
+    "last night · vs. the recommended range": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "last night · vs. the recommended range"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "anoche · según lo recomendado"
+          }
+        }
+      }
+    },
+    "vs. the recommended range": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "vs. the recommended range"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "según lo recomendado"
+          }
+        }
+      }
+    },
     "last reading %@": {
       "extractionState": "manual",
       "localizations": {
