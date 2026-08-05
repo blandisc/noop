@@ -46,9 +46,10 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
     /// datos: el estado sin ni una fuente (el orbe DORMIDO) y el cuadro final de la entrada
     /// (FER-41).
     ///
-    /// OJO al leer el PNG de la entrada: sale en GRIS, y no es un defecto. `ImageRenderer` no
-    /// ejecuta `.task`, y es ahí donde la entrada lee el veredicto y fija su color — así que en
-    /// el render se queda con el neutro con el que arranca. En el teléfono sí se tiñe.
+    /// La entrada se renderiza con el movimiento desactivado, que es el camino de «Reducir
+    /// movimiento»: ahí el clima se lee en vivo, así que el PNG SÍ sale teñido de su veredicto
+    /// (antes salía gris porque `ImageRenderer` no ejecuta `.task`, donde el camino normal lo
+    /// fija).
     #if os(macOS)
     @MainActor
     func test_renderEstadoVacioYEntrada() throws {
