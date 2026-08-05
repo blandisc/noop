@@ -31,7 +31,7 @@ final class MetricLevelsTests: XCTestCase {
 
     func testRestingHRLevelsMatchReadme() {
         let lv = MetricLevels.levels(for: .restingHR)
-        XCTAssertEqual(lv.map(\.key), ["athlete", "excellent", "normal", "elevated"])
+        XCTAssertEqual(lv.map(\.key), ["rhrAthlete", "rhrLow", "rhrTypical", "rhrHigher"])
         XCTAssertEqual(lv.map(\.lower), [nil, 50, 60, 80])
         XCTAssertEqual(lv.map(\.upper), [50, 60, 80, nil])
     }

@@ -135,12 +135,12 @@ public enum MetricLevels {
                 Level(key: "extreme",   lower: 18,  upper: nil),
             ]
         case .restingHR:
-            // Atleta <50 · Excelente 50–60 · Normal 60–80 · Elevada >80.
+            // Rango de atleta <50 · Baja 50–60 · Típica 60–80 · Alta ≥80.
             return [
-                Level(key: "athlete",   lower: nil, upper: 50),
-                Level(key: "excellent", lower: 50,  upper: 60),
-                Level(key: "normal",    lower: 60,  upper: 80),
-                Level(key: "elevated",  lower: 80,  upper: nil),
+                Level(key: "rhrAthlete", lower: nil, upper: 50),
+                Level(key: "rhrLow",     lower: 50,  upper: 60),
+                Level(key: "rhrTypical", lower: 60,  upper: 80),
+                Level(key: "rhrHigher",  lower: 80,  upper: nil),
             ]
         case .bloodOxygen:
             // Bajo <95 · Normal 95–100.
@@ -230,8 +230,11 @@ public enum MetricLevels {
         case "moderate":   return "Moderate"
         case "normal":     return "Normal"
         case "elevated":   return "Elevated"
-        case "athlete":    return "Athlete"
-        case "excellent":  return "Excellent"
+        // restingHR: resuelven vía catálogo con en override (mismo patrón que reading.vsBase.*) para poder dar género correcto en es (FER-43).
+        case "rhrAthlete": return "level.rhr.athlete"
+        case "rhrLow":     return "level.rhr.low"
+        case "rhrTypical": return "level.rhr.typical"
+        case "rhrHigher":  return "level.rhr.higher"
         case "sedentary":  return "Sedentary"
         case "active":     return "Active"
         case "veryActive": return "Very active"

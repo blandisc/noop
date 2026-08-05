@@ -75,7 +75,7 @@ extension MetricDetailScreen {
             // Normal / Borderline / Low
             return [theme.verdict, theme.warning, theme.critical]
         case "rhr":
-            // Athlete / Excellent / Normal / Elevated — lower is better
+            // Athlete range / Low / Typical / Higher — lower is better
             return [theme.verdictDeep, theme.verdict, theme.inkSecondary, theme.critical]
         case "resp_rate":
             // Low / Typical / Elevated / High

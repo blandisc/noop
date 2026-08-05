@@ -20,6 +20,8 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- FC en reposo: las bandas de la hoja quedan rotuladas como referencia poblacional (no tu veredicto), headline suavizado y niveles renombrados (Rango de atleta / Baja / Típica / Alta).
+
 - **El sueño se lee contra la guía recomendada, dicho con claridad / Sleep reads against the recommended guide, said plainly.**
   **ES** — La boleta «Cómo llegué aquí» ya no dice que tu sueño se mide «contra un mínimo fijo» (sonaba a regla arbitraria de la app): ahora dice «según lo recomendado». El sueño se juzga contra el rango de sueño recomendado para la salud (~7 h), no contra tu propio hábito — a propósito: calificarte solo contra tu historial normalizaría dormir poco de forma crónica. Y la frase, antes sin traducir en su variante «anoche …», ya está en español.
   **EN** — The "How I got here" ballot no longer says your sleep is measured "against a fixed minimum" (which read like an arbitrary app rule): it now says "vs. the recommended range." Sleep is judged against the recommended healthy sleep range (~7 h), not against your own habit — on purpose: grading you only against your history would normalize chronic short sleep. And the "last night …" variant, previously untranslated, now speaks Spanish.

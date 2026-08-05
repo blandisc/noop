@@ -108,7 +108,7 @@ public enum MetricLevelPhrase {
     /// HRV uses the personal below/inBase/above levels, and Carga uses `ReadinessEngine.LoadBand`.
     private static let levelKeysByMetric: [String: [String]] = [
         "hrv":       ["below", "inBase", "above"],
-        "rhr":       ["athlete", "excellent", "normal", "elevated"],
+        "rhr":       ["rhrAthlete", "rhrLow", "rhrTypical", "rhrHigher"],
         "resp_rate": ["normal", "elevated"],
         "skin_temp": ["below", "inBase", "warm", "elevated"],
         "spo2":      ["low", "normal"],
