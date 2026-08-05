@@ -163,8 +163,8 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
                             title: "Tus señales de día están en tu rango.",
                             subtitle: "Sin noche grabada: esta lectura es menos precisa."),
             carga: .medida(pos: 51.5, zone: 1, status: "EN EQUILIBRIO", ratio: "1.03", razon: 1.03, state: .ok),
-            metricas: base.metricas,
-            modulos: LiquidHoyModel.ejemploModulos,
+            metricas: metricasSinHoy(base.metricas),
+            modulos: modulosSinHoy(LiquidHoyModel.ejemploModulos),
             // «Una fuera»: solo la temperatura se tiñe; el héroe NO cambia.
             guardian: .init(label: "VIGILANDO", temp: "+0.9°", resp: "14 rpm", estado: .tempFuera),
             heroHint: base.heroHint,
@@ -211,6 +211,39 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
             ambiente: .atencion,
             heroPuerta: "Cómo llegué a esto")
 
+
+
+        /// Las métricas tal como quedan cuando HOY no tiene fila. No es una licencia del
+        /// arnés: `TodayView` resuelve el sueño con `todayOnly` —así que cae a «—»— y el
+        /// ritmo en reposo, la temperatura y la respiración con `latestFromDisplay`, que
+        /// acepta hasta 13 días atrás. La asimetría que se ve aquí es la de producción.
+        func metricasSinHoy(_ base: [LiquidHoyModel.Metrica]) -> [LiquidHoyModel.Metrica] {
+            base.map { m in
+                guard m.id == "sleep" else { return m }
+                return .init(id: m.id, label: m.label, value: "—", unit: "",
+                             delta: "", tone: m.tone, icon: m.icon)
+            }
+        }
+
+        /// El TABLERO cuando hoy no tiene fila. Va aparte de `metricasSinHoy` porque el arnés
+        /// hardcodea el tablero en vez de derivarlo de las métricas como hace el builder —
+        /// así que aquí hay que repetir a mano lo que allá es automático. (Ese desacople es,
+        /// en sí, la razón por la que el arnés puede desfasarse de producción sin avisar.)
+        func modulosSinHoy(_ base: [LiquidHoyModel.Modulo]) -> [LiquidHoyModel.Modulo] {
+            base.map { mod in
+                guard mod.id == "veredicto" else { return mod }
+                return .init(id: mod.id, kicker: mod.kicker, auroraTones: mod.auroraTones,
+                             auroraPeriod: mod.auroraPeriod, auroraReverse: mod.auroraReverse,
+                             columnas: mod.columnas.map { col in
+                    guard col.id == "sleep" else { return col }
+                    return .init(id: col.id, label: col.label, tone: LiquidColor.tinta500,
+                                 alineacion: col.alineacion,
+                                 contenido: .simple(value: "—", unit: "", detail: "", mejora: false),
+                                 destino: col.destino,
+                                 a11yLabel: "Sueño, sin dato de hoy")
+                })
+            }
+        }
 
         // 8 · «Leyendo tu noche…»: el primer pintado, antes de que el refresh complete el
         // veredicto. Decirle «no conozco tu base» a alguien con años de historia sería falso.
@@ -269,8 +302,8 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
             hero: .demotado(kicker: "PREPARACIÓN", title: "Sin lectura de hoy",
                             subtitle: "Tu rango ya está formado; la lectura de hoy aún no llega."),
             carga: base.carga,
-            metricas: base.metricas,
-            modulos: LiquidHoyModel.ejemploModulos,
+            metricas: metricasSinHoy(base.metricas),
+            modulos: modulosSinHoy(LiquidHoyModel.ejemploModulos),
             guardian: .init(label: "VIGILANDO", temp: "+0.1°", resp: "14 rpm", estado: .tranquilo),
             heroHint: nil,
             ambiente: .neutro,
