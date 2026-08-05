@@ -544,7 +544,9 @@ enum LiquidGuardianFixtures {
                        a11y: "Aprendiendo tu patrón: noches previas sin base todavía."),
         metodo: metodo,
         calibracion: .init(titulo: "Aprendiendo tu patrón",
-                           leyenda: "8 de 14 noches", hechas: 8, necesarias: 14))
+                           // El guardián cuenta contra `Baselines.minNightsSeed` (4), no contra 14:
+                           // las 14 son la madurez del veredicto, otro concepto.
+                           leyenda: "3 de 4 noches", hechas: 3, necesarias: 4))
 }
 
 private func guardianPreview(_ model: LiquidGuardianHoja) -> some View {

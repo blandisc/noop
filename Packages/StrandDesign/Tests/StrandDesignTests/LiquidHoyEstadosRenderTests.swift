@@ -139,7 +139,9 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
             ],
             hero: .veredicto(title: "Recupera", highlight: "Recupera",
                              highlightTone: LiquidColor.negativo,
-                             subtitle: "Tu pulso en reposo pasó la noche alto.",
+                             // El eje autonómico es una z ORIENTADA: `autonomicAxis` solo produce `.low`,
+                             // así que el builder jamás dice «alto» de esta señal.
+                             subtitle: "Tu señal autonómica quedó abajo de tu rango.",
                              confianza: nil),
             carga: .medida(pos: 78, zone: 3, status: "MUY ALTA", ratio: "1.61", razon: 1.61, state: .atencion),
             metricas: base.metricas,
@@ -186,9 +188,9 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
                             title: "Conociéndote",
                             subtitle: "Noche 3 de 4 · tu rango se está formando"),
             carga: .calibrando(status: "CALIBRANDO"),
-            metricas: base.metricas,
-            modulos: LiquidHoyModel.calibrandoModulos,
-            guardian: .init(label: "VIGILANDO", temp: "—", resp: "—", estado: .tranquilo),
+            metricas: metricasSinHoy(base.metricas),
+            modulos: modulosSinHoy(LiquidHoyModel.calibrandoModulos),
+            guardian: .init(label: "VIGILANDO", temp: "—", resp: "—", estado: .sinLectura),
             heroHint: nil,
             ambiente: .neutro,
             heroPuerta: "Cómo llegué a esto",
@@ -202,7 +204,7 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
             senales: base.senales,
             hero: .veredicto(title: "Hoy ve leve", highlight: "leve",
                              highlightTone: LiquidColor.atencion,
-                             subtitle: "Algo se salió de tu patrón: temperatura y respiración se movieron juntas.",
+                             subtitle: "Tu temperatura y tu respiración se salieron juntas de tu patrón.",
                              confianza: nil),
             carga: .medida(pos: 51.5, zone: 1, status: "EN EQUILIBRIO", ratio: "1.03", razon: 1.03, state: .ok),
             metricas: base.metricas,
@@ -260,9 +262,9 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
             hero: .demotado(kicker: "PREPARACIÓN", title: "Leyendo tu noche…",
                             subtitle: "Un momento."),
             carga: .calibrando(status: "CALIBRANDO"),
-            metricas: base.metricas,
-            modulos: LiquidHoyModel.calibrandoModulos,
-            guardian: .init(label: "VIGILANDO", temp: "—", resp: "—", estado: .tranquilo),
+            metricas: metricasSinHoy(base.metricas),
+            modulos: modulosSinHoy(LiquidHoyModel.calibrandoModulos),
+            guardian: .init(label: "VIGILANDO", temp: "—", resp: "—", estado: .sinLectura),
             heroHint: nil,
             ambiente: .neutro,
             heroPuerta: "Cómo llegué a esto")
@@ -281,12 +283,14 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
             hero: .demotado(kicker: "PREPARACIÓN", title: "Aún no conozco tu base",
                             subtitle: "Conecta Apple Salud en Ajustes y tu veredicto diario aparecerá aquí."),
             carga: .calibrando(status: "CALIBRANDO"),
-            metricas: base.metricas,
-            modulos: LiquidHoyModel.calibrandoModulos,
-            guardian: .init(label: "VIGILANDO", temp: "—", resp: "—", estado: .tranquilo),
+            metricas: metricasSinHoy(base.metricas),
+            modulos: modulosSinHoy(LiquidHoyModel.calibrandoModulos),
+            guardian: .init(label: "VIGILANDO", temp: "—", resp: "—", estado: .sinLectura),
             heroHint: nil,
             ambiente: .neutro,
-            heroPuerta: "Cómo llegué a esto")
+            // Sin permiso la ruta del héroe es `.salud`, y el builder le pone ESA puerta:
+            // la única salida real es conceder el permiso, no explicar un veredicto que no hay.
+            heroPuerta: "Conectar Salud")
 
         // 10 · «Sin lectura de hoy»: la base YA está formada; lo que falta es la lectura de
         // hoy. Sin contador a propósito — decir «se está formando» con los puntos llenos
@@ -328,6 +332,31 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
             ambiente: .bien,
             heroPuerta: "Cómo llegué a esto")
 
+
+        // 13 · RECIÉN CONECTADO: hay permiso pero todavía cero noches en el banco. Es la
+        // pantalla del instante siguiente a conceder Salud, y la única que enseña el contador
+        // en cero. `calibracionConteo` lo clampa a (0, minNightsSeed), así que «Noche 0 de 4»
+        // es literalmente lo que dice la app.
+        let recienConectado = LiquidHoyModel(
+            kicker: base.kicker,
+            dial: .init(night: nil, sol: (start: 6.8, end: 20.3), marker: 10),
+            senales: [
+                .init(id: "autonomico", label: "EN REPOSO", caption: "SIN DATOS",
+                      progress: nil, icon: .ondaSenal, state: .ok),
+                .init(id: "sueno", label: "SUEÑO", caption: "SIN DATOS",
+                      progress: nil, icon: .lunaSenal, state: .ok),
+            ],
+            hero: .demotado(kicker: "PREPARACIÓN", title: "Conociéndote",
+                            subtitle: "Noche 0 de 4 · tu rango se está formando"),
+            carga: .calibrando(status: "CALIBRANDO"),
+            metricas: metricasSinHoy(base.metricas),
+            modulos: modulosSinHoy(LiquidHoyModel.calibrandoModulos),
+            guardian: .init(label: "VIGILANDO", temp: "—", resp: "—", estado: .sinLectura),
+            heroHint: nil,
+            ambiente: .neutro,
+            heroPuerta: "Cómo llegué a esto",
+            calibracion: .init(noche: 0, total: 4))
+
         return [("1_verde", base, nil),
                 ("2_ambar", ambar, nil),
                 ("3_rojo", rojo, nil),
@@ -338,6 +367,7 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
                 ("8_leyendo", leyendo, nil),
                 ("9_sin_permiso", sinPermiso, nil),
                 ("10_sin_lectura", sinLectura, nil),
-                ("11_provisional", provisional, nil)]
+                ("11_provisional", provisional, nil),
+                ("13_recien_conectado", recienConectado, nil)]
     }()
 }

@@ -606,6 +606,15 @@ enum LiquidHoyBuilder {
     /// tres orbes para saber CUÁL está fuera. `prep.drivers` ya lo sabe: se nombra el eje y
     /// su dirección. `nil` = ninguno fuera → el caller usa la frase genérica.
     private static func subtituloDetalle(_ prep: Preparedness.Read?) -> String? {
+        // El PAR manda sobre el eje suelto. Con el centinela corroborado, lo que empujó el día
+        // son temperatura y respiración JUNTAS — pero el eje térmico también aparece «fuera»
+        // por su propio corte, y como es el primero de `drivers` que lo está, el barrido de
+        // abajo culpaba a la temperatura SOLA. El héroe quedaba contradiciendo la regla que la
+        // hoja del guardián enseña dos toques más abajo: una señal sola nunca empuja tu día,
+        // solo el par. (Revisión adversarial de la auditoría de estados.)
+        if prep?.sentinel?.state == .corroborated {
+            return String(localized: "Your temperature and breathing moved out of your pattern together.")
+        }
         guard let fuera = prep?.drivers.first(where: { $0.state.isOut }) else { return nil }
         switch (fuera.axis, fuera.state) {
         case (.sleep, .low):      return String(localized: "Your sleep came in below your range.")
