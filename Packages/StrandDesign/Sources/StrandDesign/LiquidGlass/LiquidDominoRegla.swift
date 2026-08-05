@@ -161,18 +161,26 @@ public struct LiquidDominoRegla: View {
                 // Rótulos bajo las últimas columnas.
                 if !etiquetas.isEmpty, count > 0, let lastY = laneYs.last {
                     let baseY = lastY + Self.gotaSize / 2 + LiquidSpace.s100 + Self.etiquetaAlto / 2
-                    let start = count - etiquetas.count
-                    ForEach(etiquetas.indices, id: \.self) { i in
-                        let col = start + i
-                        if col >= 0, col < count {
+                    // #inject r5 · Los rótulos de las últimas noches («night before last» ·
+                    // «last night») van como GRUPO alineado a la derecha del plot, no
+                    // centrados bajo cada columna: dos frases largas bajo columnas contiguas
+                    // se solapaban (o la del borde se cortaba). El grupo derecho ya asocia
+                    // con las últimas noches sin pisarse (revisión adversarial DeepSeek+Grok).
+                    HStack(spacing: LiquidSpace.s300) {
+                        Spacer(minLength: 0)
+                        ForEach(etiquetas.indices, id: \.self) { i in
                             Text(verbatim: etiquetas[i])
                                 .font(LiquidType.caption)
                                 .foregroundStyle(LiquidColor.tinta500)
                                 .lineLimit(1)
+                                // A Dynamic Type grande / es-MX largo el par encoge en vez
+                                // de desbordar el filo de la tarjeta (revisión Grok r2).
                                 .minimumScaleFactor(0.7)
-                                .position(x: plotX0 + xs[col], y: baseY)
+                                .allowsTightening(true)
                         }
                     }
+                    .frame(width: geo.size.width, alignment: .trailing)
+                    .position(x: geo.size.width / 2, y: baseY)
                 }
             }
         }
@@ -189,7 +197,10 @@ public struct LiquidDominoRegla: View {
         let bottom = laneYs[laneYs.count - 1] + Self.puntoDiametro / 2 + Self.cercoPadV
         let rect = CGRect(x: left, y: top, width: right - left, height: bottom - top)
         return RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous)
-            .fill(LiquidColor.atencion.opacity(LiquidChart.filaActivaAlfa))
+            // #inject r6 · Un escalón BAJO el wash de la fila de datos medida (revisión
+            // UI-agent M5): el dominó EXPLICA la regla, no debe pesar igual que el dato que
+            // de verdad se midió. El borde `atencion` pleno conserva la lectura «esto pasó».
+            .fill(LiquidColor.atencion.opacity(LiquidChart.filaResaltadaAlfa))
             .overlay(
                 RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous)
                     .strokeBorder(LiquidColor.atencion, lineWidth: Self.cercoBorde)

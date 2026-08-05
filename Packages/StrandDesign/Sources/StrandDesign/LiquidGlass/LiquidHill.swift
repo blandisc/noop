@@ -249,9 +249,10 @@ public struct LiquidHill: View {
     @ViewBuilder
     private func readout(w: CGFloat, hx: CGFloat, hy: CGFloat, zona: Zona?, color: Color) -> some View {
         let etiqueta = zona?.etiqueta ?? ""
-        let valor = isShowingToday
-            ? "\(hoyEtiqueta) · \(Self.fmt(displayRatio))"
-            : Self.fmt(displayRatio)
+        // #inject r5 · A reposo el readout ya NO repite «TODAY» (revisión adversarial: el
+        // dato de hoy lo anclan el header —«TODAY · AUG 4»— y el tri-stat de la gráfica; la
+        // colina defaultea a hoy). Muestra valor + zona; el número solo, sin el rótulo.
+        let valor = Self.fmt(displayRatio)
         // Clamp con el ancho MEDIDO del popup (no una estimación): así nunca se corta en los
         // bordes, ni con la etiqueta más ancha ni en Dynamic Type grande.
         let mitad = min(readoutW, w) / 2

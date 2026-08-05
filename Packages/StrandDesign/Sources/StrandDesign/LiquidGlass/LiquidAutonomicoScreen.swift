@@ -305,6 +305,15 @@ public struct LiquidSignalRow<Mini: View>: View {
     /// no en el ámbar crudo (mismo criterio que `LiquidLevelRow`).
     private var tintaEstado: Color { fila.fuera ? LiquidColor.atencionTexto : LiquidColor.tinta500 }
 
+    /// #inject r5 · El valor teñido con su hue 1:1, pero el ámbar de dato demotado a su voz
+    /// de TEXTO: el ámbar crudo (#C4631F) mide ~4.1:1 sobre la tarjeta blanca — bajo el
+    /// 4.5:1 de AA para el `datoMenor` (15) — y baja a `atencionTexto` (6.1:1), mismo
+    /// criterio que `tintaEstado` y `LiquidLevelRow` (revisión adversarial DeepSeek+Grok).
+    private var valorTinta: Color {
+        guard let t = fila.valorTono else { return LiquidColor.tinta700 }
+        return (t == LiquidColor.ambar || t == LiquidColor.atencion) ? LiquidColor.atencionTexto : t
+    }
+
     public init(fila: LiquidSignalFila, @ViewBuilder mini: () -> Mini) {
         self.fila = fila
         self.mini = mini()
@@ -330,7 +339,7 @@ public struct LiquidSignalRow<Mini: View>: View {
                         Text(verbatim: valor)
                             .font(LiquidType.datoMenor)
                             .monospacedDigit()
-                            .foregroundStyle(fila.valorTono ?? LiquidColor.tinta700)
+                            .foregroundStyle(valorTinta)
                     } else {
                         if let estado = fila.estado {
                             Text(verbatim: estado)

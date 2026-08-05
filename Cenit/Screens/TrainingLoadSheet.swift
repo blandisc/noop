@@ -203,7 +203,12 @@ struct TrainingLoadSheet: View {
                 // Frase y tono siguen el valor que el héroe MUESTRA (hoy en S, media en
                 // rangos largos) — no el de hoy a ciegas.
                 if let band = valorMostrado.map(ReadinessEngine.loadBand(forACWR:)) {
-                    LiquidReadingLine(readingText(band), highlightTone: tonoTexto)
+                    // #inject r5 · Solo la cláusula-veredicto, TODA en verde (pedido del
+                    // dueño: «simplifica el copy y deja solo verde»). La coletilla («en línea
+                    // con lo de siempre») sobra; al pasar la frase corta como su propio
+                    // `highlight`, `LiquidReadingLine` la pinta entera en el tono.
+                    let corto = Self.verdicto(readingText(band))
+                    LiquidReadingLine(corto, highlight: corto, highlightTone: tonoTexto)
                 }
                 colina(acwr: acwr)
                 explorador
@@ -223,13 +228,17 @@ struct TrainingLoadSheet: View {
     // MARK: - Cabecera (sello de ventana; procedencia baja al pie)
 
     private var cabecera: some View {
-        LiquidSheetHeader(
+        // Una sola lectura de `heroVentana` por render (revisión adversarial DeepSeek,
+        // paridad con la hoja de Sueño): cada acceso camina `levelsHost.window` — el gasto
+        // que ya costó caro en FER-216/FER-1040.
+        let hv = heroVentana
+        return LiquidSheetHeader(
             icono: .carga,
             titulo: String(localized: "Training load"),
             tono: tono,
-            numeral: heroVentana.numeral,
+            numeral: hv.numeral,
             numeralTono: tono,
-            sello: heroVentana.sello,
+            sello: hv.sello,
             // FER-33 · F2: la procedencia YA NO viaja en el héroe — va al chip del pie.
             origen: nil,
             origenEtiqueta: nil,
@@ -303,6 +312,27 @@ struct TrainingLoadSheet: View {
             calibrandoAncla: String(localized: "I need about two weeks of recorded strain to read your load."),
             a11yTitulo: String(localized: "The hill"),
             a11yValor: { r, z in "\(Self.format.numeral(r)), \(z.lowercased())" })
+    }
+
+    /// #inject r5 · Marcas del eje Y: los tres umbrales de carga (0.8 / 1.0 / 1.5) MÁS la
+    /// cima y el piso REALES de la ventana — el mismo criterio que la gráfica de Sueño
+    /// (`nivelesMarcasY`), para que el eje deje de ser tres líneas fijas y el lector pueda
+    /// ubicar hasta dónde llegó su carga. Extremos de los DATOS, no del dominio (0.45–1.9
+    /// trae respiro); solo si caben y no pisan un umbral (≥ 6 % del alto).
+    private func marcasY(window: MetricWindow) -> [(valor: Double, etiqueta: String)] {
+        let dominio = 0.45...1.9
+        let span = dominio.upperBound - dominio.lowerBound
+        var ticks: [Double] = [
+            ReadinessEngine.acwrSpikeAt, 1.0, ReadinessEngine.acwrSweetSpotLow,
+        ].filter { dominio.contains($0) }
+        if let lo = window.values.min(), let hi = window.values.max() {
+            for extremo in [lo, hi]
+            where dominio.contains(extremo)
+                && !ticks.contains(where: { abs($0 - extremo) < span * 0.06 }) {
+                ticks.append(extremo)
+            }
+        }
+        return ticks.sorted().map { (valor: $0, etiqueta: Self.format.boundary($0)) }
     }
 
     // MARK: - Explorador (selector + tarjeta gráfica + escalera)
@@ -388,12 +418,7 @@ struct TrainingLoadSheet: View {
                 puntos: puntos,
                 bandas: bandas,
                 dominio: 0.45...1.9,
-                ticksY: [
-                    (ReadinessEngine.acwrSpikeAt, Self.format.boundary(ReadinessEngine.acwrSpikeAt)),
-                    (1.0, Self.format.boundary(1.0)),
-                    (ReadinessEngine.acwrSweetSpotLow,
-                     Self.format.boundary(ReadinessEngine.acwrSweetSpotLow)),
-                ],
+                ticksY: marcasY(window: window),
                 tono: tono,
                 puntoHoy: indiceDeHoy != nil ? puntos.last : nil,
                 hoyAnillo: nivelExplorado != nil && nivelExplorado != indiceDeHoy,
@@ -404,6 +429,11 @@ struct TrainingLoadSheet: View {
                 atenuarFuera: nivelExplorado != nil,
                 estadoVacio: String(localized: "Not enough days in this range to draw a trend."),
                 a11yLabel: String(localized: "Training load history"))
+            // #inject r5 · Tri-stat Promedio/Rango/Hoy: EXCEPCIÓN consciente de Load (como
+            // el color de las zonas). Es el único consumidor de `LiquidResumenVentana` en el
+            // app — las otras hojas cierran en la gráfica. Se queda porque el ACWR se LEE por
+            // comparación (¿hoy vs mi promedio/rango?), no como un número aislado; la celda
+            // «Hoy» es el ancla de esa comparación, no una tercera repetición ociosa.
             LiquidResumenVentana(celdas: [
                 .init(rotulo: String(localized: "Average"),
                       valor: window.values.isEmpty ? "—" : Self.format.numeral(stat.mean)),
@@ -569,6 +599,13 @@ struct TrainingLoadSheet: View {
     /// Frase de veredicto bajo el numeral. Descriptiva, sin imperativo. FER-29 · contrato 4:
     /// el copy vive en el catálogo bajo `reading.vsBase.load.*`; `LoadBand.rawValue`
     /// coincide 1:1 con las claves de nivel de `MetricLevelPhrase`.
+    /// #inject r5 · La cláusula-veredicto de una frase de lectura (hasta la primera coma;
+    /// sin el punto final) — el copy corto que la hoja pinta entero en el tono.
+    private static func verdicto(_ t: String) -> String {
+        if let coma = t.firstIndex(of: ",") { return String(t[..<coma]) }
+        return t.hasSuffix(".") ? String(t.dropLast()) : t
+    }
+
     private func readingText(_ band: ReadinessEngine.LoadBand) -> String {
         let clave = MetricLevelPhrase.key(metricID: "load", levelKey: band.rawValue)
             ?? "reading.vsBase.load.\(band.rawValue)"   // fallback defensivo; los rawValue coinciden 1:1

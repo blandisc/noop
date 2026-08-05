@@ -222,13 +222,16 @@ public struct LiquidGuardianScreen: View {
                              tono: hoja.tono, sinLectura: hoja.sinLectura,
                              sello: hoja.sello)
 
-            // 3 · Tarjeta del par vigilado (papel + aurora ámbar/azul).
-            parVigilado
-
-            if let nota = hoja.nota {
-                LiquidNotaLine(nota, tono: hoja.notaAvisa
-                               ? LiquidColor.atencionTexto
-                               : LiquidColor.tinta500)
+            // 3 · Tarjeta del par vigilado + su nota, como UN grupo (ritmo: la nota es
+            // glosa de la tarjeta, no un beat suelto — antes flotaba equidistante entre
+            // dos tarjetas y no se leía como pie de ninguna. Revisión UI-agent A1).
+            VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+                parVigilado
+                if let nota = hoja.nota {
+                    LiquidNotaLine(nota, tono: hoja.notaAvisa
+                                   ? LiquidColor.atencionTexto
+                                   : LiquidColor.tinta500)
+                }
             }
 
             // 4 · Tarjeta LA REGLA + dominó.
@@ -274,7 +277,12 @@ public struct LiquidGuardianScreen: View {
                 .font(LiquidType.captionLectura)
                 .foregroundStyle(LiquidColor.tinta500)
                 .fixedSize(horizontal: false, vertical: true)
-                .accessibilityHidden(true)
+                // #inject r6 · Al lado DERECHO del módulo (pedido del dueño): la leyenda de
+                // ventana («tus últimas 14 noches») cierra la tarjeta por la derecha, no
+                // compite con la lectura que arranca a la izquierda.
+                .frame(maxWidth: .infinity, alignment: .trailing)
+                // Audible para VoiceOver: la ventana temporal es contexto que el vidente
+                // recibe y el lector de pantalla perdía (revisión UX-agent B3).
         }
     }
 

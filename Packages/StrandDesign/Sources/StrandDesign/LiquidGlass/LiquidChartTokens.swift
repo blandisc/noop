@@ -43,6 +43,10 @@ public enum LiquidChart {
     /// Wash de FILA resaltada (eco del scrub tabla↔gráfica): más tenue que `filaActivaAlfa`.
     /// Solo aplica cuando la fila NO es la activa de hoy.
     public static let filaResaltadaAlfa: Double = 0.055
+    /// Alfa del FILO de la banda del mini-riel de la boleta (gradiente de densidad: el
+    /// patrón personal no tiene bordes duros — el núcleo usa `bandaActivaAlfa`).
+    public static let rielBandaFiloAlfa: Double = 0.06
+
     /// Anillo de la gota-marca cuando la señal amaneció fuera (guardián / filas de señal;
     /// paridad del mockup sheet-guardian-final: rgba ámbar al 45 %).
     public static let marcaAnilloAlfa: Double = 0.45
