@@ -268,10 +268,17 @@ public struct LiquidOrbeDormido: View {
         // Respiración: ±4.5 % con periodo `periodo`.
         let radio = base * (quieto ? 1 : 1 + 0.045 * sin(t * 2 * .pi / Self.periodo))
         nubeDeOrbe(&g, dirs: Self.dirs,
-                   grupos: [GrupoDeOrbe(indices: Self.indices, centro: centro, alfaK: 0.9)],
+                   grupos: [GrupoDeOrbe(indices: Self.indices, centro: centro, alfaK: 0.72)],
                    radio: radio,
                    rotacion: quieto ? 0 : t * 0.14,
-                   nivel: 0,                       // recipiente vacío: solo el piso y vapor
+                   // Esfera PLENA, no un gauge en cero. El gauge en cero deja el 90 % de la
+                   // esfera en vapor al 12 % de alfa: en pantalla no se ve un orbe dormido,
+                   // se ve una neblina con una miga abajo, y el estado deja de comunicar.
+                   // Además un nivel de cero es una LECTURA, y aquí no hay nada que leer —
+                   // igual que en la entrada, el orbe está como objeto, no como dato.
+                   nivel: nil,
+                   // Más tenue que el orbe de la entrada: «dormido» se lee en el color y en la
+                   // respiración lenta, no en la ausencia.
                    jitter: 0, t: t, color: LiquidColor.particulaNeutra)
         chispear(&g, centro: centro, radio: radio, t: t)
     }
