@@ -14589,6 +14589,39 @@
         }
       }
     },
+    "Connect Apple Health and it will start beating with your nights." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conecta Apple Salud y empezará a latir con tus noches."
+          }
+        }
+      }
+    },
+    "Everything stays on your iPhone. No account, no cloud." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todo se queda en tu iPhone. Sin cuenta, sin nube."
+          }
+        }
+      }
+    },
+    "The orb is still asleep" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El orbe aún duerme"
+          }
+        }
+      }
+    },
     "Connect Apple Health": {
       "comment": "A button label that prompts the user to connect to their Apple Health account.",
       "extractionState": "stale",

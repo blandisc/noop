@@ -229,6 +229,24 @@ public enum LiquidEcosistemaMotion {
     public static let ambienteCrossfade: Double = 1.6
 }
 
+// MARK: - Entrada de la app (FER-41 · «El orbe en tres actos», acto I)
+
+/// Las perillas de la animación de arranque. `duracionTotal` es la PERILLA MAESTRA: cada
+/// hito de la coreografía (`EntradaSimulacion.Guion`) es una fracción de ella, así que
+/// acelerar o alargar toda la entrada es cambiar este número — nunca reescalar seis tiempos
+/// a mano y que se desfasen entre sí.
+public enum LiquidEntradaMotion {
+    /// Cuánto dura la coreografía completa: llegada → respiro → ascenso → teñido.
+    public static let duracionTotal: Double = 2.8
+    /// El fundido con el que la entrada se retira y descubre la app ya construida.
+    public static let salida: Double = 0.35
+    /// Con «Reducir movimiento» no hay viaje: el orbe aparece asentado y teñido y solo se
+    /// sostiene lo justo para que el relevo no lea como un parpadeo.
+    public static let duracionReduce: Double = 0.45
+    /// El fundido de salida, ya envuelto (la curva vive en el contrato, no en el call site).
+    public static var salidaAnim: Animation { .easeOut(duration: salida) }
+}
+
 // MARK: - Override de motion para previews/tests
 
 private struct LiquidMotionDisabledKey: EnvironmentKey {

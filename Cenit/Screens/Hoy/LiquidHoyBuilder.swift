@@ -322,7 +322,7 @@ enum LiquidHoyBuilder {
             if prep == nil {
                 return (nil,
                         String(localized: "Reading your night"),
-                        String(localized: "One moment — the guardian is still reading your signals."),
+                        String(localized: "One moment: the guardian is still reading your signals."),
                         nil, false, false)
             }
             return (nil,
