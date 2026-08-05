@@ -1152,7 +1152,12 @@ enum LiquidHoyBuilder {
         if desfase {
             let esperado: Int = prep!.verdict == .full ? 0 : (prep!.verdict == .caution ? 1 : 2)
             if fuera > esperado {
-                return (String(localized: "A vote fell outside today. A new verdict has to repeat two days in a row to replace yesterday's."),
+                // El plural importa (revisión DeepSeek r2): con los DOS votos fuera hoy el
+                // singular «a vote» mentía la magnitud del desfase.
+                let texto = fuera >= 2
+                    ? String(localized: "Both votes fell outside today. A new verdict has to repeat two days in a row to replace yesterday's.")
+                    : String(localized: "A vote fell outside today. A new verdict has to repeat two days in a row to replace yesterday's.")
+                return (texto,
                         String(localized: "acta.resumen.hist.fuera.clave", defaultValue: "outside today"))
             }
             return (String(localized: "Your votes fell inside today. The verdict changes once the improvement repeats two days in a row."),

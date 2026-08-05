@@ -660,6 +660,19 @@ final class LiquidHoyBuilderTests: XCTestCase {
                        "la fila que se salió no habla en el verde del veredicto")
         XCTAssertTrue(sueno?.fuera == true)
 
+        // El plural del desfase (DeepSeek r2): caution sostenido + los DOS fuera hoy —
+        // la frase no puede decir «a vote» cuando cayeron dos.
+        let dosFuera = Preparedness.Read(
+            verdict: .caution,
+            drivers: [driver(.autonomic, .high, z: 1.4), driver(.sleep, .low),
+                      driver(.thermal, .inRange), driver(.load, .noData)],
+            signalsPresent: 3, signalsTotal: 3, maturity: .trusted,
+            autonomicNights: 21, trend: nil)
+        let actaDos = LiquidHoyBuilder.acta(prep: dosFuera)
+        XCTAssertEqual(actaDos.conteoClave, "outside today")
+        XCTAssertTrue(actaDos.conteo.localizedCaseInsensitiveContains("both"),
+                      "con 2 fuera la frase habla en plural: \(actaDos.conteo)")
+
         XCTAssertTrue(LiquidHoyBuilder.desfaseDeHisteresis(verdict: .full, fuera: 1))
         XCTAssertFalse(LiquidHoyBuilder.desfaseDeHisteresis(verdict: .caution, fuera: 1))
         XCTAssertFalse(LiquidHoyBuilder.desfaseDeHisteresis(verdict: .easy, fuera: 2))
