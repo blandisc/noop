@@ -20,6 +20,11 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **La gramática de «Cosmos y Matriz» / The grammar of "Cosmos and Matrix."**
+  **ES** — El vocabulario compartido que traduce las señales del cuerpo a la posición de la lunita del medidor, decide cuándo una señal solo pide atención y cuándo alarma, y arma el estado del guardián. Sin pantalla todavía; es la base con la que las dos caras hablan el mismo idioma.
+  **EN** — The shared vocabulary that turns the body's signals into the meter's moon position, decides when a signal only asks for attention versus alarm, and builds the guardian's state. No screen yet; it's the base that lets both faces speak the same language.
+  ([HoyGramatica.swift](Cenit/Screens/Hoy/HoyGramatica.swift))
+
 - **Las gráficas y el conmutador de «Cosmos y Matriz» / The charts and switcher of "Cosmos and Matrix."**
   **ES** — Las seis formas de tendencia del modo Matriz (columnas de sueño, líneas de FC y VFC, la línea serena del guardián, la colina de carga, las barras y la escalerita), el sello con su ícono de partículas, y el conmutador Cosmos·Matriz. Sin pantalla todavía; son las piezas que las dos caras ensamblan.
   **EN** — The six trend shapes of the Matrix mode (sleep columns, HR and HRV lines, the guardian's calm line, the load hill, the bars and the little staircase), the sello with its particle icon, and the Cosmos·Matrix switcher. No screen yet; they're the pieces the two faces assemble.
