@@ -20,6 +20,11 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **Cimientos de «Cosmos y Matriz» / Foundations for "Cosmos and Matrix."** (FER-51, fase 1)
+  **ES** — Primeros ladrillos del rediseño de Hoy: el medidor lunar (un anillo con la lunita de tu hoy contra tu rango), el motor de «medios tonos» que dibuja las tendencias con partículas de tinta, y los colores del papel Matriz. Sin cambios visibles todavía; las piezas se ensamblan en pantalla más adelante.
+  **EN** — First building blocks of the Today redesign: the lunar meter (a ring with today's moon against your range), the "halftone" engine that draws trends with ink particles, and the Matrix paper colors. Nothing visible yet; the pieces assemble on screen later.
+  ([MedidorLunar.swift](Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/MedidorLunar.swift), [MatrizDither.swift](Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/MatrizDither.swift))
+
 - **La racha deja de contar un plan que no existe / The streak stops counting a plan that isn't there.**
   **ES** — Si nunca configuraste un split de entrenamiento, Entrenar te presumía una racha de «120 días cumpliendo el plan»: sin días asignados, cada día contaba como descanso cumplido, y el número era en realidad el tope de la ventana de cálculo disfrazado de logro. Sin plan no hay racha.
   **EN** — With no training split configured, Entrenar bragged about a "120 days on plan" streak: with no assigned days, every day counted as a kept rest day, and the number was really the calculation window's cap dressed up as an achievement. No plan, no streak.

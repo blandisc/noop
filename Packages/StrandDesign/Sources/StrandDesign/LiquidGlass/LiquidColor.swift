@@ -54,6 +54,11 @@ public enum LiquidColor {
     public static let fondoGradient = LinearGradient(
         colors: [fondoAlto, fondoBajo], startPoint: .top, endPoint: .bottom)
 
+    /// FER-51 · El papel plano del modo Matriz («medios tonos»): tinta sobre papel cálido,
+    /// sin tarjetas — un solo lienzo para las gráficas de partículas. Plano a propósito
+    /// (el dither necesita un suelo uniforme, no un degradado).
+    public static let papelMatriz = Color(hex: "#F6F4EE")
+
     // MARK: Verde (única voz de marca)
 
     /// CTA, énfasis, palabra destacada del hero, pulsos.
@@ -88,6 +93,12 @@ public enum LiquidColor {
     /// El ámbar CLARO del clima de atención (decisión del dueño /inject: un solo ámbar,
     /// familia naranja — el oro amarillo queda solo para el dial solar).
     public static let ambarClaro = Color(hex: "#E29A50")
+    /// FER-51 · Identidad de TEMPERATURA DE PIEL en «Cosmos y Matriz» (§8 del REQ): un
+    /// dorado profundo deliberadamente DISTINTO del ámbar de atención — la identidad y la
+    /// alerta no pueden compartir hue. Oscurecido desde el #B08A3E del prototipo para
+    /// contraste ≥ 4.5:1 como texto sobre `papelMatriz` (verificado en MatrizContrasteTests);
+    /// las partículas/puntos pueden usar la familia clara, el TEXTO usa este.
+    public static let doradoTemp = Color(hex: "#8A6A2B")
 
     // MARK: Partículas del Ecosistema (FER-10)
     //
