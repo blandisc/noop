@@ -305,7 +305,11 @@ public struct LiquidHoyModel: Sendable {
         ],
         hero: .veredicto(title: "En rango", highlight: "rango",
                          highlightTone: LiquidColor.verdePrimario,
-                         subtitle: "Tus dos señales amanecieron dentro de tu rango.",
+                         // El copy EXACTO del builder (`Both of your signals woke up in your
+                         // range.` → es). El ejemplo se presenta como paridad de producto y el
+                         // arnés de estados lo renderiza como tal, así que una redacción propia
+                         // aquí acaba enseñándole al dueño un texto que la app nunca dice.
+                         subtitle: "Tus dos señales amanecieron en tu rango.",
                          confianza: nil),
         carga: .medida(pos: 51.5, zone: 1, status: "EN EQUILIBRIO", ratio: "1.03", razon: 1.03, state: .ok),
         metricas: [

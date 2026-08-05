@@ -42,8 +42,60 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
     }
     #endif
 
-    /// Los 7 estados con el copy es-MX REAL del builder (paridad de producto): los 5
-    /// canónicos + el estado SEPARADO (fase forzada) + el ECLIPSE del guardián.
+    /// Los dos estados de Hoy que NO pasan por `LiquidHoyModel` porque no son el héroe con
+    /// datos: el estado sin ni una fuente (el orbe DORMIDO) y el cuadro final de la entrada
+    /// (FER-41).
+    ///
+    /// OJO al leer el PNG de la entrada: sale en GRIS, y no es un defecto. `ImageRenderer` no
+    /// ejecuta `.task`, y es ahí donde la entrada lee el veredicto y fija su color — así que en
+    /// el render se queda con el neutro con el que arranca. En el teléfono sí se tiñe.
+    #if os(macOS)
+    @MainActor
+    func test_renderEstadoVacioYEntrada() throws {
+        let piezas: [(String, AnyView)] = [
+            ("0_orbe_dormido", AnyView(
+                ZStack {
+                    LiquidColor.fondoGradient.ignoresSafeArea()
+                    VStack(spacing: 0) {
+                        LiquidOrbeDormidoEstado(
+                            titulo: "El orbe aún duerme",
+                            cuerpo: "Conecta Apple Salud y empezará a latir con tus noches.",
+                            cta: "Conectar Apple Salud",
+                            privacidad: "Todo se queda en tu iPhone. Sin cuenta, sin nube.",
+                            onConectar: {})
+                        .padding(.top, LiquidSpace.s1400)
+                        .padding(.horizontal, LiquidSpace.s550)
+                        Spacer(minLength: 0)
+                    }
+                })),
+            ("12_entrada_asentada", AnyView(
+                LiquidOrbeEntrada(clima: { .bien }, onFin: {}))),
+        ]
+        for (nombre, vista) in piezas {
+            let view = vista
+                .environment(\.liquidMotionDisabled, true)
+                .frame(width: 402, height: 874)
+            let renderer = ImageRenderer(content: view)
+            renderer.scale = 2
+            guard let image = renderer.nsImage,
+                  let tiff = image.tiffRepresentation,
+                  let rep = NSBitmapImageRep(data: tiff),
+                  let png = rep.representation(using: .png, properties: [:]) else {
+                XCTFail("ImageRenderer no produjo imagen para \(nombre)")
+                continue
+            }
+            let url = URL(fileURLWithPath: "/tmp/noop-liquid/estado_\(nombre).png")
+            try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(),
+                                                     withIntermediateDirectories: true)
+            try? png.write(to: url)
+            print("WROTE \(url.path)")
+        }
+    }
+    #endif
+
+    /// Los 11 estados del héroe con el copy es-MX REAL del builder (paridad de producto):
+    /// los 3 veredictos, lectura de día, calibrando, separado, eclipse, leyendo, sin permiso,
+    /// sin lectura de hoy y el veredicto provisional con su línea de confianza.
     static let estados: [(String, LiquidHoyModel, EcosistemaSimulacion.Fase?)] = {
         let base = LiquidHoyModel.ejemplo
 
@@ -131,7 +183,7 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
             ],
             hero: .demotado(kicker: "PREPARACIÓN",
                             title: "Conociéndote",
-                            subtitle: "Noche 4 de 7 · tu rango se está formando"),
+                            subtitle: "Noche 3 de 4 · tu rango se está formando"),
             carga: .calibrando(status: "CALIBRANDO"),
             metricas: base.metricas,
             modulos: LiquidHoyModel.calibrandoModulos,
@@ -139,7 +191,7 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
             heroHint: nil,
             ambiente: .neutro,
             heroPuerta: "Cómo llegué a esto",
-            calibracion: .init(noche: 4, total: 7))
+            calibracion: .init(noche: 3, total: 4))
 
         // 7 · El ECLIPSE: ámbar con el guardián en pareja — la única causa que lo saca de
         // su órbita.
@@ -159,12 +211,99 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
             ambiente: .atencion,
             heroPuerta: "Cómo llegué a esto")
 
+
+        // 8 · «Leyendo tu noche…»: el primer pintado, antes de que el refresh complete el
+        // veredicto. Decirle «no conozco tu base» a alguien con años de historia sería falso.
+        let leyendo = LiquidHoyModel(
+            kicker: base.kicker,
+            dial: .init(night: nil, sol: (start: 6.8, end: 20.3), marker: 8),
+            senales: [
+                .init(id: "autonomico", label: "EN REPOSO", caption: "SIN DATOS",
+                      progress: nil, icon: .ondaSenal, state: .ok),
+                .init(id: "sueno", label: "SUEÑO", caption: "SIN DATOS",
+                      progress: nil, icon: .lunaSenal, state: .ok),
+            ],
+            hero: .demotado(kicker: "PREPARACIÓN", title: "Leyendo tu noche…",
+                            subtitle: "Un momento."),
+            carga: .calibrando(status: "CALIBRANDO"),
+            metricas: base.metricas,
+            modulos: LiquidHoyModel.calibrandoModulos,
+            guardian: .init(label: "VIGILANDO", temp: "—", resp: "—", estado: .tranquilo),
+            heroHint: nil,
+            ambiente: .neutro,
+            heroPuerta: "Cómo llegué a esto")
+
+        // 9 · SIN PERMISO de Salud: la única puerta real es conceder el permiso, así que el
+        // héroe cambia de promesa. No lleva contador: sin permiso no se sabe qué falta.
+        let sinPermiso = LiquidHoyModel(
+            kicker: base.kicker,
+            dial: .init(night: nil, sol: (start: 6.8, end: 20.3), marker: 11),
+            senales: [
+                .init(id: "autonomico", label: "EN REPOSO", caption: "SIN DATOS",
+                      progress: nil, icon: .ondaSenal, state: .ok),
+                .init(id: "sueno", label: "SUEÑO", caption: "SIN DATOS",
+                      progress: nil, icon: .lunaSenal, state: .ok),
+            ],
+            hero: .demotado(kicker: "PREPARACIÓN", title: "Aún no conozco tu base",
+                            subtitle: "Conecta Apple Salud en Ajustes y tu veredicto diario aparecerá aquí."),
+            carga: .calibrando(status: "CALIBRANDO"),
+            metricas: base.metricas,
+            modulos: LiquidHoyModel.calibrandoModulos,
+            guardian: .init(label: "VIGILANDO", temp: "—", resp: "—", estado: .tranquilo),
+            heroHint: nil,
+            ambiente: .neutro,
+            heroPuerta: "Cómo llegué a esto")
+
+        // 10 · «Sin lectura de hoy»: la base YA está formada; lo que falta es la lectura de
+        // hoy. Sin contador a propósito — decir «se está formando» con los puntos llenos
+        // sería falso (gate /cso B2).
+        let sinLectura = LiquidHoyModel(
+            kicker: base.kicker,
+            dial: .init(night: nil, sol: (start: 6.8, end: 20.3), marker: 9),
+            senales: [
+                .init(id: "autonomico", label: "EN REPOSO", caption: "SIN DATOS",
+                      progress: nil, icon: .ondaSenal, state: .ok),
+                .init(id: "sueno", label: "SUEÑO", caption: "SIN DATOS",
+                      progress: nil, icon: .lunaSenal, state: .ok),
+            ],
+            hero: .demotado(kicker: "PREPARACIÓN", title: "Sin lectura de hoy",
+                            subtitle: "Tu rango ya está formado; la lectura de hoy aún no llega."),
+            carga: base.carga,
+            metricas: base.metricas,
+            modulos: LiquidHoyModel.ejemploModulos,
+            guardian: .init(label: "VIGILANDO", temp: "+0.1°", resp: "14 rpm", estado: .tranquilo),
+            heroHint: nil,
+            ambiente: .neutro,
+            heroPuerta: "Cómo llegué a esto")
+
+        // 11 · PROVISIONAL: veredicto de verdad, pero sobre una base todavía joven. La línea
+        // de confianza es el tether honesto y solo existe mientras la base no está firme.
+        let provisional = LiquidHoyModel(
+            kicker: base.kicker,
+            dial: base.dial,
+            senales: base.senales,
+            hero: .veredicto(title: "En rango", highlight: "rango",
+                             highlightTone: LiquidColor.verdePrimario,
+                             subtitle: "Tus dos señales amanecieron en tu rango.",
+                             confianza: "Confianza: 6 de 14 noches"),
+            carga: base.carga,
+            metricas: base.metricas,
+            modulos: LiquidHoyModel.ejemploModulos,
+            guardian: base.guardian,
+            heroHint: base.heroHint,
+            ambiente: .bien,
+            heroPuerta: "Cómo llegué a esto")
+
         return [("1_verde", base, nil),
                 ("2_ambar", ambar, nil),
                 ("3_rojo", rojo, nil),
                 ("4_lectura", lectura, nil),
                 ("5_calibrando", calibrando, nil),
                 ("6_separado", base, .separada),
-                ("7_eclipse", eclipse, nil)]
+                ("7_eclipse", eclipse, nil),
+                ("8_leyendo", leyendo, nil),
+                ("9_sin_permiso", sinPermiso, nil),
+                ("10_sin_lectura", sinLectura, nil),
+                ("11_provisional", provisional, nil)]
     }()
 }
