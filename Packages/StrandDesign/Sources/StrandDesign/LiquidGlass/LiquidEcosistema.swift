@@ -252,7 +252,24 @@ public struct LiquidEcosistema: View {
                 .frame(maxWidth: .infinity)
                 // Compacto (FER-28): sube el lienzo recortando su aire superior — el arte no
                 // cambia, solo se presenta más apretado. El estado separado sigue librando.
+                // FER-46: el offset se ANIMA con la separación — antes saltaba de golpe
+                // (recorteCompacto → 0) mientras palabra/valores sí se fundían, y el orbe
+                // daba un brinco seco al separar y al reunir. Al UNIR, además, ESPERA a
+                // que las esferas viajen de vuelta (mismo retardo que la palabra): subir
+                // el lienzo antes de tiempo les cortaba la cabeza a los vigías contra el
+                // clipped() del contenedor.
                 .offset(y: -recorteCompacto)
+                // Pulido /inject (ojo del dueño): ambient (ease-in-out) en vez de glass-out
+                // — el arranque del glass-out se sentía un empujón. Al SEPARAR el lienzo
+                // espera la anticipación (el orbe toma aire) y PLANEA hacia abajo; al UNIR
+                // espera a que las esferas aterricen y sube como un solo gesto final.
+                .animation(still ? LiquidEcosistemaMotion.reduceCrossfadeAnim
+                                 : (esSeparadaEstable
+                                    ? LiquidMotion.ambient(0.9)
+                                        .delay(LiquidEcosistemaMotion.anticipacion)
+                                    : LiquidMotion.ambient(0.9)
+                                        .delay(LiquidEcosistemaMotion.fusionDur * 0.85)),
+                           value: esSeparadaEstable)
         }
         .frame(height: (compacto ? LiquidSpace.ecosistemaAltoCompacto
                                  : LiquidSpace.ecosistemaAlto) * escala,
@@ -478,17 +495,22 @@ public struct LiquidEcosistema: View {
             .frame(height: G.lienzo.height - 34
                    - (compacto ? LiquidSpace.ecosistemaAcercaVeredicto : 0), alignment: .bottom)
             .opacity(esSeparadaEstable ? 0 : 1)
+            // Deriva sutil (overlapping action, ojo del dueño): la palabra no aparece —
+            // ATERRIZA. Al separar se hunde 10 pt (la misma dirección en la que el orbe
+            // va a bajar); al unir viaja esos 10 pt de vuelta a su asiento mientras
+            // funde. Reduce Motion: cero viaje, solo crossfade.
+            .offset(y: still ? 0 : (esSeparadaEstable ? 10 : 0))
             // La palabra es puro texto (la puerta vive aparte): NUNCA intercepta el tap
             // del lienzo — tocar el veredicto también separa (Grok #1).
             .allowsHitTesting(false)
-            // Al UNIR, la palabra espera al orbe (oleada «costuras»: antes entraba al
-            // tap y flotaba sobre esferas aún en viaje); al separar se va de inmediato.
+            // Al SEPARAR se desvanece de inmediato (se hace a un lado, ambient suave);
+            // al UNIR llega ~0.45 s DESPUÉS de que la subida arrancó — primero se mueve
+            // el objeto, después habla el texto. Todo al unísono se sentía mecánico.
             .animation(still ? LiquidEcosistemaMotion.reduceCrossfadeAnim
                              : (esSeparadaEstable
-                                ? LiquidMotion.glassOut(LiquidMotion.quick)
-                                : LiquidMotion.glassOut(LiquidEcosistemaMotion.palabraDur)
-                                    .delay(LiquidEcosistemaMotion.anticipacion * 0.6
-                                           + LiquidEcosistemaMotion.fusionDur * 0.7)),
+                                ? LiquidMotion.ambient(LiquidEcosistemaMotion.palabraDur)
+                                : LiquidMotion.ambient(0.75)
+                                    .delay(LiquidEcosistemaMotion.fusionDur * 0.85 + 0.45)),
                        value: esSeparadaEstable)
         // La PUERTA al acta («Cómo llegué a esto») vive en AMBOS modos (D10): el tap del
         // lienzo ya no navega, así que esta pastilla es la única entrada visible.
@@ -508,7 +530,7 @@ public struct LiquidEcosistema: View {
             VStack(spacing: LiquidSpace.s050) {
                 Text(etiqueta)
                     .font(LiquidType.micro).tracking(LiquidType.microTracking)
-                    .foregroundStyle(LiquidColor.tinta500)
+                    .foregroundStyle(LiquidColor.tinta700)   // FER-45: contraste legible
             }
             .position(x: centro.x, y: 74)
             // Opción 2 «escrito en partículas» (decisión del dueño /inject, tras probar
@@ -611,7 +633,11 @@ public struct LiquidEcosistema: View {
                 .multilineTextAlignment(lado > 0 ? .leading : .trailing)
         }
         .frame(width: 120, alignment: lado > 0 ? .leading : .trailing)
-        .position(x: x + lado * (rOrbe + 18 + 60), y: 36)
+        // FER-46 (ojo del dueño): el gap geométrico era idéntico (18 pt por lado), pero la
+        // temperatura REMATA hacia el orbe con «°» — glifo chico y ligero — mientras la
+        // respiración arranca con dígitos pesados. Compensación ÓPTICA: el lado izquierdo
+        // se acerca 6 pt para que ambas cifras se PERCIBAN igual de ancladas a su orbe.
+        .position(x: x + lado * (rOrbe + (lado > 0 ? 18 : 12) + 60), y: 36)
     }
 
     // (miniGuardian murió con la gramática de columnas: ver `vigiaColumna`.)
@@ -835,7 +861,9 @@ private final class EcosistemaEtiquetas {
         // Espaciado de las versalitas orbitales: «R E P O S O».
         let v = ctx.resolve(Text(texto.map(String.init).joined(separator: " "))
             .font(LiquidType.orbita)
-            .foregroundColor(LiquidColor.tinta500))
+            // FER-45: tinta700 (no tinta500) — el fade orbital multiplica por la opacidad del
+            // contexto, así que un base más claro dejaba los rótulos ilegibles sobre el papel.
+            .foregroundColor(LiquidColor.tinta700))
         resueltas[texto] = v
         return v
     }
