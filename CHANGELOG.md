@@ -20,6 +20,11 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **El motor aprende a contar su propia historia / The engine learns to tell its own history.**
+  **ES** — Preparación ahora expone dos lecturas que ya calculaba por dentro: la historia corporal de las últimas 20 noches (cada una juzgada con la base que existía ESE día — la historia jamás se repinta cuando tu base de hoy cambia) y la desviación térmica exacta que juzgó el eje (con su descuento de fase lútea incluido). Son solo lectura para la pantalla Hoy rediseñada (FER-51): ningún voto, umbral ni peso del veredicto cambió.
+  **EN** — Preparedness now exposes two read-outs it already computed internally: the body history of the last 20 nights (each judged against the baseline that existed THAT day — history never repaints when today's baseline moves) and the exact thermal deviation the axis judged (luteal-phase discount included). Read-only for the redesigned Today screen (FER-51): no vote, threshold or weight of the verdict changed.
+  ([Preparedness.swift](Packages/StrandAnalytics/Sources/StrandAnalytics/Preparedness.swift))
+
 - **Cimientos de «Cosmos y Matriz» / Foundations for "Cosmos and Matrix."** (FER-51, fase 1)
   **ES** — Primeros ladrillos del rediseño de Hoy: el medidor lunar (un anillo con la lunita de tu hoy contra tu rango), el motor de «medios tonos» que dibuja las tendencias con partículas de tinta, y los colores del papel Matriz. Sin cambios visibles todavía; las piezas se ensamblan en pantalla más adelante.
   **EN** — First building blocks of the Today redesign: the lunar meter (a ring with today's moon against your range), the "halftone" engine that draws trends with ink particles, and the Matrix paper colors. Nothing visible yet; the pieces assemble on screen later.
