@@ -3,12 +3,25 @@ import CenitStore
 import StrandAnalytics
 @testable import Cenit
 
-/// FER-639 — `InsightsProvider` (Patrones + «La conexión de hoy» del Daily Brief) must mask every
-/// cross-source column to the BAND source before `InsightEngine` folds any HRV/RHR/resp baseline,
-/// anomaly or correlation. Before the fix it passed raw `repo.days`, so the HRV night-anomaly baseline
-/// («anoche tu HRV corrió bajo tu base, base X ms») mixed band RMSSD with Apple SDNN — two instruments
-/// with no published conversion (Task Force 1996; Shaffer & Ginsberg 2017). The fix routes `days`
-/// through `SourceLens.maskForBaseline(keep:.band)` (FER-631), the same lens the Recovery detail uses.
+/// `InsightsProvider` (Patrones + «La conexión de hoy» del Daily Brief) pasa los días por
+/// `SourceLens.clearBandColumns` antes de que `InsightEngine` doble cualquier base.
+///
+/// **Este archivo nació mintiendo** (FER-973, PR #1017): se escribió para el mundo FER-639, cuando el
+/// limpiado era SELECTIVO por fuente (noches de banda vs noches de Apple) y su misión era que la base
+/// de HRV no mezclara RMSSD de banda con SDNN de Apple. Ese mundo ya no existe: tras «la banda nunca
+/// existió» toda fila es de Apple y el limpiado es INCONDICIONAL
+/// (`SourceLens.swift` — nila `avgHrv`, `restingHr`, `respRateBpm`, las etapas de sueño y
+/// `skinTempDevC` en TODAS las filas). Como el archivo nunca se ejecutó —el modo que lo corría estaba
+/// roto y CI no cubre este target— nadie notó que una de sus pruebas fallaba y la otra pasaba VACÍA.
+///
+/// Lo que este archivo fija ahora es la consecuencia REAL, que es incómoda y por eso vale pinearla:
+/// **ninguna anomalía nocturna de vital puede aflorar hoy**, porque el motor recibe esas columnas en
+/// `nil`. Para HRV es deliberado y correcto (el SDNN de Apple no es comparable contra una base de
+/// RMSSD). Para **FC en reposo y respiración** es más ancho de lo necesario: son de un solo
+/// instrumento y sí serían comparables consigo mismas. Eso es una decisión de producto/ciencia
+/// abierta, no un descuido que se parchee aquí: si alguien la resuelve (moviendo `rank` a
+/// `SourceLens.clearBandHrv`), ESTAS pruebas son las que deben cambiar, y el diff dirá exactamente
+/// qué empieza a mostrarse.
 @MainActor
 final class InsightsProviderSourceInvarianceTests: XCTestCase {
 
@@ -21,17 +34,11 @@ final class InsightsProviderSourceInvarianceTests: XCTestCase {
                     strain: 10, exerciseCount: 1, spo2Pct: 97, skinTempDevC: 0.1, respRateBpm: resp)
     }
 
-    /// A band history + interleaved Apple-only travel nights on a DIFFERENT instrument's scale
-    /// (SDNN ~85 vs band RMSSD ~50; Apple RHR ~44 vs band ~52), then tonight back on the strap.
-    private func mixedHistory() -> (days: [DailyMetric], apple: Set<String>, todayKey: String) {
+    /// 30 noches estables + la de hoy, que es la que cada prueba decide.
+    private func history() -> (days: [DailyMetric], todayKey: String) {
         var days: [DailyMetric] = []
-        var apple: Set<String> = []
-        for i in 1...20 { days.append(dm(key(i), hrv: 50, rhr: 52)) }            // band nights
-        for i in 21...30 {                                                        // Apple-only nights
-            let k = key(i); apple.insert(k)
-            days.append(dm(k, hrv: 85, rhr: 44, resp: 16))
-        }
-        return (days, apple, key(31))
+        for i in 1...30 { days.append(dm(key(i), hrv: 50, rhr: 52)) }
+        return (days, key(31))
     }
 
     private let vitals: Set<String> = ["HRV", "FC en reposo", "Respiración"]
@@ -40,43 +47,51 @@ final class InsightsProviderSourceInvarianceTests: XCTestCase {
           .sorted { $0.datum.metric < $1.datum.metric }
     }
 
-    // MARK: I4 — the consumer's HRV/RHR/resp baseline equals the band-only (Apple-rows-dropped) one
-
-    /// Tonight's BAND reading breaks from the band baseline (RHR 58 vs base 52 → an anomaly). The masked
-    /// consumer must read it against the band-only baseline — identical to dropping the Apple rows whole —
-    /// and NOT against the contaminated mix.
-    func testVitalAnomaliesMatchBandOnlyBaseline() {
-        var (days, apple, todayKey) = mixedHistory()
-        days.append(dm(todayKey, hrv: 50, rhr: 58))   // back on the strap: RHR jumps, HRV at base
-
-        let masked = InsightsProvider.rank(days: days, appleDays: apple, behaviors: [:],
-                                           eligibleDaysByBehavior: [:], proven: [], today: todayKey)
-        // The band-only history (Apple rows dropped) — the baseline the fix must reproduce (FER-631 I4).
-        let bandOnly = InsightEngine.generate(
-            .init(days: days.filter { !apple.contains($0.day) }, referenceDay: todayKey))
-
-        XCTAssertEqual(vitalAnomalies(masked), vitalAnomalies(bandOnly),
-                       "the HRV/RHR/resp night-anomaly insights must match the band-only baseline (I4)")
-        XCTAssertFalse(vitalAnomalies(masked).isEmpty, "the RHR jump must surface as an anomaly")
-
-        // Load-bearing: without the mask the engine folds the Apple RHR (~44) into the baseline, so
-        // tonight's 58 reads against a different, pulled-down base → a different anomaly set.
-        let unmasked = InsightEngine.generate(.init(days: days, referenceDay: todayKey))
-        XCTAssertNotEqual(vitalAnomalies(unmasked), vitalAnomalies(masked),
-                          "the Apple nights bias the raw baseline — proving the source mask is load-bearing")
+    private func rank(_ days: [DailyMetric], today: String) -> [Insight] {
+        InsightsProvider.rank(days: days, appleDays: [], behaviors: [:],
+                              eligibleDaysByBehavior: [:], proven: [], today: today)
     }
 
-    // MARK: I1 — a band reading at its own baseline raises no anomaly, however many Apple days there are
+    // MARK: El limpiado silencia las anomalías de vitales — y hay que verlo, no suponerlo
 
-    /// Tonight's band reading sits exactly on the band baseline (HRV 50, RHR 52). No vital anomaly may
-    /// fire, regardless of the 10 Apple SDNN nights in `repo.days` — the classic I1 invariant.
-    func testBandReadingAtBaselineRaisesNoAnomalyDespiteAppleDays() {
-        var (days, apple, todayKey) = mixedHistory()
-        days.append(dm(todayKey, hrv: 50, rhr: 52))   // on-baseline band night
+    /// Un salto de FC en reposo que el motor SÍ marcaría con datos crudos no aflora por `InsightsProvider`.
+    /// Las dos mitades importan: sin la segunda, la prueba pasaría igual con un motor que no detecta nada,
+    /// y no estaría probando el limpiado sino la nada.
+    func testClearingSilencesVitalNightAnomalies() {
+        var (days, todayKey) = history()
+        days.append(dm(todayKey, hrv: 50, rhr: 58))   // salto de FC en reposo: 58 contra una base de 52
 
-        let masked = InsightsProvider.rank(days: days, appleDays: apple, behaviors: [:],
-                                           eligibleDaysByBehavior: [:], proven: [], today: todayKey)
-        XCTAssertTrue(vitalAnomalies(masked).isEmpty,
-                      "a band reading at its own baseline must raise no anomaly (I1)")
+        XCTAssertTrue(vitalAnomalies(rank(days, today: todayKey)).isEmpty,
+                      "con las columnas cross-source en nil, el motor no tiene qué juzgar")
+
+        // Carga de la prueba: con los días CRUDOS el mismo motor sí emite la anomalía. Si esto dejara de
+        // ser cierto, lo de arriba se volvería un verde vacío.
+        let crudo = InsightEngine.generate(.init(days: days, referenceDay: todayKey))
+        XCTAssertFalse(vitalAnomalies(crudo).isEmpty,
+                       "el motor SÍ ve el salto cuando le llegan las columnas: lo que las apaga es el limpiado")
+    }
+
+    /// El limpiado es incondicional: `appleDays` ya no selecciona nada (todo es Apple). Pasarle un
+    /// conjunto lleno o vacío da el MISMO resultado — el parámetro sobrevive por firma, no por efecto.
+    func testAppleDaysArgumentNoLongerChangesAnything() {
+        var (days, todayKey) = history()
+        days.append(dm(todayKey, hrv: 50, rhr: 58))
+
+        let sinApple = rank(days, today: todayKey)
+        let conApple = InsightsProvider.rank(days: days, appleDays: Set(days.map(\.day)), behaviors: [:],
+                                             eligibleDaysByBehavior: [:], proven: [], today: todayKey)
+        XCTAssertEqual(vitalAnomalies(sinApple), vitalAnomalies(conApple),
+                       "el limpiado no mira la fuente: marcar todo como Apple no cambia nada")
+    }
+
+    /// Las columnas de una sola fuente NO se limpian: `InsightsProvider` sigue siendo capaz de emitir
+    /// insights. Sin esto, las dos pruebas de arriba serían compatibles con un proveedor roto del todo.
+    func testSingleSourceColumnsSurviveTheClearing() {
+        let (days, todayKey) = history()
+        let masked = SourceLens.clearBandColumns(days)
+        XCTAssertNil(masked.last?.restingHr, "FC en reposo se limpia (cross-source)")
+        XCTAssertNil(masked.last?.avgHrv, "HRV se limpia (cross-source)")
+        XCTAssertEqual(masked.last?.totalSleepMin, 420, "el sueño total sobrevive (una sola fuente)")
+        XCTAssertEqual(masked.last?.spo2Pct, 97, "SpO₂ sobrevive (una sola fuente)")
     }
 }

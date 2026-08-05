@@ -74,7 +74,10 @@ final class RestActivityFER789Tests: XCTestCase {
         let s = model([(id: "a", ex: "bench", sets: 2), (id: "b", ex: "row", sets: 1)])   // 3 pending
         XCTAssertEqual(s.pendingInCurrentRun, 2)
         XCTAssertEqual(s.pendingCount, 3)
-        XCTAssertEqual(s.nextPendingExerciseName, "row")
+        // El nombre sale por `StrandDisplay.name`, que capitaliza la primera letra a propósito
+        // (un ejercicio importado en minúsculas se veía «row» en la sesión, bug del dueño 2026-07-18).
+        // La fixture nombra el ejercicio con su id en minúsculas, así que lo que se muestra es «Row».
+        XCTAssertEqual(s.nextPendingExerciseName, "Row")
         s.registerCurrentSet()                             // bench set 1 done → focus bench's last set
         XCTAssertEqual(s.pendingInCurrentRun, 1)
         XCTAssertEqual(s.pendingCount, 2)

@@ -53,7 +53,11 @@ final class TrainingStreakTests: XCTestCase {
             session(daysAgo: 0, hour: 7, now: now, cal: cal, id: "fri"),
         ]
         let streak = TrainingStreak.streak(sessions: sessions, split: split, now: now)
-        XCTAssertEqual(streak, 1, "the missed Wednesday cuts the run — only today's Friday counts")
+        // La racha cuenta DÍAS cumplidos, no días de entreno: el jueves es descanso del plan y cuenta
+        // igual que el viernes entrenado (es la misma regla que fija `testStreak…RestDaysRideThrough`,
+        // y está documentada en `WeeklySplit.adherenceStreak`). Así que el miércoles fallado corta en
+        // 2, no en 1. La expectativa original decía 1 porque se escribió sin correr nunca la prueba.
+        XCTAssertEqual(streak, 2, "el miércoles fallado corta la racha: solo sobreviven jueves (descanso) y viernes")
     }
 
     func testLateEveningSessionLandsOnItsLocalDay() {
@@ -67,7 +71,13 @@ final class TrainingStreakTests: XCTestCase {
                        "23:30 local is the SAME local day (a UTC bucketing would misfile it)")
     }
 
+    /// Sin plan no hay racha. Antes salía `windowDays` (120): sin días asignados, cada día contaba
+    /// como «descanso cumplido», y el tope de la ventana se presentaba como logro a quien nunca
+    /// configuró un plan.
     func testEmptySplitHasNoStreak() {
         XCTAssertEqual(TrainingStreak.streak(sessions: [], split: [:], now: Date()), 0)
+        // Y tampoco aparece por tener sesiones sueltas sin plan que las respalde.
+        let suelta = session(daysAgo: 0, hour: 7, now: Date(), cal: cal, id: "suelta")
+        XCTAssertEqual(TrainingStreak.streak(sessions: [suelta], split: [:], now: Date()), 0)
     }
 }

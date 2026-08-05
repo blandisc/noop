@@ -72,12 +72,16 @@ final class StrengthSessionModelTests: XCTestCase {
     // MARK: Per-set rest (FER-715)
 
     func testRegisterRespectsPerSetRestOverride() {
-        // Exercise default = fixed 90s; set 0 overrides to fixed 200s, set 1 inherits.
+        // Exercise default = fixed 90s; set 0 overrides to fixed 200s, sets 1-2 inherit.
+        // TRES sets a propósito: con dos, registrar el segundo CIERRA la sesión y la regla r9 del dueño
+        // («tras el último set del último ejercicio no hay nada que descansar») limpia el descanso, así
+        // que la herencia de los 90 s quedaba imposible de observar. La fixture original tenía dos.
         let override = RestConfig(mode: .fixed, seconds: 200)
-        let re = RoutineExercise(id: "a", routineId: "rt", exerciseId: "bench", position: 0, targetSets: 2,
+        let re = RoutineExercise(id: "a", routineId: "rt", exerciseId: "bench", position: 0, targetSets: 3,
                                  restMode: .fixed, restSeconds: 90,
                                  sets: [RoutineSet(position: 0, kind: .work, reps: 8, weightKg: 60, rest: override),
-                                        RoutineSet(position: 1, kind: .work, reps: 8, weightKg: 60)])
+                                        RoutineSet(position: 1, kind: .work, reps: 8, weightKg: 60),
+                                        RoutineSet(position: 2, kind: .work, reps: 8, weightKg: 60)])
         let s = make([StrengthSessionModel.PlanSlot(re: re, exercise: ex("bench", "Bench"), lastSets: [])])
 
         // Registering set 0 uses its OWN 200s rest, not the exercise's 90s.
@@ -88,6 +92,10 @@ final class StrengthSessionModelTests: XCTestCase {
         s.registerCurrentSet(now: Date(timeIntervalSince1970: 6000))
         XCTAssertEqual(s.restEndsAt?.timeIntervalSince1970 ?? 0, 6000 + 90, accuracy: 0.5,
                        "a set with no override inherits the exercise rest")
+        // Y el ÚLTIMO set no deja descanso colgando: la sesión queda completa (regla r9).
+        s.registerCurrentSet(now: Date(timeIntervalSince1970: 7000))
+        XCTAssertTrue(s.isComplete, "tres sets registrados = sesión completa")
+        XCTAssertNil(s.restEndsAt, "tras el último set del último ejercicio no hay nada que descansar")
     }
 
     func testUpdateRestExerciseScopeClearsPerSetOverrides() {

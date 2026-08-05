@@ -75,24 +75,42 @@ app_touched() {
   changed_files | grep -qE '^(Cenit|CenitApp|CenitShared|CenitWidgets|CenitUnitTests|CenitUITests)/|^project\.yml$'
 }
 
+# Compila la app + sus targets de test. Con `signed` CONSERVA la firma y las entitlements, que es
+# obligatorio para EJECUTAR en el simulador: sin la entitlement del App Group la app aborta al
+# arrancar (`Assertion failed: App Group … not provisioned`) y el runner muere antes de la primera
+# prueba. Sin argumento compila sin firmar, que es más rápido y basta para un chequeo de compilación.
+# El equipo y el estilo de firma vienen de `project.yml`; aquí no se hardcodea nada.
 run_app_build() {
+  signed=${1:-unsigned}
   wait_idle
   [ -x Tools/prune-deriveddata.sh ] && Tools/prune-deriveddata.sh
   xcodegen generate || fail "xcodegen generate falló."
   # build-for-testing: compila también CenitUnitTests/CenitUITests (mismo racional que ios-app.yml).
-  xcodebuild build-for-testing \
-    -project Cenit.xcodeproj -scheme Cenit \
-    -destination 'generic/platform=iOS Simulator' -configuration Debug \
-    CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
-    CODE_SIGN_ENTITLEMENTS="" ASSETCATALOG_COMPILER_APPICON_NAME="" \
-    -jobs 4 || fail "la app (o sus targets de test) no compila."
-  echo "verify: app + targets de test compilan OK"
+  if [ "$signed" = "signed" ]; then
+    xcodebuild build-for-testing \
+      -project Cenit.xcodeproj -scheme Cenit \
+      -destination 'generic/platform=iOS Simulator' -configuration Debug \
+      -allowProvisioningUpdates -jobs 4 \
+      || fail "la app (o sus targets de test) no compila FIRMADA para el simulador."
+    echo "verify: app + targets de test compilan firmados OK"
+  else
+    xcodebuild build-for-testing \
+      -project Cenit.xcodeproj -scheme Cenit \
+      -destination 'generic/platform=iOS Simulator' -configuration Debug \
+      CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+      CODE_SIGN_ENTITLEMENTS="" ASSETCATALOG_COMPILER_APPICON_NAME="" \
+      -jobs 4 || fail "la app (o sus targets de test) no compila."
+    echo "verify: app + targets de test compilan OK"
+  fi
 }
 
 run_app_tests() {
-  run_app_build
   sim=$(xcrun simctl list devices available | grep -oE 'iPhone [0-9A-Za-z ]+' | head -1 | sed 's/ *$//')
   [ -n "$sim" ] || fail "no hay simulador iPhone disponible."
+  # Un simulador que quedó a medias de una corrida anterior contesta «Failed to prepare device …
+  # Invalid connectionUUID»: se arranca de limpio, no solo se apaga al final.
+  xcrun simctl shutdown all 2>/dev/null
+  run_app_build signed
   echo "verify: CenitUnitTests en «$sim»"
   xcodebuild test-without-building \
     -project Cenit.xcodeproj -scheme Cenit \
