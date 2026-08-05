@@ -100,7 +100,7 @@ public enum LiquidType {
 
     // MARK: Cuerpo (SF)
 
-    /// `veredicto/hoja` — 30/700, tracking −0.6, escala (relativeTo `.title1`). La
+    /// `veredicto/hoja` — 30/700, tracking −0.6, escala (relativeTo `.title`). La
     /// palabra-dato de la hoja de la boleta («En rango»): manda sobre todo lo demás de la
     /// hoja (nada más pasa de 17) sin fingir numeral — el dato de esa hoja es una FRASE
     /// (boleta r3, spec /ui «acta de escrutinio»).

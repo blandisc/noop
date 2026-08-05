@@ -114,7 +114,6 @@ public struct LiquidActa: Sendable {
     /// La palabra grande — la del veredicto (paridad héroe) o la del estado sin veredicto
     /// («Conociéndote», «Sin lectura», «Lectura de día»). Nunca nil en la boleta.
     public let nivel: String?
-    public let sinLectura: String?
     /// La frase-resumen bajo la palabra: sostiene el veredicto o cuenta el desfase de
     /// histéresis (spec /ux D5). Su cláusula clave va en `conteoClave`.
     public let conteo: String
@@ -130,27 +129,26 @@ public struct LiquidActa: Sendable {
     public let verMas: String?
     public let verMasHint: String?
     /// El tono del veredicto — el del héroe. Sin veredicto: tinta/500 y cero color.
+    /// (El tono de cada VOTO viaja por fila en `Fila.tonoVoto` — con histéresis una fila
+    /// enciende en ámbar bajo palabra verde.)
     public let tono: Color
-    /// El tono de la fila FUERA (histéresis: puede ser ámbar bajo palabra verde).
-    public let tonoFilas: Color
 
     public init(titulo: String, procedencia: String, explicacion: String,
                 infoMostrar: String, infoOcultar: String,
-                nivel: String?, sinLectura: String? = nil,
+                nivel: String?,
                 conteo: String, conteoClave: String? = nil,
                 filas: [Fila],
                 vigilantesLabel: String? = nil, vigilantes: [String] = [],
                 vigilantesA11y: String? = nil,
                 notas: [Nota] = [], confianza: Confianza? = nil,
                 plegable: Metodo? = nil, verMas: String? = nil, verMasHint: String? = nil,
-                tono: Color, tonoFilas: Color? = nil) {
+                tono: Color) {
         self.titulo = titulo
         self.procedencia = procedencia
         self.explicacion = explicacion
         self.infoMostrar = infoMostrar
         self.infoOcultar = infoOcultar
         self.nivel = nivel
-        self.sinLectura = sinLectura
         self.conteo = conteo
         self.conteoClave = conteoClave
         self.filas = filas
@@ -163,7 +161,6 @@ public struct LiquidActa: Sendable {
         self.verMas = verMas
         self.verMasHint = verMasHint
         self.tono = tono
-        self.tonoFilas = tonoFilas ?? tono
     }
 }
 
@@ -199,7 +196,7 @@ public struct LiquidActaVeredicto: View {
             // 2 · Veredicto + boleta (la evidencia del resumen es la tarjeta: mismo grupo).
             VStack(alignment: .leading, spacing: LiquidSpace.s400) {
                 VStack(alignment: .leading, spacing: LiquidSpace.s150) {
-                    Text(verbatim: model.nivel ?? model.sinLectura ?? "")
+                    Text(verbatim: model.nivel ?? "")
                         .font(LiquidType.veredictoHoja)
                         .tracking(LiquidType.veredictoHojaTracking)
                         .foregroundStyle(model.tono)
@@ -335,19 +332,19 @@ enum LiquidActaFixtures {
               a11y: "Sueño, \(palabra), \(sub)\(fuera ? ", fuera de tu rango" : "").")
     }
 
-    private static func base(nivel: String?, sinLectura: String? = nil,
+    private static func base(nivel: String?,
                              conteo: String, conteoClave: String? = nil,
                              filas: [LiquidActa.Fila],
                              conVigilantes: Bool = true,
                              notas: [LiquidActa.Nota] = [],
                              confianza: LiquidActa.Confianza? = nil,
-                             tono: Color, tonoFilas: Color? = nil) -> LiquidActa {
+                             tono: Color) -> LiquidActa {
         LiquidActa(
             titulo: "Preparación",
             procedencia: "Apple Salud · esta mañana · 4 AGO",
             explicacion: "El veredicto de cómo amaneciste: tus señales contra tu propia base. Es una aproximación, no un diagnóstico.",
             infoMostrar: "Mostrar explicación", infoOcultar: "Ocultar explicación",
-            nivel: nivel, sinLectura: sinLectura,
+            nivel: nivel,
             conteo: conteo, conteoClave: conteoClave,
             filas: filas,
             vigilantesLabel: conVigilantes ? "Vigilan sin votar" : nil,
@@ -356,7 +353,7 @@ enum LiquidActaFixtures {
                 ? "Vigilan sin votar: respiración y temperatura." : nil,
             notas: notas, confianza: confianza, plegable: plegable,
             verMas: "Ver más en Tendencias", verMasHint: "Abre el detalle",
-            tono: tono, tonoFilas: tonoFilas)
+            tono: tono)
     }
 
     static let verde = base(
@@ -390,7 +387,7 @@ enum LiquidActaFixtures {
         conteoClave: "un voto fuera",
         filas: [filaAuto(.dentro, fuera: false, tonoVoto: LiquidColor.verdePrimario, palabra: "dentro"),
                 filaSueno(.fueraAbajo, fuera: true, tonoVoto: LiquidColor.atencion, palabra: "fuera")],
-        tono: LiquidColor.verdePrimario, tonoFilas: LiquidColor.atencion)
+        tono: LiquidColor.verdePrimario)
 
     static let tendencia = base(
         nivel: "Recupera",
@@ -418,6 +415,17 @@ enum LiquidActaFixtures {
         conVigilantes: false,
         confianza: .calibrando(titulo: "Calibrando tu base", leyenda: "2 de 4 noches",
                                hechas: 2, necesarias: 4),
+        tono: LiquidColor.tinta500)
+
+    /// Cobertura del gate «cero color sin veredicto» (Grok r1, MED 6): lectura de día CON
+    /// un eje fuera — el riel dibuja la joya fuera de banda, pero en TINTA y sin wash.
+    static let lecturaDeDiaFuera = base(
+        nivel: "Lectura de día",
+        conteo: "Anoche no se grabó sueño: sin su voto no hay quórum para un veredicto.",
+        filas: [filaAuto(.fueraAbajo, fuera: false, tonoVoto: LiquidColor.tinta500, palabra: "fuera"),
+                filaSueno(.sinLectura, fuera: false, tonoVoto: LiquidColor.tinta500, palabra: "sin dato")],
+        conVigilantes: false,
+        notas: [.init(id: "noche", texto: "Duerme con tu Apple Watch y mañana la boleta se llena sola.")],
         tono: LiquidColor.tinta500)
 
     static let sinPermiso = base(

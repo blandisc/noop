@@ -572,63 +572,61 @@ final class LiquidHoyBuilderTests: XCTestCase {
         }
     }
 
-    // MARK: Acta del veredicto — «Cómo llegué a esto»
+    // MARK: Acta del veredicto — LA BOLETA («Cómo llegué a esto», rediseño r3)
 
-    /// El acta se SINTETIZA: en el `lowSignal` por falta de fila de hoy, `Preparedness`
-    /// devuelve `drivers` VACÍO (:163-166). Una tabla derivada de `drivers` no existiría.
+    /// La boleta se SINTETIZA: en el `lowSignal` por falta de fila de hoy, `Preparedness`
+    /// devuelve `drivers` VACÍO. Una tabla derivada de `drivers` no existiría.
     func test_acta_sinDrivers_sintetizaLasDosFilas() {
-        // FER-1047: el acta explica las DOS señales que votan (en reposo · sueño); el térmico
-        // dejó de ser una fila (vive en el guardián).
         let acta = LiquidHoyBuilder.acta(
             prep: read(verdict: .lowSignal, drivers: [], maturity: .calibrating))
         XCTAssertEqual(acta.filas.count, 2)
         XCTAssertEqual(acta.filas.map(\.id), ["autonomic", "sleep"])
         XCTAssertTrue(acta.filas.allSatisfy { !$0.fuera }, "sin datos, nadie está fuera")
-        XCTAssertNil(acta.nivel, "sin veredicto no hay palabra")
-        XCTAssertNotNil(acta.sinLectura)
+        XCTAssertNotNil(acta.nivel, "la boleta SIEMPRE tiene palabra (la del estado)")
         XCTAssertEqual(acta.tono, LiquidColor.tinta500,
                        "sin veredicto la hoja no tiene una sola gota de color")
+        XCTAssertTrue(acta.filas.allSatisfy { $0.tonoVoto == LiquidColor.tinta500 })
+        XCTAssertNil(acta.vigilantesLabel, "los vigilantes solo aparecen con veredicto")
 
         // Y con `prep == nil` tampoco revienta ni inventa filas.
         XCTAssertEqual(LiquidHoyBuilder.acta(prep: nil).filas.count, 2)
     }
 
-    /// El conteo habla de SEÑALES (lo que el usuario ve en los orbes), jamás de «ejes» ni «3».
-    func test_acta_conteo_porSenalesNoPorEjes() {
-        let combos = [
-            LiquidHoyBuilder.conteoActa(fuera: 0, conLectura: 2),
-            LiquidHoyBuilder.conteoActa(fuera: 1, conLectura: 2),
-            LiquidHoyBuilder.conteoActa(fuera: 2, conLectura: 2),
-            LiquidHoyBuilder.conteoActa(fuera: 0, conLectura: 1),
+    /// La frase-resumen habla de VOTOS/SEÑALES (lo que el usuario ve), jamás de «ejes» ni «3».
+    func test_acta_resumen_porSenalesNoPorEjes() {
+        let preps: [Preparedness.Read] = [
+            read(verdict: .full, drivers: nocheAnclada),
+            read(verdict: .caution,
+                 drivers: [driver(.autonomic, .inRange, z: 0.1), driver(.sleep, .low),
+                           driver(.thermal, .inRange)]),
+            read(verdict: .easy,
+                 drivers: [driver(.autonomic, .high, z: 1.6), driver(.sleep, .low),
+                           driver(.thermal, .inRange)]),
         ]
-        for texto in combos {
-            XCTAssertFalse(texto.localizedCaseInsensitiveContains("eje"),
-                           "vocabulario de ingeniería en pantalla: \(texto)")
+        for prep in preps {
+            let texto = LiquidHoyBuilder.acta(prep: prep).conteo
+            XCTAssertFalse(texto.localizedCaseInsensitiveContains("eje"), texto)
             XCTAssertFalse(texto.localizedCaseInsensitiveContains("axis"), texto)
             XCTAssertFalse(texto.contains("3"), "ninguna frase dice «3 señales»: \(texto)")
         }
-        XCTAssertNotEqual(combos[0], combos[3], "cobertura parcial tiene su propia frase")
     }
 
-    /// El acta NO publica un solo umbral del motor: la columna «contra qué base» es
-    /// cualitativa (los cortes son knobs sin firmar por `/cso` y la allow-list de esta
-    /// superficie prohíbe números).
+    /// La boleta NO publica un solo umbral del motor: sub y palabra son cualitativos.
     func test_acta_noPublicaUmbrales() {
         let acta = LiquidHoyBuilder.acta(
             prep: read(verdict: .caution,
                        drivers: [driver(.autonomic, .inRange, z: 0.1),
                                  driver(.sleep, .low), driver(.thermal, .inRange)]))
         for fila in acta.filas {
-            XCTAssertNil(fila.base.rangeOfCharacter(from: .decimalDigits),
-                         "la columna de base publica un número: «\(fila.base)»")
-            XCTAssertNil(fila.dijo.rangeOfCharacter(from: .decimalDigits),
-                         "«qué dijo» publica un número: «\(fila.dijo)»")
+            XCTAssertNil(fila.sub.rangeOfCharacter(from: .decimalDigits),
+                         "el sub publica un número: «\(fila.sub)»")
+            XCTAssertNil(fila.palabra.rangeOfCharacter(from: .decimalDigits),
+                         "la palabra del voto publica un número: «\(fila.palabra)»")
         }
     }
 
-    /// Precedencia: `easy` + UNA señal fuera + tendencia abajo es el EMPUJÓN DE TENDENCIA
-    /// (:214), no la histéresis (:300-312). Sin precedencia se pintaban los dos y la hoja
-    /// se contradecía.
+    /// Precedencia en la FRASE-RESUMEN (r3: histéresis y tendencia ya no son notas):
+    /// `easy` + UNA fuera + tendencia abajo es el EMPUJÓN DE TENDENCIA, no la histéresis.
     func test_acta_precedencia_tendenciaGanaAHisteresis() {
         let prep = Preparedness.Read(
             verdict: .easy,
@@ -636,15 +634,16 @@ final class LiquidHoyBuilderTests: XCTestCase {
                       driver(.thermal, .inRange), driver(.load, .noData)],
             signalsPresent: 3, signalsTotal: 3, maturity: .trusted,
             autonomicNights: 21, trend: .below)
-        let ids = LiquidHoyBuilder.acta(prep: prep).notas.map(\.id)
-        XCTAssertTrue(ids.contains("tendencia"))
-        XCTAssertFalse(ids.contains("histeresis"), "no puede haber dos causas a la vez")
+        let acta = LiquidHoyBuilder.acta(prep: prep)
+        XCTAssertEqual(acta.conteoClave, "trending down",
+                       "la causa vive en la frase-resumen")
+        XCTAssertFalse(acta.notas.contains { $0.id == "tendencia" || $0.id == "histeresis" },
+                       "las causas ya no se duplican como notas")
     }
 
-    /// El veredicto MOSTRADO puede no ser la lectura de hoy (histéresis de 2 días). Cuando
-    /// el acta y la palabra no cuadran, el aviso es OBLIGATORIO y va en la superficie.
-    func test_acta_histeresis_avisaCuandoElConteoNoCuadra() {
-        // Verde estable con una señal fuera hoy: el crudo nuevo aún no se repite.
+    /// El veredicto MOSTRADO puede no ser la lectura de hoy (histéresis de 2 días): el
+    /// desfase ES la frase-resumen, y la fila que se salió NO se pinta del verde.
+    func test_acta_histeresis_elDesfaseEsLaFrase() {
         let prep = Preparedness.Read(
             verdict: .full,
             drivers: [driver(.autonomic, .inRange, z: 0.3), driver(.sleep, .low),
@@ -652,12 +651,14 @@ final class LiquidHoyBuilderTests: XCTestCase {
             signalsPresent: 3, signalsTotal: 3, maturity: .trusted,
             autonomicNights: 21, trend: nil)
         let acta = LiquidHoyBuilder.acta(prep: prep)
-        let aviso = acta.notas.first { $0.id == "histeresis" }
-        XCTAssertNotNil(aviso, "sin este aviso la tarjeta miente en un caso real")
-        XCTAssertTrue(aviso?.avisa == true, "el aviso va en tinta de atención, no como nota")
-        // Y la fila que se salió NO se pinta del verde del veredicto.
-        XCTAssertEqual(acta.tonoFilas, LiquidColor.atencion)
+        XCTAssertEqual(acta.conteoClave, "outside today",
+                       "el desfase se cuenta en la frase, no en una nota")
+        XCTAssertFalse(acta.notas.contains { $0.id == "histeresis" })
         XCTAssertEqual(acta.tono, LiquidColor.verdePrimario)
+        let sueno = acta.filas.first { $0.id == "sleep" }
+        XCTAssertEqual(sueno?.tonoVoto, LiquidColor.atencion,
+                       "la fila que se salió no habla en el verde del veredicto")
+        XCTAssertTrue(sueno?.fuera == true)
 
         XCTAssertTrue(LiquidHoyBuilder.desfaseDeHisteresis(verdict: .full, fuera: 1))
         XCTAssertFalse(LiquidHoyBuilder.desfaseDeHisteresis(verdict: .caution, fuera: 1))
@@ -665,26 +666,45 @@ final class LiquidHoyBuilderTests: XCTestCase {
         XCTAssertTrue(LiquidHoyBuilder.desfaseDeHisteresis(verdict: .easy, fuera: 1))
     }
 
-    /// La carga se mide y NUNCA vota (`loadAxis` :189-193): no entra al acta, baja a nota,
-    /// y tiene copy en las DOS variantes (con y sin entrenamiento).
-    func test_acta_cargaNuncaVota_conCopyEnLasDosVariantes() {
-        func nota(hayWorkout: Bool) -> String? {
-            let prep = Preparedness.Read(
+    /// La carga se mide y NUNCA vota: no es fila, y su nota SOLO aparece cuando hubo
+    /// entrenamiento (r3, /ux D8 — la ausencia no necesita nota).
+    func test_acta_cargaNuncaVota_notaSoloConEntrenamiento() {
+        func acta(hayWorkout: Bool) -> LiquidActa {
+            LiquidHoyBuilder.acta(prep: Preparedness.Read(
                 verdict: .full,
                 drivers: nocheAnclada + [driver(.load, hayWorkout ? .inRange : .noData)],
                 signalsPresent: 3, signalsTotal: 3, maturity: .trusted,
-                autonomicNights: 21, trend: nil)
-            let acta = LiquidHoyBuilder.acta(prep: prep)
-            XCTAssertEqual(acta.filas.count, 2, "las dos señales que votan; la carga nunca es fila")
-            XCTAssertFalse(acta.filas.contains { $0.id == "load" })
-            XCTAssertFalse(acta.filas.contains { $0.id == "thermal" }, "el térmico bajó al guardián")
-            return acta.notas.first { $0.id == "carga" }?.texto
+                autonomicNights: 21, trend: nil))
         }
-        let con = nota(hayWorkout: true)
-        let sin = nota(hayWorkout: false)
-        XCTAssertNotNil(con)
-        XCTAssertNotNil(sin)
-        XCTAssertNotEqual(con, sin, "las dos variantes tienen su propio copy")
+        let con = acta(hayWorkout: true)
+        XCTAssertEqual(con.filas.count, 2, "la carga nunca es fila")
+        XCTAssertFalse(con.filas.contains { $0.id == "load" || $0.id == "thermal" })
+        XCTAssertNotNil(con.notas.first { $0.id == "carga" })
+
+        let sin = acta(hayWorkout: false)
+        XCTAssertNil(sin.notas.first { $0.id == "carga" },
+                     "sin entrenamiento la nota de carga sobra")
+    }
+
+    /// REGRESIÓN (Grok r1 HIGH 2-3): sin veredicto la hoja entera habla en tinta — un eje
+    /// FUERA se dibuja fuera de banda pero sin color, sin wash, y el label dice «read»,
+    /// nunca «voted».
+    func test_acta_sinVeredicto_ceroColorYSinVotosFingidos() {
+        // «Lectura de día»: hay señal autonómica (fuera, incluso) pero sin noche anclada.
+        let prep = read(verdict: .caution,
+                        drivers: [driver(.autonomic, .low, z: -1.5),
+                                  driver(.sleep, .noData), driver(.thermal, .inRange)])
+        let acta = LiquidHoyBuilder.acta(prep: prep)
+        XCTAssertEqual(acta.tono, LiquidColor.tinta500)
+        XCTAssertTrue(acta.filas.allSatisfy { $0.tonoVoto == LiquidColor.tinta500 },
+                      "cero color: ningún voto pinta sin quórum")
+        XCTAssertTrue(acta.filas.allSatisfy { !$0.fuera },
+                      "sin veredicto no hay wash de fila")
+        let auto = acta.filas.first { $0.id == "autonomic" }
+        XCTAssertTrue(auto?.a11y.contains("read") == true,
+                      "sin quórum se LEE, no se vota: \(auto?.a11y ?? "")")
+        XCTAssertFalse(auto?.a11y.contains("voted") == true)
+        XCTAssertNil(acta.vigilantesLabel)
     }
 
     /// Ningún número de noches en pantalla que no salga de `Baselines`, y

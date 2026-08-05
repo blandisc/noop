@@ -212,6 +212,10 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
             ("acta_tendencia", acta(LiquidActaFixtures.tendencia)),
             ("acta_lectura_dia", acta(LiquidActaFixtures.lecturaDeDia)),
             ("acta_sin_veredicto", acta(LiquidActaFixtures.sinVeredicto)),
+            // Gate «cero color sin veredicto» con un eje FUERA (Grok r1): joya fuera de
+            // banda en tinta, sin wash — la clase de defecto que los fixtures «quietos»
+            // no podían atrapar.
+            ("acta_lectura_dia_fuera", acta(LiquidActaFixtures.lecturaDeDiaFuera)),
             ("acta_sin_permiso", acta(LiquidActaFixtures.sinPermiso)),
             // AX5: las filas del acta se apilan en dos renglones en vez de aplastar cuatro
             // columnas de texto.

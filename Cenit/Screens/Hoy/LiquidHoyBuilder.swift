@@ -1019,10 +1019,7 @@ enum LiquidHoyBuilder {
             plegable: plegableActa(prep: prep),
             verMas: String(localized: "See more in Trends"),
             verMasHint: String(localized: "Opens the detail"),
-            tono: actaTono(prep),
-            // El wash de la fila dice «esta se salió», no «esta está bien» (histéresis).
-            tonoFilas: prep?.verdict == .full && fuera > 0
-                ? LiquidColor.atencion : actaTono(prep))
+            tono: actaTono(prep))
     }
 
     /// «4 AGO» — el sello de fecha del acta (estático: aquí no hay scrub que lo mueva).
@@ -1082,27 +1079,35 @@ enum LiquidHoyBuilder {
         case .sinLectura:              palabra = String(localized: "no data")
         }
 
-        // El tono del VOTO: verde dentro (con veredicto), el tono del desvío fuera,
-        // tinta sin veredicto (cero color en la hoja, /ux D6).
+        // El tono del VOTO: verde dentro y el tono del desvío fuera — SOLO con veredicto.
+        // Sin quórum la hoja entera habla en tinta (cero color, /ux D6): un eje fuera en
+        // «Lectura de día»/lowSignal se DIBUJA fuera de banda, pero en tinta y sin wash
+        // (revisión adversarial Grok r1, HIGH 2).
         let tonoVoto: Color
-        if estado.isOut {
+        if !hayVeredicto {
+            tonoVoto = LiquidColor.tinta500
+        } else if estado.isOut {
             tonoVoto = (prep?.verdict == .easy) ? LiquidColor.negativo : LiquidColor.atencion
-        } else if votoEstado == .dentro && hayVeredicto {
+        } else if votoEstado == .dentro {
             tonoVoto = LiquidColor.verdePrimario
         } else {
             tonoVoto = LiquidColor.tinta500
         }
 
         let nombre = nombreEje(ax)
-        // El verbo del label distingue VOTAR de LEER (lectura de día no hace quórum, /ux D6).
+        // El verbo del label distingue VOTAR de LEER: sin quórum NADIE «votó» — se leyó
+        // (/ux D6; revisión adversarial Grok r1, HIGH 3: el label afirmaba un voto en
+        // estados sin veredicto).
         let a11y: String
         switch votoEstado {
         case .dentro:
-            a11y = esLecturaDeDia
-                ? String(localized: "\(nombre), read inside, \(sub).")
-                : String(localized: "\(nombre), voted inside, \(sub).")
+            a11y = hayVeredicto
+                ? String(localized: "\(nombre), voted inside, \(sub).")
+                : String(localized: "\(nombre), read inside, \(sub).")
         case .fueraAbajo, .fueraArriba:
-            a11y = String(localized: "\(nombre), voted outside, \(sub), outside your range.")
+            a11y = hayVeredicto
+                ? String(localized: "\(nombre), voted outside, \(sub), outside your range.")
+                : String(localized: "\(nombre), read outside, \(sub), outside your range.")
         case .calibrando:
             a11y = String(localized: "\(nombre), no vote yet, \(sub).")
         case .sinLectura:
@@ -1111,7 +1116,9 @@ enum LiquidHoyBuilder {
 
         return LiquidActa.Fila(id: ax.rawValue, glifo: glifo, etiqueta: nombre, sub: sub,
                                estado: votoEstado, umbral: esAuto ? .rango : .minimo,
-                               fuera: estado.isOut, tonoVoto: tonoVoto,
+                               // El wash dice «este voto volteó el veredicto»: sin
+                               // veredicto no hay wash (Grok r1 HIGH 2).
+                               fuera: estado.isOut && hayVeredicto, tonoVoto: tonoVoto,
                                palabra: palabra, a11y: a11y)
     }
 
