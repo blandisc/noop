@@ -617,65 +617,54 @@ public struct MatrizEscalerita: View {
     }
 }
 
+
 // MARK: - Previews
+//
+// Los datasets se izan a locales con tipo EXPLÍCITO antes del view-builder: dentro de un
+// `.map` con aritmética + ternario, el type-checker de Swift infiere a través de toda la
+// cadena de la vista y revienta el presupuesto en CI (Xcode 26.6). Tipar aquí lo corta.
 
 #Preview("Columnas · sueño") {
-    VStack(spacing: 16) {
-        MatrizColumnas(
-            chartID: "sueno",
-            noches: (0..<14).map { i in
-                .init(valor: 5.5 + Double(i % 5) * 0.4,
-                      alerta: i == 13 ? .atencion : (i == 3 ? .alarma : .ninguna))
-            },
-            referencia: 7, referenciaTag: "7 h",
-            dominio: 4...10, hue: LiquidColor.indigo)
-        MatrizColumnas(
-            chartID: "sueno-vacio",
-            noches: Array(repeating: .init(valor: nil), count: 14),
-            referencia: 7, referenciaTag: "7 h",
-            dominio: 4...10, hue: LiquidColor.indigo)
+    let conDatos: [MatrizColumnas.Noche] = (0..<14).map { i in
+        let alerta: MedidorLunar.Alerta = i == 13 ? .atencion : (i == 3 ? .alarma : .ninguna)
+        return MatrizColumnas.Noche(valor: 5.5 + Double(i % 5) * 0.4, alerta: alerta)
+    }
+    let vacio = [MatrizColumnas.Noche](repeating: .init(valor: nil), count: 14)
+    return VStack(spacing: 16) {
+        MatrizColumnas(chartID: "sueno", noches: conDatos,
+                       referencia: 7, referenciaTag: "7 h", dominio: 4...10, hue: LiquidColor.indigo)
+        MatrizColumnas(chartID: "sueno-vacio", noches: vacio,
+                       referencia: 7, referenciaTag: "7 h", dominio: 4...10, hue: LiquidColor.indigo)
     }
     .padding()
     .background(LiquidColor.papelMatriz)
 }
 
 #Preview("Línea rellena · FC") {
-    VStack(spacing: 16) {
-        MatrizLineaRellena(
-            chartID: "fc",
-            puntos: (0..<20).map { i in 58 + Double(i % 7) - 2 },
-            base: 60, dominio: 50...75,
-            hue: LiquidColor.rosa, alertaHoy: .atencion)
-        MatrizLineaRellena(
-            chartID: "vfc",
-            puntos: Array(repeating: nil, count: 20),
-            base: 40, dominio: 20...80,
-            hue: LiquidColor.cian, alfa: 0.6)
+    let fc: [Double?] = (0..<20).map { i in 58 + Double(i % 7) - 2 }
+    let vfc = [Double?](repeating: nil, count: 20)
+    return VStack(spacing: 16) {
+        MatrizLineaRellena(chartID: "fc", puntos: fc, base: 60, dominio: 50...75,
+                           hue: LiquidColor.rosa, alertaHoy: .atencion)
+        MatrizLineaRellena(chartID: "vfc", puntos: vfc, base: 40, dominio: 20...80,
+                           hue: LiquidColor.cian, alfa: 0.6)
     }
     .padding()
     .background(LiquidColor.papelMatriz)
 }
 
 #Preview("Serena · riel · barras · escalera") {
-    VStack(spacing: 16) {
-        MatrizLineaSerena(
-            chartID: "guardian-temp",
-            puntos: (0..<20).map { i in Double(i % 5) * 0.15 - 0.3 },
-            banda: -0.4...0.4, dominio: -1...1,
-            hue: LiquidColor.doradoTemp, alertaHoy: .alarma)
-        MatrizRielZona(
-            chartID: "carga",
-            p: 1.12, zona: 0.8...1.3,
-            estela: [0.95, 1.05, 1.2, 0.9, 1.0],
-            hue: LiquidColor.verdePrimario)
-        MatrizBarrasMini(
-            chartID: "esfuerzo",
-            valores: (0..<14).map { i in Double(20 + i * 3) },
-            hue: LiquidColor.teal)
-        MatrizEscalerita(
-            chartID: "estres",
-            niveles: [0, 1, 1, 2, 1, 0, 2],
-            hue: LiquidColor.tinta900)
+    let temp: [Double?] = (0..<20).map { i in Double(i % 5) * 0.15 - 0.3 }
+    let esfuerzo: [Double?] = (0..<14).map { i in Double(20 + i * 3) }
+    let niveles: [Int?] = [0, 1, 1, 2, 1, 0, 2]
+    let estela: [Double] = [0.95, 1.05, 1.2, 0.9, 1.0]
+    return VStack(spacing: 16) {
+        MatrizLineaSerena(chartID: "guardian-temp", puntos: temp, banda: -0.4...0.4,
+                          dominio: -1...1, hue: LiquidColor.doradoTemp, alertaHoy: .alarma)
+        MatrizRielZona(chartID: "carga", p: 1.12, zona: 0.8...1.3,
+                       estela: estela, hue: LiquidColor.verdePrimario)
+        MatrizBarrasMini(chartID: "esfuerzo", valores: esfuerzo, hue: LiquidColor.teal)
+        MatrizEscalerita(chartID: "estres", niveles: niveles, hue: LiquidColor.tinta900)
     }
     .padding()
     .background(LiquidColor.papelMatriz)
