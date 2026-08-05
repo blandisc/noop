@@ -207,12 +207,23 @@ final class LiquidHoyBuilderTests: XCTestCase {
         -> Preparedness.Read {
         let signals = [Preparedness.SignalRead(signal: .resp, orientedZ: respOrientedZ,
                                                share: 0, flaggedAlone: false)]
+        // El guardián lee `respOut` de `sentinelHistory.last`, NO de `signals` (gate /qa D2,
+        // c231c009): es el juicio del MOTOR, para que el dibujo nunca contradiga el voto. La
+        // fixture tiene que reflejar esa misma noche con la MISMA regla que usa el motor
+        // (`respOut = -orientedZ >= respBadZ`, Preparedness.swift ReadinessEngine), o el
+        // guardián nunca ve la señal que el test cree que le está pasando.
+        let badZ = Preparedness.Config.default.respBadZ
+        let respOut = respOrientedZ.map { -$0 >= badZ } ?? false
+        let noche = Preparedness.SentinelNight(
+            day: "2026-08-03", tempOut: thermal == .high, respOut: respOut,
+            tempMissing: false, respMissing: false, respJudged: true, gapBefore: false)
         return Preparedness.Read(
             verdict: .full,
             drivers: [driver(.autonomic, .inRange, z: 0.2), driver(.sleep, .inRange),
                       driver(.thermal, thermal)],
             signals: signals, signalsPresent: 3, signalsTotal: 4,
-            maturity: .trusted, autonomicNights: 21, trend: nil, sentinel: sentinel)
+            maturity: .trusted, autonomicNights: 21, trend: nil, sentinel: sentinel,
+            sentinelHistory: [noche])
     }
 
     func test_guardian_tranquilo_ceroColor() {
