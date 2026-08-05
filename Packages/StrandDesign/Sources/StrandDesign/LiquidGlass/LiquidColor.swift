@@ -108,6 +108,36 @@ public enum LiquidColor {
     /// Partícula blanca: el realce especular puro de la simulación del orbe (tinta `.blanco`).
     /// El sistema es dueño del blanco, no el componente de superficie (FER-31).
     public static let particulaBlanca = Color.white
+
+    /// Las MISMAS tintas de partícula de arriba, en componentes sRGB 0–1.
+    ///
+    /// Existen porque la entrada (FER-41) tiene que INTERPOLAR del gris neutro al color del
+    /// veredicto, y un `Color` de SwiftUI no expone sus componentes de forma portátil: leerlos
+    /// exigiría `UIColor`/`NSColor`, que este paquete no puede importar (compila para iOS,
+    /// macOS y watchOS por igual). Interpolar con dos capas superpuestas en vez de con números
+    /// deja al orbe perdiendo densidad a medio teñido, así que los números son la vía honesta.
+    ///
+    /// Cada terna es el hex de su hermana de arriba: si una cambia, la otra cambia con ella.
+    /// `LiquidColorTintaTests` lo verifica para que no puedan separarse en silencio.
+    public enum ParticulaRGB {
+        public static let verde: (r: Double, g: Double, b: Double) = (0x10 / 255, 0x69 / 255, 0x4E / 255)
+        public static let roja: (r: Double, g: Double, b: Double) = (0x96 / 255, 0x34 / 255, 0x26 / 255)
+        public static let ambar: (r: Double, g: Double, b: Double) = (0x96 / 255, 0x50 / 255, 0x1A / 255)
+        public static let neutra: (r: Double, g: Double, b: Double) = (0x73 / 255, 0x76 / 255, 0x70 / 255)
+    }
+
+    /// Interpola en sRGB de la tinta neutra a `destino` (`k` = 0 neutra … 1 destino). Es el
+    /// teñido de la entrada: un solo color por frame, sin capas apiladas que se laven.
+    public static func particulaTeñida(hacia destino: (r: Double, g: Double, b: Double),
+                                       k: Double) -> Color {
+        let u = min(1, max(0, k))
+        let n = ParticulaRGB.neutra
+        return Color(.sRGB,
+                     red: n.r + (destino.r - n.r) * u,
+                     green: n.g + (destino.g - n.g) * u,
+                     blue: n.b + (destino.b - n.b) * u,
+                     opacity: 1)
+    }
     /// El rojo CLARO del clima de alerta (par simétrico de `ambarClaro` — el ambiente de
     /// alerta usaba `rosa`, que es el tono 1:1 de FC en reposo, no un clima).
     public static let rojoClaro = Color(hex: "#E06C56")
