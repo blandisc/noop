@@ -35,9 +35,16 @@ public enum EntradaSimulacion {
         /// da aire arriba y abajo para que las corrientes nazcan fuera de cuadro.
         public static let lienzo = CGSize(width: EcosistemaSimulacion.Geometria.lienzo.width,
                                           height: 720)
-        /// La esfera plena del veredicto: mismas direcciones, mismo radio.
+        /// La esfera plena del veredicto: las mismas direcciones.
         public static let n = EcosistemaSimulacion.Geometria.nEsfera
-        public static let radio = EcosistemaSimulacion.Geometria.radioOrbe
+        /// El radio, un 29 % sobre el del héroe.
+        ///
+        /// En Hoy el orbe comparte pantalla con el tablero, así que su tamaño se mide contra
+        /// lo que tiene al lado. En la entrada está SOLO sobre blanco, y ahí el mismo radio se
+        /// ve perdido — un punto en medio de la nada en vez de la presencia que abre la app.
+        /// El 29 % lo devuelve a peso de héroe sin sacarlo de su familia: la merma al pasar al
+        /// orbe real queda por debajo de lo que el ojo registra durante un fundido de 0.35 s.
+        public static let radio = EcosistemaSimulacion.Geometria.radioOrbe * 1.29
         /// Dónde ASIENTA el orbe (el cénit) y a qué altura se REÚNEN antes de subir. La
         /// reunión es solo una `y`: el viaje es vertical, así que compartir la `x` del cénit
         /// no es una coincidencia que haya que mantener a mano — es la definición.
