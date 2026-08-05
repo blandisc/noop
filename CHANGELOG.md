@@ -20,7 +20,10 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
-- FC en reposo: las bandas de la hoja quedan rotuladas como referencia poblacional (no tu veredicto), headline suavizado y niveles renombrados (Rango de atleta / Baja / Típica / Alta).
+- **La FC en reposo dice qué son sus bandas / Resting HR says what its bands are.**
+  **ES** — La hoja mostraba la escalera poblacional (Atleta / Excelente / Normal / Elevada) como si fuera el criterio del veredicto, cuando tu lectura diaria se compara contra tu propia base. Ahora la escalera lo dice de frente: «Referencia poblacional, no tu veredicto»; el headline habla de asociación (forma física, edad, genética, medicamentos) con su dosis de humildad («por sí sola es una señal ruidosa»), y los niveles quedaron honestos: Rango de atleta / Baja / Típica / Alta — decir «Elevada» sobre 80 lpm contradecía el rango normal adulto de referencia (60–100).
+  **EN** — The sheet showed the population ladder (Athlete / Excellent / Normal / Elevated) as if it were the verdict's criterion, when your daily read compares against your own baseline. The ladder now says it plainly: "Population reference, not your verdict"; the headline speaks in associations (fitness, age, genetics, medications) with due humility ("on its own it's a noisy signal"), and the levels are honest: Athlete range / Low / Typical / Higher — calling ≥80 bpm "Elevated" contradicted the normal adult reference range (60–100).
+  ([MetricInfoCatalog.swift](Cenit/Screens/MetricInfoCatalog.swift), [MetricLevels.swift](Packages/StrandAnalytics/Sources/StrandAnalytics/MetricLevels.swift))
 
 - **El sueño se lee contra la guía recomendada, dicho con claridad / Sleep reads against the recommended guide, said plainly.**
   **ES** — La boleta «Cómo llegué aquí» ya no dice que tu sueño se mide «contra un mínimo fijo» (sonaba a regla arbitraria de la app): ahora dice «según lo recomendado». El sueño se juzga contra el rango de sueño recomendado para la salud (~7 h), no contra tu propio hábito — a propósito: calificarte solo contra tu historial normalizaría dormir poco de forma crónica. Y la frase, antes sin traducir en su variante «anoche …», ya está en español.
