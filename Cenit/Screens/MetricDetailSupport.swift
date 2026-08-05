@@ -75,8 +75,11 @@ extension MetricDetailScreen {
             // Normal / Borderline / Low
             return [theme.verdict, theme.warning, theme.critical]
         case "rhr":
-            // Athlete / Excellent / Normal / Elevated — lower is better
-            return [theme.verdictDeep, theme.verdict, theme.inkSecondary, theme.critical]
+            // Athlete range / Low / Typical / Higher — lower is better. FER-43 (gate /cso): la banda
+            // alta baja de `critical` a `warning`. Se suavizó la PALABRA («Higher», no «Elevated»)
+            // porque >80 lpm sigue dentro del normal adulto de la AHA (60–100); dejar el rojo de
+            // alarma hacía que el color siguiera gritando lo que el copy ya no afirma.
+            return [theme.verdictDeep, theme.verdict, theme.inkSecondary, theme.warning]
         case "resp_rate":
             // Low / Typical / Elevated / High
             return [theme.inkSecondary, theme.verdict, theme.warning, theme.critical]

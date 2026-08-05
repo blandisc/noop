@@ -34,6 +34,9 @@ struct MetricInfo: Identifiable {
     /// `MetricLevels` (FER-570). nil → the classic summary, untouched. Pilot: resting HR only. (FER-607)
     var levelsMetric: MetricLevels.FixedMetric? = nil
 
+    /// Rótulo bajo la escalera de niveles (FER-43): aclara qué son las bandas cuando hace falta.
+    var bandsCaption: LocalizedStringResource? = nil
+
     /// The raw today value (in the metric's own domain) that highlights the active level — passed
     /// explicitly instead of parsing `displayValue`, which is formatted for several metrics (SpO₂ «97%»,
     /// Sleep «7h 18m», Steps «8,240»). Set alongside `levelsMetric` (or `levelsRelative`). (FER-617)
@@ -174,25 +177,26 @@ extension MetricInfo {
     static func restingHR(_ value: Int?) -> MetricInfo {
         let lpm = String(localized: "bpm")
         let bands: [Band] = [
-            Band(label: "Athlete", range: "< 50 \(lpm)",
+            Band(label: LocalizedStringKey("level.rhr.athlete"), range: "< 50 \(lpm)",
                  isActive: value.map { $0 < 50 } ?? false, lower: nil, upper: 50),
-            Band(label: "Excellent", range: "50 – 60 \(lpm)",
+            Band(label: LocalizedStringKey("level.rhr.low"), range: "50 – 60 \(lpm)",
                  isActive: value.map { $0 >= 50 && $0 < 60 } ?? false, lower: 50, upper: 60),
-            Band(label: "Normal", range: "60 – 80 \(lpm)",
+            Band(label: LocalizedStringKey("level.rhr.typical"), range: "60 – 80 \(lpm)",
                  isActive: value.map { $0 >= 60 && $0 < 80 } ?? false, lower: 60, upper: 80),
-            Band(label: "Elevated", range: "> 80 \(lpm)",
+            Band(label: LocalizedStringKey("level.rhr.higher"), range: "> 80 \(lpm)",
                  isActive: value.map { $0 >= 80 } ?? false, lower: 80, upper: nil),
         ]
         return MetricInfo(
             id: "rhr",
             name: "Resting HR",
-            headline: "Your heart rate when your body is fully at rest: how hard your heart has to work doing nothing. Lower generally means a stronger, more efficient cardiovascular system. Cénit reads it against your own norm as part of your daily verdict; a rise can signal fatigue or that something's coming on.",
+            headline: "Your resting heart rate is how hard your heart works when your body is fully at rest. Fitter people tend to have a lower one, though age, genetics, and some medications shape it too. Cénit reads it against your own norm as part of your daily verdict: a rise above your usual tends to show up when you're run down, short on sleep, or fighting something off. On its own it's a noisy signal, so it counts most alongside your other signs.",
             displayValue: value.map { "\($0)" } ?? "—",
             unit: lpm,
             headerTint: value == nil ? .neutral : .metric,
             bands: bands,
             note: "Measured overnight from your Apple Watch's heart rate; when it isn't worn to sleep, Cénit uses Apple Health's resting heart rate instead.",
             levelsMetric: .restingHR,
+            bandsCaption: "Population reference, not your verdict. These ranges are a rough fitness guide and shift with age and sex; your daily read compares you against your own baseline, not against these bands.",
             levelsTodayValue: value.map(Double.init)
         )
     }

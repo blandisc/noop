@@ -1138,6 +1138,9 @@ struct LiquidMetricSheetView: View {
                     esqueletoNiveles
                     extras()
                     nivelesLista(d, conteos: false)
+                    if let caption = datoInfo.bandsCaption {
+                        LiquidNotaLine(String(localized: caption))
+                    }
                 } else {
                     if window.fellBack { avisoVentana(window) }
                     // FER-29 · Fidelidad (auditoría Grok+DeepSeek 2026-08-03): el título de
@@ -1155,6 +1158,9 @@ struct LiquidMetricSheetView: View {
                     .liquidGlass(.superficieSolida)
                     extras()
                     nivelesLista(d)
+                    if let caption = datoInfo.bandsCaption {
+                        LiquidNotaLine(String(localized: caption))
+                    }
                 }
             }
         } else if datoInfo.levelsRelative {

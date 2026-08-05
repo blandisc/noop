@@ -93,7 +93,12 @@ public enum MetricLevelPhrase {
     /// design.
     private static let comparisonByMetric: [String: Comparison] = [
         "hrv":       .vsBase,
-        "rhr":       .vsBase,
+        // FER-43 (gate /cso): la FRASE de FC en reposo lee la banda POBLACIONAL
+        // (`levels(for: .restingHR)`), no tu base — decía «por encima de lo usual» sobre un corte
+        // de población, la misma confusión banda↔veredicto que este issue vino a matar, y más
+        // prominente que el rótulo que la aclara. El VEREDICTO sí compara contra tu propia base
+        // (`ReadinessEngine`); esta línea no, y ahora su gramática lo dice.
+        "rhr":       .vsPopulation,
         "resp_rate": .vsBase,
         "skin_temp": .vsBase,
         "spo2":      .vsPopulation,
@@ -108,7 +113,7 @@ public enum MetricLevelPhrase {
     /// HRV uses the personal below/inBase/above levels, and Carga uses `ReadinessEngine.LoadBand`.
     private static let levelKeysByMetric: [String: [String]] = [
         "hrv":       ["below", "inBase", "above"],
-        "rhr":       ["athlete", "excellent", "normal", "elevated"],
+        "rhr":       ["rhrAthlete", "rhrLow", "rhrTypical", "rhrHigher"],
         "resp_rate": ["normal", "elevated"],
         "skin_temp": ["below", "inBase", "warm", "elevated"],
         "spo2":      ["low", "normal"],
