@@ -39,7 +39,14 @@ enum TrainingStreak {
     }
 
     /// La racha en días — el número que muestran tanto Entrenar como el bloque «Hoy en tu plan».
+    ///
+    /// Sin plan no hay racha. Sin este candado, un split vacío hace que TODOS los días de la ventana
+    /// cuenten como `.metRest` (un día sin entreno asignado es «descanso cumplido»), así que la racha
+    /// salía exactamente `windowDays`: a quien nunca configuró un plan la app le presumía «120 días
+    /// cumpliendo el plan», que además es el tope de la ventana disfrazado de logro. Cumplir un plan
+    /// que no existe no es una racha. (FER-973 · la prueba que lo cazaba nunca se había ejecutado.)
     static func streak(sessions: [StrengthSession], split: [Int: String], now: Date = Date()) -> Int {
-        WeeklySplit.adherenceStreak(adherenceStates(sessions: sessions, split: split, now: now))
+        guard !split.isEmpty else { return 0 }
+        return WeeklySplit.adherenceStreak(adherenceStates(sessions: sessions, split: split, now: now))
     }
 }
