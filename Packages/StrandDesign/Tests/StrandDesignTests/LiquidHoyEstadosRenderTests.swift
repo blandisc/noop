@@ -272,6 +272,26 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
             }
         }
 
+
+        /// El tablero cuando NO HAY NADA que mostrar: cero noches en el banco. Distinto de
+        /// `modulosSinHoy`, que solo vacía el sueño porque las demás señales sí pueden venir
+        /// de otro día. Aquí no hay «otro día» del que venir. Sin esto, la pantalla del
+        /// instante siguiente a conceder Salud enseñaba una VFC de 56 ms como lectura real.
+        func modulosSinDatos(_ base: [LiquidHoyModel.Modulo]) -> [LiquidHoyModel.Modulo] {
+            base.map { mod in
+                .init(id: mod.id, kicker: mod.kicker, auroraTones: mod.auroraTones,
+                      auroraPeriod: mod.auroraPeriod, auroraReverse: mod.auroraReverse,
+                      columnas: mod.columnas.map { col in
+                    if case .carga = col.contenido { return col }
+                    return .init(id: col.id, label: col.label, tone: LiquidColor.tinta500,
+                                 alineacion: col.alineacion,
+                                 contenido: .simple(value: "—", unit: "", detail: "", mejora: false),
+                                 destino: col.destino,
+                                 a11yLabel: "\(col.label), sin dato")
+                })
+            }
+        }
+
         // 8 · «Leyendo tu noche…»: el primer pintado, antes de que el refresh complete el
         // veredicto. Decirle «no conozco tu base» a alguien con años de historia sería falso.
         let leyendo = LiquidHoyModel(
@@ -374,7 +394,7 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
                             subtitle: "Noche 0 de 4 · tu rango se está formando"),
             carga: .calibrando(status: "CALIBRANDO"),
             metricas: metricasSinHoy(base.metricas),
-            modulos: modulosSinHoy(LiquidHoyModel.calibrandoModulos),
+            modulos: modulosSinDatos(LiquidHoyModel.calibrandoModulos),
             guardian: .init(label: "VIGILANDO", temp: "—", resp: "—", estado: .sinLectura),
             heroHint: nil,
             ambiente: .neutro,

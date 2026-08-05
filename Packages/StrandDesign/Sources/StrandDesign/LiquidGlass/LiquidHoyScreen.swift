@@ -806,7 +806,10 @@ public struct LiquidHoyScreen: View {
         carga: .calibrando(status: "CALIBRANDO"),
         metricas: LiquidHoyModel.ejemplo.metricas,
         modulos: LiquidHoyModel.calibrandoModulos,
-        guardian: .init(label: "VIGILANDO", temp: "—", resp: "—", estado: .tranquilo),
+        // `.sinLectura`, no `.tranquilo`: con las DOS lecturas en «—» el builder nunca
+        // devuelve tranquilo — afirmar «dentro de tu patrón» sobre dos guiones es
+        // exactamente la calma falsa que el guardián vino a matar.
+        guardian: .init(label: "VIGILANDO", temp: "—", resp: "—", estado: .sinLectura),
         ambiente: .neutro,
         calibracion: .init(noche: 3, total: 4)))
         .frame(width: 402, height: 874)
