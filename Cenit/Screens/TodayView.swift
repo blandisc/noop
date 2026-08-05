@@ -1200,6 +1200,28 @@ struct TodayView: View {
         return (hour(session.startTs), hour(session.endTs))
     }
 
+    /// El instrumento está sincronizando: offload en curso, su puente async (FER-480 `draining`) o el
+    /// pull-to-sync manual. Fuente única para las señales del héroe (estado, dial, numeral, pista).
+    /// La pista del pull (FER-293) y el sello armado viven en `PullSyncHint` / `PullIndicator`
+    /// (FER-972 P-09): leen el progreso en su propio body para no invalidar Hoy por frame.
+    // TODO(/pm): sin banda, "sincronizando" solo refleja el pull-to-refresh del usuario, no un fetch real de Apple Health en curso.
+    private var isSyncing: Bool { pullSyncing }
+
+    /// Cero fuentes: ni strap visto, ni datos de Apple Health, ni permiso de Health concedido. (FER-364)
+    /// Decide entre las DOS superficies de Hoy: la Liquid con datos y el orbe dormido sin ellos.
+    private var noSources: Bool {
+        #if DEBUG
+        // Los fixtures de captura (`-noop.fixture …`) siembran el dashboard pero NO
+        // `appleHealthDays` ni el permiso de Salud, así que sin conceder HealthKit a mano
+        // caían a la superficie CLÁSICA (las agujas «En reposo») en vez de la Liquid que
+        // representan. En modo fixture SIEMPRE hay fuentes: el estado sin fuentes se captura
+        // con el arg ausente/`empty`, que toma el camino normal. (SIMULADOR-ONLY, ver
+        // `ScreenshotFixtures.activeState`.)
+        if ScreenshotFixtures.activeState() != nil { return false }
+        #endif
+        return repo.appleHealthDays.isEmpty && health.auth != .authorized
+    }
+
     /// Los días de base para la media de 7 días (FER-258): las filas del dashboard de display
     /// ANTERIORES a hoy (la misma fuente en capas que resuelve el valor de hoy y la de la tendencia
     /// 14d), ordenadas y acotadas a las recientes. Excluir hoy hace que el delta sea «hoy vs tu

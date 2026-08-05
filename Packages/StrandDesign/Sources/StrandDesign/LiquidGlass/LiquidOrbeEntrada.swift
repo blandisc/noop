@@ -13,34 +13,45 @@ import SwiftUI
 
 // MARK: Primitiva compartida
 
-/// Dibuja UNA nube de partículas del orbe en el contexto dado, con el mismo bucketing que el
-/// héroe (`LiquidEcosistema.dibujarNube`): un `Path` por nivel de alfa, ≤ 16 fills por nube en
-/// vez de 300. Sin ese agrupado, un Canvas de 300 fills por frame no sostiene 60 fps.
+/// Un grupo de partículas del orbe: qué índices lleva, dónde está su centro y con cuánto alfa
+/// entra. El acto I manda seis (una por corriente); el acto II, uno solo.
+struct GrupoDeOrbe {
+    var indices: [Int]
+    var centro: CGPoint
+    var alfaK: Double
+}
+
+/// Dibuja los grupos dados con el mismo bucketing que el héroe (`LiquidEcosistema.dibujarNube`):
+/// un `Path` por nivel de alfa en vez de un fill por partícula. Sin ese agrupado, 300 fills por
+/// frame no sostienen la tasa de refresco.
 ///
-/// `alfaK` multiplica el alfa de TODAS sus partículas: es como una corriente entra fundiéndose.
+/// Los buckets son COMPARTIDOS entre grupos a propósito. Un diccionario por grupo dejaba el
+/// pico de la entrada en ~40 fills por cuadro —el triple que el héroe para las mismas 300
+/// partículas— porque cada corriente rehacía sus doce niveles por su cuenta. Como todas se
+/// pintan del mismo color, dos partículas de corrientes distintas con el mismo alfa pueden
+/// compartir trazo: 12 fills como techo, salgan de donde salgan.
 @inline(__always)
 private func nubeDeOrbe(_ ctx: inout GraphicsContext,
-                dirs: [SIMD3<Double>],
-                indices: [Int],
-                centro: CGPoint,
-                radio: CGFloat,
-                rotacion: Double,
-                nivel: Double?,
-                alfaK: Double,
-                jitter: Double,
-                t: TimeInterval,
-                color: Color) {
-    guard alfaK > 0.004 else { return }
+                        dirs: [SIMD3<Double>],
+                        grupos: [GrupoDeOrbe],
+                        radio: CGFloat,
+                        rotacion: Double,
+                        nivel: Double?,
+                        jitter: Double,
+                        t: TimeInterval,
+                        color: Color) {
     var buckets: [Int: Path] = [:]
-    for i in indices {
-        let p = EcosistemaSimulacion.particula(
-            dir: dirs[i], indice: i, centro: centro, radio: radio,
-            rotacion: rotacion, jitterAmp: jitter, t: t, alfaK: alfaK, nivel: nivel)
-        guard p.alfa > 0.004 else { continue }
-        let idx = min(11, max(0, Int(p.alfa * 12)))
-        buckets[idx, default: Path()].addEllipse(in: CGRect(
-            x: p.pos.x - p.tamano, y: p.pos.y - p.tamano,
-            width: p.tamano * 2, height: p.tamano * 2))
+    for grupo in grupos where grupo.alfaK > 0.004 {
+        for i in grupo.indices {
+            let p = EcosistemaSimulacion.particula(
+                dir: dirs[i], indice: i, centro: grupo.centro, radio: radio,
+                rotacion: rotacion, jitterAmp: jitter, t: t, alfaK: grupo.alfaK, nivel: nivel)
+            guard p.alfa > 0.004 else { continue }
+            let idx = min(11, max(0, Int(p.alfa * 12)))
+            buckets[idx, default: Path()].addEllipse(in: CGRect(
+                x: p.pos.x - p.tamano, y: p.pos.y - p.tamano,
+                width: p.tamano * 2, height: p.tamano * 2))
+        }
     }
     for (idx, path) in buckets {
         ctx.fill(path, with: .color(color.opacity(min(1, (Double(idx) + 0.5) / 12))))
@@ -94,6 +105,9 @@ public struct LiquidOrbeEntrada: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.liquidMotionDisabled) private var motionDisabled
+    /// La app se puede ir al fondo a media coreografía (una llamada entrando, el Centro de
+    /// Control). Sin esto el `TimelineView` sigue programando redibujos que nadie ve.
+    @Environment(\.scenePhase) private var scenePhase
     @State private var inicio: Date?
     @State private var saltada = false
     /// La entrada avisa que terminó UNA sola vez. Hay dos caminos que llegan al final —la
@@ -114,7 +128,11 @@ public struct LiquidOrbeEntrada: View {
     public var body: some View {
         ZStack {
             LiquidColor.fondoGradient.ignoresSafeArea()
-            TimelineView(.animation) { ctx in
+            // Con tope de 60 Hz explícito, como el resto del sistema: sin él, en ProMotion
+            // esto pediría 120 cuadros por segundo justo durante el arranque en frío, cuando
+            // HealthKit, SQLite y la construcción de la app ya se pelean por el CPU.
+            TimelineView(.animation(minimumInterval: LiquidMotion.intervaloPleno,
+                                    paused: scenePhase != .active)) { ctx in
                 let t = tiempo(ctx.date)
                 let cuadro = EntradaSimulacion.cuadro(t: t, reduce: sinViaje)
                 Canvas(rendersAsynchronously: false) { g, size in
@@ -129,7 +147,8 @@ public struct LiquidOrbeEntrada: View {
         // Decorativa de cabo a rabo: para VoiceOver esta pantalla no existe, así que el
         // lector de pantalla se va derecho a la app en vez de esperar la coreografía.
         .accessibilityHidden(true)
-        .allowsHitTesting(true)
+        // La forma es toda la pantalla: la entrada se come los toques en vez de dejarlos pasar
+        // a una app que el usuario todavía no ve.
         .contentShape(Rectangle())
         // Un toque la salta: la entrada se disuelve donde vaya, sin brincar al final (un
         // salto desde media llegada se vería como un glitch, no como saltarse algo).
@@ -184,20 +203,16 @@ public struct LiquidOrbeEntrada: View {
         // densidad justo a medio teñido, que es el instante que más se mira.
         let tinta = LiquidColor.particulaTeñida(hacia: climaFijado.particulaRGB, k: c.tinte)
 
-        for corriente in 0..<G.corrientes {
+        let grupos = (0..<G.corrientes).map { corriente -> GrupoDeOrbe in
             let d = c.desvios[corriente]
-            nubeDeOrbe(&g,
-                       dirs: Self.dirs,
-                       indices: Self.reparto[corriente],
-                       centro: CGPoint(x: centro.x + d.width * s, y: centro.y + d.height * s),
-                       radio: radio,
-                       rotacion: c.rotacion,
-                       nivel: nil,                    // esfera PLENA: objeto, no lectura
-                       alfaK: c.alfas[corriente],
-                       jitter: 0,
-                       t: t,
-                       color: tinta)
+            return GrupoDeOrbe(indices: Self.reparto[corriente],
+                               centro: CGPoint(x: centro.x + d.width * s,
+                                               y: centro.y + d.height * s),
+                               alfaK: c.alfas[corriente])
         }
+        nubeDeOrbe(&g, dirs: Self.dirs, grupos: grupos, radio: radio, rotacion: c.rotacion,
+                   nivel: nil,                        // esfera PLENA: objeto, no lectura
+                   jitter: 0, t: t, color: tinta)
         especularDeOrbe(&g, centro: centro, radio: radio, alfa: c.especular)
     }
 }
@@ -252,17 +267,12 @@ public struct LiquidOrbeDormido: View {
         let base = min(size.width, size.height) * 0.38
         // Respiración: ±4.5 % con periodo `periodo`.
         let radio = base * (quieto ? 1 : 1 + 0.045 * sin(t * 2 * .pi / Self.periodo))
-        nubeDeOrbe(&g,
-                   dirs: Self.dirs,
-                   indices: Self.indices,
-                   centro: centro,
+        nubeDeOrbe(&g, dirs: Self.dirs,
+                   grupos: [GrupoDeOrbe(indices: Self.indices, centro: centro, alfaK: 0.9)],
                    radio: radio,
                    rotacion: quieto ? 0 : t * 0.14,
                    nivel: 0,                       // recipiente vacío: solo el piso y vapor
-                   alfaK: 0.9,
-                   jitter: 0,
-                   t: t,
-                   color: LiquidColor.particulaNeutra)
+                   jitter: 0, t: t, color: LiquidColor.particulaNeutra)
         chispear(&g, centro: centro, radio: radio, t: t)
     }
 
@@ -296,6 +306,14 @@ public struct LiquidOrbeDormidoEstado: View {
     private let privacidad: String
     private let onConectar: () -> Void
 
+    /// El cuerpo ESCALA con Dynamic Type. `LiquidType.cuerpo` es de tamaño fijo (SF no acepta
+    /// `relativeTo:`), y aquí eso sería un defecto de accesibilidad y no un detalle: esta
+    /// pantalla no tiene más trabajo que ser leída, y su lector podría no alcanzar nunca el
+    /// botón porque el texto que se lo explica se quedó en 12.5 pt. Mismo patrón que
+    /// `LiquidAutonomicoScreen` y `LiquidBandsTable`.
+    @ScaledMetric(relativeTo: .footnote)
+    private var cuerpoPt: CGFloat = LiquidType.cuerpoLecturaBase
+
     public init(titulo: String, cuerpo: String, cta: String, privacidad: String,
                 onConectar: @escaping () -> Void) {
         self.titulo = titulo
@@ -313,7 +331,7 @@ public struct LiquidOrbeDormidoEstado: View {
                     .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
                     .foregroundStyle(LiquidColor.tinta900)
                 Text(cuerpo)
-                    .font(LiquidType.cuerpo)
+                    .font(.system(size: cuerpoPt))
                     .lineSpacing(LiquidType.cuerpoLineSpacing)
                     .foregroundStyle(LiquidColor.tinta500)
                     .fixedSize(horizontal: false, vertical: true)

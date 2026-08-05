@@ -26,8 +26,12 @@ N = 300            # EcosistemaSimulacion.Geometria.nEsfera
 APLASTAMIENTO = 0.96
 RADIO_REL = 0.40   # radio del orbe como fracción del lado (diámetro 0.80 — la retícula de Apple)
 
-DESTINO = (pathlib.Path(__file__).resolve().parent.parent
-           / "CenitApp/Resources/Assets.xcassets/AppIcon.appiconset")
+RAIZ = pathlib.Path(__file__).resolve().parent.parent
+DESTINO = RAIZ / "CenitApp/Resources/Assets.xcassets/AppIcon.appiconset"
+# El Watch tiene su propio appiconset y su propio nombre de archivo; si no se genera aquí, se
+# queda con el ícono del ADN retirado y las dos plataformas del mismo producto dejan de
+# parecerse (lo cazó la revisión adversarial de FER-41).
+DESTINO_WATCH = RAIZ / "CenitWatch/Resources/Assets.xcassets/AppIcon.appiconset"
 
 
 def direcciones(n: int) -> list[tuple[float, float, float]]:
@@ -123,7 +127,6 @@ def pintar(fondo_arriba, fondo_abajo, particula, nucleo, nucleo_alfa, especular_
 
 
 def main() -> None:
-    DESTINO.mkdir(parents=True, exist_ok=True)
     variantes = {
         # Claro: las partículas verde-tinta (#10694E) sobre el blanco de la app.
         "icon-light-1024.png": dict(
@@ -141,11 +144,16 @@ def main() -> None:
             particula=(0xF2, 0xF3, 0xF1), nucleo=(0x74, 0x77, 0x72),
             nucleo_alfa=0.80, especular_alfa=0.14),
     }
-    for nombre, cfg in variantes.items():
+    # El Watch usa la variante OSCURA: su parrilla de apps es negra, así que el orbe iluminado
+    # sobre fondo hondo es el que se lee ahí — no el claro, que ahí sería una mancha blanca.
+    salidas = [(DESTINO / n, cfg) for n, cfg in variantes.items()]
+    salidas.append((DESTINO_WATCH / "icon-watch-1024.png", variantes["icon-dark-1024.png"]))
+    for ruta, cfg in salidas:
+        ruta.parent.mkdir(parents=True, exist_ok=True)
         img = pintar(**cfg)
-        ruta = DESTINO / nombre
         img.save(ruta, "PNG", optimize=True)
-        print(f"{ruta.name}  {img.size[0]}×{img.size[1]}  modo {img.mode}")
+        print(f"{ruta.parent.parent.parent.parent.name}/{ruta.name}  "
+              f"{img.size[0]}×{img.size[1]}  modo {img.mode}")
 
 
 if __name__ == "__main__":
