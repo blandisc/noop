@@ -2,11 +2,35 @@ import XCTest
 import SwiftUI
 @testable import StrandDesign
 
-/// Arnés de renders de los estados canónicos del héroe (FER-1045 → FER-10 «El Ecosistema»):
-/// escribe un PNG por estado a /tmp/noop-liquid/ para verificación visual del dueño.
-/// Con `liquidMotionDisabled` el Ecosistema dibuja su cuadro canónico t = 0 (determinista
-/// para ImageRenderer, que no dispara onAppear).
+/// Arnés de renders de los estados de «Hoy»: escribe un PNG por estado a /tmp/noop-liquid/
+/// para verificación visual del dueño. Con `liquidMotionDisabled` el Ecosistema dibuja su
+/// cuadro canónico t = 0 (determinista para ImageRenderer, que no dispara onAppear).
 /// Run: swift test --filter LiquidHoyEstadosRenderTests
+///
+/// ESTE ARCHIVO ES EL MAPA DE ESTADOS. Vive aquí, y no en un documento aparte, porque lo que
+/// enumera es exactamente lo que renderiza: un mapa en markdown se desfasa en silencio, éste
+/// no compila si un estado deja de existir. Cada uno con la condición EXACTA que lo dispara:
+///
+///   0 · orbe dormido      `noSources`: sin datos de Salud Y sin permiso. No pasa por el héroe.
+///   12 · entrada          `LiquidOrbeEntrada`, el overlay de arranque. Tampoco pasa por el héroe.
+///   8 · leyendo tu noche  `prep == nil && verdictPending` (primer pintado, aún cargando).
+///   13 · recién conectado con permiso, `nights == 0` → «Noche 0 de 4».
+///   5 · conociéndote      con permiso, `0 < nights < Baselines.minNightsSeed` (4).
+///   11 · provisional      veredicto real con `nights < minNightsTrust` (14) → línea de confianza.
+///   1 · en rango          `verdict == .full`, anclado a una noche.
+///   2 · hoy ve leve       `verdict == .caution` (un eje fuera, o el par del guardián).
+///   3 · recupera          `verdict == .easy` (≥ 2 ejes fuera, o ámbar + tendencia a la baja).
+///   7 · eclipse           subcaso de 2/3: `sentinel == .corroborated` (temp Y resp juntas).
+///   6 · separado          cualquiera de los anteriores con la fase del Ecosistema en `.separada`.
+///   4 · lectura de día    veredicto SIN noche grabada (`isNightAnchored == false`).
+///   10 · sin lectura hoy  sin veredicto, con permiso, `nights >= 4` (la base ya está sembrada).
+///   9 · sin permiso       `healthConnected == false` Y `noSources == false` (datos sin la marca
+///                         de conectado; p. ej. tras restaurar un respaldo).
+///
+/// FALTA UNO, a propósito, y está levantado como deuda en FER-47: «lectura de día CON el
+/// guardián en pareja». El motor sí baja el veredicto, pero `lecturaDeDia()` ignora el
+/// centinela y afirma «tus señales de día están en tu rango» mientras el guardián dice JUNTAS.
+/// No se renderiza aquí porque renderizarlo sería bendecir una pantalla que se contradice.
 final class LiquidHoyEstadosRenderTests: XCTestCase {
 
     #if os(macOS)
