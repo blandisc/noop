@@ -100,6 +100,14 @@ public enum LiquidType {
 
     // MARK: Cuerpo (SF)
 
+    /// `veredicto/hoja` — 30/700, tracking −0.6, escala (relativeTo `.title1`). La
+    /// palabra-dato de la hoja de la boleta («En rango»): manda sobre todo lo demás de la
+    /// hoja (nada más pasa de 17) sin fingir numeral — el dato de esa hoja es una FRASE
+    /// (boleta r3, spec /ui «acta de escrutinio»).
+    public static let veredictoHoja = InstrumentoType.grotesk(30, weight: .bold,
+                                                              relativeTo: .title)
+    public static let veredictoHojaTracking: CGFloat = -0.6
+
     /// Glifo ⓘ de cabecera de hoja — 15 SF (QA F1-D5: fuera del inline).
     public static let infoGlifo = Font.system(size: 15)
 

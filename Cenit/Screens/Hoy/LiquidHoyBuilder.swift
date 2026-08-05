@@ -961,76 +961,259 @@ enum LiquidHoyBuilder {
     }
 
     static func acta(prep: Preparedness.Read?, healthConnected: Bool = true) -> LiquidActa {
-        // El acta se SINTETIZA con sus tres filas fijas, no se itera sobre `drivers`: en el
-        // `lowSignal` por falta de fila de hoy, `Preparedness` devuelve `drivers` VACÍO
-        // (:163-166), y una tabla derivada de ahí simplemente no existiría.
+        // La boleta se SINTETIZA con sus dos votantes fijos, no se itera sobre `drivers`:
+        // en el `lowSignal` por falta de fila de hoy, `Preparedness` devuelve `drivers`
+        // VACÍO (:163-166) y una tabla derivada de ahí no existiría.
         let estados = ejesActa.map { ax in
             prep?.drivers.first { $0.axis == ax }?.state ?? .noData
         }
         let fuera = estados.filter { $0.isOut }.count
-        let conLectura = estados.filter { $0.hasData }.count
-        // D1 del verificador: `isNightAnchored` es OBLIGATORIO. Sin noche grabada el héroe
-        // se demota a propósito («Lectura de día», sin palabra) y el acta reinstalaba el
-        // «Dale con todo» en grande: el usuario tocaba un héroe que se niega a dar
-        // veredicto y aterrizaba en una hoja que se lo gritaba (invariante Preparedness:101).
+        // D1 del verificador: `isNightAnchored` es OBLIGATORIO (ver historial).
         let hayVeredicto = prep != nil && prep?.verdict != .lowSignal
             && prep?.isNightAnchored == true
-        // «Lectura de día»: hay señal autonómica (verdict != lowSignal) pero NO se grabó sueño
-        // anoche (isNightAnchored == false). No hay veredicto —falta la noche—, pero la razón
-        // NO es «me faltan tus noches» (la base puede estar madura): es que anoche no hubo
-        // sueño. Sin distinguirlo, el conteo grande contradecía a su propia nota y al héroe.
         let esLecturaDeDia = prep != nil && prep?.verdict != .lowSignal
             && prep?.isNightAnchored == false
+        let calibrando = prep?.maturity == .calibrating
+
+        let desfase = hayVeredicto
+            && desfaseDeHisteresis(verdict: prep!.verdict, fuera: fuera)
+        let empujeTendencia = hayVeredicto && prep!.verdict == .easy && fuera == 1
+            && prep!.trend == .below
 
         let filas: [LiquidActa.Fila] = ejesActa.enumerated().map { i, ax in
-            let estado = estados[i]
-            let etiqueta = nombreEje(ax)
-            let dijo = caption(for: estado)
-            let base = baseDeEje(ax)
-            // El label de VoiceOver dice el estado FUERA con palabras: el wash de color es
-            // la única marca visual de la fila activa, y el color no habla.
-            let a11y = [etiqueta, dijo, base].joined(separator: ", ")
-                + (estado.isOut ? ", " + String(localized: "outside your range") : "")
-            return LiquidActa.Fila(id: ax.rawValue, etiqueta: etiqueta, dijo: dijo,
-                                   base: base, fuera: estado.isOut, a11y: a11y)
+            filaBoleta(ax: ax, estado: estados[i], prep: prep,
+                       hayVeredicto: hayVeredicto, esLecturaDeDia: esLecturaDeDia,
+                       calibrando: calibrando, healthConnected: healthConnected)
         }
+
+        let resumen = resumenBoleta(prep: prep, estados: estados, fuera: fuera,
+                                    hayVeredicto: hayVeredicto,
+                                    esLecturaDeDia: esLecturaDeDia,
+                                    calibrando: calibrando,
+                                    desfase: desfase, empujeTendencia: empujeTendencia,
+                                    healthConnected: healthConnected)
 
         return LiquidActa(
             titulo: String(localized: "Readiness"),
-            procedencia: String(localized: "Apple Health · this morning"),
+            // Procedencia + sello de fecha: el micro-momento de acta oficial (/ux D2).
+            procedencia: String(localized: "Apple Health · this morning · \(selloFechaActa())"),
             explicacion: String(localized: "The verdict for how you woke up: your signals against your own baseline. It's an approximation, not a diagnosis."),
             infoMostrar: String(localized: "Show explanation"),
             infoOcultar: String(localized: "Hide explanation"),
-            nivel: hayVeredicto ? palabraVeredicto(prep!.verdict) : nil,
-            sinLectura: hayVeredicto ? nil : String(localized: "No verdict yet"),
-            conteo: hayVeredicto
-                ? conteoActa(fuera: fuera, conLectura: conLectura)
-                : esLecturaDeDia
-                    ? String(localized: "No sleep recorded last night, so there's no morning verdict.")
-                    : String(localized: "I need a few of your own nights before I can give you a verdict."),
-            // El método en LLANO: nada de «ejes» (vocabulario de `Preparedness.Axis`, no del
-            // usuario — en Hoy solo ve tres orbes con nombre propio).
-            // v3 (hermana de FER-5, firmado /cso): la versión previa decía «tu respiración
-            // puede marcar la señal por su cuenta» — cierto en v2 (`respOut` daba veto propio),
-            // FALSO en v3: la respiración salió del voto (`wResp=0`) y ahora solo VIGILA en el
-            // guardián junto con la temperatura, y ambas deben corroborar (Preparedness:24-25,
-            // :513; Mishra 2020). El acta vota por 2 señales separadas (FC en reposo · sueño):
-            // votos que no cuentan doble; respiración y temperatura no votan aquí.
-            metodo: String(localized: "Your resting heart rate and your sleep are read as separate votes, so one rough night can't count against you twice. Your breathing and temperature only keep watch. They don't vote here."),
-            metodoClave: String(localized: "acta.metodo.clave", defaultValue: "only keep watch"),
+            nivel: palabraBoleta(prep: prep, hayVeredicto: hayVeredicto,
+                                 esLecturaDeDia: esLecturaDeDia, calibrando: calibrando,
+                                 healthConnected: healthConnected),
+            conteo: resumen.texto, conteoClave: resumen.clave,
             filas: filas,
-            notas: notasActa(prep: prep, fuera: fuera, conLectura: conLectura,
-                             healthConnected: healthConnected),
+            // Vigilantes SOLO con veredicto (/ux D7): su drama vive en el guardián.
+            vigilantesLabel: hayVeredicto ? String(localized: "Watching, not voting") : nil,
+            vigilantes: hayVeredicto
+                ? [String(localized: "Breathing"), String(localized: "Temperature")] : [],
+            vigilantesA11y: hayVeredicto
+                ? String(localized: "Watching, not voting: breathing and temperature.") : nil,
+            notas: notasBoleta(prep: prep, fuera: fuera, hayVeredicto: hayVeredicto,
+                               esLecturaDeDia: esLecturaDeDia, desfase: desfase,
+                               empujeTendencia: empujeTendencia,
+                               healthConnected: healthConnected),
             confianza: confianzaActa(prep: prep),
             plegable: plegableActa(prep: prep),
             verMas: String(localized: "See more in Trends"),
             verMasHint: String(localized: "Opens the detail"),
             tono: actaTono(prep),
-            // El wash de la fila significa «esta es la que se salió». Con la histéresis
-            // activa el veredicto puede seguir verde mientras una señal amaneció fuera:
-            // pintar esa fila de verde diría lo contrario de lo que pasó.
+            // El wash de la fila dice «esta se salió», no «esta está bien» (histéresis).
             tonoFilas: prep?.verdict == .full && fuera > 0
                 ? LiquidColor.atencion : actaTono(prep))
+    }
+
+    /// «4 AGO» — el sello de fecha del acta (estático: aquí no hay scrub que lo mueva).
+    private static func selloFechaActa() -> String {
+        let f = DateFormatter()
+        f.setLocalizedDateFormatFromTemplate("d MMM")
+        return f.string(from: Date()).uppercased(with: Locale.current)
+    }
+
+    /// La palabra grande de la boleta: la del héroe con veredicto (paridad /cso B1) o la
+    /// del estado sin veredicto — nunca nil.
+    private static func palabraBoleta(prep: Preparedness.Read?, hayVeredicto: Bool,
+                                      esLecturaDeDia: Bool, calibrando: Bool,
+                                      healthConnected: Bool) -> String {
+        if hayVeredicto { return palabraVeredicto(prep!.verdict) }
+        if esLecturaDeDia { return String(localized: "Day reading") }
+        if !healthConnected || prep == nil { return String(localized: "No reading") }
+        if calibrando {
+            return String(localized: "hero.title.calibrando", defaultValue: "Getting to know you")
+        }
+        return String(localized: "No reading")
+    }
+
+    /// Un votante de la boleta: glifo + sub + voto direccional + palabra + a11y.
+    private static func filaBoleta(ax: Preparedness.Axis,
+                                   estado: Preparedness.AxisState,
+                                   prep: Preparedness.Read?,
+                                   hayVeredicto: Bool, esLecturaDeDia: Bool,
+                                   calibrando: Bool, healthConnected: Bool) -> LiquidActa.Fila {
+        let esAuto = ax == .autonomic
+        let glifo: LiquidIcon.Glyph = esAuto ? .corazon : .luna
+
+        let votoEstado: LiquidVotoRiel.Estado
+        switch estado {
+        case .inRange: votoEstado = .dentro
+        case .low:     votoEstado = .fueraAbajo
+        case .high:    votoEstado = .fueraArriba
+        case .noData:  votoEstado = (esAuto && calibrando && prep != nil) ? .calibrando : .sinLectura
+        }
+
+        let sub: String
+        if esAuto {
+            sub = votoEstado == .calibrando
+                ? String(localized: "learning your base")
+                : String(localized: "resting HR · against your base")
+        } else {
+            sub = estado.hasData
+                ? String(localized: "last night · against a fixed minimum")
+                : String(localized: "against a fixed minimum")
+        }
+
+        let palabra: String
+        switch votoEstado {
+        case .dentro:                  palabra = String(localized: "acta.voto.in", defaultValue: "in")
+        case .fueraAbajo, .fueraArriba: palabra = String(localized: "acta.voto.out", defaultValue: "out")
+        case .calibrando:              palabra = "··"
+        case .sinLectura:              palabra = String(localized: "no data")
+        }
+
+        // El tono del VOTO: verde dentro (con veredicto), el tono del desvío fuera,
+        // tinta sin veredicto (cero color en la hoja, /ux D6).
+        let tonoVoto: Color
+        if estado.isOut {
+            tonoVoto = (prep?.verdict == .easy) ? LiquidColor.negativo : LiquidColor.atencion
+        } else if votoEstado == .dentro && hayVeredicto {
+            tonoVoto = LiquidColor.verdePrimario
+        } else {
+            tonoVoto = LiquidColor.tinta500
+        }
+
+        let nombre = nombreEje(ax)
+        // El verbo del label distingue VOTAR de LEER (lectura de día no hace quórum, /ux D6).
+        let a11y: String
+        switch votoEstado {
+        case .dentro:
+            a11y = esLecturaDeDia
+                ? String(localized: "\(nombre), read inside, \(sub).")
+                : String(localized: "\(nombre), voted inside, \(sub).")
+        case .fueraAbajo, .fueraArriba:
+            a11y = String(localized: "\(nombre), voted outside, \(sub), outside your range.")
+        case .calibrando:
+            a11y = String(localized: "\(nombre), no vote yet, \(sub).")
+        case .sinLectura:
+            a11y = String(localized: "\(nombre), no data, \(sub).")
+        }
+
+        return LiquidActa.Fila(id: ax.rawValue, glifo: glifo, etiqueta: nombre, sub: sub,
+                               estado: votoEstado, umbral: esAuto ? .rango : .minimo,
+                               fuera: estado.isOut, tonoVoto: tonoVoto,
+                               palabra: palabra, a11y: a11y)
+    }
+
+    /// La frase-resumen bajo la palabra — sostiene el veredicto o cuenta el DESFASE de
+    /// histéresis (/ux D5: el desfase ES lo que estás viendo, no una nota al pie).
+    private static func resumenBoleta(prep: Preparedness.Read?,
+                                      estados: [Preparedness.AxisState],
+                                      fuera: Int, hayVeredicto: Bool,
+                                      esLecturaDeDia: Bool, calibrando: Bool,
+                                      desfase: Bool, empujeTendencia: Bool,
+                                      healthConnected: Bool) -> (texto: String, clave: String?) {
+        guard hayVeredicto else {
+            if esLecturaDeDia {
+                return (String(localized: "No sleep recorded last night: without its vote there's no quorum for a verdict."), nil)
+            }
+            if !healthConnected {
+                return (String(localized: "Without Apple Health connected there's nothing to count."), nil)
+            }
+            if prep == nil {
+                return (String(localized: "Nothing came in last night: no sleep and no resting signals."), nil)
+            }
+            if calibrando {
+                return (String(localized: "The ballot is taking shape with your first nights."), nil)
+            }
+            return (String(localized: "Nothing came in last night: no sleep and no resting signals."), nil)
+        }
+        if empujeTendencia {
+            return (String(localized: "One vote fell outside and your night HRV is trending down: that's why today asks for recovery."),
+                    String(localized: "acta.resumen.tendencia.clave", defaultValue: "trending down"))
+        }
+        if desfase {
+            let esperado: Int = prep!.verdict == .full ? 0 : (prep!.verdict == .caution ? 1 : 2)
+            if fuera > esperado {
+                return (String(localized: "A vote fell outside today. A new verdict has to repeat two days in a row to replace yesterday's."),
+                        String(localized: "acta.resumen.hist.fuera.clave", defaultValue: "outside today"))
+            }
+            return (String(localized: "Your votes fell inside today. The verdict changes once the improvement repeats two days in a row."),
+                    String(localized: "acta.resumen.hist.dentro.clave", defaultValue: "inside today"))
+        }
+        switch prep!.verdict {
+        case .full:
+            return (String(localized: "Both of your votes fell inside."),
+                    String(localized: "acta.resumen.full.clave", defaultValue: "inside"))
+        case .caution:
+            let suenoFuera = estados.indices.contains(1) && estados[1].isOut
+            return suenoFuera
+                ? (String(localized: "Sleep voted outside; autonomic, inside."),
+                   String(localized: "acta.resumen.caution.clave", defaultValue: "voted outside"))
+                : (String(localized: "Autonomic voted outside; sleep, inside."),
+                   String(localized: "acta.resumen.caution.clave", defaultValue: "voted outside"))
+        case .easy:
+            return (String(localized: "Both of your votes fell outside."),
+                    String(localized: "acta.resumen.easy.clave", defaultValue: "outside"))
+        case .lowSignal:
+            return (String(localized: "Nothing came in last night: no sleep and no resting signals."), nil)
+        }
+    }
+
+    /// Las notas de la boleta. El desfase y la tendencia YA viven en la frase-resumen; la
+    /// carga solo aparece cuando HUBO entrenamiento (/ux D8).
+    private static func notasBoleta(prep: Preparedness.Read?, fuera: Int,
+                                    hayVeredicto: Bool, esLecturaDeDia: Bool,
+                                    desfase: Bool, empujeTendencia: Bool,
+                                    healthConnected: Bool) -> [LiquidActa.Nota] {
+        var out: [LiquidActa.Nota] = []
+        guard let prep else {
+            if !healthConnected {
+                out.append(.init(id: "permiso",
+                                 texto: String(localized: "Connect Apple Health in Settings and your daily verdict will appear here."),
+                                 avisa: true))
+            } else {
+                out.append(.init(id: "noche",
+                                 texto: String(localized: "Sleep with your Apple Watch and tomorrow the ballot fills itself.")))
+            }
+            return out
+        }
+
+        if esLecturaDeDia || prep.verdict == .lowSignal {
+            out.append(.init(id: "noche",
+                             texto: String(localized: "Sleep with your Apple Watch and tomorrow the ballot fills itself.")))
+            return out
+        }
+
+        if hayVeredicto && !desfase && !empujeTendencia {
+            if fuera >= 2 {
+                out.append(.init(id: "aviso",
+                                 texto: String(localized: "Both out at once: today is for recovering, not pushing."),
+                                 avisa: true))
+            } else if fuera == 1 {
+                out.append(.init(id: "voto",
+                                 texto: String(localized: "One vote out lightens the day; it doesn't sink it.")))
+            }
+        }
+
+        // La carga se mide y NUNCA vota — nota solo cuando hubo entrenamiento (/ux D8);
+        // la aclaración permanente vive en «Cómo se calcula».
+        let huboEntrenamiento = prep.drivers.first { $0.axis == .load }?.state.hasData ?? false
+        if huboEntrenamiento {
+            out.append(.init(id: "carga",
+                             texto: String(localized: "There was a workout today. It's measured, but it doesn't change your verdict yet.")))
+        }
+        return out
     }
 
     /// La palabra del veredicto tal cual la dice el héroe (misma clave del catálogo).
@@ -1054,67 +1237,6 @@ enum LiquidHoyBuilder {
         case .thermal: return String(localized: "Thermal")
         case .load: return String(localized: "Load")
         }
-    }
-
-    /// Contra QUÉ se compara cada señal — cualitativo, nunca el umbral. Es el hallazgo real:
-    /// las tres NO se juzgan contra la misma referencia (tu base / una banda fija / la base
-    /// que Apple ya calculó).
-    private static func baseDeEje(_ ax: Preparedness.Axis) -> String {
-        switch ax {
-        case .autonomic: return String(localized: "against your base")
-        case .sleep: return String(localized: "against a fixed minimum")
-        case .thermal: return String(localized: "against Apple's base")
-        case .load: return ""
-        }
-    }
-
-    static func conteoActa(fuera: Int, conLectura: Int) -> String {
-        if fuera >= 2 { return String(localized: "Both of your signals woke up outside your range.") }
-        if fuera == 1 { return String(localized: "1 of your 2 signals woke up outside your range.") }
-        if conLectura < 2 { return String(localized: "Only \(conLectura) of your 2 signals had a reading today.") }
-        return String(localized: "Both of your signals woke up in your range.")
-    }
-
-    /// Las notas del acta, con PRECEDENCIA explícita entre los dos avisos que cambian la
-    /// lectura (sin ella, el caso `easy` + 1 fuera + tendencia abajo pintaba los dos y la
-    /// hoja se contradecía).
-    private static func notasActa(prep: Preparedness.Read?, fuera: Int, conLectura: Int,
-                                  healthConnected: Bool) -> [LiquidActa.Nota] {
-        var out: [LiquidActa.Nota] = []
-        guard let prep, prep.verdict != .lowSignal else {
-            if !healthConnected {
-                out.append(.init(id: "permiso",
-                                 texto: String(localized: "Connect Apple Health in Settings and your daily verdict will appear here."),
-                                 avisa: true))
-            }
-            return out
-        }
-
-        // Sin noche grabada, el sueño no pudo votar (FER-1033, misma frase que el héroe).
-        if !prep.isNightAnchored {
-            out.append(.init(id: "noche",
-                             texto: String(localized: "No sleep reading last night; this is less precise."),
-                             avisa: true))
-        }
-
-        // 1) Empujón de tendencia — la causa cuando `easy` sale de UNA sola señal fuera.
-        if prep.verdict == .easy && fuera == 1 && prep.trend == .below {
-            out.append(.init(id: "tendencia",
-                             texto: String(localized: "One signal outside your range, and your night-time HRV trend is coming down."),
-                             avisa: true))
-        } else if desfaseDeHisteresis(verdict: prep.verdict, fuera: fuera) {
-            // 2) Histéresis — el acta de HOY no cuadra con el veredicto MOSTRADO.
-            out.append(.init(id: "histeresis",
-                             texto: String(localized: "Today I read \(fuera) of your signals outside your range; the verdict doesn't change until it repeats two days in a row."),
-                             avisa: true))
-        }
-
-        // La carga se mide y NUNCA vota: baja a nota, en las dos variantes.
-        let huboEntrenamiento = prep.drivers.first { $0.axis == .load }?.state.hasData ?? false
-        out.append(.init(id: "carga", texto: huboEntrenamiento
-            ? String(localized: "There was a workout today. It's measured, but it doesn't change your verdict yet.")
-            : String(localized: "No workout recorded today. Load is measured, but it doesn't change your verdict yet.")))
-        return out
     }
 
     /// ¿El conteo de hoy contradice al veredicto mostrado? (full→0, caution→1, easy→≥2).
