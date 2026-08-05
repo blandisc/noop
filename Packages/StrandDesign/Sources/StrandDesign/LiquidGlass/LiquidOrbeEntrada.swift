@@ -344,8 +344,11 @@ public struct LiquidOrbeDormidoEstado: View {
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
         }
+        // Sin margen horizontal propio: el margen de PANTALLA lo pone la pantalla. Cuando el
+        // componente traía el suyo, Hoy le sumaba el de la suya y el título, el botón y el
+        // aviso quedaban 16 pt más adentro que la fecha de la cabecera — un desalineo visible
+        // en la primera pantalla que ve quien todavía no da permiso de Salud.
         .frame(maxWidth: .infinity)
-        .padding(.horizontal, LiquidSpace.s400)
     }
 }
 
@@ -363,6 +366,7 @@ public struct LiquidOrbeDormidoEstado: View {
             cta: "Conectar Apple Salud",
             privacidad: "Todo se queda en tu iPhone. Sin cuenta, sin nube.",
             onConectar: {})
+        .padding(.horizontal, LiquidSpace.s550)
     }
 }
 
@@ -376,6 +380,7 @@ public struct LiquidOrbeDormidoEstado: View {
                 cta: "Conectar Apple Salud",
                 privacidad: "Todo se queda en tu iPhone. Sin cuenta, sin nube.",
                 onConectar: {})
+            .padding(.horizontal, LiquidSpace.s550)
         }
     }
     .environment(\.dynamicTypeSize, .accessibility5)
