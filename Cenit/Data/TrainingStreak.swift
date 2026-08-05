@@ -45,8 +45,16 @@ enum TrainingStreak {
     /// salía exactamente `windowDays`: a quien nunca configuró un plan la app le presumía «120 días
     /// cumpliendo el plan», que además es el tope de la ventana disfrazado de logro. Cumplir un plan
     /// que no existe no es una racha. (FER-973 · la prueba que lo cazaba nunca se había ejecutado.)
-    static func streak(sessions: [StrengthSession], split: [Int: String], now: Date = Date()) -> Int {
+    ///
+    /// `calendar` se puede inyectar como en `adherenceStates`/`completedDayStarts`: era la ÚNICA de
+    /// las tres que no lo permitía, así que una prueba podía fijar las fechas en su zona horaria pero
+    /// no el calendario con el que se bucketean, y el resultado dependía de la zona de la máquina.
+    /// Pasaba en la Mac del dueño (CDMX) y fallaba en CI (UTC): una sesión de 19:30 en CDMX cae al día
+    /// siguiente en UTC y parte la racha. Lo cazó la primera corrida de CI de esta suite (FER-50).
+    static func streak(sessions: [StrengthSession], split: [Int: String],
+                       now: Date = Date(), calendar: Calendar = .current) -> Int {
         guard !split.isEmpty else { return 0 }
-        return WeeklySplit.adherenceStreak(adherenceStates(sessions: sessions, split: split, now: now))
+        return WeeklySplit.adherenceStreak(
+            adherenceStates(sessions: sessions, split: split, now: now, calendar: calendar))
     }
 }

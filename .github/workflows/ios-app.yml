@@ -1,10 +1,14 @@
-name: iOS App Compile Check
+name: iOS App Compile + Unit Tests
 
 # FER-973 (A-01): the app layer (~75% of the code) had NO mechanical gate — the packages CI only
 # watches Packages/**, so a PR touching only Cenit/** could land without any machine compiling it.
 # This job compiles the Cenit SCHEME (app + widget/Live-Activity extensions via the scheme's
-# dependency graph) unsigned, plus the test targets (see the build step's note on
-# `build-for-testing`), mirroring release.yaml's recipe.
+# dependency graph) plus the test targets (see the build step's note on `build-for-testing`).
+#
+# FER-50: it now also RUNS CenitUnitTests on a simulator. Compiling them was never enough — the
+# suite had rotted invisibly (see the build step's note), because no machine anywhere executed it.
+# One job does both: the same build feeds the compile gate and the test run, so this costs one
+# macOS runner, not two.
 #
 # Deliberately LABEL-GATED (`ci-app`) + manual dispatch, NOT on every PR: macOS runners bill at
 # 10× and this account has hit Actions spending limits before (2026-07-11). Apply the `ci-app`
@@ -58,21 +62,58 @@ jobs:
       # release.yaml stayed green. `build-for-testing` closes exactly that gap.
       #
       # `build-for-testing` needs a destination that can host tests, so the device SDK
-      # (`-sdk iphoneos`) becomes a generic Simulator destination. It still only COMPILES: no
-      # simulator is booted and no test is executed, so this adds neither the ~8 GB simulator boot
-      # nor test flakiness — just the compile time of the test targets.
+      # (`-sdk iphoneos`) becomes a generic Simulator destination. This step still only COMPILES;
+      # the simulator gets booted by the NEXT step, which runs the suite (FER-50).
       #
-      # Compile-only check: unsigned, entitlements stripped — green means "compiles cleanly",
-      # like release.yaml's build step.
-      - name: Compile Unsigned iOS App + Test Targets
+      # AD-HOC signed, entitlements INTACT — and that is the whole point (FER-49/FER-50).
+      #
+      # The old recipe here stripped signing AND entitlements (`CODE_SIGN_ENTITLEMENTS=""`). That is
+      # fine to COMPILE, but such a build cannot RUN: without the App Group entitlement the app trips
+      # `AppGroup.warnIfGroupUnprovisioned`'s simulator assert and the test runner dies before the
+      # first test ("Early unexpected exit ... crashed before establishing connection"). That is
+      # exactly why `Tools/verify.sh app-tests` was broken for months and why CenitUnitTests rotted
+      # unseen: 5 tests from PR #1017 had NEVER executed anywhere, and one of them was hiding a real
+      # user-facing bug (the training streak bragged «120 days on plan» with no plan configured).
+      #
+      # No Apple account is needed: the Simulator does not enforce provisioning, it just applies the
+      # entitlements file, so ad-hoc (`CODE_SIGN_IDENTITY="-"`, manual style, no team, no profile) is
+      # enough to both compile and run. Verified locally: 230 tests green with this exact recipe.
+      # release.yaml still covers the fully unsigned/stripped device build, so that path keeps a gate.
+      - name: Compile iOS App + Test Targets (ad-hoc signed)
         run: |
           xcodebuild build-for-testing \
             -project Cenit.xcodeproj \
             -scheme Cenit \
             -destination 'generic/platform=iOS Simulator' \
             -configuration Debug \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGN_ENTITLEMENTS="" \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="-" \
+            DEVELOPMENT_TEAM="" \
+            PROVISIONING_PROFILE_SPECIFIER="" \
             ASSETCATALOG_COMPILER_APPICON_NAME=""
+
+      # The simulator name is resolved from what the runner image actually ships instead of being
+      # pinned: a hardcoded «iPhone 17 Pro» turns every Xcode image bump into a red build for a
+      # reason that has nothing to do with the code.
+      - name: Run CenitUnitTests on the Simulator
+        run: |
+          sim=$(xcrun simctl list devices available \
+                | grep -oE 'iPhone [0-9A-Za-z ]+' | head -1 | sed 's/ *$//')
+          [ -n "$sim" ] || { echo "::error::no iPhone simulator available on this runner"; exit 1; }
+          echo "Running CenitUnitTests on «$sim»"
+          xcodebuild test-without-building \
+            -project Cenit.xcodeproj \
+            -scheme Cenit \
+            -destination "platform=iOS Simulator,name=$sim" \
+            -only-testing:CenitUnitTests \
+            -resultBundlePath TestResults.xcresult
+
+      # Outside a developer's own Mac this is the only place the suite runs, so when one goes red the
+      # bundle is the whole forensic trail.
+      - name: Upload test results on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: CenitUnitTests-results
+          path: TestResults.xcresult
+          retention-days: 7
