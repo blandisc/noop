@@ -37,7 +37,7 @@ final class LiquidHoyBuilderTests: XCTestCase {
 
     func test_hero_full_nocturno_esVeredictoVerde() {
         let (hero, route, _) = LiquidHoyBuilder.hero(
-            prep: read(verdict: .full, drivers: nocheAnclada), sleepMin: 440, nights: 21)
+            prep: read(verdict: .full, drivers: nocheAnclada), nights: 21)
         guard case .veredicto(let title, let highlight, let tone, _, let confianza) = hero else {
             return XCTFail("esperaba .veredicto")
         }
@@ -52,7 +52,7 @@ final class LiquidHoyBuilderTests: XCTestCase {
         for (verdict, esperado) in [(Preparedness.Verdict.caution, LiquidColor.atencion),
                                     (.easy, LiquidColor.negativo)] {
             let (hero, _, _) = LiquidHoyBuilder.hero(
-                prep: read(verdict: verdict, drivers: nocheAnclada), sleepMin: nil, nights: 21)
+                prep: read(verdict: verdict, drivers: nocheAnclada), nights: 21)
             guard case .veredicto(let title, let highlight, let tone, _, _) = hero else {
                 return XCTFail("esperaba .veredicto para \(verdict)")
             }
@@ -75,7 +75,7 @@ final class LiquidHoyBuilderTests: XCTestCase {
 
     func test_hero_confianza_soloBajo21Noches() {
         let (hero, _, _) = LiquidHoyBuilder.hero(
-            prep: read(verdict: .full, drivers: nocheAnclada, nights: 12), sleepMin: nil, nights: 12)
+            prep: read(verdict: .full, drivers: nocheAnclada, nights: 12), nights: 12)
         guard case .veredicto(_, _, _, _, let confianza) = hero else {
             return XCTFail("esperaba .veredicto")
         }
@@ -88,7 +88,7 @@ final class LiquidHoyBuilderTests: XCTestCase {
         let drivers = [driver(.autonomic, .inRange, z: 0.1), driver(.sleep, .noData),
                        driver(.thermal, .inRange)]
         let (hero, route, _) = LiquidHoyBuilder.hero(
-            prep: read(verdict: .full, drivers: drivers), sleepMin: nil, nights: 21)
+            prep: read(verdict: .full, drivers: drivers), nights: 21)
         guard case .demotado(let kicker, _, _) = hero else {
             return XCTFail("esperaba .demotado (lectura de día)")
         }
@@ -101,7 +101,7 @@ final class LiquidHoyBuilderTests: XCTestCase {
         // sueño — SIEMPRE «aún sin datos suficientes», aunque exista sueño grabado.
         let (heroLow, routeLow, calLow) = LiquidHoyBuilder.hero(
             prep: read(verdict: .lowSignal, drivers: [], maturity: .calibrating),
-            sleepMin: 440, nights: 2)
+            nights: 2)
         guard case .demotado(_, let title, _) = heroLow else {
             return XCTFail("esperaba .demotado (sin datos)")
         }
@@ -115,7 +115,7 @@ final class LiquidHoyBuilderTests: XCTestCase {
         XCTAssertEqual(routeLow, .autonomic)
 
         // prep == nil → mismo estado honesto, mismo destino.
-        let (heroNil, routeNil, calNil) = LiquidHoyBuilder.hero(prep: nil, sleepMin: nil, nights: 0)
+        let (heroNil, routeNil, calNil) = LiquidHoyBuilder.hero(prep: nil, nights: 0)
         guard case .demotado(_, let titleNil, _) = heroNil else {
             return XCTFail("esperaba .demotado (sin datos)")
         }
@@ -131,7 +131,7 @@ final class LiquidHoyBuilderTests: XCTestCase {
     /// frase falsa. `verdictPending` separa «todavía no lo calculo» de «no tengo base».
     func test_hero_verdictPending_diceQueLeeNoQueNoTeConoce() {
         let (heroPending, routePending, calPending) = LiquidHoyBuilder.hero(
-            prep: nil, sleepMin: 440, nights: 0, verdictPending: true)
+            prep: nil, nights: 0, verdictPending: true)
         guard case .demotado(_, let titlePending, _) = heroPending else {
             return XCTFail("esperaba .demotado (leyendo)")
         }
@@ -143,7 +143,7 @@ final class LiquidHoyBuilderTests: XCTestCase {
         XCTAssertEqual(routePending, .autonomic)
 
         // Y el estado honesto de «sin base» sigue intacto cuando NO está pendiente: son distintos.
-        let (heroNoBase, _, calNoBase) = LiquidHoyBuilder.hero(prep: nil, sleepMin: 440, nights: 0,
+        let (heroNoBase, _, calNoBase) = LiquidHoyBuilder.hero(prep: nil, nights: 0,
                                                     verdictPending: false)
         guard case .demotado(_, let titleNoBase, _) = heroNoBase else {
             return XCTFail("esperaba .demotado (sin base)")
@@ -158,7 +158,7 @@ final class LiquidHoyBuilderTests: XCTestCase {
         let anclado = read(verdict: .full,
                            drivers: [.init(axis: .sleep, state: .inRange, orientedZ: nil)],
                            maturity: .trusted)
-        let (heroReal, _, _) = LiquidHoyBuilder.hero(prep: anclado, sleepMin: 440, nights: 20,
+        let (heroReal, _, _) = LiquidHoyBuilder.hero(prep: anclado, nights: 20,
                                                   verdictPending: true)
         if case .demotado = heroReal {
             XCTFail("con veredicto real no puede caer a «leyendo»: el dato gana a la bandera")

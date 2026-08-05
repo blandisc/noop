@@ -59,6 +59,7 @@ struct WiggleEffect: ViewModifier {
     private let maxFires = 3
 
     @ObservedObject private var hold = WiggleTimerHold.shared
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     func body(content: Content) -> some View {
         content
@@ -66,7 +67,12 @@ struct WiggleEffect: ViewModifier {
             // No `.onDisappear` teardown: the holder is shared and self-cancelling, and tearing it down
             // on one view's disappearance would let the next `onAppear` arm a second timer — the very
             // accumulation this fix removes.
-            .onAppear { hold.armIfNeeded(period: period, maxFires: maxFires) }
+            .onAppear {
+                // Reduce Motion: no armamos el timer — el nudge decorativo del botón de soporte no es
+                // información crítica que deba sobrevivir a la preferencia de accesibilidad.
+                guard !reduceMotion else { return }
+                hold.armIfNeeded(period: period, maxFires: maxFires)
+            }
     }
 }
 

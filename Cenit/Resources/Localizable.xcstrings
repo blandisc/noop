@@ -31560,6 +31560,23 @@
         }
       }
     },
+    "Opens the sleep detail": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens the sleep detail"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre el detalle de sueño"
+          }
+        }
+      }
+    },
     "Opens the training-load explainer.": {
       "extractionState": "manual",
       "localizations": {
@@ -33510,23 +33527,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Jalón"
-          }
-        }
-      }
-    },
-    "Pull to refresh": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pull to refresh"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Desliza para actualizar"
           }
         }
       }

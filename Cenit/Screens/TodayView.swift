@@ -73,35 +73,23 @@ private struct PullIndicator: View {
 private struct PullSyncHint: View {
     let pullProgress: PullProgressModel
     let isSyncing: Bool
-    let didFirstPullSync: Bool
-    let reduceMotion: Bool
     @Environment(\.instrumentoTheme) private var theme
-    @State private var hintBob = false
 
     private var shows: Bool { pullProgress.progress == 0 && !isSyncing }
 
     var body: some View {
         Group {
             if shows {
-                let learning = !didFirstPullSync
-                let bobbing = learning && !reduceMotion && hintBob
                 VStack(spacing: CenitMetrics.space1) {
-                    // Vestida de Liquid (/inject 2026-07-22): el chevron del sistema nuevo
-                    // en tinta/500 — el único chrome no-Liquid que quedaba en Hoy.
+                    // Vestida de Liquid (/inject 2026-07-22): el chevron del sistema nuevo en
+                    // tinta/500 — el único chrome no-Liquid que quedaba en Hoy. El microcopy
+                    // «Pull to refresh» y el rebote de aprendizaje se retiraron (FER-293/GRK-13):
+                    // el chevron es el único cue, y el gesto sigue siendo descubrible.
                     LiquidIcon(.chevron, size: 11, color: LiquidColor.tinta500)
                         .rotationEffect(.degrees(90))
-                        .offset(y: bobbing ? 4 : 0)
-                        .animation(bobbing ? LiquidMotion.glassSpring(0.9).repeatForever(autoreverses: true) : nil,
-                                   value: bobbing)
-                    if learning {
-                        Text("Pull to refresh")
-                            .font(LiquidType.captionLectura)
-                            .foregroundStyle(LiquidColor.tinta500)
-                    }
                 }
                 .transition(.opacity)
                 .accessibilityHidden(true)
-                .onAppear { hintBob = true }
             }
         }
         .strandAnimation(StrandMotion.fade, value: shows)
@@ -139,9 +127,6 @@ struct TodayView: View {
     /// provocar el gesto de sincronización (FER-204).
     @State private var syncHaptic = 0
 
-    /// El usuario ya hizo al menos un pull-to-sync con strap (FER-270): apaga para siempre la pista
-    /// «Desliza para sincronizar» del héroe — ya aprendió el gesto. Persiste entre lanzamientos.
-    @AppStorage("today.didFirstPullSync") private var didFirstPullSync = false
     // «El Ecosistema» (FER-10): la fusión de apertura es el ritual de «tu veredicto llegó»
     // — corre UNA vez por día LOCAL (dayKey local, no UTC: trampa conocida de la fila
     // fantasma). El hint «Toca para separar» se retira tras 3 separaciones acumuladas.
@@ -149,6 +134,8 @@ struct TodayView: View {
     /// La hoja del guardián («¿qué es VIGILANDO?», FER-10 / FER-33 · F3).
     @State private var showGuardianHoja = false
     @AppStorage("today.ecosistemaSeparaciones") private var ecosistemaSeparaciones = 0
+    /// Tras cuántas separaciones acumuladas se retira el hint «Toca para separar».
+    private static let maxSeparacionHints = 3
 
     // MARK: - Pull-to-refresh propio (FER-222)
     //
@@ -202,15 +189,6 @@ struct TodayView: View {
     // Pausa las animaciones ambientales Liquid (drift/pulsos) cuando Hoy no está activo.
     @Environment(\.scenePhase) private var scenePhase
 
-
-    // Insights del día (FER-614), cargados en `loadAll` vía el loader compartido `InsightsProvider` (mismo
-    // FDR que muestra Patrones). FER-1039: retirado el brief, el único consumidor vivo aquí es la franja de
-    // carga de SEÑALES (`insights.first { .trainingLoad }`).
-    @State private var insights: [Insight] = []
-    // FER-872: memo de los insights por (refreshSeq, díaLocal). `loadAll` se dispara por `refreshSeq`, pero
-    // un re-`.task` con el MISMO seq (misma data) no debe recomputar la correlación+FDR de nuevo — se
-    // conserva el resultado. Un seq nuevo (data nueva) o el rollover de día invalidan el memo.
-    @State private var memoInsightsKey: String?
 
     // Support sheet (donate + contact) — always reachable from the home toolbar.
     @State private var showingSupport = false
@@ -316,14 +294,8 @@ struct TodayView: View {
 
 
     var body: some View {
-        platformBody
+        iosBody
             .task(id: repo.refreshSeq) { await loadAll() }
-            .task(id: repo.refreshSeq) {
-                let start = Int(Calendar.current.startOfDay(for: Date()).timeIntervalSince1970)
-                let now   = Int(Date().timeIntervalSince1970)
-                let rows  = await repo.hrBuckets(from: start, to: now, bucketSeconds: 300)
-                hrPoints  = rows.map { TrendPoint(date: Date(timeIntervalSince1970: TimeInterval($0.ts)), value: $0.bpm) }
-            }
             .task(id: repo.refreshSeq) {
                 // FER-1045: la sesión de sueño de anoche (desde ayer mediodía) para el dial-sello.
                 let calendar = Calendar.current
@@ -465,9 +437,6 @@ struct TodayView: View {
         TrainingLoadItem(model: model, onSeeTrends: { tabRouter.select(.body) })
     }
 
-    private var platformBody: some View {
-        iosBody
-    }
 
     /// Builds the metric detail sheet, passing the live «Instrumento» theme (it does NOT propagate
     /// through `.sheet`'s fresh environment) and deciding the "connect Apple Salud" hint: shown only
@@ -767,12 +736,7 @@ struct TodayView: View {
             .overlay(alignment: .top) {
                 PullSyncHint(
                     pullProgress: pullProgressModel,
-                    isSyncing: isSyncing,
-                    // /inject 2026-07-22: el microcopy «Desliza para actualizar» se retiró
-                    // (queda el chevron como cue sutil; el gesto sigue recalculando local
-                    // y releyendo Apple Salud).
-                    didFirstPullSync: true,
-                    reduceMotion: reduceMotion
+                    isSyncing: isSyncing
                 )
             }
             // El padding horizontal vive en cada rama (FER-1045): la superficie Liquid trae su
@@ -834,12 +798,6 @@ struct TodayView: View {
         // Ola 2: no band — pull-to-refresh only re-runs local recompute (Apple Health is passive).
         try? await Task.sleep(for: .seconds(1.2))
         await repo.refresh()
-        // FER-293: el usuario ya ejecutó un pull-to-sync → ya aprendió el gesto; retira el microcopy y el
-        // rebote (con desvanecido salvo Reduce Motion). El chevron permanece como cue sutil, así el gesto
-        // sigue siendo descubrible (a diferencia de FER-270, que lo apagaba por completo para siempre).
-        if !didFirstPullSync {
-            withAnimation(StrandMotion.gated(StrandMotion.fade, reduceMotion)) { didFirstPullSync = true }
-        }
     }
 
     /// Procesa el overscroll del tope del scroll (FER-222) para el pull-to-refresh propio. `overscroll` > 0
@@ -1075,13 +1033,13 @@ struct TodayView: View {
                 // El guardián (orbe separado Y franja) abre SU hoja: qué vigila y por
                 // qué no vota (FER-10, revisión de usuario).
                 onTapGuardian: { showGuardianHoja = true },
-                mostrarHintSeparar: ecosistemaSeparaciones < 3,
+                mostrarHintSeparar: ecosistemaSeparaciones < Self.maxSeparacionHints,
                 fusionInicial: ecosistemaFusionDay != Repository.localDayKey(Date()),
                 onFusionArrancada: {
                     ecosistemaFusionDay = Repository.localDayKey(Date())
                 },
                 onSeparacion: {
-                    ecosistemaSeparaciones = min(3, ecosistemaSeparaciones + 1)
+                    ecosistemaSeparaciones = min(Self.maxSeparacionHints, ecosistemaSeparaciones + 1)
                 })
             // /inject: la leyenda de origen se retiró de la superficie Liquid a pedido del
             // dueño (los puntos de origen por tile se quedan).
@@ -1279,6 +1237,13 @@ struct TodayView: View {
     // MARK: - Loading
 
     private func loadAll() async {
+        // La curva de HR de hoy (buckets de 5 min, medianoche local → ahora) se dispara ANTES de
+        // `recomputeDerived()` para que su query corra EN PARALELO al hop de readiness — antes vivía en
+        // un `.task` hermano independiente; GRK-08 unificó la doble carga y este orden preserva ese
+        // paralelismo (sin él, la curva esperaría detrás del snapshot de readiness en el primer frame).
+        let startOfToday = Int(Calendar.current.startOfDay(for: Date()).timeIntervalSince1970)
+        let nowTs = Int(Date().timeIntervalSince1970)
+        async let hrBucketRows = repo.hrBuckets(from: startOfToday, to: nowTs, bucketSeconds: 300)
         // Siembra el veredicto + los conteos derivados de HRV una sola vez por refresh, ANTES de los
         // awaits de abajo, para que el body deje de recalcular `ReadinessEngine.evaluate` en cada frame
         // (FER-172). FER-982: `recomputeDerived()` snapshotea `repo` en main y hopea el cómputo pesado a
@@ -1294,11 +1259,6 @@ struct TodayView: View {
         // Estimación de pasos WHOOP 4.0 (FER-663) — vacía salvo que el motor la haya calibrado y escrito.
         async let stepsEstRows = repo.computedSeries(key: "steps_est", days: 60)
 
-        // Today's HR trend — 5-minute bucket means from local midnight → now.
-        let startOfToday = Int(Calendar.current.startOfDay(for: Date()).timeIntervalSince1970)
-        let nowTs = Int(Date().timeIntervalSince1970)
-        async let hrBucketRows = repo.hrBuckets(from: startOfToday, to: nowTs, bucketSeconds: 300)
-
         appleDays = await adRows
         appleMetricDays = (await amRows).sorted { $0.day < $1.day }
         stepsEst = (await stepsEstRows).sorted { $0.day < $1.day }
@@ -1311,14 +1271,6 @@ struct TodayView: View {
         stress = StressModel(days: repo.displayDays, stored: await stressRows,
                              todayKey: Repository.localDayKey(Date()), appleDays: repo.appleHealthDays)
         // Ola 2: live day-strain fold retired with the band; settled daily strain via repo.today is enough.
-        // «La conexión de hoy» (FER-614): los hallazgos rankeados, misma fuente que Patrones. Memoizado
-        // por (refreshSeq, díaLocal) — FER-872: si el mismo seq re-dispara `loadAll`, no repite la
-        // correlación+FDR (que ya corre off-main dentro de `generate`).
-        let insightsKey = "\(repo.refreshSeq)|\(Repository.localDayKey(Date()))"
-        if memoInsightsKey != insightsKey {
-            insights = await InsightsProvider.generate(repo: repo, today: Repository.localDayKey(Date()))
-            memoInsightsKey = insightsKey
-        }
     }
 
     // MARK: - 14-day trend loader (all platforms)
