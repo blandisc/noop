@@ -53,7 +53,10 @@ public struct MedidorLunar: View {
 
     private var rangoArco: ClosedRange<Double> {
         switch sabor {
-        case .progreso: return 50...75
+        // Progreso (sueño): el borde derecho (p 75) es el umbral de alerta; el izquierdo (p 25)
+        // es «dormiste de sobra» — el REQ §6 clampa p a [25,100] y pide que dormir de más NUNCA
+        // salga del arco por la izquierda, así que el arco llega hasta 25, no hasta 50.
+        case .progreso: return 25...75
         case .desviacion: return 25...75
         case .zona: return 40...65
         }

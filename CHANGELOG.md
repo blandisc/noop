@@ -20,6 +20,11 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **Las gráficas y el conmutador de «Cosmos y Matriz» / The charts and switcher of "Cosmos and Matrix."**
+  **ES** — Las seis formas de tendencia del modo Matriz (columnas de sueño, líneas de FC y VFC, la línea serena del guardián, la colina de carga, las barras y la escalerita), el sello con su ícono de partículas, y el conmutador Cosmos·Matriz. Sin pantalla todavía; son las piezas que las dos caras ensamblan.
+  **EN** — The six trend shapes of the Matrix mode (sleep columns, HR and HRV lines, the guardian's calm line, the load hill, the bars and the little staircase), the sello with its particle icon, and the Cosmos·Matrix switcher. No screen yet; they're the pieces the two faces assemble.
+  ([MatrizChart.swift](Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/MatrizChart.swift))
+
 - **El motor aprende a contar su propia historia / The engine learns to tell its own history.**
   **ES** — Preparación ahora expone dos lecturas que ya calculaba por dentro: la historia corporal de las últimas 20 noches (cada una juzgada con la base que existía ESE día — la historia jamás se repinta cuando tu base de hoy cambia) y la desviación térmica exacta que juzgó el eje (con su descuento de fase lútea incluido). Son solo lectura para la pantalla Hoy rediseñada (FER-51): ningún voto, umbral ni peso del veredicto cambió.
   **EN** — Preparedness now exposes two read-outs it already computed internally: the body history of the last 20 nights (each judged against the baseline that existed THAT day — history never repaints when today's baseline moves) and the exact thermal deviation the axis judged (luteal-phase discount included). Read-only for the redesigned Today screen (FER-51): no vote, threshold or weight of the verdict changed.
