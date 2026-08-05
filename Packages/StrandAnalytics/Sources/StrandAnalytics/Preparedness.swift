@@ -140,6 +140,42 @@ public enum Preparedness {
         public init(z: Double, dense: Bool) { self.z = z; self.dense = dense }
     }
 
+    /// FER-51: cap de noches que `Read.bodyHistory` acarrea (las últimas N terminando en asOf),
+    /// para que el `Equatable` del publish no engorde con historiales multianuales.
+    public static let bodyHistoryWindow = 20
+
+    /// FER-51 · Lane 0: una noche del cuerpo, juzgada por el MISMO pase forward del veredicto con
+    /// la base que existía ESE día (priors) — proyección pura, cero matemática nueva (el mismo
+    /// precedente que `sentinelHistory`). Surfaced en `Read.bodyHistory` para que la Matriz de Hoy
+    /// pinte la historia sin re-derivar cortes en la capa app. SOLO UI: jamás el voto.
+    public struct BodyNight: Sendable, Equatable {
+        /// Local civil day, "yyyy-MM-dd".
+        public let day: String
+        /// FC en reposo RESUELTA (serie nocturna-o-despierta, suavizada; el elemento asOf con
+        /// descuento lúteo) — el mismo constructo que la base juzga; para la línea de la Matriz.
+        public let rhrResolved: Double?
+        /// z orientado del eje autonómico de ESE día (+ = mejor); nil sin base usable.
+        public let autonomicOrientedZ: Double?
+        /// El eje autonómico de ESE día quedó fuera (mismo corte del veredicto crudo).
+        public let autonomicOut: Bool
+        /// El eje sueño de ESE día quedó fuera (cualquiera de sus dos brazos).
+        public let sleepOut: Bool
+        /// Centro de la base de FC de ESE día en unidades naturales (bpm — `BaselineState.baseline`
+        /// ya vive en unidades de display para todo dominio); nil sin base usable. El último
+        /// elemento dibuja la punteada «tu base».
+        public let rhrBaseCenter: Double?
+        /// Centro de la base de SDNN de ESE día en unidades naturales (ms); ídem.
+        public let hrvBaseCenter: Double?
+        public init(day: String, rhrResolved: Double?, autonomicOrientedZ: Double?,
+                    autonomicOut: Bool, sleepOut: Bool,
+                    rhrBaseCenter: Double?, hrvBaseCenter: Double?) {
+            self.day = day; self.rhrResolved = rhrResolved
+            self.autonomicOrientedZ = autonomicOrientedZ
+            self.autonomicOut = autonomicOut; self.sleepOut = sleepOut
+            self.rhrBaseCenter = rhrBaseCenter; self.hrvBaseCenter = hrvBaseCenter
+        }
+    }
+
     public struct Read: Sendable, Equatable {
         public let verdict: Verdict
         public let drivers: [Driver]
@@ -175,14 +211,24 @@ public enum Preparedness {
         /// threshold moves. Empty on the low-signal path, where no raws are computed (same
         /// condition under which `sentinel` is already `nil`). COPY/UI only: never the vote.
         public let sentinelHistory: [SentinelNight]
+        /// FER-51: últimas `bodyHistoryWindow` (= 20) noches terminando en asOf, viejo → nuevo,
+        /// juzgada cada una con la base de SU propio día (proyección del mismo pase forward que
+        /// `sentinelHistory`). Vacía en la ruta lowSignal donde no se computan raws (la misma
+        /// condición bajo la cual `sentinel` es nil). SOLO UI, jamás el voto.
+        public let bodyHistory: [BodyNight]
+        /// FER-51: dev térmica del día asOf DESPUÉS del descuento lúteo — el número exacto que
+        /// juzgó `thermalDriver` (z_equiv = esto / `Config.thermalOutC`). nil sin lectura.
+        public let thermalAdjustedDevC: Double?
         public init(verdict: Verdict, drivers: [Driver], signals: [SignalRead] = [],
                     signalsPresent: Int, signalsTotal: Int,
                     maturity: BaselineStatus, autonomicNights: Int, trend: AutonomicTrend.Direction?,
-                    sentinel: SentinelRead? = nil, sentinelHistory: [SentinelNight] = []) {
+                    sentinel: SentinelRead? = nil, sentinelHistory: [SentinelNight] = [],
+                    bodyHistory: [BodyNight] = [], thermalAdjustedDevC: Double? = nil) {
             self.verdict = verdict; self.drivers = drivers; self.signals = signals
             self.signalsPresent = signalsPresent; self.signalsTotal = signalsTotal
             self.maturity = maturity; self.autonomicNights = autonomicNights; self.trend = trend
             self.sentinel = sentinel; self.sentinelHistory = sentinelHistory
+            self.bodyHistory = bodyHistory; self.thermalAdjustedDevC = thermalAdjustedDevC
         }
 
         /// Whether today's read is anchored by a RECORDED night of sleep (FER-1033). `false` means
@@ -437,11 +483,11 @@ public enum Preparedness {
         let signals = autonomicSignals(hrv: hrvZ, rhr: rhrZ, resp: respZ,
                                        nocturnalRmssdWeight: rmssdTerm?.weight ?? 0, cfg: config)
         let sleepAxis = sleepDriver(today, config: config)
-        // B2: luteal high-side temp allowance on asOf day only.
-        let thermalAxis = thermalDriver(
-            skinTempDevC: adjustedTempDev(today.skinTempDevC, cyclePhase: input.cyclePhase,
-                                          isAsOf: true, config: config),
-            config: config)
+        // B2: luteal high-side temp allowance on asOf day only. Hoisted (FER-51) para exponer el
+        // MISMO número que juzga el driver como `Read.thermalAdjustedDevC` — cero recomputación.
+        let tempDevToday = adjustedTempDev(today.skinTempDevC, cyclePhase: input.cyclePhase,
+                                           isAsOf: true, config: config)
+        let thermalAxis = thermalDriver(skinTempDevC: tempDevToday, config: config)
         // --- Axis: load (optional — present ONLY with a real workout; its OUT logic is deferred to
         // `/cso`, so today it contributes coverage/context but never flips the verdict). ---
         let loadAxis: Driver = input.strainByDay[today.day] != nil
@@ -463,7 +509,8 @@ public enum Preparedness {
             return Read(verdict: .lowSignal, drivers: drivers, signals: signals,
                         signalsPresent: signalsPresent,
                         signalsTotal: 3, maturity: maturity, autonomicNights: autonomicNights,
-                        trend: input.trend?.direction)
+                        trend: input.trend?.direction,
+                        thermalAdjustedDevC: tempDevToday)
         }
 
         // --- Consensus + hysteresis over RAW body verdicts across history (deterministic, no persistence) ---
@@ -485,7 +532,33 @@ public enum Preparedness {
                     maturity: maturity, autonomicNights: autonomicNights, trend: input.trend?.direction,
                     sentinel: sentinelStreak(ordered: ordered, raws: raws),
                     sentinelHistory: sentinelNights(ordered: ordered, raws: raws,
-                                                    priorStates: priorStates))
+                                                    priorStates: priorStates),
+                    bodyHistory: bodyNights(ordered: ordered, raws: raws, priorStates: priorStates),
+                    thermalAdjustedDevC: tempDevToday)
+    }
+
+    /// FER-51: la historia corporal por-noche — proyección pura del pase forward que ya corrió
+    /// (`raws` + `priorStates`): cero matemática nueva, mismo patrón que `sentinelNights`. Cada
+    /// noche carga el juicio hecho con la base de SU día (los priors de `ordered[0..<i]`), así que
+    /// agregar días posteriores jamás repinta la historia. Cap `bodyHistoryWindow` (= 20).
+    private static func bodyNights(ordered: [DailyMetric], raws: [RawDay],
+                                   priorStates: PriorStates) -> [BodyNight] {
+        // `BaselineState.baseline` ya vive en unidades naturales para todo dominio (el update
+        // aplica `fromCenter` al guardar), así que no hay que des-log-ear nada aquí.
+        func center(_ state: BaselineState?) -> Double? {
+            guard let state, state.usable else { return nil }
+            return state.baseline
+        }
+        let all = ordered.indices.map { i in
+            BodyNight(day: ordered[i].day,
+                      rhrResolved: raws[i].rhrResolved,
+                      autonomicOrientedZ: raws[i].autonomicOrientedZ,
+                      autonomicOut: raws[i].autonomicOut,
+                      sleepOut: raws[i].sleepOut,
+                      rhrBaseCenter: center(priorStates.rhr?[i]),
+                      hrvBaseCenter: center(priorStates.hrv?[i]))
+        }
+        return Array(all.suffix(bodyHistoryWindow))
     }
 
     /// The per-night sentinel signals for the whole window (FER-33). Pure projection of the
@@ -679,7 +752,18 @@ public enum Preparedness {
     /// `day.day == asOf` (historical raws stay pre-adjustment so hysteresis is consistent).
     /// One day's raw evaluation: the consensus verdict PLUS the illness-sentinel signals (temp/resp
     /// out), so the forward pass carries both without recomputing (FER-8).
-    private struct RawDay { let verdict: Verdict; let tempOut: Bool; let respOut: Bool }
+    /// FER-51: además del veredicto y las señales del centinela, acarrea el juicio por-eje del
+    /// propio día (autonómico/sueño) y la FC resuelta — ya calculados aquí; solo se transportan
+    /// para que `bodyNights` los proyecte sin recomputar nada.
+    private struct RawDay {
+        let verdict: Verdict
+        let tempOut: Bool
+        let respOut: Bool
+        let autonomicOrientedZ: Double?
+        let autonomicOut: Bool
+        let sleepOut: Bool
+        let rhrResolved: Double?
+    }
 
     private static func rawVerdictAt(_ i: Int, ordered: [DailyMetric],
                                      priorStates: PriorStates, rhrSeries: [Double?],
@@ -703,14 +787,24 @@ public enum Preparedness {
         let respHigh = (respZ.map { -$0 }).map { $0 >= config.respBadZ } ?? false
 
         let rmssdTerm = nocturnalRmssdTerm(nocturnalRmssd, rhrZ: rhrZ, isAsOf: isAsOf, config: config)
-        let a = autonomicAxis(hrv: (hrvZ, config.wHRV), rhr: (rhrZ, config.wRHR),
-                              resp: (respZ, config.wResp), nocturnalRmssd: rmssdTerm, cfg: config).state
-        guard a.hasData else { return RawDay(verdict: .lowSignal, tempOut: tempHigh, respOut: respHigh) }
+        let axis = autonomicAxis(hrv: (hrvZ, config.wHRV), rhr: (rhrZ, config.wRHR),
+                                 resp: (respZ, config.wResp), nocturnalRmssd: rmssdTerm, cfg: config)
+        let a = axis.state
+        // El juicio del sueño es independiente del eje autonómico: se calcula SIEMPRE (mismo
+        // `sleepDriver`, mismo corte), para que `bodyHistory` no pinte tranquila una noche corta
+        // de un día low-signal. En la ruta low-signal el VOTO no cambia (sigue el early return).
         let s = sleepDriver(day, config: config).state
+        guard a.hasData else {
+            return RawDay(verdict: .lowSignal, tempOut: tempHigh, respOut: respHigh,
+                          autonomicOrientedZ: axis.orientedZ, autonomicOut: false,
+                          sleepOut: s.isOut, rhrResolved: rhrVal)
+        }
         let sentinelOut = tempHigh && respHigh
         let out = (a.isOut ? 1 : 0) + (s.isOut ? 1 : 0) + (sentinelOut ? 1 : 0)
         let v: Verdict = out == 0 ? .full : (out == 1 ? .caution : .easy)
-        return RawDay(verdict: v, tempOut: tempHigh, respOut: respHigh)
+        return RawDay(verdict: v, tempOut: tempHigh, respOut: respHigh,
+                      autonomicOrientedZ: axis.orientedZ, autonomicOut: a.isOut,
+                      sleepOut: s.isOut, rhrResolved: rhrVal)
     }
 
     /// Run-length hysteresis over the RAW verdicts (computed once by the caller — the same pass the
