@@ -92,12 +92,16 @@ struct ContentView: View {
                     EntradaDeArranque.marcarCorrida()
                     entradaLista = true
                 }
+                // Cinturón y tirantes: la entrada ya se apaga sola antes de avisar, así que al
+                // quitarla debería ser invisible. Si algún día ese cálculo se desfasa, esto
+                // convierte un corte seco en un fundido en vez de en un parpadeo.
                 .transition(.opacity)
                 .zIndex(3)
             }
         }
         .animation(.easeInOut(duration: 0.35), value: onboarded)
         .animation(.easeInOut(duration: 0.35), value: acceptedTerms)
+        .animation(.easeOut(duration: 0.2), value: entradaLista)
         // El color scheme se decide AQUÍ (lo más cercano a la raíz del WindowGroup, que es donde el
         // controlador raíz lee `preferredColorScheme` para la barra de estado): el gate de Términos es
         // papel claro (FER-416) → barra en tinta oscura; el onboarding sigue oscuro; ya dentro, Hoy es
