@@ -2,6 +2,19 @@ import SwiftUI
 import StrandDesign
 import Inject   // recarga en caliente (dev-only, inerte en Release)
 
+/// Marca de proceso de la entrada (FER-41): la coreografía de arranque corre UNA sola vez por
+/// lanzamiento.
+///
+/// El `@State` de `ContentView` ya sobrevive a volver del segundo plano —SwiftUI no reconstruye
+/// la raíz del `WindowGroup`—, pero no sobrevive a una reconexión de escena, donde la raíz sí se
+/// re-crea y la entrada se repetiría sin que nadie la haya pedido. Esta marca lo deja dicho en
+/// una línea y cierra ese caso.
+@MainActor
+enum EntradaDeArranque {
+    private(set) static var yaCorrio = false
+    static func marcarCorrida() { yaCorrio = true }
+}
+
 /// Root — the sidebar shell, with the first-run onboarding/pairing wizard overlaid until complete,
 /// and a "What's New" changelog sheet shown automatically after an update.
 struct ContentView: View {
@@ -9,6 +22,8 @@ struct ContentView: View {
     @AppStorage("noop.lastSeenChangelogVersion") private var lastSeenChangelog = ""
     @AppStorage("noop.acceptedTermsVersion") private var acceptedTerms = ""
     @State private var showWhatsNew = false
+    /// FER-41: la entrada sigue puesta hasta que su coreografía termina (o el usuario la toca).
+    @State private var entradaLista = false
     /// Whether Today is the active tab (RootTabView keeps this in sync). Drives the app's color scheme
     /// so the status bar is dark on Today's light paper and light on the dark instrument tabs.
     @State private var isTodayTab = true
@@ -65,6 +80,20 @@ struct ContentView: View {
                 TermsGateView(onAccept: { acceptedTerms = Terms.currentVersion })
                     .transition(.opacity)
                     .zIndex(2)
+            }
+            // La entrada (FER-41) va HASTA ARRIBA, incluso sobre el gate de Términos: es lo
+            // primero que existe al abrir. Y va como capa APARTE, no envolviendo a la app: el
+            // árbol de abajo se construye y carga mientras la coreografía corre, así que la
+            // entrada tapa el arranque pero nunca lo retrasa.
+            if mostrandoEntrada {
+                // El clima va como CIERRE: la entrada lo lee cuando el teñido arranca, no al
+                // montarse — a los 0 ms el veredicto todavía se está calculando.
+                LiquidOrbeEntrada(clima: { climaEntrada }) {
+                    EntradaDeArranque.marcarCorrida()
+                    entradaLista = true
+                }
+                .transition(.opacity)
+                .zIndex(3)
             }
         }
         .animation(.easeInOut(duration: 0.35), value: onboarded)
@@ -129,9 +158,26 @@ struct ContentView: View {
     /// inside the app the scheme follows the active tab: Today is light paper (dark-ink status bar),
     /// every other tab is the dark instrument panel.
     private var resolvedColorScheme: ColorScheme {
+        if mostrandoEntrada { return .light }                        // la entrada es blanca (FER-41)
         if acceptedTerms != Terms.currentVersion { return .light }   // Terms gate (paper) is on top
         guard onboarded else { return .dark }                        // onboarding wizard is still dark
         return isTodayTab ? .light : .dark
+    }
+
+    /// La entrada se pinta mientras no haya terminado Y no haya corrido ya en este proceso.
+    private var mostrandoEntrada: Bool { !entradaLista && !EntradaDeArranque.yaCorrio }
+
+    /// El clima al que la entrada tiñe el orbe: el MISMO mapeo veredicto → ambiente que usa la
+    /// superficie de Hoy, para que el color con el que el orbe asienta sea exactamente el que la
+    /// pantalla de abajo va a mostrar. Al arrancar el veredicto casi nunca está calculado
+    /// todavía y `ambiente` devuelve `.neutro`: el orbe se queda gris en vez de apostar un color
+    /// y tener que corregirlo a la vista del usuario.
+    private var climaEntrada: LiquidAmbiente {
+        #if os(iOS)
+        return LiquidHoyBuilder.ambiente(prep: repo.todayPreparedness)
+        #else
+        return .neutro
+        #endif
     }
 
     #if os(iOS)

@@ -7,23 +7,21 @@ import Foundation
 import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 
-// MARK: - Hoy «Instrumento» evolucionado (FER-709, handoff 2026-07)
+// MARK: - Hoy (FER-709 · FER-1045 · FER-41)
 //
-// The home screen in the EVOLVED «Instrumento diurno» voice (Space Grotesk numerals, warm paper,
-// one dominant number, arithmetic transparency — see DESIGN.md §8.7).
+// The home screen. TWO surfaces, both Liquid Glass over the same ambient background:
 //
-// Composition (top → bottom), all inside `iosBody`:
-//   (a) HEADER — date · strap battery · live BPM (tap → Latidos) · the 34pt `DialSeal` (the 24h
-//                signature AND the pull-to-refresh spinner), plus the freshness line (`headerBlock`).
-//   (b) HERO   — last night's SLEEP as the dominant numeral (`appleTrendHero`). FER-1029: this is the
-//                ONLY hero. The 0–100 recovery verdict (band era) and the classic «Preparación» hero
-//                (verdict word + needles) were retired as unreachable dead code (FER-35). The big
-//                `DiurnalDial` was retired earlier; the 24h lives in the header seal.
-//   (c) SEÑALES — the classic surface (`senalesPage`) now renders ONLY in the empty state (`noSources`):
-//                the training-load strip + the «connect Apple Health» card. FER-1039 retired the
-//                SEÑALES/BRIEF tabs and the pager; FER-35 removed the 2×4 tile grid (`iosMetricsSection`)
-//                as unreachable dead code. With data, the surface is `liquidSurface` (the Liquid Glass
-//                composition), not this branch.
+//   · WITH SOURCES → `liquidSurface`, the Liquid Glass composition fed by the pure builder
+//     (`LiquidHoyBuilder`): the Ecosistema hero (the particle orb + its moons + the guardian)
+//     and the board below it.
+//   · WITHOUT A SINGLE SOURCE (`noSources`) → the SLEEPING ORB (FER-41): the same particle orb
+//     as the hero, in neutral ink with its level at zero, plus the one action that exists —
+//     connect Apple Health. It replaced the classic «Instrumento» surface (a sleep hero stuck
+//     on «—» plus a connect card), the last remnant of the retired warm-paper DNA, which
+//     asserted a reading that in that state never exists.
+//
+// The header (date · live BPM · the 34pt `DialSeal` that is both the 24h signature and the
+// pull-to-refresh spinner) rides above both.
 //
 // Pull-to-refresh: the seal winds up with the pull and spins while syncing; the tile values settle
 // straight to their numbers (no count-up or reveal sequence on completion).
@@ -641,22 +639,16 @@ struct TodayView: View {
         // `.sensoryFeedback` por el cambio de `syncHaptic` que hace `pullToSync` (heredado de FER-204).
         .sensoryFeedback(.impact(weight: .medium), trigger: syncHaptic)
         // El fondo (FER-1045): la superficie Liquid monta su fondo ambiental (aurora + orbes
-        // drift) DETRÁS del scroll — un solo fondo, nunca papel doble; el estado vacío conserva
-        // el papel del tema. El velo de status corona la superficie Liquid, y las animaciones
-        // ambientales se pausan fuera de `.active` (scenePhase → `liquidAmbientPaused`).
-        .background {
-            if noSources && !liquidDemo {
-                PaperBackground()
-            } else {
-                LiquidAmbientBackground.hoy(liquidAmbiente)
-            }
-        }
+        // drift) DETRÁS del scroll — un solo fondo, nunca papel doble. El velo de status lo
+        // corona, y las animaciones ambientales se pausan fuera de `.active` (scenePhase →
+        // `liquidAmbientPaused`). Sin bifurcar por `noSources` (FER-41): el estado vacío ya no
+        // es papel crema del ADN retirado, así que Hoy tiene UN fondo, siempre el mismo, y sin
+        // fuentes `liquidAmbiente` ya vale `.neutro` — el gris honesto de «aún no sé».
+        .background { LiquidAmbientBackground.hoy(liquidAmbiente) }
         .overlay(alignment: .top) {
-            if !noSources || liquidDemo {
-                LiquidVeil(tone: liquidAmbiente.acento)
-                    .frame(height: LiquidSpace.s1400)
-                    .ignoresSafeArea(edges: .top)
-            }
+            LiquidVeil(tone: liquidAmbiente.acento)
+                .frame(height: LiquidSpace.s1400)
+                .ignoresSafeArea(edges: .top)
         }
         .environment(\.liquidAmbientPaused, scenePhase != .active)
         .instrumentoTheme(.base)
@@ -736,19 +728,31 @@ struct TodayView: View {
         let scroll = ScrollView {
             Group {
                 // FER-1045 «Hoy Liquid»: la superficie normal es la composición Liquid Glass
-                // alimentada por el MISMO estado derivado (builder puro). El estado vacío
-                // (cero fuentes) conserva la superficie anterior intacta (criterio 7).
+                // alimentada por el MISMO estado derivado (builder puro). El estado sin ni una
+                // fuente es el ORBE DORMIDO (FER-41): el mismo objeto del héroe, en tinta
+                // neutra y con su nivel en cero — un recipiente vacío, que es literalmente lo
+                // que se sabe del usuario ahí. Sustituyó a la superficie clásica «Instrumento»
+                // (héroe de sueño en «—» + tarjeta de conectar), que era la última reminiscencia
+                // del ADN retirado y afirmaba un dato que en ese estado nunca existe.
                 if noSources && !liquidDemo {
-                    VStack(alignment: .leading, spacing: 0) {
-                        // Bloque FIJO del instrumento (handoff «Hoy» 2026-07): header + héroe.
-                        VStack(alignment: .leading, spacing: CenitMetrics.space1) {
-                            headerBlock
-                            HealthAlertBanner()
-                            heroBlock
+                    VStack(alignment: .leading, spacing: CenitMetrics.space2) {
+                        headerBlock
+                        HealthAlertBanner()
+                        // La franja de carga se conserva: alguien puede registrar FUERZA sin
+                        // conceder Salud, y ese dato es suyo — borrarlo por estar en el estado
+                        // «vacío» sería esconderle algo que sí midió.
+                        if let trainingLoad {
+                            TrainingLoadStrip(model: trainingLoad, theme: theme) {
+                                trainingLoadItem = makeTrainingLoadItem(trainingLoad)
+                            }
                         }
-                        // FER-1039: Hoy es UNA sola superficie — SEÑALES.
-                        senalesPage
-                            .padding(.top, CenitMetrics.space2)
+                        LiquidOrbeDormidoEstado(
+                            titulo: String(localized: "The orb is still asleep"),
+                            cuerpo: String(localized: "Connect Apple Health and it will start beating with your nights."),
+                            cta: String(localized: "Connect Apple Health"),
+                            privacidad: String(localized: "Everything stays on your iPhone. No account, no cloud."),
+                            onConectar: { showDataSources = true })
+                        .padding(.top, CenitMetrics.space2)
                     }
                     .padding(.horizontal, CenitMetrics.screenPadding)
                 } else {
@@ -885,30 +889,6 @@ struct TodayView: View {
     /// (`guard !backfilling`, the BLE engine). `refreshBattery()` es agnóstico al modelo (4.0 → comando
     /// GET_BATTERY_LEVEL; 5/MG → lectura 0x2A19) y no introduce ningún comando nuevo.
 
-    /// El lienzo: el papel del tema, leído DENTRO del subárbol tematizado para que también recolore por
-    /// hora. (El `.background(theme.paper)` del propio `iosBody` resolvería contra el tema base, no el de
-    /// la hora — por eso esta vista hija lo lee del entorno.)
-    private struct PaperBackground: View {
-        @Environment(\.instrumentoTheme) private var theme
-        var body: some View {
-            // Papel con profundidad (handoff «Hoy · Estados»): un gradiente radial cálido —pozo de luz
-            // arriba-centro (`paperHi`), papel medio y un borde un poco más hondo (`paperLo`)— en vez del
-            // relleno plano de antes. Los stops se derivan del `paper` vivo, así que el lienzo también
-            // amanece/anochece por hora. Elíptico (no circular) para cubrir el alto del teléfono como el
-            // `radial-gradient(125% 78% at 50% 16%)` del handoff.
-            EllipticalGradient(
-                stops: [
-                    .init(color: theme.paperHi, location: 0),
-                    .init(color: theme.paper,   location: 0.44),
-                    .init(color: theme.paperLo, location: 1.0)
-                ],
-                center: UnitPoint(x: 0.5, y: 0.16),
-                startRadiusFraction: 0,
-                endRadiusFraction: 0.9
-            )
-            .ignoresSafeArea()
-        }
-    }
 
     /// Ventana solar (amanecer/atardecer) para HOY, en horas reloj, derivada de `SolarClock` para la
     /// zona horaria actual SIN GPS ni permisos. Mapeada al `SolarWindow` de StrandDesign que consume
@@ -1218,132 +1198,6 @@ struct TodayView: View {
             return Double(components.hour ?? 0) + Double(components.minute ?? 0) / 60
         }
         return (hour(session.startTs), hour(session.endTs))
-    }
-
-    // MARK: - Héroe «Instrumento diurno» (FER-160 · FER-1008/FER-1029)
-    //
-    // Apple-only: el héroe es el SUEÑO de anoche (número dominante). El veredicto 0–100 estilo-banda y
-    // sus estados narrados pre-lectura (calibrando / en espera) se retiraron con la banda y el brief
-    // (FER-1039); la tarjeta de tendencia autonómica vivía en el héroe «Preparación», retirado como
-    // código muerto (FER-35). El numeral de sueño se basta solo.
-
-
-    // El único héroe de la superficie clásica (estado sin fuentes): el sueño de anoche como número
-    // dominante. La «Preparación» categórica (veredicto + agujas) y la «Lectura de día» se retiraron
-    // por ser código muerto (FER-35): sólo se pintaban aquí, en el estado `noSources`, donde por
-    // definición nunca hay un veredicto real (necesita noches de datos). La superficie con datos es
-    // la Liquid (`liquidSurface`), que trae su propio héroe.
-    @ViewBuilder private var heroBlock: some View { appleTrendHero }
-
-    /// R4 (FER-1008): el héroe del path Apple-only — el SUEÑO es el número dominante (el 0–100 estilo-WHOOP
-    /// se retiró). Toca → detalle de sueño.
-    @ViewBuilder private var appleTrendHero: some View {
-        let sleepMin = resolveMeasured(todayOnly: true) { $0.totalSleepMin }?.value
-        // FER-38: es un control accionable (abre el Detalle de Sueño), así que va como `Button`
-        // —no `onTapGesture`— para que VoiceOver anuncie el rol de botón y la pista, y para la
-        // afordancia nativa de presión. `.plain` conserva el look «Instrumento» (sin chrome).
-        Button {
-            metricDetail = .sleep(resolveMeasured(todayOnly: true) { $0.totalSleepMin }.map { Int($0.value.rounded()) })
-        } label: {
-            VStack(alignment: .leading, spacing: CenitMetrics.space1) {
-                Text("LAST NIGHT'S SLEEP").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                if let sleepMin, sleepMin > 0 {
-                    let h = Int(sleepMin) / 60, m = Int(sleepMin) % 60
-                    HStack(alignment: .firstTextBaseline, spacing: 2) {
-                        Text("\(h)").font(StrandFont.number(64)).foregroundStyle(theme.ink)
-                        Text("h ").font(StrandFont.number(28)).foregroundStyle(theme.inkSecondary)
-                        Text("\(m)").font(StrandFont.number(64)).foregroundStyle(theme.ink)
-                        Text("m").font(StrandFont.number(28)).foregroundStyle(theme.inkSecondary)
-                    }
-                    .lineLimit(1).minimumScaleFactor(0.6)
-                    Text(sleepMin >= 420 ? LocalizedStringKey("You slept well") : LocalizedStringKey("Sleep was short"))
-                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                } else {
-                    Text("—").font(StrandFont.number(64)).foregroundStyle(theme.inkTertiary)
-                    Text("No sleep recorded last night").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityHint(Text("Opens the sleep detail"))
-    }
-
-    // MARK: - SEÑALES (superficie clásica · solo estado vacío)
-
-    /// SEÑALES — la superficie CLÁSICA, que ya solo se pinta en el estado sin fuentes (`noSources`):
-    /// la franja de carga (si la hay) + la tarjeta de «conectar Apple Health» (FER-364). La retícula 2×4
-    /// de tiles se retiró por inalcanzable (FER-35); con datos, la superficie es `liquidSurface`.
-    @ViewBuilder private var senalesPage: some View {
-        VStack(alignment: .leading, spacing: CenitMetrics.space2) {
-            // Franja de carga (FER-705 · handoff «Carga»): vive DENTRO de Señales, así que pertenece solo a
-            // esta página y NO viaja al Brief con el swipe. No respira ni participa del pull-to-refresh;
-            // tocarla abre la hoja. Si `trainingLoad` aún no sembró (primer refresh) se omite; una vez con
-            // datos muestra la banda o «calibrando».
-            if let trainingLoad {
-                TrainingLoadStrip(model: trainingLoad, theme: theme) {
-                    trainingLoadItem = makeTrainingLoadItem(trainingLoad)
-                }
-            }
-            // `senalesPage` sólo se pinta en la rama `noSources`, así que siempre es la tarjeta de
-            // conectar fuentes. La retícula 2×4 (`iosMetricsSection`) se retiró por inalcanzable (FER-35).
-            emptySourcesCard
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-
-    /// El instrumento está sincronizando: offload en curso, su puente async (FER-480 `draining`) o el
-    /// pull-to-sync manual. Fuente única para las señales del héroe (estado, dial, numeral, pista).
-    /// La pista del pull (FER-293) y el sello armado viven en `PullSyncHint` / `PullIndicator`
-    /// (FER-972 P-09): leen el progreso en su propio body para no invalidar Hoy por frame.
-    // TODO(/pm): sin banda, "sincronizando" solo refleja el pull-to-refresh del usuario, no un fetch real de Apple Health en curso.
-    private var isSyncing: Bool { pullSyncing }
-
-    /// Cero fuentes: ni strap visto, ni datos de Apple Health, ni permiso de Health concedido. (FER-364)
-    private var noSources: Bool {
-        #if DEBUG
-        // Los fixtures de captura (`-noop.fixture …`) siembran el dashboard pero NO
-        // `appleHealthDays` ni el permiso de Salud, así que sin conceder HealthKit a mano
-        // caían a la superficie CLÁSICA (las agujas «En reposo») en vez de la Liquid que
-        // representan. En modo fixture SIEMPRE hay fuentes: el estado sin fuentes se captura
-        // con el arg ausente/`empty`, que toma el camino normal. (SIMULADOR-ONLY, ver
-        // `ScreenshotFixtures.activeState`.)
-        if ScreenshotFixtures.activeState() != nil { return false }
-        #endif
-        return repo.appleHealthDays.isEmpty && health.auth != .authorized
-    }
-
-    /// La tarjeta de «conecta tus fuentes» del estado vacío: Apple Health como base, la banda como capa
-    /// opcional. Reemplaza el botón verde y el viejo link de Apple Salud, y deja que Hoy quepa de una. (FER-364)
-    private var emptySourcesCard: some View {
-        VStack(spacing: 0) {
-            sourceRow(icon: "heart.fill", tint: theme.dataSpO2,
-                      title: "Connect Apple Health", subtitle: "the base of your data") { showDataSources = true }
-        }
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
-            .strokeBorder(theme.hairline, lineWidth: 1))
-        .strandElevation(.raised, ink: theme.ink)
-    }
-
-    private func sourceRow(icon: String, tint: Color, title: LocalizedStringKey,
-                           subtitle: LocalizedStringKey, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: CenitMetrics.gap) {
-                Image(systemName: icon).font(StrandFont.glyph(.inline)).foregroundStyle(tint).frame(width: 22)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(title).font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.ink)
-                    Text(subtitle).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                }
-                Spacer(minLength: 0)
-                StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
-            }
-            .padding(CenitMetrics.cardPadding)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
     }
 
     /// Los días de base para la media de 7 días (FER-258): las filas del dashboard de display

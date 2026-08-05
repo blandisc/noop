@@ -54,6 +54,18 @@ public enum LiquidAmbiente: Sendable, Equatable {
         }
     }
 
+    /// La tinta de PARTÍCULA de este clima, en componentes sRGB — la misma que el héroe le
+    /// pone a su orbe. La entrada (FER-41) interpola hacia ella desde el gris neutro, y para
+    /// interpolar hacen falta números, no un `Color` opaco (ver `LiquidColor.ParticulaRGB`).
+    public var particulaRGB: (r: Double, g: Double, b: Double) {
+        switch self {
+        case .bien: return LiquidColor.ParticulaRGB.verde
+        case .atencion: return LiquidColor.ParticulaRGB.ambar
+        case .alerta: return LiquidColor.ParticulaRGB.roja
+        case .neutro: return LiquidColor.ParticulaRGB.neutra
+        }
+    }
+
     /// (tono de arranque, tono medio) de la aurora.
     var aurora: (Color, Color) {
         switch self {
