@@ -42,19 +42,30 @@ enum InsightsProvider {
         }.value
     }
 
-    /// Pure ranking core (testable seam). Clears every cross-source column (FER-639)
-    /// BEFORE the engine folds any HRV/RHR/resp baseline, anomaly or correlation — the same
-    /// `SourceLens.clearBandColumns` the Recovery detail and «Hoy» use (FER-631/632). Without
-    /// it, `InsightEngine`'s HRV baseline (`avgHrv`) mixes band RMSSD with Apple SDNN (no published
-    /// conversion — Task Force 1996; Shaffer & Ginsberg 2017), so «anoche tu HRV corrió bajo tu base» and
-    /// the HRV↔behavior correlations shift by SCALE, not physiology. `strain`/ACWR (trainingLoadInsight)
-    /// aren't cross-source columns, so that path is untouched. `appleDays == []` (strap-only) is the
-    /// identity — an existing strap user's insights are bit-for-bit unchanged.
+    /// Pure ranking core (testable seam). Clears ONLY `avgHrv` before the engine folds anything
+    /// (`SourceLens.clearBandHrv`, the same lens «Qué la mueve» already uses).
+    ///
+    /// FER-48: this used to be `clearBandColumns`, which also nils `restingHr` and `respRateBpm` — and
+    /// those are exactly the columns `InsightEngine.nightAnomalyInsights` probes, so NO vital anomaly
+    /// could ever surface in Patrones or the Daily Brief. Live code that could not produce anything.
+    /// The wide mask was inherited from the band era, when its job was to keep two instruments out of
+    /// one baseline; with every row Apple-sourced there is no mixing left to prevent for a metric
+    /// compared against its OWN history. What survives is HRV, and not because of the source: Apple
+    /// records SDNN while `Baselines.hrvCfg` is tuned for RMSSD — different constructs, no published
+    /// conversion (Task Force 1996; Shaffer & Ginsberg 2017). The honest nocturnal HRV path is
+    /// `SourceFusion.autonomicTrend` (real `apple_rmssd_night`), which never comes through here.
+    ///
+    /// The engine reads NO sleep stages and NO `skinTempDevC` (pinned by
+    /// `InsightEngineColumnSurfaceTests`), so widening the lens does not expose them: that contract
+    /// test is now the guardrail the broad mask used to be by accident.
+    ///
+    /// `appleDays` no longer selects anything (every row is Apple) and is kept only for call-site
+    /// compatibility.
     nonisolated static func rank(days: [DailyMetric], appleDays: Set<String>,
                                  behaviors: [String: Set<String>],
                                  eligibleDaysByBehavior: [String: Set<String>],
                                  proven: Set<Lever>, today: String) -> [Insight] {
-        let bandDays = SourceLens.clearBandColumns(days)
+        let bandDays = SourceLens.clearBandHrv(days)
         let inputs = InsightEngine.Inputs(days: bandDays, behaviors: behaviors,
                                           eligibleDaysByBehavior: eligibleDaysByBehavior, referenceDay: today)
         return InsightEngine.promoteProven(InsightEngine.generate(inputs), provenLevers: proven)

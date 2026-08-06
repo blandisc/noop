@@ -3472,6 +3472,23 @@
         }
       }
     },
+    "%@ ran off your usual": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ran off your usual"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ se salió de lo habitual"
+          }
+        }
+      }
+    },
     "%@ was off last night": {
       "extractionState": "stale",
       "localizations": {
@@ -24212,6 +24229,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Anoche tu %@ estuvo por debajo de tu base (z=%@, base %lld%@)."
+          }
+        }
+      }
+    },
+    "Your %1$@ ran %2$lld%3$@ above your usual (%4$lld%5$@).": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your %1$@ ran %2$lld%3$@ above your usual (%4$lld%5$@)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu %1$@ corrió %2$lld%3$@ por encima de lo habitual (%4$lld%5$@)."
+          }
+        }
+      }
+    },
+    "Your %1$@ ran %2$lld%3$@ below your usual (%4$lld%5$@).": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your %1$@ ran %2$lld%3$@ below your usual (%4$lld%5$@)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu %1$@ corrió %2$lld%3$@ por debajo de lo habitual (%4$lld%5$@)."
           }
         }
       }
