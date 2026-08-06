@@ -338,7 +338,7 @@ extension LiquidHoyBuilder {
         // SIN medidor, SIN alerta. «—» vs «0» sagrado.
         let valorTxt = HoyGramatica.valorODash(extra.strain) { String(format: "%.1f", $0) }
         return .init(
-            id: "strain", grupo: 3, lunaRadio: 3.8, hueLuna: LiquidColor.teal,
+            id: "strain", grupo: 3, lunaRadio: 8, hueLuna: LiquidColor.teal,
             medidor: nil,
             valorPartes: [.init(texto: valorTxt, hue: LiquidColor.tinta900)],
             valorSize: 18,
@@ -351,7 +351,7 @@ extension LiquidHoyBuilder {
                                    locale: Locale) -> CosmosAbiertoModel.Ancla {
         let valorTxt = HoyGramatica.valorODash(extra.steps) { HoyGramatica.formatoMiles($0) }
         return .init(
-            id: "steps", grupo: 3, lunaRadio: 3.8, hueLuna: LiquidColor.tinta500,
+            id: "steps", grupo: 3, lunaRadio: 8, hueLuna: LiquidColor.tinta500,
             medidor: nil,
             valorPartes: [.init(texto: valorTxt, hue: LiquidColor.tinta900)],
             valorSize: 18,

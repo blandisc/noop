@@ -246,8 +246,8 @@ public struct MatrizHoyFace: View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             // Orbe de partículas puro, sin glifo (revisión del dueño en vivo): el eco
             // del héroe junto a cada título, con el hue de identidad de la señal.
-            LunaParticulas(radio: 8, hue: s.huesPar?.0 ?? s.hue,
-                           chartID: "sello-\(s.id)", huePar: s.huesPar?.1)
+            OrbeVivo(radio: 8, hue: s.huesPar?.0 ?? s.hue,
+                     semillaID: "sello-\(s.id)", huePar: s.huesPar?.1)
             VStack(alignment: .leading, spacing: 2) {
                 Text(s.titulo)
                     .font(LiquidType.tituloFila)

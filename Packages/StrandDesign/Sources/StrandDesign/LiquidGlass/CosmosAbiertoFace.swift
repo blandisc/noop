@@ -335,50 +335,29 @@ public struct CosmosAbiertoFace: View {
 
     // MARK: Arcos
 
+    /// Órbitas del MISMO sistema del héroe: anillos concéntricos cuyo centro vive
+    /// arriba (donde el héroe respira), desvanecidos hacia los bordes. La cara abierta
+    /// es un acercamiento al universo — no tres rayas sueltas (revisión del dueño).
     private func arcos(sx: CGFloat, sy: CGFloat) -> some View {
-        TimelineView(.animation(minimumInterval: 1 / 30, paused: reduceMotion)) { timeline in
-            let t = reduceMotion ? 0.0 : timeline.date.timeIntervalSinceReferenceDate
-            Canvas { ctx, _ in
-                dibujarArco(ctx,
-                            a: CGPoint(x: 24 * sx, y: 58 * sy),
-                            b: CGPoint(x: 195 * sx, y: 96 * sy),
-                            c: CGPoint(x: 366 * sx, y: 58 * sy),
-                            t: t, fase: 0)
-                dibujarArco(ctx,
-                            a: CGPoint(x: 10 * sx, y: 192 * sy),
-                            b: CGPoint(x: 195 * sx, y: 234 * sy),
-                            c: CGPoint(x: 380 * sx, y: 192 * sy),
-                            t: t, fase: 3)
-                dibujarArco(ctx,
-                            a: CGPoint(x: 24 * sx, y: 338 * sy),
-                            b: CGPoint(x: 195 * sx, y: 315 * sy),
-                            c: CGPoint(x: 366 * sx, y: 338 * sy),
-                            t: t, fase: 6)
+        Canvas { ctx, size in
+            let centro = CGPoint(x: 195 * sx, y: -240 * sy)
+            for fila: CGFloat in [74, 211, 333] {
+                // El anillo pasa por las anclas laterales de su fila (x ≈ 99/291).
+                let dx = 96 * sx
+                let dy = (fila + 240) * sy
+                let r = (dx * dx + dy * dy).squareRoot()
+                let rect = CGRect(x: centro.x - r, y: centro.y - r, width: r * 2, height: r * 2)
+                ctx.stroke(Path(ellipseIn: rect), with: .linearGradient(
+                    Gradient(stops: [
+                        .init(color: .clear, location: 0),
+                        .init(color: LiquidColor.tinta900.opacity(0.10), location: 0.5),
+                        .init(color: .clear, location: 1),
+                    ]),
+                    startPoint: CGPoint(x: 0, y: 0),
+                    endPoint: CGPoint(x: size.width, y: 0)),
+                    style: StrokeStyle(lineWidth: 1))
             }
         }
-    }
-
-    private func dibujarArco(_ ctx: GraphicsContext, a: CGPoint, b: CGPoint, c: CGPoint,
-                             t: TimeInterval, fase: Double) {
-        var path = Path()
-        path.move(to: a)
-        path.addQuadCurve(to: c, control: b)
-        ctx.stroke(path, with: .color(LiquidColor.tinta900.opacity(0.10)),
-                   style: StrokeStyle(lineWidth: 1, lineCap: .round))
-
-        // Destello que recorre el arco cada ~9 s.
-        let ciclo = (t + fase).truncatingRemainder(dividingBy: 9) / 9
-        let p = puntoEnCuadratica(a: a, b: b, c: c, u: ciclo)
-        let destello = Path(ellipseIn: CGRect(x: p.x - 3, y: p.y - 3, width: 6, height: 6))
-        ctx.fill(destello, with: .color(model.destelloTono.opacity(0.55)))
-    }
-
-    private func puntoEnCuadratica(a: CGPoint, b: CGPoint, c: CGPoint, u: Double) -> CGPoint {
-        let t = CGFloat(u)
-        let mt = 1 - t
-        return CGPoint(
-            x: mt * mt * a.x + 2 * mt * t * b.x + t * t * c.x,
-            y: mt * mt * a.y + 2 * mt * t * b.y + t * t * c.y)
     }
 
     // MARK: Anclas
@@ -440,13 +419,13 @@ public struct CosmosAbiertoFace: View {
         let r = ancla.lunaRadio * s
         return ZStack {
             if let h2 = ancla.hueLuna2 {
-                // Binaria del guardián: dos lunitas pequeñas de partículas.
-                LunaParticulas(radio: r * 0.7, hue: ancla.hueLuna, chartID: "luna-\(ancla.id)-a")
-                    .offset(x: -r * 0.55)
-                LunaParticulas(radio: r * 0.7, hue: h2, chartID: "luna-\(ancla.id)-b")
-                    .offset(x: r * 0.55)
+                // Binaria del guardián: dos lunitas vivas con aire entre ellas.
+                OrbeVivo(radio: r * 0.72, hue: ancla.hueLuna, semillaID: "luna-\(ancla.id)-a")
+                    .offset(x: -r * 0.95)
+                OrbeVivo(radio: r * 0.72, hue: h2, semillaID: "luna-\(ancla.id)-b")
+                    .offset(x: r * 0.95)
             } else {
-                LunaParticulas(radio: r, hue: ancla.hueLuna, chartID: "luna-\(ancla.id)")
+                OrbeVivo(radio: r, hue: ancla.hueLuna, semillaID: "luna-\(ancla.id)")
             }
         }
         .accessibilityHidden(true)
@@ -515,42 +494,6 @@ public struct CosmosAbiertoFace: View {
         case .atencion: return LiquidColor.atencion
         case .alarma: return LiquidColor.negativo
         }
-    }
-}
-
-// MARK: - Luna de partículas (revisión del dueño: nada de bolas planas)
-
-/// Luna de MATERIA de partículas — la MISMA receta del héroe (`EcosistemaSimulacion`:
-/// esfera de Fibonacci proyectada con tamaño/alfa por profundidad). Todos los cuerpos
-/// del Cosmos están hechos de lo mismo. `huePar` alterna por índice (binaria del guardián).
-struct LunaParticulas: View {
-    let radio: CGFloat
-    let hue: Color
-    let chartID: String
-    var huePar: Color? = nil
-
-    var body: some View {
-        let lado = radio * 2.5
-        Canvas { ctx, size in
-            let centro = CGPoint(x: size.width / 2, y: size.height / 2)
-            // Densidad ∝ área; el héroe usa ~0.5 pt²/partícula. Tope por rendimiento.
-            let cuenta = min(260, max(44, Int(0.62 * radio * radio)))
-            // Rotación estable por identidad (cada luna mira distinto, siempre igual).
-            let rot = Double(MatrizDither.semilla(chartID: chartID, index: 0) % 628) / 100.0
-            for i in 0..<cuenta {
-                let dir = EcosistemaSimulacion.direccion(i, de: cuenta)
-                let p = EcosistemaSimulacion.particula(
-                    dir: dir, indice: i, centro: centro, radio: radio,
-                    rotacion: rot, jitterAmp: 0, t: 0, alfaK: 1.55)
-                let pr = p.tamano * (0.55 + radio / 60)
-                let color = (huePar != nil && i % 2 == 1) ? huePar! : hue
-                ctx.fill(Path(ellipseIn: CGRect(x: p.pos.x - pr, y: p.pos.y - pr,
-                                                width: pr * 2, height: pr * 2)),
-                         with: .color(color.opacity(min(1, p.alfa))))
-            }
-        }
-        .frame(width: lado, height: lado)
-        .accessibilityHidden(true)
     }
 }
 
@@ -660,23 +603,11 @@ public struct CosmosReunidoFace: View {
         ctx.stroke(Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2)),
                    with: .color(color.opacity(0.55)), style: StrokeStyle(lineWidth: 1))
     }
-    /// Cuerpo de MATERIA de partículas — la receta del héroe (`EcosistemaSimulacion`),
-    /// con rotación lenta propia. `color2` alterna por índice (binaria del guardián).
+    /// Una sola materia en todo el rediseño: delega en `OrbeVivo.dibujar`.
     private func dibujaLuna(_ ctx: GraphicsContext, _ c: CGPoint, _ r: CGFloat,
                             _ color: Color, _ color2: Color?, t: Double = 0) {
-        let cuenta = min(300, max(40, Int(0.6 * r * r)))
-        let rot = t * 0.10
-        for i in 0..<cuenta {
-            let dir = EcosistemaSimulacion.direccion(i, de: cuenta)
-            let p = EcosistemaSimulacion.particula(
-                dir: dir, indice: i, centro: c, radio: r,
-                rotacion: rot, jitterAmp: 0, t: 0, alfaK: 1.55)
-            let pr = p.tamano * (0.55 + r / 60)
-            let hue = (color2 != nil && i % 2 == 1) ? color2! : color
-            ctx.fill(Path(ellipseIn: CGRect(x: p.pos.x - pr, y: p.pos.y - pr,
-                                            width: pr * 2, height: pr * 2)),
-                     with: .color(hue.opacity(min(1, p.alfa))))
-        }
+        OrbeVivo.dibujar(ctx, centro: c, radio: r, hue: color, huePar: color2,
+                         t: t, faseID: "reunido")
     }
 }
 

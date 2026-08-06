@@ -1,11 +1,13 @@
 import SwiftUI
 
-// MARK: - FER-51 · Familia de gráficas «medios tonos» (Canvas puro, sin lógica de datos)
+// MARK: - FER-51 · Familia de gráficas de la Matriz (Canvas puro, sin lógica de datos)
 //
-// Cada forma recibe datos YA derivados + `chartID` (semilla del dither compartido con F2).
-// Historia en dither del hue a ~50 % alfa; HOY (último elemento, si no es nil) a ~95 %.
-// Aro de alerta por punto/columna fuera (`MedidorLunar.Alerta`); rejilla fantasma
-// (puntos tinta 5 %) cuando no hay datos. Punteada HORIZONTAL solo para referencia/base/banda.
+// Cada forma recibe datos YA derivados + `chartID` (semilla estable). Revisión del dueño
+// en vivo (2026-08-06): el dato se dibuja en el lenguaje LIQUID del app — curvas suaves,
+// rellenos de gradiente tenue, barras redondeadas — nada de tramados de puntos (se leían
+// sucios). La punteada HORIZONTAL queda solo para referencia/base/banda; HOY es el único
+// punto marcado (más el aro de alerta de la gramática §8). Rejilla fantasma tenue cuando
+// no hay datos.
 
 // MARK: Shared draw helpers (file-private)
 
@@ -15,8 +17,7 @@ private enum MatrizChartDraw {
     static let hoyAlfa: Double = 0.95
     static let ghostDensidad: Double = 0.05
     static let dash: [CGFloat] = [3, 4]
-    static let histR: CGFloat = 1.7
-    static let hoyR: CGFloat = 2.5
+    static let hoyR: CGFloat = 3.0
     static let defaultHeight: CGFloat = 56
 
     static func yNorm(_ v: Double, domain: ClosedRange<Double>) -> CGFloat {
@@ -39,29 +40,6 @@ private enum MatrizChartDraw {
         ctx.stroke(p, with: .color(color.opacity(0.8)), style: StrokeStyle(lineWidth: 1))
     }
 
-    /// Cadena de puntos sobre una polilínea — retro-futurismo: el DATO son puntos,
-    /// nunca un trazo continuo (revisión del dueño en vivo). Espaciado por longitud de arco.
-    static func cadena(_ ctx: GraphicsContext, _ puntos: [CGPoint], hue: Color,
-                       alfa: Double, radio: CGFloat = 0.9, paso: CGFloat = 3.4) {
-        guard puntos.count > 1 else { return }
-        var resto: CGFloat = 0
-        for k in 1..<puntos.count {
-            let a = puntos[k - 1], b = puntos[k]
-            let d = hypot(b.x - a.x, b.y - a.y)
-            guard d > 0.01 else { continue }
-            var s = resto
-            while s < d {
-                let u = s / d
-                let p = CGPoint(x: a.x + (b.x - a.x) * u, y: a.y + (b.y - a.y) * u)
-                ctx.fill(Path(ellipseIn: CGRect(x: p.x - radio, y: p.y - radio,
-                                                width: radio * 2, height: radio * 2)),
-                         with: .color(hue.opacity(alfa)))
-                s += paso
-            }
-            resto = s - d
-        }
-    }
-
     static func dibujarAlerta(_ ctx: GraphicsContext, en punto: CGPoint,
                               radioBase: CGFloat, alerta: MedidorLunar.Alerta) {
         switch alerta {
@@ -74,7 +52,58 @@ private enum MatrizChartDraw {
         }
     }
 
-    /// Rejilla fantasma: puntos de tinta al 5 % (sin hue de señal).
+    /// Punto sólido (marcador de dato en el lenguaje Liquid).
+    static func punto(_ ctx: GraphicsContext, en c: CGPoint, radio: CGFloat,
+                      hue: Color, alfa: Double) {
+        ctx.fill(Path(ellipseIn: CGRect(x: c.x - radio, y: c.y - radio,
+                                        width: radio * 2, height: radio * 2)),
+                 with: .color(hue.opacity(alfa)))
+    }
+
+    /// Curva suave (Catmull-Rom → Bézier) por los puntos — la voz Liquid del app.
+    static func curva(_ pts: [CGPoint]) -> Path {
+        var path = Path()
+        guard let first = pts.first else { return path }
+        path.move(to: first)
+        guard pts.count > 1 else { return path }
+        for i in 0..<(pts.count - 1) {
+            let p0 = i > 0 ? pts[i - 1] : pts[i]
+            let p1 = pts[i]
+            let p2 = pts[i + 1]
+            let p3 = i + 2 < pts.count ? pts[i + 2] : p2
+            let c1 = CGPoint(x: p1.x + (p2.x - p0.x) / 6, y: p1.y + (p2.y - p0.y) / 6)
+            let c2 = CGPoint(x: p2.x - (p3.x - p1.x) / 6, y: p2.y - (p3.y - p1.y) / 6)
+            path.addCurve(to: p2, control1: c1, control2: c2)
+        }
+        return path
+    }
+
+    /// Curva + su relleno de gradiente (hue tenue → casi nada) hasta el piso del lienzo.
+    static func curvaRellena(_ ctx: GraphicsContext, pts: [CGPoint], size: CGSize,
+                             hue: Color, alfaLinea: Double, alfaRelleno: Double,
+                             grosor: CGFloat = 1.5) {
+        guard pts.count > 1 else { return }
+        var area = curva(pts)
+        area.addLine(to: CGPoint(x: pts[pts.count - 1].x, y: size.height))
+        area.addLine(to: CGPoint(x: pts[0].x, y: size.height))
+        area.closeSubpath()
+        let topY = pts.map(\.y).min() ?? 0
+        ctx.fill(area, with: .linearGradient(
+            Gradient(colors: [hue.opacity(alfaRelleno), hue.opacity(alfaRelleno * 0.1)]),
+            startPoint: CGPoint(x: 0, y: topY),
+            endPoint: CGPoint(x: 0, y: size.height)))
+        ctx.stroke(curva(pts), with: .color(hue.opacity(alfaLinea)),
+                   style: StrokeStyle(lineWidth: grosor, lineCap: .round, lineJoin: .round))
+    }
+
+    /// Barra redondeada sólida (columna Liquid).
+    static func barra(_ ctx: GraphicsContext, rect: CGRect, hue: Color, alfa: Double) {
+        guard rect.height > 0.5, rect.width > 0.5 else { return }
+        let radio = min(rect.width / 2, 2)
+        ctx.fill(Path(roundedRect: rect, cornerRadius: radio), with: .color(hue.opacity(alfa)))
+    }
+
+    /// Rejilla fantasma: puntos de tinta al 5 % (sin hue de señal) — estado sin datos.
     static func rejillaFantasma(_ ctx: GraphicsContext, size: CGSize, chartID: String) {
         let step = cell * 2
         var i = 0
@@ -100,51 +129,6 @@ private enum MatrizChartDraw {
         }
     }
 
-    /// Rellena un rect con tramado Bayer + partícula irregular del hue.
-    static func ditherRect(_ ctx: GraphicsContext, rect: CGRect, chartID: String,
-                           seedIndex: Int, densidad: Double, hue: Color, alfa: Double) {
-        guard rect.width > 0.5, rect.height > 0.5, densidad > 0 else { return }
-        let dens = min(max(densidad, 0), 1)
-        let originX = Int(floor(rect.minX / cell))
-        let originY = Int(floor(rect.minY / cell))
-        let endX = Int(ceil(rect.maxX / cell))
-        let endY = Int(ceil(rect.maxY / cell))
-        var k = 0
-        for gy in originY..<endY {
-            for gx in originX..<endX {
-                guard MatrizDither.encendido(x: gx, y: gy, densidad: dens) else {
-                    k += 1
-                    continue
-                }
-                let s = MatrizDither.semilla(chartID: chartID, index: seedIndex &* 10_000 &+ k)
-                let p = MatrizDither.particula(s)
-                let cx = CGFloat(gx) * cell + cell * 0.5 + CGFloat(p.dx)
-                let cy = CGFloat(gy) * cell + cell * 0.5 + CGFloat(p.dy)
-                guard rect.contains(CGPoint(x: cx, y: cy)) else {
-                    k += 1
-                    continue
-                }
-                let r = 0.85 * CGFloat(p.dScale)
-                ctx.fill(Path(ellipseIn: CGRect(x: cx - r, y: cy - r,
-                                                width: r * 2, height: r * 2)),
-                         with: .color(hue.opacity(alfa * p.dAlpha)))
-                k += 1
-            }
-        }
-    }
-
-    /// Punto-partícula en la línea/columna (semilla = chartID+index del dato).
-    static func puntoParticula(_ ctx: GraphicsContext, en centro: CGPoint,
-                               chartID: String, index: Int, hue: Color,
-                               alfa: Double, radio: CGFloat) {
-        let s = MatrizDither.semilla(chartID: chartID, index: index)
-        let p = MatrizDither.particula(s)
-        let r = radio * CGFloat(p.dScale)
-        let c = CGPoint(x: centro.x + CGFloat(p.dx), y: centro.y + CGFloat(p.dy))
-        ctx.fill(Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2)),
-                 with: .color(hue.opacity(alfa * p.dAlpha)))
-    }
-
     static func tieneDatos(_ valores: [Double?]) -> Bool {
         valores.contains { $0 != nil }
     }
@@ -153,6 +137,24 @@ private enum MatrizChartDraw {
         guard count > 1 else { return width / 2 }
         let usable = max(width - inset * 2, 1)
         return inset + CGFloat(index) / CGFloat(count - 1) * usable
+    }
+
+    /// Parte la serie en tramos contiguos (los huecos nil cortan el trazo).
+    static func tramos(_ puntos: [Double?], count: Int, width: CGFloat,
+                       dominio: ClosedRange<Double>, height: CGFloat) -> [[CGPoint]] {
+        var out: [[CGPoint]] = []
+        var actual: [CGPoint] = []
+        for (i, val) in puntos.enumerated() {
+            guard let v = val else {
+                if actual.count > 1 { out.append(actual) }
+                actual.removeAll()
+                continue
+            }
+            actual.append(CGPoint(x: xAt(index: i, count: count, width: width),
+                                  y: yTop(v, domain: dominio, height: height)))
+        }
+        if actual.count > 1 { out.append(actual) }
+        return out
     }
 }
 
@@ -193,29 +195,18 @@ public struct MatrizColumnas: View {
             if !hay {
                 MatrizChartDraw.rejillaFantasma(ctx, size: size, chartID: chartID)
             } else {
-                let gap: CGFloat = 2
+                let gap: CGFloat = 3
                 let colW = max((size.width - gap * CGFloat(n - 1)) / CGFloat(n), 1)
                 let last = n - 1
                 for (i, noche) in noches.enumerated() {
                     guard let v = noche.valor else { continue }
                     let esHoy = i == last
-                    let alfa = esHoy ? MatrizChartDraw.hoyAlfa : MatrizChartDraw.histAlfa
+                    let alfa = esHoy ? 0.9 : 0.32
                     let x = CGFloat(i) * (colW + gap)
                     let yn = MatrizChartDraw.yNorm(v, domain: dominio)
                     let h = max(yn * (size.height - 2), 1)
                     let rect = CGRect(x: x, y: size.height - h, width: colW, height: h)
-                    // Densidad mayor hacia la cima de la columna (gradiente de medios tonos).
-                    MatrizChartDraw.ditherRect(ctx, rect: rect, chartID: chartID,
-                                               seedIndex: i, densidad: 0.55 + 0.35 * yn,
-                                               hue: hue, alfa: alfa)
-                    if esHoy {
-                        // Tope de HOY más denso / saturado.
-                        let cap = CGRect(x: x, y: size.height - h, width: colW,
-                                         height: min(h, 4))
-                        MatrizChartDraw.ditherRect(ctx, rect: cap, chartID: chartID,
-                                                   seedIndex: i &+ 500, densidad: 0.9,
-                                                   hue: hue, alfa: MatrizChartDraw.hoyAlfa)
-                    }
+                    MatrizChartDraw.barra(ctx, rect: rect, hue: hue, alfa: alfa)
                     if noche.alerta != .ninguna {
                         let centro = CGPoint(x: x + colW / 2, y: size.height - h)
                         MatrizChartDraw.dibujarAlerta(ctx, en: centro, radioBase: colW * 0.35,
@@ -237,7 +228,7 @@ public struct MatrizColumnas: View {
                 .foregroundColor(LiquidColor.tinta500)
                 .monospacedDigit()
             ctx.draw(ctx.resolve(tag),
-                     at: CGPoint(x: size.width - 2, y: yRef - 8),
+                     at: CGPoint(x: size.width - 6, y: yRef - 8),
                      anchor: .topTrailing)
         }
         .frame(maxWidth: .infinity, minHeight: MatrizChartDraw.defaultHeight,
@@ -248,7 +239,7 @@ public struct MatrizColumnas: View {
 
 // MARK: - MatrizLineaRellena (FC / VFC)
 
-/// Línea + área rellena con dither + punteada horizontal = tu base.
+/// Curva suave + relleno de gradiente + punteada horizontal = tu base. HOY marcado.
 public struct MatrizLineaRellena: View {
     private let chartID: String
     private let puntos: [Double?]
@@ -272,58 +263,24 @@ public struct MatrizLineaRellena: View {
     public var body: some View {
         Canvas { ctx, size in
             let count = puntos.count
-            guard count > 0 else {
-                MatrizChartDraw.rejillaFantasma(ctx, size: size, chartID: chartID)
-                return
-            }
-            if !MatrizChartDraw.tieneDatos(puntos) {
+            if count == 0 || !MatrizChartDraw.tieneDatos(puntos) {
                 MatrizChartDraw.rejillaFantasma(ctx, size: size, chartID: chartID)
             } else {
-                // Área rellena (dither por franjas verticales entre puntos consecutivos).
-                for i in 0..<(count - 1) {
-                    guard let a = puntos[i], let b = puntos[i + 1] else { continue }
-                    let x0 = MatrizChartDraw.xAt(index: i, count: count, width: size.width)
-                    let x1 = MatrizChartDraw.xAt(index: i + 1, count: count, width: size.width)
-                    let y0 = MatrizChartDraw.yTop(a, domain: dominio, height: size.height)
-                    let y1 = MatrizChartDraw.yTop(b, domain: dominio, height: size.height)
-                    let midY = (y0 + y1) / 2
-                    let rect = CGRect(x: x0, y: midY,
-                                      width: max(x1 - x0, 1),
-                                      height: max(size.height - midY, 1))
-                    let dens = 0.28 + 0.25 * Double(MatrizChartDraw.yNorm((a + b) / 2,
-                                                                          domain: dominio))
-                    MatrizChartDraw.ditherRect(ctx, rect: rect, chartID: chartID,
-                                               seedIndex: i, densidad: dens,
-                                               hue: hue, alfa: MatrizChartDraw.histAlfa * alfa)
+                for tramo in MatrizChartDraw.tramos(puntos, count: count, width: size.width,
+                                                    dominio: dominio, height: size.height) {
+                    MatrizChartDraw.curvaRellena(ctx, pts: tramo, size: size, hue: hue,
+                                                 alfaLinea: 0.75 * alfa,
+                                                 alfaRelleno: 0.20 * alfa)
                 }
 
-                // El DATO son puntos: cadena de partículas entre lecturas consecutivas
-                // (nunca un trazo continuo — retro-futurismo, revisión del dueño).
-                var hilo: [CGPoint] = []
-                for (i, val) in puntos.enumerated() {
-                    guard let v = val else {
-                        MatrizChartDraw.cadena(ctx, hilo, hue: hue, alfa: 0.5 * alfa)
-                        hilo.removeAll()
-                        continue
-                    }
-                    hilo.append(CGPoint(x: MatrizChartDraw.xAt(index: i, count: count, width: size.width),
-                                        y: MatrizChartDraw.yTop(v, domain: dominio, height: size.height)))
-                }
-                MatrizChartDraw.cadena(ctx, hilo, hue: hue, alfa: 0.5 * alfa)
-
-                // Puntos-partícula.
-                let last = count - 1
-                for (i, val) in puntos.enumerated() {
-                    guard let v = val else { continue }
-                    let esHoy = i == last
-                    let pt = CGPoint(x: MatrizChartDraw.xAt(index: i, count: count, width: size.width),
+                // HOY: el único punto marcado (+ aro de la gramática §8).
+                if let idx = puntos.lastIndex(where: { $0 != nil }), let v = puntos[idx] {
+                    let pt = CGPoint(x: MatrizChartDraw.xAt(index: idx, count: count, width: size.width),
                                      y: MatrizChartDraw.yTop(v, domain: dominio, height: size.height))
-                    let a = (esHoy ? MatrizChartDraw.hoyAlfa : MatrizChartDraw.histAlfa) * alfa
-                    let r = esHoy ? MatrizChartDraw.hoyR : MatrizChartDraw.histR
-                    MatrizChartDraw.puntoParticula(ctx, en: pt, chartID: chartID, index: i,
-                                                   hue: hue, alfa: a, radio: r)
-                    if esHoy {
-                        MatrizChartDraw.dibujarAlerta(ctx, en: pt, radioBase: r,
+                    MatrizChartDraw.punto(ctx, en: pt, radio: MatrizChartDraw.hoyR,
+                                          hue: hue, alfa: MatrizChartDraw.hoyAlfa * alfa)
+                    if idx == count - 1 {
+                        MatrizChartDraw.dibujarAlerta(ctx, en: pt, radioBase: MatrizChartDraw.hoyR,
                                                       alerta: alertaHoy)
                     }
                 }
@@ -346,7 +303,7 @@ public struct MatrizLineaRellena: View {
 
 // MARK: - MatrizLineaSerena (GUARDIÁN)
 
-/// Filo central + banda ± tenue + puntos-día casi sobre la línea (brincos fuera visibles).
+/// Filo central + banda ± tenue + curva serena casi plana (brincos fuera visibles).
 public struct MatrizLineaSerena: View {
     private let chartID: String
     private let puntos: [Double?]
@@ -373,16 +330,13 @@ public struct MatrizLineaSerena: View {
                 MatrizChartDraw.rejillaFantasma(ctx, size: size, chartID: chartID)
             }
 
-            // Banda ± (relleno dither tenue entre lower/upper).
+            // Banda ± (relleno sólido tenue entre lower/upper) + bordes punteados.
             if let banda {
                 let yLo = MatrizChartDraw.yTop(banda.upperBound, domain: dominio, height: size.height)
                 let yHi = MatrizChartDraw.yTop(banda.lowerBound, domain: dominio, height: size.height)
                 let bandRect = CGRect(x: 0, y: yLo, width: size.width,
                                       height: max(yHi - yLo, 1))
-                MatrizChartDraw.ditherRect(ctx, rect: bandRect, chartID: chartID,
-                                           seedIndex: 900, densidad: 0.18,
-                                           hue: hue, alfa: 0.22)
-                // Bordes de banda punteados (referencia).
+                ctx.fill(Path(bandRect), with: .color(hue.opacity(0.08)))
                 for y in [yLo, yHi] {
                     var p = Path()
                     p.move(to: CGPoint(x: 0, y: y))
@@ -403,31 +357,19 @@ public struct MatrizLineaSerena: View {
 
             guard count > 0, MatrizChartDraw.tieneDatos(puntos) else { return }
 
-            // Cadena serena de puntos conectando lecturas (el dato son puntos, no trazo).
-            var hilo: [CGPoint] = []
-            for (i, val) in puntos.enumerated() {
-                guard let v = val else {
-                    MatrizChartDraw.cadena(ctx, hilo, hue: hue, alfa: 0.4, radio: 0.8)
-                    hilo.removeAll()
-                    continue
-                }
-                hilo.append(CGPoint(x: MatrizChartDraw.xAt(index: i, count: count, width: size.width),
-                                    y: MatrizChartDraw.yTop(v, domain: dominio, height: size.height)))
+            for tramo in MatrizChartDraw.tramos(puntos, count: count, width: size.width,
+                                                dominio: dominio, height: size.height) {
+                ctx.stroke(MatrizChartDraw.curva(tramo), with: .color(hue.opacity(0.55)),
+                           style: StrokeStyle(lineWidth: 1.2, lineCap: .round, lineJoin: .round))
             }
-            MatrizChartDraw.cadena(ctx, hilo, hue: hue, alfa: 0.4, radio: 0.8)
 
-            let last = count - 1
-            for (i, val) in puntos.enumerated() {
-                guard let v = val else { continue }
-                let esHoy = i == last
-                let pt = CGPoint(x: MatrizChartDraw.xAt(index: i, count: count, width: size.width),
+            if let idx = puntos.lastIndex(where: { $0 != nil }), let v = puntos[idx] {
+                let pt = CGPoint(x: MatrizChartDraw.xAt(index: idx, count: count, width: size.width),
                                  y: MatrizChartDraw.yTop(v, domain: dominio, height: size.height))
-                let a = esHoy ? MatrizChartDraw.hoyAlfa : MatrizChartDraw.histAlfa
-                let r = esHoy ? MatrizChartDraw.hoyR : MatrizChartDraw.histR
-                MatrizChartDraw.puntoParticula(ctx, en: pt, chartID: chartID, index: i,
-                                               hue: hue, alfa: a, radio: r)
-                if esHoy {
-                    MatrizChartDraw.dibujarAlerta(ctx, en: pt, radioBase: r, alerta: alertaHoy)
+                MatrizChartDraw.punto(ctx, en: pt, radio: 2.6, hue: hue,
+                                      alfa: MatrizChartDraw.hoyAlfa)
+                if idx == count - 1 {
+                    MatrizChartDraw.dibujarAlerta(ctx, en: pt, radioBase: 2.6, alerta: alertaHoy)
                 }
             }
         }
@@ -439,7 +381,7 @@ public struct MatrizLineaSerena: View {
 
 // MARK: - MatrizRielZona (CARGA)
 
-/// Riel horizontal + zona dulce en dither + punto de la razón + estela de 5 previos.
+/// Riel horizontal + zona dulce sólida tenue + punto de la razón + estela de 5 previos.
 public struct MatrizRielZona: View {
     private let chartID: String
     private let p: Double?
@@ -471,13 +413,12 @@ public struct MatrizRielZona: View {
             ctx.stroke(riel, with: .color(LiquidColor.tinta900.opacity(0.14)),
                        style: StrokeStyle(lineWidth: 2, lineCap: .round))
 
-            // Zona dulce en dither.
+            // Zona dulce: cápsula sólida tenue.
             let xZ0 = Self.x(zona.lowerBound, domain: dominio, width: size.width, inset: inset)
             let xZ1 = Self.x(zona.upperBound, domain: dominio, width: size.width, inset: inset)
             let zonaRect = CGRect(x: xZ0, y: y - 7, width: max(xZ1 - xZ0, 1), height: 14)
-            MatrizChartDraw.ditherRect(ctx, rect: zonaRect, chartID: chartID,
-                                       seedIndex: 0, densidad: 0.55,
-                                       hue: hue, alfa: 0.40)
+            ctx.fill(Path(roundedRect: zonaRect, cornerRadius: 7),
+                     with: .color(hue.opacity(0.16)))
             // Ticks de borde de zona.
             for x in [xZ0, xZ1] {
                 var tick = Path()
@@ -491,20 +432,17 @@ public struct MatrizRielZona: View {
             let nE = estela.count
             for (i, v) in estela.enumerated() {
                 let t = nE > 1 ? Double(i) / Double(nE - 1) : 1
-                let alfa = 0.15 + 0.35 * t
+                let alfa = 0.15 + 0.30 * t
                 let x = Self.x(v, domain: dominio, width: size.width, inset: inset)
-                MatrizChartDraw.puntoParticula(ctx, en: CGPoint(x: x, y: y),
-                                               chartID: chartID, index: i,
-                                               hue: hue, alfa: alfa, radio: 1.6)
+                MatrizChartDraw.punto(ctx, en: CGPoint(x: x, y: y), radio: 1.6,
+                                      hue: hue, alfa: alfa)
             }
 
             // Punto HOY.
             if let p {
                 let x = Self.x(p, domain: dominio, width: size.width, inset: inset)
-                MatrizChartDraw.puntoParticula(ctx, en: CGPoint(x: x, y: y),
-                                               chartID: chartID, index: 100 + nE,
-                                               hue: hue, alfa: MatrizChartDraw.hoyAlfa,
-                                               radio: 3.4)
+                MatrizChartDraw.punto(ctx, en: CGPoint(x: x, y: y), radio: 3.4,
+                                      hue: hue, alfa: MatrizChartDraw.hoyAlfa)
                 // Aro de alerta sobre HOY: la gramática §8 debe verse IGUAL en las dos caras;
                 // sin esto un pico de carga ≥ 1.5 solo salía como sublabel en la Matriz mientras
                 // el Cosmos sí lo marcaba (asimetría cara-vs-cara, hallazgo adversarial Grok #4).
@@ -537,7 +475,7 @@ public struct MatrizRielZona: View {
 
 // MARK: - MatrizBarrasMini (ESFUERZO / PASOS)
 
-/// N barras finas; HOY saturado; SIN juicio (nunca aro).
+/// N barras finas redondeadas; HOY saturado; SIN juicio (nunca aro).
 public struct MatrizBarrasMini: View {
     private let chartID: String
     private let valores: [Double?]
@@ -557,7 +495,7 @@ public struct MatrizBarrasMini: View {
                 return
             }
             let maxV = valores.compactMap { $0 }.max() ?? 1
-            let gap: CGFloat = 1.5
+            let gap: CGFloat = 2
             let barW = max((size.width - gap * CGFloat(n - 1)) / CGFloat(n), 1)
             let last = valores.count - 1
             for (i, val) in valores.enumerated() {
@@ -566,11 +504,7 @@ public struct MatrizBarrasMini: View {
                 let h = max(CGFloat(v / maxV) * (size.height - 2), 1)
                 let x = CGFloat(i) * (barW + gap)
                 let rect = CGRect(x: x, y: size.height - h, width: barW, height: h)
-                let dens = esHoy ? 0.85 : 0.45
-                let alfa = esHoy ? MatrizChartDraw.hoyAlfa : MatrizChartDraw.histAlfa
-                MatrizChartDraw.ditherRect(ctx, rect: rect, chartID: chartID,
-                                           seedIndex: i, densidad: dens,
-                                           hue: hue, alfa: alfa)
+                MatrizChartDraw.barra(ctx, rect: rect, hue: hue, alfa: esHoy ? 0.9 : 0.32)
             }
         }
         .frame(maxWidth: .infinity, minHeight: 40, idealHeight: 40)
@@ -609,26 +543,27 @@ public struct MatrizEscalerita: View {
                            style: StrokeStyle(lineWidth: 1))
             }
 
+            // La escalera como curva suave por los niveles (voz Liquid).
+            let pts: [CGPoint] = niveles.enumerated().compactMap { i, niv in
+                guard let nivel = niv else { return nil }
+                let clamped = min(max(nivel, 0), 2)
+                return CGPoint(x: MatrizChartDraw.xAt(index: i, count: count, width: size.width),
+                               y: Self.y(nivel: clamped, height: size.height))
+            }
+            if pts.count > 1 {
+                ctx.stroke(MatrizChartDraw.curva(pts), with: .color(hue.opacity(0.40)),
+                           style: StrokeStyle(lineWidth: 1.2, lineCap: .round, lineJoin: .round))
+            }
+
             let last = niveles.count - 1
-            var prev: CGPoint?
             for (i, niv) in niveles.enumerated() {
-                guard let nivel = niv else {
-                    prev = nil
-                    continue
-                }
+                guard let nivel = niv else { continue }
                 let clamped = min(max(nivel, 0), 2)
                 let esHoy = i == last
                 let pt = CGPoint(x: MatrizChartDraw.xAt(index: i, count: count, width: size.width),
                                  y: Self.y(nivel: clamped, height: size.height))
-                if let prev {
-                    // Escalón como cadena de puntos (el dato son puntos, no trazo).
-                    MatrizChartDraw.cadena(ctx, [prev, pt], hue: hue, alfa: 0.32, radio: 0.8)
-                }
-                let a = esHoy ? MatrizChartDraw.hoyAlfa : MatrizChartDraw.histAlfa
-                let r = esHoy ? MatrizChartDraw.hoyR : MatrizChartDraw.histR
-                MatrizChartDraw.puntoParticula(ctx, en: pt, chartID: chartID, index: i,
-                                               hue: hue, alfa: a, radio: r)
-                prev = pt
+                MatrizChartDraw.punto(ctx, en: pt, radio: esHoy ? 2.8 : 1.8, hue: hue,
+                                      alfa: esHoy ? MatrizChartDraw.hoyAlfa : MatrizChartDraw.histAlfa)
             }
         }
         .frame(maxWidth: .infinity, minHeight: 36, idealHeight: 36)

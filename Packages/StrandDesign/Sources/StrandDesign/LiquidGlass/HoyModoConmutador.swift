@@ -23,16 +23,14 @@ public struct HoyModoConmutador: View {
     private static let tracking: CGFloat = 11 * 0.15
 
     public var body: some View {
-        HStack(spacing: 10) {
+        // Sin separador «·» (revisión del dueño: leía como un punto raro entre modos);
+        // el punto de 4 pt bajo el rótulo activo es el único indicador.
+        HStack(spacing: 18) {
             rotulo(rotuloCosmos, modo: .cosmos)
-            Text(verbatim: "·")
-                .font(InstrumentoType.grotesk(11, weight: .medium))
-                .foregroundStyle(LiquidColor.tinta500)
-                .accessibilityHidden(true)
             rotulo(rotuloMatriz, modo: .matriz)
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(Text(verbatim: "\(rotuloCosmos) · \(rotuloMatriz)"))
+        .accessibilityLabel(Text(verbatim: "\(rotuloCosmos), \(rotuloMatriz)"))
     }
 
     private func rotulo(_ texto: String, modo target: HoyModo) -> some View {

@@ -71,8 +71,9 @@ struct HoyModosHost: View {
                     }
             )
 
-            // Pista del gesto del cielo (las primeras 3 veces que aún no lo usas).
-            if modo.wrappedValue == .cosmos && gestoUsos < 3 {
+            // Pista del gesto del cielo — SIEMPRE visible y sutil (revisión del dueño:
+            // no quedaba claro cómo reunir/abrir el universo).
+            if modo.wrappedValue == .cosmos {
                 Text(reunido ? String(localized: "hoy.hint.abrir", defaultValue: "Tap the sky to open it")
                              : String(localized: "hoy.hint.reunir", defaultValue: "Tap the sky to gather it"))
                     .font(InstrumentoType.grotesk(12, weight: .regular))
