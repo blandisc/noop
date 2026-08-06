@@ -154,10 +154,21 @@ final class HoyEstadosTests: XCTestCase {
     }
 
     func test_plantilla_T4_sinPermiso() {
+        // T4 aplica SIN veredicto real (con veredicto, éste manda — ver test abajo).
+        let p = LiquidHoyBuilder.plantilla(
+            prep: nil, healthConnected: false, hasAnySource: true,
+            silencioT4: nil, causaT3: nil)
+        XCTAssertEqual(p, .t4SinPermiso)
+    }
+
+    func test_plantilla_veredicto_manda_sobre_T4() {
+        // Estudio en frío R2: la franja «sin lectura» junto a un héroe que afirma
+        // «En tu rango» confundía a todos los perfiles — el veredicto calla la franja
+        // (Salud desconectada ya tiene su propio banner).
         let p = LiquidHoyBuilder.plantilla(
             prep: prep(.full), healthConnected: false, hasAnySource: true,
             silencioT4: nil, causaT3: nil)
-        XCTAssertEqual(p, .t4SinPermiso)
+        XCTAssertEqual(p, .t1Pleno)
     }
 
     func test_plantilla_T4_porSilencio() {
@@ -167,7 +178,7 @@ final class HoyEstadosTests: XCTestCase {
             (tuvo14d: false, vacio48h: false),
         ])
         let p = LiquidHoyBuilder.plantilla(
-            prep: prep(.full), healthConnected: true, hasAnySource: true,
+            prep: nil, healthConnected: true, hasAnySource: true,
             silencioT4: silencio, causaT3: nil)
         XCTAssertEqual(p, .t4SinPermiso)
     }

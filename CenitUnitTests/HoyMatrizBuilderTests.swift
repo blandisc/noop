@@ -240,7 +240,7 @@ final class HoyMatrizBuilderTests: XCTestCase {
 
         // Orden visual a11y.
         XCTAssertEqual(model.ordenA11y, [
-            "sleep", "rhr", "hrv", "guardian", "carga", "strain", "stress", "steps",
+            "sleep", "rhr", "guardian", "carga", "strain", "hrv", "stress", "steps",
         ])
     }
 

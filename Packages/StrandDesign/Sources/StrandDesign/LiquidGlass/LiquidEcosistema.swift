@@ -1033,6 +1033,8 @@ private struct EcosistemaCanvas: View {
         case .blanco: return LiquidColor.particulaBlanca
         case .sueno: return Self.mezclada(LiquidColor.indigo, hacia: tintaClima)
         case .reposo: return Self.mezclada(LiquidColor.rosa, hacia: tintaClima)
+        case .vigiaTemp: return Self.mezclada(LiquidColor.doradoTemp, hacia: tintaClima)
+        case .vigiaResp: return Self.mezclada(LiquidColor.azul, hacia: tintaClima)
         }
     }
 

@@ -34,6 +34,11 @@ public struct MatrizSeccion: Sendable, Identifiable, Equatable {
     public let unidad: String?
     /// Protagonista del veredicto (sueño / FC): numeral grande; el resto, medio (UX #3).
     public let destacada: Bool
+    /// ¿Esta señal VOTA el veredicto? Pinta el sello «vota» (P3 del estudio en frío:
+    /// «si etiquetas al abstenido, etiqueta a los votantes» — Sofía).
+    public let vota: Bool
+    /// Bitácora/referencia (VFC, pasos): numeral un nivel abajo (P7).
+    public let terciaria: Bool
     public let sublabel: String?
     public let chartID: String
     public let chart: MatrizChartPayload
@@ -45,12 +50,14 @@ public struct MatrizSeccion: Sendable, Identifiable, Equatable {
     public init(id: String, hue: Color,
                 huesPar: (Color, Color)? = nil, titulo: String, valor: String,
                 unidad: String? = nil, destacada: Bool = false,
+                vota: Bool = false, terciaria: Bool = false,
                 sublabel: String? = nil, chartID: String, chart: MatrizChartPayload,
                 chip: MatrizHoyModel.ChipGuardian? = nil,
                 renglones: [MatrizRenglon]? = nil) {
         self.id = id; self.hue = hue; self.huesPar = huesPar
         self.titulo = titulo; self.valor = valor
         self.unidad = unidad; self.destacada = destacada
+        self.vota = vota; self.terciaria = terciaria
         self.sublabel = sublabel
         self.chartID = chartID; self.chart = chart; self.chip = chip
         self.renglones = renglones
@@ -64,6 +71,7 @@ public struct MatrizSeccion: Sendable, Identifiable, Equatable {
             && lhs.hue == rhs.hue
             && lhs.huesPar?.0 == rhs.huesPar?.0 && lhs.huesPar?.1 == rhs.huesPar?.1
             && lhs.unidad == rhs.unidad && lhs.destacada == rhs.destacada
+            && lhs.vota == rhs.vota && lhs.terciaria == rhs.terciaria
     }
 }
 
@@ -73,15 +81,19 @@ public struct MatrizRenglon: Sendable, Identifiable, Equatable {
     public let titulo: String
     public let valor: String
     public let unidad: String?
+    /// Estado en palabras bajo el renglón («dentro de tu banda», «típica tuya») — P2.
+    public let sublabel: String?
     public let hue: Color
     public let chartID: String
     public let chart: MatrizChartPayload
     public let subrayado: MedidorLunar.Alerta
 
     public init(id: String, titulo: String, valor: String, unidad: String? = nil,
+                sublabel: String? = nil,
                 hue: Color, chartID: String, chart: MatrizChartPayload,
                 subrayado: MedidorLunar.Alerta = .ninguna) {
         self.id = id; self.titulo = titulo; self.valor = valor; self.unidad = unidad
+        self.sublabel = sublabel
         self.hue = hue
         self.chartID = chartID; self.chart = chart; self.subrayado = subrayado
     }
@@ -90,7 +102,7 @@ public struct MatrizRenglon: Sendable, Identifiable, Equatable {
         lhs.id == rhs.id && lhs.titulo == rhs.titulo && lhs.valor == rhs.valor
             && lhs.chartID == rhs.chartID && lhs.chart == rhs.chart
             && lhs.subrayado == rhs.subrayado && lhs.hue == rhs.hue
-            && lhs.unidad == rhs.unidad
+            && lhs.unidad == rhs.unidad && lhs.sublabel == rhs.sublabel
     }
 }
 
@@ -118,6 +130,9 @@ public struct MatrizHoyModel: Sendable, Equatable {
     public enum Banda: Sendable, Equatable {
         case full(MatrizSeccion)
         case split(izq: MatrizSeccion, der: MatrizSeccion)
+        /// Rótulo de NIVEL (Opción A del dueño): «Deciden tu día · Vigila · Contexto ·
+        /// Bitácora» — el orden enseña el modelo sin manual.
+        case nivel(String)
     }
 
     /// Orden VISUAL de arriba a abajo (§7). Bandas divididas = 2 elementos a11y.
@@ -135,6 +150,8 @@ public struct MatrizHoyModel: Sendable, Equatable {
             case .full(let s): ids.append(s.id)
             case .split(let izq, let der):
                 ids.append(izq.id); ids.append(der.id)
+            case .nivel:
+                break   // decorativo: VoiceOver lee las secciones, no las capas.
             }
         }
         return ids
@@ -168,7 +185,7 @@ public struct MatrizHoyFace: View {
         VStack(spacing: 0) {
             ForEach(Array(model.bandas.enumerated()), id: \.offset) { _, banda in
                 bandaView(banda, columnaUnica: columnaUnica)
-                filo()
+                if case .nivel = banda {} else { filo() }
             }
         }
         .frame(maxWidth: .infinity)
@@ -195,6 +212,15 @@ public struct MatrizHoyFace: View {
         case .full(let s):
             seccionView(s)
                 .padding(.vertical, MatrizTokens.bandaV)
+        case .nivel(let rotulo):
+            Text(rotulo)
+                .font(LiquidType.micro)
+                .tracking(LiquidType.microTracking)
+                .textCase(.uppercase)
+                .foregroundStyle(LiquidColor.tinta500)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.top, MatrizTokens.bandaV)
+                .accessibilityHidden(true)
         case .split(let izq, let der):
             if columnaUnica {
                 VStack(spacing: 0) {
@@ -206,6 +232,10 @@ public struct MatrizHoyFace: View {
                 // Mitades iguales: el filo vertical parte la banda al centro.
                 HStack(alignment: .top, spacing: 0) {
                     seccionView(izq)
+                        // La celda mide su CONTENIDO: sin esto una propuesta alta del
+                        // layout inflaba el encabezado flexible y el chart caía al
+                        // fondo (regresión cazada en vivo).
+                        .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.trailing, MatrizTokens.colGap)
                         .padding(.vertical, MatrizTokens.bandaV)
@@ -216,6 +246,7 @@ public struct MatrizHoyFace: View {
                         // los filos horizontales — convergencia de simetría R2).
                         .padding(.vertical, MatrizTokens.bandaV)
                     seccionView(der)
+                        .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.leading, MatrizTokens.colGap)
                         .padding(.vertical, MatrizTokens.bandaV)
@@ -254,7 +285,7 @@ public struct MatrizHoyFace: View {
                 VStack(alignment: .leading, spacing: LiquidSpace.s200) {
                     encabezado(s)
                     chartView(s.chart, hue: s.hue, chartID: s.chartID)
-                        .frame(minHeight: chartAltura(s.chart))
+                        .frame(height: chartAltura(s.chart))
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
@@ -268,17 +299,20 @@ public struct MatrizHoyFace: View {
     }
 
     private func encabezado(_ s: MatrizSeccion) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: MatrizTokens.selloTexto) {
-            // Orbe de partículas puro, sin glifo (revisión del dueño en vivo): el eco
-            // del héroe junto a cada título, con el hue de identidad de la señal.
-            OrbeVivo(radio: MatrizTokens.selloRadio, hue: s.huesPar?.0 ?? s.hue,
-                     semillaID: "sello-\(s.id)", huePar: s.huesPar?.1, fps: 12)
-                // El orbe no es texto: ancla su centro óptico al centro de las
-                // versalitas del título (hallazgo Grok-UI #3; afinado en vivo).
-                .alignmentGuide(.firstTextBaseline) { d in d.height * 0.78 }
-                // Acuse del tacto: el eco del héroe responde al dedo (cariño §micro).
-                .scaleEffect(latido == s.id ? 1.10 : 1)
-            VStack(alignment: .leading, spacing: LiquidSpace.s050) {
+        // Dos renglones a lo ANCHO de la celda: [orbe · título · valor · ›] y debajo
+        // [sello vota · estado]. El sello/estado dentro del VStack del título competía
+        // con el Spacer y se estrujaba a 1 carácter por línea (torre — cazada en arnés).
+        VStack(alignment: .leading, spacing: LiquidSpace.s050) {
+            HStack(alignment: .firstTextBaseline, spacing: MatrizTokens.selloTexto) {
+                // Orbe de partículas puro, sin glifo (revisión del dueño en vivo): el
+                // eco del héroe junto a cada título, con el hue de identidad.
+                OrbeVivo(radio: MatrizTokens.selloRadio, hue: s.huesPar?.0 ?? s.hue,
+                         semillaID: "sello-\(s.id)", huePar: s.huesPar?.1, fps: 12)
+                    // El orbe no es texto: ancla su centro óptico al centro de las
+                    // versalitas del título (hallazgo Grok-UI #3; afinado en vivo).
+                    .alignmentGuide(.firstTextBaseline) { d in d.height * 0.78 }
+                    // Acuse del tacto: el eco del héroe responde al dedo (§micro).
+                    .scaleEffect(latido == s.id ? 1.10 : 1)
                 Text(s.titulo)
                     .font(LiquidType.tituloFila)
                     .foregroundStyle(LiquidColor.tinta700)
@@ -286,23 +320,40 @@ public struct MatrizHoyFace: View {
                     // Nunca partir palabra («RESTIN-G HR»): hasta 2 líneas por espacio
                     // y encoge un poco antes de quebrar.
                     .lineLimit(2)
-                    .minimumScaleFactor(0.82)
-                if let sub = s.sublabel {
-                    Text(sub)
-                        .font(LiquidType.caption)
-                        .foregroundStyle(LiquidColor.tinta500)
-                        .fixedSize(horizontal: false, vertical: true)
+                    .minimumScaleFactor(0.7)
+                Spacer(minLength: LiquidSpace.s200)
+                if let chip = s.chip {
+                    chipView(chip)
+                } else {
+                    valorCompuesto(s)
                 }
+                // Affordance de tap discreta (UX #6): cada sección abre su detalle.
+                LiquidIcon(.chevron, size: 8, color: LiquidColor.tinta500)
+                    .alignmentGuide(.firstTextBaseline) { d in d.height * 0.85 }
             }
-            Spacer(minLength: LiquidSpace.s200)
-            if let chip = s.chip {
-                chipView(chip)
-            } else {
-                valorCompuesto(s)
+            if s.vota || s.sublabel != nil {
+                HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s150) {
+                    if s.vota {
+                        // P3: las votantes llevan su sello — el modelo se lee solo.
+                        Text(String(localized: "matriz.vota", defaultValue: "votes"))
+                            .font(LiquidType.micro)
+                            .foregroundStyle(LiquidColor.verdePrimario)
+                            .padding(.horizontal, LiquidSpace.s150)
+                            .padding(.vertical, LiquidSpace.s025)
+                            .overlay(Capsule().strokeBorder(
+                                LiquidColor.verdePrimario.opacity(0.45), lineWidth: 1))
+                            .fixedSize()
+                    }
+                    if let sub = s.sublabel {
+                        Text(sub)
+                            .font(LiquidType.caption)
+                            .foregroundStyle(LiquidColor.tinta500)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                // Alineado con el título (después del orbe), a lo ancho de la celda.
+                .padding(.leading, MatrizTokens.selloRadio * 2 + MatrizTokens.selloTexto)
             }
-            // Affordance de tap discreta (UX #6): cada sección abre su detalle.
-            LiquidIcon(.chevron, size: 8, color: LiquidColor.tinta500)
-                .alignmentGuide(.firstTextBaseline) { d in d.height * 0.85 }
         }
         // Techo común en bandas divididas: reservar la línea de sublabel aunque
         // falte, para que los lienzos gemelos arranquen parejos (Grok-UI #6).
@@ -315,7 +366,8 @@ public struct MatrizHoyFace: View {
     private func valorCompuesto(_ s: MatrizSeccion) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s050) {
             Text(s.valor)
-                .font(s.destacada ? LiquidType.valorL : LiquidType.valorM)
+                .font(s.destacada ? LiquidType.valorL
+                      : (s.terciaria ? LiquidType.valorS : LiquidType.valorM))
                 .foregroundStyle(s.hue)
                 .monospacedDigit()
                 .contentTransition(.numericText())
@@ -326,11 +378,11 @@ public struct MatrizHoyFace: View {
                     .foregroundStyle(s.hue)
             }
         }
-        // El numeral JAMÁS se parte («46» → «4/6»): una línea, encoge antes de envolver,
-        // y gana el jalón de layout contra el título.
+        // El numeral JAMÁS se parte («46» → «4/6»): una línea, encoge antes de
+        // envolver. Sin layoutPriority: estrangulaba al título hasta volverlo una
+        // torre de 1 carácter (regresión cazada en vivo).
         .lineLimit(1)
         .minimumScaleFactor(0.6)
-        .layoutPriority(1)
     }
 
     private func renglónView(_ r: MatrizRenglon) -> some View {
@@ -365,6 +417,13 @@ public struct MatrizHoyFace: View {
                     // y sus numerales alinean con los del header (Grok simetría R1).
                     LiquidIcon(.chevron, size: 8, color: LiquidColor.tinta500)
                         .alignmentGuide(.firstTextBaseline) { d in d.height * 0.85 }
+                }
+                if let sub = r.sublabel {
+                    // P2: el estado en palabras — el número deja de asustar.
+                    Text(sub)
+                        .font(LiquidType.caption)
+                        .foregroundStyle(LiquidColor.tinta500)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 chartView(r.chart, hue: r.hue, chartID: r.chartID)
                     .frame(height: MatrizTokens.alturaRenglon)

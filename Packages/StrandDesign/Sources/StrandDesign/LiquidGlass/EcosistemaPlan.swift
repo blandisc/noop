@@ -33,6 +33,10 @@ public extension EcosistemaSimulacion {
         /// besado por el clima del veredicto (70 % identidad / 30 % clima).
         case sueno
         case reposo
+        /// Los VIGÍAS con su identidad (dueño 2026-08-06): temperatura dorada y
+        /// respiración azul — los mismos hues de sus renglones en la Matriz.
+        case vigiaTemp
+        case vigiaResp
     }
 
     /// Los rótulos orbitales, como identidad — el DS no conoce locales (los strings los
@@ -442,7 +446,8 @@ public extension EcosistemaSimulacion {
                                   alerta: Bool, hueco: Bool,
                                   eclipse: Double) -> Trazo {
         let dep = (orb.z + 1) / 2
-        let tinta: Tinta = (alerta || eclipse > 0) ? .atencion : .vigia
+        let tinta: Tinta = (alerta || eclipse > 0) ? .atencion
+            : (g == 0 ? .vigiaTemp : .vigiaResp)
         let alfaK = eclipse > 0
             ? 0.85 * max(0.4, eclipse)
             : (0.5 + 0.5 * dep) * (hueco ? 0.55 : 0.95)
@@ -598,7 +603,8 @@ public extension EcosistemaSimulacion {
                                  angulo: t * LiquidEcosistemaMotion.orbitaGuardian
                                      + LiquidEcosistemaMotion.faseGuardian
                                      + Double(g) * .pi,
-                                 wobble: 0, tinta: .vigia, radioOrbe: radioOrbe,
+                                 wobble: 0, tinta: g == 0 ? .vigiaTemp : .vigiaResp,
+                                 radioOrbe: radioOrbe,
                                  still: e.still, ralo: e.guardianHueco, pulso: 0,
                                  frente: frente, alfa: alfaG)
             }

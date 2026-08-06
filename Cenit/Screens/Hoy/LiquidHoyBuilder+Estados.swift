@@ -68,12 +68,17 @@ extension LiquidHoyBuilder {
     static func plantilla(prep: Preparedness.Read?, healthConnected: Bool, hasAnySource: Bool,
                           silencioT4: SilencioSalud?, causaT3: CausaT3?) -> Plantilla {
         if !hasAnySource { return .t5Dormido }
-        if !healthConnected || (silencioT4?.disparaT4 ?? false) { return .t4SinPermiso }
-        guard let prep else { return .t3SinVeredicto(causaT3 ?? .leyendo) }
-        switch prep.verdict {
-        case .lowSignal: return .t3SinVeredicto(causaT3 ?? .leyendo)   // «Conociéndote»
-        case .caution, .easy: return .t2Provisional                    // veredicto con menos certeza (mismo layout T1)
-        case .full: return .t1Pleno
+        // El VEREDICTO manda (estudio en frío R2): una franja «sin lectura · sync
+        // pendiente» junto a un héroe que afirma «En tu rango» confundía a TODOS los
+        // perfiles. Con veredicto real, la franja calla — Salud desconectada ya tiene
+        // su propio banner (HealthAlertBanner).
+        if let prep, prep.verdict != .lowSignal {
+            switch prep.verdict {
+            case .caution, .easy: return .t2Provisional   // veredicto con menos certeza
+            default: return .t1Pleno
+            }
         }
+        if !healthConnected || (silencioT4?.disparaT4 ?? false) { return .t4SinPermiso }
+        return .t3SinVeredicto(causaT3 ?? .leyendo)
     }
 }
