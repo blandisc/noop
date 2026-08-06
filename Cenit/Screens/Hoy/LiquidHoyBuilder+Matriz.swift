@@ -112,7 +112,14 @@ extension LiquidHoyBuilder {
 
         // —— 3. Guardián ——
         let chip = chipGuardianModelo(prep?.sentinel)
-        let ptsTemp: [Double?] = keys20.map { byDay[$0]?.skinTempDevC }
+        var ptsTemp: [Double?] = keys20.map { byDay[$0]?.skinTempDevC }
+        // HOY usa el dev térmico AJUSTADO (descuento lúteo ya aplicado) — el MISMO número
+        // que juzga el guardián y que muestra la cara Cosmos (+Cosmos.swift), para que las
+        // dos caras jamás se contradigan sobre la temperatura (la deriva que FER-51 elimina).
+        // La historia se queda cruda: el motor no expone un ajuste por-día, solo el de hoy.
+        if let adj = prep?.thermalAdjustedDevC, !ptsTemp.isEmpty {
+            ptsTemp[ptsTemp.count - 1] = adj
+        }
         let ptsResp: [Double?] = keys20.map { byDay[$0]?.respRateBpm }
         let valorTemp = HoyGramatica.valorODash(ptsTemp.last.flatMap { $0 },
                                                 formato: HoyGramatica.formatoDeltaTemp)
