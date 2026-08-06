@@ -540,6 +540,126 @@ public struct CosmosAbiertoFace: View {
     }
 }
 
+// MARK: - FER-51 Fase 2 · Cara Cosmos REUNIDA (el gesto de tocar el cielo)
+
+/// La postura REUNIDA (§5 del REQ): todas las señales orbitan el héroe en tres anillos
+/// (por grupo: vota / contexto / bitácora), sin números. Responde «¿todo bien?» de un
+/// vistazo — color y órbitas. Lo que se sale de tu tendencia (`alerta != .ninguna`) se
+/// SALE de su órbita con una estela y un halo. Toca el cielo para abrirla (lo maneja el host).
+/// Canvas + TimelineView; estática bajo Reduce Motion.
+public struct CosmosReunidoFace: View {
+    private let model: CosmosAbiertoModel
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    public init(model: CosmosAbiertoModel) { self.model = model }
+
+    /// Anillo por grupo (radios del prototipo, sin escalar; se escalan con `s`).
+    private static func anillo(_ grupo: Int) -> CGFloat {
+        switch grupo { case 1: return 86; case 2: return 116; default: return 146 }
+    }
+    /// Velocidad angular por grupo (rad/s); anillos contrarrotantes como el mock.
+    private static func omega(_ grupo: Int) -> Double {
+        switch grupo { case 1: return 0.12; case 2: return -0.09; default: return 0.07 }
+    }
+
+    public var body: some View {
+        GeometryReader { geo in
+            let s: CGFloat = min(geo.size.width / 390, geo.size.height / 820)
+            let cx: CGFloat = geo.size.width / 2
+            let cy: CGFloat = 300 * (geo.size.height / 820)
+            ZStack(alignment: .top) {
+                TimelineView(.animation(minimumInterval: 1 / 60, paused: reduceMotion)) { tl in
+                    let t: Double = reduceMotion ? 0 : tl.date.timeIntervalSinceReferenceDate
+                    Canvas { ctx, _ in dibujaEscena(&ctx, t: t, cx: cx, cy: cy, s: s) }
+                }
+                // La palabra del veredicto responde «¿todo bien?» debajo del orbe.
+                Text(model.heroe.palabra)
+                    .font(.system(size: 19 * s, weight: .light))
+                    .foregroundStyle(model.heroe.tonoPalabra)
+                    .position(x: cx, y: cy + Self.anillo(3) * s + 26 * s)
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(model.heroe.a11y)
+    }
+
+    /// Todo el dibujo del reunido, aislado del inferidor de `some View` (evita el
+    /// type-check timeout de un Canvas grande con loops + Dictionary inline).
+    private func dibujaEscena(_ ctx: inout GraphicsContext, t: Double,
+                              cx: CGFloat, cy: CGFloat, s: CGFloat) {
+        // Anillos guía tenues.
+        for g in 1...3 {
+            let r: CGFloat = Self.anillo(g) * s
+            let ry: CGFloat = r * 0.94
+            let rect = CGRect(x: cx - r, y: cy - ry, width: r * 2, height: ry * 2)
+            ctx.stroke(Path(ellipseIn: rect),
+                       with: .color(LiquidColor.tinta900.opacity(0.08)),
+                       style: StrokeStyle(lineWidth: 1))
+        }
+        // Regla de tormenta (§5, criterio 14): con ≥ 3 alertas el héroe carga el drama
+        // (su orbe ya está teñido del veredicto) y cada luna conserva SOLO su halo —
+        // sin salir de órbita ni estela— para no volverse árbol de navidad.
+        let tormenta: Bool = model.anclas.filter { $0.alerta != .ninguna }.count >= 3
+        // Lunas: reparte cada grupo en su anillo por fase estable (índice).
+        let porGrupo = Dictionary(grouping: model.anclas, by: { $0.grupo })
+        for (g, anclas) in porGrupo {
+            let base: CGFloat = Self.anillo(g) * s
+            for (i, a) in anclas.enumerated() {
+                dibujaLunaOrbital(&ctx, a: a, i: i, count: anclas.count, g: g,
+                                  base: base, t: t, cx: cx, cy: cy, s: s, tormenta: tormenta)
+            }
+        }
+        // El héroe al centro.
+        dibujaLuna(ctx, CGPoint(x: cx, y: cy), 52 * s, model.heroe.tonoOrbe, nil)
+    }
+
+    private func dibujaLunaOrbital(_ ctx: inout GraphicsContext, a: CosmosAbiertoModel.Ancla,
+                                   i: Int, count: Int, g: Int, base: CGFloat, t: Double,
+                                   cx: CGFloat, cy: CGFloat, s: CGFloat, tormenta: Bool) {
+        let fase: Double = Double(i) / Double(max(count, 1)) * 2 * .pi
+        let ang: Double = fase + t * Self.omega(g)
+        let alertada: Bool = a.alerta != .ninguna
+        // En tormenta la luna NO se sale de órbita (fuera = 0 ⇒ sin estela); solo su halo.
+        let fuera: CGFloat = (alertada && !tormenta) ? a.lunaRadio * s : 0
+        let r: CGFloat = base + fuera
+        let cosA: CGFloat = CGFloat(cos(ang))
+        let sinA: CGFloat = CGFloat(sin(ang))
+        let x: CGFloat = cx + cosA * r
+        let y: CGFloat = cy + sinA * r * 0.94
+        let p = CGPoint(x: x, y: y)
+        if alertada, fuera > 2 {
+            let bx: CGFloat = cx + cosA * base
+            let by: CGFloat = cy + sinA * base * 0.94
+            var estela = Path()
+            estela.move(to: CGPoint(x: bx, y: by))
+            estela.addLine(to: p)
+            ctx.stroke(estela, with: .color(colorAlerta(a.alerta).opacity(0.35)),
+                       style: StrokeStyle(lineWidth: 1))
+        }
+        if alertada {
+            let pulso: CGFloat = reduceMotion ? 0 : CGFloat(0.9 * sin(t * 1.1))
+            let hr: CGFloat = a.lunaRadio * s + 4 + pulso
+            aro(ctx, p, hr, colorAlerta(a.alerta))
+            if a.alerta == .alarma { aro(ctx, p, hr + 3.5, colorAlerta(a.alerta)) }
+        }
+        dibujaLuna(ctx, p, a.lunaRadio * s, a.hueLuna, a.hueLuna2)
+    }
+
+    private func colorAlerta(_ a: CosmosAbiertoModel.Alerta) -> Color {
+        a == .alarma ? LiquidColor.negativo : LiquidColor.atencion
+    }
+    private func aro(_ ctx: GraphicsContext, _ c: CGPoint, _ r: CGFloat, _ color: Color) {
+        ctx.stroke(Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2)),
+                   with: .color(color.opacity(0.55)), style: StrokeStyle(lineWidth: 1))
+    }
+    private func dibujaLuna(_ ctx: GraphicsContext, _ c: CGPoint, _ r: CGFloat, _ color: Color, _ color2: Color?) {
+        let tint = color2.map { Gradient(colors: [color, $0]) } ?? Gradient(colors: [color.opacity(0.9), color.opacity(0.5)])
+        ctx.fill(Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2)),
+                 with: .radialGradient(tint, center: CGPoint(x: c.x - r * 0.2, y: c.y - r * 0.25),
+                                       startRadius: 0, endRadius: r))
+    }
+}
+
 // MARK: - Orbe compacto (sin lunas; el orbe teñido del veredicto)
 
 /// Orbe estático de partículas para la postura abierta (F1: sin Metal extra; Canvas puro).
@@ -589,4 +709,16 @@ struct CosmosOrbeCompacto: View {
 #Preview("Cosmos · calibrando") {
     CosmosAbiertoFace(model: .previewCalibrando)
         .frame(width: 390, height: 820)
+}
+
+#Preview("Cosmos REUNIDO · día bueno") {
+    CosmosReunidoFace(model: .previewDiaBueno)
+        .frame(width: 390, height: 820)
+        .background(LiquidColor.fondoGradient)
+}
+
+#Preview("Cosmos REUNIDO · día malo (fuera de órbita)") {
+    CosmosReunidoFace(model: .previewDiaMalo)
+        .frame(width: 390, height: 820)
+        .background(LiquidColor.fondoGradient)
 }
