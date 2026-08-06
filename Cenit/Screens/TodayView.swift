@@ -1003,9 +1003,7 @@ struct TodayView: View {
 
     @ViewBuilder private var liquidSurface: some View {
         let output = liquidOutput
-        // FER-51 F1: el Tablero (módulos de vidrio) lo sustituye el host Cosmos·Matriz.
-        // Conservamos el Ecosistema (héroe) con `modulos: []` y montamos el host debajo.
-        let heroModel = liquidModelSinTablero(output.model)
+        // FER-51: el host Cosmos·Matriz vive debajo del Ecosistema (héroe).
         let mInputs = liquidMatrizInputs()
         let cExtra = liquidCosmosExtra()
         VStack(alignment: .leading, spacing: CenitMetrics.space1) {
@@ -1015,7 +1013,7 @@ struct TodayView: View {
             }
             .padding(.horizontal, LiquidSpace.s550)
             LiquidHoyContent(
-                model: heroModel,
+                model: output.model,
                 onTapMetric: { openLiquidMetric($0) },
                 onTapSenal: { openLiquidSenal($0) },
                 onTapCarga: {
@@ -1060,16 +1058,6 @@ struct TodayView: View {
             // dueño (los puntos de origen por tile se quedan).
         }
         .accessibilityAction(named: Text("Sync")) { triggerPullSync() }
-    }
-
-    /// Copia del modelo Liquid sin el Tablero viejo (los módulos los pinta `HoyModosHost`).
-    private func liquidModelSinTablero(_ m: LiquidHoyModel) -> LiquidHoyModel {
-        LiquidHoyModel(
-            kicker: m.kicker, dial: m.dial, senales: m.senales, hero: m.hero,
-            carga: m.carga, metricas: m.metricas, modulos: [],
-            guardian: m.guardian, heroHint: m.heroHint, ambiente: m.ambiente,
-            cargaLabel: m.cargaLabel, kickerA11y: m.kickerA11y,
-            heroPuerta: m.heroPuerta, calibracion: m.calibracion, rotulos: m.rotulos)
     }
 
     /// Inputs de Matriz/Cosmos: mismos orígenes que `liquidInputs()` (displayDays, prep, carga…).

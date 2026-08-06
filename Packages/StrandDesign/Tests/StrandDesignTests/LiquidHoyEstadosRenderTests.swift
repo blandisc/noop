@@ -143,7 +143,6 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
                              confianza: "Confianza: 8 de 14 noches"),
             carga: .medida(pos: 62, zone: 2, status: "ALTA", ratio: "1.32", razon: 1.32, state: .atencion),
             metricas: base.metricas,
-            modulos: LiquidHoyModel.atencionModulos,
             guardian: .init(label: "VIGILANDO", temp: "+0.1°", resp: "14 rpm", estado: .tranquilo),
             heroHint: base.heroHint,
             ambiente: .atencion,
@@ -169,7 +168,6 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
                              confianza: nil),
             carga: .medida(pos: 78, zone: 3, status: "MUY ALTA", ratio: "1.61", razon: 1.61, state: .atencion),
             metricas: base.metricas,
-            modulos: LiquidHoyModel.ejemploModulos,
             guardian: .init(label: "VIGILANDO", temp: "+0.1°", resp: "14 rpm", estado: .tranquilo),
             heroHint: base.heroHint,
             ambiente: .alerta,
@@ -191,7 +189,6 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
                             subtitle: "Sin noche grabada: esta lectura es menos precisa."),
             carga: .medida(pos: 51.5, zone: 1, status: "EN EQUILIBRIO", ratio: "1.03", razon: 1.03, state: .ok),
             metricas: metricasSinHoy(base.metricas),
-            modulos: modulosSinHoy(LiquidHoyModel.ejemploModulos),
             // «Una fuera»: solo la temperatura se tiñe; el héroe NO cambia.
             guardian: .init(label: "VIGILANDO", temp: "+0.9°", resp: "14 rpm", estado: .tempFuera),
             heroHint: base.heroHint,
@@ -213,7 +210,6 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
                             subtitle: "Noche 3 de 4 · tu rango se está formando"),
             carga: .calibrando(status: "CALIBRANDO"),
             metricas: metricasSinHoy(base.metricas),
-            modulos: modulosSinHoy(LiquidHoyModel.calibrandoModulos),
             guardian: .init(label: "VIGILANDO", temp: "—", resp: "—", estado: .sinLectura),
             heroHint: nil,
             ambiente: .neutro,
@@ -232,7 +228,6 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
                              confianza: nil),
             carga: .medida(pos: 51.5, zone: 1, status: "EN EQUILIBRIO", ratio: "1.03", razon: 1.03, state: .ok),
             metricas: base.metricas,
-            modulos: LiquidHoyModel.ejemploModulos,
             guardian: .init(label: "JUNTAS", temp: "+0.6°", resp: "19 rpm", estado: .juntas),
             heroHint: base.heroHint,
             ambiente: .atencion,
@@ -254,46 +249,6 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
             }
         }
 
-        /// El TABLERO cuando hoy no tiene fila. Va aparte de `metricasSinHoy` porque el arnés
-        /// hardcodea el tablero en vez de derivarlo de las métricas como hace el builder —
-        /// así que aquí hay que repetir a mano lo que allá es automático. (Ese desacople es,
-        /// en sí, la razón por la que el arnés puede desfasarse de producción sin avisar.)
-        func modulosSinHoy(_ base: [LiquidHoyModel.Modulo]) -> [LiquidHoyModel.Modulo] {
-            base.map { mod in
-                .init(id: mod.id, kicker: mod.kicker, auroraTones: mod.auroraTones,
-                      auroraPeriod: mod.auroraPeriod, auroraReverse: mod.auroraReverse,
-                      columnas: mod.columnas.map { col in
-                    // FER-42: las mismas cinco vitales `todayOnly` que `metricasSinHoy`.
-                    guard ["sleep", "hrv", "rhr", "skintemp", "resp"].contains(col.id) else { return col }
-                    return .init(id: col.id, label: col.label, tone: LiquidColor.tinta500,
-                                 alineacion: col.alineacion,
-                                 contenido: .simple(value: "—", unit: "", detail: "", mejora: false),
-                                 destino: col.destino,
-                                 a11yLabel: "\(col.label), sin dato de hoy")
-                })
-            }
-        }
-
-
-        /// El tablero cuando NO HAY NADA que mostrar: cero noches en el banco. Distinto de
-        /// `modulosSinHoy`, que solo vacía el sueño porque las demás señales sí pueden venir
-        /// de otro día. Aquí no hay «otro día» del que venir. Sin esto, la pantalla del
-        /// instante siguiente a conceder Salud enseñaba una VFC de 56 ms como lectura real.
-        func modulosSinDatos(_ base: [LiquidHoyModel.Modulo]) -> [LiquidHoyModel.Modulo] {
-            base.map { mod in
-                .init(id: mod.id, kicker: mod.kicker, auroraTones: mod.auroraTones,
-                      auroraPeriod: mod.auroraPeriod, auroraReverse: mod.auroraReverse,
-                      columnas: mod.columnas.map { col in
-                    if case .carga = col.contenido { return col }
-                    return .init(id: col.id, label: col.label, tone: LiquidColor.tinta500,
-                                 alineacion: col.alineacion,
-                                 contenido: .simple(value: "—", unit: "", detail: "", mejora: false),
-                                 destino: col.destino,
-                                 a11yLabel: "\(col.label), sin dato")
-                })
-            }
-        }
-
         // 8 · «Leyendo tu noche…»: el primer pintado, antes de que el refresh complete el
         // veredicto. Decirle «no conozco tu base» a alguien con años de historia sería falso.
         let leyendo = LiquidHoyModel(
@@ -309,7 +264,6 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
                             subtitle: "Un momento."),
             carga: .calibrando(status: "CALIBRANDO"),
             metricas: metricasSinHoy(base.metricas),
-            modulos: modulosSinHoy(LiquidHoyModel.calibrandoModulos),
             guardian: .init(label: "VIGILANDO", temp: "—", resp: "—", estado: .sinLectura),
             heroHint: nil,
             ambiente: .neutro,
@@ -330,7 +284,6 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
                             subtitle: "Conecta Apple Salud en Ajustes y tu veredicto diario aparecerá aquí."),
             carga: .calibrando(status: "CALIBRANDO"),
             metricas: metricasSinHoy(base.metricas),
-            modulos: modulosSinHoy(LiquidHoyModel.calibrandoModulos),
             guardian: .init(label: "VIGILANDO", temp: "—", resp: "—", estado: .sinLectura),
             heroHint: nil,
             ambiente: .neutro,
@@ -354,7 +307,6 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
                             subtitle: "Tu rango ya está formado; la lectura de hoy aún no llega."),
             carga: base.carga,
             metricas: metricasSinHoy(base.metricas),
-            modulos: modulosSinHoy(LiquidHoyModel.ejemploModulos),
             guardian: .init(label: "VIGILANDO", temp: "+0.1°", resp: "14 rpm", estado: .tranquilo),
             heroHint: nil,
             ambiente: .neutro,
@@ -372,7 +324,6 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
                              confianza: "Confianza: 6 de 14 noches"),
             carga: base.carga,
             metricas: base.metricas,
-            modulos: LiquidHoyModel.ejemploModulos,
             guardian: base.guardian,
             heroHint: base.heroHint,
             ambiente: .bien,
@@ -396,7 +347,6 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
                             subtitle: "Noche 0 de 4 · tu rango se está formando"),
             carga: .calibrando(status: "CALIBRANDO"),
             metricas: metricasSinHoy(base.metricas),
-            modulos: modulosSinDatos(LiquidHoyModel.calibrandoModulos),
             guardian: .init(label: "VIGILANDO", temp: "—", resp: "—", estado: .sinLectura),
             heroHint: nil,
             ambiente: .neutro,

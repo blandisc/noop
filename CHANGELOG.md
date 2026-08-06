@@ -20,6 +20,11 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **Retiro del Tablero viejo / Old Board retired.**
+  **ES** — Se borra la maquinaria muerta de los cuatro módulos de vidrio bajo el héroe (modelo `Modulo`/`Columna`, `LiquidModulo`, builder y arnés). La mitad de abajo ya la pintan Cosmos y Matriz; este cambio no mueve un píxel, solo quita código que el host ya dejaba en silencio.
+  **EN** — Dead machinery for the four glass modules under the hero is gone (`Modulo`/`Columna` model, `LiquidModulo`, builder, and harness). The lower half is already Cosmos and Matrix; this change moves no pixels — it only removes code the host had already silenced.
+  ([LiquidHoyScreen.swift](Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/LiquidHoyScreen.swift), [LiquidHoyBuilder.swift](Cenit/Screens/Hoy/LiquidHoyBuilder.swift))
+
 - **Hoy estrena «Cosmos y Matriz» / Today gets "Cosmos and Matrix."**
   **ES** — La mitad de abajo de Hoy ya vive bajo un conmutador: el modo Cosmos (cada señal orbitando con su medidor lunar) y el modo Matriz (las tendencias en tinta sobre papel). Tu elección se recuerda entre sesiones. Debajo, la máquina de estados que sabe cuándo está «leyendo tu noche», cuándo falta sincronizar y cuándo aún te está conociendo.
   **EN** — Today's lower half now lives under a switcher: Cosmos mode (each signal orbiting with its lunar meter) and Matrix mode (trends in ink on paper). Your choice is remembered between sessions. Underneath, the state machine that knows when it's "reading your night," when a sync is pending, and when it's still getting to know you.
