@@ -62,13 +62,16 @@ final class MatrizHoyFaceSnapshotTests: XCTestCase {
                     izq: MatrizSeccion(
                         id: "rhr", hue: LiquidColor.rosa,
                         titulo: "Resting HR", valor: "52",
+                        unidad: "bpm", destacada: true, vota: true,
+                        sublabel: "in your range",
                         chartID: "matriz-rhr",
                         chart: .lineaRellena(puntos: fc, base: 56, dominio: 45...75,
                                              alfa: 1.0, alertaHoy: .ninguna)),
                     der: MatrizSeccion(
                         id: "hrv", hue: LiquidColor.cian,
-                        titulo: "HRV", valor: "68 ms",
-                        sublabel: "Does not vote",
+                        titulo: "HRV", valor: "68",
+                        unidad: "ms", terciaria: true,
+                        sublabel: "reference — does not vote · why?",
                         chartID: "matriz-hrv",
                         chart: .lineaRellena(puntos: vfc, base: 45, dominio: 20...80,
                                              alfa: 0.6, alertaHoy: .ninguna))),

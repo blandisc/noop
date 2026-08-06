@@ -505,7 +505,9 @@ enum LiquidHoyBuilder {
     /// Los rótulos del Ecosistema (FER-10) desde el catálogo, en caja alta del locale.
     static func rotulos(locale: Locale) -> EcosistemaRotulos {
         EcosistemaRotulos(
-            reposo: String(localized: "At rest").uppercased(with: locale),
+            // P4: la luna se llama IGUAL que su sección en la Matriz (era «At rest»
+            // arriba y «Resting HR» abajo — nadie conectaba las dos).
+            reposo: String(localized: "Resting HR").uppercased(with: locale),
             sueno: String(localized: "Sleep").uppercased(with: locale),
             guardian: String(localized: "Guardian").uppercased(with: locale),
             temperatura: String(localized: "Temperature").uppercased(with: locale),
@@ -657,7 +659,10 @@ enum LiquidHoyBuilder {
                 highlightTone: LiquidColor.verdePrimario,
                 // FER-1047: el héroe afirma «tus DOS señales» (en reposo · sueño) — el eje autonómico
                 // ya no cuenta como tres, y el térmico bajó al guardián que vigila pero no vota.
-                subtitle: String(localized: "Both of your signals woke up in your range."),
+                // P1 (estudio en frío): el veredicto NOMBRA a sus votantes — los 4
+                // perfiles tropezaron con «both of your signals» sin saber cuáles.
+                subtitle: String(localized: "hero.sub.full.nombrado",
+                                 defaultValue: "Your sleep and your resting heart rate woke up in your range."),
                 confianza: confianza)
         case .caution:
             return .veredicto(

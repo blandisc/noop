@@ -104,6 +104,8 @@ struct EcosistemaPaleta: Equatable {
     /// Identidades de las decisoras (70 % identidad / 30 % clima) — espejo del Canvas.
     var sueno: SIMD4<Float>
     var reposo: SIMD4<Float>
+    var vigiaTemp: SIMD4<Float>
+    var vigiaResp: SIMD4<Float>
 
     static func desde(clima: Color) -> EcosistemaPaleta {
         let c = rgba(clima)
@@ -118,7 +120,9 @@ struct EcosistemaPaleta: Equatable {
                                 vigia: rgba(LiquidColor.azul),
                                 blanco: SIMD4<Float>(1, 1, 1, 1),
                                 sueno: besada(LiquidColor.indigo),
-                                reposo: besada(LiquidColor.rosa))
+                                reposo: besada(LiquidColor.rosa),
+                                vigiaTemp: besada(LiquidColor.doradoTemp),
+                                vigiaResp: besada(LiquidColor.azul))
     }
 
     /// El token es la fuente de verdad; aquí solo se lee su valor sRGB. `resolve(in:)`
@@ -138,6 +142,8 @@ struct EcosistemaPaleta: Equatable {
         case .blanco: return blanco
         case .sueno: return sueno
         case .reposo: return reposo
+        case .vigiaTemp: return vigiaTemp
+        case .vigiaResp: return vigiaResp
         }
     }
 }

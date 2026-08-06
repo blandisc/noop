@@ -69,7 +69,7 @@ extension LiquidHoyBuilder {
         let seccionSueno = MatrizSeccion(
             id: "sleep", hue: LiquidColor.indigo,
             titulo: String(localized: "Sleep"),
-            valor: valorSueno, destacada: true,
+            valor: valorSueno, destacada: true, vota: true,
             sublabel: (hoy?.totalSleepMin == nil && noches.allSatisfy { $0.valor == nil })
                 ? String(localized: "Getting to know you") : nil,
             chartID: "matriz-sleep",
@@ -86,9 +86,8 @@ extension LiquidHoyBuilder {
         let seccionFC = MatrizSeccion(
             id: "rhr", hue: LiquidColor.rosa,
             titulo: String(localized: "Resting HR"),
-            valor: valorFC, unidad: String(localized: "bpm"), destacada: true,
-            sublabel: ptsFC.allSatisfy({ $0 == nil })
-                ? String(localized: "Getting to know you") : nil,
+            valor: valorFC, unidad: String(localized: "bpm"), destacada: true, vota: true,
+            sublabel: sublabelFC(ptsFC: ptsFC, prep: prep, alerta: alertaFC),
             chartID: "matriz-rhr",
             chart: .lineaRellena(puntos: ptsFC, base: baseFC,
                                  dominio: dominioLinea(ptsFC, base: baseFC, fallback: 45...75),
@@ -102,8 +101,10 @@ extension LiquidHoyBuilder {
         let seccionVFC = MatrizSeccion(
             id: "hrv", hue: LiquidColor.cian,
             titulo: String(localized: "HRV"),
-            valor: valorVFC, unidad: String(localized: "ms"),
-            sublabel: String(localized: "Does not vote"),
+            valor: valorVFC, unidad: String(localized: "ms"), terciaria: true,
+            // P3: el abstenido explica su papel y promete el porqué a un tap.
+            sublabel: String(localized: "matriz.vfc.referencia",
+                             defaultValue: "reference — does not vote · why?"),
             chartID: "matriz-hrv",
             chart: .lineaRellena(puntos: ptsVFC, base: baseVFC,
                                  dominio: dominioLinea(ptsVFC, base: baseVFC, fallback: 20...80),
@@ -132,6 +133,8 @@ extension LiquidHoyBuilder {
             huesPar: (LiquidColor.doradoTemp, LiquidColor.azul),
             titulo: String(localized: "The guardian"),
             valor: "",
+            sublabel: String(localized: "matriz.guardian.sub",
+                             defaultValue: "watches fever and breathing while you sleep"),
             chartID: "matriz-guardian",
             chart: .lineaSerena(puntos: ptsTemp, banda: -thermalBand...thermalBand,
                                 dominio: -1.5...1.5, alertaHoy: alertaGuardian),
@@ -140,7 +143,11 @@ extension LiquidHoyBuilder {
                 MatrizRenglon(
                     id: "skintemp",
                     titulo: String(localized: "Skin temp"),
-                    valor: valorTemp, hue: LiquidColor.doradoTemp,
+                    valor: valorTemp,
+                    sublabel: alertaGuardian == .ninguna
+                        ? String(localized: "matriz.temp.enbanda", defaultValue: "within your band")
+                        : String(localized: "matriz.temp.fuera", defaultValue: "outside your band"),
+                    hue: LiquidColor.doradoTemp,
                     chartID: "matriz-guardian-temp",
                     chart: .lineaSerena(puntos: ptsTemp, banda: -thermalBand...thermalBand,
                                         dominio: -1.5...1.5, alertaHoy: alertaGuardian),
@@ -149,6 +156,9 @@ extension LiquidHoyBuilder {
                     id: "resp",
                     titulo: String(localized: "Breathing"),
                     valor: valorResp, unidad: String(localized: "rpm"),
+                    sublabel: alertaGuardian == .ninguna
+                        ? String(localized: "matriz.resp.tipica", defaultValue: "typical for you")
+                        : String(localized: "matriz.resp.fuera", defaultValue: "above your usual"),
                     hue: LiquidColor.azul,
                     chartID: "matriz-guardian-resp",
                     chart: .lineaSerena(puntos: ptsResp, banda: nil,
@@ -168,7 +178,7 @@ extension LiquidHoyBuilder {
             id: "carga", hue: LiquidColor.verdePrimario,
             titulo: String(localized: "Load"),
             valor: valorCarga,
-            sublabel: sublabelCarga(estadoCargaKey),
+            sublabel: sublabelCargaConZona(estadoCargaKey),
             chartID: "matriz-carga",
             chart: .rielZona(p: pCarga,
                              zona: ReadinessEngine.acwrSweetSpotLow...ReadinessEngine.acwrSweetSpotHigh,
@@ -182,7 +192,7 @@ extension LiquidHoyBuilder {
         let seccionEsf = MatrizSeccion(
             id: "strain", hue: LiquidColor.teal,
             titulo: String(localized: "Effort"),
-            valor: valorEsf,
+            valor: valorEsf, unidad: valorEsf == "\u{2014}" ? nil : "/ 21",
             chartID: "matriz-strain",
             chart: .barrasMini(valores: ptsEsf))
 
@@ -224,7 +234,7 @@ extension LiquidHoyBuilder {
         let seccionPasos = MatrizSeccion(
             id: "steps", hue: LiquidColor.tinta700,
             titulo: String(localized: "Steps"),
-            valor: valorPasos,
+            valor: valorPasos, terciaria: true,
             chartID: "matriz-steps",
             chart: .barrasMini(valores: ptsPasos))
 
@@ -236,11 +246,21 @@ extension LiquidHoyBuilder {
         return MatrizHoyModel(
 
             bandas: [
-                .full(seccionSueno),
-                .split(izq: seccionFC, der: seccionVFC),
+                // Opción A del dueño (2026-08-06): el ORDEN enseña el modelo.
+                // Las dos votantes GEMELAS abren la Matriz, lado a lado.
+                .nivel(String(localized: "matriz.nivel.deciden",
+                              defaultValue: "Decide your day")),
+                .split(izq: seccionSueno, der: seccionFC),
+                .nivel(String(localized: "matriz.nivel.vigila",
+                              defaultValue: "Watches over you")),
                 .full(seccionGuardian),
+                .nivel(String(localized: "matriz.nivel.contexto",
+                              defaultValue: "Context")),
                 .split(izq: seccionCarga, der: seccionEsf),
-                .split(izq: seccionStress, der: seccionPasos),
+                .split(izq: seccionVFC, der: seccionStress),
+                .nivel(String(localized: "matriz.nivel.bitacora",
+                              defaultValue: "Logbook")),
+                .full(seccionPasos),
             ])
     }
 
@@ -338,5 +358,36 @@ extension LiquidHoyBuilder {
         }
         let pad = (hi - lo) * 0.15
         return (lo - pad)...(hi + pad)
+    }
+    /// Estado de la FC en palabras (P2, estudio en frío): la MISMA regla del Cosmos —
+    /// z_mal ≤ −2 = «inusualmente baja» SIN alerta (§6: el lado bueno no alarma).
+    private static func sublabelFC(ptsFC: [Double?], prep: Preparedness.Read?,
+                                   alerta: MedidorLunar.Alerta) -> String? {
+        if ptsFC.allSatisfy({ $0 == nil }) {
+            return String(localized: "Getting to know you")
+        }
+        if alerta != .ninguna { return nil }  // el aro ya habla; no duplicar.
+        // z_mal = −orientedZ del eje autonómico (compuesto; wRHR=1) — la MISMA
+        // derivación que usa la ancla del Cosmos (§6).
+        let zMal: Double? = {
+            guard let z = prep?.drivers.first(where: { $0.axis == .autonomic })?.orientedZ
+            else { return nil }
+            return -z
+        }()
+        if let z = zMal, z <= -2 {
+            return String(localized: "matriz.fc.baja",
+                          defaultValue: "low — good side")
+        }
+        return String(localized: "matriz.fc.enrango", defaultValue: "in your range")
+    }
+
+    /// Sublabel de carga + la zona ideal del ACWR (escala honesta, P2).
+    private static func sublabelCargaConZona(_ key: String) -> String {
+        let zona = String(format: String(localized: "matriz.carga.zona",
+                                         defaultValue: "sweet spot %.1f–%.1f"),
+                          ReadinessEngine.acwrSweetSpotLow,
+                          ReadinessEngine.acwrSweetSpotHigh)
+        let estado = sublabelCarga(key)
+        return estado.isEmpty ? zona : "\(estado) · \(zona)"
     }
 }

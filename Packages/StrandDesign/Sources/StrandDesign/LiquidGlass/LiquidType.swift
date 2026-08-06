@@ -55,6 +55,8 @@ public enum LiquidType {
     /// tri-stat de Carga), más chicas que `valorL` para no competir con el numeral héroe
     /// (#inject r5, pedido del dueño: «reduce el tamaño de la fuente»).
     public static let valorM = InstrumentoType.groteskNumber(17, relativeTo: .body)
+    /// Numeral terciario (referencia/bitácora: VFC, pasos) — P7 del estudio en frío.
+    public static let valorS = InstrumentoType.groteskNumber(14, relativeTo: .subheadline)
 
     /// `nivel/título` — 18/700, escala. El nombre del nivel destacado en la tarjeta de la
     /// gráfica (mock `.titfila {18px/700}`); más chico que `valorL` (22) para no competir con
