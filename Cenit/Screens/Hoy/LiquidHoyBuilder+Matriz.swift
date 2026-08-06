@@ -107,7 +107,7 @@ extension LiquidHoyBuilder {
             valor: valorVFC, unidad: String(localized: "ms"), terciaria: true,
             // P3: el abstenido explica su papel y promete el porqué a un tap.
             sublabel: String(localized: "matriz.vfc.referencia",
-                             defaultValue: "reference — does not vote · why?"),
+                             defaultValue: "reference · does not vote · why?"),
             chartID: "matriz-hrv",
             chart: .lineaRellena(puntos: ptsVFC, base: baseVFC,
                                  dominio: dominioLinea(ptsVFC, base: baseVFC, fallback: 20...80),
@@ -395,7 +395,7 @@ extension LiquidHoyBuilder {
         }()
         if let z = zMal, z <= -2 {
             return String(localized: "matriz.fc.baja",
-                          defaultValue: "low — good side")
+                          defaultValue: "low · good side")
         }
         return String(localized: "matriz.fc.enrango", defaultValue: "in your range")
     }

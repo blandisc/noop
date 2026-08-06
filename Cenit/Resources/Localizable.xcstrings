@@ -20068,13 +20068,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "low — good side"
+            "value" : "low · good side"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "baja — del lado bueno"
+            "value" : "baja · del lado bueno"
           }
         }
       }
@@ -20187,13 +20187,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "reference — does not vote · why?"
+            "value" : "reference · does not vote · why?"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "referencia — no vota · ¿por qué?"
+            "value" : "referencia · no vota · ¿por qué?"
           }
         }
       }
