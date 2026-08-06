@@ -105,8 +105,9 @@ extension LiquidHoyBuilder {
             if sinDato { return conociendote() }
             if let m = mapeo, m.porEficiencia, let e = eficiencia {
                 let pct = Int((e * 100).rounded())
-                return String(localized: "efficiency \(pct) %",
-                              defaultValue: "efficiency \(pct) %")
+                // La sobrecarga LocalizationValue admite interpolación; la forma
+                // key+defaultValue exige que la clave sea StaticString (sin \(…)).
+                return String(localized: "efficiency \(pct) %")
             }
             return nil
         }()
