@@ -85,6 +85,11 @@ public enum MatrizTokens {
     public static let barraGap: CGFloat = 2
     /// Media altura de la cápsula de zona dulce (carga).
     public static let zonaAlto: CGFloat = 14
+    /// Media altura de los ticks que rematan la zona dulce.
+    public static let zonaTickAlto: CGFloat = 6
+    /// Pad vertical de la escalerita (un pelo más de aire que la familia:
+    /// sus puntos viven en 3 rieles fijos y el aro de HOY necesita cancha).
+    public static let escaleraPadV: CGFloat = chartPadV + 2
 
     // MARK: Alturas de gráfica por forma
 

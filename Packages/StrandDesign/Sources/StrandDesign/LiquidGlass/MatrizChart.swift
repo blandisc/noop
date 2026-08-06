@@ -446,8 +446,8 @@ public struct MatrizRielZona: View {
             // Ticks de borde de zona.
             for x in [xZ0, xZ1] {
                 var tick = Path()
-                tick.move(to: CGPoint(x: x, y: y - 6))
-                tick.addLine(to: CGPoint(x: x, y: y + 6))
+                tick.move(to: CGPoint(x: x, y: y - MatrizTokens.zonaTickAlto))
+                tick.addLine(to: CGPoint(x: x, y: y + MatrizTokens.zonaTickAlto))
                 ctx.stroke(tick, with: .color(hue.opacity(0.55)),
                            style: StrokeStyle(lineWidth: 1, lineCap: .round))
             }
@@ -598,7 +598,7 @@ public struct MatrizEscalerita: View {
     /// nivel 0 = bajo (abajo), 2 = alto (arriba) — proyección compartida.
     private static func y(nivel: Int, height: CGFloat) -> CGFloat {
         MatrizChartDraw.yTop(Double(min(max(nivel, 0), 2)), domain: 0...2,
-                             height: height, pad: MatrizTokens.chartPadV + 2)
+                             height: height, pad: MatrizTokens.escaleraPadV)
     }
 }
 

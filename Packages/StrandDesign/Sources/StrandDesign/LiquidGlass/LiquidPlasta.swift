@@ -35,11 +35,11 @@ private struct LiquidPlastaMasa {
               b: UnitPoint(x: 0.5, y: 0.30), period: 9, pulses: true),
         // Tres derivas lentas por la mitad inferior (28–34 s de ciclo completo).
         .init(size: 280, alpha: 0.5, a: UnitPoint(x: 0.72, y: 0.52),
-              b: UnitPoint(x: 0.46, y: 0.68), period: 15, pulses: false),
+              b: UnitPoint(x: 0.46, y: 0.68), period: 10, pulses: false),
         .init(size: 260, alpha: 0.3, a: UnitPoint(x: 0.10, y: 0.62),
-              b: UnitPoint(x: 0.42, y: 0.50), period: 14, pulses: false),
+              b: UnitPoint(x: 0.42, y: 0.50), period: 9, pulses: false),
         .init(size: 230, alpha: 0.55, a: UnitPoint(x: 0.74, y: 0.72),
-              b: UnitPoint(x: 0.32, y: 0.80), period: 17, pulses: false),
+              b: UnitPoint(x: 0.32, y: 0.80), period: 12, pulses: false),
     ]
 }
 
@@ -73,18 +73,26 @@ public struct LiquidPlasta: View {
                         ZStack {
                             ForEach(Array(LiquidPlastaMasa.hoy.enumerated()), id: \.offset) { i, masa in
                                 let tono = tonos[i % tonos.count]
-                                // Deriva A↔B con el coseno del sistema (CSS `alternate` ease-in-out).
+                                // LÁMPARA DE LAVA (dueño 2026-08-06): la deriva A↔B lineal
+                                // se leía muerta. Cada masa viaja su eje A→B y ADEMÁS
+                                // vaga en Lissajous perpendicular con fase propia — el
+                                // camino nunca se repite igual y se VE vivo.
                                 let u = still ? 0 : LiquidMotion.driftProgress(time: t, period: masa.period)
-                                let cx = masa.a.x + (masa.b.x - masa.a.x) * CGFloat(u)
-                                let cy = masa.a.y + (masa.b.y - masa.a.y) * CGFloat(u)
-                                // La principal late 1 → 1.12 con el reloj de 9 s.
-                                let pulse = (masa.pulses && !still)
-                                    ? 1 + 0.06 * (1 - cos(2 * .pi * t / masa.period))
-                                    : 1
+                                let fase = Double(i) * 1.7
+                                let theta = still ? 0 : 2 * .pi * t / (masa.period * 1.31) + fase
+                                let wx = still ? 0.0 : 0.045 * sin(theta)
+                                let wy = still ? 0.0 : 0.035 * sin(theta * 0.62 + fase)
+                                let cx = masa.a.x + (masa.b.x - masa.a.x) * CGFloat(u) + CGFloat(wx)
+                                let cy = masa.a.y + (masa.b.y - masa.a.y) * CGFloat(u) + CGFloat(wy)
+                                // TODAS las masas respiran (la lava se hincha y se
+                                // encoge); la principal conserva su latido más hondo.
+                                let respira = still ? 1.0
+                                    : 1 + (masa.pulses ? 0.06 : 0.035)
+                                        * (1 - cos(2 * .pi * t / masa.period + fase))
                                 Circle()
                                     .fill(tono.opacity(masa.alpha))
                                     .frame(width: masa.size, height: masa.size)
-                                    .scaleEffect(pulse)
+                                    .scaleEffect(respira)
                                     .blur(radius: 52)
                                     .position(x: cx * w, y: cy * h)
                             }
