@@ -596,13 +596,17 @@ public struct CosmosReunidoFace: View {
                        with: .color(LiquidColor.tinta900.opacity(0.08)),
                        style: StrokeStyle(lineWidth: 1))
         }
+        // Regla de tormenta (§5, criterio 14): con ≥ 3 alertas el héroe carga el drama
+        // (su orbe ya está teñido del veredicto) y cada luna conserva SOLO su halo —
+        // sin salir de órbita ni estela— para no volverse árbol de navidad.
+        let tormenta: Bool = model.anclas.filter { $0.alerta != .ninguna }.count >= 3
         // Lunas: reparte cada grupo en su anillo por fase estable (índice).
         let porGrupo = Dictionary(grouping: model.anclas, by: { $0.grupo })
         for (g, anclas) in porGrupo {
             let base: CGFloat = Self.anillo(g) * s
             for (i, a) in anclas.enumerated() {
                 dibujaLunaOrbital(&ctx, a: a, i: i, count: anclas.count, g: g,
-                                  base: base, t: t, cx: cx, cy: cy, s: s)
+                                  base: base, t: t, cx: cx, cy: cy, s: s, tormenta: tormenta)
             }
         }
         // El héroe al centro.
@@ -611,11 +615,12 @@ public struct CosmosReunidoFace: View {
 
     private func dibujaLunaOrbital(_ ctx: inout GraphicsContext, a: CosmosAbiertoModel.Ancla,
                                    i: Int, count: Int, g: Int, base: CGFloat, t: Double,
-                                   cx: CGFloat, cy: CGFloat, s: CGFloat) {
+                                   cx: CGFloat, cy: CGFloat, s: CGFloat, tormenta: Bool) {
         let fase: Double = Double(i) / Double(max(count, 1)) * 2 * .pi
         let ang: Double = fase + t * Self.omega(g)
         let alertada: Bool = a.alerta != .ninguna
-        let fuera: CGFloat = alertada ? a.lunaRadio * s : 0
+        // En tormenta la luna NO se sale de órbita (fuera = 0 ⇒ sin estela); solo su halo.
+        let fuera: CGFloat = (alertada && !tormenta) ? a.lunaRadio * s : 0
         let r: CGFloat = base + fuera
         let cosA: CGFloat = CGFloat(cos(ang))
         let sinA: CGFloat = CGFloat(sin(ang))
