@@ -228,7 +228,9 @@ public struct MatrizHoyFace: View {
                 // FER-54: la fila entera es el hit (≥44 pt); el «?» hueco en el mismo
                 // gris del rótulo — visible al que busca, invisible al que ya sabe.
                 Button { tocar(manualID) } label: {
-                    HStack(spacing: LiquidSpace.s150) {
+                    // firstTextBaseline: el «?» centrado ópticamente con las caps del
+                    // rótulo (con .center caía bajo — revisión del dueño).
+                    HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s150) {
                         nivelTexto(rotulo)
                         Image(systemName: "questionmark.circle")
                             .font(LiquidType.infoGlifoCompacto.weight(.medium))
