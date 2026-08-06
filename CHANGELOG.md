@@ -20,6 +20,11 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **Hoy estrena «Cosmos y Matriz» / Today gets "Cosmos and Matrix."**
+  **ES** — La mitad de abajo de Hoy ya vive bajo un conmutador: el modo Cosmos (cada señal orbitando con su medidor lunar) y el modo Matriz (las tendencias en tinta sobre papel). Tu elección se recuerda entre sesiones. Debajo, la máquina de estados que sabe cuándo está «leyendo tu noche», cuándo falta sincronizar y cuándo aún te está conociendo.
+  **EN** — Today's lower half now lives under a switcher: Cosmos mode (each signal orbiting with its lunar meter) and Matrix mode (trends in ink on paper). Your choice is remembered between sessions. Underneath, the state machine that knows when it's "reading your night," when a sync is pending, and when it's still getting to know you.
+  ([HoyModosHost.swift](Cenit/Screens/Hoy/HoyModosHost.swift))
+
 - **Las dos caras de «Cosmos y Matriz» / The two faces of "Cosmos and Matrix."**
   **ES** — Las vistas de los dos modos: la cara Cosmos abierta (cada señal anclada con su número y su medidor lunar) y la cara Matriz (las ocho secciones de tendencia sobre papel). Aún no se montan en la pantalla; el host las une en el siguiente paso.
   **EN** — The views for both modes: the open Cosmos face (each signal anchored with its number and lunar meter) and the Matrix face (the eight trend sections on paper). Not wired into the screen yet; the host joins them next.

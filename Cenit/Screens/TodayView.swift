@@ -1003,6 +1003,11 @@ struct TodayView: View {
 
     @ViewBuilder private var liquidSurface: some View {
         let output = liquidOutput
+        // FER-51 F1: el Tablero (módulos de vidrio) lo sustituye el host Cosmos·Matriz.
+        // Conservamos el Ecosistema (héroe) con `modulos: []` y montamos el host debajo.
+        let heroModel = liquidModelSinTablero(output.model)
+        let mInputs = liquidMatrizInputs()
+        let cExtra = liquidCosmosExtra()
         VStack(alignment: .leading, spacing: CenitMetrics.space1) {
             Group {
                 syncStatusLine
@@ -1010,7 +1015,7 @@ struct TodayView: View {
             }
             .padding(.horizontal, LiquidSpace.s550)
             LiquidHoyContent(
-                model: output.model,
+                model: heroModel,
                 onTapMetric: { openLiquidMetric($0) },
                 onTapSenal: { openLiquidSenal($0) },
                 onTapCarga: {
@@ -1043,10 +1048,147 @@ struct TodayView: View {
                 onSeparacion: {
                     ecosistemaSeparaciones = min(Self.maxSeparacionHints, ecosistemaSeparaciones + 1)
                 })
+            // FER-51 · Host de las dos caras (conmutador + estados T1–T5). Debajo del héroe.
+            HoyModosHost(
+                matriz: LiquidHoyBuilder.matriz(mInputs),
+                cosmos: LiquidHoyBuilder.cosmosAbierto(mInputs, extra: cExtra),
+                plantilla: plantillaActual,
+                onTapSeccion: { abrirHojaCaras($0) },
+                onTapAncla: { abrirHojaCaras($0) })
+                .padding(.horizontal, LiquidSpace.s600)
             // /inject: la leyenda de origen se retiró de la superficie Liquid a pedido del
             // dueño (los puntos de origen por tile se quedan).
         }
         .accessibilityAction(named: Text("Sync")) { triggerPullSync() }
+    }
+
+    /// Copia del modelo Liquid sin el Tablero viejo (los módulos los pinta `HoyModosHost`).
+    private func liquidModelSinTablero(_ m: LiquidHoyModel) -> LiquidHoyModel {
+        LiquidHoyModel(
+            kicker: m.kicker, dial: m.dial, senales: m.senales, hero: m.hero,
+            carga: m.carga, metricas: m.metricas, modulos: [],
+            guardian: m.guardian, heroHint: m.heroHint, ambiente: m.ambiente,
+            cargaLabel: m.cargaLabel, kickerA11y: m.kickerA11y,
+            heroPuerta: m.heroPuerta, calibracion: m.calibracion, rotulos: m.rotulos)
+    }
+
+    /// Inputs de Matriz/Cosmos: mismos orígenes que `liquidInputs()` (displayDays, prep, carga…).
+    private func liquidMatrizInputs() -> LiquidHoyBuilder.MatrizInputs {
+        let todayKey = Repository.localDayKey(Date())
+        let sorted = repo.displayDays.sorted { $0.day < $1.day }
+        let prev = Array(sorted.filter { $0.day < todayKey }.suffix(21))
+        var dias = prev
+        if let hoy = sorted.last(where: { $0.day == todayKey }) {
+            dias.append(hoy)
+        }
+        let stressTrend: [(day: String, value: Double)] = (stress?.fullTrend ?? []).map {
+            (day: Repository.utcDayKey($0.date), value: $0.value)
+        }
+        return LiquidHoyBuilder.MatrizInputs(
+            prep: repo.todayPreparedness,
+            diasRecientes: dias,
+            stressTrend: stressTrend,
+            carga: trainingLoad,
+            stepsEstimados: stepsEst,
+            locale: .current,
+            calendar: .current,
+            now: Date())
+    }
+
+    /// Lecturas de HOY ya resueltas (mismas capas que `liquidInputs()`).
+    private func liquidCosmosExtra() -> LiquidHoyBuilder.CosmosExtraInputs {
+        let steps = liquidSteps()
+        return LiquidHoyBuilder.CosmosExtraInputs(
+            sleep: resolveMeasured(todayOnly: true, { $0.totalSleepMin })
+                .map { .init($0.value, fromApple: $0.fromApple) },
+            rhr: resolveMeasured(todayOnly: true, { $0.restingHr.map(Double.init) })
+                .map { .init($0.value, fromApple: $0.fromApple) },
+            hrv: resolveMeasured(todayOnly: true, { $0.avgHrv })
+                .map { .init($0.value, fromApple: $0.fromApple) },
+            temp: resolveMeasured(todayOnly: true, { $0.skinTempDevC })
+                .map { .init($0.value, fromApple: $0.fromApple) },
+            resp: resolveMeasured(todayOnly: true, { $0.respRateBpm })
+                .map { .init($0.value, fromApple: $0.fromApple) },
+            stress: stress?.score,
+            strain: model.displayedDayStrain,
+            steps: steps.value)
+    }
+
+    /// Plantilla T1–T5 actual (máquina pura + orígenes de Hoy).
+    private var plantillaActual: LiquidHoyBuilder.Plantilla {
+        let cal = Calendar.current
+        let now = Date()
+        // Sesión que termina hoy: si hay ventana de noche ya resuelta para el dial, cierra.
+        let sesionFinHoy: Date? = liquidNight.map { _ in now }
+        let ventana = LiquidHoyBuilder.VentanaNocturna.evaluar(
+            now: now, calendar: cal, sesionFinHoy: sesionFinHoy)
+        let hayNoche = (resolveMeasured(todayOnly: true, { $0.totalSleepMin }) != nil)
+            || liquidNight != nil
+        let causa = LiquidHoyBuilder.causaT3(
+            ventana: ventana, lastSync: health.lastSync, hayNocheRegistrada: hayNoche)
+        return LiquidHoyBuilder.plantilla(
+            prep: repo.todayPreparedness,
+            healthConnected: health.auth == .authorized,
+            hasAnySource: !noSources,
+            silencioT4: silencioSaludActual,
+            causaT3: causa)
+    }
+
+    /// Heurística T4 (§18): FC nocturna / sueño / pasos — (historia 14 d, vacío 48 h).
+    private var silencioSaludActual: LiquidHoyBuilder.SilencioSalud {
+        let cal = Calendar.current
+        let now = Date()
+        let cutoff14 = cal.date(byAdding: .day, value: -13, to: cal.startOfDay(for: now))
+            .map { Repository.localDayKey($0) } ?? ""
+        let cutoff48 = cal.date(byAdding: .hour, value: -48, to: now) ?? now
+        let day48 = Repository.localDayKey(cutoff48)
+        let rows = repo.displayDays
+
+        func tipo(_ pick: (DailyMetric) -> Double?) -> (tuvo14d: Bool, vacio48h: Bool) {
+            let en14 = rows.filter { $0.day >= cutoff14 }
+            let tuvo = en14.contains { pick($0) != nil }
+            let recientes = rows.filter { $0.day >= day48 }
+            let vacio = recientes.allSatisfy { pick($0) == nil }
+            return (tuvo, vacio)
+        }
+
+        return LiquidHoyBuilder.SilencioSalud(tipos: [
+            tipo { $0.restingHr.map(Double.init) },
+            tipo { $0.totalSleepMin },
+            tipo { $0.steps.map(Double.init) },
+        ])
+    }
+
+    /// Taps de las caras → las mismas hojas que ya abre `liquidSurface`.
+    private func abrirHojaCaras(_ id: String) {
+        switch id {
+        case "sleep", "sueno":
+            openLiquidMetric("sleep")
+        case "hrv":
+            openLiquidMetric("hrv")
+        case "rhr":
+            openLiquidMetric("rhr")
+        case "strain", "esfuerzo":
+            openLiquidMetric("strain")
+        case "steps", "pasos":
+            openLiquidMetric("steps")
+        case "skintemp", "temp", "termico":
+            openLiquidMetric("skintemp")
+        case "resp":
+            openLiquidMetric("resp")
+        case "stress", "estres":
+            openLiquidMetric("stress")
+        case "carga":
+            if let trainingLoad {
+                trainingLoadItem = makeTrainingLoadItem(trainingLoad)
+            }
+        case "guardian":
+            showGuardianHoja = true
+        case "autonomico":
+            openLiquidSenal("autonomico")
+        default:
+            openLiquidMetric(id)
+        }
     }
 
     /// Los inputs del builder — las MISMAS resoluciones en capas que alimentan los tiles y
