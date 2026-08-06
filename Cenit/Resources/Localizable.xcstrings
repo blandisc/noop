@@ -1,6 +1,38 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "hoy.hint.abrir" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap the sky to open it"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toca el cielo para abrirlo"
+          }
+        }
+      }
+    },
+    "hoy.hint.reunir" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap the sky to gather it"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toca el cielo para reunirlo"
+          }
+        }
+      }
+    },
     "your last %lld nights" : {
       "extractionState" : "manual",
       "localizations" : {

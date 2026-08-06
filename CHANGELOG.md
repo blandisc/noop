@@ -20,6 +20,11 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **El cielo se reúne y se abre / The sky gathers and opens.** (FER-51, fase 2)
+  **ES** — En modo Cosmos, toca el cielo: todas tus señales se reúnen a orbitar el veredicto (y lo que se sale de tu tendencia se sale de su órbita, con su color de alerta), o se abren a sus puestos con números. Tu jornada se lee de un vistazo por color y órbitas; el detalle, a un toque.
+  **EN** — In Cosmos mode, tap the sky: all your signals gather to orbit the verdict (and whatever drifts from your trend leaves its orbit, in its alert color), or open to their places with numbers. Your day reads at a glance by color and orbits; the detail is one tap away.
+  ([CosmosAbiertoFace.swift](Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/CosmosAbiertoFace.swift))
+
 - **Retiro del Tablero viejo / Old Board retired.**
   **ES** — Se borra la maquinaria muerta de los cuatro módulos de vidrio bajo el héroe (modelo `Modulo`/`Columna`, `LiquidModulo`, builder y arnés). La mitad de abajo ya la pintan Cosmos y Matriz; este cambio no mueve un píxel, solo quita código que el host ya dejaba en silencio.
   **EN** — Dead machinery for the four glass modules under the hero is gone (`Modulo`/`Columna` model, `LiquidModulo`, builder, and harness). The lower half is already Cosmos and Matrix; this change moves no pixels — it only removes code the host had already silenced.
