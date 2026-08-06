@@ -574,7 +574,7 @@ public struct CosmosReunidoFace: View {
                 }
                 // La palabra del veredicto responde «¿todo bien?» debajo del orbe.
                 Text(model.heroe.palabra)
-                    .font(.system(size: 19 * s, weight: .light))
+                    .font(InstrumentoType.grotesk(19 * s, weight: .regular, relativeTo: .title3))
                     .foregroundStyle(model.heroe.tonoPalabra)
                     .position(x: cx, y: cy + Self.anillo(3) * s + 26 * s)
             }
