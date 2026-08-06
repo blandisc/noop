@@ -30,6 +30,10 @@ public struct MatrizSeccion: Sendable, Identifiable, Equatable {
     public let huesPar: (Color, Color)?
     public let titulo: String
     public let valor: String
+    /// Unidad del valor («ms», «bpm», «rpm») — se pinta chica, mismo hue (Grok-UI #7).
+    public let unidad: String?
+    /// Protagonista del veredicto (sueño / FC): numeral grande; el resto, medio (UX #3).
+    public let destacada: Bool
     public let sublabel: String?
     public let chartID: String
     public let chart: MatrizChartPayload
@@ -40,11 +44,14 @@ public struct MatrizSeccion: Sendable, Identifiable, Equatable {
 
     public init(id: String, hue: Color,
                 huesPar: (Color, Color)? = nil, titulo: String, valor: String,
+                unidad: String? = nil, destacada: Bool = false,
                 sublabel: String? = nil, chartID: String, chart: MatrizChartPayload,
                 chip: MatrizHoyModel.ChipGuardian? = nil,
                 renglones: [MatrizRenglon]? = nil) {
         self.id = id; self.hue = hue; self.huesPar = huesPar
-        self.titulo = titulo; self.valor = valor; self.sublabel = sublabel
+        self.titulo = titulo; self.valor = valor
+        self.unidad = unidad; self.destacada = destacada
+        self.sublabel = sublabel
         self.chartID = chartID; self.chart = chart; self.chip = chip
         self.renglones = renglones
     }
@@ -56,6 +63,7 @@ public struct MatrizSeccion: Sendable, Identifiable, Equatable {
             && lhs.renglones == rhs.renglones
             && lhs.hue == rhs.hue
             && lhs.huesPar?.0 == rhs.huesPar?.0 && lhs.huesPar?.1 == rhs.huesPar?.1
+            && lhs.unidad == rhs.unidad && lhs.destacada == rhs.destacada
     }
 }
 
@@ -64,15 +72,17 @@ public struct MatrizRenglon: Sendable, Identifiable, Equatable {
     public let id: String
     public let titulo: String
     public let valor: String
+    public let unidad: String?
     public let hue: Color
     public let chartID: String
     public let chart: MatrizChartPayload
     public let subrayado: MedidorLunar.Alerta
 
-    public init(id: String, titulo: String, valor: String, hue: Color,
-                chartID: String, chart: MatrizChartPayload,
+    public init(id: String, titulo: String, valor: String, unidad: String? = nil,
+                hue: Color, chartID: String, chart: MatrizChartPayload,
                 subrayado: MedidorLunar.Alerta = .ninguna) {
-        self.id = id; self.titulo = titulo; self.valor = valor; self.hue = hue
+        self.id = id; self.titulo = titulo; self.valor = valor; self.unidad = unidad
+        self.hue = hue
         self.chartID = chartID; self.chart = chart; self.subrayado = subrayado
     }
 
@@ -80,6 +90,7 @@ public struct MatrizRenglon: Sendable, Identifiable, Equatable {
         lhs.id == rhs.id && lhs.titulo == rhs.titulo && lhs.valor == rhs.valor
             && lhs.chartID == rhs.chartID && lhs.chart == rhs.chart
             && lhs.subrayado == rhs.subrayado && lhs.hue == rhs.hue
+            && lhs.unidad == rhs.unidad
     }
 }
 
@@ -139,6 +150,9 @@ public struct MatrizHoyFace: View {
     private let onTapSeccion: (String) -> Void
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Acuse del sello: el orbe de la sección tocada late una vez (cariño §micro).
+    @State private var latido: String?
 
     public init(model: MatrizHoyModel, onTapSeccion: @escaping (String) -> Void) {
         self.model = model
@@ -159,7 +173,20 @@ public struct MatrizHoyFace: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.bottom, LiquidSpace.s600)
+        .sensoryFeedback(.selection, trigger: latido)
         .accessibilityElement(children: .contain)
+    }
+
+    /// Toca una sección: dispara su hoja + el latido del sello.
+    private func tocar(_ id: String) {
+        if !reduceMotion {
+            withAnimation(.spring(duration: 0.3)) { latido = id }
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(320))
+                withAnimation(.easeOut(duration: 0.25)) { latido = nil }
+            }
+        }
+        onTapSeccion(id)
     }
 
     @ViewBuilder
@@ -203,7 +230,7 @@ public struct MatrizHoyFace: View {
             // es su propio botón y cada renglón el suyo.
             VStack(alignment: .leading, spacing: LiquidSpace.s200) {
                 Button {
-                    onTapSeccion(s.id)
+                    tocar(s.id)
                 } label: {
                     encabezado(s)
                         .contentShape(Rectangle())
@@ -220,7 +247,7 @@ public struct MatrizHoyFace: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         } else {
             Button {
-                onTapSeccion(s.id)
+                tocar(s.id)
             } label: {
                 VStack(alignment: .leading, spacing: LiquidSpace.s200) {
                     encabezado(s)
@@ -244,14 +271,20 @@ public struct MatrizHoyFace: View {
             // del héroe junto a cada título, con el hue de identidad de la señal.
             OrbeVivo(radio: MatrizTokens.selloRadio, hue: s.huesPar?.0 ?? s.hue,
                      semillaID: "sello-\(s.id)", huePar: s.huesPar?.1, fps: 12)
-                // El orbe no es texto: ancla su centro óptico a la primera línea
-                // (sin esto «flota» contra el baseline — hallazgo Grok #10).
-                .alignmentGuide(.firstTextBaseline) { d in d.height * 0.72 }
+                // El orbe no es texto: ancla su centro óptico al centro de las
+                // versalitas del título (hallazgo Grok-UI #3; afinado en vivo).
+                .alignmentGuide(.firstTextBaseline) { d in d.height * 0.78 }
+                // Acuse del tacto: el eco del héroe responde al dedo (cariño §micro).
+                .scaleEffect(latido == s.id ? 1.10 : 1)
             VStack(alignment: .leading, spacing: LiquidSpace.s050) {
                 Text(s.titulo)
                     .font(LiquidType.tituloFila)
                     .foregroundStyle(LiquidColor.tinta700)
                     .textCase(.uppercase)
+                    // Nunca partir palabra («RESTIN-G HR»): hasta 2 líneas por espacio
+                    // y encoge un poco antes de quebrar.
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.82)
                 if let sub = s.sublabel {
                     Text(sub)
                         .font(LiquidType.caption)
@@ -263,13 +296,39 @@ public struct MatrizHoyFace: View {
             if let chip = s.chip {
                 chipView(chip)
             } else {
-                Text(s.valor)
-                    .font(LiquidType.valorL)
+                valorCompuesto(s)
+            }
+            // Affordance de tap discreta (UX #6): cada sección abre su detalle.
+            LiquidIcon(.chevron, size: 8, color: LiquidColor.tinta500)
+                .alignmentGuide(.firstTextBaseline) { d in d.height * 0.85 }
+        }
+        // Techo común en bandas divididas: reservar la línea de sublabel aunque
+        // falte, para que los lienzos gemelos arranquen parejos (Grok-UI #6).
+        .frame(minHeight: 34, alignment: .top)
+    }
+
+    /// Numeral + unidad chica en el mismo hue (Grok-UI #7); los protagonistas del
+    /// veredicto (sueño/FC) en `valorL`, el resto en `valorM` (UX #3). El numeral
+    /// rueda al refrescar (`numericText`) en vez de parpadear.
+    private func valorCompuesto(_ s: MatrizSeccion) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s050) {
+            Text(s.valor)
+                .font(s.destacada ? LiquidType.valorL : LiquidType.valorM)
+                .foregroundStyle(s.hue)
+                .monospacedDigit()
+                .contentTransition(.numericText())
+                .animation(.snappy, value: s.valor)
+            if let u = s.unidad {
+                Text(u)
+                    .font(LiquidType.caption)
                     .foregroundStyle(s.hue)
-                    .monospacedDigit()
-                    .multilineTextAlignment(.trailing)
             }
         }
+        // El numeral JAMÁS se parte («46» → «4/6»): una línea, encoge antes de envolver,
+        // y gana el jalón de layout contra el título.
+        .lineLimit(1)
+        .minimumScaleFactor(0.6)
+        .layoutPriority(1)
     }
 
     private func renglónView(_ r: MatrizRenglon) -> some View {
@@ -284,13 +343,22 @@ public struct MatrizHoyFace: View {
                         .font(LiquidType.tituloFila)
                         .foregroundStyle(LiquidColor.tinta700)
                     Spacer()
-                    Text(r.valor)
-                        .font(LiquidType.valorM)
-                        .foregroundStyle(r.hue)
-                        .monospacedDigit()
-                        .underline(r.subrayado != .ninguna,
-                                   color: r.subrayado == .alarma
-                                   ? LiquidColor.negativo : LiquidColor.atencion)
+                    HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s050) {
+                        Text(r.valor)
+                            .font(LiquidType.valorM)
+                            .foregroundStyle(r.hue)
+                            .monospacedDigit()
+                            .contentTransition(.numericText())
+                            .animation(.snappy, value: r.valor)
+                        if let u = r.unidad {
+                            Text(u)
+                                .font(LiquidType.caption)
+                                .foregroundStyle(r.hue)
+                        }
+                    }
+                    .underline(r.subrayado != .ninguna,
+                               color: r.subrayado == .alarma
+                               ? LiquidColor.negativo : LiquidColor.atencion)
                 }
                 chartView(r.chart, hue: r.hue, chartID: r.chartID)
                     .frame(height: MatrizTokens.alturaRenglon)

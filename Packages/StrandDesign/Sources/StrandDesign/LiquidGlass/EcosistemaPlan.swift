@@ -28,6 +28,11 @@ public extension EcosistemaSimulacion {
         /// mueble). Cada backend la resuelve a su token azul.
         case vigia
         case blanco
+        /// Identidad de las DECISORAS (dueño 2026-08-06): la luna del sueño es índigo
+        /// y la del reposo rosa — el mismo hue de su métrica en la Matriz de abajo,
+        /// besado por el clima del veredicto (70 % identidad / 30 % clima).
+        case sueno
+        case reposo
     }
 
     /// Los rótulos orbitales, como identidad — el DS no conoce locales (los strings los
@@ -406,7 +411,8 @@ public extension EcosistemaSimulacion {
             nivelMezcla: apertura,
             nivelBajo: l.fuera,
             capAmbar: false,
-            n: Geometria.nLuna, paso: l.hueca ? 3 : 1, tinta: .clima)))
+            n: Geometria.nLuna, paso: l.hueca ? 3 : 1,
+            tinta: l.rotulo == .reposo ? .reposo : .sueno)))
         // El rótulo orbital CEDE a los overlays al parquearse (allí viven las
         // etiquetas de estación con su valor sólido).
         let alfaRotulo = (0.35 + 0.5 * dep) * rotuloAlfa * (1 - apertura)

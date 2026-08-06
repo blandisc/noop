@@ -227,7 +227,9 @@ public struct MatrizColumnas: View {
                     let alfa = esHoy ? MatrizTokens.hoyAlfa : MatrizTokens.histAlfa
                     let x = CGFloat(i) * (colW + gap)
                     let yn = MatrizChartDraw.yNorm(v, domain: dominio)
-                    let h = max(yn * (size.height - 2), 1)
+                    // Canal superior de 16 pt: territorio del tag de referencia —
+                    // HOY nunca queda tapado por el rótulo (Grok-UI #5 / UX #7).
+                    let h = max(yn * (size.height - 16), 1)
                     let rect = CGRect(x: x, y: size.height - h, width: colW, height: h)
                     MatrizChartDraw.barra(ctx, rect: rect, hue: hue, alfa: alfa)
                     if noche.alerta != .ninguna {
@@ -347,41 +349,45 @@ public struct MatrizLineaSerena: View {
                 MatrizChartDraw.rejillaFantasma(ctx, size: size, chartID: chartID)
             }
 
-            // Banda ± (relleno sólido tenue entre lower/upper) + bordes punteados.
+            // Rediseño del guardián (Grok-UI #4): CON banda, una sola tinta estructural —
+            // el relleno redondeado «tu zona» — y el dominio se aprieta a banda×1.6 para
+            // que la vena respire (antes: 4 líneas de estructura por 1 de dato y la curva
+            // era un electro plano). SIN banda (resp: se juzga contra tu base z, no hay
+            // corte fijo honesto que dibujar): filo central de referencia + curva.
+            let dom: ClosedRange<Double> = {
+                guard let banda else { return dominio }
+                let c = (banda.lowerBound + banda.upperBound) / 2
+                let half = (banda.upperBound - banda.lowerBound) / 2 * 1.6
+                return (c - half)...(c + half)
+            }()
+
             if let banda {
-                let yLo = MatrizChartDraw.yTop(banda.upperBound, domain: dominio, height: size.height)
-                let yHi = MatrizChartDraw.yTop(banda.lowerBound, domain: dominio, height: size.height)
+                let yLo = MatrizChartDraw.yTop(banda.upperBound, domain: dom, height: size.height)
+                let yHi = MatrizChartDraw.yTop(banda.lowerBound, domain: dom, height: size.height)
                 let bandRect = CGRect(x: 0, y: yLo, width: size.width,
                                       height: max(yHi - yLo, 1))
-                ctx.fill(Path(bandRect), with: .color(hue.opacity(MatrizTokens.bandaFillAlfa)))
-                for y in [yLo, yHi] {
-                    var p = Path()
-                    p.move(to: CGPoint(x: 0, y: y))
-                    p.addLine(to: CGPoint(x: size.width, y: y))
-                    ctx.stroke(p, with: .color(LiquidColor.tinta900.opacity(MatrizTokens.bandaRefAlfa)),
-                               style: StrokeStyle(lineWidth: 1, dash: MatrizChartDraw.dash))
-                }
+                ctx.fill(Path(roundedRect: bandRect, cornerRadius: 3),
+                         with: .color(hue.opacity(MatrizTokens.bandaFillAlfa)))
+            } else {
+                let mid = (dom.lowerBound + dom.upperBound) / 2
+                let yMid = MatrizChartDraw.yTop(mid, domain: dom, height: size.height)
+                var filo = Path()
+                filo.move(to: CGPoint(x: 0, y: yMid))
+                filo.addLine(to: CGPoint(x: size.width, y: yMid))
+                ctx.stroke(filo, with: .color(LiquidColor.tinta900.opacity(MatrizTokens.filoCentralAlfa)),
+                           style: StrokeStyle(lineWidth: 1))
             }
-
-            // Filo central (cero / base de la señal).
-            let mid = (dominio.lowerBound + dominio.upperBound) / 2
-            let yMid = MatrizChartDraw.yTop(mid, domain: dominio, height: size.height)
-            var filo = Path()
-            filo.move(to: CGPoint(x: 0, y: yMid))
-            filo.addLine(to: CGPoint(x: size.width, y: yMid))
-            ctx.stroke(filo, with: .color(LiquidColor.tinta900.opacity(MatrizTokens.filoCentralAlfa)),
-                       style: StrokeStyle(lineWidth: 1))
 
             guard count > 0, MatrizChartDraw.tieneDatos(puntos) else { return }
 
             for tramo in MatrizChartDraw.tramos(puntos, count: count, width: size.width,
-                                                dominio: dominio, height: size.height) {
+                                                dominio: dom, height: size.height) {
                 ctx.stroke(MatrizChartDraw.curva(tramo), with: .color(hue.opacity(MatrizTokens.lineaSerenaAlfa)),
                            style: StrokeStyle(lineWidth: 1.2, lineCap: .round, lineJoin: .round))
             }
 
             MatrizChartDraw.marcarHoy(ctx, puntos: puntos, count: count,
-                                      width: size.width, dominio: dominio,
+                                      width: size.width, dominio: dom,
                                       height: size.height, hue: hue, alerta: alertaHoy)
         }
         .frame(maxWidth: .infinity, minHeight: MatrizChartDraw.defaultHeight,
@@ -444,7 +450,7 @@ public struct MatrizRielZona: View {
             let nE = estela.count
             for (i, v) in estela.enumerated() {
                 let t = nE > 1 ? Double(i) / Double(nE - 1) : 1
-                let alfa = 0.15 + 0.30 * t
+                let alfa = 0.25 + 0.35 * t
                 let x = Self.x(v, domain: dominio, width: size.width, inset: inset)
                 MatrizChartDraw.punto(ctx, en: CGPoint(x: x, y: y), radio: MatrizTokens.histRadio,
                                       hue: hue, alfa: alfa)

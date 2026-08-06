@@ -17,7 +17,7 @@ public enum MatrizTokens {
     /// la cara no vuelve a sangrar (hallazgo DeepSeek #14: doble margen 24+16).
     public static let margenH: CGFloat = LiquidSpace.s600       // 24
     /// Aire entre renglones nombrados (guardián: Temp / Resp).
-    public static let renglonV: CGFloat = LiquidSpace.s150      // 6
+    public static let renglonV: CGFloat = LiquidSpace.s200      // 8
     /// Aire sello → bloque de título.
     public static let selloTexto: CGFloat = LiquidSpace.s200    // 8
     /// Canal entre columnas de una banda dividida (a cada lado del filo).
@@ -83,8 +83,8 @@ public enum MatrizTokens {
     // MARK: Alturas de gráfica por forma
 
     public static let alturaLinea: CGFloat = 56
-    public static let alturaRenglon: CGFloat = 40
+    public static let alturaRenglon: CGFloat = 32
     public static let alturaBarras: CGFloat = 40
     public static let alturaEscalera: CGFloat = 36
-    public static let alturaRiel: CGFloat = 28
+    public static let alturaRiel: CGFloat = 40   // gemela de barras: el riel centra en el mismo alto
 }

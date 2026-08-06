@@ -69,7 +69,7 @@ extension LiquidHoyBuilder {
         let seccionSueno = MatrizSeccion(
             id: "sleep", hue: LiquidColor.indigo,
             titulo: String(localized: "Sleep"),
-            valor: valorSueno,
+            valor: valorSueno, destacada: true,
             sublabel: (hoy?.totalSleepMin == nil && noches.allSatisfy { $0.valor == nil })
                 ? String(localized: "Getting to know you") : nil,
             chartID: "matriz-sleep",
@@ -86,7 +86,7 @@ extension LiquidHoyBuilder {
         let seccionFC = MatrizSeccion(
             id: "rhr", hue: LiquidColor.rosa,
             titulo: String(localized: "Resting HR"),
-            valor: valorFC,
+            valor: valorFC, unidad: String(localized: "bpm"), destacada: true,
             sublabel: ptsFC.allSatisfy({ $0 == nil })
                 ? String(localized: "Getting to know you") : nil,
             chartID: "matriz-rhr",
@@ -97,12 +97,12 @@ extension LiquidHoyBuilder {
         let ptsVFC: [Double?] = keys20.map { byDay[$0]?.avgHrv }
         let baseVFC = keys20.reversed().compactMap { bodyByDay[$0]?.hrvBaseCenter }.first
         let valorVFC = HoyGramatica.valorODash(ptsVFC.last.flatMap { $0 }) {
-            "\(Int($0.rounded())) ms"
+            "\(Int($0.rounded()))"
         }
         let seccionVFC = MatrizSeccion(
             id: "hrv", hue: LiquidColor.cian,
             titulo: String(localized: "HRV"),
-            valor: valorVFC,
+            valor: valorVFC, unidad: String(localized: "ms"),
             sublabel: String(localized: "Does not vote"),
             chartID: "matriz-hrv",
             chart: .lineaRellena(puntos: ptsVFC, base: baseVFC,
@@ -148,7 +148,8 @@ extension LiquidHoyBuilder {
                 MatrizRenglon(
                     id: "resp",
                     titulo: String(localized: "Breathing"),
-                    valor: valorResp, hue: LiquidColor.azul,
+                    valor: valorResp, unidad: String(localized: "rpm"),
+                    hue: LiquidColor.azul,
                     chartID: "matriz-guardian-resp",
                     chart: .lineaSerena(puntos: ptsResp, banda: nil,
                                         dominio: dominioLinea(ptsResp, base: nil, fallback: 8...22),
