@@ -58,7 +58,7 @@ extension LiquidHoyBuilder {
     }
 
     /// Heurística T4 (§18): decisión PURA. Un tipo suma al ≥2 solo si (≥1 muestra en 14 d) ∧ (fetch 48h vacío).
-    struct SilencioSalud: Equatable {
+    struct SilencioSalud {
         /// por tipo {FC nocturna, sueño, pasos}: (historia14d>0, ultimas48hVacio)
         let tipos: [(tuvo14d: Bool, vacio48h: Bool)]
         var disparaT4: Bool { tipos.filter { $0.tuvo14d && $0.vacio48h }.count >= 2 }
