@@ -3,8 +3,8 @@ import SwiftUI
 // MARK: - FER-51 · Cara Matriz (Lane B)
 //
 // Modelo tonto (`Sendable`, sin lógica) + vista que lo dibuja. La proyección de datos
-// vive en `LiquidHoyBuilder.matriz` (capa app). Reusa MatrizChart / SelloIcono /
-// MedidorLunar / LiquidColor. Lienzo: papelMatriz, sin tarjetas, filos 1 px.
+// vive en `LiquidHoyBuilder.matriz` (capa app). Reusa MatrizChart / OrbeVivo /
+// MedidorLunar / LiquidColor. Tinta sobre el suelo vivo de Hoy, sin tarjetas, filos 1 px.
 
 // MARK: Model
 
@@ -25,7 +25,6 @@ public enum MatrizChartPayload: Sendable, Equatable {
 /// Una sección de la Matriz (sello + título + valor + chart).
 public struct MatrizSeccion: Sendable, Identifiable, Equatable {
     public let id: String
-    public let glifo: SelloIcono.Glifo
     public let hue: Color
     /// Guardián bicolor (dorado + azul). nil = orbe monocolor.
     public let huesPar: (Color, Color)?
@@ -39,12 +38,12 @@ public struct MatrizSeccion: Sendable, Identifiable, Equatable {
     /// Renglones nombrados del guardián (Temp / Resp); nil en el resto.
     public let renglones: [MatrizRenglon]?
 
-    public init(id: String, glifo: SelloIcono.Glifo, hue: Color,
+    public init(id: String, hue: Color,
                 huesPar: (Color, Color)? = nil, titulo: String, valor: String,
                 sublabel: String? = nil, chartID: String, chart: MatrizChartPayload,
                 chip: MatrizHoyModel.ChipGuardian? = nil,
                 renglones: [MatrizRenglon]? = nil) {
-        self.id = id; self.glifo = glifo; self.hue = hue; self.huesPar = huesPar
+        self.id = id; self.hue = hue; self.huesPar = huesPar
         self.titulo = titulo; self.valor = valor; self.sublabel = sublabel
         self.chartID = chartID; self.chart = chart; self.chip = chip
         self.renglones = renglones
@@ -55,6 +54,8 @@ public struct MatrizSeccion: Sendable, Identifiable, Equatable {
             && lhs.sublabel == rhs.sublabel && lhs.chartID == rhs.chartID
             && lhs.chart == rhs.chart && lhs.chip == rhs.chip
             && lhs.renglones == rhs.renglones
+            && lhs.hue == rhs.hue
+            && lhs.huesPar?.0 == rhs.huesPar?.0 && lhs.huesPar?.1 == rhs.huesPar?.1
     }
 }
 
@@ -78,34 +79,12 @@ public struct MatrizRenglon: Sendable, Identifiable, Equatable {
     public static func == (lhs: MatrizRenglon, rhs: MatrizRenglon) -> Bool {
         lhs.id == rhs.id && lhs.titulo == rhs.titulo && lhs.valor == rhs.valor
             && lhs.chartID == rhs.chartID && lhs.chart == rhs.chart
-            && lhs.subrayado == rhs.subrayado
+            && lhs.subrayado == rhs.subrayado && lhs.hue == rhs.hue
     }
 }
 
 /// Modelo tonto de la cara Matriz. Sin lógica: el builder proyecta todo.
 public struct MatrizHoyModel: Sendable, Equatable {
-
-    /// Héroe compacto: orbe + 2 lunas votantes (sueño índigo, FC rosa) + palabra.
-    public struct Hero: Sendable, Equatable {
-        public let palabra: String
-        public let highlight: String
-        public let tone: Color
-        public let lunaSuenoAlerta: MedidorLunar.Alerta
-        public let lunaFCAlerta: MedidorLunar.Alerta
-
-        public init(palabra: String, highlight: String, tone: Color,
-                    lunaSuenoAlerta: MedidorLunar.Alerta = .ninguna,
-                    lunaFCAlerta: MedidorLunar.Alerta = .ninguna) {
-            self.palabra = palabra; self.highlight = highlight; self.tone = tone
-            self.lunaSuenoAlerta = lunaSuenoAlerta; self.lunaFCAlerta = lunaFCAlerta
-        }
-
-        public static func == (lhs: Hero, rhs: Hero) -> Bool {
-            lhs.palabra == rhs.palabra && lhs.highlight == rhs.highlight
-                && lhs.lunaSuenoAlerta == rhs.lunaSuenoAlerta
-                && lhs.lunaFCAlerta == rhs.lunaFCAlerta
-        }
-    }
 
     /// Chip del guardián — texto + tono ya resueltos por el builder (§8 / criterio 10).
     public struct ChipGuardian: Sendable, Equatable {
@@ -123,27 +102,27 @@ public struct MatrizHoyModel: Sendable, Equatable {
     }
 
     /// Banda visual §7: ancha completa o dividida (2 elementos a11y).
+    /// Las divididas son MITADES EXACTAS — el filo parte la banda al centro
+    /// (decisión de diseño; el ancho variable se retiró, hallazgo Grok #3).
     public enum Banda: Sendable, Equatable {
         case full(MatrizSeccion)
-        /// `fraccionIzq` 0.5 (mitades) o 0.55 (carga|esfuerzo).
-        case split(izq: MatrizSeccion, der: MatrizSeccion, fraccionIzq: CGFloat)
+        case split(izq: MatrizSeccion, der: MatrizSeccion)
     }
 
-    public let hero: Hero
     /// Orden VISUAL de arriba a abajo (§7). Bandas divididas = 2 elementos a11y.
     public let bandas: [Banda]
 
-    public init(hero: Hero, bandas: [Banda]) {
-        self.hero = hero; self.bandas = bandas
+    public init(bandas: [Banda]) {
+        self.bandas = bandas
     }
 
     /// Orden de lectura VoiceOver = orden visual; bandas divididas expanden a 2 ids.
     public var ordenA11y: [String] {
-        var ids: [String] = ["hero"]
+        var ids: [String] = []
         for b in bandas {
             switch b {
             case .full(let s): ids.append(s.id)
-            case .split(let izq, let der, _):
+            case .split(let izq, let der):
                 ids.append(izq.id); ids.append(der.id)
             }
         }
@@ -179,8 +158,7 @@ public struct MatrizHoyFace: View {
             }
         }
         .frame(maxWidth: .infinity)
-        .padding(.horizontal, 16)
-        .padding(.bottom, 24)
+        .padding(.bottom, LiquidSpace.s600)
         .accessibilityElement(children: .contain)
     }
 
@@ -189,66 +167,87 @@ public struct MatrizHoyFace: View {
         switch banda {
         case .full(let s):
             seccionView(s)
-                .padding(.vertical, 12)
-        case .split(let izq, let der, _):
+                .padding(.vertical, MatrizTokens.bandaV)
+        case .split(let izq, let der):
             if columnaUnica {
                 VStack(spacing: 0) {
-                    seccionView(izq).padding(.vertical, 12)
+                    seccionView(izq).padding(.vertical, MatrizTokens.bandaV)
                     filo()
-                    seccionView(der).padding(.vertical, 12)
+                    seccionView(der).padding(.vertical, MatrizTokens.bandaV)
                 }
             } else {
                 // Mitades iguales: el filo vertical parte la banda al centro.
                 HStack(alignment: .top, spacing: 0) {
                     seccionView(izq)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.trailing, 12)
-                        .padding(.vertical, 12)
+                        .padding(.trailing, MatrizTokens.colGap)
+                        .padding(.vertical, MatrizTokens.bandaV)
                     Rectangle()
-                        .fill(LiquidColor.tinta900.opacity(0.08))
+                        .fill(LiquidColor.tinta900.opacity(MatrizTokens.filoAlfa))
                         .frame(width: 1)
-                        .padding(.vertical, 8)
+                        .padding(.vertical, LiquidSpace.s200)
                     seccionView(der)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.leading, 12)
-                        .padding(.vertical, 12)
+                        .padding(.leading, MatrizTokens.colGap)
+                        .padding(.vertical, MatrizTokens.bandaV)
                 }
             }
         }
     }
 
+    @ViewBuilder
     private func seccionView(_ s: MatrizSeccion) -> some View {
-        Button {
-            onTapSeccion(s.id)
-        } label: {
-            VStack(alignment: .leading, spacing: 8) {
-                encabezado(s)
-                if let renglones = s.renglones {
-                    ForEach(renglones) { r in
-                        renglónView(r)
-                    }
-                } else {
-                    chartView(s.chart, hue: s.hue, chartID: s.chartID)
-                        .frame(minHeight: chartAltura(s.chart))
+        if let renglones = s.renglones {
+            // Sección con renglones (guardián): SIN botón contenedor — anidar botones
+            // rompe hit-testing y el foco de VoiceOver (hallazgo Grok #1). El encabezado
+            // es su propio botón y cada renglón el suyo.
+            VStack(alignment: .leading, spacing: LiquidSpace.s200) {
+                Button {
+                    onTapSeccion(s.id)
+                } label: {
+                    encabezado(s)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(Text(verbatim: a11yLabel(s)))
+                .accessibilityAddTraits(.isButton)
+                .accessibilityIdentifier("matriz-seccion-\(s.id)")
+                ForEach(renglones) { r in
+                    renglónView(r)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle())
+        } else {
+            Button {
+                onTapSeccion(s.id)
+            } label: {
+                VStack(alignment: .leading, spacing: LiquidSpace.s200) {
+                    encabezado(s)
+                    chartView(s.chart, hue: s.hue, chartID: s.chartID)
+                        .frame(minHeight: chartAltura(s.chart))
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(Text(verbatim: a11yLabel(s)))
+            .accessibilityAddTraits(.isButton)
+            .accessibilityIdentifier("matriz-seccion-\(s.id)")
         }
-        .buttonStyle(.plain)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(Text(verbatim: a11yLabel(s)))
-        .accessibilityAddTraits(.isButton)
-        .accessibilityIdentifier("matriz-seccion-\(s.id)")
     }
 
     private func encabezado(_ s: MatrizSeccion) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
+        HStack(alignment: .firstTextBaseline, spacing: MatrizTokens.selloTexto) {
             // Orbe de partículas puro, sin glifo (revisión del dueño en vivo): el eco
             // del héroe junto a cada título, con el hue de identidad de la señal.
-            OrbeVivo(radio: 8, hue: s.huesPar?.0 ?? s.hue,
-                     semillaID: "sello-\(s.id)", huePar: s.huesPar?.1)
-            VStack(alignment: .leading, spacing: 2) {
+            OrbeVivo(radio: MatrizTokens.selloRadio, hue: s.huesPar?.0 ?? s.hue,
+                     semillaID: "sello-\(s.id)", huePar: s.huesPar?.1, fps: 12)
+                // El orbe no es texto: ancla su centro óptico a la primera línea
+                // (sin esto «flota» contra el baseline — hallazgo Grok #10).
+                .alignmentGuide(.firstTextBaseline) { d in d.height * 0.72 }
+            VStack(alignment: .leading, spacing: LiquidSpace.s050) {
                 Text(s.titulo)
                     .font(LiquidType.tituloFila)
                     .foregroundStyle(LiquidColor.tinta700)
@@ -257,9 +256,10 @@ public struct MatrizHoyFace: View {
                     Text(sub)
                         .font(LiquidType.caption)
                         .foregroundStyle(LiquidColor.tinta500)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            Spacer(minLength: 8)
+            Spacer(minLength: LiquidSpace.s200)
             if let chip = s.chip {
                 chipView(chip)
             } else {
@@ -276,8 +276,10 @@ public struct MatrizHoyFace: View {
         Button {
             onTapSeccion(r.id)
         } label: {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
+            VStack(alignment: .leading, spacing: MatrizTokens.renglonV) {
+                // Sentence-case a propósito: los renglones son SUB-señales del guardián
+                // (voz subordinada); el ritmo/baseline sí es el mismo del encabezado.
+                HStack(alignment: .firstTextBaseline, spacing: MatrizTokens.selloTexto) {
                     Text(r.titulo)
                         .font(LiquidType.tituloFila)
                         .foregroundStyle(LiquidColor.tinta700)
@@ -291,13 +293,14 @@ public struct MatrizHoyFace: View {
                                    ? LiquidColor.negativo : LiquidColor.atencion)
                 }
                 chartView(r.chart, hue: r.hue, chartID: r.chartID)
-                    .frame(height: 40)
+                    .frame(height: MatrizTokens.alturaRenglon)
             }
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(Text(verbatim: "\(r.titulo), \(r.valor)"))
+        .accessibilityAddTraits(.isButton)
         .accessibilityIdentifier("matriz-renglon-\(r.id)")
     }
 
@@ -343,16 +346,16 @@ public struct MatrizHoyFace: View {
 
     private func chartAltura(_ p: MatrizChartPayload) -> CGFloat {
         switch p {
-        case .rielZona: return 28
-        case .barrasMini: return 40
-        case .escalerita: return 36
-        default: return 56
+        case .rielZona: return MatrizTokens.alturaRiel
+        case .barrasMini: return MatrizTokens.alturaBarras
+        case .escalerita: return MatrizTokens.alturaEscalera
+        default: return MatrizTokens.alturaLinea
         }
     }
 
     private func filo() -> some View {
         Rectangle()
-            .fill(LiquidColor.tinta900.opacity(0.08))
+            .fill(LiquidColor.tinta900.opacity(MatrizTokens.filoAlfa))
             .frame(height: 1)
     }
 
@@ -361,79 +364,6 @@ public struct MatrizHoyFace: View {
         if let sub = s.sublabel { parts.append(sub) }
         if let chip = s.chip { parts.append(chip.texto) }
         return parts.filter { !$0.isEmpty }.joined(separator: ", ")
-    }
-}
-
-// MARK: - Héroe compacto (orbe + 2 lunas + palabra)
-
-private struct MatrizHeroCompacto: View {
-    let hero: MatrizHoyModel.Hero
-
-    var body: some View {
-        VStack(spacing: 14) {
-            ZStack {
-                // Órbita elíptica tenue.
-                Ellipse()
-                    .stroke(LiquidColor.tinta900.opacity(0.10), lineWidth: 1)
-                    .frame(width: 128, height: 94)
-                // Orbe del veredicto (simplificado; F2 traerá partículas).
-                Circle()
-                    .fill(hero.tone.opacity(0.85))
-                    .frame(width: 72, height: 72)
-                    .overlay(Circle().stroke(hero.tone.opacity(0.4), lineWidth: 1))
-                // Luna sueño (índigo) — izquierda de la órbita.
-                luna(hue: LiquidColor.indigo, alerta: hero.lunaSuenoAlerta)
-                    .offset(x: -52, y: -8)
-                // Luna FC (rosa) — derecha.
-                luna(hue: LiquidColor.rosa, alerta: hero.lunaFCAlerta)
-                    .offset(x: 52, y: 6)
-            }
-            .frame(height: 110)
-
-            // Palabra del veredicto con resalte.
-            palabraResaltada
-        }
-    }
-
-    private var palabraResaltada: some View {
-        let full = hero.palabra
-        let hi = hero.highlight
-        if let range = full.range(of: hi, options: .caseInsensitive), !hi.isEmpty {
-            let before = String(full[..<range.lowerBound])
-            let mid = String(full[range])
-            let after = String(full[range.upperBound...])
-            return AnyView(
-                (Text(before) + Text(mid).foregroundColor(hero.tone) + Text(after))
-                    .font(LiquidType.displayS)
-                    .foregroundStyle(LiquidColor.tinta900)
-                    .multilineTextAlignment(.center)
-            )
-        }
-        return AnyView(
-            Text(full)
-                .font(LiquidType.displayS)
-                .foregroundStyle(LiquidColor.tinta900)
-                .multilineTextAlignment(.center)
-        )
-    }
-
-    private func luna(hue: Color, alerta: MedidorLunar.Alerta) -> some View {
-        ZStack {
-            Circle()
-                .fill(hue)
-                .frame(width: 14, height: 14)
-            switch alerta {
-            case .ninguna: EmptyView()
-            case .atencion:
-                Circle().stroke(LiquidColor.atencion.opacity(0.85), lineWidth: 1)
-                    .frame(width: 20, height: 20)
-            case .alarma:
-                Circle().stroke(LiquidColor.negativo.opacity(0.85), lineWidth: 1)
-                    .frame(width: 20, height: 20)
-                Circle().stroke(LiquidColor.negativo.opacity(0.85), lineWidth: 1)
-                    .frame(width: 26, height: 26)
-            }
-        }
     }
 }
 
@@ -455,32 +385,29 @@ private enum MatrizHoyFacePreviewData {
         let resp: [Double?] = (0..<20).map { _ in 14.0 }
 
         return MatrizHoyModel(
-            hero: .init(palabra: "In range", highlight: "range",
-                        tone: LiquidColor.verdePrimario),
             bandas: [
                 .full(MatrizSeccion(
-                    id: "sleep", glifo: .luna, hue: LiquidColor.indigo,
+                    id: "sleep", hue: LiquidColor.indigo,
                     titulo: "Sleep", valor: "7:12",
                     chartID: "matriz-sleep",
                     chart: .columnas(noches: noches, referencia: 420,
                                      referenciaTag: "7 h", dominio: 240...600))),
                 .split(
                     izq: MatrizSeccion(
-                        id: "rhr", glifo: .corazon, hue: LiquidColor.rosa,
+                        id: "rhr", hue: LiquidColor.rosa,
                         titulo: "Resting HR", valor: "52",
                         chartID: "matriz-rhr",
                         chart: .lineaRellena(puntos: fc, base: 56, dominio: 45...75,
                                              alfa: 1.0, alertaHoy: .ninguna)),
                     der: MatrizSeccion(
-                        id: "hrv", glifo: .onda, hue: LiquidColor.cian,
+                        id: "hrv", hue: LiquidColor.cian,
                         titulo: "HRV", valor: "68 ms",
                         sublabel: "Does not vote",
                         chartID: "matriz-hrv",
                         chart: .lineaRellena(puntos: vfc, base: 45, dominio: 20...80,
-                                             alfa: 0.6, alertaHoy: .ninguna)),
-                    fraccionIzq: 0.5),
+                                             alfa: 0.6, alertaHoy: .ninguna))),
                 .full(MatrizSeccion(
-                    id: "guardian", glifo: .escudo, hue: LiquidColor.doradoTemp,
+                    id: "guardian", hue: LiquidColor.doradoTemp,
                     huesPar: (LiquidColor.doradoTemp, LiquidColor.azul),
                     titulo: "Guardian", valor: "",
                     chartID: "matriz-guardian",
@@ -501,30 +428,28 @@ private enum MatrizHoyFacePreviewData {
                     ])),
                 .split(
                     izq: MatrizSeccion(
-                        id: "carga", glifo: .montana, hue: LiquidColor.verdePrimario,
+                        id: "carga", hue: LiquidColor.verdePrimario,
                         titulo: "Load", valor: "1.12",
                         sublabel: "Steady",
                         chartID: "matriz-carga",
                         chart: .rielZona(p: 1.12, zona: 0.8...1.3, estela: estela)),
                     der: MatrizSeccion(
-                        id: "strain", glifo: .flama, hue: LiquidColor.teal,
+                        id: "strain", hue: LiquidColor.teal,
                         titulo: "Effort", valor: "12.4",
                         chartID: "matriz-strain",
-                        chart: .barrasMini(valores: strain)),
-                    fraccionIzq: 0.55),
+                        chart: .barrasMini(valores: strain))),
                 .split(
                     izq: MatrizSeccion(
-                        id: "stress", glifo: .rayo, hue: LiquidColor.tinta900,
+                        id: "stress", hue: LiquidColor.tinta900,
                         titulo: "Stress", valor: "Low",
                         sublabel: "vs your 7 days",
                         chartID: "matriz-stress",
                         chart: .escalerita(niveles: stress)),
                     der: MatrizSeccion(
-                        id: "steps", glifo: .huellas, hue: LiquidColor.tinta700,
+                        id: "steps", hue: LiquidColor.tinta700,
                         titulo: "Steps", valor: "8 432",
                         chartID: "matriz-steps",
-                        chart: .barrasMini(valores: steps)),
-                    fraccionIzq: 0.5),
+                        chart: .barrasMini(valores: steps))),
             ])
     }
 
@@ -534,11 +459,9 @@ private enum MatrizHoyFacePreviewData {
         let vacio14 = [Double?](repeating: nil, count: 14)
         let vacio7 = [Int?](repeating: nil, count: 7)
         return MatrizHoyModel(
-            hero: .init(palabra: "Getting to know you", highlight: "know",
-                        tone: LiquidColor.tinta500),
             bandas: [
                 .full(MatrizSeccion(
-                    id: "sleep", glifo: .luna, hue: LiquidColor.indigo,
+                    id: "sleep", hue: LiquidColor.indigo,
                     titulo: "Sleep", valor: "—",
                     sublabel: "Getting to know you",
                     chartID: "matriz-sleep",
@@ -546,21 +469,20 @@ private enum MatrizHoyFacePreviewData {
                                      referenciaTag: "7 h", dominio: 240...600))),
                 .split(
                     izq: MatrizSeccion(
-                        id: "rhr", glifo: .corazon, hue: LiquidColor.rosa,
+                        id: "rhr", hue: LiquidColor.rosa,
                         titulo: "Resting HR", valor: "—",
                         sublabel: "Getting to know you",
                         chartID: "matriz-rhr",
                         chart: .lineaRellena(puntos: vacio20, base: nil, dominio: 45...75,
                                              alfa: 1.0, alertaHoy: .ninguna)),
                     der: MatrizSeccion(
-                        id: "hrv", glifo: .onda, hue: LiquidColor.cian,
+                        id: "hrv", hue: LiquidColor.cian,
                         titulo: "HRV", valor: "—",
                         chartID: "matriz-hrv",
                         chart: .lineaRellena(puntos: vacio20, base: nil, dominio: 20...80,
-                                             alfa: 0.6, alertaHoy: .ninguna)),
-                    fraccionIzq: 0.5),
+                                             alfa: 0.6, alertaHoy: .ninguna))),
                 .full(MatrizSeccion(
-                    id: "guardian", glifo: .escudo, hue: LiquidColor.doradoTemp,
+                    id: "guardian", hue: LiquidColor.doradoTemp,
                     huesPar: (LiquidColor.doradoTemp, LiquidColor.azul),
                     titulo: "Guardian", valor: "—",
                     chartID: "matriz-guardian",
@@ -568,29 +490,27 @@ private enum MatrizHoyFacePreviewData {
                                         alertaHoy: .ninguna))),
                 .split(
                     izq: MatrizSeccion(
-                        id: "carga", glifo: .montana, hue: LiquidColor.verdePrimario,
+                        id: "carga", hue: LiquidColor.verdePrimario,
                         titulo: "Load", valor: "—",
                         sublabel: "Calibrating",
                         chartID: "matriz-carga",
                         chart: .rielZona(p: nil, zona: 0.8...1.3, estela: [])),
                     der: MatrizSeccion(
-                        id: "strain", glifo: .flama, hue: LiquidColor.teal,
+                        id: "strain", hue: LiquidColor.teal,
                         titulo: "Effort", valor: "—",
                         chartID: "matriz-strain",
-                        chart: .barrasMini(valores: vacio14)),
-                    fraccionIzq: 0.55),
+                        chart: .barrasMini(valores: vacio14))),
                 .split(
                     izq: MatrizSeccion(
-                        id: "stress", glifo: .rayo, hue: LiquidColor.tinta900,
+                        id: "stress", hue: LiquidColor.tinta900,
                         titulo: "Stress", valor: "—",
                         chartID: "matriz-stress",
                         chart: .escalerita(niveles: vacio7)),
                     der: MatrizSeccion(
-                        id: "steps", glifo: .huellas, hue: LiquidColor.tinta700,
+                        id: "steps", hue: LiquidColor.tinta700,
                         titulo: "Steps", valor: "—",
                         chartID: "matriz-steps",
-                        chart: .barrasMini(valores: vacio14)),
-                    fraccionIzq: 0.5),
+                        chart: .barrasMini(valores: vacio14))),
             ])
     }
 
@@ -604,33 +524,29 @@ private enum MatrizHoyFacePreviewData {
         let resp: [Double?] = (0..<20).map { i in i >= 17 ? 17.0 : 14.0 }
         let estela: [Double] = [1.0, 1.1, 1.2, 1.3, 1.4]
         return MatrizHoyModel(
-            hero: .init(palabra: "Go light today", highlight: "light",
-                        tone: LiquidColor.atencion,
-                        lunaSuenoAlerta: .atencion, lunaFCAlerta: .atencion),
             bandas: [
                 .full(MatrizSeccion(
-                    id: "sleep", glifo: .luna, hue: LiquidColor.indigo,
+                    id: "sleep", hue: LiquidColor.indigo,
                     titulo: "Sleep", valor: "5:00",
                     chartID: "matriz-sleep",
                     chart: .columnas(noches: noches, referencia: 7,
                                      referenciaTag: "7 h", dominio: 4...10))),
                 .split(
                     izq: MatrizSeccion(
-                        id: "rhr", glifo: .corazon, hue: LiquidColor.rosa,
+                        id: "rhr", hue: LiquidColor.rosa,
                         titulo: "Resting HR", valor: "72",
                         chartID: "matriz-rhr",
                         chart: .lineaRellena(puntos: fc, base: 56, dominio: 45...80,
                                              alfa: 1.0, alertaHoy: .atencion)),
                     der: MatrizSeccion(
-                        id: "hrv", glifo: .onda, hue: LiquidColor.cian,
+                        id: "hrv", hue: LiquidColor.cian,
                         titulo: "HRV", valor: "38 ms",
                         chartID: "matriz-hrv",
                         chart: .lineaRellena(
                             puntos: (0..<20).map { _ in 38.0 as Double? },
-                            base: 45, dominio: 20...80, alfa: 0.6, alertaHoy: .ninguna)),
-                    fraccionIzq: 0.5),
+                            base: 45, dominio: 20...80, alfa: 0.6, alertaHoy: .ninguna))),
                 .full(MatrizSeccion(
-                    id: "guardian", glifo: .escudo, hue: LiquidColor.doradoTemp,
+                    id: "guardian", hue: LiquidColor.doradoTemp,
                     huesPar: (LiquidColor.doradoTemp, LiquidColor.azul),
                     titulo: "Guardian", valor: "",
                     chartID: "matriz-guardian",
@@ -654,28 +570,26 @@ private enum MatrizHoyFacePreviewData {
                     ])),
                 .split(
                     izq: MatrizSeccion(
-                        id: "carga", glifo: .montana, hue: LiquidColor.verdePrimario,
+                        id: "carga", hue: LiquidColor.verdePrimario,
                         titulo: "Load", valor: "1.48", sublabel: "Building",
                         chartID: "matriz-carga",
                         chart: .rielZona(p: 1.48, zona: 0.8...1.3, estela: estela)),
                     der: MatrizSeccion(
-                        id: "strain", glifo: .flama, hue: LiquidColor.teal,
+                        id: "strain", hue: LiquidColor.teal,
                         titulo: "Effort", valor: "14.0",
                         chartID: "matriz-strain",
-                        chart: .barrasMini(valores: (0..<14).map { Double(10 + $0) })),
-                    fraccionIzq: 0.55),
+                        chart: .barrasMini(valores: (0..<14).map { Double(10 + $0) }))),
                 .split(
                     izq: MatrizSeccion(
-                        id: "stress", glifo: .rayo, hue: LiquidColor.tinta900,
+                        id: "stress", hue: LiquidColor.tinta900,
                         titulo: "Stress", valor: "High",
                         chartID: "matriz-stress",
                         chart: .escalerita(niveles: [0, 1, 1, 2, 2, 1, 2])),
                     der: MatrizSeccion(
-                        id: "steps", glifo: .huellas, hue: LiquidColor.tinta700,
+                        id: "steps", hue: LiquidColor.tinta700,
                         titulo: "Steps", valor: "3 200",
                         chartID: "matriz-steps",
-                        chart: .barrasMini(valores: (0..<14).map { Double(3000 + $0 * 50) })),
-                    fraccionIzq: 0.5),
+                        chart: .barrasMini(valores: (0..<14).map { Double(3000 + $0 * 50) }))),
             ])
     }
 }

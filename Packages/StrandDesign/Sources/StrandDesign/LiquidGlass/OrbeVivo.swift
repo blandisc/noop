@@ -14,18 +14,25 @@ public struct OrbeVivo: View {
     private let hue: Color
     private let huePar: Color?
     private let semillaID: String
+    private let fps: Double
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    public init(radio: CGFloat, hue: Color, semillaID: String = "", huePar: Color? = nil) {
+    /// `fps`: los cuerpos chicos (sellos) viven bien a 12; los grandes a 24
+    /// (hallazgo Grok #2 — N relojes en la única cara).
+    public init(radio: CGFloat, hue: Color, semillaID: String = "",
+                huePar: Color? = nil, fps: Double = 24) {
         self.radio = radio
         self.hue = hue
         self.huePar = huePar
         self.semillaID = semillaID
+        self.fps = fps
     }
 
     public var body: some View {
         let lado = radio * 2.5
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: reduceMotion)) { tl in
+        // La rotación es de 0.12 rad/s: más cuadros no se ven, solo cuestan
+        // (hallazgos DeepSeek #2 / Grok #2 — perf de N orbes).
+        TimelineView(.animation(minimumInterval: 1.0 / fps, paused: reduceMotion)) { tl in
             let t = reduceMotion ? 0 : tl.date.timeIntervalSinceReferenceDate
             Canvas { ctx, size in
                 Self.dibujar(ctx, centro: CGPoint(x: size.width / 2, y: size.height / 2),
@@ -34,6 +41,22 @@ public struct OrbeVivo: View {
         }
         .frame(width: lado, height: lado)
         .accessibilityHidden(true)
+    }
+
+    /// Direcciones fibonacci por conteo — geometría PURA (no depende de `t`): se
+    /// calcula una vez por tamaño y se comparte entre todos los orbes y frames
+    /// (hallazgo DeepSeek #1: la trigonometría por frame era basura pura). El Canvas
+    /// puede dibujar fuera de MainActor → candado clásico, no aislamiento.
+    private static let cacheCandado = NSLock()
+    nonisolated(unsafe) private static var dirsCache: [Int: [SIMD3<Double>]] = [:]
+
+    private static func direcciones(_ n: Int) -> [SIMD3<Double>] {
+        cacheCandado.lock()
+        defer { cacheCandado.unlock() }
+        if let d = dirsCache[n] { return d }
+        let d = EcosistemaSimulacion.fibonacci(n)
+        dirsCache[n] = d
+        return d
     }
 
     /// El trazo compartido — quien ya tiene su propio Canvas + reloj (el reunido) lo
@@ -47,8 +70,7 @@ public struct OrbeVivo: View {
         // Fase estable por identidad: cada orbe mira distinto y gira desde su ángulo.
         let fase = Double(MatrizDither.semilla(chartID: faseID, index: 0) % 628) / 100.0
         let rot = fase + t * 0.12
-        for i in 0..<cuenta {
-            let dir = EcosistemaSimulacion.direccion(i, de: cuenta)
+        for (i, dir) in direcciones(cuenta).enumerated() {
             let p = EcosistemaSimulacion.particula(
                 dir: dir, indice: i, centro: centro, radio: radio,
                 rotacion: rot, jitterAmp: radio > 10 ? 0.7 : 0, t: t, alfaK: 1.4)

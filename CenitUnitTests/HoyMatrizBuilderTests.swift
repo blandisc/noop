@@ -163,8 +163,6 @@ final class HoyMatrizBuilderTests: XCTestCase {
             carga: TrainingLoadModel(acwr: 1.0, series: keys.suffix(6).map { ($0, 1.0) })))
 
         // Héroe sin alertas en lunas.
-        XCTAssertEqual(model.hero.lunaSuenoAlerta, .ninguna)
-        XCTAssertEqual(model.hero.lunaFCAlerta, .ninguna)
 
         // Secciones: alertaHoy / noches sin atencion/alarma (salvo historia — aquí limpia).
         if case .columnas(let noches, _, _, _) = seccion(model, id: "sleep")?.chart {
@@ -242,7 +240,7 @@ final class HoyMatrizBuilderTests: XCTestCase {
 
         // Orden visual a11y.
         XCTAssertEqual(model.ordenA11y, [
-            "hero", "sleep", "rhr", "hrv", "guardian", "carga", "strain", "stress", "steps",
+            "sleep", "rhr", "hrv", "guardian", "carga", "strain", "stress", "steps",
         ])
     }
 
