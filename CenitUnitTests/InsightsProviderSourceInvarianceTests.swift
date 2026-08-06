@@ -3,25 +3,20 @@ import CenitStore
 import StrandAnalytics
 @testable import Cenit
 
-/// `InsightsProvider` (Patrones + «La conexión de hoy» del Daily Brief) pasa los días por
-/// `SourceLens.clearBandColumns` antes de que `InsightEngine` doble cualquier base.
+/// `InsightsProvider` (Patrones + «La conexión de hoy» del Daily Brief) y lo que su lente deja pasar.
 ///
-/// **Este archivo nació mintiendo** (FER-973, PR #1017): se escribió para el mundo FER-639, cuando el
-/// limpiado era SELECTIVO por fuente (noches de banda vs noches de Apple) y su misión era que la base
-/// de HRV no mezclara RMSSD de banda con SDNN de Apple. Ese mundo ya no existe: tras «la banda nunca
-/// existió» toda fila es de Apple y el limpiado es INCONDICIONAL
-/// (`SourceLens.swift` — nila `avgHrv`, `restingHr`, `respRateBpm`, las etapas de sueño y
-/// `skinTempDevC` en TODAS las filas). Como el archivo nunca se ejecutó —el modo que lo corría estaba
-/// roto y CI no cubre este target— nadie notó que una de sus pruebas fallaba y la otra pasaba VACÍA.
+/// Historia de este archivo, porque explica qué fija y qué no: nació en el mundo FER-639 (banda vs
+/// Apple), se pudrió sin ejecutarse nunca (FER-49), y en FER-48 se reescribió otra vez cuando el gate
+/// de ciencia cambió la política. Hoy fija la política VIGENTE:
 ///
-/// Lo que este archivo fija ahora es la consecuencia REAL, que es incómoda y por eso vale pinearla:
-/// **ninguna anomalía nocturna de vital puede aflorar hoy**, porque el motor recibe esas columnas en
-/// `nil`. Para HRV es deliberado y correcto (el SDNN de Apple no es comparable contra una base de
-/// RMSSD). Para **FC en reposo y respiración** es más ancho de lo necesario: son de un solo
-/// instrumento y sí serían comparables consigo mismas. Eso es una decisión de producto/ciencia
-/// abierta, no un descuido que se parchee aquí: si alguien la resuelve (moviendo `rank` a
-/// `SourceLens.clearBandHrv`), ESTAS pruebas son las que deben cambiar, y el diff dirá exactamente
-/// qué empieza a mostrarse.
+/// · La lente es `clearBandHrv`: nila SOLO el HRV. Antes era `clearBandColumns`, que también nilaba
+///   `restingHr` y `respRateBpm` — justo las columnas que sondea el detector de anomalías —, así que
+///   NINGUNA anomalía de vital podía aflorar jamás. Era código vivo incapaz de producir nada.
+/// · HRV sigue callado, y no por la fuente: Apple graba SDNN y la base está calibrada en RMSSD
+///   (constructos distintos, sin conversión publicada). Su probe se BORRÓ del motor, no se enmascaró.
+/// · Respiración sigue callada hasta que la ingesta se acote a la ventana de sueño (FER-52): hoy es un
+///   promedio de día completo que mezcla sesiones de Respirar y entradas manuales.
+/// · FC en reposo SÍ habla, sobre el último día CERRADO y contra una base madura (14 noches).
 @MainActor
 final class InsightsProviderSourceInvarianceTests: XCTestCase {
 
@@ -34,17 +29,18 @@ final class InsightsProviderSourceInvarianceTests: XCTestCase {
                     strain: 10, exerciseCount: 1, spo2Pct: 97, skinTempDevC: 0.1, respRateBpm: resp)
     }
 
-    /// 30 noches estables + la de hoy, que es la que cada prueba decide.
-    private func history() -> (days: [DailyMetric], todayKey: String) {
+    /// 30 noches estables + hoy. El día 30 es el último CERRADO (hoy = 31, parcial).
+    private func history(lastClosedRHR: Int = 52, lastClosedResp: Double = 14,
+                         lastClosedHRV: Double = 50) -> (days: [DailyMetric], todayKey: String) {
         var days: [DailyMetric] = []
-        for i in 1...30 { days.append(dm(key(i), hrv: 50, rhr: 52)) }
+        for i in 1...29 { days.append(dm(key(i), hrv: 50, rhr: 52)) }
+        days.append(dm(key(30), hrv: lastClosedHRV, rhr: lastClosedRHR, resp: lastClosedResp))
+        days.append(dm(key(31), hrv: 50, rhr: 52))   // hoy, parcial
         return (days, key(31))
     }
 
-    private let vitals: Set<String> = ["HRV", "FC en reposo", "Respiración"]
-    private func vitalAnomalies(_ xs: [Insight]) -> [Insight] {
-        xs.filter { $0.kind == .nightAnomaly && vitals.contains($0.datum.metric) }
-          .sorted { $0.datum.metric < $1.datum.metric }
+    private func anomalias(_ xs: [Insight], _ metric: String) -> [Insight] {
+        xs.filter { $0.kind == .nightAnomaly && $0.datum.metric == metric }
     }
 
     private func rank(_ days: [DailyMetric], today: String) -> [Insight] {
@@ -52,46 +48,71 @@ final class InsightsProviderSourceInvarianceTests: XCTestCase {
                               eligibleDaysByBehavior: [:], proven: [], today: today)
     }
 
-    // MARK: El limpiado silencia las anomalías de vitales — y hay que verlo, no suponerlo
+    // MARK: Lo que el usuario SÍ puede ver ahora
 
-    /// Un salto de FC en reposo que el motor SÍ marcaría con datos crudos no aflora por `InsightsProvider`.
-    /// Las dos mitades importan: sin la segunda, la prueba pasaría igual con un motor que no detecta nada,
-    /// y no estaría probando el limpiado sino la nada.
-    func testClearingSilencesVitalNightAnomalies() {
-        var (days, todayKey) = history()
-        days.append(dm(todayKey, hrv: 50, rhr: 58))   // salto de FC en reposo: 58 contra una base de 52
-
-        XCTAssertTrue(vitalAnomalies(rank(days, today: todayKey)).isEmpty,
-                      "con las columnas cross-source en nil, el motor no tiene qué juzgar")
-
-        // Carga de la prueba: con los días CRUDOS el mismo motor sí emite la anomalía. Si esto dejara de
-        // ser cierto, lo de arriba se volvería un verde vacío.
-        let crudo = InsightEngine.generate(.init(days: days, referenceDay: todayKey))
-        XCTAssertFalse(vitalAnomalies(crudo).isEmpty,
-                       "el motor SÍ ve el salto cuando le llegan las columnas: lo que las apaga es el limpiado")
+    /// El caso que FER-48 vino a desbloquear: un salto real de FC en reposo aflora como anomalía.
+    /// Antes de FER-48 esto era imposible por construcción.
+    func testRestingHRJumpSurfacesAsAnomaly() {
+        let (days, todayKey) = history(lastClosedRHR: 70)   // 70 contra una base de 52
+        let out = anomalias(rank(days, today: todayKey), "FC en reposo")
+        XCTAssertFalse(out.isEmpty, "un salto de 18 lpm sobre la base tiene que aflorar")
+        // El copy no dice «anoche»: la FC en reposo de Apple es un promedio de día, no un dato nocturno.
+        let reading = out.first?.reading ?? ""
+        XCTAssertFalse(reading.lowercased().contains("anoche"),
+                       "la FC en reposo de Apple NO es nocturna: el copy no puede decir «anoche»")
+        XCTAssertFalse(reading.contains("z="), "el z es jerga: la desviación va en lpm")
     }
 
-    /// El limpiado es incondicional: `appleDays` ya no selecciona nada (todo es Apple). Pasarle un
-    /// conjunto lleno o vacío da el MISMO resultado — el parámetro sobrevive por firma, no por efecto.
+    /// Una FC en reposo en su base no dispara nada.
+    func testRestingHRAtBaselineRaisesNothing() {
+        let (days, todayKey) = history(lastClosedRHR: 52)
+        XCTAssertTrue(anomalias(rank(days, today: todayKey), "FC en reposo").isEmpty)
+    }
+
+    // MARK: Lo que sigue callado A PROPÓSITO
+
+    /// HRV no habla aunque el dato exista y se salga: su probe se borró del motor.
+    func testHRVNeverSurfaces() {
+        let (days, todayKey) = history(lastClosedHRV: 120)   // SDNN muy fuera de base
+        XCTAssertTrue(anomalias(rank(days, today: todayKey), "HRV").isEmpty,
+                      "Apple graba SDNN y la base es de RMSSD: el probe se borró, no se enmascaró")
+    }
+
+    /// Respiración tampoco, hasta que la ingesta se acote a la ventana de sueño (FER-52).
+    func testRespirationNeverSurfacesYet() {
+        let (days, todayKey) = history(lastClosedResp: 25)   // muy fuera de una base de 14
+        XCTAssertTrue(anomalias(rank(days, today: todayKey), "Respiración").isEmpty,
+                      "la ingesta mezcla sesiones de Respirar y entradas manuales: aún no es honesto")
+    }
+
+    // MARK: Los candados que hacen honesta a la que sí habla
+
+    /// El día de REFERENCIA (hoy) no se juzga: Apple sigue refinando su FC en reposo durante el día,
+    /// así que un valor parcial no se compara contra una base de días completos.
+    func testTodayIsNotJudged() {
+        var days: [DailyMetric] = []
+        for i in 1...30 { days.append(dm(key(i), hrv: 50, rhr: 52)) }
+        days.append(dm(key(31), hrv: 50, rhr: 70))   // el salto está SOLO en hoy (parcial)
+        XCTAssertTrue(anomalias(rank(days, today: key(31)), "FC en reposo").isEmpty,
+                      "hoy es parcial: no se juzga")
+    }
+
+    /// Con base tierna no se declara nada anómalo: con pocas noches el propio spread es ruido, así que
+    /// el z no tiene denominador calibrado. Se exigen 14 noches (`minNightsTrust`), no 4.
+    func testThinBaselineStaysQuiet() {
+        var days: [DailyMetric] = []
+        for i in 1...6 { days.append(dm(key(i), hrv: 50, rhr: 52)) }   // 5 cerradas: provisional, no trusted
+        days.append(dm(key(7), hrv: 50, rhr: 70))
+        XCTAssertTrue(anomalias(rank(days, today: key(7)), "FC en reposo").isEmpty,
+                      "una base provisional no puede declarar una anomalía")
+    }
+
+    /// `appleDays` ya no selecciona nada (todo es Apple): pasarlo lleno o vacío da lo mismo.
     func testAppleDaysArgumentNoLongerChangesAnything() {
-        var (days, todayKey) = history()
-        days.append(dm(todayKey, hrv: 50, rhr: 58))
-
-        let sinApple = rank(days, today: todayKey)
-        let conApple = InsightsProvider.rank(days: days, appleDays: Set(days.map(\.day)), behaviors: [:],
-                                             eligibleDaysByBehavior: [:], proven: [], today: todayKey)
-        XCTAssertEqual(vitalAnomalies(sinApple), vitalAnomalies(conApple),
-                       "el limpiado no mira la fuente: marcar todo como Apple no cambia nada")
-    }
-
-    /// Las columnas de una sola fuente NO se limpian: `InsightsProvider` sigue siendo capaz de emitir
-    /// insights. Sin esto, las dos pruebas de arriba serían compatibles con un proveedor roto del todo.
-    func testSingleSourceColumnsSurviveTheClearing() {
-        let (days, todayKey) = history()
-        let masked = SourceLens.clearBandColumns(days)
-        XCTAssertNil(masked.last?.restingHr, "FC en reposo se limpia (cross-source)")
-        XCTAssertNil(masked.last?.avgHrv, "HRV se limpia (cross-source)")
-        XCTAssertEqual(masked.last?.totalSleepMin, 420, "el sueño total sobrevive (una sola fuente)")
-        XCTAssertEqual(masked.last?.spo2Pct, 97, "SpO₂ sobrevive (una sola fuente)")
+        let (days, todayKey) = history(lastClosedRHR: 70)
+        let sin = rank(days, today: todayKey)
+        let con = InsightsProvider.rank(days: days, appleDays: Set(days.map(\.day)), behaviors: [:],
+                                        eligibleDaysByBehavior: [:], proven: [], today: todayKey)
+        XCTAssertEqual(sin.map(\.title), con.map(\.title))
     }
 }

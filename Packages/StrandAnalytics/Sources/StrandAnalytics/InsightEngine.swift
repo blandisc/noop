@@ -200,7 +200,7 @@ public enum InsightEngine {
         var insights: [Insight] = []
         insights += associationInsights(days, behaviors: inputs.behaviors,
                                          eligibleDaysByBehavior: inputs.eligibleDaysByBehavior)  // FDR family (behaviors × M + correlations)
-        insights += nightAnomalyInsights(days)
+        insights += nightAnomalyInsights(days, referenceDay: refDay)
         insights += trendInsights(days, referenceDay: refDay)
         if let f = forecastInsight(days, sleepDebtMin: debtMin) { insights.append(f) }
         if let s = sleepRegularityInsight(inputs.sleepSessions) { insights.append(s) }
@@ -377,9 +377,39 @@ public enum InsightEngine {
 
     // MARK: - Night anomaly (Baselines z-score)
 
-    private static func nightAnomalyInsights(_ days: [DailyMetric]) -> [Insight] {
-        guard let latest = days.last else { return [] }
-        let history = Array(days.dropLast())
+    /// FER-48 (gate /cso). Three things this detector deliberately does NOT do:
+    ///
+    /// · **No HRV probe.** `avgHrv` is Apple's SDNN averaged over the whole day, and `Baselines.hrvCfg`
+    ///   is tuned for nocturnal RMSSD — different constructs with no published conversion (Task Force
+    ///   1996, Circulation 93(5):1043–1065; Shaffer & Ginsberg 2017, Front Public Health 5:258). The
+    ///   repo even keeps a separate `metricCfg["sdnn"]` so the two can never share a baseline. The
+    ///   honest nocturnal HRV read already exists elsewhere: `SourceFusion.autonomicTrend`, on real
+    ///   `apple_rmssd_night`. Probing it here would say «last night» about neither last night nor the
+    ///   same quantity, so the probe is GONE rather than merely masked — masking invites its return.
+    ///
+    /// · **No respiration probe, yet.** Respiration is the only one of the three genuinely measured
+    ///   during sleep, so it is the best future candidate — but `HealthKitBridge` ingests
+    ///   `.respiratoryRate` as a whole-CALENDAR-DAY `.discreteAverage`, so Mindfulness/Breathe sessions
+    ///   and manual entries land in the same number as the night. On top of that, Apple Watch
+    ///   respiratory rate is not among the validated metrics in the living meta-analysis, and with
+    ///   `respCfg.floorSpread = 0.5` a |z| ≥ 2 fires at ~1.25 rpm — inside the measurement noise of even
+    ///   validated devices. Bring it back once ingestion is windowed to the sleep session (FER-52).
+    ///
+    /// · **No same-day reading.** Apple derives resting HR from awake, sedentary samples across the
+    ///   day and keeps refining it as the day goes, and we ingest it as a full-day average — so today's
+    ///   row is a PARTIAL estimate. The probe reads the most recent CLOSED day instead, and the copy
+    ///   never claims «last night» for it: that dato is not nocturnal.
+    ///
+    /// Method: robust z against the user's own EWMA baseline (`Baselines`), |z| ≥ 2.0, and only on a
+    /// `trusted` baseline (≥ `minNightsTrust` nights). `usable` (4 nights) was too thin to call
+    /// something anomalous: with n=4 the spread is itself mostly noise, so the z has no calibrated
+    /// denominator.
+    private static func nightAnomalyInsights(_ days: [DailyMetric], referenceDay: String?) -> [Insight] {
+        // El último día CERRADO: el de referencia (hoy) sigue creciendo, y una FC en reposo a medio día
+        // no es comparable contra una base de días completos.
+        let closed = referenceDay.map { ref in days.filter { $0.day < ref } } ?? Array(days.dropLast())
+        guard let latest = closed.last else { return [] }
+        let history = Array(closed.dropLast())
         guard history.count >= Baselines.minNightsSeed else { return [] }
 
         // `label` stays es-MX — it's the stable key used for `datum.metric` and the coach's topic filter;
@@ -387,27 +417,25 @@ public enum InsightEngine {
         struct Probe { let key: String; let label: String; let displayLabel: String; let unit: String
                        let cfg: MetricCfg; let value: (DailyMetric) -> Double? }
         let probes: [Probe] = [
-            Probe(key: "hrv", label: "HRV", displayLabel: appLocalized("HRV"),
-                  unit: "ms", cfg: Baselines.hrvCfg, value: { $0.avgHrv }),
             Probe(key: "resting_hr", label: "FC en reposo", displayLabel: appLocalized("Resting HR"),
                   unit: "lpm", cfg: Baselines.restingHRCfg, value: { $0.restingHr.map(Double.init) }),
-            Probe(key: "resp", label: "Respiración", displayLabel: appLocalized("Respiration"),
-                  unit: "rpm", cfg: Baselines.respCfg, value: { $0.respRateBpm }),
         ]
 
         var out: [Insight] = []
         for p in probes {
             guard let value = p.value(latest) else { continue }
             let state = Baselines.foldHistory(history.map { p.value($0) }, cfg: p.cfg)
-            guard state.usable else { continue }
+            guard state.trusted else { continue }
             let dev = Baselines.deviation(value, state: state)
             guard abs(dev.z) >= 2.0 else { continue }   // anomaly only
-            let zTxt = String(round1(dev.z))
             let baseInt = Int(state.baseline.rounded())
-            let title = appLocalized("\(p.displayLabel) was off last night")
+            // La desviación en unidades del cuerpo, no en z: «6 lpm por encima» lo puede juzgar
+            // cualquiera; «z=2.4» no. El z se conserva en `evidence` para quien lo quiera.
+            let gapInt = max(1, Int(abs(value - state.baseline).rounded()))
+            let title = appLocalized("\(p.displayLabel) ran off your usual")
             let reading = dev.z < 0
-                ? appLocalized("Last night your \(p.displayLabel) ran below your baseline (z=\(zTxt), baseline \(baseInt)\(p.unit)).")
-                : appLocalized("Last night your \(p.displayLabel) ran above your baseline (z=\(zTxt), baseline \(baseInt)\(p.unit)).")
+                ? appLocalized("Your \(p.displayLabel) ran \(gapInt)\(p.unit) below your usual (\(baseInt)\(p.unit)).")
+                : appLocalized("Your \(p.displayLabel) ran \(gapInt)\(p.unit) above your usual (\(baseInt)\(p.unit)).")
             let datum = InsightDatum(value: round1(value), unit: p.unit, metric: p.label)
             let evidence = InsightEvidence(n: state.nValid, pValue: nil, pAdjusted: nil,
                                            effectSize: dev.z, significant: false)
