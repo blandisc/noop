@@ -727,14 +727,16 @@ public struct LiquidEcosistema: View {
     }
 
     @ViewBuilder private func botonPuerta(_ puerta: String) -> some View {
+        // Revisión del dueño en vivo (FER-51): la puerta era invisible en tinta500 —
+        // sube a tinta700 con un punto más de aire; sigue siendo pastilla de vidrio.
         let etiqueta = HStack(spacing: LiquidSpace.s150) {
             Text(puerta)
                 .font(LiquidType.captionLectura)
-                .foregroundStyle(LiquidColor.tinta500)
-            LiquidIcon(.chevron, size: 9, color: LiquidColor.tinta500)
+                .foregroundStyle(LiquidColor.tinta700)
+            LiquidIcon(.chevron, size: 9, color: LiquidColor.tinta700)
         }
         .padding(.horizontal, LiquidSpace.s300)
-        .padding(.vertical, LiquidSpace.s075)
+        .padding(.vertical, LiquidSpace.s100)
         .background {
             Capsule().fill(LiquidColor.vidrioPastilla)
             Capsule().strokeBorder(LiquidColor.vidrioBordePastilla, lineWidth: 0.5)

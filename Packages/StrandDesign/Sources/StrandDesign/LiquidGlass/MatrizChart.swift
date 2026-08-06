@@ -39,6 +39,29 @@ private enum MatrizChartDraw {
         ctx.stroke(p, with: .color(color.opacity(0.8)), style: StrokeStyle(lineWidth: 1))
     }
 
+    /// Cadena de puntos sobre una polilínea — retro-futurismo: el DATO son puntos,
+    /// nunca un trazo continuo (revisión del dueño en vivo). Espaciado por longitud de arco.
+    static func cadena(_ ctx: GraphicsContext, _ puntos: [CGPoint], hue: Color,
+                       alfa: Double, radio: CGFloat = 0.9, paso: CGFloat = 3.4) {
+        guard puntos.count > 1 else { return }
+        var resto: CGFloat = 0
+        for k in 1..<puntos.count {
+            let a = puntos[k - 1], b = puntos[k]
+            let d = hypot(b.x - a.x, b.y - a.y)
+            guard d > 0.01 else { continue }
+            var s = resto
+            while s < d {
+                let u = s / d
+                let p = CGPoint(x: a.x + (b.x - a.x) * u, y: a.y + (b.y - a.y) * u)
+                ctx.fill(Path(ellipseIn: CGRect(x: p.x - radio, y: p.y - radio,
+                                                width: radio * 2, height: radio * 2)),
+                         with: .color(hue.opacity(alfa)))
+                s += paso
+            }
+            resto = s - d
+        }
+    }
+
     static func dibujarAlerta(_ ctx: GraphicsContext, en punto: CGPoint,
                               radioBase: CGFloat, alerta: MedidorLunar.Alerta) {
         switch alerta {
@@ -274,20 +297,19 @@ public struct MatrizLineaRellena: View {
                                                hue: hue, alfa: MatrizChartDraw.histAlfa * alfa)
                 }
 
-                // Trazo de la línea (segmentos entre puntos no-nil consecutivos).
-                var path = Path()
-                var started = false
+                // El DATO son puntos: cadena de partículas entre lecturas consecutivas
+                // (nunca un trazo continuo — retro-futurismo, revisión del dueño).
+                var hilo: [CGPoint] = []
                 for (i, val) in puntos.enumerated() {
                     guard let v = val else {
-                        started = false
+                        MatrizChartDraw.cadena(ctx, hilo, hue: hue, alfa: 0.5 * alfa)
+                        hilo.removeAll()
                         continue
                     }
-                    let pt = CGPoint(x: MatrizChartDraw.xAt(index: i, count: count, width: size.width),
-                                     y: MatrizChartDraw.yTop(v, domain: dominio, height: size.height))
-                    if started { path.addLine(to: pt) } else { path.move(to: pt); started = true }
+                    hilo.append(CGPoint(x: MatrizChartDraw.xAt(index: i, count: count, width: size.width),
+                                        y: MatrizChartDraw.yTop(v, domain: dominio, height: size.height)))
                 }
-                ctx.stroke(path, with: .color(hue.opacity(0.55 * alfa)),
-                           style: StrokeStyle(lineWidth: 1.2, lineCap: .round, lineJoin: .round))
+                MatrizChartDraw.cadena(ctx, hilo, hue: hue, alfa: 0.5 * alfa)
 
                 // Puntos-partícula.
                 let last = count - 1
@@ -381,17 +403,18 @@ public struct MatrizLineaSerena: View {
 
             guard count > 0, MatrizChartDraw.tieneDatos(puntos) else { return }
 
-            // Línea serena conectando puntos.
-            var path = Path()
-            var started = false
+            // Cadena serena de puntos conectando lecturas (el dato son puntos, no trazo).
+            var hilo: [CGPoint] = []
             for (i, val) in puntos.enumerated() {
-                guard let v = val else { started = false; continue }
-                let pt = CGPoint(x: MatrizChartDraw.xAt(index: i, count: count, width: size.width),
-                                 y: MatrizChartDraw.yTop(v, domain: dominio, height: size.height))
-                if started { path.addLine(to: pt) } else { path.move(to: pt); started = true }
+                guard let v = val else {
+                    MatrizChartDraw.cadena(ctx, hilo, hue: hue, alfa: 0.4, radio: 0.8)
+                    hilo.removeAll()
+                    continue
+                }
+                hilo.append(CGPoint(x: MatrizChartDraw.xAt(index: i, count: count, width: size.width),
+                                    y: MatrizChartDraw.yTop(v, domain: dominio, height: size.height)))
             }
-            ctx.stroke(path, with: .color(hue.opacity(0.45)),
-                       style: StrokeStyle(lineWidth: 1, lineCap: .round, lineJoin: .round))
+            MatrizChartDraw.cadena(ctx, hilo, hue: hue, alfa: 0.4, radio: 0.8)
 
             let last = count - 1
             for (i, val) in puntos.enumerated() {
@@ -598,11 +621,8 @@ public struct MatrizEscalerita: View {
                 let pt = CGPoint(x: MatrizChartDraw.xAt(index: i, count: count, width: size.width),
                                  y: Self.y(nivel: clamped, height: size.height))
                 if let prev {
-                    var seg = Path()
-                    seg.move(to: prev)
-                    seg.addLine(to: pt)
-                    ctx.stroke(seg, with: .color(hue.opacity(0.35)),
-                               style: StrokeStyle(lineWidth: 1, lineCap: .round))
+                    // Escalón como cadena de puntos (el dato son puntos, no trazo).
+                    MatrizChartDraw.cadena(ctx, [prev, pt], hue: hue, alfa: 0.32, radio: 0.8)
                 }
                 let a = esHoy ? MatrizChartDraw.hoyAlfa : MatrizChartDraw.histAlfa
                 let r = esHoy ? MatrizChartDraw.hoyR : MatrizChartDraw.histR

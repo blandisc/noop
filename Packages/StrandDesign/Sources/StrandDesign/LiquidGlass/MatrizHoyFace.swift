@@ -244,7 +244,10 @@ public struct MatrizHoyFace: View {
 
     private func encabezado(_ s: MatrizSeccion) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
-            SelloIcono(glifo: s.glifo, hue: s.hue, huesPar: s.huesPar)
+            // Orbe de partículas puro, sin glifo (revisión del dueño en vivo): el eco
+            // del héroe junto a cada título, con el hue de identidad de la señal.
+            LunaParticulas(radio: 8, hue: s.huesPar?.0 ?? s.hue,
+                           chartID: "sello-\(s.id)", huePar: s.huesPar?.1)
             VStack(alignment: .leading, spacing: 2) {
                 Text(s.titulo)
                     .font(LiquidType.tituloFila)

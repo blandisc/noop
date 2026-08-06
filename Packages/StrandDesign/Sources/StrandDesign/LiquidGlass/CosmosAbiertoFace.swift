@@ -341,18 +341,18 @@ public struct CosmosAbiertoFace: View {
             Canvas { ctx, _ in
                 dibujarArco(ctx,
                             a: CGPoint(x: 24 * sx, y: 58 * sy),
-                            b: CGPoint(x: 195 * sx, y: 104 * sy),
+                            b: CGPoint(x: 195 * sx, y: 96 * sy),
                             c: CGPoint(x: 366 * sx, y: 58 * sy),
                             t: t, fase: 0)
                 dibujarArco(ctx,
                             a: CGPoint(x: 10 * sx, y: 192 * sy),
-                            b: CGPoint(x: 195 * sx, y: 250 * sy),
+                            b: CGPoint(x: 195 * sx, y: 234 * sy),
                             c: CGPoint(x: 380 * sx, y: 192 * sy),
                             t: t, fase: 3)
                 dibujarArco(ctx,
-                            a: CGPoint(x: 24 * sx, y: 343 * sy),
-                            b: CGPoint(x: 195 * sx, y: 317 * sy),
-                            c: CGPoint(x: 366 * sx, y: 343 * sy),
+                            a: CGPoint(x: 24 * sx, y: 338 * sy),
+                            b: CGPoint(x: 195 * sx, y: 315 * sy),
+                            c: CGPoint(x: 366 * sx, y: 338 * sy),
                             t: t, fase: 6)
             }
         }
@@ -520,35 +520,33 @@ public struct CosmosAbiertoFace: View {
 
 // MARK: - Luna de partículas (revisión del dueño: nada de bolas planas)
 
-/// Luna de MATERIA de partículas — la misma receta del `SelloIcono` (disco de Fibonacci +
-/// jitter determinista de `MatrizDither`), escalada al radio. Es el eco directo del héroe:
-/// todos los cuerpos del Cosmos están hechos de lo mismo.
+/// Luna de MATERIA de partículas — la MISMA receta del héroe (`EcosistemaSimulacion`:
+/// esfera de Fibonacci proyectada con tamaño/alfa por profundidad). Todos los cuerpos
+/// del Cosmos están hechos de lo mismo. `huePar` alterna por índice (binaria del guardián).
 struct LunaParticulas: View {
     let radio: CGFloat
     let hue: Color
     let chartID: String
+    var huePar: Color? = nil
 
     var body: some View {
-        let lado = radio * 2.3
+        let lado = radio * 2.5
         Canvas { ctx, size in
             let centro = CGPoint(x: size.width / 2, y: size.height / 2)
-            // Densidad ∝ área (el sello usa 46 puntos a radio 9); tope por rendimiento.
-            let cuenta = min(200, max(46, Int(46 * (radio * radio) / 81)))
-            let escala = sqrt(max(1, radio / 9))
-            let golden = Double.pi * (3 - sqrt(5))
+            // Densidad ∝ área; el héroe usa ~0.5 pt²/partícula. Tope por rendimiento.
+            let cuenta = min(260, max(44, Int(0.62 * radio * radio)))
+            // Rotación estable por identidad (cada luna mira distinto, siempre igual).
+            let rot = Double(MatrizDither.semilla(chartID: chartID, index: 0) % 628) / 100.0
             for i in 0..<cuenta {
-                let sem = MatrizDither.semilla(chartID: chartID, index: i)
-                let p = MatrizDither.particula(sem)
-                let t = Double(i) / Double(cuenta - 1)
-                let rNorm = sqrt(t) * Double(radio) * 0.92
-                let ang = golden * Double(i)
-                let px = centro.x + CGFloat(Foundation.cos(ang) * rNorm) + CGFloat(p.dx) * 0.8
-                let py = centro.y + CGFloat(Foundation.sin(ang) * rNorm) + CGFloat(p.dy) * 0.8
-                let pr = (0.55 + 0.55 * (1 - t)) * CGFloat(p.dScale) * escala
-                let densAlfa = (0.55 + 0.40 * (1 - t)) * p.dAlpha
-                ctx.fill(Path(ellipseIn: CGRect(x: px - pr, y: py - pr,
+                let dir = EcosistemaSimulacion.direccion(i, de: cuenta)
+                let p = EcosistemaSimulacion.particula(
+                    dir: dir, indice: i, centro: centro, radio: radio,
+                    rotacion: rot, jitterAmp: 0, t: 0, alfaK: 1.55)
+                let pr = p.tamano * (0.55 + radio / 60)
+                let color = (huePar != nil && i % 2 == 1) ? huePar! : hue
+                ctx.fill(Path(ellipseIn: CGRect(x: p.pos.x - pr, y: p.pos.y - pr,
                                                 width: pr * 2, height: pr * 2)),
-                         with: .color(hue.opacity(densAlfa)))
+                         with: .color(color.opacity(min(1, p.alfa))))
             }
         }
         .frame(width: lado, height: lado)
@@ -580,19 +578,13 @@ public struct CosmosReunidoFace: View {
 
     public var body: some View {
         GeometryReader { geo in
-            let s: CGFloat = min(geo.size.width / 390, geo.size.height / 820)
+            let s: CGFloat = min(geo.size.width / 390, geo.size.height / 445)
             let cx: CGFloat = geo.size.width / 2
-            let cy: CGFloat = 300 * (geo.size.height / 820)
-            ZStack(alignment: .top) {
-                TimelineView(.animation(minimumInterval: 1 / 60, paused: reduceMotion)) { tl in
-                    let t: Double = reduceMotion ? 0 : tl.date.timeIntervalSinceReferenceDate
-                    Canvas { ctx, _ in dibujaEscena(&ctx, t: t, cx: cx, cy: cy, s: s) }
-                }
-                // La palabra del veredicto responde «¿todo bien?» debajo del orbe.
-                Text(model.heroe.palabra)
-                    .font(InstrumentoType.grotesk(19 * s, weight: .regular, relativeTo: .title3))
-                    .foregroundStyle(model.heroe.tonoPalabra)
-                    .position(x: cx, y: cy + Self.anillo(3) * s + 26 * s)
+            let cy: CGFloat = geo.size.height / 2
+            // Sin palabra propia: el héroe de la pantalla (arriba) ya dice el veredicto.
+            TimelineView(.animation(minimumInterval: 1 / 60, paused: reduceMotion)) { tl in
+                let t: Double = reduceMotion ? 0 : tl.date.timeIntervalSinceReferenceDate
+                Canvas { ctx, _ in dibujaEscena(&ctx, t: t, cx: cx, cy: cy, s: s) }
             }
         }
         .accessibilityElement(children: .ignore)
@@ -626,7 +618,7 @@ public struct CosmosReunidoFace: View {
             }
         }
         // El héroe al centro.
-        dibujaLuna(ctx, CGPoint(x: cx, y: cy), 52 * s, model.heroe.tonoOrbe, nil)
+        dibujaLuna(ctx, CGPoint(x: cx, y: cy), 46 * s, model.heroe.tonoOrbe, nil, t: t)
     }
 
     private func dibujaLunaOrbital(_ ctx: inout GraphicsContext, a: CosmosAbiertoModel.Ancla,
@@ -658,7 +650,7 @@ public struct CosmosReunidoFace: View {
             aro(ctx, p, hr, colorAlerta(a.alerta))
             if a.alerta == .alarma { aro(ctx, p, hr + 3.5, colorAlerta(a.alerta)) }
         }
-        dibujaLuna(ctx, p, a.lunaRadio * s, a.hueLuna, a.hueLuna2)
+        dibujaLuna(ctx, p, a.lunaRadio * s, a.hueLuna, a.hueLuna2, t: t)
     }
 
     private func colorAlerta(_ a: CosmosAbiertoModel.Alerta) -> Color {
@@ -668,11 +660,23 @@ public struct CosmosReunidoFace: View {
         ctx.stroke(Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2)),
                    with: .color(color.opacity(0.55)), style: StrokeStyle(lineWidth: 1))
     }
-    private func dibujaLuna(_ ctx: GraphicsContext, _ c: CGPoint, _ r: CGFloat, _ color: Color, _ color2: Color?) {
-        let tint = color2.map { Gradient(colors: [color, $0]) } ?? Gradient(colors: [color.opacity(0.9), color.opacity(0.5)])
-        ctx.fill(Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2)),
-                 with: .radialGradient(tint, center: CGPoint(x: c.x - r * 0.2, y: c.y - r * 0.25),
-                                       startRadius: 0, endRadius: r))
+    /// Cuerpo de MATERIA de partículas — la receta del héroe (`EcosistemaSimulacion`),
+    /// con rotación lenta propia. `color2` alterna por índice (binaria del guardián).
+    private func dibujaLuna(_ ctx: GraphicsContext, _ c: CGPoint, _ r: CGFloat,
+                            _ color: Color, _ color2: Color?, t: Double = 0) {
+        let cuenta = min(300, max(40, Int(0.6 * r * r)))
+        let rot = t * 0.10
+        for i in 0..<cuenta {
+            let dir = EcosistemaSimulacion.direccion(i, de: cuenta)
+            let p = EcosistemaSimulacion.particula(
+                dir: dir, indice: i, centro: c, radio: r,
+                rotacion: rot, jitterAmp: 0, t: 0, alfaK: 1.55)
+            let pr = p.tamano * (0.55 + r / 60)
+            let hue = (color2 != nil && i % 2 == 1) ? color2! : color
+            ctx.fill(Path(ellipseIn: CGRect(x: p.pos.x - pr, y: p.pos.y - pr,
+                                            width: pr * 2, height: pr * 2)),
+                     with: .color(hue.opacity(min(1, p.alfa))))
+        }
     }
 }
 
