@@ -281,20 +281,21 @@ public struct CosmosAbiertoFace: View {
     private let onTapAncla: (String) -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    /// Lienzo de referencia del prototipo (§1): las fracciones se derivan de 390×820.
+    /// Lienzo de referencia (revisión del dueño en vivo): la cara ya NO trae héroe propio —
+    /// el héroe de la pantalla es el ecosistema de partículas que vive arriba. Solo anclas.
     private static let refW: CGFloat = 390
-    private static let refH: CGFloat = 820
+    private static let refH: CGFloat = 445
 
-    /// Posiciones de ancla en el prototipo (x, y) pt sobre 390×820.
+    /// Posiciones de ancla (x, y) pt sobre 390×560.
     private static let pos: [String: CGPoint] = [
-        "sleep":    CGPoint(x: 99,  y: 334),
-        "guardian": CGPoint(x: 195, y: 341),
-        "rhr":      CGPoint(x: 291, y: 334),
-        "carga":    CGPoint(x: 84,  y: 471),
-        "stress":   CGPoint(x: 195, y: 481),
-        "hrv":      CGPoint(x: 306, y: 471),
-        "strain":   CGPoint(x: 110, y: 593),
-        "steps":    CGPoint(x: 280, y: 593),
+        "sleep":    CGPoint(x: 99,  y: 74),
+        "guardian": CGPoint(x: 195, y: 81),
+        "rhr":      CGPoint(x: 291, y: 74),
+        "carga":    CGPoint(x: 84,  y: 211),
+        "stress":   CGPoint(x: 195, y: 221),
+        "hrv":      CGPoint(x: 306, y: 211),
+        "strain":   CGPoint(x: 110, y: 333),
+        "steps":    CGPoint(x: 280, y: 333),
     ]
 
     public init(model: CosmosAbiertoModel, onTapAncla: @escaping (String) -> Void = { _ in }) {
@@ -310,17 +311,12 @@ public struct CosmosAbiertoFace: View {
             let stack = shouldStack(width: geo.size.width)
 
             ZStack(alignment: .top) {
-                LiquidColor.fondoGradient.ignoresSafeArea()
+                // Sin fondo propio ni héroe propio: la cara es transparente sobre el suelo
+                // vivo de Hoy y el héroe es el ecosistema que ya vive arriba.
 
                 // Arcos de anclaje (detrás de las anclas).
                 arcos(sx: sx, sy: sy)
                     .allowsHitTesting(false)
-
-                // Héroe.
-                heroeBlock(sx: sx, sy: sy, s: s)
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(model.heroe.a11y)
-                    .accessibilitySortPriority(100)
 
                 if stack {
                     anclasApiladas(sx: sx, s: s)
@@ -337,28 +333,6 @@ public struct CosmosAbiertoFace: View {
         .accessibilityElement(children: .contain)
     }
 
-    // MARK: Héroe
-
-    private func heroeBlock(sx: CGFloat, sy: CGFloat, s: CGFloat) -> some View {
-        let cx = 0.5 * Self.refW * sx
-        let cy = 152 * sy
-        let r: CGFloat = 52 * s
-        return VStack(spacing: 10 * s) {
-            CosmosOrbeCompacto(radio: r, color: model.heroe.tonoOrbe)
-            Text(model.heroe.palabra)
-                .font(InstrumentoType.grotesk(28 * s, weight: .semibold, relativeTo: .title2))
-                .foregroundStyle(model.heroe.tonoPalabra)
-                .multilineTextAlignment(.center)
-            if let conf = model.heroe.confianza {
-                Text(conf)
-                    .font(LiquidType.captionLectura)
-                    .foregroundStyle(LiquidColor.tinta500)
-                    .multilineTextAlignment(.center)
-            }
-        }
-        .position(x: cx, y: cy + 30 * s)
-    }
-
     // MARK: Arcos
 
     private func arcos(sx: CGFloat, sy: CGFloat) -> some View {
@@ -366,19 +340,19 @@ public struct CosmosAbiertoFace: View {
             let t = reduceMotion ? 0.0 : timeline.date.timeIntervalSinceReferenceDate
             Canvas { ctx, _ in
                 dibujarArco(ctx,
-                            a: CGPoint(x: 24 * sx, y: 318 * sy),
-                            b: CGPoint(x: 195 * sx, y: 364 * sy),
-                            c: CGPoint(x: 366 * sx, y: 318 * sy),
+                            a: CGPoint(x: 24 * sx, y: 58 * sy),
+                            b: CGPoint(x: 195 * sx, y: 104 * sy),
+                            c: CGPoint(x: 366 * sx, y: 58 * sy),
                             t: t, fase: 0)
                 dibujarArco(ctx,
-                            a: CGPoint(x: 10 * sx, y: 452 * sy),
-                            b: CGPoint(x: 195 * sx, y: 510 * sy),
-                            c: CGPoint(x: 380 * sx, y: 452 * sy),
+                            a: CGPoint(x: 10 * sx, y: 192 * sy),
+                            b: CGPoint(x: 195 * sx, y: 250 * sy),
+                            c: CGPoint(x: 380 * sx, y: 192 * sy),
                             t: t, fase: 3)
                 dibujarArco(ctx,
-                            a: CGPoint(x: 24 * sx, y: 603 * sy),
-                            b: CGPoint(x: 195 * sx, y: 577 * sy),
-                            c: CGPoint(x: 366 * sx, y: 603 * sy),
+                            a: CGPoint(x: 24 * sx, y: 343 * sy),
+                            b: CGPoint(x: 195 * sx, y: 317 * sy),
+                            c: CGPoint(x: 366 * sx, y: 343 * sy),
                             t: t, fase: 6)
             }
         }
@@ -439,7 +413,8 @@ public struct CosmosAbiertoFace: View {
                     Text(sub)
                         .font(LiquidType.captionLectura)
                         .foregroundStyle(LiquidColor.tinta500)
-                        .lineLimit(1)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
                         .minimumScaleFactor(0.8)
                 }
                 Text(ancla.rotulo)
@@ -449,7 +424,10 @@ public struct CosmosAbiertoFace: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
             }
-            .frame(minWidth: hit, minHeight: hit)
+            // Columna fija ≤ separación entre anclas (~96 pt): el texto envuelve DENTRO
+            // de su ancla, nunca sobre la vecina.
+            .frame(width: 94 * s)
+            .frame(minHeight: hit)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -462,13 +440,13 @@ public struct CosmosAbiertoFace: View {
         let r = ancla.lunaRadio * s
         return ZStack {
             if let h2 = ancla.hueLuna2 {
-                // Binaria del guardián: dos lunitas pequeñas.
-                Circle().fill(ancla.hueLuna).frame(width: r * 1.4, height: r * 1.4)
+                // Binaria del guardián: dos lunitas pequeñas de partículas.
+                LunaParticulas(radio: r * 0.7, hue: ancla.hueLuna, chartID: "luna-\(ancla.id)-a")
                     .offset(x: -r * 0.55)
-                Circle().fill(h2).frame(width: r * 1.4, height: r * 1.4)
+                LunaParticulas(radio: r * 0.7, hue: h2, chartID: "luna-\(ancla.id)-b")
                     .offset(x: r * 0.55)
             } else {
-                Circle().fill(ancla.hueLuna).frame(width: r * 2, height: r * 2)
+                LunaParticulas(radio: r, hue: ancla.hueLuna, chartID: "luna-\(ancla.id)")
             }
         }
         .accessibilityHidden(true)
@@ -499,7 +477,7 @@ public struct CosmosAbiertoFace: View {
         let g2 = model.anclas.filter { $0.grupo == 2 }
         let g3 = model.anclas.filter { $0.grupo == 3 }
         return VStack(spacing: 28 * s) {
-            Spacer().frame(height: 220 * s)
+            Spacer().frame(height: 24 * s)
             grupoFila(g1, s: s)
             grupoFila(g2, s: s)
             grupoFila(g3, s: s)
@@ -537,6 +515,44 @@ public struct CosmosAbiertoFace: View {
         case .atencion: return LiquidColor.atencion
         case .alarma: return LiquidColor.negativo
         }
+    }
+}
+
+// MARK: - Luna de partículas (revisión del dueño: nada de bolas planas)
+
+/// Luna de MATERIA de partículas — la misma receta del `SelloIcono` (disco de Fibonacci +
+/// jitter determinista de `MatrizDither`), escalada al radio. Es el eco directo del héroe:
+/// todos los cuerpos del Cosmos están hechos de lo mismo.
+struct LunaParticulas: View {
+    let radio: CGFloat
+    let hue: Color
+    let chartID: String
+
+    var body: some View {
+        let lado = radio * 2.3
+        Canvas { ctx, size in
+            let centro = CGPoint(x: size.width / 2, y: size.height / 2)
+            // Densidad ∝ área (el sello usa 46 puntos a radio 9); tope por rendimiento.
+            let cuenta = min(200, max(46, Int(46 * (radio * radio) / 81)))
+            let escala = sqrt(max(1, radio / 9))
+            let golden = Double.pi * (3 - sqrt(5))
+            for i in 0..<cuenta {
+                let sem = MatrizDither.semilla(chartID: chartID, index: i)
+                let p = MatrizDither.particula(sem)
+                let t = Double(i) / Double(cuenta - 1)
+                let rNorm = sqrt(t) * Double(radio) * 0.92
+                let ang = golden * Double(i)
+                let px = centro.x + CGFloat(Foundation.cos(ang) * rNorm) + CGFloat(p.dx) * 0.8
+                let py = centro.y + CGFloat(Foundation.sin(ang) * rNorm) + CGFloat(p.dy) * 0.8
+                let pr = (0.55 + 0.55 * (1 - t)) * CGFloat(p.dScale) * escala
+                let densAlfa = (0.55 + 0.40 * (1 - t)) * p.dAlpha
+                ctx.fill(Path(ellipseIn: CGRect(x: px - pr, y: py - pr,
+                                                width: pr * 2, height: pr * 2)),
+                         with: .color(hue.opacity(densAlfa)))
+            }
+        }
+        .frame(width: lado, height: lado)
+        .accessibilityHidden(true)
     }
 }
 

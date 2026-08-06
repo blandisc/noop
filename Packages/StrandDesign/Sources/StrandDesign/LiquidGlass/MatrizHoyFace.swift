@@ -167,41 +167,30 @@ public struct MatrizHoyFace: View {
     }
 
     public var body: some View {
-        GeometryReader { geo in
-            let columnaUnica = dynamicTypeSize >= .accessibility1 || geo.size.width < 320
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(spacing: 0) {
-                    MatrizHeroCompacto(hero: model.hero)
-                        .padding(.top, 12)
-                        .padding(.bottom, 20)
-                        .accessibilityElement(children: .combine)
-                        .accessibilityLabel(Text(verbatim: model.hero.palabra))
-                        .accessibilityIdentifier("matriz-hero")
-
-                    filo()
-
-                    ForEach(Array(model.bandas.enumerated()), id: \.offset) { _, banda in
-                        bandaView(banda, columnaUnica: columnaUnica, ancho: geo.size.width)
-                        filo()
-                    }
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal, 16)
-                .padding(.bottom, 24)
+        // El héroe de la pantalla es el ecosistema de partículas que ya vive arriba — la
+        // Matriz NO repite orbe ni palabra, NO trae fondo propio (la telemetría se imprime
+        // directo sobre el suelo vivo de Hoy) y NO scrollea por su cuenta: mide su contenido
+        // y el scroll es el de la pantalla (revisión del dueño en vivo, 2026-08-06).
+        let columnaUnica = dynamicTypeSize >= .accessibility1
+        VStack(spacing: 0) {
+            ForEach(Array(model.bandas.enumerated()), id: \.offset) { _, banda in
+                bandaView(banda, columnaUnica: columnaUnica)
+                filo()
             }
         }
-        .background(LiquidColor.papelMatriz.ignoresSafeArea())
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 16)
+        .padding(.bottom, 24)
         .accessibilityElement(children: .contain)
     }
 
     @ViewBuilder
-    private func bandaView(_ banda: MatrizHoyModel.Banda, columnaUnica: Bool,
-                           ancho: CGFloat) -> some View {
+    private func bandaView(_ banda: MatrizHoyModel.Banda, columnaUnica: Bool) -> some View {
         switch banda {
         case .full(let s):
             seccionView(s)
                 .padding(.vertical, 12)
-        case .split(let izq, let der, let fraccion):
+        case .split(let izq, let der, _):
             if columnaUnica {
                 VStack(spacing: 0) {
                     seccionView(izq).padding(.vertical, 12)
@@ -209,9 +198,11 @@ public struct MatrizHoyFace: View {
                     seccionView(der).padding(.vertical, 12)
                 }
             } else {
+                // Mitades iguales: el filo vertical parte la banda al centro.
                 HStack(alignment: .top, spacing: 0) {
                     seccionView(izq)
-                        .frame(width: (ancho - 32) * fraccion, alignment: .leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.trailing, 12)
                         .padding(.vertical, 12)
                     Rectangle()
                         .fill(LiquidColor.tinta900.opacity(0.08))
