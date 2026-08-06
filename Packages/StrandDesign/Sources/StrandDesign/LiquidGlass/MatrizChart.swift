@@ -423,14 +423,16 @@ public struct MatrizRielZona: View {
     private let zona: ClosedRange<Double>
     private let estela: [Double]
     private let hue: Color
+    private let alertaHoy: MedidorLunar.Alerta
 
     public init(chartID: String, p: Double?, zona: ClosedRange<Double>,
-                estela: [Double], hue: Color) {
+                estela: [Double], hue: Color, alertaHoy: MedidorLunar.Alerta = .ninguna) {
         self.chartID = chartID
         self.p = p
         self.zona = zona
         self.estela = estela
         self.hue = hue
+        self.alertaHoy = alertaHoy
     }
 
     public var body: some View {
@@ -480,6 +482,11 @@ public struct MatrizRielZona: View {
                                                chartID: chartID, index: 100 + nE,
                                                hue: hue, alfa: MatrizChartDraw.hoyAlfa,
                                                radio: 3.4)
+                // Aro de alerta sobre HOY: la gramática §8 debe verse IGUAL en las dos caras;
+                // sin esto un pico de carga ≥ 1.5 solo salía como sublabel en la Matriz mientras
+                // el Cosmos sí lo marcaba (asimetría cara-vs-cara, hallazgo adversarial Grok #4).
+                MatrizChartDraw.dibujarAlerta(ctx, en: CGPoint(x: x, y: y),
+                                              radioBase: 3.4, alerta: alertaHoy)
             } else if estela.isEmpty {
                 MatrizChartDraw.rejillaFantasma(ctx, size: size, chartID: chartID)
             }

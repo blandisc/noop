@@ -89,6 +89,11 @@ enum HoyGramatica {
     /// Única fuente de alarma en toda la pantalla: el par centinela con racha ≥ 2 noches.
     static func severidad(senal: SenalID, prep: Preparedness.Read?,
                           razonCarga: Double?) -> Alerta {
+        // §10: con veredicto global «lowSignal» («Conociéndote») NINGUNA señal alerta.
+        // El motor puede devolver lowSignal con el eje de sueño aún en `.low` (autonómico
+        // sin dato + noche corta), así que sin este corte la pantalla pintaría ámbar durante
+        // la calibración — exactamente lo que §10 prohíbe (hallazgo adversarial Grok #1).
+        if prep?.verdict == .lowSignal { return .ninguna }
         switch senal {
         case .sleep:
             guard let eje = prep?.drivers.first(where: { $0.axis == .sleep }) else { return .ninguna }

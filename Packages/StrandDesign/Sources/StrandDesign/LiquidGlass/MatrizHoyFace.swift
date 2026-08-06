@@ -16,7 +16,8 @@ public enum MatrizChartPayload: Sendable, Equatable {
                       alfa: Double, alertaHoy: MedidorLunar.Alerta)
     case lineaSerena(puntos: [Double?], banda: ClosedRange<Double>?,
                      dominio: ClosedRange<Double>, alertaHoy: MedidorLunar.Alerta)
-    case rielZona(p: Double?, zona: ClosedRange<Double>, estela: [Double])
+    case rielZona(p: Double?, zona: ClosedRange<Double>, estela: [Double],
+                  alertaHoy: MedidorLunar.Alerta = .ninguna)
     case barrasMini(valores: [Double?])
     case escalerita(niveles: [Int?])
 }
@@ -336,8 +337,9 @@ public struct MatrizHoyFace: View {
         case .lineaSerena(let pts, let banda, let dom, let alerta):
             MatrizLineaSerena(chartID: chartID, puntos: pts, banda: banda, dominio: dom,
                               hue: hue, alertaHoy: alerta)
-        case .rielZona(let p, let zona, let estela):
-            MatrizRielZona(chartID: chartID, p: p, zona: zona, estela: estela, hue: hue)
+        case .rielZona(let p, let zona, let estela, let alertaHoy):
+            MatrizRielZona(chartID: chartID, p: p, zona: zona, estela: estela, hue: hue,
+                           alertaHoy: alertaHoy)
         case .barrasMini(let valores):
             MatrizBarrasMini(chartID: chartID, valores: valores, hue: hue)
         case .escalerita(let niveles):

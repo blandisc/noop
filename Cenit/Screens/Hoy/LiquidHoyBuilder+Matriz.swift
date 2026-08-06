@@ -172,7 +172,7 @@ extension LiquidHoyBuilder {
             chartID: "matriz-carga",
             chart: .rielZona(p: pCarga,
                              zona: ReadinessEngine.acwrSweetSpotLow...ReadinessEngine.acwrSweetSpotHigh,
-                             estela: estela))
+                             estela: estela, alertaHoy: alertaCarga))
 
         let keysEsf = Array(keys.suffix(matrizVentanaEsfuerzo))
         let ptsEsf: [Double?] = keysEsf.map { byDay[$0]?.strain }
@@ -228,11 +228,10 @@ extension LiquidHoyBuilder {
             chartID: "matriz-steps",
             chart: .barrasMini(valores: ptsPasos))
 
-        // Silenciar warning de sentByDay si no se usa en aros históricos de guardián
-        // (la API de línea serena solo pinta alertaHoy; la historia fuera se lee en tests
-        // del modelo vía bodyHistory/sentinelHistory).
+        // sentByDay: reservado para los aros históricos del guardián — la API de línea serena
+        // solo pinta alertaHoy hoy; la historia fuera se cubre en tests del modelo (deuda §7,
+        // hallazgo adversarial Grok #3, difería StrandDesign per-punto).
         _ = sentByDay
-        _ = alertaCarga
 
         return MatrizHoyModel(
             hero: hero,
