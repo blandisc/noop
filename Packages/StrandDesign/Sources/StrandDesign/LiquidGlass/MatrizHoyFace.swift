@@ -212,7 +212,9 @@ public struct MatrizHoyFace: View {
                     Rectangle()
                         .fill(LiquidColor.tinta900.opacity(MatrizTokens.filoAlfa))
                         .frame(width: 1)
-                        .padding(.vertical, LiquidSpace.s200)
+                        // Mismo borde que las columnas que separa (edge-to-edge, como
+                        // los filos horizontales — convergencia de simetría R2).
+                        .padding(.vertical, MatrizTokens.bandaV)
                     seccionView(der)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.leading, MatrizTokens.colGap)
@@ -342,7 +344,7 @@ public struct MatrizHoyFace: View {
                     Text(r.titulo)
                         .font(LiquidType.tituloFila)
                         .foregroundStyle(LiquidColor.tinta700)
-                    Spacer()
+                    Spacer(minLength: MatrizTokens.selloTexto)
                     HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s050) {
                         Text(r.valor)
                             .font(LiquidType.valorM)
