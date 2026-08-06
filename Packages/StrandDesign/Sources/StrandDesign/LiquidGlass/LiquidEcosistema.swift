@@ -483,9 +483,11 @@ public struct LiquidEcosistema: View {
         .allowsHitTesting(esSeparadaEstable)
         .animation(still ? LiquidEcosistemaMotion.reduceCrossfadeAnim
                          : (esSeparadaEstable
+                            // FER-54 (revisión del dueño): primero ATERRIZA el orbe,
+                            // después habla el texto — 0.45 destapaba a mitad del vuelo.
                             ? LiquidMotion.glassOut(LiquidMotion.quick)
                                 .delay(LiquidEcosistemaMotion.anticipacion
-                                       + LiquidEcosistemaMotion.fusionDur * 0.45)
+                                       + LiquidEcosistemaMotion.fusionDur * 0.85)
                             : LiquidMotion.glassOut(LiquidMotion.quick)),
                    value: esSeparadaEstable)
         // La palabra del veredicto (abajo, centrada) — se oculta en separado. En compacto

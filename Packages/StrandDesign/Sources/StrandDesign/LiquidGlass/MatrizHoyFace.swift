@@ -131,8 +131,10 @@ public struct MatrizHoyModel: Sendable, Equatable {
         case full(MatrizSeccion)
         case split(izq: MatrizSeccion, der: MatrizSeccion)
         /// Rótulo de NIVEL (Opción A del dueño): «Deciden tu día · Vigila · Contexto ·
-        /// Bitácora» — el orden enseña el modelo sin manual.
-        case nivel(String)
+        /// Bitácora» — el orden enseña el modelo sin manual. Con `manualID` la fila
+        /// entera es tocable (FER-54): un «?» hueco discreto anuncia la hoja-manual
+        /// que explica ese nivel; `nil` = decorativo como siempre.
+        case nivel(String, manualID: String?)
     }
 
     /// Orden VISUAL de arriba a abajo (§7). Bandas divididas = 2 elementos a11y.
@@ -194,6 +196,15 @@ public struct MatrizHoyFace: View {
         .accessibilityElement(children: .contain)
     }
 
+    /// El texto de un rótulo de nivel (compartido por el decorativo y el tocable).
+    private func nivelTexto(_ rotulo: String) -> some View {
+        Text(rotulo)
+            .font(LiquidType.micro)
+            .tracking(LiquidType.microTracking)
+            .textCase(.uppercase)
+            .foregroundStyle(LiquidColor.tinta500)
+    }
+
     /// Toca una sección: dispara su hoja + el latido del sello.
     private func tocar(_ id: String) {
         if !reduceMotion {
@@ -212,15 +223,33 @@ public struct MatrizHoyFace: View {
         case .full(let s):
             seccionView(s)
                 .padding(.vertical, MatrizTokens.bandaV)
-        case .nivel(let rotulo):
-            Text(rotulo)
-                .font(LiquidType.micro)
-                .tracking(LiquidType.microTracking)
-                .textCase(.uppercase)
-                .foregroundStyle(LiquidColor.tinta500)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.top, MatrizTokens.bandaV)
-                .accessibilityHidden(true)
+        case .nivel(let rotulo, let manualID):
+            if let manualID {
+                // FER-54: la fila entera es el hit (≥44 pt); el «?» hueco en el mismo
+                // gris del rótulo — visible al que busca, invisible al que ya sabe.
+                Button { tocar(manualID) } label: {
+                    HStack(spacing: LiquidSpace.s150) {
+                        nivelTexto(rotulo)
+                        Image(systemName: "questionmark.circle")
+                            .font(LiquidType.infoGlifoCompacto.weight(.medium))
+                            .foregroundStyle(LiquidColor.tinta500)
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.top, MatrizTokens.bandaV)
+                    .frame(minHeight: LiquidControl.hitTarget, alignment: .bottomLeading)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text(rotulo))
+                .accessibilityHint(Text(String(localized: "matriz.nivel.manual.hint",
+                                               defaultValue: "How this works",
+                                               bundle: .main)))
+            } else {
+                nivelTexto(rotulo)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, MatrizTokens.bandaV)
+                    .accessibilityHidden(true)
+            }
         case .split(let izq, let der):
             if columnaUnica {
                 VStack(spacing: 0) {
@@ -341,7 +370,7 @@ public struct MatrizHoyFace: View {
                             .padding(.horizontal, LiquidSpace.s150)
                             .padding(.vertical, LiquidSpace.s025)
                             .overlay(Capsule().strokeBorder(
-                                LiquidColor.verdePrimario.opacity(0.45), lineWidth: 1))
+                                LiquidColor.verdePrimario.opacity(0.45), lineWidth: 1)) // token-exempt: aro del sello «vota» al 45 %
                             .fixedSize()
                     }
                     if let sub = s.sublabel {

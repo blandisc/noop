@@ -20198,6 +20198,465 @@
         }
       }
     },
+    "manual.deciden.c1" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All in your range"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todo en tu rango"
+          }
+        }
+      }
+    },
+    "manual.deciden.c1.sub" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No signal out. Your body woke up where it usually does."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ninguna señal fuera. Tu cuerpo amaneció donde suele."
+          }
+        }
+      }
+    },
+    "manual.deciden.c2" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Good, with one detail"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bien, con un detalle"
+          }
+        }
+      }
+    },
+    "manual.deciden.c2.sub" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One signal out of your range, and I tell you which."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Una señal fuera de tu rango — te digo cuál."
+          }
+        }
+      }
+    },
+    "manual.deciden.c3" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Take it easy"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ándate leve"
+          }
+        }
+      }
+    },
+    "manual.deciden.c3.sub" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Two or more out, or the guardian confirmed its alert."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dos o más fuera, o el guardián corroboró su alerta."
+          }
+        }
+      }
+    },
+    "manual.deciden.c4" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Low signal"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Baja señal"
+          }
+        }
+      }
+    },
+    "manual.deciden.c4.sub" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not enough reading tonight. Without data I don't guess."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No hubo lectura suficiente esta noche. Sin datos no adivino."
+          }
+        }
+      }
+    },
+    "manual.deciden.como" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From your recent weeks I learn your normal band for each signal. Each morning I compare the night against that band: in or out. The verdict counts how many voting signals stepped out. It is never a 0-100 score, because your watch doesn't measure with that precision and I won't pretend it does."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "De tus últimas semanas aprendo tu banda normal de cada señal. Cada mañana comparo la noche contra esa banda: dentro o fuera. El veredicto cuenta cuántas señales votantes se salieron — nunca es un puntaje de 0 a 100, porque tu reloj no mide con esa precisión y no te voy a fingir que sí."
+          }
+        }
+      }
+    },
+    "manual.deciden.fc" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resting heart rate"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FC en reposo"
+          }
+        }
+      }
+    },
+    "manual.deciden.fc.sub" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your lowest pulse of the night, against your recent weeks."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu pulso más bajo de la noche, contra tus últimas semanas."
+          }
+        }
+      }
+    },
+    "manual.deciden.guardian" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The guardian"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El guardián"
+          }
+        }
+      }
+    },
+    "manual.deciden.guardian.sub" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Temperature and breathing watch together. They only weigh in when both step out at once; one alone can be noise."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Temperatura y respiración vigilan juntas. Solo pesan si las dos se salen a la vez — una sola puede ser ruido."
+          }
+        }
+      }
+    },
+    "manual.deciden.hedge" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A wrist-watch reading: an honest approximation, not a diagnosis. Cénit is not a medical device."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lectura de un reloj de muñeca: una aproximación honesta, no un diagnóstico. Cénit no es un dispositivo médico."
+          }
+        }
+      }
+    },
+    "manual.deciden.promesa" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Every morning I read your night and tell you one thing: whether you woke up inside your own range. Not against tables: against you."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cada mañana leo tu noche y te digo una sola cosa: si amaneciste dentro de tu propio rango — no contra tablas, contra ti."
+          }
+        }
+      }
+    },
+    "manual.deciden.resto" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "HRV, load, effort"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "VFC, carga, esfuerzo"
+          }
+        }
+      }
+    },
+    "manual.deciden.resto.sub" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "They give you context, but don't vote: on a wrist watch they aren't stable enough to decide."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Te dan contexto, pero no votan: en un reloj de muñeca no son lo bastante estables para decidir."
+          }
+        }
+      }
+    },
+    "manual.deciden.sec.combos" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The combinations"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las combinaciones"
+          }
+        }
+      }
+    },
+    "manual.deciden.sec.como" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How it's read"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cómo se calcula"
+          }
+        }
+      }
+    },
+    "manual.deciden.sec.votan" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Who votes"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quién vota"
+          }
+        }
+      }
+    },
+    "manual.deciden.sello.centinela" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sentinel"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "centinela"
+          }
+        }
+      }
+    },
+    "manual.deciden.sello.ref" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "reference"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "referencia"
+          }
+        }
+      }
+    },
+    "manual.deciden.sello.vota" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "votes"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "vota"
+          }
+        }
+      }
+    },
+    "manual.deciden.sueno" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sleep"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sueño"
+          }
+        }
+      }
+    },
+    "manual.deciden.sueno.sub" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How much and how well you slept last night."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cuánto y qué tan bien dormiste anoche."
+          }
+        }
+      }
+    },
+    "manual.deciden.titulo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What decides your day?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Qué decide tu día?"
+          }
+        }
+      }
+    },
+    "matriz.nivel.manual.hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How this works"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cómo funciona"
+          }
+        }
+      }
+    },
     "matriz.vota" : {
       "extractionState" : "manual",
       "localizations" : {

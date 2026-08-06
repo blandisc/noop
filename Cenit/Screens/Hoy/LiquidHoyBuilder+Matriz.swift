@@ -259,18 +259,22 @@ extension LiquidHoyBuilder {
             bandas: [
                 // Opción A del dueño (2026-08-06): el ORDEN enseña el modelo.
                 // Las dos votantes GEMELAS abren la Matriz, lado a lado.
+                // FER-54: el nivel que manda gana su manual — tocar el rótulo abre
+                // la hoja «¿Qué decide tu día?» (el patrón queda listo para escalar
+                // a los otros niveles cuando tengan la suya).
                 .nivel(String(localized: "matriz.nivel.deciden",
-                              defaultValue: "Decide your day")),
+                              defaultValue: "Decide your day"),
+                       manualID: "manual.deciden"),
                 .split(izq: seccionSueno, der: seccionFC),
                 .nivel(String(localized: "matriz.nivel.vigila",
-                              defaultValue: "Watches over you")),
+                              defaultValue: "Watches over you"), manualID: nil),
                 .full(seccionGuardian),
                 .nivel(String(localized: "matriz.nivel.contexto",
-                              defaultValue: "Context")),
+                              defaultValue: "Context"), manualID: nil),
                 .split(izq: seccionCarga, der: seccionEsf),
                 .split(izq: seccionVFC, der: seccionStress),
                 .nivel(String(localized: "matriz.nivel.bitacora",
-                              defaultValue: "Logbook")),
+                              defaultValue: "Logbook"), manualID: nil),
                 .full(seccionPasos),
             ])
     }
