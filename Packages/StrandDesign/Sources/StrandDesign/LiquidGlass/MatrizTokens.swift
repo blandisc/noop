@@ -73,6 +73,12 @@ public enum MatrizTokens {
     public static let aroGap2: CGFloat = 4.6
     /// Inset horizontal estándar de las gráficas de serie.
     public static let chartInset: CGFloat = 4
+    /// Aire vertical estándar del trazo dentro de su lienzo (un solo pad para toda la familia).
+    public static let chartPadV: CGFloat = 4
+    /// Canal superior de columnas: territorio del tag de referencia («7 h»).
+    public static let tagCanal: CGFloat = 16
+    /// Altura mínima del encabezado de sección (título + línea de sublabel reservada).
+    public static let encabezadoMinH: CGFloat = 34
     /// Inset del riel de carga (deja aire al punto HOY + su aro).
     public static let rielInset: CGFloat = 8
     /// Canal entre barras (columnas de sueño Y barras mini — un solo ritmo).
@@ -85,6 +91,6 @@ public enum MatrizTokens {
     public static let alturaLinea: CGFloat = 56
     public static let alturaRenglon: CGFloat = 32
     public static let alturaBarras: CGFloat = 40
-    public static let alturaEscalera: CGFloat = 36
+    public static let alturaEscalera: CGFloat = alturaBarras   // gemela de Steps (banda Stress|Steps)
     public static let alturaRiel: CGFloat = 40   // gemela de barras: el riel centra en el mismo alto
 }

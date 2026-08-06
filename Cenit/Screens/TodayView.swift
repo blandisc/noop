@@ -1010,7 +1010,9 @@ struct TodayView: View {
                 syncStatusLine
                 HealthAlertBanner()
             }
-            .padding(.horizontal, LiquidSpace.s550)
+            // Mismo margen que la Matriz (auditoría de simetría: s550 dejaba la
+            // columna vecina 2 pt fuera de eje).
+            .padding(.horizontal, LiquidSpace.s600)
             LiquidHoyContent(
                 model: output.model,
                 onTapMetric: { openLiquidMetric($0) },

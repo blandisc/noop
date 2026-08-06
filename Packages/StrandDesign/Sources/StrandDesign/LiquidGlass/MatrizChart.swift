@@ -26,7 +26,8 @@ private enum MatrizChartDraw {
     }
 
     /// y desde el borde superior (0 = top). Valores altos → y menor.
-    static func yTop(_ v: Double, domain: ClosedRange<Double>, height: CGFloat, pad: CGFloat = 2) -> CGFloat {
+    static func yTop(_ v: Double, domain: ClosedRange<Double>, height: CGFloat,
+                     pad: CGFloat = MatrizTokens.chartPadV) -> CGFloat {
         let n = yNorm(v, domain: domain)
         let usable = max(height - pad * 2, 1)
         return pad + (1 - n) * usable
@@ -219,17 +220,18 @@ public struct MatrizColumnas: View {
                 MatrizChartDraw.rejillaFantasma(ctx, size: size, chartID: chartID)
             } else {
                 let gap = MatrizTokens.barraGap
-                let colW = max((size.width - gap * CGFloat(n - 1)) / CGFloat(n), 1)
+                let inset = MatrizTokens.chartInset
+                let colW = max((size.width - inset * 2 - gap * CGFloat(n - 1)) / CGFloat(n), 1)
                 let last = n - 1
                 for (i, noche) in noches.enumerated() {
                     guard let v = noche.valor else { continue }
                     let esHoy = i == last
                     let alfa = esHoy ? MatrizTokens.hoyAlfa : MatrizTokens.histAlfa
-                    let x = CGFloat(i) * (colW + gap)
+                    let x = inset + CGFloat(i) * (colW + gap)
                     let yn = MatrizChartDraw.yNorm(v, domain: dominio)
-                    // Canal superior de 16 pt: territorio del tag de referencia —
-                    // HOY nunca queda tapado por el rótulo (Grok-UI #5 / UX #7).
-                    let h = max(yn * (size.height - 16), 1)
+                    // Canal superior: territorio del tag de referencia — HOY nunca
+                    // queda tapado por el rótulo (Grok-UI #5 / UX #7).
+                    let h = max(yn * (size.height - MatrizTokens.tagCanal), 1)
                     let rect = CGRect(x: x, y: size.height - h, width: colW, height: h)
                     MatrizChartDraw.barra(ctx, rect: rect, hue: hue, alfa: alfa)
                     if noche.alerta != .ninguna {
@@ -240,8 +242,11 @@ public struct MatrizColumnas: View {
                 }
             }
 
-            // Referencia punteada horizontal + tag.
-            let yRef = MatrizChartDraw.yTop(referencia, domain: dominio, height: size.height)
+            // Referencia punteada horizontal + tag — en la MISMA escala del canal de
+            // barras (auditoría de simetría Grok R1: antes yTop usaba otro pad y la
+            // punteada quedaba 8 pt arriba del valor que decía marcar).
+            let ynRef = MatrizChartDraw.yNorm(referencia, domain: dominio)
+            let yRef = size.height - max(ynRef * (size.height - MatrizTokens.tagCanal), 1)
             var linea = Path()
             linea.move(to: CGPoint(x: 0, y: yRef))
             linea.addLine(to: CGPoint(x: size.width, y: yRef))
@@ -253,7 +258,8 @@ public struct MatrizColumnas: View {
                 .foregroundColor(LiquidColor.tinta500)
                 .monospacedDigit()
             ctx.draw(ctx.resolve(tag),
-                     at: CGPoint(x: size.width - 8, y: max(yRef - 12, 2)),
+                     at: CGPoint(x: size.width - MatrizTokens.rielInset,
+                                 y: max(yRef - MatrizTokens.tagCanal + MatrizTokens.chartPadV, 2)),
                      anchor: .topTrailing)
         }
         .frame(maxWidth: .infinity, minHeight: MatrizChartDraw.defaultHeight,
@@ -512,13 +518,14 @@ public struct MatrizBarrasMini: View {
             }
             let maxV = valores.compactMap { $0 }.max() ?? 1
             let gap = MatrizTokens.barraGap
-            let barW = max((size.width - gap * CGFloat(n - 1)) / CGFloat(n), 1)
+            let inset = MatrizTokens.chartInset
+            let barW = max((size.width - inset * 2 - gap * CGFloat(n - 1)) / CGFloat(n), 1)
             let last = valores.count - 1
             for (i, val) in valores.enumerated() {
                 guard let v = val, maxV > 0 else { continue }
                 let esHoy = i == last
-                let h = max(CGFloat(v / maxV) * (size.height - 2), 1)
-                let x = CGFloat(i) * (barW + gap)
+                let h = max(CGFloat(v / maxV) * (size.height - MatrizTokens.chartPadV), 1)
+                let x = inset + CGFloat(i) * (barW + gap)
                 let rect = CGRect(x: x, y: size.height - h, width: barW, height: h)
                 MatrizChartDraw.barra(ctx, rect: rect, hue: hue, alfa: esHoy ? MatrizTokens.hoyAlfa : MatrizTokens.histAlfa)
             }
@@ -553,8 +560,8 @@ public struct MatrizEscalerita: View {
             for nivel in 0...2 {
                 let y = Self.y(nivel: nivel, height: size.height)
                 var riel = Path()
-                riel.move(to: CGPoint(x: 2, y: y))
-                riel.addLine(to: CGPoint(x: size.width - 2, y: y))
+                riel.move(to: CGPoint(x: MatrizTokens.chartInset, y: y))
+                riel.addLine(to: CGPoint(x: size.width - MatrizTokens.chartInset, y: y))
                 ctx.stroke(riel, with: .color(LiquidColor.tinta900.opacity(MatrizTokens.rielFantasmaAlfa)),
                            style: StrokeStyle(lineWidth: 1))
             }
@@ -591,7 +598,7 @@ public struct MatrizEscalerita: View {
     /// nivel 0 = bajo (abajo), 2 = alto (arriba) — proyección compartida.
     private static func y(nivel: Int, height: CGFloat) -> CGFloat {
         MatrizChartDraw.yTop(Double(min(max(nivel, 0), 2)), domain: 0...2,
-                             height: height, pad: 6)
+                             height: height, pad: MatrizTokens.chartPadV + 2)
     }
 }
 

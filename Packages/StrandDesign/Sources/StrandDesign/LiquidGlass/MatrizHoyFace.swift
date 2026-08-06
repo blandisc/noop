@@ -304,7 +304,7 @@ public struct MatrizHoyFace: View {
         }
         // Techo común en bandas divididas: reservar la línea de sublabel aunque
         // falte, para que los lienzos gemelos arranquen parejos (Grok-UI #6).
-        .frame(minHeight: 34, alignment: .top)
+        .frame(minHeight: MatrizTokens.encabezadoMinH, alignment: .top)
     }
 
     /// Numeral + unidad chica en el mismo hue (Grok-UI #7); los protagonistas del
@@ -359,6 +359,10 @@ public struct MatrizHoyFace: View {
                     .underline(r.subrayado != .ninguna,
                                color: r.subrayado == .alarma
                                ? LiquidColor.negativo : LiquidColor.atencion)
+                    // Chevron gemelo del encabezado: el renglón también abre su hoja
+                    // y sus numerales alinean con los del header (Grok simetría R1).
+                    LiquidIcon(.chevron, size: 8, color: LiquidColor.tinta500)
+                        .alignmentGuide(.firstTextBaseline) { d in d.height * 0.85 }
                 }
                 chartView(r.chart, hue: r.hue, chartID: r.chartID)
                     .frame(height: MatrizTokens.alturaRenglon)
