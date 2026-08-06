@@ -1,0 +1,280 @@
+#if os(macOS)
+import XCTest
+import SwiftUI
+import AppKit
+@testable import StrandDesign
+
+/// FER-51 — arnés PNG de la cara Matriz (T1 bueno / T2 calibrando / T3 alerta).
+/// No es aserción de CI: escribe PNGs en /tmp/noop-fer51/.
+/// Run: `swift test --filter MatrizHoyFaceSnapshotTests`
+final class MatrizHoyFaceSnapshotTests: XCTestCase {
+
+    @MainActor func test_t1_bueno() throws {
+        try render(MatrizHoyFace(model: Self.t1Bueno, onTapSeccion: { _ in }),
+                   to: "matriz_hoy_t1_bueno", size: CGSize(width: 390, height: 820))
+    }
+
+    @MainActor func test_t2_calibrando() throws {
+        try render(MatrizHoyFace(model: Self.t2Calibrando, onTapSeccion: { _ in }),
+                   to: "matriz_hoy_t2_calibrando", size: CGSize(width: 390, height: 820))
+    }
+
+    @MainActor func test_t3_alerta() throws {
+        try render(MatrizHoyFace(model: Self.t3Alerta, onTapSeccion: { _ in }),
+                   to: "matriz_hoy_t3_alerta", size: CGSize(width: 390, height: 820))
+    }
+
+    @MainActor func test_orden_a11y_visual_bandas_divididas() {
+        let ids = Self.t1Bueno.ordenA11y
+        // héroe + sueño + FC + VFC + guardián + carga + esfuerzo + estrés + pasos
+        XCTAssertEqual(ids, [
+            "hero", "sleep", "rhr", "hrv", "guardian", "carga", "strain", "stress", "steps",
+        ])
+        // Bandas divididas aportan 2 elementos cada una (3 splits × 2 + 2 full + hero = 9).
+        XCTAssertEqual(ids.count, 9)
+    }
+
+    // MARK: - Fixtures (datasets tipados — evita el type-checker de CI)
+
+    private static var t1Bueno: MatrizHoyModel {
+        let noches: [MatrizColumnas.Noche] = (0..<14).map { i in
+            MatrizColumnas.Noche(valor: 6.5 + Double(i % 4) * 0.3, alerta: .ninguna)
+        }
+        let fc: [Double?] = (0..<20).map { i in 56 + Double(i % 5) }
+        let vfc: [Double?] = (0..<20).map { i in 40 + Double(i % 7) }
+        let estela: [Double] = [0.9, 1.0, 1.05, 0.95, 1.1]
+        let strain: [Double?] = (0..<14).map { Double(10 + $0) }
+        let steps: [Double?] = (0..<14).map { Double(6000 + $0 * 200) }
+        let stress: [Int?] = [0, 1, 0, 1, 1, 0, 1]
+        let temp: [Double?] = (0..<20).map { _ in 0.1 as Double? }
+        let resp: [Double?] = (0..<20).map { _ in 14.0 as Double? }
+
+        return MatrizHoyModel(
+            hero: .init(palabra: "In range", highlight: "range",
+                        tone: LiquidColor.verdePrimario),
+            bandas: [
+                .full(MatrizSeccion(
+                    id: "sleep", glifo: .luna, hue: LiquidColor.indigo,
+                    titulo: "Sleep", valor: "7:12",
+                    chartID: "matriz-sleep",
+                    chart: .columnas(noches: noches, referencia: 7, referenciaTag: "7 h",
+                                     dominio: 4...10))),
+                .split(
+                    izq: MatrizSeccion(
+                        id: "rhr", glifo: .corazon, hue: LiquidColor.rosa,
+                        titulo: "Resting HR", valor: "52",
+                        chartID: "matriz-rhr",
+                        chart: .lineaRellena(puntos: fc, base: 56, dominio: 45...75,
+                                             alfa: 1.0, alertaHoy: .ninguna)),
+                    der: MatrizSeccion(
+                        id: "hrv", glifo: .onda, hue: LiquidColor.cian,
+                        titulo: "HRV", valor: "68 ms",
+                        sublabel: "Does not vote",
+                        chartID: "matriz-hrv",
+                        chart: .lineaRellena(puntos: vfc, base: 45, dominio: 20...80,
+                                             alfa: 0.6, alertaHoy: .ninguna)),
+                    fraccionIzq: 0.5),
+                .full(MatrizSeccion(
+                    id: "guardian", glifo: .escudo, hue: LiquidColor.doradoTemp,
+                    huesPar: (LiquidColor.doradoTemp, LiquidColor.azul),
+                    titulo: "Guardian", valor: "",
+                    chartID: "matriz-guardian",
+                    chart: .lineaSerena(puntos: temp, banda: -0.4...0.4,
+                                        dominio: -1...1, alertaHoy: .ninguna),
+                    chip: .init(texto: "At ease", tono: .calma),
+                    renglones: [
+                        MatrizRenglon(id: "skintemp", titulo: "Skin temp",
+                                      valor: "+0.1°", hue: LiquidColor.doradoTemp,
+                                      chartID: "matriz-guardian-temp",
+                                      chart: .lineaSerena(puntos: temp, banda: -0.4...0.4,
+                                                          dominio: -1...1, alertaHoy: .ninguna)),
+                        MatrizRenglon(id: "resp", titulo: "Breathing",
+                                      valor: "14.0", hue: LiquidColor.azul,
+                                      chartID: "matriz-guardian-resp",
+                                      chart: .lineaSerena(puntos: resp, banda: 12...16,
+                                                          dominio: 8...22, alertaHoy: .ninguna)),
+                    ])),
+                .split(
+                    izq: MatrizSeccion(
+                        id: "carga", glifo: .montana, hue: LiquidColor.verdePrimario,
+                        titulo: "Load", valor: "1.12",
+                        sublabel: "Steady",
+                        chartID: "matriz-carga",
+                        chart: .rielZona(p: 1.12, zona: 0.8...1.3, estela: estela)),
+                    der: MatrizSeccion(
+                        id: "strain", glifo: .flama, hue: LiquidColor.teal,
+                        titulo: "Effort", valor: "12.4",
+                        chartID: "matriz-strain",
+                        chart: .barrasMini(valores: strain)),
+                    fraccionIzq: 0.55),
+                .split(
+                    izq: MatrizSeccion(
+                        id: "stress", glifo: .rayo, hue: LiquidColor.tinta900,
+                        titulo: "Stress", valor: "Low",
+                        sublabel: "vs your 7 days",
+                        chartID: "matriz-stress",
+                        chart: .escalerita(niveles: stress)),
+                    der: MatrizSeccion(
+                        id: "steps", glifo: .huellas, hue: LiquidColor.tinta700,
+                        titulo: "Steps", valor: "8 432",
+                        chartID: "matriz-steps",
+                        chart: .barrasMini(valores: steps)),
+                    fraccionIzq: 0.5),
+            ])
+    }
+
+    private static var t2Calibrando: MatrizHoyModel {
+        let vacioNoches = [MatrizColumnas.Noche](repeating: .init(valor: nil), count: 14)
+        let vacio20 = [Double?](repeating: nil, count: 20)
+        let vacio14 = [Double?](repeating: nil, count: 14)
+        let vacio7 = [Int?](repeating: nil, count: 7)
+        return MatrizHoyModel(
+            hero: .init(palabra: "Getting to know you", highlight: "know",
+                        tone: LiquidColor.tinta500),
+            bandas: [
+                .full(MatrizSeccion(
+                    id: "sleep", glifo: .luna, hue: LiquidColor.indigo,
+                    titulo: "Sleep", valor: "—",
+                    sublabel: "Getting to know you",
+                    chartID: "matriz-sleep",
+                    chart: .columnas(noches: vacioNoches, referencia: 7, referenciaTag: "7 h",
+                                     dominio: 4...10))),
+                .split(
+                    izq: MatrizSeccion(
+                        id: "rhr", glifo: .corazon, hue: LiquidColor.rosa,
+                        titulo: "Resting HR", valor: "—",
+                        chartID: "matriz-rhr",
+                        chart: .lineaRellena(puntos: vacio20, base: nil, dominio: 45...75,
+                                             alfa: 1.0, alertaHoy: .ninguna)),
+                    der: MatrizSeccion(
+                        id: "hrv", glifo: .onda, hue: LiquidColor.cian,
+                        titulo: "HRV", valor: "—",
+                        chartID: "matriz-hrv",
+                        chart: .lineaRellena(puntos: vacio20, base: nil, dominio: 20...80,
+                                             alfa: 0.6, alertaHoy: .ninguna)),
+                    fraccionIzq: 0.5),
+                .full(MatrizSeccion(
+                    id: "guardian", glifo: .escudo, hue: LiquidColor.doradoTemp,
+                    huesPar: (LiquidColor.doradoTemp, LiquidColor.azul),
+                    titulo: "Guardian", valor: "—",
+                    chartID: "matriz-guardian",
+                    chart: .lineaSerena(puntos: vacio20, banda: nil, dominio: -1...1,
+                                        alertaHoy: .ninguna))),
+                .split(
+                    izq: MatrizSeccion(
+                        id: "carga", glifo: .montana, hue: LiquidColor.verdePrimario,
+                        titulo: "Load", valor: "—",
+                        sublabel: "Calibrating",
+                        chartID: "matriz-carga",
+                        chart: .rielZona(p: nil, zona: 0.8...1.3, estela: [])),
+                    der: MatrizSeccion(
+                        id: "strain", glifo: .flama, hue: LiquidColor.teal,
+                        titulo: "Effort", valor: "—",
+                        chartID: "matriz-strain",
+                        chart: .barrasMini(valores: vacio14)),
+                    fraccionIzq: 0.55),
+                .split(
+                    izq: MatrizSeccion(
+                        id: "stress", glifo: .rayo, hue: LiquidColor.tinta900,
+                        titulo: "Stress", valor: "—",
+                        chartID: "matriz-stress",
+                        chart: .escalerita(niveles: vacio7)),
+                    der: MatrizSeccion(
+                        id: "steps", glifo: .huellas, hue: LiquidColor.tinta700,
+                        titulo: "Steps", valor: "—",
+                        chartID: "matriz-steps",
+                        chart: .barrasMini(valores: vacio14)),
+                    fraccionIzq: 0.5),
+            ])
+    }
+
+    private static var t3Alerta: MatrizHoyModel {
+        let noches: [MatrizColumnas.Noche] = (0..<14).map { i in
+            let alerta: MedidorLunar.Alerta = (i == 13 || i == 5) ? .atencion : .ninguna
+            return MatrizColumnas.Noche(valor: i == 13 ? 5.0 : 7.0, alerta: alerta)
+        }
+        let fc: [Double?] = (0..<20).map { i in i == 19 ? 72.0 : 58.0 }
+        let temp: [Double?] = (0..<20).map { i in i >= 17 ? 0.9 : 0.1 }
+        return MatrizHoyModel(
+            hero: .init(palabra: "Go light today", highlight: "light",
+                        tone: LiquidColor.atencion,
+                        lunaSuenoAlerta: .atencion, lunaFCAlerta: .atencion),
+            bandas: [
+                .full(MatrizSeccion(
+                    id: "sleep", glifo: .luna, hue: LiquidColor.indigo,
+                    titulo: "Sleep", valor: "5:00",
+                    chartID: "matriz-sleep",
+                    chart: .columnas(noches: noches, referencia: 7, referenciaTag: "7 h",
+                                     dominio: 4...10))),
+                .split(
+                    izq: MatrizSeccion(
+                        id: "rhr", glifo: .corazon, hue: LiquidColor.rosa,
+                        titulo: "Resting HR", valor: "72",
+                        chartID: "matriz-rhr",
+                        chart: .lineaRellena(puntos: fc, base: 56, dominio: 45...80,
+                                             alfa: 1.0, alertaHoy: .atencion)),
+                    der: MatrizSeccion(
+                        id: "hrv", glifo: .onda, hue: LiquidColor.cian,
+                        titulo: "HRV", valor: "38 ms",
+                        chartID: "matriz-hrv",
+                        chart: .lineaRellena(puntos: (0..<20).map { _ in 38.0 as Double? },
+                                             base: 45, dominio: 20...80,
+                                             alfa: 0.6, alertaHoy: .ninguna)),
+                    fraccionIzq: 0.5),
+                .full(MatrizSeccion(
+                    id: "guardian", glifo: .escudo, hue: LiquidColor.doradoTemp,
+                    huesPar: (LiquidColor.doradoTemp, LiquidColor.azul),
+                    titulo: "Guardian", valor: "",
+                    chartID: "matriz-guardian",
+                    chart: .lineaSerena(puntos: temp, banda: -0.4...0.4,
+                                        dominio: -1...1, alertaHoy: .alarma),
+                    chip: .init(texto: "Temperature and breathing off · 3rd night",
+                                tono: .alarma))),
+                .split(
+                    izq: MatrizSeccion(
+                        id: "carga", glifo: .montana, hue: LiquidColor.verdePrimario,
+                        titulo: "Load", valor: "1.48",
+                        sublabel: "Building",
+                        chartID: "matriz-carga",
+                        chart: .rielZona(p: 1.48, zona: 0.8...1.3,
+                                         estela: [1.0, 1.1, 1.2, 1.3, 1.4])),
+                    der: MatrizSeccion(
+                        id: "strain", glifo: .flama, hue: LiquidColor.teal,
+                        titulo: "Effort", valor: "14.0",
+                        chartID: "matriz-strain",
+                        chart: .barrasMini(valores: (0..<14).map { Double(10 + $0) })),
+                    fraccionIzq: 0.55),
+                .split(
+                    izq: MatrizSeccion(
+                        id: "stress", glifo: .rayo, hue: LiquidColor.tinta900,
+                        titulo: "Stress", valor: "High",
+                        chartID: "matriz-stress",
+                        chart: .escalerita(niveles: [0, 1, 1, 2, 2, 1, 2])),
+                    der: MatrizSeccion(
+                        id: "steps", glifo: .huellas, hue: LiquidColor.tinta700,
+                        titulo: "Steps", valor: "3 200",
+                        chartID: "matriz-steps",
+                        chart: .barrasMini(valores: (0..<14).map { Double(3000 + $0 * 50) })),
+                    fraccionIzq: 0.5),
+            ])
+    }
+
+    @MainActor private func render<V: View>(_ content: V, to name: String,
+                                            size: CGSize) throws {
+        let view = content
+            .frame(width: size.width, height: size.height)
+            .background(LiquidColor.papelMatriz)
+        let renderer = ImageRenderer(content: view)
+        renderer.scale = 2
+        guard let image = renderer.nsImage,
+              let tiff = image.tiffRepresentation,
+              let rep = NSBitmapImageRep(data: tiff),
+              let png = rep.representation(using: .png, properties: [:]) else {
+            return XCTFail("no se pudo renderizar \(name)")
+        }
+        let dir = URL(fileURLWithPath: "/tmp/noop-fer51", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        try png.write(to: dir.appendingPathComponent("\(name).png"))
+    }
+}
+#endif

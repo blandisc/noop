@@ -1,0 +1,700 @@
+import SwiftUI
+
+// MARK: - FER-51 · Cara Matriz (Lane B)
+//
+// Modelo tonto (`Sendable`, sin lógica) + vista que lo dibuja. La proyección de datos
+// vive en `LiquidHoyBuilder.matriz` (capa app). Reusa MatrizChart / SelloIcono /
+// MedidorLunar / LiquidColor. Lienzo: papelMatriz, sin tarjetas, filos 1 px.
+
+// MARK: Model
+
+/// Payload de gráfica ya derivado — el builder rellena; la vista solo pinta.
+public enum MatrizChartPayload: Sendable, Equatable {
+    case columnas(noches: [MatrizColumnas.Noche], referencia: Double,
+                  referenciaTag: String, dominio: ClosedRange<Double>)
+    case lineaRellena(puntos: [Double?], base: Double?, dominio: ClosedRange<Double>,
+                      alfa: Double, alertaHoy: MedidorLunar.Alerta)
+    case lineaSerena(puntos: [Double?], banda: ClosedRange<Double>?,
+                     dominio: ClosedRange<Double>, alertaHoy: MedidorLunar.Alerta)
+    case rielZona(p: Double?, zona: ClosedRange<Double>, estela: [Double],
+                  alertaHoy: MedidorLunar.Alerta = .ninguna)
+    case barrasMini(valores: [Double?])
+    case escalerita(niveles: [Int?])
+}
+
+/// Una sección de la Matriz (sello + título + valor + chart).
+public struct MatrizSeccion: Sendable, Identifiable, Equatable {
+    public let id: String
+    public let glifo: SelloIcono.Glifo
+    public let hue: Color
+    /// Guardián bicolor (dorado + azul). nil = orbe monocolor.
+    public let huesPar: (Color, Color)?
+    public let titulo: String
+    public let valor: String
+    public let sublabel: String?
+    public let chartID: String
+    public let chart: MatrizChartPayload
+    /// Chip del guardián (solo esa sección); nil en el resto.
+    public let chip: MatrizHoyModel.ChipGuardian?
+    /// Renglones nombrados del guardián (Temp / Resp); nil en el resto.
+    public let renglones: [MatrizRenglon]?
+
+    public init(id: String, glifo: SelloIcono.Glifo, hue: Color,
+                huesPar: (Color, Color)? = nil, titulo: String, valor: String,
+                sublabel: String? = nil, chartID: String, chart: MatrizChartPayload,
+                chip: MatrizHoyModel.ChipGuardian? = nil,
+                renglones: [MatrizRenglon]? = nil) {
+        self.id = id; self.glifo = glifo; self.hue = hue; self.huesPar = huesPar
+        self.titulo = titulo; self.valor = valor; self.sublabel = sublabel
+        self.chartID = chartID; self.chart = chart; self.chip = chip
+        self.renglones = renglones
+    }
+
+    public static func == (lhs: MatrizSeccion, rhs: MatrizSeccion) -> Bool {
+        lhs.id == rhs.id && lhs.titulo == rhs.titulo && lhs.valor == rhs.valor
+            && lhs.sublabel == rhs.sublabel && lhs.chartID == rhs.chartID
+            && lhs.chart == rhs.chart && lhs.chip == rhs.chip
+            && lhs.renglones == rhs.renglones
+    }
+}
+
+/// Renglón nombrado del guardián (Temp piel / Resp) con su línea serena.
+public struct MatrizRenglon: Sendable, Identifiable, Equatable {
+    public let id: String
+    public let titulo: String
+    public let valor: String
+    public let hue: Color
+    public let chartID: String
+    public let chart: MatrizChartPayload
+    public let subrayado: MedidorLunar.Alerta
+
+    public init(id: String, titulo: String, valor: String, hue: Color,
+                chartID: String, chart: MatrizChartPayload,
+                subrayado: MedidorLunar.Alerta = .ninguna) {
+        self.id = id; self.titulo = titulo; self.valor = valor; self.hue = hue
+        self.chartID = chartID; self.chart = chart; self.subrayado = subrayado
+    }
+
+    public static func == (lhs: MatrizRenglon, rhs: MatrizRenglon) -> Bool {
+        lhs.id == rhs.id && lhs.titulo == rhs.titulo && lhs.valor == rhs.valor
+            && lhs.chartID == rhs.chartID && lhs.chart == rhs.chart
+            && lhs.subrayado == rhs.subrayado
+    }
+}
+
+/// Modelo tonto de la cara Matriz. Sin lógica: el builder proyecta todo.
+public struct MatrizHoyModel: Sendable, Equatable {
+
+    /// Héroe compacto: orbe + 2 lunas votantes (sueño índigo, FC rosa) + palabra.
+    public struct Hero: Sendable, Equatable {
+        public let palabra: String
+        public let highlight: String
+        public let tone: Color
+        public let lunaSuenoAlerta: MedidorLunar.Alerta
+        public let lunaFCAlerta: MedidorLunar.Alerta
+
+        public init(palabra: String, highlight: String, tone: Color,
+                    lunaSuenoAlerta: MedidorLunar.Alerta = .ninguna,
+                    lunaFCAlerta: MedidorLunar.Alerta = .ninguna) {
+            self.palabra = palabra; self.highlight = highlight; self.tone = tone
+            self.lunaSuenoAlerta = lunaSuenoAlerta; self.lunaFCAlerta = lunaFCAlerta
+        }
+
+        public static func == (lhs: Hero, rhs: Hero) -> Bool {
+            lhs.palabra == rhs.palabra && lhs.highlight == rhs.highlight
+                && lhs.lunaSuenoAlerta == rhs.lunaSuenoAlerta
+                && lhs.lunaFCAlerta == rhs.lunaFCAlerta
+        }
+    }
+
+    /// Chip del guardián — texto + tono ya resueltos por el builder (§8 / criterio 10).
+    public struct ChipGuardian: Sendable, Equatable {
+        public enum Tono: Sendable, Equatable {
+            case calma       // verde
+            case terciario   // vigilando una sola señal — sin cálidos
+            case atencion    // ámbar — par 1.ª noche
+            case alarma      // rojo — racha ≥ 2
+        }
+        public let texto: String
+        public let tono: Tono
+        public init(texto: String, tono: Tono) {
+            self.texto = texto; self.tono = tono
+        }
+    }
+
+    /// Banda visual §7: ancha completa o dividida (2 elementos a11y).
+    public enum Banda: Sendable, Equatable {
+        case full(MatrizSeccion)
+        /// `fraccionIzq` 0.5 (mitades) o 0.55 (carga|esfuerzo).
+        case split(izq: MatrizSeccion, der: MatrizSeccion, fraccionIzq: CGFloat)
+    }
+
+    public let hero: Hero
+    /// Orden VISUAL de arriba a abajo (§7). Bandas divididas = 2 elementos a11y.
+    public let bandas: [Banda]
+
+    public init(hero: Hero, bandas: [Banda]) {
+        self.hero = hero; self.bandas = bandas
+    }
+
+    /// Orden de lectura VoiceOver = orden visual; bandas divididas expanden a 2 ids.
+    public var ordenA11y: [String] {
+        var ids: [String] = ["hero"]
+        for b in bandas {
+            switch b {
+            case .full(let s): ids.append(s.id)
+            case .split(let izq, let der, _):
+                ids.append(izq.id); ids.append(der.id)
+            }
+        }
+        return ids
+    }
+}
+
+// MARK: - Face view
+
+/// Cara Matriz completa: héroe compacto + 5 bandas §7 + filos 1 px.
+/// Breakpoint: Dynamic Type ≥ accessibility1 o ancho estrecho → columna única con scroll.
+public struct MatrizHoyFace: View {
+    private let model: MatrizHoyModel
+    private let onTapSeccion: (String) -> Void
+
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    public init(model: MatrizHoyModel, onTapSeccion: @escaping (String) -> Void) {
+        self.model = model
+        self.onTapSeccion = onTapSeccion
+    }
+
+    public var body: some View {
+        GeometryReader { geo in
+            let columnaUnica = dynamicTypeSize >= .accessibility1 || geo.size.width < 320
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(spacing: 0) {
+                    MatrizHeroCompacto(hero: model.hero)
+                        .padding(.top, 12)
+                        .padding(.bottom, 20)
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel(Text(verbatim: model.hero.palabra))
+                        .accessibilityIdentifier("matriz-hero")
+
+                    filo()
+
+                    ForEach(Array(model.bandas.enumerated()), id: \.offset) { _, banda in
+                        bandaView(banda, columnaUnica: columnaUnica, ancho: geo.size.width)
+                        filo()
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 24)
+            }
+        }
+        .background(LiquidColor.papelMatriz.ignoresSafeArea())
+        .accessibilityElement(children: .contain)
+    }
+
+    @ViewBuilder
+    private func bandaView(_ banda: MatrizHoyModel.Banda, columnaUnica: Bool,
+                           ancho: CGFloat) -> some View {
+        switch banda {
+        case .full(let s):
+            seccionView(s)
+                .padding(.vertical, 12)
+        case .split(let izq, let der, let fraccion):
+            if columnaUnica {
+                VStack(spacing: 0) {
+                    seccionView(izq).padding(.vertical, 12)
+                    filo()
+                    seccionView(der).padding(.vertical, 12)
+                }
+            } else {
+                HStack(alignment: .top, spacing: 0) {
+                    seccionView(izq)
+                        .frame(width: (ancho - 32) * fraccion, alignment: .leading)
+                        .padding(.vertical, 12)
+                    Rectangle()
+                        .fill(LiquidColor.tinta900.opacity(0.08))
+                        .frame(width: 1)
+                        .padding(.vertical, 8)
+                    seccionView(der)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.leading, 12)
+                        .padding(.vertical, 12)
+                }
+            }
+        }
+    }
+
+    private func seccionView(_ s: MatrizSeccion) -> some View {
+        Button {
+            onTapSeccion(s.id)
+        } label: {
+            VStack(alignment: .leading, spacing: 8) {
+                encabezado(s)
+                if let renglones = s.renglones {
+                    ForEach(renglones) { r in
+                        renglónView(r)
+                    }
+                } else {
+                    chartView(s.chart, hue: s.hue, chartID: s.chartID)
+                        .frame(minHeight: chartAltura(s.chart))
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text(verbatim: a11yLabel(s)))
+        .accessibilityAddTraits(.isButton)
+        .accessibilityIdentifier("matriz-seccion-\(s.id)")
+    }
+
+    private func encabezado(_ s: MatrizSeccion) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            SelloIcono(glifo: s.glifo, hue: s.hue, huesPar: s.huesPar)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(s.titulo)
+                    .font(LiquidType.tituloFila)
+                    .foregroundStyle(LiquidColor.tinta700)
+                    .textCase(.uppercase)
+                if let sub = s.sublabel {
+                    Text(sub)
+                        .font(LiquidType.caption)
+                        .foregroundStyle(LiquidColor.tinta500)
+                }
+            }
+            Spacer(minLength: 8)
+            if let chip = s.chip {
+                chipView(chip)
+            } else {
+                Text(s.valor)
+                    .font(LiquidType.valorL)
+                    .foregroundStyle(s.hue)
+                    .monospacedDigit()
+                    .multilineTextAlignment(.trailing)
+            }
+        }
+    }
+
+    private func renglónView(_ r: MatrizRenglon) -> some View {
+        Button {
+            onTapSeccion(r.id)
+        } label: {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text(r.titulo)
+                        .font(LiquidType.tituloFila)
+                        .foregroundStyle(LiquidColor.tinta700)
+                    Spacer()
+                    Text(r.valor)
+                        .font(LiquidType.valorM)
+                        .foregroundStyle(r.hue)
+                        .monospacedDigit()
+                        .underline(r.subrayado != .ninguna,
+                                   color: r.subrayado == .alarma
+                                   ? LiquidColor.negativo : LiquidColor.atencion)
+                }
+                chartView(r.chart, hue: r.hue, chartID: r.chartID)
+                    .frame(height: 40)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text(verbatim: "\(r.titulo), \(r.valor)"))
+        .accessibilityIdentifier("matriz-renglon-\(r.id)")
+    }
+
+    private func chipView(_ chip: MatrizHoyModel.ChipGuardian) -> some View {
+        let color: Color = {
+            switch chip.tono {
+            case .calma: return LiquidColor.verdePrimario
+            case .terciario: return LiquidColor.tinta500
+            case .atencion: return LiquidColor.atencion
+            case .alarma: return LiquidColor.negativo
+            }
+        }()
+        return Text(chip.texto)
+            .font(LiquidType.caption)
+            .foregroundStyle(color)
+            .multilineTextAlignment(.trailing)
+            .lineLimit(3)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    @ViewBuilder
+    private func chartView(_ payload: MatrizChartPayload, hue: Color,
+                           chartID: String) -> some View {
+        switch payload {
+        case .columnas(let noches, let ref, let tag, let dom):
+            MatrizColumnas(chartID: chartID, noches: noches, referencia: ref,
+                           referenciaTag: tag, dominio: dom, hue: hue)
+        case .lineaRellena(let pts, let base, let dom, let alfa, let alerta):
+            MatrizLineaRellena(chartID: chartID, puntos: pts, base: base, dominio: dom,
+                               hue: hue, alfa: alfa, alertaHoy: alerta)
+        case .lineaSerena(let pts, let banda, let dom, let alerta):
+            MatrizLineaSerena(chartID: chartID, puntos: pts, banda: banda, dominio: dom,
+                              hue: hue, alertaHoy: alerta)
+        case .rielZona(let p, let zona, let estela, let alertaHoy):
+            MatrizRielZona(chartID: chartID, p: p, zona: zona, estela: estela, hue: hue,
+                           alertaHoy: alertaHoy)
+        case .barrasMini(let valores):
+            MatrizBarrasMini(chartID: chartID, valores: valores, hue: hue)
+        case .escalerita(let niveles):
+            MatrizEscalerita(chartID: chartID, niveles: niveles, hue: hue)
+        }
+    }
+
+    private func chartAltura(_ p: MatrizChartPayload) -> CGFloat {
+        switch p {
+        case .rielZona: return 28
+        case .barrasMini: return 40
+        case .escalerita: return 36
+        default: return 56
+        }
+    }
+
+    private func filo() -> some View {
+        Rectangle()
+            .fill(LiquidColor.tinta900.opacity(0.08))
+            .frame(height: 1)
+    }
+
+    private func a11yLabel(_ s: MatrizSeccion) -> String {
+        var parts = [s.titulo, s.valor]
+        if let sub = s.sublabel { parts.append(sub) }
+        if let chip = s.chip { parts.append(chip.texto) }
+        return parts.filter { !$0.isEmpty }.joined(separator: ", ")
+    }
+}
+
+// MARK: - Héroe compacto (orbe + 2 lunas + palabra)
+
+private struct MatrizHeroCompacto: View {
+    let hero: MatrizHoyModel.Hero
+
+    var body: some View {
+        VStack(spacing: 14) {
+            ZStack {
+                // Órbita elíptica tenue.
+                Ellipse()
+                    .stroke(LiquidColor.tinta900.opacity(0.10), lineWidth: 1)
+                    .frame(width: 128, height: 94)
+                // Orbe del veredicto (simplificado; F2 traerá partículas).
+                Circle()
+                    .fill(hero.tone.opacity(0.85))
+                    .frame(width: 72, height: 72)
+                    .overlay(Circle().stroke(hero.tone.opacity(0.4), lineWidth: 1))
+                // Luna sueño (índigo) — izquierda de la órbita.
+                luna(hue: LiquidColor.indigo, alerta: hero.lunaSuenoAlerta)
+                    .offset(x: -52, y: -8)
+                // Luna FC (rosa) — derecha.
+                luna(hue: LiquidColor.rosa, alerta: hero.lunaFCAlerta)
+                    .offset(x: 52, y: 6)
+            }
+            .frame(height: 110)
+
+            // Palabra del veredicto con resalte.
+            palabraResaltada
+        }
+    }
+
+    private var palabraResaltada: some View {
+        let full = hero.palabra
+        let hi = hero.highlight
+        if let range = full.range(of: hi, options: .caseInsensitive), !hi.isEmpty {
+            let before = String(full[..<range.lowerBound])
+            let mid = String(full[range])
+            let after = String(full[range.upperBound...])
+            return AnyView(
+                (Text(before) + Text(mid).foregroundColor(hero.tone) + Text(after))
+                    .font(LiquidType.displayS)
+                    .foregroundStyle(LiquidColor.tinta900)
+                    .multilineTextAlignment(.center)
+            )
+        }
+        return AnyView(
+            Text(full)
+                .font(LiquidType.displayS)
+                .foregroundStyle(LiquidColor.tinta900)
+                .multilineTextAlignment(.center)
+        )
+    }
+
+    private func luna(hue: Color, alerta: MedidorLunar.Alerta) -> some View {
+        ZStack {
+            Circle()
+                .fill(hue)
+                .frame(width: 14, height: 14)
+            switch alerta {
+            case .ninguna: EmptyView()
+            case .atencion:
+                Circle().stroke(LiquidColor.atencion.opacity(0.85), lineWidth: 1)
+                    .frame(width: 20, height: 20)
+            case .alarma:
+                Circle().stroke(LiquidColor.negativo.opacity(0.85), lineWidth: 1)
+                    .frame(width: 20, height: 20)
+                Circle().stroke(LiquidColor.negativo.opacity(0.85), lineWidth: 1)
+                    .frame(width: 26, height: 26)
+            }
+        }
+    }
+}
+
+// MARK: - Previews
+
+#if DEBUG
+private enum MatrizHoyFacePreviewData {
+    static var t1Bueno: MatrizHoyModel {
+        let noches: [MatrizColumnas.Noche] = (0..<14).map { i in
+            .init(valor: 420 + Double(i % 4) * 12, alerta: .ninguna)
+        }
+        let fc: [Double?] = (0..<20).map { i in 58 + Double(i % 5) }
+        let vfc: [Double?] = (0..<20).map { i in 40 + Double(i % 7) }
+        let estela: [Double] = [0.9, 1.0, 1.05, 0.95, 1.1]
+        let strain: [Double?] = (0..<14).map { Double(10 + $0) }
+        let steps: [Double?] = (0..<14).map { Double(6000 + $0 * 200) }
+        let stress: [Int?] = [0, 1, 0, 1, 1, 0, 1]
+        let temp: [Double?] = (0..<20).map { _ in 0.1 }
+        let resp: [Double?] = (0..<20).map { _ in 14.0 }
+
+        return MatrizHoyModel(
+            hero: .init(palabra: "In range", highlight: "range",
+                        tone: LiquidColor.verdePrimario),
+            bandas: [
+                .full(MatrizSeccion(
+                    id: "sleep", glifo: .luna, hue: LiquidColor.indigo,
+                    titulo: "Sleep", valor: "7:12",
+                    chartID: "matriz-sleep",
+                    chart: .columnas(noches: noches, referencia: 420,
+                                     referenciaTag: "7 h", dominio: 240...600))),
+                .split(
+                    izq: MatrizSeccion(
+                        id: "rhr", glifo: .corazon, hue: LiquidColor.rosa,
+                        titulo: "Resting HR", valor: "52",
+                        chartID: "matriz-rhr",
+                        chart: .lineaRellena(puntos: fc, base: 56, dominio: 45...75,
+                                             alfa: 1.0, alertaHoy: .ninguna)),
+                    der: MatrizSeccion(
+                        id: "hrv", glifo: .onda, hue: LiquidColor.cian,
+                        titulo: "HRV", valor: "68 ms",
+                        sublabel: "Does not vote",
+                        chartID: "matriz-hrv",
+                        chart: .lineaRellena(puntos: vfc, base: 45, dominio: 20...80,
+                                             alfa: 0.6, alertaHoy: .ninguna)),
+                    fraccionIzq: 0.5),
+                .full(MatrizSeccion(
+                    id: "guardian", glifo: .escudo, hue: LiquidColor.doradoTemp,
+                    huesPar: (LiquidColor.doradoTemp, LiquidColor.azul),
+                    titulo: "Guardian", valor: "",
+                    chartID: "matriz-guardian",
+                    chart: .lineaSerena(puntos: temp, banda: -0.4...0.4,
+                                        dominio: -1...1, alertaHoy: .ninguna),
+                    chip: .init(texto: "At ease", tono: .calma),
+                    renglones: [
+                        MatrizRenglon(id: "skintemp", titulo: "Skin temp",
+                                      valor: "+0.1°", hue: LiquidColor.doradoTemp,
+                                      chartID: "matriz-guardian-temp",
+                                      chart: .lineaSerena(puntos: temp, banda: -0.4...0.4,
+                                                          dominio: -1...1, alertaHoy: .ninguna)),
+                        MatrizRenglon(id: "resp", titulo: "Breathing",
+                                      valor: "14.0", hue: LiquidColor.azul,
+                                      chartID: "matriz-guardian-resp",
+                                      chart: .lineaSerena(puntos: resp, banda: 12...16,
+                                                          dominio: 8...22, alertaHoy: .ninguna)),
+                    ])),
+                .split(
+                    izq: MatrizSeccion(
+                        id: "carga", glifo: .montana, hue: LiquidColor.verdePrimario,
+                        titulo: "Load", valor: "1.12",
+                        sublabel: "Steady",
+                        chartID: "matriz-carga",
+                        chart: .rielZona(p: 1.12, zona: 0.8...1.3, estela: estela)),
+                    der: MatrizSeccion(
+                        id: "strain", glifo: .flama, hue: LiquidColor.teal,
+                        titulo: "Effort", valor: "12.4",
+                        chartID: "matriz-strain",
+                        chart: .barrasMini(valores: strain)),
+                    fraccionIzq: 0.55),
+                .split(
+                    izq: MatrizSeccion(
+                        id: "stress", glifo: .rayo, hue: LiquidColor.tinta900,
+                        titulo: "Stress", valor: "Low",
+                        sublabel: "vs your 7 days",
+                        chartID: "matriz-stress",
+                        chart: .escalerita(niveles: stress)),
+                    der: MatrizSeccion(
+                        id: "steps", glifo: .huellas, hue: LiquidColor.tinta700,
+                        titulo: "Steps", valor: "8 432",
+                        chartID: "matriz-steps",
+                        chart: .barrasMini(valores: steps)),
+                    fraccionIzq: 0.5),
+            ])
+    }
+
+    static var t2Calibrando: MatrizHoyModel {
+        let vacioNoches = [MatrizColumnas.Noche](repeating: .init(valor: nil), count: 14)
+        let vacio20 = [Double?](repeating: nil, count: 20)
+        let vacio14 = [Double?](repeating: nil, count: 14)
+        let vacio7 = [Int?](repeating: nil, count: 7)
+        return MatrizHoyModel(
+            hero: .init(palabra: "Getting to know you", highlight: "know",
+                        tone: LiquidColor.tinta500),
+            bandas: [
+                .full(MatrizSeccion(
+                    id: "sleep", glifo: .luna, hue: LiquidColor.indigo,
+                    titulo: "Sleep", valor: "—",
+                    sublabel: "Getting to know you",
+                    chartID: "matriz-sleep",
+                    chart: .columnas(noches: vacioNoches, referencia: 420,
+                                     referenciaTag: "7 h", dominio: 240...600))),
+                .split(
+                    izq: MatrizSeccion(
+                        id: "rhr", glifo: .corazon, hue: LiquidColor.rosa,
+                        titulo: "Resting HR", valor: "—",
+                        sublabel: "Getting to know you",
+                        chartID: "matriz-rhr",
+                        chart: .lineaRellena(puntos: vacio20, base: nil, dominio: 45...75,
+                                             alfa: 1.0, alertaHoy: .ninguna)),
+                    der: MatrizSeccion(
+                        id: "hrv", glifo: .onda, hue: LiquidColor.cian,
+                        titulo: "HRV", valor: "—",
+                        chartID: "matriz-hrv",
+                        chart: .lineaRellena(puntos: vacio20, base: nil, dominio: 20...80,
+                                             alfa: 0.6, alertaHoy: .ninguna)),
+                    fraccionIzq: 0.5),
+                .full(MatrizSeccion(
+                    id: "guardian", glifo: .escudo, hue: LiquidColor.doradoTemp,
+                    huesPar: (LiquidColor.doradoTemp, LiquidColor.azul),
+                    titulo: "Guardian", valor: "—",
+                    chartID: "matriz-guardian",
+                    chart: .lineaSerena(puntos: vacio20, banda: nil, dominio: -1...1,
+                                        alertaHoy: .ninguna))),
+                .split(
+                    izq: MatrizSeccion(
+                        id: "carga", glifo: .montana, hue: LiquidColor.verdePrimario,
+                        titulo: "Load", valor: "—",
+                        sublabel: "Calibrating",
+                        chartID: "matriz-carga",
+                        chart: .rielZona(p: nil, zona: 0.8...1.3, estela: [])),
+                    der: MatrizSeccion(
+                        id: "strain", glifo: .flama, hue: LiquidColor.teal,
+                        titulo: "Effort", valor: "—",
+                        chartID: "matriz-strain",
+                        chart: .barrasMini(valores: vacio14)),
+                    fraccionIzq: 0.55),
+                .split(
+                    izq: MatrizSeccion(
+                        id: "stress", glifo: .rayo, hue: LiquidColor.tinta900,
+                        titulo: "Stress", valor: "—",
+                        chartID: "matriz-stress",
+                        chart: .escalerita(niveles: vacio7)),
+                    der: MatrizSeccion(
+                        id: "steps", glifo: .huellas, hue: LiquidColor.tinta700,
+                        titulo: "Steps", valor: "—",
+                        chartID: "matriz-steps",
+                        chart: .barrasMini(valores: vacio14)),
+                    fraccionIzq: 0.5),
+            ])
+    }
+
+    static var t3Alerta: MatrizHoyModel {
+        let noches: [MatrizColumnas.Noche] = (0..<14).map { i in
+            .init(valor: i == 13 ? 5.0 : 7.0,
+                  alerta: (i == 13 || i == 5) ? .atencion : .ninguna)
+        }
+        let fc: [Double?] = (0..<20).map { i in i == 19 ? 72.0 : 58.0 }
+        let temp: [Double?] = (0..<20).map { i in i >= 17 ? 0.9 : 0.1 }
+        let resp: [Double?] = (0..<20).map { i in i >= 17 ? 17.0 : 14.0 }
+        let estela: [Double] = [1.0, 1.1, 1.2, 1.3, 1.4]
+        return MatrizHoyModel(
+            hero: .init(palabra: "Go light today", highlight: "light",
+                        tone: LiquidColor.atencion,
+                        lunaSuenoAlerta: .atencion, lunaFCAlerta: .atencion),
+            bandas: [
+                .full(MatrizSeccion(
+                    id: "sleep", glifo: .luna, hue: LiquidColor.indigo,
+                    titulo: "Sleep", valor: "5:00",
+                    chartID: "matriz-sleep",
+                    chart: .columnas(noches: noches, referencia: 7,
+                                     referenciaTag: "7 h", dominio: 4...10))),
+                .split(
+                    izq: MatrizSeccion(
+                        id: "rhr", glifo: .corazon, hue: LiquidColor.rosa,
+                        titulo: "Resting HR", valor: "72",
+                        chartID: "matriz-rhr",
+                        chart: .lineaRellena(puntos: fc, base: 56, dominio: 45...80,
+                                             alfa: 1.0, alertaHoy: .atencion)),
+                    der: MatrizSeccion(
+                        id: "hrv", glifo: .onda, hue: LiquidColor.cian,
+                        titulo: "HRV", valor: "38 ms",
+                        chartID: "matriz-hrv",
+                        chart: .lineaRellena(
+                            puntos: (0..<20).map { _ in 38.0 as Double? },
+                            base: 45, dominio: 20...80, alfa: 0.6, alertaHoy: .ninguna)),
+                    fraccionIzq: 0.5),
+                .full(MatrizSeccion(
+                    id: "guardian", glifo: .escudo, hue: LiquidColor.doradoTemp,
+                    huesPar: (LiquidColor.doradoTemp, LiquidColor.azul),
+                    titulo: "Guardian", valor: "",
+                    chartID: "matriz-guardian",
+                    chart: .lineaSerena(puntos: temp, banda: -0.4...0.4,
+                                        dominio: -1...1, alertaHoy: .alarma),
+                    chip: .init(texto: "Temperature and breathing off · 3rd night",
+                                tono: .alarma),
+                    renglones: [
+                        MatrizRenglon(id: "skintemp", titulo: "Skin temp",
+                                      valor: "+0.9°", hue: LiquidColor.doradoTemp,
+                                      chartID: "matriz-guardian-temp",
+                                      chart: .lineaSerena(puntos: temp, banda: -0.4...0.4,
+                                                          dominio: -1...1, alertaHoy: .alarma),
+                                      subrayado: .alarma),
+                        MatrizRenglon(id: "resp", titulo: "Breathing",
+                                      valor: "17.0", hue: LiquidColor.azul,
+                                      chartID: "matriz-guardian-resp",
+                                      chart: .lineaSerena(puntos: resp, banda: 12...16,
+                                                          dominio: 8...22, alertaHoy: .alarma),
+                                      subrayado: .alarma),
+                    ])),
+                .split(
+                    izq: MatrizSeccion(
+                        id: "carga", glifo: .montana, hue: LiquidColor.verdePrimario,
+                        titulo: "Load", valor: "1.48", sublabel: "Building",
+                        chartID: "matriz-carga",
+                        chart: .rielZona(p: 1.48, zona: 0.8...1.3, estela: estela)),
+                    der: MatrizSeccion(
+                        id: "strain", glifo: .flama, hue: LiquidColor.teal,
+                        titulo: "Effort", valor: "14.0",
+                        chartID: "matriz-strain",
+                        chart: .barrasMini(valores: (0..<14).map { Double(10 + $0) })),
+                    fraccionIzq: 0.55),
+                .split(
+                    izq: MatrizSeccion(
+                        id: "stress", glifo: .rayo, hue: LiquidColor.tinta900,
+                        titulo: "Stress", valor: "High",
+                        chartID: "matriz-stress",
+                        chart: .escalerita(niveles: [0, 1, 1, 2, 2, 1, 2])),
+                    der: MatrizSeccion(
+                        id: "steps", glifo: .huellas, hue: LiquidColor.tinta700,
+                        titulo: "Steps", valor: "3 200",
+                        chartID: "matriz-steps",
+                        chart: .barrasMini(valores: (0..<14).map { Double(3000 + $0 * 50) })),
+                    fraccionIzq: 0.5),
+            ])
+    }
+}
+
+#Preview("Matriz · T1 bueno") {
+    MatrizHoyFace(model: MatrizHoyFacePreviewData.t1Bueno, onTapSeccion: { _ in })
+}
+
+#Preview("Matriz · T2 calibrando") {
+    MatrizHoyFace(model: MatrizHoyFacePreviewData.t2Calibrando, onTapSeccion: { _ in })
+}
+
+#Preview("Matriz · T3 alerta") {
+    MatrizHoyFace(model: MatrizHoyFacePreviewData.t3Alerta, onTapSeccion: { _ in })
+}
+#endif
