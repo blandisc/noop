@@ -133,6 +133,8 @@ struct TodayView: View {
     @AppStorage("today.ecosistemaFusionDay") private var ecosistemaFusionDay = ""
     /// La hoja del guardián («¿qué es VIGILANDO?», FER-10 / FER-33 · F3).
     @State private var showGuardianHoja = false
+    /// FER-54: la hoja-manual «¿Qué decide tu día?» (rótulo de nivel en la Matriz).
+    @State private var showDecideManual = false
     @AppStorage("today.ecosistemaSeparaciones") private var ecosistemaSeparaciones = 0
     /// Tras cuántas separaciones acumuladas se retira el hint «Toca para separar».
     private static let maxSeparacionHints = 3
@@ -679,6 +681,14 @@ struct TodayView: View {
             }
             .preferredColorScheme(.light)
         }
+        // FER-54 · El manual del modelo: «¿Qué decide tu día?» — estático y pedagógico,
+        // en tinta neutra (no toma el tono del veredicto: no habla de hoy).
+        .sheet(isPresented: $showDecideManual) {
+            LiquidMetricSheet(tono: LiquidColor.tinta700, detent: .porContenido) {
+                HojaDecideTuDia()
+            }
+            .preferredColorScheme(.light)
+        }
         // La hoja del eje autonómico: el desglose de sus tres señales.
         .sheet(isPresented: $showAutonomicoHoja) {
             LiquidMetricSheet(tono: liquidAutonomicoTono, detent: .porContenido) {
@@ -1152,6 +1162,9 @@ struct TodayView: View {
             }
         case "guardian":
             showGuardianHoja = true
+        case "manual.deciden":
+            // FER-54: el manual del modelo — el rótulo «Decide your day» tocado.
+            showDecideManual = true
         case "autonomico":
             openLiquidSenal("autonomico")
         default:

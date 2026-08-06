@@ -228,15 +228,16 @@ final class HoyMatrizBuilderTests: XCTestCase {
             XCTAssertEqual(n.count, 7)
         } else { XCTFail("stress") }
 
-        // Sellos / glifos.
-        XCTAssertEqual(seccion(model, id: "sleep")?.glifo, .luna)
-        XCTAssertEqual(seccion(model, id: "rhr")?.glifo, .corazon)
-        XCTAssertEqual(seccion(model, id: "hrv")?.glifo, .onda)
-        XCTAssertEqual(seccion(model, id: "guardian")?.glifo, .escudo)
-        XCTAssertEqual(seccion(model, id: "carga")?.glifo, .montana)
-        XCTAssertEqual(seccion(model, id: "strain")?.glifo, .flama)
-        XCTAssertEqual(seccion(model, id: "stress")?.glifo, .rayo)
-        XCTAssertEqual(seccion(model, id: "steps")?.glifo, .huellas)
+        // Sellos: la identidad ahora es el HUE del orbe vivo (los glifos se
+        // retiraron con el rediseño FER-51; línea podrida cazada por verify).
+        XCTAssertEqual(seccion(model, id: "sleep")?.hue, LiquidColor.indigo)
+        XCTAssertEqual(seccion(model, id: "rhr")?.hue, LiquidColor.rosa)
+        XCTAssertEqual(seccion(model, id: "hrv")?.hue, LiquidColor.cian)
+        XCTAssertEqual(seccion(model, id: "guardian")?.hue, LiquidColor.doradoTemp)
+        XCTAssertEqual(seccion(model, id: "carga")?.hue, LiquidColor.verdePrimario)
+        XCTAssertEqual(seccion(model, id: "strain")?.hue, LiquidColor.teal)
+        XCTAssertEqual(seccion(model, id: "stress")?.hue, LiquidColor.tinta900)
+        XCTAssertEqual(seccion(model, id: "steps")?.hue, LiquidColor.tinta700)
 
         // Orden visual a11y.
         XCTAssertEqual(model.ordenA11y, [

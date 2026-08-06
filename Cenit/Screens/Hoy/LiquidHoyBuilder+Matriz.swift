@@ -107,7 +107,7 @@ extension LiquidHoyBuilder {
             valor: valorVFC, unidad: String(localized: "ms"), terciaria: true,
             // P3: el abstenido explica su papel y promete el porqué a un tap.
             sublabel: String(localized: "matriz.vfc.referencia",
-                             defaultValue: "reference — does not vote · why?"),
+                             defaultValue: "reference · does not vote · why?"),
             chartID: "matriz-hrv",
             chart: .lineaRellena(puntos: ptsVFC, base: baseVFC,
                                  dominio: dominioLinea(ptsVFC, base: baseVFC, fallback: 20...80),
@@ -259,18 +259,22 @@ extension LiquidHoyBuilder {
             bandas: [
                 // Opción A del dueño (2026-08-06): el ORDEN enseña el modelo.
                 // Las dos votantes GEMELAS abren la Matriz, lado a lado.
+                // FER-54: el nivel que manda gana su manual — tocar el rótulo abre
+                // la hoja «¿Qué decide tu día?» (el patrón queda listo para escalar
+                // a los otros niveles cuando tengan la suya).
                 .nivel(String(localized: "matriz.nivel.deciden",
-                              defaultValue: "Decide your day")),
+                              defaultValue: "Decide your day"),
+                       manualID: "manual.deciden"),
                 .split(izq: seccionSueno, der: seccionFC),
                 .nivel(String(localized: "matriz.nivel.vigila",
-                              defaultValue: "Watches over you")),
+                              defaultValue: "Watches over you"), manualID: nil),
                 .full(seccionGuardian),
                 .nivel(String(localized: "matriz.nivel.contexto",
-                              defaultValue: "Context")),
+                              defaultValue: "Context"), manualID: nil),
                 .split(izq: seccionCarga, der: seccionEsf),
                 .split(izq: seccionVFC, der: seccionStress),
                 .nivel(String(localized: "matriz.nivel.bitacora",
-                              defaultValue: "Logbook")),
+                              defaultValue: "Logbook"), manualID: nil),
                 .full(seccionPasos),
             ])
     }
@@ -391,7 +395,7 @@ extension LiquidHoyBuilder {
         }()
         if let z = zMal, z <= -2 {
             return String(localized: "matriz.fc.baja",
-                          defaultValue: "low — good side")
+                          defaultValue: "low · good side")
         }
         return String(localized: "matriz.fc.enrango", defaultValue: "in your range")
     }
