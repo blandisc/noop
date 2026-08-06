@@ -69,6 +69,8 @@ extension LiquidHoyBuilder {
         let seccionSueno = MatrizSeccion(
             id: "sleep", hue: LiquidColor.indigo,
             titulo: String(localized: "Sleep"),
+            // «vota» es ROL estable del modelo (las decisoras §6), no «votó esta noche» —
+            // por eso no se apaga sin lectura. Carga NUNCA vota (loadAxis inRange/noData).
             valor: valorSueno, destacada: true, vota: true,
             sublabel: (hoy?.totalSleepMin == nil && noches.allSatisfy { $0.valor == nil })
                 ? String(localized: "Getting to know you") : nil,
@@ -86,7 +88,8 @@ extension LiquidHoyBuilder {
         let seccionFC = MatrizSeccion(
             id: "rhr", hue: LiquidColor.rosa,
             titulo: String(localized: "Resting HR"),
-            valor: valorFC, unidad: String(localized: "bpm"), destacada: true, vota: true,
+            valor: valorFC, unidad: valorFC == "—" ? nil : String(localized: "bpm"),
+            destacada: true, vota: true,
             sublabel: sublabelFC(ptsFC: ptsFC, prep: prep, alerta: alertaFC),
             chartID: "matriz-rhr",
             chart: .lineaRellena(puntos: ptsFC, base: baseFC,
@@ -131,7 +134,8 @@ extension LiquidHoyBuilder {
         let seccionGuardian = MatrizSeccion(
             id: "guardian", hue: LiquidColor.doradoTemp,
             huesPar: (LiquidColor.doradoTemp, LiquidColor.azul),
-            titulo: String(localized: "The guardian"),
+            // P4: el MISMO nombre que su luna en el héroe (una sola llave).
+            titulo: String(localized: "Guardian"),
             valor: "",
             sublabel: String(localized: "matriz.guardian.sub",
                              defaultValue: "watches fever and breathing while you sleep"),
@@ -144,9 +148,13 @@ extension LiquidHoyBuilder {
                     id: "skintemp",
                     titulo: String(localized: "Skin temp"),
                     valor: valorTemp,
-                    sublabel: alertaGuardian == .ninguna
-                        ? String(localized: "matriz.temp.enbanda", defaultValue: "within your band")
-                        : String(localized: "matriz.temp.fuera", defaultValue: "outside your band"),
+                    // El juicio es POR SEÑAL (tempOut) y solo con lectura de hoy —
+                    // afirmar «dentro de tu banda» sin dato o contra el flag del motor
+                    // es copy que miente (gate del repo; Grok+DeepSeek convergieron).
+                    sublabel: valorTemp == "—" ? nil
+                        : ((prep?.sentinel?.tempOut ?? false)
+                            ? String(localized: "matriz.temp.fuera", defaultValue: "outside your band")
+                            : String(localized: "matriz.temp.enbanda", defaultValue: "within your band")),
                     hue: LiquidColor.doradoTemp,
                     chartID: "matriz-guardian-temp",
                     chart: .lineaSerena(puntos: ptsTemp, banda: -thermalBand...thermalBand,
@@ -155,10 +163,11 @@ extension LiquidHoyBuilder {
                 MatrizRenglon(
                     id: "resp",
                     titulo: String(localized: "Breathing"),
-                    valor: valorResp, unidad: String(localized: "rpm"),
-                    sublabel: alertaGuardian == .ninguna
-                        ? String(localized: "matriz.resp.tipica", defaultValue: "typical for you")
-                        : String(localized: "matriz.resp.fuera", defaultValue: "above your usual"),
+                    valor: valorResp, unidad: valorResp == "—" ? nil : String(localized: "rpm"),
+                    sublabel: valorResp == "—" ? nil
+                        : ((prep?.sentinel?.respOut ?? false)
+                            ? String(localized: "matriz.resp.fuera", defaultValue: "above your usual")
+                            : String(localized: "matriz.resp.tipica", defaultValue: "typical for you")),
                     hue: LiquidColor.azul,
                     chartID: "matriz-guardian-resp",
                     chart: .lineaSerena(puntos: ptsResp, banda: nil,
@@ -192,7 +201,9 @@ extension LiquidHoyBuilder {
         let seccionEsf = MatrizSeccion(
             id: "strain", hue: LiquidColor.teal,
             titulo: String(localized: "Effort"),
-            valor: valorEsf, unidad: valorEsf == "\u{2014}" ? nil : "/ 21",
+            valor: valorEsf, unidad: valorEsf == "—" ? nil : "/ 21",
+            sublabel: valorEsf == "—" ? nil
+                : String(localized: "matriz.esf.sub", defaultValue: "today's effort so far"),
             chartID: "matriz-strain",
             chart: .barrasMini(valores: ptsEsf))
 
@@ -366,6 +377,10 @@ extension LiquidHoyBuilder {
         if ptsFC.allSatisfy({ $0 == nil }) {
             return String(localized: "Getting to know you")
         }
+        // Sin lectura de HOY o sin veredicto real (nil/lowSignal): no se afirma rango
+        // (espejo del gate fantasma del Cosmos — Grok #3).
+        guard ptsFC.last.flatMap({ $0 }) != nil,
+              let v = prep?.verdict, v != .lowSignal else { return nil }
         if alerta != .ninguna { return nil }  // el aro ya habla; no duplicar.
         // z_mal = −orientedZ del eje autonómico (compuesto; wRHR=1) — la MISMA
         // derivación que usa la ancla del Cosmos (§6).

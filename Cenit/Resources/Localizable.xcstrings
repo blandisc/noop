@@ -20055,6 +20055,13 @@
         }
       }
     },
+    "matriz.esf.sub" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "today's effort so far" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "lo que llevas del día" } }
+      }
+    },
     "matriz.fc.baja" : {
       "extractionState" : "manual",
       "localizations" : {
