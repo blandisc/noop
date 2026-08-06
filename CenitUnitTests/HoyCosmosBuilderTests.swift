@@ -176,7 +176,7 @@ final class HoyCosmosBuilderTests: XCTestCase {
     func test_criterio6_vfcNuncaAlerta() {
         // orientedZ muy negativo (HRV caído) → z_mal alto, p fuera del arco, PERO alerta .ninguna.
         let sigs = [signal(.rhr, z: 0.2), signal(.hrv, z: -3.0), signal(.resp, z: 0)]
-        let m = model(signals: sigs, hrv: 25)
+        let m = model(hrv: 25, signals: sigs)
         let hrv = ancla(m, "hrv")
         XCTAssertEqual(hrv.alerta, .ninguna)
         XCTAssertEqual(hrv.medidor?.lunitas.first?.alerta, .ninguna)
@@ -216,7 +216,7 @@ final class HoyCosmosBuilderTests: XCTestCase {
 
     func test_criterio8_suenoPorEficiencia() {
         let prep = read(sleep: .high)  // eje fuera (eficiencia)
-        let m = model(prep: prep, sleepMin: 480, efficiency: 0.72)
+        let m = model(prep, sleepMin: 480, efficiency: 0.72)
         let s = ancla(m, "sleep")
         XCTAssertEqual(s.alerta, .atencion)
         let p = try! XCTUnwrap(s.medidor?.lunitas.first?.p)
@@ -250,9 +250,9 @@ final class HoyCosmosBuilderTests: XCTestCase {
     // MARK: Criterio 12 — numeral conserva hue; alerta es subrayado aparte
 
     func test_criterio12_numeralConservaHue() {
-        let prep = read(autonomic: .high, autonomicZ: -1.5,  // z_mal = 1.5 → fuera
-                        sleep: .low)
-        let m = model(prep: prep, acwr: 1.55, sleepMin: 300, efficiency: 0.9)
+        let prep = read(autonomic: .high, sleep: .low,  // z_mal = 1.5 → fuera
+                        autonomicZ: -1.5)
+        let m = model(prep, acwr: 1.55, sleepMin: 300, efficiency: 0.9)
         let rhr = ancla(m, "rhr")
         XCTAssertEqual(rhr.alerta, .atencion)
         // El hue del numeral ES rosa (identidad), no ámbar de alerta.
