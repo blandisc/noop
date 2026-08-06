@@ -48,7 +48,6 @@ extension LiquidHoyBuilder {
         let alertaGuardian = mapaAlerta(HoyGramatica.severidad(senal: .skintemp, prep: prep, razonCarga: razonCarga))
         let alertaCarga = mapaAlerta(HoyGramatica.severidad(senal: .carga, prep: prep, razonCarga: razonCarga))
 
-        let hero = heroMatriz(prep: prep, alertaSueno: alertaSueno, alertaFC: alertaFC)
 
         // —— 1. Sueño (14 columnas) ——
         let keysSueno = Array(keys.suffix(matrizVentanaSueno))
@@ -68,9 +67,9 @@ extension LiquidHoyBuilder {
             HoyGramatica.formatoDuracion($0)
         }
         let seccionSueno = MatrizSeccion(
-            id: "sleep", glifo: .luna, hue: LiquidColor.indigo,
+            id: "sleep", hue: LiquidColor.indigo,
             titulo: String(localized: "Sleep"),
-            valor: valorSueno,
+            valor: valorSueno, destacada: true,
             sublabel: (hoy?.totalSleepMin == nil && noches.allSatisfy { $0.valor == nil })
                 ? String(localized: "Getting to know you") : nil,
             chartID: "matriz-sleep",
@@ -85,9 +84,9 @@ extension LiquidHoyBuilder {
             "\(Int($0.rounded()))"
         }
         let seccionFC = MatrizSeccion(
-            id: "rhr", glifo: .corazon, hue: LiquidColor.rosa,
+            id: "rhr", hue: LiquidColor.rosa,
             titulo: String(localized: "Resting HR"),
-            valor: valorFC,
+            valor: valorFC, unidad: String(localized: "bpm"), destacada: true,
             sublabel: ptsFC.allSatisfy({ $0 == nil })
                 ? String(localized: "Getting to know you") : nil,
             chartID: "matriz-rhr",
@@ -98,12 +97,12 @@ extension LiquidHoyBuilder {
         let ptsVFC: [Double?] = keys20.map { byDay[$0]?.avgHrv }
         let baseVFC = keys20.reversed().compactMap { bodyByDay[$0]?.hrvBaseCenter }.first
         let valorVFC = HoyGramatica.valorODash(ptsVFC.last.flatMap { $0 }) {
-            "\(Int($0.rounded())) ms"
+            "\(Int($0.rounded()))"
         }
         let seccionVFC = MatrizSeccion(
-            id: "hrv", glifo: .onda, hue: LiquidColor.cian,
+            id: "hrv", hue: LiquidColor.cian,
             titulo: String(localized: "HRV"),
-            valor: valorVFC,
+            valor: valorVFC, unidad: String(localized: "ms"),
             sublabel: String(localized: "Does not vote"),
             chartID: "matriz-hrv",
             chart: .lineaRellena(puntos: ptsVFC, base: baseVFC,
@@ -129,7 +128,7 @@ extension LiquidHoyBuilder {
         // Banda ± del guardián: corte térmico público (± thermalOutC) y resp ~ base±.
         let thermalBand = Preparedness.Config.default.thermalOutC
         let seccionGuardian = MatrizSeccion(
-            id: "guardian", glifo: .escudo, hue: LiquidColor.doradoTemp,
+            id: "guardian", hue: LiquidColor.doradoTemp,
             huesPar: (LiquidColor.doradoTemp, LiquidColor.azul),
             titulo: String(localized: "The guardian"),
             valor: "",
@@ -149,7 +148,8 @@ extension LiquidHoyBuilder {
                 MatrizRenglon(
                     id: "resp",
                     titulo: String(localized: "Breathing"),
-                    valor: valorResp, hue: LiquidColor.azul,
+                    valor: valorResp, unidad: String(localized: "rpm"),
+                    hue: LiquidColor.azul,
                     chartID: "matriz-guardian-resp",
                     chart: .lineaSerena(puntos: ptsResp, banda: nil,
                                         dominio: dominioLinea(ptsResp, base: nil, fallback: 8...22),
@@ -165,7 +165,7 @@ extension LiquidHoyBuilder {
         let valorCarga = HoyGramatica.valorODash(razonCarga) { String(format: "%.2f", $0) }
         let estadoCargaKey = HoyGramatica.estadoCarga(razon: razonCarga)
         let seccionCarga = MatrizSeccion(
-            id: "carga", glifo: .montana, hue: LiquidColor.verdePrimario,
+            id: "carga", hue: LiquidColor.verdePrimario,
             titulo: String(localized: "Load"),
             valor: valorCarga,
             sublabel: sublabelCarga(estadoCargaKey),
@@ -180,7 +180,7 @@ extension LiquidHoyBuilder {
             String(format: "%.1f", $0)
         }
         let seccionEsf = MatrizSeccion(
-            id: "strain", glifo: .flama, hue: LiquidColor.teal,
+            id: "strain", hue: LiquidColor.teal,
             titulo: String(localized: "Effort"),
             valor: valorEsf,
             chartID: "matriz-strain",
@@ -207,7 +207,7 @@ extension LiquidHoyBuilder {
             }
         }()
         let seccionStress = MatrizSeccion(
-            id: "stress", glifo: .rayo, hue: LiquidColor.tinta900,
+            id: "stress", hue: LiquidColor.tinta900,
             titulo: String(localized: "Stress"),
             valor: valorStress,
             sublabel: stressHoy == nil ? nil : String(localized: "vs your 7 days"),
@@ -222,7 +222,7 @@ extension LiquidHoyBuilder {
         let valorPasos = HoyGramatica.valorODash(ptsPasos.last.flatMap { $0 },
                                                  formato: HoyGramatica.formatoMiles)
         let seccionPasos = MatrizSeccion(
-            id: "steps", glifo: .huellas, hue: LiquidColor.tinta700,
+            id: "steps", hue: LiquidColor.tinta700,
             titulo: String(localized: "Steps"),
             valor: valorPasos,
             chartID: "matriz-steps",
@@ -234,13 +234,13 @@ extension LiquidHoyBuilder {
         _ = sentByDay
 
         return MatrizHoyModel(
-            hero: hero,
+
             bandas: [
                 .full(seccionSueno),
-                .split(izq: seccionFC, der: seccionVFC, fraccionIzq: 0.5),
+                .split(izq: seccionFC, der: seccionVFC),
                 .full(seccionGuardian),
-                .split(izq: seccionCarga, der: seccionEsf, fraccionIzq: 0.55),
-                .split(izq: seccionStress, der: seccionPasos, fraccionIzq: 0.5),
+                .split(izq: seccionCarga, der: seccionEsf),
+                .split(izq: seccionStress, der: seccionPasos),
             ])
     }
 
@@ -273,36 +273,6 @@ extension LiquidHoyBuilder {
         }
     }
 
-    private static func heroMatriz(prep: Preparedness.Read?,
-                                   alertaSueno: MedidorLunar.Alerta,
-                                   alertaFC: MedidorLunar.Alerta) -> MatrizHoyModel.Hero {
-        guard let prep, prep.verdict != .lowSignal, prep.isNightAnchored else {
-            let palabra = String(localized: "Getting to know you")
-            return .init(palabra: palabra, highlight: palabra,
-                         tone: LiquidColor.tinta500,
-                         lunaSuenoAlerta: .ninguna, lunaFCAlerta: .ninguna)
-        }
-        switch prep.verdict {
-        case .full:
-            return .init(
-                palabra: String(localized: "hero.title.full", defaultValue: "In range"),
-                highlight: String(localized: "hero.highlight.full", defaultValue: "range"),
-                tone: LiquidColor.verdePrimario,
-                lunaSuenoAlerta: alertaSueno, lunaFCAlerta: alertaFC)
-        case .caution:
-            return .init(
-                palabra: String(localized: "hero.title.caution", defaultValue: "Go light today"),
-                highlight: String(localized: "hero.highlight.caution", defaultValue: "light"),
-                tone: LiquidColor.atencion,
-                lunaSuenoAlerta: alertaSueno, lunaFCAlerta: alertaFC)
-        case .easy, .lowSignal:
-            return .init(
-                palabra: String(localized: "hero.title.easy", defaultValue: "Recover"),
-                highlight: String(localized: "hero.highlight.easy", defaultValue: "Recover"),
-                tone: LiquidColor.negativo,
-                lunaSuenoAlerta: alertaSueno, lunaFCAlerta: alertaFC)
-        }
-    }
 
     /// Chip §8 / criterio 10 — texto + tono resueltos; ordinal REAL de racha.
     static func chipGuardianModelo(_ sentinel: Preparedness.SentinelRead?)

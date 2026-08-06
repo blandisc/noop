@@ -101,14 +101,24 @@ struct EcosistemaPaleta: Equatable {
     /// La voz de VIGILANDO (azul) — ver `Tinta.vigia`.
     var vigia: SIMD4<Float>
     var blanco: SIMD4<Float>
+    /// Identidades de las decisoras (70 % identidad / 30 % clima) — espejo del Canvas.
+    var sueno: SIMD4<Float>
+    var reposo: SIMD4<Float>
 
     static func desde(clima: Color) -> EcosistemaPaleta {
-        EcosistemaPaleta(clima: rgba(clima),
-                         atencion: rgba(LiquidColor.atencion),
-                         negativo: rgba(LiquidColor.negativo),
-                         neutra: rgba(LiquidColor.particulaNeutra),
-                         vigia: rgba(LiquidColor.azul),
-                         blanco: SIMD4<Float>(1, 1, 1, 1))
+        let c = rgba(clima)
+        func besada(_ identidad: Color) -> SIMD4<Float> {
+            let i = rgba(identidad)
+            return i + (c - i) * 0.30
+        }
+        return EcosistemaPaleta(clima: c,
+                                atencion: rgba(LiquidColor.atencion),
+                                negativo: rgba(LiquidColor.negativo),
+                                neutra: rgba(LiquidColor.particulaNeutra),
+                                vigia: rgba(LiquidColor.azul),
+                                blanco: SIMD4<Float>(1, 1, 1, 1),
+                                sueno: besada(LiquidColor.indigo),
+                                reposo: besada(LiquidColor.rosa))
     }
 
     /// El token es la fuente de verdad; aquí solo se lee su valor sRGB. `resolve(in:)`
@@ -126,6 +136,8 @@ struct EcosistemaPaleta: Equatable {
         case .neutra: return neutra
         case .vigia: return vigia
         case .blanco: return blanco
+        case .sueno: return sueno
+        case .reposo: return reposo
         }
     }
 }

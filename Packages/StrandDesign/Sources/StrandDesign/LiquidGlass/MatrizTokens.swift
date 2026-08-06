@@ -1,0 +1,101 @@
+import SwiftUI
+
+// MARK: - FER-51 · Tokens de la familia Matriz (fuente única)
+//
+// Toda constante visual de la Matriz vive AQUÍ (regla de tokenización del repo:
+// cambios a FAMILIAS, nunca por pantalla). La cara (`MatrizHoyFace`) y las gráficas
+// (`MatrizChart`) consumen estos tokens; ningún número mágico inline. Los espaciados
+// derivan de la escala `LiquidSpace` — un solo ritmo en toda la superficie.
+
+public enum MatrizTokens {
+
+    // MARK: Ritmo (escala LiquidSpace)
+
+    /// Aire vertical de cada banda (arriba y abajo del contenido).
+    public static let bandaV: CGFloat = LiquidSpace.s300        // 12
+    /// Margen horizontal del instrumento completo — UN solo dueño (el host);
+    /// la cara no vuelve a sangrar (hallazgo DeepSeek #14: doble margen 24+16).
+    public static let margenH: CGFloat = LiquidSpace.s600       // 24
+    /// Aire entre renglones nombrados (guardián: Temp / Resp).
+    public static let renglonV: CGFloat = LiquidSpace.s200      // 8
+    /// Aire sello → bloque de título.
+    public static let selloTexto: CGFloat = LiquidSpace.s200    // 8
+    /// Canal entre columnas de una banda dividida (a cada lado del filo).
+    public static let colGap: CGFloat = LiquidSpace.s300        // 12
+
+    // MARK: El sello (orbe vivo junto al título)
+
+    public static let selloRadio: CGFloat = 8
+
+    // MARK: Filos y referencias (tinta estructural)
+
+    /// Filo separador de bandas (1 px).
+    public static let filoAlfa: Double = 0.08
+    /// Punteada de referencia («tu base», «7 h»).
+    public static let refAlfa: Double = 0.28
+    /// Bordes punteados de banda ± (guardián).
+    public static let bandaRefAlfa: Double = 0.18
+
+    // MARK: El dato (historia serena, HOY presente)
+
+    /// Historia: barras/puntos del pasado.
+    public static let histAlfa: Double = 0.32
+    /// Trazo de la curva protagonista (FC/VFC).
+    public static let lineaAlfa: Double = 0.75
+    /// Trazo de la curva serena (guardián — casi plana a propósito).
+    public static let lineaSerenaAlfa: Double = 0.55
+    /// Trazo de la escalerita (estrés — geometría sin juicio).
+    public static let lineaEscaleraAlfa: Double = 0.40
+    /// Relleno de gradiente bajo la curva (arranque; muere a ~10 %).
+    public static let rellenoAlfa: Double = 0.20
+    /// HOY: el único elemento saturado — NUNCA multiplicado por el alfa de sección.
+    public static let hoyAlfa: Double = 0.95
+
+    // MARK: Marcadores (un solo radio de HOY en toda la familia)
+
+    public static let hoyRadio: CGFloat = 3.0
+    public static let histRadio: CGFloat = 1.8
+
+    // MARK: Estructura de gráfica (tinta que no es dato)
+
+    /// Relleno sólido de la banda ± (guardián).
+    public static let bandaFillAlfa: Double = 0.08
+    /// Filo central (cero / base de la señal serena).
+    public static let filoCentralAlfa: Double = 0.22
+    /// Riel base de la carga.
+    public static let rielAlfa: Double = 0.14
+    /// Rieles fantasma de la escalerita.
+    public static let rielFantasmaAlfa: Double = 0.08
+    /// Aro de alerta (trazo).
+    public static let aroAlfa: Double = 0.8
+    /// Separación del aro de alerta respecto al marcador (y del segundo aro).
+    public static let aroGap: CGFloat = 2.4
+    public static let aroGap2: CGFloat = 4.6
+    /// Inset horizontal estándar de las gráficas de serie.
+    public static let chartInset: CGFloat = 4
+    /// Aire vertical estándar del trazo dentro de su lienzo (un solo pad para toda la familia).
+    public static let chartPadV: CGFloat = 4
+    /// Canal superior de columnas: territorio del tag de referencia («7 h»).
+    public static let tagCanal: CGFloat = 16
+    /// Altura mínima del encabezado de sección (título + línea de sublabel reservada).
+    public static let encabezadoMinH: CGFloat = 34
+    /// Inset del riel de carga (deja aire al punto HOY + su aro).
+    public static let rielInset: CGFloat = 8
+    /// Canal entre barras (columnas de sueño Y barras mini — un solo ritmo).
+    public static let barraGap: CGFloat = 2
+    /// Media altura de la cápsula de zona dulce (carga).
+    public static let zonaAlto: CGFloat = 14
+    /// Media altura de los ticks que rematan la zona dulce.
+    public static let zonaTickAlto: CGFloat = 6
+    /// Pad vertical de la escalerita (un pelo más de aire que la familia:
+    /// sus puntos viven en 3 rieles fijos y el aro de HOY necesita cancha).
+    public static let escaleraPadV: CGFloat = chartPadV + 2
+
+    // MARK: Alturas de gráfica por forma
+
+    public static let alturaLinea: CGFloat = 56
+    public static let alturaRenglon: CGFloat = 32
+    public static let alturaBarras: CGFloat = 40
+    public static let alturaEscalera: CGFloat = alturaBarras   // gemela de Steps (banda Stress|Steps)
+    public static let alturaRiel: CGFloat = 40   // gemela de barras: el riel centra en el mismo alto
+}

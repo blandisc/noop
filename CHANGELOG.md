@@ -20,6 +20,9 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **Hoy se destila: la Matriz** (FER-51). **ES** — La mitad de abajo de Hoy es ahora un solo instrumento: cada señal con su orbe vivo de partículas (el eco del héroe, girando), su numeral con unidad, y su gráfica en la voz Liquid — curvas suaves, barras redondeadas, la zona del guardián como una banda serena. Las lunas del héroe visten el color de su métrica (sueño índigo, reposo rosa). El fondo respira como lámpara de lava. Todo el espaciado converge a una sola escala, auditado hasta la simetría por tres revisores. El modo Cosmos se retiró (era complejidad de más); el dial 24h también.
+  **EN** — The bottom half of Today is now a single instrument: each signal with its living particle orb (the hero's echo, rotating), its numeral with unit, and its chart in the Liquid voice — smooth curves, rounded bars, the guardian's zone as a calm band. The hero's moons wear their metric's color (sleep indigo, resting pink). The background breathes like a lava lamp. All spacing converges to one scale, audited to symmetry by three reviewers. Cosmos mode was retired (too much complexity); the 24h dial too.
+
 - **El cielo se reúne y se abre / The sky gathers and opens.** (FER-51, fase 2)
   **ES** — En modo Cosmos, toca el cielo: todas tus señales se reúnen a orbitar el veredicto (y lo que se sale de tu tendencia se sale de su órbita, con su color de alerta), o se abren a sus puestos con números. Tu jornada se lee de un vistazo por color y órbitas; el detalle, a un toque.
   **EN** — In Cosmos mode, tap the sky: all your signals gather to orbit the verdict (and whatever drifts from your trend leaves its orbit, in its alert color), or open to their places with numbers. Your day reads at a glance by color and orbits; the detail is one tap away.

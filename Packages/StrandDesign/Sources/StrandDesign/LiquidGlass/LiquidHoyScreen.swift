@@ -319,9 +319,11 @@ public struct LiquidHoyContent: View {
 
     public var body: some View {
         VStack(spacing: 0) {
+            // El dial-sello 24 h se retiró del header (decisión del dueño 2026-08-06:
+            // competía con el veredicto como segundo dominante). El tirón de sync sigue
+            // funcionando; el modelo conserva `dial` por si vuelve en otra superficie.
             LiquidScreenHeader(kicker: model.kicker, kickerA11y: model.kickerA11y) {
-                LiquidDialSeal(night: model.dial.night, sol: model.dial.sol,
-                               marker: model.dial.marker)
+                EmptyView()
             }
             .liquidEntrada(index: 0)
 

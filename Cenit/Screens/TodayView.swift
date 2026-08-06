@@ -1005,13 +1005,14 @@ struct TodayView: View {
         let output = liquidOutput
         // FER-51: el host Cosmos·Matriz vive debajo del Ecosistema (héroe).
         let mInputs = liquidMatrizInputs()
-        let cExtra = liquidCosmosExtra()
         VStack(alignment: .leading, spacing: CenitMetrics.space1) {
             Group {
                 syncStatusLine
                 HealthAlertBanner()
             }
-            .padding(.horizontal, LiquidSpace.s550)
+            // Mismo margen que la Matriz (auditoría de simetría: s550 dejaba la
+            // columna vecina 2 pt fuera de eje).
+            .padding(.horizontal, LiquidSpace.s600)
             LiquidHoyContent(
                 model: output.model,
                 onTapMetric: { openLiquidMetric($0) },
@@ -1046,14 +1047,12 @@ struct TodayView: View {
                 onSeparacion: {
                     ecosistemaSeparaciones = min(Self.maxSeparacionHints, ecosistemaSeparaciones + 1)
                 })
-            // FER-51 · Host de las dos caras (conmutador + estados T1–T5). Debajo del héroe.
-            HoyModosHost(
+            // FER-51 · La Matriz (estados T1–T5 + instrumento). Debajo del héroe.
+            // El modo Cosmos se apagó (decisión del dueño 2026-08-06).
+            HoyMatrizHost(
                 matriz: LiquidHoyBuilder.matriz(mInputs),
-                cosmos: LiquidHoyBuilder.cosmosAbierto(mInputs, extra: cExtra),
                 plantilla: plantillaActual,
-                onTapSeccion: { abrirHojaCaras($0) },
-                onTapAncla: { abrirHojaCaras($0) })
-                .padding(.horizontal, LiquidSpace.s600)
+                onTapSeccion: { abrirHojaCaras($0) })
             // /inject: la leyenda de origen se retiró de la superficie Liquid a pedido del
             // dueño (los puntos de origen por tile se quedan).
         }
@@ -1081,25 +1080,6 @@ struct TodayView: View {
             locale: .current,
             calendar: .current,
             now: Date())
-    }
-
-    /// Lecturas de HOY ya resueltas (mismas capas que `liquidInputs()`).
-    private func liquidCosmosExtra() -> LiquidHoyBuilder.CosmosExtraInputs {
-        let steps = liquidSteps()
-        return LiquidHoyBuilder.CosmosExtraInputs(
-            sleep: resolveMeasured(todayOnly: true, { $0.totalSleepMin })
-                .map { .init($0.value, fromApple: $0.fromApple) },
-            rhr: resolveMeasured(todayOnly: true, { $0.restingHr.map(Double.init) })
-                .map { .init($0.value, fromApple: $0.fromApple) },
-            hrv: resolveMeasured(todayOnly: true, { $0.avgHrv })
-                .map { .init($0.value, fromApple: $0.fromApple) },
-            temp: resolveMeasured(todayOnly: true, { $0.skinTempDevC })
-                .map { .init($0.value, fromApple: $0.fromApple) },
-            resp: resolveMeasured(todayOnly: true, { $0.respRateBpm })
-                .map { .init($0.value, fromApple: $0.fromApple) },
-            stress: stress?.score,
-            strain: model.displayedDayStrain,
-            steps: steps.value)
     }
 
     /// Plantilla T1–T5 actual (máquina pura + orígenes de Hoy).

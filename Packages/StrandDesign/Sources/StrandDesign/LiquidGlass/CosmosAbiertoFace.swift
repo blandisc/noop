@@ -281,20 +281,21 @@ public struct CosmosAbiertoFace: View {
     private let onTapAncla: (String) -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    /// Lienzo de referencia del prototipo (§1): las fracciones se derivan de 390×820.
+    /// Lienzo de referencia (revisión del dueño en vivo): la cara ya NO trae héroe propio —
+    /// el héroe de la pantalla es el ecosistema de partículas que vive arriba. Solo anclas.
     private static let refW: CGFloat = 390
-    private static let refH: CGFloat = 820
+    private static let refH: CGFloat = 445
 
-    /// Posiciones de ancla en el prototipo (x, y) pt sobre 390×820.
+    /// Posiciones de ancla (x, y) pt sobre 390×560.
     private static let pos: [String: CGPoint] = [
-        "sleep":    CGPoint(x: 99,  y: 334),
-        "guardian": CGPoint(x: 195, y: 341),
-        "rhr":      CGPoint(x: 291, y: 334),
-        "carga":    CGPoint(x: 84,  y: 471),
-        "stress":   CGPoint(x: 195, y: 481),
-        "hrv":      CGPoint(x: 306, y: 471),
-        "strain":   CGPoint(x: 110, y: 593),
-        "steps":    CGPoint(x: 280, y: 593),
+        "sleep":    CGPoint(x: 99,  y: 74),
+        "guardian": CGPoint(x: 195, y: 81),
+        "rhr":      CGPoint(x: 291, y: 74),
+        "carga":    CGPoint(x: 84,  y: 211),
+        "stress":   CGPoint(x: 195, y: 221),
+        "hrv":      CGPoint(x: 306, y: 211),
+        "strain":   CGPoint(x: 110, y: 333),
+        "steps":    CGPoint(x: 280, y: 333),
     ]
 
     public init(model: CosmosAbiertoModel, onTapAncla: @escaping (String) -> Void = { _ in }) {
@@ -310,17 +311,12 @@ public struct CosmosAbiertoFace: View {
             let stack = shouldStack(width: geo.size.width)
 
             ZStack(alignment: .top) {
-                LiquidColor.fondoGradient.ignoresSafeArea()
+                // Sin fondo propio ni héroe propio: la cara es transparente sobre el suelo
+                // vivo de Hoy y el héroe es el ecosistema que ya vive arriba.
 
                 // Arcos de anclaje (detrás de las anclas).
                 arcos(sx: sx, sy: sy)
                     .allowsHitTesting(false)
-
-                // Héroe.
-                heroeBlock(sx: sx, sy: sy, s: s)
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(model.heroe.a11y)
-                    .accessibilitySortPriority(100)
 
                 if stack {
                     anclasApiladas(sx: sx, s: s)
@@ -337,74 +333,31 @@ public struct CosmosAbiertoFace: View {
         .accessibilityElement(children: .contain)
     }
 
-    // MARK: Héroe
-
-    private func heroeBlock(sx: CGFloat, sy: CGFloat, s: CGFloat) -> some View {
-        let cx = 0.5 * Self.refW * sx
-        let cy = 152 * sy
-        let r: CGFloat = 52 * s
-        return VStack(spacing: 10 * s) {
-            CosmosOrbeCompacto(radio: r, color: model.heroe.tonoOrbe)
-            Text(model.heroe.palabra)
-                .font(InstrumentoType.grotesk(28 * s, weight: .semibold, relativeTo: .title2))
-                .foregroundStyle(model.heroe.tonoPalabra)
-                .multilineTextAlignment(.center)
-            if let conf = model.heroe.confianza {
-                Text(conf)
-                    .font(LiquidType.captionLectura)
-                    .foregroundStyle(LiquidColor.tinta500)
-                    .multilineTextAlignment(.center)
-            }
-        }
-        .position(x: cx, y: cy + 30 * s)
-    }
-
     // MARK: Arcos
 
+    /// Órbitas del MISMO sistema del héroe: anillos concéntricos cuyo centro vive
+    /// arriba (donde el héroe respira), desvanecidos hacia los bordes. La cara abierta
+    /// es un acercamiento al universo — no tres rayas sueltas (revisión del dueño).
     private func arcos(sx: CGFloat, sy: CGFloat) -> some View {
-        TimelineView(.animation(minimumInterval: 1 / 30, paused: reduceMotion)) { timeline in
-            let t = reduceMotion ? 0.0 : timeline.date.timeIntervalSinceReferenceDate
-            Canvas { ctx, _ in
-                dibujarArco(ctx,
-                            a: CGPoint(x: 24 * sx, y: 318 * sy),
-                            b: CGPoint(x: 195 * sx, y: 364 * sy),
-                            c: CGPoint(x: 366 * sx, y: 318 * sy),
-                            t: t, fase: 0)
-                dibujarArco(ctx,
-                            a: CGPoint(x: 10 * sx, y: 452 * sy),
-                            b: CGPoint(x: 195 * sx, y: 510 * sy),
-                            c: CGPoint(x: 380 * sx, y: 452 * sy),
-                            t: t, fase: 3)
-                dibujarArco(ctx,
-                            a: CGPoint(x: 24 * sx, y: 603 * sy),
-                            b: CGPoint(x: 195 * sx, y: 577 * sy),
-                            c: CGPoint(x: 366 * sx, y: 603 * sy),
-                            t: t, fase: 6)
+        Canvas { ctx, size in
+            let centro = CGPoint(x: 195 * sx, y: -240 * sy)
+            for fila: CGFloat in [74, 211, 333] {
+                // El anillo pasa por las anclas laterales de su fila (x ≈ 99/291).
+                let dx = 96 * sx
+                let dy = (fila + 240) * sy
+                let r = (dx * dx + dy * dy).squareRoot()
+                let rect = CGRect(x: centro.x - r, y: centro.y - r, width: r * 2, height: r * 2)
+                ctx.stroke(Path(ellipseIn: rect), with: .linearGradient(
+                    Gradient(stops: [
+                        .init(color: .clear, location: 0),
+                        .init(color: LiquidColor.tinta900.opacity(0.10), location: 0.5),
+                        .init(color: .clear, location: 1),
+                    ]),
+                    startPoint: CGPoint(x: 0, y: 0),
+                    endPoint: CGPoint(x: size.width, y: 0)),
+                    style: StrokeStyle(lineWidth: 1))
             }
         }
-    }
-
-    private func dibujarArco(_ ctx: GraphicsContext, a: CGPoint, b: CGPoint, c: CGPoint,
-                             t: TimeInterval, fase: Double) {
-        var path = Path()
-        path.move(to: a)
-        path.addQuadCurve(to: c, control: b)
-        ctx.stroke(path, with: .color(LiquidColor.tinta900.opacity(0.10)),
-                   style: StrokeStyle(lineWidth: 1, lineCap: .round))
-
-        // Destello que recorre el arco cada ~9 s.
-        let ciclo = (t + fase).truncatingRemainder(dividingBy: 9) / 9
-        let p = puntoEnCuadratica(a: a, b: b, c: c, u: ciclo)
-        let destello = Path(ellipseIn: CGRect(x: p.x - 3, y: p.y - 3, width: 6, height: 6))
-        ctx.fill(destello, with: .color(model.destelloTono.opacity(0.55)))
-    }
-
-    private func puntoEnCuadratica(a: CGPoint, b: CGPoint, c: CGPoint, u: Double) -> CGPoint {
-        let t = CGFloat(u)
-        let mt = 1 - t
-        return CGPoint(
-            x: mt * mt * a.x + 2 * mt * t * b.x + t * t * c.x,
-            y: mt * mt * a.y + 2 * mt * t * b.y + t * t * c.y)
     }
 
     // MARK: Anclas
@@ -439,7 +392,8 @@ public struct CosmosAbiertoFace: View {
                     Text(sub)
                         .font(LiquidType.captionLectura)
                         .foregroundStyle(LiquidColor.tinta500)
-                        .lineLimit(1)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
                         .minimumScaleFactor(0.8)
                 }
                 Text(ancla.rotulo)
@@ -449,7 +403,10 @@ public struct CosmosAbiertoFace: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
             }
-            .frame(minWidth: hit, minHeight: hit)
+            // Columna fija ≤ separación entre anclas (~96 pt): el texto envuelve DENTRO
+            // de su ancla, nunca sobre la vecina.
+            .frame(width: 94 * s)
+            .frame(minHeight: hit)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -462,13 +419,13 @@ public struct CosmosAbiertoFace: View {
         let r = ancla.lunaRadio * s
         return ZStack {
             if let h2 = ancla.hueLuna2 {
-                // Binaria del guardián: dos lunitas pequeñas.
-                Circle().fill(ancla.hueLuna).frame(width: r * 1.4, height: r * 1.4)
-                    .offset(x: -r * 0.55)
-                Circle().fill(h2).frame(width: r * 1.4, height: r * 1.4)
-                    .offset(x: r * 0.55)
+                // Binaria del guardián: dos lunitas vivas con aire entre ellas.
+                OrbeVivo(radio: r * 0.72, hue: ancla.hueLuna, semillaID: "luna-\(ancla.id)-a")
+                    .offset(x: -r * 0.95)
+                OrbeVivo(radio: r * 0.72, hue: h2, semillaID: "luna-\(ancla.id)-b")
+                    .offset(x: r * 0.95)
             } else {
-                Circle().fill(ancla.hueLuna).frame(width: r * 2, height: r * 2)
+                OrbeVivo(radio: r, hue: ancla.hueLuna, semillaID: "luna-\(ancla.id)")
             }
         }
         .accessibilityHidden(true)
@@ -499,7 +456,7 @@ public struct CosmosAbiertoFace: View {
         let g2 = model.anclas.filter { $0.grupo == 2 }
         let g3 = model.anclas.filter { $0.grupo == 3 }
         return VStack(spacing: 28 * s) {
-            Spacer().frame(height: 220 * s)
+            Spacer().frame(height: 24 * s)
             grupoFila(g1, s: s)
             grupoFila(g2, s: s)
             grupoFila(g3, s: s)
@@ -564,19 +521,13 @@ public struct CosmosReunidoFace: View {
 
     public var body: some View {
         GeometryReader { geo in
-            let s: CGFloat = min(geo.size.width / 390, geo.size.height / 820)
+            let s: CGFloat = min(geo.size.width / 390, geo.size.height / 445)
             let cx: CGFloat = geo.size.width / 2
-            let cy: CGFloat = 300 * (geo.size.height / 820)
-            ZStack(alignment: .top) {
-                TimelineView(.animation(minimumInterval: 1 / 60, paused: reduceMotion)) { tl in
-                    let t: Double = reduceMotion ? 0 : tl.date.timeIntervalSinceReferenceDate
-                    Canvas { ctx, _ in dibujaEscena(&ctx, t: t, cx: cx, cy: cy, s: s) }
-                }
-                // La palabra del veredicto responde «¿todo bien?» debajo del orbe.
-                Text(model.heroe.palabra)
-                    .font(InstrumentoType.grotesk(19 * s, weight: .regular, relativeTo: .title3))
-                    .foregroundStyle(model.heroe.tonoPalabra)
-                    .position(x: cx, y: cy + Self.anillo(3) * s + 26 * s)
+            let cy: CGFloat = geo.size.height / 2
+            // Sin palabra propia: el héroe de la pantalla (arriba) ya dice el veredicto.
+            TimelineView(.animation(minimumInterval: 1 / 60, paused: reduceMotion)) { tl in
+                let t: Double = reduceMotion ? 0 : tl.date.timeIntervalSinceReferenceDate
+                Canvas { ctx, _ in dibujaEscena(&ctx, t: t, cx: cx, cy: cy, s: s) }
             }
         }
         .accessibilityElement(children: .ignore)
@@ -610,7 +561,7 @@ public struct CosmosReunidoFace: View {
             }
         }
         // El héroe al centro.
-        dibujaLuna(ctx, CGPoint(x: cx, y: cy), 52 * s, model.heroe.tonoOrbe, nil)
+        dibujaLuna(ctx, CGPoint(x: cx, y: cy), 46 * s, model.heroe.tonoOrbe, nil, t: t)
     }
 
     private func dibujaLunaOrbital(_ ctx: inout GraphicsContext, a: CosmosAbiertoModel.Ancla,
@@ -642,7 +593,7 @@ public struct CosmosReunidoFace: View {
             aro(ctx, p, hr, colorAlerta(a.alerta))
             if a.alerta == .alarma { aro(ctx, p, hr + 3.5, colorAlerta(a.alerta)) }
         }
-        dibujaLuna(ctx, p, a.lunaRadio * s, a.hueLuna, a.hueLuna2)
+        dibujaLuna(ctx, p, a.lunaRadio * s, a.hueLuna, a.hueLuna2, t: t)
     }
 
     private func colorAlerta(_ a: CosmosAbiertoModel.Alerta) -> Color {
@@ -652,11 +603,11 @@ public struct CosmosReunidoFace: View {
         ctx.stroke(Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2)),
                    with: .color(color.opacity(0.55)), style: StrokeStyle(lineWidth: 1))
     }
-    private func dibujaLuna(_ ctx: GraphicsContext, _ c: CGPoint, _ r: CGFloat, _ color: Color, _ color2: Color?) {
-        let tint = color2.map { Gradient(colors: [color, $0]) } ?? Gradient(colors: [color.opacity(0.9), color.opacity(0.5)])
-        ctx.fill(Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2)),
-                 with: .radialGradient(tint, center: CGPoint(x: c.x - r * 0.2, y: c.y - r * 0.25),
-                                       startRadius: 0, endRadius: r))
+    /// Una sola materia en todo el rediseño: delega en `OrbeVivo.dibujar`.
+    private func dibujaLuna(_ ctx: GraphicsContext, _ c: CGPoint, _ r: CGFloat,
+                            _ color: Color, _ color2: Color?, t: Double = 0) {
+        OrbeVivo.dibujar(ctx, centro: c, radio: r, hue: color, huePar: color2,
+                         t: t, faseID: "reunido")
     }
 }
 

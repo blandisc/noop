@@ -727,14 +727,16 @@ public struct LiquidEcosistema: View {
     }
 
     @ViewBuilder private func botonPuerta(_ puerta: String) -> some View {
+        // Revisión del dueño en vivo (FER-51): la puerta era invisible en tinta500 —
+        // sube a tinta700 con un punto más de aire; sigue siendo pastilla de vidrio.
         let etiqueta = HStack(spacing: LiquidSpace.s150) {
             Text(puerta)
                 .font(LiquidType.captionLectura)
-                .foregroundStyle(LiquidColor.tinta500)
-            LiquidIcon(.chevron, size: 9, color: LiquidColor.tinta500)
+                .foregroundStyle(LiquidColor.tinta700)
+            LiquidIcon(.chevron, size: 9, color: LiquidColor.tinta700)
         }
         .padding(.horizontal, LiquidSpace.s300)
-        .padding(.vertical, LiquidSpace.s075)
+        .padding(.vertical, LiquidSpace.s100)
         .background {
             Capsule().fill(LiquidColor.vidrioPastilla)
             Capsule().strokeBorder(LiquidColor.vidrioBordePastilla, lineWidth: 0.5)
@@ -1029,7 +1031,19 @@ private struct EcosistemaCanvas: View {
         // custodia (decisión del dueño /inject; el gris lo hacía mueble).
         case .vigia: return LiquidColor.azul
         case .blanco: return LiquidColor.particulaBlanca
+        case .sueno: return Self.mezclada(LiquidColor.indigo, hacia: tintaClima)
+        case .reposo: return Self.mezclada(LiquidColor.rosa, hacia: tintaClima)
         }
+    }
+
+    /// Identidad besada por el clima (70/30): el morado sigue siendo morado, pero la
+    /// atmósfera del veredicto lo entinta — mismo lerp que la paleta Metal.
+    private static func mezclada(_ identidad: Color, hacia clima: Color, k: Double = 0.30) -> Color {
+        let a = identidad.resolve(in: EnvironmentValues())
+        let b = clima.resolve(in: EnvironmentValues())
+        func l(_ x: Float, _ y: Float) -> Double { Double(x) + (Double(y) - Double(x)) * k }
+        return Color(.sRGB, red: l(a.red, b.red), green: l(a.green, b.green),
+                     blue: l(a.blue, b.blue), opacity: l(a.opacity, b.opacity))
     }
 
     private func rotulo(_ cual: Sim.RotuloOrbital) -> String {

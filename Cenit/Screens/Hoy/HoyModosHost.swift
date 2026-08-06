@@ -1,116 +1,33 @@
 import SwiftUI
 import StrandDesign
+import Inject   // recarga en caliente (dev-only, inerte en Release)
 
-// MARK: - FER-51 · Host de modos (Cosmos · Matriz)
+// MARK: - FER-51 · Host de la Matriz
 //
-// Conmutador + crossfade entre las dos caras + franja de estado T1–T5.
-// Persistencia de modo en `@AppStorage("hoy.modo")`. F2: la postura del Cosmos (reunido⇄
-// abierto) la alterna el gesto de tocar el cielo; amanece abierta con el cambio de día.
+// Decisión del dueño (2026-08-06, revisión en vivo): el modo Cosmos se APAGA — era
+// mucha complejidad; la Matriz es la apuesta y se pule a fondo. Este host monta la
+// franja de estado T1–T5 + la cara Matriz, y nada más. (Las caras Cosmos siguen en
+// StrandDesign con sus tests por si la decisión se revierte; aquí ya no se montan.)
 
-struct HoyModosHost: View {
-    @AppStorage("hoy.modo") private var modoRaw = HoyModo.cosmos.rawValue
-    @AppStorage("hoy.lastActiveDay") private var lastActiveDay = ""
-    @AppStorage("hoy.gestoUsos") private var gestoUsos = 0
-    @Environment(\.scenePhase) private var scenePhase
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    /// F2 · postura del Cosmos: amanece ABIERTA; el gesto de tocar el cielo la reúne.
-    @State private var reunido = false
+struct HoyMatrizHost: View {
+    @ObserveInjection private var inject
 
     let matriz: MatrizHoyModel
-    let cosmos: CosmosAbiertoModel
     let plantilla: LiquidHoyBuilder.Plantilla
     var onTapSeccion: (String) -> Void = { _ in }
-    var onTapAncla: (String) -> Void = { _ in }
-
-    private var modo: Binding<HoyModo> {
-        Binding(
-            get: { HoyModo(rawValue: modoRaw) ?? .cosmos },
-            set: { modoRaw = $0.rawValue }
-        )
-    }
 
     var body: some View {
         VStack(spacing: LiquidSpace.s300) {
             if let copy = estadoCopy {
                 estadoGrupo(copy)
             }
-
-            Group {
-                if modo.wrappedValue == .cosmos {
-                    cosmosCara
-                        .frame(maxWidth: .infinity)
-                        .aspectRatio(390.0 / 820.0, contentMode: .fit)
-                        .transition(.opacity)
-                } else {
-                    // Matriz: GeometryReader + bandas §7; mínimo generoso en el scroll padre.
-                    MatrizHoyFace(model: matriz, onTapSeccion: onTapSeccion)
-                        .frame(maxWidth: .infinity)
-                        .frame(minHeight: 720)
-                        .transition(.opacity)
-                }
-            }
-            .animation(.easeInOut(duration: 0.3), value: modo.wrappedValue)
-
-            // F2 · pista del gesto (las primeras 3 veces que aún no lo usas).
-            if modo.wrappedValue == .cosmos && gestoUsos < 3 {
-                Text(reunido ? String(localized: "hoy.hint.abrir", defaultValue: "Tap the sky to open it")
-                             : String(localized: "hoy.hint.reunir", defaultValue: "Tap the sky to gather it"))
-                    .font(.footnote)
-                    .foregroundStyle(LiquidColor.tinta500)
-                    .transition(.opacity)
-            }
-
-            HoyModoConmutador(
-                modo: modo,
-                rotuloCosmos: String(localized: "hoy.modo.cosmos", defaultValue: "Cosmos"),
-                rotuloMatriz: String(localized: "hoy.modo.matriz", defaultValue: "Matrix"))
-            .padding(.top, LiquidSpace.s100)
-            .padding(.bottom, LiquidSpace.s200)
+            MatrizHoyFace(model: matriz, onTapSeccion: onTapSeccion)
+                .frame(maxWidth: .infinity)
         }
-        .onChange(of: scenePhase) { _, phase in
-            guard phase == .active else { return }
-            let hoy = Self.dayKey(Date())
-            // F2: la postura amanece ABIERTA con el cambio de día calendario.
-            if lastActiveDay != hoy {
-                lastActiveDay = hoy
-                reunido = false
-            }
-        }
-        .onAppear {
-            let hoy = Self.dayKey(Date())
-            if lastActiveDay != hoy {
-                lastActiveDay = hoy
-                reunido = false
-            }
-        }
-    }
-
-    // MARK: - F2 · postura del Cosmos y el gesto
-
-    /// El Cosmos con su gesto: tocar el CIELO (vacío) alterna reunido⇄abierto; tocar una
-    /// ANCLA abre su hoja (el tap del hijo gana sobre el del padre, comportamiento estándar).
-    private var cosmosCara: some View {
-        Group {
-            if reunido {
-                CosmosReunidoFace(model: cosmos)
-            } else {
-                CosmosAbiertoFace(model: cosmos, onTapAncla: onTapAncla)
-            }
-        }
-        .contentShape(Rectangle())
-        .onTapGesture { alternarPostura() }
-        .animation(reduceMotion ? nil : .easeInOut(duration: 0.5), value: reunido)
-        .accessibilityAction(named: Text(reunido
-            ? String(localized: "hoy.hint.abrir", defaultValue: "Tap the sky to open it")
-            : String(localized: "hoy.hint.reunir", defaultValue: "Tap the sky to gather it"))) {
-            alternarPostura()
-        }
-    }
-
-    private func alternarPostura() {
-        reunido.toggle()
-        if gestoUsos < 3 { gestoUsos += 1 }
+        // UN solo dueño del margen horizontal (hallazgo DeepSeek #14: antes 24 del
+        // TodayView + 16 de la cara = 40 desalineados del copy de estado).
+        .padding(.horizontal, MatrizTokens.margenH)
+        .enableInjection()   // Inject: recarga en caliente (no-op en Release)
     }
 
     // MARK: - Estado (copy §11)
@@ -143,16 +60,6 @@ struct HoyModosHost: View {
             .font(InstrumentoType.grotesk(13, weight: .medium))
             .foregroundStyle(LiquidColor.tinta500)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, LiquidSpace.s100)
             .accessibilityIdentifier("hoy-estado-copy")
-    }
-
-    private static func dayKey(_ date: Date) -> String {
-        let f = DateFormatter()
-        f.calendar = .current
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = .current
-        f.dateFormat = "yyyy-MM-dd"
-        return f.string(from: date)
     }
 }
