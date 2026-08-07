@@ -10,22 +10,28 @@ import SwiftUI
 // Bajo Reduce Motion queda quieta. `huePar` alterna por índice (binaria del guardián).
 
 public struct OrbeVivo: View {
+    /// Silueta del cuerpo: esfera plena (default) o luna creciente (FER-55, Sueño):
+    /// la MISMA materia, con una mordida 2D que talla el creciente.
+    public enum Forma: Sendable, Equatable { case esfera, luna }
+
     private let radio: CGFloat
     private let hue: Color
     private let huePar: Color?
     private let semillaID: String
     private let fps: Double
+    private let forma: Forma
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// `fps`: los cuerpos chicos (sellos) viven bien a 12; los grandes a 24
     /// (hallazgo Grok #2 — N relojes en la única cara).
     public init(radio: CGFloat, hue: Color, semillaID: String = "",
-                huePar: Color? = nil, fps: Double = 24) {
+                huePar: Color? = nil, fps: Double = 24, forma: Forma = .esfera) {
         self.radio = radio
         self.hue = hue
         self.huePar = huePar
         self.semillaID = semillaID
         self.fps = fps
+        self.forma = forma
     }
 
     public var body: some View {
@@ -36,7 +42,8 @@ public struct OrbeVivo: View {
             let t = reduceMotion ? 0 : tl.date.timeIntervalSinceReferenceDate
             Canvas { ctx, size in
                 Self.dibujar(ctx, centro: CGPoint(x: size.width / 2, y: size.height / 2),
-                             radio: radio, hue: hue, huePar: huePar, t: t, faseID: semillaID)
+                             radio: radio, hue: hue, huePar: huePar, t: t, faseID: semillaID,
+                             forma: forma)
             }
         }
         .frame(width: lado, height: lado)
@@ -63,10 +70,18 @@ public struct OrbeVivo: View {
     /// llama directo con su `t`. Una sola definición de materia para todo el rediseño.
     public static func dibujar(_ ctx: GraphicsContext, centro: CGPoint, radio: CGFloat,
                                hue: Color, huePar: Color? = nil,
-                               t: Double = 0, faseID: String = "") {
+                               t: Double = 0, faseID: String = "",
+                               forma: Forma = .esfera) {
         // Densidad del héroe (~0.4 pt²/partícula) — más rala que un relleno: se ven
-        // los puntos individuales, como arriba. Tope por rendimiento.
-        let cuenta = min(240, max(36, Int(0.4 * radio * radio)))
+        // los puntos individuales, como arriba. Tope por rendimiento. La luna pierde
+        // ~30 % de su silueta a la mordida → se compensa la cuenta para no ralear.
+        let base = min(240, max(36, Int(0.4 * radio * radio)))
+        let cuenta = forma == .luna ? min(240, Int(Double(base) * 1.35)) : base
+        // Mordida 2D del creciente (mismas proporciones que el mock aprobado): centro
+        // desplazado a la derecha-arriba, radio 0.86·R. Se descartan las motas cuyo
+        // punto PROYECTADO cae dentro (front y back juntas → lee como luna).
+        let mordida = centro.applying(.init(translationX: radio * 0.42, y: -radio * 0.16))
+        let mordidaR = radio * 0.86
         // Fase estable por identidad: cada orbe mira distinto y gira desde su ángulo.
         let fase = Double(MatrizDither.semilla(chartID: faseID, index: 0) % 628) / 100.0
         let rot = fase + t * 0.12
@@ -74,6 +89,10 @@ public struct OrbeVivo: View {
             let p = EcosistemaSimulacion.particula(
                 dir: dir, indice: i, centro: centro, radio: radio,
                 rotacion: rot, jitterAmp: radio > 10 ? 0.7 : 0, t: t, alfaK: 1.4)
+            if forma == .luna {
+                let dx = p.pos.x - mordida.x, dy = p.pos.y - mordida.y
+                if dx * dx + dy * dy < mordidaR * mordidaR { continue }
+            }
             let pr = p.tamano * (0.55 + radio / 60)
             let color = (huePar != nil && i % 2 == 1) ? huePar! : hue
             ctx.fill(Path(ellipseIn: CGRect(x: p.pos.x - pr, y: p.pos.y - pr,
@@ -90,6 +109,7 @@ public struct OrbeVivo: View {
         OrbeVivo(radio: 24, hue: LiquidColor.verdePrimario, semillaID: "c")
         OrbeVivo(radio: 12, hue: LiquidColor.doradoTemp, semillaID: "d",
                  huePar: LiquidColor.azul)
+        OrbeVivo(radio: 15, hue: LiquidColor.indigo, semillaID: "luna", forma: .luna)
     }
     .padding(32)
     .background(LiquidColor.fondoGradient)

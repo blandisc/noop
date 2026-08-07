@@ -46,6 +46,11 @@ public struct MatrizSeccion: Sendable, Identifiable, Equatable {
     public let chip: MatrizHoyModel.ChipGuardian?
     /// Renglones nombrados del guardián (Temp / Resp); nil en el resto.
     public let renglones: [MatrizRenglon]?
+    /// Silueta del orbe-sello (FER-55): `.luna` para Sueño, `.esfera` para el resto.
+    public let formaSello: OrbeVivo.Forma
+    /// Scrub (FER-55): cada noche con su lectura ya formateada (valor + sublabel).
+    /// El índice mapea 1:1 a las barras; el último = hoy. `nil` = celda sin scrub.
+    public let scrubNoches: [ScrubNoche]?
 
     public init(id: String, hue: Color,
                 huesPar: (Color, Color)? = nil, titulo: String, valor: String,
@@ -53,7 +58,9 @@ public struct MatrizSeccion: Sendable, Identifiable, Equatable {
                 vota: Bool = false, terciaria: Bool = false,
                 sublabel: String? = nil, chartID: String, chart: MatrizChartPayload,
                 chip: MatrizHoyModel.ChipGuardian? = nil,
-                renglones: [MatrizRenglon]? = nil) {
+                renglones: [MatrizRenglon]? = nil,
+                formaSello: OrbeVivo.Forma = .esfera,
+                scrubNoches: [ScrubNoche]? = nil) {
         self.id = id; self.hue = hue; self.huesPar = huesPar
         self.titulo = titulo; self.valor = valor
         self.unidad = unidad; self.destacada = destacada
@@ -61,6 +68,18 @@ public struct MatrizSeccion: Sendable, Identifiable, Equatable {
         self.sublabel = sublabel
         self.chartID = chartID; self.chart = chart; self.chip = chip
         self.renglones = renglones
+        self.formaSello = formaSello
+        self.scrubNoches = scrubNoches
+    }
+
+    /// Una noche leída para el scrub: el valor grande y la frase del sublabel, ya
+    /// formateados por el builder (la vista no sabe de fechas ni unidades).
+    public struct ScrubNoche: Sendable, Equatable {
+        public let valor: String
+        public let sublabel: String
+        public init(valor: String, sublabel: String) {
+            self.valor = valor; self.sublabel = sublabel
+        }
     }
 
     public static func == (lhs: MatrizSeccion, rhs: MatrizSeccion) -> Bool {
@@ -72,6 +91,7 @@ public struct MatrizSeccion: Sendable, Identifiable, Equatable {
             && lhs.huesPar?.0 == rhs.huesPar?.0 && lhs.huesPar?.1 == rhs.huesPar?.1
             && lhs.unidad == rhs.unidad && lhs.destacada == rhs.destacada
             && lhs.vota == rhs.vota && lhs.terciaria == rhs.terciaria
+            && lhs.formaSello == rhs.formaSello && lhs.scrubNoches == rhs.scrubNoches
     }
 }
 
@@ -172,6 +192,11 @@ public struct MatrizHoyFace: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// Acuse del sello: el orbe de la sección tocada late una vez (cariño §micro).
     @State private var latido: String?
+    /// Scrub activo (FER-55): qué sección y qué noche está leyendo el dedo. `nil` =
+    /// sin scrub → la celda muestra HOY (regresa sola al soltar).
+    @State private var scrub: (id: String, idx: Int)?
+    /// Pulso háptico: cambia al cruzar de barra durante el scrub (tick por noche).
+    @State private var scrubTick: Int = 0
 
     public init(model: MatrizHoyModel, onTapSeccion: @escaping (String) -> Void) {
         self.model = model
@@ -193,6 +218,7 @@ public struct MatrizHoyFace: View {
         .frame(maxWidth: .infinity)
         .padding(.bottom, LiquidSpace.s600)
         .sensoryFeedback(.selection, trigger: latido)
+        .sensoryFeedback(.selection, trigger: scrubTick)
         .accessibilityElement(children: .contain)
     }
 
@@ -315,8 +341,11 @@ public struct MatrizHoyFace: View {
             } label: {
                 VStack(alignment: .leading, spacing: LiquidSpace.s200) {
                     encabezado(s)
-                    chartView(s.chart, hue: s.hue, chartID: s.chartID)
+                    chartView(s.chart, hue: s.hue, chartID: s.chartID,
+                              resaltado: scrub?.id == s.id ? scrub?.idx : nil)
                         .frame(height: chartAltura(s.chart))
+                        .modifier(ScrubGesto(seccion: s, scrub: $scrub, tick: $scrubTick,
+                                             reduceMotion: reduceMotion))
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
@@ -338,7 +367,8 @@ public struct MatrizHoyFace: View {
                 // Orbe de partículas puro, sin glifo (revisión del dueño en vivo): el
                 // eco del héroe junto a cada título, con el hue de identidad.
                 OrbeVivo(radio: MatrizTokens.selloRadio, hue: s.huesPar?.0 ?? s.hue,
-                         semillaID: "sello-\(s.id)", huePar: s.huesPar?.1, fps: 12)
+                         semillaID: "sello-\(s.id)", huePar: s.huesPar?.1, fps: 12,
+                         forma: s.formaSello)
                     // El orbe no es texto: ancla su centro óptico al centro de las
                     // versalitas del título (hallazgo Grok-UI #3; afinado en vivo).
                     .alignmentGuide(.firstTextBaseline) { d in d.height * 0.78 }
@@ -356,13 +386,14 @@ public struct MatrizHoyFace: View {
                 if let chip = s.chip {
                     chipView(chip)
                 } else {
-                    valorCompuesto(s)
+                    valorCompuesto(s, valor: valorEfectivo(s))
                 }
                 // Affordance de tap discreta (UX #6): cada sección abre su detalle.
                 LiquidIcon(.chevron, size: 8, color: LiquidColor.tinta500)
                     .alignmentGuide(.firstTextBaseline) { d in d.height * 0.85 }
             }
-            if s.vota || s.sublabel != nil {
+            let sub = sublabelEfectivo(s)
+            if s.vota || sub != nil {
                 HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s150) {
                     if s.vota {
                         // P3: las votantes llevan su sello — el modelo se lee solo.
@@ -375,11 +406,14 @@ public struct MatrizHoyFace: View {
                                 LiquidColor.verdePrimario.opacity(0.45), lineWidth: 1)) // token-exempt: aro del sello «vota» al 45 %
                             .fixedSize()
                     }
-                    if let sub = s.sublabel {
+                    if let sub {
                         Text(sub)
                             .font(LiquidType.caption)
                             .foregroundStyle(LiquidColor.tinta500)
                             .fixedSize(horizontal: false, vertical: true)
+                            // El dato del scrub rueda en su sitio, no parpadea.
+                            .contentTransition(.numericText())
+                            .animation(.snappy, value: sub)
                     }
                 }
                 // Alineado con el título (después del orbe), a lo ancho de la celda.
@@ -391,18 +425,34 @@ public struct MatrizHoyFace: View {
         .frame(minHeight: MatrizTokens.encabezadoMinH, alignment: .top)
     }
 
+    /// Valor a mostrar: la noche del scrub si esta sección la está leyendo, si no HOY.
+    private func valorEfectivo(_ s: MatrizSeccion) -> String {
+        if scrub?.id == s.id, let i = scrub?.idx, let n = s.scrubNoches, n.indices.contains(i) {
+            return n[i].valor
+        }
+        return s.valor
+    }
+
+    /// Sublabel a mostrar: la frase de la noche del scrub si aplica, si no la de HOY.
+    private func sublabelEfectivo(_ s: MatrizSeccion) -> String? {
+        if scrub?.id == s.id, let i = scrub?.idx, let n = s.scrubNoches, n.indices.contains(i) {
+            return n[i].sublabel
+        }
+        return s.sublabel
+    }
+
     /// Numeral + unidad chica en el mismo hue (Grok-UI #7); los protagonistas del
     /// veredicto (sueño/FC) en `valorL`, el resto en `valorM` (UX #3). El numeral
     /// rueda al refrescar (`numericText`) en vez de parpadear.
-    private func valorCompuesto(_ s: MatrizSeccion) -> some View {
+    private func valorCompuesto(_ s: MatrizSeccion, valor: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s050) {
-            Text(s.valor)
+            Text(valor)
                 .font(s.destacada ? LiquidType.valorL
                       : (s.terciaria ? LiquidType.valorS : LiquidType.valorM))
                 .foregroundStyle(s.hue)
                 .monospacedDigit()
                 .contentTransition(.numericText())
-                .animation(.snappy, value: s.valor)
+                .animation(.snappy, value: valor)
             if let u = s.unidad {
                 Text(u)
                     .font(LiquidType.caption)
@@ -487,11 +537,11 @@ public struct MatrizHoyFace: View {
 
     @ViewBuilder
     private func chartView(_ payload: MatrizChartPayload, hue: Color,
-                           chartID: String) -> some View {
+                           chartID: String, resaltado: Int? = nil) -> some View {
         switch payload {
         case .columnas(let noches, let ref, let tag, let dom):
             MatrizColumnas(chartID: chartID, noches: noches, referencia: ref,
-                           referenciaTag: tag, dominio: dom, hue: hue)
+                           referenciaTag: tag, dominio: dom, hue: hue, resaltado: resaltado)
         case .lineaRellena(let pts, let base, let dom, let alfa, let alerta):
             MatrizLineaRellena(chartID: chartID, puntos: pts, base: base, dominio: dom,
                                hue: hue, alfa: alfa, alertaHoy: alerta)
@@ -528,6 +578,45 @@ public struct MatrizHoyFace: View {
         if let sub = s.sublabel { parts.append(sub) }
         if let chip = s.chip { parts.append(chip.texto) }
         return parts.filter { !$0.isEmpty }.joined(separator: ", ")
+    }
+}
+
+// MARK: - Scrub (FER-55)
+
+/// Arrastrar sobre la gráfica lee cada noche (fecha + horas) en el sublabel, como las
+/// gráficas de adentro. Solo se activa en secciones con `scrubNoches`; al soltar, el
+/// estado vuelve a `nil` y la celda regresa sola a HOY. El gesto convive con el botón
+/// contenedor: un toque (sin arrastre) sigue abriendo la hoja; el arrastre gana al
+/// cruzar el umbral. Bajo Reduce Motion se desactiva (la celda queda en HOY).
+private struct ScrubGesto: ViewModifier {
+    let seccion: MatrizSeccion
+    @Binding var scrub: (id: String, idx: Int)?
+    @Binding var tick: Int
+    let reduceMotion: Bool
+
+    func body(content: Content) -> some View {
+        if let noches = seccion.scrubNoches, noches.count > 1, !reduceMotion {
+            GeometryReader { geo in
+                content
+                    .contentShape(Rectangle())
+                    .gesture(
+                        DragGesture(minimumDistance: 8)
+                            .onChanged { g in
+                                let w = geo.size.width
+                                guard w > 0 else { return }
+                                let rel = min(max(g.location.x / w, 0), 0.9999)
+                                let i = min(Int(rel * CGFloat(noches.count)), noches.count - 1)
+                                if scrub?.id != seccion.id || scrub?.idx != i {
+                                    scrub = (seccion.id, i)
+                                    tick &+= 1   // pulso háptico por noche cruzada
+                                }
+                            }
+                            .onEnded { _ in scrub = nil }
+                    )
+            }
+        } else {
+            content
+        }
     }
 }
 

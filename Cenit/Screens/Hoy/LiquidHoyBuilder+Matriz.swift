@@ -66,17 +66,47 @@ extension LiquidHoyBuilder {
         let valorSueno = HoyGramatica.valorODash(hoy?.totalSleepMin) {
             HoyGramatica.formatoDuracion($0)
         }
+        // Scrub (FER-55): cada noche con su día + horas + estado, ya formateados. El
+        // último = hoy. La honestidad manda: sin lectura → «—» y «no reading».
+        let diaFmt = weekdayFormatter(locale: i.locale, calendar: i.calendar)
+        let scrubSueno: [MatrizSeccion.ScrubNoche] = keysSueno.enumerated().map { idx, day in
+            let mins = byDay[day]?.totalSleepMin
+            let offsetDesdeFin = keysSueno.count - 1 - idx
+            let fecha = weekdayLabel(offsetFromToday: offsetDesdeFin, now: i.now,
+                                     calendar: i.calendar, formatter: diaFmt)
+            guard let mins else {
+                return .init(valor: "—",
+                             sublabel: String(format: String(localized: "matriz.sueno.scrub.sinlectura",
+                                                             defaultValue: "%@ · no reading"), fecha))
+            }
+            let out = bodyByDay[day]?.sleepOut == true
+            let estado = out ? String(localized: "matriz.sueno.scrub.corto", defaultValue: "a bit short")
+                             : String(localized: "matriz.sueno.scrub.enrango", defaultValue: "in your range")
+            return .init(valor: HoyGramatica.formatoDuracion(mins),
+                         sublabel: "\(fecha) · \(estado)")
+        }
+        // Sublabel de reposo (no-scrub): «anoche · <estado>» — la celda habla en palabras
+        // (P2), y el dato del scrub la reemplaza al arrastrar.
+        let sublabelSueno: String? = {
+            if hoy?.totalSleepMin == nil && noches.allSatisfy({ $0.valor == nil }) {
+                return String(localized: "Getting to know you")
+            }
+            guard hoy?.totalSleepMin != nil else { return nil }
+            let out = bodyByDay[hoyKey ?? ""]?.sleepOut == true
+            return out ? String(localized: "matriz.sueno.anoche.corto", defaultValue: "last night · a bit short")
+                       : String(localized: "matriz.sueno.anoche.enrango", defaultValue: "last night · in your range")
+        }()
         let seccionSueno = MatrizSeccion(
             id: "sleep", hue: LiquidColor.indigo,
             titulo: String(localized: "Sleep"),
-            // «vota» es ROL estable del modelo (las decisoras §6), no «votó esta noche» —
-            // por eso no se apaga sin lectura. Carga NUNCA vota (loadAxis inRange/noData).
-            valor: valorSueno, destacada: true, vota: true,
-            sublabel: (hoy?.totalSleepMin == nil && noches.allSatisfy { $0.valor == nil })
-                ? String(localized: "Getting to know you") : nil,
+            // FER-55: fuera el sello «vota» de las gemelas — la jerarquía la dan el nivel,
+            // el orden y el manual «?». Carga NUNCA vota (loadAxis inRange/noData).
+            valor: valorSueno, destacada: true, vota: false,
+            sublabel: sublabelSueno,
             chartID: "matriz-sleep",
             chart: .columnas(noches: noches, referencia: 7, referenciaTag: "7 h",
-                             dominio: 4...10))
+                             dominio: 4...10),
+            formaSello: .luna, scrubNoches: scrubSueno)
 
         // —— 2. FC | VFC (20) ——
         let keys20 = keys  // ya son 20
@@ -89,7 +119,9 @@ extension LiquidHoyBuilder {
             id: "rhr", hue: LiquidColor.rosa,
             titulo: String(localized: "Resting HR"),
             valor: valorFC, unidad: valorFC == "—" ? nil : String(localized: "bpm"),
-            destacada: true, vota: true,
+            // FER-55: sin «vota» (simétrico con Sueño — la gemela no puede quedar sola
+            // con el sello o el par se ve roto). El manual «?» explica quién vota.
+            destacada: true, vota: false,
             sublabel: sublabelFC(ptsFC: ptsFC, prep: prep, alerta: alertaFC),
             chartID: "matriz-rhr",
             chart: .lineaRellena(puntos: ptsFC, base: baseFC,
@@ -298,6 +330,27 @@ extension LiquidHoyBuilder {
         f.timeZone = calendar.timeZone
         f.dateFormat = "yyyy-MM-dd"
         return f
+    }
+
+    /// Formateador de día de la semana corto («Mon», «lun») para el scrub (FER-55).
+    static func weekdayFormatter(locale: Locale, calendar: Calendar) -> DateFormatter {
+        let f = DateFormatter()
+        f.calendar = calendar
+        f.locale = locale
+        f.timeZone = calendar.timeZone
+        f.setLocalizedDateFormatFromTemplate("EEE")
+        return f
+    }
+
+    /// Rótulo del día para la noche a `offsetFromToday` días atrás. Hoy → «Today».
+    static func weekdayLabel(offsetFromToday: Int, now: Date, calendar: Calendar,
+                             formatter: DateFormatter) -> String {
+        if offsetFromToday == 0 {
+            return String(localized: "matriz.sueno.scrub.hoy", defaultValue: "Today")
+        }
+        let start = calendar.startOfDay(for: now)
+        let d = calendar.date(byAdding: .day, value: -offsetFromToday, to: start) ?? start
+        return formatter.string(from: d)
     }
 
     static func mapaAlerta(_ a: HoyGramatica.Alerta) -> MedidorLunar.Alerta {
