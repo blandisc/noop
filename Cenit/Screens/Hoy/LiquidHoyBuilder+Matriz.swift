@@ -251,7 +251,10 @@ extension LiquidHoyBuilder {
                                         dominio: dominioLinea(ptsResp, base: nil, fallback: 8...22),
                                         alertaHoy: alertaGuardian),
                     subrayado: alertaGuardian),
-            ])
+            ],
+            // FER-56 · Ola 3: el sello VIVO reacciona al MISMO estado que el chip (nunca lo
+            // contradice) — se separa y tiñe cuando el par se sale, calla en calma.
+            selloGuardian: selloGuardianEstado(prep?.sentinel))
 
         // —— 4. Carga | Esfuerzo ——
         let pCarga = razonCarga  // razón natural (API del riel: 0.8…1.3)
@@ -434,6 +437,20 @@ extension LiquidHoyBuilder {
             let base = String(localized: "Temperature and breathing off")
             let sufijo = ordinalRacha(n)
             return .init(texto: "\(base) · \(sufijo)", tono: .alarma)
+        }
+    }
+
+    /// FER-56 · Ola 3 — el estado del sello VIVO del guardián, proyectado 1:1 del chip (nunca
+    /// lo contradice): sin lectura del par ⇒ sin datos; una sola fuera ⇒ vigila esa (frío, sin
+    /// alarma, como el chip terciario); el par 1.ª noche ⇒ ámbar; el par en racha ⇒ rojo.
+    static func selloGuardianEstado(_ sentinel: Preparedness.SentinelRead?) -> SelloGuardianVivo.Estado {
+        guard let chip = HoyGramatica.chipGuardian(sentinel: sentinel) else { return .sinDatos }
+        switch chip {
+        case .calma:             return .calma
+        case .vigilandoTemp:     return .vigilaTemp
+        case .vigilandoResp:     return .vigilaResp
+        case .ambasPrimeraNoche: return .ambasAmbar
+        case .racha:             return .ambasRoja
         }
     }
 

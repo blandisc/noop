@@ -171,6 +171,24 @@ final class HoyMatrizBuilderTests: XCTestCase {
         assertTextoResuelto(chip, "sin sentinel")
     }
 
+    // MARK: 10b — El sello VIVO del guardián espeja el chip (Ola 3, nunca lo contradice)
+
+    func test_10_sello_guardian_espeja_el_chip() {
+        // Sin lectura del par → sin datos (nunca un falso «calma» verde).
+        XCTAssertEqual(LiquidHoyBuilder.selloGuardianEstado(nil), .sinDatos)
+        XCTAssertEqual(LiquidHoyBuilder.selloGuardianEstado(sentinel(.quiet)), .calma)
+        // Una sola fuera → vigila ESA, en frío (paridad con el chip terciario, sin alarma).
+        XCTAssertEqual(LiquidHoyBuilder.selloGuardianEstado(
+            sentinel(.watchingOneSignal, watching: .temp, tempOut: true)), .vigilaTemp)
+        XCTAssertEqual(LiquidHoyBuilder.selloGuardianEstado(
+            sentinel(.watchingOneSignal, watching: .resp, respOut: true)), .vigilaResp)
+        // El par 1.ª noche → ámbar; el par en racha → rojo. Espeja atencion → alarma.
+        XCTAssertEqual(LiquidHoyBuilder.selloGuardianEstado(
+            sentinel(.corroborated, streak: 1, tempOut: true, respOut: true)), .ambasAmbar)
+        XCTAssertEqual(LiquidHoyBuilder.selloGuardianEstado(
+            sentinel(.corroborated, streak: 3, tempOut: true, respOut: true)), .ambasRoja)
+    }
+
     // MARK: 11 — Cero cálidos en día bueno
 
     func test_11_dia_bueno_cero_alertas_hoy() {
