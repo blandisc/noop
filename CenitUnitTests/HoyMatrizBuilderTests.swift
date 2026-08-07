@@ -162,8 +162,23 @@ final class HoyMatrizBuilderTests: XCTestCase {
         }
     }
 
+    /// El ordinal de la racha se formatea POR locale (CA1): es-MX «N.ª» (femenino numérico),
+    /// en irregular (2nd/3rd/21st). Antes concatenaba «2nd» crudo → es-MX veía «2nd noche»;
+    /// esta rama no tenía cobertura (hallazgo Grok+DeepSeek en la revisión adversarial).
+    func test_10_ordinal_marcador_por_locale() {
+        let es = Locale(identifier: "es_MX"), en = Locale(identifier: "en_US")
+        XCTAssertEqual(LiquidHoyBuilder.ordinalMarcador(2, locale: es), "2.ª")
+        XCTAssertEqual(LiquidHoyBuilder.ordinalMarcador(3, locale: es), "3.ª")
+        XCTAssertEqual(LiquidHoyBuilder.ordinalMarcador(11, locale: es), "11.ª")
+        XCTAssertEqual(LiquidHoyBuilder.ordinalMarcador(2, locale: en), "2nd")
+        XCTAssertEqual(LiquidHoyBuilder.ordinalMarcador(3, locale: en), "3rd")
+        XCTAssertEqual(LiquidHoyBuilder.ordinalMarcador(11, locale: en), "11th")
+        XCTAssertEqual(LiquidHoyBuilder.ordinalMarcador(21, locale: en), "21st")
+        XCTAssertEqual(LiquidHoyBuilder.ordinalMarcador(4, locale: en), "4th")
+    }
+
     /// 6.º camino (Grok): sin lectura del par, el chip NO queda en blanco ni afirma calma —
-    /// un estado honesto en tinta terciaria («Sin lecturas aún»).
+    /// un estado honesto en tinta terciaria (reusa la key «No readings yet» → «Aún no hay lecturas»).
     func test_10_chip_sin_sentinel_no_queda_en_blanco() {
         let chip = LiquidHoyBuilder.chipGuardianModelo(nil)
         XCTAssertEqual(chip?.tono, .terciario)

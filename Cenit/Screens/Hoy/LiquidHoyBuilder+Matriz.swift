@@ -211,12 +211,17 @@ extension LiquidHoyBuilder {
             // P4: el MISMO nombre que su luna en el héroe (una sola llave).
             titulo: String(localized: "Guardian"),
             valor: "",
-            // FER-56: la sublínea DICE LA REGLA COMPLETA (par fuera + dos noches) en vez de
-            // repetir «vigila» (ya lo dice el nivel «Te vigila»). `HoyGramatica.severidad` exige
-            // corroboración Y `streakNights >= 2`; omitir la racha sería mentir por omisión.
+            // FER-56: la sublínea DICE LA REGLA en la voz EXACTA de la hoja que abre su «?»
+            // (`reglaTexto`): una sola nunca empuja tu día; solo la pareja, dos noches seguidas.
+            // `HoyGramatica.severidad` exige corroboración Y `streakNights >= 2` para empujar —
+            // el ámbar de la 1.ª noche es aviso, no empuje; por eso la regla habla de «empujar».
             sublabel: String(localized: "matriz.guardian.sub",
-                             defaultValue: "only alerts if fever and breathing drift out together, two nights"),
+                             defaultValue: "one signal alone never pushes your day; only the pair, two nights in a row"),
             chartID: "matriz-guardian",
+            // DEUDA (FER-56): esta gráfica de sección NO se dibuja — `MatrizHoyFace.seccionView`
+            // ignora `s.chart` cuando la sección trae `renglones` (guardián), que llevan su
+            // propia línea. Se conserva porque `chart` es obligatorio en `MatrizSeccion`; hacerlo
+            // opcional o darle un caso `.vacio` es su propio cambio, fuera del alcance de esta ola.
             chart: .lineaSerena(puntos: ptsTemp, banda: -thermalBand...thermalBand,
                                 dominio: -1.5...1.5, alertaHoy: alertaGuardian),
             chip: chip,
@@ -454,24 +459,23 @@ extension LiquidHoyBuilder {
         }
     }
 
-    /// Ordinal de racha localizado: en irregular («2nd»), es-MX «N.ª» (femenino, concuerda con
-    /// «noche»). El ordinal se formatea POR locale porque su gramática es locale-específica; el
-    /// sustantivo lo pone el catálogo («%@ night» → «%@ noche»).
-    private static func ordinalRacha(_ n: Int) -> String {
+    /// El MARCADOR ordinal solo (sin sustantivo), formateado POR locale porque su gramática es
+    /// locale-específica: es-MX «N.ª» (femenino numérico, uniforme, concuerda con «noche»); en
+    /// irregular (2nd/3rd/21st…). Pura y testeable (locale inyectable) — el sustantivo lo pone
+    /// aparte el catálogo. `internal` a propósito: la prueba flexiona el locale sin tocar el proceso.
+    static func ordinalMarcador(_ n: Int, locale: Locale = .current) -> String {
         let n = max(n, 2)
-        let ord: String
-        if Locale.current.language.languageCode == .spanish {
-            // Ordinal femenino numérico («2.ª», «3.ª», …): uniforme en español y concuerda con «noche».
-            ord = "\(n).ª"
-        } else {
-            let mod10 = n % 10
-            let mod100 = n % 100
-            if mod10 == 1 && mod100 != 11 { ord = "\(n)st" }
-            else if mod10 == 2 && mod100 != 12 { ord = "\(n)nd" }
-            else if mod10 == 3 && mod100 != 13 { ord = "\(n)rd" }
-            else { ord = "\(n)th" }
-        }
-        return String(localized: "\(ord) night")
+        if locale.language.languageCode == .spanish { return "\(n).ª" }
+        let mod10 = n % 10, mod100 = n % 100
+        if mod10 == 1 && mod100 != 11 { return "\(n)st" }
+        if mod10 == 2 && mod100 != 12 { return "\(n)nd" }
+        if mod10 == 3 && mod100 != 13 { return "\(n)rd" }
+        return "\(n)th"
+    }
+
+    /// «2.ª noche» (es) / «2nd night» (en): el marcador ordinal + el sustantivo del catálogo.
+    private static func ordinalRacha(_ n: Int) -> String {
+        String(localized: "\(ordinalMarcador(n)) night")
     }
 
     private static func sublabelCarga(_ key: String) -> String {

@@ -33,22 +33,6 @@
         }
       }
     },
-    "No readings yet" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No readings yet"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sin lecturas aún"
-          }
-        }
-      }
-    },
     "Temperature and breathing off" : {
       "localizations" : {
         "en" : {
@@ -20198,13 +20182,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "only alerts if fever and breathing drift out together, two nights"
+            "value" : "one signal alone never pushes your day; only the pair, two nights in a row"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "solo avisa si fiebre y respiración se salen juntas, dos noches"
+            "value" : "una sola no empuja tu día; solo la pareja, dos noches seguidas"
           }
         }
       }
@@ -20221,7 +20205,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "arriba de lo tuyo"
+            "value" : "arriba de lo usual"
           }
         }
       }
