@@ -407,7 +407,11 @@ extension LiquidHoyBuilder {
     /// Chip §8 / criterio 10 — texto + tono resueltos; ordinal REAL de racha.
     static func chipGuardianModelo(_ sentinel: Preparedness.SentinelRead?)
         -> MatrizHoyModel.ChipGuardian? {
-        guard let chip = HoyGramatica.chipGuardian(sentinel: sentinel) else { return nil }
+        guard let chip = HoyGramatica.chipGuardian(sentinel: sentinel) else {
+            // Sin lectura del par esa noche (`sentinel == nil`): no se afirma calma (verde) —
+            // sería mentir— pero tampoco se deja el chip en blanco. Tinta terciaria, honesto.
+            return .init(texto: String(localized: "No readings yet"), tono: .terciario)
+        }
         switch chip {
         case .calma:
             return .init(texto: String(localized: "At ease"), tono: .calma)
@@ -427,15 +431,16 @@ extension LiquidHoyBuilder {
         }
     }
 
-    /// «2nd night», «3rd night», … — ordinal REAL de `streakNights`.
+    /// Ordinal de racha localizado: en irregular («2nd»), es-MX «N.ª» (femenino, concuerda con
+    /// «noche»). El ordinal se formatea POR locale porque su gramática es locale-específica; el
+    /// sustantivo lo pone el catálogo («%@ night» → «%@ noche»).
     private static func ordinalRacha(_ n: Int) -> String {
         let n = max(n, 2)
-        // English source (app catalog language); es-MX se resuelve en el catálogo §11 (Lane D).
         let ord: String
-        switch n {
-        case 2: ord = "2nd"
-        case 3: ord = "3rd"
-        default:
+        if Locale.current.language.languageCode == .spanish {
+            // Ordinal femenino numérico («2.ª», «3.ª», …): uniforme en español y concuerda con «noche».
+            ord = "\(n).ª"
+        } else {
             let mod10 = n % 10
             let mod100 = n % 100
             if mod10 == 1 && mod100 != 11 { ord = "\(n)st" }

@@ -111,10 +111,21 @@ final class HoyMatrizBuilderTests: XCTestCase {
               tempOut: tempOut, respOut: respOut)
     }
 
+    /// Texto resuelto y NO vacío en cada estado — un `""` (key sin valor) es el modo de falla
+    /// que este guard cierra: «no hay literal inglés» pasaría con vacío; «no vacío» no. La
+    /// cadena es-MX exacta se verifica en el simulador es-MX (CA7), no aquí (locale del test = en).
+    private func assertTextoResuelto(_ chip: MatrizHoyModel.ChipGuardian?,
+                                     _ ctx: String, file: StaticString = #filePath,
+                                     line: UInt = #line) {
+        XCTAssertNotNil(chip, ctx, file: file, line: line)
+        XCTAssertFalse(chip?.texto.isEmpty ?? true, "\(ctx): el chip muestra una palabra, no vacío",
+                       file: file, line: line)
+    }
+
     func test_10_chip_calma() {
         let chip = LiquidHoyBuilder.chipGuardianModelo(sentinel(.quiet))
         XCTAssertEqual(chip?.tono, .calma)
-        XCTAssertNotNil(chip?.texto)
+        assertTextoResuelto(chip, "calma")
     }
 
     func test_10_chip_vigilando_temp_sin_calidos() {
@@ -123,18 +134,21 @@ final class HoyMatrizBuilderTests: XCTestCase {
         XCTAssertEqual(chip?.tono, .terciario)
         XCTAssertNotEqual(chip?.tono, .atencion)
         XCTAssertNotEqual(chip?.tono, .alarma)
+        assertTextoResuelto(chip, "vigilando temp")
     }
 
     func test_10_chip_vigilando_resp() {
         let chip = LiquidHoyBuilder.chipGuardianModelo(
             sentinel(.watchingOneSignal, watching: .resp, respOut: true))
         XCTAssertEqual(chip?.tono, .terciario)
+        assertTextoResuelto(chip, "vigilando resp")
     }
 
     func test_10_chip_ambas_primera_noche_ambar() {
         let chip = LiquidHoyBuilder.chipGuardianModelo(
             sentinel(.corroborated, streak: 1, tempOut: true, respOut: true))
         XCTAssertEqual(chip?.tono, .atencion)
+        assertTextoResuelto(chip, "ambas 1.ª noche")
     }
 
     func test_10_chip_racha_ordinal_real() {
@@ -148,8 +162,13 @@ final class HoyMatrizBuilderTests: XCTestCase {
         }
     }
 
-    func test_10_chip_nil_sin_sentinel() {
-        XCTAssertNil(LiquidHoyBuilder.chipGuardianModelo(nil))
+    /// 6.º camino (Grok): sin lectura del par, el chip NO queda en blanco ni afirma calma —
+    /// un estado honesto en tinta terciaria («Sin lecturas aún»).
+    func test_10_chip_sin_sentinel_no_queda_en_blanco() {
+        let chip = LiquidHoyBuilder.chipGuardianModelo(nil)
+        XCTAssertEqual(chip?.tono, .terciario)
+        XCTAssertNotEqual(chip?.tono, .calma, "sin dato jamás afirma calma (sería mentir)")
+        assertTextoResuelto(chip, "sin sentinel")
     }
 
     // MARK: 11 — Cero cálidos en día bueno
