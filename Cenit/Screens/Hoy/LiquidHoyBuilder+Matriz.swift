@@ -211,8 +211,11 @@ extension LiquidHoyBuilder {
             // P4: el MISMO nombre que su luna en el héroe (una sola llave).
             titulo: String(localized: "Guardian"),
             valor: "",
+            // FER-56: la sublínea DICE LA REGLA COMPLETA (par fuera + dos noches) en vez de
+            // repetir «vigila» (ya lo dice el nivel «Te vigila»). `HoyGramatica.severidad` exige
+            // corroboración Y `streakNights >= 2`; omitir la racha sería mentir por omisión.
             sublabel: String(localized: "matriz.guardian.sub",
-                             defaultValue: "watches fever and breathing while you sleep"),
+                             defaultValue: "only alerts if fever and breathing drift out together, two nights"),
             chartID: "matriz-guardian",
             chart: .lineaSerena(puntos: ptsTemp, banda: -thermalBand...thermalBand,
                                 dominio: -1.5...1.5, alertaHoy: alertaGuardian),
@@ -340,8 +343,11 @@ extension LiquidHoyBuilder {
                               defaultValue: "Decide your day"),
                        manualID: "manual.deciden"),
                 .split(izq: seccionSueno, der: seccionFC),
+                // FER-56: el nivel gana su «?» reusando la hoja del guardián que YA existe
+                // (`showGuardianHoja` vía `abrirHojaCaras("guardian")`) — la misma que abre el
+                // encabezado. Sin segunda hoja: regla+estados+hedge con datos reales de hoy.
                 .nivel(String(localized: "matriz.nivel.vigila",
-                              defaultValue: "Watches over you"), manualID: nil),
+                              defaultValue: "Watches over you"), manualID: "guardian"),
                 .full(seccionGuardian),
                 .nivel(String(localized: "matriz.nivel.contexto",
                               defaultValue: "Context"), manualID: nil),

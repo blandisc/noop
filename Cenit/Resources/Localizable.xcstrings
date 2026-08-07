@@ -20198,13 +20198,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "watches fever and breathing while you sleep"
+            "value" : "only alerts if fever and breathing drift out together, two nights"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "vigila fiebre y respiración mientras duermes"
+            "value" : "solo avisa si fiebre y respiración se salen juntas, dos noches"
           }
         }
       }
