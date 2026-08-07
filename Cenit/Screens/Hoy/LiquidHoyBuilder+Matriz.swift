@@ -211,12 +211,12 @@ extension LiquidHoyBuilder {
             // P4: el MISMO nombre que su luna en el héroe (una sola llave).
             titulo: String(localized: "Guardian"),
             valor: "",
-            // FER-56: la sublínea DICE LA REGLA en la voz EXACTA de la hoja que abre su «?»
-            // (`reglaTexto`): una sola nunca empuja tu día; solo la pareja, dos noches seguidas.
-            // `HoyGramatica.severidad` exige corroboración Y `streakNights >= 2` para empujar —
-            // el ámbar de la 1.ª noche es aviso, no empuje; por eso la regla habla de «empujar».
+            // FER-57: la sublínea describe QUÉ vigila y CUÁNDO (el trabajo del vistazo, correcto en
+            // los 5 estados); la REGLA («una sola no empuja… dos noches») vive SOLO tras el «?» —
+            // repetirla en los dos lados era redundante (decisión dueño + experto UX). Dice
+            // «temperatura», no «fiebre» (piel ≠ fiebre: sin claim clínico).
             sublabel: String(localized: "matriz.guardian.sub",
-                             defaultValue: "one signal alone never pushes your day; only the pair, two nights in a row"),
+                             defaultValue: "your temperature and breathing while you sleep"),
             chartID: "matriz-guardian",
             // DEUDA (FER-56): esta gráfica de sección NO se dibuja — `MatrizHoyFace.seccionView`
             // ignora `s.chart` cuando la sección trae `renglones` (guardián), que llevan su
