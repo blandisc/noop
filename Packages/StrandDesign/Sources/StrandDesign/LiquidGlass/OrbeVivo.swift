@@ -10,9 +10,10 @@ import SwiftUI
 // Bajo Reduce Motion queda quieta. `huePar` alterna por índice (binaria del guardián).
 
 public struct OrbeVivo: View {
-    /// Silueta del cuerpo: esfera plena (default) o luna creciente (FER-55, Sueño):
-    /// la MISMA materia, con una mordida 2D que talla el creciente.
-    public enum Forma: Sendable, Equatable { case esfera, luna }
+    /// Silueta del cuerpo: esfera plena (default), luna creciente (Sueño) o corazón
+    /// (FC en reposo) — la MISMA materia, tallada en 2D. Luna y corazón son QUIETOS:
+    /// motas fijas, contorno denso (decisión del dueño, FER-55).
+    public enum Forma: Sendable, Equatable { case esfera, luna, corazon }
 
     private let radio: CGFloat
     private let hue: Color
@@ -37,9 +38,9 @@ public struct OrbeVivo: View {
     public var body: some View {
         let lado = radio * 2.5
         Group {
-            if forma == .luna {
-                // La luna es QUIETA (revisión del dueño, FER-55): las motas fijas
-                // trazando el creciente — sin reloj, cero costo por frame.
+            if forma != .esfera {
+                // Luna y corazón son QUIETOS (revisión del dueño, FER-55): motas fijas
+                // trazando la silueta — sin reloj, cero costo por frame.
                 Canvas { ctx, size in
                     Self.dibujar(ctx, centro: CGPoint(x: size.width / 2, y: size.height / 2),
                                  radio: radio, hue: hue, huePar: huePar, t: 0,
@@ -88,7 +89,12 @@ public struct OrbeVivo: View {
         // los puntos individuales, como arriba. Tope por rendimiento. La luna pierde
         // ~30 % de su silueta a la mordida → se compensa la cuenta para no ralear.
         let base = min(240, max(36, Int(0.4 * radio * radio)))
-        let cuenta = forma == .luna ? min(240, Int(Double(base) * 1.35)) : base
+        // Las siluetas talladas pierden parte de la esfera → compensar la cuenta.
+        let cuenta: Int = switch forma {
+        case .esfera: base
+        case .luna: min(240, Int(Double(base) * 1.35))
+        case .corazon: min(280, Int(Double(base) * 2.2))
+        }
         // Mordida 2D del creciente (mismas proporciones que el mock aprobado): centro
         // desplazado a la derecha-arriba, radio 0.86·R. Se descartan las motas cuyo
         // punto PROYECTADO cae dentro (front y back juntas → lee como luna).
@@ -96,22 +102,41 @@ public struct OrbeVivo: View {
         let mordidaR = radio * 0.86
         // Fase estable por identidad: cada orbe mira distinto y gira desde su ángulo.
         let fase = Double(MatrizDither.semilla(chartID: faseID, index: 0) % 628) / 100.0
-        // La luna no rota ni tiembla: motas fijas con el contorno (dueño, FER-55).
-        let rot = forma == .luna ? fase : fase + t * 0.12
+        // Luna y corazón no rotan ni tiemblan: motas fijas (dueño, FER-55).
+        let quieta = forma != .esfera
+        let rot = quieta ? fase : fase + t * 0.12
+        // Corazón implícito: (x²+y²−1)³ − x²·y³ ≤ 0 (x,y normalizados). El CONTORNO
+        // se detecta por cercanía al borde y se marca: motas más grandes y plenas
+        // trazan la silueta; el interior queda más tenue (receta aprobada en mock).
+        let escalaCorazon = Double(radio) * 0.82
+        func corazonF(_ px: CGFloat, _ py: CGFloat) -> Double {
+            let x = Double(px - centro.x) / escalaCorazon
+            let y = Double(centro.y - py) / escalaCorazon + 0.12
+            let a = x * x + y * y - 1
+            return a * a * a - x * x * y * y * y
+        }
         for (i, dir) in direcciones(cuenta).enumerated() {
             let p = EcosistemaSimulacion.particula(
                 dir: dir, indice: i, centro: centro, radio: radio,
-                rotacion: rot, jitterAmp: (forma == .luna || radio <= 10) ? 0 : 0.7,
-                t: forma == .luna ? 0 : t, alfaK: 1.4)
-            if forma == .luna {
+                rotacion: rot, jitterAmp: (quieta || radio <= 10) ? 0 : 0.7,
+                t: quieta ? 0 : t, alfaK: 1.4)
+            var esBorde = false
+            switch forma {
+            case .esfera: break
+            case .luna:
                 let dx = p.pos.x - mordida.x, dy = p.pos.y - mordida.y
                 if dx * dx + dy * dy < mordidaR * mordidaR { continue }
+            case .corazon:
+                let f = corazonF(p.pos.x, p.pos.y)
+                if f > 0 { continue }               // fuera del corazón
+                esBorde = f > -0.09                  // cerca del borde → contorno
             }
-            let pr = p.tamano * (0.55 + radio / 60)
+            let pr = p.tamano * (0.55 + radio / 60) * (esBorde ? 1.45 : 1)
             let color = (huePar != nil && i % 2 == 1) ? huePar! : hue
+            let alfa = esBorde ? 1.0 : min(1, p.alfa) * (forma == .corazon ? 0.55 : 1)
             ctx.fill(Path(ellipseIn: CGRect(x: p.pos.x - pr, y: p.pos.y - pr,
                                             width: pr * 2, height: pr * 2)),
-                     with: .color(color.opacity(min(1, p.alfa))))
+                     with: .color(color.opacity(alfa)))
         }
     }
 }
@@ -124,6 +149,7 @@ public struct OrbeVivo: View {
         OrbeVivo(radio: 12, hue: LiquidColor.doradoTemp, semillaID: "d",
                  huePar: LiquidColor.azul)
         OrbeVivo(radio: 15, hue: LiquidColor.indigo, semillaID: "luna", forma: .luna)
+        OrbeVivo(radio: 15, hue: LiquidColor.rosa, semillaID: "cor", forma: .corazon)
     }
     .padding(32)
     .background(LiquidColor.fondoGradient)

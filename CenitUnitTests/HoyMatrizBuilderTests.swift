@@ -52,11 +52,12 @@ final class HoyMatrizBuilderTests: XCTestCase {
 
     private func bodyNight(day: String, rhr: Double? = 56, sleepOut: Bool = false,
                            autonomicOut: Bool = false,
-                           rhrBase: Double? = 56, hrvBase: Double? = 45)
+                           rhrBase: Double? = 56, hrvBase: Double? = 45,
+                           rhrBand: ClosedRange<Double>? = 53...59)
         -> Preparedness.BodyNight {
         .init(day: day, rhrResolved: rhr, autonomicOrientedZ: autonomicOut ? -1.2 : 0.2,
               autonomicOut: autonomicOut, sleepOut: sleepOut,
-              rhrBaseCenter: rhrBase, hrvBaseCenter: hrvBase)
+              rhrBaseCenter: rhrBase, hrvBaseCenter: hrvBase, rhrBand: rhrBand)
     }
 
     private func prep(verdict: Preparedness.Verdict = .full,
@@ -242,6 +243,38 @@ final class HoyMatrizBuilderTests: XCTestCase {
         XCTAssertEqual(model.ordenA11y, [
             "sleep", "rhr", "guardian", "carga", "strain", "hrv", "stress", "steps",
         ])
+    }
+
+    // MARK: FER-55 · panel B — el sublabel de FC dice el JUICIO del motor, no la banda
+
+    func test_fc_lado_bueno_fuera_de_banda_dice_en_rango() {
+        let keys = LiquidHoyBuilder.dayKeys(endingAt: now, calendar: cal, count: 20)
+        let dias = keys.map { metric(day: $0, rhr: 48) }
+        // FC de HOY (48) por DEBAJO de la banda 53...59 — lado bueno: el motor NO
+        // castiga (autonomicOut false) → el sublabel debe decir «in your range»
+        // (héroe, scrub y hoja hablan el juicio del motor; la franja es geografía).
+        let body = keys.map { bodyNight(day: $0, rhr: 48, autonomicOut: false) }
+        let model = LiquidHoyBuilder.matriz(inputs(
+            prep: prep(sentinel: sentinel(.quiet), bodyHistory: body), dias: dias))
+        XCTAssertEqual(seccion(model, id: "rhr")?.sublabel, "in your range")
+        // Y la banda sí viaja al chart (geografía visible).
+        if case .carriles(_, let banda, _, _) = seccion(model, id: "rhr")?.chart {
+            XCTAssertEqual(banda, 53...59)
+        } else { XCTFail("carriles") }
+        // El scrub de HOY dice lo mismo que el sublabel (misma voz).
+        XCTAssertTrue(seccion(model, id: "rhr")?.scrubNoches?.last?.sublabel
+            .contains("in your range") == true)
+    }
+
+    func test_fc_fuera_por_motor_dice_fuera_en_scrub() {
+        let keys = LiquidHoyBuilder.dayKeys(endingAt: now, calendar: cal, count: 20)
+        let outDay = keys[10]
+        let dias = keys.map { metric(day: $0) }
+        let body = keys.map { bodyNight(day: $0, autonomicOut: $0 == outDay) }
+        let model = LiquidHoyBuilder.matriz(inputs(
+            prep: prep(sentinel: sentinel(.quiet), bodyHistory: body), dias: dias))
+        XCTAssertTrue(seccion(model, id: "rhr")?.scrubNoches?[10].sublabel
+            .contains("out of your range") == true)
     }
 
     // MARK: 17 — Historia juzgada con SU día (no se repinta)

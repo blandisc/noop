@@ -436,7 +436,16 @@ public struct MatrizCarriles: View {
                            with: .color(hue.opacity(MatrizTokens.lineaAlfa)),
                            style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
             }
-            // Hilo del scrub sobre la lectura elegida.
+            // Hilo del scrub sobre la lectura elegida. Día sin lectura: hilo fantasma
+            // punteado a lo alto (paridad con columnas — panel B, Grok #4).
+            if let i = resaltado, puntos.indices.contains(i), puntos[i] == nil {
+                let x = MatrizChartDraw.xAt(index: i, count: count, width: size.width)
+                var hueco = Path()
+                hueco.move(to: CGPoint(x: x, y: 0))
+                hueco.addLine(to: CGPoint(x: x, y: size.height))
+                ctx.stroke(hueco, with: .color(hue.opacity(0.35)),
+                           style: StrokeStyle(lineWidth: 1.5, lineCap: .round, dash: [2, 3]))
+            }
             if let i = resaltado, puntos.indices.contains(i), let v = puntos[i] {
                 // Misma proyección horizontal que la curva (xAt) — el hilo cae exacto.
                 let x = MatrizChartDraw.xAt(index: i, count: count, width: size.width)

@@ -20657,7 +20657,7 @@
         }
       }
     },
-    "matriz.sueno.scrub.hoy" : {
+    "matriz.scrub.hoy" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -20674,7 +20674,7 @@
         }
       }
     },
-    "matriz.sueno.scrub.sinlectura" : {
+    "matriz.scrub.sinlectura" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {

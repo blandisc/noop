@@ -70,7 +70,8 @@ final class MatrizHoyFaceSnapshotTests: XCTestCase {
                         sublabel: "in your range",
                         chartID: "matriz-rhr",
                         chart: .carriles(puntos: fc, banda: 53...59, dominio: 45...75,
-                                         alertaHoy: .ninguna))),
+                                         alertaHoy: .ninguna),
+                        formaSello: .corazon)),
                 .nivel("Watches over you", manualID: nil),
                 .full(MatrizSeccion(
                     id: "guardian", hue: LiquidColor.doradoTemp,

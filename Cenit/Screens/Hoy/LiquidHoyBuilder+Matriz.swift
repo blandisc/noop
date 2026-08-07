@@ -82,7 +82,7 @@ extension LiquidHoyBuilder {
                                      calendar: i.calendar, formatter: diaFmt)
             guard let mins else {
                 return .init(valor: "—",
-                             sublabel: String(format: String(localized: "matriz.sueno.scrub.sinlectura",
+                             sublabel: String(format: String(localized: "matriz.scrub.sinlectura",
                                                              defaultValue: "%@ · no reading"), fecha))
             }
             // El juicio del día: nil = ese día no tiene juicio de rango todavía.
@@ -138,7 +138,7 @@ extension LiquidHoyBuilder {
                                      calendar: i.calendar, formatter: diaFmt)
             guard let v = ptsFC[idx] else {
                 return .init(valor: "—",
-                             sublabel: String(format: String(localized: "matriz.sueno.scrub.sinlectura",
+                             sublabel: String(format: String(localized: "matriz.scrub.sinlectura",
                                                              defaultValue: "%@ · no reading"), fecha))
             }
             let noche = bodyByDay[day]
@@ -150,20 +150,21 @@ extension LiquidHoyBuilder {
         let seccionFC = MatrizSeccion(
             id: "rhr", hue: LiquidColor.rosa,
             titulo: String(localized: "Resting HR"),
-            valor: valorFC, unidad: valorFC == "—" ? nil : String(localized: "bpm"),
+            valor: valorFC,
+            unidad: ptsFC.contains(where: { $0 != nil }) ? String(localized: "bpm") : nil,
             // FER-55: sin «vota» (simétrico con Sueño — la gemela no puede quedar sola
             // con el sello o el par se ve roto). El manual «?» explica quién vota.
             destacada: true, vota: false,
-            sublabel: sublabelFC(ptsFC: ptsFC, banda: bandaFC, prep: prep, alerta: alertaFC),
+            sublabel: sublabelFC(ptsFC: ptsFC, prep: prep, alerta: alertaFC),
             chartID: "matriz-rhr",
             // Los carriles (FER-55): tu rango ±1σ como franja; blend inferior muere a 0
             // sobre el papel. Sin banda usable, MatrizCarriles pinta solo la curva.
             chart: .carriles(puntos: ptsFC, banda: bandaFC,
                              dominio: dominioCarriles(ptsFC, banda: bandaFC, fallback: 45...75),
                              alertaHoy: alertaFC),
-            // Comparativa FER-55 (dueño): FC con la gota/corazón de las hojas de
-            // resumen, junto a la luna de partículas de Sueño — para juzgar lado a lado.
-            glifoSello: .corazon,
+            // Decisión del dueño (FER-55): el corazón de PARTÍCULAS (contorno denso,
+            // quieto — gemelo de la luna), no la gota de las hojas.
+            formaSello: .corazon,
             scrubNoches: scrubFC)
 
         let ptsVFC: [Double?] = keys20.map { byDay[$0]?.avgHrv }
@@ -384,7 +385,7 @@ extension LiquidHoyBuilder {
     static func weekdayLabel(offsetFromToday: Int, now: Date, calendar: Calendar,
                              formatter: DateFormatter) -> String {
         if offsetFromToday == 0 {
-            return String(localized: "matriz.sueno.scrub.hoy", defaultValue: "Today")
+            return String(localized: "matriz.scrub.hoy", defaultValue: "Today")
         }
         let start = calendar.startOfDay(for: now)
         let d = calendar.date(byAdding: .day, value: -offsetFromToday, to: start) ?? start
@@ -482,24 +483,26 @@ extension LiquidHoyBuilder {
     }
     /// Estado de la FC en palabras (P2, estudio en frío): la MISMA regla del Cosmos —
     /// z_mal ≤ −2 = «inusualmente baja» SIN alerta (§6: el lado bueno no alarma).
-    /// FER-55: el sublabel de FC habla el idioma de los CARRILES — dentro/fuera de la
-    /// misma banda ±1σ que la celda pinta, para que texto y visual jamás se contradigan
-    /// («low · good side» decía bueno mientras la curva se veía fuera del carril).
-    private static func sublabelFC(ptsFC: [Double?], banda: ClosedRange<Double>?,
-                                   prep: Preparedness.Read?,
+    /// FER-55 (panel B, Grok ALTA #1): el sublabel de FC dice el JUICIO DEL MOTOR —
+    /// la única voz que héroe, scrub y hoja comparten. La franja ±1σ es geografía
+    /// («donde sueles estar»), no la definición de «out of your range»: juzgar por
+    /// `banda.contains` invertía el vocabulario (con FC alta el aro apaga el sublabel,
+    /// así que «out» solo aparecía en el caso BUENO, contradiciendo héroe y scrub).
+    private static func sublabelFC(ptsFC: [Double?], prep: Preparedness.Read?,
                                    alerta: MedidorLunar.Alerta) -> String? {
         if ptsFC.allSatisfy({ $0 == nil }) {
             return String(localized: "Getting to know you")
         }
         // Sin lectura de HOY o sin veredicto real (nil/lowSignal): no se afirma rango
         // (espejo del gate fantasma del Cosmos — Grok #3).
-        guard let hoy = ptsFC.last.flatMap({ $0 }),
+        guard ptsFC.last.flatMap({ $0 }) != nil,
               let v = prep?.verdict, v != .lowSignal else { return nil }
         if alerta != .ninguna { return nil }  // el aro ya habla; no duplicar.
-        guard let banda else { return nil }   // sin banda no se afirma rango.
-        return banda.contains(hoy)
-            ? String(localized: "matriz.rango.dentro", defaultValue: "in your range")
-            : String(localized: "matriz.rango.fuera", defaultValue: "out of your range")
+        // El MISMO juicio por-día que usa el scrub (autonomicOut de hoy).
+        guard let hoyOut = prep?.bodyHistory.last?.autonomicOut else { return nil }
+        return hoyOut
+            ? String(localized: "matriz.rango.fuera", defaultValue: "out of your range")
+            : String(localized: "matriz.rango.dentro", defaultValue: "in your range")
     }
 
     /// Sublabel de carga + la zona ideal del ACWR (escala honesta, P2).

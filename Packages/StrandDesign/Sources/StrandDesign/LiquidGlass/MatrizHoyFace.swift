@@ -15,8 +15,8 @@ public enum MatrizChartPayload: Sendable, Equatable {
     case lineaRellena(puntos: [Double?], base: Double?, dominio: ClosedRange<Double>,
                       alfa: Double, alertaHoy: MedidorLunar.Alerta)
     /// FC (FER-55): los tres carriles — tu rango como banda saturada, arriba/abajo en
-    /// el mismo hue desvaneciendo. `banda` = rango típico del motor (±1σ); nil → cae a
-    /// la línea rellena clásica (sin banda no hay carriles honestos).
+    /// el mismo hue desvaneciendo. `banda` = rango típico del motor (±1σ); nil → solo
+    /// la curva sobre el papel (sin banda no hay carriles honestos).
     case carriles(puntos: [Double?], banda: ClosedRange<Double>?,
                   dominio: ClosedRange<Double>, alertaHoy: MedidorLunar.Alerta)
     case lineaSerena(puntos: [Double?], banda: ClosedRange<Double>?,
@@ -364,7 +364,8 @@ public struct MatrizHoyFace: View {
                 chartView(s.chart, hue: s.hue, chartID: s.chartID,
                           resaltado: scrub?.id == s.id ? scrub?.idx : nil)
                     .frame(height: chartAltura(s.chart))
-                    .modifier(ScrubGesto(seccion: s, scrub: $scrub, tick: $scrubTick))
+                    .modifier(ScrubGesto(seccion: s, scrub: $scrub, tick: $scrubTick,
+                                             onTap: { tocar(s.id) }))
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         } else {
@@ -435,6 +436,11 @@ public struct MatrizHoyFace: View {
                     LiquidIcon(.chevron, size: 8, color: LiquidColor.tinta500)
                 }
                 .alignmentGuide(.firstTextBaseline) { d in d[.firstTextBaseline] }
+                // El numeral NO cede su talla (simetría de gemelas — el dueño cazó
+                // «52» más chico que «7:12»): el título es quien encoge (minScale 0.7,
+                // 1 línea), nunca el dato. Seguro contra la torre: el sublabel ya vive
+                // en su propio renglón a lo ancho, no dentro de esta fila.
+                .layoutPriority(1)
             }
             let sub = sublabelEfectivo(s)
             if s.vota || sub != nil {
@@ -497,7 +503,7 @@ public struct MatrizHoyFace: View {
                 .monospacedDigit()
                 .contentTransition(.numericText())
                 .animation(.snappy, value: valor)
-            if let u = s.unidad {
+            if let u = s.unidad, valor != "—" {
                 Text(u)
                     .font(LiquidType.caption)
                     .foregroundStyle(s.hue)
@@ -630,8 +636,9 @@ public struct MatrizHoyFace: View {
 
 // MARK: - Scrub (FER-55)
 
-/// Arrastrar sobre la gráfica lee cada noche (fecha + horas) en el sublabel, como las
-/// gráficas de adentro. Solo se monta en secciones con `scrubNoches` (Sueño); al soltar
+/// Arrastrar sobre la gráfica lee cada lectura (fecha + valor) en el sublabel, como
+/// las gráficas de adentro. Se monta en toda sección con `scrubNoches` (Sueño, FC —
+/// panel B baja #7); al soltar
 /// —o si el gesto se CANCELA— la celda regresa sola a HOY. Detalles de robustez, todos
 /// hallazgos del panel adversarial Grok/DeepSeek/Sonnet:
 /// - El gesto vive en un `overlay` transparente que TOMA el tamaño del contenido ya
@@ -646,6 +653,14 @@ private struct ScrubGesto: ViewModifier {
     let seccion: MatrizSeccion
     @Binding var scrub: (id: String, idx: Int)?
     @Binding var tick: Int
+    var onTap: () -> Void = {}
+    /// El mapeo dedo→índice depende de la forma (panel B, Grok #2): las COLUMNAS son
+    /// bins de ancho igual (floor sobre n); una SERIE ancla sus puntos en i/(n−1)
+    /// (redondear al vecino) — usar bins ahí desfasa el hilo hasta un día.
+    private var esSerie: Bool {
+        if case .columnas = seccion.chart { return false }
+        return true
+    }
     /// Vivo mientras el dedo arrastra; SwiftUI lo devuelve a `false` al terminar O cancelar.
     @GestureState private var arrastrando = false
 
@@ -655,7 +670,13 @@ private struct ScrubGesto: ViewModifier {
             GeometryReader { geo in
                 Color.clear
                     .contentShape(Rectangle())
-                    .highPriorityGesture(
+                    // Un toque limpio sobre la gráfica abre la hoja, como en las celdas
+                    // sin scrub (panel B, DeepSeek BAJA: quedaba zona muerta).
+                    .onTapGesture { onTap() }
+                    .simultaneousGesture(
+                        // simultaneous (no highPriority): el pan vertical del ScrollView
+                        // sigue vivo sobre las gemelas; el scrub solo actúa en arrastres
+                        // horizontales (guard de abajo) — panel B, DeepSeek MEDIA.
                         DragGesture(minimumDistance: 6, coordinateSpace: .local)
                             .updating($arrastrando) { _, estado, _ in estado = true }
                             .onChanged { g in
@@ -666,7 +687,9 @@ private struct ScrubGesto: ViewModifier {
                                 let w = geo.size.width - inset * 2
                                 guard w > 0, noches.count > 1 else { return }
                                 let rel = min(max((g.location.x - inset) / w, 0), 0.9999)
-                                let i = min(Int(rel * CGFloat(noches.count)), noches.count - 1)
+                                let i = esSerie
+                                    ? Int((rel * CGFloat(noches.count - 1)).rounded())
+                                    : min(Int(rel * CGFloat(noches.count)), noches.count - 1)
                                 if scrub?.id != seccion.id || scrub?.idx != i {
                                     scrub = (seccion.id, i)
                                     tick &+= 1   // pulso háptico por noche cruzada
