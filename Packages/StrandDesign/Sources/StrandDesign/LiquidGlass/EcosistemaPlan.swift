@@ -45,6 +45,8 @@ public extension EcosistemaSimulacion {
         case reposo
         case sueno
         case guardian
+        case temperatura
+        case respiracion
     }
 
     /// Una nube de partículas: el shader la instancia por índice, el Canvas la recorre.
@@ -225,10 +227,13 @@ public extension EcosistemaSimulacion {
         // Al separar, cada una vuela a su esquina; en eclipse ambas se ciernen detrás.
         var vigias: [Orbital] = []
         for g in 0..<2 {
+            // Wobble por vigía (dueño): la elipse respira su radio ~7pt en distinta fase
+            // para cada uno, así los dos no se mueven en lockstep sobre un riel plano.
             var orb = orbita(Geometria.orbitaGuardian,
                              angulo: t * LiquidEcosistemaMotion.orbitaGuardian
                                  + LiquidEcosistemaMotion.faseGuardian + Double(g) * .pi,
-                             radioBase: Geometria.radioGuardian)
+                             radioBase: Geometria.radioGuardian,
+                             wobble: 7 * sin(t * 0.5 + Double(g) * 1.7))
             // FER-27: en eclipse ya NO se desplaza aquí — el vigía queda ORBITAL
             // (config A del morfo) y la fusión 2→1 se resuelve superponiendo dos
             // morfos mismo-conteo sobre un frente compartido (ver `frenteEclipse`).
@@ -387,6 +392,21 @@ public extension EcosistemaSimulacion {
                                         hueco: e.guardianHueco, eclipse: eclipse))
             }
         }
+        // Rótulos de los VIGÍAS (revisión del dueño): TEMPERATURA/RESPIRACIÓN identifican
+        // cada vigía igual que REPOSO/SUEÑO identifican las decisoras. Persisten en ambos
+        // estados (no hay overlay de estación que los reemplace al separar). Se dibujan al
+        // final para quedar SOBRE las partículas.
+        if !enEclipse {
+            for (g, v) in vigias.enumerated() {
+                let dep = (v.z + 1) / 2
+                let alfaR = (0.30 + 0.5 * dep) * alfaFundida
+                guard alfaR > 0.02 else { continue }
+                trazos.append(.rotulo(g == 0 ? .temperatura : .respiracion,
+                                      en: CGPoint(x: v.centro.x,
+                                                  y: v.centro.y + v.radio + 12),
+                                      alfa: alfaR))
+            }
+        }
         trazos += trazosEstelas(t: t, escena: e, lunas: lunasEstela,
                                 radioOrbe: CGFloat(radio), frente: true,
                                 alfa: alfaEstela)
@@ -450,7 +470,7 @@ public extension EcosistemaSimulacion {
             : (g == 0 ? .vigiaTemp : .vigiaResp)
         let alfaK = eclipse > 0
             ? 0.85 * max(0.4, eclipse)
-            : (0.5 + 0.5 * dep) * (hueco ? 0.55 : 0.95)
+            : (0.5 + 0.5 * dep) * (hueco ? 0.55 : 0.82)   // 0.95→0.82: vigías más tenues (dueño)
         return .nube(guardianaNube(centro: orb.centro, radio: orb.radio, g: g, t: t,
                                    alfaK: alfaK, hueco: hueco, tinta: tinta))
     }
@@ -518,14 +538,24 @@ public extension EcosistemaSimulacion {
         // su fracción restante — antes nacía/moría en seco y la línea «reptaba».
         let cercania = min(1, max(0, (a1 - a0) / 26))
         let ux = dx / d, uy = dy / d
+        // La mirada era una recta punteada = «palo» (dueño). Ahora ARQUEA: cada punto se
+        // desvía por una perpendicular que pica al medio del trayecto y respira con `t`,
+        // así el vigía mira en curva, no atado con un tramo rígido. El arco siempre comba
+        // hacia ARRIBA (perp con y<0) para que ambos vigías lean como un colgadizo, no
+        // como dos palos cruzados.
+        var px = -uy, py = ux
+        if py > 0 { px = -px; py = -py }
+        let arcoAmp = 6.5 + 1.6 * sin(t * 0.6)
         let pasoPunteado: Double = hueco ? 22 : 11
         var trazos: [Trazo] = []
         var sd = a0
         while sd <= a1 {
             let residuo = min(1, (a1 - sd) / pasoPunteado)
+            let f01 = (a1 - a0) > 2 ? (sd - a0) / (a1 - a0) : 0
+            let bow = sin(.pi * f01) * arcoAmp
             trazos.append(.disco(
-                centro: CGPoint(x: desde.x + CGFloat(ux * sd),
-                                y: desde.y + CGFloat(uy * sd)),
+                centro: CGPoint(x: desde.x + CGFloat(ux * sd + px * bow),
+                                y: desde.y + CGFloat(uy * sd + py * bow)),
                 // 0.9/0.22 → 1.15/0.32 (revisión del dueño: la mirada no se veía).
                 radio: 1.15, tinta: .vigia, alfa: 0.32 * cercania * residuo))
             sd += pasoPunteado
@@ -538,9 +568,10 @@ public extension EcosistemaSimulacion {
             if ciclo < 1.0 / 3 {
                 let f = ciclo * 3
                 let sp = a0 + (a1 - a0) * f
+                let bowP = sin(.pi * f) * arcoAmp     // el pulso viaja por el MISMO arco
                 trazos.append(.disco(
-                    centro: CGPoint(x: desde.x + CGFloat(ux * sp),
-                                    y: desde.y + CGFloat(uy * sp)),
+                    centro: CGPoint(x: desde.x + CGFloat(ux * sp + px * bowP),
+                                    y: desde.y + CGFloat(uy * sp + py * bowP)),
                     radio: 2.4, tinta: .atencion,
                     alfa: 0.85 * sin(.pi * f) * cercania))
             }

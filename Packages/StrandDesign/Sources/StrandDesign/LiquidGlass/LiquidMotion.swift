@@ -174,11 +174,12 @@ public enum LiquidEcosistemaMotion {
     /// Fade de la palabra del veredicto al coronar.
     public static let palabraDur: Double = 0.70
     /// Revelado del DATO al separar (FER-56, dueño: antes destapaba a media separación
-    /// —0.85× del viaje, aún en vuelo— con un fade rápido: se sentía brusco). Ahora
-    /// espera a que el orbe ATERRICE (anticipación + viaje) y su rebote se CALME (+0.14),
-    /// y florece suave y largo (ease-out 0.55). Al reunir, la salida es inmediata.
-    public static let revelarDatoEspera: Double = anticipacion + fusionDur + 0.14
-    public static let revelarDatoDur: Double = 0.55
+    /// —0.85× del viaje, aún en vuelo— con un fade rápido: se sentía brusco). Aparece
+    /// cuando el orbe está CASI aterrizado (~0.7× del viaje) y florece suave (ease-out
+    /// 0.5) — antes esperaba el viaje COMPLETO + rebote (1.91 s), que se sentía tardío
+    /// (revisión del dueño 2026-08). Al reunir, la salida es inmediata.
+    public static let revelarDatoEspera: Double = anticipacion + fusionDur * 0.68
+    public static let revelarDatoDur: Double = 0.50
     public static var revelarDatoAnim: Animation {
         .easeOut(duration: revelarDatoDur).delay(revelarDatoEspera)
     }

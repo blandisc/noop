@@ -1036,7 +1036,10 @@ private struct EcosistemaCanvas: View {
         case .blanco: return LiquidColor.particulaBlanca
         case .sueno: return Self.mezclada(LiquidColor.indigo, hacia: tintaClima)
         case .reposo: return Self.mezclada(LiquidColor.rosa, hacia: tintaClima)
-        case .vigiaTemp: return Self.mezclada(LiquidColor.doradoTemp, hacia: tintaClima)
+        // El dorado de temperatura brincaba (dueño): más besado por el clima (k .55) para
+        // que baje de intensidad y no lea como «lo más importante». La respiración (azul)
+        // se queda como está.
+        case .vigiaTemp: return Self.mezclada(LiquidColor.doradoTemp, hacia: tintaClima, k: 0.55)
         case .vigiaResp: return Self.mezclada(LiquidColor.azul, hacia: tintaClima)
         }
     }
@@ -1056,6 +1059,8 @@ private struct EcosistemaCanvas: View {
         case .reposo: return rotulos.reposo
         case .sueno: return rotulos.sueno
         case .guardian: return rotulos.guardian
+        case .temperatura: return rotulos.temperatura
+        case .respiracion: return rotulos.respiracion
         }
     }
 
