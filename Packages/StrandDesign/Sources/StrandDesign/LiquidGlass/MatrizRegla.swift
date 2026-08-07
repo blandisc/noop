@@ -83,6 +83,9 @@ public struct MatrizRegla: View {
         let leidoIdx = resaltado.flatMap { puntos.indices.contains($0) ? $0 : nil }
         // La lectura activa: la del scrub si el día leído tiene dato; si no, HOY.
         let activoIdx = leidoIdx.flatMap { puntos[$0] != nil ? $0 : nil } ?? hoyIdx
+        // Hueco leído: el ÚNICO marcador es el hilo fantasma en esa x — las gotas se
+        // esconden (dejarlas en HOY contradecía al texto; panel C, Grok #1).
+        let leyendoHueco = leidoIdx.map { puntos[$0] == nil } == true
         ZStack(alignment: .topLeading) {
             // 1 · Relleno: nace EN la curva y muere a nada antes del piso.
             AreaCurva(puntos: pts, piso: size.height)
@@ -90,18 +93,25 @@ public struct MatrizRegla: View {
                     colors: [hue.opacity(MatrizTokens.reglaRellenoAlfa), hue.opacity(0)],
                     startPoint: .top, endPoint: .bottom))
                 .opacity(rellenoVivo ? 1 : 0)
-            // 2 · La curva, escrita por la tinta.
-            TrazoCurva(puntos: pts)
+            // 2 · La curva, escrita por la tinta. El trim escribe SOLO el tramo más
+            // largo (trim sobre un path multipieza teletransporta la tinta entre islas
+            // — panel C, Grok #3); las islas restantes aparecen con el relleno.
+            TrazoCurva(puntos: pts, soloPrincipal: true)
                 .trim(from: 0, to: escrito)
                 .stroke(hue.opacity(MatrizTokens.lineaAlfa),
                         style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+            TrazoCurva(puntos: pts, soloPrincipal: false)
+                .stroke(hue.opacity(MatrizTokens.lineaAlfa),
+                        style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+                .opacity(rellenoVivo ? 1 : 0)
             // 3 · La regla: capilar de dominio + tramo de tu rango.
             regla(size: size)
                 .opacity(asentado ? 1 : 0)
-            // 4 · Hilo-susurro + puntos gemelos (solo con dato activo).
-            if let i = activoIdx, let v = puntos[i] {
+            // 4 · Hilo-susurro + puntos gemelos (solo con dato activo y sin hueco).
+            if !leyendoHueco, let i = activoIdx, let v = puntos[i] {
                 let p = punto(en: i, valor: v, size: size)
-                let leyendo = leidoIdx != nil
+                // ¿El dedo lee un día CON dato? (nil-dato se maneja aparte abajo.)
+                let leyendo = leidoIdx.map { puntos[$0] != nil } == true
                 if leyendo {
                     HiloLectura(desde: p, hastaX: reglaX(size: size) - 8)
                         .stroke(hue.opacity(0.25),
@@ -110,12 +120,58 @@ public struct MatrizRegla: View {
                 }
                 gota(radioHalo: 5.4, radioPunto: 3.4)
                     .position(p)
+                // El aro de alerta §8 (gramática) — SOLO sobre HOY, jamás sobre una
+                // lectura histórica del scrub (panel C, DeepSeek ALTA #1).
+                if i == hoyIdx, alertaHoy != .ninguna {
+                    aros(alerta: alertaHoy)
+                        // Mismo tercer tiempo que las gotas (panel C, Grok #2): los
+                        // anillos jamás flotan solos antes del asentado.
+                        .opacity(asentado ? 1 : 0)
+                        .scaleEffect(asentado ? 1 : 0.4)
+                        .position(p)
+                }
                 gota(radioHalo: 5.6, radioPunto: 3.6)
                     .position(x: reglaX(size: size), y: p.y)
+            }
+            // Scrub sobre un día SIN dato: hilo fantasma vertical en ESE día (paridad
+            // con las columnas de Sueño) — el texto dice «sin lectura» y la gráfica
+            // señala el mismo día, no HOY (panel C, DeepSeek MEDIA #2).
+            if let i = leidoIdx, puntos[i] == nil {
+                let x = xEn(i, size: size)
+                Path { p in
+                    p.move(to: CGPoint(x: x, y: 0))
+                    p.addLine(to: CGPoint(x: x, y: size.height))
+                }
+                .stroke(hue.opacity(0.35),
+                        style: StrokeStyle(lineWidth: 1.5, lineCap: .round, dash: [2, 3]))
             }
         }
         // El deslizado del scrub: los gemelos viajan, no se teletransportan.
         .animation(reduceMotion ? nil : .snappy(duration: 0.16), value: resaltado)
+    }
+
+    /// El aro de alerta §8: atención = un aro; alarma = dos (mismos tokens que el
+    /// resto de la familia — aroGap/aroGap2/aroAlfa).
+    @ViewBuilder
+    private func aros(alerta: MedidorLunar.Alerta) -> some View {
+        let base: CGFloat = 3.4
+        switch alerta {
+        case .ninguna:
+            EmptyView()
+        case .atencion:
+            Circle().strokeBorder(LiquidColor.atencion.opacity(MatrizTokens.aroAlfa), lineWidth: 1)
+                .frame(width: (base + MatrizTokens.aroGap) * 2,
+                       height: (base + MatrizTokens.aroGap) * 2)
+        case .alarma:
+            ZStack {
+                Circle().strokeBorder(LiquidColor.negativo.opacity(MatrizTokens.aroAlfa), lineWidth: 1)
+                    .frame(width: (base + MatrizTokens.aroGap) * 2,
+                           height: (base + MatrizTokens.aroGap) * 2)
+                Circle().strokeBorder(LiquidColor.negativo.opacity(MatrizTokens.aroAlfa), lineWidth: 1)
+                    .frame(width: (base + MatrizTokens.aroGap2) * 2,
+                           height: (base + MatrizTokens.aroGap2) * 2)
+            }
+        }
     }
 
     /// Punto + halo de papel (la lectura se separa de la curva con elegancia).
@@ -160,35 +216,50 @@ public struct MatrizRegla: View {
         size.width - MatrizTokens.reglaAire
     }
 
+    /// x del índice `i` — LA fórmula única (curva, gemelos, hilo fantasma y el gesto
+    /// deben coincidir; testeable como estática).
+    static func xIndice(_ i: Int, count: Int, width: CGFloat) -> CGFloat {
+        let n = max(count - 1, 1)
+        let usable = width - MatrizTokens.chartInset - MatrizTokens.reglaZona
+        return MatrizTokens.chartInset + CGFloat(i) / CGFloat(n) * usable
+    }
+
+    private func xEn(_ i: Int, size: CGSize) -> CGFloat {
+        Self.xIndice(i, count: puntos.count, width: size.width)
+    }
+
     /// La curva reserva la zona de la regla a la derecha.
     private func puntosXY(size: CGSize) -> [CGPoint?] {
-        let n = max(puntos.count - 1, 1)
-        let usable = size.width - MatrizTokens.chartInset - MatrizTokens.reglaZona
-        return puntos.enumerated().map { i, v in
+        puntos.enumerated().map { i, v in
             guard let v else { return nil }
-            let x = MatrizTokens.chartInset + CGFloat(i) / CGFloat(n) * usable
-            return CGPoint(x: x, y: MatrizChartDraw.yTop(v, domain: dominio, height: size.height))
+            return CGPoint(x: xEn(i, size: size),
+                           y: MatrizChartDraw.yTop(v, domain: dominio, height: size.height))
         }
     }
 
     private func punto(en i: Int, valor: Double, size: CGSize) -> CGPoint {
-        let n = max(puntos.count - 1, 1)
-        let usable = size.width - MatrizTokens.chartInset - MatrizTokens.reglaZona
-        return CGPoint(x: MatrizTokens.chartInset + CGFloat(i) / CGFloat(n) * usable,
-                       y: MatrizChartDraw.yTop(valor, domain: dominio, height: size.height))
+        CGPoint(x: xEn(i, size: size),
+                y: MatrizChartDraw.yTop(valor, domain: dominio, height: size.height))
     }
 }
 
 // MARK: Shapes
 
-/// La curva Catmull-Rom como Shape (para `.trim` — la tinta la escribe al entrar).
-/// Solo el tramo CONTIGUO más largo con datos; los huecos parten la escritura.
+/// La curva Catmull-Rom como Shape. `soloPrincipal: true` = el tramo contiguo MÁS
+/// LARGO (el que la tinta escribe con `.trim`); `false` = las demás islas (aparecen
+/// con el relleno, sin escritura — panel C, Grok #3).
 private struct TrazoCurva: Shape {
     let puntos: [CGPoint?]
+    let soloPrincipal: Bool
     func path(in rect: CGRect) -> Path {
         var path = Path()
-        for tramo in MatrizRegla.tramos(puntos) where tramo.count > 1 {
-            path.addPath(MatrizRegla.catmull(tramo))
+        let tramos = MatrizRegla.tramos(puntos).filter { $0.count > 1 }
+        guard let principal = tramos.max(by: { $0.count < $1.count }) else { return path }
+        for tramo in tramos {
+            let esPrincipal = tramo.elementsEqual(principal)
+            if esPrincipal == soloPrincipal {
+                path.addPath(MatrizRegla.catmull(tramo))
+            }
         }
         return path
     }

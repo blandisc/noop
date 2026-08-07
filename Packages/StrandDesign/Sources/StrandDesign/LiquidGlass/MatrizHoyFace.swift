@@ -743,8 +743,8 @@ private enum MatrizHoyFacePreviewData {
                         id: "rhr", hue: LiquidColor.rosa,
                         titulo: "Resting HR", valor: "52",
                         chartID: "matriz-rhr",
-                        chart: .lineaRellena(puntos: fc, base: 56, dominio: 45...75,
-                                             alfa: 1.0, alertaHoy: .ninguna)),
+                        chart: .regla(puntos: fc, banda: 53...59, dominio: 45...75,
+                                      alertaHoy: .ninguna)),
                     der: MatrizSeccion(
                         id: "hrv", hue: LiquidColor.cian,
                         titulo: "HRV", valor: "68 ms",
@@ -819,8 +819,8 @@ private enum MatrizHoyFacePreviewData {
                         titulo: "Resting HR", valor: "—",
                         sublabel: "Getting to know you",
                         chartID: "matriz-rhr",
-                        chart: .lineaRellena(puntos: vacio20, base: nil, dominio: 45...75,
-                                             alfa: 1.0, alertaHoy: .ninguna)),
+                        chart: .regla(puntos: vacio20, banda: nil, dominio: 45...75,
+                                      alertaHoy: .ninguna)),
                     der: MatrizSeccion(
                         id: "hrv", hue: LiquidColor.cian,
                         titulo: "HRV", valor: "—",
@@ -882,8 +882,8 @@ private enum MatrizHoyFacePreviewData {
                         id: "rhr", hue: LiquidColor.rosa,
                         titulo: "Resting HR", valor: "72",
                         chartID: "matriz-rhr",
-                        chart: .lineaRellena(puntos: fc, base: 56, dominio: 45...80,
-                                             alfa: 1.0, alertaHoy: .atencion)),
+                        chart: .regla(puntos: fc, banda: 53...59, dominio: 45...80,
+                                      alertaHoy: .atencion)),
                     der: MatrizSeccion(
                         id: "hrv", hue: LiquidColor.cian,
                         titulo: "HRV", valor: "38 ms",
