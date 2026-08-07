@@ -414,7 +414,10 @@ public struct MatrizHoyFace: View {
                     // Acuse del tacto: el eco del héroe responde al dedo (§micro).
                     .scaleEffect(latido == s.id ? 1.10 : 1)
                 Text(s.titulo)
-                    .font(LiquidType.tituloFila)
+                    // Las gemelas destacadas (Sueño · Reposo) usan el título gemelo, un
+                    // punto más grande, para que el par pese igual (FER-56). El resto de
+                    // secciones conserva el título de fila.
+                    .font(s.destacada ? LiquidType.tituloGemela : LiquidType.tituloFila)
                     .foregroundStyle(LiquidColor.tinta700)
                     .textCase(.uppercase)
                     // UNA sola línea siempre (revisión del dueño: «RESTING HR» / «FC EN

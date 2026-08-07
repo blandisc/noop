@@ -149,7 +149,10 @@ extension LiquidHoyBuilder {
         }
         let seccionFC = MatrizSeccion(
             id: "rhr", hue: LiquidColor.rosa,
-            titulo: String(localized: "Resting HR"),
+            // Título CORTO de una palabra para la celda gemela (FER-56): «Reposo» / «Resting»
+            // pesa igual que «Sueño» y cabe en una línea al mismo tamaño, sin encoger. La hoja
+            // de detalle conserva el nombre completo «FC en reposo».
+            titulo: String(localized: "matriz.rhr.titulo.corto", defaultValue: "Resting"),
             valor: valorFC,
             unidad: ptsFC.contains(where: { $0 != nil }) ? String(localized: "bpm") : nil,
             // FER-55: sin «vota» (simétrico con Sueño — la gemela no puede quedar sola
@@ -500,9 +503,14 @@ extension LiquidHoyBuilder {
         if alerta != .ninguna { return nil }  // el aro ya habla; no duplicar.
         // El MISMO juicio por-día que usa el scrub (autonomicOut de hoy).
         guard let hoyOut = prep?.bodyHistory.last?.autonomicOut else { return nil }
-        return hoyOut
+        let estado = hoyOut
             ? String(localized: "matriz.rango.fuera", defaultValue: "out of your range")
             : String(localized: "matriz.rango.dentro", defaultValue: "in your range")
+        // Simetría del par (FER-56): la gemela habla con la MISMA estructura que Sueño
+        // («anoche · <estado>»). La FC en reposo también es lectura de anoche, así que el
+        // prefijo es igual de verdadero; reutiliza el mismo formato para que el par lea gemelo.
+        return String(format: String(localized: "matriz.sueno.anoche.estado",
+                                     defaultValue: "last night · %@"), estado)
     }
 
     /// Sublabel de carga + la zona ideal del ACWR (escala honesta, P2).

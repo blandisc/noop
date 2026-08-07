@@ -20708,6 +20708,23 @@
         }
       }
     },
+    "matriz.rhr.titulo.corto" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resting"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reposo"
+          }
+        }
+      }
+    },
     "matriz.rango.fuera" : {
       "extractionState" : "manual",
       "localizations" : {
