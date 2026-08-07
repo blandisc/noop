@@ -737,20 +737,37 @@ public struct LiquidEcosistema: View {
         .accessibilityHidden(true)   // el caption ya dice «Noche n de m».
     }
 
+    /// El tono del veredicto, cuando lo hay (nil en estados sin veredicto → puerta neutra).
+    private var veredictoTono: Color? {
+        if case .veredicto(_, _, let tone, _, _) = hero { return tone }
+        return nil
+    }
+
     @ViewBuilder private func botonPuerta(_ puerta: String) -> some View {
-        // Revisión del dueño en vivo (FER-51): la puerta era invisible en tinta500 —
-        // sube a tinta700 con un punto más de aire; sigue siendo pastilla de vidrio.
+        // Opción A (revisión del dueño 2026-08): la puerta al acta TOMA EL TONO DEL VEREDICTO
+        // — pastilla teñida (fill 12 % + borde 38 %) con el texto en su voz de lectura. Se ve,
+        // se amarra al «por qué» de HOY, y con contención NO le gana a la palabra. Sin veredicto
+        // queda neutra (regla «sin veredicto, cero color»). Antes era vidrio en tinta700, casi
+        // invisible (FER-51).
+        let tono = veredictoTono
+        let textoTono = tono.map { LiquidSheetHeader.tonoTexto($0) } ?? LiquidColor.tinta700
         let etiqueta = HStack(spacing: LiquidSpace.s150) {
             Text(puerta)
                 .font(LiquidType.captionLectura)
-                .foregroundStyle(LiquidColor.tinta700)
-            LiquidIcon(.chevron, size: 9, color: LiquidColor.tinta700)
+                .fontWeight(.medium)
+                .foregroundStyle(textoTono)
+            LiquidIcon(.chevron, size: 9, color: textoTono)
         }
         .padding(.horizontal, LiquidSpace.s300)
-        .padding(.vertical, LiquidSpace.s100)
+        .padding(.vertical, LiquidSpace.s125)
         .background {
-            Capsule().fill(LiquidColor.vidrioPastilla)
-            Capsule().strokeBorder(LiquidColor.vidrioBordePastilla, lineWidth: 0.5)
+            if let tono {
+                Capsule().fill(tono.opacity(0.12))
+                Capsule().strokeBorder(tono.opacity(0.38), lineWidth: 1)
+            } else {
+                Capsule().fill(LiquidColor.vidrioPastilla)
+                Capsule().strokeBorder(LiquidColor.vidrioBordePastilla, lineWidth: 0.5)
+            }
         }
         if let onTapVeredicto {
             Button(action: onTapVeredicto) {
