@@ -65,7 +65,7 @@ final class MatrizHoyFaceSnapshotTests: XCTestCase {
                         formaSello: .luna),
                     der: MatrizSeccion(
                         id: "rhr", hue: LiquidColor.rosa,
-                        titulo: "Resting", valor: "52",
+                        titulo: "Resting HR", valor: "52",
                         unidad: "bpm", destacada: true,
                         sublabel: "last night · in your range",
                         chartID: "matriz-rhr",

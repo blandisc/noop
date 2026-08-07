@@ -149,10 +149,10 @@ extension LiquidHoyBuilder {
         }
         let seccionFC = MatrizSeccion(
             id: "rhr", hue: LiquidColor.rosa,
-            // Título CORTO de una palabra para la celda gemela (FER-56): «Reposo» / «Resting»
-            // pesa igual que «Sueño» y cabe en una línea al mismo tamaño, sin encoger. La hoja
-            // de detalle conserva el nombre completo «FC en reposo».
-            titulo: String(localized: "matriz.rhr.titulo.corto", defaultValue: "Resting"),
+            // Título corto para la celda gemela (FER-56): «FC Reposo» / «Resting HR» pesa
+            // parejo con «Sueño» y cabe en una línea al mismo tamaño. La hoja de detalle
+            // conserva el nombre completo «FC en reposo».
+            titulo: String(localized: "matriz.rhr.titulo.corto", defaultValue: "Resting HR"),
             valor: valorFC,
             unidad: ptsFC.contains(where: { $0 != nil }) ? String(localized: "bpm") : nil,
             // FER-55: sin «vota» (simétrico con Sueño — la gemela no puede quedar sola

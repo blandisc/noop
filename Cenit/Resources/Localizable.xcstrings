@@ -20714,13 +20714,47 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Resting"
+            "value" : "Resting HR"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Reposo"
+            "value" : "FC Reposo"
+          }
+        }
+      }
+    },
+    "matriz.scrub.a11y.hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Swipe up or down to hear each reading"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desliza arriba o abajo para oír cada lectura"
+          }
+        }
+      }
+    },
+    "matriz.scrub.a11y.label" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@, %2$d readings"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@, %2$d lecturas"
           }
         }
       }
