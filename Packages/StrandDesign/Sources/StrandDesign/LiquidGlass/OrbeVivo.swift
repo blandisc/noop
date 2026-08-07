@@ -85,16 +85,20 @@ public struct OrbeVivo: View {
                                hue: Color, huePar: Color? = nil,
                                t: Double = 0, faseID: String = "",
                                forma: Forma = .esfera) {
+        // El corazón NO se talla de la esfera (a tamaño de sello quedan pocas motas,
+        // grandes y dispersas en 3D → amasijo ilegible, revisión del dueño FER-56). Se
+        // SIEMBRA en 2D sobre la forma del corazón: puntos chicos y densos, contorno
+        // marcado — misma materia visual, silueta que sí se lee. Quieto.
+        if forma == .corazon {
+            dibujarCorazon(ctx, centro: centro, radio: radio, hue: hue, faseID: faseID)
+            return
+        }
         // Densidad del héroe (~0.4 pt²/partícula) — más rala que un relleno: se ven
         // los puntos individuales, como arriba. Tope por rendimiento. La luna pierde
         // ~30 % de su silueta a la mordida → se compensa la cuenta para no ralear.
         let base = min(240, max(36, Int(0.4 * radio * radio)))
-        // Las siluetas talladas pierden parte de la esfera → compensar la cuenta.
-        let cuenta: Int = switch forma {
-        case .esfera: base
-        case .luna: min(240, Int(Double(base) * 1.35))
-        case .corazon: min(280, Int(Double(base) * 2.2))
-        }
+        // La luna pierde parte de la esfera a la mordida → compensar la cuenta.
+        let cuenta: Int = forma == .luna ? min(240, Int(Double(base) * 1.35)) : base
         // Mordida 2D del creciente (mismas proporciones que el mock aprobado): centro
         // desplazado a la derecha-arriba, radio 0.86·R. Se descartan las motas cuyo
         // punto PROYECTADO cae dentro (front y back juntas → lee como luna).
@@ -102,41 +106,72 @@ public struct OrbeVivo: View {
         let mordidaR = radio * 0.86
         // Fase estable por identidad: cada orbe mira distinto y gira desde su ángulo.
         let fase = Double(MatrizDither.semilla(chartID: faseID, index: 0) % 628) / 100.0
-        // Luna y corazón no rotan ni tiemblan: motas fijas (dueño, FER-55).
-        let quieta = forma != .esfera
+        // La luna no rota ni tiembla: motas fijas (dueño, FER-55).
+        let quieta = forma == .luna
         let rot = quieta ? fase : fase + t * 0.12
-        // Corazón implícito: (x²+y²−1)³ − x²·y³ ≤ 0 (x,y normalizados). El CONTORNO
-        // se detecta por cercanía al borde y se marca: motas más grandes y plenas
-        // trazan la silueta; el interior queda más tenue (receta aprobada en mock).
-        let escalaCorazon = Double(radio) * 0.82
-        func corazonF(_ px: CGFloat, _ py: CGFloat) -> Double {
-            let x = Double(px - centro.x) / escalaCorazon
-            let y = Double(centro.y - py) / escalaCorazon + 0.12
-            let a = x * x + y * y - 1
-            return a * a * a - x * x * y * y * y
-        }
         for (i, dir) in direcciones(cuenta).enumerated() {
             let p = EcosistemaSimulacion.particula(
                 dir: dir, indice: i, centro: centro, radio: radio,
                 rotacion: rot, jitterAmp: (quieta || radio <= 10) ? 0 : 0.7,
                 t: quieta ? 0 : t, alfaK: 1.4)
-            var esBorde = false
-            switch forma {
-            case .esfera: break
-            case .luna:
+            if forma == .luna {
                 let dx = p.pos.x - mordida.x, dy = p.pos.y - mordida.y
                 if dx * dx + dy * dy < mordidaR * mordidaR { continue }
-            case .corazon:
-                let f = corazonF(p.pos.x, p.pos.y)
-                if f > 0 { continue }               // fuera del corazón
-                esBorde = f > -0.09                  // cerca del borde → contorno
             }
-            let pr = p.tamano * (0.55 + radio / 60) * (esBorde ? 1.45 : 1)
+            let pr = p.tamano * (0.55 + radio / 60)
             let color = (huePar != nil && i % 2 == 1) ? huePar! : hue
-            let alfa = esBorde ? 1.0 : min(1, p.alfa) * (forma == .corazon ? 0.55 : 1)
             ctx.fill(Path(ellipseIn: CGRect(x: p.pos.x - pr, y: p.pos.y - pr,
                                             width: pr * 2, height: pr * 2)),
-                     with: .color(color.opacity(alfa)))
+                     with: .color(color.opacity(min(1, p.alfa))))
+        }
+    }
+
+    /// El corazón sembrado en 2D (FER-56): rejection-sampling DETERMINISTA sobre la
+    /// curva implícita del corazón `(x²+y²−1)³ − x²·y³ ≤ 0` (misma que el mock). Motas
+    /// chicas y densas; las del CONTORNO (cercanas al borde) más grandes, plenas y
+    /// oscuras trazan la silueta; el interior más tenue. Quieto (sin `t`): la semilla
+    /// fija la nube, cero shimmer y cero costo por frame.
+    private static func dibujarCorazon(_ ctx: GraphicsContext, centro: CGPoint,
+                                       radio: CGFloat, hue: Color, faseID: String) {
+        let esc = Double(radio) * 0.072     // la paramétrica vive en ±16; a marco de sello
+        let yCentro = -2.3                   // centra el peso vertical (cúspide abajo)
+        // Paramétrica clásica del corazón: x=16sin³t, y=13cos t−5cos2t−2cos3t−cos4t.
+        // Lóbulos arriba, cúspide abajo (en pantalla, y invertida).
+        func punto(_ tt: Double) -> CGPoint {
+            let x = 16 * pow(sin(tt), 3)
+            let y = 13 * cos(tt) - 5 * cos(2 * tt) - 2 * cos(3 * tt) - cos(4 * tt)
+            return CGPoint(x: centro.x + CGFloat(x) * esc,
+                           y: centro.y - CGFloat(y - yCentro) * esc)
+        }
+        // 1 · CONTORNO — puntos parejos sobre la curva = silueta NÍTIDA. Motas plenas.
+        let nContorno = min(64, max(30, Int(radio * 3.2)))
+        let prBorde = 0.9 * (0.55 + radio / 40)
+        for k in 0..<nContorno {
+            let tt = Double(k) / Double(nContorno) * 2 * .pi
+            let c = punto(tt)
+            ctx.fill(Path(ellipseIn: CGRect(x: c.x - prBorde, y: c.y - prBorde,
+                                            width: prBorde * 2, height: prBorde * 2)),
+                     with: .color(hue))
+        }
+        // 2 · RELLENO tenue — motas chicas por copias ENCOGIDAS del contorno (jamás se
+        // salen de la silueta). PRNG determinista: misma nube cada frame.
+        var estado = UInt64(MatrizDither.semilla(chartID: faseID, index: 7)) | 1
+        func rnd() -> Double {
+            estado ^= estado << 13; estado ^= estado >> 7; estado ^= estado << 17
+            return Double(estado % 100_000) / 100_000
+        }
+        let nRelleno = min(90, max(28, Int(0.55 * radio * radio)))
+        let prIn = 0.6 * (0.5 + radio / 40)
+        for _ in 0..<nRelleno {
+            let tt = rnd() * 2 * .pi
+            let r = 0.28 + rnd() * 0.6       // fracción hacia el centro (nunca el borde)
+            let b = punto(tt)
+            let cx = centro.x + (b.x - centro.x) * CGFloat(r)
+            let cy = centro.y + (b.y - centro.y) * CGFloat(r)
+            let alfa = 0.30 + rnd() * 0.26
+            ctx.fill(Path(ellipseIn: CGRect(x: cx - prIn, y: cy - prIn,
+                                            width: prIn * 2, height: prIn * 2)),
+                     with: .color(hue.opacity(alfa)))
         }
     }
 }
