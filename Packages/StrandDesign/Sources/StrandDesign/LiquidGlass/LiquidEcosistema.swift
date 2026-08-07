@@ -495,7 +495,11 @@ public struct LiquidEcosistema: View {
         // (FER-28) sube `acercaVeredicto` hacia el orbe (recorta el aire de abajo).
         palabra
             .frame(width: G.lienzo.width)
-            .frame(height: G.lienzo.height - 34
+            // El subtítulo sube 34→64 pt sobre el fondo del lienzo (auditoría del dueño: la
+            // puerta se veía «pegada» al subtítulo — hueco arriba chico, abajo grande). Con más
+            // aire arriba, el botón respira y el ritmo vertical queda parejo; hay espacio de
+            // sobra entre el orbe y el veredicto para subirlo.
+            .frame(height: G.lienzo.height - 64
                    - (compacto ? LiquidSpace.ecosistemaAcercaVeredicto : 0), alignment: .bottom)
             .opacity(esSeparadaEstable ? 0 : 1)
             // Deriva sutil (overlapping action, ojo del dueño): la palabra no aparece —
@@ -518,9 +522,13 @@ public struct LiquidEcosistema: View {
         // La PUERTA al acta («Cómo llegué a esto») vive en AMBOS modos (D10): el tap del
         // lienzo ya no navega, así que esta pastilla es la única entrada visible.
         if let heroPuerta {
+            // La puerta es la CODA del veredicto (rec. del /ui): se ancla al fondo del BLOQUE
+            // del veredicto (subtítulo en `-64`), no al piso del lienzo — hueco chico y
+            // deliberado arriba (~s400), y el aire se acumula ABAJO como corte de sección.
+            // Pegarla refuerza su tinte (extensión del veredicto, no un 2º objeto con color).
             botonPuerta(heroPuerta)
                 .frame(width: G.lienzo.width)
-                .frame(height: G.lienzo.height
+                .frame(height: G.lienzo.height - 26
                        - (compacto ? LiquidSpace.ecosistemaAcercaVeredicto : 0), alignment: .bottom)
         }
     }
@@ -737,20 +745,37 @@ public struct LiquidEcosistema: View {
         .accessibilityHidden(true)   // el caption ya dice «Noche n de m».
     }
 
+    /// El tono del veredicto, cuando lo hay (nil en estados sin veredicto → puerta neutra).
+    private var veredictoTono: Color? {
+        if case .veredicto(_, _, let tone, _, _) = hero { return tone }
+        return nil
+    }
+
     @ViewBuilder private func botonPuerta(_ puerta: String) -> some View {
-        // Revisión del dueño en vivo (FER-51): la puerta era invisible en tinta500 —
-        // sube a tinta700 con un punto más de aire; sigue siendo pastilla de vidrio.
+        // Opción A (revisión del dueño 2026-08): la puerta al acta TOMA EL TONO DEL VEREDICTO
+        // — pastilla teñida (fill 12 % + borde 38 %) con el texto en su voz de lectura. Se ve,
+        // se amarra al «por qué» de HOY, y con contención NO le gana a la palabra. Sin veredicto
+        // queda neutra (regla «sin veredicto, cero color»). Antes era vidrio en tinta700, casi
+        // invisible (FER-51).
+        let tono = veredictoTono
+        let textoTono = tono.map { LiquidSheetHeader.tonoTexto($0) } ?? LiquidColor.tinta700
         let etiqueta = HStack(spacing: LiquidSpace.s150) {
             Text(puerta)
                 .font(LiquidType.captionLectura)
-                .foregroundStyle(LiquidColor.tinta700)
-            LiquidIcon(.chevron, size: 9, color: LiquidColor.tinta700)
+                .fontWeight(.medium)
+                .foregroundStyle(textoTono)
+            LiquidIcon(.chevron, size: 9, color: textoTono)
         }
         .padding(.horizontal, LiquidSpace.s300)
-        .padding(.vertical, LiquidSpace.s100)
+        .padding(.vertical, LiquidSpace.s125)
         .background {
-            Capsule().fill(LiquidColor.vidrioPastilla)
-            Capsule().strokeBorder(LiquidColor.vidrioBordePastilla, lineWidth: 0.5)
+            if let tono {
+                Capsule().fill(tono.opacity(0.12))
+                Capsule().strokeBorder(tono.opacity(0.38), lineWidth: 1)
+            } else {
+                Capsule().fill(LiquidColor.vidrioPastilla)
+                Capsule().strokeBorder(LiquidColor.vidrioBordePastilla, lineWidth: 0.5)
+            }
         }
         if let onTapVeredicto {
             Button(action: onTapVeredicto) {

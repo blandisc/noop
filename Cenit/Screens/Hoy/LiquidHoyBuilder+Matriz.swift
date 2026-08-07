@@ -211,9 +211,17 @@ extension LiquidHoyBuilder {
             // P4: el MISMO nombre que su luna en el héroe (una sola llave).
             titulo: String(localized: "Guardian"),
             valor: "",
+            // FER-56: la sublínea DICE LA REGLA en la voz EXACTA de la hoja que abre su «?»
+            // (`reglaTexto`): una sola nunca empuja tu día; solo la pareja, dos noches seguidas.
+            // `HoyGramatica.severidad` exige corroboración Y `streakNights >= 2` para empujar —
+            // el ámbar de la 1.ª noche es aviso, no empuje; por eso la regla habla de «empujar».
             sublabel: String(localized: "matriz.guardian.sub",
-                             defaultValue: "watches fever and breathing while you sleep"),
+                             defaultValue: "one signal alone never pushes your day; only the pair, two nights in a row"),
             chartID: "matriz-guardian",
+            // DEUDA (FER-56): esta gráfica de sección NO se dibuja — `MatrizHoyFace.seccionView`
+            // ignora `s.chart` cuando la sección trae `renglones` (guardián), que llevan su
+            // propia línea. Se conserva porque `chart` es obligatorio en `MatrizSeccion`; hacerlo
+            // opcional o darle un caso `.vacio` es su propio cambio, fuera del alcance de esta ola.
             chart: .lineaSerena(puntos: ptsTemp, banda: -thermalBand...thermalBand,
                                 dominio: -1.5...1.5, alertaHoy: alertaGuardian),
             chip: chip,
@@ -248,7 +256,10 @@ extension LiquidHoyBuilder {
                                         dominio: dominioLinea(ptsResp, base: nil, fallback: 8...22),
                                         alertaHoy: alertaGuardian),
                     subrayado: alertaGuardian),
-            ])
+            ],
+            // FER-56 · Ola 3: el sello VIVO reacciona al MISMO estado que el chip (nunca lo
+            // contradice) — se separa y tiñe cuando el par se sale, calla en calma.
+            selloGuardian: selloGuardianEstado(prep?.sentinel))
 
         // —— 4. Carga | Esfuerzo ——
         let pCarga = razonCarga  // razón natural (API del riel: 0.8…1.3)
@@ -340,8 +351,11 @@ extension LiquidHoyBuilder {
                               defaultValue: "Decide your day"),
                        manualID: "manual.deciden"),
                 .split(izq: seccionSueno, der: seccionFC),
+                // FER-56: el nivel gana su «?» reusando la hoja del guardián que YA existe
+                // (`showGuardianHoja` vía `abrirHojaCaras("guardian")`) — la misma que abre el
+                // encabezado. Sin segunda hoja: regla+estados+hedge con datos reales de hoy.
                 .nivel(String(localized: "matriz.nivel.vigila",
-                              defaultValue: "Watches over you"), manualID: nil),
+                              defaultValue: "Watches over you"), manualID: "guardian"),
                 .full(seccionGuardian),
                 .nivel(String(localized: "matriz.nivel.contexto",
                               defaultValue: "Context"), manualID: nil),
@@ -407,7 +421,11 @@ extension LiquidHoyBuilder {
     /// Chip §8 / criterio 10 — texto + tono resueltos; ordinal REAL de racha.
     static func chipGuardianModelo(_ sentinel: Preparedness.SentinelRead?)
         -> MatrizHoyModel.ChipGuardian? {
-        guard let chip = HoyGramatica.chipGuardian(sentinel: sentinel) else { return nil }
+        guard let chip = HoyGramatica.chipGuardian(sentinel: sentinel) else {
+            // Sin lectura del par esa noche (`sentinel == nil`): no se afirma calma (verde) —
+            // sería mentir— pero tampoco se deja el chip en blanco. Tinta terciaria, honesto.
+            return .init(texto: String(localized: "No readings yet"), tono: .terciario)
+        }
         switch chip {
         case .calma:
             return .init(texto: String(localized: "At ease"), tono: .calma)
@@ -427,23 +445,37 @@ extension LiquidHoyBuilder {
         }
     }
 
-    /// «2nd night», «3rd night», … — ordinal REAL de `streakNights`.
-    private static func ordinalRacha(_ n: Int) -> String {
-        let n = max(n, 2)
-        // English source (app catalog language); es-MX se resuelve en el catálogo §11 (Lane D).
-        let ord: String
-        switch n {
-        case 2: ord = "2nd"
-        case 3: ord = "3rd"
-        default:
-            let mod10 = n % 10
-            let mod100 = n % 100
-            if mod10 == 1 && mod100 != 11 { ord = "\(n)st" }
-            else if mod10 == 2 && mod100 != 12 { ord = "\(n)nd" }
-            else if mod10 == 3 && mod100 != 13 { ord = "\(n)rd" }
-            else { ord = "\(n)th" }
+    /// FER-56 · Ola 3 — el estado del sello VIVO del guardián, proyectado 1:1 del chip (nunca
+    /// lo contradice): sin lectura del par ⇒ sin datos; una sola fuera ⇒ vigila esa (frío, sin
+    /// alarma, como el chip terciario); el par 1.ª noche ⇒ ámbar; el par en racha ⇒ rojo.
+    static func selloGuardianEstado(_ sentinel: Preparedness.SentinelRead?) -> SelloGuardianVivo.Estado {
+        guard let chip = HoyGramatica.chipGuardian(sentinel: sentinel) else { return .sinDatos }
+        switch chip {
+        case .calma:             return .calma
+        case .vigilandoTemp:     return .vigilaTemp
+        case .vigilandoResp:     return .vigilaResp
+        case .ambasPrimeraNoche: return .ambasAmbar
+        case .racha:             return .ambasRoja
         }
-        return String(localized: "\(ord) night")
+    }
+
+    /// El MARCADOR ordinal solo (sin sustantivo), formateado POR locale porque su gramática es
+    /// locale-específica: es-MX «N.ª» (femenino numérico, uniforme, concuerda con «noche»); en
+    /// irregular (2nd/3rd/21st…). Pura y testeable (locale inyectable) — el sustantivo lo pone
+    /// aparte el catálogo. `internal` a propósito: la prueba flexiona el locale sin tocar el proceso.
+    static func ordinalMarcador(_ n: Int, locale: Locale = .current) -> String {
+        let n = max(n, 2)
+        if locale.language.languageCode == .spanish { return "\(n).ª" }
+        let mod10 = n % 10, mod100 = n % 100
+        if mod10 == 1 && mod100 != 11 { return "\(n)st" }
+        if mod10 == 2 && mod100 != 12 { return "\(n)nd" }
+        if mod10 == 3 && mod100 != 13 { return "\(n)rd" }
+        return "\(n)th"
+    }
+
+    /// «2.ª noche» (es) / «2nd night» (en): el marcador ordinal + el sustantivo del catálogo.
+    private static func ordinalRacha(_ n: Int) -> String {
+        String(localized: "\(ordinalMarcador(n)) night")
     }
 
     private static func sublabelCarga(_ key: String) -> String {

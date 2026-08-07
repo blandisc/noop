@@ -59,6 +59,10 @@ public struct MatrizSeccion: Sendable, Identifiable, Equatable {
     /// Scrub (FER-55): cada noche con su lectura ya formateada (valor + sublabel).
     /// El índice mapea 1:1 a las barras; el último = hoy. `nil` = celda sin scrub.
     public let scrubNoches: [ScrubNoche]?
+    /// El sello del guardián VIVO (FER-56 · Ola 3): reacciona al estado del par (calma /
+    /// vigila una / ambas ámbar / racha roja / sin datos) separando y tiñendo sus dos
+    /// colores. Presente SOLO en la sección del guardián; nil ⇒ el sello normal (orbe/glifo).
+    public let selloGuardian: SelloGuardianVivo.Estado?
 
     public init(id: String, hue: Color,
                 huesPar: (Color, Color)? = nil, titulo: String, valor: String,
@@ -69,7 +73,8 @@ public struct MatrizSeccion: Sendable, Identifiable, Equatable {
                 renglones: [MatrizRenglon]? = nil,
                 formaSello: OrbeVivo.Forma = .esfera,
                 glifoSello: LiquidIcon.Glyph? = nil,
-                scrubNoches: [ScrubNoche]? = nil) {
+                scrubNoches: [ScrubNoche]? = nil,
+                selloGuardian: SelloGuardianVivo.Estado? = nil) {
         self.id = id; self.hue = hue; self.huesPar = huesPar
         self.titulo = titulo; self.valor = valor
         self.unidad = unidad; self.destacada = destacada
@@ -80,6 +85,7 @@ public struct MatrizSeccion: Sendable, Identifiable, Equatable {
         self.formaSello = formaSello
         self.glifoSello = glifoSello
         self.scrubNoches = scrubNoches
+        self.selloGuardian = selloGuardian
     }
 
     /// Una noche leída para el scrub: el valor grande y la frase del sublabel, ya
@@ -103,6 +109,7 @@ public struct MatrizSeccion: Sendable, Identifiable, Equatable {
             && lhs.vota == rhs.vota && lhs.terciaria == rhs.terciaria
             && lhs.formaSello == rhs.formaSello && lhs.scrubNoches == rhs.scrubNoches
             && lhs.glifoSello == rhs.glifoSello
+            && lhs.selloGuardian == rhs.selloGuardian
     }
 }
 
@@ -407,7 +414,16 @@ public struct MatrizHoyFace: View {
                 // Orbe de partículas puro, sin glifo (revisión del dueño en vivo): el
                 // eco del héroe junto a cada título, con el hue de identidad.
                 Group {
-                    if let glifo = s.glifoSello {
+                    if let estado = s.selloGuardian {
+                        // FER-56 · Ola 3: el sello del guardián VIVO — un orbe bicolor que en
+                        // calma es uno solo (dorado+azul intercalados, respirando) y al salirse
+                        // el par se SEPARA y tiñe (ámbar 1.ª noche → rojo en racha). Dice la
+                        // regla «solo la pareja» sin texto. Reduce Motion lo deja asentado.
+                        SelloGuardianVivo(radio: MatrizTokens.selloRadio,
+                                          hueTemp: s.huesPar?.0 ?? s.hue,
+                                          hueResp: s.huesPar?.1 ?? s.hue,
+                                          estado: estado)
+                    } else if let glifo = s.glifoSello {
                         // Comparativa FER-55: la gota de las hojas de resumen como sello.
                         LiquidIconDrop(glifo, tone: s.hue,
                                        size: MatrizTokens.selloRadio * 2.5,
