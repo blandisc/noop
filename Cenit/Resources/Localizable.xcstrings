@@ -53998,6 +53998,669 @@
           }
         }
       }
+    },
+    "Watching, not voting" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Watching, not voting"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vigilan sin votar"
+          }
+        }
+      }
+    },
+    "Watching, not voting: breathing and temperature." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Watching, not voting: breathing and temperature."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vigilan sin votar: respiración y temperatura."
+          }
+        }
+      }
+    },
+    "learning your base" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "learning your base"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "aprendiendo tu base"
+          }
+        }
+      }
+    },
+    "acta.sub.fc" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "overnight · against your base"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "de la noche · contra tu base"
+          }
+        }
+      }
+    },
+    "acta.voto.in" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "in"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "dentro"
+          }
+        }
+      }
+    },
+    "acta.voto.out" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "out"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "fuera"
+          }
+        }
+      }
+    },
+    "Day reading" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Day reading"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lectura de día"
+          }
+        }
+      }
+    },
+    "The verdict for how you woke up: your signals against your own baseline." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The verdict for how you woke up: your signals against your own baseline."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El veredicto de cómo amaneciste: tus señales contra tu propia base."
+          }
+        }
+      }
+    },
+    "No sleep recorded last night: without its vote there's no quorum for a verdict." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No sleep recorded last night: without its vote there's no quorum for a verdict."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anoche no se grabó sueño: sin su voto no hay quórum para un veredicto."
+          }
+        }
+      }
+    },
+    "Without Apple Health connected there's nothing to count." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Without Apple Health connected there's nothing to count."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin conexión con Apple Salud no hay nada que contar."
+          }
+        }
+      }
+    },
+    "Nothing came in last night: no sleep and no resting signals." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing came in last night: no sleep and no resting signals."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anoche no entró nada: ni sueño ni señales en reposo."
+          }
+        }
+      }
+    },
+    "The ballot is taking shape with your first nights." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The ballot is taking shape with your first nights."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La boleta se está formando con tus primeras noches."
+          }
+        }
+      }
+    },
+    "One vote fell outside and your night HRV is trending down: that's why today asks for recovery." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One vote fell outside and your night HRV is trending down: that's why today asks for recovery."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un voto cayó fuera y tu VFC nocturna viene bajando: por eso hoy pide recuperar."
+          }
+        }
+      }
+    },
+    "A vote fell outside today. A new verdict has to repeat two days in a row to replace yesterday's." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A vote fell outside today. A new verdict has to repeat two days in a row to replace yesterday's."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoy hubo un voto fuera. Un veredicto nuevo tiene que repetirse dos días seguidos para reemplazar al de ayer."
+          }
+        }
+      }
+    },
+    "Both votes fell outside today. A new verdict has to repeat two days in a row to replace yesterday's." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Both votes fell outside today. A new verdict has to repeat two days in a row to replace yesterday's."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoy los dos votos cayeron fuera. Un veredicto nuevo tiene que repetirse dos días seguidos para reemplazar al de ayer."
+          }
+        }
+      }
+    },
+    "Your votes fell inside today. The verdict changes once the improvement repeats two days in a row." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your votes fell inside today. The verdict changes once the improvement repeats two days in a row."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoy tus votos cayeron dentro. El veredicto cambia cuando la mejora se repite dos días seguidos."
+          }
+        }
+      }
+    },
+    "Both of your votes fell inside." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Both of your votes fell inside."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus dos votos cayeron dentro."
+          }
+        }
+      }
+    },
+    "Sleep voted outside; autonomic, inside." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sleep voted outside; autonomic, inside."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El sueño votó fuera; la FC en reposo, dentro."
+          }
+        }
+      }
+    },
+    "Autonomic voted outside; sleep, inside." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Autonomic voted outside; sleep, inside."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La FC en reposo votó fuera; el sueño, dentro."
+          }
+        }
+      }
+    },
+    "Both of your votes fell outside." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Both of your votes fell outside."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus dos votos cayeron fuera."
+          }
+        }
+      }
+    },
+    "acta.resumen.full.clave" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "inside"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "dentro"
+          }
+        }
+      }
+    },
+    "acta.resumen.caution.clave" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "voted outside"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "votó fuera"
+          }
+        }
+      }
+    },
+    "acta.resumen.easy.clave" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "outside"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "fuera"
+          }
+        }
+      }
+    },
+    "acta.resumen.hist.fuera.clave" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "outside today"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "fuera hoy"
+          }
+        }
+      }
+    },
+    "acta.resumen.hist.dentro.clave" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "inside today"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "dentro hoy"
+          }
+        }
+      }
+    },
+    "acta.resumen.tendencia.clave" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "trending down"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "viene bajando"
+          }
+        }
+      }
+    },
+    "Sleep with your Apple Watch and tomorrow the ballot fills itself." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sleep with your Apple Watch and tomorrow the ballot fills itself."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Duerme con tu Apple Watch y mañana la boleta se llena sola."
+          }
+        }
+      }
+    },
+    "Both out at once: today is for recovering, not pushing." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Both out at once: today is for recovering, not pushing."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los dos fuera a la vez: hoy toca recuperar, no empujar."
+          }
+        }
+      }
+    },
+    "One vote out lightens the day; it doesn't sink it." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One vote out lightens the day; it doesn't sink it."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un voto fuera aligera el día; no lo tumba."
+          }
+        }
+      }
+    },
+    "acta.metodo.fc" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your resting HR is your lowest pulse of the night, measured by your Apple Watch; when it isn't worn to sleep, Cénit uses Apple Health's resting heart rate."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu FC en reposo es tu pulso más bajo de la noche, medido con el Apple Watch; si no lo usas para dormir, Cénit usa la FC en reposo de Apple."
+          }
+        }
+      }
+    },
+    "acta.metodo.votos" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your sleep and your resting HR are read as separate votes, so a bad night doesn't count twice. Your breathing and temperature only watch; they don't vote here."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu sueño y tu FC en reposo se leen como votos separados, para que una mala noche no cuente dos veces. Tu respiración y tu temperatura solo vigilan; aquí no votan."
+          }
+        }
+      }
+    },
+    "acta.metodo.histeresis" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A new verdict has to repeat two days in a row before it replaces the previous one."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un veredicto nuevo tiene que repetirse dos días seguidos antes de reemplazar al anterior."
+          }
+        }
+      }
+    },
+    "acta.metodo.cita" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O'Grady et al., 2024 · Task Force, 1996 · Plews et al., 2013. Approximate, no clinical claim."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O'Grady et al., 2024 · Task Force, 1996 · Plews et al., 2013. Aproximado, sin fin clínico."
+          }
+        }
+      }
+    },
+    "%@, voted inside, %@." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, voted inside, %@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, votó dentro, %@."
+          }
+        }
+      }
+    },
+    "%@, read inside, %@." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, read inside, %@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, se leyó dentro, %@."
+          }
+        }
+      }
+    },
+    "%@, voted outside, %@, outside your range." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, voted outside, %@, outside your range."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, votó fuera, %@, fuera de tu rango."
+          }
+        }
+      }
+    },
+    "%@, read outside, %@, outside your range." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, read outside, %@, outside your range."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, se leyó fuera, %@, fuera de tu rango."
+          }
+        }
+      }
+    },
+    "%@, no vote yet, %@." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, no vote yet, %@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, sin voto todavía, %@."
+          }
+        }
+      }
+    },
+    "%@, no data, %@." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, no data, %@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, sin dato, %@."
+          }
+        }
+      }
     }
   },
   "version" : "1.1"

@@ -209,8 +209,6 @@ public struct LiquidBoletaCard: View {
 
     public struct Votante: Sendable, Identifiable {
         public let id: String
-        /// El glifo del votante — la gota va SIEMPRE en tinta (doctrina: el hue 1:1 no
-        /// entra a la boleta; el color de la hoja cabe en la palabra y los rieles).
         public let glifo: LiquidIcon.Glyph
         public let nombre: String
         public let sub: String
@@ -223,13 +221,19 @@ public struct LiquidBoletaCard: View {
         /// tinta sin veredicto.
         public let tonoVoto: Color
         public let palabra: String
+        /// El hue de IDENTIDAD de la métrica (revisión del dueño): rosa para FC en reposo,
+        /// indigo para Sueño — el mismo color de su celda en la Matriz. Tiñe la gota y el
+        /// título para amarrar la fila a su métrica; el estado del voto lo sigue diciendo el
+        /// riel/palabra/wash. `tinta700` = sin identidad (comportamiento previo).
+        public let hueMetrica: Color
         /// Label compuesto de VoiceOver, YA localizado («Sueño, votó fuera, anoche contra
         /// un mínimo fijo, fuera de tu rango.»).
         public let a11y: String
 
         public init(id: String, glifo: LiquidIcon.Glyph, nombre: String, sub: String,
                     estado: LiquidVotoRiel.Estado, umbral: LiquidVotoRiel.Umbral,
-                    fuera: Bool, tonoVoto: Color, palabra: String, a11y: String) {
+                    fuera: Bool, tonoVoto: Color, palabra: String,
+                    hueMetrica: Color = LiquidColor.tinta700, a11y: String) {
             self.id = id
             self.glifo = glifo
             self.nombre = nombre
@@ -239,6 +243,7 @@ public struct LiquidBoletaCard: View {
             self.fuera = fuera
             self.tonoVoto = tonoVoto
             self.palabra = palabra
+            self.hueMetrica = hueMetrica
             self.a11y = a11y
         }
     }
@@ -271,7 +276,8 @@ public struct LiquidBoletaCard: View {
                     separador
                 }
             }
-            cierre
+            // La «doble raya contable» de cierre se retiró (revisión del dueño): la línea
+            // bajo la última fila leía como ruido. La tarjeta cierra con su propio borde.
         }
         .clipShape(RoundedRectangle(cornerRadius: LiquidRadius.tarjeta, style: .continuous))
         .liquidGlass(.superficieSolida)
@@ -328,17 +334,19 @@ public struct LiquidBoletaCard: View {
     }
 
     private func gota(_ v: Votante) -> some View {
-        // Gota en TINTA (el hue 1:1 no entra a la boleta): el átomo de la familia con el
-        // tono de tinta — glifo tinta700 sobre tinta al 7 %.
-        LiquidIconDrop(v.glifo, tone: LiquidColor.tinta700,
+        // Gota en el HUE de la métrica (revisión del dueño): el átomo de la familia teñido
+        // de la identidad de su señal (rosa/indigo) — glifo en el hue sobre su lavado al 7 %.
+        LiquidIconDrop(v.glifo, tone: v.hueMetrica,
                        size: Self.gotaSize, iconSize: 14, fillAlpha: 0.07)
     }
 
     private func nombre(_ v: Votante) -> some View {
         VStack(alignment: .leading, spacing: LiquidSpace.s050) {
+            // El título lleva el color de su métrica (revisión del dueño): amarra la fila a
+            // su señal. El estado del voto (verde/ámbar) sigue viviendo en el riel y la palabra.
             Text(verbatim: v.nombre)
                 .font(LiquidType.tituloFila)
-                .foregroundStyle(LiquidColor.tinta900)
+                .foregroundStyle(v.hueMetrica)
             Text(verbatim: v.sub)
                 .font(LiquidType.captionLectura)
                 .foregroundStyle(LiquidColor.tinta500)
@@ -353,18 +361,6 @@ public struct LiquidBoletaCard: View {
             .padding(.leading, LiquidSpace.s400 + Self.gotaSize + LiquidSpace.s300)
     }
 
-    /// La doble raya contable: el escrutinio está cerrado. Cero color, puro significado
-    /// documental (spec /ui, decisión no-genérica #3).
-    private var cierre: some View {
-        VStack(spacing: LiquidSpace.s050) {
-            Rectangle().fill(LiquidColor.tinta10).frame(height: 1)
-            Rectangle().fill(LiquidColor.tinta10).frame(height: 1)
-        }
-        .padding(.horizontal, LiquidSpace.s400)
-        .padding(.top, LiquidSpace.s200)
-        .padding(.bottom, LiquidSpace.s250)
-        .accessibilityHidden(true)
-    }
 }
 
 // MARK: - La ficha del vigilante

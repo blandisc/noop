@@ -1023,9 +1023,13 @@ enum LiquidHoyBuilder {
 
         return LiquidActa(
             titulo: String(localized: "Readiness"),
-            // Procedencia + sello de fecha: el micro-momento de acta oficial (/ux D2).
-            procedencia: String(localized: "Apple Health · this morning · \(selloFechaActa())"),
-            explicacion: String(localized: "The verdict for how you woke up: your signals against your own baseline. It's an approximation, not a diagnosis."),
+            // Procedencia SIN fecha (revisión del dueño): la fecha del día ya vive en el
+            // encabezado de Hoy; repetirla aquí confundía. Reusa la key ya traducida.
+            procedencia: String(localized: "Apple Health · this morning"),
+            // El ⓘ dice QUÉ es (una línea) — el hedge «aproximación» vive SOLO en «Cómo se
+            // calcula» para no repetir (revisión del dueño: el ⓘ y el método decían casi lo
+            // mismo).
+            explicacion: String(localized: "The verdict for how you woke up: your signals against your own baseline."),
             infoMostrar: String(localized: "Show explanation"),
             infoOcultar: String(localized: "Hide explanation"),
             nivel: palabraBoleta(prep: prep, hayVeredicto: hayVeredicto,
@@ -1048,13 +1052,6 @@ enum LiquidHoyBuilder {
             verMas: String(localized: "See more in Trends"),
             verMasHint: String(localized: "Opens the detail"),
             tono: actaTono(prep))
-    }
-
-    /// «4 AGO» — el sello de fecha del acta (estático: aquí no hay scrub que lo mueva).
-    private static func selloFechaActa() -> String {
-        let f = DateFormatter()
-        f.setLocalizedDateFormatFromTemplate("d MMM")
-        return f.string(from: Date()).uppercased(with: Locale.current)
     }
 
     /// La palabra grande de la boleta: la del héroe con veredicto (paridad /cso B1) o la
@@ -1090,9 +1087,12 @@ enum LiquidHoyBuilder {
 
         let sub: String
         if esAuto {
+            // El sub ESPECIFICA el tipo de FC (revisión del dueño): «de la noche» deja claro
+            // que es la FC en reposo derivada de la noche, no un promedio. El detalle completo
+            // (Apple Watch / fallback) vive en «Cómo se calcula».
             sub = votoEstado == .calibrando
                 ? String(localized: "learning your base")
-                : String(localized: "resting HR · against your base")
+                : String(localized: "acta.sub.fc", defaultValue: "overnight · against your base")
         } else {
             // FER-44 (gate /cso): el sueño se juzga contra el rango RECOMENDADO de salud
             // (piso poblacional ~7h, Hirshkowitz 2015), NO contra base personal — usar base
@@ -1151,7 +1151,11 @@ enum LiquidHoyBuilder {
                                // El wash dice «este voto volteó el veredicto»: sin
                                // veredicto no hay wash (Grok r1 HIGH 2).
                                fuera: estado.isOut && hayVeredicto, tonoVoto: tonoVoto,
-                               palabra: palabra, a11y: a11y)
+                               palabra: palabra,
+                               // Hue de identidad = el MISMO de la celda de la Matriz (rosa FC ·
+                               // indigo Sueño), vía token compartido: si cambia allá, cambia aquí.
+                               hueMetrica: esAuto ? LiquidColor.rosa : LiquidColor.indigo,
+                               a11y: a11y)
     }
 
     /// La frase-resumen bajo la palabra — sostiene el veredicto o cuenta el DESFASE de
@@ -1276,7 +1280,10 @@ enum LiquidHoyBuilder {
 
     private static func nombreEje(_ ax: Preparedness.Axis) -> String {
         switch ax {
-        case .autonomic: return String(localized: "Autonomic")
+        // «FC en reposo», no «Autonómico» (revisión del dueño): la fila vota SOLO con la FC
+        // en reposo (wRHR=1); «Autonómico» era jerga y un tercer nombre para la misma señal
+        // que la celda ya llama «FC en reposo». Reusa la MISMA key que la celda de la Matriz.
+        case .autonomic: return String(localized: "Resting HR")
         case .sleep: return String(localized: "Sleep")
         case .thermal: return String(localized: "Thermal")
         case .load: return String(localized: "Load")
@@ -1312,16 +1319,20 @@ enum LiquidHoyBuilder {
     }
 
     private static func plegableActa(prep: Preparedness.Read?) -> LiquidActa.Metodo {
-        var lineas: [String] = []
-        if let prep {
-            // v3: el eje autonómico LEE las 3 señales en reposo (para el desglose), pero VOTA
-            // solo con la FC en reposo (`wRHR=1`); VFC y respiración van de contexto. La línea
-            // nombra ambas cosas —cuántas se leyeron y cuál decide— sin implicar que las 3 votan.
-            lineas.append(String(localized: "Your autonomic axis reads \(prep.signalsPresent) of \(prep.signalsTotal) resting signals, but votes on just your resting heart rate; HRV and breathing ride along for context."))
-        }
-        lineas.append(String(localized: "A new verdict has to repeat two days in a row before it replaces the previous one."))
-        lineas.append(String(localized: "Apple's HRV is a daytime average, not a sleep-window measurement: this reads your resting signals against your own norm."))
-        lineas.append(String(localized: "O'Grady et al., 2024 · Task Force, 1996 · Plews et al., 2013. Approximate, no clinical claim."))
+        // «Cómo se calcula» es el CÓMO (la mecánica); el ⓘ ya dijo el QUÉ. Primera línea:
+        // QUÉ tipo de FC es (el dueño pidió especificarlo). Luego: los dos votos separados,
+        // la histéresis, y la cita. Se quitó el «lee X de Y señales» (confundía) y el hedge
+        // que ya no duplica al ⓘ.
+        let lineas: [String] = [
+            String(localized: "acta.metodo.fc",
+                   defaultValue: "Your resting HR is your lowest pulse of the night, measured by your Apple Watch; when it isn't worn to sleep, Cénit uses Apple Health's resting heart rate."),
+            String(localized: "acta.metodo.votos",
+                   defaultValue: "Your sleep and your resting HR are read as separate votes, so a bad night doesn't count twice. Your breathing and temperature only watch; they don't vote here."),
+            String(localized: "acta.metodo.histeresis",
+                   defaultValue: "A new verdict has to repeat two days in a row before it replaces the previous one."),
+            String(localized: "acta.metodo.cita",
+                   defaultValue: "O'Grady et al., 2024 · Task Force, 1996 · Plews et al., 2013. Approximate, no clinical claim."),
+        ]
         return .init(titulo: String(localized: "How it's calculated"),
                      mostrar: String(localized: "Show method"),
                      ocultar: String(localized: "Hide method"),
