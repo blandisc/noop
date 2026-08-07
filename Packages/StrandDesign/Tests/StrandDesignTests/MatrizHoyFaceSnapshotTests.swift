@@ -69,7 +69,7 @@ final class MatrizHoyFaceSnapshotTests: XCTestCase {
                         unidad: "bpm", destacada: true,
                         sublabel: "in your range",
                         chartID: "matriz-rhr",
-                        chart: .carriles(puntos: fc, banda: 53...59, dominio: 45...75,
+                        chart: .regla(puntos: fc, banda: 53...59, dominio: 45...75,
                                          alertaHoy: .ninguna),
                         formaSello: .corazon)),
                 .nivel("Watches over you", manualID: nil),

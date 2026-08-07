@@ -157,11 +157,11 @@ extension LiquidHoyBuilder {
             destacada: true, vota: false,
             sublabel: sublabelFC(ptsFC: ptsFC, prep: prep, alerta: alertaFC),
             chartID: "matriz-rhr",
-            // Los carriles (FER-55): tu rango ±1σ como franja; blend inferior muere a 0
-            // sobre el papel. Sin banda usable, MatrizCarriles pinta solo la curva.
-            chart: .carriles(puntos: ptsFC, banda: bandaFC,
-                             dominio: dominioCarriles(ptsFC, banda: bandaFC, fallback: 45...75),
-                             alertaHoy: alertaFC),
+            // La regla al margen (FER-55, diseño final): tu rango ±1σ como tramo; relleno muere a 0
+            // sobre el papel. Sin banda usable, la regla muestra solo el capilar.
+            chart: .regla(puntos: ptsFC, banda: bandaFC,
+                          dominio: dominioCarriles(ptsFC, banda: bandaFC, fallback: 45...75),
+                          alertaHoy: alertaFC),
             // Decisión del dueño (FER-55): el corazón de PARTÍCULAS (contorno denso,
             // quieto — gemelo de la luna), no la gota de las hojas.
             formaSello: .corazon,

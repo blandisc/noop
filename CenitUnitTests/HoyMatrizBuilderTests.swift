@@ -170,7 +170,7 @@ final class HoyMatrizBuilderTests: XCTestCase {
             XCTAssertTrue(noches.allSatisfy { $0.alerta == .ninguna })
         } else { XCTFail("sueño") }
 
-        if case .carriles(_, _, _, let a) = seccion(model, id: "rhr")?.chart {
+        if case .regla(_, _, _, let a) = seccion(model, id: "rhr")?.chart {
             XCTAssertEqual(a, .ninguna)
         } else { XCTFail("fc") }
 
@@ -198,7 +198,7 @@ final class HoyMatrizBuilderTests: XCTestCase {
         } else { XCTFail("sleep chart") }
 
         // FC: 20 puntos en carriles (FER-55); VFC: línea rellena.
-        if case .carriles(let pts, _, _, _) = seccion(model, id: "rhr")?.chart {
+        if case .regla(let pts, _, _, _) = seccion(model, id: "rhr")?.chart {
             XCTAssertEqual(pts.count, 20)
         } else { XCTFail("rhr") }
         if case .lineaRellena(let pts, _, _, let alfa, _) = seccion(model, id: "hrv")?.chart {
@@ -258,7 +258,7 @@ final class HoyMatrizBuilderTests: XCTestCase {
             prep: prep(sentinel: sentinel(.quiet), bodyHistory: body), dias: dias))
         XCTAssertEqual(seccion(model, id: "rhr")?.sublabel, "in your range")
         // Y la banda sí viaja al chart (geografía visible).
-        if case .carriles(_, let banda, _, _) = seccion(model, id: "rhr")?.chart {
+        if case .regla(_, let banda, _, _) = seccion(model, id: "rhr")?.chart {
             XCTAssertEqual(banda, 53...59)
         } else { XCTFail("carriles") }
         // El scrub de HOY dice lo mismo que el sublabel (misma voz).
@@ -348,7 +348,7 @@ final class HoyMatrizBuilderTests: XCTestCase {
         if case .columnas(let n, _, _, _) = seccion(model, id: "sleep")?.chart {
             XCTAssertTrue(n.allSatisfy { $0.valor == nil }, "fantasma: sin datos")
         } else { XCTFail("sleep") }
-        if case .carriles(let pts, let banda, _, _) = seccion(model, id: "rhr")?.chart {
+        if case .regla(let pts, let banda, _, _) = seccion(model, id: "rhr")?.chart {
             XCTAssertTrue(pts.allSatisfy { $0 == nil })
             XCTAssertNil(banda)
         } else { XCTFail("rhr") }

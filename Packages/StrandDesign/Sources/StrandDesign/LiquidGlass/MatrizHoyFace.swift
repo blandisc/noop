@@ -14,11 +14,11 @@ public enum MatrizChartPayload: Sendable, Equatable {
                   referenciaTag: String, dominio: ClosedRange<Double>)
     case lineaRellena(puntos: [Double?], base: Double?, dominio: ClosedRange<Double>,
                       alfa: Double, alertaHoy: MedidorLunar.Alerta)
-    /// FC (FER-55): los tres carriles — tu rango como banda saturada, arriba/abajo en
-    /// el mismo hue desvaneciendo. `banda` = rango típico del motor (±1σ); nil → solo
-    /// la curva sobre el papel (sin banda no hay carriles honestos).
-    case carriles(puntos: [Double?], banda: ClosedRange<Double>?,
-                  dominio: ClosedRange<Double>, alertaHoy: MedidorLunar.Alerta)
+    /// FC (FER-55, diseño final): LA REGLA AL MARGEN — curva con relleno que muere a
+    /// nada + regla a la derecha (capilar de dominio, tramo de tu rango ±1σ, lectura
+    /// gemela de HOY). `banda` nil → la regla muestra solo el capilar.
+    case regla(puntos: [Double?], banda: ClosedRange<Double>?,
+               dominio: ClosedRange<Double>, alertaHoy: MedidorLunar.Alerta)
     case lineaSerena(puntos: [Double?], banda: ClosedRange<Double>?,
                      dominio: ClosedRange<Double>, alertaHoy: MedidorLunar.Alerta)
     case rielZona(p: Double?, zona: ClosedRange<Double>, estela: [Double],
@@ -595,9 +595,9 @@ public struct MatrizHoyFace: View {
         case .lineaRellena(let pts, let base, let dom, let alfa, let alerta):
             MatrizLineaRellena(chartID: chartID, puntos: pts, base: base, dominio: dom,
                                hue: hue, alfa: alfa, alertaHoy: alerta)
-        case .carriles(let pts, let banda, let dom, let alerta):
-            MatrizCarriles(chartID: chartID, puntos: pts, banda: banda, dominio: dom,
-                           hue: hue, alertaHoy: alerta, resaltado: resaltado)
+        case .regla(let pts, let banda, let dom, let alerta):
+            MatrizRegla(chartID: chartID, puntos: pts, banda: banda, dominio: dom,
+                        hue: hue, alertaHoy: alerta, resaltado: resaltado)
         case .lineaSerena(let pts, let banda, let dom, let alerta):
             MatrizLineaSerena(chartID: chartID, puntos: pts, banda: banda, dominio: dom,
                               hue: hue, alertaHoy: alerta)
@@ -661,6 +661,12 @@ private struct ScrubGesto: ViewModifier {
         if case .columnas = seccion.chart { return false }
         return true
     }
+    /// La regla reserva su zona a la derecha: el mapeo del dedo debe usar el MISMO
+    /// ancho útil que usa la curva, o el índice se corre cerca del margen.
+    private var insetDerecho: CGFloat {
+        if case .regla = seccion.chart { return MatrizTokens.reglaZona }
+        return MatrizTokens.chartInset
+    }
     /// Vivo mientras el dedo arrastra; SwiftUI lo devuelve a `false` al terminar O cancelar.
     @GestureState private var arrastrando = false
 
@@ -684,7 +690,7 @@ private struct ScrubGesto: ViewModifier {
                                 // vertical es intención de scroll, no de leer noches.
                                 guard abs(g.translation.width) >= abs(g.translation.height) else { return }
                                 let inset = MatrizTokens.chartInset
-                                let w = geo.size.width - inset * 2
+                                let w = geo.size.width - inset - insetDerecho
                                 guard w > 0, noches.count > 1 else { return }
                                 let rel = min(max((g.location.x - inset) / w, 0), 0.9999)
                                 let i = esSerie
