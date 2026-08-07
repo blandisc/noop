@@ -122,7 +122,10 @@ public struct MatrizRegla: View {
                     .position(p)
                 // El aro de alerta §8 (gramática) — SOLO sobre HOY, jamás sobre una
                 // lectura histórica del scrub (panel C, DeepSeek ALTA #1).
-                if i == hoyIdx, alertaHoy != .ninguna {
+                // Invariante de la familia (marcarHoy): el aro SOLO si HOY es de
+                // verdad el último índice CON dato de la serie — con hoy vacío, el
+                // último no-nil es historia y no lleva aro (r2, Grok MEDIA #1).
+                if i == hoyIdx, i == puntos.count - 1, alertaHoy != .ninguna {
                     aros(alerta: alertaHoy)
                         // Mismo tercer tiempo que las gotas (panel C, Grok #2): los
                         // anillos jamás flotan solos antes del asentado.
@@ -139,11 +142,13 @@ public struct MatrizRegla: View {
             if let i = leidoIdx, puntos[i] == nil {
                 let x = xEn(i, size: size)
                 Path { p in
-                    p.move(to: CGPoint(x: x, y: 0))
-                    p.addLine(to: CGPoint(x: x, y: size.height))
+                    p.move(to: CGPoint(x: x, y: MatrizTokens.chartPadV))
+                    p.addLine(to: CGPoint(x: x, y: size.height - MatrizTokens.chartPadV))
                 }
                 .stroke(hue.opacity(0.35),
                         style: StrokeStyle(lineWidth: 1.5, lineCap: .round, dash: [2, 3]))
+                // Mismo tercer tiempo que el resto de marcadores (r2, DeepSeek BAJA).
+                .opacity(asentado ? 1 : 0)
             }
         }
         // El deslizado del scrub: los gemelos viajan, no se teletransportan.
@@ -254,12 +259,9 @@ private struct TrazoCurva: Shape {
     func path(in rect: CGRect) -> Path {
         var path = Path()
         let tramos = MatrizRegla.tramos(puntos).filter { $0.count > 1 }
-        guard let principal = tramos.max(by: { $0.count < $1.count }) else { return path }
-        for tramo in tramos {
-            let esPrincipal = tramo.elementsEqual(principal)
-            if esPrincipal == soloPrincipal {
-                path.addPath(MatrizRegla.catmull(tramo))
-            }
+        guard let iPrincipal = MatrizRegla.indicePrincipal(tramos) else { return path }
+        for (i, tramo) in tramos.enumerated() where (i == iPrincipal) == soloPrincipal {
+            path.addPath(MatrizRegla.catmull(tramo))
         }
         return path
     }
@@ -295,6 +297,17 @@ private struct HiloLectura: Shape {
 }
 
 extension MatrizRegla {
+    /// Índice del tramo PRINCIPAL (el más largo; empate → el más reciente, que es el
+    /// que contiene a HOY). Estática para testearla (panel C r2, DeepSeek MEDIA).
+    static func indicePrincipal(_ tramos: [[CGPoint]]) -> Int? {
+        guard !tramos.isEmpty else { return nil }
+        var mejor = 0
+        for (i, t) in tramos.enumerated() where t.count >= tramos[mejor].count {
+            mejor = i
+        }
+        return mejor
+    }
+
     /// Tramos contiguos no-nil (mismo criterio que MatrizChartDraw.tramos).
     static func tramos(_ puntos: [CGPoint?]) -> [[CGPoint]] {
         var out: [[CGPoint]] = []
@@ -341,6 +354,15 @@ extension MatrizRegla {
             .frame(height: MatrizTokens.alturaLinea)
         MatrizRegla(chartID: "regla-sinbanda", puntos: pts, banda: nil,
                     dominio: 43...56, hue: LiquidColor.rosa)
+            .frame(height: MatrizTokens.alturaLinea)
+        // Doble aro de alarma sobre HOY (§8).
+        MatrizRegla(chartID: "regla-alarma", puntos: pts, banda: 47...53,
+                    dominio: 43...56, hue: LiquidColor.rosa, alertaHoy: .alarma)
+            .frame(height: MatrizTokens.alturaLinea)
+        // Scrub sobre un HUECO: solo el hilo fantasma señala (gotas escondidas).
+        MatrizRegla(chartID: "regla-hueco",
+                    puntos: pts.enumerated().map { i, v in (7...9).contains(i) ? nil : v },
+                    banda: 47...53, dominio: 43...56, hue: LiquidColor.rosa, resaltado: 8)
             .frame(height: MatrizTokens.alturaLinea)
     }
     .padding(24)

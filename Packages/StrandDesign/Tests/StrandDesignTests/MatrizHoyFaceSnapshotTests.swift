@@ -210,8 +210,8 @@ final class MatrizHoyFaceSnapshotTests: XCTestCase {
                         id: "rhr", hue: LiquidColor.rosa,
                         titulo: "Resting HR", valor: "72",
                         chartID: "matriz-rhr",
-                        chart: .lineaRellena(puntos: fc, base: 56, dominio: 45...80,
-                                             alfa: 1.0, alertaHoy: .atencion)),
+                        chart: .regla(puntos: fc, banda: 53...59, dominio: 45...80,
+                                      alertaHoy: .atencion)),
                     der: MatrizSeccion(
                         id: "hrv", hue: LiquidColor.cian,
                         titulo: "HRV", valor: "38 ms",

@@ -56,6 +56,17 @@ final class MatrizReglaTests: XCTestCase {
         }
     }
 
+    // MARK: indicePrincipal — el trim escribe el tramo correcto
+
+    func test_indicePrincipal_mas_largo_y_empate_reciente() {
+        let a = CGPoint(x: 1, y: 1), b = CGPoint(x: 2, y: 2), c = CGPoint(x: 3, y: 3)
+        // El más largo gana.
+        XCTAssertEqual(MatrizRegla.indicePrincipal([[a, b], [a, b, c], [a]]), 1)
+        // Empate → el MÁS RECIENTE (contiene a HOY).
+        XCTAssertEqual(MatrizRegla.indicePrincipal([[a, b], [b, c]]), 1)
+        XCTAssertNil(MatrizRegla.indicePrincipal([]))
+    }
+
     func test_xIndice_serie_de_uno_no_divide_por_cero() {
         _ = MatrizRegla.xIndice(0, count: 1, width: 300)   // no crash
     }
