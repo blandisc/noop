@@ -133,7 +133,7 @@ public struct OrbeVivo: View {
     /// fija la nube, cero shimmer y cero costo por frame.
     private static func dibujarCorazon(_ ctx: GraphicsContext, centro: CGPoint,
                                        radio: CGFloat, hue: Color, faseID: String) {
-        let esc = Double(radio) * 0.072     // la paramétrica vive en ±16; a marco de sello
+        let esc = Double(radio) * 0.062     // ±16 de la paramétrica → mismo Ø que la luna
         let yCentro = -2.3                   // centra el peso vertical (cúspide abajo)
         // Paramétrica clásica del corazón: x=16sin³t, y=13cos t−5cos2t−2cos3t−cos4t.
         // Lóbulos arriba, cúspide abajo (en pantalla, y invertida).
@@ -143,35 +143,55 @@ public struct OrbeVivo: View {
             return CGPoint(x: centro.x + CGFloat(x) * esc,
                            y: centro.y - CGFloat(y - yCentro) * esc)
         }
-        // 1 · CONTORNO — puntos parejos sobre la curva = silueta NÍTIDA. Motas plenas.
-        let nContorno = min(64, max(30, Int(radio * 3.2)))
-        let prBorde = 0.9 * (0.55 + radio / 40)
+        // El contorno como POLÍGONO (para el test dentro/fuera del relleno uniforme).
+        let nContorno = min(72, max(36, Int(radio * 3.6)))
+        var poligono: [CGPoint] = []
+        poligono.reserveCapacity(nContorno)
         for k in 0..<nContorno {
-            let tt = Double(k) / Double(nContorno) * 2 * .pi
-            let c = punto(tt)
-            ctx.fill(Path(ellipseIn: CGRect(x: c.x - prBorde, y: c.y - prBorde,
-                                            width: prBorde * 2, height: prBorde * 2)),
-                     with: .color(hue))
+            poligono.append(punto(Double(k) / Double(nContorno) * 2 * .pi))
         }
-        // 2 · RELLENO tenue — motas chicas por copias ENCOGIDAS del contorno (jamás se
-        // salen de la silueta). PRNG determinista: misma nube cada frame.
+        // 1 · RELLENO UNIFORME primero (debajo): rejection-sampling dentro del polígono,
+        // DENSO como la luna. PRNG determinista → misma nube cada frame.
         var estado = UInt64(MatrizDither.semilla(chartID: faseID, index: 7)) | 1
         func rnd() -> Double {
             estado ^= estado << 13; estado ^= estado >> 7; estado ^= estado << 17
             return Double(estado % 100_000) / 100_000
         }
-        let nRelleno = min(90, max(28, Int(0.55 * radio * radio)))
-        let prIn = 0.6 * (0.5 + radio / 40)
-        for _ in 0..<nRelleno {
-            let tt = rnd() * 2 * .pi
-            let r = 0.28 + rnd() * 0.6       // fracción hacia el centro (nunca el borde)
-            let b = punto(tt)
-            let cx = centro.x + (b.x - centro.x) * CGFloat(r)
-            let cy = centro.y + (b.y - centro.y) * CGFloat(r)
-            let alfa = 0.30 + rnd() * 0.26
-            ctx.fill(Path(ellipseIn: CGRect(x: cx - prIn, y: cy - prIn,
+        func dentro(_ px: CGFloat, _ py: CGFloat) -> Bool {
+            var d = false, j = poligono.count - 1
+            for i in 0..<poligono.count {
+                let a = poligono[i], b = poligono[j]
+                if (a.y > py) != (b.y > py),
+                   px < (b.x - a.x) * (py - a.y) / (b.y - a.y) + a.x { d.toggle() }
+                j = i
+            }
+            return d
+        }
+        let minX = poligono.map(\.x).min() ?? centro.x
+        let maxX = poligono.map(\.x).max() ?? centro.x
+        let minY = poligono.map(\.y).min() ?? centro.y
+        let maxY = poligono.map(\.y).max() ?? centro.y
+        // Densidad calcada de la luna (~0.4 pt²·1.35 por partícula): misma sensación.
+        let nRelleno = min(180, max(48, Int(0.55 * radio * radio)))
+        let prIn = 0.62 * (0.55 + radio / 44)
+        var puestas = 0, intentos = 0
+        while puestas < nRelleno && intentos < nRelleno * 40 {
+            intentos += 1
+            let px = minX + CGFloat(rnd()) * (maxX - minX)
+            let py = minY + CGFloat(rnd()) * (maxY - minY)
+            guard dentro(px, py) else { continue }
+            let alfa = 0.5 + rnd() * 0.4          // como la luna: motas plenas, no fantasmas
+            ctx.fill(Path(ellipseIn: CGRect(x: px - prIn, y: py - prIn,
                                             width: prIn * 2, height: prIn * 2)),
                      with: .color(hue.opacity(alfa)))
+            puestas += 1
+        }
+        // 2 · CONTORNO encima — motas parejas sobre la curva = silueta nítida y plena.
+        let prBorde = 0.85 * (0.55 + radio / 44)
+        for c in poligono {
+            ctx.fill(Path(ellipseIn: CGRect(x: c.x - prBorde, y: c.y - prBorde,
+                                            width: prBorde * 2, height: prBorde * 2)),
+                     with: .color(hue))
         }
     }
 }
