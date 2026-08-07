@@ -530,10 +530,15 @@ public struct LiquidEcosistema: View {
         ForEach(Array(senales.prefix(2).enumerated()), id: \.element.id) { i, senal in
             let centro = i == 0 ? G.p1 : G.p2
             let etiqueta = i == 0 ? rotulos.reposo : rotulos.sueno
+            // El rótulo toma el HUE de su orbe al separarse (revisión del dueño): REPOSO
+            // rosa, SUEÑO indigo — el mismo color de su métrica en la Matriz de abajo. En
+            // atención (votó fuera) cede al rojo semántico, como su número.
+            let hueEtiqueta = i == 0 ? LiquidColor.rosa : LiquidColor.indigo
             VStack(spacing: LiquidSpace.s050) {
                 Text(etiqueta)
                     .font(LiquidType.micro).tracking(LiquidType.microTracking)
-                    .foregroundStyle(LiquidColor.tinta700)   // FER-45: contraste legible
+                    .foregroundStyle(senal.state == .atencion
+                                     ? LiquidColor.negativo : hueEtiqueta)
             }
             .position(x: centro.x, y: 74)
             // Opción 2 «escrito en partículas» (decisión del dueño /inject, tras probar
@@ -611,10 +616,13 @@ public struct LiquidEcosistema: View {
         let rOrbe = Sim.Geometria.radioGuardianSeparado
         let tinta = fuera ? LiquidColor.atencionTexto : LiquidColor.tinta900
         let materia = fuera ? LiquidColor.atencionTexto : LiquidColor.azul
+        // El rótulo toma el HUE de su vigía al separarse (revisión del dueño): TEMPERATURA
+        // dorado, RESPIRACIÓN azul — su identidad en la Matriz. Fuera de rango cede al rojo.
+        let hueRotulo = lado < 0 ? LiquidColor.doradoTemp : LiquidColor.azul
         Text(rotulo)
             .font(LiquidType.orbita).tracking(LiquidType.orbitaTracking)
             .fontWeight(.medium)
-            .foregroundStyle(tinta)
+            .foregroundStyle(fuera ? LiquidColor.atencionTexto : hueRotulo)
             .fixedSize()
             .position(x: x, y: 6)
         // (El puente de motas al número murió — revisión del dueño: la conexión que
