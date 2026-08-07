@@ -44,18 +44,22 @@ public struct LiquidAutonomico: Sendable {
         public let fuera: Bool
         /// Nota opcional bajo la fila, ya localizada. `nil` = sin nota.
         public let nota: String?
+        /// El hue de IDENTIDAD de la señal (rosa FC · cian VFC) — el mismo de su celda en la
+        /// Matriz. `nil` = sin identidad (tinta), p. ej. sin base (revisión del dueño, Opción B).
+        public let hueMetrica: Color?
         /// Label compuesto de VoiceOver, YA localizado (el color no habla: el estado «fuera» y el
         /// peso del voto tienen que ser audibles).
         public let a11y: String
 
         public init(id: String, etiqueta: String, estado: String, voto: String?,
-                    fuera: Bool, nota: String? = nil, a11y: String) {
+                    fuera: Bool, nota: String? = nil, hueMetrica: Color? = nil, a11y: String) {
             self.id = id
             self.etiqueta = etiqueta
             self.estado = estado
             self.voto = voto
             self.fuera = fuera
             self.nota = nota
+            self.hueMetrica = hueMetrica
             self.a11y = a11y
         }
     }
@@ -194,6 +198,9 @@ public struct LiquidSignalFila: Sendable, Identifiable {
     public let valorTono: Color?
     public let fuera: Bool
     public let nota: String?
+    /// El hue de IDENTIDAD (rosa FC · cian VFC): tiñe el punto y el nombre de la fila del eje.
+    /// `nil` = tinta (sin base). No aplica a las filas del guardián (usan gota-icono).
+    public let hueMetrica: Color?
     public let a11y: String
     /// `nil` = punto del eje; con glifo = gota del guardián.
     public let icono: LiquidIcon.Glyph?
@@ -203,7 +210,7 @@ public struct LiquidSignalFila: Sendable, Identifiable {
 
     public init(id: String, etiqueta: String, estado: String? = nil, voto: String? = nil,
                 valor: String? = nil, valorTono: Color? = nil, fuera: Bool,
-                nota: String? = nil, a11y: String,
+                nota: String? = nil, hueMetrica: Color? = nil, a11y: String,
                 icono: LiquidIcon.Glyph? = nil, iconoTono: Color? = nil,
                 anillo: Bool = false) {
         self.id = id
@@ -214,6 +221,7 @@ public struct LiquidSignalFila: Sendable, Identifiable {
         self.valorTono = valorTono
         self.fuera = fuera
         self.nota = nota
+        self.hueMetrica = hueMetrica
         self.a11y = a11y
         self.icono = icono
         self.iconoTono = iconoTono
@@ -223,7 +231,8 @@ public struct LiquidSignalFila: Sendable, Identifiable {
     /// Proyección del modelo del eje autonómico.
     public init(_ senal: LiquidAutonomico.Senal) {
         self.init(id: senal.id, etiqueta: senal.etiqueta, estado: senal.estado,
-                  voto: senal.voto, fuera: senal.fuera, nota: senal.nota, a11y: senal.a11y)
+                  voto: senal.voto, fuera: senal.fuera, nota: senal.nota,
+                  hueMetrica: senal.hueMetrica, a11y: senal.a11y)
     }
 }
 
@@ -333,7 +342,10 @@ public struct LiquidSignalRow<Mini: View>: View {
                     Text(verbatim: fila.etiqueta)
                         .font(.system(size: etiquetaPt))
                         .fontWeight(fila.fuera ? .semibold : .regular)
-                        .foregroundStyle(fila.fuera ? LiquidColor.tinta900 : LiquidColor.tinta700)
+                        // El nombre lleva el hue de IDENTIDAD de su señal (rosa FC · cian VFC);
+                        // fuera de rango cede al tinta plena del énfasis. Sin hue = tinta700.
+                        .foregroundStyle(fila.fuera ? LiquidColor.tinta900
+                                         : (fila.hueMetrica ?? LiquidColor.tinta700))
                     Spacer(minLength: LiquidSpace.s200)
                     if let valor = fila.valor {
                         Text(verbatim: valor)
@@ -394,8 +406,9 @@ public struct LiquidSignalRow<Mini: View>: View {
                     }
                 }
         } else {
+            // El punto del eje toma el hue de identidad de su señal; fuera = ámbar; sin hue = tinta10.
             Circle()
-                .fill(fila.fuera ? LiquidColor.atencion : LiquidColor.tinta10)
+                .fill(fila.fuera ? LiquidColor.atencion : (fila.hueMetrica ?? LiquidColor.tinta10))
                 .frame(width: LiquidSignalMarcaGeo.puntoDiametro,
                        height: LiquidSignalMarcaGeo.puntoDiametro)
         }
@@ -423,8 +436,10 @@ enum LiquidAutonomicoFixtures {
     static let metodoClave = "un solo voto"
 
     static func senal(_ id: String, _ etiqueta: String, _ estado: String, _ voto: String?,
-                      fuera: Bool = false, nota: String? = nil) -> LiquidAutonomico.Senal {
+                      fuera: Bool = false, nota: String? = nil,
+                      hue: Color? = nil) -> LiquidAutonomico.Senal {
         .init(id: id, etiqueta: etiqueta, estado: estado, voto: voto, fuera: fuera, nota: nota,
+              hueMetrica: hue,
               a11y: "\(etiqueta), \(estado.lowercased())"
                   + (voto.map { ", \($0) del voto" } ?? "")
                   + (fuera ? ", fuera de tu rango" : ""))
@@ -433,36 +448,34 @@ enum LiquidAutonomicoFixtures {
     static func base(nivel: String?, sinLectura: String? = nil, conteo: String,
                      senales: [LiquidAutonomico.Senal], enRango: Bool) -> LiquidAutonomico {
         LiquidAutonomico(
-            titulo: "AUTONÓMICO",
+            titulo: "En reposo",
             procedencia: "Apple Salud · esta mañana",
-            explicacion: "Tu sistema nervioso en reposo, leído sobre todo desde tu pulso en reposo comparado con tu propia base. La VFC y la respiración también se muestran, pero no cargan el voto. Una aproximación, no un diagnóstico.",
+            explicacion: "Tu cuerpo en reposo, leído sobre todo desde tu FC en reposo contra tu propia base. La VFC también se muestra, pero no carga el voto. Una aproximación, no un diagnóstico.",
             infoMostrar: "Mostrar explicación", infoOcultar: "Ocultar explicación",
             nivel: nivel, sinLectura: sinLectura, conteo: conteo,
             metodo: metodo, metodoClave: metodoClave,
             senales: senales, plegable: plegable, enRango: enRango)
     }
 
-    /// En rango: la FC en reposo (el votante) amaneció en tu rango. VFC/respiración van como
-    /// referencia. La lista queda ENTERAMENTE gris — el único color es la palabra verde.
+    /// En rango: la FC en reposo (el votante) amaneció en tu rango. La VFC va como referencia.
+    /// Cada señal en su hue de identidad (rosa FC · cian VFC); la palabra del veredicto en verde.
     static let enRango = base(
         nivel: "En tu rango",
         conteo: "Tu pulso en reposo amaneció en tu rango.",
         senales: [
-            senal("rhr", "FC en reposo", "En tu rango", nil),
-            senal("hrv", "VFC", "En tu rango", "referencia"),
-            senal("resp", "Respiración", "En tu rango", "referencia"),
+            senal("rhr", "FC en reposo", "En tu rango", nil, hue: LiquidColor.rosa),
+            senal("hrv", "VFC", "En tu rango", "referencia", hue: LiquidColor.cian),
         ],
         enRango: true)
 
-    /// Fuera: la FC en reposo —el único votante en v3— amaneció por arriba de tu base. Solo esa
-    /// fila se ilumina; VFC/respiración siguen como referencia gris (no votan, no tiñen).
+    /// Fuera: la FC en reposo —el único votante— amaneció por arriba de tu base. Solo esa fila
+    /// se ilumina (ámbar); la VFC sigue como referencia en su cian (no vota, no tiñe «fuera»).
     static let unaFuera = base(
         nivel: "Fuera de tu rango",
         conteo: "Tu pulso en reposo amaneció por arriba de tu base.",
         senales: [
-            senal("rhr", "FC en reposo", "Arriba de tu base", nil, fuera: true),
-            senal("hrv", "VFC", "Debajo de tu base", "referencia"),
-            senal("resp", "Respiración", "En tu rango", "referencia"),
+            senal("rhr", "FC en reposo", "Arriba de tu base", nil, fuera: true, hue: LiquidColor.rosa),
+            senal("hrv", "VFC", "Debajo de tu base", "referencia", hue: LiquidColor.cian),
         ],
         enRango: false)
 
@@ -474,7 +487,6 @@ enum LiquidAutonomicoFixtures {
         senales: [
             senal("rhr", "FC en reposo", "Sin base", nil),
             senal("hrv", "VFC", "Sin base", nil),
-            senal("resp", "Respiración", "Sin base", nil),
         ],
         enRango: false)
 }

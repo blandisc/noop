@@ -1399,16 +1399,18 @@ enum LiquidHoyBuilder {
         let filas: [LiquidAutonomico.Senal]
         if signals.isEmpty {
             let sinDato = caption(for: .noData)
-            filas = [Preparedness.Signal.rhr, .hrv, .resp].map { sig in
+            // Opción B (dueño): Respiración salió del desglose (vive en el Guardián). Sin base,
+            // sin hue (tinta).
+            filas = [Preparedness.Signal.rhr, .hrv].map { sig in
                 let etiqueta = nombreSenal(sig)
                 return LiquidAutonomico.Senal(id: sig.rawValue, etiqueta: etiqueta, estado: sinDato,
-                                              voto: nil, fuera: false, nota: nil,
+                                              voto: nil, fuera: false, nota: nil, hueMetrica: nil,
                                               a11y: "\(etiqueta), \(sinDato)")
             }
         } else {
-            // En v3 SOLO la FC en reposo vota (`wRHR=1`); VFC y respiración se muestran como
-            // READ-OUT (`share==0`) — no cargan el voto.
-            filas = signals.map { s in
+            // En v3 SOLO la FC en reposo vota (`wRHR=1`); la VFC se muestra como READ-OUT
+            // (`share==0`). Opción B (dueño): Respiración salió del desglose (vive en el Guardián).
+            filas = signals.filter { $0.signal != .resp }.map { s in
                 let etiqueta = nombreSenal(s.signal)
                 let est = estadoSenal(s)
                 let vota = s.share > 0
@@ -1427,14 +1429,21 @@ enum LiquidHoyBuilder {
                     .filter { !$0.isEmpty }.joined(separator: ", ")
                     + (fuera ? ", " + String(localized: "outside your range") : "")
                 return LiquidAutonomico.Senal(id: s.signal.rawValue, etiqueta: etiqueta, estado: est,
-                                              voto: voto, fuera: fuera, nota: nil, a11y: a11y)
+                                              voto: voto, fuera: fuera, nota: nil,
+                                              // Hue de identidad solo con base (sin base = tinta).
+                                              hueMetrica: hayBase ? hueSenal(s.signal) : nil,
+                                              a11y: a11y)
             }
         }
 
         return LiquidAutonomico(
-            titulo: String(localized: "Autonomic"),
+            // «En reposo», no «Autonómico» (Opción B del dueño): jerga fuera, y coincide con la
+            // etiqueta del orbe que abre esta hoja. Reusa la MISMA key que el orbe.
+            titulo: String(localized: "At rest"),
             procedencia: String(localized: "Apple Health · this morning"),
-            explicacion: String(localized: "Your resting nervous system, read mainly from your resting heart rate against your own base. HRV and breathing are shown too, but they don't carry the vote. An approximation, not a diagnosis."),
+            // Respiración salió de este desglose (vive en el Guardián), así que la explicación
+            // ya no la menciona: FC en reposo decide, la VFC acompaña.
+            explicacion: String(localized: "Your body at rest, read mainly from your resting HR against your own base. HRV is shown too, but it doesn't carry the vote. An approximation, not a diagnosis."),
             infoMostrar: String(localized: "Show explanation"),
             infoOcultar: String(localized: "Hide explanation"),
             nivel: hayBase ? (enRango ? String(localized: "In range")
@@ -1451,9 +1460,20 @@ enum LiquidHoyBuilder {
 
     private static func nombreSenal(_ s: Preparedness.Signal) -> String {
         switch s {
-        case .rhr: return String(localized: "Resting heart rate")
+        // «FC en reposo» (misma key que la celda y el acta), no «Frecuencia cardiaca en reposo».
+        case .rhr: return String(localized: "Resting HR")
         case .hrv: return String(localized: "HRV")
         case .resp: return String(localized: "Breathing")
+        }
+    }
+
+    /// El hue de identidad de cada señal (rosa FC · cian VFC) — el mismo de su celda en la
+    /// Matriz. Solo con base (sin base la hoja va en tinta). Respiración ya no aparece aquí.
+    private static func hueSenal(_ s: Preparedness.Signal) -> Color {
+        switch s {
+        case .rhr: return LiquidColor.rosa
+        case .hrv: return LiquidColor.cian
+        case .resp: return LiquidColor.azul
         }
     }
 
@@ -1498,7 +1518,10 @@ enum LiquidHoyBuilder {
               ocultar: String(localized: "Hide method"),
               lineas: [
                 String(localized: "Your resting heart rate against your own base is the vote: Apple's densest, most reliable signal, so it carries this axis on its own."),
-                String(localized: "HRV and breathing are shown for context but don't vote here. Apple's all-day HRV is too noisy to trust, and breathing is watched by the sentinel alongside your temperature."),
+                // Respiración salió de esta lista (Opción B): la línea ya no dice «se muestra»,
+                // y explica DÓNDE quedó (el Guardián) para que no se sienta perdida.
+                String(localized: "reposo.metodo.vfc",
+                       defaultValue: "HRV is shown for context but doesn't vote here: Apple's all-day HRV is too noisy to trust. Breathing isn't in this list; the sentinel watches it alongside your temperature."),
                 String(localized: "Apple's HRV is a daytime average, not a sleep-window reading, so it stays a reference here rather than a vote."),
                 String(localized: "O'Grady et al., 2024 · Task Force, 1996 · Plews et al., 2013. Approximate, no clinical claim."),
               ])

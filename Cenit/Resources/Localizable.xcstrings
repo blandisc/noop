@@ -54695,6 +54695,40 @@
           }
         }
       }
+    },
+    "Your body at rest, read mainly from your resting HR against your own base. HRV is shown too, but it doesn't carry the vote. An approximation, not a diagnosis." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your body at rest, read mainly from your resting HR against your own base. HRV is shown too, but it doesn't carry the vote. An approximation, not a diagnosis."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu cuerpo en reposo, leído sobre todo desde tu FC en reposo contra tu propia base. La VFC también se muestra, pero no carga el voto. Una aproximación, no un diagnóstico."
+          }
+        }
+      }
+    },
+    "reposo.metodo.vfc" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "HRV is shown for context but doesn't vote here: Apple's all-day HRV is too noisy to trust. Breathing isn't in this list; the sentinel watches it alongside your temperature."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La VFC se muestra de contexto pero aquí no vota: la VFC de todo el día de Apple es demasiado ruidosa para confiar en ella. La respiración no está en esta lista, la vigila el Guardián junto con tu temperatura."
+          }
+        }
+      }
     }
   },
   "version" : "1.1"
