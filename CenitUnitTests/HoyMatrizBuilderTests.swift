@@ -169,7 +169,7 @@ final class HoyMatrizBuilderTests: XCTestCase {
             XCTAssertTrue(noches.allSatisfy { $0.alerta == .ninguna })
         } else { XCTFail("sueño") }
 
-        if case .lineaRellena(_, _, _, _, let a) = seccion(model, id: "rhr")?.chart {
+        if case .carriles(_, _, _, let a) = seccion(model, id: "rhr")?.chart {
             XCTAssertEqual(a, .ninguna)
         } else { XCTFail("fc") }
 
@@ -196,10 +196,9 @@ final class HoyMatrizBuilderTests: XCTestCase {
             XCTAssertEqual(tag, "7 h")
         } else { XCTFail("sleep chart") }
 
-        // FC / VFC: 20 puntos, línea rellena.
-        if case .lineaRellena(let pts, _, _, let alfa, _) = seccion(model, id: "rhr")?.chart {
+        // FC: 20 puntos en carriles (FER-55); VFC: línea rellena.
+        if case .carriles(let pts, _, _, _) = seccion(model, id: "rhr")?.chart {
             XCTAssertEqual(pts.count, 20)
-            XCTAssertEqual(alfa, 1.0)
         } else { XCTFail("rhr") }
         if case .lineaRellena(let pts, _, _, let alfa, _) = seccion(model, id: "hrv")?.chart {
             XCTAssertEqual(pts.count, 20)
@@ -316,9 +315,9 @@ final class HoyMatrizBuilderTests: XCTestCase {
         if case .columnas(let n, _, _, _) = seccion(model, id: "sleep")?.chart {
             XCTAssertTrue(n.allSatisfy { $0.valor == nil }, "fantasma: sin datos")
         } else { XCTFail("sleep") }
-        if case .lineaRellena(let pts, let base, _, _, _) = seccion(model, id: "rhr")?.chart {
+        if case .carriles(let pts, let banda, _, _) = seccion(model, id: "rhr")?.chart {
             XCTAssertTrue(pts.allSatisfy { $0 == nil })
-            XCTAssertNil(base)
+            XCTAssertNil(banda)
         } else { XCTFail("rhr") }
         if case .rielZona(let p, _, let estela, _) = seccion(model, id: "carga")?.chart {
             XCTAssertNil(p)

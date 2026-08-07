@@ -69,8 +69,8 @@ final class MatrizHoyFaceSnapshotTests: XCTestCase {
                         unidad: "bpm", destacada: true,
                         sublabel: "in your range",
                         chartID: "matriz-rhr",
-                        chart: .lineaRellena(puntos: fc, base: 56, dominio: 45...75,
-                                             alfa: 1.0, alertaHoy: .ninguna))),
+                        chart: .carriles(puntos: fc, banda: 53...59, dominio: 45...75,
+                                         alertaHoy: .ninguna))),
                 .nivel("Watches over you", manualID: nil),
                 .full(MatrizSeccion(
                     id: "guardian", hue: LiquidColor.doradoTemp,

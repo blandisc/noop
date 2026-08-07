@@ -166,13 +166,19 @@ public enum Preparedness {
         public let rhrBaseCenter: Double?
         /// Centro de la base de SDNN de ESE día en unidades naturales (ms); ídem.
         public let hrvBaseCenter: Double?
+        /// Rango típico de FC de ESE día (`Baselines.normalRange`, ±1σ — el MISMO σ del
+        /// corte del veredicto `autonomicOutZ = −1`): la banda «tu rango» de la Matriz
+        /// (FER-55). Proyección pura del estado que ya existía; nil sin base usable.
+        public let rhrBand: ClosedRange<Double>?
         public init(day: String, rhrResolved: Double?, autonomicOrientedZ: Double?,
                     autonomicOut: Bool, sleepOut: Bool,
-                    rhrBaseCenter: Double?, hrvBaseCenter: Double?) {
+                    rhrBaseCenter: Double?, hrvBaseCenter: Double?,
+                    rhrBand: ClosedRange<Double>? = nil) {
             self.day = day; self.rhrResolved = rhrResolved
             self.autonomicOrientedZ = autonomicOrientedZ
             self.autonomicOut = autonomicOut; self.sleepOut = sleepOut
             self.rhrBaseCenter = rhrBaseCenter; self.hrvBaseCenter = hrvBaseCenter
+            self.rhrBand = rhrBand
         }
     }
 
@@ -549,6 +555,10 @@ public enum Preparedness {
             guard let state, state.usable else { return nil }
             return state.baseline
         }
+        func band(_ state: BaselineState?) -> ClosedRange<Double>? {
+            guard let state, state.usable else { return nil }
+            return Baselines.normalRange(state, k: 1)
+        }
         let all = ordered.indices.map { i in
             BodyNight(day: ordered[i].day,
                       rhrResolved: raws[i].rhrResolved,
@@ -556,7 +566,8 @@ public enum Preparedness {
                       autonomicOut: raws[i].autonomicOut,
                       sleepOut: raws[i].sleepOut,
                       rhrBaseCenter: center(priorStates.rhr?[i]),
-                      hrvBaseCenter: center(priorStates.hrv?[i]))
+                      hrvBaseCenter: center(priorStates.hrv?[i]),
+                      rhrBand: band(priorStates.rhr?[i]))
         }
         return Array(all.suffix(bodyHistoryWindow))
     }

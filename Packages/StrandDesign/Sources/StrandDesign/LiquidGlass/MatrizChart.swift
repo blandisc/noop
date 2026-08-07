@@ -363,6 +363,102 @@ public struct MatrizLineaRellena: View {
     }
 }
 
+// MARK: - MatrizCarriles (FC · FER-55)
+
+/// Los tres carriles de la FC: tu rango típico como la franja saturada del centro, y
+/// arriba/abajo el MISMO hue desvaneciendo — un solo blend vertical continuo, sin filos.
+/// El borde inferior muere a alfa 0 a propósito: la cara vive sobre el papel de Hoy y
+/// un corte duro contra el blanco se ve sucio (revisión del dueño). Los rieles del
+/// carril central son susurros (alfa bajo), no líneas. Curva + HOY por encima.
+public struct MatrizCarriles: View {
+    private let chartID: String
+    private let puntos: [Double?]
+    private let banda: ClosedRange<Double>?
+    private let dominio: ClosedRange<Double>
+    private let hue: Color
+    private let alertaHoy: MedidorLunar.Alerta
+    /// Índice resaltado por el scrub (hilo + punto en esa lectura).
+    private let resaltado: Int?
+
+    public init(chartID: String, puntos: [Double?], banda: ClosedRange<Double>?,
+                dominio: ClosedRange<Double>, hue: Color,
+                alertaHoy: MedidorLunar.Alerta = .ninguna, resaltado: Int? = nil) {
+        self.chartID = chartID
+        self.puntos = puntos
+        self.banda = banda
+        self.dominio = dominio
+        self.hue = hue
+        self.alertaHoy = alertaHoy
+        self.resaltado = resaltado
+    }
+
+    public var body: some View {
+        Canvas { ctx, size in
+            let count = puntos.count
+            guard count > 0, MatrizChartDraw.tieneDatos(puntos) else {
+                MatrizChartDraw.rejillaFantasma(ctx, size: size, chartID: chartID)
+                return
+            }
+            if let banda {
+                let yHi = MatrizChartDraw.yTop(banda.upperBound, domain: dominio,
+                                               height: size.height)
+                let yLo = MatrizChartDraw.yTop(banda.lowerBound, domain: dominio,
+                                               height: size.height)
+                let fHi = max(0, min(1, yHi / size.height))
+                let fLo = max(0, min(1, yLo / size.height))
+                // Un solo gradiente vertical: pico de presencia dentro de tu rango,
+                // desvaneciendo hacia arriba y MUY sutil hacia abajo (muere en 0 —
+                // nunca un corte contra el papel).
+                let g = Gradient(stops: [
+                    .init(color: hue.opacity(0.05), location: 0),
+                    .init(color: hue.opacity(MatrizTokens.carrilFueraAlfa), location: max(0, fHi - 0.03)),
+                    .init(color: hue.opacity(MatrizTokens.carrilRangoAlfa), location: fHi),
+                    .init(color: hue.opacity(MatrizTokens.carrilRangoAlfa), location: fLo),
+                    .init(color: hue.opacity(MatrizTokens.carrilFueraAlfa), location: min(1, fLo + 0.03)),
+                    .init(color: hue.opacity(0), location: 1),
+                ])
+                ctx.fill(Path(CGRect(origin: .zero, size: size)),
+                         with: .linearGradient(g, startPoint: .zero,
+                                               endPoint: CGPoint(x: 0, y: size.height)))
+                // Rieles-susurro del carril central.
+                for y in [yHi, yLo] {
+                    var riel = Path()
+                    riel.move(to: CGPoint(x: 0, y: y))
+                    riel.addLine(to: CGPoint(x: size.width, y: y))
+                    ctx.stroke(riel, with: .color(hue.opacity(MatrizTokens.carrilRielAlfa)),
+                               style: StrokeStyle(lineWidth: 1))
+                }
+            }
+            // La curva encima del blend (sin relleno propio: los carriles ya son el aire).
+            for tramo in MatrizChartDraw.tramos(puntos, count: count, width: size.width,
+                                                dominio: dominio, height: size.height) {
+                ctx.stroke(MatrizChartDraw.curva(tramo),
+                           with: .color(hue.opacity(MatrizTokens.lineaAlfa)),
+                           style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+            }
+            // Hilo del scrub sobre la lectura elegida.
+            if let i = resaltado, puntos.indices.contains(i), let v = puntos[i] {
+                // Misma proyección horizontal que la curva (xAt) — el hilo cae exacto.
+                let x = MatrizChartDraw.xAt(index: i, count: count, width: size.width)
+                let y = MatrizChartDraw.yTop(v, domain: dominio, height: size.height)
+                var hilo = Path()
+                hilo.move(to: CGPoint(x: x, y: max(y - 4, 0)))
+                hilo.addLine(to: CGPoint(x: x, y: size.height))
+                ctx.stroke(hilo, with: .color(hue.opacity(0.9)),
+                           style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
+                ctx.fill(Path(ellipseIn: CGRect(x: x - 3, y: y - 3, width: 6, height: 6)),
+                         with: .color(hue))
+            }
+            MatrizChartDraw.marcarHoy(ctx, puntos: puntos, count: count,
+                                      width: size.width, dominio: dominio,
+                                      height: size.height, hue: hue, alerta: alertaHoy)
+        }
+        .frame(maxWidth: .infinity, minHeight: MatrizChartDraw.defaultHeight,
+               idealHeight: MatrizChartDraw.defaultHeight)
+        .accessibilityHidden(true)
+    }
+}
+
 // MARK: - MatrizLineaSerena (GUARDIÁN)
 
 /// Filo central + banda ± tenue + curva serena casi plana (brincos fuera visibles).

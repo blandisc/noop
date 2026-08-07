@@ -14,6 +14,11 @@ public enum MatrizChartPayload: Sendable, Equatable {
                   referenciaTag: String, dominio: ClosedRange<Double>)
     case lineaRellena(puntos: [Double?], base: Double?, dominio: ClosedRange<Double>,
                       alfa: Double, alertaHoy: MedidorLunar.Alerta)
+    /// FC (FER-55): los tres carriles — tu rango como banda saturada, arriba/abajo en
+    /// el mismo hue desvaneciendo. `banda` = rango típico del motor (±1σ); nil → cae a
+    /// la línea rellena clásica (sin banda no hay carriles honestos).
+    case carriles(puntos: [Double?], banda: ClosedRange<Double>?,
+                  dominio: ClosedRange<Double>, alertaHoy: MedidorLunar.Alerta)
     case lineaSerena(puntos: [Double?], banda: ClosedRange<Double>?,
                      dominio: ClosedRange<Double>, alertaHoy: MedidorLunar.Alerta)
     case rielZona(p: Double?, zona: ClosedRange<Double>, estela: [Double],
@@ -48,6 +53,9 @@ public struct MatrizSeccion: Sendable, Identifiable, Equatable {
     public let renglones: [MatrizRenglon]?
     /// Silueta del orbe-sello (FER-55): `.luna` para Sueño, `.esfera` para el resto.
     public let formaSello: OrbeVivo.Forma
+    /// Glifo de gota (comparativa FER-55): si está presente, el sello es el
+    /// `LiquidIconDrop` de las hojas de resumen en vez del orbe de partículas.
+    public let glifoSello: LiquidIcon.Glyph?
     /// Scrub (FER-55): cada noche con su lectura ya formateada (valor + sublabel).
     /// El índice mapea 1:1 a las barras; el último = hoy. `nil` = celda sin scrub.
     public let scrubNoches: [ScrubNoche]?
@@ -60,6 +68,7 @@ public struct MatrizSeccion: Sendable, Identifiable, Equatable {
                 chip: MatrizHoyModel.ChipGuardian? = nil,
                 renglones: [MatrizRenglon]? = nil,
                 formaSello: OrbeVivo.Forma = .esfera,
+                glifoSello: LiquidIcon.Glyph? = nil,
                 scrubNoches: [ScrubNoche]? = nil) {
         self.id = id; self.hue = hue; self.huesPar = huesPar
         self.titulo = titulo; self.valor = valor
@@ -69,6 +78,7 @@ public struct MatrizSeccion: Sendable, Identifiable, Equatable {
         self.chartID = chartID; self.chart = chart; self.chip = chip
         self.renglones = renglones
         self.formaSello = formaSello
+        self.glifoSello = glifoSello
         self.scrubNoches = scrubNoches
     }
 
@@ -92,6 +102,7 @@ public struct MatrizSeccion: Sendable, Identifiable, Equatable {
             && lhs.unidad == rhs.unidad && lhs.destacada == rhs.destacada
             && lhs.vota == rhs.vota && lhs.terciaria == rhs.terciaria
             && lhs.formaSello == rhs.formaSello && lhs.scrubNoches == rhs.scrubNoches
+            && lhs.glifoSello == rhs.glifoSello
     }
 }
 
@@ -384,9 +395,18 @@ public struct MatrizHoyFace: View {
             HStack(alignment: .firstTextBaseline, spacing: MatrizTokens.selloTexto) {
                 // Orbe de partículas puro, sin glifo (revisión del dueño en vivo): el
                 // eco del héroe junto a cada título, con el hue de identidad.
-                OrbeVivo(radio: MatrizTokens.selloRadio, hue: s.huesPar?.0 ?? s.hue,
-                         semillaID: "sello-\(s.id)", huePar: s.huesPar?.1, fps: 12,
-                         forma: s.formaSello)
+                Group {
+                    if let glifo = s.glifoSello {
+                        // Comparativa FER-55: la gota de las hojas de resumen como sello.
+                        LiquidIconDrop(glifo, tone: s.hue,
+                                       size: MatrizTokens.selloRadio * 2.5,
+                                       iconSize: MatrizTokens.selloRadio * 1.4)
+                    } else {
+                        OrbeVivo(radio: MatrizTokens.selloRadio, hue: s.huesPar?.0 ?? s.hue,
+                                 semillaID: "sello-\(s.id)", huePar: s.huesPar?.1, fps: 12,
+                                 forma: s.formaSello)
+                    }
+                }
                     // El orbe no es texto: ancla su centro óptico al centro de las
                     // versalitas del título (hallazgo Grok-UI #3; afinado en vivo).
                     .alignmentGuide(.firstTextBaseline) { d in d.height * 0.78 }
@@ -396,19 +416,25 @@ public struct MatrizHoyFace: View {
                     .font(LiquidType.tituloFila)
                     .foregroundStyle(LiquidColor.tinta700)
                     .textCase(.uppercase)
-                    // Nunca partir palabra («RESTIN-G HR»): hasta 2 líneas por espacio
-                    // y encoge un poco antes de quebrar.
-                    .lineLimit(2)
+                    // UNA sola línea siempre (revisión del dueño: «RESTING HR» / «FC EN
+                    // REPOSO» se partían en dos en la celda gemela angosta). Encoge lo
+                    // mínimo para caber en la línea en vez de quebrar.
+                    .lineLimit(1)
                     .minimumScaleFactor(0.7)
                 Spacer(minLength: LiquidSpace.s200)
-                if let chip = s.chip {
-                    chipView(chip)
-                } else {
-                    valorCompuesto(s, valor: valorEfectivo(s))
+                // Valor + chevrón como un grupo alineado al CENTRO (el chevrón se centra
+                // con el numeral, no cae a su base — revisión del dueño); el grupo se
+                // ancla a la fila por la base del texto para no romper el ritmo del título.
+                HStack(alignment: .center, spacing: LiquidSpace.s150) {
+                    if let chip = s.chip {
+                        chipView(chip)
+                    } else {
+                        valorCompuesto(s, valor: valorEfectivo(s))
+                    }
+                    // Affordance de tap discreta (UX #6): cada sección abre su detalle.
+                    LiquidIcon(.chevron, size: 8, color: LiquidColor.tinta500)
                 }
-                // Affordance de tap discreta (UX #6): cada sección abre su detalle.
-                LiquidIcon(.chevron, size: 8, color: LiquidColor.tinta500)
-                    .alignmentGuide(.firstTextBaseline) { d in d.height * 0.85 }
+                .alignmentGuide(.firstTextBaseline) { d in d[.firstTextBaseline] }
             }
             let sub = sublabelEfectivo(s)
             if s.vota || sub != nil {
@@ -563,6 +589,9 @@ public struct MatrizHoyFace: View {
         case .lineaRellena(let pts, let base, let dom, let alfa, let alerta):
             MatrizLineaRellena(chartID: chartID, puntos: pts, base: base, dominio: dom,
                                hue: hue, alfa: alfa, alertaHoy: alerta)
+        case .carriles(let pts, let banda, let dom, let alerta):
+            MatrizCarriles(chartID: chartID, puntos: pts, banda: banda, dominio: dom,
+                           hue: hue, alertaHoy: alerta, resaltado: resaltado)
         case .lineaSerena(let pts, let banda, let dom, let alerta):
             MatrizLineaSerena(chartID: chartID, puntos: pts, banda: banda, dominio: dom,
                               hue: hue, alertaHoy: alerta)

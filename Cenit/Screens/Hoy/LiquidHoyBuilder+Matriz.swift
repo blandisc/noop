@@ -123,8 +123,29 @@ extension LiquidHoyBuilder {
         let keys20 = keys  // ya son 20
         let ptsFC: [Double?] = keys20.map { bodyByDay[$0]?.rhrResolved ?? byDay[$0].flatMap { $0.restingHr.map(Double.init) } }
         let baseFC = keys20.reversed().compactMap { bodyByDay[$0]?.rhrBaseCenter }.first
+        // La banda «tu rango» (±1σ del motor, el MISMO σ del corte del veredicto) — los
+        // carriles de la celda (FER-55). Sin base usable no hay carriles honestos.
+        let bandaFC = keys20.reversed().compactMap { bodyByDay[$0]?.rhrBand }.first
         let valorFC = HoyGramatica.valorODash(ptsFC.last.flatMap { $0 }) {
             "\(Int($0.rounded()))"
+        }
+        // Scrub de FC (paridad con Sueño): día + bpm + estado. El juicio del día es el
+        // del MOTOR (autonomicOrientedZ presente = juzgado; su Out = fuera). Sin juicio,
+        // solo la fecha — jamás afirmar rango sin dato.
+        let scrubFC: [MatrizSeccion.ScrubNoche] = keys20.enumerated().map { idx, day in
+            let offsetDesdeFin = keys20.count - 1 - idx
+            let fecha = weekdayLabel(offsetFromToday: offsetDesdeFin, now: i.now,
+                                     calendar: i.calendar, formatter: diaFmt)
+            guard let v = ptsFC[idx] else {
+                return .init(valor: "—",
+                             sublabel: String(format: String(localized: "matriz.sueno.scrub.sinlectura",
+                                                             defaultValue: "%@ · no reading"), fecha))
+            }
+            let noche = bodyByDay[day]
+            let estado: String? = (noche?.autonomicOrientedZ != nil)
+                ? ((noche?.autonomicOut == true) ? fueraRango : enRango) : nil
+            let sub = estado.map { "\(fecha) · \($0)" } ?? fecha
+            return .init(valor: "\(Int(v.rounded()))", sublabel: sub)
         }
         let seccionFC = MatrizSeccion(
             id: "rhr", hue: LiquidColor.rosa,
@@ -133,11 +154,17 @@ extension LiquidHoyBuilder {
             // FER-55: sin «vota» (simétrico con Sueño — la gemela no puede quedar sola
             // con el sello o el par se ve roto). El manual «?» explica quién vota.
             destacada: true, vota: false,
-            sublabel: sublabelFC(ptsFC: ptsFC, prep: prep, alerta: alertaFC),
+            sublabel: sublabelFC(ptsFC: ptsFC, banda: bandaFC, prep: prep, alerta: alertaFC),
             chartID: "matriz-rhr",
-            chart: .lineaRellena(puntos: ptsFC, base: baseFC,
-                                 dominio: dominioLinea(ptsFC, base: baseFC, fallback: 45...75),
-                                 alfa: 1.0, alertaHoy: alertaFC))
+            // Los carriles (FER-55): tu rango ±1σ como franja; blend inferior muere a 0
+            // sobre el papel. Sin banda usable, MatrizCarriles pinta solo la curva.
+            chart: .carriles(puntos: ptsFC, banda: bandaFC,
+                             dominio: dominioCarriles(ptsFC, banda: bandaFC, fallback: 45...75),
+                             alertaHoy: alertaFC),
+            // Comparativa FER-55 (dueño): FC con la gota/corazón de las hojas de
+            // resumen, junto a la luna de partículas de Sueño — para juzgar lado a lado.
+            glifoSello: .corazon,
+            scrubNoches: scrubFC)
 
         let ptsVFC: [Double?] = keys20.map { byDay[$0]?.avgHrv }
         let baseVFC = keys20.reversed().compactMap { bodyByDay[$0]?.hrvBaseCenter }.first
@@ -427,6 +454,21 @@ extension LiquidHoyBuilder {
     }
 
     /// Dominio de línea: min/max de puntos+base con padding, o fallback.
+    /// Dominio de los carriles de FC: la serie + la banda completa, con aire — la banda
+    /// nunca se corta en el borde del lienzo (los carriles de fuera necesitan existir).
+    static func dominioCarriles(_ pts: [Double?], banda: ClosedRange<Double>?,
+                                fallback: ClosedRange<Double>) -> ClosedRange<Double> {
+        var vals = pts.compactMap { $0 }
+        if let banda {
+            vals.append(banda.lowerBound)
+            vals.append(banda.upperBound)
+        }
+        guard let lo = vals.min(), let hi = vals.max() else { return fallback }
+        if lo == hi { return (lo - 5)...(hi + 5) }
+        let pad = (hi - lo) * 0.3   // aire extra: que se VEAN los carriles de fuera
+        return (lo - pad)...(hi + pad)
+    }
+
     private static func dominioLinea(_ pts: [Double?], base: Double?,
                                      fallback: ClosedRange<Double>) -> ClosedRange<Double> {
         var vals = pts.compactMap { $0 }
@@ -440,28 +482,24 @@ extension LiquidHoyBuilder {
     }
     /// Estado de la FC en palabras (P2, estudio en frío): la MISMA regla del Cosmos —
     /// z_mal ≤ −2 = «inusualmente baja» SIN alerta (§6: el lado bueno no alarma).
-    private static func sublabelFC(ptsFC: [Double?], prep: Preparedness.Read?,
+    /// FER-55: el sublabel de FC habla el idioma de los CARRILES — dentro/fuera de la
+    /// misma banda ±1σ que la celda pinta, para que texto y visual jamás se contradigan
+    /// («low · good side» decía bueno mientras la curva se veía fuera del carril).
+    private static func sublabelFC(ptsFC: [Double?], banda: ClosedRange<Double>?,
+                                   prep: Preparedness.Read?,
                                    alerta: MedidorLunar.Alerta) -> String? {
         if ptsFC.allSatisfy({ $0 == nil }) {
             return String(localized: "Getting to know you")
         }
         // Sin lectura de HOY o sin veredicto real (nil/lowSignal): no se afirma rango
         // (espejo del gate fantasma del Cosmos — Grok #3).
-        guard ptsFC.last.flatMap({ $0 }) != nil,
+        guard let hoy = ptsFC.last.flatMap({ $0 }),
               let v = prep?.verdict, v != .lowSignal else { return nil }
         if alerta != .ninguna { return nil }  // el aro ya habla; no duplicar.
-        // z_mal = −orientedZ del eje autonómico (compuesto; wRHR=1) — la MISMA
-        // derivación que usa la ancla del Cosmos (§6).
-        let zMal: Double? = {
-            guard let z = prep?.drivers.first(where: { $0.axis == .autonomic })?.orientedZ
-            else { return nil }
-            return -z
-        }()
-        if let z = zMal, z <= -2 {
-            return String(localized: "matriz.fc.baja",
-                          defaultValue: "low · good side")
-        }
-        return String(localized: "matriz.fc.enrango", defaultValue: "in your range")
+        guard let banda else { return nil }   // sin banda no se afirma rango.
+        return banda.contains(hoy)
+            ? String(localized: "matriz.rango.dentro", defaultValue: "in your range")
+            : String(localized: "matriz.rango.fuera", defaultValue: "out of your range")
     }
 
     /// Sublabel de carga + la zona ideal del ACWR (escala honesta, P2).

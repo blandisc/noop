@@ -50,6 +50,11 @@ public enum MatrizTokens {
     public static let rellenoAlfa: Double = 0.20
     /// HOY: el único elemento saturado — NUNCA multiplicado por el alfa de sección.
     public static let hoyAlfa: Double = 0.95
+    /// Carriles de FC (FER-55): presencia del carril «tu rango», los de fuera, y sus
+    /// rieles-susurro. El borde inferior del blend muere a 0 (papel blanco detrás).
+    public static let carrilRangoAlfa: Double = 0.22
+    public static let carrilFueraAlfa: Double = 0.10
+    public static let carrilRielAlfa: Double = 0.22
 
     // MARK: Marcadores (un solo radio de HOY en toda la familia)
 

@@ -36,14 +36,26 @@ public struct OrbeVivo: View {
 
     public var body: some View {
         let lado = radio * 2.5
-        // La rotación es de 0.12 rad/s: más cuadros no se ven, solo cuestan
-        // (hallazgos DeepSeek #2 / Grok #2 — perf de N orbes).
-        TimelineView(.animation(minimumInterval: 1.0 / fps, paused: reduceMotion)) { tl in
-            let t = reduceMotion ? 0 : tl.date.timeIntervalSinceReferenceDate
-            Canvas { ctx, size in
-                Self.dibujar(ctx, centro: CGPoint(x: size.width / 2, y: size.height / 2),
-                             radio: radio, hue: hue, huePar: huePar, t: t, faseID: semillaID,
-                             forma: forma)
+        Group {
+            if forma == .luna {
+                // La luna es QUIETA (revisión del dueño, FER-55): las motas fijas
+                // trazando el creciente — sin reloj, cero costo por frame.
+                Canvas { ctx, size in
+                    Self.dibujar(ctx, centro: CGPoint(x: size.width / 2, y: size.height / 2),
+                                 radio: radio, hue: hue, huePar: huePar, t: 0,
+                                 faseID: semillaID, forma: forma)
+                }
+            } else {
+                // La rotación es de 0.12 rad/s: más cuadros no se ven, solo cuestan
+                // (hallazgos DeepSeek #2 / Grok #2 — perf de N orbes).
+                TimelineView(.animation(minimumInterval: 1.0 / fps, paused: reduceMotion)) { tl in
+                    let t = reduceMotion ? 0 : tl.date.timeIntervalSinceReferenceDate
+                    Canvas { ctx, size in
+                        Self.dibujar(ctx, centro: CGPoint(x: size.width / 2, y: size.height / 2),
+                                     radio: radio, hue: hue, huePar: huePar, t: t,
+                                     faseID: semillaID, forma: forma)
+                    }
+                }
             }
         }
         .frame(width: lado, height: lado)
@@ -84,11 +96,13 @@ public struct OrbeVivo: View {
         let mordidaR = radio * 0.86
         // Fase estable por identidad: cada orbe mira distinto y gira desde su ángulo.
         let fase = Double(MatrizDither.semilla(chartID: faseID, index: 0) % 628) / 100.0
-        let rot = fase + t * 0.12
+        // La luna no rota ni tiembla: motas fijas con el contorno (dueño, FER-55).
+        let rot = forma == .luna ? fase : fase + t * 0.12
         for (i, dir) in direcciones(cuenta).enumerated() {
             let p = EcosistemaSimulacion.particula(
                 dir: dir, indice: i, centro: centro, radio: radio,
-                rotacion: rot, jitterAmp: radio > 10 ? 0.7 : 0, t: t, alfaK: 1.4)
+                rotacion: rot, jitterAmp: (forma == .luna || radio <= 10) ? 0 : 0.7,
+                t: forma == .luna ? 0 : t, alfaK: 1.4)
             if forma == .luna {
                 let dx = p.pos.x - mordida.x, dy = p.pos.y - mordida.y
                 if dx * dx + dy * dy < mordidaR * mordidaR { continue }
