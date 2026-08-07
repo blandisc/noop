@@ -1,7 +1,7 @@
 # Strand / Cénit — Design System
 
 > **One language: «Instrumento diurno».** Every screen reads like a precision instrument on warm
-> day paper: one dominant number, **color only on the datum**, hierarchy by space (not boxes),
+> day paper: one dominant number, **meaningful color (the value and each signal's identity)**, hierarchy by space (not boxes),
 > tabular numerics that never reflow, and physiological motion (breathe / pulse / flow — no cartoon
 > bounce). The canonical surface / text / role tokens live in **[§8](#8-instrumento-diurno--the-daytime-language-fer-131)**.
 
@@ -257,7 +257,7 @@ See [`assets/`](assets/) (and its [README](assets/README.md)):
 ## 8. «Instrumento diurno» — the daytime language (FER-131)
 
 The redesign language. It reads like a precision instrument printed on **warm paper**:
-light mode, **one dominant number**, **color only in the datum**, hierarchy by space.
+light mode, **one dominant number**, **meaningful color (value + signal identity)**, hierarchy by space.
 It lives **alongside** the dark system (§1–§7) — no shipped screen changes in FER-131.
 
 > **Source of truth:** `Instrumento.swift` (theme + type) and `InstrumentoStates.swift`
@@ -343,8 +343,15 @@ Not tokens — how the tokens are allowed to combine. `/qa` checks screens again
 
 1. **One dominant element.** Each screen has a single hero (usually the recovery/strain
    numeral). Nothing else matches its size/weight.
-2. **Color only in the datum.** Saturated hue appears on a *measured value*, never on
-   chrome, labels, decorative icons, or backgrounds.
+2. **Color carries meaning, not decoration.** Saturated hue marks a *measured value* **or a
+   *signal's identity*** — each metric keeps its own tone (indigo sleep, rosa resting HR, verde
+   load, …) on its number, its label, or its mark. It never fills backgrounds, boxes, or
+   chrome, and it stays restrained: the page is still ink on warm paper, not a field of color.
+   *(Evolución Fer 2026-08: la regla anterior, «color solo en el dato», prohibía teñir
+   rótulos/íconos; se retira. El color de identidad de cada señal también habla —como en los
+   rótulos del héroe y las filas del acta de Hoy—, con la misma contención. El único acento que
+   sigue reservado es el del **veredicto/estado**: verde/ámbar/rojo hablan de juicio, no de
+   identidad, y no se mezclan con el hue de la señal en el mismo elemento.)*
 3. **Hierarchy by space, not boxes.** Group with whitespace + hairlines. No card-in-card;
    `surface` is the exception, used sparingly and never nested.
 4. **Moderate overline.** Labels are quiet (tertiary ink). They orient; they don't announce.
@@ -353,8 +360,9 @@ Not tokens — how the tokens are allowed to combine. `/qa` checks screens again
 pantallas sin que ninguna esté mal** (decisión Fer 2026-07-19). El caso que fijó el criterio: el
 numeral de serie va en **tinta pelona** al editar una rutina (`RoutineEditorScreen.numeralRing`) y con
 **anillo ámbar** en la sesión activa (`LiveStrengthSheet.badge`). Las dos citaban la regla 2 y llegaban
-a lo contrario. La lectura correcta es que el color «vive en el dato», y **qué cuenta como el dato
-cambia con el momento**: planeando el martes en el sillón, «cuál serie es» no urge y el anillo sería
+a lo contrario. La lectura correcta es que el color «vive en el significado» (el dato o la identidad de
+la señal), y **qué cuenta como el dato cambia con el momento**: planeando el martes en el sillón, «cuál
+serie es» no urge y el anillo sería
 cromo; con la barra en la mano, «cuál voy» es el dato más urgente de la pantalla y el anillo deja de
 ser adorno.
 
@@ -442,7 +450,8 @@ no migradas conservan la voz de §8.3 hasta que les toque.
   recibo y ancla la familia ember de la carga (handoff Entrenar), no se replica en otros CTAs;
   (b) los **chips troquel** de Descanso/Nota llevan su hue SOLO en el icono (reloj ember, lápiz
   teal — propuesta B aprobada): el único color del chip es ese glifo; el valor va en tinta.
-  Ambas son excepciones nombradas a la regla 2 («color solo en el dato»), como `keyCap`.
+  Ambas son excepciones nombradas a la regla 2 (§8.4) —hue como FONDO/CTA, que la regla sigue
+  reservando aunque ya permita el color de identidad en marcas y rótulos—, como `keyCap`.
 - **Excepción del AZUL del vigía (FER-22, dueño):** en «El Ecosistema» de Hoy, los dos vigías
   (temperatura y respiración) hablan en `LiquidColor.azul` —orbe, estela, mirada y su dato— para
   que se lean como UNA familia: «lo que vigila». Es una excepción CONSCIENTE al mapeo 1:1 de
@@ -499,17 +508,18 @@ El rediseño de la mitad inferior de Hoy formaliza dos evoluciones del ADN, amba
 pantalla Hoy (el resto del sistema no cambia). Misma disciplina que la excepción del vigía (FER-24):
 excepciones **conscientes y nombradas**, no una relajación general.
 
-- **Se retira «color solo en el dato» PARA HOY.** En «El Tablero» el color vive en tres capas, no
-  en una:
+- **Hoy estrenó la evolución de la regla 2 (§8.4).** Aquí se probó primero que el color puede
+  vivir en más de una capa; la regla 2 ya lo generalizó a todo el sistema. En «El Tablero» el
+  color vive en tres capas, no en una:
   1. **Los valores** de cada métrica van teñidos con su tono 1:1 (`indigo` sueño, `rosa` FC,
      `verde` carga, `ámbar` temp/esfuerzo, `teal` pasos, `cian` VFC, `azul` resp) — el dato manda,
      y su color lo ancla a su casa.
   2. **El ambiente** (la *plasta*, `LiquidPlasta`) es MONOCROMO del veredicto — una sola familia de
      clima a la vez (verde/ámbar/rojo/neutro), a luminancia casi constante.
   3. **Los filos** (`LiquidAuroraEdge`) llevan, insinuados, los tonos de LOS DATOS de su módulo.
-  La regla original («color solo en el dato», §8, regla 2) sigue vigente para las demás pantallas;
-  Hoy es la excepción nombrada, porque su trabajo es que un vistazo lea a la vez el veredicto (fondo)
-  y de dónde sale (datos teñidos).
+  La regla 2 (§8.4) ya permite el color de identidad en todo el sistema; lo que sigue siendo
+  propio de Hoy es la COMPOSICIÓN de tres capas (dato + plasta del veredicto + filos), porque su
+  trabajo es que un vistazo lea a la vez el veredicto (fondo) y de dónde sale (datos teñidos).
 
 - **Doctrina sin-scroll de Hoy.** Con Dynamic Type por defecto, Hoy entera cabe SIN scroll en un
   iPhone estándar (header + héroe + 4 módulos + dock). Para lograrlo sin tocar el arte del héroe
@@ -546,7 +556,7 @@ Reglas de superficie (reafirmación):
 - **El héroe sigue la ventana del selector:** en la semana es el dato de hoy; en los rangos
   largos es la **media** de la ventana visible, y la frase de nivel, el titular de la gráfica
   y la fila activa de la escalera siguen ese mismo valor.
-- **Color solo en el dato** + plasta monocroma del tono de la métrica (no cajas teñidas).
+- **Color con significado** (el dato y la identidad de la señal) + plasta monocroma del tono de la métrica (no cajas teñidas).
 - **Papel opaco** en tarjetas internas (tabla de bandas, pie, Regularidad…):
   `.liquidGlass(.superficieSolida)` / `.pastillaSolida`. El vidrio real queda en la hoja
   (`LiquidSheetFondo`), el dock y el orbe.
