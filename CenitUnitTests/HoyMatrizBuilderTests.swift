@@ -91,7 +91,7 @@ final class HoyMatrizBuilderTests: XCTestCase {
         for b in model.bandas {
             switch b {
             case .full(let s) where s.id == id: return s
-            case .split(let izq, let der, _):
+            case .split(let izq, let der):
                 if izq.id == id { return izq }
                 if der.id == id { return der }
             default: break

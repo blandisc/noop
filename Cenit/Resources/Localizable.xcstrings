@@ -20657,74 +20657,6 @@
         }
       }
     },
-    "matriz.sueno.anoche.corto" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "last night · a bit short"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "anoche · un poco corto"
-          }
-        }
-      }
-    },
-    "matriz.sueno.anoche.enrango" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "last night · in your range"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "anoche · en tu rango"
-          }
-        }
-      }
-    },
-    "matriz.sueno.scrub.corto" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "a bit short"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "un poco corto"
-          }
-        }
-      }
-    },
-    "matriz.sueno.scrub.enrango" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "in your range"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "en tu rango"
-          }
-        }
-      }
-    },
     "matriz.sueno.scrub.hoy" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -20755,6 +20687,74 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ · sin lectura"
+          }
+        }
+      }
+    },
+    "matriz.rango.dentro" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "in your range"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "en tu rango"
+          }
+        }
+      }
+    },
+    "matriz.rango.fuera" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "out of your range"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "fuera de tu rango"
+          }
+        }
+      }
+    },
+    "matriz.sueno.anoche" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "last night"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "anoche"
+          }
+        }
+      }
+    },
+    "matriz.sueno.anoche.estado" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "last night · %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "anoche · %@"
           }
         }
       }

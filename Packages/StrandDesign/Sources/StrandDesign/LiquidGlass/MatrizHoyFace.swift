@@ -335,17 +335,35 @@ public struct MatrizHoyFace: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+        } else if s.scrubNoches != nil, !reduceMotion {
+            // Sección con SCRUB (Sueño): el encabezado es su propio botón (abre la hoja)
+            // y la gráfica lleva el gesto de arrastre — separados, como el guardián, para
+            // que un toque abra y un arrastre lea sin pelear (hallazgos Grok/DeepSeek/Sonnet:
+            // un DragGesture dentro del Button es ambiguo). El gesto usa highPriorityGesture
+            // para ganarle al ScrollView de Hoy (patrón #118, ver TrendChart).
+            VStack(alignment: .leading, spacing: LiquidSpace.s200) {
+                Button { tocar(s.id) } label: {
+                    encabezado(s).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(Text(verbatim: a11yLabel(s)))
+                .accessibilityAddTraits(.isButton)
+                .accessibilityIdentifier("matriz-seccion-\(s.id)")
+                chartView(s.chart, hue: s.hue, chartID: s.chartID,
+                          resaltado: scrub?.id == s.id ? scrub?.idx : nil)
+                    .frame(height: chartAltura(s.chart))
+                    .modifier(ScrubGesto(seccion: s, scrub: $scrub, tick: $scrubTick))
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         } else {
             Button {
                 tocar(s.id)
             } label: {
                 VStack(alignment: .leading, spacing: LiquidSpace.s200) {
                     encabezado(s)
-                    chartView(s.chart, hue: s.hue, chartID: s.chartID,
-                              resaltado: scrub?.id == s.id ? scrub?.idx : nil)
+                    chartView(s.chart, hue: s.hue, chartID: s.chartID)
                         .frame(height: chartAltura(s.chart))
-                        .modifier(ScrubGesto(seccion: s, scrub: $scrub, tick: $scrubTick,
-                                             reduceMotion: reduceMotion))
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
@@ -411,9 +429,9 @@ public struct MatrizHoyFace: View {
                             .font(LiquidType.caption)
                             .foregroundStyle(LiquidColor.tinta500)
                             .fixedSize(horizontal: false, vertical: true)
-                            // El dato del scrub rueda en su sitio, no parpadea.
-                            .contentTransition(.numericText())
-                            .animation(.snappy, value: sub)
+                            // El dato del scrub cambia con un cruce suave (es texto —
+                            // numericText sólo aplica a dígitos, hallazgo Grok BAJA).
+                            .animation(.easeInOut(duration: 0.15), value: sub)
                     }
                 }
                 // Alineado con el título (después del orbe), a lo ancho de la celda.
@@ -584,27 +602,41 @@ public struct MatrizHoyFace: View {
 // MARK: - Scrub (FER-55)
 
 /// Arrastrar sobre la gráfica lee cada noche (fecha + horas) en el sublabel, como las
-/// gráficas de adentro. Solo se activa en secciones con `scrubNoches`; al soltar, el
-/// estado vuelve a `nil` y la celda regresa sola a HOY. El gesto convive con el botón
-/// contenedor: un toque (sin arrastre) sigue abriendo la hoja; el arrastre gana al
-/// cruzar el umbral. Bajo Reduce Motion se desactiva (la celda queda en HOY).
+/// gráficas de adentro. Solo se monta en secciones con `scrubNoches` (Sueño); al soltar
+/// —o si el gesto se CANCELA— la celda regresa sola a HOY. Detalles de robustez, todos
+/// hallazgos del panel adversarial Grok/DeepSeek/Sonnet:
+/// - El gesto vive en un `overlay` transparente que TOMA el tamaño del contenido ya
+///   dimensionado, así el `.frame(height:)` del chart se preserva (un `GeometryReader`
+///   envolvente reportaba alto ideal ~0 y colapsaba la celda).
+/// - `highPriorityGesture` para ganarle al pan vertical del `ScrollView` de Hoy (#118).
+/// - `@GestureState` → al cancelarse el gesto, SwiftUI resetea el estado y limpiamos
+///   `scrub` en `onChange`, no solo en `onEnded` (que no corre en cancelación).
+/// - El índice descuenta el `chartInset` real de las barras y sólo se compromete cuando
+///   el arrastre es predominantemente HORIZONTAL (no secuestra el scroll vertical).
 private struct ScrubGesto: ViewModifier {
     let seccion: MatrizSeccion
     @Binding var scrub: (id: String, idx: Int)?
     @Binding var tick: Int
-    let reduceMotion: Bool
+    /// Vivo mientras el dedo arrastra; SwiftUI lo devuelve a `false` al terminar O cancelar.
+    @GestureState private var arrastrando = false
 
     func body(content: Content) -> some View {
-        if let noches = seccion.scrubNoches, noches.count > 1, !reduceMotion {
+        let noches = seccion.scrubNoches ?? []
+        content.overlay(
             GeometryReader { geo in
-                content
+                Color.clear
                     .contentShape(Rectangle())
-                    .gesture(
-                        DragGesture(minimumDistance: 8)
+                    .highPriorityGesture(
+                        DragGesture(minimumDistance: 6, coordinateSpace: .local)
+                            .updating($arrastrando) { _, estado, _ in estado = true }
                             .onChanged { g in
-                                let w = geo.size.width
-                                guard w > 0 else { return }
-                                let rel = min(max(g.location.x / w, 0), 0.9999)
+                                // Sólo scrub cuando el gesto es horizontal — un arrastre
+                                // vertical es intención de scroll, no de leer noches.
+                                guard abs(g.translation.width) >= abs(g.translation.height) else { return }
+                                let inset = MatrizTokens.chartInset
+                                let w = geo.size.width - inset * 2
+                                guard w > 0, noches.count > 1 else { return }
+                                let rel = min(max((g.location.x - inset) / w, 0), 0.9999)
                                 let i = min(Int(rel * CGFloat(noches.count)), noches.count - 1)
                                 if scrub?.id != seccion.id || scrub?.idx != i {
                                     scrub = (seccion.id, i)
@@ -614,8 +646,11 @@ private struct ScrubGesto: ViewModifier {
                             .onEnded { _ in scrub = nil }
                     )
             }
-        } else {
-            content
+        )
+        // Red de seguridad ante cancelación: si el gesto muere sin `onEnded`, el estado
+        // vuelve a false y aquí soltamos el scrub (la celda regresa a HOY).
+        .onChange(of: arrastrando) { _, activo in
+            if !activo, scrub?.id == seccion.id { scrub = nil }
         }
     }
 }

@@ -69,6 +69,12 @@ extension LiquidHoyBuilder {
         // Scrub (FER-55): cada noche con su día + horas + estado, ya formateados. El
         // último = hoy. La honestidad manda: sin lectura → «—» y «no reading».
         let diaFmt = weekdayFormatter(locale: i.locale, calendar: i.calendar)
+        // Vocabulario ÚNICO, igual que la hoja de detalle y el héroe (revisión del dueño):
+        // «in your range» / «out of your range». Y jamás afirmamos rango sin juicio del
+        // motor para ESE día (hallazgo Grok #5: `sleepOut==true` también dispara por
+        // eficiencia, y `nil` no es «en rango»). Sin juicio → sólo la fecha.
+        let enRango = String(localized: "matriz.rango.dentro", defaultValue: "in your range")
+        let fueraRango = String(localized: "matriz.rango.fuera", defaultValue: "out of your range")
         let scrubSueno: [MatrizSeccion.ScrubNoche] = keysSueno.enumerated().map { idx, day in
             let mins = byDay[day]?.totalSleepMin
             let offsetDesdeFin = keysSueno.count - 1 - idx
@@ -79,22 +85,27 @@ extension LiquidHoyBuilder {
                              sublabel: String(format: String(localized: "matriz.sueno.scrub.sinlectura",
                                                              defaultValue: "%@ · no reading"), fecha))
             }
-            let out = bodyByDay[day]?.sleepOut == true
-            let estado = out ? String(localized: "matriz.sueno.scrub.corto", defaultValue: "a bit short")
-                             : String(localized: "matriz.sueno.scrub.enrango", defaultValue: "in your range")
-            return .init(valor: HoyGramatica.formatoDuracion(mins),
-                         sublabel: "\(fecha) · \(estado)")
+            // El juicio del día: nil = ese día no tiene juicio de rango todavía.
+            // Paréntesis obligatorio: sin ellos `?.sleepOut.map` aplica `.map` al Bool,
+            // no al Bool? del optional-chaining (precedencia de `?.`).
+            let juicio: Bool? = bodyByDay[day]?.sleepOut
+            let estado = juicio.map { $0 ? fueraRango : enRango }
+            let sub = estado.map { "\(fecha) · \($0)" } ?? fecha
+            return .init(valor: HoyGramatica.formatoDuracion(mins), sublabel: sub)
         }
         // Sublabel de reposo (no-scrub): «anoche · <estado>» — la celda habla en palabras
-        // (P2), y el dato del scrub la reemplaza al arrastrar.
+        // (P2), y el dato del scrub la reemplaza al arrastrar. Mismo gate de honestidad.
         let sublabelSueno: String? = {
             if hoy?.totalSleepMin == nil && noches.allSatisfy({ $0.valor == nil }) {
                 return String(localized: "Getting to know you")
             }
             guard hoy?.totalSleepMin != nil else { return nil }
-            let out = bodyByDay[hoyKey ?? ""]?.sleepOut == true
-            return out ? String(localized: "matriz.sueno.anoche.corto", defaultValue: "last night · a bit short")
-                       : String(localized: "matriz.sueno.anoche.enrango", defaultValue: "last night · in your range")
+            guard let out = bodyByDay[hoyKey ?? ""]?.sleepOut else {
+                return String(localized: "matriz.sueno.anoche", defaultValue: "last night")
+            }
+            let estado = out ? fueraRango : enRango
+            return String(format: String(localized: "matriz.sueno.anoche.estado",
+                                         defaultValue: "last night · %@"), estado)
         }()
         let seccionSueno = MatrizSeccion(
             id: "sleep", hue: LiquidColor.indigo,

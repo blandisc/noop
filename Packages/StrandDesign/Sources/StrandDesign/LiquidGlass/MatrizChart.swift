@@ -226,8 +226,24 @@ public struct MatrizColumnas: View {
                 let inset = MatrizTokens.chartInset
                 let colW = max((size.width - inset * 2 - gap * CGFloat(n - 1)) / CGFloat(n), 1)
                 let last = n - 1
+                let gap0 = MatrizTokens.barraGap
+                let inset0 = MatrizTokens.chartInset
+                let colW0 = max((size.width - inset0 * 2 - gap0 * CGFloat(n - 1)) / CGFloat(n), 1)
                 for (i, noche) in noches.enumerated() {
-                    guard let v = noche.valor else { continue }
+                    guard let v = noche.valor else {
+                        // Noche sin lectura resaltada por el scrub: aún así damos feedback
+                        // — un cursor tenue a lo alto en su columna (Grok #4: scrub fantasma).
+                        if resaltado == i {
+                            let cx = inset0 + CGFloat(i) * (colW0 + gap0) + colW0 / 2
+                            var hueco = Path()
+                            hueco.move(to: CGPoint(x: cx, y: 0))
+                            hueco.addLine(to: CGPoint(x: cx, y: size.height))
+                            ctx.stroke(hueco, with: .color(hue.opacity(0.35)),
+                                       style: StrokeStyle(lineWidth: 1.5, lineCap: .round,
+                                                          dash: [2, 3]))
+                        }
+                        continue
+                    }
                     let esHoy = i == last
                     // Durante el scrub la barra elegida toma el alfa pleno de HOY; el
                     // resto se atenúa a histórico (FER-55: la noche leída manda).
