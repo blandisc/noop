@@ -495,7 +495,11 @@ public struct LiquidEcosistema: View {
         // (FER-28) sube `acercaVeredicto` hacia el orbe (recorta el aire de abajo).
         palabra
             .frame(width: G.lienzo.width)
-            .frame(height: G.lienzo.height - 34
+            // El subtítulo sube 34→64 pt sobre el fondo del lienzo (auditoría del dueño: la
+            // puerta se veía «pegada» al subtítulo — hueco arriba chico, abajo grande). Con más
+            // aire arriba, el botón respira y el ritmo vertical queda parejo; hay espacio de
+            // sobra entre el orbe y el veredicto para subirlo.
+            .frame(height: G.lienzo.height - 64
                    - (compacto ? LiquidSpace.ecosistemaAcercaVeredicto : 0), alignment: .bottom)
             .opacity(esSeparadaEstable ? 0 : 1)
             // Deriva sutil (overlapping action, ojo del dueño): la palabra no aparece —
@@ -518,9 +522,13 @@ public struct LiquidEcosistema: View {
         // La PUERTA al acta («Cómo llegué a esto») vive en AMBOS modos (D10): el tap del
         // lienzo ya no navega, así que esta pastilla es la única entrada visible.
         if let heroPuerta {
+            // La puerta es la CODA del veredicto (rec. del /ui): se ancla al fondo del BLOQUE
+            // del veredicto (subtítulo en `-64`), no al piso del lienzo — hueco chico y
+            // deliberado arriba (~s400), y el aire se acumula ABAJO como corte de sección.
+            // Pegarla refuerza su tinte (extensión del veredicto, no un 2º objeto con color).
             botonPuerta(heroPuerta)
                 .frame(width: G.lienzo.width)
-                .frame(height: G.lienzo.height
+                .frame(height: G.lienzo.height - 26
                        - (compacto ? LiquidSpace.ecosistemaAcercaVeredicto : 0), alignment: .bottom)
         }
     }
