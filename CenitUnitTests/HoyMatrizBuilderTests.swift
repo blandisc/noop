@@ -251,12 +251,13 @@ final class HoyMatrizBuilderTests: XCTestCase {
         let keys = LiquidHoyBuilder.dayKeys(endingAt: now, calendar: cal, count: 20)
         let dias = keys.map { metric(day: $0, rhr: 48) }
         // FC de HOY (48) por DEBAJO de la banda 53...59 — lado bueno: el motor NO
-        // castiga (autonomicOut false) → el sublabel debe decir «in your range»
-        // (héroe, scrub y hoja hablan el juicio del motor; la franja es geografía).
+        // castiga (autonomicOut false) → el sublabel dice el juicio del motor con la
+        // MISMA estructura que Sueño: «last night · in your range» (FER-56, simetría de
+        // las gemelas: la FC en reposo también es lectura de anoche).
         let body = keys.map { bodyNight(day: $0, rhr: 48, autonomicOut: false) }
         let model = LiquidHoyBuilder.matriz(inputs(
             prep: prep(sentinel: sentinel(.quiet), bodyHistory: body), dias: dias))
-        XCTAssertEqual(seccion(model, id: "rhr")?.sublabel, "in your range")
+        XCTAssertEqual(seccion(model, id: "rhr")?.sublabel, "last night · in your range")
         // Y la banda sí viaja al chart (geografía visible).
         if case .regla(_, let banda, _, _) = seccion(model, id: "rhr")?.chart {
             XCTAssertEqual(banda, 53...59)
