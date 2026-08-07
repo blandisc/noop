@@ -67,7 +67,7 @@ final class MatrizHoyFaceSnapshotTests: XCTestCase {
                         id: "rhr", hue: LiquidColor.rosa,
                         titulo: "Resting HR", valor: "52",
                         unidad: "bpm", destacada: true,
-                        sublabel: "in your range",
+                        sublabel: "last night · in your range",
                         chartID: "matriz-rhr",
                         chart: .regla(puntos: fc, banda: 53...59, dominio: 45...75,
                                          alertaHoy: .ninguna),

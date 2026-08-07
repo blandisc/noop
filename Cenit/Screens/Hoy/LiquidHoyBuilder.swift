@@ -1023,9 +1023,13 @@ enum LiquidHoyBuilder {
 
         return LiquidActa(
             titulo: String(localized: "Readiness"),
-            // Procedencia + sello de fecha: el micro-momento de acta oficial (/ux D2).
-            procedencia: String(localized: "Apple Health · this morning · \(selloFechaActa())"),
-            explicacion: String(localized: "The verdict for how you woke up: your signals against your own baseline. It's an approximation, not a diagnosis."),
+            // Procedencia SIN fecha (revisión del dueño): la fecha del día ya vive en el
+            // encabezado de Hoy; repetirla aquí confundía. Reusa la key ya traducida.
+            procedencia: String(localized: "Apple Health · this morning"),
+            // El ⓘ dice QUÉ es (una línea) — el hedge «aproximación» vive SOLO en «Cómo se
+            // calcula» para no repetir (revisión del dueño: el ⓘ y el método decían casi lo
+            // mismo).
+            explicacion: String(localized: "The verdict for how you woke up: your signals against your own baseline."),
             infoMostrar: String(localized: "Show explanation"),
             infoOcultar: String(localized: "Hide explanation"),
             nivel: palabraBoleta(prep: prep, hayVeredicto: hayVeredicto,
@@ -1044,17 +1048,10 @@ enum LiquidHoyBuilder {
                                empujeTendencia: empujeTendencia,
                                healthConnected: healthConnected),
             confianza: confianzaActa(prep: prep),
-            plegable: plegableActa(prep: prep),
+            plegable: plegableActa(),
             verMas: String(localized: "See more in Trends"),
             verMasHint: String(localized: "Opens the detail"),
             tono: actaTono(prep))
-    }
-
-    /// «4 AGO» — el sello de fecha del acta (estático: aquí no hay scrub que lo mueva).
-    private static func selloFechaActa() -> String {
-        let f = DateFormatter()
-        f.setLocalizedDateFormatFromTemplate("d MMM")
-        return f.string(from: Date()).uppercased(with: Locale.current)
     }
 
     /// La palabra grande de la boleta: la del héroe con veredicto (paridad /cso B1) o la
@@ -1090,9 +1087,12 @@ enum LiquidHoyBuilder {
 
         let sub: String
         if esAuto {
+            // El sub ESPECIFICA el tipo de FC (revisión del dueño): «de la noche» deja claro
+            // que es la FC en reposo derivada de la noche, no un promedio. El detalle completo
+            // (Apple Watch / fallback) vive en «Cómo se calcula».
             sub = votoEstado == .calibrando
                 ? String(localized: "learning your base")
-                : String(localized: "resting HR · against your base")
+                : String(localized: "acta.sub.fc", defaultValue: "overnight · against your base")
         } else {
             // FER-44 (gate /cso): el sueño se juzga contra el rango RECOMENDADO de salud
             // (piso poblacional ~7h, Hirshkowitz 2015), NO contra base personal — usar base
@@ -1151,7 +1151,15 @@ enum LiquidHoyBuilder {
                                // El wash dice «este voto volteó el veredicto»: sin
                                // veredicto no hay wash (Grok r1 HIGH 2).
                                fuera: estado.isOut && hayVeredicto, tonoVoto: tonoVoto,
-                               palabra: palabra, a11y: a11y)
+                               palabra: palabra,
+                               // Hue de identidad = el MISMO de la celda de la Matriz (rosa FC ·
+                               // indigo Sueño), vía token compartido: si cambia allá, cambia aquí.
+                               // GATE «sin veredicto = CERO color» (regla de la hoja, igual que
+                               // tonoVoto): sin veredicto la fila va en tinta, no en su hue.
+                               hueMetrica: hayVeredicto
+                                   ? (esAuto ? LiquidColor.rosa : LiquidColor.indigo)
+                                   : LiquidColor.tinta700,
+                               a11y: a11y)
     }
 
     /// La frase-resumen bajo la palabra — sostiene el veredicto o cuenta el DESFASE de
@@ -1201,10 +1209,14 @@ enum LiquidHoyBuilder {
                     String(localized: "acta.resumen.full.clave", defaultValue: "inside"))
         case .caution:
             let suenoFuera = estados.indices.contains(1) && estados[1].isOut
+            // Keys namespaced con EN nuevo: el nombre de la señal es «resting HR» / «FC en
+            // reposo» también en inglés, no «autonomic» (consistente con la fila).
             return suenoFuera
-                ? (String(localized: "Sleep voted outside; autonomic, inside."),
+                ? (String(localized: "acta.resumen.caution.sueno",
+                          defaultValue: "Sleep voted outside; resting HR, inside."),
                    String(localized: "acta.resumen.caution.clave", defaultValue: "voted outside"))
-                : (String(localized: "Autonomic voted outside; sleep, inside."),
+                : (String(localized: "acta.resumen.caution.auto",
+                          defaultValue: "Resting HR voted outside; sleep, inside."),
                    String(localized: "acta.resumen.caution.clave", defaultValue: "voted outside"))
         case .easy:
             return (String(localized: "Both of your votes fell outside."),
@@ -1276,7 +1288,10 @@ enum LiquidHoyBuilder {
 
     private static func nombreEje(_ ax: Preparedness.Axis) -> String {
         switch ax {
-        case .autonomic: return String(localized: "Autonomic")
+        // «FC en reposo», no «Autonómico» (revisión del dueño): la fila vota SOLO con la FC
+        // en reposo (wRHR=1); «Autonómico» era jerga y un tercer nombre para la misma señal
+        // que la celda ya llama «FC en reposo». Reusa la MISMA key que la celda de la Matriz.
+        case .autonomic: return String(localized: "Resting HR")
         case .sleep: return String(localized: "Sleep")
         case .thermal: return String(localized: "Thermal")
         case .load: return String(localized: "Load")
@@ -1311,17 +1326,21 @@ enum LiquidHoyBuilder {
         return .nota(String(localized: "Your verdict stands on \(n) of your own nights; at \(trust) your base is firm."))
     }
 
-    private static func plegableActa(prep: Preparedness.Read?) -> LiquidActa.Metodo {
-        var lineas: [String] = []
-        if let prep {
-            // v3: el eje autonómico LEE las 3 señales en reposo (para el desglose), pero VOTA
-            // solo con la FC en reposo (`wRHR=1`); VFC y respiración van de contexto. La línea
-            // nombra ambas cosas —cuántas se leyeron y cuál decide— sin implicar que las 3 votan.
-            lineas.append(String(localized: "Your autonomic axis reads \(prep.signalsPresent) of \(prep.signalsTotal) resting signals, but votes on just your resting heart rate; HRV and breathing ride along for context."))
-        }
-        lineas.append(String(localized: "A new verdict has to repeat two days in a row before it replaces the previous one."))
-        lineas.append(String(localized: "Apple's HRV is a daytime average, not a sleep-window measurement: this reads your resting signals against your own norm."))
-        lineas.append(String(localized: "O'Grady et al., 2024 · Task Force, 1996 · Plews et al., 2013. Approximate, no clinical claim."))
+    private static func plegableActa() -> LiquidActa.Metodo {
+        // «Cómo se calcula» es el CÓMO (la mecánica); el ⓘ ya dijo el QUÉ. Primera línea:
+        // QUÉ tipo de FC es (el dueño pidió especificarlo). Luego: los dos votos separados,
+        // la histéresis, y la cita. Se quitó el «lee X de Y señales» (confundía) y el hedge
+        // que ya no duplica al ⓘ.
+        let lineas: [String] = [
+            String(localized: "acta.metodo.fc",
+                   defaultValue: "Your resting HR is your lowest pulse of the night, measured by your Apple Watch; when there's no overnight reading, Cénit uses Apple Health's resting heart rate."),
+            String(localized: "acta.metodo.votos",
+                   defaultValue: "Your sleep and your resting HR are read as separate votes, so a bad night doesn't count twice. Your breathing and temperature only watch; they don't vote here."),
+            String(localized: "acta.metodo.histeresis",
+                   defaultValue: "A new verdict has to repeat two days in a row before it replaces the previous one."),
+            String(localized: "acta.metodo.cita",
+                   defaultValue: "O'Grady et al., 2024 · Task Force, 1996 · Plews et al., 2013. Approximate, no clinical claim."),
+        ]
         return .init(titulo: String(localized: "How it's calculated"),
                      mostrar: String(localized: "Show method"),
                      ocultar: String(localized: "Hide method"),
@@ -1380,16 +1399,18 @@ enum LiquidHoyBuilder {
         let filas: [LiquidAutonomico.Senal]
         if signals.isEmpty {
             let sinDato = caption(for: .noData)
-            filas = [Preparedness.Signal.rhr, .hrv, .resp].map { sig in
+            // Opción B (dueño): Respiración salió del desglose (vive en el Guardián). Sin base,
+            // sin hue (tinta).
+            filas = [Preparedness.Signal.rhr, .hrv].map { sig in
                 let etiqueta = nombreSenal(sig)
                 return LiquidAutonomico.Senal(id: sig.rawValue, etiqueta: etiqueta, estado: sinDato,
-                                              voto: nil, fuera: false, nota: nil,
+                                              voto: nil, fuera: false, nota: nil, hueMetrica: nil,
                                               a11y: "\(etiqueta), \(sinDato)")
             }
         } else {
-            // En v3 SOLO la FC en reposo vota (`wRHR=1`); VFC y respiración se muestran como
-            // READ-OUT (`share==0`) — no cargan el voto.
-            filas = signals.map { s in
+            // En v3 SOLO la FC en reposo vota (`wRHR=1`); la VFC se muestra como READ-OUT
+            // (`share==0`). Opción B (dueño): Respiración salió del desglose (vive en el Guardián).
+            filas = signals.filter { $0.signal != .resp }.map { s in
                 let etiqueta = nombreSenal(s.signal)
                 let est = estadoSenal(s)
                 let vota = s.share > 0
@@ -1408,14 +1429,21 @@ enum LiquidHoyBuilder {
                     .filter { !$0.isEmpty }.joined(separator: ", ")
                     + (fuera ? ", " + String(localized: "outside your range") : "")
                 return LiquidAutonomico.Senal(id: s.signal.rawValue, etiqueta: etiqueta, estado: est,
-                                              voto: voto, fuera: fuera, nota: nil, a11y: a11y)
+                                              voto: voto, fuera: fuera, nota: nil,
+                                              // Hue de identidad solo con base (sin base = tinta).
+                                              hueMetrica: hayBase ? hueSenal(s.signal) : nil,
+                                              a11y: a11y)
             }
         }
 
         return LiquidAutonomico(
-            titulo: String(localized: "Autonomic"),
+            // «En reposo», no «Autonómico» (Opción B del dueño): jerga fuera, y coincide con la
+            // etiqueta del orbe que abre esta hoja. Reusa la MISMA key que el orbe.
+            titulo: String(localized: "At rest"),
             procedencia: String(localized: "Apple Health · this morning"),
-            explicacion: String(localized: "Your resting nervous system, read mainly from your resting heart rate against your own base. HRV and breathing are shown too, but they don't carry the vote. An approximation, not a diagnosis."),
+            // Respiración salió de este desglose (vive en el Guardián), así que la explicación
+            // ya no la menciona: FC en reposo decide, la VFC acompaña.
+            explicacion: String(localized: "Your body at rest, read mainly from your resting HR against your own base. HRV is shown too, but it doesn't carry the vote. An approximation, not a diagnosis."),
             infoMostrar: String(localized: "Show explanation"),
             infoOcultar: String(localized: "Hide explanation"),
             nivel: hayBase ? (enRango ? String(localized: "In range")
@@ -1432,9 +1460,20 @@ enum LiquidHoyBuilder {
 
     private static func nombreSenal(_ s: Preparedness.Signal) -> String {
         switch s {
-        case .rhr: return String(localized: "Resting heart rate")
+        // «FC en reposo» (misma key que la celda y el acta), no «Frecuencia cardiaca en reposo».
+        case .rhr: return String(localized: "Resting HR")
         case .hrv: return String(localized: "HRV")
         case .resp: return String(localized: "Breathing")
+        }
+    }
+
+    /// El hue de identidad de cada señal (rosa FC · cian VFC) — el mismo de su celda en la
+    /// Matriz. Solo con base (sin base la hoja va en tinta). Respiración ya no aparece aquí.
+    private static func hueSenal(_ s: Preparedness.Signal) -> Color {
+        switch s {
+        case .rhr: return LiquidColor.rosa
+        case .hrv: return LiquidColor.cian
+        case .resp: return LiquidColor.azul
         }
     }
 
@@ -1479,7 +1518,10 @@ enum LiquidHoyBuilder {
               ocultar: String(localized: "Hide method"),
               lineas: [
                 String(localized: "Your resting heart rate against your own base is the vote: Apple's densest, most reliable signal, so it carries this axis on its own."),
-                String(localized: "HRV and breathing are shown for context but don't vote here. Apple's all-day HRV is too noisy to trust, and breathing is watched by the sentinel alongside your temperature."),
+                // Respiración salió de esta lista (Opción B): la línea ya no dice «se muestra»,
+                // y explica DÓNDE quedó (el Guardián) para que no se sienta perdida.
+                String(localized: "reposo.metodo.vfc",
+                       defaultValue: "HRV is shown for context but doesn't vote here: Apple's all-day HRV is too noisy to trust. Breathing isn't in this list; the sentinel watches it alongside your temperature."),
                 String(localized: "Apple's HRV is a daytime average, not a sleep-window reading, so it stays a reference here rather than a vote."),
                 String(localized: "O'Grady et al., 2024 · Task Force, 1996 · Plews et al., 2013. Approximate, no clinical claim."),
               ])

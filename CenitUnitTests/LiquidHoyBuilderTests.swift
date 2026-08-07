@@ -616,6 +616,9 @@ final class LiquidHoyBuilderTests: XCTestCase {
         XCTAssertEqual(acta.tono, LiquidColor.tinta500,
                        "sin veredicto la hoja no tiene una sola gota de color")
         XCTAssertTrue(acta.filas.allSatisfy { $0.tonoVoto == LiquidColor.tinta500 })
+        // El hue de identidad (rosa/indigo) también se gatea a tinta sin veredicto (FER-56).
+        XCTAssertTrue(acta.filas.allSatisfy { $0.hueMetrica == LiquidColor.tinta700 },
+                      "sin veredicto el hue de identidad de las filas también se apaga")
         XCTAssertNil(acta.vigilantesLabel, "los vigilantes solo aparecen con veredicto")
 
         // Y con `prep == nil` tampoco revienta ni inventa filas.

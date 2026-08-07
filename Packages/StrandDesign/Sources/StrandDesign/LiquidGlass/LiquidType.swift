@@ -100,6 +100,12 @@ public enum LiquidType {
     /// `título/fila` — 13/600. Título de ListRow.
     public static let tituloFila = InstrumentoType.grotesk(13, weight: .semibold)
 
+    /// `título/gemela` — 15/600. El rótulo de las celdas gemelas destacadas de la Matriz
+    /// (Sueño · Reposo): mismo peso callado que `tituloFila`, un punto más grande para que
+    /// el par pese igual y se lea como gemelo (FER-56). Sube el tamaño, no la voz — el
+    /// número sigue mandando (jerarquía «Instrumento»).
+    public static let tituloGemela = InstrumentoType.grotesk(15, weight: .semibold)
+
     // MARK: Cuerpo (SF)
 
     /// `veredicto/hoja` — 30/700, tracking −0.6, escala (relativeTo `.title`). La

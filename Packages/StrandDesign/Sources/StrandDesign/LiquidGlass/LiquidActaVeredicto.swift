@@ -11,9 +11,11 @@ import SwiftUI
 // sola, el método es letra chica.
 //
 // REGLAS QUE ESTA HOJA NO ROMPE
-//  · El color saturado vive SOLO en la palabra del veredicto, la cláusula del resumen
-//    (text-tier AA) y los rieles; el wash de fila fuera va al token de I1. Gotas y fichas
-//    en tinta. Sin veredicto: CERO color en toda la hoja.
+//  · El color saturado vive en la palabra del veredicto, la cláusula del resumen (text-tier
+//    AA) y los rieles; el wash de fila fuera va al token de I1. Las gotas y los TÍTULOS de
+//    fila llevan el hue de IDENTIDAD de su métrica (rosa FC · indigo Sueño, revisión del
+//    dueño 2026-08); las fichas siguen en tinta. Sin veredicto: CERO color en toda la hoja
+//    (el hue de identidad también se apaga — se gatea a tinta en el caller).
 //  · Paridad héroe↔acta (gate /cso B1): la palabra grande es EXACTAMENTE la del héroe.
 //  · Las filas NO son tocables; el riel es decorativo para VoiceOver — la lectura viaja en
 //    el label compuesto de cada votante.
@@ -30,7 +32,8 @@ public struct LiquidActa: Sendable {
     /// Un votante de la boleta: quién, contra qué, y su voto en el riel.
     public struct Fila: Sendable, Identifiable {
         public let id: String
-        /// El glifo de la gota (SIEMPRE pintada en tinta — el hue 1:1 no entra a la boleta).
+        /// El glifo de la gota — teñida con el `hueMetrica` de identidad (rosa/indigo) cuando
+        /// hay veredicto; tinta sin él.
         public let glifo: LiquidIcon.Glyph
         /// El nombre que el usuario YA ve en el orbe («Autonómico»).
         public let etiqueta: String
@@ -47,12 +50,17 @@ public struct LiquidActa: Sendable {
         public let tonoVoto: Color
         /// La palabra del voto bajo el riel («dentro» / «fuera» / «sin dato» / «··»).
         public let palabra: String
+        /// El hue de IDENTIDAD de la métrica (rosa FC · indigo Sueño) — tiñe gota y título
+        /// para amarrar la fila a su celda de la Matriz (revisión del dueño). `tinta700` = sin
+        /// identidad.
+        public let hueMetrica: Color
         /// Label compuesto de VoiceOver, YA localizado — el estado es audible sin color.
         public let a11y: String
 
         public init(id: String, glifo: LiquidIcon.Glyph, etiqueta: String, sub: String,
                     estado: LiquidVotoRiel.Estado, umbral: LiquidVotoRiel.Umbral,
-                    fuera: Bool, tonoVoto: Color, palabra: String, a11y: String) {
+                    fuera: Bool, tonoVoto: Color, palabra: String,
+                    hueMetrica: Color = LiquidColor.tinta700, a11y: String) {
             self.id = id
             self.glifo = glifo
             self.etiqueta = etiqueta
@@ -62,6 +70,7 @@ public struct LiquidActa: Sendable {
             self.fuera = fuera
             self.tonoVoto = tonoVoto
             self.palabra = palabra
+            self.hueMetrica = hueMetrica
             self.a11y = a11y
         }
     }
@@ -105,8 +114,8 @@ public struct LiquidActa: Sendable {
     }
 
     public let titulo: String
-    /// Procedencia + sello de fecha, YA compuestos («Apple Salud · esta mañana · 4 AGO») —
-    /// el micro-momento de acta oficial (spec /ux D2).
+    /// Procedencia YA compuesta («Apple Salud · esta mañana») — sin fecha (revisión del
+    /// dueño: la fecha ya vive en el encabezado de Hoy).
     public let procedencia: String
     public let explicacion: String
     public let infoMostrar: String
@@ -211,7 +220,8 @@ public struct LiquidActaVeredicto: View {
                     LiquidBoletaCard(votantes: model.filas.map {
                         .init(id: $0.id, glifo: $0.glifo, nombre: $0.etiqueta, sub: $0.sub,
                               estado: $0.estado, umbral: $0.umbral, fuera: $0.fuera,
-                              tonoVoto: $0.tonoVoto, palabra: $0.palabra, a11y: $0.a11y)
+                              tonoVoto: $0.tonoVoto, palabra: $0.palabra,
+                              hueMetrica: $0.hueMetrica, a11y: $0.a11y)
                     })
                     // El aviso que cambia la lectura va PEGADO a la boleta (spec /ux D1).
                     ForEach(model.notas.filter(\.avisa)) { nota in
@@ -304,10 +314,10 @@ public struct LiquidActaVeredicto: View {
 enum LiquidActaFixtures {
 
     private static let plegableLineas = [
-        "Tu FC en reposo y tu sueño se leen como votos separados, para que una mala noche no cuente dos veces. Tu respiración y tu temperatura solo vigilan: aquí no votan.",
+        "Tu FC en reposo es tu pulso más bajo de la noche, medido con el Apple Watch; cuando no hay lectura nocturna, Cénit usa la FC en reposo de Apple.",
+        "Tu sueño y tu FC en reposo se leen como votos separados, para que una mala noche no cuente dos veces. Tu respiración y tu temperatura solo vigilan; aquí no votan.",
         "Un veredicto nuevo tiene que repetirse dos días seguidos antes de reemplazar al anterior.",
-        "La VFC de Apple es un promedio de día, no una medición de la ventana de sueño: esto lee tus señales en reposo contra tu propia norma.",
-        "O'Grady et al., 2024 · Task Force, 1996 · Plews et al., 2013. Aproximado, sin claim clínico.",
+        "O'Grady et al., 2024 · Task Force, 1996 · Plews et al., 2013. Aproximado, sin fin clínico.",
     ]
 
     private static let plegable = LiquidActa.Metodo(
@@ -316,19 +326,19 @@ enum LiquidActaFixtures {
 
     private static func filaAuto(_ estado: LiquidVotoRiel.Estado, fuera: Bool,
                                  tonoVoto: Color, palabra: String,
-                                 sub: String = "FC en reposo · contra tu base") -> LiquidActa.Fila {
-        .init(id: "auto", glifo: .corazon, etiqueta: "Autonómico", sub: sub,
+                                 sub: String = "de la noche · contra tu base") -> LiquidActa.Fila {
+        .init(id: "auto", glifo: .corazon, etiqueta: "FC en reposo", sub: sub,
               estado: estado, umbral: .rango, fuera: fuera, tonoVoto: tonoVoto,
-              palabra: palabra,
-              a11y: "Autonómico, \(palabra), \(sub)\(fuera ? ", fuera de tu rango" : "").")
+              palabra: palabra, hueMetrica: LiquidColor.rosa,
+              a11y: "FC en reposo, \(palabra), \(sub)\(fuera ? ", fuera de tu rango" : "").")
     }
 
     private static func filaSueno(_ estado: LiquidVotoRiel.Estado, fuera: Bool,
                                   tonoVoto: Color, palabra: String,
-                                  sub: String = "anoche · contra un mínimo fijo") -> LiquidActa.Fila {
+                                  sub: String = "anoche · según lo recomendado") -> LiquidActa.Fila {
         .init(id: "sleep", glifo: .luna, etiqueta: "Sueño", sub: sub,
               estado: estado, umbral: .minimo, fuera: fuera, tonoVoto: tonoVoto,
-              palabra: palabra,
+              palabra: palabra, hueMetrica: LiquidColor.indigo,
               a11y: "Sueño, \(palabra), \(sub)\(fuera ? ", fuera de tu rango" : "").")
     }
 
@@ -341,8 +351,8 @@ enum LiquidActaFixtures {
                              tono: Color) -> LiquidActa {
         LiquidActa(
             titulo: "Preparación",
-            procedencia: "Apple Salud · esta mañana · 4 AGO",
-            explicacion: "El veredicto de cómo amaneciste: tus señales contra tu propia base. Es una aproximación, no un diagnóstico.",
+            procedencia: "Apple Salud · esta mañana",
+            explicacion: "El veredicto de cómo amaneciste: tus señales contra tu propia base.",
             infoMostrar: "Mostrar explicación", infoOcultar: "Ocultar explicación",
             nivel: nivel,
             conteo: conteo, conteoClave: conteoClave,
@@ -367,7 +377,7 @@ enum LiquidActaFixtures {
 
     static let ambar = base(
         nivel: "Hoy ve leve",
-        conteo: "El sueño votó fuera; lo autonómico, dentro.", conteoClave: "votó fuera",
+        conteo: "El sueño votó fuera; la FC en reposo, dentro.", conteoClave: "votó fuera",
         filas: [filaAuto(.dentro, fuera: false, tonoVoto: LiquidColor.verdePrimario, palabra: "dentro"),
                 filaSueno(.fueraAbajo, fuera: true, tonoVoto: LiquidColor.atencion, palabra: "fuera")],
         notas: [.init(id: "voto", texto: "Un voto fuera aligera el día; no lo tumba.")],

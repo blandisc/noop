@@ -40,7 +40,9 @@ public enum EcosistemaSimulacion {
         /// Órbitas (semiejes rx/ry + inclinación rad).
         public static let orbitaLuna1 = (rx: 92.0, ry: 34.0, tilt: -0.20)
         public static let orbitaLuna2 = (rx: 72.0, ry: 26.0, tilt: 0.32)
-        public static let orbitaGuardian = (rx: 112.0, ry: 42.0, tilt: 0.12)
+        // Más canteada (0.12→0.22, dueño): la elipse casi horizontal leía como un riel;
+        // el bucle inclinado se siente más orgánico, menos «atada con un palo».
+        public static let orbitaGuardian = (rx: 112.0, ry: 42.0, tilt: 0.22)
         /// Wobble de las órbitas en desgaste (±pt sobre rx).
         public static let wobbleDesgaste: Double = 10
         /// Destino del guardián en eclipse (offset desde `centro`).
@@ -51,7 +53,9 @@ public enum EcosistemaSimulacion {
         /// Conteos de partículas (esferas fibonacci).
         public static let nEsfera = 300
         public static let nLuna = 90
-        public static let nGuardian = 70
+        // Vigías más RALOS (dueño): menos motas → más transparentes, «como los demás».
+        // Ambos morfos del eclipse usan este mismo n, así la ley a.n==b.n queda intacta.
+        public static let nGuardian = 48
         public static let nEspirales = 34
         /// Aplastamiento vertical de la proyección (esfera ligeramente achatada).
         public static let aplastamiento: CGFloat = 0.96

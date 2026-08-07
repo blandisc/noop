@@ -366,6 +366,12 @@ public struct MatrizHoyFace: View {
                     .frame(height: chartAltura(s.chart))
                     .modifier(ScrubGesto(seccion: s, scrub: $scrub, tick: $scrubTick,
                                              onTap: { tocar(s.id) }))
+                    // VoiceOver no arrastra: la gráfica es su propio control ajustable.
+                    .accessibilityElement()
+                    .accessibilityLabel(Text(verbatim: scrubA11yLabel(s)))
+                    .modifier(ScrubA11y(aplica: true, valor: scrubA11yValue(s),
+                                        hint: scrubA11yHint,
+                                        ajustar: { scrubAjustar(s, $0) }))
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         } else {
@@ -385,6 +391,10 @@ public struct MatrizHoyFace: View {
             .accessibilityLabel(Text(verbatim: a11yLabel(s)))
             .accessibilityAddTraits(.isButton)
             .accessibilityIdentifier("matriz-seccion-\(s.id)")
+            // Bajo Reduce Motion las secciones con scrub caen aquí; siguen siendo
+            // ajustables por VoiceOver (el arrastre visual es lo único que se apaga).
+            .modifier(ScrubA11y(aplica: s.scrubNoches != nil, valor: scrubA11yValue(s),
+                                hint: scrubA11yHint, ajustar: { scrubAjustar(s, $0) }))
         }
     }
 
@@ -414,7 +424,10 @@ public struct MatrizHoyFace: View {
                     // Acuse del tacto: el eco del héroe responde al dedo (§micro).
                     .scaleEffect(latido == s.id ? 1.10 : 1)
                 Text(s.titulo)
-                    .font(LiquidType.tituloFila)
+                    // Las gemelas destacadas (Sueño · Reposo) usan el título gemelo, un
+                    // punto más grande, para que el par pese igual (FER-56). El resto de
+                    // secciones conserva el título de fila.
+                    .font(s.destacada ? LiquidType.tituloGemela : LiquidType.tituloFila)
                     .foregroundStyle(LiquidColor.tinta700)
                     .textCase(.uppercase)
                     // UNA sola línea siempre (revisión del dueño: «RESTING HR» / «FC EN
@@ -631,6 +644,65 @@ public struct MatrizHoyFace: View {
         if let sub = s.sublabel { parts.append(sub) }
         if let chip = s.chip { parts.append(chip.texto) }
         return parts.filter { !$0.isEmpty }.joined(separator: ", ")
+    }
+
+    // MARK: - Scrub accesible (FER-56)
+    // El arrastre lee las 14/20 lecturas con el dedo; VoiceOver no puede arrastrar. Se
+    // expone la gráfica como un control «ajustable»: deslizar ↑/↓ mueve el índice y el
+    // valor a11y anuncia esa lectura — el equivalente accesible del scrub táctil.
+
+    /// «FC Reposo, 20 lecturas» — nombre del control ajustable.
+    private func scrubA11yLabel(_ s: MatrizSeccion) -> String {
+        let n = s.scrubNoches?.count ?? 0
+        return String(format: String(localized: "matriz.scrub.a11y.label",
+                                     defaultValue: "%1$@, %2$d readings"), s.titulo, n)
+    }
+
+    /// Valor a11y: la lectura enfocada por el ajuste (o HOY mientras no se ha movido).
+    private func scrubA11yValue(_ s: MatrizSeccion) -> String {
+        guard let n = s.scrubNoches, !n.isEmpty else { return s.valor }
+        let idx = (scrub?.id == s.id ? scrub?.idx : nil) ?? (n.count - 1)
+        guard n.indices.contains(idx) else { return s.valor }
+        return "\(n[idx].valor), \(n[idx].sublabel)"
+    }
+
+    private var scrubA11yHint: String {
+        String(localized: "matriz.scrub.a11y.hint",
+               defaultValue: "Swipe up or down to hear each reading")
+    }
+
+    /// El ajuste de VoiceOver mueve el índice (↑ acerca a HOY, ↓ al pasado).
+    private func scrubAjustar(_ s: MatrizSeccion, _ dir: AccessibilityAdjustmentDirection) {
+        guard let n = s.scrubNoches, !n.isEmpty else { return }
+        let cur = (scrub?.id == s.id ? scrub?.idx : nil) ?? (n.count - 1)
+        let nuevo: Int
+        switch dir {
+        case .increment: nuevo = min(n.count - 1, cur + 1)
+        case .decrement: nuevo = max(0, cur - 1)
+        @unknown default: return
+        }
+        scrub = (id: s.id, idx: nuevo)
+        scrubTick += 1
+    }
+}
+
+/// Expone el historial del scrub a VoiceOver como control «ajustable» (FER-56): sin esto,
+/// las 14/20 lecturas sólo existían para el dedo. `aplica == false` → no-op (secciones
+/// sin scrub no deben volverse ajustables).
+private struct ScrubA11y: ViewModifier {
+    let aplica: Bool
+    let valor: String
+    let hint: String
+    let ajustar: (AccessibilityAdjustmentDirection) -> Void
+    func body(content: Content) -> some View {
+        if aplica {
+            content
+                .accessibilityValue(Text(verbatim: valor))
+                .accessibilityHint(Text(verbatim: hint))
+                .accessibilityAdjustableAction { ajustar($0) }
+        } else {
+            content
+        }
     }
 }
 

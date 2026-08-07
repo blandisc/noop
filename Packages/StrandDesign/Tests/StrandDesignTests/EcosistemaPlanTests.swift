@@ -58,7 +58,7 @@ final class EcosistemaPlanTests: XCTestCase {
                                 stretch: 0, nivel: nil, nivelBajo: false, capAmbar: false,
                                 n: G.nGuardian, paso: 2, tinta: .clima)
         XCTAssertEqual(luna.cuenta, 30)
-        XCTAssertEqual(guardian.cuenta, 35)
+        XCTAssertEqual(guardian.cuenta, 24)   // nGuardian 48, paso 2 (vigías más ralos)
     }
 
     // MARK: Fundida y viva
@@ -75,10 +75,10 @@ final class EcosistemaPlanTests: XCTestCase {
         // Sin gauge: el nivel solo se lee camino a / en el estado separado.
         XCTAssertNil(esferas[0].nivel)
 
-        // FER-22: los vigías (dos, azules) no llevan rótulo orbital — sus títulos
-        // viven en los overlays del estado separado.
+        // Revisión del dueño (2026-08): los vigías SÍ llevan rótulo orbital
+        // (TEMPERATURA/RESPIRACIÓN) para identificarse igual que REPOSO/SUEÑO.
         XCTAssertEqual(rotulos(trazos).sorted { "\($0)" < "\($1)" },
-                       [Sim.RotuloOrbital.reposo, .sueno]
+                       [Sim.RotuloOrbital.reposo, .sueno, .temperatura, .respiracion]
                         .sorted { "\($0)" < "\($1)" })
         XCTAssertTrue(trazos.contains { if case .halo = $0 { return true } else { return false } },
                       "el orbe fundido lleva su especular")

@@ -85,16 +85,20 @@ public struct OrbeVivo: View {
                                hue: Color, huePar: Color? = nil,
                                t: Double = 0, faseID: String = "",
                                forma: Forma = .esfera) {
+        // El corazón NO se talla de la esfera (a tamaño de sello quedan pocas motas,
+        // grandes y dispersas en 3D → amasijo ilegible, revisión del dueño FER-56). Se
+        // SIEMBRA en 2D sobre la forma del corazón: puntos chicos y densos, contorno
+        // marcado — misma materia visual, silueta que sí se lee. Quieto.
+        if forma == .corazon {
+            dibujarCorazon(ctx, centro: centro, radio: radio, hue: hue, faseID: faseID)
+            return
+        }
         // Densidad del héroe (~0.4 pt²/partícula) — más rala que un relleno: se ven
         // los puntos individuales, como arriba. Tope por rendimiento. La luna pierde
         // ~30 % de su silueta a la mordida → se compensa la cuenta para no ralear.
         let base = min(240, max(36, Int(0.4 * radio * radio)))
-        // Las siluetas talladas pierden parte de la esfera → compensar la cuenta.
-        let cuenta: Int = switch forma {
-        case .esfera: base
-        case .luna: min(240, Int(Double(base) * 1.35))
-        case .corazon: min(280, Int(Double(base) * 2.2))
-        }
+        // La luna pierde parte de la esfera a la mordida → compensar la cuenta.
+        let cuenta: Int = forma == .luna ? min(240, Int(Double(base) * 1.35)) : base
         // Mordida 2D del creciente (mismas proporciones que el mock aprobado): centro
         // desplazado a la derecha-arriba, radio 0.86·R. Se descartan las motas cuyo
         // punto PROYECTADO cae dentro (front y back juntas → lee como luna).
@@ -102,41 +106,92 @@ public struct OrbeVivo: View {
         let mordidaR = radio * 0.86
         // Fase estable por identidad: cada orbe mira distinto y gira desde su ángulo.
         let fase = Double(MatrizDither.semilla(chartID: faseID, index: 0) % 628) / 100.0
-        // Luna y corazón no rotan ni tiemblan: motas fijas (dueño, FER-55).
-        let quieta = forma != .esfera
+        // La luna no rota ni tiembla: motas fijas (dueño, FER-55).
+        let quieta = forma == .luna
         let rot = quieta ? fase : fase + t * 0.12
-        // Corazón implícito: (x²+y²−1)³ − x²·y³ ≤ 0 (x,y normalizados). El CONTORNO
-        // se detecta por cercanía al borde y se marca: motas más grandes y plenas
-        // trazan la silueta; el interior queda más tenue (receta aprobada en mock).
-        let escalaCorazon = Double(radio) * 0.82
-        func corazonF(_ px: CGFloat, _ py: CGFloat) -> Double {
-            let x = Double(px - centro.x) / escalaCorazon
-            let y = Double(centro.y - py) / escalaCorazon + 0.12
-            let a = x * x + y * y - 1
-            return a * a * a - x * x * y * y * y
-        }
         for (i, dir) in direcciones(cuenta).enumerated() {
             let p = EcosistemaSimulacion.particula(
                 dir: dir, indice: i, centro: centro, radio: radio,
                 rotacion: rot, jitterAmp: (quieta || radio <= 10) ? 0 : 0.7,
                 t: quieta ? 0 : t, alfaK: 1.4)
-            var esBorde = false
-            switch forma {
-            case .esfera: break
-            case .luna:
+            if forma == .luna {
                 let dx = p.pos.x - mordida.x, dy = p.pos.y - mordida.y
                 if dx * dx + dy * dy < mordidaR * mordidaR { continue }
-            case .corazon:
-                let f = corazonF(p.pos.x, p.pos.y)
-                if f > 0 { continue }               // fuera del corazón
-                esBorde = f > -0.09                  // cerca del borde → contorno
             }
-            let pr = p.tamano * (0.55 + radio / 60) * (esBorde ? 1.45 : 1)
+            let pr = p.tamano * (0.55 + radio / 60)
             let color = (huePar != nil && i % 2 == 1) ? huePar! : hue
-            let alfa = esBorde ? 1.0 : min(1, p.alfa) * (forma == .corazon ? 0.55 : 1)
             ctx.fill(Path(ellipseIn: CGRect(x: p.pos.x - pr, y: p.pos.y - pr,
                                             width: pr * 2, height: pr * 2)),
-                     with: .color(color.opacity(alfa)))
+                     with: .color(color.opacity(min(1, p.alfa))))
+        }
+    }
+
+    /// El corazón sembrado en 2D (FER-56): rejection-sampling DETERMINISTA sobre la
+    /// curva implícita del corazón `(x²+y²−1)³ − x²·y³ ≤ 0` (misma que el mock). Motas
+    /// chicas y densas; las del CONTORNO (cercanas al borde) más grandes, plenas y
+    /// oscuras trazan la silueta; el interior más tenue. Quieto (sin `t`): la semilla
+    /// fija la nube, cero shimmer y cero costo por frame.
+    private static func dibujarCorazon(_ ctx: GraphicsContext, centro: CGPoint,
+                                       radio: CGFloat, hue: Color, faseID: String) {
+        let esc = Double(radio) * 0.062     // ±16 de la paramétrica → mismo Ø que la luna
+        let yCentro = -2.3                   // centra el peso vertical (cúspide abajo)
+        // Paramétrica clásica del corazón: x=16sin³t, y=13cos t−5cos2t−2cos3t−cos4t.
+        // Lóbulos arriba, cúspide abajo (en pantalla, y invertida).
+        func punto(_ tt: Double) -> CGPoint {
+            let x = 16 * pow(sin(tt), 3)
+            let y = 13 * cos(tt) - 5 * cos(2 * tt) - 2 * cos(3 * tt) - cos(4 * tt)
+            return CGPoint(x: centro.x + CGFloat(x) * esc,
+                           y: centro.y - CGFloat(y - yCentro) * esc)
+        }
+        // El contorno como POLÍGONO (para el test dentro/fuera del relleno uniforme).
+        let nContorno = min(72, max(36, Int(radio * 3.6)))
+        var poligono: [CGPoint] = []
+        poligono.reserveCapacity(nContorno)
+        for k in 0..<nContorno {
+            poligono.append(punto(Double(k) / Double(nContorno) * 2 * .pi))
+        }
+        // 1 · RELLENO UNIFORME primero (debajo): rejection-sampling dentro del polígono,
+        // DENSO como la luna. PRNG determinista → misma nube cada frame.
+        var estado = UInt64(MatrizDither.semilla(chartID: faseID, index: 7)) | 1
+        func rnd() -> Double {
+            estado ^= estado << 13; estado ^= estado >> 7; estado ^= estado << 17
+            return Double(estado % 100_000) / 100_000
+        }
+        func dentro(_ px: CGFloat, _ py: CGFloat) -> Bool {
+            var d = false, j = poligono.count - 1
+            for i in 0..<poligono.count {
+                let a = poligono[i], b = poligono[j]
+                if (a.y > py) != (b.y > py),
+                   px < (b.x - a.x) * (py - a.y) / (b.y - a.y) + a.x { d.toggle() }
+                j = i
+            }
+            return d
+        }
+        let minX = poligono.map(\.x).min() ?? centro.x
+        let maxX = poligono.map(\.x).max() ?? centro.x
+        let minY = poligono.map(\.y).min() ?? centro.y
+        let maxY = poligono.map(\.y).max() ?? centro.y
+        // Densidad calcada de la luna (~0.4 pt²·1.35 por partícula): misma sensación.
+        let nRelleno = min(180, max(48, Int(0.55 * radio * radio)))
+        let prIn = 0.62 * (0.55 + radio / 44)
+        var puestas = 0, intentos = 0
+        while puestas < nRelleno && intentos < nRelleno * 40 {
+            intentos += 1
+            let px = minX + CGFloat(rnd()) * (maxX - minX)
+            let py = minY + CGFloat(rnd()) * (maxY - minY)
+            guard dentro(px, py) else { continue }
+            let alfa = 0.5 + rnd() * 0.4          // como la luna: motas plenas, no fantasmas
+            ctx.fill(Path(ellipseIn: CGRect(x: px - prIn, y: py - prIn,
+                                            width: prIn * 2, height: prIn * 2)),
+                     with: .color(hue.opacity(alfa)))
+            puestas += 1
+        }
+        // 2 · CONTORNO encima — motas parejas sobre la curva = silueta nítida y plena.
+        let prBorde = 0.85 * (0.55 + radio / 44)
+        for c in poligono {
+            ctx.fill(Path(ellipseIn: CGRect(x: c.x - prBorde, y: c.y - prBorde,
+                                            width: prBorde * 2, height: prBorde * 2)),
+                     with: .color(hue))
         }
     }
 }

@@ -478,16 +478,17 @@ public struct LiquidEcosistema: View {
         // El destape espera a que las esferas estén aterrizando; la salida es inmediata
         // (las motas se disuelven de regreso mientras el contenedor se apaga).
         .opacity(esSeparadaEstable ? 1 : 0)
-        // Asentado sutil (ronda quirurgica): el valor no APARECE, se sienta.
-        .scaleEffect(esSeparadaEstable ? 1 : 0.97)
+        // Florecido sutil (FER-56, dueño): el dato no APARECE, se asienta — crece un
+        // pelín (0.94→1) y sube 6 pt mientras funde, ya con el orbe quieto.
+        .scaleEffect(esSeparadaEstable ? 1 : 0.94)
+        .offset(y: still ? 0 : (esSeparadaEstable ? 0 : 6))
         .allowsHitTesting(esSeparadaEstable)
         .animation(still ? LiquidEcosistemaMotion.reduceCrossfadeAnim
                          : (esSeparadaEstable
-                            // FER-54 (revisión del dueño): primero ATERRIZA el orbe,
-                            // después habla el texto — 0.45 destapaba a mitad del vuelo.
-                            ? LiquidMotion.glassOut(LiquidMotion.quick)
-                                .delay(LiquidEcosistemaMotion.anticipacion
-                                       + LiquidEcosistemaMotion.fusionDur * 0.85)
+                            // Espera el aterrizaje + que el rebote se calme, y florece
+                            // suave y largo (antes: fade rápido a media separación).
+                            ? LiquidEcosistemaMotion.revelarDatoAnim
+                            // Al reunir, se va de inmediato (las motas se disuelven).
                             : LiquidMotion.glassOut(LiquidMotion.quick)),
                    value: esSeparadaEstable)
         // La palabra del veredicto (abajo, centrada) — se oculta en separado. En compacto
@@ -529,10 +530,15 @@ public struct LiquidEcosistema: View {
         ForEach(Array(senales.prefix(2).enumerated()), id: \.element.id) { i, senal in
             let centro = i == 0 ? G.p1 : G.p2
             let etiqueta = i == 0 ? rotulos.reposo : rotulos.sueno
+            // El rótulo toma el HUE de su orbe al separarse (revisión del dueño): REPOSO
+            // rosa, SUEÑO indigo — el mismo color de su métrica en la Matriz de abajo. En
+            // atención (votó fuera) cede al rojo semántico, como su número.
+            let hueEtiqueta = i == 0 ? LiquidColor.rosa : LiquidColor.indigo
             VStack(spacing: LiquidSpace.s050) {
                 Text(etiqueta)
                     .font(LiquidType.micro).tracking(LiquidType.microTracking)
-                    .foregroundStyle(LiquidColor.tinta700)   // FER-45: contraste legible
+                    .foregroundStyle(senal.state == .atencion
+                                     ? LiquidColor.negativo : hueEtiqueta)
             }
             .position(x: centro.x, y: 74)
             // Opción 2 «escrito en partículas» (decisión del dueño /inject, tras probar
@@ -610,10 +616,13 @@ public struct LiquidEcosistema: View {
         let rOrbe = Sim.Geometria.radioGuardianSeparado
         let tinta = fuera ? LiquidColor.atencionTexto : LiquidColor.tinta900
         let materia = fuera ? LiquidColor.atencionTexto : LiquidColor.azul
+        // El rótulo toma el HUE de su vigía al separarse (revisión del dueño): TEMPERATURA
+        // dorado, RESPIRACIÓN azul — su identidad en la Matriz. Fuera de rango cede al rojo.
+        let hueRotulo = lado < 0 ? LiquidColor.doradoTemp : LiquidColor.azul
         Text(rotulo)
             .font(LiquidType.orbita).tracking(LiquidType.orbitaTracking)
             .fontWeight(.medium)
-            .foregroundStyle(tinta)
+            .foregroundStyle(fuera ? LiquidColor.atencionTexto : hueRotulo)
             .fixedSize()
             .position(x: x, y: 6)
         // (El puente de motas al número murió — revisión del dueño: la conexión que
@@ -1035,7 +1044,10 @@ private struct EcosistemaCanvas: View {
         case .blanco: return LiquidColor.particulaBlanca
         case .sueno: return Self.mezclada(LiquidColor.indigo, hacia: tintaClima)
         case .reposo: return Self.mezclada(LiquidColor.rosa, hacia: tintaClima)
-        case .vigiaTemp: return Self.mezclada(LiquidColor.doradoTemp, hacia: tintaClima)
+        // El dorado de temperatura brincaba (dueño): más besado por el clima (k .55) para
+        // que baje de intensidad y no lea como «lo más importante». La respiración (azul)
+        // se queda como está.
+        case .vigiaTemp: return Self.mezclada(LiquidColor.doradoTemp, hacia: tintaClima, k: 0.55)
         case .vigiaResp: return Self.mezclada(LiquidColor.azul, hacia: tintaClima)
         }
     }
@@ -1055,6 +1067,8 @@ private struct EcosistemaCanvas: View {
         case .reposo: return rotulos.reposo
         case .sueno: return rotulos.sueno
         case .guardian: return rotulos.guardian
+        case .temperatura: return rotulos.temperatura
+        case .respiracion: return rotulos.respiracion
         }
     }
 
