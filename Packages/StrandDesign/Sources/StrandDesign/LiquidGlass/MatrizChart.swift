@@ -224,17 +224,18 @@ public struct MatrizColumnas: View {
             } else {
                 let gap = MatrizTokens.barraGap
                 let inset = MatrizTokens.chartInset
-                let colW = max((size.width - inset * 2 - gap * CGFloat(n - 1)) / CGFloat(n), 1)
+                // Sub-expresiones TIPADAS: la forma anidada agota el budget del type-checker en
+                // el compile de iOS (ad-hoc CI) — «unable to type-check in reasonable time». Y el
+                // set `0`-duplicado (idéntico) se consolidó en éste: doblaba la carga (FER-55).
+                let usable: CGFloat = size.width - inset * 2 - gap * CGFloat(n - 1)
+                let colW: CGFloat = max(usable / CGFloat(n), 1)
                 let last = n - 1
-                let gap0 = MatrizTokens.barraGap
-                let inset0 = MatrizTokens.chartInset
-                let colW0 = max((size.width - inset0 * 2 - gap0 * CGFloat(n - 1)) / CGFloat(n), 1)
                 for (i, noche) in noches.enumerated() {
                     guard let v = noche.valor else {
                         // Noche sin lectura resaltada por el scrub: aún así damos feedback
                         // — un cursor tenue a lo alto en su columna (Grok #4: scrub fantasma).
                         if resaltado == i {
-                            let cx = inset0 + CGFloat(i) * (colW0 + gap0) + colW0 / 2
+                            let cx = inset + CGFloat(i) * (colW + gap) + colW / 2
                             var hueco = Path()
                             hueco.move(to: CGPoint(x: cx, y: 0))
                             hueco.addLine(to: CGPoint(x: cx, y: size.height))
@@ -556,7 +557,8 @@ public struct MatrizBarrasMini: View {
             let maxV = valores.compactMap { $0 }.max() ?? 1
             let gap = MatrizTokens.barraGap
             let inset = MatrizTokens.chartInset
-            let barW = max((size.width - inset * 2 - gap * CGFloat(n - 1)) / CGFloat(n), 1)
+            let usable: CGFloat = size.width - inset * 2 - gap * CGFloat(n - 1)
+            let barW: CGFloat = max(usable / CGFloat(n), 1)
             let last = valores.count - 1
             for (i, val) in valores.enumerated() {
                 guard let v = val, maxV > 0 else { continue }
