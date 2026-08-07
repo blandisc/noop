@@ -478,16 +478,17 @@ public struct LiquidEcosistema: View {
         // El destape espera a que las esferas estén aterrizando; la salida es inmediata
         // (las motas se disuelven de regreso mientras el contenedor se apaga).
         .opacity(esSeparadaEstable ? 1 : 0)
-        // Asentado sutil (ronda quirurgica): el valor no APARECE, se sienta.
-        .scaleEffect(esSeparadaEstable ? 1 : 0.97)
+        // Florecido sutil (FER-56, dueño): el dato no APARECE, se asienta — crece un
+        // pelín (0.94→1) y sube 6 pt mientras funde, ya con el orbe quieto.
+        .scaleEffect(esSeparadaEstable ? 1 : 0.94)
+        .offset(y: still ? 0 : (esSeparadaEstable ? 0 : 6))
         .allowsHitTesting(esSeparadaEstable)
         .animation(still ? LiquidEcosistemaMotion.reduceCrossfadeAnim
                          : (esSeparadaEstable
-                            // FER-54 (revisión del dueño): primero ATERRIZA el orbe,
-                            // después habla el texto — 0.45 destapaba a mitad del vuelo.
-                            ? LiquidMotion.glassOut(LiquidMotion.quick)
-                                .delay(LiquidEcosistemaMotion.anticipacion
-                                       + LiquidEcosistemaMotion.fusionDur * 0.85)
+                            // Espera el aterrizaje + que el rebote se calme, y florece
+                            // suave y largo (antes: fade rápido a media separación).
+                            ? LiquidEcosistemaMotion.revelarDatoAnim
+                            // Al reunir, se va de inmediato (las motas se disuelven).
                             : LiquidMotion.glassOut(LiquidMotion.quick)),
                    value: esSeparadaEstable)
         // La palabra del veredicto (abajo, centrada) — se oculta en separado. En compacto

@@ -173,6 +173,15 @@ public enum LiquidEcosistemaMotion {
     public static let settleFrecuencia: Double = 11
     /// Fade de la palabra del veredicto al coronar.
     public static let palabraDur: Double = 0.70
+    /// Revelado del DATO al separar (FER-56, dueño: antes destapaba a media separación
+    /// —0.85× del viaje, aún en vuelo— con un fade rápido: se sentía brusco). Ahora
+    /// espera a que el orbe ATERRICE (anticipación + viaje) y su rebote se CALME (+0.14),
+    /// y florece suave y largo (ease-out 0.55). Al reunir, la salida es inmediata.
+    public static let revelarDatoEspera: Double = anticipacion + fusionDur + 0.14
+    public static let revelarDatoDur: Double = 0.55
+    public static var revelarDatoAnim: Animation {
+        .easeOut(duration: revelarDatoDur).delay(revelarDatoEspera)
+    }
     /// Crossfade bajo Reduce Motion (sustituye viaje/asentamiento).
     public static let reduceMotionCrossfade: Double = 0.3
     /// Los crossfades ambiental / reduce-motion ya envueltos como `Animation` (FER-31): la curva
