@@ -54498,13 +54498,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your resting HR is your lowest pulse of the night, measured by your Apple Watch; when it isn't worn to sleep, Cénit uses Apple Health's resting heart rate."
+            "value" : "Your resting HR is your lowest pulse of the night, measured by your Apple Watch; when there's no overnight reading, Cénit uses Apple Health's resting heart rate."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tu FC en reposo es tu pulso más bajo de la noche, medido con el Apple Watch; si no lo usas para dormir, Cénit usa la FC en reposo de Apple."
+            "value" : "Tu FC en reposo es tu pulso más bajo de la noche, medido con el Apple Watch; cuando no hay lectura nocturna, Cénit usa la FC en reposo de Apple."
           }
         }
       }
@@ -54658,6 +54658,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@, sin dato, %@."
+          }
+        }
+      }
+    },
+    "acta.resumen.caution.sueno" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sleep voted outside; resting HR, inside."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El sueño votó fuera; la FC en reposo, dentro."
+          }
+        }
+      }
+    },
+    "acta.resumen.caution.auto" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resting HR voted outside; sleep, inside."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La FC en reposo votó fuera; el sueño, dentro."
           }
         }
       }

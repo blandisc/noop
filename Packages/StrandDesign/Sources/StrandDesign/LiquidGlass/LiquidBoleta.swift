@@ -7,8 +7,8 @@ import SwiftUI
 //    de slider), banda con gradiente de densidad (= tu patrón), ticks de umbral cuyo NÚMERO
 //    codifica el tipo de comparación (1 = contra un mínimo · 2 = contra tu base), y la joya
 //    de papel ribeteada (= tu amanecer, misma gramática que el punto de HOY en las gráficas).
-//  · `LiquidBoletaCard` — la tarjeta-acta: filas de votante + la DOBLE RAYA contable que
-//    cierra el escrutinio (el sello del documento es tipográfico, no un adorno).
+//  · `LiquidBoletaCard` — la tarjeta-acta: filas de votante, cada una con el hue de su
+//    métrica (rosa FC · indigo Sueño) cuando hay veredicto (revisión del dueño 2026-08).
 //  · `LiquidVigilanteChip` — la ficha punteada de quien mide pero no vota (anillo hueco:
 //    un voto que nunca se llena; borde punteado: no es votante).
 //
@@ -395,28 +395,32 @@ public struct LiquidVigilanteChip: View {
 #Preview("Boleta · estados") {
     VStack(alignment: .leading, spacing: LiquidSpace.s550) {
         LiquidBoletaCard(votantes: [
-            .init(id: "auto", glifo: .corazon, nombre: "Autonómico", sub: "FC en reposo · contra tu base",
+            .init(id: "auto", glifo: .corazon, nombre: "FC en reposo", sub: "de la noche · contra tu base",
                   estado: .dentro, umbral: .rango, fuera: false,
                   tonoVoto: LiquidColor.verdePrimario, palabra: "dentro",
-                  a11y: "Autonómico, votó dentro, contra tu base."),
-            .init(id: "sleep", glifo: .luna, nombre: "Sueño", sub: "anoche · contra un mínimo fijo",
+                  hueMetrica: LiquidColor.rosa,
+                  a11y: "FC en reposo, votó dentro, contra tu base."),
+            .init(id: "sleep", glifo: .luna, nombre: "Sueño", sub: "anoche · según lo recomendado",
                   estado: .fueraAbajo, umbral: .minimo, fuera: true,
                   tonoVoto: LiquidColor.atencion, palabra: "fuera",
-                  a11y: "Sueño, votó fuera, anoche contra un mínimo fijo, fuera de tu rango."),
+                  hueMetrica: LiquidColor.indigo,
+                  a11y: "Sueño, votó fuera, anoche según lo recomendado, fuera de tu rango."),
         ])
         HStack(spacing: LiquidSpace.s150) {
             LiquidVigilanteChip(nombre: "Respiración")
             LiquidVigilanteChip(nombre: "Temperatura")
         }
+        // Sin veredicto (calibrando / sin lectura): el hue va GATEADO a tinta — la fila no
+        // toma su identidad de color hasta que hay veredicto (regla de la hoja).
         LiquidBoletaCard(votantes: [
-            .init(id: "auto", glifo: .corazon, nombre: "Autonómico", sub: "aprendiendo tu base",
+            .init(id: "auto", glifo: .corazon, nombre: "FC en reposo", sub: "aprendiendo tu base",
                   estado: .calibrando, umbral: .rango, fuera: false,
                   tonoVoto: LiquidColor.tinta500, palabra: "··",
-                  a11y: "Autonómico, aún sin voto, aprendiendo tu base."),
-            .init(id: "sleep", glifo: .luna, nombre: "Sueño", sub: "contra un mínimo fijo",
+                  a11y: "FC en reposo, aún sin voto, aprendiendo tu base."),
+            .init(id: "sleep", glifo: .luna, nombre: "Sueño", sub: "según lo recomendado",
                   estado: .sinLectura, umbral: .minimo, fuera: false,
                   tonoVoto: LiquidColor.tinta500, palabra: "sin dato",
-                  a11y: "Sueño, sin dato, contra un mínimo fijo."),
+                  a11y: "Sueño, sin dato, según lo recomendado."),
         ])
     }
     .padding(LiquidSpace.s550)
@@ -426,14 +430,16 @@ public struct LiquidVigilanteChip: View {
 
 #Preview("Boleta · AX5") {
     LiquidBoletaCard(votantes: [
-        .init(id: "auto", glifo: .corazon, nombre: "Autonómico", sub: "FC en reposo · contra tu base",
+        .init(id: "auto", glifo: .corazon, nombre: "FC en reposo", sub: "de la noche · contra tu base",
               estado: .fueraArriba, umbral: .rango, fuera: true,
               tonoVoto: LiquidColor.negativo, palabra: "fuera",
-              a11y: "Autonómico, votó fuera, contra tu base, fuera de tu rango."),
-        .init(id: "sleep", glifo: .luna, nombre: "Sueño", sub: "anoche · contra un mínimo fijo",
+              hueMetrica: LiquidColor.rosa,
+              a11y: "FC en reposo, votó fuera, contra tu base, fuera de tu rango."),
+        .init(id: "sleep", glifo: .luna, nombre: "Sueño", sub: "anoche · según lo recomendado",
               estado: .fueraAbajo, umbral: .minimo, fuera: true,
               tonoVoto: LiquidColor.negativo, palabra: "fuera",
-              a11y: "Sueño, votó fuera, anoche contra un mínimo fijo, fuera de tu rango."),
+              hueMetrica: LiquidColor.indigo,
+              a11y: "Sueño, votó fuera, anoche según lo recomendado, fuera de tu rango."),
     ])
     .padding(LiquidSpace.s550)
     .background(LiquidSheetFondo(tone: LiquidColor.negativo))

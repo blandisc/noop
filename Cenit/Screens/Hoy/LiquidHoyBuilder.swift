@@ -1048,7 +1048,7 @@ enum LiquidHoyBuilder {
                                empujeTendencia: empujeTendencia,
                                healthConnected: healthConnected),
             confianza: confianzaActa(prep: prep),
-            plegable: plegableActa(prep: prep),
+            plegable: plegableActa(),
             verMas: String(localized: "See more in Trends"),
             verMasHint: String(localized: "Opens the detail"),
             tono: actaTono(prep))
@@ -1154,7 +1154,11 @@ enum LiquidHoyBuilder {
                                palabra: palabra,
                                // Hue de identidad = el MISMO de la celda de la Matriz (rosa FC ·
                                // indigo Sueño), vía token compartido: si cambia allá, cambia aquí.
-                               hueMetrica: esAuto ? LiquidColor.rosa : LiquidColor.indigo,
+                               // GATE «sin veredicto = CERO color» (regla de la hoja, igual que
+                               // tonoVoto): sin veredicto la fila va en tinta, no en su hue.
+                               hueMetrica: hayVeredicto
+                                   ? (esAuto ? LiquidColor.rosa : LiquidColor.indigo)
+                                   : LiquidColor.tinta700,
                                a11y: a11y)
     }
 
@@ -1205,10 +1209,14 @@ enum LiquidHoyBuilder {
                     String(localized: "acta.resumen.full.clave", defaultValue: "inside"))
         case .caution:
             let suenoFuera = estados.indices.contains(1) && estados[1].isOut
+            // Keys namespaced con EN nuevo: el nombre de la señal es «resting HR» / «FC en
+            // reposo» también en inglés, no «autonomic» (consistente con la fila).
             return suenoFuera
-                ? (String(localized: "Sleep voted outside; autonomic, inside."),
+                ? (String(localized: "acta.resumen.caution.sueno",
+                          defaultValue: "Sleep voted outside; resting HR, inside."),
                    String(localized: "acta.resumen.caution.clave", defaultValue: "voted outside"))
-                : (String(localized: "Autonomic voted outside; sleep, inside."),
+                : (String(localized: "acta.resumen.caution.auto",
+                          defaultValue: "Resting HR voted outside; sleep, inside."),
                    String(localized: "acta.resumen.caution.clave", defaultValue: "voted outside"))
         case .easy:
             return (String(localized: "Both of your votes fell outside."),
@@ -1318,14 +1326,14 @@ enum LiquidHoyBuilder {
         return .nota(String(localized: "Your verdict stands on \(n) of your own nights; at \(trust) your base is firm."))
     }
 
-    private static func plegableActa(prep: Preparedness.Read?) -> LiquidActa.Metodo {
+    private static func plegableActa() -> LiquidActa.Metodo {
         // «Cómo se calcula» es el CÓMO (la mecánica); el ⓘ ya dijo el QUÉ. Primera línea:
         // QUÉ tipo de FC es (el dueño pidió especificarlo). Luego: los dos votos separados,
         // la histéresis, y la cita. Se quitó el «lee X de Y señales» (confundía) y el hedge
         // que ya no duplica al ⓘ.
         let lineas: [String] = [
             String(localized: "acta.metodo.fc",
-                   defaultValue: "Your resting HR is your lowest pulse of the night, measured by your Apple Watch; when it isn't worn to sleep, Cénit uses Apple Health's resting heart rate."),
+                   defaultValue: "Your resting HR is your lowest pulse of the night, measured by your Apple Watch; when there's no overnight reading, Cénit uses Apple Health's resting heart rate."),
             String(localized: "acta.metodo.votos",
                    defaultValue: "Your sleep and your resting HR are read as separate votes, so a bad night doesn't count twice. Your breathing and temperature only watch; they don't vote here."),
             String(localized: "acta.metodo.histeresis",

@@ -11,9 +11,11 @@ import SwiftUI
 // sola, el método es letra chica.
 //
 // REGLAS QUE ESTA HOJA NO ROMPE
-//  · El color saturado vive SOLO en la palabra del veredicto, la cláusula del resumen
-//    (text-tier AA) y los rieles; el wash de fila fuera va al token de I1. Gotas y fichas
-//    en tinta. Sin veredicto: CERO color en toda la hoja.
+//  · El color saturado vive en la palabra del veredicto, la cláusula del resumen (text-tier
+//    AA) y los rieles; el wash de fila fuera va al token de I1. Las gotas y los TÍTULOS de
+//    fila llevan el hue de IDENTIDAD de su métrica (rosa FC · indigo Sueño, revisión del
+//    dueño 2026-08); las fichas siguen en tinta. Sin veredicto: CERO color en toda la hoja
+//    (el hue de identidad también se apaga — se gatea a tinta en el caller).
 //  · Paridad héroe↔acta (gate /cso B1): la palabra grande es EXACTAMENTE la del héroe.
 //  · Las filas NO son tocables; el riel es decorativo para VoiceOver — la lectura viaja en
 //    el label compuesto de cada votante.
@@ -30,7 +32,8 @@ public struct LiquidActa: Sendable {
     /// Un votante de la boleta: quién, contra qué, y su voto en el riel.
     public struct Fila: Sendable, Identifiable {
         public let id: String
-        /// El glifo de la gota (SIEMPRE pintada en tinta — el hue 1:1 no entra a la boleta).
+        /// El glifo de la gota — teñida con el `hueMetrica` de identidad (rosa/indigo) cuando
+        /// hay veredicto; tinta sin él.
         public let glifo: LiquidIcon.Glyph
         /// El nombre que el usuario YA ve en el orbe («Autonómico»).
         public let etiqueta: String
@@ -111,8 +114,8 @@ public struct LiquidActa: Sendable {
     }
 
     public let titulo: String
-    /// Procedencia + sello de fecha, YA compuestos («Apple Salud · esta mañana · 4 AGO») —
-    /// el micro-momento de acta oficial (spec /ux D2).
+    /// Procedencia YA compuesta («Apple Salud · esta mañana») — sin fecha (revisión del
+    /// dueño: la fecha ya vive en el encabezado de Hoy).
     public let procedencia: String
     public let explicacion: String
     public let infoMostrar: String
@@ -311,7 +314,7 @@ public struct LiquidActaVeredicto: View {
 enum LiquidActaFixtures {
 
     private static let plegableLineas = [
-        "Tu FC en reposo es tu pulso más bajo de la noche, medido con el Apple Watch; si no lo usas para dormir, Cénit usa la FC en reposo de Apple.",
+        "Tu FC en reposo es tu pulso más bajo de la noche, medido con el Apple Watch; cuando no hay lectura nocturna, Cénit usa la FC en reposo de Apple.",
         "Tu sueño y tu FC en reposo se leen como votos separados, para que una mala noche no cuente dos veces. Tu respiración y tu temperatura solo vigilan; aquí no votan.",
         "Un veredicto nuevo tiene que repetirse dos días seguidos antes de reemplazar al anterior.",
         "O'Grady et al., 2024 · Task Force, 1996 · Plews et al., 2013. Aproximado, sin fin clínico.",
@@ -374,7 +377,7 @@ enum LiquidActaFixtures {
 
     static let ambar = base(
         nivel: "Hoy ve leve",
-        conteo: "El sueño votó fuera; lo autonómico, dentro.", conteoClave: "votó fuera",
+        conteo: "El sueño votó fuera; la FC en reposo, dentro.", conteoClave: "votó fuera",
         filas: [filaAuto(.dentro, fuera: false, tonoVoto: LiquidColor.verdePrimario, palabra: "dentro"),
                 filaSueno(.fueraAbajo, fuera: true, tonoVoto: LiquidColor.atencion, palabra: "fuera")],
         notas: [.init(id: "voto", texto: "Un voto fuera aligera el día; no lo tumba.")],
