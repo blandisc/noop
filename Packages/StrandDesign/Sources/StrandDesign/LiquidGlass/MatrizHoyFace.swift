@@ -14,6 +14,11 @@ public enum MatrizChartPayload: Sendable, Equatable {
                   referenciaTag: String, dominio: ClosedRange<Double>)
     case lineaRellena(puntos: [Double?], base: Double?, dominio: ClosedRange<Double>,
                       alfa: Double, alertaHoy: MedidorLunar.Alerta)
+    /// FC (FER-55, diseño final): LA REGLA AL MARGEN — curva con relleno que muere a
+    /// nada + regla a la derecha (capilar de dominio, tramo de tu rango ±1σ, lectura
+    /// gemela de HOY). `banda` nil → la regla muestra solo el capilar.
+    case regla(puntos: [Double?], banda: ClosedRange<Double>?,
+               dominio: ClosedRange<Double>, alertaHoy: MedidorLunar.Alerta)
     case lineaSerena(puntos: [Double?], banda: ClosedRange<Double>?,
                      dominio: ClosedRange<Double>, alertaHoy: MedidorLunar.Alerta)
     case rielZona(p: Double?, zona: ClosedRange<Double>, estela: [Double],
@@ -46,6 +51,14 @@ public struct MatrizSeccion: Sendable, Identifiable, Equatable {
     public let chip: MatrizHoyModel.ChipGuardian?
     /// Renglones nombrados del guardián (Temp / Resp); nil en el resto.
     public let renglones: [MatrizRenglon]?
+    /// Silueta del orbe-sello (FER-55): `.luna` para Sueño, `.esfera` para el resto.
+    public let formaSello: OrbeVivo.Forma
+    /// Glifo de gota (comparativa FER-55): si está presente, el sello es el
+    /// `LiquidIconDrop` de las hojas de resumen en vez del orbe de partículas.
+    public let glifoSello: LiquidIcon.Glyph?
+    /// Scrub (FER-55): cada noche con su lectura ya formateada (valor + sublabel).
+    /// El índice mapea 1:1 a las barras; el último = hoy. `nil` = celda sin scrub.
+    public let scrubNoches: [ScrubNoche]?
 
     public init(id: String, hue: Color,
                 huesPar: (Color, Color)? = nil, titulo: String, valor: String,
@@ -53,7 +66,10 @@ public struct MatrizSeccion: Sendable, Identifiable, Equatable {
                 vota: Bool = false, terciaria: Bool = false,
                 sublabel: String? = nil, chartID: String, chart: MatrizChartPayload,
                 chip: MatrizHoyModel.ChipGuardian? = nil,
-                renglones: [MatrizRenglon]? = nil) {
+                renglones: [MatrizRenglon]? = nil,
+                formaSello: OrbeVivo.Forma = .esfera,
+                glifoSello: LiquidIcon.Glyph? = nil,
+                scrubNoches: [ScrubNoche]? = nil) {
         self.id = id; self.hue = hue; self.huesPar = huesPar
         self.titulo = titulo; self.valor = valor
         self.unidad = unidad; self.destacada = destacada
@@ -61,6 +77,19 @@ public struct MatrizSeccion: Sendable, Identifiable, Equatable {
         self.sublabel = sublabel
         self.chartID = chartID; self.chart = chart; self.chip = chip
         self.renglones = renglones
+        self.formaSello = formaSello
+        self.glifoSello = glifoSello
+        self.scrubNoches = scrubNoches
+    }
+
+    /// Una noche leída para el scrub: el valor grande y la frase del sublabel, ya
+    /// formateados por el builder (la vista no sabe de fechas ni unidades).
+    public struct ScrubNoche: Sendable, Equatable {
+        public let valor: String
+        public let sublabel: String
+        public init(valor: String, sublabel: String) {
+            self.valor = valor; self.sublabel = sublabel
+        }
     }
 
     public static func == (lhs: MatrizSeccion, rhs: MatrizSeccion) -> Bool {
@@ -72,6 +101,8 @@ public struct MatrizSeccion: Sendable, Identifiable, Equatable {
             && lhs.huesPar?.0 == rhs.huesPar?.0 && lhs.huesPar?.1 == rhs.huesPar?.1
             && lhs.unidad == rhs.unidad && lhs.destacada == rhs.destacada
             && lhs.vota == rhs.vota && lhs.terciaria == rhs.terciaria
+            && lhs.formaSello == rhs.formaSello && lhs.scrubNoches == rhs.scrubNoches
+            && lhs.glifoSello == rhs.glifoSello
     }
 }
 
@@ -172,6 +203,11 @@ public struct MatrizHoyFace: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// Acuse del sello: el orbe de la sección tocada late una vez (cariño §micro).
     @State private var latido: String?
+    /// Scrub activo (FER-55): qué sección y qué noche está leyendo el dedo. `nil` =
+    /// sin scrub → la celda muestra HOY (regresa sola al soltar).
+    @State private var scrub: (id: String, idx: Int)?
+    /// Pulso háptico: cambia al cruzar de barra durante el scrub (tick por noche).
+    @State private var scrubTick: Int = 0
 
     public init(model: MatrizHoyModel, onTapSeccion: @escaping (String) -> Void) {
         self.model = model
@@ -193,6 +229,7 @@ public struct MatrizHoyFace: View {
         .frame(maxWidth: .infinity)
         .padding(.bottom, LiquidSpace.s600)
         .sensoryFeedback(.selection, trigger: latido)
+        .sensoryFeedback(.selection, trigger: scrubTick)
         .accessibilityElement(children: .contain)
     }
 
@@ -309,6 +346,28 @@ public struct MatrizHoyFace: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+        } else if s.scrubNoches != nil, !reduceMotion {
+            // Sección con SCRUB (Sueño): el encabezado es su propio botón (abre la hoja)
+            // y la gráfica lleva el gesto de arrastre — separados, como el guardián, para
+            // que un toque abra y un arrastre lea sin pelear (hallazgos Grok/DeepSeek/Sonnet:
+            // un DragGesture dentro del Button es ambiguo). El gesto usa highPriorityGesture
+            // para ganarle al ScrollView de Hoy (patrón #118, ver TrendChart).
+            VStack(alignment: .leading, spacing: LiquidSpace.s200) {
+                Button { tocar(s.id) } label: {
+                    encabezado(s).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(Text(verbatim: a11yLabel(s)))
+                .accessibilityAddTraits(.isButton)
+                .accessibilityIdentifier("matriz-seccion-\(s.id)")
+                chartView(s.chart, hue: s.hue, chartID: s.chartID,
+                          resaltado: scrub?.id == s.id ? scrub?.idx : nil)
+                    .frame(height: chartAltura(s.chart))
+                    .modifier(ScrubGesto(seccion: s, scrub: $scrub, tick: $scrubTick,
+                                             onTap: { tocar(s.id) }))
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         } else {
             Button {
                 tocar(s.id)
@@ -337,8 +396,18 @@ public struct MatrizHoyFace: View {
             HStack(alignment: .firstTextBaseline, spacing: MatrizTokens.selloTexto) {
                 // Orbe de partículas puro, sin glifo (revisión del dueño en vivo): el
                 // eco del héroe junto a cada título, con el hue de identidad.
-                OrbeVivo(radio: MatrizTokens.selloRadio, hue: s.huesPar?.0 ?? s.hue,
-                         semillaID: "sello-\(s.id)", huePar: s.huesPar?.1, fps: 12)
+                Group {
+                    if let glifo = s.glifoSello {
+                        // Comparativa FER-55: la gota de las hojas de resumen como sello.
+                        LiquidIconDrop(glifo, tone: s.hue,
+                                       size: MatrizTokens.selloRadio * 2.5,
+                                       iconSize: MatrizTokens.selloRadio * 1.4)
+                    } else {
+                        OrbeVivo(radio: MatrizTokens.selloRadio, hue: s.huesPar?.0 ?? s.hue,
+                                 semillaID: "sello-\(s.id)", huePar: s.huesPar?.1, fps: 12,
+                                 forma: s.formaSello)
+                    }
+                }
                     // El orbe no es texto: ancla su centro óptico al centro de las
                     // versalitas del título (hallazgo Grok-UI #3; afinado en vivo).
                     .alignmentGuide(.firstTextBaseline) { d in d.height * 0.78 }
@@ -348,21 +417,33 @@ public struct MatrizHoyFace: View {
                     .font(LiquidType.tituloFila)
                     .foregroundStyle(LiquidColor.tinta700)
                     .textCase(.uppercase)
-                    // Nunca partir palabra («RESTIN-G HR»): hasta 2 líneas por espacio
-                    // y encoge un poco antes de quebrar.
-                    .lineLimit(2)
+                    // UNA sola línea siempre (revisión del dueño: «RESTING HR» / «FC EN
+                    // REPOSO» se partían en dos en la celda gemela angosta). Encoge lo
+                    // mínimo para caber en la línea en vez de quebrar.
+                    .lineLimit(1)
                     .minimumScaleFactor(0.7)
                 Spacer(minLength: LiquidSpace.s200)
-                if let chip = s.chip {
-                    chipView(chip)
-                } else {
-                    valorCompuesto(s)
+                // Valor + chevrón como un grupo alineado al CENTRO (el chevrón se centra
+                // con el numeral, no cae a su base — revisión del dueño); el grupo se
+                // ancla a la fila por la base del texto para no romper el ritmo del título.
+                HStack(alignment: .center, spacing: LiquidSpace.s150) {
+                    if let chip = s.chip {
+                        chipView(chip)
+                    } else {
+                        valorCompuesto(s, valor: valorEfectivo(s))
+                    }
+                    // Affordance de tap discreta (UX #6): cada sección abre su detalle.
+                    LiquidIcon(.chevron, size: 8, color: LiquidColor.tinta500)
                 }
-                // Affordance de tap discreta (UX #6): cada sección abre su detalle.
-                LiquidIcon(.chevron, size: 8, color: LiquidColor.tinta500)
-                    .alignmentGuide(.firstTextBaseline) { d in d.height * 0.85 }
+                .alignmentGuide(.firstTextBaseline) { d in d[.firstTextBaseline] }
+                // El numeral NO cede su talla (simetría de gemelas — el dueño cazó
+                // «52» más chico que «7:12»): el título es quien encoge (minScale 0.7,
+                // 1 línea), nunca el dato. Seguro contra la torre: el sublabel ya vive
+                // en su propio renglón a lo ancho, no dentro de esta fila.
+                .layoutPriority(1)
             }
-            if s.vota || s.sublabel != nil {
+            let sub = sublabelEfectivo(s)
+            if s.vota || sub != nil {
                 HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s150) {
                     if s.vota {
                         // P3: las votantes llevan su sello — el modelo se lee solo.
@@ -375,11 +456,14 @@ public struct MatrizHoyFace: View {
                                 LiquidColor.verdePrimario.opacity(0.45), lineWidth: 1)) // token-exempt: aro del sello «vota» al 45 %
                             .fixedSize()
                     }
-                    if let sub = s.sublabel {
+                    if let sub {
                         Text(sub)
                             .font(LiquidType.caption)
                             .foregroundStyle(LiquidColor.tinta500)
                             .fixedSize(horizontal: false, vertical: true)
+                            // El dato del scrub cambia con un cruce suave (es texto —
+                            // numericText sólo aplica a dígitos, hallazgo Grok BAJA).
+                            .animation(.easeInOut(duration: 0.15), value: sub)
                     }
                 }
                 // Alineado con el título (después del orbe), a lo ancho de la celda.
@@ -391,19 +475,35 @@ public struct MatrizHoyFace: View {
         .frame(minHeight: MatrizTokens.encabezadoMinH, alignment: .top)
     }
 
+    /// Valor a mostrar: la noche del scrub si esta sección la está leyendo, si no HOY.
+    private func valorEfectivo(_ s: MatrizSeccion) -> String {
+        if scrub?.id == s.id, let i = scrub?.idx, let n = s.scrubNoches, n.indices.contains(i) {
+            return n[i].valor
+        }
+        return s.valor
+    }
+
+    /// Sublabel a mostrar: la frase de la noche del scrub si aplica, si no la de HOY.
+    private func sublabelEfectivo(_ s: MatrizSeccion) -> String? {
+        if scrub?.id == s.id, let i = scrub?.idx, let n = s.scrubNoches, n.indices.contains(i) {
+            return n[i].sublabel
+        }
+        return s.sublabel
+    }
+
     /// Numeral + unidad chica en el mismo hue (Grok-UI #7); los protagonistas del
     /// veredicto (sueño/FC) en `valorL`, el resto en `valorM` (UX #3). El numeral
     /// rueda al refrescar (`numericText`) en vez de parpadear.
-    private func valorCompuesto(_ s: MatrizSeccion) -> some View {
+    private func valorCompuesto(_ s: MatrizSeccion, valor: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s050) {
-            Text(s.valor)
+            Text(valor)
                 .font(s.destacada ? LiquidType.valorL
                       : (s.terciaria ? LiquidType.valorS : LiquidType.valorM))
                 .foregroundStyle(s.hue)
                 .monospacedDigit()
                 .contentTransition(.numericText())
-                .animation(.snappy, value: s.valor)
-            if let u = s.unidad {
+                .animation(.snappy, value: valor)
+            if let u = s.unidad, valor != "—" {
                 Text(u)
                     .font(LiquidType.caption)
                     .foregroundStyle(s.hue)
@@ -487,14 +587,17 @@ public struct MatrizHoyFace: View {
 
     @ViewBuilder
     private func chartView(_ payload: MatrizChartPayload, hue: Color,
-                           chartID: String) -> some View {
+                           chartID: String, resaltado: Int? = nil) -> some View {
         switch payload {
         case .columnas(let noches, let ref, let tag, let dom):
             MatrizColumnas(chartID: chartID, noches: noches, referencia: ref,
-                           referenciaTag: tag, dominio: dom, hue: hue)
+                           referenciaTag: tag, dominio: dom, hue: hue, resaltado: resaltado)
         case .lineaRellena(let pts, let base, let dom, let alfa, let alerta):
             MatrizLineaRellena(chartID: chartID, puntos: pts, base: base, dominio: dom,
                                hue: hue, alfa: alfa, alertaHoy: alerta)
+        case .regla(let pts, let banda, let dom, let alerta):
+            MatrizRegla(chartID: chartID, puntos: pts, banda: banda, dominio: dom,
+                        hue: hue, alertaHoy: alerta, resaltado: resaltado)
         case .lineaSerena(let pts, let banda, let dom, let alerta):
             MatrizLineaSerena(chartID: chartID, puntos: pts, banda: banda, dominio: dom,
                               hue: hue, alertaHoy: alerta)
@@ -531,6 +634,85 @@ public struct MatrizHoyFace: View {
     }
 }
 
+// MARK: - Scrub (FER-55)
+
+/// Arrastrar sobre la gráfica lee cada lectura (fecha + valor) en el sublabel, como
+/// las gráficas de adentro. Se monta en toda sección con `scrubNoches` (Sueño, FC —
+/// panel B baja #7); al soltar
+/// —o si el gesto se CANCELA— la celda regresa sola a HOY. Detalles de robustez, todos
+/// hallazgos del panel adversarial Grok/DeepSeek/Sonnet:
+/// - El gesto vive en un `overlay` transparente que TOMA el tamaño del contenido ya
+///   dimensionado, así el `.frame(height:)` del chart se preserva (un `GeometryReader`
+///   envolvente reportaba alto ideal ~0 y colapsaba la celda).
+/// - `highPriorityGesture` para ganarle al pan vertical del `ScrollView` de Hoy (#118).
+/// - `@GestureState` → al cancelarse el gesto, SwiftUI resetea el estado y limpiamos
+///   `scrub` en `onChange`, no solo en `onEnded` (que no corre en cancelación).
+/// - El índice descuenta el `chartInset` real de las barras y sólo se compromete cuando
+///   el arrastre es predominantemente HORIZONTAL (no secuestra el scroll vertical).
+private struct ScrubGesto: ViewModifier {
+    let seccion: MatrizSeccion
+    @Binding var scrub: (id: String, idx: Int)?
+    @Binding var tick: Int
+    var onTap: () -> Void = {}
+    /// El mapeo dedo→índice depende de la forma (panel B, Grok #2): las COLUMNAS son
+    /// bins de ancho igual (floor sobre n); una SERIE ancla sus puntos en i/(n−1)
+    /// (redondear al vecino) — usar bins ahí desfasa el hilo hasta un día.
+    private var esSerie: Bool {
+        if case .columnas = seccion.chart { return false }
+        return true
+    }
+    /// La regla reserva su zona a la derecha: el mapeo del dedo debe usar el MISMO
+    /// ancho útil que usa la curva, o el índice se corre cerca del margen.
+    private var insetDerecho: CGFloat {
+        if case .regla = seccion.chart { return MatrizTokens.reglaZona }
+        return MatrizTokens.chartInset
+    }
+    /// Vivo mientras el dedo arrastra; SwiftUI lo devuelve a `false` al terminar O cancelar.
+    @GestureState private var arrastrando = false
+
+    func body(content: Content) -> some View {
+        let noches = seccion.scrubNoches ?? []
+        content.overlay(
+            GeometryReader { geo in
+                Color.clear
+                    .contentShape(Rectangle())
+                    // Un toque limpio sobre la gráfica abre la hoja, como en las celdas
+                    // sin scrub (panel B, DeepSeek BAJA: quedaba zona muerta).
+                    .onTapGesture { onTap() }
+                    .simultaneousGesture(
+                        // simultaneous (no highPriority): el pan vertical del ScrollView
+                        // sigue vivo sobre las gemelas; el scrub solo actúa en arrastres
+                        // horizontales (guard de abajo) — panel B, DeepSeek MEDIA.
+                        DragGesture(minimumDistance: 6, coordinateSpace: .local)
+                            .updating($arrastrando) { _, estado, _ in estado = true }
+                            .onChanged { g in
+                                // Sólo scrub cuando el gesto es horizontal — un arrastre
+                                // vertical es intención de scroll, no de leer noches.
+                                guard abs(g.translation.width) >= abs(g.translation.height) else { return }
+                                let inset = MatrizTokens.chartInset
+                                let w = geo.size.width - inset - insetDerecho
+                                guard w > 0, noches.count > 1 else { return }
+                                let rel = min(max((g.location.x - inset) / w, 0), 0.9999)
+                                let i = esSerie
+                                    ? Int((rel * CGFloat(noches.count - 1)).rounded())
+                                    : min(Int(rel * CGFloat(noches.count)), noches.count - 1)
+                                if scrub?.id != seccion.id || scrub?.idx != i {
+                                    scrub = (seccion.id, i)
+                                    tick &+= 1   // pulso háptico por noche cruzada
+                                }
+                            }
+                            .onEnded { _ in scrub = nil }
+                    )
+            }
+        )
+        // Red de seguridad ante cancelación: si el gesto muere sin `onEnded`, el estado
+        // vuelve a false y aquí soltamos el scrub (la celda regresa a HOY).
+        .onChange(of: arrastrando) { _, activo in
+            if !activo, scrub?.id == seccion.id { scrub = nil }
+        }
+    }
+}
+
 // MARK: - Previews
 
 #if DEBUG
@@ -561,8 +743,8 @@ private enum MatrizHoyFacePreviewData {
                         id: "rhr", hue: LiquidColor.rosa,
                         titulo: "Resting HR", valor: "52",
                         chartID: "matriz-rhr",
-                        chart: .lineaRellena(puntos: fc, base: 56, dominio: 45...75,
-                                             alfa: 1.0, alertaHoy: .ninguna)),
+                        chart: .regla(puntos: fc, banda: 53...59, dominio: 45...75,
+                                      alertaHoy: .ninguna)),
                     der: MatrizSeccion(
                         id: "hrv", hue: LiquidColor.cian,
                         titulo: "HRV", valor: "68 ms",
@@ -637,8 +819,8 @@ private enum MatrizHoyFacePreviewData {
                         titulo: "Resting HR", valor: "—",
                         sublabel: "Getting to know you",
                         chartID: "matriz-rhr",
-                        chart: .lineaRellena(puntos: vacio20, base: nil, dominio: 45...75,
-                                             alfa: 1.0, alertaHoy: .ninguna)),
+                        chart: .regla(puntos: vacio20, banda: nil, dominio: 45...75,
+                                      alertaHoy: .ninguna)),
                     der: MatrizSeccion(
                         id: "hrv", hue: LiquidColor.cian,
                         titulo: "HRV", valor: "—",
@@ -700,8 +882,8 @@ private enum MatrizHoyFacePreviewData {
                         id: "rhr", hue: LiquidColor.rosa,
                         titulo: "Resting HR", valor: "72",
                         chartID: "matriz-rhr",
-                        chart: .lineaRellena(puntos: fc, base: 56, dominio: 45...80,
-                                             alfa: 1.0, alertaHoy: .atencion)),
+                        chart: .regla(puntos: fc, banda: 53...59, dominio: 45...80,
+                                      alertaHoy: .atencion)),
                     der: MatrizSeccion(
                         id: "hrv", hue: LiquidColor.cian,
                         titulo: "HRV", valor: "38 ms",

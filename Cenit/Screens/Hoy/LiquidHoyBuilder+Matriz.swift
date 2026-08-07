@@ -66,35 +66,106 @@ extension LiquidHoyBuilder {
         let valorSueno = HoyGramatica.valorODash(hoy?.totalSleepMin) {
             HoyGramatica.formatoDuracion($0)
         }
+        // Scrub (FER-55): cada noche con su día + horas + estado, ya formateados. El
+        // último = hoy. La honestidad manda: sin lectura → «—» y «no reading».
+        let diaFmt = weekdayFormatter(locale: i.locale, calendar: i.calendar)
+        // Vocabulario ÚNICO, igual que la hoja de detalle y el héroe (revisión del dueño):
+        // «in your range» / «out of your range». Y jamás afirmamos rango sin juicio del
+        // motor para ESE día (hallazgo Grok #5: `sleepOut==true` también dispara por
+        // eficiencia, y `nil` no es «en rango»). Sin juicio → sólo la fecha.
+        let enRango = String(localized: "matriz.rango.dentro", defaultValue: "in your range")
+        let fueraRango = String(localized: "matriz.rango.fuera", defaultValue: "out of your range")
+        let scrubSueno: [MatrizSeccion.ScrubNoche] = keysSueno.enumerated().map { idx, day in
+            let mins = byDay[day]?.totalSleepMin
+            let offsetDesdeFin = keysSueno.count - 1 - idx
+            let fecha = weekdayLabel(offsetFromToday: offsetDesdeFin, now: i.now,
+                                     calendar: i.calendar, formatter: diaFmt)
+            guard let mins else {
+                return .init(valor: "—",
+                             sublabel: String(format: String(localized: "matriz.scrub.sinlectura",
+                                                             defaultValue: "%@ · no reading"), fecha))
+            }
+            // El juicio del día: nil = ese día no tiene juicio de rango todavía.
+            // Paréntesis obligatorio: sin ellos `?.sleepOut.map` aplica `.map` al Bool,
+            // no al Bool? del optional-chaining (precedencia de `?.`).
+            let juicio: Bool? = bodyByDay[day]?.sleepOut
+            let estado = juicio.map { $0 ? fueraRango : enRango }
+            let sub = estado.map { "\(fecha) · \($0)" } ?? fecha
+            return .init(valor: HoyGramatica.formatoDuracion(mins), sublabel: sub)
+        }
+        // Sublabel de reposo (no-scrub): «anoche · <estado>» — la celda habla en palabras
+        // (P2), y el dato del scrub la reemplaza al arrastrar. Mismo gate de honestidad.
+        let sublabelSueno: String? = {
+            if hoy?.totalSleepMin == nil && noches.allSatisfy({ $0.valor == nil }) {
+                return String(localized: "Getting to know you")
+            }
+            guard hoy?.totalSleepMin != nil else { return nil }
+            guard let out = bodyByDay[hoyKey ?? ""]?.sleepOut else {
+                return String(localized: "matriz.sueno.anoche", defaultValue: "last night")
+            }
+            let estado = out ? fueraRango : enRango
+            return String(format: String(localized: "matriz.sueno.anoche.estado",
+                                         defaultValue: "last night · %@"), estado)
+        }()
         let seccionSueno = MatrizSeccion(
             id: "sleep", hue: LiquidColor.indigo,
             titulo: String(localized: "Sleep"),
-            // «vota» es ROL estable del modelo (las decisoras §6), no «votó esta noche» —
-            // por eso no se apaga sin lectura. Carga NUNCA vota (loadAxis inRange/noData).
-            valor: valorSueno, destacada: true, vota: true,
-            sublabel: (hoy?.totalSleepMin == nil && noches.allSatisfy { $0.valor == nil })
-                ? String(localized: "Getting to know you") : nil,
+            // FER-55: fuera el sello «vota» de las gemelas — la jerarquía la dan el nivel,
+            // el orden y el manual «?». Carga NUNCA vota (loadAxis inRange/noData).
+            valor: valorSueno, destacada: true, vota: false,
+            sublabel: sublabelSueno,
             chartID: "matriz-sleep",
             chart: .columnas(noches: noches, referencia: 7, referenciaTag: "7 h",
-                             dominio: 4...10))
+                             dominio: 4...10),
+            formaSello: .luna, scrubNoches: scrubSueno)
 
         // —— 2. FC | VFC (20) ——
         let keys20 = keys  // ya son 20
         let ptsFC: [Double?] = keys20.map { bodyByDay[$0]?.rhrResolved ?? byDay[$0].flatMap { $0.restingHr.map(Double.init) } }
         let baseFC = keys20.reversed().compactMap { bodyByDay[$0]?.rhrBaseCenter }.first
+        // La banda «tu rango» (±1σ del motor, el MISMO σ del corte del veredicto) — los
+        // carriles de la celda (FER-55). Sin base usable no hay carriles honestos.
+        let bandaFC = keys20.reversed().compactMap { bodyByDay[$0]?.rhrBand }.first
         let valorFC = HoyGramatica.valorODash(ptsFC.last.flatMap { $0 }) {
             "\(Int($0.rounded()))"
+        }
+        // Scrub de FC (paridad con Sueño): día + bpm + estado. El juicio del día es el
+        // del MOTOR (autonomicOrientedZ presente = juzgado; su Out = fuera). Sin juicio,
+        // solo la fecha — jamás afirmar rango sin dato.
+        let scrubFC: [MatrizSeccion.ScrubNoche] = keys20.enumerated().map { idx, day in
+            let offsetDesdeFin = keys20.count - 1 - idx
+            let fecha = weekdayLabel(offsetFromToday: offsetDesdeFin, now: i.now,
+                                     calendar: i.calendar, formatter: diaFmt)
+            guard let v = ptsFC[idx] else {
+                return .init(valor: "—",
+                             sublabel: String(format: String(localized: "matriz.scrub.sinlectura",
+                                                             defaultValue: "%@ · no reading"), fecha))
+            }
+            let noche = bodyByDay[day]
+            let estado: String? = (noche?.autonomicOrientedZ != nil)
+                ? ((noche?.autonomicOut == true) ? fueraRango : enRango) : nil
+            let sub = estado.map { "\(fecha) · \($0)" } ?? fecha
+            return .init(valor: "\(Int(v.rounded()))", sublabel: sub)
         }
         let seccionFC = MatrizSeccion(
             id: "rhr", hue: LiquidColor.rosa,
             titulo: String(localized: "Resting HR"),
-            valor: valorFC, unidad: valorFC == "—" ? nil : String(localized: "bpm"),
-            destacada: true, vota: true,
+            valor: valorFC,
+            unidad: ptsFC.contains(where: { $0 != nil }) ? String(localized: "bpm") : nil,
+            // FER-55: sin «vota» (simétrico con Sueño — la gemela no puede quedar sola
+            // con el sello o el par se ve roto). El manual «?» explica quién vota.
+            destacada: true, vota: false,
             sublabel: sublabelFC(ptsFC: ptsFC, prep: prep, alerta: alertaFC),
             chartID: "matriz-rhr",
-            chart: .lineaRellena(puntos: ptsFC, base: baseFC,
-                                 dominio: dominioLinea(ptsFC, base: baseFC, fallback: 45...75),
-                                 alfa: 1.0, alertaHoy: alertaFC))
+            // La regla al margen (FER-55, diseño final): tu rango ±1σ como tramo; relleno muere a 0
+            // sobre el papel. Sin banda usable, la regla muestra solo el capilar.
+            chart: .regla(puntos: ptsFC, banda: bandaFC,
+                          dominio: dominioCarriles(ptsFC, banda: bandaFC, fallback: 45...75),
+                          alertaHoy: alertaFC),
+            // Decisión del dueño (FER-55): el corazón de PARTÍCULAS (contorno denso,
+            // quieto — gemelo de la luna), no la gota de las hojas.
+            formaSello: .corazon,
+            scrubNoches: scrubFC)
 
         let ptsVFC: [Double?] = keys20.map { byDay[$0]?.avgHrv }
         let baseVFC = keys20.reversed().compactMap { bodyByDay[$0]?.hrvBaseCenter }.first
@@ -300,6 +371,27 @@ extension LiquidHoyBuilder {
         return f
     }
 
+    /// Formateador de día de la semana corto («Mon», «lun») para el scrub (FER-55).
+    static func weekdayFormatter(locale: Locale, calendar: Calendar) -> DateFormatter {
+        let f = DateFormatter()
+        f.calendar = calendar
+        f.locale = locale
+        f.timeZone = calendar.timeZone
+        f.setLocalizedDateFormatFromTemplate("EEE")
+        return f
+    }
+
+    /// Rótulo del día para la noche a `offsetFromToday` días atrás. Hoy → «Today».
+    static func weekdayLabel(offsetFromToday: Int, now: Date, calendar: Calendar,
+                             formatter: DateFormatter) -> String {
+        if offsetFromToday == 0 {
+            return String(localized: "matriz.scrub.hoy", defaultValue: "Today")
+        }
+        let start = calendar.startOfDay(for: now)
+        let d = calendar.date(byAdding: .day, value: -offsetFromToday, to: start) ?? start
+        return formatter.string(from: d)
+    }
+
     static func mapaAlerta(_ a: HoyGramatica.Alerta) -> MedidorLunar.Alerta {
         switch a {
         case .ninguna: return .ninguna
@@ -363,6 +455,21 @@ extension LiquidHoyBuilder {
     }
 
     /// Dominio de línea: min/max de puntos+base con padding, o fallback.
+    /// Dominio de los carriles de FC: la serie + la banda completa, con aire — la banda
+    /// nunca se corta en el borde del lienzo (los carriles de fuera necesitan existir).
+    static func dominioCarriles(_ pts: [Double?], banda: ClosedRange<Double>?,
+                                fallback: ClosedRange<Double>) -> ClosedRange<Double> {
+        var vals = pts.compactMap { $0 }
+        if let banda {
+            vals.append(banda.lowerBound)
+            vals.append(banda.upperBound)
+        }
+        guard let lo = vals.min(), let hi = vals.max() else { return fallback }
+        if lo == hi { return (lo - 5)...(hi + 5) }
+        let pad = (hi - lo) * 0.3   // aire extra: que se VEAN los carriles de fuera
+        return (lo - pad)...(hi + pad)
+    }
+
     private static func dominioLinea(_ pts: [Double?], base: Double?,
                                      fallback: ClosedRange<Double>) -> ClosedRange<Double> {
         var vals = pts.compactMap { $0 }
@@ -376,6 +483,11 @@ extension LiquidHoyBuilder {
     }
     /// Estado de la FC en palabras (P2, estudio en frío): la MISMA regla del Cosmos —
     /// z_mal ≤ −2 = «inusualmente baja» SIN alerta (§6: el lado bueno no alarma).
+    /// FER-55 (panel B, Grok ALTA #1): el sublabel de FC dice el JUICIO DEL MOTOR —
+    /// la única voz que héroe, scrub y hoja comparten. La franja ±1σ es geografía
+    /// («donde sueles estar»), no la definición de «out of your range»: juzgar por
+    /// `banda.contains` invertía el vocabulario (con FC alta el aro apaga el sublabel,
+    /// así que «out» solo aparecía en el caso BUENO, contradiciendo héroe y scrub).
     private static func sublabelFC(ptsFC: [Double?], prep: Preparedness.Read?,
                                    alerta: MedidorLunar.Alerta) -> String? {
         if ptsFC.allSatisfy({ $0 == nil }) {
@@ -386,18 +498,11 @@ extension LiquidHoyBuilder {
         guard ptsFC.last.flatMap({ $0 }) != nil,
               let v = prep?.verdict, v != .lowSignal else { return nil }
         if alerta != .ninguna { return nil }  // el aro ya habla; no duplicar.
-        // z_mal = −orientedZ del eje autonómico (compuesto; wRHR=1) — la MISMA
-        // derivación que usa la ancla del Cosmos (§6).
-        let zMal: Double? = {
-            guard let z = prep?.drivers.first(where: { $0.axis == .autonomic })?.orientedZ
-            else { return nil }
-            return -z
-        }()
-        if let z = zMal, z <= -2 {
-            return String(localized: "matriz.fc.baja",
-                          defaultValue: "low · good side")
-        }
-        return String(localized: "matriz.fc.enrango", defaultValue: "in your range")
+        // El MISMO juicio por-día que usa el scrub (autonomicOut de hoy).
+        guard let hoyOut = prep?.bodyHistory.last?.autonomicOut else { return nil }
+        return hoyOut
+            ? String(localized: "matriz.rango.fuera", defaultValue: "out of your range")
+            : String(localized: "matriz.rango.dentro", defaultValue: "in your range")
     }
 
     /// Sublabel de carga + la zona ideal del ACWR (escala honesta, P2).

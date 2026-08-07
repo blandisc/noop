@@ -29,7 +29,7 @@ final class MatrizHoyFaceSnapshotTests: XCTestCase {
         // sueño + FC + VFC + guardián + carga + esfuerzo + estrés + pasos — el héroe de
         // la pantalla es el ecosistema de arriba; la Matriz ya no lo repite (2026-08-06).
         XCTAssertEqual(ids, [
-            "sleep", "rhr", "hrv", "guardian", "carga", "strain", "stress", "steps",
+            "sleep", "rhr", "guardian", "carga", "strain", "hrv", "stress", "steps",
         ])
         // Bandas divididas aportan 2 elementos cada una (3 splits × 2 + 2 full = 8).
         XCTAssertEqual(ids.count, 8)
@@ -52,29 +52,27 @@ final class MatrizHoyFaceSnapshotTests: XCTestCase {
 
         return MatrizHoyModel(
             bandas: [
-                .full(MatrizSeccion(
-                    id: "sleep", hue: LiquidColor.indigo,
-                    titulo: "Sleep", valor: "7:12",
-                    chartID: "matriz-sleep",
-                    chart: .columnas(noches: noches, referencia: 7, referenciaTag: "7 h",
-                                     dominio: 4...10))),
+                // Opción A (producción): niveles + gemelas Sueño|FC, luna en Sueño, sin «votes».
+                .nivel("Decide your day", manualID: "manual.deciden"),
                 .split(
                     izq: MatrizSeccion(
+                        id: "sleep", hue: LiquidColor.indigo,
+                        titulo: "Sleep", valor: "7:12", destacada: true,
+                        sublabel: "last night · in your range",
+                        chartID: "matriz-sleep",
+                        chart: .columnas(noches: noches, referencia: 7, referenciaTag: "7 h",
+                                         dominio: 4...10),
+                        formaSello: .luna),
+                    der: MatrizSeccion(
                         id: "rhr", hue: LiquidColor.rosa,
                         titulo: "Resting HR", valor: "52",
-                        unidad: "bpm", destacada: true, vota: true,
+                        unidad: "bpm", destacada: true,
                         sublabel: "in your range",
                         chartID: "matriz-rhr",
-                        chart: .lineaRellena(puntos: fc, base: 56, dominio: 45...75,
-                                             alfa: 1.0, alertaHoy: .ninguna)),
-                    der: MatrizSeccion(
-                        id: "hrv", hue: LiquidColor.cian,
-                        titulo: "HRV", valor: "68",
-                        unidad: "ms", terciaria: true,
-                        sublabel: "reference — does not vote · why?",
-                        chartID: "matriz-hrv",
-                        chart: .lineaRellena(puntos: vfc, base: 45, dominio: 20...80,
-                                             alfa: 0.6, alertaHoy: .ninguna))),
+                        chart: .regla(puntos: fc, banda: 53...59, dominio: 45...75,
+                                         alertaHoy: .ninguna),
+                        formaSello: .corazon)),
+                .nivel("Watches over you", manualID: nil),
                 .full(MatrizSeccion(
                     id: "guardian", hue: LiquidColor.doradoTemp,
                     huesPar: (LiquidColor.doradoTemp, LiquidColor.azul),
@@ -95,6 +93,7 @@ final class MatrizHoyFaceSnapshotTests: XCTestCase {
                                       chart: .lineaSerena(puntos: resp, banda: 12...16,
                                                           dominio: 8...22, alertaHoy: .ninguna)),
                     ])),
+                .nivel("Context", manualID: nil),
                 .split(
                     izq: MatrizSeccion(
                         id: "carga", hue: LiquidColor.verdePrimario,
@@ -109,16 +108,25 @@ final class MatrizHoyFaceSnapshotTests: XCTestCase {
                         chart: .barrasMini(valores: strain))),
                 .split(
                     izq: MatrizSeccion(
+                        id: "hrv", hue: LiquidColor.cian,
+                        titulo: "HRV", valor: "68",
+                        unidad: "ms", terciaria: true,
+                        sublabel: "reference · does not vote · why?",
+                        chartID: "matriz-hrv",
+                        chart: .lineaRellena(puntos: vfc, base: 45, dominio: 20...80,
+                                             alfa: 0.6, alertaHoy: .ninguna)),
+                    der: MatrizSeccion(
                         id: "stress", hue: LiquidColor.tinta900,
                         titulo: "Stress", valor: "Low",
                         sublabel: "vs your 7 days",
                         chartID: "matriz-stress",
-                        chart: .escalerita(niveles: stress)),
-                    der: MatrizSeccion(
-                        id: "steps", hue: LiquidColor.tinta700,
-                        titulo: "Steps", valor: "8 432",
-                        chartID: "matriz-steps",
-                        chart: .barrasMini(valores: steps))),
+                        chart: .escalerita(niveles: stress))),
+                .nivel("Logbook", manualID: nil),
+                .full(MatrizSeccion(
+                    id: "steps", hue: LiquidColor.tinta700,
+                    titulo: "Steps", valor: "8 432",
+                    chartID: "matriz-steps",
+                    chart: .barrasMini(valores: steps))),
             ])
     }
 
@@ -141,8 +149,8 @@ final class MatrizHoyFaceSnapshotTests: XCTestCase {
                         id: "rhr", hue: LiquidColor.rosa,
                         titulo: "Resting HR", valor: "—",
                         chartID: "matriz-rhr",
-                        chart: .lineaRellena(puntos: vacio20, base: nil, dominio: 45...75,
-                                             alfa: 1.0, alertaHoy: .ninguna)),
+                        chart: .regla(puntos: vacio20, banda: nil, dominio: 45...75,
+                                      alertaHoy: .ninguna)),
                     der: MatrizSeccion(
                         id: "hrv", hue: LiquidColor.cian,
                         titulo: "HRV", valor: "—",
@@ -202,8 +210,8 @@ final class MatrizHoyFaceSnapshotTests: XCTestCase {
                         id: "rhr", hue: LiquidColor.rosa,
                         titulo: "Resting HR", valor: "72",
                         chartID: "matriz-rhr",
-                        chart: .lineaRellena(puntos: fc, base: 56, dominio: 45...80,
-                                             alfa: 1.0, alertaHoy: .atencion)),
+                        chart: .regla(puntos: fc, banda: 53...59, dominio: 45...80,
+                                      alertaHoy: .atencion)),
                     der: MatrizSeccion(
                         id: "hrv", hue: LiquidColor.cian,
                         titulo: "HRV", valor: "38 ms",

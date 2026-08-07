@@ -50,6 +50,16 @@ public enum MatrizTokens {
     public static let rellenoAlfa: Double = 0.20
     /// HOY: el único elemento saturado — NUNCA multiplicado por el alfa de sección.
     public static let hoyAlfa: Double = 0.95
+    /// Carriles de FC (FER-55): presencia del carril «tu rango», los de fuera, y sus
+    /// rieles-susurro. El borde inferior del blend muere a 0 (papel blanco detrás).
+    /// La regla al margen (FER-55, diseño final de FC): zona reservada a la derecha
+    /// de la curva, el aire de la regla al borde, y sus alfas (capilar de dominio,
+    /// tramo de tu rango, relleno bajo la curva que muere a 0 sobre el papel).
+    public static let reglaZona: CGFloat = 24
+    public static let reglaAire: CGFloat = 8
+    public static let reglaCapilarAlfa: Double = 0.14
+    public static let reglaTramoAlfa: Double = 0.60
+    public static let reglaRellenoAlfa: Double = 0.16
 
     // MARK: Marcadores (un solo radio de HOY en toda la familia)
 

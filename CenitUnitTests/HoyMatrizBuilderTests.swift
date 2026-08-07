@@ -52,11 +52,12 @@ final class HoyMatrizBuilderTests: XCTestCase {
 
     private func bodyNight(day: String, rhr: Double? = 56, sleepOut: Bool = false,
                            autonomicOut: Bool = false,
-                           rhrBase: Double? = 56, hrvBase: Double? = 45)
+                           rhrBase: Double? = 56, hrvBase: Double? = 45,
+                           rhrBand: ClosedRange<Double>? = 53...59)
         -> Preparedness.BodyNight {
         .init(day: day, rhrResolved: rhr, autonomicOrientedZ: autonomicOut ? -1.2 : 0.2,
               autonomicOut: autonomicOut, sleepOut: sleepOut,
-              rhrBaseCenter: rhrBase, hrvBaseCenter: hrvBase)
+              rhrBaseCenter: rhrBase, hrvBaseCenter: hrvBase, rhrBand: rhrBand)
     }
 
     private func prep(verdict: Preparedness.Verdict = .full,
@@ -91,7 +92,7 @@ final class HoyMatrizBuilderTests: XCTestCase {
         for b in model.bandas {
             switch b {
             case .full(let s) where s.id == id: return s
-            case .split(let izq, let der, _):
+            case .split(let izq, let der):
                 if izq.id == id { return izq }
                 if der.id == id { return der }
             default: break
@@ -169,7 +170,7 @@ final class HoyMatrizBuilderTests: XCTestCase {
             XCTAssertTrue(noches.allSatisfy { $0.alerta == .ninguna })
         } else { XCTFail("sueño") }
 
-        if case .lineaRellena(_, _, _, _, let a) = seccion(model, id: "rhr")?.chart {
+        if case .regla(_, _, _, let a) = seccion(model, id: "rhr")?.chart {
             XCTAssertEqual(a, .ninguna)
         } else { XCTFail("fc") }
 
@@ -196,10 +197,9 @@ final class HoyMatrizBuilderTests: XCTestCase {
             XCTAssertEqual(tag, "7 h")
         } else { XCTFail("sleep chart") }
 
-        // FC / VFC: 20 puntos, línea rellena.
-        if case .lineaRellena(let pts, _, _, let alfa, _) = seccion(model, id: "rhr")?.chart {
+        // FC: 20 puntos en carriles (FER-55); VFC: línea rellena.
+        if case .regla(let pts, _, _, _) = seccion(model, id: "rhr")?.chart {
             XCTAssertEqual(pts.count, 20)
-            XCTAssertEqual(alfa, 1.0)
         } else { XCTFail("rhr") }
         if case .lineaRellena(let pts, _, _, let alfa, _) = seccion(model, id: "hrv")?.chart {
             XCTAssertEqual(pts.count, 20)
@@ -243,6 +243,38 @@ final class HoyMatrizBuilderTests: XCTestCase {
         XCTAssertEqual(model.ordenA11y, [
             "sleep", "rhr", "guardian", "carga", "strain", "hrv", "stress", "steps",
         ])
+    }
+
+    // MARK: FER-55 · panel B — el sublabel de FC dice el JUICIO del motor, no la banda
+
+    func test_fc_lado_bueno_fuera_de_banda_dice_en_rango() {
+        let keys = LiquidHoyBuilder.dayKeys(endingAt: now, calendar: cal, count: 20)
+        let dias = keys.map { metric(day: $0, rhr: 48) }
+        // FC de HOY (48) por DEBAJO de la banda 53...59 — lado bueno: el motor NO
+        // castiga (autonomicOut false) → el sublabel debe decir «in your range»
+        // (héroe, scrub y hoja hablan el juicio del motor; la franja es geografía).
+        let body = keys.map { bodyNight(day: $0, rhr: 48, autonomicOut: false) }
+        let model = LiquidHoyBuilder.matriz(inputs(
+            prep: prep(sentinel: sentinel(.quiet), bodyHistory: body), dias: dias))
+        XCTAssertEqual(seccion(model, id: "rhr")?.sublabel, "in your range")
+        // Y la banda sí viaja al chart (geografía visible).
+        if case .regla(_, let banda, _, _) = seccion(model, id: "rhr")?.chart {
+            XCTAssertEqual(banda, 53...59)
+        } else { XCTFail("carriles") }
+        // El scrub de HOY dice lo mismo que el sublabel (misma voz).
+        XCTAssertTrue(seccion(model, id: "rhr")?.scrubNoches?.last?.sublabel
+            .contains("in your range") == true)
+    }
+
+    func test_fc_fuera_por_motor_dice_fuera_en_scrub() {
+        let keys = LiquidHoyBuilder.dayKeys(endingAt: now, calendar: cal, count: 20)
+        let outDay = keys[10]
+        let dias = keys.map { metric(day: $0) }
+        let body = keys.map { bodyNight(day: $0, autonomicOut: $0 == outDay) }
+        let model = LiquidHoyBuilder.matriz(inputs(
+            prep: prep(sentinel: sentinel(.quiet), bodyHistory: body), dias: dias))
+        XCTAssertTrue(seccion(model, id: "rhr")?.scrubNoches?[10].sublabel
+            .contains("out of your range") == true)
     }
 
     // MARK: 17 — Historia juzgada con SU día (no se repinta)
@@ -316,9 +348,9 @@ final class HoyMatrizBuilderTests: XCTestCase {
         if case .columnas(let n, _, _, _) = seccion(model, id: "sleep")?.chart {
             XCTAssertTrue(n.allSatisfy { $0.valor == nil }, "fantasma: sin datos")
         } else { XCTFail("sleep") }
-        if case .lineaRellena(let pts, let base, _, _, _) = seccion(model, id: "rhr")?.chart {
+        if case .regla(let pts, let banda, _, _) = seccion(model, id: "rhr")?.chart {
             XCTAssertTrue(pts.allSatisfy { $0 == nil })
-            XCTAssertNil(base)
+            XCTAssertNil(banda)
         } else { XCTFail("rhr") }
         if case .rielZona(let p, _, let estela, _) = seccion(model, id: "carga")?.chart {
             XCTAssertNil(p)

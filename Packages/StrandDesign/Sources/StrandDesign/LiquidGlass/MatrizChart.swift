@@ -9,9 +9,9 @@ import SwiftUI
 // punto marcado (más el aro de alerta de la gramática §8). Rejilla fantasma tenue cuando
 // no hay datos.
 
-// MARK: Shared draw helpers (file-private)
+// MARK: Shared draw helpers (internal — MatrizRegla los reutiliza)
 
-private enum MatrizChartDraw {
+enum MatrizChartDraw {
     static let cell: CGFloat = 2.0
     static let histAlfa: Double = MatrizTokens.histAlfa
     static let hoyAlfa: Double = MatrizTokens.hoyAlfa
@@ -201,15 +201,18 @@ public struct MatrizColumnas: View {
     private let referenciaTag: String
     private let dominio: ClosedRange<Double>
     private let hue: Color
+    /// Índice resaltado por el scrub (FER-55): esa barra va a alfa pleno + cursor.
+    private let resaltado: Int?
 
     public init(chartID: String, noches: [Noche], referencia: Double, referenciaTag: String,
-                dominio: ClosedRange<Double>, hue: Color) {
+                dominio: ClosedRange<Double>, hue: Color, resaltado: Int? = nil) {
         self.chartID = chartID
         self.noches = noches
         self.referencia = referencia
         self.referenciaTag = referenciaTag
         self.dominio = dominio
         self.hue = hue
+        self.resaltado = resaltado
     }
 
     public var body: some View {
@@ -223,10 +226,30 @@ public struct MatrizColumnas: View {
                 let inset = MatrizTokens.chartInset
                 let colW = max((size.width - inset * 2 - gap * CGFloat(n - 1)) / CGFloat(n), 1)
                 let last = n - 1
+                let gap0 = MatrizTokens.barraGap
+                let inset0 = MatrizTokens.chartInset
+                let colW0 = max((size.width - inset0 * 2 - gap0 * CGFloat(n - 1)) / CGFloat(n), 1)
                 for (i, noche) in noches.enumerated() {
-                    guard let v = noche.valor else { continue }
+                    guard let v = noche.valor else {
+                        // Noche sin lectura resaltada por el scrub: aún así damos feedback
+                        // — un cursor tenue a lo alto en su columna (Grok #4: scrub fantasma).
+                        if resaltado == i {
+                            let cx = inset0 + CGFloat(i) * (colW0 + gap0) + colW0 / 2
+                            var hueco = Path()
+                            hueco.move(to: CGPoint(x: cx, y: 0))
+                            hueco.addLine(to: CGPoint(x: cx, y: size.height))
+                            ctx.stroke(hueco, with: .color(hue.opacity(0.35)),
+                                       style: StrokeStyle(lineWidth: 1.5, lineCap: .round,
+                                                          dash: [2, 3]))
+                        }
+                        continue
+                    }
                     let esHoy = i == last
-                    let alfa = esHoy ? MatrizTokens.hoyAlfa : MatrizTokens.histAlfa
+                    // Durante el scrub la barra elegida toma el alfa pleno de HOY; el
+                    // resto se atenúa a histórico (FER-55: la noche leída manda).
+                    let seleccionada = resaltado == i
+                    let alfa = (esHoy || seleccionada) ? MatrizTokens.hoyAlfa
+                                                       : MatrizTokens.histAlfa
                     let x = inset + CGFloat(i) * (colW + gap)
                     let yn = MatrizChartDraw.yNorm(v, domain: dominio)
                     // Canal superior: territorio del tag de referencia — HOY nunca
@@ -234,6 +257,16 @@ public struct MatrizColumnas: View {
                     let h = max(yn * (size.height - MatrizTokens.tagCanal), 1)
                     let rect = CGRect(x: x, y: size.height - h, width: colW, height: h)
                     MatrizChartDraw.barra(ctx, rect: rect, hue: hue, alfa: alfa)
+                    // Cursor del scrub: hilo fino sobre la columna leída (como las
+                    // gráficas de adentro). Sube desde la barra hasta el tope del canal.
+                    if seleccionada {
+                        var hilo = Path()
+                        let cx = x + colW / 2
+                        hilo.move(to: CGPoint(x: cx, y: max(size.height - h - 3, 0)))
+                        hilo.addLine(to: CGPoint(x: cx, y: size.height))
+                        ctx.stroke(hilo, with: .color(hue.opacity(0.9)),
+                                   style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
+                    }
                     if noche.alerta != .ninguna {
                         let centro = CGPoint(x: x + colW / 2, y: size.height - h)
                         MatrizChartDraw.dibujarAlerta(ctx, en: centro, radioBase: colW * 0.35,
@@ -253,13 +286,17 @@ public struct MatrizColumnas: View {
             ctx.stroke(linea, with: .color(LiquidColor.tinta900.opacity(MatrizTokens.refAlfa)),
                        style: StrokeStyle(lineWidth: 1, dash: MatrizChartDraw.dash))
 
+            // El rótulo vive en el CANAL SUPERIOR (arriba-derecha), no pegado a la
+            // punteada: con referencia baja en el dominio, el tag caía a media gráfica
+            // y se encimaba con la barra de hoy (revisión del dueño, FER-55). Las barras
+            // nunca entran a este canal (tope `tagCanal`), así que aquí está siempre libre.
             let tag = Text(referenciaTag)
                 .font(LiquidType.caption)
                 .foregroundColor(LiquidColor.tinta500)
                 .monospacedDigit()
             ctx.draw(ctx.resolve(tag),
                      at: CGPoint(x: size.width - MatrizTokens.rielInset,
-                                 y: max(yRef - MatrizTokens.tagCanal + MatrizTokens.chartPadV, 2)),
+                                 y: MatrizTokens.chartPadV),
                      anchor: .topTrailing)
         }
         .frame(maxWidth: .infinity, minHeight: MatrizChartDraw.defaultHeight,
