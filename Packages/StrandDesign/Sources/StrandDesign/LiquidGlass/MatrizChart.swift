@@ -76,6 +76,19 @@ enum MatrizChartDraw {
         return inset + n * usable
     }
 
+    /// Cursor del scrub (FER-62): hilo fino vertical en la x leída — compartido por la
+    /// familia (columnas lo tenía inline; ahora barras/escalera/línea lo reusan). `fantasma`
+    /// (día sin lectura) → punteado tenue; con dato → sólido presente.
+    static func cursorScrub(_ ctx: GraphicsContext, x: CGFloat, height: CGFloat,
+                            hue: Color, fantasma: Bool) {
+        var hilo = Path()
+        hilo.move(to: CGPoint(x: x, y: 0))
+        hilo.addLine(to: CGPoint(x: x, y: height))
+        ctx.stroke(hilo, with: .color(hue.opacity(fantasma ? 0.35 : 0.9)),
+                   style: StrokeStyle(lineWidth: 1.5, lineCap: .round,
+                                      dash: fantasma ? [2, 3] : []))
+    }
+
     /// Punto sólido (marcador de dato en el lenguaje Liquid).
     static func punto(_ ctx: GraphicsContext, en c: CGPoint, radio: CGFloat,
                       hue: Color, alfa: Double) {
@@ -351,10 +364,13 @@ public struct MatrizLineaRellena: View {
     private let hue: Color
     private let alfa: Double
     private let alertaHoy: MedidorLunar.Alerta
+    /// Índice leído por el scrub (FER-62): marca su punto + cursor.
+    private let resaltado: Int?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(chartID: String, puntos: [Double?], base: Double?, dominio: ClosedRange<Double>,
-                hue: Color, alfa: Double = 1.0, alertaHoy: MedidorLunar.Alerta = .ninguna) {
+                hue: Color, alfa: Double = 1.0, alertaHoy: MedidorLunar.Alerta = .ninguna,
+                resaltado: Int? = nil) {
         self.chartID = chartID
         self.puntos = puntos
         self.base = base
@@ -362,6 +378,7 @@ public struct MatrizLineaRellena: View {
         self.hue = hue
         self.alfa = alfa
         self.alertaHoy = alertaHoy
+        self.resaltado = resaltado
     }
 
     public var body: some View {
@@ -394,6 +411,25 @@ public struct MatrizLineaRellena: View {
                     linea.addLine(to: CGPoint(x: size.width, y: yB))
                     ctx.stroke(linea, with: .color(LiquidColor.tinta900.opacity(MatrizTokens.refAlfa)),
                                style: StrokeStyle(lineWidth: 1, dash: MatrizChartDraw.dash))
+                }
+
+                // FER-62 · Scrub: cursor en el día leído + su punto con halo de papel (se
+                // separa de la curva, como la gota de la regla). Día sin lectura → cursor
+                // fantasma en esa x (el texto dice «sin lectura»; la gráfica señala el día).
+                if let r = resaltado, puntos.indices.contains(r) {
+                    let x = MatrizChartDraw.xAt(index: r, count: max(count, 1), width: size.width)
+                    if let v = puntos[r] {
+                        let y = MatrizChartDraw.yTop(v, domain: dominio, height: size.height)
+                        MatrizChartDraw.cursorScrub(ctx, x: x, height: size.height, hue: hue, fantasma: false)
+                        MatrizChartDraw.punto(ctx, en: CGPoint(x: x, y: y),
+                                              radio: MatrizTokens.hoyRadio + 1.6,
+                                              hue: LiquidColor.papelMatriz, alfa: 1)
+                        MatrizChartDraw.punto(ctx, en: CGPoint(x: x, y: y),
+                                              radio: MatrizTokens.hoyRadio, hue: hue,
+                                              alfa: MatrizChartDraw.hoyAlfa)
+                    } else {
+                        MatrizChartDraw.cursorScrub(ctx, x: x, height: size.height, hue: hue, fantasma: true)
+                    }
                 }
             }
         }
@@ -669,11 +705,14 @@ public struct MatrizBarrasMini: View {
     private let chartID: String
     private let valores: [Double?]
     private let hue: Color
+    /// Índice leído por el scrub (FER-62): esa barra va a alfa pleno + cursor.
+    private let resaltado: Int?
 
-    public init(chartID: String, valores: [Double?], hue: Color) {
+    public init(chartID: String, valores: [Double?], hue: Color, resaltado: Int? = nil) {
         self.chartID = chartID
         self.valores = valores
         self.hue = hue
+        self.resaltado = resaltado
     }
 
     public var body: some View {
@@ -690,12 +729,25 @@ public struct MatrizBarrasMini: View {
             let barW: CGFloat = max(usable / CGFloat(n), 1)
             let last = valores.count - 1
             for (i, val) in valores.enumerated() {
-                guard let v = val, maxV > 0 else { continue }
+                let x = inset + CGFloat(i) * (barW + gap)
+                let cx = x + barW / 2
+                let seleccionada = resaltado == i
+                guard let v = val, maxV > 0 else {
+                    // Día leído sin lectura: cursor fantasma en su cajón (paridad columnas).
+                    if seleccionada {
+                        MatrizChartDraw.cursorScrub(ctx, x: cx, height: size.height, hue: hue, fantasma: true)
+                    }
+                    continue
+                }
                 let esHoy = i == last
                 let h = max(CGFloat(v / maxV) * (size.height - MatrizTokens.chartPadV), 1)
-                let x = inset + CGFloat(i) * (barW + gap)
                 let rect = CGRect(x: x, y: size.height - h, width: barW, height: h)
-                MatrizChartDraw.barra(ctx, rect: rect, hue: hue, alfa: esHoy ? MatrizTokens.hoyAlfa : MatrizTokens.histAlfa)
+                // La barra leída toma el alfa pleno de HOY; el cursor la distingue de HOY.
+                MatrizChartDraw.barra(ctx, rect: rect, hue: hue,
+                                      alfa: (esHoy || seleccionada) ? MatrizTokens.hoyAlfa : MatrizTokens.histAlfa)
+                if seleccionada {
+                    MatrizChartDraw.cursorScrub(ctx, x: cx, height: size.height, hue: hue, fantasma: false)
+                }
             }
         }
         .frame(maxWidth: .infinity, minHeight: MatrizTokens.alturaBarras, idealHeight: MatrizTokens.alturaBarras)
@@ -713,12 +765,15 @@ public struct MatrizEscalerita: View {
     private let chartID: String
     private let niveles: [Int?]
     private let hue: Color
+    /// Índice leído por el scrub (FER-62): ese punto va a alfa pleno + cursor.
+    private let resaltado: Int?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    public init(chartID: String, niveles: [Int?], hue: Color) {
+    public init(chartID: String, niveles: [Int?], hue: Color, resaltado: Int? = nil) {
         self.chartID = chartID
         self.niveles = niveles
         self.hue = hue
+        self.resaltado = resaltado
     }
 
     public var body: some View {
@@ -755,19 +810,30 @@ public struct MatrizEscalerita: View {
 
                 let last = niveles.count - 1
                 for (i, niv) in niveles.enumerated() {
-                    guard let nivel = niv else { continue }
+                    let cx = MatrizChartDraw.xAt(index: i, count: count, width: size.width)
+                    let seleccionada = resaltado == i
+                    guard let nivel = niv else {
+                        // Día leído sin lectura: cursor fantasma en su x (paridad familia).
+                        if seleccionada {
+                            MatrizChartDraw.cursorScrub(ctx, x: cx, height: size.height, hue: hue, fantasma: true)
+                        }
+                        continue
+                    }
                     let clamped = min(max(nivel, 0), 2)
                     let esHoy = i == last
-                    let pt = CGPoint(x: MatrizChartDraw.xAt(index: i, count: count, width: size.width),
-                                     y: Self.y(nivel: clamped, height: size.height))
+                    let pt = CGPoint(x: cx, y: Self.y(nivel: clamped, height: size.height))
                     // FER-60 · Heatmap por-punto: cada día toma el COLOR de su nivel (no el
                     // hue de sección). La historia usa `heatHistAlfa` para que el ocre/siena
-                    // se lea; HOY sigue saturado y RESPIRA (radio × aliento). La geometría
-                    // (altura) ya dice el nivel; el color lo refuerza sin texto.
-                    MatrizChartDraw.punto(ctx, en: pt,
-                                          radio: esHoy ? MatrizTokens.hoyRadio * aliento : MatrizTokens.histRadio,
+                    // se lea; HOY sigue saturado y RESPIRA (radio × aliento). FER-62: el punto
+                    // leído por el scrub se agranda a HOY (sin respirar) + su cursor.
+                    let radio = esHoy ? MatrizTokens.hoyRadio * aliento
+                                      : (seleccionada ? MatrizTokens.hoyRadio : MatrizTokens.histRadio)
+                    MatrizChartDraw.punto(ctx, en: pt, radio: radio,
                                           hue: Self.colorNivel(clamped),
-                                          alfa: esHoy ? MatrizChartDraw.hoyAlfa : MatrizTokens.heatHistAlfa)
+                                          alfa: (esHoy || seleccionada) ? MatrizChartDraw.hoyAlfa : MatrizTokens.heatHistAlfa)
+                    if seleccionada {
+                        MatrizChartDraw.cursorScrub(ctx, x: cx, height: size.height, hue: hue, fantasma: false)
+                    }
                 }
             }
         }

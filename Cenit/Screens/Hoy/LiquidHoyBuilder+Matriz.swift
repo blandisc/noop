@@ -175,6 +175,18 @@ extension LiquidHoyBuilder {
         let valorVFC = HoyGramatica.valorODash(ptsVFC.last.flatMap { $0 }) {
             "\(Int($0.rounded()))"
         }
+        // Scrub de VFC (FER-62): día + valor. Sin estado de rango — la VFC NO vota, no hay
+        // corte honesto que afirmar (paridad con la hoja «Tu contexto»): solo la fecha.
+        let scrubVFC: [MatrizSeccion.ScrubNoche] = keys20.enumerated().map { idx, _ in
+            let fecha = weekdayLabel(offsetFromToday: keys20.count - 1 - idx, now: i.now,
+                                     calendar: i.calendar, formatter: diaFmt)
+            guard let v = ptsVFC[idx] else {
+                return .init(valor: "—",
+                             sublabel: String(format: String(localized: "matriz.scrub.sinlectura",
+                                                             defaultValue: "%@ · no reading"), fecha))
+            }
+            return .init(valor: "\(Int(v.rounded()))", sublabel: fecha)
+        }
         let seccionVFC = MatrizSeccion(
             id: "hrv", hue: LiquidColor.cian,
             titulo: String(localized: "HRV"),
@@ -185,7 +197,8 @@ extension LiquidHoyBuilder {
             chartID: "matriz-hrv",
             chart: .lineaRellena(puntos: ptsVFC, base: baseVFC,
                                  dominio: dominioLinea(ptsVFC, base: baseVFC, fallback: 20...80),
-                                 alfa: 0.6, alertaHoy: .ninguna))
+                                 alfa: 0.6, alertaHoy: .ninguna),
+            scrubNoches: scrubVFC)
 
         // —— 3. Guardián ——
         let chip = chipGuardianModelo(prep?.sentinel)
@@ -283,6 +296,18 @@ extension LiquidHoyBuilder {
         let valorEsf = HoyGramatica.valorODash(ptsEsf.last.flatMap { $0 }) {
             String(format: "%.1f", $0)
         }
+        // Scrub de Esfuerzo (FER-62): día + esfuerzo del día. Es una acumulación, no un
+        // juicio de rango → sublabel = solo la fecha.
+        let scrubEsf: [MatrizSeccion.ScrubNoche] = keysEsf.enumerated().map { idx, _ in
+            let fecha = weekdayLabel(offsetFromToday: keysEsf.count - 1 - idx, now: i.now,
+                                     calendar: i.calendar, formatter: diaFmt)
+            guard let v = ptsEsf[idx] else {
+                return .init(valor: "—",
+                             sublabel: String(format: String(localized: "matriz.scrub.sinlectura",
+                                                             defaultValue: "%@ · no reading"), fecha))
+            }
+            return .init(valor: String(format: "%.1f", v), sublabel: fecha)
+        }
         let seccionEsf = MatrizSeccion(
             id: "strain", hue: LiquidColor.teal,
             titulo: String(localized: "Effort"),
@@ -290,7 +315,8 @@ extension LiquidHoyBuilder {
             sublabel: valorEsf == "—" ? nil
                 : String(localized: "matriz.esf.sub", defaultValue: "today's effort so far"),
             chartID: "matriz-strain",
-            chart: .barrasMini(valores: ptsEsf))
+            chart: .barrasMini(valores: ptsEsf),
+            scrubNoches: scrubEsf)
 
         // —— 5. Estrés | Pasos ——
         let keysEstres = Array(keys.suffix(matrizVentanaEstres))
@@ -312,6 +338,24 @@ extension LiquidHoyBuilder {
             case .high: return String(localized: "High")
             }
         }()
+        // Scrub de Estrés (FER-62): día + nivel (palabra). Los cortes son fijos, no un
+        // juicio personal de rango → sublabel = solo la fecha.
+        let scrubStress: [MatrizSeccion.ScrubNoche] = keysEstres.enumerated().map { idx, day in
+            let fecha = weekdayLabel(offsetFromToday: keysEstres.count - 1 - idx, now: i.now,
+                                     calendar: i.calendar, formatter: diaFmt)
+            guard let v = stressByDay[day] else {
+                return .init(valor: "—",
+                             sublabel: String(format: String(localized: "matriz.scrub.sinlectura",
+                                                             defaultValue: "%@ · no reading"), fecha))
+            }
+            let palabra: String
+            switch StressBand(score: v) {
+            case .low: palabra = String(localized: "Low")
+            case .medium: palabra = String(localized: "Medium")
+            case .high: palabra = String(localized: "High")
+            }
+            return .init(valor: palabra, sublabel: fecha)
+        }
         let seccionStress = MatrizSeccion(
             // FER-59: Estrés RECEDE (era tinta900, máximo contraste — gritaba siendo la
             // referencia que no vota). tinta500 lo baja al peso de las demás de contexto.
@@ -323,7 +367,8 @@ extension LiquidHoyBuilder {
             sublabel: stressHoy == nil ? nil
                 : String(localized: "matriz.stress.sub", defaultValue: "last 7 days"),
             chartID: "matriz-stress",
-            chart: .escalerita(niveles: niveles))
+            chart: .escalerita(niveles: niveles),
+            scrubNoches: scrubStress)
 
         let keysPasos = Array(keys.suffix(matrizVentanaPasos))
         let ptsPasos: [Double?] = keysPasos.map { day in

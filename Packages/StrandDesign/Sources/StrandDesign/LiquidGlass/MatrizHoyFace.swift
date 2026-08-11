@@ -623,7 +623,7 @@ public struct MatrizHoyFace: View {
                            referenciaTag: tag, dominio: dom, hue: hue, resaltado: resaltado)
         case .lineaRellena(let pts, let base, let dom, let alfa, let alerta):
             MatrizLineaRellena(chartID: chartID, puntos: pts, base: base, dominio: dom,
-                               hue: hue, alfa: alfa, alertaHoy: alerta)
+                               hue: hue, alfa: alfa, alertaHoy: alerta, resaltado: resaltado)
         case .regla(let pts, let banda, let dom, let alerta):
             MatrizRegla(chartID: chartID, puntos: pts, banda: banda, dominio: dom,
                         hue: hue, alertaHoy: alerta, resaltado: resaltado)
@@ -634,9 +634,9 @@ public struct MatrizHoyFace: View {
             MatrizColina(chartID: chartID, p: p, zona: zona, estela: estela, hue: hue,
                            alertaHoy: alertaHoy)
         case .barrasMini(let valores):
-            MatrizBarrasMini(chartID: chartID, valores: valores, hue: hue)
+            MatrizBarrasMini(chartID: chartID, valores: valores, hue: hue, resaltado: resaltado)
         case .escalerita(let niveles):
-            MatrizEscalerita(chartID: chartID, niveles: niveles, hue: hue)
+            MatrizEscalerita(chartID: chartID, niveles: niveles, hue: hue, resaltado: resaltado)
         }
     }
 
@@ -742,18 +742,37 @@ private struct ScrubA11y: ViewModifier {
 ///   `scrub` en `onChange`, no solo en `onEnded` (que no corre en cancelación).
 /// - El índice descuenta el `chartInset` real de las barras y sólo se compromete cuando
 ///   el arrastre es predominantemente HORIZONTAL (no secuestra el scroll vertical).
+/// El mapeo dedo→índice del scrub, PURO y testeable (FER-62). Vivía inline en el gesto y
+/// escondía un bug: trataba TODA forma que no fuera `.columnas` como serie, pero las
+/// `.barrasMini` son BINS igual que las columnas — al darles scrub (Esfuerzo/Pasos) el
+/// índice se desfasaba hasta un día (~23% del arrastre). Nunca se ejerció porque barrasMini
+/// no tenía scrub… hasta ahora. Extraído a estáticas puras con test de contrato.
+enum ScrubMapeo {
+    /// ¿La forma ancla sus puntos como SERIE (i/(n−1), redondeo al vecino) o como BINS
+    /// (columnas y barras: floor sobre n)? Las series de contexto (curva/escalera) redondean;
+    /// las de bins parten el ancho en `n` cajones iguales.
+    static func esSerie(_ chart: MatrizChartPayload) -> Bool {
+        switch chart {
+        case .columnas, .barrasMini: return false   // bins de ancho igual
+        default: return true                         // series: lineaRellena, escalerita, regla…
+        }
+    }
+
+    /// Índice de la noche bajo el dedo. `x` local; `ancho` ya descuenta los insets; `inset`
+    /// es el margen izquierdo. Bins → floor; serie → redondeo al vecino. Clampa a [0, n-1].
+    static func indice(x: CGFloat, inset: CGFloat, ancho: CGFloat, count: Int, esSerie: Bool) -> Int {
+        guard ancho > 0, count > 1 else { return max(count - 1, 0) }
+        let rel = min(max((x - inset) / ancho, 0), 0.9999)
+        return esSerie ? Int((rel * CGFloat(count - 1)).rounded())
+                       : min(Int(rel * CGFloat(count)), count - 1)
+    }
+}
+
 private struct ScrubGesto: ViewModifier {
     let seccion: MatrizSeccion
     @Binding var scrub: (id: String, idx: Int)?
     @Binding var tick: Int
     var onTap: () -> Void = {}
-    /// El mapeo dedo→índice depende de la forma (panel B, Grok #2): las COLUMNAS son
-    /// bins de ancho igual (floor sobre n); una SERIE ancla sus puntos en i/(n−1)
-    /// (redondear al vecino) — usar bins ahí desfasa el hilo hasta un día.
-    private var esSerie: Bool {
-        if case .columnas = seccion.chart { return false }
-        return true
-    }
     /// La regla reserva su zona a la derecha: el mapeo del dedo debe usar el MISMO
     /// ancho útil que usa la curva, o el índice se corre cerca del margen.
     private var insetDerecho: CGFloat {
@@ -785,10 +804,10 @@ private struct ScrubGesto: ViewModifier {
                                 let inset = MatrizTokens.chartInset
                                 let w = geo.size.width - inset - insetDerecho
                                 guard w > 0, noches.count > 1 else { return }
-                                let rel = min(max((g.location.x - inset) / w, 0), 0.9999)
-                                let i = esSerie
-                                    ? Int((rel * CGFloat(noches.count - 1)).rounded())
-                                    : min(Int(rel * CGFloat(noches.count)), noches.count - 1)
+                                let i = ScrubMapeo.indice(
+                                    x: g.location.x, inset: inset, ancho: w,
+                                    count: noches.count,
+                                    esSerie: ScrubMapeo.esSerie(seccion.chart))
                                 if scrub?.id != seccion.id || scrub?.idx != i {
                                     scrub = (seccion.id, i)
                                     tick &+= 1   // pulso háptico por noche cruzada
@@ -879,9 +898,9 @@ private enum MatrizHoyFacePreviewData {
                         chart: .barrasMini(valores: strain))),
                 .split(
                     izq: MatrizSeccion(
-                        id: "stress", hue: LiquidColor.tinta900,
+                        id: "stress", hue: LiquidColor.tinta500,
                         titulo: "Stress", valor: "Low",
-                        sublabel: "vs your 7 days",
+                        sublabel: "last 7 days",
                         chartID: "matriz-stress",
                         chart: .escalerita(niveles: stress)),
                     der: MatrizSeccion(
@@ -941,7 +960,7 @@ private enum MatrizHoyFacePreviewData {
                         chart: .barrasMini(valores: vacio14))),
                 .split(
                     izq: MatrizSeccion(
-                        id: "stress", hue: LiquidColor.tinta900,
+                        id: "stress", hue: LiquidColor.tinta500,
                         titulo: "Stress", valor: "—",
                         chartID: "matriz-stress",
                         chart: .escalerita(niveles: vacio7)),
@@ -1020,7 +1039,7 @@ private enum MatrizHoyFacePreviewData {
                         chart: .barrasMini(valores: (0..<14).map { Double(10 + $0) }))),
                 .split(
                     izq: MatrizSeccion(
-                        id: "stress", hue: LiquidColor.tinta900,
+                        id: "stress", hue: LiquidColor.tinta500,
                         titulo: "Stress", valor: "High",
                         chartID: "matriz-stress",
                         chart: .escalerita(niveles: [0, 1, 1, 2, 2, 1, 2])),
