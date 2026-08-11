@@ -54,14 +54,15 @@ enum MatrizChartDraw {
     }
 
     /// HOY: el único marcador saturado + su aro §8 — compartido por toda la familia
-    /// (un solo radio, un solo alfa; el alfa de sección NUNCA apaga a HOY).
+    /// (un solo radio, un solo alfa; el alfa de sección NUNCA apaga a HOY). `aliento`
+    /// escala SOLO el radio de HOY (respiro continuo, FER-60); el aro no respira.
     static func marcarHoy(_ ctx: GraphicsContext, puntos: [Double?], count: Int,
                           width: CGFloat, dominio: ClosedRange<Double>, height: CGFloat,
-                          hue: Color, alerta: MedidorLunar.Alerta) {
+                          hue: Color, alerta: MedidorLunar.Alerta, aliento: CGFloat = 1) {
         guard let idx = puntos.lastIndex(where: { $0 != nil }), let v = puntos[idx] else { return }
         let pt = CGPoint(x: xAt(index: idx, count: count, width: width),
                          y: yTop(v, domain: dominio, height: height))
-        punto(ctx, en: pt, radio: MatrizTokens.hoyRadio, hue: hue, alfa: MatrizTokens.hoyAlfa)
+        punto(ctx, en: pt, radio: MatrizTokens.hoyRadio * aliento, hue: hue, alfa: MatrizTokens.hoyAlfa)
         if idx == count - 1 {
             dibujarAlerta(ctx, en: pt, radioBase: MatrizTokens.hoyRadio, alerta: alerta)
         }
@@ -179,6 +180,39 @@ enum MatrizChartDraw {
         }
         if actual.count > 1 { out.append(actual) }
         return out
+    }
+}
+
+// MARK: - Respiración de la Matriz (FER-60)
+
+/// Entrada de asentado (settle-in one-shot): el chart aparece con un respiro —opacidad
+/// 0.4→1 y una pizca de escala— UNA sola vez. Porta el ESPÍRITU de `MatrizRegla.entrar()`
+/// (que escribe la curva con `.trim`) a los charts Canvas del contexto, donde no hay trim
+/// posible. Reduce Motion: aparece asentado, sin animación.
+struct MatrizEntrada: ViewModifier {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var asentado = false
+    func body(content: Content) -> some View {
+        content
+            .opacity(asentado ? 1 : 0.4)
+            .scaleEffect(asentado ? 1 : 0.99, anchor: .bottom)
+            .onAppear {
+                guard !reduceMotion else { asentado = true; return }
+                withAnimation(.easeOut(duration: 0.5).delay(0.05)) { asentado = true }
+            }
+    }
+}
+
+/// El respiro continuo de HOY (~1.07 de pico, ciclo sereno). Sólo el punto de HOY respira
+/// (§ «solo hoy respira»); la historia queda quieta. Se alimenta de la fecha de un
+/// `TimelineView`; con Reduce Motion el TimelineView se pausa y esto devuelve 1 (quieto).
+enum MatrizAliento {
+    static let periodo: Double = 3.4   // s por ciclo — lento, no distrae
+    static func escala(_ date: Date, reduceMotion: Bool) -> CGFloat {
+        guard !reduceMotion else { return 1 }
+        let fase = date.timeIntervalSinceReferenceDate
+            .truncatingRemainder(dividingBy: periodo) / periodo
+        return 1 + 0.07 * CGFloat(0.5 - 0.5 * cos(2 * .pi * fase))   // 1 → 1.07 → 1
     }
 }
 
@@ -317,6 +351,7 @@ public struct MatrizLineaRellena: View {
     private let hue: Color
     private let alfa: Double
     private let alertaHoy: MedidorLunar.Alerta
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(chartID: String, puntos: [Double?], base: Double?, dominio: ClosedRange<Double>,
                 hue: Color, alfa: Double = 1.0, alertaHoy: MedidorLunar.Alerta = .ninguna) {
@@ -330,37 +365,42 @@ public struct MatrizLineaRellena: View {
     }
 
     public var body: some View {
-        Canvas { ctx, size in
-            let count = puntos.count
-            if count == 0 || !MatrizChartDraw.tieneDatos(puntos) {
-                MatrizChartDraw.rejillaFantasma(ctx, size: size, chartID: chartID)
-            } else {
-                for tramo in MatrizChartDraw.tramos(puntos, count: count, width: size.width,
-                                                    dominio: dominio, height: size.height) {
-                    MatrizChartDraw.curvaRellena(ctx, pts: tramo, size: size, hue: hue,
-                                                 alfaLinea: MatrizTokens.lineaAlfa * alfa,
-                                                 alfaRelleno: MatrizTokens.rellenoAlfa * alfa)
+        TimelineView(.animation(minimumInterval: 1.0 / 20.0, paused: reduceMotion)) { tl in
+            let aliento = MatrizAliento.escala(tl.date, reduceMotion: reduceMotion)
+            Canvas { ctx, size in
+                let count = puntos.count
+                if count == 0 || !MatrizChartDraw.tieneDatos(puntos) {
+                    MatrizChartDraw.rejillaFantasma(ctx, size: size, chartID: chartID)
+                } else {
+                    for tramo in MatrizChartDraw.tramos(puntos, count: count, width: size.width,
+                                                        dominio: dominio, height: size.height) {
+                        MatrizChartDraw.curvaRellena(ctx, pts: tramo, size: size, hue: hue,
+                                                     alfaLinea: MatrizTokens.lineaAlfa * alfa,
+                                                     alfaRelleno: MatrizTokens.rellenoAlfa * alfa)
+                    }
+
+                    // HOY: el único punto marcado (+ aro §8) — saturado SIEMPRE, aunque
+                    // la sección sea secundaria (hallazgo DeepSeek #5). Respira (FER-60).
+                    MatrizChartDraw.marcarHoy(ctx, puntos: puntos, count: count,
+                                              width: size.width, dominio: dominio,
+                                              height: size.height, hue: hue, alerta: alertaHoy,
+                                              aliento: aliento)
                 }
 
-                // HOY: el único punto marcado (+ aro §8) — saturado SIEMPRE, aunque
-                // la sección sea secundaria (hallazgo DeepSeek #5).
-                MatrizChartDraw.marcarHoy(ctx, puntos: puntos, count: count,
-                                          width: size.width, dominio: dominio,
-                                          height: size.height, hue: hue, alerta: alertaHoy)
-            }
-
-            if let base {
-                let yB = MatrizChartDraw.yTop(base, domain: dominio, height: size.height)
-                var linea = Path()
-                linea.move(to: CGPoint(x: 0, y: yB))
-                linea.addLine(to: CGPoint(x: size.width, y: yB))
-                ctx.stroke(linea, with: .color(LiquidColor.tinta900.opacity(MatrizTokens.refAlfa)),
-                           style: StrokeStyle(lineWidth: 1, dash: MatrizChartDraw.dash))
+                if let base {
+                    let yB = MatrizChartDraw.yTop(base, domain: dominio, height: size.height)
+                    var linea = Path()
+                    linea.move(to: CGPoint(x: 0, y: yB))
+                    linea.addLine(to: CGPoint(x: size.width, y: yB))
+                    ctx.stroke(linea, with: .color(LiquidColor.tinta900.opacity(MatrizTokens.refAlfa)),
+                               style: StrokeStyle(lineWidth: 1, dash: MatrizChartDraw.dash))
+                }
             }
         }
         .frame(maxWidth: .infinity, minHeight: MatrizChartDraw.defaultHeight,
                idealHeight: MatrizChartDraw.defaultHeight)
         .accessibilityHidden(true)
+        .modifier(MatrizEntrada())
     }
 }
 
@@ -440,96 +480,185 @@ public struct MatrizLineaSerena: View {
     }
 }
 
-// MARK: - MatrizRielZona (CARGA)
+// MARK: - MatrizColina (CARGA)
 
-/// Riel horizontal + zona dulce sólida tenue + punto de la razón + estela de 5 previos.
-public struct MatrizRielZona: View {
+/// La mini-colina de Carga (FER-60): la silueta de `LiquidHill` destilada al tamaño de
+/// celda. La forma ES la identidad de Carga — subes la cuesta, la cresta es tu equilibrio,
+/// la bajada es la sobrecarga. Reemplaza al riel plano de antes: la razón se
+/// posiciona en la escala 0…`maximo` y su punto CAMINA la pendiente; la estela de días
+/// previos deja su rastro subiendo la cuesta; la zona de equilibrio se marca a susurro
+/// (verde tenue, sin gritar «aprobado»); el aro §8 corona a HOY cuando la carga se dispara.
+/// Sin scrub (eje de VALOR, no de día — Carga no se arrastra por día). El color vive en el
+/// dato (el punto) y en la zona-susurro, nunca en un smear de bandas que a 40 pt mentiría.
+public struct MatrizColina: View {
     private let chartID: String
     private let p: Double?
     private let zona: ClosedRange<Double>
     private let estela: [Double]
     private let hue: Color
     private let alertaHoy: MedidorLunar.Alerta
+    /// Tope de la escala (paridad con `LiquidHill`): la razón vive en 0…`maximo`.
+    private let maximo: Double
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(chartID: String, p: Double?, zona: ClosedRange<Double>,
-                estela: [Double], hue: Color, alertaHoy: MedidorLunar.Alerta = .ninguna) {
+                estela: [Double], hue: Color, alertaHoy: MedidorLunar.Alerta = .ninguna,
+                maximo: Double = 2.0) {
         self.chartID = chartID
         self.p = p
         self.zona = zona
         self.estela = estela
         self.hue = hue
         self.alertaHoy = alertaHoy
+        self.maximo = maximo
     }
 
     public var body: some View {
-        Canvas { ctx, size in
-            let dominio = Self.dominio(p: p, zona: zona, estela: estela)
-            let y = size.height / 2
+        TimelineView(.animation(minimumInterval: 1.0 / 20.0, paused: reduceMotion)) { tl in
+            let aliento = MatrizAliento.escala(tl.date, reduceMotion: reduceMotion)
+            Canvas { ctx, size in
+            let w = max(size.width, 1)
+            let h = size.height
             let inset = MatrizTokens.rielInset
+            let baseY = h - MatrizTokens.colinaPadBajo
 
-            // Riel base.
-            var riel = Path()
-            riel.move(to: CGPoint(x: inset, y: y))
-            riel.addLine(to: CGPoint(x: size.width - inset, y: y))
-            ctx.stroke(riel, with: .color(LiquidColor.tinta900.opacity(MatrizTokens.rielAlfa)),
-                       style: StrokeStyle(lineWidth: 2, lineCap: .round))
-
-            // Zona dulce: cápsula sólida tenue.
-            let xZ0 = Self.x(zona.lowerBound, domain: dominio, width: size.width, inset: inset)
-            let xZ1 = Self.x(zona.upperBound, domain: dominio, width: size.width, inset: inset)
-            let zonaRect = CGRect(x: xZ0, y: y - MatrizTokens.zonaAlto / 2,
-                                  width: max(xZ1 - xZ0, 1), height: MatrizTokens.zonaAlto)
-            ctx.fill(Path(roundedRect: zonaRect, cornerRadius: MatrizTokens.zonaAlto / 2),
-                     with: .color(hue.opacity(0.16)))
-            // Ticks de borde de zona.
-            for x in [xZ0, xZ1] {
-                var tick = Path()
-                tick.move(to: CGPoint(x: x, y: y - MatrizTokens.zonaTickAlto))
-                tick.addLine(to: CGPoint(x: x, y: y + MatrizTokens.zonaTickAlto))
-                ctx.stroke(tick, with: .color(hue.opacity(0.55)),
-                           style: StrokeStyle(lineWidth: 1, lineCap: .round))
+            // Sin dato ni estela → rejilla fantasma (misma familia).
+            if p == nil, estela.isEmpty {
+                MatrizChartDraw.rejillaFantasma(ctx, size: size, chartID: chartID)
+                return
             }
 
-            // Estela (más antigua → más transparente).
+            // 1 · Zona de equilibrio A SUSURRO: una barra verde tenue al pie, marcando en
+            //     el eje dónde vive «tu costumbre» (lenguaje de zona de LiquidHill, pero un
+            //     solo tramo y en susurro — sin el smear que a 40 pt leería «aprobado»).
+            let xZ0 = Self.xDe(zona.lowerBound, maximo: maximo, width: w, inset: inset)
+            let xZ1 = Self.xDe(zona.upperBound, maximo: maximo, width: w, inset: inset)
+            let zonaRect = CGRect(x: xZ0, y: baseY - MatrizTokens.colinaZonaAlto,
+                                  width: max(xZ1 - xZ0, 1), height: MatrizTokens.colinaZonaAlto)
+            ctx.fill(Path(roundedRect: zonaRect, cornerRadius: MatrizTokens.colinaZonaAlto / 2),
+                     with: .color(hue.opacity(MatrizTokens.colinaZonaAlfa)))
+
+            // 2 · La colina: área tenue (tinta) + trazo (chrome, nunca color de dato).
+            let area = Self.areaColina(width: w, height: h, inset: inset, baseY: baseY)
+            ctx.fill(area, with: .linearGradient(
+                Gradient(colors: [LiquidColor.tinta900.opacity(MatrizTokens.colinaAreaAlfa),
+                                  LiquidColor.tinta900.opacity(0)]),
+                startPoint: CGPoint(x: 0, y: 0), endPoint: CGPoint(x: 0, y: baseY)))
+            ctx.stroke(Self.lineaColina(width: w, height: h, inset: inset),
+                       with: .color(LiquidColor.tinta700.opacity(MatrizTokens.colinaLineaAlfa)),
+                       style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
+
+            // 3 · Estela: los días previos caminando la cuesta (más antiguo → más tenue).
             let nE = estela.count
             for (i, v) in estela.enumerated() {
                 let t = nE > 1 ? Double(i) / Double(nE - 1) : 1
-                let alfa = 0.25 + 0.35 * t
-                let x = Self.x(v, domain: dominio, width: size.width, inset: inset)
-                MatrizChartDraw.punto(ctx, en: CGPoint(x: x, y: y), radio: MatrizTokens.histRadio,
-                                      hue: hue, alfa: alfa)
+                let alfa = 0.22 + 0.30 * t
+                let x = Self.xDe(v, maximo: maximo, width: w, inset: inset)
+                let y = Self.yEnX(x, width: w, height: h, inset: inset)
+                MatrizChartDraw.punto(ctx, en: CGPoint(x: x, y: y),
+                                      radio: MatrizTokens.histRadio, hue: hue, alfa: alfa)
             }
 
-            // Punto HOY.
+            // 4 · HOY: el punto en la pendiente + halo de papel + aro §8. El halo lo separa
+            //     de la línea de la colina (como la gota de la regla); el aro reaparece
+            //     igual en las dos caras (paridad Cosmos/Matriz — un pico ≥1.5 se ve).
             if let p {
-                let x = Self.x(p, domain: dominio, width: size.width, inset: inset)
-                MatrizChartDraw.punto(ctx, en: CGPoint(x: x, y: y), radio: MatrizTokens.hoyRadio,
-                                      hue: hue, alfa: MatrizChartDraw.hoyAlfa)
-                // Aro de alerta sobre HOY: la gramática §8 debe verse IGUAL en las dos caras;
-                // sin esto un pico de carga ≥ 1.5 solo salía como sublabel en la Matriz mientras
-                // el Cosmos sí lo marcaba (asimetría cara-vs-cara, hallazgo adversarial Grok #4).
+                let x = Self.xDe(p, maximo: maximo, width: w, inset: inset)
+                let y = Self.yEnX(x, width: w, height: h, inset: inset)
+                // HOY respira (FER-60): el punto y su halo de papel crecen con `aliento`;
+                // el aro §8 NO respira (una alarma no debe latir para leerse).
+                MatrizChartDraw.punto(ctx, en: CGPoint(x: x, y: y),
+                                      radio: (MatrizTokens.hoyRadio + 1.6) * aliento,
+                                      hue: LiquidColor.papelMatriz, alfa: 1)
+                MatrizChartDraw.punto(ctx, en: CGPoint(x: x, y: y),
+                                      radio: MatrizTokens.hoyRadio * aliento, hue: hue,
+                                      alfa: MatrizChartDraw.hoyAlfa)
                 MatrizChartDraw.dibujarAlerta(ctx, en: CGPoint(x: x, y: y),
                                               radioBase: MatrizTokens.hoyRadio, alerta: alertaHoy)
-            } else if estela.isEmpty {
-                MatrizChartDraw.rejillaFantasma(ctx, size: size, chartID: chartID)
+            }
             }
         }
         .frame(maxWidth: .infinity, minHeight: MatrizTokens.alturaRiel, idealHeight: MatrizTokens.alturaRiel)
         .accessibilityHidden(true)
+        .modifier(MatrizEntrada())
     }
 
-    private static func dominio(p: Double?, zona: ClosedRange<Double>,
-                                estela: [Double]) -> ClosedRange<Double> {
-        var vals = [zona.lowerBound, zona.upperBound] + estela
-        if let p { vals.append(p) }
-        let lo = (vals.min() ?? 0) - 0.15
-        let hi = (vals.max() ?? 1) + 0.15
-        return lo...max(hi, lo + 0.1)
+    // MARK: Geometría de la colina (bezier de LiquidHill escalada a la celda)
+
+    /// Razón → x lineal en [inset, w-inset] sobre la escala 0…maximo (clampeada).
+    static func xDe(_ v: Double, maximo: Double, width w: CGFloat, inset: CGFloat) -> CGFloat {
+        let usable = max(w - inset * 2, 1)
+        let frac = CGFloat(min(max(v / maximo, 0), 1))
+        return inset + frac * usable
     }
 
-    private static func x(_ v: Double, domain: ClosedRange<Double>,
-                          width: CGFloat, inset: CGFloat) -> CGFloat {
-        MatrizChartDraw.xNorm(v, domain: domain, width: width, inset: inset)
+    /// Puntos de control de la bezier (mock de LiquidHill: M0 92 C60 90,100 74,140 52
+    /// C180 30,240 16,320 14) escalados a la celda: x a [inset, w-inset], y a [padAlto,
+    /// baseY] con yN=(my-14)/78 (0 = cresta arriba, 1 = pie abajo).
+    private static func ctrl(width w: CGFloat, height h: CGFloat, inset: CGFloat)
+        -> [CGPoint] {
+        let baseY = h - MatrizTokens.colinaPadBajo
+        let topY = MatrizTokens.colinaPadAlto
+        let usableY = max(baseY - topY, 1)
+        let usableX = max(w - inset * 2, 1)
+        func cx(_ mx: CGFloat) -> CGFloat { inset + (mx / 320) * usableX }
+        func cy(_ my: CGFloat) -> CGFloat { topY + ((my - 14) / 78) * usableY }
+        return [
+            CGPoint(x: cx(0),   y: cy(92)),   // 0 · pie izquierdo (carga baja)
+            CGPoint(x: cx(60),  y: cy(90)), CGPoint(x: cx(100), y: cy(74)),
+            CGPoint(x: cx(140), y: cy(52)),  // 3 · cresta media
+            CGPoint(x: cx(180), y: cy(30)), CGPoint(x: cx(240), y: cy(16)),
+            CGPoint(x: cx(320), y: cy(14)),  // 6 · cima derecha (sobrecarga)
+        ]
+    }
+
+    static func lineaColina(width w: CGFloat, height h: CGFloat, inset: CGFloat) -> Path {
+        let c = ctrl(width: w, height: h, inset: inset)
+        var p = Path()
+        p.move(to: c[0])
+        p.addCurve(to: c[3], control1: c[1], control2: c[2])
+        p.addCurve(to: c[6], control1: c[4], control2: c[5])
+        return p
+    }
+
+    static func areaColina(width w: CGFloat, height h: CGFloat, inset: CGFloat,
+                           baseY: CGFloat) -> Path {
+        let c = ctrl(width: w, height: h, inset: inset)
+        var p = lineaColina(width: w, height: h, inset: inset)
+        p.addLine(to: CGPoint(x: c[6].x, y: baseY))
+        p.addLine(to: CGPoint(x: c[0].x, y: baseY))
+        p.closeSubpath()
+        return p
+    }
+
+    /// y sobre la curva en una x dada (muestreo de las dos cúbicas — port compacto de
+    /// `LiquidHill.hillY`). Para colocar la estela y HOY «en la pendiente».
+    static func yEnX(_ xTarget: CGFloat, width w: CGFloat, height h: CGFloat,
+                     inset: CGFloat) -> CGFloat {
+        let c = ctrl(width: w, height: h, inset: inset)
+        var bestY = c[0].y
+        var bestDist = CGFloat.greatestFiniteMagnitude
+        var t: CGFloat = 0
+        while t <= 1 {
+            let (x1, y1) = Self.cubic(c[0], c[1], c[2], c[3], t)
+            let d1 = abs(x1 - xTarget)
+            if d1 < bestDist { bestDist = d1; bestY = y1 }
+            let (x2, y2) = Self.cubic(c[3], c[4], c[5], c[6], t)
+            let d2 = abs(x2 - xTarget)
+            if d2 < bestDist { bestDist = d2; bestY = y2 }
+            t += 0.02
+        }
+        return bestY
+    }
+
+    private static func cubic(_ p0: CGPoint, _ p1: CGPoint, _ p2: CGPoint, _ p3: CGPoint,
+                              _ t: CGFloat) -> (CGFloat, CGFloat) {
+        let u = 1 - t
+        let uu = u * u, tt = t * t
+        let uuu = uu * u, ttt = tt * t
+        let x = uuu * p0.x + 3 * uu * t * p1.x + 3 * u * tt * p2.x + ttt * p3.x
+        let y = uuu * p0.y + 3 * uu * t * p1.y + 3 * u * tt * p2.y + ttt * p3.y
+        return (x, y)
     }
 }
 
@@ -571,6 +700,9 @@ public struct MatrizBarrasMini: View {
         }
         .frame(maxWidth: .infinity, minHeight: MatrizTokens.alturaBarras, idealHeight: MatrizTokens.alturaBarras)
         .accessibilityHidden(true)
+        // Entrada de asentado como sus vecinas de contexto; las barras no respiran (HOY
+        // ya se distingue por saturación — un punto respira, una barra no).
+        .modifier(MatrizEntrada())
     }
 }
 
@@ -581,6 +713,7 @@ public struct MatrizEscalerita: View {
     private let chartID: String
     private let niveles: [Int?]
     private let hue: Color
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(chartID: String, niveles: [Int?], hue: Color) {
         self.chartID = chartID
@@ -589,55 +722,76 @@ public struct MatrizEscalerita: View {
     }
 
     public var body: some View {
-        Canvas { ctx, size in
-            let count = max(niveles.count, 1)
-            if niveles.allSatisfy({ $0 == nil }) {
-                MatrizChartDraw.rejillaFantasma(ctx, size: size, chartID: chartID)
-                return
-            }
-            // Tres rieles fantasma (niveles 0/1/2).
-            for nivel in 0...2 {
-                let y = Self.y(nivel: nivel, height: size.height)
-                var riel = Path()
-                riel.move(to: CGPoint(x: MatrizTokens.chartInset, y: y))
-                riel.addLine(to: CGPoint(x: size.width - MatrizTokens.chartInset, y: y))
-                ctx.stroke(riel, with: .color(LiquidColor.tinta900.opacity(MatrizTokens.rielFantasmaAlfa)),
-                           style: StrokeStyle(lineWidth: 1))
-            }
+        TimelineView(.animation(minimumInterval: 1.0 / 20.0, paused: reduceMotion)) { tl in
+            let aliento = MatrizAliento.escala(tl.date, reduceMotion: reduceMotion)
+            Canvas { ctx, size in
+                let count = max(niveles.count, 1)
+                if niveles.allSatisfy({ $0 == nil }) {
+                    MatrizChartDraw.rejillaFantasma(ctx, size: size, chartID: chartID)
+                    return
+                }
+                // Tres rieles fantasma (niveles 0/1/2).
+                for nivel in 0...2 {
+                    let y = Self.y(nivel: nivel, height: size.height)
+                    var riel = Path()
+                    riel.move(to: CGPoint(x: MatrizTokens.chartInset, y: y))
+                    riel.addLine(to: CGPoint(x: size.width - MatrizTokens.chartInset, y: y))
+                    ctx.stroke(riel, with: .color(LiquidColor.tinta900.opacity(MatrizTokens.rielFantasmaAlfa)),
+                               style: StrokeStyle(lineWidth: 1))
+                }
 
-            // La escalera como curva suave por los niveles (voz Liquid).
-            let pts: [CGPoint] = niveles.enumerated().compactMap { i, niv in
-                guard let nivel = niv else { return nil }
-                let clamped = min(max(nivel, 0), 2)
-                return CGPoint(x: MatrizChartDraw.xAt(index: i, count: count, width: size.width),
-                               y: Self.y(nivel: clamped, height: size.height))
-            }
-            if pts.count > 1 {
-                ctx.stroke(MatrizChartDraw.curva(pts), with: .color(hue.opacity(MatrizTokens.lineaEscaleraAlfa)),
-                           style: StrokeStyle(lineWidth: 1.2, lineCap: .round, lineJoin: .round))
-            }
+                // La escalera como curva suave por los niveles: NEUTRA (tinta de sección)
+                // para que el color viva en los puntos, no en la línea conectora.
+                let pts: [CGPoint] = niveles.enumerated().compactMap { i, niv in
+                    guard let nivel = niv else { return nil }
+                    let clamped = min(max(nivel, 0), 2)
+                    return CGPoint(x: MatrizChartDraw.xAt(index: i, count: count, width: size.width),
+                                   y: Self.y(nivel: clamped, height: size.height))
+                }
+                if pts.count > 1 {
+                    ctx.stroke(MatrizChartDraw.curva(pts), with: .color(hue.opacity(MatrizTokens.lineaEscaleraAlfa)),
+                               style: StrokeStyle(lineWidth: 1.2, lineCap: .round, lineJoin: .round))
+                }
 
-            let last = niveles.count - 1
-            for (i, niv) in niveles.enumerated() {
-                guard let nivel = niv else { continue }
-                let clamped = min(max(nivel, 0), 2)
-                let esHoy = i == last
-                let pt = CGPoint(x: MatrizChartDraw.xAt(index: i, count: count, width: size.width),
-                                 y: Self.y(nivel: clamped, height: size.height))
-                MatrizChartDraw.punto(ctx, en: pt,
-                                      radio: esHoy ? MatrizTokens.hoyRadio : MatrizTokens.histRadio,
-                                      hue: hue,
-                                      alfa: esHoy ? MatrizChartDraw.hoyAlfa : MatrizChartDraw.histAlfa)
+                let last = niveles.count - 1
+                for (i, niv) in niveles.enumerated() {
+                    guard let nivel = niv else { continue }
+                    let clamped = min(max(nivel, 0), 2)
+                    let esHoy = i == last
+                    let pt = CGPoint(x: MatrizChartDraw.xAt(index: i, count: count, width: size.width),
+                                     y: Self.y(nivel: clamped, height: size.height))
+                    // FER-60 · Heatmap por-punto: cada día toma el COLOR de su nivel (no el
+                    // hue de sección). La historia usa `heatHistAlfa` para que el ocre/siena
+                    // se lea; HOY sigue saturado y RESPIRA (radio × aliento). La geometría
+                    // (altura) ya dice el nivel; el color lo refuerza sin texto.
+                    MatrizChartDraw.punto(ctx, en: pt,
+                                          radio: esHoy ? MatrizTokens.hoyRadio * aliento : MatrizTokens.histRadio,
+                                          hue: Self.colorNivel(clamped),
+                                          alfa: esHoy ? MatrizChartDraw.hoyAlfa : MatrizTokens.heatHistAlfa)
+                }
             }
         }
         .frame(maxWidth: .infinity, minHeight: MatrizTokens.alturaEscalera, idealHeight: MatrizTokens.alturaEscalera)
         .accessibilityHidden(true)
+        .modifier(MatrizEntrada())
     }
 
     /// nivel 0 = bajo (abajo), 2 = alto (arriba) — proyección compartida.
     private static func y(nivel: Int, height: CGFloat) -> CGFloat {
         MatrizChartDraw.yTop(Double(min(max(nivel, 0), 2)), domain: 0...2,
                              height: height, pad: MatrizTokens.escaleraPadV)
+    }
+
+    /// FER-60 · Color de calor por nivel de estrés: bajo = tinta neutra (sin calor),
+    /// medio = ocre, alto = siena. Es una rampa de CALOR, no de juicio: nunca el verde del
+    /// veredicto ni el ámbar/rojo de alerta del guardián (que sí votan). `static` para
+    /// testear la distinción como contrato (MatrizContrasteTests). Clampa fuera de 0…2.
+    static func colorNivel(_ nivel: Int) -> Color {
+        switch min(max(nivel, 0), 2) {
+        case 0: return LiquidColor.tinta500
+        case 1: return LiquidColor.estresMedio
+        default: return LiquidColor.estresAlto
+        }
     }
 }
 
@@ -685,7 +839,7 @@ public struct MatrizEscalerita: View {
     return VStack(spacing: 16) {
         MatrizLineaSerena(chartID: "guardian-temp", puntos: temp, banda: -0.4...0.4,
                           dominio: -1...1, hue: LiquidColor.doradoTemp, alertaHoy: .alarma)
-        MatrizRielZona(chartID: "carga", p: 1.12, zona: 0.8...1.3,
+        MatrizColina(chartID: "carga", p: 1.12, zona: 0.8...1.3,
                        estela: estela, hue: LiquidColor.verdePrimario)
         MatrizBarrasMini(chartID: "esfuerzo", valores: esfuerzo, hue: LiquidColor.teal)
         MatrizEscalerita(chartID: "estres", niveles: niveles, hue: LiquidColor.tinta900)

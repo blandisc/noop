@@ -259,7 +259,7 @@ final class HoyMatrizBuilderTests: XCTestCase {
         } else { XCTFail("hrv") }
 
         // Carga: riel + estela ≤ 5.
-        if case .rielZona(let p, let zona, let estela, _) = seccion(model, id: "carga")?.chart {
+        if case .colina(let p, let zona, let estela, _) = seccion(model, id: "carga")?.chart {
             XCTAssertEqual(p, 1.12)
             XCTAssertEqual(zona.lowerBound, ReadinessEngine.acwrSweetSpotLow)
             XCTAssertEqual(zona.upperBound, ReadinessEngine.acwrSweetSpotHigh)
@@ -407,7 +407,7 @@ final class HoyMatrizBuilderTests: XCTestCase {
             XCTAssertTrue(pts.allSatisfy { $0 == nil })
             XCTAssertNil(banda)
         } else { XCTFail("rhr") }
-        if case .rielZona(let p, _, let estela, _) = seccion(model, id: "carga")?.chart {
+        if case .colina(let p, _, let estela, _) = seccion(model, id: "carga")?.chart {
             XCTAssertNil(p)
             XCTAssertTrue(estela.isEmpty)
         } else { XCTFail("carga") }
@@ -467,7 +467,7 @@ final class HoyMatrizBuilderTests: XCTestCase {
             prep: prep(bodyHistory: keys.map { bodyNight(day: $0) }),
             dias: keys.map { metric(day: $0) },
             carga: TrainingLoadModel(acwr: 9.99, series: series)))
-        if case .rielZona(let p, _, let estela, _) = seccion(model, id: "carga")?.chart {
+        if case .colina(let p, _, let estela, _) = seccion(model, id: "carga")?.chart {
             XCTAssertEqual(p, 9.99)
             XCTAssertFalse(estela.contains(9.99), "estela no incluye HOY")
             XCTAssertEqual(estela.count, 5)

@@ -274,7 +274,7 @@ extension LiquidHoyBuilder {
             valor: valorCarga,
             sublabel: sublabelCargaConZona(estadoCargaKey),
             chartID: "matriz-carga",
-            chart: .rielZona(p: pCarga,
+            chart: .colina(p: pCarga,
                              zona: ReadinessEngine.acwrSweetSpotLow...ReadinessEngine.acwrSweetSpotHigh,
                              estela: estela, alertaHoy: alertaCarga))
 

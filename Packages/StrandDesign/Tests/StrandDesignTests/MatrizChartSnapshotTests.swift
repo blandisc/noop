@@ -57,10 +57,10 @@ final class MatrizChartSnapshotTests: XCTestCase {
     @MainActor func test_riel_zona() throws {
         let estela: [Double] = [0.95, 1.05, 1.2, 0.9, 1.0]
         try render(VStack(spacing: 12) {
-            MatrizRielZona(chartID: "carga", p: 1.12, zona: 0.8...1.3, estela: estela,
+            MatrizColina(chartID: "carga", p: 1.12, zona: 0.8...1.3, estela: estela,
                            hue: LiquidColor.verdePrimario)
                 .frame(width: 200, height: 28)
-            MatrizRielZona(chartID: "carga-vacia", p: nil, zona: 0.8...1.3, estela: [],
+            MatrizColina(chartID: "carga-vacia", p: nil, zona: 0.8...1.3, estela: [],
                            hue: LiquidColor.verdePrimario)
                 .frame(width: 200, height: 28)
         }, to: "matriz_riel_zona")
