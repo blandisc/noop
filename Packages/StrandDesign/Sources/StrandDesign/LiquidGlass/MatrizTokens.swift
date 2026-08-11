@@ -44,8 +44,13 @@ public enum MatrizTokens {
     public static let lineaAlfa: Double = 0.75
     /// Trazo de la curva serena (guardián — casi plana a propósito).
     public static let lineaSerenaAlfa: Double = 0.55
-    /// Trazo de la escalerita (estrés — geometría sin juicio).
+    /// Trazo de la escalerita (estrés — geometría sin juicio; la curva conectora queda
+    /// NEUTRA para que el color viva en los puntos, no en la línea — FER-60).
     public static let lineaEscaleraAlfa: Double = 0.40
+    /// Puntos de historia del HEATMAP de estrés (FER-60): más presentes que `histAlfa`
+    /// (0.32) porque en el heatmap el COLOR de cada día ES el dato — a 0.32 el ocre/siena
+    /// se lavaba. HOY sigue en `hoyAlfa`; el par mantiene «historia serena, HOY presente».
+    public static let heatHistAlfa: Double = 0.60
     /// Relleno de gradiente bajo la curva (arranque; muere a ~10 %).
     public static let rellenoAlfa: Double = 0.20
     /// HOY: el único elemento saturado — NUNCA multiplicado por el alfa de sección.
@@ -97,6 +102,19 @@ public enum MatrizTokens {
     public static let zonaAlto: CGFloat = 14
     /// Media altura de los ticks que rematan la zona dulce.
     public static let zonaTickAlto: CGFloat = 6
+
+    // MARK: La mini-colina de carga (FER-60)
+
+    /// Aire bajo/sobre la silueta de la colina en la celda (la cima y el aro de HOY
+    /// necesitan cancha arriba; el pie deja sitio a la barra-susurro abajo).
+    public static let colinaPadAlto: CGFloat = 8
+    public static let colinaPadBajo: CGFloat = 5
+    /// Barra-susurro de la zona de equilibrio (al pie): alto y alfa — un hint, no un juicio.
+    public static let colinaZonaAlto: CGFloat = 3
+    public static let colinaZonaAlfa: Double = 0.20
+    /// Área tenue bajo la colina (tinta chrome) y su trazo.
+    public static let colinaAreaAlfa: Double = 0.05
+    public static let colinaLineaAlfa: Double = 0.55
     /// Pad vertical de la escalerita (un pelo más de aire que la familia:
     /// sus puntos viven en 3 rieles fijos y el aro de HOY necesita cancha).
     public static let escaleraPadV: CGFloat = chartPadV + 2

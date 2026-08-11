@@ -21,7 +21,7 @@ public enum MatrizChartPayload: Sendable, Equatable {
                dominio: ClosedRange<Double>, alertaHoy: MedidorLunar.Alerta)
     case lineaSerena(puntos: [Double?], banda: ClosedRange<Double>?,
                      dominio: ClosedRange<Double>, alertaHoy: MedidorLunar.Alerta)
-    case rielZona(p: Double?, zona: ClosedRange<Double>, estela: [Double],
+    case colina(p: Double?, zona: ClosedRange<Double>, estela: [Double],
                   alertaHoy: MedidorLunar.Alerta = .ninguna)
     case barrasMini(valores: [Double?])
     case escalerita(niveles: [Int?])
@@ -630,8 +630,8 @@ public struct MatrizHoyFace: View {
         case .lineaSerena(let pts, let banda, let dom, let alerta):
             MatrizLineaSerena(chartID: chartID, puntos: pts, banda: banda, dominio: dom,
                               hue: hue, alertaHoy: alerta)
-        case .rielZona(let p, let zona, let estela, let alertaHoy):
-            MatrizRielZona(chartID: chartID, p: p, zona: zona, estela: estela, hue: hue,
+        case .colina(let p, let zona, let estela, let alertaHoy):
+            MatrizColina(chartID: chartID, p: p, zona: zona, estela: estela, hue: hue,
                            alertaHoy: alertaHoy)
         case .barrasMini(let valores):
             MatrizBarrasMini(chartID: chartID, valores: valores, hue: hue)
@@ -644,7 +644,7 @@ public struct MatrizHoyFace: View {
     /// en un test la IGUALDAD de las gemelas (FER-59) sin depender de snapshots (que no son gate de CI).
     static func chartAltura(_ p: MatrizChartPayload) -> CGFloat {
         switch p {
-        case .rielZona: return MatrizTokens.alturaRiel
+        case .colina: return MatrizTokens.alturaRiel
         case .barrasMini: return MatrizTokens.alturaBarras
         case .escalerita: return MatrizTokens.alturaEscalera
         // FER-59: VFC (lineaRellena) es gemela de Estrés (escalerita) en Contexto → misma
@@ -871,7 +871,7 @@ private enum MatrizHoyFacePreviewData {
                         titulo: "Load", valor: "1.12",
                         sublabel: "Steady",
                         chartID: "matriz-carga",
-                        chart: .rielZona(p: 1.12, zona: 0.8...1.3, estela: estela)),
+                        chart: .colina(p: 1.12, zona: 0.8...1.3, estela: estela)),
                     der: MatrizSeccion(
                         id: "strain", hue: LiquidColor.teal,
                         titulo: "Effort", valor: "12.4",
@@ -933,7 +933,7 @@ private enum MatrizHoyFacePreviewData {
                         titulo: "Load", valor: "—",
                         sublabel: "Calibrating",
                         chartID: "matriz-carga",
-                        chart: .rielZona(p: nil, zona: 0.8...1.3, estela: [])),
+                        chart: .colina(p: nil, zona: 0.8...1.3, estela: [])),
                     der: MatrizSeccion(
                         id: "strain", hue: LiquidColor.teal,
                         titulo: "Effort", valor: "—",
@@ -1012,7 +1012,7 @@ private enum MatrizHoyFacePreviewData {
                         id: "carga", hue: LiquidColor.verdePrimario,
                         titulo: "Load", valor: "1.48", sublabel: "Building",
                         chartID: "matriz-carga",
-                        chart: .rielZona(p: 1.48, zona: 0.8...1.3, estela: estela)),
+                        chart: .colina(p: 1.48, zona: 0.8...1.3, estela: estela)),
                     der: MatrizSeccion(
                         id: "strain", hue: LiquidColor.teal,
                         titulo: "Effort", valor: "14.0",

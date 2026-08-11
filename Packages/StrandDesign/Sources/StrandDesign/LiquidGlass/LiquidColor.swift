@@ -100,6 +100,16 @@ public enum LiquidColor {
     /// las partículas/puntos pueden usar la familia clara, el TEXTO usa este.
     public static let doradoTemp = Color(hex: "#8A6A2B")
 
+    /// FER-60 · Heatmap de ESTRÉS (contexto, NO vota): una rampa de calor de tres pasos
+    /// — nivel bajo = la tinta neutra de la sección (`tinta500`, sin calor); medio y alto
+    /// suben por la familia OCRE→SIENA. Deliberadamente DISTINTOS del `atencion`/`ambar`
+    /// #C4631F (el naranja de alerta que SÍ vota, en el guardián) y del `negativo` #B3402A:
+    /// el estrés es acompañante, no puede vestir el color de la alarma que decide (mismo
+    /// principio que `doradoTemp`). Nunca verde (ese es el veredicto). Oscurecidos para
+    /// contraste ≥ 4.5:1 como texto sobre `papelMatriz` (verificado en MatrizContrasteTests).
+    public static let estresMedio = Color(hex: "#A9752F")
+    public static let estresAlto = Color(hex: "#9C5B2E")
+
     // MARK: Partículas del Ecosistema (FER-10)
     //
     // La tinta de las esferas de partículas del héroe: más profunda que los tonos de dato

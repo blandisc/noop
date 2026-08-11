@@ -16,9 +16,9 @@ final class MatrizChartAlturaTests: XCTestCase {
 
     /// La otra fila gemela (Carga | Esfuerzo) ya estaba alineada — no la rompemos.
     func test_gemela_carga_esfuerzo_misma_altura() {
-        let carga: MatrizChartPayload = .rielZona(p: 1.0, zona: 0.8...1.3, estela: [])
+        let carga: MatrizChartPayload = .colina(p: 1.0, zona: 0.8...1.3, estela: [])
         let esf: MatrizChartPayload = .barrasMini(valores: [])
         XCTAssertEqual(MatrizHoyFace.chartAltura(carga), MatrizHoyFace.chartAltura(esf),
-                       "Carga (rielZona) y Esfuerzo (barrasMini) son gemelas en Contexto")
+                       "Carga (colina) y Esfuerzo (barrasMini) son gemelas en Contexto")
     }
 }
