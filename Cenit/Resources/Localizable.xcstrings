@@ -1,6 +1,214 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "manual.contexto.titulo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your context"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu contexto"
+          }
+        }
+      }
+    },
+    "manual.contexto.intro" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "These four don't decide your day: only your sleep and resting heart rate vote. They're here to give you context around that verdict, never to judge it."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estas cuatro no deciden tu d\u00eda: solo tu sue\u00f1o y tu FC en reposo votan. Est\u00e1n aqu\u00ed para darte contexto alrededor de ese veredicto, nunca para juzgarlo."
+          }
+        }
+      }
+    },
+    "manual.contexto.sec.que" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What each one is"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qu\u00e9 es cada una"
+          }
+        }
+      }
+    },
+    "manual.contexto.carga" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Load"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Carga"
+          }
+        }
+      }
+    },
+    "manual.contexto.carga.sub" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How much training you've been piling up lately, against what's usual for you."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cu\u00e1nto entrenamiento vienes acumulando \u00faltimamente, comparado con lo que es normal en ti."
+          }
+        }
+      }
+    },
+    "manual.contexto.esfuerzo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effort"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esfuerzo"
+          }
+        }
+      }
+    },
+    "manual.contexto.esfuerzo.sub" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What you've built up so far today."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lo que llevas construido en el d\u00eda."
+          }
+        }
+      }
+    },
+    "manual.contexto.vfc" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "HRV"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "VFC"
+          }
+        }
+      }
+    },
+    "manual.contexto.vfc.sub" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your heart-rate variability, estimated by your watch through the day. The dotted line is where you usually sit."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu variabilidad de la frecuencia cardiaca, estimada por tu reloj a lo largo del d\u00eda. La l\u00ednea punteada es donde sueles estar."
+          }
+        }
+      }
+    },
+    "manual.contexto.estres" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stress"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estr\u00e9s"
+          }
+        }
+      }
+    },
+    "manual.contexto.estres.sub" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your estimated stress level for the day, on a low-to-high scale."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu nivel de estr\u00e9s estimado del d\u00eda, en una escala de bajo a alto."
+          }
+        }
+      }
+    },
+    "manual.contexto.sec.porque" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Why they don't vote"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Por qu\u00e9 no votan"
+          }
+        }
+      }
+    },
+    "manual.contexto.porque" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On a wrist watch, HRV and stress aren't stable enough to decide with. Your watch's daytime HRV drifts about 29% from a chest-strap reference, so we show it as a quiet line where you usually sit, never as a range you crossed. Your resting heart rate and sleep carry the verdict; these ride along as context."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En un reloj de mu\u00f1eca, la VFC y el estr\u00e9s no son lo bastante estables para decidir con ellos. La VFC de d\u00eda de tu reloj se aleja alrededor de 29% de una referencia de banda de pecho, as\u00ed que la mostramos como una l\u00ednea quieta donde sueles estar, nunca como un rango que cruzaste. Tu FC en reposo y tu sue\u00f1o llevan el veredicto; estas van de acompa\u00f1antes."
+          }
+        }
+      }
+    },
     "%@ night" : {
       "localizations" : {
         "en" : {
