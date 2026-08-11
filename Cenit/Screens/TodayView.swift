@@ -135,6 +135,7 @@ struct TodayView: View {
     @State private var showGuardianHoja = false
     /// FER-54: la hoja-manual «¿Qué decide tu día?» (rótulo de nivel en la Matriz).
     @State private var showDecideManual = false
+    @State private var showContextoManual = false
     @AppStorage("today.ecosistemaSeparaciones") private var ecosistemaSeparaciones = 0
     /// Tras cuántas separaciones acumuladas se retira el hint «Toca para separar».
     private static let maxSeparacionHints = 3
@@ -689,6 +690,13 @@ struct TodayView: View {
             }
             .preferredColorScheme(.light)
         }
+        // FER-61 · El manual «Tu contexto»: el hogar único del «no deciden tu día».
+        .sheet(isPresented: $showContextoManual) {
+            LiquidMetricSheet(tono: LiquidColor.tinta700, detent: .porContenido) {
+                HojaContexto()
+            }
+            .preferredColorScheme(.light)
+        }
         // La hoja del eje autonómico: el desglose de sus tres señales.
         .sheet(isPresented: $showAutonomicoHoja) {
             LiquidMetricSheet(tono: liquidAutonomicoTono, detent: .porContenido) {
@@ -1165,6 +1173,9 @@ struct TodayView: View {
         case "manual.deciden":
             // FER-54: el manual del modelo — el rótulo «Decide your day» tocado.
             showDecideManual = true
+        case "manual.contexto":
+            // FER-61: el manual «Tu contexto» — el rótulo «Context» tocado.
+            showContextoManual = true
         case "autonomico":
             openLiquidSenal("autonomico")
         default:

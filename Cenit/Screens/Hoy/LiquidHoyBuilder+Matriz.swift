@@ -362,8 +362,10 @@ extension LiquidHoyBuilder {
                 .nivel(String(localized: "matriz.nivel.vigila",
                               defaultValue: "Watches over you"), manualID: "guardian"),
                 .full(seccionGuardian),
+                // FER-61: el nivel gana su «?» → hoja «Tu contexto», el hogar único del
+                // «no deciden tu día» (resuelve la asimetría: antes solo VFC lo decía).
                 .nivel(String(localized: "matriz.nivel.contexto",
-                              defaultValue: "Context"), manualID: nil),
+                              defaultValue: "Context"), manualID: "manual.contexto"),
                 .split(izq: seccionCarga, der: seccionEsf),
                 .split(izq: seccionVFC, der: seccionStress),
                 .nivel(String(localized: "matriz.nivel.bitacora",
