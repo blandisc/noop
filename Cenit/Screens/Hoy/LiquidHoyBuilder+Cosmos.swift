@@ -278,7 +278,7 @@ extension LiquidHoyBuilder {
             case .high:   return String(localized: "High")
             }
         }()
-        let sub = String(localized: "vs your 7 days", defaultValue: "vs your 7 days")
+        let sub = String(localized: "matriz.stress.sub", defaultValue: "last 7 days")
         return .init(
             id: "stress", grupo: 2, lunaRadio: 9, hueLuna: LiquidColor.tinta500,
             medidor: nil,

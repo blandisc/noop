@@ -20261,6 +20261,22 @@
         }
       }
     },
+    "matriz.stress.sub" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "last 7 days"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "últimos 7 días"
+          }
+        }
+      }
+    },
     "matriz.vfc.referencia" : {
       "extractionState" : "manual",
       "localizations" : {
