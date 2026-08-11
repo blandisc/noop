@@ -370,7 +370,7 @@ public struct MatrizHoyFace: View {
                 .accessibilityIdentifier("matriz-seccion-\(s.id)")
                 chartView(s.chart, hue: s.hue, chartID: s.chartID,
                           resaltado: scrub?.id == s.id ? scrub?.idx : nil)
-                    .frame(height: chartAltura(s.chart))
+                    .frame(height: Self.chartAltura(s.chart))
                     .modifier(ScrubGesto(seccion: s, scrub: $scrub, tick: $scrubTick,
                                              onTap: { tocar(s.id) }))
                     // VoiceOver no arrastra: la gráfica es su propio control ajustable.
@@ -388,7 +388,7 @@ public struct MatrizHoyFace: View {
                 VStack(alignment: .leading, spacing: LiquidSpace.s200) {
                     encabezado(s)
                     chartView(s.chart, hue: s.hue, chartID: s.chartID)
-                        .frame(height: chartAltura(s.chart))
+                        .frame(height: Self.chartAltura(s.chart))
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
@@ -640,11 +640,16 @@ public struct MatrizHoyFace: View {
         }
     }
 
-    private func chartAltura(_ p: MatrizChartPayload) -> CGFloat {
+    /// Alto del chart por tipo. `static internal` (no depende de `self`) para poder afirmar
+    /// en un test la IGUALDAD de las gemelas (FER-59) sin depender de snapshots (que no son gate de CI).
+    static func chartAltura(_ p: MatrizChartPayload) -> CGFloat {
         switch p {
         case .rielZona: return MatrizTokens.alturaRiel
         case .barrasMini: return MatrizTokens.alturaBarras
         case .escalerita: return MatrizTokens.alturaEscalera
+        // FER-59: VFC (lineaRellena) es gemela de Estrés (escalerita) en Contexto → misma
+        // altura, para que el borde inferior de la fila no quede dentado (antes 56 vs 40).
+        case .lineaRellena: return MatrizTokens.alturaEscalera
         default: return MatrizTokens.alturaLinea
         }
     }

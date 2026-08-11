@@ -288,7 +288,9 @@ final class HoyMatrizBuilderTests: XCTestCase {
         XCTAssertEqual(seccion(model, id: "guardian")?.hue, LiquidColor.doradoTemp)
         XCTAssertEqual(seccion(model, id: "carga")?.hue, LiquidColor.verdePrimario)
         XCTAssertEqual(seccion(model, id: "strain")?.hue, LiquidColor.teal)
-        XCTAssertEqual(seccion(model, id: "stress")?.hue, LiquidColor.tinta900)
+        // FER-59: Estrés RECEDE — era tinta900 (gritaba siendo referencia que no vota),
+        // ahora tinta500 (peso de las demás de contexto).
+        XCTAssertEqual(seccion(model, id: "stress")?.hue, LiquidColor.tinta500)
         XCTAssertEqual(seccion(model, id: "steps")?.hue, LiquidColor.tinta700)
 
         // Orden visual a11y.

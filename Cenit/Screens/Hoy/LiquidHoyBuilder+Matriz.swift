@@ -313,10 +313,15 @@ extension LiquidHoyBuilder {
             }
         }()
         let seccionStress = MatrizSeccion(
-            id: "stress", hue: LiquidColor.tinta900,
+            // FER-59: Estrés RECEDE (era tinta900, máximo contraste — gritaba siendo la
+            // referencia que no vota). tinta500 lo baja al peso de las demás de contexto.
+            id: "stress", hue: LiquidColor.tinta500,
             titulo: String(localized: "Stress"),
             valor: valorStress,
-            sublabel: stressHoy == nil ? nil : String(localized: "vs your 7 days"),
+            // FER-59: la escalerita es la tendencia de tus últimos 7 días — describir la
+            // VENTANA, no un «vs» (los cortes son fijos; no es una comparación personal).
+            sublabel: stressHoy == nil ? nil
+                : String(localized: "matriz.stress.sub", defaultValue: "last 7 days"),
             chartID: "matriz-stress",
             chart: .escalerita(niveles: niveles))
 
