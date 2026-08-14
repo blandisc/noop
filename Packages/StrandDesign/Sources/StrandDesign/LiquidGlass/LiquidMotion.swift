@@ -52,6 +52,10 @@ public enum LiquidMotion {
     public static let intervaloAmbiente: Double = 1.0 / 20.0
     /// 60 fps — simulaciones PLENAS (partículas del orbe, siembra de motas). (FER-31)
     public static let intervaloPleno: Double = 1.0 / 60.0
+    /// 12 fps — los SELLOS chicos de la Matriz (OrbeVivo, SelloGuardianVivo): un cuerpo de
+    /// pocos pt no delata más cuadros y son varios a la vez. Nombrado (FER-audit) en vez del
+    /// `1.0/12` suelto que vivía fuera del contrato de movimiento.
+    public static let intervaloSello: Double = 1.0 / 12.0
 
     // MARK: Easings
 

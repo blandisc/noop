@@ -22,6 +22,13 @@ public struct OrbeVivo: View {
     private let fps: Double
     private let forma: Forma
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    // FER-audit: el sello hereda la MISMA disciplina de pausa del héroe. Antes solo leía
+    // reduceMotion, así que los ~6 sellos-esfera de la Matriz seguían latiendo con la app en
+    // segundo plano (`liquidAmbientPaused`) y en previews/fixtures «sin motion»
+    // (`liquidMotionDisabled`). Ahora un solo `quieto` los apaga a todos.
+    @Environment(\.liquidAmbientPaused) private var ambientPaused
+    @Environment(\.liquidMotionDisabled) private var motionDisabled
+    private var quieto: Bool { reduceMotion || ambientPaused || motionDisabled }
 
     /// `fps`: los cuerpos chicos (sellos) viven bien a 12; los grandes a 24
     /// (hallazgo Grok #2 — N relojes en la única cara).
@@ -49,8 +56,8 @@ public struct OrbeVivo: View {
             } else {
                 // La rotación es de 0.12 rad/s: más cuadros no se ven, solo cuestan
                 // (hallazgos DeepSeek #2 / Grok #2 — perf de N orbes).
-                TimelineView(.animation(minimumInterval: 1.0 / fps, paused: reduceMotion)) { tl in
-                    let t = reduceMotion ? 0 : tl.date.timeIntervalSinceReferenceDate
+                TimelineView(.animation(minimumInterval: 1.0 / fps, paused: quieto)) { tl in
+                    let t = quieto ? 0 : tl.date.timeIntervalSinceReferenceDate
                     Canvas { ctx, size in
                         Self.dibujar(ctx, centro: CGPoint(x: size.width / 2, y: size.height / 2),
                                      radio: radio, hue: hue, huePar: huePar, t: t,

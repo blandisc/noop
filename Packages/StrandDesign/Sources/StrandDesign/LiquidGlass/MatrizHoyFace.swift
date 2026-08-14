@@ -235,7 +235,9 @@ public struct MatrizHoyFace: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.bottom, LiquidSpace.s600)
-        .sensoryFeedback(.selection, trigger: latido)
+        // FER-audit: solo en la transición «se puso» (tap), no también en la limpieza a nil
+        // 320 ms después — que hacía vibrar DOS veces por un solo toque.
+        .sensoryFeedback(.selection, trigger: latido) { _, nuevo in nuevo != nil }
         .sensoryFeedback(.selection, trigger: scrubTick)
         .accessibilityElement(children: .contain)
     }
@@ -353,7 +355,10 @@ public struct MatrizHoyFace: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-        } else if s.scrubNoches != nil, !reduceMotion {
+        } else if s.scrubNoches != nil {
+            // FER-audit: el scrub es manipulación directa 1:1 con el dedo, no una animación
+            // del sistema — así que SIGUE vivo bajo Reduce Motion (antes se apagaba entero, y
+            // un vidente con RM perdía la función). RM apaga solo la ANIMACIÓN del cruce/cursor.
             // Sección con SCRUB (Sueño): el encabezado es su propio botón (abre la hoja)
             // y la gráfica lleva el gesto de arrastre — separados, como el guardián, para
             // que un toque abra y un arrastre lea sin pelear (hallazgos Grok/DeepSeek/Sonnet:
@@ -399,10 +404,6 @@ public struct MatrizHoyFace: View {
             .accessibilityLabel(Text(verbatim: a11yLabel(s)))
             .accessibilityAddTraits(.isButton)
             .accessibilityIdentifier("matriz-seccion-\(s.id)")
-            // Bajo Reduce Motion las secciones con scrub caen aquí; siguen siendo
-            // ajustables por VoiceOver (el arrastre visual es lo único que se apaga).
-            .modifier(ScrubA11y(aplica: s.scrubNoches != nil, valor: scrubA11yValue(s),
-                                hint: scrubA11yHint, ajustar: { scrubAjustar(s, $0) }))
         }
     }
 
@@ -492,8 +493,9 @@ public struct MatrizHoyFace: View {
                             .foregroundStyle(LiquidColor.tinta500)
                             .fixedSize(horizontal: false, vertical: true)
                             // El dato del scrub cambia con un cruce suave (es texto —
-                            // numericText sólo aplica a dígitos, hallazgo Grok BAJA).
-                            .animation(.easeInOut(duration: 0.15), value: sub)
+                            // numericText sólo aplica a dígitos, hallazgo Grok BAJA). Bajo
+                            // Reduce Motion el valor salta sin cruce (FER-audit).
+                            .animation(reduceMotion ? nil : .easeInOut(duration: 0.15), value: sub)
                     }
                 }
                 // Alineado con el título (después del orbe), a lo ancho de la celda.
