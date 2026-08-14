@@ -20,6 +20,11 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **Hoy: se retira el texto de sync heredado de la banda / Today drops the band-era sync caption** (FER-65).
+  **ES** — Bajo el encabezado quedaba una línea de texto («Sincronizando…») que nació con la banda retirada. Por decisión del dueño se quita: el pull-to-refresh conserva toda su señal —el sello del dial se da cuerda y gira, más la acción VoiceOver «Sincronizar»—, sin un texto redundante. Se depuraron también los comentarios y los `TODO(/pm)` que aún describían la banda.
+  **EN** — A leftover text line ("Syncing…") under the header dated back to the retired band. Removed by owner's call: pull-to-refresh keeps its full signal — the dial seal winds and spins, plus the VoiceOver "Sync" action — without the redundant caption.
+  ([TodayView.swift](Cenit/Screens/TodayView.swift))
+
 - **Hoy avisa si Apple Salud se desconecta / Today tells you if Apple Health disconnects** (FER-audit).
   **ES** — Si revocas el permiso de Apple Salud después de que Cénit ya leyó tu noche, Hoy seguía mostrando el veredicto de anoche todo el día sin avisar que estaba desconectada — el dato en caché es honesto, pero parecía de hoy. Ahora aparece un aviso discreto: «Apple Salud desconectada · mostrando tu última lectura». (De paso se corrigió un comentario del código que afirmaba, en falso, que ese caso ya se avisaba.)
   **EN** — If you revoke Apple Health permission after Cénit already read your night, Today kept showing last night's verdict all day with no hint it was disconnected — the cached reading is honest, but it looked like today's. Now a discreet line appears: "Apple Health disconnected · showing your last reading."
