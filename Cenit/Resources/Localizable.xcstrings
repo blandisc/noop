@@ -1,6 +1,118 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "matriz.vfc.sub" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "your daily HRV"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tu VFC del d\u00eda"
+          }
+        }
+      }
+    },
+    "Unloading" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unloading"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Descargando"
+          }
+        }
+      }
+    },
+    "Spike" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spike"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pico"
+          }
+        }
+      }
+    },
+    "Very regular" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Very regular"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Muy regular"
+          }
+        }
+      }
+    },
+    "One moment: the guardian is still reading your signals." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One moment: the guardian is still reading your signals."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un momento: el guardi\u00e1n todav\u00eda est\u00e1 leyendo tus se\u00f1ales."
+          }
+        }
+      }
+    },
+    "Last night only one of your two signals came through. The guardian needs both before it can say anything." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last night only one of your two signals came through. The guardian needs both before it can say anything."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anoche solo lleg\u00f3 una de tus dos se\u00f1ales. El guardi\u00e1n necesita las dos antes de poder decir algo."
+          }
+        }
+      }
+    },
+    "The guardian needs a few nights to learn your pattern." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The guardian needs a few nights to learn your pattern."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El guardi\u00e1n necesita unas noches para aprender tu patr\u00f3n."
+          }
+        }
+      }
+    },
     "manual.contexto.titulo" : {
       "localizations" : {
         "en" : {
@@ -20565,7 +20677,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Una señal fuera de tu rango — te digo cuál."
+            "value" : "Una señal fuera de tu rango: te digo cuál."
           }
         }
       }
@@ -20650,7 +20762,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "De tus últimas semanas aprendo tu banda normal de cada señal. Cada mañana comparo la noche contra esa banda: dentro o fuera. El veredicto cuenta cuántas señales votantes se salieron — nunca es un puntaje de 0 a 100, porque tu reloj no mide con esa precisión y no te voy a fingir que sí."
+            "value" : "De tus últimas semanas aprendo tu banda normal de cada señal. Cada mañana comparo la noche contra esa banda: dentro o fuera. El veredicto cuenta cuántas señales votantes se salieron; nunca es un puntaje de 0 a 100, porque tu reloj no mide con esa precisión y no te voy a fingir que sí."
           }
         }
       }
@@ -20718,7 +20830,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Temperatura y respiración vigilan juntas. Solo pesan si las dos se salen a la vez — una sola puede ser ruido."
+            "value" : "Temperatura y respiración vigilan juntas. Solo pesan si las dos se salen a la vez: una sola puede ser ruido."
           }
         }
       }
@@ -20752,7 +20864,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cada mañana leo tu noche y te digo una sola cosa: si amaneciste dentro de tu propio rango — no contra tablas, contra ti."
+            "value" : "Cada mañana leo tu noche y te digo una sola cosa: si amaneciste dentro de tu propio rango: no contra tablas, contra ti."
           }
         }
       }

@@ -2,11 +2,10 @@ import Foundation
 import StrandAnalytics
 import StrandModels
 
-// MARK: - FER-51 · Inputs compartidos de las caras Matriz / Cosmos (Lane C)
+// MARK: - FER-51 · Inputs compartidos de la cara Matriz
 //
-// Declara AQUÍ `MatrizInputs` y `CosmosExtraInputs` para que esta rama compile sola.
-// El director fusionará con la copia de la cara Matriz en un archivo único al integrar
-// (colisión esperada; no reescribir el struct en otro sitio de esta rama).
+// `MatrizInputs` es el material crudo día-alineado que Hoy resuelve una vez y las ventanas §7
+// del builder recortan. (`CosmosExtraInputs` sobrevive del modo Cosmos, ya retirado.)
 
 extension LiquidHoyBuilder {
 
