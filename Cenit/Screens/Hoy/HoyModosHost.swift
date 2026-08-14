@@ -4,16 +4,18 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 // MARK: - FER-51 · Host de la Matriz
 //
-// Decisión del dueño (2026-08-06, revisión en vivo): el modo Cosmos se APAGA — era
-// mucha complejidad; la Matriz es la apuesta y se pule a fondo. Este host monta la
-// franja de estado T1–T5 + la cara Matriz, y nada más. (Las caras Cosmos siguen en
-// StrandDesign con sus tests por si la decisión se revierte; aquí ya no se montan.)
+// Decisión del dueño (2026-08-06, revisión en vivo): el modo Cosmos se APAGÓ — era mucha
+// complejidad; la Matriz es la apuesta y se pule a fondo. (El código muerto de Cosmos se
+// podó después, FER-audit.) Este host monta la franja de estado T1–T5 + la cara Matriz.
 
 struct HoyMatrizHost: View {
     @ObserveInjection private var inject
 
     let matriz: MatrizHoyModel
     let plantilla: LiquidHoyBuilder.Plantilla
+    /// Apple Salud desconectada (permiso revocado). Con veredicto en caché (t1/t2) pinta un
+    /// aviso discreto: el dato es honesto pero es de anoche (FER-audit).
+    var saludDesconectada: Bool = false
     var onTapSeccion: (String) -> Void = { _ in }
 
     var body: some View {
@@ -35,7 +37,12 @@ struct HoyMatrizHost: View {
     private var estadoCopy: String? {
         switch plantilla {
         case .t1Pleno, .t2Provisional:
-            return nil
+            // Con veredicto en caché pero Salud desconectada, avisamos honesto que el dato
+            // es de anoche (FER-audit: antes callaba y el usuario no sabía que se desconectó).
+            return saludDesconectada
+                ? String(localized: "hoy.desconectado.cache",
+                         defaultValue: "Apple Health disconnected · showing your last reading")
+                : nil
         case .t3SinVeredicto(let causa):
             switch causa {
             case .leyendo:
