@@ -97,7 +97,7 @@ extension LiquidHoyBuilder {
         // (P2), y el dato del scrub la reemplaza al arrastrar. Mismo gate de honestidad.
         let sublabelSueno: String? = {
             if hoy?.totalSleepMin == nil && noches.allSatisfy({ $0.valor == nil }) {
-                return String(localized: "Getting to know you")
+                return String(localized: "hero.title.calibrando", defaultValue: "Getting to know you")
             }
             guard hoy?.totalSleepMin != nil else { return nil }
             guard let out = bodyByDay[hoyKey ?? ""]?.sleepOut else {
@@ -191,9 +191,10 @@ extension LiquidHoyBuilder {
             id: "hrv", hue: LiquidColor.cian,
             titulo: String(localized: "HRV"),
             valor: valorVFC, unidad: String(localized: "ms"), terciaria: true,
-            // P3: el abstenido explica su papel y promete el porqué a un tap.
-            sublabel: String(localized: "matriz.vfc.referencia",
-                             defaultValue: "reference · does not vote · why?"),
+            // Sublabel DESCRIPTIVO, simétrico con sus gemelas de contexto (Carga/Esfuerzo/
+            // Estrés): el «no vota» ya no vive suelto aquí — lo lleva el rótulo de nivel
+            // «Contexto» + la hoja «Tu contexto» (FER-61), así que las cuatro se ven parejas.
+            sublabel: String(localized: "matriz.vfc.sub", defaultValue: "your daily HRV"),
             chartID: "matriz-hrv",
             chart: .lineaRellena(puntos: ptsVFC, base: baseVFC,
                                  dominio: dominioLinea(ptsVFC, base: baseVFC, fallback: 20...80),
@@ -311,7 +312,10 @@ extension LiquidHoyBuilder {
         let seccionEsf = MatrizSeccion(
             id: "strain", hue: LiquidColor.teal,
             titulo: String(localized: "Effort"),
-            valor: valorEsf, unidad: valorEsf == "—" ? nil : "/ 21",
+            valor: valorEsf,
+            // Fuente única del sufijo de escala (no un literal): la hoja de detalle usa el
+            // mismo `MetricFormat.scaleSuffix`, así que Matriz y hoja no divergen.
+            unidad: valorEsf == "—" ? nil : MetricFormat.forMetric(.strain).scaleSuffix,
             sublabel: valorEsf == "—" ? nil
                 : String(localized: "matriz.esf.sub", defaultValue: "today's effort so far"),
             chartID: "matriz-strain",
@@ -578,7 +582,7 @@ extension LiquidHoyBuilder {
     private static func sublabelFC(ptsFC: [Double?], prep: Preparedness.Read?,
                                    alerta: MedidorLunar.Alerta) -> String? {
         if ptsFC.allSatisfy({ $0 == nil }) {
-            return String(localized: "Getting to know you")
+            return String(localized: "hero.title.calibrando", defaultValue: "Getting to know you")
         }
         // Sin lectura de HOY o sin veredicto real (nil/lowSignal): no se afirma rango
         // (espejo del gate fantasma del Cosmos — Grok #3).

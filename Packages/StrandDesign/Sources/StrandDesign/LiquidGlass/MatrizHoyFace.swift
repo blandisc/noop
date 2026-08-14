@@ -357,8 +357,9 @@ public struct MatrizHoyFace: View {
             // Sección con SCRUB (Sueño): el encabezado es su propio botón (abre la hoja)
             // y la gráfica lleva el gesto de arrastre — separados, como el guardián, para
             // que un toque abra y un arrastre lea sin pelear (hallazgos Grok/DeepSeek/Sonnet:
-            // un DragGesture dentro del Button es ambiguo). El gesto usa highPriorityGesture
-            // para ganarle al ScrollView de Hoy (patrón #118, ver TrendChart).
+            // un DragGesture dentro del Button es ambiguo). El gesto usa simultaneousGesture
+            // + guard de intención horizontal, para no robarle el pan vertical al ScrollView
+            // de Hoy (ver ScrubGesto abajo; patrón #118).
             VStack(alignment: .leading, spacing: LiquidSpace.s200) {
                 Button { tocar(s.id) } label: {
                     encabezado(s).contentShape(Rectangle())

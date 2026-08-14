@@ -1698,7 +1698,7 @@ enum LiquidHoyBuilder {
         out.append(.init(
             id: "stress", label: String(localized: "Stress"),
             value: i.stress.map { String(format: "%.1f", $0) } ?? "—",
-            unit: i.stress == nil ? "" : "/ 3",
+            unit: i.stress == nil ? "" : (MetricFormat.forMetric(.stress).scaleSuffix ?? ""),
             delta: stressDelta.text, deltaTone: stressDelta.tone,
             tone: i.stress.map(stressTone) ?? LiquidColor.tinta500, icon: .estres,
             origen: .calculado))
