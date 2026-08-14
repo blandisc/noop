@@ -204,13 +204,15 @@ enum MatrizChartDraw {
 /// posible. Reduce Motion: aparece asentado, sin animación.
 struct MatrizEntrada: ViewModifier {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    // FER-audit: en previews/fixtures «sin motion» la entrada aparece asentada, como con RM.
+    @Environment(\.liquidMotionDisabled) private var motionDisabled
     @State private var asentado = false
     func body(content: Content) -> some View {
         content
             .opacity(asentado ? 1 : 0.4)
             .scaleEffect(asentado ? 1 : 0.99, anchor: .bottom)
             .onAppear {
-                guard !reduceMotion else { asentado = true; return }
+                guard !reduceMotion, !motionDisabled else { asentado = true; return }
                 withAnimation(.easeOut(duration: 0.5).delay(0.05)) { asentado = true }
             }
     }
@@ -221,8 +223,8 @@ struct MatrizEntrada: ViewModifier {
 /// `TimelineView`; con Reduce Motion el TimelineView se pausa y esto devuelve 1 (quieto).
 enum MatrizAliento {
     static let periodo: Double = 3.4   // s por ciclo — lento, no distrae
-    static func escala(_ date: Date, reduceMotion: Bool) -> CGFloat {
-        guard !reduceMotion else { return 1 }
+    static func escala(_ date: Date, quieto: Bool) -> CGFloat {
+        guard !quieto else { return 1 }
         let fase = date.timeIntervalSinceReferenceDate
             .truncatingRemainder(dividingBy: periodo) / periodo
         return 1 + 0.07 * CGFloat(0.5 - 0.5 * cos(2 * .pi * fase))   // 1 → 1.07 → 1
@@ -367,6 +369,9 @@ public struct MatrizLineaRellena: View {
     /// Índice leído por el scrub (FER-62): marca su punto + cursor.
     private let resaltado: Int?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.liquidAmbientPaused) private var ambientPaused
+    @Environment(\.liquidMotionDisabled) private var motionDisabled
+    private var quieto: Bool { reduceMotion || ambientPaused || motionDisabled }
 
     public init(chartID: String, puntos: [Double?], base: Double?, dominio: ClosedRange<Double>,
                 hue: Color, alfa: Double = 1.0, alertaHoy: MedidorLunar.Alerta = .ninguna,
@@ -382,8 +387,8 @@ public struct MatrizLineaRellena: View {
     }
 
     public var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 20.0, paused: reduceMotion)) { tl in
-            let aliento = MatrizAliento.escala(tl.date, reduceMotion: reduceMotion)
+        TimelineView(.animation(minimumInterval: LiquidMotion.intervaloAmbiente, paused: quieto)) { tl in
+            let aliento = MatrizAliento.escala(tl.date, quieto: quieto)
             Canvas { ctx, size in
                 let count = puntos.count
                 if count == 0 || !MatrizChartDraw.tieneDatos(puntos) {
@@ -536,6 +541,9 @@ public struct MatrizColina: View {
     /// Tope de la escala (paridad con `LiquidHill`): la razón vive en 0…`maximo`.
     private let maximo: Double
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.liquidAmbientPaused) private var ambientPaused
+    @Environment(\.liquidMotionDisabled) private var motionDisabled
+    private var quieto: Bool { reduceMotion || ambientPaused || motionDisabled }
 
     public init(chartID: String, p: Double?, zona: ClosedRange<Double>,
                 estela: [Double], hue: Color, alertaHoy: MedidorLunar.Alerta = .ninguna,
@@ -550,8 +558,8 @@ public struct MatrizColina: View {
     }
 
     public var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 20.0, paused: reduceMotion)) { tl in
-            let aliento = MatrizAliento.escala(tl.date, reduceMotion: reduceMotion)
+        TimelineView(.animation(minimumInterval: LiquidMotion.intervaloAmbiente, paused: quieto)) { tl in
+            let aliento = MatrizAliento.escala(tl.date, quieto: quieto)
             Canvas { ctx, size in
             let w = max(size.width, 1)
             let h = size.height
@@ -768,6 +776,9 @@ public struct MatrizEscalerita: View {
     /// Índice leído por el scrub (FER-62): ese punto va a alfa pleno + cursor.
     private let resaltado: Int?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.liquidAmbientPaused) private var ambientPaused
+    @Environment(\.liquidMotionDisabled) private var motionDisabled
+    private var quieto: Bool { reduceMotion || ambientPaused || motionDisabled }
 
     public init(chartID: String, niveles: [Int?], hue: Color, resaltado: Int? = nil) {
         self.chartID = chartID
@@ -777,8 +788,8 @@ public struct MatrizEscalerita: View {
     }
 
     public var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 20.0, paused: reduceMotion)) { tl in
-            let aliento = MatrizAliento.escala(tl.date, reduceMotion: reduceMotion)
+        TimelineView(.animation(minimumInterval: LiquidMotion.intervaloAmbiente, paused: quieto)) { tl in
+            let aliento = MatrizAliento.escala(tl.date, quieto: quieto)
             Canvas { ctx, size in
                 let count = max(niveles.count, 1)
                 if niveles.allSatisfy({ $0 == nil }) {

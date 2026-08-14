@@ -36,6 +36,10 @@ public struct SelloGuardianVivo: View {
     private let hueResp: Color
     private let estado: Estado
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    // FER-audit: misma disciplina de pausa del héroe (background + previews «sin motion»).
+    @Environment(\.liquidAmbientPaused) private var ambientPaused
+    @Environment(\.liquidMotionDisabled) private var motionDisabled
+    private var quieto: Bool { reduceMotion || ambientPaused || motionDisabled }
 
     public init(radio: CGFloat, hueTemp: Color, hueResp: Color, estado: Estado) {
         self.radio = radio
@@ -83,8 +87,8 @@ public struct SelloGuardianVivo: View {
 
     public var body: some View {
         let lado = radio * 2.5
-        TimelineView(.animation(minimumInterval: 1.0 / 12, paused: reduceMotion)) { tl in
-            let t = reduceMotion ? 0 : tl.date.timeIntervalSinceReferenceDate
+        TimelineView(.animation(minimumInterval: LiquidMotion.intervaloSello, paused: quieto)) { tl in
+            let t = quieto ? 0 : tl.date.timeIntervalSinceReferenceDate
             // Latido sutil solo en racha (el par lleva dos noches fuera): la esfera respira
             // un punto más hondo. Reduce Motion lo apaga (t = 0 ⇒ escala 1).
             let escala = late ? 1 + 0.05 * CGFloat(sin(t * 2.4)) : 1
