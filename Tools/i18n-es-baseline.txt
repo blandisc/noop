@@ -1,0 +1,128 @@
+%@ / %@ nights
+%@ bpm to ready
+%@ breaths
+%@ cm
+%@ days · %@ routines
+%@ exercises
+%@ exercises · %@ sets · %@ done
+%@ kg
+%@ kg, %@ pairs
+%@ lb
+%@ min
+%@ nights
+%@ of %@ days
+%@ of %@ sets
+%@ of ~%@ nights
+%@ of ~%@ nights learned
+%@ overlapping days · %@ %@ correlation
+%@ raising
+%@ receipts · tap one to reprint
+%@ receipts · today's on top
+%@ records
+%@ registros
+%@ sessions this month
+%@ sessions this month · %@ load raises
+%@ sessions without hitting the goal at this weight.
+%@ sessions · 90 days
+%@ sessions · tap another bar to switch
+%@ · %@h
+%@ · n = %@
+%@ ›
+%@%%
+%@, %@%% last night
+%@: all your data, none of the cloud.
+%@–%@%@ · step %@
+%@′ %@″
+%lld breaths
+%lld days
+%lld exercises
+%lld nights
+%lld packets
+%lld pieces
+%lld raising
+%lld readings
+%lld records
+%lld reps
+%lld seconds
+%lld sessions
+%lld sets
+%lld weeks
+, typical %@%%
+/ %@
+/%@
+/100
+0
+=
+A health app built on Apple Health. Everything stays on this device: your history, your nights, your numbers. Nothing is uploaded. %@ is an independent, experimental project.
+Active session: %@, %@, heart rate %@
+Add %lld exercise(s)
+An estimate with a ±%@-year margin.
+Apple Health · backup
+Best: %@
+Borrar media descargada
+Cruza tu temperatura de muñeca y tu pulso en reposo nocturno para avisarte temprano de una posible enfermedad. Aproximado, no es un diagnóstico; necesita unas dos semanas de datos.
+Cómo estimo tu tendencia
+Day %@
+Descargar biblioteca de ejercicios
+Downloading %@/%@…
+Es una guía de dirección, no una medición médica ni una puntuación exacta.
+Estimated max heart rate · %@ bpm
+FOCUS MODE · SET %@ OF %@
+For %@ days
+Goal today: %@×%@ with the new weight. Losing a rep or two on a raise is normal; you win them back in 1 or 2 sessions.
+Heart rate %@
+Heart rate %@, zone %@, %@ percent of your maximum
+I need at least 3 signals to work this out without guessing. You have %@.
+It looks like there's no data on this device. If you've used Cénit before, on this phone or another, restore your history and settings from an iCloud Drive backup.
+Kept **%@ of %@** days.
+Mark your meals · 0 of %@
+Miro la variabilidad de los latidos que tu reloj registra mientras duermes y la comparo con tu propio promedio, no con el de otra persona ni con un número fijo de población.
+No se pudo armar el recibo.
+Not a medical device.
+Overriding the automatic estimate (%@).
+Peak %@ bpm · %@
+Pick 2–4 to overlay.
+Recalibrada el %@
+Resting %@
+Round %@ of %@
+Set %@
+Set %@ · %@ × %@ reps
+Showing the last %@ days
+Sleep stages: deep %@ percent, light %@ percent, REM %@ percent, awake %@ percent
+Step %@ of 4
+Still learning how consistent your nightly warming is: keep wearing it to bed.
+Sync the last few weeks, on-device: Cénit reads your Apple Health HR, HRV, sleep, SpO₂ and steps. Nothing leaves your iPhone; your strength workouts are saved back to Apple Health when you allow it. (For a one-time bulk history, use the export import above.)
+Task Force 1996; Plews 2013
+Tendencias
+The «vs your base» bars show each signal's deviation in σ (above your base = right). HRV, resting heart rate and respiration are z-scored that way; sleep and skin temperature carry no σ, so they show their state, not a position. Your base and normal range are your recent average ± one σ. Steadiness is the coefficient of variation (CV). Training load is the acute:chronic workload ratio (ACWR): context for recovery, never an injury claim.
+Timing, %@ seconds
+Vigilar señales de enfermedad
+With this plan: %@×%@ with %@ kg %@ → next time you train with **%@**.
+Write-back to Apple Health: %@/%@ enabled
+YOUR INVENTORY · PER SIDE
+You're %@ of %@ sessions in with %@.
+Your plates can't hit %@ kg exactly, closest is %@ kg
+Z%@
+Zones as a percentage of your max heart rate (%@ bpm, Tanaka). The rest of the day you were resting or very light.
+adherence · %@ of %@ meals
+applies to all %@ work sets
+kg
+max weight · %@ wk
+ms²
+night to night
+nights in a row · kept %@ of %@
+of %@
+rest %@ + margin %@ bpm
+typical warming into sleep
+vs your normal · ~%@ bpm · %@ sessions
+your rest + %@ bpm margin
+~%@%%
+±%@
+×
+…
+‹ %@
+↗ +%@ / %@ wk
+↗ +%@%% vs. last month
+↗ up %@ wk
+↘ −%@%% vs. last month
+★ %@: %@
