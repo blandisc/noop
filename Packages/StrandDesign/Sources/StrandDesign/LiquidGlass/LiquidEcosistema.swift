@@ -76,8 +76,32 @@ public struct EcosistemaRotulos: Sendable {
         accionSeparar: "Separar señales", accionUnir: "Unir señales")
 }
 
+/// El frame REAL del orbe del héroe en pantalla (coords globales), que la ANIMACIÓN DE ENTRADA
+/// lee para aterrizar sin costura sobre él. `nil` = aún no medido (o no hay héroe en pantalla)
+/// → la entrada cae a su cénit fijo. `reduce` conserva el último no-nil (el héroe puede salir
+/// de vista al scrollear; el frame de reposo sigue siendo el bueno para la entrada).
+public struct HeroOrbeFrameKey: PreferenceKey {
+    public static let defaultValue: CGRect? = nil
+    public static func reduce(value: inout CGRect?, nextValue: () -> CGRect?) {
+        value = nextValue() ?? value
+    }
+}
+
 public struct LiquidEcosistema: View {
     public typealias Sim = EcosistemaSimulacion
+
+    /// El frame global del orbe del héroe, derivado del contenedor YA dispuesto (no del arte
+    /// escalado: un `GeometryReader` lee la geometría de LAYOUT, anterior al `scaleEffect`, así
+    /// que el frame del arte escalado saldría sin escalar). El `scaleEffect(anchor: .top)` baja
+    /// el centro a `centro.y·escala` desde el tope del contenedor; el ancho lo centra el
+    /// `maxWidth`, así que `midX` es el centro. En reposo (la entrada corre antes de tocar) el
+    /// `offset` de compacto vale 0, así que no hace falta descontarlo.
+    static func orbeFrameGlobal(contenedor: CGRect, escala: CGFloat) -> CGRect {
+        let r = Sim.Geometria.radioOrbe * escala
+        let cx = contenedor.midX
+        let cy = contenedor.minY + Sim.Geometria.centro.y * escala
+        return CGRect(x: cx - r, y: cy - r, width: r * 2, height: r * 2)
+    }
 
     private let senales: [LiquidHoyModel.Senal]
     private let hero: LiquidHoyModel.Hero
@@ -250,6 +274,12 @@ public struct LiquidEcosistema: View {
                        height: Sim.Geometria.lienzo.height)
                 .scaleEffect(escala, anchor: .top)
                 .frame(maxWidth: .infinity)
+                // Publica el frame real del orbe (para la entrada sin costura). Sobre el
+                // contenedor YA dispuesto: su .global es geometría de layout, correcta.
+                .background(GeometryReader { geo in
+                    Color.clear.preference(key: HeroOrbeFrameKey.self,
+                        value: Self.orbeFrameGlobal(contenedor: geo.frame(in: .global), escala: escala))
+                })
                 // Compacto (FER-28): sube el lienzo recortando su aire superior — el arte no
                 // cambia, solo se presenta más apretado. El estado separado sigue librando.
                 // FER-46: el offset se ANIMA con la separación — antes saltaba de golpe
