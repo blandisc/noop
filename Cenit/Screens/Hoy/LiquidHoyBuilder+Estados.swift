@@ -70,8 +70,11 @@ extension LiquidHoyBuilder {
         if !hasAnySource { return .t5Dormido }
         // El VEREDICTO manda (estudio en frío R2): una franja «sin lectura · sync
         // pendiente» junto a un héroe que afirma «En tu rango» confundía a TODOS los
-        // perfiles. Con veredicto real, la franja calla — Salud desconectada ya tiene
-        // su propio banner (HealthAlertBanner).
+        // perfiles. Con veredicto real la franja calla — SALVO un aviso discreto si Salud
+        // está desconectada (lo pinta `estadoCopy` con `saludDesconectada`, FER-audit): el
+        // veredicto en caché es honesto, pero el usuario merece saber que es de anoche.
+        // (El comentario viejo decía que HealthAlertBanner ya avisaba: falso — ese banner
+        // solo es la alerta de enfermedad, nunca el estado de conexión.)
         if let prep, prep.verdict != .lowSignal {
             switch prep.verdict {
             case .caution, .easy: return .t2Provisional   // veredicto con menos certeza

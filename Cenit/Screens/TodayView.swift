@@ -1070,6 +1070,9 @@ struct TodayView: View {
             HoyMatrizHost(
                 matriz: LiquidHoyBuilder.matriz(mInputs),
                 plantilla: plantillaActual,
+                // «Desconectada» = permiso revocado, no un dispositivo sin HealthKit
+                // (`.unavailable`). MISMA semántica que la pista «conecta Apple Salud» (l. 460).
+                saludDesconectada: health.auth != .authorized && health.auth != .unavailable,
                 onTapSeccion: { abrirHojaCaras($0) })
             // /inject: la leyenda de origen se retiró de la superficie Liquid a pedido del
             // dueño (los puntos de origen por tile se quedan).

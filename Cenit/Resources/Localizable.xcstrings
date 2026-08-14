@@ -1,6 +1,22 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "hoy.desconectado.cache" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Health disconnected \u00b7 showing your last reading"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Salud desconectada \u00b7 mostrando tu \u00faltima lectura"
+          }
+        }
+      }
+    },
     "matriz.vfc.sub" : {
       "localizations" : {
         "en" : {
