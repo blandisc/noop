@@ -90,18 +90,15 @@ public struct LiquidOrbeEntrada: View {
 
     private let clima: () -> LiquidAmbiente
     private let onFin: () -> Void
+    /// El frame REAL del orbe del héroe (centro + tamaño, coords de pantalla), leído TARDE:
+    /// llega cuando Hoy ya se armó debajo de la entrada. `nil` ⇒ aún no publicado (o no hay
+    /// héroe) → el ascenso aterriza en el cénit fijo. Con él, el orbe aterriza SIN COSTURA
+    /// sobre el orbe real y el fundido no deja unión visible.
+    private let destino: () -> CGRect?
 
     /// Las direcciones de la esfera, una sola vez por proceso (300 `sin`/`cos` no se rehacen
     /// por frame).
     private static let dirs = EcosistemaSimulacion.fibonacci(EntradaSimulacion.Geometria.n)
-    /// Qué partículas lleva cada corriente, precomputado: el reparto es fijo.
-    private static let reparto: [[Int]] = {
-        var r = [[Int]](repeating: [], count: EntradaSimulacion.Geometria.corrientes)
-        for i in 0..<EntradaSimulacion.Geometria.n {
-            r[EntradaSimulacion.corriente(i, de: EntradaSimulacion.Geometria.n)].append(i)
-        }
-        return r
-    }()
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.liquidMotionDisabled) private var motionDisabled
@@ -118,8 +115,11 @@ public struct LiquidOrbeEntrada: View {
     /// que el orbe muestra mientras `tinte` vale 0.
     @State private var climaFijado: LiquidAmbiente = .neutro
 
-    public init(clima: @escaping () -> LiquidAmbiente, onFin: @escaping () -> Void) {
+    public init(clima: @escaping () -> LiquidAmbiente,
+                destino: @escaping () -> CGRect? = { nil },
+                onFin: @escaping () -> Void) {
         self.clima = clima
+        self.destino = destino
         self.onFin = onFin
     }
 
@@ -192,32 +192,60 @@ public struct LiquidOrbeEntrada: View {
 
     private func dibujar(_ g: inout GraphicsContext, size: CGSize,
                          cuadro c: EntradaSimulacion.Cuadro, t: TimeInterval) {
-        // Escala uniforme por ancho + centrado vertical: los círculos siguen siendo círculos
-        // y la composición conserva sus proporciones en cualquier alto de pantalla.
+        // Escala uniforme por ancho + centrado vertical: los círculos siguen siendo círculos.
         let s = size.width / G.lienzo.width
         let dy = (size.height - G.lienzo.height * s) / 2
-        let centro = CGPoint(x: c.centro.x * s, y: c.centro.y * s + dy)
-        let radio = G.radio * s
-        // El teñido es UN color por frame, interpolado en sRGB del gris neutro al clima. La
-        // alternativa —dos nubes superpuestas cruzándose en opacidad— deja al orbe perdiendo
-        // densidad justo a medio teñido, que es el instante que más se mira.
-        // Con «Reducir movimiento» el clima se lee EN VIVO: no hay revelación que proteger —el
-        // orbe aparece ya asentado y teñido— así que esperar a fijarlo solo retrasaría el color
-        // sin ganar nada. Con la coreografía completa sí se usa el valor fijado, que es lo que
-        // impide que un veredicto tardío salte de color a media revelación.
+        func aPantalla(_ p: CGPoint) -> CGPoint { CGPoint(x: p.x * s, y: p.y * s + dy) }
+
+        // El orbe reunido nace abajo y SUBE al destino real del héroe (si ya llegó su frame)
+        // o al cénit fijo. Centro y radio interpolan con el progreso del ascenso, así que al
+        // final el orbe coincide EXACTO con el héroe y el fundido no deja costura.
+        let reunion = aPantalla(CGPoint(x: G.cenit.x, y: G.reunionY))
+        let radioEntrada = G.radio * s
+        let hero = destino()
+        let arriba = hero.map { CGPoint(x: $0.midX, y: $0.midY) } ?? aPantalla(G.cenit)
+        let radioArriba = hero.map { min($0.width, $0.height) / 2 } ?? radioEntrada
+        let a = CGFloat(c.ascenso)
+        let centro = CGPoint(x: reunion.x + (arriba.x - reunion.x) * a,
+                             y: reunion.y + (arriba.y - reunion.y) * a)
+        let radio = radioEntrada + (radioArriba - radioEntrada) * a
+
+        // El teñido es UN color por frame, del gris neutro al clima. Con «Reducir movimiento»
+        // el clima se lee EN VIVO (no hay revelación que proteger); con la coreografía completa
+        // se usa el valor FIJADO, que impide que un veredicto tardío salte de color a la vista.
         let ambiente = sinViaje ? clima() : climaFijado
         let tinta = LiquidColor.particulaTeñida(hacia: ambiente.particulaRGB, k: c.tinte)
 
-        let grupos = (0..<G.corrientes).map { corriente -> GrupoDeOrbe in
-            let d = c.desvios[corriente]
-            return GrupoDeOrbe(indices: Self.reparto[corriente],
-                               centro: CGPoint(x: centro.x + d.width * s,
-                                               y: centro.y + d.height * s),
-                               alfaK: c.alfas[corriente])
+        // Por-partícula: cada una viaja de su punto disperso (con deriva) a su lugar en el
+        // orbe, con su propio escalón (`reunionParticula`). Bucketing por alfa (12 fills como
+        // techo): 300 rellenos por cuadro no sostienen la tasa de refresco.
+        var buckets: [Int: Path] = [:]
+        for i in 0..<G.n {
+            let k = EntradaSimulacion.reunionParticula(i, global: c.reunion)
+            let p = EcosistemaSimulacion.particula(
+                dir: Self.dirs[i], indice: i, centro: centro, radio: radio,
+                rotacion: c.rotacion, jitterAmp: 0, t: t, alfaK: 1, nivel: nil)
+            let pos: CGPoint
+            if k >= 0.999 {
+                pos = p.pos                          // ya en el orbe
+            } else {
+                let disp = EntradaSimulacion.dispersa(i)
+                let der = EntradaSimulacion.deriva(i, t: t)
+                let dp = aPantalla(CGPoint(x: disp.x + der.width, y: disp.y + der.height))
+                pos = CGPoint(x: dp.x + (p.pos.x - dp.x) * k,
+                              y: dp.y + (p.pos.y - dp.y) * k)
+            }
+            // Dispersa y tenue; plena al posarse (el alfa de profundidad manda al final).
+            let alfa = p.alfa * (0.30 + 0.70 * k)
+            guard alfa > 0.004 else { continue }
+            let idx = min(11, max(0, Int(alfa * 12)))
+            buckets[idx, default: Path()].addEllipse(in: CGRect(
+                x: pos.x - p.tamano, y: pos.y - p.tamano,
+                width: p.tamano * 2, height: p.tamano * 2))
         }
-        nubeDeOrbe(&g, dirs: Self.dirs, grupos: grupos, radio: radio, rotacion: c.rotacion,
-                   nivel: nil,                        // esfera PLENA: objeto, no lectura
-                   jitter: 0, t: t, color: tinta)
+        for (idx, path) in buckets {
+            g.fill(path, with: .color(tinta.opacity(min(1, (Double(idx) + 0.5) / 12))))
+        }
         especularDeOrbe(&g, centro: centro, radio: radio, alfa: c.especular)
     }
 }

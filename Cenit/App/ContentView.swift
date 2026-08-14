@@ -24,6 +24,10 @@ struct ContentView: View {
     @State private var showWhatsNew = false
     /// FER-41: la entrada sigue puesta hasta que su coreografía termina (o el usuario la toca).
     @State private var entradaLista = false
+    /// El frame REAL del orbe del héroe en pantalla (para que la entrada aterrice sin costura).
+    /// Se mide del tamaño de pantalla + área segura; `nil` hasta medir → la entrada cae al
+    /// cénit fijo de siempre (sin regresión). Ver `heroDestinoRect`.
+    @State private var heroDestino: CGRect? = nil
     /// Whether Today is the active tab (RootTabView keeps this in sync). Drives the app's color scheme
     /// so the status bar is dark on Today's light paper and light on the dark instrument tabs.
     @State private var isTodayTab = true
@@ -88,7 +92,10 @@ struct ContentView: View {
             if mostrandoEntrada {
                 // El clima va como CIERRE: la entrada lo lee cuando el teñido arranca, no al
                 // montarse — a los 0 ms el veredicto todavía se está calculando.
-                LiquidOrbeEntrada(clima: { climaEntrada }) {
+                // `destino` es el frame REAL del orbe del héroe (responsivo al notch y al
+                // ancho): el ascenso aterriza AHÍ, no en un punto fijo, así que el fundido de
+                // salida no deja costura. Se lee tarde (durante el ascenso), cuando ya se midió.
+                LiquidOrbeEntrada(clima: { climaEntrada }, destino: { heroDestino }) {
                     EntradaDeArranque.marcarCorrida()
                     entradaLista = true
                 }
@@ -99,6 +106,10 @@ struct ContentView: View {
                 .zIndex(3)
             }
         }
+        // El héroe (LiquidEcosistema) publica el frame real de su orbe; la entrada lo lee para
+        // aterrizar sin costura sobre él. Antes de que llegue (o si el árbol no lo propaga), la
+        // entrada cae a su cénit fijo — sin regresión.
+        .onPreferenceChange(HeroOrbeFrameKey.self) { heroDestino = $0 }
         .animation(.easeInOut(duration: 0.35), value: onboarded)
         .animation(.easeInOut(duration: 0.35), value: acceptedTerms)
         .animation(.easeOut(duration: 0.2), value: entradaLista)
