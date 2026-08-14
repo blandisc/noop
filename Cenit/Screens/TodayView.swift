@@ -884,10 +884,9 @@ struct TodayView: View {
         return SleepWindow(bedtime: s.bedtime, wake: s.wake)
     }
 
-    /// El header del handoff «Hoy» 2026-07 (FER-709): fecha · batería de la banda · BPM vivo tocable ·
-    /// sello del dial (la firma de 24 h, que también es el spinner del pull-to-refresh). Debajo, en
-    /// reposo, la línea de frescura «última lectura hace N min»; sincronizando, «Sincronizando con tu
-    /// banda…». FER-222: la acción accesible «Sincronizar» reinstala para VoiceOver el gesto de jalar.
+    /// El header del handoff «Hoy» (FER-709): la fecha corta. La línea de texto de sync heredada de la
+    /// banda se retiró (FER-65) — el sello del dial es la señal visual del pull-to-refresh. FER-222: la
+    /// acción accesible «Sincronizar» reinstala para VoiceOver el gesto de jalar.
     private var headerBlock: some View {
         VStack(alignment: .leading, spacing: CenitMetrics.space1) {
             HStack(alignment: .center, spacing: CenitMetrics.space2) {
@@ -897,7 +896,6 @@ struct TodayView: View {
                     .foregroundStyle(theme.inkSecondary)
                 Spacer(minLength: CenitMetrics.space2)
             }
-            syncStatusLine
         }
         .accessibilityElement(children: .combine)
         .accessibilityAction(named: Text("Sync")) { triggerPullSync() }
@@ -908,17 +906,6 @@ struct TodayView: View {
 
     /// El header cuando la banda se desconectó de día (FER-711): en lugar del BPM vivo, un punto gris
     /// quieto + «SIN SEÑAL». El punto NO late (no hay señal), a diferencia del BPM.
-
-    /// La línea de estado bajo el header: «Sincronizando con tu banda…» durante el sync (con el conteo
-    /// de paquetes si ya fluyen), o la frescura «última lectura hace N min» en reposo. Nada sin banda vista.
-    // TODO(/pm): la línea de frescura "última lectura hace N min" perdió su fuente (banda); ¿equivalente con Apple Health?
-    @ViewBuilder private var syncStatusLine: some View {
-        if isSyncing {
-            Text("Syncing…")
-                .font(StrandFont.caption).monospacedDigit()
-                .foregroundStyle(theme.verdict)
-        }
-    }
 
 
 
@@ -1025,7 +1012,6 @@ struct TodayView: View {
         let mInputs = liquidMatrizInputs()
         VStack(alignment: .leading, spacing: CenitMetrics.space1) {
             Group {
-                syncStatusLine
                 HealthAlertBanner()
             }
             // Mismo margen que la Matriz (auditoría de simetría: s550 dejaba la
@@ -1303,7 +1289,9 @@ struct TodayView: View {
     /// pull-to-sync manual. Fuente única para las señales del héroe (estado, dial, numeral, pista).
     /// La pista del pull (FER-293) y el sello armado viven en `PullSyncHint` / `PullIndicator`
     /// (FER-972 P-09): leen el progreso en su propio body para no invalidar Hoy por frame.
-    // TODO(/pm): sin banda, "sincronizando" solo refleja el pull-to-refresh del usuario, no un fetch real de Apple Health en curso.
+    // `isSyncing` = el pull-to-refresh del usuario en curso (FER-222); alimenta el giro del sello del
+    // dial. No refleja un fetch de Apple Health en background (HealthKit sincroniza solo). El texto
+    // «Sincronizando…» que colgaba de aquí, heredado de la banda, se retiró en FER-65 — el dial es la señal.
     private var isSyncing: Bool { pullSyncing }
 
     /// Cero fuentes: ni strap visto, ni datos de Apple Health, ni permiso de Health concedido. (FER-364)
