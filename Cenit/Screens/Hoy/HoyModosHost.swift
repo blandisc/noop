@@ -86,37 +86,51 @@ struct HoyMatrizHost: View {
 
 // MARK: - Aviso de Apple Salud desconectada (FER-64/65 · pulido en vivo)
 //
-// Compacto: una pastilla que HUGa el texto (no una franja de ancho completo), con un punto
-// latiente y un glow rojo CÁLIDO (rojoClaro, no el neón del sistema oscuro) muy sutil que respira
-// para llevar la vista sin alarmar. Respeta Reduce Motion y la pausa ambiental de la Matriz
-// (reloj compartido: `liquidAmbientPaused`).
+// Dos líneas INTENCIONALES (no el wrap roto de una pastilla): la copia del catálogo se parte en
+// el «·» → estado (semibold) + detalle (más tenue). Tarjeta rosa a susurro (radio de control),
+// punto latiente y un glow rojo CÁLIDO (rojoClaro, no el neón del sistema oscuro) que respira
+// para llevar la vista sin alarmar. Respeta Reduce Motion y la pausa ambiental (reloj compartido).
 private struct AvisoDesconexion: View {
     let texto: String
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.liquidAmbientPaused) private var ambientPaused
     private var quieto: Bool { reduceMotion || ambientPaused }
 
+    /// «estado · detalle» partido en el «·» → dos renglones con jerarquía, no un corte a media frase.
+    private var partes: (estado: String, detalle: String?) {
+        let c = texto.components(separatedBy: " · ")
+        guard c.count > 1 else { return (texto, nil) }
+        return (c[0], c.dropFirst().joined(separator: " · "))
+    }
+
     var body: some View {
         TimelineView(.animation(minimumInterval: LiquidMotion.intervaloSello, paused: quieto)) { tl in
             let fase = quieto ? 0.5 : (sin(tl.date.timeIntervalSinceReferenceDate * 1.5) * 0.5 + 0.5)
-            HStack(spacing: LiquidSpace.s150) {
+            HStack(alignment: .center, spacing: LiquidSpace.s200) {
                 Circle()
                     .fill(LiquidColor.rojoClaro)
-                    .frame(width: 5, height: 5)
-                    .opacity(0.5 + 0.5 * fase)   // token-exempt: latido del punto de aviso
-                Text(texto)
-                    .font(InstrumentoType.grotesk(13, weight: .medium))
-                    .foregroundStyle(LiquidColor.rojoClaro)
+                    .frame(width: 6, height: 6)
+                    .opacity(0.55 + 0.45 * fase)   // token-exempt: latido del punto de aviso
+                VStack(alignment: .leading, spacing: LiquidSpace.s050) {
+                    Text(partes.estado)
+                        .font(InstrumentoType.grotesk(13, weight: .semibold))
+                        .foregroundStyle(LiquidColor.rojoClaro)
+                    if let detalle = partes.detalle {
+                        Text(detalle)
+                            .font(InstrumentoType.grotesk(12, weight: .regular))
+                            .foregroundStyle(LiquidColor.rojoClaro.opacity(0.72))   // token-exempt: detalle a susurro
+                    }
+                }
+                Spacer(minLength: 0)
             }
-            .padding(.vertical, LiquidSpace.s100)
-            .padding(.horizontal, LiquidSpace.s200)
+            .padding(.vertical, LiquidSpace.s200)
+            .padding(.horizontal, LiquidSpace.s250)
             .background(
-                Capsule(style: .continuous)
-                    .fill(LiquidColor.rojoClaro.opacity(0.05 + 0.04 * fase))   // token-exempt: fondo del aviso
+                RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous)
+                    .fill(LiquidColor.rojoClaro.opacity(0.06 + 0.04 * fase))   // token-exempt: fondo del aviso
             )
-            .shadow(color: LiquidColor.rojoClaro.opacity(0.12 + 0.10 * fase),   // token-exempt: glow que respira
-                    radius: 8 + 5 * fase)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .shadow(color: LiquidColor.rojoClaro.opacity(0.11 + 0.09 * fase),   // token-exempt: glow que respira
+                    radius: 7 + 4 * fase)
         }
     }
 }

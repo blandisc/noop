@@ -330,7 +330,9 @@ extension LiquidHoyBuilder {
             return .init(valor: String(format: "%.1f", v), sublabel: fecha)
         }
         let seccionEsf = MatrizSeccion(
-            id: "strain", hue: LiquidColor.teal,
+            // Effort = Day Strain: su identidad es ÁMBAR (igual que la hoja de resumen y el
+            // detalle «Day Strain»). Antes teal — chocaba con la identidad naranja del detalle.
+            id: "strain", hue: LiquidColor.ambar,
             titulo: String(localized: "Effort"),
             valor: valorEsf,
             // Fuente única del sufijo de escala (no un literal): la hoja de detalle usa el
@@ -402,7 +404,9 @@ extension LiquidHoyBuilder {
         let valorPasos = HoyGramatica.valorODash(ptsPasos.last.flatMap { $0 },
                                                  formato: HoyGramatica.formatoMiles)
         let seccionPasos = MatrizSeccion(
-            id: "steps", hue: LiquidColor.ambarClaro,
+            // Steps = TEAL (el color de Pasos en la hoja de resumen). Antes gris (tinta700);
+            // probé ámbar pero ese es de Effort — teal es su identidad real.
+            id: "steps", hue: LiquidColor.teal,
             titulo: String(localized: "Steps"),
             valor: valorPasos, terciaria: true,
             chartID: "matriz-steps",

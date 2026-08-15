@@ -128,10 +128,10 @@ struct ContentView: View {
             .preferredColorScheme(.light)
         }
         .onAppear {
-            // Existing users who updated: their last-seen version is behind the current one.
-            if onboarded && lastSeenChangelog != AppChangelog.currentVersion {
-                showWhatsNew = true
-            }
+            // «What's new» RETIRADO (dueño 2026-08-14): su contenido era de la banda WHOOP
+            // (straps 4.0/5.0/MG), ajeno a un app Apple-only. Marcamos la versión como vista
+            // para que la hoja no se auto-presente; el binding queda inerte (nunca `true`).
+            lastSeenChangelog = AppChangelog.currentVersion
         }
         #if os(iOS)
         // Check at launch (covers updated users) and again the moment onboarding completes (covers a
