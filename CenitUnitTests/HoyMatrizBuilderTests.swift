@@ -287,11 +287,14 @@ final class HoyMatrizBuilderTests: XCTestCase {
         XCTAssertEqual(seccion(model, id: "hrv")?.hue, LiquidColor.cian)
         XCTAssertEqual(seccion(model, id: "guardian")?.hue, LiquidColor.doradoTemp)
         XCTAssertEqual(seccion(model, id: "carga")?.hue, LiquidColor.verdePrimario)
-        XCTAssertEqual(seccion(model, id: "strain")?.hue, LiquidColor.teal)
+        // Dueño 2026-08-15: Effort = ÁMBAR (su detalle «Day Strain» y la hoja de resumen
+        // son ámbar — estaba cruzado con Steps) y Steps = TEAL (su color en la hoja de
+        // resumen; era tinta700 gris). Fuente de verdad: LiquidMetricSheetView.tono.
+        XCTAssertEqual(seccion(model, id: "strain")?.hue, LiquidColor.ambar)
         // FER-59: Estrés RECEDE — era tinta900 (gritaba siendo referencia que no vota),
         // ahora tinta500 (peso de las demás de contexto).
         XCTAssertEqual(seccion(model, id: "stress")?.hue, LiquidColor.tinta500)
-        XCTAssertEqual(seccion(model, id: "steps")?.hue, LiquidColor.tinta700)
+        XCTAssertEqual(seccion(model, id: "steps")?.hue, LiquidColor.teal)
 
         // Orden visual a11y.
         XCTAssertEqual(model.ordenA11y, [

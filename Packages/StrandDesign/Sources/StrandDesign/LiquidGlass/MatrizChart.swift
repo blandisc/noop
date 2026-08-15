@@ -455,16 +455,19 @@ public struct MatrizLineaSerena: View {
     private let dominio: ClosedRange<Double>
     private let hue: Color
     private let alertaHoy: MedidorLunar.Alerta
+    /// Índice leído por el scrub (Skin temp/Breathing, dueño 2026-08-15): cursor + punto pleno.
+    private let resaltado: Int?
 
     public init(chartID: String, puntos: [Double?], banda: ClosedRange<Double>?,
                 dominio: ClosedRange<Double>, hue: Color,
-                alertaHoy: MedidorLunar.Alerta = .ninguna) {
+                alertaHoy: MedidorLunar.Alerta = .ninguna, resaltado: Int? = nil) {
         self.chartID = chartID
         self.puntos = puntos
         self.banda = banda
         self.dominio = dominio
         self.hue = hue
         self.alertaHoy = alertaHoy
+        self.resaltado = resaltado
     }
 
     public var body: some View {
@@ -514,6 +517,20 @@ public struct MatrizLineaSerena: View {
             MatrizChartDraw.marcarHoy(ctx, puntos: puntos, count: count,
                                       width: size.width, dominio: dom,
                                       height: size.height, hue: hue, alerta: alertaHoy)
+
+            // Scrub (dueño 2026-08-15): cursor + punto pleno en la noche leída. Serie de tiempo:
+            // el índice mapea a x uniforme, el cursor sigue al dedo.
+            if let r = resaltado, puntos.indices.contains(r) {
+                let x = count > 1 ? size.width * CGFloat(r) / CGFloat(count - 1) : size.width / 2
+                if let v = puntos[r] {
+                    let y = MatrizChartDraw.yTop(v, domain: dom, height: size.height)
+                    MatrizChartDraw.punto(ctx, en: CGPoint(x: x, y: y),
+                                          radio: MatrizTokens.hoyRadio, hue: hue,
+                                          alfa: MatrizChartDraw.hoyAlfa)
+                }
+                MatrizChartDraw.cursorScrub(ctx, x: x, height: size.height, hue: hue,
+                                            fantasma: puntos[r] == nil)
+            }
         }
         .frame(maxWidth: .infinity, minHeight: MatrizChartDraw.defaultHeight,
                idealHeight: MatrizChartDraw.defaultHeight)
@@ -540,6 +557,9 @@ public struct MatrizColina: View {
     private let alertaHoy: MedidorLunar.Alerta
     /// Tope de la escala (paridad con `LiquidHill`): la razón vive en 0…`maximo`.
     private let maximo: Double
+    /// Índice leído por el scrub (dueño /inject): el cursor CAMINA la cuesta al día leído.
+    /// La serie completa es `estela + [p]` (viejo → HOY), así que resaltado ∈ 0…estela.count.
+    private let resaltado: Int?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.liquidAmbientPaused) private var ambientPaused
     @Environment(\.liquidMotionDisabled) private var motionDisabled
@@ -547,7 +567,7 @@ public struct MatrizColina: View {
 
     public init(chartID: String, p: Double?, zona: ClosedRange<Double>,
                 estela: [Double], hue: Color, alertaHoy: MedidorLunar.Alerta = .ninguna,
-                maximo: Double = 2.0) {
+                maximo: Double = 2.0, resaltado: Int? = nil) {
         self.chartID = chartID
         self.p = p
         self.zona = zona
@@ -555,6 +575,7 @@ public struct MatrizColina: View {
         self.hue = hue
         self.alertaHoy = alertaHoy
         self.maximo = maximo
+        self.resaltado = resaltado
     }
 
     public var body: some View {
@@ -619,6 +640,24 @@ public struct MatrizColina: View {
                                       alfa: MatrizChartDraw.hoyAlfa)
                 MatrizChartDraw.dibujarAlerta(ctx, en: CGPoint(x: x, y: y),
                                               radioBase: MatrizTokens.hoyRadio, alerta: alertaHoy)
+            }
+
+            // 5 · SCRUB (dueño /inject): el cursor CAMINA la cuesta al día leído. La serie es
+            //     `estela + HOY`; el día resaltado toma halo de papel + punto pleno + cursor —
+            //     se lee como HOY pero en su posición de VALOR sobre la pendiente.
+            if let r = resaltado {
+                let serie = estela + (p.map { [$0] } ?? [])
+                if serie.indices.contains(r) {
+                    let xr = Self.xDe(serie[r], maximo: maximo, width: w, inset: inset)
+                    let yr = Self.yEnX(xr, width: w, height: h, inset: inset)
+                    MatrizChartDraw.punto(ctx, en: CGPoint(x: xr, y: yr),
+                                          radio: MatrizTokens.hoyRadio + 1.6,
+                                          hue: LiquidColor.papelMatriz, alfa: 1)
+                    MatrizChartDraw.punto(ctx, en: CGPoint(x: xr, y: yr),
+                                          radio: MatrizTokens.hoyRadio, hue: hue,
+                                          alfa: MatrizChartDraw.hoyAlfa)
+                    MatrizChartDraw.cursorScrub(ctx, x: xr, height: h, hue: hue, fantasma: false)
+                }
             }
             }
         }

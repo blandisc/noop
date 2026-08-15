@@ -88,7 +88,10 @@ final class HoyEstadosTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(lastSync, v.inicio)
         let causa = LiquidHoyBuilder.causaT3(
             ventana: v, lastSync: lastSync, hayNocheRegistrada: true)
-        XCTAssertEqual(causa, .leyendo, "noche completa: no aplica nocheNoRegistrada")
+        // C2 (revisión conceptual 2026-08-15): con la ventana CERRADA y la noche registrada
+        // pero sin veredicto, «Reading your night…» era una promesa eterna (iPhone sin
+        // Watch). Ahora dice la verdad: noche registrada, falta señal.
+        XCTAssertEqual(causa, .senalInsuficiente, "noche completa sin veredicto: señal insuficiente")
         XCTAssertNotEqual(causa, .nocheNoRegistrada)
     }
 

@@ -217,6 +217,23 @@ extension LiquidHoyBuilder {
         let valorResp = HoyGramatica.valorODash(ptsResp.last.flatMap { $0 }) {
             String(format: "%.1f", $0)
         }
+        // Scrub de temp/resp (dueño 2026-08-15): día + lectura de esa noche, alineado 1:1 con la
+        // serie que dibuja la línea serena. Serie de tiempo → el scrub se lee natural (a diferencia
+        // de la colina de Carga, que es eje de valor y por eso NO se arrastra).
+        func scrubGuardian(_ pts: [Double?], fmt: (Double) -> String) -> [MatrizSeccion.ScrubNoche] {
+            keys20.enumerated().map { idx, _ in
+                let fecha = weekdayLabel(offsetFromToday: keys20.count - 1 - idx, now: i.now,
+                                         calendar: i.calendar, formatter: diaFmt)
+                guard let v = pts[idx] else {
+                    return .init(valor: "—",
+                                 sublabel: String(format: String(localized: "matriz.scrub.sinlectura",
+                                                                 defaultValue: "%@ · no reading"), fecha))
+                }
+                return .init(valor: fmt(v), sublabel: fecha)
+            }
+        }
+        let scrubTemp = scrubGuardian(ptsTemp) { String(format: "%+.1f°", $0) }
+        let scrubResp = scrubGuardian(ptsResp) { String(format: "%.1f", $0) }
         // Banda ± del guardián: corte térmico público (± thermalOutC) y resp ~ base±.
         let thermalBand = Preparedness.Config.default.thermalOutC
         let seccionGuardian = MatrizSeccion(
@@ -255,7 +272,8 @@ extension LiquidHoyBuilder {
                     chartID: "matriz-guardian-temp",
                     chart: .lineaSerena(puntos: ptsTemp, banda: -thermalBand...thermalBand,
                                         dominio: -1.5...1.5, alertaHoy: alertaGuardian),
-                    subrayado: alertaGuardian),
+                    subrayado: alertaGuardian,
+                    scrubNoches: scrubTemp),
                 MatrizRenglon(
                     id: "resp",
                     titulo: String(localized: "Breathing"),
@@ -269,7 +287,8 @@ extension LiquidHoyBuilder {
                     chart: .lineaSerena(puntos: ptsResp, banda: nil,
                                         dominio: dominioLinea(ptsResp, base: nil, fallback: 8...22),
                                         alertaHoy: alertaGuardian),
-                    subrayado: alertaGuardian),
+                    subrayado: alertaGuardian,
+                    scrubNoches: scrubResp),
             ],
             // FER-56 · Ola 3: el sello VIVO reacciona al MISMO estado que el chip (nunca lo
             // contradice) — se separa y tiñe cuando el par se sale, calla en calma.
@@ -282,6 +301,9 @@ extension LiquidHoyBuilder {
         let estela: [Double] = keysEstelaPrev.compactMap { cargaSeriesByDay[$0] }
         let valorCarga = HoyGramatica.valorODash(razonCarga) { String(format: "%.2f", $0) }
         let estadoCargaKey = HoyGramatica.estadoCarga(razon: razonCarga)
+        // Carga NO se arrastra por día (dueño 2026-08-15): la colina es eje de VALOR, no de
+        // tiempo — el cursor saltaba por valor en vez de seguir el dedo. El scrub queda para las
+        // series de tiempo (Esfuerzo, Estrés, Skin temp, Breathing).
         let seccionCarga = MatrizSeccion(
             id: "carga", hue: LiquidColor.verdePrimario,
             titulo: String(localized: "Load"),
@@ -310,7 +332,9 @@ extension LiquidHoyBuilder {
             return .init(valor: String(format: "%.1f", v), sublabel: fecha)
         }
         let seccionEsf = MatrizSeccion(
-            id: "strain", hue: LiquidColor.teal,
+            // Effort = Day Strain: su identidad es ÁMBAR (igual que la hoja de resumen y el
+            // detalle «Day Strain»). Antes teal — chocaba con la identidad naranja del detalle.
+            id: "strain", hue: LiquidColor.ambar,
             titulo: String(localized: "Effort"),
             valor: valorEsf,
             // Fuente única del sufijo de escala (no un literal): la hoja de detalle usa el
@@ -382,7 +406,9 @@ extension LiquidHoyBuilder {
         let valorPasos = HoyGramatica.valorODash(ptsPasos.last.flatMap { $0 },
                                                  formato: HoyGramatica.formatoMiles)
         let seccionPasos = MatrizSeccion(
-            id: "steps", hue: LiquidColor.tinta700,
+            // Steps = TEAL (el color de Pasos en la hoja de resumen). Antes gris (tinta700);
+            // probé ámbar pero ese es de Effort — teal es su identidad real.
+            id: "steps", hue: LiquidColor.teal,
             titulo: String(localized: "Steps"),
             valor: valorPasos, terciaria: true,
             chartID: "matriz-steps",

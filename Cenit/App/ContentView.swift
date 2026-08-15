@@ -128,16 +128,25 @@ struct ContentView: View {
             .preferredColorScheme(.light)
         }
         .onAppear {
-            // Existing users who updated: their last-seen version is behind the current one.
-            if onboarded && lastSeenChangelog != AppChangelog.currentVersion {
-                showWhatsNew = true
-            }
+            // «What's new» RETIRADO (dueño 2026-08-14): su contenido era de la banda WHOOP
+            // (straps 4.0/5.0/MG), ajeno a un app Apple-only. Marcamos la versión como vista
+            // para que la hoja no se auto-presente; el binding queda inerte (nunca `true`).
+            lastSeenChangelog = AppChangelog.currentVersion
         }
         #if os(iOS)
         // Check at launch (covers updated users) and again the moment onboarding completes (covers a
         // fresh install / reinstall, where `onboarded` flips false→true after this view appears).
         .task { await maybeOfferRestore() }
         .onChange(of: onboarded) { _, done in if done { Task { await maybeOfferRestore() } } }
+        // Velo de papel BAJO el alert de restore (dueño 2026-08-15): el alert nativo es
+        // translúcido y el CTA verde «Connect Apple Health» del estado vacío quedaba justo
+        // detrás — sangraba a través del material como una mancha verde sobre el mensaje
+        // (parecía un subrayado roto). El velo opaca el fondo solo mientras el alert vive.
+        .overlay {
+            if showRestoreOffer {
+                InstrumentoTheme.base.paper.opacity(0.85).ignoresSafeArea()
+            }
+        }
         .alert("Restore your data?", isPresented: $showRestoreOffer) {
             Button("Restore from backup…") { Task { await runRestore() } }
             Button("Not now", role: .cancel) { }
