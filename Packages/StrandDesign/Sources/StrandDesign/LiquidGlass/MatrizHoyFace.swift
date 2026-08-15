@@ -289,8 +289,13 @@ public struct MatrizHoyFace: View {
                         Spacer(minLength: 0)
                     }
                     .padding(.top, MatrizTokens.bandaV)
-                    .frame(minHeight: LiquidControl.hitTarget, alignment: .bottomLeading)
-                    .contentShape(Rectangle())
+                    // Zona táctil ≥44 pt (HIG) SIN inflar el layout (dueño 2026-08-15): antes
+                    // `.frame(minHeight: hitTarget, alignment: .bottomLeading)` estiraba la fila
+                    // a 44 con el rótulo al pie — ~32 pt de AIRE encima de CADA título de sección
+                    // (el hueco «entre How I got here y Decide your day»). El hit crece hacia
+                    // afuera con contentShape; la fila mide lo que mide el texto.
+                    // rótulo micro ≈14 pt + 2×s400 = ~46 pt táctiles ≥ hitTarget (44).
+                    .contentShape(Rectangle().inset(by: -LiquidSpace.s400))
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text(rotulo))
