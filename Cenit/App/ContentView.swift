@@ -138,6 +138,15 @@ struct ContentView: View {
         // fresh install / reinstall, where `onboarded` flips false→true after this view appears).
         .task { await maybeOfferRestore() }
         .onChange(of: onboarded) { _, done in if done { Task { await maybeOfferRestore() } } }
+        // Velo de papel BAJO el alert de restore (dueño 2026-08-15): el alert nativo es
+        // translúcido y el CTA verde «Connect Apple Health» del estado vacío quedaba justo
+        // detrás — sangraba a través del material como una mancha verde sobre el mensaje
+        // (parecía un subrayado roto). El velo opaca el fondo solo mientras el alert vive.
+        .overlay {
+            if showRestoreOffer {
+                InstrumentoTheme.base.paper.opacity(0.85).ignoresSafeArea()
+            }
+        }
         .alert("Restore your data?", isPresented: $showRestoreOffer) {
             Button("Restore from backup…") { Task { await runRestore() } }
             Button("Not now", role: .cancel) { }

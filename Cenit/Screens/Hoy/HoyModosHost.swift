@@ -78,6 +78,9 @@ struct HoyMatrizHost: View {
             case .nocheNoRegistrada:
                 return String(localized: "hoy.noche.noregistrada",
                               defaultValue: "The night wasn't recorded")
+            case .senalInsuficiente:
+                return String(localized: "hoy.senal.insuficiente",
+                              defaultValue: "Night recorded · not enough signal for a verdict")
             }
         case .t4SinPermiso:
             // Revisión conceptual (dueño 2026-08-15): «pending sync» era MENTIRA aquí — sin

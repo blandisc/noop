@@ -21701,6 +21701,23 @@
         }
       }
     },
+    "hoy.senal.insuficiente" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Night recorded · not enough signal for a verdict"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noche registrada · sin señal suficiente para un veredicto"
+          }
+        }
+      }
+    },
     "hoy.sinlectura.noche" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -52323,6 +52340,23 @@
         }
       }
     },
+    "your " : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "your "
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tu "
+          }
+        }
+      }
+    },
     "Your " : {
       "extractionState" : "manual",
       "localizations" : {
@@ -53310,112 +53344,6 @@
         }
       }
     },
-    "Your HRV by frequency" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your HRV by frequency"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu VFC por frecuencia"
-          }
-        }
-      }
-    },
-    "Your phone reviews your nights and flags three things: what's out of the ordinary (an anomaly), what's trending (up or down), and which metrics move together.\n\nAll from your own data." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu teléfono revisa tus noches y te avisa de tres cosas: lo que se sale de lo normal (una anomalía), lo que viene en tendencia (subiendo o bajando), y qué métricas se mueven juntas.\n\nTodo a partir de tus propios datos."
-          }
-        }
-      }
-    },
-    "Your plates can't hit %@ kg exactly, closest is %@ kg" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Your plates can't hit %1$@ kg exactly, closest is %2$@ kg"
-          }
-        }
-      }
-    },
-    "Your program" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your program"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu programa"
-          }
-        }
-      }
-    },
-    "Your Recovery is trending down (%lld days)" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your Recovery is trending down (%lld days)"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu Recuperación viene bajando (%lld días)"
-          }
-        }
-      }
-    },
-    "Your recovery sums up how ready your body is today, from 0 to 100. It blends several signals from your night, your HRV above all, and compares them with your own average from recent weeks, not anyone else's." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your recovery sums up how ready your body is today, from 0 to 100. It blends several signals from your night, your HRV above all, and compares them with your own average from recent weeks, not anyone else's."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu recuperación resume qué tan listo está tu cuerpo hoy, del 0 al 100. Combina varias señales de tu noche, sobre todo tu VFC, y las compara con tu propio promedio de las últimas semanas, no con el de nadie más."
-          }
-        }
-      }
-    },
-    "your " : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "your "
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "tu "
-          }
-        }
-      }
-    },
     "Your highest point today was at %@" : {
       "localizations" : {
         "en" : {
@@ -53512,6 +53440,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "tu VFC"
+          }
+        }
+      }
+    },
+    "Your HRV by frequency" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your HRV by frequency"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu VFC por frecuencia"
           }
         }
       }
@@ -53847,6 +53792,17 @@
         }
       }
     },
+    "Your phone reviews your nights and flags three things: what's out of the ordinary (an anomaly), what's trending (up or down), and which metrics move together.\n\nAll from your own data." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu teléfono revisa tus noches y te avisa de tres cosas: lo que se sale de lo normal (una anomalía), lo que viene en tendencia (subiendo o bajando), y qué métricas se mueven juntas.\n\nTodo a partir de tus propios datos."
+          }
+        }
+      }
+    },
     "Your plan" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -53910,6 +53866,33 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tu plan no trae horas sugeridas."
+          }
+        }
+      }
+    },
+    "Your plates can't hit %@ kg exactly, closest is %@ kg" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Your plates can't hit %1$@ kg exactly, closest is %2$@ kg"
+          }
+        }
+      }
+    },
+    "Your program" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your program"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu programa"
           }
         }
       }
@@ -54065,6 +54048,23 @@
         }
       }
     },
+    "Your Recovery is trending down (%lld days)" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your Recovery is trending down (%lld days)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu Recuperación viene bajando (%lld días)"
+          }
+        }
+      }
+    },
     "Your Recovery is trending up (%lld days)" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -54078,6 +54078,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tu Recuperación viene subiendo (%lld días)"
+          }
+        }
+      }
+    },
+    "Your recovery sums up how ready your body is today, from 0 to 100. It blends several signals from your night, your HRV above all, and compares them with your own average from recent weeks, not anyone else's." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your recovery sums up how ready your body is today, from 0 to 100. It blends several signals from your night, your HRV above all, and compares them with your own average from recent weeks, not anyone else's."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu recuperación resume qué tan listo está tu cuerpo hoy, del 0 al 100. Combina varias señales de tu noche, sobre todo tu VFC, y las compara con tu propio promedio de las últimas semanas, no con el de nadie más."
           }
         }
       }

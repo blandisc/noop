@@ -20,6 +20,11 @@ extension LiquidHoyBuilder {
         case leyendo
         case sinSync
         case nocheNoRegistrada
+        /// Ventana cerrada + noche registrada + sin veredicto (C2 de la revisión conceptual,
+        /// dueño 2026-08-15): el caso de quien registra sueño sin señal autonómica usable
+        /// (p. ej. iPhone solo, sin Watch). Antes decía «Reading your night…» PARA SIEMPRE —
+        /// una promesa que jamás se cumplía. Ahora dice la verdad: hay noche, falta señal.
+        case senalInsuficiente
     }
 
     /// Ventana nocturna del veredicto (KNOB de producto, nombrado). Cerrada si hay sesión de
@@ -50,11 +55,13 @@ extension LiquidHoyBuilder {
     ///  1. sin veredicto ∧ ventana ABIERTA            ⇒ .leyendo (SIEMPRE, sin importar el import)
     ///  2. sin veredicto ∧ ventana CERRADA ∧ import anterior al inicio de ventana ⇒ .sinSync
     ///  3. sin veredicto ∧ ventana CERRADA ∧ import fresco ∧ noche vacía          ⇒ .nocheNoRegistrada
+    ///  4. sin veredicto ∧ ventana CERRADA ∧ import fresco ∧ noche REGISTRADA     ⇒ .senalInsuficiente
+    ///     (C2: antes ⇒ .leyendo — «Reading your night…» eterno para quien duerme sin Watch)
     static func causaT3(ventana: VentanaNocturna, lastSync: Date?, hayNocheRegistrada: Bool) -> CausaT3 {
         if ventana.abierta { return .leyendo }
         if let ls = lastSync, ls < ventana.inicio { return .sinSync }
         if lastSync == nil { return .sinSync }      // nil = conservador
-        return hayNocheRegistrada ? .leyendo : .nocheNoRegistrada
+        return hayNocheRegistrada ? .senalInsuficiente : .nocheNoRegistrada
     }
 
     /// Heurística T4 (§18): decisión PURA. Un tipo suma al ≥2 solo si (≥1 muestra en 14 d) ∧ (fetch 48h vacío).

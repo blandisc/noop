@@ -399,12 +399,11 @@ public extension EcosistemaSimulacion {
         if !enEclipse {
             for (g, v) in vigias.enumerated() {
                 let dep = (v.z + 1) / 2
-                let alfaR = (0.30 + 0.5 * dep) * alfaFundida
+                let punto = CGPoint(x: v.centro.x, y: v.centro.y + v.radio + 12)
+                let alfaR = (0.30 + 0.5 * dep) * alfaFundida * alfaZonaTitulo(punto.y)
                 guard alfaR > 0.02 else { continue }
                 trazos.append(.rotulo(g == 0 ? .temperatura : .respiracion,
-                                      en: CGPoint(x: v.centro.x,
-                                                  y: v.centro.y + v.radio + 12),
-                                      alfa: alfaR))
+                                      en: punto, alfa: alfaR))
             }
         }
         trazos += trazosEstelas(t: t, escena: e, lunas: lunasEstela,
@@ -439,14 +438,28 @@ public extension EcosistemaSimulacion {
             tinta: l.rotulo == .reposo ? .reposo : .sueno)))
         // El rótulo orbital CEDE a los overlays al parquearse (allí viven las
         // etiquetas de estación con su valor sólido).
+        let punto = CGPoint(x: l.orb.centro.x, y: l.orb.centro.y + l.orb.radio + 13)
         let alfaRotulo = (0.35 + 0.5 * dep) * rotuloAlfa * (1 - apertura)
+            * alfaZonaTitulo(punto.y)
         if alfaRotulo > 0.02 {
-            trazos.append(.rotulo(l.rotulo,
-                                  en: CGPoint(x: l.orb.centro.x,
-                                              y: l.orb.centro.y + l.orb.radio + 13),
-                                  alfa: alfaRotulo))
+            trazos.append(.rotulo(l.rotulo, en: punto, alfa: alfaRotulo))
         }
         return trazos
+    }
+
+    /// Fade de los rótulos orbitales al entrar a la ZONA DEL TITULAR (dueño 2026-08-15):
+    /// el veredicto («In range»…) vive al pie del lienzo (y ≈ 215–260) y un satélite que
+    /// orbita bajo metía su rótulo DETRÁS del título — se leía basura («In R..NO SLEEP
+    /// range», cazado en captura). El rótulo se desvanece suave 195→215 y reaparece al
+    /// subir; la nube (el orbe chico) sí completa su órbita. Smoothstep: sin brincos, y
+    /// bajo Reduce Motion (órbitas quietas) un rótulo en zona queda oculto — mejor que
+    /// encimado.
+    private static func alfaZonaTitulo(_ y: CGFloat) -> Double {
+        let inicio: CGFloat = 195, fin: CGFloat = 215
+        if y <= inicio { return 1 }
+        if y >= fin { return 0 }
+        let f = Double((y - inicio) / (fin - inicio))
+        return 1 - f * f * (3 - 2 * f)
     }
 
     /// UN vigía (FER-22: dos de nacimiento — ya no hay guardián que se parta).
