@@ -827,9 +827,16 @@ struct TodayView: View {
     @MainActor
     private func pullToSync() async {
         syncHaptic += 1                       // dispara la háptica `.medium` al provocar el gesto
-        // Ola 2: no band — pull-to-refresh only re-runs local recompute (Apple Health is passive).
-        try? await Task.sleep(for: .seconds(1.2))
-        await repo.refresh()
+        // Dueño 2026-08-15: el jalón era TEATRO — un sleep de 1.2 s + releer la DB local, sin
+        // tocar Apple Salud (vestigio de la banda). Ahora hace lo que la franja «pull down to
+        // sync» promete: un sync MANUAL real del bridge (trae noches nuevas de HealthKit, misma
+        // ruta que «Sync now» de Data Sources; idempotente, y termina refrescando el dashboard).
+        // Sin permiso, `sync` sale temprano → cae al recálculo local, que sigue siendo honesto.
+        if health.auth == .authorized {
+            await health.sync()
+        } else {
+            await repo.refresh()
+        }
     }
 
     /// Procesa el overscroll del tope del scroll (FER-222) para el pull-to-refresh propio. `overscroll` > 0
