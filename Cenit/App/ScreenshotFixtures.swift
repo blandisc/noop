@@ -9,14 +9,16 @@ import StrandTraining
 /// screenshot UI test (`CenitUITests/CenitScreenshotTests`). DEBUG-only — never compiled into a
 /// Release build, and gated at the call site (`AppModel.init`) on the `-noop.fixture` launch argument.
 ///
-/// The values are reverse-engineered against `ReadinessEngine` + `Baselines` so each state lands
-/// unambiguously past the engine's thresholds (verified, not guessed):
-///   - **primed**   — today's HRV well above baseline (z ≈ +2.7 → good), resting HR below baseline
-///                    (good), training load in the ACWR sweet-spot (good) ⇒ `good ≥ 2`, no watch/bad.
-///   - **strained** — today's HRV well below baseline (z ≈ −3.5 → bad), everything else neutral/good
-///                    ⇒ exactly one bad recovery signal, load normal ⇒ `.strained` (not `.rundown`).
-/// `respRate`/`skinTemp` are held flat so they raise no flag; the weekly strain cycle keeps monotony
-/// low (≈0.9 < 2.0) and ACWR ≈ 1.0, so neither sneaks an extra flag in.
+/// The values are calibrated against **`Preparedness`** (the engine the hero actually reads —
+/// verdict = count of axes out: 0 → `.full`, 1 → `.caution`, ≥2 → `.easy`; re-verified against
+/// thresholds 2026-08-15, conceptual review). Axes: autonomic = RHR only (wHRV=0), out at
+/// z ≤ −1.0 with σ = 1.253·spread (floor 2 bpm); sleep out under 375 min or eff < 0.80;
+/// sentinel votes only with temp ≥ 0.8 °C AND resp z ≥ 1.5 together. Hysteresis needs 2
+/// consecutive days, so the bad states seed today AND yesterday:
+///   - **primed**   — 0 axes out ⇒ `.full` («In range»).
+///   - **strained** — RHR 60 vs base 52 (z≈−3.2), sleep fine ⇒ 1 axis ⇒ `.caution` («Go light today»).
+///   - **rundown**  — RHR 62 + sleep 340 < 375 ⇒ 2 axes ⇒ `.easy` («Recover»).
+/// `respRate`/`skinTemp` wave INSIDE the typical band (guardian sparklines look real, no flag).
 enum ScreenshotFixtures {
 
     /// The requested fixture state, or nil when not in fixture mode. `-noop.fixture empty` (and an
@@ -67,7 +69,14 @@ enum ScreenshotFixtures {
                     exerciseCount: 0, spo2Pct: 97.4, skinTempDevC: 0.05,
                     respRateBpm: 14.4, steps: 5200, activeKcalEst: 420))
             }
-            model.repo.setDashboard(days: days)
+            // Revisión conceptual (dueño 2026-08-15): SIN publicar Preparedness el héroe caía
+            // al fallback con nights=0 («Night 0 of 4») — el progreso de las 2 noches bancadas
+            // se perdía. Con evaluate: lowSignal + autonomicNights=2 ⇒ «Night 2 of 4».
+            let prepCal = Preparedness.evaluate(.init(
+                days: days, strainByDay: [:], trend: nil, asOf: Repository.localDayKey(today)))
+            model.repo.setDashboard(days: days,
+                                    appleHealthDays: Set(days.map(\.day)),
+                                    preparedness: prepCal)
             return
         }
 
@@ -169,20 +178,30 @@ enum ScreenshotFixtures {
             // se sostiene hasta que se repite dos días seguidos), así que con un único día malo
             // el fixture renderizaba «Dale con todo» sobre un orbe rojo. Los estados de un día
             // (primed/balanced, buenos) solo tocan HOY.
+            // RE-CALIBRADO contra Preparedness (revisión conceptual del dueño, 2026-08-15): el
+            // héroe lee Preparedness.Verdict (ejes fuera: 0→full, 1→caution, ≥2→easy), NO el
+            // ReadinessEngine legado. Ejes: autonómico = SOLO RHR (wHRV=0, O'Grady 2024; fuera
+            // si z≤−1.0 con σ=1.253·spread, piso 2 bpm ⇒ rhr 60 vs base 52 → z≈−3.2); sueño =
+            // fuera si <375 min (420−45 de slack) o eff<0.80; centinela = temp≥0.8 °C ∧ resp
+            // z≥1.5 juntas. La histéresis exige 2 días seguidos → los malos siembran HOY y AYER.
             let esMalo = (state == "strained" || state == "rundown")
             if isToday || (esMalo && ago == 1) {
                 switch state {
                 case "primed":
-                    // HRV muy arriba (z≈+2.7 good) + RHR bajo (good) + carga en el sweet-spot ⇒ good≥2.
+                    // 0 ejes fuera ⇒ .full («In range»). RHR bajo + sueño amplio.
                     hrv = 72; rhr = 46; recovery = 82; strain = 9; sleepMin = 445; spo2 = 98; steps = 9240
                 case "balanced":
-                    // Todo en rango normal (HRV/RHR neutral) — una sola señal good (carga) ⇒ `.balanced`.
+                    // También .full — Preparedness NO tiene estado intermedio (legado del motor
+                    // viejo; se conserva por compat, la galería usa primed).
                     hrv = 56; rhr = 52; recovery = 66; strain = 10; sleepMin = 440; spo2 = 98; steps = 8100
                 case "rundown":
-                    // Dos señales de recuperación abajo a la vez (HRV suprimida + RHR elevada) ⇒ `.rundown`.
-                    hrv = 33; rhr = 60; recovery = 28; strain = 12; sleepMin = 388; spo2 = 96; steps = 3400
-                default: // "strained": exactamente UNA señal mala (HRV) ⇒ `.strained`.
-                    hrv = 33; rhr = 52; recovery = 45; strain = 11; sleepMin = 402; spo2 = 97; steps = 4180
+                    // DOS ejes fuera 2 días (RHR z≈−3.5 + sueño 340<375) ⇒ .easy («Recover») —
+                    // antes sleep 388 se quedaba 14 min ARRIBA del corte y salía ámbar.
+                    hrv = 33; rhr = 62; recovery = 28; strain = 12; sleepMin = 340; spo2 = 96; steps = 3400
+                default: // "strained": UN eje fuera (RHR elevada; sueño en rango) ⇒ .caution
+                    // («Go light today»). Antes rhr 52 ≈ base ⇒ 0 ejes ⇒ pintaba VERDE: la HRV
+                    // baja NO vota — queda como señal informativa en el detalle.
+                    hrv = 33; rhr = 60; recovery = 45; strain = 11; sleepMin = 440; spo2 = 97; steps = 4180
                 }
             }
 

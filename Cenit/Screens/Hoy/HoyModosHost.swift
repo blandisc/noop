@@ -18,13 +18,22 @@ struct HoyMatrizHost: View {
     /// aviso discreto: el dato es honesto pero es de anoche (FER-audit).
     var saludDesconectada: Bool = false
     var onTapSeccion: (String) -> Void = { _ in }
+    /// Tap del aviso de desconexión → el MISMO flujo de conexión que la puerta «Connect
+    /// Health» (C6 de la revisión conceptual: una sola causa, una sola ruta).
+    var onTapAvisoSalud: () -> Void = {}
 
     var body: some View {
         VStack(spacing: esAvisoDesconexion ? LiquidSpace.s150 : LiquidSpace.s300) {
             if let copy = estadoCopy {
                 if esAvisoDesconexion {
-                    AvisoDesconexion(texto: copy)
-                        .accessibilityIdentifier("hoy-estado-copy")
+                    Button(action: onTapAvisoSalud) {
+                        AvisoDesconexion(texto: copy)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Text(verbatim: copy))
+                    .accessibilityHint(Text(String(localized: "hoy.desconectado.hint",
+                                                   defaultValue: "Opens Data Sources to reconnect")))
+                    .accessibilityIdentifier("hoy-estado-copy")
                 } else {
                     estadoGrupo(copy)
                 }
@@ -57,19 +66,24 @@ struct HoyMatrizHost: View {
                          defaultValue: "Apple Health disconnected · showing your last reading")
                 : nil
         case .t3SinVeredicto(let causa):
+            // Revisión conceptual (dueño 2026-08-15): la franja lleva SOLO la causa — el héroe
+            // ya dice «No reading today»; repetirlo palabra por palabra en la misma columna era
+            // eco, no información. De paso, sinSync ahora enseña el gesto que sí ayuda.
             switch causa {
             case .leyendo:
                 return String(localized: "hoy.leyendo", defaultValue: "Reading your night…")
             case .sinSync:
-                return String(localized: "hoy.sinlectura.sync",
-                              defaultValue: "No reading today · pending sync")
+                return String(localized: "hoy.sync.pendiente",
+                              defaultValue: "Pending sync · pull down to sync")
             case .nocheNoRegistrada:
-                return String(localized: "hoy.sinlectura.noche",
-                              defaultValue: "No reading today · the night wasn't recorded")
+                return String(localized: "hoy.noche.noregistrada",
+                              defaultValue: "The night wasn't recorded")
             }
         case .t4SinPermiso:
-            return String(localized: "hoy.sinlectura.sync",
-                          defaultValue: "No reading today · pending sync")
+            // Revisión conceptual (dueño 2026-08-15): «pending sync» era MENTIRA aquí — sin
+            // permiso no hay sync pendiente. El héroe ya es dueño del mensaje («Connect Apple
+            // Health…» + CTA); una franja que dice otra cosa solo contradice. Calla.
+            return nil
         case .t5Dormido:
             return nil
         }

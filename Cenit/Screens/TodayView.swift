@@ -115,6 +115,18 @@ struct TodayView: View {
     /// Apple Salud when the measured Key Metrics are empty; `showDataSources` presents Data Sources
     /// so they can connect in one tap instead of hunting through the More tab. (FER-94)
     @EnvironmentObject var health: HealthKitBridge
+
+    /// Salud «conectada» EFECTIVA. En modo fixture (DEBUG, simulador) el permiso real de
+    /// HealthKit nunca está concedido, así que TODOS los estados sin veredicto caían al héroe
+    /// de «Connect Apple Health» — calibrando e insuficiente se veían idénticos y con copy de
+    /// conectar (revisión conceptual del dueño, 2026-08-15). El fixture simula un usuario
+    /// conectado: se trata como tal para que cada estado pinte SU héroe real.
+    private var saludConectada: Bool {
+        #if DEBUG
+        if ScreenshotFixtures.activeState() != nil { return true }
+        #endif
+        return health.auth == .authorized
+    }
     /// Tab switcher — the «Explóralo en el Coach» handoff from the Detalle de Estrés (FER-452, mirrors Cuerpo).
     @EnvironmentObject var tabRouter: TabRouter
     @State private var showDataSources = false
@@ -967,7 +979,7 @@ struct TodayView: View {
         if liquidDemo { return LiquidHoyBuilder.actaEjemplo }
         #endif
         return LiquidHoyBuilder.acta(prep: repo.todayPreparedness,
-                                     healthConnected: health.auth == .authorized)
+                                     healthConnected: saludConectada)
     }
 
     private var liquidActaTono: Color {
@@ -984,7 +996,7 @@ struct TodayView: View {
         if liquidDemo { return LiquidHoyBuilder.autonomicoEjemplo }
         #endif
         return LiquidHoyBuilder.autonomico(prep: repo.todayPreparedness,
-                                           healthConnected: health.auth == .authorized)
+                                           healthConnected: saludConectada)
     }
 
     private var liquidAutonomicoTono: Color {
@@ -1058,8 +1070,11 @@ struct TodayView: View {
                 plantilla: plantillaActual,
                 // «Desconectada» = permiso revocado, no un dispositivo sin HealthKit
                 // (`.unavailable`). MISMA semántica que la pista «conecta Apple Salud» (l. 460).
-                saludDesconectada: health.auth != .authorized && health.auth != .unavailable,
-                onTapSeccion: { abrirHojaCaras($0) })
+                saludDesconectada: !saludConectada && health.auth != .unavailable,
+                onTapSeccion: { abrirHojaCaras($0) },
+                // C6: el aviso de desconexión abre Data Sources — la misma ruta que la puerta
+                // «Connect Health» del héroe (una causa, una acción).
+                onTapAvisoSalud: { showDataSources = true })
             // /inject: la leyenda de origen se retiró de la superficie Liquid a pedido del
             // dueño (los puntos de origen por tile se quedan).
         }
@@ -1103,7 +1118,7 @@ struct TodayView: View {
             ventana: ventana, lastSync: health.lastSync, hayNocheRegistrada: hayNoche)
         return LiquidHoyBuilder.plantilla(
             prep: repo.todayPreparedness,
-            healthConnected: health.auth == .authorized,
+            healthConnected: saludConectada,
             hasAnySource: !noSources,
             silencioT4: silencioSaludActual,
             causaT3: causa)
@@ -1176,7 +1191,7 @@ struct TodayView: View {
     /// el héroe actuales (paridad por construcción; el builder solo mapea/formatea).
     private func liquidInputs() -> LiquidHoyBuilder.Inputs {
         var inputs = LiquidHoyBuilder.Inputs()
-        inputs.healthConnected = health.auth == .authorized
+        inputs.healthConnected = saludConectada
         inputs.preparedness = repo.todayPreparedness
         // El veredicto SOLO se calcula en el refresh completo (`Repository`, para no puntuar la FC
         // despierta en el primer pintado y desdecirse segundos después). Mientras eso llega, el héroe

@@ -1,422 +1,6 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "hoy.desconectado.cache" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apple Health disconnected \u00b7 showing your last reading"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apple Salud desconectada \u00b7 mostrando tu \u00faltima lectura"
-          }
-        }
-      }
-    },
-    "matriz.vfc.sub" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "your daily HRV"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "tu VFC del d\u00eda"
-          }
-        }
-      }
-    },
-    "Unloading" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Unloading"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Descargando"
-          }
-        }
-      }
-    },
-    "Spike" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Spike"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pico"
-          }
-        }
-      }
-    },
-    "Very regular" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Very regular"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Muy regular"
-          }
-        }
-      }
-    },
-    "One moment: the guardian is still reading your signals." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "One moment: the guardian is still reading your signals."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Un momento: el guardi\u00e1n todav\u00eda est\u00e1 leyendo tus se\u00f1ales."
-          }
-        }
-      }
-    },
-    "Last night only one of your two signals came through. The guardian needs both before it can say anything." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Last night only one of your two signals came through. The guardian needs both before it can say anything."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Anoche solo lleg\u00f3 una de tus dos se\u00f1ales. El guardi\u00e1n necesita las dos antes de poder decir algo."
-          }
-        }
-      }
-    },
-    "The guardian needs a few nights to learn your pattern." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The guardian needs a few nights to learn your pattern."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El guardi\u00e1n necesita unas noches para aprender tu patr\u00f3n."
-          }
-        }
-      }
-    },
-    "manual.contexto.titulo" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your context"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu contexto"
-          }
-        }
-      }
-    },
-    "manual.contexto.intro" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "These four don't decide your day: only your sleep and resting heart rate vote. They're here to give you context around that verdict, never to judge it."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Estas cuatro no deciden tu d\u00eda: solo tu sue\u00f1o y tu FC en reposo votan. Est\u00e1n aqu\u00ed para darte contexto alrededor de ese veredicto, nunca para juzgarlo."
-          }
-        }
-      }
-    },
-    "manual.contexto.sec.que" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "What each one is"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Qu\u00e9 es cada una"
-          }
-        }
-      }
-    },
-    "manual.contexto.carga" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Load"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Carga"
-          }
-        }
-      }
-    },
-    "manual.contexto.carga.sub" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "How much training you've been piling up lately, against what's usual for you."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cu\u00e1nto entrenamiento vienes acumulando \u00faltimamente, comparado con lo que es normal en ti."
-          }
-        }
-      }
-    },
-    "manual.contexto.esfuerzo" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Effort"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Esfuerzo"
-          }
-        }
-      }
-    },
-    "manual.contexto.esfuerzo.sub" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "What you've built up so far today."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lo que llevas construido en el d\u00eda."
-          }
-        }
-      }
-    },
-    "manual.contexto.vfc" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "HRV"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "VFC"
-          }
-        }
-      }
-    },
-    "manual.contexto.vfc.sub" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your heart-rate variability, estimated by your watch through the day. The dotted line is where you usually sit."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu variabilidad de la frecuencia cardiaca, estimada por tu reloj a lo largo del d\u00eda. La l\u00ednea punteada es donde sueles estar."
-          }
-        }
-      }
-    },
-    "manual.contexto.estres" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Stress"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Estr\u00e9s"
-          }
-        }
-      }
-    },
-    "manual.contexto.estres.sub" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your estimated stress level for the day, on a low-to-high scale."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu nivel de estr\u00e9s estimado del d\u00eda, en una escala de bajo a alto."
-          }
-        }
-      }
-    },
-    "manual.contexto.sec.porque" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Why they don't vote"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Por qu\u00e9 no votan"
-          }
-        }
-      }
-    },
-    "manual.contexto.porque" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "On a wrist watch, HRV and stress aren't stable enough to decide with. Your watch's daytime HRV drifts about 29% from a chest-strap reference, so we show it as a quiet line where you usually sit, never as a range you crossed. Your resting heart rate and sleep carry the verdict; these ride along as context."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "En un reloj de mu\u00f1eca, la VFC y el estr\u00e9s no son lo bastante estables para decidir con ellos. La VFC de d\u00eda de tu reloj se aleja alrededor de 29% de una referencia de banda de pecho, as\u00ed que la mostramos como una l\u00ednea quieta donde sueles estar, nunca como un rango que cruzaste. Tu FC en reposo y tu sue\u00f1o llevan el veredicto; estas van de acompa\u00f1antes."
-          }
-        }
-      }
-    },
-    "%@ night" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ night"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ noche"
-          }
-        }
-      }
-    },
-    "At ease" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "At ease"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "En calma"
-          }
-        }
-      }
-    },
-    "Temperature and breathing off" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Temperature and breathing off"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Temperatura y respiración fuera"
-          }
-        }
-      }
-    },
-    "Watching your breathing" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Watching your breathing"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vigilando tu respiración"
-          }
-        }
-      }
-    },
-    "Watching your temperature" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Watching your temperature"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vigilando tu temperatura"
-          }
-        }
-      }
-    },
     "\n" : {
 
     },
@@ -1696,6 +1280,23 @@
     "%@ min" : {
 
     },
+    "%@ night" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ night"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ noche"
+          }
+        }
+      }
+    },
     "%@ nights" : {
 
     },
@@ -2284,6 +1885,23 @@
         }
       }
     },
+    "%@, no data, %@." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, no data, %@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, sin dato, %@."
+          }
+        }
+      }
+    },
     "%@, no training" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2301,6 +1919,23 @@
         }
       }
     },
+    "%@, no vote yet, %@." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, no vote yet, %@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, sin voto todavía, %@."
+          }
+        }
+      }
+    },
     "%@, range %@ to %@" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -2314,6 +1949,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@, rango de %@ a %@"
+          }
+        }
+      }
+    },
+    "%@, read inside, %@." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, read inside, %@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, se leyó dentro, %@."
+          }
+        }
+      }
+    },
+    "%@, read outside, %@, outside your range." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, read outside, %@, outside your range."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, se leyó fuera, %@, fuera de tu rango."
           }
         }
       }
@@ -2348,6 +2017,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@, entrenaste"
+          }
+        }
+      }
+    },
+    "%@, voted inside, %@." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, voted inside, %@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, votó dentro, %@."
+          }
+        }
+      }
+    },
+    "%@, voted outside, %@, outside your range." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, voted outside, %@, outside your range."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, votó fuera, %@, fuera de tu rango."
           }
         }
       }
@@ -6690,6 +6393,23 @@
         }
       }
     },
+    "A vote fell outside today. A new verdict has to repeat two days in a row to replace yesterday's." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A vote fell outside today. A new verdict has to repeat two days in a row to replace yesterday's."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoy hubo un voto fuera. Un veredicto nuevo tiene que repetirse dos días seguidos para reemplazar al de ayer."
+          }
+        }
+      }
+    },
     "a weak" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -7159,6 +6879,23 @@
         }
       }
     },
+    "acta.metodo.cita" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O'Grady et al., 2024 · Task Force, 1996 · Plews et al., 2013. Approximate, no clinical claim."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O'Grady et al., 2024 · Task Force, 1996 · Plews et al., 2013. Aproximado, sin fin clínico."
+          }
+        }
+      }
+    },
     "acta.metodo.clave" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -7172,6 +6909,244 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "solo vigilan"
+          }
+        }
+      }
+    },
+    "acta.metodo.fc" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your resting HR is your lowest pulse of the night, measured by your Apple Watch; when there's no overnight reading, Cénit uses Apple Health's resting heart rate."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu FC en reposo es tu pulso más bajo de la noche, medido con el Apple Watch; cuando no hay lectura nocturna, Cénit usa la FC en reposo de Apple."
+          }
+        }
+      }
+    },
+    "acta.metodo.histeresis" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A new verdict has to repeat two days in a row before it replaces the previous one."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un veredicto nuevo tiene que repetirse dos días seguidos antes de reemplazar al anterior."
+          }
+        }
+      }
+    },
+    "acta.metodo.votos" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your sleep and your resting HR are read as separate votes, so a bad night doesn't count twice. Your breathing and temperature only watch; they don't vote here."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu sueño y tu FC en reposo se leen como votos separados, para que una mala noche no cuente dos veces. Tu respiración y tu temperatura solo vigilan; aquí no votan."
+          }
+        }
+      }
+    },
+    "acta.resumen.caution.auto" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resting HR voted outside; sleep, inside."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La FC en reposo votó fuera; el sueño, dentro."
+          }
+        }
+      }
+    },
+    "acta.resumen.caution.clave" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "voted outside"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "votó fuera"
+          }
+        }
+      }
+    },
+    "acta.resumen.caution.sueno" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sleep voted outside; resting HR, inside."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El sueño votó fuera; la FC en reposo, dentro."
+          }
+        }
+      }
+    },
+    "acta.resumen.easy.clave" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "outside"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "fuera"
+          }
+        }
+      }
+    },
+    "acta.resumen.full.clave" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "inside"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "dentro"
+          }
+        }
+      }
+    },
+    "acta.resumen.hist.dentro.clave" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "inside today"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "dentro hoy"
+          }
+        }
+      }
+    },
+    "acta.resumen.hist.fuera.clave" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "outside today"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "fuera hoy"
+          }
+        }
+      }
+    },
+    "acta.resumen.tendencia.clave" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "trending down"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "viene bajando"
+          }
+        }
+      }
+    },
+    "acta.sub.fc" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "overnight · against your base"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "de la noche · contra tu base"
+          }
+        }
+      }
+    },
+    "acta.voto.in" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "in"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "dentro"
+          }
+        }
+      }
+    },
+    "acta.voto.out" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "out"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "fuera"
           }
         }
       }
@@ -9185,6 +9160,23 @@
         }
       }
     },
+    "At ease" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "At ease"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En calma"
+          }
+        }
+      }
+    },
     "At home" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -9400,6 +9392,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Autonómico"
+          }
+        }
+      }
+    },
+    "Autonomic voted outside; sleep, inside." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Autonomic voted outside; sleep, inside."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La FC en reposo votó fuera; el sueño, dentro."
           }
         }
       }
@@ -11130,6 +11139,40 @@
         }
       }
     },
+    "Both of your votes fell inside." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Both of your votes fell inside."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus dos votos cayeron dentro."
+          }
+        }
+      }
+    },
+    "Both of your votes fell outside." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Both of your votes fell outside."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus dos votos cayeron fuera."
+          }
+        }
+      }
+    },
     "Both out" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -11147,6 +11190,23 @@
         }
       }
     },
+    "Both out at once: today is for recovering, not pushing." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Both out at once: today is for recovering, not pushing."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los dos fuera a la vez: hoy toca recuperar, no empujar."
+          }
+        }
+      }
+    },
     "Both signals are read from your Apple Watch while you sleep and compared against your own pattern from recent weeks, not population tables. An isolated deviation is ignored on purpose: a warm room or an extra blanket can produce it alone." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -11160,6 +11220,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Las dos señales se leen de tu Apple Watch mientras duermes y se comparan contra tu propio patrón de las últimas semanas, no contra tablas de población. Una desviación aislada se ignora a propósito: un cuarto caliente o una cobija de más la producen solas."
+          }
+        }
+      }
+    },
+    "Both votes fell outside today. A new verdict has to repeat two days in a row to replace yesterday's." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Both votes fell outside today. A new verdict has to repeat two days in a row to replace yesterday's."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoy los dos votos cayeron fuera. Un veredicto nuevo tiene que repetirse dos días seguidos para reemplazar al de ayer."
           }
         }
       }
@@ -14883,6 +14960,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Opciones del día"
+          }
+        }
+      }
+    },
+    "Day reading" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Day reading"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lectura de día"
           }
         }
       }
@@ -20409,856 +20503,6 @@
         }
       }
     },
-    "hero.sub.full.nombrado" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your sleep and your resting heart rate woke up in your range."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu sueño y tu FC en reposo amanecieron en tu rango."
-          }
-        }
-      }
-    },
-    "matriz.nivel.bitacora" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Logbook" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Bitácora" } }
-      }
-    },
-    "matriz.nivel.contexto" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Context" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Contexto" } }
-      }
-    },
-    "matriz.nivel.deciden" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Decide your day" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Deciden tu día" } }
-      }
-    },
-    "matriz.nivel.vigila" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Watches over you" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Te vigila" } }
-      }
-    },
-    "matriz.carga.zona" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sweet spot %.1f–%.1f"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "zona ideal %.1f–%.1f"
-          }
-        }
-      }
-    },
-    "matriz.esf.sub" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "today's effort so far" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "lo que llevas del día" } }
-      }
-    },
-    "matriz.fc.baja" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "low · good side"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "baja · del lado bueno"
-          }
-        }
-      }
-    },
-    "matriz.fc.enrango" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "in your range"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "en tu rango"
-          }
-        }
-      }
-    },
-    "matriz.guardian.sub" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "your temperature and breathing while you sleep"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "tu temperatura y tu respiración mientras duermes"
-          }
-        }
-      }
-    },
-    "matriz.resp.fuera" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "above your usual"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "arriba de lo usual"
-          }
-        }
-      }
-    },
-    "matriz.resp.tipica" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "typical for you"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "tu ritmo usual"
-          }
-        }
-      }
-    },
-    "matriz.temp.enbanda" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "within your band"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "dentro de tu banda"
-          }
-        }
-      }
-    },
-    "matriz.temp.fuera" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "outside your band"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "fuera de tu banda"
-          }
-        }
-      }
-    },
-    "matriz.stress.sub" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "last 7 days"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "últimos 7 días"
-          }
-        }
-      }
-    },
-    "matriz.vfc.referencia" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "reference · does not vote · why?"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "referencia · no vota · ¿por qué?"
-          }
-        }
-      }
-    },
-    "manual.deciden.c1" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "All in your range"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Todo en tu rango"
-          }
-        }
-      }
-    },
-    "manual.deciden.c1.sub" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No signal out. Your body woke up where it usually does."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ninguna señal fuera. Tu cuerpo amaneció donde suele."
-          }
-        }
-      }
-    },
-    "manual.deciden.c2" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Good, with one detail"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bien, con un detalle"
-          }
-        }
-      }
-    },
-    "manual.deciden.c2.sub" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "One signal out of your range, and I tell you which."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Una señal fuera de tu rango: te digo cuál."
-          }
-        }
-      }
-    },
-    "manual.deciden.c3" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Take it easy"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ándate leve"
-          }
-        }
-      }
-    },
-    "manual.deciden.c3.sub" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Two or more out, or the guardian confirmed its alert."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dos o más fuera, o el guardián corroboró su alerta."
-          }
-        }
-      }
-    },
-    "manual.deciden.c4" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Low signal"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Baja señal"
-          }
-        }
-      }
-    },
-    "manual.deciden.c4.sub" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Not enough reading tonight. Without data I don't guess."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No hubo lectura suficiente esta noche. Sin datos no adivino."
-          }
-        }
-      }
-    },
-    "manual.deciden.como" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "From your recent weeks I learn your normal band for each signal. Each morning I compare the night against that band: in or out. The verdict counts how many voting signals stepped out. It is never a 0-100 score, because your watch doesn't measure with that precision and I won't pretend it does."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "De tus últimas semanas aprendo tu banda normal de cada señal. Cada mañana comparo la noche contra esa banda: dentro o fuera. El veredicto cuenta cuántas señales votantes se salieron; nunca es un puntaje de 0 a 100, porque tu reloj no mide con esa precisión y no te voy a fingir que sí."
-          }
-        }
-      }
-    },
-    "manual.deciden.fc" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Resting heart rate"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "FC en reposo"
-          }
-        }
-      }
-    },
-    "manual.deciden.fc.sub" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your lowest pulse of the night, against your recent weeks."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu pulso más bajo de la noche, contra tus últimas semanas."
-          }
-        }
-      }
-    },
-    "manual.deciden.guardian" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The guardian"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El guardián"
-          }
-        }
-      }
-    },
-    "manual.deciden.guardian.sub" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Temperature and breathing watch together. They only weigh in when both step out at once; one alone can be noise."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Temperatura y respiración vigilan juntas. Solo pesan si las dos se salen a la vez: una sola puede ser ruido."
-          }
-        }
-      }
-    },
-    "manual.deciden.hedge" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "A wrist-watch reading: an honest approximation, not a diagnosis. Cénit is not a medical device."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lectura de un reloj de muñeca: una aproximación honesta, no un diagnóstico. Cénit no es un dispositivo médico."
-          }
-        }
-      }
-    },
-    "manual.deciden.promesa" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Every morning I read your night and tell you one thing: whether you woke up inside your own range. Not against tables: against you."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cada mañana leo tu noche y te digo una sola cosa: si amaneciste dentro de tu propio rango: no contra tablas, contra ti."
-          }
-        }
-      }
-    },
-    "manual.deciden.resto" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "HRV, load, effort"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "VFC, carga, esfuerzo"
-          }
-        }
-      }
-    },
-    "manual.deciden.resto.sub" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "They give you context, but don't vote: on a wrist watch they aren't stable enough to decide."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Te dan contexto, pero no votan: en un reloj de muñeca no son lo bastante estables para decidir."
-          }
-        }
-      }
-    },
-    "manual.deciden.sec.combos" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The combinations"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Las combinaciones"
-          }
-        }
-      }
-    },
-    "manual.deciden.sec.como" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "How it's read"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cómo se calcula"
-          }
-        }
-      }
-    },
-    "manual.deciden.sec.votan" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Who votes"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Quién vota"
-          }
-        }
-      }
-    },
-    "manual.deciden.sello.centinela" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sentinel"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "centinela"
-          }
-        }
-      }
-    },
-    "manual.deciden.sello.ref" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "reference"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "referencia"
-          }
-        }
-      }
-    },
-    "manual.deciden.sello.vota" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "votes"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "vota"
-          }
-        }
-      }
-    },
-    "manual.deciden.sueno" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sleep"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sueño"
-          }
-        }
-      }
-    },
-    "manual.deciden.sueno.sub" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "How much and how well you slept last night."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cuánto y qué tan bien dormiste anoche."
-          }
-        }
-      }
-    },
-    "manual.deciden.titulo" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "What decides your day?"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "¿Qué decide tu día?"
-          }
-        }
-      }
-    },
-    "matriz.nivel.manual.hint" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "How this works"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cómo funciona"
-          }
-        }
-      }
-    },
-    "matriz.scrub.hoy" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Today"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hoy"
-          }
-        }
-      }
-    },
-    "matriz.scrub.sinlectura" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ · no reading"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ · sin lectura"
-          }
-        }
-      }
-    },
-    "matriz.rango.dentro" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "in your range"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "en tu rango"
-          }
-        }
-      }
-    },
-    "matriz.rhr.titulo.corto" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Resting HR"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "FC Reposo"
-          }
-        }
-      }
-    },
-    "matriz.scrub.a11y.hint" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Swipe up or down to hear each reading"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Desliza arriba o abajo para oír cada lectura"
-          }
-        }
-      }
-    },
-    "matriz.scrub.a11y.label" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@, %2$d readings"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@, %2$d lecturas"
-          }
-        }
-      }
-    },
-    "matriz.rango.fuera" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "out of your range"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "fuera de tu rango"
-          }
-        }
-      }
-    },
-    "matriz.sueno.anoche" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "last night"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "anoche"
-          }
-        }
-      }
-    },
-    "matriz.sueno.anoche.estado" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "last night · %@"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "anoche · %@"
-          }
-        }
-      }
-    },
-    "matriz.vota" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "votes"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "vota"
-          }
-        }
-      }
-    },
     "hero.highlight.caution" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -21306,6 +20550,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "rango"
+          }
+        }
+      }
+    },
+    "hero.sub.full.nombrado" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your sleep and your resting heart rate woke up in your range."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu sueño y tu FC en reposo amanecieron en tu rango."
           }
         }
       }
@@ -22304,6 +21565,40 @@
         }
       }
     },
+    "hoy.desconectado.cache" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Health disconnected · showing your last reading"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Salud desconectada · mostrando tu última lectura"
+          }
+        }
+      }
+    },
+    "hoy.desconectado.hint" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens Data Sources to reconnect"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre Fuentes de datos para reconectar"
+          }
+        }
+      }
+    },
     "hoy.hint.abrir" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -22389,6 +21684,23 @@
         }
       }
     },
+    "hoy.noche.noregistrada" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The night wasn't recorded"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La noche no quedó registrada"
+          }
+        }
+      }
+    },
     "hoy.sinlectura.noche" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -22419,6 +21731,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sin lectura de hoy · falta sincronizar"
+          }
+        }
+      }
+    },
+    "hoy.sync.pendiente" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pending sync · pull down to sync"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sync pendiente · jala hacia abajo para sincronizar"
           }
         }
       }
@@ -24942,6 +24271,23 @@
         }
       }
     },
+    "Last night only one of your two signals came through. The guardian needs both before it can say anything." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last night only one of your two signals came through. The guardian needs both before it can say anything."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anoche solo llegó una de tus dos señales. El guardián necesita las dos antes de poder decir algo."
+          }
+        }
+      }
+    },
     "Last night vs your typical" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -25410,6 +24756,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "APRENDIENDO"
+          }
+        }
+      }
+    },
+    "learning your base" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "learning your base"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "aprendiendo tu base"
           }
         }
       }
@@ -26749,6 +26112,669 @@
         }
       }
     },
+    "manual.contexto.carga" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Load"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Carga"
+          }
+        }
+      }
+    },
+    "manual.contexto.carga.sub" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How much training you've been piling up lately, against what's usual for you."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cuánto entrenamiento vienes acumulando últimamente, comparado con lo que es normal en ti."
+          }
+        }
+      }
+    },
+    "manual.contexto.esfuerzo" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effort"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esfuerzo"
+          }
+        }
+      }
+    },
+    "manual.contexto.esfuerzo.sub" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What you've built up so far today."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lo que llevas construido en el día."
+          }
+        }
+      }
+    },
+    "manual.contexto.estres" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stress"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estrés"
+          }
+        }
+      }
+    },
+    "manual.contexto.estres.sub" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your estimated stress level for the day, on a low-to-high scale."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu nivel de estrés estimado del día, en una escala de bajo a alto."
+          }
+        }
+      }
+    },
+    "manual.contexto.intro" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "These four don't decide your day: only your sleep and resting heart rate vote. They're here to give you context around that verdict, never to judge it."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estas cuatro no deciden tu día: solo tu sueño y tu FC en reposo votan. Están aquí para darte contexto alrededor de ese veredicto, nunca para juzgarlo."
+          }
+        }
+      }
+    },
+    "manual.contexto.porque" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On a wrist watch, HRV and stress aren't stable enough to decide with. Your watch's daytime HRV drifts about 29% from a chest-strap reference, so we show it as a quiet line where you usually sit, never as a range you crossed. Your resting heart rate and sleep carry the verdict; these ride along as context."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En un reloj de muñeca, la VFC y el estrés no son lo bastante estables para decidir con ellos. La VFC de día de tu reloj se aleja alrededor de 29% de una referencia de banda de pecho, así que la mostramos como una línea quieta donde sueles estar, nunca como un rango que cruzaste. Tu FC en reposo y tu sueño llevan el veredicto; estas van de acompañantes."
+          }
+        }
+      }
+    },
+    "manual.contexto.sec.porque" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Why they don't vote"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Por qué no votan"
+          }
+        }
+      }
+    },
+    "manual.contexto.sec.que" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What each one is"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qué es cada una"
+          }
+        }
+      }
+    },
+    "manual.contexto.titulo" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your context"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu contexto"
+          }
+        }
+      }
+    },
+    "manual.contexto.vfc" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "HRV"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "VFC"
+          }
+        }
+      }
+    },
+    "manual.contexto.vfc.sub" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your heart-rate variability, estimated by your watch through the day. The dotted line is where you usually sit."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu variabilidad de la frecuencia cardiaca, estimada por tu reloj a lo largo del día. La línea punteada es donde sueles estar."
+          }
+        }
+      }
+    },
+    "manual.deciden.c1" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All in your range"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todo en tu rango"
+          }
+        }
+      }
+    },
+    "manual.deciden.c1.sub" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No signal out. Your body woke up where it usually does."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ninguna señal fuera. Tu cuerpo amaneció donde suele."
+          }
+        }
+      }
+    },
+    "manual.deciden.c2" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Good, with one detail"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bien, con un detalle"
+          }
+        }
+      }
+    },
+    "manual.deciden.c2.sub" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One signal out of your range, and I tell you which."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Una señal fuera de tu rango: te digo cuál."
+          }
+        }
+      }
+    },
+    "manual.deciden.c3" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Take it easy"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ándate leve"
+          }
+        }
+      }
+    },
+    "manual.deciden.c3.sub" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Two or more out, or the guardian confirmed its alert."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dos o más fuera, o el guardián corroboró su alerta."
+          }
+        }
+      }
+    },
+    "manual.deciden.c4" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Low signal"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Baja señal"
+          }
+        }
+      }
+    },
+    "manual.deciden.c4.sub" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not enough reading tonight. Without data I don't guess."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No hubo lectura suficiente esta noche. Sin datos no adivino."
+          }
+        }
+      }
+    },
+    "manual.deciden.como" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From your recent weeks I learn your normal band for each signal. Each morning I compare the night against that band: in or out. The verdict counts how many voting signals stepped out. It is never a 0-100 score, because your watch doesn't measure with that precision and I won't pretend it does."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "De tus últimas semanas aprendo tu banda normal de cada señal. Cada mañana comparo la noche contra esa banda: dentro o fuera. El veredicto cuenta cuántas señales votantes se salieron; nunca es un puntaje de 0 a 100, porque tu reloj no mide con esa precisión y no te voy a fingir que sí."
+          }
+        }
+      }
+    },
+    "manual.deciden.fc" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resting heart rate"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FC en reposo"
+          }
+        }
+      }
+    },
+    "manual.deciden.fc.sub" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your lowest pulse of the night, against your recent weeks."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu pulso más bajo de la noche, contra tus últimas semanas."
+          }
+        }
+      }
+    },
+    "manual.deciden.guardian" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The guardian"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El guardián"
+          }
+        }
+      }
+    },
+    "manual.deciden.guardian.sub" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Temperature and breathing watch together. They only weigh in when both step out at once; one alone can be noise."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Temperatura y respiración vigilan juntas. Solo pesan si las dos se salen a la vez: una sola puede ser ruido."
+          }
+        }
+      }
+    },
+    "manual.deciden.hedge" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A wrist-watch reading: an honest approximation, not a diagnosis. Cénit is not a medical device."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lectura de un reloj de muñeca: una aproximación honesta, no un diagnóstico. Cénit no es un dispositivo médico."
+          }
+        }
+      }
+    },
+    "manual.deciden.promesa" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Every morning I read your night and tell you one thing: whether you woke up inside your own range. Not against tables: against you."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cada mañana leo tu noche y te digo una sola cosa: si amaneciste dentro de tu propio rango: no contra tablas, contra ti."
+          }
+        }
+      }
+    },
+    "manual.deciden.resto" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "HRV, load, effort"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "VFC, carga, esfuerzo"
+          }
+        }
+      }
+    },
+    "manual.deciden.resto.sub" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "They give you context, but don't vote: on a wrist watch they aren't stable enough to decide."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Te dan contexto, pero no votan: en un reloj de muñeca no son lo bastante estables para decidir."
+          }
+        }
+      }
+    },
+    "manual.deciden.sec.combos" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The combinations"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las combinaciones"
+          }
+        }
+      }
+    },
+    "manual.deciden.sec.como" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How it's read"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cómo se calcula"
+          }
+        }
+      }
+    },
+    "manual.deciden.sec.votan" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Who votes"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quién vota"
+          }
+        }
+      }
+    },
+    "manual.deciden.sello.centinela" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sentinel"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "centinela"
+          }
+        }
+      }
+    },
+    "manual.deciden.sello.ref" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "reference"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "referencia"
+          }
+        }
+      }
+    },
+    "manual.deciden.sello.vota" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "votes"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "vota"
+          }
+        }
+      }
+    },
+    "manual.deciden.sueno" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sleep"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sueño"
+          }
+        }
+      }
+    },
+    "manual.deciden.sueno.sub" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How much and how well you slept last night."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cuánto y qué tan bien dormiste anoche."
+          }
+        }
+      }
+    },
+    "manual.deciden.titulo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What decides your day?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Qué decide tu día?"
+          }
+        }
+      }
+    },
     "Map" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -26995,6 +27021,465 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Emparejado automático · %@"
+          }
+        }
+      }
+    },
+    "matriz.carga.zona" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sweet spot %.1f–%.1f"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "zona ideal %.1f–%.1f"
+          }
+        }
+      }
+    },
+    "matriz.esf.sub" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "today's effort so far"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "lo que llevas del día"
+          }
+        }
+      }
+    },
+    "matriz.fc.baja" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "low · good side"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "baja · del lado bueno"
+          }
+        }
+      }
+    },
+    "matriz.fc.enrango" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "in your range"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "en tu rango"
+          }
+        }
+      }
+    },
+    "matriz.guardian.sub" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "your temperature and breathing while you sleep"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tu temperatura y tu respiración mientras duermes"
+          }
+        }
+      }
+    },
+    "matriz.nivel.bitacora" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logbook"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bitácora"
+          }
+        }
+      }
+    },
+    "matriz.nivel.contexto" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Context"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Contexto"
+          }
+        }
+      }
+    },
+    "matriz.nivel.deciden" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Decide your day"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deciden tu día"
+          }
+        }
+      }
+    },
+    "matriz.nivel.manual.hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How this works"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cómo funciona"
+          }
+        }
+      }
+    },
+    "matriz.nivel.vigila" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Watches over you"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Te vigila"
+          }
+        }
+      }
+    },
+    "matriz.rango.dentro" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "in your range"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "en tu rango"
+          }
+        }
+      }
+    },
+    "matriz.rango.fuera" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "out of your range"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "fuera de tu rango"
+          }
+        }
+      }
+    },
+    "matriz.resp.fuera" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "above your usual"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "arriba de lo usual"
+          }
+        }
+      }
+    },
+    "matriz.resp.tipica" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "typical for you"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tu ritmo usual"
+          }
+        }
+      }
+    },
+    "matriz.rhr.titulo.corto" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resting HR"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FC Reposo"
+          }
+        }
+      }
+    },
+    "matriz.scrub.a11y.hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Swipe up or down to hear each reading"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desliza arriba o abajo para oír cada lectura"
+          }
+        }
+      }
+    },
+    "matriz.scrub.a11y.label" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@, %2$d readings"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@, %2$d lecturas"
+          }
+        }
+      }
+    },
+    "matriz.scrub.hoy" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoy"
+          }
+        }
+      }
+    },
+    "matriz.scrub.sinlectura" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ · no reading"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ · sin lectura"
+          }
+        }
+      }
+    },
+    "matriz.stress.sub" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "last 7 days"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "últimos 7 días"
+          }
+        }
+      }
+    },
+    "matriz.sueno.anoche" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "last night"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "anoche"
+          }
+        }
+      }
+    },
+    "matriz.sueno.anoche.estado" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "last night · %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "anoche · %@"
+          }
+        }
+      }
+    },
+    "matriz.temp.enbanda" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "within your band"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "dentro de tu banda"
+          }
+        }
+      }
+    },
+    "matriz.temp.fuera" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "outside your band"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "fuera de tu banda"
+          }
+        }
+      }
+    },
+    "matriz.vfc.referencia" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "reference · does not vote · why?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "referencia · no vota · ¿por qué?"
+          }
+        }
+      }
+    },
+    "matriz.vfc.sub" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "your daily HRV"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tu VFC del día"
+          }
+        }
+      }
+    },
+    "matriz.vota" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "votes"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "vota"
           }
         }
       }
@@ -30618,6 +31103,23 @@
         }
       }
     },
+    "No sleep recorded last night: without its vote there's no quorum for a verdict." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No sleep recorded last night: without its vote there's no quorum for a verdict."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anoche no se grabó sueño: sin su voto no hay quórum para un veredicto."
+          }
+        }
+      }
+    },
     "No strain from today yet: your recent history is below." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -31314,6 +31816,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nada"
+          }
+        }
+      }
+    },
+    "Nothing came in last night: no sleep and no resting signals." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing came in last night: no sleep and no resting signals."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anoche no entró nada: ni sueño ni señales en reposo."
           }
         }
       }
@@ -32148,6 +32667,23 @@
         }
       }
     },
+    "One moment: the guardian is still reading your signals." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One moment: the guardian is still reading your signals."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un momento: el guardián todavía está leyendo tus señales."
+          }
+        }
+      }
+    },
     "One moment." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -32461,6 +32997,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Un toque agrega la escalera 40/60/80% antes de tu primera serie pesada."
+          }
+        }
+      }
+    },
+    "One vote fell outside and your night HRV is trending down: that's why today asks for recovery." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One vote fell outside and your night HRV is trending down: that's why today asks for recovery."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un voto cayó fuera y tu VFC nocturna viene bajando: por eso hoy pide recuperar."
+          }
+        }
+      }
+    },
+    "One vote out lightens the day; it doesn't sink it." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One vote out lightens the day; it doesn't sink it."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un voto fuera aligera el día; no lo tumba."
           }
         }
       }
@@ -37600,6 +38170,23 @@
         }
       }
     },
+    "reposo.metodo.vfc" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "HRV is shown for context but doesn't vote here: Apple's all-day HRV is too noisy to trust. Breathing isn't in this list; the sentinel watches it alongside your temperature."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La VFC se muestra de contexto pero aquí no vota: la VFC de todo el día de Apple es demasiado ruidosa para confiar en ella. La respiración no está en esta lista, la vigila el Guardián junto con tu temperatura."
+          }
+        }
+      }
+    },
     "reps" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -41900,6 +42487,23 @@
         }
       }
     },
+    "Sleep voted outside; autonomic, inside." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sleep voted outside; autonomic, inside."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El sueño votó fuera; la FC en reposo, dentro."
+          }
+        }
+      }
+    },
     "Sleep was short" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -41947,6 +42551,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Duerme con tu Apple Watch y mañana vuelve a vigilar."
+          }
+        }
+      }
+    },
+    "Sleep with your Apple Watch and tomorrow the ballot fills itself." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sleep with your Apple Watch and tomorrow the ballot fills itself."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Duerme con tu Apple Watch y mañana la boleta se llena sola."
           }
         }
       }
@@ -42381,6 +43002,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Las fuentes coinciden"
+          }
+        }
+      }
+    },
+    "Spike" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spike"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pico"
           }
         }
       }
@@ -43885,6 +44523,7 @@
     },
     "Syncing…" : {
       "comment" : "A label indicating that a process is currently in progress.",
+      "extractionState" : "stale",
       "isCommentAutoGenerated" : true,
       "localizations" : {
         "es" : {
@@ -44123,6 +44762,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Temperatura"
+          }
+        }
+      }
+    },
+    "Temperature and breathing off" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Temperature and breathing off"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Temperatura y respiración fuera"
           }
         }
       }
@@ -44583,6 +45239,23 @@
         }
       }
     },
+    "The ballot is taking shape with your first nights." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The ballot is taking shape with your first nights."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La boleta se está formando con tus primeras noches."
+          }
+        }
+      }
+    },
     "The band has nothing new." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -44776,6 +45449,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "El guardián no diagnostica: solo te baja el ritmo."
+          }
+        }
+      }
+    },
+    "The guardian needs a few nights to learn your pattern." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The guardian needs a few nights to learn your pattern."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El guardián necesita unas noches para aprender tu patrón."
           }
         }
       }
@@ -45295,6 +45985,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "La temperatura de tu piel, medida en la muñeca mientras duermes. Cambia con tu ritmo circadiano. Lo que importa no es el número en sí, sino qué tan lejos queda de tu propia base. Una subida sostenida puede ser una señal temprana de inflamación o de que te estás enfermando; por eso es una de las señales detrás de tu veredicto del día."
+          }
+        }
+      }
+    },
+    "The verdict for how you woke up: your signals against your own baseline." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The verdict for how you woke up: your signals against your own baseline."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El veredicto de cómo amaneciste: tus señales contra tu propia base."
           }
         }
       }
@@ -47523,6 +48230,23 @@
         }
       }
     },
+    "Unloading" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unloading"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Descargando"
+          }
+        }
+      }
+    },
     "untrained" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -48130,6 +48854,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "muy regular"
+          }
+        }
+      }
+    },
+    "Very regular" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Very regular"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Muy regular"
           }
         }
       }
@@ -48913,6 +49654,74 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vigilando"
+          }
+        }
+      }
+    },
+    "Watching your breathing" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Watching your breathing"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vigilando tu respiración"
+          }
+        }
+      }
+    },
+    "Watching your temperature" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Watching your temperature"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vigilando tu temperatura"
+          }
+        }
+      }
+    },
+    "Watching, not voting" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Watching, not voting"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vigilan sin votar"
+          }
+        }
+      }
+    },
+    "Watching, not voting: breathing and temperature." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Watching, not voting: breathing and temperature."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vigilan sin votar: respiración y temperatura."
           }
         }
       }
@@ -50617,6 +51426,23 @@
         }
       }
     },
+    "Without Apple Health connected there's nothing to count." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Without Apple Health connected there's nothing to count."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin conexión con Apple Salud no hay nada que contar."
+          }
+        }
+      }
+    },
     "Without it the exercise won't count toward your muscle map or weekly volume." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -51959,69 +52785,19 @@
         }
       }
     },
-    "Your breathing woke up outside your pattern; temperature, where it always does." : {
+    "Your body at rest, read mainly from your resting HR against your own base. HRV is shown too, but it doesn't carry the vote. An approximation, not a diagnosis." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your breathing woke up outside your pattern; temperature, where it always does."
+            "value" : "Your body at rest, read mainly from your resting HR against your own base. HRV is shown too, but it doesn't carry the vote. An approximation, not a diagnosis."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tu respiración amaneció fuera de tu patrón; la temperatura, donde siempre."
-          }
-        }
-      }
-    },
-    "Your calendar isn't available on this device because of a system restriction." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your calendar isn't available on this device because of a system restriction."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu calendario no está disponible en este dispositivo por una restricción del sistema."
-          }
-        }
-      }
-    },
-    "Your ceiling is a reference from your recent load and how recovered you woke up. It is context, not a goal, and you can go past it." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your ceiling is a reference from your recent load and how recovered you woke up. It is context, not a goal, and you can go past it."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu techo es un punto de referencia según tu carga reciente y qué tan recuperado amaneciste. Es contexto, no un objetivo, y puedes pasarlo."
-          }
-        }
-      }
-    },
-    "your " : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "your "
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "tu "
+            "value" : "Tu cuerpo en reposo, leído sobre todo desde tu FC en reposo contra tu propia base. La VFC también se muestra, pero no carga el voto. Una aproximación, no un diagnóstico."
           }
         }
       }
@@ -52060,6 +52836,39 @@
         }
       }
     },
+    "Your breathing woke up outside your pattern; temperature, where it always does." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your breathing woke up outside your pattern; temperature, where it always does."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu respiración amaneció fuera de tu patrón; la temperatura, donde siempre."
+          }
+        }
+      }
+    },
+    "Your calendar isn't available on this device because of a system restriction." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your calendar isn't available on this device because of a system restriction."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu calendario no está disponible en este dispositivo por una restricción del sistema."
+          }
+        }
+      }
+    },
     "your calm signal, tied to your breathing" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -52073,6 +52882,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "tu señal de calma, ligada a la respiración"
+          }
+        }
+      }
+    },
+    "Your ceiling is a reference from your recent load and how recovered you woke up. It is context, not a goal, and you can go past it." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your ceiling is a reference from your recent load and how recovered you woke up. It is context, not a goal, and you can go past it."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu techo es un punto de referencia según tu carga reciente y qué tan recuperado amaneciste. Es contexto, no un objetivo, y puedes pasarlo."
           }
         }
       }
@@ -52484,6 +53310,112 @@
         }
       }
     },
+    "Your HRV by frequency" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your HRV by frequency"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu VFC por frecuencia"
+          }
+        }
+      }
+    },
+    "Your phone reviews your nights and flags three things: what's out of the ordinary (an anomaly), what's trending (up or down), and which metrics move together.\n\nAll from your own data." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu teléfono revisa tus noches y te avisa de tres cosas: lo que se sale de lo normal (una anomalía), lo que viene en tendencia (subiendo o bajando), y qué métricas se mueven juntas.\n\nTodo a partir de tus propios datos."
+          }
+        }
+      }
+    },
+    "Your plates can't hit %@ kg exactly, closest is %@ kg" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Your plates can't hit %1$@ kg exactly, closest is %2$@ kg"
+          }
+        }
+      }
+    },
+    "Your program" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your program"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu programa"
+          }
+        }
+      }
+    },
+    "Your Recovery is trending down (%lld days)" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your Recovery is trending down (%lld days)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu Recuperación viene bajando (%lld días)"
+          }
+        }
+      }
+    },
+    "Your recovery sums up how ready your body is today, from 0 to 100. It blends several signals from your night, your HRV above all, and compares them with your own average from recent weeks, not anyone else's." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your recovery sums up how ready your body is today, from 0 to 100. It blends several signals from your night, your HRV above all, and compares them with your own average from recent weeks, not anyone else's."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu recuperación resume qué tan listo está tu cuerpo hoy, del 0 al 100. Combina varias señales de tu noche, sobre todo tu VFC, y las compara con tu propio promedio de las últimas semanas, no con el de nadie más."
+          }
+        }
+      }
+    },
+    "your " : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "your "
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tu "
+          }
+        }
+      }
+    },
     "Your highest point today was at %@" : {
       "localizations" : {
         "en" : {
@@ -52580,23 +53512,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "tu VFC"
-          }
-        }
-      }
-    },
-    "Your HRV by frequency" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your HRV by frequency"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu VFC por frecuencia"
           }
         }
       }
@@ -52932,17 +53847,6 @@
         }
       }
     },
-    "Your phone reviews your nights and flags three things: what's out of the ordinary (an anomaly), what's trending (up or down), and which metrics move together.\n\nAll from your own data." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu teléfono revisa tus noches y te avisa de tres cosas: lo que se sale de lo normal (una anomalía), lo que viene en tendencia (subiendo o bajando), y qué métricas se mueven juntas.\n\nTodo a partir de tus propios datos."
-          }
-        }
-      }
-    },
     "Your plan" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -53006,33 +53910,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tu plan no trae horas sugeridas."
-          }
-        }
-      }
-    },
-    "Your plates can't hit %@ kg exactly, closest is %@ kg" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Your plates can't hit %1$@ kg exactly, closest is %2$@ kg"
-          }
-        }
-      }
-    },
-    "Your program" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your program"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu programa"
           }
         }
       }
@@ -53188,23 +54065,6 @@
         }
       }
     },
-    "Your Recovery is trending down (%lld days)" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your Recovery is trending down (%lld days)"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu Recuperación viene bajando (%lld días)"
-          }
-        }
-      }
-    },
     "Your Recovery is trending up (%lld days)" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -53218,23 +54078,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tu Recuperación viene subiendo (%lld días)"
-          }
-        }
-      }
-    },
-    "Your recovery sums up how ready your body is today, from 0 to 100. It blends several signals from your night, your HRV above all, and compares them with your own average from recent weeks, not anyone else's." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your recovery sums up how ready your body is today, from 0 to 100. It blends several signals from your night, your HRV above all, and compares them with your own average from recent weeks, not anyone else's."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu recuperación resume qué tan listo está tu cuerpo hoy, del 0 al 100. Combina varias señales de tu noche, sobre todo tu VFC, y las compara con tu propio promedio de las últimas semanas, no con el de nadie más."
           }
         }
       }
@@ -54103,6 +54946,23 @@
         }
       }
     },
+    "Your votes fell inside today. The verdict changes once the improvement repeats two days in a row." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your votes fell inside today. The verdict changes once the improvement repeats two days in a row."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoy tus votos cayeron dentro. El veredicto cambia cuando la mejora se repite dos días seguidos."
+          }
+        }
+      }
+    },
     "Your week" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -54427,737 +55287,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "σ"
-          }
-        }
-      }
-    },
-    "Watching, not voting" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Watching, not voting"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vigilan sin votar"
-          }
-        }
-      }
-    },
-    "Watching, not voting: breathing and temperature." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Watching, not voting: breathing and temperature."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vigilan sin votar: respiración y temperatura."
-          }
-        }
-      }
-    },
-    "learning your base" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "learning your base"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "aprendiendo tu base"
-          }
-        }
-      }
-    },
-    "acta.sub.fc" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "overnight · against your base"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "de la noche · contra tu base"
-          }
-        }
-      }
-    },
-    "acta.voto.in" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "in"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "dentro"
-          }
-        }
-      }
-    },
-    "acta.voto.out" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "out"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "fuera"
-          }
-        }
-      }
-    },
-    "Day reading" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Day reading"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lectura de día"
-          }
-        }
-      }
-    },
-    "The verdict for how you woke up: your signals against your own baseline." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The verdict for how you woke up: your signals against your own baseline."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El veredicto de cómo amaneciste: tus señales contra tu propia base."
-          }
-        }
-      }
-    },
-    "No sleep recorded last night: without its vote there's no quorum for a verdict." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No sleep recorded last night: without its vote there's no quorum for a verdict."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Anoche no se grabó sueño: sin su voto no hay quórum para un veredicto."
-          }
-        }
-      }
-    },
-    "Without Apple Health connected there's nothing to count." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Without Apple Health connected there's nothing to count."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sin conexión con Apple Salud no hay nada que contar."
-          }
-        }
-      }
-    },
-    "Nothing came in last night: no sleep and no resting signals." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nothing came in last night: no sleep and no resting signals."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Anoche no entró nada: ni sueño ni señales en reposo."
-          }
-        }
-      }
-    },
-    "The ballot is taking shape with your first nights." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The ballot is taking shape with your first nights."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La boleta se está formando con tus primeras noches."
-          }
-        }
-      }
-    },
-    "One vote fell outside and your night HRV is trending down: that's why today asks for recovery." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "One vote fell outside and your night HRV is trending down: that's why today asks for recovery."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Un voto cayó fuera y tu VFC nocturna viene bajando: por eso hoy pide recuperar."
-          }
-        }
-      }
-    },
-    "A vote fell outside today. A new verdict has to repeat two days in a row to replace yesterday's." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "A vote fell outside today. A new verdict has to repeat two days in a row to replace yesterday's."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hoy hubo un voto fuera. Un veredicto nuevo tiene que repetirse dos días seguidos para reemplazar al de ayer."
-          }
-        }
-      }
-    },
-    "Both votes fell outside today. A new verdict has to repeat two days in a row to replace yesterday's." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Both votes fell outside today. A new verdict has to repeat two days in a row to replace yesterday's."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hoy los dos votos cayeron fuera. Un veredicto nuevo tiene que repetirse dos días seguidos para reemplazar al de ayer."
-          }
-        }
-      }
-    },
-    "Your votes fell inside today. The verdict changes once the improvement repeats two days in a row." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your votes fell inside today. The verdict changes once the improvement repeats two days in a row."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hoy tus votos cayeron dentro. El veredicto cambia cuando la mejora se repite dos días seguidos."
-          }
-        }
-      }
-    },
-    "Both of your votes fell inside." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Both of your votes fell inside."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tus dos votos cayeron dentro."
-          }
-        }
-      }
-    },
-    "Sleep voted outside; autonomic, inside." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sleep voted outside; autonomic, inside."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El sueño votó fuera; la FC en reposo, dentro."
-          }
-        }
-      }
-    },
-    "Autonomic voted outside; sleep, inside." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Autonomic voted outside; sleep, inside."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La FC en reposo votó fuera; el sueño, dentro."
-          }
-        }
-      }
-    },
-    "Both of your votes fell outside." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Both of your votes fell outside."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tus dos votos cayeron fuera."
-          }
-        }
-      }
-    },
-    "acta.resumen.full.clave" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "inside"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "dentro"
-          }
-        }
-      }
-    },
-    "acta.resumen.caution.clave" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "voted outside"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "votó fuera"
-          }
-        }
-      }
-    },
-    "acta.resumen.easy.clave" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "outside"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "fuera"
-          }
-        }
-      }
-    },
-    "acta.resumen.hist.fuera.clave" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "outside today"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "fuera hoy"
-          }
-        }
-      }
-    },
-    "acta.resumen.hist.dentro.clave" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "inside today"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "dentro hoy"
-          }
-        }
-      }
-    },
-    "acta.resumen.tendencia.clave" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "trending down"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "viene bajando"
-          }
-        }
-      }
-    },
-    "Sleep with your Apple Watch and tomorrow the ballot fills itself." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sleep with your Apple Watch and tomorrow the ballot fills itself."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Duerme con tu Apple Watch y mañana la boleta se llena sola."
-          }
-        }
-      }
-    },
-    "Both out at once: today is for recovering, not pushing." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Both out at once: today is for recovering, not pushing."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Los dos fuera a la vez: hoy toca recuperar, no empujar."
-          }
-        }
-      }
-    },
-    "One vote out lightens the day; it doesn't sink it." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "One vote out lightens the day; it doesn't sink it."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Un voto fuera aligera el día; no lo tumba."
-          }
-        }
-      }
-    },
-    "acta.metodo.fc" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your resting HR is your lowest pulse of the night, measured by your Apple Watch; when there's no overnight reading, Cénit uses Apple Health's resting heart rate."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu FC en reposo es tu pulso más bajo de la noche, medido con el Apple Watch; cuando no hay lectura nocturna, Cénit usa la FC en reposo de Apple."
-          }
-        }
-      }
-    },
-    "acta.metodo.votos" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your sleep and your resting HR are read as separate votes, so a bad night doesn't count twice. Your breathing and temperature only watch; they don't vote here."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu sueño y tu FC en reposo se leen como votos separados, para que una mala noche no cuente dos veces. Tu respiración y tu temperatura solo vigilan; aquí no votan."
-          }
-        }
-      }
-    },
-    "acta.metodo.histeresis" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "A new verdict has to repeat two days in a row before it replaces the previous one."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Un veredicto nuevo tiene que repetirse dos días seguidos antes de reemplazar al anterior."
-          }
-        }
-      }
-    },
-    "acta.metodo.cita" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "O'Grady et al., 2024 · Task Force, 1996 · Plews et al., 2013. Approximate, no clinical claim."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "O'Grady et al., 2024 · Task Force, 1996 · Plews et al., 2013. Aproximado, sin fin clínico."
-          }
-        }
-      }
-    },
-    "%@, voted inside, %@." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@, voted inside, %@."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@, votó dentro, %@."
-          }
-        }
-      }
-    },
-    "%@, read inside, %@." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@, read inside, %@."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@, se leyó dentro, %@."
-          }
-        }
-      }
-    },
-    "%@, voted outside, %@, outside your range." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@, voted outside, %@, outside your range."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@, votó fuera, %@, fuera de tu rango."
-          }
-        }
-      }
-    },
-    "%@, read outside, %@, outside your range." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@, read outside, %@, outside your range."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@, se leyó fuera, %@, fuera de tu rango."
-          }
-        }
-      }
-    },
-    "%@, no vote yet, %@." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@, no vote yet, %@."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@, sin voto todavía, %@."
-          }
-        }
-      }
-    },
-    "%@, no data, %@." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@, no data, %@."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@, sin dato, %@."
-          }
-        }
-      }
-    },
-    "acta.resumen.caution.sueno" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sleep voted outside; resting HR, inside."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El sueño votó fuera; la FC en reposo, dentro."
-          }
-        }
-      }
-    },
-    "acta.resumen.caution.auto" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Resting HR voted outside; sleep, inside."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La FC en reposo votó fuera; el sueño, dentro."
-          }
-        }
-      }
-    },
-    "Your body at rest, read mainly from your resting HR against your own base. HRV is shown too, but it doesn't carry the vote. An approximation, not a diagnosis." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your body at rest, read mainly from your resting HR against your own base. HRV is shown too, but it doesn't carry the vote. An approximation, not a diagnosis."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu cuerpo en reposo, leído sobre todo desde tu FC en reposo contra tu propia base. La VFC también se muestra, pero no carga el voto. Una aproximación, no un diagnóstico."
-          }
-        }
-      }
-    },
-    "reposo.metodo.vfc" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "HRV is shown for context but doesn't vote here: Apple's all-day HRV is too noisy to trust. Breathing isn't in this list; the sentinel watches it alongside your temperature."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La VFC se muestra de contexto pero aquí no vota: la VFC de todo el día de Apple es demasiado ruidosa para confiar en ella. La respiración no está en esta lista, la vigila el Guardián junto con tu temperatura."
           }
         }
       }

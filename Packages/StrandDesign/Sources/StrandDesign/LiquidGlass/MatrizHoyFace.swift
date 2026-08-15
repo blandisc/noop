@@ -520,6 +520,22 @@ public struct MatrizHoyFace: View {
         return s.valor
     }
 
+    /// Gemelos para RENGLONES (Skin temp/Breathing, dueño 2026-08-15): el arrastre cambia
+    /// valor y fecha en el encabezado del renglón, igual que en las secciones.
+    private func valorEfectivoRenglon(_ r: MatrizRenglon) -> String {
+        if scrub?.id == r.id, let i = scrub?.idx, let n = r.scrubNoches, n.indices.contains(i) {
+            return n[i].valor
+        }
+        return r.valor
+    }
+
+    private func sublabelEfectivoRenglon(_ r: MatrizRenglon) -> String? {
+        if scrub?.id == r.id, let i = scrub?.idx, let n = r.scrubNoches, n.indices.contains(i) {
+            return n[i].sublabel
+        }
+        return r.sublabel
+    }
+
     /// Sublabel a mostrar: la frase de la noche del scrub si aplica, si no la de HOY.
     private func sublabelEfectivo(_ s: MatrizSeccion) -> String? {
         if scrub?.id == s.id, let i = scrub?.idx, let n = s.scrubNoches, n.indices.contains(i) {
@@ -592,23 +608,28 @@ public struct MatrizHoyFace: View {
     }
 
     /// El encabezado del renglón (título · valor · chevron + estado). Compartido por los dos
-    /// caminos (con/sin scrub). @ViewBuilder para que la VStack del llamador reparta el spacing.
-    @ViewBuilder
+    /// caminos (con/sin scrub). VStack PROPIO — devolver la tupla suelta dejaba que el label
+    /// del Button la acomodara HORIZONTAL y el sublabel se subía junto al título (regresión
+    /// cazada en captura, 2026-08-15).
     private func encabezadoRenglon(_ r: MatrizRenglon) -> some View {
+        // El valor/fecha EFECTIVOS: la noche del scrub si el dedo está leyendo este renglón.
+        let valor = valorEfectivoRenglon(r)
+        let sub = sublabelEfectivoRenglon(r)
         // Sentence-case a propósito: los renglones son SUB-señales del guardián (voz
         // subordinada); el ritmo/baseline sí es el mismo del encabezado.
+        return VStack(alignment: .leading, spacing: MatrizTokens.renglonV) {
         HStack(alignment: .firstTextBaseline, spacing: MatrizTokens.selloTexto) {
             Text(r.titulo)
                 .font(LiquidType.tituloFila)
                 .foregroundStyle(LiquidColor.tinta700)
             Spacer(minLength: MatrizTokens.selloTexto)
             HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s050) {
-                Text(r.valor)
+                Text(valor)
                     .font(LiquidType.valorM)
                     .foregroundStyle(r.hue)
                     .monospacedDigit()
                     .contentTransition(.numericText())
-                    .animation(.snappy, value: r.valor)
+                    .animation(.snappy, value: valor)
                 if let u = r.unidad {
                     Text(u)
                         .font(LiquidType.caption)
@@ -623,12 +644,15 @@ public struct MatrizHoyFace: View {
             LiquidIcon(.chevron, size: 8, color: LiquidColor.tinta500)
                 .alignmentGuide(.firstTextBaseline) { d in d.height * 0.85 }
         }
-        if let sub = r.sublabel {
-            // P2: el estado en palabras — el número deja de asustar.
+        if let sub {
+            // P2: el estado en palabras — el número deja de asustar. Con el scrub, la
+            // fecha cruza suave (es texto, no dígitos); bajo Reduce Motion salta.
             Text(sub)
                 .font(LiquidType.caption)
                 .foregroundStyle(LiquidColor.tinta500)
                 .fixedSize(horizontal: false, vertical: true)
+                .animation(reduceMotion ? nil : .easeInOut(duration: 0.15), value: sub)
+        }
         }
     }
 
