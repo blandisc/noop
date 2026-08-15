@@ -277,11 +277,30 @@ extension LiquidHoyBuilder {
 
         // —— 4. Carga | Esfuerzo ——
         let pCarga = razonCarga  // razón natural (API del riel: 0.8…1.3)
-        // Estela: 5 posiciones PREVIAS (sin HOY), viejo → nuevo.
+        // Estela: 5 posiciones PREVIAS (sin HOY), viejo → nuevo. Pareo día+valor para que el
+        // scrub (dueño /inject) alinee 1:1 con los puntos que dibuja la colina.
         let keysEstelaPrev = Array(keys.dropLast().suffix(matrizVentanaEstela))
-        let estela: [Double] = keysEstelaPrev.compactMap { cargaSeriesByDay[$0] }
+        let estelaPairs: [(day: String, v: Double)] = keysEstelaPrev.compactMap { k in
+            cargaSeriesByDay[k].map { (k, $0) }
+        }
+        let estela: [Double] = estelaPairs.map(\.v)
         let valorCarga = HoyGramatica.valorODash(razonCarga) { String(format: "%.2f", $0) }
         let estadoCargaKey = HoyGramatica.estadoCarga(razon: razonCarga)
+        // Scrub de Carga (dueño /inject): la colina es eje de VALOR, así que el cursor mueve el
+        // punto a la posición de ESE día en la cuesta. Ventana = estela con dato + HOY.
+        func offsetHoyCarga(_ day: String) -> Int {
+            guard let idx = keys.lastIndex(of: day) else { return 0 }
+            return max(0, (keys.count - 1) - idx)
+        }
+        var scrubCarga: [MatrizSeccion.ScrubNoche] = estelaPairs.map { pair in
+            let fecha = weekdayLabel(offsetFromToday: offsetHoyCarga(pair.day), now: i.now,
+                                     calendar: i.calendar, formatter: diaFmt)
+            return .init(valor: String(format: "%.2f", pair.v), sublabel: fecha)
+        }
+        scrubCarga.append(.init(
+            valor: valorCarga,
+            sublabel: weekdayLabel(offsetFromToday: 0, now: i.now,
+                                   calendar: i.calendar, formatter: diaFmt)))
         let seccionCarga = MatrizSeccion(
             id: "carga", hue: LiquidColor.verdePrimario,
             titulo: String(localized: "Load"),
@@ -290,7 +309,8 @@ extension LiquidHoyBuilder {
             chartID: "matriz-carga",
             chart: .colina(p: pCarga,
                              zona: ReadinessEngine.acwrSweetSpotLow...ReadinessEngine.acwrSweetSpotHigh,
-                             estela: estela, alertaHoy: alertaCarga))
+                             estela: estela, alertaHoy: alertaCarga),
+            scrubNoches: scrubCarga)
 
         let keysEsf = Array(keys.suffix(matrizVentanaEsfuerzo))
         let ptsEsf: [Double?] = keysEsf.map { byDay[$0]?.strain }
@@ -382,7 +402,7 @@ extension LiquidHoyBuilder {
         let valorPasos = HoyGramatica.valorODash(ptsPasos.last.flatMap { $0 },
                                                  formato: HoyGramatica.formatoMiles)
         let seccionPasos = MatrizSeccion(
-            id: "steps", hue: LiquidColor.tinta700,
+            id: "steps", hue: LiquidColor.ambarClaro,
             titulo: String(localized: "Steps"),
             valor: valorPasos, terciaria: true,
             chartID: "matriz-steps",

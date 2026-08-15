@@ -635,7 +635,7 @@ public struct MatrizHoyFace: View {
                               hue: hue, alertaHoy: alerta)
         case .colina(let p, let zona, let estela, let alertaHoy):
             MatrizColina(chartID: chartID, p: p, zona: zona, estela: estela, hue: hue,
-                           alertaHoy: alertaHoy)
+                           alertaHoy: alertaHoy, resaltado: resaltado)
         case .barrasMini(let valores):
             MatrizBarrasMini(chartID: chartID, valores: valores, hue: hue, resaltado: resaltado)
         case .escalerita(let niveles):

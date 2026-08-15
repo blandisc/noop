@@ -115,7 +115,7 @@ public struct OrbeVivo: View {
         let fase = Double(MatrizDither.semilla(chartID: faseID, index: 0) % 628) / 100.0
         // La luna no rota ni tiembla: motas fijas (dueño, FER-55).
         let quieta = forma == .luna
-        let rot = quieta ? fase : fase + t * 0.12
+        let rot = quieta ? fase : fase + t * 0.24   // vivo: giro perceptible (antes 0.12)
         for (i, dir) in direcciones(cuenta).enumerated() {
             let p = EcosistemaSimulacion.particula(
                 dir: dir, indice: i, centro: centro, radio: radio,

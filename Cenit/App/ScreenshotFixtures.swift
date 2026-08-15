@@ -199,8 +199,10 @@ enum ScreenshotFixtures {
                 strain: strain,
                 exerciseCount: idx % 3,
                 spo2Pct: spo2,
-                skinTempDevC: 0.05,                 // flat ⇒ no skin-temp flag
-                respRateBpm: 14.5,                  // flat ⇒ SD 0 ⇒ no respiratory flag
+                // Ola nocturna DENTRO de la banda típica (temp ±0.4, resp 12–16) — natural, NO
+                // dispara flag: los sparklines del guardián se leen como datos reales, no una raya.
+                skinTempDevC: 0.05 + wobble(idx, 0.14, 0.9),
+                respRateBpm: 14.5 + wobble(idx, 0.85, 0.5),
                 steps: steps,
                 activeKcalEst: 480 + wobble(idx, 120, 0.6)
             ))
