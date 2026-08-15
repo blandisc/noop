@@ -455,16 +455,19 @@ public struct MatrizLineaSerena: View {
     private let dominio: ClosedRange<Double>
     private let hue: Color
     private let alertaHoy: MedidorLunar.Alerta
+    /// Índice leído por el scrub (Skin temp/Breathing, dueño 2026-08-15): cursor + punto pleno.
+    private let resaltado: Int?
 
     public init(chartID: String, puntos: [Double?], banda: ClosedRange<Double>?,
                 dominio: ClosedRange<Double>, hue: Color,
-                alertaHoy: MedidorLunar.Alerta = .ninguna) {
+                alertaHoy: MedidorLunar.Alerta = .ninguna, resaltado: Int? = nil) {
         self.chartID = chartID
         self.puntos = puntos
         self.banda = banda
         self.dominio = dominio
         self.hue = hue
         self.alertaHoy = alertaHoy
+        self.resaltado = resaltado
     }
 
     public var body: some View {
@@ -514,6 +517,20 @@ public struct MatrizLineaSerena: View {
             MatrizChartDraw.marcarHoy(ctx, puntos: puntos, count: count,
                                       width: size.width, dominio: dom,
                                       height: size.height, hue: hue, alerta: alertaHoy)
+
+            // Scrub (dueño 2026-08-15): cursor + punto pleno en la noche leída. Serie de tiempo:
+            // el índice mapea a x uniforme, el cursor sigue al dedo.
+            if let r = resaltado, puntos.indices.contains(r) {
+                let x = count > 1 ? size.width * CGFloat(r) / CGFloat(count - 1) : size.width / 2
+                if let v = puntos[r] {
+                    let y = MatrizChartDraw.yTop(v, domain: dom, height: size.height)
+                    MatrizChartDraw.punto(ctx, en: CGPoint(x: x, y: y),
+                                          radio: MatrizTokens.hoyRadio, hue: hue,
+                                          alfa: MatrizChartDraw.hoyAlfa)
+                }
+                MatrizChartDraw.cursorScrub(ctx, x: x, height: size.height, hue: hue,
+                                            fantasma: puntos[r] == nil)
+            }
         }
         .frame(maxWidth: .infinity, minHeight: MatrizChartDraw.defaultHeight,
                idealHeight: MatrizChartDraw.defaultHeight)

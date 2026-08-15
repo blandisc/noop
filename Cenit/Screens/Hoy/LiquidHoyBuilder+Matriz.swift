@@ -217,6 +217,23 @@ extension LiquidHoyBuilder {
         let valorResp = HoyGramatica.valorODash(ptsResp.last.flatMap { $0 }) {
             String(format: "%.1f", $0)
         }
+        // Scrub de temp/resp (dueño 2026-08-15): día + lectura de esa noche, alineado 1:1 con la
+        // serie que dibuja la línea serena. Serie de tiempo → el scrub se lee natural (a diferencia
+        // de la colina de Carga, que es eje de valor y por eso NO se arrastra).
+        func scrubGuardian(_ pts: [Double?], fmt: (Double) -> String) -> [MatrizSeccion.ScrubNoche] {
+            keys20.enumerated().map { idx, _ in
+                let fecha = weekdayLabel(offsetFromToday: keys20.count - 1 - idx, now: i.now,
+                                         calendar: i.calendar, formatter: diaFmt)
+                guard let v = pts[idx] else {
+                    return .init(valor: "—",
+                                 sublabel: String(format: String(localized: "matriz.scrub.sinlectura",
+                                                                 defaultValue: "%@ · no reading"), fecha))
+                }
+                return .init(valor: fmt(v), sublabel: fecha)
+            }
+        }
+        let scrubTemp = scrubGuardian(ptsTemp) { String(format: "%+.1f°", $0) }
+        let scrubResp = scrubGuardian(ptsResp) { String(format: "%.1f", $0) }
         // Banda ± del guardián: corte térmico público (± thermalOutC) y resp ~ base±.
         let thermalBand = Preparedness.Config.default.thermalOutC
         let seccionGuardian = MatrizSeccion(
@@ -255,7 +272,8 @@ extension LiquidHoyBuilder {
                     chartID: "matriz-guardian-temp",
                     chart: .lineaSerena(puntos: ptsTemp, banda: -thermalBand...thermalBand,
                                         dominio: -1.5...1.5, alertaHoy: alertaGuardian),
-                    subrayado: alertaGuardian),
+                    subrayado: alertaGuardian,
+                    scrubNoches: scrubTemp),
                 MatrizRenglon(
                     id: "resp",
                     titulo: String(localized: "Breathing"),
@@ -269,7 +287,8 @@ extension LiquidHoyBuilder {
                     chart: .lineaSerena(puntos: ptsResp, banda: nil,
                                         dominio: dominioLinea(ptsResp, base: nil, fallback: 8...22),
                                         alertaHoy: alertaGuardian),
-                    subrayado: alertaGuardian),
+                    subrayado: alertaGuardian,
+                    scrubNoches: scrubResp),
             ],
             // FER-56 · Ola 3: el sello VIVO reacciona al MISMO estado que el chip (nunca lo
             // contradice) — se separa y tiñe cuando el par se sale, calla en calma.
@@ -277,30 +296,14 @@ extension LiquidHoyBuilder {
 
         // —— 4. Carga | Esfuerzo ——
         let pCarga = razonCarga  // razón natural (API del riel: 0.8…1.3)
-        // Estela: 5 posiciones PREVIAS (sin HOY), viejo → nuevo. Pareo día+valor para que el
-        // scrub (dueño /inject) alinee 1:1 con los puntos que dibuja la colina.
+        // Estela: 5 posiciones PREVIAS (sin HOY), viejo → nuevo.
         let keysEstelaPrev = Array(keys.dropLast().suffix(matrizVentanaEstela))
-        let estelaPairs: [(day: String, v: Double)] = keysEstelaPrev.compactMap { k in
-            cargaSeriesByDay[k].map { (k, $0) }
-        }
-        let estela: [Double] = estelaPairs.map(\.v)
+        let estela: [Double] = keysEstelaPrev.compactMap { cargaSeriesByDay[$0] }
         let valorCarga = HoyGramatica.valorODash(razonCarga) { String(format: "%.2f", $0) }
         let estadoCargaKey = HoyGramatica.estadoCarga(razon: razonCarga)
-        // Scrub de Carga (dueño /inject): la colina es eje de VALOR, así que el cursor mueve el
-        // punto a la posición de ESE día en la cuesta. Ventana = estela con dato + HOY.
-        func offsetHoyCarga(_ day: String) -> Int {
-            guard let idx = keys.lastIndex(of: day) else { return 0 }
-            return max(0, (keys.count - 1) - idx)
-        }
-        var scrubCarga: [MatrizSeccion.ScrubNoche] = estelaPairs.map { pair in
-            let fecha = weekdayLabel(offsetFromToday: offsetHoyCarga(pair.day), now: i.now,
-                                     calendar: i.calendar, formatter: diaFmt)
-            return .init(valor: String(format: "%.2f", pair.v), sublabel: fecha)
-        }
-        scrubCarga.append(.init(
-            valor: valorCarga,
-            sublabel: weekdayLabel(offsetFromToday: 0, now: i.now,
-                                   calendar: i.calendar, formatter: diaFmt)))
+        // Carga NO se arrastra por día (dueño 2026-08-15): la colina es eje de VALOR, no de
+        // tiempo — el cursor saltaba por valor en vez de seguir el dedo. El scrub queda para las
+        // series de tiempo (Esfuerzo, Estrés, Skin temp, Breathing).
         let seccionCarga = MatrizSeccion(
             id: "carga", hue: LiquidColor.verdePrimario,
             titulo: String(localized: "Load"),
@@ -309,8 +312,7 @@ extension LiquidHoyBuilder {
             chartID: "matriz-carga",
             chart: .colina(p: pCarga,
                              zona: ReadinessEngine.acwrSweetSpotLow...ReadinessEngine.acwrSweetSpotHigh,
-                             estela: estela, alertaHoy: alertaCarga),
-            scrubNoches: scrubCarga)
+                             estela: estela, alertaHoy: alertaCarga))
 
         let keysEsf = Array(keys.suffix(matrizVentanaEsfuerzo))
         let ptsEsf: [Double?] = keysEsf.map { byDay[$0]?.strain }

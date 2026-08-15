@@ -125,15 +125,19 @@ public struct MatrizRenglon: Sendable, Identifiable, Equatable {
     public let chartID: String
     public let chart: MatrizChartPayload
     public let subrayado: MedidorLunar.Alerta
+    /// Lecturas por-noche para el scrub del renglón (Skin temp/Breathing, dueño 2026-08-15).
+    public let scrubNoches: [MatrizSeccion.ScrubNoche]?
 
     public init(id: String, titulo: String, valor: String, unidad: String? = nil,
                 sublabel: String? = nil,
                 hue: Color, chartID: String, chart: MatrizChartPayload,
-                subrayado: MedidorLunar.Alerta = .ninguna) {
+                subrayado: MedidorLunar.Alerta = .ninguna,
+                scrubNoches: [MatrizSeccion.ScrubNoche]? = nil) {
         self.id = id; self.titulo = titulo; self.valor = valor; self.unidad = unidad
         self.sublabel = sublabel
         self.hue = hue
         self.chartID = chartID; self.chart = chart; self.subrayado = subrayado
+        self.scrubNoches = scrubNoches
     }
 
     public static func == (lhs: MatrizRenglon, rhs: MatrizRenglon) -> Bool {
@@ -141,6 +145,7 @@ public struct MatrizRenglon: Sendable, Identifiable, Equatable {
             && lhs.chartID == rhs.chartID && lhs.chart == rhs.chart
             && lhs.subrayado == rhs.subrayado && lhs.hue == rhs.hue
             && lhs.unidad == rhs.unidad && lhs.sublabel == rhs.sublabel
+            && lhs.scrubNoches == rhs.scrubNoches
     }
 }
 
@@ -377,8 +382,8 @@ public struct MatrizHoyFace: View {
                 chartView(s.chart, hue: s.hue, chartID: s.chartID,
                           resaltado: scrub?.id == s.id ? scrub?.idx : nil)
                     .frame(height: Self.chartAltura(s.chart))
-                    .modifier(ScrubGesto(seccion: s, scrub: $scrub, tick: $scrubTick,
-                                             onTap: { tocar(s.id) }))
+                    .modifier(ScrubGesto(id: s.id, noches: s.scrubNoches ?? [], chart: s.chart,
+                                         scrub: $scrub, tick: $scrubTick, onTap: { tocar(s.id) }))
                     // VoiceOver no arrastra: la gráfica es su propio control ajustable.
                     .accessibilityElement()
                     .accessibilityLabel(Text(verbatim: scrubA11yLabel(s)))
@@ -548,56 +553,83 @@ public struct MatrizHoyFace: View {
         .minimumScaleFactor(0.6)
     }
 
+    @ViewBuilder
     private func renglónView(_ r: MatrizRenglon) -> some View {
-        Button {
-            onTapSeccion(r.id)
-        } label: {
+        if let noches = r.scrubNoches, noches.count > 1 {
+            // CON scrub (Skin temp/Breathing, dueño 2026-08-15): el encabezado es su botón
+            // (abre la hoja) y la gráfica lleva el arrastre — separados, como las secciones con
+            // scrub, para que un toque abra y un arrastre lea sin pelear.
             VStack(alignment: .leading, spacing: MatrizTokens.renglonV) {
-                // Sentence-case a propósito: los renglones son SUB-señales del guardián
-                // (voz subordinada); el ritmo/baseline sí es el mismo del encabezado.
-                HStack(alignment: .firstTextBaseline, spacing: MatrizTokens.selloTexto) {
-                    Text(r.titulo)
-                        .font(LiquidType.tituloFila)
-                        .foregroundStyle(LiquidColor.tinta700)
-                    Spacer(minLength: MatrizTokens.selloTexto)
-                    HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s050) {
-                        Text(r.valor)
-                            .font(LiquidType.valorM)
-                            .foregroundStyle(r.hue)
-                            .monospacedDigit()
-                            .contentTransition(.numericText())
-                            .animation(.snappy, value: r.valor)
-                        if let u = r.unidad {
-                            Text(u)
-                                .font(LiquidType.caption)
-                                .foregroundStyle(r.hue)
-                        }
-                    }
-                    .underline(r.subrayado != .ninguna,
-                               color: r.subrayado == .alarma
-                               ? LiquidColor.negativo : LiquidColor.atencion)
-                    // Chevron gemelo del encabezado: el renglón también abre su hoja
-                    // y sus numerales alinean con los del header (Grok simetría R1).
-                    LiquidIcon(.chevron, size: 8, color: LiquidColor.tinta500)
-                        .alignmentGuide(.firstTextBaseline) { d in d.height * 0.85 }
+                Button { onTapSeccion(r.id) } label: {
+                    encabezadoRenglon(r).contentShape(Rectangle())
                 }
-                if let sub = r.sublabel {
-                    // P2: el estado en palabras — el número deja de asustar.
-                    Text(sub)
-                        .font(LiquidType.caption)
-                        .foregroundStyle(LiquidColor.tinta500)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                chartView(r.chart, hue: r.hue, chartID: r.chartID)
+                .buttonStyle(.plain)
+                chartView(r.chart, hue: r.hue, chartID: r.chartID,
+                          resaltado: scrub?.id == r.id ? scrub?.idx : nil)
                     .frame(height: MatrizTokens.alturaRenglon)
+                    .modifier(ScrubGesto(id: r.id, noches: noches, chart: r.chart,
+                                         scrub: $scrub, tick: $scrubTick,
+                                         onTap: { onTapSeccion(r.id) }))
             }
-            .contentShape(Rectangle())
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(Text(verbatim: "\(r.titulo), \(r.valor)"))
+            .accessibilityIdentifier("matriz-renglon-\(r.id)")
+        } else {
+            Button { onTapSeccion(r.id) } label: {
+                VStack(alignment: .leading, spacing: MatrizTokens.renglonV) {
+                    encabezadoRenglon(r)
+                    chartView(r.chart, hue: r.hue, chartID: r.chartID)
+                        .frame(height: MatrizTokens.alturaRenglon)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(Text(verbatim: "\(r.titulo), \(r.valor)"))
+            .accessibilityAddTraits(.isButton)
+            .accessibilityIdentifier("matriz-renglon-\(r.id)")
         }
-        .buttonStyle(.plain)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(Text(verbatim: "\(r.titulo), \(r.valor)"))
-        .accessibilityAddTraits(.isButton)
-        .accessibilityIdentifier("matriz-renglon-\(r.id)")
+    }
+
+    /// El encabezado del renglón (título · valor · chevron + estado). Compartido por los dos
+    /// caminos (con/sin scrub). @ViewBuilder para que la VStack del llamador reparta el spacing.
+    @ViewBuilder
+    private func encabezadoRenglon(_ r: MatrizRenglon) -> some View {
+        // Sentence-case a propósito: los renglones son SUB-señales del guardián (voz
+        // subordinada); el ritmo/baseline sí es el mismo del encabezado.
+        HStack(alignment: .firstTextBaseline, spacing: MatrizTokens.selloTexto) {
+            Text(r.titulo)
+                .font(LiquidType.tituloFila)
+                .foregroundStyle(LiquidColor.tinta700)
+            Spacer(minLength: MatrizTokens.selloTexto)
+            HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s050) {
+                Text(r.valor)
+                    .font(LiquidType.valorM)
+                    .foregroundStyle(r.hue)
+                    .monospacedDigit()
+                    .contentTransition(.numericText())
+                    .animation(.snappy, value: r.valor)
+                if let u = r.unidad {
+                    Text(u)
+                        .font(LiquidType.caption)
+                        .foregroundStyle(r.hue)
+                }
+            }
+            .underline(r.subrayado != .ninguna,
+                       color: r.subrayado == .alarma
+                       ? LiquidColor.negativo : LiquidColor.atencion)
+            // Chevron gemelo del encabezado: el renglón también abre su hoja y sus numerales
+            // alinean con los del header (Grok simetría R1).
+            LiquidIcon(.chevron, size: 8, color: LiquidColor.tinta500)
+                .alignmentGuide(.firstTextBaseline) { d in d.height * 0.85 }
+        }
+        if let sub = r.sublabel {
+            // P2: el estado en palabras — el número deja de asustar.
+            Text(sub)
+                .font(LiquidType.caption)
+                .foregroundStyle(LiquidColor.tinta500)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 
     private func chipView(_ chip: MatrizHoyModel.ChipGuardian) -> some View {
@@ -632,7 +664,7 @@ public struct MatrizHoyFace: View {
                         hue: hue, alertaHoy: alerta, resaltado: resaltado)
         case .lineaSerena(let pts, let banda, let dom, let alerta):
             MatrizLineaSerena(chartID: chartID, puntos: pts, banda: banda, dominio: dom,
-                              hue: hue, alertaHoy: alerta)
+                              hue: hue, alertaHoy: alerta, resaltado: resaltado)
         case .colina(let p, let zona, let estela, let alertaHoy):
             MatrizColina(chartID: chartID, p: p, zona: zona, estela: estela, hue: hue,
                            alertaHoy: alertaHoy, resaltado: resaltado)
@@ -772,21 +804,23 @@ enum ScrubMapeo {
 }
 
 private struct ScrubGesto: ViewModifier {
-    let seccion: MatrizSeccion
+    // Trabaja con secciones Y renglones (guardián): recibe las piezas, no un `MatrizSeccion`.
+    let id: String
+    let noches: [MatrizSeccion.ScrubNoche]
+    let chart: MatrizChartPayload
     @Binding var scrub: (id: String, idx: Int)?
     @Binding var tick: Int
     var onTap: () -> Void = {}
     /// La regla reserva su zona a la derecha: el mapeo del dedo debe usar el MISMO
     /// ancho útil que usa la curva, o el índice se corre cerca del margen.
     private var insetDerecho: CGFloat {
-        if case .regla = seccion.chart { return MatrizTokens.reglaZona }
+        if case .regla = chart { return MatrizTokens.reglaZona }
         return MatrizTokens.chartInset
     }
     /// Vivo mientras el dedo arrastra; SwiftUI lo devuelve a `false` al terminar O cancelar.
     @GestureState private var arrastrando = false
 
     func body(content: Content) -> some View {
-        let noches = seccion.scrubNoches ?? []
         content.overlay(
             GeometryReader { geo in
                 Color.clear
@@ -810,9 +844,9 @@ private struct ScrubGesto: ViewModifier {
                                 let i = ScrubMapeo.indice(
                                     x: g.location.x, inset: inset, ancho: w,
                                     count: noches.count,
-                                    esSerie: ScrubMapeo.esSerie(seccion.chart))
-                                if scrub?.id != seccion.id || scrub?.idx != i {
-                                    scrub = (seccion.id, i)
+                                    esSerie: ScrubMapeo.esSerie(chart))
+                                if scrub?.id != id || scrub?.idx != i {
+                                    scrub = (id, i)
                                     tick &+= 1   // pulso háptico por noche cruzada
                                 }
                             }
@@ -823,7 +857,7 @@ private struct ScrubGesto: ViewModifier {
         // Red de seguridad ante cancelación: si el gesto muere sin `onEnded`, el estado
         // vuelve a false y aquí soltamos el scrub (la celda regresa a HOY).
         .onChange(of: arrastrando) { _, activo in
-            if !activo, scrub?.id == seccion.id { scrub = nil }
+            if !activo, scrub?.id == id { scrub = nil }
         }
     }
 }
