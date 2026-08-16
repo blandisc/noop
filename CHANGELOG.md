@@ -20,6 +20,11 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **Hoy: las gráficas de temperatura y respiración son ya la misma familia que la tarjeta del guardián, y Carga se arrastra por día / Today: skin-temp and breathing sparklines now share the guardian card's language; Load scrubs by day** (FER-72).
+  **ES** — Trazo pleno, un punto por noche, HOY como anillo hueco — con los mismos tokens que la tarjeta que abre «Te vigila». Y la colina de Carga se arrastra: cada día muestra su razón, estado y fecha.
+  **EN** — Full stroke, one dot per night, hollow "today" ring — same tokens as the guardian card. Load's hill now scrubs by day (ratio · state · date).
+  ([MatrizChart.swift](Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/MatrizChart.swift))
+
 ## Unreleased
 
 - **Hoy: la puerta al acta es ahora un ⓘ junto al veredicto / Today: the verdict's "how I got here" is now an ⓘ next to the word** (FER-71).
