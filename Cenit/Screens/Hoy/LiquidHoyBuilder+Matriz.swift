@@ -296,14 +296,36 @@ extension LiquidHoyBuilder {
 
         // —— 4. Carga | Esfuerzo ——
         let pCarga = razonCarga  // razón natural (API del riel: 0.8…1.3)
-        // Estela: 5 posiciones PREVIAS (sin HOY), viejo → nuevo.
+        // Estela: 5 posiciones PREVIAS (sin HOY), viejo → nuevo. Pareo día+valor para que el
+        // scrub alinee 1:1 con los puntos que dibuja la colina.
         let keysEstelaPrev = Array(keys.dropLast().suffix(matrizVentanaEstela))
-        let estela: [Double] = keysEstelaPrev.compactMap { cargaSeriesByDay[$0] }
+        let estelaPairs: [(day: String, v: Double)] = keysEstelaPrev.compactMap { k in
+            cargaSeriesByDay[k].map { (k, $0) }
+        }
+        let estela: [Double] = estelaPairs.map(\.v)
         let valorCarga = HoyGramatica.valorODash(razonCarga) { String(format: "%.2f", $0) }
         let estadoCargaKey = HoyGramatica.estadoCarga(razon: razonCarga)
-        // Carga NO se arrastra por día (dueño 2026-08-15): la colina es eje de VALOR, no de
-        // tiempo — el cursor saltaba por valor en vez de seguir el dedo. El scrub queda para las
-        // series de tiempo (Esfuerzo, Estrés, Skin temp, Breathing).
+        // Scrub de Carga «como la hoja de resumen» (dueño 2026-08-15, 2.ª vuelta): el dedo
+        // recorre los DÍAS en orden (índice uniforme, como toda serie de tiempo) y el marcador
+        // se dibuja donde ESE día cae en la cuesta — el dedo no salta; el punto sí, porque eso
+        // es el dato. Cada noche muestra razón + estado + fecha, como el popup de la hoja.
+        func offsetHoyCarga(_ day: String) -> Int {
+            guard let idx = keys.lastIndex(of: day) else { return 0 }
+            return max(0, (keys.count - 1) - idx)
+        }
+        func lecturaCarga(_ v: Double, fecha: String) -> MatrizSeccion.ScrubNoche {
+            let estado = HoyGramatica.estadoCarga(razon: v)
+            return .init(valor: String(format: "%.2f", v),
+                         sublabel: "\(fecha) · \(sublabelCargaConZona(estado))")
+        }
+        var scrubCarga: [MatrizSeccion.ScrubNoche] = estelaPairs.map { pair in
+            lecturaCarga(pair.v, fecha: weekdayLabel(offsetFromToday: offsetHoyCarga(pair.day),
+                                                      now: i.now, calendar: i.calendar, formatter: diaFmt))
+        }
+        if let hoyV = razonCarga {
+            scrubCarga.append(lecturaCarga(hoyV, fecha: weekdayLabel(offsetFromToday: 0, now: i.now,
+                                                                       calendar: i.calendar, formatter: diaFmt)))
+        }
         let seccionCarga = MatrizSeccion(
             id: "carga", hue: LiquidColor.verdePrimario,
             titulo: String(localized: "Load"),
@@ -312,7 +334,8 @@ extension LiquidHoyBuilder {
             chartID: "matriz-carga",
             chart: .colina(p: pCarga,
                              zona: ReadinessEngine.acwrSweetSpotLow...ReadinessEngine.acwrSweetSpotHigh,
-                             estela: estela, alertaHoy: alertaCarga))
+                             estela: estela, alertaHoy: alertaCarga),
+            scrubNoches: scrubCarga.count > 1 ? scrubCarga : nil)
 
         let keysEsf = Array(keys.suffix(matrizVentanaEsfuerzo))
         let ptsEsf: [Double?] = keysEsf.map { byDay[$0]?.strain }
