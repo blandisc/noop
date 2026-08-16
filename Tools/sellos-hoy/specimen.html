@@ -1,0 +1,157 @@
+<title>Sellos de Hoy</title>
+<style>
+  :root{
+    --bg:#EEEFEC; --bg-hi:#F6F7F4; --panel:#FBFBFA; --ink:#221D16; --ink-2:#5C5648; --ink-3:#7C7566;
+    --edge:rgba(34,29,22,.09); --edge-strong:rgba(34,29,22,.16); --green:#0C8F62; --green-deep:#00774B;
+    /* El specimen vive SIEMPRE sobre papel: Cénit es un instrumento diurno y no tiene modo
+       oscuro, así que la hoja y su tinta no se tematizan a propósito. El tema solo afecta
+       el marco de esta página. */
+    --paper-hi:#FEFEFD; --paper-lo:#F3F4F2; --cell-lo:#F9FAF8;
+    --paper-ink:#221D16; --paper-ink-3:#7C7566; --paper-edge:rgba(34,29,22,.10);
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --bg:#15140E; --bg-hi:#1C1A13; --panel:#1E1C15; --ink:#EFEADE; --ink-2:#B4AD9C; --ink-3:#8C8676;
+    --edge:rgba(239,234,222,.11); --edge-strong:rgba(239,234,222,.2); --green:#3FC98D; --green-deep:#2EB27D;
+  }}
+  :root[data-theme="dark"]{
+    --bg:#15140E; --bg-hi:#1C1A13; --panel:#1E1C15; --ink:#EFEADE; --ink-2:#B4AD9C; --ink-3:#8C8676;
+    --edge:rgba(239,234,222,.11); --edge-strong:rgba(239,234,222,.2); --green:#3FC98D; --green-deep:#2EB27D;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Space Grotesk",ui-sans-serif,-apple-system,"Segoe UI",system-ui,sans-serif;font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;
+    background-image:radial-gradient(130% 80% at 50% -6%,var(--bg-hi),var(--bg) 52%);background-attachment:fixed}
+  .wrap{max-width:1060px;margin:0 auto;padding:44px 24px 84px}
+  .kicker{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--ink-3);margin:0 0 12px;text-align:center}
+  h1{font-size:clamp(24px,4vw,34px);line-height:1.05;letter-spacing:-.02em;font-weight:700;margin:0 0 10px;text-align:center;text-wrap:balance}
+  .deck{font-size:15px;color:var(--ink-2);max-width:56ch;margin:0 auto 30px;text-align:center}
+
+  .hoy{background:linear-gradient(var(--paper-hi),var(--paper-lo));border:1px solid var(--paper-edge);border-radius:20px}
+
+  .fam{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:1px;background:rgba(34,29,22,.06);border-radius:20px;overflow:hidden}
+  .g{background:linear-gradient(var(--paper-hi),var(--cell-lo));padding:34px 12px 24px;display:flex;flex-direction:column;align-items:center;gap:13px;text-align:center}
+  .seal{position:relative;display:grid;place-items:center}
+  .seal .drop{position:absolute;inset:0;border-radius:50%}
+  .seal svg{position:relative;display:block}
+  @media (prefers-reduced-motion:no-preference){
+    .g .seal{transition:transform .3s cubic-bezier(.2,.6,.2,1)}
+    .g:hover .seal{transform:scale(1.06)}
+  }
+  .g .gn{font-weight:640;font-size:14px;color:var(--paper-ink);letter-spacing:-.005em}
+  .g .gh{font-size:10.5px;color:var(--paper-ink-3);line-height:1.35;max-width:17ch;font-family:ui-monospace,Menlo,monospace;letter-spacing:.02em}
+
+  .strip{margin-top:14px;padding:20px 14px 8px}
+  .striprow{display:flex;gap:26px;align-items:center;justify-content:center;flex-wrap:wrap}
+  .stripcap{font-family:ui-monospace,Menlo,monospace;font-size:10.5px;color:var(--paper-ink-3);text-align:center;padding:12px 0 14px;letter-spacing:.04em}
+
+  .voice{display:flex;gap:22px;justify-content:center;align-items:center;margin:26px auto 0;flex-wrap:wrap;
+    font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--ink-3);letter-spacing:.03em}
+  .voice span{display:inline-flex;align-items:center;gap:8px}
+  .ficha{max-width:72ch;margin:34px auto 0;border-top:1px solid var(--edge);padding-top:22px}
+  .ficha h2{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);
+    font-family:ui-monospace,Menlo,monospace;font-weight:500;margin:0 0 18px;text-align:center}
+  .ficha dl{margin:0;display:grid;grid-template-columns:minmax(150px,1fr) 2.5fr;gap:14px 22px;font-size:13px}
+  .ficha dt{font-weight:640;color:var(--ink-2)}
+  .ficha dd{margin:0;color:var(--ink-3);line-height:1.62}
+  .ficha code{font-family:ui-monospace,Menlo,monospace;font-size:11.5px}
+  @media(max-width:620px){.ficha dl{grid-template-columns:1fr;gap:4px 0}.ficha dd{margin-bottom:14px}}
+  .note{max-width:64ch;margin:18px auto 0;text-align:center;font-size:12.5px;line-height:1.6;color:var(--ink-3)}
+  .voice i{font-style:normal;display:inline-block}
+  .themebtn{position:fixed;top:14px;right:14px;z-index:9;font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.08em;color:var(--ink-2);background:var(--panel);border:1px solid var(--edge-strong);border-radius:100px;padding:6px 13px;cursor:pointer}
+  .themebtn:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+</style>
+<button class="themebtn" id="tt" aria-label="Cambiar tema">◐ tema</button>
+<div class="wrap">
+  <p class="kicker">Sellos de Hoy · v20 · auditoría aplicada</p>
+  <h1>La familia, reconocible</h1>
+  <p class="deck">La dirección no cambió: cada glifo <b>retrata lo que mide</b>. Lo que cambió es la
+  ejecución. Esta versión aplica una auditoría técnica completa: la geometría ahora <b>coincide con lo
+  que declara</b> (los huecos que el generador prometía no existían — los remates redondos se los
+  comían), el color sigue el <b>contrato de tokens de la app</b> en vez de hexes libres, y nada queda
+  por debajo del pixel al tamaño real del sello.</p>
+
+  <figure style="margin:0">
+    <div class="fam" id="fam"></div>
+    <div class="hoy strip">
+      <div class="striprow" id="strip"></div>
+      <div class="stripcap">tamaño real en la Matriz · 20 pt (iPhone renderiza a 2× y 3×)</div>
+    </div>
+  </figure>
+
+  <div class="voice">
+    <span><i style="width:20px;height:6px;border-radius:3px;background:var(--green)"></i>cuerpo</span>
+    <span><i style="width:9px;height:9px;border-radius:50%;background:var(--green-deep)"></i>lectura — tono hondo o tallada en negativo</span>
+    <span><i style="width:14px;height:14px;border-radius:50%;background:var(--green);opacity:.12"></i>gota</span>
+  </div>
+  <p class="note">Tres voces, y las diez las hablan: el <b>cuerpo</b> en el tono del dato, la
+  <b>lectura</b> como ancla en tono hondo (sueño, respiración, esfuerzo, pasos, guardián, estrés) o
+  tallada en negativo (reposo, piel, carga), y la <b>gota</b> al 10 % detrás del sello. HRV es la
+  excepción declarada: su trazo <i>es</i> la lectura, y colgarle una marca aparte la leía como alfiler.
+  El sello vive siempre sobre papel: Cénit es un instrumento diurno y no tiene modo oscuro — el botón
+  de tema solo cambia el marco de esta página, nunca la hoja.</p>
+
+  <div class="ficha">
+    <h2>Lo que corrigió esta versión</h2>
+    <dl>
+      <dt>Huecos que ahora existen</dt><dd>El respiro del ápice del guardián y la partición del medidor
+      se declaraban en grados, pero los remates redondos los cerraban: los arcos se solapaban y el orden
+      de pintado le regalaba <b>+11 %</b> al azul y <b>+15 %</b> al rojo en composiciones espejo. Ahora
+      los extremos se retraen por la extensión del remate, y el medidor corta sus zonas con junta plana
+      exacta: <b>60° / 60° / 60°</b>, cero solape, cero sesgo.</dd>
+      <dt>Nada sub-pixel a 20 pt</dt><dd>La soldadura del asa pasó de <b>0.45 px</b> a <b>1.79 px</b>
+      (el asa se veía flotando sobre la bola), la ranura del termómetro de 1.09 a <b>1.30 px</b>, el
+      cuello del caminante de 0.52 a <b>1.00 px</b>, y ningún remate baja de <b>1.25 px</b>.</dd>
+      <dt>El medidor ya no dicta veredicto</dt><dd>La aguja estaba clavada en ámbar, a 9° del rojo: un
+      sello de identidad afirmaba «estrés medio-alto» todos los días. Ahora es <b>vertical</b>, la
+      posición neutra de cualquier medidor — y el arco pasó a <b>240°</b>, la convención real del
+      velocímetro, que además lo despega del guardián en silueta (IoU 0.80 → <b>0.42</b>).</dd>
+      <dt>Color con contrato</dt><dd>Cada sello viste el token que <code>Instrumento.swift</code> le da
+      a su métrica: esfuerzo dejó el teal que era de <i>pasos</i>, pasos dejó un token de <i>texto</i>,
+      carga dejó la voz de marca verde, y el medidor usa el trío de veredicto vigente. Quedan por acuñar
+      <b>dos tonos hondos</b> (azul y teal) y formalizar la regla del stop claro (HSL L +0.075).</dd>
+      <dt>Higiene</dt><dd>Sin ids duplicados en el documento, sin degradados muertos, sin nodo de cierre
+      repetido, huecos con <code>fill-rule</code> explícito, y un solo origen: el forjador inyecta el
+      payload en esta página — ya no hay copia a mano que pueda desincronizarse.</dd>
+    </dl>
+  </div>
+</div>
+
+<script>
+(function(){
+  var root=document.documentElement,btn=document.getElementById('tt');
+  function cur(){var t=root.getAttribute('data-theme');return t?t:(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}
+  btn.addEventListener('click',function(){root.setAttribute('data-theme',cur()==='dark'?'light':'dark');});
+
+  // Payload forjado — FUENTE ÚNICA: iconforge.py reescribe estas dos líneas al forjar.
+  // No editar a mano (se pierde en el siguiente forjado).
+  var FORGED = {"sueno": "<defs><linearGradient id=\"g_sueno\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#7370AE\"/><stop offset=\"1\" stop-color=\"#5D5A9E\"/></linearGradient></defs><path d=\"M15.54 4.33 L14.81 4.46 L14.14 4.65 L13.49 4.91 L12.77 5.28 L12.10 5.74 L11.57 6.18 L11.08 6.68 L10.65 7.23 L10.27 7.81 L9.90 8.53 L9.65 9.18 L9.45 9.97 L9.34 10.66 L9.31 11.47 L9.35 12.16 L9.46 12.85 L9.64 13.52 L9.88 14.17 L10.24 14.90 L10.62 15.49 L11.13 16.12 L11.62 16.61 L12.25 17.12 L12.83 17.50 L13.45 17.82 L14.10 18.08 L14.88 18.30 L15.56 18.42 L16.37 18.47 L17.07 18.43 L17.76 18.33 L18.50 18.15 L17.74 18.70 L16.95 19.14 L16.11 19.49 L15.11 19.78 L14.21 19.91 L13.30 19.95 L12.39 19.88 L11.37 19.67 L10.63 19.43 L9.91 19.12 L9.23 18.74 L8.59 18.29 L8.00 17.78 L7.46 17.22 L6.98 16.61 L6.56 15.95 L6.20 15.26 L5.92 14.53 L5.71 13.78 L5.57 13.01 L5.51 12.23 L5.52 11.45 L5.61 10.68 L5.78 9.92 L6.02 9.18 L6.34 8.46 L6.72 7.78 L7.16 7.14 L7.67 6.55 L8.23 6.01 L8.84 5.52 L9.50 5.10 L10.20 4.75 L10.92 4.46 L11.67 4.25 L12.44 4.11 L13.22 4.05 L14.00 4.07 L14.78 4.16 Z\" fill=\"url(#g_sueno)\"/><path d=\"M18.23 11.42 L18.19 11.82 L18.07 12.20 L17.88 12.55 L17.63 12.86 L17.32 13.12 L16.97 13.31 L16.58 13.42 L16.19 13.46 L15.79 13.42 L15.41 13.31 L15.05 13.12 L14.74 12.86 L14.49 12.55 L14.30 12.20 L14.18 11.82 L14.15 11.42 L14.18 11.02 L14.30 10.64 L14.49 10.29 L14.74 9.98 L15.05 9.72 L15.41 9.53 L15.79 9.42 L16.19 9.38 L16.58 9.42 L16.97 9.53 L17.32 9.72 L17.63 9.98 L17.88 10.29 L18.07 10.64 L18.19 11.02 Z\" fill=\"#3F3C78\"/>", "reposo": "<defs><linearGradient id=\"g_reposo\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#C36B7F\"/><stop offset=\"1\" stop-color=\"#B85068\"/></linearGradient></defs><path d=\"M12.00 18.75 L10.68 17.74 L9.49 16.76 L8.44 15.80 L7.51 14.85 L6.72 13.91 L6.08 12.98 L5.57 12.04 L5.26 11.28 L5.01 10.32 L4.90 9.35 L4.95 8.46 L5.15 7.70 L5.53 6.94 L6.06 6.30 L6.72 5.81 L7.47 5.46 L8.06 5.31 L8.68 5.25 L9.26 5.28 L9.84 5.41 L10.32 5.60 L10.78 5.87 L11.26 6.27 L11.77 6.82 L12.00 6.91 L12.23 6.82 L12.68 6.32 L13.16 5.92 L13.54 5.67 L13.95 5.48 L14.45 5.33 L14.97 5.26 L15.57 5.27 L16.06 5.34 L16.53 5.46 L17.07 5.69 L17.48 5.93 L17.85 6.22 L18.18 6.56 L18.47 6.94 L18.71 7.36 L18.90 7.82 L19.05 8.45 L19.10 9.00 L19.07 9.74 L18.99 10.32 L18.86 10.90 L18.60 11.66 L18.34 12.23 L17.92 12.98 L17.55 13.54 L16.98 14.29 L16.31 15.04 L15.56 15.80 L14.04 17.15 Z M13.55 9.80 L13.53 9.50 L13.45 9.20 L13.32 8.93 L13.13 8.69 L12.90 8.49 L12.64 8.34 L12.35 8.24 L12.05 8.20 L11.75 8.22 L11.45 8.30 L11.18 8.43 L10.94 8.62 L10.74 8.85 L10.59 9.11 L10.49 9.40 L10.45 9.70 L10.47 10.00 L10.55 10.30 L10.68 10.57 L10.87 10.81 L11.10 11.01 L11.36 11.16 L11.65 11.26 L11.95 11.30 L12.25 11.28 L12.55 11.20 L12.82 11.07 L13.06 10.88 L13.26 10.65 L13.41 10.39 L13.51 10.10 Z\" fill=\"url(#g_reposo)\" fill-rule=\"evenodd\"/>", "guardian": "<defs><linearGradient id=\"g_guardianL\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#A78034\"/><stop offset=\"1\" stop-color=\"#8A6A2B\"/></linearGradient><linearGradient id=\"g_guardianR\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#4682BB\"/><stop offset=\"1\" stop-color=\"#3B6FA0\"/></linearGradient></defs><path d=\"M4.53 12.35 L4.76 11.78 L5.06 11.18 L5.41 10.61 L5.80 10.07 L6.25 9.56 L6.73 9.08 L7.69 8.33 L8.27 7.97 L8.89 7.67 L9.24 7.53 L9.60 7.47 L9.96 7.50 L10.36 7.63 L10.66 7.84 L10.94 8.15 L11.14 8.59 L11.20 9.00 L11.14 9.42 L10.94 9.86 L10.70 10.13 L10.41 10.34 L9.43 10.73 L8.65 11.17 L8.03 11.65 L7.55 12.15 L6.95 12.99 L6.56 13.84 L6.33 14.63 L6.20 15.63 L6.09 15.95 L5.95 16.16 L5.77 16.33 L5.35 16.51 L4.93 16.51 L4.54 16.35 L4.24 16.05 L4.08 15.67 L4.05 14.85 L4.12 14.05 L4.27 13.22 Z\" fill=\"url(#g_guardianL)\"/><path d=\"M14.76 7.53 L15.42 7.81 L16.02 8.15 L16.71 8.61 L17.27 9.08 L17.75 9.56 L18.28 10.18 L18.70 10.77 L19.03 11.35 L19.37 12.09 L19.65 12.90 L19.83 13.72 L19.93 14.52 L19.95 15.36 L19.89 15.79 L19.68 16.16 L19.35 16.42 L18.95 16.53 L18.57 16.49 L18.23 16.33 L17.97 16.05 L17.81 15.67 L17.74 14.98 L17.62 14.40 L17.36 13.62 L16.93 12.79 L16.30 11.97 L15.80 11.50 L15.16 11.04 L14.57 10.73 L13.75 10.42 L13.49 10.28 L13.17 10.00 L12.97 9.70 L12.82 9.24 L12.81 8.82 L12.94 8.36 L13.17 8.01 L13.49 7.73 L13.92 7.53 L14.34 7.47 Z\" fill=\"url(#g_guardianR)\"/><path d=\"M13.95 14.33 L13.91 14.71 L13.80 15.07 L13.62 15.41 L13.38 15.71 L13.08 15.95 L12.74 16.13 L12.38 16.24 L12.00 16.28 L11.62 16.24 L11.26 16.13 L10.92 15.95 L10.62 15.71 L10.38 15.41 L10.20 15.07 L10.09 14.71 L10.05 14.33 L10.09 13.95 L10.20 13.59 L10.38 13.25 L10.62 12.95 L10.92 12.71 L11.26 12.53 L11.62 12.42 L12.00 12.38 L12.38 12.42 L12.74 12.53 L13.08 12.71 L13.38 12.95 L13.62 13.25 L13.80 13.59 L13.91 13.95 Z\" fill=\"#2A5480\"/><path d=\"M12.00 12.38 L12.00 16.28 L11.62 16.24 L11.31 16.15 L10.97 15.98 L10.67 15.75 L10.42 15.46 L10.23 15.13 L10.10 14.77 L10.05 14.39 L10.08 14.01 L10.18 13.64 L10.35 13.30 L10.58 13.00 L10.87 12.75 L11.20 12.56 L11.56 12.43 Z\" fill=\"#8A6A2B\"/>", "piel": "<defs><linearGradient id=\"g_piel\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#A78034\"/><stop offset=\"1\" stop-color=\"#8A6A2B\"/></linearGradient></defs><path d=\"M10.22 5.69 L10.28 5.36 L10.38 5.08 L10.56 4.78 L10.79 4.52 L11.07 4.31 L11.39 4.16 L11.73 4.07 L12.08 4.05 L12.42 4.10 L12.75 4.22 L13.05 4.39 L13.32 4.63 L13.53 4.91 L13.68 5.22 L13.77 5.56 L13.79 14.09 L13.68 14.84 L13.76 15.10 L14.23 15.65 L14.54 16.24 L14.70 16.82 L14.72 17.49 L14.63 17.95 L14.49 18.33 L14.27 18.73 L13.98 19.10 L13.68 19.37 L13.28 19.63 L12.85 19.81 L12.40 19.92 L11.87 19.95 L11.34 19.87 L10.84 19.69 L10.38 19.42 L9.98 19.06 L9.66 18.63 L9.43 18.14 L9.30 17.63 L9.28 16.95 L9.43 16.30 L9.73 15.70 L10.24 15.10 L10.32 14.84 L10.21 14.09 Z M11.21 7.56 L11.21 10.45 L11.24 10.66 L11.38 10.94 L11.62 11.13 L11.91 11.23 L12.21 11.20 L12.41 11.12 L12.58 10.98 L12.71 10.78 L12.78 10.57 L12.79 7.50 L12.76 7.29 L12.64 7.04 L12.44 6.85 L12.18 6.74 L11.88 6.73 L11.62 6.82 L11.38 7.02 L11.25 7.26 Z\" fill=\"url(#g_piel)\" fill-rule=\"evenodd\"/>", "resp": "<defs><linearGradient id=\"g_resp\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#4682BB\"/><stop offset=\"1\" stop-color=\"#3B6FA0\"/></linearGradient></defs><path d=\"M7.42 8.05 L8.14 7.97 L8.80 8.03 L9.09 8.11 L9.42 8.27 L10.05 8.70 L10.70 9.32 L11.29 10.10 L11.93 11.19 L12.68 12.77 L12.98 13.22 L13.18 13.42 L13.29 13.49 L13.41 13.45 L14.09 12.95 L14.52 12.81 L14.78 12.81 L15.04 12.87 L15.28 12.99 L15.49 13.17 L15.70 13.50 L15.79 13.90 L15.73 14.29 L15.54 14.65 L15.14 15.09 L14.74 15.44 L14.31 15.71 L13.86 15.90 L13.45 16.00 L12.98 16.03 L12.50 15.97 L12.01 15.82 L11.59 15.60 L11.22 15.34 L10.48 14.63 L9.88 13.83 L9.03 12.44 L8.49 11.77 L8.10 11.45 L7.51 11.18 L7.20 11.31 L6.77 11.67 L6.33 12.19 L5.82 12.97 L5.56 13.20 L5.27 13.32 L4.96 13.34 L4.70 13.29 L4.43 13.13 L4.24 12.94 L4.11 12.70 L4.05 12.43 L4.07 12.16 L4.48 11.06 L5.00 10.04 L5.52 9.30 L6.14 8.69 L6.76 8.29 Z\" fill=\"url(#g_resp)\"/><path d=\"M19.95 10.52 L19.91 10.89 L19.81 11.24 L19.63 11.57 L19.40 11.85 L19.11 12.09 L18.79 12.26 L18.43 12.37 L18.07 12.41 L17.70 12.37 L17.35 12.26 L17.02 12.09 L16.74 11.85 L16.50 11.57 L16.33 11.24 L16.22 10.89 L16.19 10.52 L16.22 10.16 L16.33 9.80 L16.50 9.48 L16.74 9.19 L17.02 8.96 L17.35 8.78 L17.70 8.68 L18.07 8.64 L18.43 8.68 L18.79 8.78 L19.11 8.96 L19.40 9.19 L19.63 9.48 L19.81 9.80 L19.91 10.16 Z\" fill=\"#2A5480\"/>", "carga": "<defs><linearGradient id=\"g_carga\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#4C9371\"/><stop offset=\"1\" stop-color=\"#3F7A5E\"/></linearGradient></defs><path d=\"M7.31 9.08 L7.35 8.33 L7.50 7.63 L7.85 6.79 L8.21 6.22 L8.65 5.70 L9.16 5.26 L9.93 4.78 L10.55 4.53 L11.21 4.37 L11.88 4.30 L12.79 4.37 L13.44 4.53 L14.06 4.78 L14.65 5.11 L15.32 5.67 L15.76 6.17 L16.15 6.79 L16.50 7.63 L16.65 8.33 L16.69 9.24 L16.60 9.95 L16.33 10.82 L16.06 11.33 L15.65 11.70 L15.60 11.89 L15.64 12.03 L16.15 12.78 L16.48 13.56 L16.67 14.46 L16.69 15.31 L16.62 15.84 L16.52 16.29 L16.34 16.80 L16.15 17.21 L15.91 17.61 L15.58 18.04 L14.92 18.68 L14.15 19.18 L13.29 19.52 L12.38 19.68 L11.46 19.67 L10.56 19.47 L9.72 19.11 L8.96 18.58 L8.32 17.92 L7.86 17.22 L7.55 16.51 L7.35 15.69 L7.30 14.92 L7.38 14.16 L7.57 13.42 L7.89 12.71 L8.37 12.01 L8.40 11.84 L8.32 11.67 L8.07 11.47 L7.91 11.29 L7.67 10.82 L7.39 9.91 Z M9.70 9.07 L9.76 9.52 L9.85 9.82 L10.08 10.42 L10.24 10.56 L10.40 10.57 L11.31 10.35 L12.00 10.30 L12.77 10.36 L13.66 10.58 L13.79 10.54 L13.90 10.44 L14.15 9.83 L14.27 9.36 L14.30 8.90 L14.23 8.42 L14.07 7.98 L13.89 7.68 L13.58 7.32 L13.21 7.04 L12.78 6.83 L12.32 6.72 L11.86 6.70 L11.51 6.75 L11.06 6.90 L10.66 7.13 L10.30 7.45 L10.02 7.83 L9.82 8.26 L9.71 8.72 Z\" fill=\"url(#g_carga)\" fill-rule=\"evenodd\"/>", "esfuerzo": "<defs><linearGradient id=\"g_esfuerzo\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#DE752C\"/><stop offset=\"1\" stop-color=\"#C4631F\"/></linearGradient></defs><path d=\"M8.94 16.36 L9.93 15.23 L10.95 13.75 L11.82 12.26 L13.82 8.58 L14.35 7.68 L14.57 7.47 L14.82 7.31 L15.10 7.20 L15.40 7.15 L15.70 7.15 L15.99 7.22 L16.26 7.34 L16.51 7.51 L16.82 7.87 L17.02 8.37 L17.03 8.91 L16.88 9.37 L13.68 14.12 L12.72 15.39 L11.70 16.59 L10.91 17.37 L10.05 18.09 L9.17 18.68 L8.21 19.20 L6.96 19.66 L5.85 19.91 L5.54 19.95 L5.34 19.93 L5.11 19.84 L4.93 19.68 L4.79 19.42 L4.75 19.12 L4.83 18.84 L5.02 18.60 L5.25 18.47 L5.80 18.32 L6.50 18.06 L7.29 17.66 L8.16 17.07 Z\" fill=\"url(#g_esfuerzo)\"/><path d=\"M19.25 6.30 L19.21 6.73 L19.08 7.15 L18.87 7.54 L18.59 7.88 L18.25 8.16 L17.86 8.37 L17.44 8.50 L17.01 8.54 L16.57 8.50 L16.15 8.37 L15.76 8.16 L15.42 7.88 L15.14 7.54 L14.93 7.15 L14.80 6.73 L14.76 6.30 L14.80 5.86 L14.93 5.44 L15.14 5.05 L15.42 4.71 L15.76 4.43 L16.15 4.22 L16.57 4.09 L17.01 4.05 L17.44 4.09 L17.86 4.22 L18.25 4.43 L18.59 4.71 L18.87 5.05 L19.08 5.44 L19.21 5.86 Z\" fill=\"#8F4413\"/>", "hrv": "<defs><linearGradient id=\"g_hrv\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#199AAD\"/><stop offset=\"1\" stop-color=\"#147C8C\"/></linearGradient></defs><path d=\"M10.47 9.21 L10.89 13.30 L11.95 13.16 L12.90 10.19 L13.01 9.94 L13.24 9.67 L13.50 9.51 L13.84 9.41 L14.15 9.42 L14.45 9.51 L14.68 9.65 L14.87 9.83 L15.02 10.10 L15.79 13.37 L16.15 13.30 L19.06 13.36 L19.34 13.42 L19.68 13.64 L19.81 13.81 L19.90 14.01 L19.94 14.40 L19.81 14.78 L19.54 15.07 L19.17 15.21 L16.56 15.28 L15.73 16.03 L15.44 16.17 L15.16 16.21 L14.74 16.11 L14.39 15.85 L14.20 15.54 L14.00 14.81 L13.85 15.05 L13.65 15.25 L13.40 15.41 L13.18 15.48 L12.84 15.52 L11.70 15.40 L11.04 16.59 L10.90 16.79 L10.56 17.03 L10.12 17.13 L9.84 17.09 L9.57 16.97 L9.35 16.79 L9.18 16.55 L9.09 16.28 L8.75 14.51 L8.62 14.83 L8.41 15.07 L8.14 15.24 L7.83 15.31 L4.87 15.22 L4.56 15.12 L4.30 14.92 L4.17 14.75 L4.08 14.54 L4.06 14.15 L4.21 13.78 L4.49 13.50 L4.69 13.41 L4.91 13.37 L6.87 13.30 L7.46 9.58 L7.67 7.91 L7.81 7.53 L8.06 7.22 L8.44 6.97 L8.88 6.87 L9.38 6.95 L9.77 7.18 L10.01 7.45 L10.16 7.76 Z\" fill=\"url(#g_hrv)\"/>", "estres": "<path d=\"M7.46 7.14 L7.94 6.83 L8.97 6.32 L9.56 6.11 L10.57 5.85 L11.76 5.72 L12.81 5.76 L13.38 5.84 L14.49 6.12 L15.07 6.34 L16.01 6.81 L17.00 7.49 L17.77 8.20 L18.15 8.63 L18.81 9.57 L19.11 10.11 L19.52 11.08 L19.82 12.24 L19.94 13.28 L19.95 13.85 L19.83 15.04 L19.71 15.60 L19.39 16.60 L19.14 17.17 L18.75 17.84 L18.50 18.06 L18.19 18.21 L17.85 18.27 L17.56 18.25 L17.23 18.14 L16.95 17.94 L16.73 17.68 L16.61 17.41 L16.55 17.07 L16.58 16.73 L16.68 16.45 L16.99 15.89 L17.26 15.16 L17.41 14.40 L17.46 13.62 L17.40 12.85 L17.23 12.10 L16.95 11.37 L16.58 10.69 L16.11 10.08 L15.56 9.53 L14.94 9.07 L14.60 8.87 L13.90 8.55 L13.15 8.33 L12.77 8.27 L12.00 8.21 L11.23 8.27 L10.85 8.33 L10.10 8.55 L9.40 8.87 L9.06 9.07 L8.44 9.53 L7.89 10.08 L7.42 10.69 L7.05 11.37 L6.77 12.10 L6.60 12.85 L6.54 13.62 L6.59 14.40 L6.74 15.16 L7.01 15.89 L7.32 16.45 L7.42 16.73 L7.45 17.07 L7.41 17.36 L7.29 17.63 L7.12 17.87 L6.85 18.09 L6.59 18.21 L6.25 18.27 L5.95 18.25 L5.67 18.16 L5.38 17.98 L5.16 17.72 L4.84 17.13 L4.45 16.15 L4.27 15.55 L4.15 14.94 L4.05 13.95 L4.10 12.75 L4.20 12.14 L4.45 11.17 L4.91 10.07 L5.22 9.52 L5.82 8.67 L6.23 8.20 Z\" fill=\"#9C5E10\"/><path d=\"M6.90 7.59 L8.50 9.50 L7.89 10.08 L7.64 10.38 L7.22 11.03 L6.90 11.73 L6.77 12.10 L6.60 12.85 L6.56 13.24 L6.55 14.01 L6.65 14.78 L6.86 15.53 L7.01 15.89 L7.39 16.63 L7.45 16.92 L7.43 17.24 L6.10 18.27 L5.67 18.16 L5.28 17.87 L5.08 17.59 L4.62 16.65 L4.29 15.60 L4.16 14.99 L4.05 13.90 L4.06 13.28 L4.18 12.24 L4.32 11.63 L4.65 10.63 L4.91 10.07 L5.22 9.52 L5.82 8.67 L6.23 8.20 Z\" fill=\"#0C8F62\"/><path d=\"M15.50 9.50 L17.10 7.59 L17.77 8.20 L18.15 8.63 L18.81 9.57 L19.33 10.59 L19.68 11.63 L19.89 12.71 L19.95 13.38 L19.91 14.47 L19.73 15.55 L19.38 16.65 L18.87 17.68 L18.54 18.04 L18.14 18.23 L17.89 18.27 L16.57 17.24 L16.55 16.92 L16.61 16.63 L16.99 15.89 L17.14 15.53 L17.35 14.78 L17.45 14.01 L17.44 13.24 L17.40 12.85 L17.23 12.10 L17.10 11.73 L16.78 11.03 L16.36 10.38 L16.11 10.08 Z\" fill=\"#BC3A34\"/><path d=\"M12.74 10.38 L13.11 13.58 L13.09 13.93 L12.90 14.33 L12.58 14.62 L12.17 14.77 L11.74 14.76 L11.42 14.62 L11.15 14.40 L10.97 14.10 L10.89 13.80 L10.89 13.54 L11.26 10.41 L11.35 10.19 L11.53 9.99 L11.76 9.86 L12.00 9.82 L12.24 9.86 L12.47 9.99 L12.64 10.16 Z\" fill=\"#221D16\"/><path d=\"M13.38 13.67 L13.36 13.94 L13.28 14.20 L13.15 14.44 L12.98 14.65 L12.77 14.82 L12.53 14.95 L12.27 15.03 L12.00 15.05 L11.73 15.03 L11.47 14.95 L11.23 14.82 L11.02 14.65 L10.85 14.44 L10.72 14.20 L10.64 13.94 L10.62 13.67 L10.64 13.40 L10.72 13.14 L10.85 12.90 L11.02 12.70 L11.23 12.52 L11.47 12.40 L11.73 12.32 L12.00 12.29 L12.27 12.32 L12.53 12.40 L12.77 12.52 L12.98 12.70 L13.15 12.90 L13.28 13.14 L13.36 13.40 Z\" fill=\"#221D16\"/>", "pasos": "<defs><linearGradient id=\"g_pasos\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#5C9EAE\"/><stop offset=\"1\" stop-color=\"#4C8998\"/></linearGradient></defs><path d=\"M7.93 17.93 L9.08 15.94 L10.54 13.62 L10.54 13.48 L10.45 13.38 L10.06 13.31 L9.80 13.16 L9.66 12.97 L9.59 12.73 L9.60 12.51 L9.68 12.28 L10.27 11.10 L10.56 10.65 L10.92 10.22 L11.69 9.52 L11.89 8.85 L12.03 8.63 L12.24 8.42 L12.55 8.24 L12.95 8.14 L13.35 8.18 L13.73 8.33 L14.01 8.56 L14.21 8.85 L14.32 9.14 L14.38 9.57 L14.96 10.17 L15.43 10.75 L15.91 11.50 L16.17 12.05 L16.15 12.40 L15.98 12.68 L15.70 12.85 L15.35 12.87 L15.17 12.81 L14.99 12.68 L14.54 12.07 L14.16 11.65 L14.06 11.60 L13.95 11.61 L13.83 11.74 L13.45 13.20 L14.26 15.24 L15.88 18.88 L15.93 19.23 L15.81 19.59 L15.54 19.86 L15.21 19.97 L14.83 19.93 L14.52 19.72 L13.09 17.39 L12.02 15.56 L11.89 15.47 L11.71 15.51 L11.17 16.12 L10.05 17.46 L9.06 18.76 L8.88 18.92 L8.67 19.00 L8.43 19.02 L8.19 18.94 L8.00 18.80 L7.88 18.61 L7.82 18.38 L7.83 18.16 Z\" fill=\"url(#g_pasos)\"/><path d=\"M14.96 5.49 L14.93 5.78 L14.85 6.05 L14.71 6.31 L14.53 6.53 L14.30 6.71 L14.05 6.85 L13.77 6.93 L13.49 6.96 L13.20 6.93 L12.93 6.85 L12.67 6.71 L12.45 6.53 L12.27 6.31 L12.13 6.05 L12.05 5.78 L12.02 5.49 L12.05 5.20 L12.13 4.93 L12.27 4.67 L12.45 4.45 L12.67 4.27 L12.93 4.13 L13.20 4.05 L13.49 4.02 L13.77 4.05 L14.05 4.13 L14.30 4.27 L14.53 4.45 L14.71 4.67 L14.85 4.93 L14.93 5.20 Z\" fill=\"#35707E\"/>"};
+  var DROP = {"sueno": "#5D5A9E1A", "reposo": "#B850681A", "guardian": "linear-gradient(135deg,#8A6A2B1A,#3B6FA01A)", "piel": "#8A6A2B1A", "resp": "#3B6FA01A", "carga": "#3F7A5E1A", "esfuerzo": "#C4631F1A", "hrv": "#147C8C1A", "estres": "#9C5E101A", "pasos": "#4C89981A"};
+
+  // El mismo markup se monta dos veces (retícula 96 px + tira 20 px): los ids de gradiente
+  // se sufijan por montaje para que el documento no tenga ids duplicados.
+  function glyph(k,uid){ return (FORGED[k]||'').replace(/g_/g,'g'+uid+'_'); }
+  function seal(k,px,label){
+    var box=Math.round(px*1.22/2)*2;
+    var a = label ? ' role="img" aria-label="'+label+'"' : ' aria-hidden="true"';
+    return '<span class="seal" style="width:'+box+'px;height:'+box+'px">'
+         + '<span class="drop" style="background:'+DROP[k]+'"></span>'
+         + '<svg viewBox="0 0 24 24" width="'+px+'" height="'+px+'"'+a+'>'+glyph(k,px)+'</svg></span>';}
+
+  var ORDER=[
+    ['sueno','Sueño','la lectura dentro de la noche'],
+    ['reposo','Reposo','un latido, en calma'],
+    ['guardian','Guardián','dos señales, un guardián'],
+    ['piel','Piel','el termómetro y su mercurio'],
+    ['resp','Respiración','la onda y su ahora'],
+    ['carga','Carga','la pesa de tu semana'],
+    ['esfuerzo','Esfuerzo','hecho · ahora · lo que falta'],
+    ['hrv','HRV','tu ritmo, latido a latido'],
+    
+    ['estres','Estrés','el medidor, con sus zonas'],
+    ['pasos','Pasos','tú, caminando']
+  ];
+  document.getElementById('fam').innerHTML=ORDER.map(function(o){
+    return '<div class="g">'+seal(o[0],96)+'<div><div class="gn">'+o[1]+'</div><div class="gh">'+o[2]+'</div></div></div>';}).join('');
+  document.getElementById('strip').innerHTML=ORDER.map(function(o){return seal(o[0],20,o[1]);}).join('');
+})();
+</script>
