@@ -529,7 +529,10 @@ public struct LiquidEcosistema: View {
             // puerta se veía «pegada» al subtítulo — hueco arriba chico, abajo grande). Con más
             // aire arriba, el botón respira y el ritmo vertical queda parejo; hay espacio de
             // sobra entre el orbe y el veredicto para subirlo.
-            .frame(height: G.lienzo.height - 64
+            // Dueño 2026-08-15: el bloque del veredicto BAJA 20 pt (64→44, 26→6) para darle
+            // más aire al orbe y sus satélites arriba; el lienzo reservado crece lo mismo
+            // (ecosistemaAlto 300→320) y la zona de fade de los rótulos baja a la par.
+            .frame(height: G.lienzo.height - 44
                    - (compacto ? LiquidSpace.ecosistemaAcercaVeredicto : 0), alignment: .bottom)
             .opacity(esSeparadaEstable ? 0 : 1)
             // Deriva sutil (overlapping action, ojo del dueño): la palabra no aparece —
@@ -558,7 +561,7 @@ public struct LiquidEcosistema: View {
             // Pegarla refuerza su tinte (extensión del veredicto, no un 2º objeto con color).
             botonPuerta(heroPuerta)
                 .frame(width: G.lienzo.width)
-                .frame(height: G.lienzo.height - 26
+                .frame(height: G.lienzo.height - 6
                        - (compacto ? LiquidSpace.ecosistemaAcercaVeredicto : 0), alignment: .bottom)
         }
     }

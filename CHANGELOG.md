@@ -20,6 +20,11 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **Hoy: el veredicto baja un poco para darle aire a los orbes / Today: the verdict sits a bit lower so the orbs breathe** (FER-69).
+  **ES** — El bloque del veredicto (titular, subtítulo y «Cómo llegué a esto») baja 20 pt dentro del héroe; el orbe y sus satélites ganan ese aire arriba. El hueco hacia «Decide tu día» no cambia.
+  **EN** — The verdict block moves 20 pt down inside the hero so the orb and its satellites get more room above; the gap to "Decide your day" is unchanged.
+  ([LiquidEcosistema.swift](Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/LiquidEcosistema.swift))
+
 - **Hoy: menos aire bajo el veredicto, y jalar hacia abajo ahora sincroniza de verdad / Today: tighter hero, and pull-to-refresh now truly syncs** (FER-68).
   **ES** — El hueco entre «Cómo llegué a esto» y «Decide tu día» tenía ~30 pt fantasma: la zona táctil del «?» de cada título inflaba la fila. Ahora la zona táctil crece sin ocupar espacio (52 → 29 pt). Y jalar hacia abajo era teatro: vibraba, esperaba 1.2 s y releía lo que ya tenía, sin tocar Apple Salud. Ahora sí sincroniza con Apple Salud (trae noches nuevas) — la franja «jala para sincronizar» por fin cumple lo que promete.
   **EN** — Removed ~30 pt of phantom space under the hero (section-title hit-target inflated the row; now the hit area grows without taking layout space). Pull-to-refresh was theatre (haptic + 1.2 s sleep + local re-read); it now runs a real Apple Health manual sync, so the "pull down to sync" banner finally tells the truth.
