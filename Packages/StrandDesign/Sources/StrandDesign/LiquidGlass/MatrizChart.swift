@@ -490,12 +490,22 @@ public struct MatrizLineaSerena: View {
             }()
 
             if let banda {
+                // Pulido (dueño 2026-08-15): la banda «tu patrón» se lee como en la tarjeta de la
+                // hoja del guardián — relleno teñido + FILOS finos en los dos umbrales (antes solo
+                // el relleno, y a 40 pt se perdía). Mismo hue, alfa doble en los filos.
                 let yLo = MatrizChartDraw.yTop(banda.upperBound, domain: dom, height: size.height)
                 let yHi = MatrizChartDraw.yTop(banda.lowerBound, domain: dom, height: size.height)
                 let bandRect = CGRect(x: 0, y: yLo, width: size.width,
                                       height: max(yHi - yLo, 1))
                 ctx.fill(Path(roundedRect: bandRect, cornerRadius: 3),
                          with: .color(hue.opacity(MatrizTokens.bandaFillAlfa)))
+                for y in [yLo, yHi] {
+                    var filo = Path()
+                    filo.move(to: CGPoint(x: 0, y: y))
+                    filo.addLine(to: CGPoint(x: size.width, y: y))
+                    ctx.stroke(filo, with: .color(hue.opacity(MatrizTokens.bandaFillAlfa * 2.5)),
+                               style: StrokeStyle(lineWidth: 1))
+                }
             } else {
                 let mid = (dom.lowerBound + dom.upperBound) / 2
                 let yMid = MatrizChartDraw.yTop(mid, domain: dom, height: size.height)
@@ -508,15 +518,32 @@ public struct MatrizLineaSerena: View {
 
             guard count > 0, MatrizChartDraw.tieneDatos(puntos) else { return }
 
+            // Trazo (pulido dueño 2026-08-15, paridad con la tarjeta de la hoja del guardián):
+            // más presente que la línea serena original (1.2 → 1.6, alfa 0.55 → 0.75) y con un
+            // PUNTO POR NOCHE en la historia — «cada noche cuenta», no un hilo continuo. HOY se
+            // corona con la JOYA hueca (relleno papel + filo del tono), como en la hoja.
             for tramo in MatrizChartDraw.tramos(puntos, count: count, width: size.width,
                                                 dominio: dom, height: size.height) {
-                ctx.stroke(MatrizChartDraw.curva(tramo), with: .color(hue.opacity(MatrizTokens.lineaSerenaAlfa)),
-                           style: StrokeStyle(lineWidth: 1.2, lineCap: .round, lineJoin: .round))
+                ctx.stroke(MatrizChartDraw.curva(tramo), with: .color(hue.opacity(0.75)),   // token-exempt: paridad con la hoja
+                           style: StrokeStyle(lineWidth: 1.6, lineCap: .round, lineJoin: .round))
             }
-
-            MatrizChartDraw.marcarHoy(ctx, puntos: puntos, count: count,
-                                      width: size.width, dominio: dom,
-                                      height: size.height, hue: hue, alerta: alertaHoy)
+            let idxHoy = puntos.lastIndex(where: { $0 != nil })
+            for (i, v) in puntos.enumerated() where i != idxHoy {
+                guard let v else { continue }
+                let x = count > 1 ? size.width * CGFloat(i) / CGFloat(count - 1) : size.width / 2
+                let y = MatrizChartDraw.yTop(v, domain: dom, height: size.height)
+                MatrizChartDraw.punto(ctx, en: CGPoint(x: x, y: y),
+                                      radio: MatrizTokens.histRadio, hue: hue, alfa: 0.75)   // token-exempt: paridad con la hoja
+            }
+            if let idxHoy, let vHoy = puntos[idxHoy] {
+                let x = count > 1 ? size.width * CGFloat(idxHoy) / CGFloat(count - 1) : size.width / 2
+                let y = MatrizChartDraw.yTop(vHoy, domain: dom, height: size.height)
+                let c = CGPoint(x: x, y: y)
+                // Joya hueca: papel adentro, filo del tono afuera.
+                MatrizChartDraw.punto(ctx, en: c, radio: MatrizTokens.hoyRadio + 0.6, hue: hue, alfa: MatrizTokens.hoyAlfa)
+                MatrizChartDraw.punto(ctx, en: c, radio: MatrizTokens.hoyRadio - 0.9, hue: LiquidColor.papelMatriz, alfa: 1)
+                MatrizChartDraw.dibujarAlerta(ctx, en: c, radioBase: MatrizTokens.hoyRadio, alerta: alertaHoy)
+            }
 
             // Scrub (dueño 2026-08-15): cursor + punto pleno en la noche leída. Serie de tiempo:
             // el índice mapea a x uniforme, el cursor sigue al dedo.
@@ -534,6 +561,10 @@ public struct MatrizLineaSerena: View {
         }
         .frame(maxWidth: .infinity, minHeight: MatrizChartDraw.defaultHeight,
                idealHeight: MatrizChartDraw.defaultHeight)
+        // La joya de HOY (hoyRadio+0.6) y los puntos de la historia van al ras del ancho:
+        // sin este aire la joya se CORTA en el borde derecho (cazado en captura). El
+        // scrub mapea sobre este mismo lienzo, así que la lectura no se desalinea.
+        .padding(.horizontal, MatrizTokens.hoyRadio + 1)
         .accessibilityHidden(true)
     }
 }
