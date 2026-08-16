@@ -20,6 +20,12 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+## Unreleased
+
+- **Hoy: la puerta al acta es ahora un ⓘ junto al veredicto / Today: the verdict's "how I got here" is now an ⓘ next to the word** (FER-71).
+  **ES** — El botón «Cómo llegué a esto» bajo el subtítulo se retira; en su lugar, un ⓘ en el tono exacto del veredicto, en la misma línea del titular («En rango ⓘ»). Sin la pastilla, el orbe y sus satélites ganan aire. Sin permiso de Salud se conserva el botón «Conectar Salud» (una acción no se disfraza de ⓘ).
+  **EN** — The "How I got here" pill under the subtitle is gone; an ⓘ in the verdict's exact tone sits on the title line instead ("In range ⓘ"). The orb gains room. Without Health permission the "Connect Health" text button stays (an action never hides behind an ⓘ).
+  ([LiquidEcosistema.swift](Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/LiquidEcosistema.swift))
 - **Hoy: las gráficas de temperatura y respiración hablan el idioma de la tarjeta del guardián / Today: skin-temp and breathing sparklines now match the guardian card** (FER-70).
   **ES** — Banda «tu patrón» con sus dos filos de umbral, trazo más presente, un punto por noche y la joya hueca en HOY — como en la tarjeta que abre «Te vigila». Respiración sigue sin banda a propósito (el motor juzga contra tu propia base, no contra una tabla).
   **EN** — Pattern band with threshold edges, a fuller stroke, one dot per night and the hollow "today" jewel — matching the guardian card. Breathing intentionally keeps no band (judged against your own baseline, not a table).

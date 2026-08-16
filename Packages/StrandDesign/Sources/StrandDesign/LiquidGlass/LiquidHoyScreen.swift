@@ -181,6 +181,12 @@ public struct LiquidHoyModel: Sendable {
     /// `Hero` porque es la misma promesa en los dos estados del héroe (veredicto y
     /// demotado) y el destino es uno solo — igual que `heroHint`. `nil` = sin pastilla.
     public let heroPuerta: String?
+    /// La puerta es INFORMATIVA (abre el acta «cómo llegué a esto») → se pinta como un ⓘ en el
+    /// tono del veredicto, pegado a la palabra del titular (dueño 2026-08-15, gate UX+UI); en
+    /// ese caso `heroPuerta` NO se dibuja como pastilla (queda como label a11y de la acción).
+    /// `false` = la puerta es una ACCIÓN («Connect Health»): pastilla de texto — un ⓘ ahí
+    /// mentiría (HIG: el info button revela información, no ejecuta acciones).
+    public let heroInfo: Bool
     /// Rótulo YA localizado de la barra de carga («CARGA»/«LOAD») — el DS no conoce locales.
     public let cargaLabel: String
     /// La fecha completa para VoiceOver («miércoles, 22 de julio de 2026»).
@@ -196,7 +202,8 @@ public struct LiquidHoyModel: Sendable {
                 metricas: [Metrica], guardian: Guardian? = nil,
                 heroHint: String? = nil, ambiente: LiquidAmbiente = .bien,
                 cargaLabel: String = "CARGA", kickerA11y: String? = nil,
-                heroPuerta: String? = nil, calibracion: Calibracion? = nil,
+                heroPuerta: String? = nil, heroInfo: Bool = false,
+                calibracion: Calibracion? = nil,
                 rotulos: EcosistemaRotulos = .base) {
         self.cargaLabel = cargaLabel
         self.kickerA11y = kickerA11y
@@ -210,6 +217,7 @@ public struct LiquidHoyModel: Sendable {
         self.heroHint = heroHint
         self.ambiente = ambiente
         self.heroPuerta = heroPuerta
+        self.heroInfo = heroInfo
         self.calibracion = calibracion
         self.rotulos = rotulos
     }
@@ -331,7 +339,7 @@ public struct LiquidHoyContent: View {
             LiquidEcosistema(
                 senales: model.senales, hero: model.hero, guardian: model.guardian,
                 ambiente: model.ambiente, calibracion: model.calibracion,
-                rotulos: model.rotulos, heroPuerta: model.heroPuerta,
+                rotulos: model.rotulos, heroPuerta: model.heroPuerta, heroInfo: model.heroInfo,
                 heroHint: model.heroHint,
                 mostrarHintSeparar: mostrarHintSeparar,
                 fusionInicial: fusionInicial, faseForzada: ecosistemaFase,

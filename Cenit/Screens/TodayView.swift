@@ -739,10 +739,13 @@ struct TodayView: View {
                     VStack(alignment: .leading, spacing: CenitMetrics.space2) {
                         headerBlock
                         HealthAlertBanner()
-                        // La franja de carga se conserva: alguien puede registrar FUERZA sin
-                        // conceder Salud, y ese dato es suyo — borrarlo por estar en el estado
-                        // «vacío» sería esconderle algo que sí midió.
-                        if let trainingLoad {
+                        // La franja de carga se conserva SOLO con carga REAL: alguien puede
+                        // registrar FUERZA sin conceder Salud, y ese dato es suyo — borrarlo por
+                        // estar en el estado «vacío» sería esconderle algo que sí midió. Pero
+                        // `trainingLoad` nunca es nil (con acwr == nil pinta «calibrando» sin
+                        // punto): en el primer arranque salía «LOAD · CALIBRATING ··» sobre el
+                        // orbe dormido — ruido, no un dato (pregunta del dueño 2026-08-15).
+                        if let trainingLoad, trainingLoad.acwr != nil {
                             TrainingLoadStrip(model: trainingLoad, theme: theme) {
                                 trainingLoadItem = makeTrainingLoadItem(trainingLoad)
                             }
