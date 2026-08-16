@@ -124,6 +124,15 @@ public enum LiquidType {
     /// letra más (#inject r2, pedido del dueño).
     public static let infoGlifoCompacto = Font.system(size: 12)
 
+    /// Glifo ⓘ DEL TITULAR del héroe — 22 SF medium (dueño 2026-08-15, gate UX+UI): la puerta
+    /// al acta deja de ser pastilla y pasa a ser un ⓘ pegado a la palabra del veredicto, en su
+    /// tono. Es el peldaño GRANDE de la misma familia (12 «?» de sección → 15 de hoja → 22 en
+    /// el titular displayL de 30): anillo ≈0.9 em ≈ la altura de caja del titular; `.medium`
+    /// para que se lea como MARCA junto a la palabra, no como una letra más. Fijo como displayL.
+    public static let infoGlifoTitular = Font.system(size: 22, weight: .medium)
+    /// Su hermano para los titulares demotados (displayS, escala con Dynamic Type): callout.
+    public static let infoGlifoTitularS = Font.system(.callout, weight: .medium)
+
     /// `lectura/hoja` — 14 SF, base del texto de lectura de la hoja de resumen (readings,
     /// subtítulo del héroe). Los consumidores lo escalan con @ScaledMetric(relativeTo:
     /// .footnote) — acuñado en el revote adversarial F2 (adiós 14 inline).

@@ -110,6 +110,8 @@ public struct LiquidEcosistema: View {
     private let calibracion: LiquidHoyModel.Calibracion?
     private let rotulos: EcosistemaRotulos
     private let heroPuerta: String?
+    /// La puerta es INFORMATIVA → ⓘ en el titular; false → pastilla de texto (acción).
+    private let heroInfo: Bool
     private let heroHint: String?
     private let mostrarHintSeparar: Bool
     private let fusionInicial: Bool
@@ -142,7 +144,7 @@ public struct LiquidEcosistema: View {
     public init(senales: [LiquidHoyModel.Senal], hero: LiquidHoyModel.Hero,
                 guardian: LiquidHoyModel.Guardian?, ambiente: LiquidAmbiente,
                 calibracion: LiquidHoyModel.Calibracion?, rotulos: EcosistemaRotulos,
-                heroPuerta: String? = nil, heroHint: String? = nil,
+                heroPuerta: String? = nil, heroInfo: Bool = false, heroHint: String? = nil,
                 mostrarHintSeparar: Bool = true, fusionInicial: Bool = false,
                 compacto: Bool = false,
                 onTapVeredicto: (() -> Void)? = nil, onTapSenal: ((String) -> Void)? = nil,
@@ -150,6 +152,7 @@ public struct LiquidEcosistema: View {
                 onFusionArrancada: (() -> Void)? = nil, onSeparacion: (() -> Void)? = nil) {
         self.init(senales: senales, hero: hero, guardian: guardian, ambiente: ambiente,
                   calibracion: calibracion, rotulos: rotulos, heroPuerta: heroPuerta,
+                  heroInfo: heroInfo,
                   heroHint: heroHint, mostrarHintSeparar: mostrarHintSeparar,
                   fusionInicial: fusionInicial, faseForzada: nil, compacto: compacto,
                   onTapVeredicto: onTapVeredicto, onTapSenal: onTapSenal,
@@ -161,7 +164,7 @@ public struct LiquidEcosistema: View {
     init(senales: [LiquidHoyModel.Senal], hero: LiquidHoyModel.Hero,
          guardian: LiquidHoyModel.Guardian?, ambiente: LiquidAmbiente,
          calibracion: LiquidHoyModel.Calibracion?, rotulos: EcosistemaRotulos,
-         heroPuerta: String? = nil, heroHint: String? = nil,
+         heroPuerta: String? = nil, heroInfo: Bool = false, heroHint: String? = nil,
          mostrarHintSeparar: Bool = true, fusionInicial: Bool = false,
          faseForzada: Sim.Fase?, compacto: Bool = false,
          onTapVeredicto: (() -> Void)? = nil, onTapSenal: ((String) -> Void)? = nil,
@@ -175,6 +178,7 @@ public struct LiquidEcosistema: View {
         self.calibracion = calibracion
         self.rotulos = rotulos
         self.heroPuerta = heroPuerta
+        self.heroInfo = heroInfo
         self.heroHint = heroHint
         self.mostrarHintSeparar = mostrarHintSeparar
         self.fusionInicial = fusionInicial
@@ -532,7 +536,11 @@ public struct LiquidEcosistema: View {
             // Dueño 2026-08-15: el bloque del veredicto BAJA 20 pt (64→44, 26→6) para darle
             // más aire al orbe y sus satélites arriba; el lienzo reservado crece lo mismo
             // (ecosistemaAlto 300→320) y la zona de fade de los rótulos baja a la par.
-            .frame(height: G.lienzo.height - 44
+            // Dueño 2026-08-15 (gate UX+UI): SIN pastilla bajo el subtítulo, el bloque baja
+            // otros 24 pt (−44 → −20): el orbe gana ese aire; bajo el subtítulo quedan ~18 pt
+            // como corte de sección. Con puerta-ACCIÓN (Connect Health) la pastilla es la
+            // última fila del propio bloque (viaja con él).
+            .frame(height: G.lienzo.height - (heroInfo ? 20 : 44)
                    - (compacto ? LiquidSpace.ecosistemaAcercaVeredicto : 0), alignment: .bottom)
             .opacity(esSeparadaEstable ? 0 : 1)
             // Deriva sutil (overlapping action, ojo del dueño): la palabra no aparece —
@@ -540,9 +548,9 @@ public struct LiquidEcosistema: View {
             // va a bajar); al unir viaja esos 10 pt de vuelta a su asiento mientras
             // funde. Reduce Motion: cero viaje, solo crossfade.
             .offset(y: still ? 0 : (esSeparadaEstable ? 10 : 0))
-            // La palabra es puro texto (la puerta vive aparte): NUNCA intercepta el tap
-            // del lienzo — tocar el veredicto también separa (Grok #1).
-            .allowsHitTesting(false)
+            // El hit-testing vive en los TEXT de adentro (allowsHitTesting(false) por
+            // pieza): tocar el veredicto sigue separando (Grok #1); solo el ⓘ intercepta.
+            .allowsHitTesting(!esSeparadaEstable)
             // Al SEPARAR se desvanece de inmediato (se hace a un lado, ambient suave);
             // al UNIR llega ~0.45 s DESPUÉS de que la subida arrancó — primero se mueve
             // el objeto, después habla el texto. Todo al unísono se sentía mecánico.
@@ -552,13 +560,12 @@ public struct LiquidEcosistema: View {
                                 : LiquidMotion.ambient(0.75)
                                     .delay(LiquidEcosistemaMotion.fusionDur * 0.85 + 0.45)),
                        value: esSeparadaEstable)
-        // La PUERTA al acta («Cómo llegué a esto») vive en AMBOS modos (D10): el tap del
-        // lienzo ya no navega, así que esta pastilla es la única entrada visible.
-        if let heroPuerta {
-            // La puerta es la CODA del veredicto (rec. del /ui): se ancla al fondo del BLOQUE
-            // del veredicto (subtítulo en `-64`), no al piso del lienzo — hueco chico y
-            // deliberado arriba (~s400), y el aire se acumula ABAJO como corte de sección.
-            // Pegarla refuerza su tinte (extensión del veredicto, no un 2º objeto con color).
+        // La PUERTA como PASTILLA solo cuando es una ACCIÓN («Connect Health», ruta .salud):
+        // un ⓘ ahí mentiría (HIG: el info button revela información, no ejecuta). Con puerta
+        // informativa el ⓘ vive DENTRO del titular (ver `palabraVeredicto`) y la pastilla
+        // desaparece — también en modo separado (D10 actualizado: el separado es una consulta
+        // momentánea; la acción de rotor «How I got here» sigue viva en ambos modos).
+        if let heroPuerta, !heroInfo {
             botonPuerta(heroPuerta)
                 .frame(width: G.lienzo.width)
                 .frame(height: G.lienzo.height - 6
@@ -713,32 +720,42 @@ public struct LiquidEcosistema: View {
         VStack(spacing: LiquidSpace.s150) {
             switch hero {
             case .veredicto(let title, let highlight, let tone, let subtitle, let confianza):
-                palabraVeredicto(title: title, highlight: highlight, tone: tone)
+                titularConInfo(palabraVeredicto(title: title, highlight: highlight, tone: tone),
+                               tono: tone, fuente: LiquidType.infoGlifoTitular,
+                               levante: LiquidSpace.s075)
                 Text(subtitle)
                     .font(LiquidType.cuerpo).lineSpacing(LiquidType.cuerpoLineSpacing)
                     .foregroundStyle(LiquidColor.tinta700)
                     .multilineTextAlignment(.center)
+                    .allowsHitTesting(false)
                 if let confianza {
                     Text(confianza)
                         .font(LiquidType.captionLectura)
                         .foregroundStyle(LiquidColor.tinta500)
+                        .allowsHitTesting(false)
                 }
             case .demotado(let kicker, let title, let subtitle):
                 if let kicker {
                     Text(kicker).liquidLabel().foregroundStyle(LiquidColor.tinta500)
+                        .allowsHitTesting(false)
                 }
                 // Los estados sin veredicto hablan bajito (displayS): un titular
                 // demotado de 2 líneas en displayL se encimaba al orbe (revisión en
-                // simulador con «Aún no conozco tu base»).
-                Text(title)
-                    .font(LiquidType.displayS)
-                    .tracking(LiquidType.displaySTracking)
-                    .foregroundStyle(esCalibrando ? LiquidColor.tinta700 : LiquidColor.tinta900)
-                    .multilineTextAlignment(.center)
+                // simulador con «Aún no conozco tu base»). Con puerta informativa llevan
+                // su ⓘ en tinta neutra («sin veredicto, cero color»), talla callout.
+                titularConInfo(
+                    Text(title)
+                        .font(LiquidType.displayS)
+                        .tracking(LiquidType.displaySTracking)
+                        .foregroundStyle(esCalibrando ? LiquidColor.tinta700 : LiquidColor.tinta900)
+                        .multilineTextAlignment(.center),
+                    tono: LiquidColor.tinta500, fuente: LiquidType.infoGlifoTitularS,
+                    levante: LiquidSpace.s050)
                 Text(subtitle)
                     .font(LiquidType.cuerpo).lineSpacing(LiquidType.cuerpoLineSpacing)
                     .foregroundStyle(LiquidColor.tinta700)
                     .multilineTextAlignment(.center)
+                    .allowsHitTesting(false)
             }
             if case .calibrando(let noche, let total) = coreo {
                 puntosProgreso(noche: noche, total: total)
@@ -751,6 +768,33 @@ public struct LiquidEcosistema: View {
     private var esCalibrando: Bool {
         if case .calibrando = coreo { return true }
         return false
+    }
+
+    /// El titular con su ⓘ (dueño 2026-08-15, gate UX+UI): el glifo va en la MISMA línea, a la
+    /// última base (cubre titulares de 2 líneas), levantado un pelín, en el `tono` dado, y es
+    /// el único blanco táctil del bloque (≥44 pt vía contentShape, SIN inflar la línea). Sin
+    /// puerta informativa (acción «Connect Health», o sin puerta) el titular va solo.
+    @ViewBuilder
+    private func titularConInfo<T: View>(_ titular: T, tono: Color, fuente: Font,
+                                         levante: CGFloat) -> some View {
+        if heroInfo, let onTapVeredicto {
+            HStack(alignment: .lastTextBaseline, spacing: LiquidSpace.s200) {
+                titular.allowsHitTesting(false)
+                Button(action: onTapVeredicto) {
+                    Image(systemName: "info.circle")
+                        .font(fuente)
+                        .foregroundStyle(tono)
+                        .alignmentGuide(.lastTextBaseline) { d in d[.lastTextBaseline] + levante }
+                        // El «?» de la Matriz usa la misma receta (hit hacia afuera, la fila
+                        // mide lo que mide el texto).
+                        .contentShape(Rectangle().inset(by: -LiquidSpace.s300))
+                }
+                .buttonStyle(.liquidPress)
+                .accessibilityLabel(Text(verbatim: heroPuerta ?? ""))
+            }
+        } else {
+            titular.allowsHitTesting(false)
+        }
     }
 
     private func palabraVeredicto(title: String, highlight: String, tone: Color) -> some View {

@@ -132,6 +132,10 @@ enum LiquidHoyBuilder {
             // dos estados del héroe.
             heroPuerta: route == .salud ? String(localized: "Connect Health")
                                         : String(localized: "How I got here"),
+            // Dueño 2026-08-15 (gate UX+UI): con ruta autonómica la puerta es INFORMATIVA →
+            // ⓘ pegado a la palabra del veredicto (sin pastilla); con ruta .salud es una
+            // ACCIÓN («Connect Health») → pastilla de texto. Nunca un ⓘ para una acción.
+            heroInfo: route != .salud,
             calibracion: calibracion,
             rotulos: rotulos(locale: i.locale))
         return Output(model: model, heroRoute: route)
