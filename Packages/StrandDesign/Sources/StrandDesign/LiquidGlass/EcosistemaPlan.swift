@@ -448,14 +448,14 @@ public extension EcosistemaSimulacion {
     }
 
     /// Fade de los rótulos orbitales al entrar a la ZONA DEL TITULAR (dueño 2026-08-15):
-    /// el veredicto («In range»…) vive al pie del lienzo (y ≈ 215–260) y un satélite que
+    /// el veredicto («In range»…) vive al pie del lienzo (y ≈ 235–280) y un satélite que
     /// orbita bajo metía su rótulo DETRÁS del título — se leía basura («In R..NO SLEEP
-    /// range», cazado en captura). El rótulo se desvanece suave 195→215 y reaparece al
+    /// range», cazado en captura). El rótulo se desvanece suave 215→235 y reaparece al
     /// subir; la nube (el orbe chico) sí completa su órbita. Smoothstep: sin brincos, y
     /// bajo Reduce Motion (órbitas quietas) un rótulo en zona queda oculto — mejor que
     /// encimado.
     private static func alfaZonaTitulo(_ y: CGFloat) -> Double {
-        let inicio: CGFloat = 195, fin: CGFloat = 215
+        let inicio: CGFloat = 215, fin: CGFloat = 235   // sigue al veredicto (bajó 20, dueño 2026-08-15)
         if y <= inicio { return 1 }
         if y >= fin { return 0 }
         let f = Double((y - inicio) / (fin - inicio))
