@@ -20,6 +20,11 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **Hoy: las gráficas de temperatura y respiración hablan el idioma de la tarjeta del guardián / Today: skin-temp and breathing sparklines now match the guardian card** (FER-70).
+  **ES** — Banda «tu patrón» con sus dos filos de umbral, trazo más presente, un punto por noche y la joya hueca en HOY — como en la tarjeta que abre «Te vigila». Respiración sigue sin banda a propósito (el motor juzga contra tu propia base, no contra una tabla).
+  **EN** — Pattern band with threshold edges, a fuller stroke, one dot per night and the hollow "today" jewel — matching the guardian card. Breathing intentionally keeps no band (judged against your own baseline, not a table).
+  ([MatrizChart.swift](Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/MatrizChart.swift))
+
 - **Hoy: el veredicto baja un poco para darle aire a los orbes / Today: the verdict sits a bit lower so the orbs breathe** (FER-69).
   **ES** — El bloque del veredicto (titular, subtítulo y «Cómo llegué a esto») baja 20 pt dentro del héroe; el orbe y sus satélites ganan ese aire arriba. El hueco hacia «Decide tu día» no cambia.
   **EN** — The verdict block moves 20 pt down inside the hero so the orb and its satellites get more room above; the gap to "Decide your day" is unchanged.
