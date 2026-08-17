@@ -229,23 +229,16 @@ public struct LiquidEcosistema: View {
 
     /// El alto que el héroe RESERVA en el scroll (FER-79 · D4). Compacto manda sobre separado:
     /// «El Tablero» ya viene apretado por su propia presentación.
-    /// El alto de la línea del hint, que SÍ crece con Dynamic Type (`microEstado` es
-    /// `relativeTo: .caption2`). El 244 del token se midió a un solo tamaño de texto: en xxLarge
-    /// el margen volvía a ser cero y el rótulo se partía otra vez (tercera vuelta adversarial).
-    @ScaledMetric(relativeTo: .caption2) private var altoHint: CGFloat = 14
-
+    /// ALTURA FIJA (revisión del dueño 2026-08-17, viéndolo en el teléfono). Separar el orbe ya
+    /// NO mueve nada: el veredicto y todo lo que va debajo se quedan clavados donde estaban.
+    ///
+    /// Esto retira la decisión D4 de FER-79 («cierra el hueco»), que animaba el alto reservado
+    /// 320 → 244 al separar para que el modo separado no dejara aire muerto abajo. El precio de
+    /// aquello era que la página entera subía y bajaba con cada toque, y en el teléfono ese
+    /// movimiento pesa más que el hueco que evitaba: el usuario toca para MIRAR una señal, no
+    /// para reacomodar la pantalla. El aire de abajo vuelve, y es el trato aceptado.
     private var altoReservado: CGFloat {
-        if compacto { return LiquidSpace.ecosistemaAltoCompacto }
-        guard esSeparadaEstable else { return LiquidSpace.ecosistemaAlto }
-        // La pastilla de ACCIÓN («Connect Apple Health») vive al ras de abajo del lienzo. El
-        // hueco que D4 cierra es el hueco VACÍO del modo separado; cuando hay una puerta ahí
-        // abajo no está vacío, y recortar se la comía entera contra el `.clipped()` — al
-        // usuario sin permiso de Salud le desaparecía su única salida por separar el orbe
-        // (revisión adversarial).
-        if heroPuerta != nil, !heroInfo { return LiquidSpace.ecosistemaAlto }
-        return min(LiquidSpace.ecosistemaAlto,
-                   max(LiquidSpace.ecosistemaAltoSeparado,
-                       Self.hintUnirY + altoHint + LiquidSpace.s100))
+        compacto ? LiquidSpace.ecosistemaAltoCompacto : LiquidSpace.ecosistemaAlto
     }
 
     /// Dónde vive el hint «toca para unir» dentro del lienzo. Una sola fuente: el `offset` que
@@ -347,16 +340,10 @@ public struct LiquidEcosistema: View {
         // bloque del veredicto se funde y la sección de abajo sube con él; al reunir, baja de
         // vuelta con el mismo gesto (la misma curva y el mismo retardo que el lienzo, para que
         // se lea como un solo movimiento y no como dos).
+        // Sin animación: el alto ya no depende de la fase (ver `altoReservado`), así que no hay
+        // nada que animar — y cualquier animación aquí volvería a mover la página al separar,
+        // que es justo lo que el dueño pidió quitar.
         .frame(height: altoReservado * escala, alignment: .top)
-        // Se anima con el ALTO, no con la fase: el alto también cambia sin que la fase se mueva
-        // —conceder el permiso de Salud hace aparecer la pastilla y con ella los 76 pt que
-        // reserva— y con `value: esSeparadaEstable` ese salto entraba en seco (tercera vuelta).
-        .animation(still ? LiquidEcosistemaMotion.reduceCrossfadeAnim
-                         : (esSeparadaEstable
-                            ? LiquidMotion.ambient(0.9).delay(LiquidEcosistemaMotion.anticipacion)
-                            : LiquidMotion.ambient(0.9)
-                                .delay(LiquidEcosistemaMotion.fusionDur * 0.85)),
-                   value: altoReservado)
         .clipped()
         .modifier(EcosistemaVisibilidad { visible = $0 })
         .onAppear {
@@ -1043,6 +1030,7 @@ private struct EcosistemaVisibilidad: ViewModifier {
 /// resuelto congela (esquema de color).
 private final class EcosistemaEtiquetas {
     private var resueltas: [String: GraphicsContext.ResolvedText] = [:]
+    private var tamanos: [String: CGSize] = [:]
 
     func resuelta(_ texto: String, en ctx: GraphicsContext) -> GraphicsContext.ResolvedText {
         if let hit = resueltas[texto] { return hit }
@@ -1056,7 +1044,17 @@ private final class EcosistemaEtiquetas {
         return v
     }
 
-    func vaciar() { resueltas.removeAll() }
+    /// El tamaño dibujado de un rótulo, cacheado como su texto resuelto: se pide 60 veces por
+    /// segundo para saber quién se encima con quién.
+    func tamano(_ texto: String, en ctx: GraphicsContext) -> CGSize {
+        if let hit = tamanos[texto] { return hit }
+        let v = resuelta(texto, en: ctx)
+            .measure(in: CGSize(width: 4000, height: 4000))
+        tamanos[texto] = v
+        return v
+    }
+
+    func vaciar() { resueltas.removeAll(); tamanos.removeAll() }
 }
 
 // MARK: - El escenario (el reloj, el ancla del eclipse y QUÉ backend pinta)
@@ -1160,6 +1158,43 @@ extension EcosistemaSimulacion.Coreografia {
 
 // MARK: - El canvas de partículas (decorativo: la a11y vive en el elemento compuesto)
 
+// MARK: - Los rótulos orbitales se ceden el paso (FER-117)
+
+/// Geometría PURA de la cesión entre rótulos del héroe, fuera de la vista para poder probarla
+/// sin Canvas ni simulador.
+enum EcosistemaCesion {
+    /// El aire que cada rótulo reclama a los lados: empiezan a cederse el paso ANTES de
+    /// tocarse, porque dos versalitas a un pelo de distancia ya se leen como una sola palabra.
+    static let aireRotulo: CGFloat = 5
+
+    /// Cuánto cede cada rótulo, de 1 (nada) a 0 (invisible). **Pura**: la geometría se prueba
+    /// sin Canvas ni simulador.
+    ///
+    /// Cede SIEMPRE el de menor alfa, que en esta escena es el que va más atrás en la órbita.
+    /// La cesión es proporcional al solape horizontal —desvanecerse de golpe se leería como un
+    /// parpadeo— y llega a cero cuando el traslape alcanza el 40 % del rótulo más angosto.
+    static func cesionesRotulos(_ cajas: [(rect: CGRect, alfa: Double)]) -> [Double] {
+        var k = [Double](repeating: 1, count: cajas.count)
+        guard cajas.count > 1 else { return k }
+        for i in cajas.indices {
+            for j in cajas.indices where j != i {
+                // Empate de alfa (mismo plano): cede el de la izquierda, para que la regla sea
+                // determinista y no parpadeen los dos a la vez.
+                let cedeYo = cajas[i].alfa < cajas[j].alfa
+                    || (cajas[i].alfa == cajas[j].alfa && cajas[i].rect.minX < cajas[j].rect.minX)
+                guard cedeYo else { continue }
+                let solape = cajas[i].rect.intersection(cajas[j].rect)
+                guard !solape.isNull, solape.width > 0, solape.height > 0 else { continue }
+                let masAngosto = min(cajas[i].rect.width, cajas[j].rect.width)
+                guard masAngosto > 0 else { continue }
+                let fraccion = solape.width / masAngosto
+                k[i] = min(k[i], max(0, 1 - fraccion / 0.4))
+            }
+        }
+        return k
+    }
+}
+
 private struct EcosistemaCanvas: View {
     typealias Sim = EcosistemaSimulacion
     typealias G = EcosistemaSimulacion.Geometria
@@ -1250,10 +1285,26 @@ private struct EcosistemaCanvas: View {
     // MARK: Dibujo (recorre el PLAN — la coreografía vive en `EcosistemaSimulacion.plan`)
 
     private func dibujar(ctx: inout GraphicsContext, t: TimeInterval) {
-        for trazo in Sim.plan(t: t, escena: escena) {
+        let plan = Sim.plan(t: t, escena: escena)
+        // LOS RÓTULOS SE CEDEN EL PASO (FER-117). En español, «TEMPERATURA» y «FC EN REPOSO»
+        // —versalitas espaciadas letra a letra, casi el doble de anchas que sus gemelas en
+        // inglés— se montaban una sobre otra en parte de la órbita y quedaban ilegibles.
+        //
+        // De las tres salidas posibles se eligió la que no cobra el precio en otro lado:
+        // acortar la palabra castiga al español y volvería a romperse con la siguiente palabra
+        // larga; mover las órbitas rompe la coreografía que el dueño ya aprobó. Que el rótulo de
+        // ATRÁS se desvanezca no cuesta ninguna de las dos: su alfa ya codifica la profundidad,
+        // así que el de adelante gana solo, y como mide el texto REAL que va a dibujarse, sirve
+        // en cualquier idioma y a cualquier tamaño de letra.
+        let cede = cesiones(plan, ctx: ctx)
+        var iRotulo = 0
+        for trazo in plan {
             switch trazo {
             case .rotulo(let cual, let punto, let alfa):
-                etiqueta(ctx: &ctx, texto: rotulo(cual), en: punto, alfa: alfa)
+                let k = iRotulo < cede.count ? cede[iRotulo] : 1
+                iRotulo += 1
+                guard alfa * k > 0.02 else { break }
+                etiqueta(ctx: &ctx, texto: rotulo(cual), en: punto, alfa: alfa * k)
             // Con `soloEtiquetas` el Canvas es la capa de TEXTO sobre el shader de Metal
             // (FER-13): las partículas ya las pintó la GPU, aquí solo van los rótulos.
             case .nube(let nube):
@@ -1277,6 +1328,20 @@ private struct EcosistemaCanvas: View {
                     center: foco, startRadius: radioIni, endRadius: radio))
             }
         }
+    }
+
+    /// Mide los rótulos del plan y pregunta cuánto cede cada uno.
+    private func cesiones(_ plan: [Sim.Trazo], ctx: GraphicsContext) -> [Double] {
+        var cajas: [(rect: CGRect, alfa: Double)] = []
+        for trazo in plan {
+            guard case .rotulo(let cual, let punto, let alfa) = trazo else { continue }
+            let tam = etiquetas.tamano(rotulo(cual), en: ctx)
+            cajas.append((CGRect(x: punto.x - tam.width / 2 - EcosistemaCesion.aireRotulo,
+                                 y: punto.y - tam.height / 2,
+                                 width: tam.width + EcosistemaCesion.aireRotulo * 2,
+                                 height: tam.height), alfa))
+        }
+        return EcosistemaCesion.cesionesRotulos(cajas)
     }
 
     private func circulo(_ centro: CGPoint, _ radio: CGFloat) -> Path {

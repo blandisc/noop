@@ -62,15 +62,6 @@ public enum LiquidSpace {
     /// muerto abajo. Derivarlo de los recortes dejaba ~62 pt de aire reservado bajo la pastilla
     /// (el frame centrado); este valor + anclaje arriba lo eliminan y suben el módulo 1 pegado.
     public static let ecosistemaAltoCompacto: CGFloat = 250
-    /// FER-79 · D4 (dueño): el alto reservado cuando las señales están SEPARADAS. En ese modo
-    /// el bloque del veredicto (palabra + subtítulo + puerta) se funde, pero el lienzo seguía
-    /// reservando sus 320 pt: quedaban ~90 pt de aire muerto antes de «Deciden tu día». Las
-    /// esferas separadas viven en el tercio superior del lienzo, así que reservar hasta el
-    /// ancla de la puerta (≈230) las respeta enteras y sube la sección de abajo.
-    // 244 y no 232: el elemento MÁS BAJO del modo separado es el hint «toca para unir»
-    // (`offset(y: 226)` + su línea de ~14 pt). Con 232 el `.clipped()` del héroe lo partía a
-    // la mitad — el texto que invita al gesto, cortado (revisión adversarial).
-    public static let ecosistemaAltoSeparado: CGFloat = 244
 
     /// Margen inferior del dock flotante. Negativo entra al área segura para pegarlo
     /// más al borde (pedido del dueño /inject: a 8 y a 0 seguía flotando muy arriba).
