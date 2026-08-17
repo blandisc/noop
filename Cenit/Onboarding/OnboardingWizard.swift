@@ -1,636 +1,201 @@
 import SwiftUI
-import UniformTypeIdentifiers
 import StrandDesign
-import CenitStore
-#if canImport(UIKit)
-import UIKit
-#endif
+import StrandAnalytics
 
-// MARK: - OnboardingWizard  ·  «Instrumento diurno» (light)
+// MARK: - OnboardingWizard  ·  el onboarding en seis actos (FER-109)
 //
-// First-run setup, rebuilt light (FER-358, which absorbed the F2 re-skin). Apple
-// Health is the BASE everyone connects (FER-1003: Apple-only, no band step).
-// No dead ends: skipping Health still lands you in the app.
+// El primer arranque dejó de ser un wizard de formularios y pasó a ser una sola escena que se
+// transforma seis veces sobre EL MISMO lienzo de partículas. Lo que hay que entender antes de
+// tocar este archivo:
 //
-// Flow (Apple-only after Ola 2 amputation):
-//   welcome        — Cénit + "tus datos, nada en la nube" (one honest line)
-//   appleHealth    — connect the base (with "Not now"); 5 states
-//   profile        — age / sex / weight / height
-//   importData     — optional history import
-//   done           — "Enter Cénit" → onFinished()
+//   1. **Un solo suelo: `LiquidColor.fondoGradient`.** Es exactamente el papel de Hoy. El
+//      onboarding termina descubriendo la app, y con el papel cálido de «Instrumento» el
+//      aterrizaje saltaba de color en el último cuadro. Cero `InstrumentoTheme.base.paper` aquí.
 //
-// Surface is `InstrumentoTheme.base.paper`; color appears ONLY on a real measured
-// state (verdict-green for "connected", critical-red for "denied"). CTAs are the
-// shared InkButton / OutlineButton (hierarchy by ink fill, not color).
+//   2. **El orbe se llena con TU evidencia, no con el reloj.** La densidad del lienzo la manda
+//      `OnboardingLanding.densidadHonesta`, nunca cuánto tiempo llevas mirando la pantalla (ver
+//      la cabecera de `AcumulacionSimulacion`: en Hoy un orbe llenándose YA significa «todavía no
+//      te conozco», así que usar el mismo dibujo para «estoy descargando» enseñaría a leer mal la
+//      pantalla de todas las mañanas).
+//
+//   3. **El color llega como REVELACIÓN.** El lienzo va en tinta neutra durante cinco de los seis
+//      actos; el veredicto lo tiñe UNA vez, en el encendido del acto 3 → 4. Y la palabra que
+//      aparece ahí no se escribe en este flujo: sale de `LiquidHoyBuilder.veredicto`, la MISMA
+//      función que la dice en Hoy, para que las dos pantallas no puedan discrepar.
+//
+//   4. **Actos 3 y 4 son la misma pantalla.** No hay corte entre «conectando» y «tu lectura»: la
+//      convergencia se densifica, se tiñe, calla, y la palabra entra en fade puro encima.
+//
+// Los actos viven en archivos hermanos (`OnboardingActoPromesa`, `OnboardingActoEncendido`,
+// `OnboardingActoActa`, `OnboardingActoCiclo`); aquí está la escena, el lienzo y el cableado.
 
-public struct OnboardingWizard: View {
+struct OnboardingWizard: View {
 
-    /// Called when the user finishes (or skips to the end of) onboarding.
-    public var onFinished: () -> Void
+    /// Se llama cuando el usuario termina (o se salta al final de) el onboarding.
+    var onFinished: () -> Void
 
-    public init(onFinished: @escaping () -> Void) {
+    init(onFinished: @escaping () -> Void) {
         self.onFinished = onFinished
     }
 
-    private enum Step: Int, CaseIterable {
-        case welcome, appleHealth, profile, importData, done
-        var isFirst: Bool { self == .welcome }
-        var isLast: Bool { self == .done }
-    }
+    @EnvironmentObject private var health: HealthKitBridge
+    @EnvironmentObject private var repo: Repository
+    @EnvironmentObject private var tabRouter: TabRouter
 
-    @State private var step: Step = .welcome
+    @State private var acto: OnbActo = .promesa
+    /// 0…1 de cuánta materia hay en el lienzo. Ver la regla 2 de la cabecera.
+    @State private var densidad: Double = 0
+    /// 0 = tinta neutra · 1 = el color del veredicto. Ver la regla 3.
+    @State private var tenido: Double = 0
+    /// El desenlace, en cuanto se conoce. `nil` hasta que la sincronización termina.
+    @State private var landing: OnboardingLanding?
+    /// El acto 4 ya reveló: el lienzo pasa de `.convergencia` a `.dentro`.
+    @State private var revelado = false
 
-    public var body: some View {
+    var body: some View {
         ZStack {
-            InstrumentoTheme.base.paper.ignoresSafeArea()
+            LiquidColor.fondoGradient.ignoresSafeArea()
 
-            VStack(spacing: 0) {
-                topBar
-                    .padding(.horizontal, 28)
-                    .padding(.top, 18)
+            OnbLienzo(densidad: densidad, tenido: tenido, modo: modo,
+                      destino: destinoTinte, dosCentros: acto == .ciclo)
+                .ignoresSafeArea()
+                .zIndex(0)
 
-                ZStack {
-                    switch step {
-                    case .welcome:       WelcomeStep(onContinue: advance)
-                    case .appleHealth:   AppleHealthStep(onContinue: advance)
-                    case .profile:       ProfileStep(onContinue: advance)
-                    case .importData:    ImportStep(onContinue: advance)
-                    case .done:          DoneStep(onFinish: onFinished)
-                    }
-                }
-                .frame(maxWidth: 560, maxHeight: .infinity)
-                .transition(stepTransition)
-                .id(step)
-                .padding(.horizontal, CenitMetrics.screenPadding)
-                .padding(.bottom, 28)
-            }
+            contenido
+                .id(acto)
+                .transition(.opacity)
+                .zIndex(1)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .instrumentoTheme(.base)
-        .preferredColorScheme(.light)
+        .animation(LiquidMotion.glassOut(LiquidMotion.gentle), value: acto)
     }
 
-    // MARK: Top bar (just a quiet Back affordance)
+    // MARK: El acto en turno
 
     @ViewBuilder
-    private var topBar: some View {
-        HStack {
-            if step.isFirst {
-                Color.clear.frame(width: 44, height: 28)
-            } else {
-                Button(action: back) {
-                    HStack(spacing: 6) {
-                        StrandIcon.back.image
-                        Text("Back")
-                    }
-                    .font(StrandFont.subhead)
-                    .foregroundStyle(InstrumentoTheme.base.inkSecondary)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Back")
-            }
-            Spacer()
-        }
-    }
-
-    // MARK: Navigation
-
-    private func advance() {
-        guard let n = Step(rawValue: step.rawValue + 1) else { onFinished(); return }
-        withAnimation(StrandMotion.gentle) { step = n }
-    }
-
-    private func back() {
-        guard let p = Step(rawValue: step.rawValue - 1) else { return }
-        withAnimation(StrandMotion.gentle) { step = p }
-    }
-
-    private var stepTransition: AnyTransition {
-        .asymmetric(
-            insertion: .move(edge: .trailing).combined(with: .opacity),
-            removal: .move(edge: .leading).combined(with: .opacity)
-        )
-    }
-}
-
-
-// MARK: - Shared shell
-
-/// One light page: a scrollable column on paper. Title/overline/body are the
-/// caller's; this just gives the consistent margins and scroll behaviour so every
-/// step survives Dynamic Type with its CTA reachable.
-private struct StepShell<Content: View>: View {
-    @ViewBuilder var content: () -> Content
-    var body: some View {
-        // minHeight = viewport so inner Spacers push the CTA to the foot, while
-        // Dynamic Type overflow still scrolls (CTA stays reachable at AX5).
-        GeometryReader { geo in
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 0) {
-                    content()
-                }
-                .frame(maxWidth: .infinity, minHeight: geo.size.height, alignment: .topLeading)
-                .padding(.vertical, CenitMetrics.space2)
-            }
-        }
-    }
-}
-
-private struct Overline: View {
-    let text: LocalizedStringKey
-    @Environment(\.instrumentoTheme) private var theme
-    var body: some View {
-        Text(text).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-    }
-}
-
-// MARK: - Step · Welcome
-
-private struct WelcomeStep: View {
-    let onContinue: () -> Void
-    @Environment(\.instrumentoTheme) private var theme
-    var body: some View {
-        StepShell {
-            Spacer(minLength: CenitMetrics.sectionGap)
-            Text("Cénit")
-                .instrumentoHero(56)
-                .foregroundStyle(theme.ink)
-            Text("Your data, none of the cloud.")
-                .font(StrandFont.title2)
-                .foregroundStyle(theme.inkSecondary)
-                .padding(.top, CenitMetrics.space1)
-            Text("Cénit reads your recovery, sleep and strain and keeps them only on your iPhone. No account, no servers. Give it a few days of data and you'll start to see your patterns.")
-                .font(StrandFont.body)
-                .foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, CenitMetrics.sectionGap)
-            Spacer(minLength: CenitMetrics.sectionGap)
-            InkButton("Get started", action: onContinue)
-        }
-    }
-}
-
-// MARK: - Step · Apple Health (the base)
-
-private struct AppleHealthStep: View {
-    let onContinue: () -> Void
-    @EnvironmentObject private var health: HealthKitBridge
-    @Environment(\.instrumentoTheme) private var theme
-    @Environment(\.openURL) private var openURL
-    @State private var requesting = false
-
-    var body: some View {
-        Group {
-            switch health.auth {
-            case .unknown:     priming
-            case .authorized:  granted
-            case .denied:      denied
-            case .unavailable: unavailable
-            }
-        }
-        // If Health isn't available, don't strand the user on a dead screen.
-        .onAppear { if health.auth == .unavailable { onContinue() } }
-    }
-
-    // Initial priming + the request, in flight ("Connecting…").
-    private var priming: some View {
-        StepShell {
-            Overline(text: "Step 1 · The base")
-            Text("Conecta Apple Health")
-                .font(StrandFont.title1)
-                .foregroundStyle(theme.ink)
-                .padding(.top, CenitMetrics.space2)
-            Text("It's the base of your data in Cénit.")
-                .font(StrandFont.body)
-                .foregroundStyle(theme.inkSecondary)
-                .padding(.top, CenitMetrics.space2)
-            Text("Cénit reads your sleep, steps, workouts, weight and heart rate from Apple Health to give you an honest read of your body.")
-                .font(StrandFont.body)
-                .foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, CenitMetrics.sectionGap)
-
-            Rectangle().fill(theme.hairline).frame(height: 1)
-                .padding(.top, CenitMetrics.sectionGap)
-            HStack(alignment: .top, spacing: CenitMetrics.space2) {
-                Image(systemName: "lock.fill")
-                    .font(StrandFont.glyph(.chevron))
-                    .foregroundStyle(theme.inkTertiary)
-                    .accessibilityHidden(true)
-                Text("Everything stays on your iPhone. Cénit doesn't upload anything to any server.")
-                    .font(StrandFont.subhead)
-                    .foregroundStyle(theme.inkTertiary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(.top, CenitMetrics.gap)
-
-            Spacer(minLength: CenitMetrics.sectionGap)
-            InkButton(requesting ? "Connecting…" : "Conectar Apple Health") {
-                guard !requesting else { return }
-                requesting = true
-                Task {
+    private var contenido: some View {
+        switch acto {
+        case .promesa:
+            OnbActoPromesa(densidad: $densidad, onEmpezar: { ir(a: .permiso) })
+        case .permiso:
+            OnbActoPermiso(
+                onAtras: { ir(a: .promesa) },
+                onConectar: {
                     await health.requestAuthorization()
-                    requesting = false
-                    if health.auth == .authorized { await health.sync(days: 180) }
-                }
-            }
-            .disabled(requesting)
-            OutlineButton("Not now", action: onContinue)
-                .opacity(requesting ? 0.45 : 1)
-                .disabled(requesting)
+                    ir(a: .encendido)
+                },
+                onAhoraNo: { ir(a: .salida) })
+        case .encendido:
+            OnbActoEncendido(
+                densidad: $densidad,
+                tenido: $tenido,
+                landing: $landing,
+                revelado: $revelado,
+                onContinuar: { ir(a: .acta) },
+                onEntrenar: { terminar(irAEntrenar: true) },
+                onEntrar: { terminar() })
+        case .acta:
+            OnbActoActa(
+                landing: landing,
+                onAtras: { ir(a: .encendido) },
+                onContinuar: { ir(a: .ciclo) })
+        case .ciclo:
+            OnbActoCiclo(
+                landing: landing,
+                onAtras: { ir(a: .acta) },
+                onEntrar: { terminar() })
+        case .salida:
+            OnbActoSalida(
+                onReconsiderar: { ir(a: .permiso) },
+                onEntrar: { terminar() })
         }
     }
 
-    private var granted: some View {
-        CenteredState(
-            glyph: "checkmark.circle.fill",
-            glyphColor: theme.verdict,
-            title: "Apple Health connected.",
-            titleColor: theme.verdict,
-            message: "You've got the base. Let's keep going."
-        ) {
-            InkButton("Continue", action: onContinue)
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Apple Health connected")
-    }
+    // MARK: El lienzo, acto por acto
 
-    private var denied: some View {
-        CenteredState(
-            glyph: "exclamationmark.circle",
-            glyphColor: theme.critical,
-            title: "Access turned off",
-            titleColor: theme.ink,
-            message: "You left Apple Health access turned off. You can turn it on anytime in Settings. Cénit works without it, with less detail."
-        ) {
-            OutlineButton("Open Settings") {
-                #if canImport(UIKit)
-                if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
-                #endif
-            }
-            OutlineButton("Continue anyway", action: onContinue)
+    private var modo: AcumulacionSimulacion.Modo {
+        switch acto {
+        case .promesa:            return .disperso
+        case .permiso, .salida:   return .quieto
+        case .encendido:          return revelado ? .dentro : .convergencia
+        case .acta:               return .descomposicion
+        case .ciclo:              return .circulacion
         }
     }
 
-    private var unavailable: some View {
-        CenteredState(
-            glyph: "heart.slash",
-            glyphColor: theme.inkTertiary,
-            title: "Apple Health isn't available on this iPhone.",
-            titleColor: theme.ink,
-            message: nil
-        ) {
-            InkButton("Continue", action: onContinue)
+    /// El color al que el lienzo se tiñe cuando hay veredicto. La familia de PARTÍCULA (más
+    /// profunda que los semánticos: un punto de 0.7–2.2 pt con alfa ≤ .65 lava cualquier tono
+    /// medio), la misma que usa el héroe de Hoy. Sin palabra no hay tinte: el orbe se queda gris
+    /// en vez de apostar un color.
+    private var destinoTinte: (r: Double, g: Double, b: Double)? {
+        guard case let .lectura(verdict, _, _) = landing else { return nil }
+        switch verdict {
+        case .full:      return LiquidColor.ParticulaRGB.verde
+        case .caution:   return LiquidColor.ParticulaRGB.ambar
+        case .easy:      return LiquidColor.ParticulaRGB.roja
+        case .lowSignal: return nil
         }
     }
-}
 
-/// A centered single-focus state (granted / denied / unavailable / done): a glyph,
-/// a title, an optional message, and the caller's button stack pinned at the foot.
-private struct CenteredState<Buttons: View>: View {
-    let glyph: String
-    let glyphColor: Color
-    let title: LocalizedStringKey
-    let titleColor: Color
-    let message: LocalizedStringKey?
-    @ViewBuilder var buttons: () -> Buttons
-    @Environment(\.instrumentoTheme) private var theme
+    // MARK: Navegación
 
-    var body: some View {
-        VStack(spacing: 0) {
-            Spacer(minLength: CenitMetrics.sectionGap)
-            VStack(spacing: CenitMetrics.gap) {
-                Image(systemName: glyph)
-                    .font(.system(size: 48, weight: .regular)) // token-exempt: glifo hero 48pt fuera de banda
-                    .foregroundStyle(glyphColor)
-                    .accessibilityHidden(true)
-                Text(title)
-                    .font(StrandFont.title2)
-                    .foregroundStyle(titleColor)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-                if let message {
-                    Text(message)
-                        .font(StrandFont.body)
-                        .foregroundStyle(theme.inkSecondary)
-                        .multilineTextAlignment(.center)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-            .frame(maxWidth: .infinity)
-            Spacer(minLength: CenitMetrics.sectionGap)
-            VStack(spacing: CenitMetrics.gap) { buttons() }
-        }
+    private func ir(a destino: OnbActo) {
+        withAnimation(LiquidMotion.glassOut(LiquidMotion.gentle)) { acto = destino }
+    }
+
+    /// El final del flujo. «Ir a Entrenar» aterriza en la pestaña que sí funciona sin reloj,
+    /// vía el mismo `TabRouter` que usan las demás pantallas.
+    private func terminar(irAEntrenar: Bool = false) {
+        if irAEntrenar { tabRouter.requested = .train }
+        onFinished()
     }
 }
 
-// MARK: - Step · Profile
+// MARK: - Los seis actos (+ la salida)
 
-private struct ProfileStep: View {
-    let onContinue: () -> Void
-    @EnvironmentObject private var profile: ProfileStore
-    @EnvironmentObject private var health: HealthKitBridge
-    @Environment(\.instrumentoTheme) private var theme
-    @State private var fromHealth: Set<String> = []
-    @State private var didAutoFill = false
-
-    @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
-    private var unitSystem: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
-
-    private let sexes: [(String, String)] = [
-        ("male", "Hombre"), ("female", "Mujer"), ("nonbinary", "Otro")
-    ]
-
-    var body: some View {
-        StepShell {
-            Overline(text: "About you")
-            Text("About you")
-                .font(StrandFont.title1)
-                .foregroundStyle(theme.ink)
-                .padding(.top, CenitMetrics.space2)
-            Text("To compute your heart-rate zones and your baselines.")
-                .font(StrandFont.body)
-                .foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, CenitMetrics.space2)
-
-            VStack(spacing: CenitMetrics.gap) {
-                Stepper(value: $profile.age, in: 13...100) {
-                    FieldRow(label: "Age", value: "\(profile.age)")
-                }
-                .tint(theme.inkSecondary)
-                Divider().overlay(theme.hairline)
-                VStack(alignment: .leading, spacing: CenitMetrics.space2) {
-                    Overline(text: "Sex")
-                    Picker("Sex", selection: $profile.sex) {
-                        ForEach(sexes, id: \.0) { key, label in Text(label).tag(key) }
-                    }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                }
-                Divider().overlay(theme.hairline)
-                Stepper(value: $profile.weightKg, in: 30...250, step: 0.5) {
-                    FieldRow(label: "Weight", value: UnitFormatter.massFromKilograms(profile.weightKg, system: unitSystem))
-                }
-                .tint(theme.inkSecondary)
-                Divider().overlay(theme.hairline)
-                Stepper(value: $profile.heightCm, in: 120...230, step: 1) {
-                    FieldRow(label: "Height", value: UnitFormatter.heightFromCentimeters(profile.heightCm, system: unitSystem))
-                }
-                .tint(theme.inkSecondary)
-            }
-            .padding(CenitMetrics.cardPadding)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
-            .padding(.top, CenitMetrics.sectionGap)
-
-            if !fromHealth.isEmpty {
-                HStack(spacing: CenitMetrics.space2) {
-                    StrandIcon.heart.image.font(StrandFont.glyph(.chevron)).foregroundStyle(theme.dataSpO2)
-                    Text("From Apple Health · editable")
-                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                }
-                .padding(.top, CenitMetrics.space2)
-                .accessibilityElement(children: .combine)
-            }
-
-            HStack(spacing: CenitMetrics.space2) {
-                Image(systemName: "bolt.heart").foregroundStyle(theme.inkTertiary)
-                Text("Estimated max heart rate · \(profile.hrMax) bpm")
-                    .font(StrandFont.footnote)
-                    .foregroundStyle(theme.inkTertiary)
-            }
-            .padding(.top, CenitMetrics.gap)
-
-            Spacer(minLength: CenitMetrics.sectionGap)
-            InkButton("Continue", action: onContinue)
-        }
-        .task { await autoFill() }
-    }
-
-    /// Prellena el Perfil desde Apple Health una sola vez al aparecer (FER-361): aplica solo los campos
-    /// que Health tiene (parcial, campo por campo) y marca su procedencia. Las ediciones del usuario son
-    /// posteriores, así que ganan.
-    private func autoFill() async {
-        guard !didAutoFill, health.auth == .authorized else { return }
-        didAutoFill = true
-        let c = await health.readProfileCharacteristics()
-        var marked: Set<String> = []
-        if let s = c.sex { profile.sex = s; marked.insert("sex") }
-        if let a = c.age, (13...100).contains(a) { profile.age = a; marked.insert("age") }
-        if let w = c.weightKg, (30...250).contains(w) { profile.weightKg = w; marked.insert("weight") }
-        if let h = c.heightCm, (120...230).contains(h) { profile.heightCm = h; marked.insert("height") }
-        fromHealth = marked
-    }
+enum OnbActo: Hashable {
+    /// 1 · La promesa.
+    case promesa
+    /// 2 · El permiso, que es también el diagrama de pesos.
+    case permiso
+    /// 3 y 4 · La conexión y la lectura: LA MISMA pantalla, que se transforma sin corte.
+    case encendido
+    /// 5 · El acta: de qué está hecha la palabra.
+    case acta
+    /// 6 · El ciclo y la mañana.
+    case ciclo
+    /// La salida de «Ahora no».
+    case salida
 }
 
-// MARK: - Step · Import (optional)
+// MARK: - El lienzo
 
-private struct ImportStep: View {
-    let onContinue: () -> Void
-    @Environment(AppModel.self) private var model
-    @Environment(\.instrumentoTheme) private var theme
-    @State private var showingImporter = false
-    @State private var importTarget: ImportTarget = .appleHealth
+/// El campo de partículas de fondo, con `densidad` y `teñido` ANIMABLES.
+///
+/// `LiquidOrbeAcumulacion` recibe la densidad como un `Double` cualquiera, y SwiftUI no interpola
+/// los parámetros de una vista que no declara `Animatable`: un `withAnimation` sobre la densidad
+/// la hacía SALTAR al valor final en el siguiente cuadro. Con `animatableData` el sistema vuelve a
+/// evaluar este `body` en cada cuadro del tramo, que es lo que convierte «se llenó» en «se está
+/// llenando». El teñido viaja en el mismo par porque el guion del encendido los encadena.
+private struct OnbLienzo: View, Animatable {
+    var densidad: Double
+    var tenido: Double
+    let modo: AcumulacionSimulacion.Modo
+    let destino: (r: Double, g: Double, b: Double)?
+    let dosCentros: Bool
+
+    var animatableData: AnimatablePair<Double, Double> {
+        get { AnimatablePair(densidad, tenido) }
+        set { densidad = newValue.first; tenido = newValue.second }
+    }
 
     var body: some View {
-        StepShell {
-            Overline(text: "Your history")
-            Text("Bring your history")
-                .font(StrandFont.title1)
-                .foregroundStyle(theme.ink)
-                .padding(.top, CenitMetrics.space2)
-            Text("Optional. Fill your dashboard from day one.")
-                .font(StrandFont.body)
-                .foregroundStyle(theme.inkSecondary)
-                .padding(.top, CenitMetrics.space2)
-            Text("An Apple Health export adds HR, HRV, sleep, blood oxygen, steps and weight.")
-                .font(StrandFont.subhead)
-                .foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, CenitMetrics.gap)
-
-            VStack(spacing: CenitMetrics.gap) {
-                ImportRow(title: model.isImporting(.appleHealth) ? "Importing…" : "Import Apple Health export",
-                          systemImage: "heart.fill",
-                          disabled: model.hasActiveImport) { presentImporter(.appleHealth) }
-            }
-            .padding(.top, CenitMetrics.sectionGap)
-
-            if model.hasActiveImport {
-                HStack(spacing: CenitMetrics.space2) {
-                    ProgressView().controlSize(.small).tint(theme.inkSecondary)
-                    if let n = model.appleHealthImportProgress {
-                        Text("\(n) registros")
-                            .font(StrandFont.footnote)
-                            .foregroundStyle(theme.inkTertiary)
-                            .monospacedDigit()
-                    }
-                }
-                .padding(.top, CenitMetrics.gap)
-            }
-
-            if let summary = lastSummary {
-                Text(summary)
-                    .font(StrandFont.subhead)
-                    .foregroundStyle(model.importFailed(importKind) ? theme.critical : theme.verdict)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, CenitMetrics.gap)
-            }
-
-            Spacer(minLength: CenitMetrics.sectionGap)
-            OutlineButton("Not now", action: onContinue)
-        }
-        .fileImporter(
-            isPresented: $showingImporter,
-            allowedContentTypes: importTarget.allowedContentTypes,
-            allowsMultipleSelection: false
-        ) { result in
-            handleImportResult(result, for: importTarget)
-        }
-    }
-
-    private var importKind: DataSourceImportKind {
-        switch importTarget {
-        case .appleHealth: return .appleHealth
-        }
-    }
-    private var lastSummary: String? {
-        switch importTarget {
-        case .appleHealth: return model.appleHealthImportSummary
-        }
-    }
-    private func presentImporter(_ target: ImportTarget) {
-        importTarget = target
-        showingImporter = true
-    }
-    private func handleImportResult(_ result: Result<[URL], Error>, for target: ImportTarget) {
-        guard case .success(let urls) = result, let url = urls.first else { return }
-        switch target {
-        case .appleHealth: model.importAppleHealth(url: url)
-        }
-    }
-    private enum ImportTarget {
-        case appleHealth
-        var allowedContentTypes: [UTType] {
-            switch self {
-            case .appleHealth: return [.zip, .xml, .folder]
-            }
-        }
-    }
-}
-
-// MARK: - Step · Done
-
-private struct DoneStep: View {
-    let onFinish: () -> Void
-    @Environment(\.instrumentoTheme) private var theme
-    @Environment(\.openURL) private var openURL
-    var body: some View {
-        StepShell {
-            Overline(text: "The ritual")
-            Text("All set. Tonight, the first read.")
-                .font(StrandFont.title1)
-                .foregroundStyle(theme.ink)
-                .padding(.top, CenitMetrics.space2)
-            Text("Sleep with your Apple Watch. In the morning, your day's read will be waiting.")
-                .font(StrandFont.body)
-                .foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, CenitMetrics.space2)
-
-            VStack(alignment: .leading, spacing: CenitMetrics.gap) {
-                Checkline("Night 1: I meet your resting rhythm.")
-                Checkline("Night 3: the read starts to feel yours.")
-                Checkline("Resting also counts. There is no streak to lose here.")
-            }
-            .padding(.top, CenitMetrics.sectionGap)
-
-            Rectangle().fill(theme.hairline).frame(height: 1)
-                .padding(.vertical, CenitMetrics.gap)
-
-            Text("One more thing, optional")
-                .font(StrandFont.subhead.weight(.semibold))
-                .foregroundStyle(theme.ink)
-            Text("If you turn on AFib History in the Health app, your watch samples your heartbeats much more often and the night read gets sharper.")
-                .font(StrandFont.subhead)
-                .foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, CenitMetrics.space2)
-            OutlineButton("Open Health") {
-                if let url = URL(string: "x-apple-health://") { openURL(url) }
-            }
-            .padding(.top, CenitMetrics.gap)
-
-            Spacer(minLength: CenitMetrics.sectionGap)
-            InkButton("Enter Cénit", action: onFinish)
-        }
-    }
-}
-
-// MARK: - Reusable pieces
-
-private struct Checkline: View {
-    let text: LocalizedStringKey
-    @Environment(\.instrumentoTheme) private var theme
-    init(_ text: LocalizedStringKey) { self.text = text }
-    var body: some View {
-        HStack(alignment: .top, spacing: CenitMetrics.space2) {
-            StrandIcon.confirm.image
-                .font(StrandFont.glyph(.chevron, weight: .semibold))
-                .foregroundStyle(theme.inkTertiary)
-                .padding(.top, 2)
-                .accessibilityHidden(true)
-            Text(text)
-                .font(StrandFont.subhead)
-                .foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-            Spacer(minLength: 0)
-        }
-    }
-}
-
-private struct FieldRow: View {
-    let label: LocalizedStringKey
-    let value: String
-    @Environment(\.instrumentoTheme) private var theme
-    var body: some View {
-        HStack {
-            Text(label).font(StrandFont.body).foregroundStyle(theme.ink)
-            Spacer()
-            Text(value).font(StrandFont.bodyNumber).foregroundStyle(theme.ink)
-        }
-    }
-}
-
-private struct ImportRow: View {
-    let title: LocalizedStringKey
-    let systemImage: String
-    var disabled = false
-    let action: () -> Void
-    @Environment(\.instrumentoTheme) private var theme
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: CenitMetrics.gap) {
-                Image(systemName: systemImage)
-                    .font(StrandFont.glyph(.inline, weight: .semibold))
-                    .frame(width: 18)
-                Text(title).font(StrandFont.subhead.weight(.semibold))
-                Spacer(minLength: 0)
-                StrandIcon.disclosure.image
-                    .font(StrandFont.glyph(.chevron, weight: .bold))
-                    .foregroundStyle(theme.inkTertiary)
-            }
-            .foregroundStyle(theme.ink)
-            .padding(.vertical, 12)
-            .padding(.horizontal, CenitMetrics.cardPadding)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
-        }
-        .buttonStyle(.plain)
-        .disabled(disabled)
-        .opacity(disabled ? 0.55 : 1)
+        LiquidOrbeAcumulacion(
+            modo: modo,
+            densidad: densidad,
+            tinte: destino.map { LiquidColor.particulaTeñida(hacia: $0, k: tenido) },
+            centroRelativo: dosCentros ? UnitPoint(x: 0.28, y: 0.30) : UnitPoint(x: 0.5, y: 0.34),
+            centroSecundario: dosCentros ? UnitPoint(x: 0.72, y: 0.30) : nil)
     }
 }
 
@@ -642,10 +207,15 @@ private struct OnboardingPreview: View {
     var body: some View {
         OnboardingWizard(onFinished: {})
             .environment(model)
+            .environmentObject(model.repo)
             .environmentObject(model.profile)
-            .frame(width: 390, height: 780)
+            .environmentObject(TabRouter())
+            .environmentObject(HealthKitBridge(repo: model.repo,
+                                               appleDeviceId: "preview-apple",
+                                               noopDeviceId: "preview"))
+            .frame(width: 390, height: 800)
     }
 }
 
-#Preview("Onboarding") { OnboardingPreview() }
+#Preview("Onboarding · seis actos") { OnboardingPreview() }
 #endif
