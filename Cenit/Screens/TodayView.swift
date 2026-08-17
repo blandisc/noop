@@ -559,7 +559,8 @@ struct TodayView: View {
             present = {
                 let r = resolveMeasured(todayOnly: true) { $0.skinTempDevC }
                 skinTempDetail = SkinTempDetailItem(model: SkinTempDetailModel.build(
-                    latest: r?.value,
+                    // FER-78: la de HOY, ajustada por tu fase — la misma que juzga el guardián.
+                    latest: tempDeHoyAjustada ?? r?.value,
                     series: repo.displayDays.compactMap { row in row.skinTempDevC.map { (row.day, $0) } }
                         .sorted { $0.day < $1.day },
                     loaded: repo.loaded))
@@ -1212,14 +1213,34 @@ struct TodayView: View {
         inputs.verdictPending = repo.todayPreparedness == nil && !repo.fullyLoaded
         // FER-42: sello de noche del guardián — su juicio solo vale para la noche actual.
         inputs.nightKey = Repository.localDayKey(Date())
-        inputs.thermalDeviation = resolveMeasured(todayOnly: true, { $0.skinTempDevC })?.value
+        // FER-78 · UNA sola cifra de temperatura por noche en toda la app: la AJUSTADA por tu fase
+        // (la que de verdad juzga el guardián). La Matriz ya la usaba y el héroe y las hojas la
+        // cruda: el mismo dato con dos valores, y un punto fuera de la banda ±0.8 bajo un título
+        // que decía «dentro de tu patrón». Sin ajuste calculado, la cruda.
+        inputs.thermalDeviation = repo.todayPreparedness?.thermalAdjustedDevC
+            ?? resolveMeasured(todayOnly: true, { $0.skinTempDevC })?.value
         inputs.trainingLoad = trainingLoad
         inputs.sleep = resolveMeasured(todayOnly: true, { $0.totalSleepMin })
             .map { .init($0.value, fromApple: $0.fromApple) }
         inputs.hrv = resolveMeasured(todayOnly: true, { $0.avgHrv })
             .map { .init($0.value, fromApple: $0.fromApple) }
-        inputs.rhr = resolveMeasured(todayOnly: true, { $0.restingHr.map(Double.init) })
-            .map { .init($0.value, fromApple: $0.fromApple) }
+        // FER-75 · «FC en reposo» era DOS números en la misma pantalla: el orbe mostraba la FC
+        // DESPIERTA que reporta Apple y la celda de abajo (y el voto) la NOCTURNA que resuelve el
+        // motor. Ahora manda la del motor —el mismo constructo que vota— y solo se cae a la de
+        // Apple cuando el motor no resolvió ninguna.
+        let rhrDelMotor: Double? = {
+            guard let bn = repo.todayPreparedness?.bodyHistory.last,
+                  bn.day == Repository.localDayKey(Date()) else { return nil }
+            return bn.rhrResolved
+        }()
+        if let rhrDelMotor {
+            inputs.rhr = .init(rhrDelMotor,
+                               fromApple: resolveMeasured(todayOnly: true,
+                                                          { $0.restingHr.map(Double.init) })?.fromApple ?? false)
+        } else {
+            inputs.rhr = resolveMeasured(todayOnly: true, { $0.restingHr.map(Double.init) })
+                .map { .init($0.value, fromApple: $0.fromApple) }
+        }
         inputs.strain = model.displayedDayStrain
         inputs.strainEstimated = repo.isStrainEstimated(repo.today?.day ?? Repository.localDayKey(Date()))
         let steps = liquidSteps()
@@ -1272,7 +1293,7 @@ struct TodayView: View {
         case "steps":
             metricDetail = .steps(liquidSteps().raw)
         case "skintemp":
-            metricDetail = .skinTemp(resolveMeasured(todayOnly: true) { $0.skinTempDevC }?.value)
+            metricDetail = .skinTemp(tempDeHoyAjustada)
         case "resp":
             metricDetail = .respiratory(resolveMeasured(todayOnly: true) { $0.respRateBpm }?.value)
         case "stress":
@@ -1295,7 +1316,7 @@ struct TodayView: View {
             metricDetail = .sleep(resolveMeasured(todayOnly: true) { $0.totalSleepMin }
                 .map { Int($0.value.rounded()) })
         case "termico":
-            metricDetail = .skinTemp(resolveMeasured(todayOnly: true) { $0.skinTempDevC }?.value)
+            metricDetail = .skinTemp(tempDeHoyAjustada)
         default:
             break
         }
@@ -1332,6 +1353,13 @@ struct TodayView: View {
     // dial. No refleja un fetch de Apple Health en background (HealthKit sincroniza solo). El texto
     // «Sincronizando…» que colgaba de aquí, heredado de la banda, se retiró en FER-65 — el dial es la señal.
     private var isSyncing: Bool { pullSyncing || health.syncing }
+
+    /// FER-78 · La temperatura de HOY con el ajuste de fase ya aplicado — la MISMA cifra que juzga
+    /// el guardián y que dibuja la Matriz. Sin ajuste calculado, la cruda.
+    private var tempDeHoyAjustada: Double? {
+        repo.todayPreparedness?.thermalAdjustedDevC
+            ?? resolveMeasured(todayOnly: true) { $0.skinTempDevC }?.value
+    }
 
     /// ¿Hay una hoja encima de Hoy? (FER-73 · M8 — pausa el ambiente que nadie está viendo.)
     private var hojaPresentada: Bool {
