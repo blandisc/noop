@@ -36,7 +36,7 @@ final class HiloEntrenarTests: XCTestCase {
         for verdict: Preparedness.Verdict in [.full, .caution, .easy] {
             let h = hilo(read(verdict, nightAnchored: false))
             XCTAssertEqual(h?.tono, .hueco, "\(verdict) sin noche anclada")
-            XCTAssertNotEqual(h?.palabra, LiquidHoyBuilder.palabraVeredictoPublica(verdict),
+            XCTAssertNotEqual(h?.palabra, LiquidHoyBuilder.palabraVeredicto(verdict),
                               "\(verdict): la palabra del héroe no puede salir sin la noche")
         }
     }
@@ -44,7 +44,7 @@ final class HiloEntrenarTests: XCTestCase {
     func testConNocheAncladaDiceLaMismaPalabraQueElHeroe() {
         for verdict: Preparedness.Verdict in [.full, .caution, .easy] {
             let h = hilo(read(verdict, nightAnchored: true))
-            XCTAssertEqual(h?.palabra, LiquidHoyBuilder.palabraVeredictoPublica(verdict), "\(verdict)")
+            XCTAssertEqual(h?.palabra, LiquidHoyBuilder.palabraVeredicto(verdict), "\(verdict)")
         }
     }
 
