@@ -280,16 +280,34 @@ final class HoyMatrizBuilderTests: XCTestCase {
             XCTAssertEqual(n.count, 7)
         } else { XCTFail("stress") }
 
-        // Sellos: la identidad ahora es el HUE del orbe vivo (los glifos se
-        // retiraron con el rediseño FER-51; línea podrida cazada por verify).
+        // Identidad: hue + sello dibujado, uno por señal. Cuatro cambiaron de tono al
+        // alinearlos con la tabla 1:1 de tokens (el teal era de PASOS, tinta700 es un tono
+        // de TEXTO, verdePrimario es la voz de marca y también la zona «bajo» del medidor).
         XCTAssertEqual(seccion(model, id: "sleep")?.hue, LiquidColor.indigo)
         XCTAssertEqual(seccion(model, id: "rhr")?.hue, LiquidColor.rosa)
         XCTAssertEqual(seccion(model, id: "hrv")?.hue, LiquidColor.cian)
         XCTAssertEqual(seccion(model, id: "guardian")?.hue, LiquidColor.doradoTemp)
-        XCTAssertEqual(seccion(model, id: "carga")?.hue, LiquidColor.verdePrimario)
-        XCTAssertEqual(seccion(model, id: "strain")?.hue, LiquidColor.teal)
-        XCTAssertEqual(seccion(model, id: "stress")?.hue, LiquidColor.tinta900)
-        XCTAssertEqual(seccion(model, id: "steps")?.hue, LiquidColor.tinta700)
+        XCTAssertEqual(seccion(model, id: "carga")?.hue, LiquidColor.verdeCarga)
+        XCTAssertEqual(seccion(model, id: "strain")?.hue, LiquidColor.ambar)
+        XCTAssertEqual(seccion(model, id: "stress")?.hue, LiquidColor.ambarEstres)
+        XCTAssertEqual(seccion(model, id: "steps")?.hue, LiquidColor.teal)
+
+        // Cada señal lleva SU sello; el guardián no (su sello VIVE: SelloGuardianVivo).
+        XCTAssertEqual(seccion(model, id: "sleep")?.sello, .sueno)
+        XCTAssertEqual(seccion(model, id: "rhr")?.sello, .reposo)
+        XCTAssertEqual(seccion(model, id: "hrv")?.sello, .hrv)
+        XCTAssertEqual(seccion(model, id: "carga")?.sello, .carga)
+        XCTAssertEqual(seccion(model, id: "strain")?.sello, .esfuerzo)
+        XCTAssertEqual(seccion(model, id: "stress")?.sello, .estres)
+        XCTAssertEqual(seccion(model, id: "steps")?.sello, .pasos)
+        XCTAssertNil(seccion(model, id: "guardian")?.sello)
+        XCTAssertNotNil(seccion(model, id: "guardian")?.selloGuardian)
+
+        // Las dos sub-señales del guardián: eran las únicas filas de Hoy sin nada a la
+        // izquierda; ahora arrancan detrás de su sello como el resto de la pantalla.
+        let renglones = seccion(model, id: "guardian")?.renglones
+        XCTAssertEqual(renglones?.first(where: { $0.id == "skintemp" })?.sello, .piel)
+        XCTAssertEqual(renglones?.first(where: { $0.id == "resp" })?.sello, .respiracion)
 
         // Orden visual a11y.
         XCTAssertEqual(model.ordenA11y, [

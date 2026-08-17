@@ -35,6 +35,26 @@ final class MatrizContrasteTests: XCTestCase {
 
     /// La identidad de temp y el ámbar de ATENCIÓN no pueden confundirse: exige una
     /// separación mínima de luminancia entre `doradoTemp` y `atencion`.
+    /// Los cuatro tonos que los sellos reasignaron (ago-2026): siguen pintando el numeral
+    /// de su fila, así que tienen que aguantar el mismo piso que el resto de los datos.
+    /// `verdeCarga` y `ambarEstres` se acuñaron aquí y pasan incluso AA de texto normal.
+    func testHuesReasignadosPorLosSellosPasanAALargeSobrePapelMatriz() {
+        for (nombre, hue) in [("verdeCarga · carga", LiquidColor.verdeCarga),
+                              ("ambarEstres · estrés", LiquidColor.ambarEstres),
+                              ("ambar · esfuerzo", LiquidColor.ambar),
+                              ("teal · pasos", LiquidColor.teal)] {
+            XCTAssertGreaterThanOrEqual(contrast(hue, LiquidColor.papelMatriz), 3.0,
+                                        "\(nombre) no pasa AA-large sobre el papel de la Matriz")
+        }
+    }
+
+    /// La identidad de CARGA no puede ser la voz de marca: `verdePrimario` es el CTA y el
+    /// veredicto, y además es la zona «bajo» del medidor de estrés — el mismo hex diciendo
+    /// dos cosas a tres sellos de distancia.
+    func testCargaNoVisteLaVozDeMarca() {
+        XCTAssertNotEqual(LiquidColor.verdeCarga, LiquidColor.verdePrimario)
+    }
+
     func testDoradoTempNoEsElAmbarDeAtencion() {
         let dl = abs(luminance(LiquidColor.doradoTemp) - luminance(LiquidColor.atencion))
         XCTAssertGreaterThan(dl, 0.03, "doradoTemp y atencion quedaron demasiado cerca")
