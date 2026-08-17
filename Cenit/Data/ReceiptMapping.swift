@@ -51,7 +51,7 @@ enum ReceiptMapping {
         let (totalValue, totalUnit) = volumeParts(summary.volumeKg, system: system)
 
         return ThermalReceipt(
-            kind: String(format: String(localized: "recibo.tipo.fmt", defaultValue: "STRENGTH — %@"), type),
+            kind: String(format: String(localized: "recibo.tipo.fmt", defaultValue: "STRENGTH · %@"), type),
             orderLine: String(format: String(localized: "recibo.orden.fmt", defaultValue: "ORDER:#%@ · %@"), orderN, orderDateTime(end)),
             items: items,
             totalCaption: String(format: String(localized: "recibo.total.caption.fmt", defaultValue: "%lld exercises · %lld sets"), summary.exercises.count, summary.setCount),

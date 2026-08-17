@@ -278,13 +278,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "STRENGTH — %@"
+            "value" : "STRENGTH · %@"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "FUERZA — %@"
+            "value" : "FUERZA · %@"
           }
         }
       }
