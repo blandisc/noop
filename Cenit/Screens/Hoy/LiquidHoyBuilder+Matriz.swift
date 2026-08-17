@@ -154,6 +154,11 @@ extension LiquidHoyBuilder {
             let sub = estado.map { "\(fecha) · \($0)" } ?? fecha
             return .init(valor: "\(Int(v.rounded()))", sublabel: sub)
         }
+        // FER-79 · D3: la ventana viva de FC (y de VFC más abajo) — el vacío inicial se recorta.
+        let iniFC = inicioVivo([ptsFC])
+        let ptsFCVivos = Array(ptsFC[iniFC...])
+        let scrubFCVivo = Array(scrubFC[iniFC...])
+
         let seccionFC = MatrizSeccion(
             id: "rhr", hue: LiquidColor.rosa,
             // Título corto para la celda gemela (FER-56): «FC Reposo» / «Resting HR» pesa
@@ -169,13 +174,13 @@ extension LiquidHoyBuilder {
             chartID: "matriz-rhr",
             // La regla al margen (FER-55, diseño final): tu rango ±1σ como tramo; relleno muere a 0
             // sobre el papel. Sin banda usable, la regla muestra solo el capilar.
-            chart: .regla(puntos: ptsFC, banda: bandaFC,
+            chart: .regla(puntos: ptsFCVivos, banda: bandaFC,
                           dominio: dominioCarriles(ptsFC, banda: bandaFC, fallback: 45...75),
                           alertaHoy: alertaFC),
             // Decisión del dueño (FER-55): el corazón de PARTÍCULAS (contorno denso,
             // quieto — gemelo de la luna), no la gota de las hojas.
             formaSello: .corazon,
-            scrubNoches: scrubFC)
+            scrubNoches: scrubFCVivo)
 
         let ptsVFC: [Double?] = keys20.map { byDay[$0]?.avgHrv }
         let baseVFC = keys20.reversed().compactMap { bodyByDay[$0]?.hrvBaseCenter }.first
@@ -194,6 +199,10 @@ extension LiquidHoyBuilder {
             }
             return .init(valor: "\(Int(v.rounded()))", sublabel: fecha)
         }
+        let iniVFC = inicioVivo([ptsVFC])
+        let ptsVFCVivos = Array(ptsVFC[iniVFC...])
+        let scrubVFCVivo = Array(scrubVFC[iniVFC...])
+
         let seccionVFC = MatrizSeccion(
             id: "hrv", hue: LiquidColor.cian,
             titulo: String(localized: "HRV"),
@@ -203,10 +212,10 @@ extension LiquidHoyBuilder {
             // «Contexto» + la hoja «Tu contexto» (FER-61), así que las cuatro se ven parejas.
             sublabel: String(localized: "matriz.vfc.sub", defaultValue: "your daily HRV"),
             chartID: "matriz-hrv",
-            chart: .lineaRellena(puntos: ptsVFC, base: baseVFC,
+            chart: .lineaRellena(puntos: ptsVFCVivos, base: baseVFC,
                                  dominio: dominioLinea(ptsVFC, base: baseVFC, fallback: 20...80),
                                  alfa: 0.6, alertaHoy: .ninguna),
-            scrubNoches: scrubVFC)
+            scrubNoches: scrubVFCVivo)
 
         // —— 3. Guardián ——
         // FER-73 · H3/H5/H18: el juicio del par vale SOLO para la noche que esta pantalla llama
@@ -231,6 +240,11 @@ extension LiquidHoyBuilder {
         let valorTemp = HoyGramatica.valorODash(ptsTemp.last.flatMap { $0 },
                                                 formato: HoyGramatica.formatoDeltaTemp)
         let valorResp = HoyGramatica.valorODash(ptsResp.last.flatMap { $0 }, formato: HoyGramatica.formatoResp)
+        // FER-79 · D3: las DOS filas del guardián comparten el mismo inicio vivo, para que sus
+        // ejes sigan alineados entre sí (leer una contra la otra es parte de la regla del par).
+        let iniGuardian = inicioVivo([ptsTemp, ptsResp])
+        let ptsTempVivos = Array(ptsTemp[iniGuardian...])
+        let ptsRespVivos = Array(ptsResp[iniGuardian...])
         let hayLecturaGuardianHoy = ptsTemp.last.flatMap { $0 } != nil || ptsResp.last.flatMap { $0 } != nil
         let chip = chipGuardianModelo(chipJuzgado, noche: nocheJuzgada,
                                       hayLecturaHoy: hayLecturaGuardianHoy,
@@ -254,8 +268,8 @@ extension LiquidHoyBuilder {
                 return .init(valor: fmt(v), sublabel: fecha)
             }
         }
-        let scrubTemp = scrubGuardian(ptsTemp) { HoyGramatica.formatoDeltaTemp($0) }
-        let scrubResp = scrubGuardian(ptsResp) { HoyGramatica.formatoResp($0) }
+        let scrubTemp = Array(scrubGuardian(ptsTemp) { HoyGramatica.formatoDeltaTemp($0) }[iniGuardian...])
+        let scrubResp = Array(scrubGuardian(ptsResp) { HoyGramatica.formatoResp($0) }[iniGuardian...])
         // Banda ± del guardián: corte térmico público (± thermalOutC) y resp ~ base±.
         let thermalBand = Preparedness.Config.default.thermalOutC
         let seccionGuardian = MatrizSeccion(
@@ -275,7 +289,7 @@ extension LiquidHoyBuilder {
             // ignora `s.chart` cuando la sección trae `renglones` (guardián), que llevan su
             // propia línea. Se conserva porque `chart` es obligatorio en `MatrizSeccion`; hacerlo
             // opcional o darle un caso `.vacio` es su propio cambio, fuera del alcance de esta ola.
-            chart: .lineaSerena(puntos: ptsTemp, banda: -thermalBand...thermalBand,
+            chart: .lineaSerena(puntos: ptsTempVivos, banda: -thermalBand...thermalBand,
                                 dominio: -1.5...1.5, alertaHoy: alertaGuardian),
             chip: chip,
             renglones: [
@@ -294,7 +308,7 @@ extension LiquidHoyBuilder {
                             : String(localized: "matriz.temp.enbanda", defaultValue: "within your band")),
                     hue: LiquidColor.doradoTemp,
                     chartID: "matriz-guardian-temp",
-                    chart: .lineaSerena(puntos: ptsTemp, banda: -thermalBand...thermalBand,
+                    chart: .lineaSerena(puntos: ptsTempVivos, banda: -thermalBand...thermalBand,
                                         dominio: -1.5...1.5, alertaHoy: alertaGuardian),
                     subrayado: alertaGuardian,
                     scrubNoches: scrubTemp),
@@ -308,7 +322,7 @@ extension LiquidHoyBuilder {
                             : String(localized: "matriz.resp.tipica", defaultValue: "typical for you")),
                     hue: LiquidColor.azul,
                     chartID: "matriz-guardian-resp",
-                    chart: .lineaSerena(puntos: ptsResp, banda: nil,
+                    chart: .lineaSerena(puntos: ptsRespVivos, banda: nil,
                                         dominio: dominioLinea(ptsResp, base: nil, fallback: 8...22),
                                         alertaHoy: alertaGuardian),
                     subrayado: alertaGuardian,
@@ -497,6 +511,19 @@ extension LiquidHoyBuilder {
     }
 
     // MARK: Helpers
+
+    /// FER-79 · D3 (dueño): **la ventana crece contigo**. La serie arranca en tu PRIMERA noche
+    /// con lectura, no 20 días antes: con 3 noches los puntos se repartían en el 15 % derecho
+    /// del ancho y el resto era aire. A partir de 20 noches el recorte no hace nada y la
+    /// gráfica se comporta como siempre.
+    ///
+    /// Solo se recorta el vacío INICIAL: un hueco a media serie (una noche sin registrar)
+    /// se conserva, porque ahí el vacío sí es información.
+    static func inicioVivo(_ series: [[Double?]]) -> Int {
+        let primeros = series.compactMap { $0.firstIndex(where: { $0 != nil }) }
+        guard let ini = primeros.min() else { return 0 }
+        return ini
+    }
 
     /// yyyy-MM-dd local, oldest → newest, ending at `now`'s civil day.
     static func dayKeys(endingAt now: Date, calendar: Calendar, count: Int) -> [String] {

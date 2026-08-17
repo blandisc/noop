@@ -1085,7 +1085,10 @@ enum LiquidHoyBuilder {
             // El ⓘ dice QUÉ es (una línea) — el hedge «aproximación» vive SOLO en «Cómo se
             // calcula» para no repetir (revisión del dueño: el ⓘ y el método decían casi lo
             // mismo).
-            explicacion: String(localized: "The verdict for how you woke up: your signals against your own baseline."),
+            // FER-79 · D8 (dueño): SIN ⓘ en el encabezado. Tocabas la ⓘ del veredicto, se abría
+            // esta hoja… y arriba había otra ⓘ idéntica con otro significado. La frase del QUÉ
+            // ahora encabeza «Cómo se calcula», que es la única puerta al detalle.
+            explicacion: nil,
             infoMostrar: String(localized: "Show explanation"),
             infoOcultar: String(localized: "Hide explanation"),
             nivel: palabraBoleta(prep: prep, hayVeredicto: hayVeredicto,
@@ -1442,6 +1445,8 @@ enum LiquidHoyBuilder {
         // la histéresis, y la cita. Se quitó el «lee X de Y señales» (confundía) y el hedge
         // que ya no duplica al ⓘ.
         let lineas: [String] = [
+            // El QUÉ abre el método (FER-79 · D8): vivía tras la ⓘ del encabezado, que se retiró.
+            String(localized: "The verdict for how you woke up: your signals against your own baseline."),
             String(localized: "acta.metodo.fc",
                    defaultValue: "Your resting HR is your lowest pulse of the night, measured by your Apple Watch; when there's no overnight reading, Cénit uses Apple Health's resting heart rate."),
             String(localized: "acta.metodo.votos",

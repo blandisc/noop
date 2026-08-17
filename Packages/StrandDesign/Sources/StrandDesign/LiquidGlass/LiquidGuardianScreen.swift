@@ -267,7 +267,10 @@ public struct LiquidGuardianScreen: View {
         VStack(alignment: .leading, spacing: LiquidSpace.s200) {
             LiquidSignalList(
                 filas: [fila(hoja.temp), fila(hoja.resp)],
-                auroraTones: [LiquidColor.ambar, LiquidColor.azul]
+                // FER-79 · D2 (dueño): la temperatura de piel es DORADA en toda la app —
+                // el ámbar es el color de atención (y el de Esfuerzo), y una identidad no se
+                // viste del color de una alarma.
+                auroraTones: [LiquidColor.doradoTemp, LiquidColor.azul]
             ) { f in
                 if f.id == hoja.temp.id, let s = hoja.temp.serie {
                     miniChart(s, tono: hoja.temp.tono)
@@ -391,7 +394,7 @@ enum LiquidGuardianFixtures {
     private static func temp(_ valor: String, fuera: Bool, serie: LiquidGuardianHoja.SerieMini?)
         -> LiquidGuardianHoja.Senal {
         .init(id: "temp", etiqueta: "Temperatura de piel", valor: valor,
-              tono: LiquidColor.ambar, fuera: fuera, icono: .termo,
+              tono: LiquidColor.doradoTemp, fuera: fuera, icono: .termo,
               a11y: "Temperatura de piel, \(valor)"
                   + (fuera ? ", fuera de tu patrón" : ", en tu patrón"),
               serie: serie)
@@ -412,7 +415,7 @@ enum LiquidGuardianFixtures {
                                a11y: String) -> LiquidGuardianHoja.Domino {
         .init(
             carriles: [
-                .init(id: "temp", icono: .termo, tono: LiquidColor.ambar,
+                .init(id: "temp", icono: .termo, tono: LiquidColor.doradoTemp,
                       noches: temp, a11y: "Temperatura de piel"),
                 .init(id: "resp", icono: .resp, tono: LiquidColor.azul,
                       noches: resp, a11y: "Respiración"),
