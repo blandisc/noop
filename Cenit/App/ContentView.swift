@@ -59,6 +59,14 @@ struct ContentView: View {
             RootTabView(isTodayActive: $isTodayTab)
             if !onboarded {
                 OnboardingWizard(onFinished: {
+                    // FER-109: la entrada de partículas se cuenta como YA CORRIDA al cerrar el
+                    // onboarding. Sin esto, `mostrandoEntrada` se vuelve cierto en el instante en que
+                    // `onboarded` pasa a true y el usuario recibe 2.8 s más de coreografía JUSTO
+                    // después del reveal de su palabra — y si venía por la salida a Entrenar, el
+                    // orbe aterrizaría sobre el frame del héroe de Hoy, que no es la pestaña activa.
+                    // `yaCorrio` es estático por proceso, así que el próximo arranque la entrada
+                    // vuelve sola, que es cuando por fin hay un veredicto que revelar.
+                    EntradaDeArranque.marcarCorrida()
                     onboarded = true
                     // A brand-new user just saw the expectations in onboarding — don't also pop the
                     // changelog at them; mark them current.

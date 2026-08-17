@@ -186,6 +186,15 @@ enum OnbCopy {
                               defaultValue: "I already have your %lld days of history, but I've got %lld nights with the watch on. Your word arrives as soon as I gather %lld."),
                dias, noches, meta)
     }
+    /// El otro `.calibrando`: la base YA está (`faltan == 0`) y aun así el motor no se atreve —
+    /// típicamente porque todavía no existe la fila de HOY. Decirle «tu palabra llega en cuanto
+    /// junte 60 noches» a quien ya tiene 60 es prometerle algo que ya ocurrió, y es el estado
+    /// normal de quien abre la app en la mañana antes de que Apple publique su FC en reposo.
+    static func calibrandoCuerpoSinHoy(dias: Int, noches: Int) -> String {
+        String(format: String(localized: "onb.4.calibrando.cuerpo.sinhoy",
+                              defaultValue: "I already have your %lld days of history and your %lld nights. What I still don't have is today: your watch hasn't published this morning's resting heart rate yet."),
+               dias, noches)
+    }
     static var calibrandoPie: String {
         String(localized: "onb.4.calibrando.pie", defaultValue: "I'm not going to make up a verdict in the meantime.")
     }

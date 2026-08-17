@@ -262,8 +262,9 @@ struct OnbActoEncendido: View {
             .padding(.top, LiquidSpace.s250)
             .liquidEntrada(index: 1)
             .accessibilityFocused($focoRevelado)
-        OnbCuerpo(OnbCopy.calibrandoCuerpo(dias: dias, noches: noches,
-                                           meta: noches + max(0, faltan)))
+        OnbCuerpo(faltan > 0
+                  ? OnbCopy.calibrandoCuerpo(dias: dias, noches: noches, meta: noches + faltan)
+                  : OnbCopy.calibrandoCuerpoSinHoy(dias: dias, noches: noches))
             .padding(.top, LiquidSpace.s400)
             .liquidEntrada(index: 2)
         OnbCuerpo(OnbCopy.calibrandoPie, tono: LiquidColor.tinta500)
@@ -337,6 +338,11 @@ struct OnbActoEncendido: View {
         .liquidEntrada(index: 4)
         OnbSalidaTexto(titulo: OnbCopy.reintentar) { Task { await reintentar() } }
             .liquidEntrada(index: 5)
+        // Sin esta salida el onboarding es un encierro: quien negó el permiso se quedaba con dos
+        // botones que no llevan a la app. Ninguna rama del flujo puede ser un callejón, y menos
+        // ésta, que es justo la de quien ya dijo que no.
+        OnbSalidaTexto(titulo: OnbCopy.sinFcCtaSecundaria, accion: onEntrar)
+            .liquidEntrada(index: 6)
     }
 
     // MARK: - El reloj y el guion
@@ -398,10 +404,20 @@ struct OnbActoEncendido: View {
     /// cuánto lleva esperando quien ya esperó).
     @MainActor
     private func reintentar() async {
+        // `landing` a nil es lo que hace que esto REINTENTE de verdad. Sin eso, `correr()` toma la
+        // salida de «ya se conoce el desenlace» y sólo re-pinta la misma pantalla: el usuario iba a
+        // Salud, encendía los permisos, volvía, tocaba «Reintentar» y no pasaba nada nunca.
+        landing = nil
+        revelado = false
+        mostrarPalabra = false
+        mostrarInfo = false
+        mostrarResto = false
+        opacidadLectura = 1
         falloLectura = false
         syncListo = false
         corriendo = false
         avance = 0
+        arranque = Date()
         await correr()
     }
 
@@ -417,13 +433,19 @@ struct OnbActoEncendido: View {
         }
         if nuevo != avance {
             avance = nuevo
-            // La densidad la manda el avance real de la sincronización, con el piso de lo que el
-            // acto 1 ya juntó: el campo formado no puede DESFORMARSE porque el primer stage de
-            // HealthKit vale 1/15.
-            let objetivo = max(OnbGuion.densidadPromesa, nuevo)
-            if objetivo > densidad {
+            // La densidad NO la manda el avance de la descarga. Atarla a `done/total` haría que el
+            // orbe se llenara por cuánto lleva bajando HealthKit, que es exactamente la mentira que
+            // la cabecera de `AcumulacionSimulacion` prohíbe: la plenitud codificaría paciencia en
+            // vez de evidencia. Y peor, se DESINFLABA delante del usuario al revelar, cuando la
+            // evidencia real resultaba menor que la descarga.
+            //
+            // Durante la lectura la densidad se queda en lo que el acto 1 ya juntó (`densidadPromesa`)
+            // y sube UNA sola vez, en el reveal, a `landing.densidadHonesta`. Lo que da la sensación
+            // de convergencia en este acto es el MODO (`.convergencia` jala las motas al centro), no
+            // el conteo: el movimiento cuenta el trabajo, el número cuenta los datos.
+            if densidad < OnbGuion.densidadPromesa {
                 let anim: Animation? = reduceMotion ? nil : LiquidMotion.ambient(LiquidMotion.gentle)
-                withAnimation(anim) { densidad = objetivo }
+                withAnimation(anim) { densidad = OnbGuion.densidadPromesa }
             }
         }
         anunciarHitos(done: p.done, total: p.total)

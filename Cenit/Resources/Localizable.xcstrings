@@ -596,6 +596,23 @@
         }
       }
     },
+    "onb.4.calibrando.cuerpo.sinhoy" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I already have your %lld days of history and your %lld nights. What I still don't have is today: your watch hasn't published this morning's resting heart rate yet."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ya tengo tus %lld días de historia y tus %lld noches. Lo que todavía no tengo es hoy: tu reloj no ha publicado tu frecuencia cardiaca en reposo de esta mañana."
+          }
+        }
+      }
+    },
     "onb.4.calibrando.pie" : {
       "extractionState" : "manual",
       "localizations" : {
