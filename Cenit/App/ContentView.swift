@@ -59,6 +59,14 @@ struct ContentView: View {
             RootTabView(isTodayActive: $isTodayTab)
             if !onboarded {
                 OnboardingWizard(onFinished: {
+                    // FER-109: la entrada de partículas se cuenta como YA CORRIDA al cerrar el
+                    // onboarding. Sin esto, `mostrandoEntrada` se vuelve cierto en el instante en que
+                    // `onboarded` pasa a true y el usuario recibe 2.8 s más de coreografía JUSTO
+                    // después del reveal de su palabra — y si venía por la salida a Entrenar, el
+                    // orbe aterrizaría sobre el frame del héroe de Hoy, que no es la pestaña activa.
+                    // `yaCorrio` es estático por proceso, así que el próximo arranque la entrada
+                    // vuelve sola, que es cuando por fin hay un veredicto que revelar.
+                    EntradaDeArranque.marcarCorrida()
                     onboarded = true
                     // A brand-new user just saw the expectations in onboarding — don't also pop the
                     // changelog at them; mark them current.
@@ -178,18 +186,27 @@ struct ContentView: View {
     }
 
     /// The Terms gate is light «Instrumento» paper (FER-416) and sits over everything until accepted →
-    /// light scheme so its status bar renders in dark ink. The onboarding wizard is still dark. Once
-    /// inside the app the scheme follows the active tab: Today is light paper (dark-ink status bar),
-    /// every other tab is the dark instrument panel.
+    /// light scheme so its status bar renders in dark ink. FER-109: the onboarding is now light too
+    /// (it lives on `LiquidColor.fondoGradient`, the SAME surface as Hoy, so the last frame of its
+    /// reveal can transform into the hero without the background jumping colour). Once inside the app
+    /// the scheme follows the active tab: Today is light paper (dark-ink status bar), every other tab
+    /// is the dark instrument panel.
     private var resolvedColorScheme: ColorScheme {
         if mostrandoEntrada { return .light }                        // la entrada es blanca (FER-41)
         if acceptedTerms != Terms.currentVersion { return .light }   // Terms gate (paper) is on top
-        guard onboarded else { return .dark }                        // onboarding wizard is still dark
+        guard onboarded else { return .light }                       // onboarding (FER-109) es papel claro
         return isTodayTab ? .light : .dark
     }
 
     /// La entrada se pinta mientras no haya terminado Y no haya corrido ya en este proceso.
-    private var mostrandoEntrada: Bool { !entradaLista && !EntradaDeArranque.yaCorrio }
+    /// FER-109: la entrada NO corre en el primer arranque. El onboarding es dueño exclusivo de las
+    /// partículas ese día, y por dos razones: (1) a los 0 ms del primer arranque no hay veredicto que
+    /// revelar, así que la ley «el orbe entra neutro y el color llega como REVELACIÓN» se quemaría en
+    /// la única corrida donde no hay nada que revelar; (2) el usuario vería la misma coreografía tres
+    /// veces en medio minuto (entrada → Términos → acto 1), con dos significados distintos, y eso no
+    /// se lee como poesía sino como que la app se repite. La entrada se GANA: vuelve en el segundo
+    /// arranque, cuando ya hay una lectura suya que revelar.
+    private var mostrandoEntrada: Bool { onboarded && !entradaLista && !EntradaDeArranque.yaCorrio }
 
     /// El clima al que la entrada tiñe el orbe: el MISMO mapeo veredicto → ambiente que usa la
     /// superficie de Hoy, para que el color con el que el orbe asienta sea exactamente el que la

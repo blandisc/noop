@@ -661,8 +661,12 @@ enum LiquidHoyBuilder {
         }
     }
 
-    private static func veredicto(_ v: Preparedness.Verdict, nights: Int,
-                                  prep: Preparedness.Read? = nil) -> LiquidHoyModel.Hero {
+    /// FER-109 · Internal, no `private`: el onboarding pide PRESTADA esta función para su acto 4
+    /// en vez de escribir su propia palabra. Es la única forma de garantizar que la pantalla de
+    /// bienvenida y la de la mañana no puedan discrepar sobre lo mismo — cambiar `hero.title.*`
+    /// en el catálogo tiene que cambiar las dos a la vez, y con una copia local no lo haría.
+    static func veredicto(_ v: Preparedness.Verdict, nights: Int,
+                          prep: Preparedness.Read? = nil) -> LiquidHoyModel.Hero {
         // El denominador sale del MOTOR, no de la UI: `Baselines.minNightsTrust` es la
         // noche en la que la base deja de encogerse y el veredicto se para completo. Las
         // «21 noches» que decía este tether no existen en `Baselines` — eran un número de
@@ -1415,8 +1419,15 @@ enum LiquidHoyBuilder {
         return out
     }
 
+    /// La palabra de CALIBRANDO tal cual la dice el héroe (misma clave del catálogo). Existe para
+    /// que el acta del onboarding (FER-109), que enumera «las cuatro palabras», tome la cuarta de
+    /// aquí en vez de tener su propia copia del `String(localized:)`.
+    static var palabraCalibrando: String {
+        String(localized: "hero.title.calibrando", defaultValue: "Getting to know you")
+    }
+
     /// La palabra del veredicto tal cual la dice el héroe (misma clave del catálogo).
-    private static func palabraVeredicto(_ v: Preparedness.Verdict) -> String {
+    static func palabraVeredicto(_ v: Preparedness.Verdict) -> String {
         switch v {
         // Paridad héroe↔acta (gate /cso B1): el acta dice EXACTAMENTE la palabra del
         // héroe FER-10 — jamás las retiradas.
