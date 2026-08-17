@@ -257,29 +257,55 @@ extension LiquidHoyBuilder {
         //   · temperatura → |dev| / corte térmico público (banda absoluta en °C);
         //   · respiración → |rpm − base| / medio ancho de su banda típica.
         // Así 1.0 = «justo en el filo de tu banda» para las dos, y la boca se abre igual.
-        let respBaseCostura: Double? = {
-            let vistos = ptsResp.compactMap { $0 }
+        // La escala de la respiración: MEDIANA y desviación absoluta mediana (MAD), no media y
+        // desviación media. Con media, una sola noche enferma corría el centro y ENGORDABA el
+        // ancho — diluyendo justo la noche que debía abrirse (revisión adversarial P-1).
+        let respEscala: (centro: Double, medioAncho: Double)? = {
+            // La base se calcula SOLO con las noches que el motor juzgó DENTRO. Si se usan todas,
+            // un desplazamiento sostenido (diez noches enfermas seguidas) arrastra el centro y se
+            // vuelve invisible: la mitad enferma se ve tan «normal» como la sana (adversarial C3).
+            let sanas: [Double] = keys20.indices.compactMap { idx -> Double? in
+                guard let v = ptsResp[idx] else { return nil }
+                guard let n = sentByDay[keys20[idx]] else { return v }   // sin juicio: cuenta
+                return (n.respJudged && n.respOut) ? nil : v
+            }
+            let vistos = (sanas.count >= 3 ? sanas : ptsResp.compactMap { $0 }).sorted()
             guard vistos.count >= 3 else { return nil }
-            return vistos.reduce(0, +) / Double(vistos.count)
-        }()
-        let respMedioAncho: Double = {
-            guard let base = respBaseCostura else { return 2.0 }
-            let vistos = ptsResp.compactMap { $0 }
-            guard vistos.count >= 3 else { return 2.0 }
-            let desv = vistos.map { abs($0 - base) }.reduce(0, +) / Double(vistos.count)
-            return max(desv * 2, 0.8)          // piso: una banda plana no exagera el dibujo
+            func mediana(_ xs: [Double]) -> Double {
+                let m = xs.count / 2
+                return xs.count % 2 == 1 ? xs[m] : (xs[m - 1] + xs[m]) / 2
+            }
+            let centro = mediana(vistos)
+            let mad = mediana(vistos.map { abs($0 - centro) }.sorted())
+            // 1.4826·MAD ≈ σ para una normal; ×2 para que «el filo» sea ~2σ, el orden del corte
+            // que usa el motor. Piso 0.8 rpm: una serie plana no exagera el dibujo.
+            return (centro, max(mad * 1.4826 * 2, 0.8))
         }()
         let nochesCostura: [MatrizCostura.Noche] = keys20.indices.map { idx in
             let dia = keys20[idx]
             let noche = sentByDay[dia]
-            let t: Double? = ptsTemp[idx].map { abs($0) / max(thermalBand, 0.01) }
-            let r: Double? = ptsResp[idx].flatMap { v in
-                guard let base = respBaseCostura else { return nil }
-                return abs(v - base) / respMedioAncho
+            // SOLO EL LADO QUE EL MOTOR JUZGA (adversarial C1). El centinela marca temperatura
+            // ALTA y respiración ALTA — nunca la baja. Con `abs()`, una noche fría (cuarto frío,
+            // destaparse) abría la boca igual que una fiebre: la gráfica afirmaba «te saliste»
+            // donde el motor no marcó nada. El lado bueno se queda junto al eje, que es lo que
+            // significa: nada que decir.
+            let t: Double? = ptsTemp[idx].map { max(0, $0) / max(thermalBand, 0.01) }
+            var r: Double? = ptsResp[idx].flatMap { v in
+                guard let esc = respEscala else { return nil }
+                return max(0, v - esc.centro) / esc.medioAncho
+            }
+            // ANCLA AL MOTOR (revisión adversarial P-1). La temperatura cuadra por construcción:
+            // se normaliza contra el MISMO corte público que la juzga. La respiración no —el
+            // motor la juzga con z contra tu base EWMA—, así que su escala aproximada podía
+            // dibujar «dentro» una noche que el motor marcó FUERA. Aquí el dibujo se somete al
+            // juicio: fuera ⇒ al menos en el filo; juzgada y dentro ⇒ nunca más allá del filo.
+            if let n = noche, let magnitud = r, !n.respMissing, n.respJudged {
+                r = n.respOut ? max(magnitud, 1.02) : min(magnitud, 0.98)
             }
             // El par votó esa noche = el juicio del MOTOR para ESE día (nunca re-derivado aquí).
             let par = (noche?.tempOut ?? false) && (noche?.respOut ?? false)
-            return .init(temp: t, resp: r, parFuera: par)
+            return .init(temp: t, resp: r, parFuera: par,
+                         tempSinLectura: ptsTemp[idx] == nil, respSinLectura: ptsResp[idx] == nil)
         }
         let nochesCosturaVivas = Array(nochesCostura[iniGuardian...])
         // El scrub de la costura lee LA NOCHE COMPLETA: las dos señales y su fecha.
@@ -303,14 +329,13 @@ extension LiquidHoyBuilder {
         }
         let scrubCosturaVivo = Array(scrubCostura[iniGuardian...])
         // El par de números vive en el encabezado: «+0.1° · 14.9».
-        let valorPar: String = {
-            switch (valorTemp == "—", valorResp == "—") {
-            case (false, false): return "\(valorTemp) · \(valorResp)"
-            case (false, true):  return valorTemp
-            case (true, false):  return valorResp
-            case (true, true):   return "—"
-            }
-        }()
+        // El par conserva SIEMPRE su forma «temp · resp» mientras haya al menos una lectura
+        // (adversarial C4): con una sola, el número solitario se pintaba con el hue de la OTRA
+        // señal —el color es lo único que las identifica— y sin unidad. El guion ocupa el lugar
+        // de la que faltó, en su propio color.
+        let valorPar: String = (valorTemp == "—" && valorResp == "—")
+            ? "—"
+            : "\(valorTemp) · \(valorResp)"
 
         let seccionGuardian = MatrizSeccion(
             id: "guardian", hue: LiquidColor.doradoTemp,
@@ -329,6 +354,18 @@ extension LiquidHoyBuilder {
             chart: .costura(noches: nochesCosturaVivas),
             chip: chip,
             scrubNoches: scrubCosturaVivo,
+            // P-4: VoiceOver nombra cada señal — «+0.1° · 14.9» leído de corrido no dice cuál
+            // es cuál (antes lo decían los dos renglones que la costura sustituyó).
+            a11yValor: {
+                var partes: [String] = []
+                if valorTemp != "—" {
+                    partes.append("\(String(localized: "Skin temp")) \(valorTemp)")
+                }
+                if valorResp != "—" {
+                    partes.append("\(String(localized: "Breathing")) \(valorResp) \(String(localized: "rpm"))")
+                }
+                return partes.isEmpty ? nil : partes.joined(separator: ", ")
+            }(),
             selloGuardian: selloGuardianEstado(chipJuzgado))
 
         // —— 4. Carga | Esfuerzo ——
@@ -595,11 +632,13 @@ extension LiquidHoyBuilder {
                                    calibrando: Bool = false)
         -> MatrizHoyModel.ChipGuardian? {
         guard let chip else {
-            if let noche, noche.tempMissing || noche.respMissing {
-                return .init(texto: String(localized: "Only one signal"), tono: .terciario)
-            }
+            // Orden: primero «no hubo NADA» (adversarial C5 — con las dos ausentes, `tempMissing`
+            // era true y el chip decía «solo una señal», que es falso), y solo después «falta una».
             if !hayLecturaHoy {
                 return .init(texto: String(localized: "No readings yet"), tono: .terciario)
+            }
+            if let noche, noche.tempMissing != noche.respMissing {
+                return .init(texto: String(localized: "Only one signal"), tono: .terciario)
             }
             if calibrando || noche?.respJudged == false {
                 return .init(texto: String(localized: "hero.title.calibrando",

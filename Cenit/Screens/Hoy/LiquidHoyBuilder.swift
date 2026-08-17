@@ -1057,7 +1057,12 @@ enum LiquidHoyBuilder {
         // leía «faltan votos» ⇒ falso «desfase de histéresis» + «Watching, not voting» el día
         // en que SÍ votaron. Aquí cuenta igual que en el motor.
         let parVoto = prep?.sentinel?.state == .corroborated
-        let fuera = estados.filter { $0.isOut }.count + (parVoto ? 1 : 0)
+        // `fuera` = el conteo del MOTOR (ejes + el par corroborado): es el que decide si el
+        // veredicto mostrado viene de la histéresis. `fueraEjes` = solo los ejes que la boleta
+        // DIBUJA: es el que puede nombrar la prosa. Mezclarlos hacía que el resumen dijera «la FC
+        // en reposo votó fuera» con las dos filas en «dentro» (adversarial H3).
+        let fueraEjes = estados.filter { $0.isOut }.count
+        let fuera = fueraEjes + (parVoto ? 1 : 0)
         // D1 del verificador: `isNightAnchored` es OBLIGATORIO (ver historial).
         let hayVeredicto = prep != nil && prep?.verdict != .lowSignal
             && prep?.isNightAnchored == true
@@ -1077,6 +1082,7 @@ enum LiquidHoyBuilder {
         }
 
         let resumen = resumenBoleta(prep: prep, estados: estados, fuera: fuera,
+                                    fueraEjes: fueraEjes, parVoto: parVoto,
                                     hayVeredicto: hayVeredicto,
                                     esLecturaDeDia: esLecturaDeDia,
                                     calibrando: calibrando,
@@ -1253,7 +1259,8 @@ enum LiquidHoyBuilder {
     /// histéresis (/ux D5: el desfase ES lo que estás viendo, no una nota al pie).
     private static func resumenBoleta(prep: Preparedness.Read?,
                                       estados: [Preparedness.AxisState],
-                                      fuera: Int, hayVeredicto: Bool,
+                                      fuera: Int, fueraEjes: Int = 0, parVoto: Bool = false,
+                                      hayVeredicto: Bool,
                                       esLecturaDeDia: Bool, calibrando: Bool,
                                       desfase: Bool, empujeTendencia: Bool,
                                       healthConnected: Bool,
@@ -1290,11 +1297,25 @@ enum LiquidHoyBuilder {
             }
             return (String(localized: "Nothing came in last night: no sleep and no resting signals."), nil)
         }
+        // El PAR fue quien votó hoy: la prosa lo dice en vez de nombrar un eje que está dentro
+        // (adversarial H3). Es la misma frase que el héroe usa arriba, para que la hoja no
+        // cuente otra historia que la pantalla que la abrió.
+        if parVoto, fueraEjes == 0 {
+            return (String(localized: "Your temperature and breathing moved out of your pattern together."),
+                    String(localized: "acta.resumen.par.clave", defaultValue: "together"))
+        }
         if empujeTendencia {
             return (String(localized: "One vote fell outside and your night HRV is trending down: that's why today asks for recovery."),
                     String(localized: "acta.resumen.tendencia.clave", defaultValue: "trending down"))
         }
         if desfase {
+            // Con el par corroborado el conteo del motor incluye su voto; la prosa del desfase
+            // habla de los EJES que la boleta dibuja, así que si el par aporta, se nombra a él.
+            if parVoto {
+                return (String(localized: "acta.resumen.par.desfase",
+                               defaultValue: "Your temperature and breathing moved out together; the verdict changes once it repeats two days in a row."),
+                        String(localized: "acta.resumen.par.clave", defaultValue: "together"))
+            }
             let esperado: Int = prep!.verdict == .full ? 0 : (prep!.verdict == .caution ? 1 : 2)
             if fuera > esperado {
                 // El plural importa (revisión DeepSeek r2): con los DOS votos fuera hoy el

@@ -1,6 +1,38 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "acta.resumen.par.clave" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "together"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "juntas"
+          }
+        }
+      }
+    },
+    "acta.resumen.par.desfase" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your temperature and breathing moved out together; the verdict changes once it repeats two days in a row."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu temperatura y tu respiración se salieron juntas; el veredicto cambia cuando se repita dos días seguidos."
+          }
+        }
+      }
+    },
     "hero.title.sinfc" : {
       "localizations" : {
         "en" : {

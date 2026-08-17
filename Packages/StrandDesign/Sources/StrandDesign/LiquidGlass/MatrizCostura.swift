@@ -26,11 +26,18 @@ public struct MatrizCostura: View {
         public let resp: Double?
         /// El motor marcó las DOS fuera esa noche: el día que el par vota.
         public let parFuera: Bool
+        /// Revisión adversarial P-2: una señal que NO SE LEYÓ no puede dibujarse como si hubiera
+        /// caído en el centro de tu banda. Un hueco es un hueco: su orilla se interrumpe.
+        public let tempSinLectura: Bool
+        public let respSinLectura: Bool
 
-        public init(temp: Double?, resp: Double?, parFuera: Bool = false) {
+        public init(temp: Double?, resp: Double?, parFuera: Bool = false,
+                    tempSinLectura: Bool = false, respSinLectura: Bool = false) {
             self.temp = temp
             self.resp = resp
             self.parFuera = parFuera
+            self.tempSinLectura = tempSinLectura
+            self.respSinLectura = respSinLectura
         }
     }
 
@@ -67,8 +74,8 @@ public struct MatrizCostura: View {
             }
 
             let medio = size.height / 2
-            let inset = max(MatrizTokens.chartInset,
-                            LiquidChart.puntoDatoRadio + LiquidChart.endpointBorde)
+            // P-3: el MISMO inset que usa el mapeo del dedo (una sola fuente).
+            let inset = MatrizHoyFace.chartInset(.costura(noches: noches))
             func x(_ i: Int) -> CGFloat {
                 MatrizChartDraw.xAt(index: i, count: n, width: size.width, inset: inset)
             }
@@ -81,16 +88,28 @@ public struct MatrizCostura: View {
 
             let arriba = noches.map { medio - labio($0.temp) }
             let abajo  = noches.map { medio + labio($0.resp) }
+            // P-2: los índices donde SÍ hubo lectura de cada señal. La boca solo existe donde
+            // existen las dos: sobre un hueco no se pinta un espacio que nadie midió.
+            let vivaT = noches.map { !$0.tempSinLectura }
+            let vivaR = noches.map { !$0.respSinLectura }
 
             // 1 · El relleno: el ESPACIO entre las dos señales. Neutro casi siempre; ámbar solo
             //     en el tramo donde el par votó (la única vez que el guardián empuja tu día).
+            //     Se dibuja por TRAMOS de noches con el par completo.
             var boca = Path()
-            boca.move(to: CGPoint(x: x(0), y: arriba[0]))
-            for i in 1..<n { boca.addLine(to: CGPoint(x: x(i), y: arriba[i])) }
-            for i in stride(from: n - 1, through: 0, by: -1) {
-                boca.addLine(to: CGPoint(x: x(i), y: abajo[i]))
+            var tramo: [Int] = []
+            func cerrarTramo() {
+                guard tramo.count > 1 else { tramo.removeAll(); return }
+                boca.move(to: CGPoint(x: x(tramo[0]), y: arriba[tramo[0]]))
+                for i in tramo.dropFirst() { boca.addLine(to: CGPoint(x: x(i), y: arriba[i])) }
+                for i in tramo.reversed() { boca.addLine(to: CGPoint(x: x(i), y: abajo[i])) }
+                boca.closeSubpath()
+                tramo.removeAll()
             }
-            boca.closeSubpath()
+            for i in 0..<n {
+                if vivaT[i] && vivaR[i] { tramo.append(i) } else { cerrarTramo() }
+            }
+            cerrarTramo()
             ctx.fill(boca, with: .color(LiquidColor.tinta500.opacity(MatrizTokens.costuraFillAlfa)))
 
             // El tramo del par fuera se tiñe encima, recortado a la boca.
@@ -105,21 +124,38 @@ public struct MatrizCostura: View {
                 }
             }
 
-            // 2 · Las dos orillas, cada una en su tono.
-            func orilla(_ ys: [CGFloat], hue: Color) {
-                var p = Path()
-                p.move(to: CGPoint(x: x(0), y: ys[0]))
-                for i in 1..<n { p.addLine(to: CGPoint(x: x(i), y: ys[i])) }
-                ctx.stroke(p, with: .color(hue),
-                           style: StrokeStyle(lineWidth: LiquidChart.lineaAncho,
-                                              lineCap: .round, lineJoin: .round))
+            // 2 · Las dos orillas, cada una en su tono, POR TRAMOS: la línea se interrumpe en las
+            //     noches sin lectura (P-2) en vez de cruzarlas por el centro como si fueran
+            //     perfectas. Una noche suelta entre huecos se dibuja como punto.
+            func orilla(_ ys: [CGFloat], viva: [Bool], hue: Color) {
+                var actual: [Int] = []
+                func trazar() {
+                    defer { actual.removeAll() }
+                    guard let primero = actual.first else { return }
+                    if actual.count == 1 {
+                        MatrizChartDraw.punto(ctx, en: CGPoint(x: x(primero), y: ys[primero]),
+                                              radio: LiquidChart.puntoDatoRadio, hue: hue, alfa: 1)
+                        return
+                    }
+                    var p = Path()
+                    p.move(to: CGPoint(x: x(primero), y: ys[primero]))
+                    for i in actual.dropFirst() { p.addLine(to: CGPoint(x: x(i), y: ys[i])) }
+                    ctx.stroke(p, with: .color(hue),
+                               style: StrokeStyle(lineWidth: LiquidChart.lineaAncho,
+                                                  lineCap: .round, lineJoin: .round))
+                }
+                for i in 0..<n {
+                    if viva[i] { actual.append(i) } else { trazar() }
+                }
+                trazar()
             }
-            orilla(arriba, hue: hueTemp)
-            orilla(abajo, hue: hueResp)
+            orilla(arriba, viva: vivaT, hue: hueTemp)
+            orilla(abajo, viva: vivaR, hue: hueResp)
 
             // 3 · HOY: el anillo hueco de la familia, en las dos orillas.
             let iHoy = n - 1
-            for (ys, hue) in [(arriba, hueTemp), (abajo, hueResp)] {
+            for (ys, hue, viva) in [(arriba, hueTemp, vivaT[iHoy]), (abajo, hueResp, vivaR[iHoy])] {
+                guard viva else { continue }        // P-2: sin lectura de hoy, sin joya de hoy
                 let c = CGPoint(x: x(iHoy), y: ys[iHoy])
                 let rExt = LiquidChart.puntoDatoRadio + LiquidChart.endpointBorde * 0.5
                 MatrizChartDraw.punto(ctx, en: c, radio: rExt, hue: hue, alfa: 1)
