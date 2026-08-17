@@ -518,9 +518,9 @@ public struct MatrizLineaSerena: View {
             // separaban hasta 4 pt en los extremos, y el anillo de HOY caía justo en x=W, donde el
             // Canvas lo recorta a la mitad. El aire vive ADENTRO del mapeo (como `LiquidChartPlot`),
             // así que ya no hace falta el `.padding` exterior que encogía la banda.
-            let insetX = max(MatrizTokens.chartInset,
-                             LiquidChart.puntoDatoRadio + LiquidChart.endpointBorde * 0.5
-                                 + MatrizTokens.aroGap2)
+            // P-3: el MISMO inset que usa el mapeo del dedo (una sola fuente).
+            let insetX = MatrizHoyFace.chartInset(.lineaSerena(puntos: puntos, banda: banda,
+                                                               dominio: dominio, alertaHoy: alertaHoy))
             func x(_ i: Int) -> CGFloat {
                 MatrizChartDraw.xAt(index: i, count: count, width: size.width, inset: insetX)
             }

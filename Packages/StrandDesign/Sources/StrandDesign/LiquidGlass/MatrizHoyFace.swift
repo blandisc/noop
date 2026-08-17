@@ -64,6 +64,9 @@ public struct MatrizSeccion: Sendable, Identifiable, Equatable {
     /// Scrub (FER-55): cada noche con su lectura ya formateada (valor + sublabel).
     /// El índice mapea 1:1 a las barras; el último = hoy. `nil` = celda sin scrub.
     public let scrubNoches: [ScrubNoche]?
+    /// El valor DICHO para VoiceOver cuando el escrito es ambiguo (el par del guardián). nil =
+    /// se lee `valor` tal cual.
+    public let a11yValor: String?
     /// El sello del guardián VIVO (FER-56 · Ola 3): reacciona al estado del par (calma /
     /// vigila una / ambas ámbar / racha roja / sin datos) separando y tiñendo sus dos
     /// colores. Presente SOLO en la sección del guardián; nil ⇒ el sello normal (orbe/glifo).
@@ -80,6 +83,7 @@ public struct MatrizSeccion: Sendable, Identifiable, Equatable {
                 glifoSello: LiquidIcon.Glyph? = nil,
                 sello: SelloMetrica? = nil,
                 scrubNoches: [ScrubNoche]? = nil,
+                a11yValor: String? = nil,
                 selloGuardian: SelloGuardianVivo.Estado? = nil) {
         self.id = id; self.hue = hue; self.huesPar = huesPar
         self.titulo = titulo; self.valor = valor
@@ -92,6 +96,7 @@ public struct MatrizSeccion: Sendable, Identifiable, Equatable {
         self.glifoSello = glifoSello
         self.sello = sello
         self.scrubNoches = scrubNoches
+        self.a11yValor = a11yValor
         self.selloGuardian = selloGuardian
     }
 
@@ -496,7 +501,7 @@ public struct MatrizHoyFace: View {
                     // trae chip Y valor —el guardián con su par de números—, mandan los DATOS
                     // arriba; el estado en palabras baja a la sublínea, en su tono. Sin valor
                     // (como era el guardián antes de la costura) el chip conserva su lugar.
-                    if let chip = s.chip, s.valor.isEmpty {
+                    if let chip = s.chip, s.valor.isEmpty, scrub?.id != s.id {
                         chipView(chip)
                     } else {
                         valorCompuesto(s, valor: valorEfectivo(s))
@@ -512,7 +517,13 @@ public struct MatrizHoyFace: View {
                 .layoutPriority(1)
             }
             let sub = sublabelEfectivo(s)
-            let chipEnSublinea: MatrizHoyModel.ChipGuardian? = s.valor.isEmpty ? nil : s.chip
+            // Adversarial C3: el chip dice el estado de HOY. Mientras el dedo lee OTRA noche, el
+            // encabezado ya muestra los números de ESA noche: dejar el chip encima hacía que la
+            // tarjeta afirmara «2.ª noche» sobre un martes que el motor vio en calma. Al arrastrar
+            // esta sección, el chip se calla y manda la lectura de la noche leída.
+            let leyendoOtraNoche = scrub?.id == s.id
+            let chipEnSublinea: MatrizHoyModel.ChipGuardian? =
+                (s.valor.isEmpty || leyendoOtraNoche) ? nil : s.chip
             if s.vota || sub != nil || chipEnSublinea != nil {
                 HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s150) {
                     if let chip = chipEnSublinea {
@@ -762,6 +773,23 @@ public struct MatrizHoyFace: View {
         }
     }
 
+    /// Revisión adversarial P-3 · El inset horizontal de cada gráfica, en UN solo lugar: lo usa
+    /// el DIBUJO y lo usa el mapeo del DEDO. Vivían separados (el gesto asumía `chartInset` 4 y
+    /// la línea serena dibujaba con 8.6 tras FER-73), así que cerca de los bordes el cursor
+    /// caía en una noche y el readout anunciaba otra.
+    static func chartInset(_ p: MatrizChartPayload) -> CGFloat {
+        switch p {
+        case .lineaSerena:
+            return max(MatrizTokens.chartInset,
+                       LiquidChart.puntoDatoRadio + LiquidChart.endpointBorde * 0.5 + MatrizTokens.aroGap2)
+        case .costura:
+            return max(MatrizTokens.chartInset,
+                       LiquidChart.puntoDatoRadio + LiquidChart.endpointBorde)
+        default:
+            return MatrizTokens.chartInset
+        }
+    }
+
     /// Alto del chart por tipo. `static internal` (no depende de `self`) para poder afirmar
     /// en un test la IGUALDAD de las gemelas (FER-59) sin depender de snapshots (que no son gate de CI).
     static func chartAltura(_ p: MatrizChartPayload) -> CGFloat {
@@ -784,7 +812,9 @@ public struct MatrizHoyFace: View {
     }
 
     private func a11yLabel(_ s: MatrizSeccion) -> String {
-        var parts = [s.titulo, s.valor]
+        // Revisión adversarial P-4: con la costura, `valor` es un PAR («+0.1° · 14.9») y leído
+        // así no dice qué número es de qué señal. `a11yValor` lo desambigua cuando existe.
+        var parts = [s.titulo, s.a11yValor ?? s.valor]
         if let sub = s.sublabel { parts.append(sub) }
         if let chip = s.chip { parts.append(chip.texto) }
         return parts.filter { !$0.isEmpty }.joined(separator: ", ")
@@ -903,8 +933,10 @@ private struct ScrubGesto: ViewModifier {
     /// ancho útil que usa la curva, o el índice se corre cerca del margen.
     private var insetDerecho: CGFloat {
         if case .regla = chart { return MatrizTokens.reglaZona }
-        return MatrizTokens.chartInset
+        return MatrizHoyFace.chartInset(chart)
     }
+    /// El inset IZQUIERDO del mapeo: el mismo con el que dibuja esta gráfica (P-3).
+    private var insetIzquierdo: CGFloat { MatrizHoyFace.chartInset(chart) }
     func body(content: Content) -> some View {
         content.overlay(
             GeometryReader { geo in
@@ -920,7 +952,7 @@ private struct ScrubGesto: ViewModifier {
                     .liquidScrubPan(
                         enabled: noches.count > 1,
                         onChange: { p in
-                            let inset = MatrizTokens.chartInset
+                            let inset = insetIzquierdo
                             let w = geo.size.width - inset - insetDerecho
                             guard w > 0, noches.count > 1 else { return }
                             let i = ScrubMapeo.indice(

@@ -166,10 +166,21 @@ private struct AvisoDesconexion: View {
     private var respiro: some View {
         TimelineView(.animation(minimumInterval: LiquidMotion.intervaloSello, paused: quieto)) { tl in
             let fase = Self.fase(tl.date, quieto: quieto)
-            RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous)
-                .fill(LiquidColor.rojoClaro.opacity(0.06 + 0.04 * fase))   // token-exempt: fondo del aviso
-                .shadow(color: LiquidColor.rojoClaro.opacity(0.11 + 0.09 * fase),   // token-exempt: glow que respira
-                        radius: 7 + 4 * fase)
+            ZStack {
+                // El halo se DIBUJA, no se deriva —colgado como `.shadow` del fondo del aviso,
+                // el sistema lo proyectaba desde la alfa de ese fondo (6-10 %) y quedaba en ~1 %,
+                // invisible— pero se dibuja como CONTORNO. Un relleno desenfocado del tamaño de
+                // la tarjeta no es un halo: es un segundo fondo que le baja el contraste al
+                // texto por dentro y se derrama sobre la Matriz por fuera, que solo tiene 6 pt
+                // de despeje (tercera vuelta adversarial). El contorno concentra el brillo en el
+                // filo, que es donde un halo vive.
+                RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous)
+                    .strokeBorder(LiquidColor.rojoClaro.opacity(0.35 + 0.20 * fase),   // token-exempt: glow que respira
+                                  lineWidth: 3)
+                    .blur(radius: 6 + 3 * fase)
+                RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous)
+                    .fill(LiquidColor.rojoClaro.opacity(0.06 + 0.04 * fase))   // token-exempt: fondo del aviso
+            }
         }
     }
 
