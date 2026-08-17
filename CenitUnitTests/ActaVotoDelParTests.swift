@@ -229,6 +229,15 @@ final class ActaVotoDelParTests: XCTestCase {
         XCTAssertNil(acta.confianza, "sin Salud conectada no entra ninguna noche")
     }
 
+    /// SEXTA VUELTA · «Tu veredicto se apoya en N noches tuyas» hablaba en presente de un
+    /// veredicto que hoy no existe: cerraba la hoja de quien acaba de leer «Sin lectura».
+    func test_sinVeredicto_laConfianzaNoHablaDeTuVeredicto() {
+        let acta = LiquidHoyBuilder.acta(prep: read(verdict: .lowSignal, autonomicOut: false,
+                                                    sleepOut: false, par: false,
+                                                    maturity: .stale))
+        XCTAssertNil(acta.confianza, "sin veredicto no hay veredicto que apoyar")
+    }
+
     /// Sin par, la prosa de siempre no cambia (no se rompió el camino normal).
     func test_sinPar_laProsaDeSiempre() {
         let acta = LiquidHoyBuilder.acta(prep: read(verdict: .easy, autonomicOut: true,

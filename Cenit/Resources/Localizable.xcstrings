@@ -1,6 +1,22 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "acta.metodo.que" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The verdict for how you woke up: your resting HR against your own baseline; your sleep, against the recommended range."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El veredicto de cómo amaneciste: tu FC en reposo contra tu propia base; tu sueño, contra el rango recomendado."
+          }
+        }
+      }
+    },
     "hero.title.rancia" : {
       "localizations" : {
         "en" : {
@@ -27111,13 +27127,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "From your recent weeks I learn your normal band for your resting heart rate, your temperature and your breathing; your sleep is measured against the recommended range for health. Each morning I compare the night: in or out. The verdict counts how many voting signals stepped out. It is never a 0-100 score, because your watch doesn't measure with that precision and I won't pretend it does."
+            "value" : "From your recent weeks I learn your normal band for your resting heart rate and your breathing; your temperature is measured by how far it drifts from your own baseline (0.8 °C or more counts as high), and your sleep against the recommended range for health. Each morning I compare the night: in or out. The verdict counts how many voting signals stepped out. It is never a 0-100 score, because your watch doesn't measure with that precision and I won't pretend it does."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "De tus últimas semanas aprendo tu banda normal de FC en reposo, de temperatura y de respiración; tu sueño se mide contra el rango recomendado para la salud. Cada mañana comparo la noche: dentro o fuera. El veredicto cuenta cuántas señales votantes se salieron. Nunca es una calificación de 0 a 100, porque tu reloj no mide con esa precisión y no voy a fingir que sí."
+            "value" : "De tus últimas semanas aprendo tu banda normal de FC en reposo y de respiración; tu temperatura se mide por cuánto se aleja de tu propia base (0.8 °C o más cuenta como alta), y tu sueño, contra el rango recomendado para la salud. Cada mañana comparo la noche: dentro o fuera. El veredicto cuenta cuántas señales votantes se salieron. Nunca es una calificación de 0 a 100, porque tu reloj no mide con esa precisión y no voy a fingir que sí."
           }
         }
       }

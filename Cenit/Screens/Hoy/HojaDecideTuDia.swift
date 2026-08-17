@@ -76,7 +76,7 @@ struct HojaDecideTuDia: View {
 
             seccion(String(localized: "manual.deciden.sec.como", defaultValue: "How it's read"))
             Text(String(localized: "manual.deciden.como",
-                        defaultValue: "From your recent weeks I learn your normal band for your resting heart rate, your temperature and your breathing; your sleep is measured against the recommended range for health. Each morning I compare the night: in or out. The verdict counts how many voting signals stepped out. It is never a 0-100 score, because your watch doesn't measure with that precision and I won't pretend it does."))
+                        defaultValue: "From your recent weeks I learn your normal band for your resting heart rate and your breathing; your temperature is measured by how far it drifts from your own baseline (0.8 °C or more counts as high), and your sleep against the recommended range for health. Each morning I compare the night: in or out. The verdict counts how many voting signals stepped out. It is never a 0-100 score, because your watch doesn't measure with that precision and I won't pretend it does."))
                 .font(LiquidType.cuerpo)
                 .lineSpacing(LiquidType.cuerpoLineSpacing)
                 .foregroundStyle(LiquidColor.tinta700)

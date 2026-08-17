@@ -1168,7 +1168,8 @@ enum LiquidHoyBuilder {
                                esLecturaDeDia: esLecturaDeDia, desfase: desfase,
                                empujeTendencia: empujeTendencia,
                                healthConnected: healthConnected, calibrando: calibrando),
-            confianza: confianzaActa(prep: prep, healthConnected: healthConnected),
+            confianza: confianzaActa(prep: prep, healthConnected: healthConnected,
+                                     hayVeredicto: hayVeredicto),
             plegable: plegableActa(),
             verMas: String(localized: "See more in Trends"),
             verMasHint: String(localized: "Opens the detail"),
@@ -1611,8 +1612,14 @@ enum LiquidHoyBuilder {
     /// plena. Y `LiquidCalibracionCard` («Calibrando tu base») SOLO mientras de verdad
     /// calibra: con la base ya usable, prosa sin barra de progreso.
     private static func confianzaActa(prep: Preparedness.Read?,
-                                      healthConnected: Bool = true) -> LiquidActa.Confianza? {
+                                      healthConnected: Bool = true,
+                                      hayVeredicto: Bool = true) -> LiquidActa.Confianza? {
         guard let prep else { return nil }
+        // «Tu veredicto se apoya en N noches tuyas» habla en presente de un veredicto que hoy no
+        // existe: cerraba la hoja de quien acaba de leer «Sin lectura» arriba, y también la del
+        // estado de base rancia que estrenó la ronda anterior. La barra de calibración sí puede
+        // salir sin veredicto (ES el estado de calibrar); la nota de confianza no (sexta vuelta).
+        guard hayVeredicto || prep.maturity == .calibrating else { return nil }
         // Sin Salud conectada no entra ninguna noche: la barra «N de 4» no puede avanzar y el
         // héroe ya apaga su calibración por lo mismo (FER-76). Es la misma promesa rota, en
         // gráfico, otra vez (quinta vuelta adversarial).
@@ -1645,7 +1652,11 @@ enum LiquidHoyBuilder {
         // que ya no duplica al ⓘ.
         let lineas: [String] = [
             // El QUÉ abre el método (FER-79 · D8): vivía tras la ⓘ del encabezado, que se retiró.
-            String(localized: "The verdict for how you woke up: your signals against your own baseline."),
+            // «Tus señales contra tu propia base» era la MISMA promesa que la ronda 5 fue a
+            // corregir al manual, viva y textual en la puerta MÁS visitada de las dos: el sueño
+            // se juzga contra un piso poblacional de 7 h, no contra tu historial (sexta vuelta).
+            String(localized: "acta.metodo.que",
+                   defaultValue: "The verdict for how you woke up: your resting HR against your own baseline; your sleep, against the recommended range."),
             String(localized: "acta.metodo.fc",
                    defaultValue: "Your resting HR is your lowest pulse of the night, measured by your Apple Watch; when there's no overnight reading, Cénit uses Apple Health's resting heart rate."),
             String(localized: "acta.metodo.votos",
