@@ -1295,26 +1295,33 @@ enum LiquidHoyBuilder {
             default:
                 break
             }
+            // La sentencia genérica solo puede decirse cuando de verdad NO llegó nada. Con la
+            // fila de Sueño llena justo arriba, «ni sueño ni señales de reposo» es falso — y el
+            // switch de arriba no la cubría en la ventana de la mañana, cuando la causa todavía
+            // es `.leyendo` (adversarial, segunda vuelta).
+            if hayNocheEnBoleta {
+                return (String(localized: "acta.resumen.senal.insuficiente",
+                               defaultValue: "Your sleep came in; your resting signal didn't, so there's no quorum."), nil)
+            }
             return (String(localized: "Nothing came in last night: no sleep and no resting signals."), nil)
-        }
-        // El PAR fue quien votó hoy: la prosa lo dice en vez de nombrar un eje que está dentro
-        // (adversarial H3). Es la misma frase que el héroe usa arriba, para que la hoja no
-        // cuente otra historia que la pantalla que la abrió.
-        if parVoto, fueraEjes == 0 {
-            return (String(localized: "Your temperature and breathing moved out of your pattern together."),
-                    String(localized: "acta.resumen.par.clave", defaultValue: "together"))
         }
         if empujeTendencia {
             return (String(localized: "One vote fell outside and your night HRV is trending down: that's why today asks for recovery."),
                     String(localized: "acta.resumen.tendencia.clave", defaultValue: "trending down"))
         }
         if desfase {
-            // Con el par corroborado el conteo del motor incluye su voto; la prosa del desfase
-            // habla de los EJES que la boleta dibuja, así que si el par aporta, se nombra a él.
+            // El DESFASE manda sobre todo lo demás: es lo que estás viendo. La rama del par
+            // vivía ARRIBA de este bloque y se lo comía —veredicto verde, «se salieron juntas»
+            // y cero explicación de por qué el veredicto no se movió— (adversarial, segunda
+            // vuelta). Ahora el par entra AQUÍ, y si además un eje se salió, se nombran los dos:
+            // la versión corta escondía justo el voto que sí cayó fuera.
             if parVoto {
-                return (String(localized: "acta.resumen.par.desfase",
-                               defaultValue: "Your temperature and breathing moved out together; the verdict changes once it repeats two days in a row."),
-                        String(localized: "acta.resumen.par.clave", defaultValue: "together"))
+                let texto = fueraEjes > 0
+                    ? String(localized: "acta.resumen.par.desfase.eje",
+                             defaultValue: "Your temperature and breathing moved out together, and one of your votes fell outside too; the verdict changes once it repeats two days in a row.")
+                    : String(localized: "acta.resumen.par.desfase",
+                             defaultValue: "Your temperature and breathing moved out together; the verdict changes once it repeats two days in a row.")
+                return (texto, String(localized: "acta.resumen.par.clave", defaultValue: "together"))
             }
             let esperado: Int = prep!.verdict == .full ? 0 : (prep!.verdict == .caution ? 1 : 2)
             if fuera > esperado {
@@ -1328,6 +1335,13 @@ enum LiquidHoyBuilder {
             }
             return (String(localized: "Your votes fell inside today. The verdict changes once the improvement repeats two days in a row."),
                     String(localized: "acta.resumen.hist.dentro.clave", defaultValue: "inside today"))
+        }
+        // El PAR fue quien votó hoy: la prosa lo dice en vez de nombrar un eje que está dentro
+        // (adversarial H3). Es la misma frase que el héroe usa arriba, para que la hoja no
+        // cuente otra historia que la pantalla que la abrió.
+        if parVoto, fueraEjes == 0 {
+            return (String(localized: "Your temperature and breathing moved out of your pattern together."),
+                    String(localized: "acta.resumen.par.clave", defaultValue: "together"))
         }
         switch prep!.verdict {
         case .full:
@@ -1345,6 +1359,18 @@ enum LiquidHoyBuilder {
                           defaultValue: "Resting HR voted outside; sleep, inside."),
                    String(localized: "acta.resumen.caution.clave", defaultValue: "voted outside"))
         case .easy:
+            // H3-b (segunda vuelta): con UN eje fuera + el par corroborado el motor cuenta dos
+            // votos y da `.easy`, pero «los dos votos cayeron fuera» es falso — uno de los dos
+            // votos lo puso el par, y la boleta solo dibuja los ejes. Se nombra lo que pasó.
+            if parVoto, fueraEjes < 2 {
+                let suenoFuera = estados.indices.contains(1) && estados[1].isOut
+                let texto = suenoFuera
+                    ? String(localized: "acta.resumen.easy.par.sueno",
+                             defaultValue: "Your sleep voted outside, and your temperature and breathing moved out together.")
+                    : String(localized: "acta.resumen.easy.par.auto",
+                             defaultValue: "Your resting HR voted outside, and your temperature and breathing moved out together.")
+                return (texto, String(localized: "acta.resumen.par.clave", defaultValue: "together"))
+            }
             return (String(localized: "Both of your votes fell outside."),
                     String(localized: "acta.resumen.easy.clave", defaultValue: "outside"))
         case .lowSignal:
@@ -1371,13 +1397,23 @@ enum LiquidHoyBuilder {
         }
         // FER-73 · H-T: mientras la base se forma, «mañana la boleta se llena sola» es falso —
         // faltan varias noches y la tarjeta de abajo lo dice con su barra. Se dice cuántas.
-        if calibrando, let prep {
+        // (…y solo si esas noches pueden llegar: sin FC nocturna posible la promesa no se
+        // cumple nunca — el mismo hallazgo que sacó la tarjeta de calibración del acta.)
+        if calibrando, let prep, prep.autonomicPossible {
             let (noche, total) = calibracionConteo(nights: prep.autonomicNights)
             if noche < total {
-                out.append(.init(id: "calibrando",
-                                 texto: String(format: String(localized: "acta.nota.calibrando",
-                                                              defaultValue: "%lld more nights with your Apple Watch and your daily verdict appears."),
-                                               total - noche)))
+                // El día 4 SIEMPRE cae en «falta 1», y «1 noches más» se leía roto en las dos
+                // lenguas (adversarial, segunda vuelta). Dos claves en vez de una: el catálogo
+                // de Cénit no lleva plurales, y una frase mal conjugada en la única nota que ve
+                // quien apenas empieza es la peor primera impresión posible.
+                let faltan = total - noche
+                let texto = faltan == 1
+                    ? String(localized: "acta.nota.calibrando.una",
+                             defaultValue: "One more night with your Apple Watch and your daily verdict appears.")
+                    : String(format: String(localized: "acta.nota.calibrando",
+                                            defaultValue: "%lld more nights with your Apple Watch and your daily verdict appears."),
+                             faltan)
+                out.append(.init(id: "calibrando", texto: texto))
                 return out
             }
         }
@@ -1463,6 +1499,14 @@ enum LiquidHoyBuilder {
     private static func confianzaActa(prep: Preparedness.Read?) -> LiquidActa.Confianza? {
         guard let prep else { return nil }
         let n = prep.autonomicNights
+        // Sin FC nocturna posible, la tarjeta de calibración es una promesa que no se va a
+        // cumplir: contar «0 de 4 noches» a quien el héroe acaba de decirle «todavía no puedo
+        // leer tus mañanas» le hace esperar un progreso que nunca avanza (adversarial, segunda
+        // vuelta). El acta dice lo que falta, no cuántas noches faltan.
+        if !prep.autonomicPossible {
+            return .nota(String(localized: "acta.confianza.sinfc",
+                                defaultValue: "Your verdict is waiting on a resting heart rate from your night; Apple Health isn't providing one yet."))
+        }
         if prep.maturity == .calibrating {
             let meta = Baselines.minNightsSeed
             return .calibrando(titulo: String(localized: "Calibrating your base"),

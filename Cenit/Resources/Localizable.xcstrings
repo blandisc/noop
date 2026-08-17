@@ -1,6 +1,118 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Population reference, not your verdict. Your own comparison lives in the guardian on Today, which reads this against your recent weeks." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Population reference, not your verdict. Your own comparison lives in the guardian on Today, which reads this against your recent weeks."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Referencia poblacional, no tu veredicto. Tu comparación propia vive en el guardián de Hoy, que lee esto contra tus semanas recientes."
+          }
+        }
+      }
+    },
+    "matriz.sueno.rango.fuera.v2" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "outside recommended"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "fuera del recomendado"
+          }
+        }
+      }
+    },
+    "acta.nota.calibrando.una" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One more night with your Apple Watch and your daily verdict appears."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Una noche más con tu Apple Watch y aparece tu veredicto diario."
+          }
+        }
+      }
+    },
+    "acta.resumen.par.desfase.eje" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your temperature and breathing moved out together, and one of your votes fell outside too; the verdict changes once it repeats two days in a row."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu temperatura y tu respiración se salieron juntas, y además uno de tus votos cayó fuera; el veredicto cambia cuando se repita dos días seguidos."
+          }
+        }
+      }
+    },
+    "acta.confianza.sinfc" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your verdict is waiting on a resting heart rate from your night; Apple Health isn't providing one yet."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu veredicto espera una frecuencia cardiaca en reposo de tu noche; Apple Salud todavía no la entrega."
+          }
+        }
+      }
+    },
+    "acta.resumen.easy.par.sueno" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your sleep voted outside, and your temperature and breathing moved out together."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu sueño votó fuera, y tu temperatura y tu respiración se salieron juntas."
+          }
+        }
+      }
+    },
+    "acta.resumen.easy.par.auto" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your resting HR voted outside, and your temperature and breathing moved out together."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu FC en reposo votó fuera, y tu temperatura y tu respiración se salieron juntas."
+          }
+        }
+      }
+    },
     "acta.resumen.par.clave" : {
       "localizations" : {
         "en" : {

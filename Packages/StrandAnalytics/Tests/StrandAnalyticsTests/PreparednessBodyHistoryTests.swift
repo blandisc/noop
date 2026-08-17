@@ -174,6 +174,28 @@ final class PreparednessBodyHistoryTests: XCTestCase {
     /// justifica que exista un helper aparte: si diverge, la Matriz mostraría un juicio distinto
     /// según si el día de hoy llegó o no — la clase de bug que nadie ve hasta que un usuario
     /// jura que ayer estaba «dentro» y hoy aparece «fuera» sin que cambiara ese día.
+    /// Segunda vuelta adversarial · la cláusula «la última noche presente tiene que ser
+    /// nocturna» pertenece al camino que JUZGA un día (ahí sí: la base y el día juzgado no
+    /// pueden ser de constructos distintos). Copiarla al helper sin día que juzgar tenía un
+    /// precio peor que el que quería evitar: una sola noche sin reloj al final de la ventana
+    /// tiraba las otras 19 al constructo despierto y la banda de la Matriz saltaba ~8 bpm entre
+    /// dos refrescos consecutivos.
+    func testUnaNocheSinFCNocturnaNoTiraLaVentanaAlConstructoDespierto() {
+        let dias = baseline()                                   // FC despierta ~54-56
+        // Nocturna (~45) en 19 de las 20 noches: la ÚLTIMA presente no la tiene.
+        var nocturna: [String: Double] = [:]
+        for d in dias.dropLast() { nocturna[d.day] = 45 }
+        let r = Preparedness.evaluate(.init(days: dias, strainByDay: [:], trend: nil,
+                                            asOf: "2026-06-21",   // sin fila de hoy: ruta temprana
+                                            nocturnalRestingHr: nocturna, cyclePhase: nil,
+                                            nocturnalRmssd: nil))
+        let usados = r.bodyHistory.compactMap(\.rhrResolved)
+        XCTAssertFalse(usados.isEmpty, "la historia se publica aunque no haya fila de hoy")
+        XCTAssertTrue(usados.contains { $0 < 50 },
+                      "19 noches nocturnas mandan: una sola faltante no reescribe las demás al "
+                      + "constructo despierto (la banda saltaría ~8 bpm entre refrescos): \(usados)")
+    }
+
     func testHistoriaSinFilaDeHoyNoDivergeDeLaRutaNormal() {
         let dias = baseline()                        // 20 noches, la última: 2026-06-20
         let normal = read(dias, asOf: "2026-06-20")  // ruta principal (hay fila de asOf)

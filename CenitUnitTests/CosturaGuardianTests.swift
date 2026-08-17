@@ -35,17 +35,21 @@ final class CosturaGuardianTests: XCTestCase {
               respMissing: respMissing, respJudged: respJudged, gapBefore: false)
     }
     private func prep(_ historia: [Preparedness.SentinelNight],
-                      sentinel: Preparedness.SentinelRead? = nil) -> Preparedness.Read {
+                      sentinel: Preparedness.SentinelRead? = nil,
+                      ajusteTermico: Double? = nil) -> Preparedness.Read {
         Preparedness.Read(verdict: .full,
                           drivers: [.init(axis: .autonomic, state: .inRange, orientedZ: 0.2),
                                     .init(axis: .sleep, state: .inRange, orientedZ: nil)],
                           signalsPresent: 3, signalsTotal: 4, maturity: .trusted,
                           autonomicNights: 30, trend: nil,
-                          sentinel: sentinel, sentinelHistory: historia)
+                          sentinel: sentinel, sentinelHistory: historia,
+                          thermalAdjustedDevC: ajusteTermico)
     }
     private func costura(dias: [DailyMetric], historia: [Preparedness.SentinelNight],
-                         sentinel: Preparedness.SentinelRead? = nil) -> [MatrizCostura.Noche] {
-        let m = LiquidHoyBuilder.matriz(.init(prep: prep(historia, sentinel: sentinel),
+                         sentinel: Preparedness.SentinelRead? = nil,
+                         ajusteTermico: Double? = nil) -> [MatrizCostura.Noche] {
+        let m = LiquidHoyBuilder.matriz(.init(prep: prep(historia, sentinel: sentinel,
+                                                         ajusteTermico: ajusteTermico),
                                               diasRecientes: dias, stressTrend: [], carga: nil,
                                               stepsEstimados: [], locale: Locale(identifier: "en_US"),
                                               calendar: cal, now: now))
@@ -63,9 +67,61 @@ final class CosturaGuardianTests: XCTestCase {
         let historia = (-19...0).map { noche(dayKey($0)) }        // el motor: nada fuera
         let n = costura(dias: dias, historia: historia)
         let hoy = n.last!
-        XCTAssertEqual(hoy.temp ?? 0, 0, accuracy: 0.001,
-                       "una noche fría se queda junto al eje: el motor no la marcó")
+        // Segunda vuelta (COS-4): el contrato ya no es «vale 0» —recortar a 0 aplanaba media
+        // serie sobre el eje y afirmaba «justo en tu centro»— sino «es negativo», que es lo que
+        // el dibujo aprieta contra el eje sin que llegue nunca a parecer que te saliste.
+        XCTAssertLessThan(hoy.temp ?? 0, 0, "una noche fría es negativa, no cero")
+        XCTAssertLessThan(MatrizCostura.fraccionFilo(hoy.temp!), MatrizCostura.fraccionFilo(1) / 2,
+                          "el lado bajo jamás puede leerse tan lejos como el filo de tu banda")
         XCTAssertFalse(hoy.parFuera)
+    }
+
+    /// ADVERSARIAL COS-4 · Dos noches BAJAS distintas no pueden dibujarse al mismo alto. El
+    /// `max(0, …)` de la primera vuelta las mandaba a las dos al eje mientras el scrub anunciaba
+    /// «−0.4°» y «−0.1°» sobre puntos idénticos.
+    func test_COS4_dosNochesBajasNoCaenEnElMismoPixel() {
+        var dias = (-19...0).map { metric(dayKey($0), temp: -0.1, resp: 14) }
+        dias[0] = metric(dayKey(-19), temp: -0.5, resp: 14)
+        let n = costura(dias: dias, historia: (-19...0).map { noche(dayKey($0)) })
+        let baja = MatrizCostura.fraccionFilo(n[0].temp!)
+        let leve = MatrizCostura.fraccionFilo(n[1].temp!)
+        XCTAssertGreaterThan(baja, leve + 0.02, "−0.5 °C y −0.1 °C tienen que distinguirse")
+    }
+
+    /// ADVERSARIAL COS-2 · Con lectura pero SIN escala (menos de 3 noches de respiración) la
+    /// orilla se callaba… y aun así se dibujaba pegada al eje con la joya de HOY encima, que es
+    /// exactamente la mentira que C2 decía haber matado.
+    func test_COS2_conLecturaPeroSinEscalaLaOrillaSeCalla() {
+        // Solo 2 noches con respiración: no hay mediana ni MAD que sostengan una escala.
+        let dias = (-19...0).map { d in metric(dayKey(d), temp: 0.1, resp: d >= -1 ? 14 : nil) }
+        let n = costura(dias: dias, historia: (-19...0).map { noche(dayKey($0), respMissing: true,
+                                                                   respJudged: false) })
+        XCTAssertTrue(n.allSatisfy { $0.resp == nil }, "sin escala no hay dónde poner la noche")
+        XCTAssertTrue(n.allSatisfy { $0.respSinLectura },
+                      "y si no hay dónde ponerla, la orilla se interrumpe: nada de joya de HOY")
+    }
+
+    /// ADVERSARIAL A1/A3 (motor) · H6 selló el héroe pero no la Matriz: pasada la medianoche la
+    /// última casilla es el día NUEVO, y plantar ahí el ajuste térmico de anteanoche hacía que
+    /// el guardián mostrara una temperatura que el héroe ya no muestra.
+    func test_A3_elAjusteTermicoNoSePlantaEnUnDiaQueElMotorNoJuzgo() {
+        // El motor juzgó AYER (su historia termina en −1); hoy todavía no tiene fila.
+        let dias = (-19 ... -1).map { metric(dayKey($0), temp: 0.05, resp: 14) }
+        let historia = (-19 ... -1).map { noche(dayKey($0)) }
+        let n = costura(dias: dias, historia: historia, ajusteTermico: 0.9)
+        XCTAssertTrue(n.last?.tempSinLectura ?? false,
+                      "la casilla de hoy no tiene lectura: el ajuste de anoche no puede ocuparla")
+    }
+
+    /// ADVERSARIAL A-2 · La temperatura también se ancla: si el motor la marcó alta, el labio
+    /// llega al filo aunque la cifra cruda del día se quede corta (p. ej. porque el ajuste de
+    /// fase movió el número que se juzgó).
+    func test_A2_laTemperaturaMarcadaFueraSiempreLlegaAlFilo() {
+        let dias = (-19...0).map { metric(dayKey($0), temp: $0 == 0 ? 0.5 : 0.05, resp: 14) }
+        var historia = (-19 ... -1).map { noche(dayKey($0)) }
+        historia.append(noche(dayKey(0), tempOut: true))
+        let n = costura(dias: dias, historia: historia)
+        XCTAssertGreaterThanOrEqual(n.last?.temp ?? 0, 1.0)
     }
 
     /// ADVERSARIAL C2 · Lo que no se midió no puede verse como lo perfecto.

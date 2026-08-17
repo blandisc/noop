@@ -443,15 +443,15 @@ public enum Preparedness {
         -> (maturity: BaselineStatus, nights: Int, autonomicPossible: Bool,
             sentinelHistory: [SentinelNight], bodyHistory: [BodyNight]) {
         guard !ordered.isEmpty else { return (.calibrating, 0, false, [], []) }
-        // El MISMO resolutor de constructo del camino principal, con su MISMA regla —incluida la
-        // cláusula «la última noche presente tiene que ser nocturna». Sin ella, la misma ventana
-        // podía resolverse nocturna aquí y despierta allá, y la banda de la Matriz cambiaría de
-        // constructo de un refresh a otro (la mezcla mitad-y-mitad que el motor prohíbe).
-        // (Revisión adversarial: divergencia D-1.)
+        // El resolutor de constructo del camino principal SIN su cláusula «la última noche tiene
+        // que ser nocturna»: esa cláusula existe porque el DÍA QUE SE JUZGA no puede compararse
+        // contra una base de otro constructo — y aquí no hay día que juzgar. Copiarla (primer
+        // intento de esta revisión) tenía un precio peor: una sola noche sin reloj al final de la
+        // ventana tiraba las otras 19 al constructo despierto y la banda de la Matriz saltaba
+        // ~8 bpm de un refresh al siguiente. (Revisión adversarial, segunda vuelta.)
         let nocturnal: [Double?] = ordered.map { input.nocturnalRestingHr[$0.day] }
         let awake: [Double?] = ordered.map { $0.restingHr.map(Double.init) }
         let nocturnalUsable = nocturnal.compactMap { $0 }.count >= Baselines.minNightsSeed
-            && nocturnal.last.flatMap { $0 } != nil
         let resolved: [Double?] = nocturnalUsable ? nocturnal : awake
         let rhrSeries = smoothedRhrSeries(resolved, nights: config.rhrSmoothingNights)
         let posible = rhrSeries.contains { $0 != nil }

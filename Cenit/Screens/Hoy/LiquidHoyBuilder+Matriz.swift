@@ -79,8 +79,12 @@ extension LiquidHoyBuilder {
         // range» / «out of your range» (rango personal) para la misma noche.
         let enRangoSueno = String(localized: "matriz.sueno.rango.dentro",
                                   defaultValue: "recommended range")
-        let fueraRangoSueno = String(localized: "matriz.sueno.rango.fuera",
-                                     defaultValue: "below recommended")
+        // SIN DIRECCIÓN (adversarial, segunda vuelta): el eje de sueño sale por `isOut`, que es
+        // `.low || .high`. Sobre una noche de 9 h el rótulo «abajo del recomendado» afirmaba lo
+        // contrario de lo que pasó, y `bodyHistory` no expone el lado — así que el rótulo dice
+        // lo único que el motor sí juzgó: que quedó fuera.
+        let fueraRangoSueno = String(localized: "matriz.sueno.rango.fuera.v2",
+                                     defaultValue: "outside recommended")
         let scrubSueno: [MatrizSeccion.ScrubNoche] = keysSueno.enumerated().map { idx, day in
             let mins = byDay[day]?.totalSleepMin
             let offsetDesdeFin = keysSueno.count - 1 - idx
@@ -232,7 +236,13 @@ extension LiquidHoyBuilder {
         // que juzga el guardián y que muestra la cara Cosmos (+Cosmos.swift), para que las
         // dos caras jamás se contradigan sobre la temperatura (la deriva que FER-51 elimina).
         // La historia se queda cruda: el motor no expone un ajuste por-día, solo el de hoy.
-        if let adj = prep?.thermalAdjustedDevC, !ptsTemp.isEmpty {
+        // SELLADO POR DÍA (H6, extendido en la revisión adversarial): `thermalAdjustedDevC` es
+        // el ajuste de LA NOCHE QUE EL MOTOR JUZGÓ, no «el de la última casilla». Pasada la
+        // medianoche la última casilla ya es el día nuevo (vacío) y plantar ahí el número de
+        // anteanoche hacía que el guardián mostrara una temperatura que el héroe —sellado en
+        // TodayView desde H6— ya no muestra: dos caras de la misma pantalla contradiciéndose.
+        if let adj = prep?.thermalAdjustedDevC, let hk = hoyKey,
+           prep?.sentinelHistory.last?.day == hk, keys20.last == hk, !ptsTemp.isEmpty {
             ptsTemp[ptsTemp.count - 1] = adj
         }
         let ptsResp: [Double?] = keys20.map { byDay[$0]?.respRateBpm }
@@ -253,13 +263,20 @@ extension LiquidHoyBuilder {
         let thermalBand = Preparedness.Config.default.thermalOutC
         // FER-80 · LA COSTURA (propuesta C2, elegida por el dueño): las dos señales del par en
         // UNA sola gráfica, espejadas sobre un eje común, con el espacio entre ellas pintado.
-        // Cada una se normaliza contra SU banda para que el espesor signifique lo mismo:
-        //   · temperatura → |dev| / corte térmico público (banda absoluta en °C);
-        //   · respiración → |rpm − base| / medio ancho de su banda típica.
-        // Así 1.0 = «justo en el filo de tu banda» para las dos, y la boca se abre igual.
-        // La escala de la respiración: MEDIANA y desviación absoluta mediana (MAD), no media y
-        // desviación media. Con media, una sola noche enferma corría el centro y ENGORDABA el
-        // ancho — diluyendo justo la noche que debía abrirse (revisión adversarial P-1).
+        //
+        // Cómo se convierte cada señal en «cuánto se abre su labio» (1.0 = justo en el filo de
+        // tu banda), tras la revisión adversarial:
+        //   · temperatura → max(0, dev) / corte térmico público. SOLO el lado alto: el centinela
+        //     nunca marca una noche fría, así que dibujarla abierta sería afirmar lo que el
+        //     motor no dijo (C1).
+        //   · respiración → max(0, rpm − centro) / medio ancho, con centro = MEDIANA y ancho =
+        //     MAD de las noches que el motor juzgó DENTRO. Mediana y MAD porque son robustas
+        //     (con media, una noche enferma corría el centro y engordaba el ancho, diluyendo
+        //     justo la que debía abrirse — P-1); y solo las sanas porque una racha larga
+        //     arrastraba la base hasta volverse invisible (C3).
+        //
+        // Y sobre las dos, el ANCLA: el labio se somete al juicio del motor por noche. Ninguna
+        // escala aproximada puede dibujar «dentro» lo que el motor marcó fuera, ni al revés.
         let respEscala: (centro: Double, medioAncho: Double)? = {
             // La base se calcula SOLO con las noches que el motor juzgó DENTRO. Si se usan todas,
             // un desplazamiento sostenido (diez noches enfermas seguidas) arrastra el centro y se
@@ -284,28 +301,40 @@ extension LiquidHoyBuilder {
         let nochesCostura: [MatrizCostura.Noche] = keys20.indices.map { idx in
             let dia = keys20[idx]
             let noche = sentByDay[dia]
-            // SOLO EL LADO QUE EL MOTOR JUZGA (adversarial C1). El centinela marca temperatura
-            // ALTA y respiración ALTA — nunca la baja. Con `abs()`, una noche fría (cuarto frío,
-            // destaparse) abría la boca igual que una fiebre: la gráfica afirmaba «te saliste»
-            // donde el motor no marcó nada. El lado bueno se queda junto al eje, que es lo que
-            // significa: nada que decir.
-            let t: Double? = ptsTemp[idx].map { max(0, $0) / max(thermalBand, 0.01) }
+            // La magnitud va FIRMADA: negativo = por debajo de tu centro. Quien decide qué hacer
+            // con el signo es el dibujo, no esta cuenta (`MatrizCostura.fraccionFilo`), y lo que
+            // hace es apretar el lado bajo contra el eje: el centinela marca temperatura ALTA y
+            // respiración ALTA, nunca la baja, así que ese lado no puede parecer «te saliste»
+            // (adversarial C1) — pero tampoco puede desaparecer. Recortarlo a 0 (primer intento
+            // de esta revisión) aplanaba media serie sobre el eje y afirmaba «justo en el centro
+            // de tu banda» en noches de −0.4 °C que el scrub sí distinguía (adversarial COS-4).
+            let t: Double? = ptsTemp[idx].map { $0 / max(thermalBand, 0.01) }
             var r: Double? = ptsResp[idx].flatMap { v in
                 guard let esc = respEscala else { return nil }
-                return max(0, v - esc.centro) / esc.medioAncho
+                return (v - esc.centro) / esc.medioAncho
             }
-            // ANCLA AL MOTOR (revisión adversarial P-1). La temperatura cuadra por construcción:
-            // se normaliza contra el MISMO corte público que la juzga. La respiración no —el
-            // motor la juzga con z contra tu base EWMA—, así que su escala aproximada podía
-            // dibujar «dentro» una noche que el motor marcó FUERA. Aquí el dibujo se somete al
-            // juicio: fuera ⇒ al menos en el filo; juzgada y dentro ⇒ nunca más allá del filo.
+            // ANCLA AL MOTOR (P-1). La respiración lo necesita porque el motor la juzga con z
+            // contra tu base EWMA y aquí solo tenemos una escala aproximada. La temperatura HOY
+            // cuadra por construcción (mismo corte, mismo número), pero se ancla igual: el día
+            // que alguien mueva `thermalOutC` o el ajuste de fase, el dibujo seguirá diciendo lo
+            // mismo que el juicio en vez de separarse en silencio.
+            var tAnclada = t
+            if let n = noche, let magnitud = t, !n.tempMissing {
+                tAnclada = n.tempOut ? max(magnitud, 1.02) : min(magnitud, 0.98)
+            }
             if let n = noche, let magnitud = r, !n.respMissing, n.respJudged {
                 r = n.respOut ? max(magnitud, 1.02) : min(magnitud, 0.98)
             }
             // El par votó esa noche = el juicio del MOTOR para ESE día (nunca re-derivado aquí).
             let par = (noche?.tempOut ?? false) && (noche?.respOut ?? false)
-            return .init(temp: t, resp: r, parFuera: par,
-                         tempSinLectura: ptsTemp[idx] == nil, respSinLectura: ptsResp[idx] == nil)
+            // Las banderas salen del VALOR, no de la lectura cruda (adversarial COS-2): con
+            // lectura pero sin escala (menos de 3 noches de respiración) la magnitud es nil, y
+            // dibujar esa orilla pegada al eje con su joya de HOY volvía a afirmar «justo en el
+            // centro de tu banda» — la misma mentira, por otra puerta — mientras el chip de la
+            // misma tarjeta decía «Conociéndote». Sin escala no hay dónde poner la noche: la
+            // orilla se calla, y el número crudo sigue vivo en el encabezado y en el scrub.
+            return .init(temp: tAnclada, resp: r, parFuera: par,
+                         tempSinLectura: tAnclada == nil, respSinLectura: r == nil)
         }
         let nochesCosturaVivas = Array(nochesCostura[iniGuardian...])
         // El scrub de la costura lee LA NOCHE COMPLETA: las dos señales y su fecha.
@@ -319,12 +348,12 @@ extension LiquidHoyBuilder {
                 return .init(valor: "—",
                              sublabel: String(format: String(localized: "matriz.scrub.sinlectura",
                                                              defaultValue: "%@ · no reading"), fecha))
-            case (let t?, let r?):
-                return .init(valor: "\(t) · \(r)", sublabel: fecha)
-            case (let t?, nil):
-                return .init(valor: t, sublabel: fecha)
-            case (nil, let r?):
-                return .init(valor: r, sublabel: fecha)
+            default:
+                // La MISMA regla que el encabezado (adversarial C4, extendida al scrub en
+                // COS/A4): con una sola señal, el número solitario se pintaba con el hue de la
+                // otra —el color es lo único que las distingue— así que el guion ocupa el lugar
+                // de la que faltó y el par conserva su forma.
+                return .init(valor: "\(t ?? "—") · \(r ?? "—")", sublabel: fecha)
             }
         }
         let scrubCosturaVivo = Array(scrubCostura[iniGuardian...])

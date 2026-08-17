@@ -143,6 +143,7 @@ public struct LiquidEcosistema: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.liquidMotionDisabled) private var motionDisabled
     @Environment(\.liquidAmbientPaused) private var ambientPaused
+    @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     public init(senales: [LiquidHoyModel.Senal], hero: LiquidHoyModel.Hero,
@@ -230,7 +231,14 @@ public struct LiquidEcosistema: View {
     /// «El Tablero» ya viene apretado por su propia presentación.
     private var altoReservado: CGFloat {
         if compacto { return LiquidSpace.ecosistemaAltoCompacto }
-        return esSeparadaEstable ? LiquidSpace.ecosistemaAltoSeparado : LiquidSpace.ecosistemaAlto
+        guard esSeparadaEstable else { return LiquidSpace.ecosistemaAlto }
+        // La pastilla de ACCIÓN («Connect Apple Health») vive al ras de abajo del lienzo. El
+        // hueco que D4 cierra es el hueco VACÍO del modo separado; cuando hay una puerta ahí
+        // abajo no está vacío, y recortar se la comía entera contra el `.clipped()` — al
+        // usuario sin permiso de Salud le desaparecía su única salida por separar el orbe
+        // (revisión adversarial).
+        if heroPuerta != nil, !heroInfo { return LiquidSpace.ecosistemaAlto }
+        return LiquidSpace.ecosistemaAltoSeparado
     }
 
     /// El radio que de verdad dibuja el plan para esta coreografía (FER-73 · M2).
@@ -400,8 +408,13 @@ public struct LiquidEcosistema: View {
         // La separación es una consulta momentánea: al salir de la tab o backgroundear,
         // el héroe regresa a fundido (su reposo ES el veredicto) — sin re-fusión.
         .onDisappear { normalizarFase() }
-        .onChange(of: ambientPaused) { _, paused in
-            if paused { normalizarFase() }
+        // SALIR de la app reúne el héroe; que una HOJA lo tape, no. `ambientPaused` mezcla dos
+        // cosas —«no gastes batería dibujando» y «el usuario se fue»— y desde que las hojas
+        // también lo activan, abrir cualquier métrica re-fundía el héroe detrás de la hoja y
+        // movía 88 pt de layout con la hoja abierta: el usuario la cerraba y encontraba otra
+        // pantalla (revisión adversarial). La fase la manda el ciclo de vida, no la batería.
+        .onChange(of: scenePhase) { _, fase in
+            if fase != .active { normalizarFase() }
         }
         .accessibilityElement(children: .ignore)
         .accessibilityAddTraits(.isHeader)
