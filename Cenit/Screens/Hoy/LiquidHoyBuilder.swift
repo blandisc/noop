@@ -1691,7 +1691,7 @@ enum LiquidHoyBuilder {
             String(localized: "acta.metodo.fc",
                    defaultValue: "Your resting HR is your lowest pulse of the night, measured by your Apple Watch; when there's no overnight reading, Cénit uses Apple Health's resting heart rate."),
             String(localized: "acta.metodo.votos",
-                   defaultValue: "Your sleep and your resting HR are read as separate votes, so a bad night doesn't count twice. Your breathing and temperature only watch; they don't vote here."),
+                   defaultValue: "Your sleep and your resting HR are read as separate votes, so a bad night doesn't count twice. Your breathing and temperature only watch: a single one never counts, and they add one vote only on the day both step out together."),
             String(localized: "acta.metodo.histeresis",
                    defaultValue: "A new verdict has to repeat two days in a row before it replaces the previous one."),
             String(localized: "acta.metodo.cita",

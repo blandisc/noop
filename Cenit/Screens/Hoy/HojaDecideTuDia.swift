@@ -62,7 +62,7 @@ struct HojaDecideTuDia: View {
                 combo(LiquidColor.negativo,
                       String(localized: "hero.title.easy", defaultValue: "Recover"),
                       String(localized: "manual.deciden.c3.sub",
-                             defaultValue: "Two or more out, or the guardian confirmed its alert."))
+                             defaultValue: "Two or more votes out."))
                 combo(LiquidColor.tinta500,
                       String(localized: "hero.title.calibrando", defaultValue: "Getting to know you"),
                       String(localized: "manual.deciden.c4.sub",
