@@ -600,6 +600,15 @@ final class LiquidHoyBuilderTests: XCTestCase {
                      // renderiza nadie: el guard llevaba meses protegiendo una cadena muerta
                      // —y manteniéndola viva en el catálogo— mientras el párrafo real podía
                      // divergir sin que nada lo notara (cuarta vuelta adversarial).
+                     //
+                     // OJO con esta última pareja: es un invariante de COPY, no de render.
+                     // Los tres primeros pares protegen un resalte que la pantalla SÍ pinta (la
+                     // palabra en color dentro del titular del héroe). `acta.metodo.clave` no se
+                     // pinta en ningún lado —`LiquidActa.Metodo` no tiene resalte—; lo que este
+                     // par protege es que la cláusula clave siga viviendo DENTRO del párrafo en
+                     // los dos idiomas, para que una traducción no se lleve por delante «solo
+                     // vigilan», que es la regla del guardián. Si algún día el método estrena
+                     // resalte, esta pareja se vuelve además un invariante de render (FER-112).
                      ("acta.metodo.votos", "acta.metodo.clave")]
         for lang in ["en", "es"] {
             for (titleKey, highlightKey) in pares {
