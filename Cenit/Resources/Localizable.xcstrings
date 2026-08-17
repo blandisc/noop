@@ -37853,17 +37853,6 @@
         }
       }
     },
-    "Go light today · don't add weight." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hoy ve leve · no subas el peso"
-          }
-        }
-      }
-    },
     "The raises wait:" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -38128,6 +38117,61 @@
         }
       }
     },
+    "your plan for today, as it is" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tu plan de hoy, tal cual"
+          }
+        }
+      }
+    },
+    "don't add weight" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "no subas el peso"
+          }
+        }
+      }
+    },
+    "easy today, or rest" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "hoy suave o descansa"
+          }
+        }
+      }
+    },
+    "no advice yet" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sin consejo todavía"
+          }
+        }
+      }
+    },
+    "sync in Today" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sincroniza en Hoy"
+          }
+        }
+      }
+    },
     "The raise waits:" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -38201,28 +38245,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "subir"
-          }
-        }
-      }
-    },
-    "In range · your plan for today, as it is." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "En rango · tu plan de hoy, tal cual"
-          }
-        }
-      }
-    },
-    "Recover · easy today, or rest." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recupera · hoy suave o descansa"
           }
         }
       }
