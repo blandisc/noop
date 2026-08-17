@@ -630,6 +630,22 @@ enum LiquidHoyBuilder {
     /// detalle» / «Vas bien, con un detalle a vigilar») y el usuario tenía que escanear los
     /// tres orbes para saber CUÁL está fuera. `prep.drivers` ya lo sabe: se nombra el eje y
     /// su dirección. `nil` = ninguno fuera → el caller usa la frase genérica.
+    /// El subtítulo cuando NADA está fuera hoy y el veredicto que se muestra es el de ayer,
+    /// sostenido por la histéresis. «Vas bien, con un detalle que cuidar» nombraba un detalle
+    /// que no existe: los dos ejes dentro, el par callado, y el acta diciendo dos toques más
+    /// abajo «hoy tus votos cayeron dentro» (cuarta vuelta adversarial). El héroe cuenta el
+    /// mismo hecho que el acta: la mejora está, y todavía tiene que repetirse.
+    private static func subtituloDesfase(_ prep: Preparedness.Read?) -> String? {
+        guard let prep else { return nil }
+        let fueraEjes = prep.drivers.filter {
+            ($0.axis == .autonomic || $0.axis == .sleep) && $0.state.isOut
+        }.count
+        let fuera = fueraEjes + (prep.sentinel?.state == .corroborated ? 1 : 0)
+        guard fuera == 0, desfaseDeHisteresis(verdict: prep.verdict, fuera: fuera) else { return nil }
+        return String(localized: "hero.sub.desfase",
+                      defaultValue: "Your signals came back into your range; the verdict changes once that repeats two days in a row.")
+    }
+
     private static func subtituloDetalle(_ prep: Preparedness.Read?) -> String? {
         // El PAR manda sobre el eje suelto. Con el centinela corroborado, lo que empujó el día
         // son temperatura y respiración JUNTAS — pero el eje térmico también aparece «fuera»
@@ -696,7 +712,7 @@ enum LiquidHoyBuilder {
                 title: String(localized: "hero.title.caution", defaultValue: "Go light today"),
                 highlight: String(localized: "hero.highlight.caution", defaultValue: "light"),
                 highlightTone: LiquidColor.atencion,
-                subtitle: subtituloDetalle(prep) ??
+                subtitle: subtituloDetalle(prep) ?? subtituloDesfase(prep) ??
                     String(localized: "You're doing well, with one thing to watch."),
                 confianza: confianza)
         case .easy, .lowSignal:
@@ -707,7 +723,7 @@ enum LiquidHoyBuilder {
                 highlight: String(localized: "hero.highlight.easy", defaultValue: "Recover"),
                 highlightTone: LiquidColor.negativo,
                 // El rojo también nombra su causa (gate /cso M3): el ámbar ya lo hacía.
-                subtitle: subtituloDetalle(prep) ??
+                subtitle: subtituloDetalle(prep) ?? subtituloDesfase(prep) ??
                     String(localized: "Your body's asking you to ease off today."),
                 confianza: confianza)
         }
@@ -1134,7 +1150,8 @@ enum LiquidHoyBuilder {
                              defaultValue: "Breathing and temperature moved out together: today they voted.")
                     : String(localized: "Watching, not voting: breathing and temperature."))
                 : nil,
-            notas: notasBoleta(prep: prep, fuera: fuera, hayVeredicto: hayVeredicto,
+            notas: notasBoleta(prep: prep, fuera: fuera,
+                               fueraEjes: fueraEjes, parVoto: parVoto, hayVeredicto: hayVeredicto,
                                esLecturaDeDia: esLecturaDeDia, desfase: desfase,
                                empujeTendencia: empujeTendencia,
                                healthConnected: healthConnected, calibrando: calibrando),
@@ -1183,7 +1200,12 @@ enum LiquidHoyBuilder {
         case .inRange: votoEstado = .dentro
         case .low:     votoEstado = .fueraAbajo
         case .high:    votoEstado = .fueraArriba
-        case .noData:  votoEstado = (esAuto && calibrando && prep != nil) ? .calibrando : .sinLectura
+        // El riel era el ÚLTIMO rincón de la hoja que seguía prometiendo un proceso en marcha:
+        // dibujaba banda y joya centrada —sobre CERO mediciones— y decía «aprendiendo tu base»
+        // a quien el héroe acaba de decirle que su base no se puede formar. Es el mismo gate que
+        // FER-76 le puso al héroe, ahora también aquí (cuarta vuelta adversarial).
+        case .noData:  votoEstado = (esAuto && calibrando && prep?.autonomicPossible == true)
+                                    ? .calibrando : .sinLectura
         }
 
         let sub: String
@@ -1305,24 +1327,34 @@ enum LiquidHoyBuilder {
                 return (String(localized: "acta.resumen.sinsync",
                                defaultValue: "Nothing has come in since last night: pull down on Today to sync."), nil)
             }
+            // LEYENDO manda sobre cualquier sentencia, haya o no fila de sueño en la boleta: la
+            // franja de arriba está prometiendo que la noche sigue entrando, y el acta decía
+            // «no llegó nada anoche» debajo. El chequeo vivía DENTRO del gate de la noche y solo
+            // cubría la mitad de los casos (cuarta vuelta).
+            if causaT3 == .leyendo {
+                return (hayNocheEnBoleta
+                        ? String(localized: "acta.resumen.leyendo.parcial",
+                                 defaultValue: "Your sleep is in; the rest of your night is still being read.")
+                        : String(localized: "acta.resumen.leyendo",
+                                 defaultValue: "One moment: your night is still being read."), nil)
+            }
             // Con la noche en la boleta, la sentencia depende de si TODAVÍA SE ESTÁ LEYENDO.
             // Decir «tu señal en reposo no llegó» mientras la pantalla promete que sigue leyendo
             // —jalón manual, o la ventana de la mañana aún abierta tras una noche corta— es
             // sentenciar antes de tiempo (tercera vuelta adversarial); y la rama que solo miraba
             // `.senalInsuficiente` dejaba fuera justo esos dos casos (segunda vuelta).
             if hayNocheEnBoleta {
-                if causaT3 == .leyendo {
-                    return (String(localized: "acta.resumen.leyendo.parcial",
-                                   defaultValue: "Your sleep is in; the rest of your night is still being read."), nil)
-                }
                 return (String(localized: "acta.resumen.senal.insuficiente",
                                defaultValue: "Your sleep came in; your resting signal didn't, so there's no quorum."), nil)
             }
-            // «Ni sueño ni señales de reposo» solo si de verdad no llegó nada: si la franja ya
-            // afirmó que hubo noche, el acta no puede negarla (tercera vuelta).
+            // Sin fila de sueño EN LA BOLETA, el acta no puede afirmar «tu sueño ya llegó»
+            // —aunque la franja sí sepa que hubo noche—: pasa en el hueco de medianoche, cuando
+            // las sesiones de anoche existen pero la fila del día todavía no. La frase de arriba
+            // se ganó una hermana que dice ese estado sin prometer lo que la boleta no muestra
+            // (cuarta vuelta: la rama que metí en la tercera afirmaba de más).
             if causaT3 == .senalInsuficiente {
-                return (String(localized: "acta.resumen.senal.insuficiente",
-                               defaultValue: "Your sleep came in; your resting signal didn't, so there's no quorum."), nil)
+                return (String(localized: "acta.resumen.noche.sinentrar",
+                               defaultValue: "Your night hasn't come in yet, so there's no quorum."), nil)
             }
             return (String(localized: "Nothing came in last night: no sleep and no resting signals."), nil)
         }
@@ -1421,6 +1453,7 @@ enum LiquidHoyBuilder {
     /// Las notas de la boleta. El desfase y la tendencia YA viven en la frase-resumen; la
     /// carga solo aparece cuando HUBO entrenamiento (/ux D8).
     private static func notasBoleta(prep: Preparedness.Read?, fuera: Int,
+                                    fueraEjes: Int = 0, parVoto: Bool = false,
                                     hayVeredicto: Bool, esLecturaDeDia: Bool,
                                     desfase: Bool, empujeTendencia: Bool,
                                     healthConnected: Bool,
@@ -1486,11 +1519,23 @@ enum LiquidHoyBuilder {
         }
 
         if hayVeredicto && !desfase && !empujeTendencia {
-            if fuera >= 2 {
+            // Las notas cuentan lo mismo que la BOLETA que tienen encima. `fuera` incluye el voto
+            // del par, que la boleta no dibuja: pegar «los dos fuera a la vez» debajo de una fila
+            // dibujada DENTRO era la contradicción más visible de la hoja, y el resumen dos
+            // renglones arriba ya lo decía bien (cuarta vuelta adversarial).
+            if parVoto, fueraEjes < 2 {
+                out.append(.init(id: "aviso",
+                                 texto: fueraEjes == 1
+                                    ? String(localized: "acta.nota.par.eje",
+                                             defaultValue: "One vote out and your pair moved together: today is for recovering, not pushing.")
+                                    : String(localized: "acta.nota.par.solo",
+                                             defaultValue: "Your temperature and breathing moved out together: today is for recovering, not pushing."),
+                                 avisa: true))
+            } else if fueraEjes >= 2 {
                 out.append(.init(id: "aviso",
                                  texto: String(localized: "Both out at once: today is for recovering, not pushing."),
                                  avisa: true))
-            } else if fuera == 1 {
+            } else if fueraEjes == 1 {
                 out.append(.init(id: "voto",
                                  texto: String(localized: "One vote out lightens the day; it doesn't sink it.")))
             }
@@ -1553,13 +1598,11 @@ enum LiquidHoyBuilder {
         // cumplir: contar «0 de 4 noches» a quien el héroe acaba de decirle «todavía no puedo
         // leer tus mañanas» le hace esperar un progreso que nunca avanza (adversarial, segunda
         // vuelta). El acta dice lo que falta, no cuántas noches faltan.
-        if !prep.autonomicPossible {
-            // La MISMA causa y la MISMA acción que el héroe dos dedos arriba. La primera
-            // redacción culpaba a Apple Salud de no entregar algo que nunca se le pidió: quien
-            // duerme sin reloj no tiene FC nocturna que entregar (tercera vuelta adversarial).
-            return .nota(String(localized: "hero.sub.sinfc",
-                                defaultValue: "Your verdict stands on your resting heart rate at night, and it hasn't arrived. Sleeping with your Apple Watch is what unlocks it."))
-        }
+        // Y CALLA: el resumen (pegado a la palabra grande) ya dice esta misma frase, y la nota
+        // de abajo dice la acción. Ponerla también aquí imprimía el mismo párrafo DOS VECES en
+        // la misma hoja, más una tercera paráfrasis (cuarta vuelta adversarial). Una voz por
+        // hueco: el resumen explica, la nota acciona, la confianza se queda fuera.
+        if !prep.autonomicPossible { return nil }
         if prep.maturity == .calibrating {
             let meta = Baselines.minNightsSeed
             return .calibrando(titulo: String(localized: "Calibrating your base"),

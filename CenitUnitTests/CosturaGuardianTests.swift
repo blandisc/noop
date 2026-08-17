@@ -204,6 +204,26 @@ final class CosturaGuardianTests: XCTestCase {
         XCTAssertTrue(n.allSatisfy { $0.respSinLectura }, "sin escala, la orilla azul se calla")
     }
 
+    /// ADVERSARIAL COS4-A1 (cuarta vuelta) · El invariante del hueco vale para TODAS las
+    /// noches, no solo para las juzgadas. El ancla se condicionaba a `respJudged`, o sea que se
+    /// apagaba sola justo cuando el motor no tiene opinión — y entonces la escala aproximada
+    /// podía mandar una noche SIN JUICIO más lejos del eje que una que el guardián sí marcó,
+    /// cruzando entero el hueco que existe para impedirlo. Le pasa a todo usuario en sus
+    /// primeras cuatro noches.
+    func test_COSTURA_A1_unaNocheSinJuicioJamasCruzaElHueco() {
+        // 6 noches: una de 17.8 rpm entre puras de ~14, y el motor sin juicio en ninguna.
+        var dias = (-5...0).map { metric(dayKey($0), temp: 0.05, resp: 14.1) }
+        dias[1] = metric(dayKey(-4), temp: 0.05, resp: 17.8)
+        let historia = (-5...0).map { noche(dayKey($0), respJudged: false) }
+        let n = costura(dias: dias, historia: historia)
+        let sospechosa = n[1].resp ?? 0
+        XCTAssertLessThanOrEqual(sospechosa, 0.98,
+                                 "sin juicio del motor, ninguna noche puede pasar del filo")
+        XCTAssertLessThan(MatrizCostura.fraccionFilo(sospechosa),
+                          MatrizCostura.fraccionFilo(1.02),
+                          "y jamás puede dibujarse más lejos que una noche que el motor SÍ marcó")
+    }
+
     /// ADVERSARIAL C4 · El par conserva su forma con una sola señal, para que cada número siga
     /// pintándose con el color de SU señal.
     func test_C4_elParConservaSuForma() {

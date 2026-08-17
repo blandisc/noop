@@ -19,7 +19,12 @@ final class ActaVotoDelParTests: XCTestCase {
                       autonomicPossible: Bool = true) -> Preparedness.Read {
         Preparedness.Read(
             verdict: verdict,
-            drivers: [.init(axis: .autonomic, state: autonomicOut ? .low : .inRange, orientedZ: nil),
+            // Sin FC nocturna posible el eje autonómico es `.noData` — con `.inRange` el
+            // fixture firmaba un estado que el motor NO puede producir, y por eso el test
+            // pasaba por encima del riel de la fila sin verlo (cuarta vuelta adversarial).
+            drivers: [.init(axis: .autonomic,
+                            state: !autonomicPossible ? .noData : (autonomicOut ? .low : .inRange),
+                            orientedZ: nil),
                       .init(axis: .sleep, state: sleepOut ? .low : .inRange, orientedZ: nil)],
             signalsPresent: 3, signalsTotal: 3, maturity: maturity, autonomicNights: 30,
             trend: trend,
@@ -162,6 +167,41 @@ final class ActaVotoDelParTests: XCTestCase {
         // Con la ventana ya cerrada, sí lo dice — y jamás «no llegó nada» con la noche llena.
         XCTAssertEqual(LiquidHoyBuilder.acta(prep: sinQuorum, causaT3: .senalInsuficiente).conteo,
                        sentencia)
+    }
+
+    // MARK: Cuarta vuelta — lo que quedaba prometiendo o contradiciendo
+
+    /// El RIEL de la fila era el último rincón que seguía dibujando «aprendiendo tu base»:
+    /// banda y joya centrada sobre cero mediciones, a quien no puede acumularlas.
+    func test_sinFCNocturnaPosible_elRielNoDibujaUnaBaseQueNoExiste() {
+        let acta = LiquidHoyBuilder.acta(prep: read(verdict: .lowSignal, autonomicOut: false,
+                                                    sleepOut: false, par: false,
+                                                    maturity: .calibrating,
+                                                    autonomicPossible: false))
+        let fc = acta.filas.first
+        XCTAssertEqual(fc?.estado, .sinLectura,
+                       "sin señal posible no hay base formándose: el riel no puede insinuarla")
+    }
+
+    /// Las NOTAS eran ciegas al voto del par: «los dos fuera a la vez» pegado bajo una boleta
+    /// con una fila dibujada DENTRO, mientras el resumen dos renglones arriba lo decía bien.
+    func test_notaDelParNoContradiceALaBoleta() {
+        let acta = LiquidHoyBuilder.acta(prep: read(verdict: .easy, autonomicOut: false,
+                                                    sleepOut: true, par: true))
+        let aviso = acta.notas.first { $0.id == "aviso" }?.texto ?? ""
+        XCTAssertNotEqual(aviso, String(localized: "Both out at once: today is for recovering, not pushing."),
+                          "solo un eje está fuera: el otro voto lo puso el par")
+        XCTAssertFalse(aviso.isEmpty, "pero el aviso sigue existiendo: el día pide recuperar")
+    }
+
+    /// La misma frase no puede imprimirse dos veces en la misma hoja.
+    func test_sinFCNocturnaPosible_laHojaNoSeRepite() {
+        let acta = LiquidHoyBuilder.acta(prep: read(verdict: .lowSignal, autonomicOut: false,
+                                                    sleepOut: false, par: false,
+                                                    maturity: .calibrating,
+                                                    autonomicPossible: false))
+        XCTAssertNil(acta.confianza,
+                     "el resumen ya dice la causa y la nota ya dice la acción")
     }
 
     /// Sin par, la prosa de siempre no cambia (no se rompió el camino normal).

@@ -320,13 +320,20 @@ extension LiquidHoyBuilder {
             // cuadra por construcción (mismo corte, mismo número), pero se ancla igual: el día
             // que alguien mueva `thermalOutC` o el ajuste de fase, el dibujo seguirá diciendo lo
             // mismo que el juicio en vez de separarse en silencio.
-            var tAnclada = t
-            if let n = noche, let magnitud = t, !n.tempMissing {
-                tAnclada = n.tempOut ? max(magnitud, 1.02) : min(magnitud, 0.98)
+            // La regla, en una línea: **SOLO lo que el motor marcó fuera puede dibujarse fuera.**
+            // Marcado fuera → al menos 1.02; todo lo demás → como mucho 0.98. «Todo lo demás»
+            // incluye las noches que el motor NO PUDO juzgar, y ahí estaba el agujero: el ancla
+            // se condicionaba a `respJudged`, o sea que se apagaba sola justo cuando el motor no
+            // tiene opinión — y entonces la escala aproximada podía mandar una noche sin juicio
+            // al 0.94 del recorrido, MÁS LEJOS que una noche que el guardián sí marcó, cruzando
+            // entero el hueco que existe para impedirlo (cuarta vuelta adversarial; le pasa a
+            // todo usuario en sus primeras 4 noches, y otra vez cada vez que su base se resiembra).
+            func anclada(_ magnitud: Double?, fuera: Bool) -> Double? {
+                guard let magnitud else { return nil }
+                return fuera ? max(magnitud, 1.02) : min(magnitud, 0.98)
             }
-            if let n = noche, let magnitud = r, !n.respMissing, n.respJudged {
-                r = n.respOut ? max(magnitud, 1.02) : min(magnitud, 0.98)
-            }
+            let tAnclada = anclada(t, fuera: noche?.tempOut ?? false)
+            r = anclada(r, fuera: (noche?.respOut ?? false) && (noche?.respJudged ?? false))
             // El par votó esa noche = el juicio del MOTOR para ESE día (nunca re-derivado aquí).
             let par = (noche?.tempOut ?? false) && (noche?.respOut ?? false)
             // Sin magnitud, la orilla se calla: `Noche` DERIVA sus banderas del valor (ya no se
@@ -781,6 +788,12 @@ extension LiquidHoyBuilder {
     private static func sublabelFC(ptsFC: [Double?], prep: Preparedness.Read?,
                                    alerta: MedidorLunar.Alerta) -> String? {
         if ptsFC.allSatisfy({ $0 == nil }) {
+            // «Conociéndote» promete un proceso en marcha. Sin FC nocturna posible no lo hay, y
+            // el héroe de la misma pantalla ya dijo lo contrario: la celda callaba la verdad y
+            // repetía la promesa (cuarta vuelta adversarial).
+            guard prep?.autonomicPossible != false else {
+                return String(localized: "hero.title.sinfc", defaultValue: "I can't read your mornings yet")
+            }
             return String(localized: "hero.title.calibrando", defaultValue: "Getting to know you")
         }
         // Sin lectura de HOY o sin veredicto real (nil/lowSignal): no se afirma rango
@@ -794,8 +807,11 @@ extension LiquidHoyBuilder {
             ? String(localized: "matriz.rango.fuera", defaultValue: "out of your range")
             : String(localized: "matriz.rango.dentro", defaultValue: "in your range")
         // Simetría del par (FER-56): la gemela habla con la MISMA estructura que Sueño
-        // («anoche · <estado>»). La FC en reposo también es lectura de anoche, así que el
-        // prefijo es igual de verdadero; reutiliza el mismo formato para que el par lea gemelo.
+        // («anoche · <estado>»). Pero SOLO cuando la lectura es de la noche: en «lectura de día»
+        // —el que trae el reloj despierto y duerme sin él— el número viene de la serie de
+        // vigilia, y el prefijo «anoche» afirmaba una medición nocturna que no existe, justo
+        // debajo de un héroe que dice lo contrario (cuarta vuelta adversarial).
+        guard prep?.isNightAnchored == true else { return estado }
         return String(format: String(localized: "matriz.sueno.anoche.estado",
                                      defaultValue: "last night · %@"), estado)
     }

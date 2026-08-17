@@ -1,6 +1,70 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "hero.sub.desfase" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your signals came back into your range; the verdict changes once that repeats two days in a row."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus señales volvieron a tu rango; el veredicto cambia cuando eso se repita dos días seguidos."
+          }
+        }
+      }
+    },
+    "acta.nota.par.eje" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One vote out and your pair moved together: today is for recovering, not pushing."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un voto fuera y tu par se movió junto: hoy toca recuperar, no empujar."
+          }
+        }
+      }
+    },
+    "acta.nota.par.solo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your temperature and breathing moved out together: today is for recovering, not pushing."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu temperatura y tu respiración se salieron juntas: hoy toca recuperar, no empujar."
+          }
+        }
+      }
+    },
+    "acta.resumen.noche.sinentrar" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your night hasn't come in yet, so there's no quorum."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu noche todavía no entra, así que no hay quórum."
+          }
+        }
+      }
+    },
     "acta.resumen.leyendo.parcial" : {
       "localizations" : {
         "en" : {
@@ -7430,7 +7494,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "only keep watch"
+            "value" : "only watch"
           }
         },
         "es" : {
@@ -54723,23 +54787,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tu pulso en reposo contra tu propia base es el voto: la señal más densa y confiable de Apple, así carga este eje por sí sola."
-          }
-        }
-      }
-    },
-    "Your resting heart rate and your sleep are read as separate votes, so one rough night can't count against you twice. Your breathing and temperature only keep watch. They don't vote here." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your resting heart rate and your sleep are read as separate votes, so one rough night can't count against you twice. Your breathing and temperature only keep watch. They don't vote here."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu pulso en reposo y tu sueño se leen como votos separados, así una mala noche no cuenta en tu contra dos veces. Tu respiración y tu temperatura solo vigilan. Aquí no votan."
           }
         }
       }

@@ -106,7 +106,11 @@ public struct MatrizCostura: View {
             let norm = 1 / (1 + kDentro)                    // para que 1 banda = filoDentro
             return filoDentro * CGFloat((x / (x + kDentro)) / norm)
         }
-        if v < 0 { return min(dentro(-v), filoDentro) * ladoBajoFrac }
+        // El lado bajo usa la MISMA curva, escalada. Sin `min`: acotarlo con un recorte lo
+        // aplanaba a partir de una banda —−0.9 °C y −1.1 °C caían en el mismo pixel—, que es
+        // justo lo que este mapeo existe para no hacer. La curva ya está acotada sola (tiende a
+        // 1.044·0.22 ≈ 0.23, muy por debajo del filo), así que el recorte nunca hizo falta.
+        if v < 0 { return dentro(-v) * ladoBajoFrac }
         if v < 1 { return dentro(v) }
         let u = v - 1
         return filoFuera + (1 - filoFuera) * CGFloat(u / (u + kFuera))
