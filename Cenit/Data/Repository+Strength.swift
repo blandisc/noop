@@ -24,6 +24,11 @@ extension Repository {
     /// `pending` mirrors Hoy's own gate (`todayPreparedness == nil && !fullyLoaded`): on a cold start
     /// the verdict only exists after the full refresh, and until then Entrenar says nothing and holds
     /// any raise rather than announcing one the verdict is about to withhold.
+    ///
+    /// READ IT ONCE PER PASS, before the loop that builds a table. Every exercise of one session must
+    /// share one verdict: reading it per exercise leaves a window (each `await` on the store yields to
+    /// the main actor, where a refresh publishes) for a table where some rows took the raise and others
+    /// held it — one screen, two verdicts, which is the whole thing this epic removes.
     var trainingAdvice: TrainingRegulation.Advice {
         TrainingRegulation.advice(verdict: todayPreparedness?.verdict,
                                   isPending: todayPreparedness == nil && !fullyLoaded)
@@ -102,17 +107,21 @@ extension Repository {
     /// One slot's guided-session seed: «la última vez» prefill + the progression evaluation (FER-E).
     /// The SINGLE implementation behind the Entrenar landing prefetch, the «Rutina» editor and the
     /// history, so the raise the hero names is exactly the raise the editor seeds (FER-838 /simplify).
-    /// The verdict is read here (`trainingAdvice`), never passed in (FER-82). The evaluation is nil
-    /// when the slot didn't opt in or has no load to progress.
+    /// The evaluation is nil when the slot didn't opt in or has no load to progress.
+    ///
+    /// `advice` is required and has no default (FER-82): the first cut of this change defaulted it,
+    /// and three screens silently kept deciding by the old 0–100 score. Pass `repo.trainingAdvice`,
+    /// read ONCE before the loop, so every exercise of the table shares one verdict.
     func sessionSeed(re: RoutineExercise, exercise: Exercise?,
-                     inventory: [PlateMath.PlateStock]) async
+                     inventory: [PlateMath.PlateStock],
+                     advice: TrainingRegulation.Advice) async
         -> (lastSets: [SetEntry], evaluation: (state: ProgressionState, raise: ProgressionPlanner.Raise?)?) {
         guard let store = await storeHandle() else { return ([], nil) }
         let last = (try? await store.lastWorkSets(exerciseId: re.exerciseId, limit: 4)) ?? []
         guard re.progressionEnabled, exercise?.type == .weightReps else { return (last, nil) }
         let history = (try? await store.workSetHistory(exerciseId: re.exerciseId)) ?? []
         let eval = ProgressionPlanner.evaluate(re: re, history: history, inventory: inventory,
-                                               equipment: exercise?.equipment, advice: trainingAdvice)
+                                               equipment: exercise?.equipment, advice: advice)
         return (last, eval)
     }
 

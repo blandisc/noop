@@ -118,8 +118,10 @@ struct WorkoutHistoryScreen: View {
         }
         .animation(StrandMotion.fade, value: saveError)
         .sensoryFeedback(trigger: coordinator.pendingUndo?.id) { _, new in new != nil ? .warning : nil }
-        // Reloads on first appear (token 0) and whenever a delete/edit deeper in the stack bumps it.
-        .task(id: coordinator.reloadToken) { await load() }
+        // Reloads on first appear (token 0), whenever a delete/edit deeper in the stack bumps it, and
+        // when the repository publishes a new pass — the progression rows read today's verdict, so a
+        // cold-start visit corrects itself the moment it lands (FER-82) instead of staying empty.
+        .task(id: [coordinator.reloadToken, repo.refreshSeq]) { await load() }
         .enableInjection()
     }
 
@@ -776,6 +778,11 @@ struct WorkoutHistoryScreen: View {
     /// ExerciseDetailScreen), classified into raised / deferred / stalled. Cap ~6 rows.
     private func loadProgressionRows() async -> [ProgressionRow] {
         let inventory = await MainActor.run { PlatesStore().inventory }
+        // One verdict for the whole list, read before the loop (FER-82). While it is still being
+        // computed the section stays empty rather than claiming raises wait on a day nobody has
+        // judged yet — `speaks` is the same silence gate the hero uses.
+        let advice = repo.trainingAdvice
+        guard TrainingRegulation.speaks(advice) || TrainingRegulation.allowsRaise(advice) else { return [] }
         let routines = await repo.routines()
         var seen = Set<String>()
         var slots: [RoutineExercise] = []
@@ -788,7 +795,7 @@ struct WorkoutHistoryScreen: View {
         var rows: [ProgressionRow] = []
         for re in slots {
             let ex = await repo.resolvedExercise(re.exerciseId)
-            let seed = await repo.sessionSeed(re: re, exercise: ex, inventory: inventory)
+            let seed = await repo.sessionSeed(re: re, exercise: ex, inventory: inventory, advice: advice)
             guard let eval = seed.evaluation else { continue }
             let name = ex.map(StrengthDisplay.name) ?? re.exerciseId
             switch eval.state {

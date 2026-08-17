@@ -126,6 +126,67 @@ final class SingleOracleSeedTests: XCTestCase {
         }
     }
 
+    // MARK: Taking the held raise
+
+    /// The offer applies to every UNDONE work set at once — the all-sets rule the owner kept — and
+    /// leaves what was already lifted alone.
+    func testTakingTheHeldRaiseMovesEveryPendingWorkSet() {
+        guard let raise = evaluate(.lighter)?.raise else { return XCTFail("expected a held raise") }
+        let session = sessionWith(raise)
+        session.runs[0].sets[0].done = true            // one set already lifted at the old weight
+        XCTAssertTrue(session.canTakeHeldRaise(at: 0))
+        XCTAssertTrue(session.takeHeldRaise(at: 0))
+        XCTAssertEqual(session.runs[0].sets[0].weightKg, 80, accuracy: 0.0001, "a done set is history")
+        XCTAssertEqual(session.runs[0].sets[1].weightKg, 82.5, accuracy: 0.0001)
+        XCTAssertEqual(session.runs[0].sets[2].weightKg, 82.5, accuracy: 0.0001)
+        XCTAssertEqual(session.runs[0].proposedRaise?.waiting, false, "the line stops waiting")
+    }
+
+    /// An exercise with nothing left to lift offers nothing: taking it would move no weight while the
+    /// screen turned green claiming today's load rose.
+    func testAFinishedExerciseCannotTakeTheRaise() {
+        guard let raise = evaluate(.lighter)?.raise else { return XCTFail("expected a held raise") }
+        let session = sessionWith(raise)
+        for i in session.runs[0].sets.indices { session.runs[0].sets[i].done = true }
+        XCTAssertFalse(session.canTakeHeldRaise(at: 0))
+        XCTAssertFalse(session.takeHeldRaise(at: 0), "nothing to take")
+        XCTAssertEqual(session.runs[0].proposedRaise?.waiting, true, "and the line keeps saying so")
+        for set in session.runs[0].sets {
+            XCTAssertEqual(set.weightKg, 80, accuracy: 0.0001, "no weight moved")
+        }
+    }
+
+    /// Taking twice is not a way to raise twice.
+    func testTakingTwiceIsANoOp() {
+        guard let raise = evaluate(.lighter)?.raise else { return XCTFail("expected a held raise") }
+        let session = sessionWith(raise)
+        XCTAssertTrue(session.takeHeldRaise(at: 0))
+        XCTAssertFalse(session.takeHeldRaise(at: 0))
+        for set in session.runs[0].sets {
+            XCTAssertEqual(set.weightKg, 82.5, accuracy: 0.0001)
+        }
+    }
+
+    /// The held table opens at the weight the raise climbs FROM (the cycle's working load), not at the
+    /// last row logged — which may be a lighter back-off set the hero never mentioned.
+    func testHeldTableOpensAtTheCycleWeightNotTheLastBackOffSet() {
+        guard let raise = evaluate(.lighter)?.raise else { return XCTFail("expected a held raise") }
+        let slot = StrengthSessionModel.PlanSlot(
+            re: earnedSlot(),
+            exercise: Exercise(id: "bench", name: "Bench", type: .weightReps, equipment: nil,
+                               primaryMuscles: [], secondaryMuscles: [], instructions: []),
+            // Last session ended with a 60 kg back-off set; the cycle's working weight is still 80.
+            lastSets: [SetEntry(id: "s1", sessionId: "s", exerciseId: "bench", position: 3,
+                                kind: .work, weightKg: 60, reps: 10, done: true, ts: 2000)],
+            raise: raise)
+        let session = StrengthSessionModel.make(routineId: "rt", routineName: "Push",
+                                                slots: [slot], startTs: 100)
+        for set in session.runs.first?.sets ?? [] {
+            XCTAssertEqual(set.weightKg, 80, accuracy: 0.0001,
+                           "opens at the weight the promised raise climbs from")
+        }
+    }
+
     // MARK: The offer survives a crash
 
     private func sessionWith(_ raise: ProgressionPlanner.Raise?) -> StrengthSessionModel {

@@ -37889,6 +37889,50 @@
         }
       }
     },
+    "The raises wait:" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Te esperan las subidas:"
+          }
+        }
+      }
+    },
+    "You can take them in the session." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Puedes tomarlas en la sesión."
+          }
+        }
+      }
+    },
+    "and %lld more" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "y %lld más"
+          }
+        }
+      }
+    },
+    "The raise to %@ waits" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La subida a %@ espera"
+          }
+        }
+      }
+    },
     "The raise waits:" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -37962,17 +38006,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "subir"
-          }
-        }
-      }
-    },
-    "The raise to %@ waits for a day in range" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La subida a %@ espera un día en rango"
           }
         }
       }

@@ -83,6 +83,9 @@ private struct EntrenarLanding: View {
     /// Exercises whose earned raise today's verdict is holding — with the weight that waits, so the
     /// hero can name it and the athlete knows exactly what is one tap away in the session (FER-82).
     @State private var deferredToday: [(name: String, kg: Double)] = []
+    /// The verdict `todaySlots` were seeded with; `nil` until the first load. Guards «Empezar» from
+    /// handing the session a table built under a verdict that has since changed (FER-82).
+    @State private var slotsAdvice: TrainingRegulation.Advice?
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
     private var unitSystem: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
     /// Top primary muscles per routine (Spanish display labels), built from the same per-routine exercise
@@ -379,6 +382,20 @@ private struct EntrenarLanding: View {
     /// routine opens its plan to edit instead of an empty session; a rest day opens the «Hoy descansas» sheet.
     private func startToday() {
         guard let r = todayRoutine else { openRestDay(); return }
+        // FER-82: the slots carry the verdict they were seeded with. If it moved since the prefetch
+        // (the case that matters: they were built while the verdict was still being computed and it
+        // landed a second later), rebuild ONCE before starting — otherwise the whole session runs on
+        // a verdict the screen has already stopped showing. Exactly one retry, never a loop.
+        if let seeded = slotsAdvice, seeded != repo.trainingAdvice {
+            Task { await load(); startTodayNow(r) }
+            return
+        }
+        startTodayNow(r)
+    }
+
+    /// Start with the slots as they are — the terminal half of `startToday`, so the rebuild path can
+    /// call it without ever re-entering the verdict check.
+    private func startTodayNow(_ r: Routine) {
         guard !todaySlots.isEmpty else { openRoutine(r.id); return }
         model.startStrengthSession(routineId: r.id, routineName: r.name, slots: todaySlots)
     }
@@ -459,7 +476,11 @@ private struct EntrenarLanding: View {
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                } else if showsHeldRaise, !deferredToday.isEmpty {
+                }
+                // Both rows can be true at once: a slot with «Baja recuperación · Ignorar» raises on
+                // its log alone while the rest of the day is held. They coexist rather than one
+                // hiding the other, so the held weights never vanish from the screen (FER-82).
+                if showsHeldRaise, !deferredToday.isEmpty {
                     // FER-82: the raise is held, not lost. Name the weight that waits and open the
                     // session, where taking it is one tap. Editing by hand is never blocked.
                     Button { openRoutine(r.id) } label: {
@@ -537,19 +558,29 @@ private struct EntrenarLanding: View {
         return t
     }
 
-    /// «La subida de Press banca a 82,5 kg te espera · tómala en la sesión» — the held raise, named.
-    /// Same shape as `raiseText` but in reading ink: it is a fact being held, not a green go-ahead.
+    /// «Te espera la subida: Press banca · 82,5 kg. Puedes tomarla en la sesión.» — the held raise,
+    /// named. Same shape as `raiseText` but in reading ink: a fact being held, not a green go-ahead.
+    ///
+    /// Two separators, two jobs: « · » binds a name to its weight, «, » separates exercises, and the
+    /// list closes with a period before the second sentence. Long days are capped at three names and
+    /// summarised, so the hero never turns into a paragraph.
     private var heldRaiseText: Text {
-        let parts = deferredToday.map { "\($0.name) · \(UnitFormatter.massFromKilograms($0.kg, system: unitSystem))" }
+        let shown = deferredToday.prefix(3)
+        let rest = deferredToday.count - shown.count
+        let parts = shown.map { "\($0.name) · \(UnitFormatter.massFromKilograms($0.kg, system: unitSystem))" }
         let strong = parts.map {
             Text(verbatim: $0).font(InstrumentoType.grotesk(13, weight: .bold)).foregroundStyle(theme.ink)
         }
-        var t = Text("The raise waits:") + Text(verbatim: " ")
+        var t = (deferredToday.count == 1 ? Text("The raise waits:") : Text("The raises wait:"))
+            + Text(verbatim: " ")
         for (i, s) in strong.enumerated() {
-            if i > 0 { t = t + Text(verbatim: " · ") }
+            if i > 0 { t = t + Text(verbatim: ", ") }
             t = t + s
         }
-        return t + Text(verbatim: " ") + Text("You can take it in the session.")
+        if rest > 0 { t = t + Text(verbatim: ", ") + Text("and \(rest) more") }
+        return t + Text(verbatim: ". ")
+            + (deferredToday.count == 1 ? Text("You can take it in the session.")
+                                        : Text("You can take them in the session."))
     }
 
     // MARK: - ② Suggestion (engine is FER-532 — TrainingRegulation.lightAlternative)
@@ -1326,6 +1357,10 @@ private struct EntrenarLanding: View {
 
     private func load() async {
         loadFailed = false   // clear on every (re)try
+        // Sequence guard, same as TodayView/CuerpoView: `.task(id:)` cancels the old pass but none of
+        // the awaits below is a cancellation point, so without this an in-flight pre-verdict load
+        // would still reach the end and overwrite the post-verdict one it lost the race to (FER-82).
+        let seq = repo.refreshSeq
         guard let store = await repo.storeHandle() else { loadFailed = true; loaded = true; return }
         let rs = (try? await store.routines()) ?? []
         let customAll = (try? await store.customExercises()) ?? []
@@ -1352,6 +1387,10 @@ private struct EntrenarLanding: View {
         // today's routine is loaded (bounded), with the same catalog + override + «la última vez» resolution
         // «Rutina de hoy» uses, so the prefill matches.
         var slots: [StrengthSessionModel.PlanSlot] = []
+        var raisingToday: [(name: String, kg: Double)] = []
+        var heldToday: [(name: String, kg: Double)] = []
+        // The verdict this whole pass was built with, published together with the slots it seeded.
+        var passAdvice = repo.trainingAdvice
         if let tid = WeeklySplit.todayRoutineId(split: splitMap, todayWeekday: todayWeekday) {
             let exs = (try? await store.routineExercises(routineId: tid)) ?? []
             let custom = (try? await store.customExercises()) ?? []
@@ -1360,11 +1399,14 @@ private struct EntrenarLanding: View {
             // FER-E/G: «la última vez» + progression per slot, via the ONE `sessionSeed` implementation
             // the «Rutina» editor also calls — the raise the hero names is exactly the raise it seeds.
             let inventory = await MainActor.run { PlatesStore().inventory }
+            // One verdict for the whole table (FER-82): read before the loop, never inside it.
+            let advice = repo.trainingAdvice
+            passAdvice = advice
             var raising: [(name: String, kg: Double)] = []
             var held: [(name: String, kg: Double)] = []
             for re in exs {
                 let ex = (ExerciseCatalog.byID(re.exerciseId) ?? customByID[re.exerciseId])?.applying(overrides)
-                let seed = await repo.sessionSeed(re: re, exercise: ex, inventory: inventory)
+                let seed = await repo.sessionSeed(re: re, exercise: ex, inventory: inventory, advice: advice)
                 if let raise = seed.evaluation?.raise {
                     let name = ex.map(StrengthDisplay.name) ?? re.exerciseId
                     // One evaluation, two readings: applied to the seed, or held by today's verdict.
@@ -1373,9 +1415,13 @@ private struct EntrenarLanding: View {
                 }
                 slots.append(.init(re: re, exercise: ex, lastSets: seed.lastSets, raise: seed.evaluation?.raise))
             }
-            raisesToday = raising
-            deferredToday = held
+            raisingToday = raising
+            heldToday = held
         }
+        guard seq == repo.refreshSeq else { return }   // a newer pass owns the screen now
+        raisesToday = raisingToday
+        deferredToday = heldToday
+        slotsAdvice = passAdvice
         routines = rs
         exerciseCounts = counts
         routineMuscles = muscles

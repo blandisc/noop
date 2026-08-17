@@ -2642,8 +2642,11 @@ struct LiveStrengthSheet: View {
     ///   • held by the day's verdict — «↑ 102,5 te espera · subir», in reading ink, and the tap TAKES
     ///     it instead of explaining it. Advisory to the end: the app holds, the athlete decides.
     private func raiseLine(_ raise: ProgressionPlanner.Raise, ei: Int) -> some View {
-        Button {
-            if raise.waiting { takeRaise(ei: ei); return }
+        // A held raise with nothing left to lift is not an offer: taking it would change no weight
+        // while the line turned green claiming today's load rose. It reads, it doesn't act.
+        let takeable = session.canTakeHeldRaise(at: ei)
+        return Button {
+            if raise.waiting { if takeable { takeRaise(ei: ei) }; return }
             withAnimation(StrandMotion.interactive) {
                 let id = session.runs[ei].id
                 if whyRaiseOpen.contains(id) { whyRaiseOpen.remove(id) } else { whyRaiseOpen.insert(id) }
@@ -2654,38 +2657,35 @@ struct LiveStrengthSheet: View {
                     .font(StrandFont.glyph(.chevron, weight: .bold))
                 Text(raise.waiting ? "\(massText(raise.toKg)) waits" : "today \(massText(raise.toKg))")
                     .font(InstrumentoType.grotesk(12, weight: .bold)).monospacedDigit()
-                Text("·").foregroundStyle(theme.inkTertiary)
-                Text(raise.waiting ? "raise" : "why")
-                    .font(InstrumentoType.grotesk(12, weight: .bold))
-                    .underline(pattern: .dot, color: theme.dataRecovery.opacity(0.55))   // token-exempt: subrayado punteado decorativo
+                if takeable || !raise.waiting {
+                    Text("·").foregroundStyle(theme.inkTertiary)
+                    Text(raise.waiting ? "raise" : "why")
+                        .font(InstrumentoType.grotesk(12, weight: .bold))
+                        .underline(pattern: .dot, color: theme.dataRecovery.opacity(0.55))   // token-exempt: subrayado punteado decorativo
+                }
             }
             .foregroundStyle(raise.waiting ? theme.ink : theme.dataRecovery)
+            .frame(minHeight: 44, alignment: .leading)   // HIG tap target: this tap IS «subir» (FER-82)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .disabled(raise.waiting && !takeable)
+        // No cause is named here: the same line shows while the verdict is still being computed, and
+        // «espera un día en rango» would be a reason the app doesn't have yet.
         .accessibilityLabel(raise.waiting
-                            ? Text("The raise to \(massText(raise.toKg)) waits for a day in range")
+                            ? Text("The raise to \(massText(raise.toKg)) waits")
                             : Text("Today you raise to \(massText(raise.toKg))"))
         .accessibilityHint(raise.waiting
-                           ? Text("Raises every work set to that weight")
+                           ? (takeable ? Text("Raises every work set to that weight") : Text(""))
                            : Text("Shows why, with your real dates"))
         // Fires only when THIS line's held raise is taken (the flag flips on this exercise).
         .sensoryFeedback(.success, trigger: raise.waiting)
     }
 
-    /// Take a held raise (FER-82): every UNDONE work set moves to the proposed weight — the same
-    /// all-work-sets rule an applied raise seeds with — and the line turns into the usual green
-    /// «hoy X · por qué». Done sets keep what was actually lifted. Mirror of `revertRaise`.
+    /// Take a held raise (FER-82): the rule lives in the model (`takeHeldRaise`, tested); the view
+    /// only animates it. The line then turns into the usual green «hoy X · por qué».
     private func takeRaise(ei: Int) {
-        guard session.runs.indices.contains(ei),
-              let raise = session.runs[ei].proposedRaise, raise.waiting else { return }
-        withAnimation(StrandMotion.interactive) {
-            for si in session.runs[ei].sets.indices
-            where !session.runs[ei].sets[si].done && session.runs[ei].sets[si].kind == .work {
-                session.runs[ei].sets[si].weightKg = raise.toKg
-            }
-            session.runs[ei].proposedRaise?.waiting = false
-        }
+        withAnimation(StrandMotion.interactive) { session.takeHeldRaise(at: ei) }
     }
 
     /// The «por qué» block (WhyRaiseCard, handoff 2b): connection surface, 2.5pt green bar, the arithmetic
@@ -3598,9 +3598,15 @@ struct LiveStrengthSheet: View {
         let loads = MuscleFatigueMap.loads(events: events)
         let historyIds = Set(history.map(\.exerciseId))
 
-        // Same engine call `MuscleMapScreen` reads (`.readyMuscles`), not a hand-rolled filter/sort: it
-        // already gates fresh muscles behind systemic recovery (a red-recovery day suggests nothing).
-        let freshMuscles = MuscleFatigueMap.recommendation(loads: loads, recovery: recovery).readyMuscles
+        // Same engine call `MuscleMapScreen` reads (`.readyMuscles`), not a hand-rolled filter/sort.
+        //
+        // FER-82: the SYSTEMIC gate is the day's verdict, not the 0–100 score. Suggesting «agrega este
+        // ejercicio, ese músculo está fresco» on a day Entrenar is saying «Recupera» was the old second
+        // oracle, alive inside the session. The score keeps deciding per-muscle freshness (that is what
+        // it measures); whether to suggest ADDING work at all is the verdict's call.
+        let freshMuscles = TrainingRegulation.allowsRaise(model.repo.trainingAdvice)
+            ? MuscleFatigueMap.recommendation(loads: loads, recovery: recovery).readyMuscles
+            : []
         var picked: [(exercise: Exercise, muscle: String)] = []
         var usedExerciseIds: Set<String> = []
         for muscle in freshMuscles {

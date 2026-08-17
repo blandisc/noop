@@ -1250,11 +1250,14 @@ struct RoutineEditorScreen: View {
         // prefetch also calls (sub-épico 1 wiring). Only the .today origin can start a session, so the
         // save-only origins skip that per-exercise history I/O entirely.
         let inventory = plates.inventory
+        // One verdict for the whole table (FER-82): read before the loop, never inside it, so the
+        // session can't open with some exercises raised and others held.
+        let advice = repo.trainingAdvice
         var built: [EditorItem] = []
         for re in res {
             guard let ex = byId[re.exerciseId] else { continue }
             if startsSession {
-                let seed = await repo.sessionSeed(re: re, exercise: ex, inventory: inventory)
+                let seed = await repo.sessionSeed(re: re, exercise: ex, inventory: inventory, advice: advice)
                 built.append(EditorItem(re: re, exercise: ex, lastSets: seed.lastSets,
                                         raise: seed.evaluation?.raise))
             } else {
