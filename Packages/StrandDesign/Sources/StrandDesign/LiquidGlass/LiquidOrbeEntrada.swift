@@ -131,17 +131,24 @@ public struct LiquidOrbeEntrada: View {
             // Con tope de 60 Hz explícito, como el resto del sistema: sin él, en ProMotion
             // esto pediría 120 cuadros por segundo justo durante el arranque en frío, cuando
             // HealthKit, SQLite y la construcción de la app ya se pelean por el CPU.
-            TimelineView(.animation(minimumInterval: LiquidMotion.intervaloPleno,
-                                    paused: scenePhase != .active)) { ctx in
-                let t = tiempo(ctx.date)
-                let cuadro = EntradaSimulacion.cuadro(t: t, reduce: sinViaje)
-                Canvas(rendersAsynchronously: false) { g, size in
-                    dibujar(&g, size: size, cuadro: cuadro, t: t)
+            // FER-73 · M1: el frame del héroe llega en coordenadas GLOBALES y el Canvas dibuja
+            // en las SUYAS. Sin traducir, el ascenso aterrizaba ~el área segura (47–59 pt) por
+            // debajo del orbe real y el fundido dejaba costura. El `GeometryReader` mide el
+            // origen global de este lienzo y se lo resta al destino.
+            GeometryReader { lienzo in
+                let origen = lienzo.frame(in: .global).origin
+                TimelineView(.animation(minimumInterval: LiquidMotion.intervaloPleno,
+                                        paused: scenePhase != .active)) { ctx in
+                    let t = tiempo(ctx.date)
+                    let cuadro = EntradaSimulacion.cuadro(t: t, reduce: sinViaje)
+                    Canvas(rendersAsynchronously: false) { g, size in
+                        dibujar(&g, size: size, cuadro: cuadro, t: t, origenLienzo: origen)
+                    }
+                    // El fundido de salida se aplica AQUÍ y no dentro del Canvas: así atenúa la
+                    // composición ya resuelta en vez de cada relleno por separado (que dejaría
+                    // ver las partículas traslapándose entre sí mientras se apaga).
+                    .opacity(cuadro.alfa)
                 }
-                // El fundido de salida se aplica AQUÍ y no dentro del Canvas: así atenúa la
-                // composición ya resuelta en vez de cada relleno por separado (que dejaría
-                // ver las partículas traslapándose entre sí mientras se apaga).
-                .opacity(cuadro.alfa)
             }
         }
         // Decorativa de cabo a rabo: para VoiceOver esta pantalla no existe, así que el
@@ -191,7 +198,8 @@ public struct LiquidOrbeEntrada: View {
     }
 
     private func dibujar(_ g: inout GraphicsContext, size: CGSize,
-                         cuadro c: EntradaSimulacion.Cuadro, t: TimeInterval) {
+                         cuadro c: EntradaSimulacion.Cuadro, t: TimeInterval,
+                         origenLienzo: CGPoint = .zero) {
         // Escala uniforme por ancho + centrado vertical: los círculos siguen siendo círculos.
         let s = size.width / G.lienzo.width
         let dy = (size.height - G.lienzo.height * s) / 2
@@ -202,7 +210,8 @@ public struct LiquidOrbeEntrada: View {
         // final el orbe coincide EXACTO con el héroe y el fundido no deja costura.
         let reunion = aPantalla(CGPoint(x: G.cenit.x, y: G.reunionY))
         let radioEntrada = G.radio * s
-        let hero = destino()
+        // El frame del héroe viene en .global; este lienzo puede no empezar en (0,0).
+        let hero = destino().map { $0.offsetBy(dx: -origenLienzo.x, dy: -origenLienzo.y) }
         let arriba = hero.map { CGPoint(x: $0.midX, y: $0.midY) } ?? aPantalla(G.cenit)
         let radioArriba = hero.map { min($0.width, $0.height) / 2 } ?? radioEntrada
         let a = CGFloat(c.ascenso)

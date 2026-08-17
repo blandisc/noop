@@ -165,12 +165,25 @@ enum HoyGramatica {
     /// Delta de temp SIEMPRE con signo («+0.2°», «−0.4°») — el motor solo expone el delta;
     /// jamás temperatura absoluta en Hoy (contrato §11).
     static func formatoDeltaTemp(_ dev: Double) -> String {
-        String(format: "%+.1f°", dev)
+        // FER-73 · H15: `%+.1f` produce «-0.0°» en (−0.05, 0) —un cero con signo negativo, que
+        // se lee como «bajaste» sin haber bajado— y escribe el guion ASCII donde el resto de la
+        // pantalla usa el menos tipográfico (U+2212). Se normaliza el cero y se unifica el signo.
+        let redondeado = (dev * 10).rounded() / 10
+        if redondeado == 0 { return "0.0°" }
+        let cuerpo = String(format: "%.1f", abs(redondeado))
+        return (redondeado > 0 ? "+" : "\u{2212}") + cuerpo + "°"
+    }
+
+    /// Respiración: SIEMPRE una décima, en las tres superficies (Matriz, héroe/guardián y su
+    /// hoja). Antes el héroe redondeaba a entero y la Matriz mostraba la décima: «14 rpm» y
+    /// «14.4» para la misma noche (FER-73 · H17/HJ-18).
+    static func formatoResp(_ rpm: Double) -> String {
+        String(format: "%.1f", rpm)
     }
 
     /// Valor del par guardián: delta de temp con signo + respiración, «+0.2° · 14.2».
     static func formatoParGuardian(deltaTemp: Double, resp: Double) -> String {
-        formatoDeltaTemp(deltaTemp) + " · " + String(format: "%.1f", resp)
+        formatoDeltaTemp(deltaTemp) + " · " + formatoResp(resp)
     }
 
     /// Miles con espacio fino no separable («8 432»), para pasos.

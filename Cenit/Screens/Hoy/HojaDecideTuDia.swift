@@ -18,7 +18,7 @@ struct HojaDecideTuDia: View {
                 .font(LiquidType.tituloHoja)
                 .foregroundStyle(LiquidColor.tinta900)
             Text(String(localized: "manual.deciden.promesa",
-                        defaultValue: "Every morning I read your night and tell you one thing: whether you woke up inside your own range. Not against tables: against you."))
+                        defaultValue: "Every morning I read your night and tell you one thing: whether you woke up inside your range. Your resting heart rate is compared against your own recent weeks; your sleep, against the recommended range for health."))
                 .font(LiquidType.cuerpo)
                 .lineSpacing(LiquidType.cuerpoLineSpacing)
                 .foregroundStyle(LiquidColor.tinta700)
@@ -28,7 +28,7 @@ struct HojaDecideTuDia: View {
             votante(orbe: .simple(LiquidColor.indigo),
                     titulo: String(localized: "manual.deciden.sueno", defaultValue: "Sleep"),
                     detalle: String(localized: "manual.deciden.sueno.sub",
-                                    defaultValue: "How much and how well you slept last night."),
+                                    defaultValue: "How much and how well you slept last night, against the recommended range."),
                     sello: .vota)
             votante(orbe: .simple(LiquidColor.rosa),
                     titulo: String(localized: "manual.deciden.fc", defaultValue: "Resting heart rate"),
@@ -48,20 +48,23 @@ struct HojaDecideTuDia: View {
 
             seccion(String(localized: "manual.deciden.sec.combos", defaultValue: "The combinations"))
             VStack(alignment: .leading, spacing: LiquidSpace.s200) {
+                // FER-73 · HJ-03: el manual nombra las combinaciones con las MISMAS palabras
+                // que el héroe («In range» / «Go light today» / «Recover» / «Getting to know
+                // you»). Antes enseñaba nombres de veredicto ya retirados.
                 combo(LiquidColor.verdePrimario,
-                      String(localized: "manual.deciden.c1", defaultValue: "All in your range"),
+                      String(localized: "hero.title.full", defaultValue: "In range"),
                       String(localized: "manual.deciden.c1.sub",
                              defaultValue: "No signal out. Your body woke up where it usually does."))
                 combo(LiquidColor.ambar,
-                      String(localized: "manual.deciden.c2", defaultValue: "Good, with one detail"),
+                      String(localized: "hero.title.caution", defaultValue: "Go light today"),
                       String(localized: "manual.deciden.c2.sub",
                              defaultValue: "One signal out of your range, and I tell you which."))
                 combo(LiquidColor.negativo,
-                      String(localized: "manual.deciden.c3", defaultValue: "Take it easy"),
+                      String(localized: "hero.title.easy", defaultValue: "Recover"),
                       String(localized: "manual.deciden.c3.sub",
                              defaultValue: "Two or more out, or the guardian confirmed its alert."))
                 combo(LiquidColor.tinta500,
-                      String(localized: "manual.deciden.c4", defaultValue: "Low signal"),
+                      String(localized: "hero.title.calibrando", defaultValue: "Getting to know you"),
                       String(localized: "manual.deciden.c4.sub",
                              defaultValue: "Not enough reading tonight. Without data I don't guess."))
             }
@@ -73,7 +76,7 @@ struct HojaDecideTuDia: View {
 
             seccion(String(localized: "manual.deciden.sec.como", defaultValue: "How it's read"))
             Text(String(localized: "manual.deciden.como",
-                        defaultValue: "From your recent weeks I learn your normal band for each signal. Each morning I compare the night against that band: in or out. The verdict counts how many voting signals stepped out. It is never a 0-100 score, because your watch doesn't measure with that precision and I won't pretend it does."))
+                        defaultValue: "From your recent weeks I learn your normal band for your resting heart rate, your temperature and your breathing; your sleep is measured against the recommended range for health. Each morning I compare the night: in or out. The verdict counts how many voting signals stepped out. It is never a 0-100 score, because your watch doesn't measure with that precision and I won't pretend it does."))
                 .font(LiquidType.cuerpo)
                 .lineSpacing(LiquidType.cuerpoLineSpacing)
                 .foregroundStyle(LiquidColor.tinta700)

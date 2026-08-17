@@ -30,7 +30,8 @@ struct HojaContexto: View {
                  titulo: String(localized: "manual.contexto.carga", defaultValue: "Load"),
                  detalle: String(localized: "manual.contexto.carga.sub",
                                  defaultValue: "How much training you've been piling up lately, against what's usual for you."))
-            fila(color: LiquidColor.teal,
+            // FER-73 · HJ-21: Effort es ÁMBAR desde el cambio de identidad (el teal es Pasos).
+            fila(color: LiquidColor.ambar,
                  titulo: String(localized: "manual.contexto.esfuerzo", defaultValue: "Effort"),
                  detalle: String(localized: "manual.contexto.esfuerzo.sub",
                                  defaultValue: "What you've built up so far today."))

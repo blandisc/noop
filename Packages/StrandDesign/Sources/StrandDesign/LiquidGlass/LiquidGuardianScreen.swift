@@ -106,10 +106,12 @@ public struct LiquidGuardianHoja: Sendable {
         public let ocultar: String
         public let nota: String
         public let origenEtiqueta: String
-        public let origenSufijo: String
+        /// Opcional (FER-73 · HJ-17): sin lectura de anoche el chip NO puede rematar «· anoche»
+        /// sobre dos guiones — afirmaría una procedencia que no existe.
+        public let origenSufijo: String?
 
         public init(titulo: String, mostrar: String, ocultar: String, nota: String,
-                    origenEtiqueta: String, origenSufijo: String) {
+                    origenEtiqueta: String, origenSufijo: String? = nil) {
             self.titulo = titulo
             self.mostrar = mostrar
             self.ocultar = ocultar

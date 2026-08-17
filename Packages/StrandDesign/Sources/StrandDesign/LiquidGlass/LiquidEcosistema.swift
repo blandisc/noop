@@ -96,8 +96,12 @@ public struct LiquidEcosistema: View {
     /// el centro a `centro.y·escala` desde el tope del contenedor; el ancho lo centra el
     /// `maxWidth`, así que `midX` es el centro. En reposo (la entrada corre antes de tocar) el
     /// `offset` de compacto vale 0, así que no hace falta descontarlo.
-    static func orbeFrameGlobal(contenedor: CGRect, escala: CGFloat) -> CGRect {
-        let r = Sim.Geometria.radioOrbe * escala
+    /// FER-73 · M2: el radio publicado es el REAL de la coreografía —el orbe mide 50 en
+    /// «Recover» (desgaste) y 30 mientras calibra (embrión)— no siempre 56. Con el radio fijo,
+    /// la entrada aterrizaba con un tamaño que no era el del orbe que la recibe.
+    static func orbeFrameGlobal(contenedor: CGRect, escala: CGFloat,
+                                radio: CGFloat = Sim.Geometria.radioOrbe) -> CGRect {
+        let r = radio * escala
         let cx = contenedor.midX
         let cy = contenedor.minY + Sim.Geometria.centro.y * escala
         return CGRect(x: cx - r, y: cy - r, width: r * 2, height: r * 2)
@@ -222,6 +226,12 @@ public struct LiquidEcosistema: View {
                          calibracion: calibracion)
     }
 
+    /// El radio que de verdad dibuja el plan para esta coreografía (FER-73 · M2).
+    private var radioOrbeReal: CGFloat {
+        if calibracion != nil { return Sim.Geometria.radioEmbrion }
+        return coreo.radioOrbe
+    }
+
     private var still: Bool { reduceMotion || motionDisabled }
 
     /// La identidad del veredicto visible (nil = demotado/calibrando): el ciclo de vida
@@ -282,7 +292,8 @@ public struct LiquidEcosistema: View {
                 // contenedor YA dispuesto: su .global es geometría de layout, correcta.
                 .background(GeometryReader { geo in
                     Color.clear.preference(key: HeroOrbeFrameKey.self,
-                        value: Self.orbeFrameGlobal(contenedor: geo.frame(in: .global), escala: escala))
+                        value: Self.orbeFrameGlobal(contenedor: geo.frame(in: .global), escala: escala,
+                                                    radio: radioOrbeReal))
                 })
                 // Compacto (FER-28): sube el lienzo recortando su aire superior — el arte no
                 // cambia, solo se presenta más apretado. El estado separado sigue librando.
@@ -381,6 +392,9 @@ public struct LiquidEcosistema: View {
         .accessibilityAddTraits(.isHeader)
         .accessibilityLabel(Text(verbatim: a11yCompuesta))
         .accessibilityHint(Text(verbatim: heroHint ?? ""))
+        // FER-73 · INT-08: el hint promete «abre el detalle» — sin esto, el doble toque de
+        // VoiceOver no hacía nada (solo existían acciones de rotor).
+        .accessibilityAction { onTapVeredicto?() }
         .modifier(EcosistemaA11yAcciones(
             separable: coreo.separable,
             separada: esSeparadaEstable,
@@ -514,7 +528,9 @@ public struct LiquidEcosistema: View {
         .opacity(esSeparadaEstable ? 1 : 0)
         // Florecido sutil (FER-56, dueño): el dato no APARECE, se asienta — crece un
         // pelín (0.94→1) y sube 6 pt mientras funde, ya con el orbe quieto.
-        .scaleEffect(esSeparadaEstable ? 1 : 0.94)
+        // FER-73 · M10: bajo Reduce Motion la escala tampoco se anima (el offset ya lo hacía;
+        // el crossfade animaba la escala igual y era movimiento no pedido).
+        .scaleEffect(still || esSeparadaEstable ? 1 : 0.94)
         .offset(y: still ? 0 : (esSeparadaEstable ? 0 : 6))
         .allowsHitTesting(esSeparadaEstable)
         .animation(still ? LiquidEcosistemaMotion.reduceCrossfadeAnim
@@ -720,9 +736,12 @@ public struct LiquidEcosistema: View {
         VStack(spacing: LiquidSpace.s150) {
             switch hero {
             case .veredicto(let title, let highlight, let tone, let subtitle, let confianza):
+                // FER-73 (dueño): el ⓘ se veía un pelín ALTO. `levante` lo subía 3 pt sobre la
+                // base del texto; SF Symbols ya vienen alineados a la base tipográfica, así que
+                // el cero es la alineación nativa — el glifo cae a la altura de la palabra.
                 titularConInfo(palabraVeredicto(title: title, highlight: highlight, tone: tone),
                                tono: tone, fuente: LiquidType.infoGlifoTitular,
-                               levante: LiquidSpace.s075)
+                               levante: 0)
                 Text(subtitle)
                     .font(LiquidType.cuerpo).lineSpacing(LiquidType.cuerpoLineSpacing)
                     .foregroundStyle(LiquidColor.tinta700)
@@ -750,7 +769,7 @@ public struct LiquidEcosistema: View {
                         .foregroundStyle(esCalibrando ? LiquidColor.tinta700 : LiquidColor.tinta900)
                         .multilineTextAlignment(.center),
                     tono: LiquidColor.tinta500, fuente: LiquidType.infoGlifoTitularS,
-                    levante: LiquidSpace.s050)
+                    levante: 0)
                 Text(subtitle)
                     .font(LiquidType.cuerpo).lineSpacing(LiquidType.cuerpoLineSpacing)
                     .foregroundStyle(LiquidColor.tinta700)
@@ -786,8 +805,11 @@ public struct LiquidEcosistema: View {
                         .foregroundStyle(tono)
                         .alignmentGuide(.lastTextBaseline) { d in d[.lastTextBaseline] + levante }
                         // El «?» de la Matriz usa la misma receta (hit hacia afuera, la fila
-                        // mide lo que mide el texto).
-                        .contentShape(Rectangle().inset(by: -LiquidSpace.s300))
+                        // mide lo que mide el texto). FER-73 · INT-02: el blanco se COMPENSA
+                        // por la escala del lienzo — toda la escena se dibuja con
+                        // `scaleEffect(escala)` en iPhones ≤ 402 pt de ancho, así que un hit
+                        // de 44 pt en el espacio del arte llegaba escalado (≈39 pt reales).
+                        .contentShape(Rectangle().inset(by: -LiquidSpace.s300 / max(escala, 0.5)))
                 }
                 .buttonStyle(.liquidPress)
                 .accessibilityLabel(Text(verbatim: heroPuerta ?? ""))
@@ -857,7 +879,10 @@ public struct LiquidEcosistema: View {
         if let onTapVeredicto {
             Button(action: onTapVeredicto) {
                 etiqueta
-                    .frame(minHeight: LiquidControl.hitTarget)      // target real ≥44 pt (D10)
+                    // target real ≥44 pt (D10), COMPENSADO por la escala del lienzo (FER-73 ·
+                    // INT-02): la escena entera se dibuja con `scaleEffect`, así que 44 pt de
+                    // arte llegaban como ~39 pt de dedo en todo iPhone ≤ 402 pt de ancho.
+                    .frame(minHeight: LiquidControl.hitTarget / max(escala, 0.5))
                     .contentShape(Rectangle())
             }
             .buttonStyle(.liquidPress)
