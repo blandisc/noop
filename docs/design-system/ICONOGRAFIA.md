@@ -79,6 +79,23 @@ custom se justifica solo cuando la familia SF no cubre el significado con el est
   consistente en `StatePill`, `ThermalTicket`, estados vacíos…).
 - Los glifos custom (`PatronesGlyph`, etc.) deben traer label si actúan como control (p. ej. tab).
 
+## 6.5 Sellos de métrica de Hoy (`SelloMetrica`)
+
+La Matriz de Hoy NO usa SF Symbols: usa **sellos dibujados** que retratan cada métrica. Son la
+única familia de iconografía propia del sistema, y no se escriben a mano — los **genera**
+`Tools/sellos-hoy/forge.py` y los vuelca en `SelloMetricaPaths.swift`.
+
+| Regla | Por qué |
+|---|---|
+| No editar `SelloMetricaPaths.swift` | Es generado. Cambia el forjador y vuelve a correrlo. |
+| El dibujo llena su lado | Traen su margen por dentro (tinta en [2,22] del viewBox 24). `LiquidIconDrop` encoge su glifo porque los símbolos de sistema ya traen el suyo: aplicar las dos reglas los rompe. |
+| 20 pt en la Matriz, 28 en cabecera de hoja | Los mínimos (remates, ranuras, aires) están verificados a 20 pt. Por debajo, se borran. |
+| El Guardián no lleva sello dibujado | Su sello es `SelloGuardianVivo`: el movimiento ES el dato (estado del par). |
+| Identidad, no veredicto | La aguja del medidor de estrés va vertical a propósito: un sello de identidad no puede afirmar «estrés medio-alto» todos los días. |
+
+El forjador verifica al emitir lo que el ojo no alcanza a esa escala: simetría de espejo, área
+segura, y que ningún rasgo caiga bajo el pixel a 20 pt. `SelloMetricaTests` ancla el lado Swift.
+
 ## 7. Gobernanza
 
 | Regla | Estado |

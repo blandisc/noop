@@ -153,12 +153,20 @@ final class PreparednessBodyHistoryTests: XCTestCase {
                        "las últimas 20 terminando en asOf, viejo → nuevo")
     }
 
-    func testRutaLowSignalSinFilaDevuelveVacia() {
-        // Sin fila de asOf: el composer regresa antes de computar raws → historia vacía y dev nil.
+    /// FER-77 · CONTRATO NUEVO: sin la fila de asOf no hay veredicto de HOY, pero la historia ya
+    /// juzgada de los días que SÍ están sobrevive. Antes se devolvía vacía y la Matriz perdía la
+    /// banda de FC, los «dentro/fuera» del arrastre y las alertas viejas — datos ya calculados.
+    /// Lo que sigue siendo nil es lo de HOY: no se inventa un día que no llegó.
+    func testRutaLowSignalSinFilaConservaLaHistoriaJuzgada() {
         let r = read(baseline(), asOf: "2026-07-15")
         XCTAssertEqual(r.verdict, .lowSignal)
-        XCTAssertTrue(r.bodyHistory.isEmpty)
-        XCTAssertNil(r.thermalAdjustedDevC)
+        XCTAssertFalse(r.bodyHistory.isEmpty, "la historia juzgada no se borra por un día ausente")
+        XCTAssertEqual(r.bodyHistory.last?.day, baseline().last?.day,
+                       "termina en la última noche que SÍ existe, no en asOf")
+        XCTAssertNil(r.thermalAdjustedDevC, "de HOY no se afirma nada: no llegó")
+        // FER-76: y la madurez que reporta es la REAL de tus priors, no un 0 que promete un
+        // progreso ya hecho.
+        XCTAssertTrue(r.autonomicPossible, "la baseline tiene FC en reposo")
     }
 
     func testRhrResolvedEsLaSerieResuelta() throws {

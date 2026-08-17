@@ -225,16 +225,23 @@ public enum Preparedness {
         /// FER-51: dev térmica del día asOf DESPUÉS del descuento lúteo — el número exacto que
         /// juzgó `thermalDriver` (z_equiv = esto / `Config.thermalOutC`). nil sin lectura.
         public let thermalAdjustedDevC: Double?
+        /// FER-76: ¿existe la señal que sostiene el veredicto (FC en reposo) en ALGUNA noche de tu
+        /// ventana? `false` = nunca la hubo — quien duerme sin Apple Watch. La diferencia importa
+        /// porque «tu base se está formando» es una PROMESA: con esta señal ausente no se cumple
+        /// nunca, y la superficie tiene que decir otra cosa. Con historia parcial es `true`.
+        public let autonomicPossible: Bool
         public init(verdict: Verdict, drivers: [Driver], signals: [SignalRead] = [],
                     signalsPresent: Int, signalsTotal: Int,
                     maturity: BaselineStatus, autonomicNights: Int, trend: AutonomicTrend.Direction?,
                     sentinel: SentinelRead? = nil, sentinelHistory: [SentinelNight] = [],
-                    bodyHistory: [BodyNight] = [], thermalAdjustedDevC: Double? = nil) {
+                    bodyHistory: [BodyNight] = [], thermalAdjustedDevC: Double? = nil,
+                    autonomicPossible: Bool = true) {
             self.verdict = verdict; self.drivers = drivers; self.signals = signals
             self.signalsPresent = signalsPresent; self.signalsTotal = signalsTotal
             self.maturity = maturity; self.autonomicNights = autonomicNights; self.trend = trend
             self.sentinel = sentinel; self.sentinelHistory = sentinelHistory
             self.bodyHistory = bodyHistory; self.thermalAdjustedDevC = thermalAdjustedDevC
+            self.autonomicPossible = autonomicPossible
         }
 
         /// Whether today's read is anchored by a RECORDED night of sleep (FER-1033). `false` means
@@ -428,13 +435,50 @@ public enum Preparedness {
 
     // MARK: Evaluate
 
+    /// FER-76/77 — lo que SÍ se puede afirmar cuando falta la fila de hoy: la madurez real de tu
+    /// base, si la señal autonómica existió alguna vez, y la historia ya juzgada de los días que
+    /// sí están. Es el MISMO pase forward de la ruta normal, solo que sin día que juzgar: no hay
+    /// matemática nueva ni un segundo camino que pueda divergir del principal.
+    private static func historiaSinDiaDeHoy(_ ordered: [DailyMetric], input: Input, config: Config)
+        -> (maturity: BaselineStatus, nights: Int, autonomicPossible: Bool,
+            sentinelHistory: [SentinelNight], bodyHistory: [BodyNight]) {
+        guard !ordered.isEmpty else { return (.calibrating, 0, false, [], []) }
+        let nocturnal: [Double?] = ordered.map { input.nocturnalRestingHr[$0.day] }
+        let awake: [Double?] = ordered.map { $0.restingHr.map(Double.init) }
+        let nocturnalUsable = nocturnal.compactMap { $0 }.count >= Baselines.minNightsSeed
+        let resolved: [Double?] = nocturnalUsable ? nocturnal : awake
+        let rhrSeries = smoothedRhrSeries(resolved, nights: config.rhrSmoothingNights)
+        let posible = rhrSeries.contains { $0 != nil }
+        let priors = bodySignalPriorStates(ordered, rhrSeries: rhrSeries, config: config)
+        // La base al final de la ventana (el fold sobre TODOS los días presentes).
+        let base = priors.rhr?.last
+        let raws = ordered.indices.map {
+            rawVerdictAt($0, ordered: ordered, priorStates: priors, rhrSeries: rhrSeries,
+                         cyclePhase: input.cyclePhase, asOf: ordered[$0].day,
+                         nocturnalRmssd: nil, config: config)
+        }
+        return (base?.status ?? .calibrating, base?.nValid ?? 0, posible,
+                sentinelNights(ordered: ordered, raws: raws, priorStates: priors),
+                bodyNights(ordered: ordered, raws: raws, priorStates: priors))
+    }
+
     public static func evaluate(_ input: Input, config: Config = .default) -> Read {
         let ordered = input.days
             .filter { $0.day <= input.asOf }
             .sorted { $0.day < $1.day }
         guard let today = ordered.last, today.day == input.asOf else {
+            // FER-76 · Sin la fila de HOY no hay veredicto — pero eso NO borra tu historia. Antes
+            // esta salida reportaba `maturity: .calibrating, autonomicNights: 0`, y la superficie
+            // lo leía como «tu base se está formando · Noche 0 de N» aunque llevaras años. Ahora
+            // el Read dice la verdad de tus priors: cuántas noches tiene tu base y si la señal que
+            // sostiene el veredicto existió alguna vez.
+            let previo = historiaSinDiaDeHoy(ordered, input: input, config: config)
             return Read(verdict: .lowSignal, drivers: [], signalsPresent: 0, signalsTotal: 3,
-                        maturity: .calibrating, autonomicNights: 0, trend: input.trend?.direction)
+                        maturity: previo.maturity, autonomicNights: previo.nights,
+                        trend: input.trend?.direction,
+                        sentinelHistory: previo.sentinelHistory,
+                        bodyHistory: previo.bodyHistory,
+                        autonomicPossible: previo.autonomicPossible)
         }
 
         // --- ONE resolved resting-HR series, in ONE construct (never a blend) ---
@@ -510,24 +554,38 @@ public enum Preparedness {
         let maturity = autoBaseline?.status ?? .calibrating
         let autonomicNights = autoBaseline?.nValid ?? 0
 
+        // FER-77: el pase forward se computa ANTES de la salida por baja señal. Antes vivía después,
+        // así que un día sin veredicto devolvía `bodyHistory`/`sentinelHistory` VACÍAS y la Matriz
+        // perdía toda la historia YA JUZGADA (la banda de FC, los «dentro/fuera» del arrastre, las
+        // alertas viejas). Son datos que ya estaban calculados: esconderlos no era honestidad, era
+        // una pérdida. El costo es un fold O(n) sobre ≤ 120 días en el único camino que lo evitaba.
+        let raws = ordered.indices.map {
+            rawVerdictAt($0, ordered: ordered, priorStates: priorStates, rhrSeries: rhrSeries,
+                         cyclePhase: input.cyclePhase, asOf: input.asOf,
+                         nocturnalRmssd: input.nocturnalRmssd, config: config)
+        }
+        let sentinelHoy = sentinelStreak(ordered: ordered, raws: raws)
+        let historiaCentinela = sentinelNights(ordered: ordered, raws: raws, priorStates: priorStates)
+        let historiaCuerpo = bodyNights(ordered: ordered, raws: raws, priorStates: priorStates)
+        let autonomicPosible = rhrSeries.contains { $0 != nil }
+
         // --- Cold start / low signal: the autonomic core must have a usable read. ---
         if autonomic.state == .noData {
             return Read(verdict: .lowSignal, drivers: drivers, signals: signals,
                         signalsPresent: signalsPresent,
                         signalsTotal: 3, maturity: maturity, autonomicNights: autonomicNights,
                         trend: input.trend?.direction,
-                        thermalAdjustedDevC: tempDevToday)
+                        sentinel: sentinelHoy,
+                        sentinelHistory: historiaCentinela,
+                        bodyHistory: historiaCuerpo,
+                        thermalAdjustedDevC: tempDevToday,
+                        autonomicPossible: autonomicPosible)
         }
 
         // --- Consensus + hysteresis over RAW body verdicts across history (deterministic, no persistence) ---
         // ONE forward pass yields the per-day RawDay (verdict + illness-sentinel signals): hysteresis
         // rides the verdicts, the sentinel STREAK (FER-8) rides the temp/resp flags — same pass, no
         // extra cost, and no drift between the vote and the sentinel.
-        let raws = ordered.indices.map {
-            rawVerdictAt($0, ordered: ordered, priorStates: priorStates, rhrSeries: rhrSeries,
-                         cyclePhase: input.cyclePhase, asOf: input.asOf,
-                         nocturnalRmssd: input.nocturnalRmssd, config: config)
-        }
         let stable = hysteresed(raws.map(\.verdict), hysteresisDays: config.hysteresisDays)
         // Trend nudge (post-hysteresis): a sustained falling RMSSD trend pushes a borderline day
         // (`caution`) to `easy`. It never overrides a clean `full`. `/cso` may widen this.
@@ -536,11 +594,11 @@ public enum Preparedness {
         return Read(verdict: final, drivers: drivers, signals: signals,
                     signalsPresent: signalsPresent, signalsTotal: 3,
                     maturity: maturity, autonomicNights: autonomicNights, trend: input.trend?.direction,
-                    sentinel: sentinelStreak(ordered: ordered, raws: raws),
-                    sentinelHistory: sentinelNights(ordered: ordered, raws: raws,
-                                                    priorStates: priorStates),
-                    bodyHistory: bodyNights(ordered: ordered, raws: raws, priorStates: priorStates),
-                    thermalAdjustedDevC: tempDevToday)
+                    sentinel: sentinelHoy,
+                    sentinelHistory: historiaCentinela,
+                    bodyHistory: historiaCuerpo,
+                    thermalAdjustedDevC: tempDevToday,
+                    autonomicPossible: autonomicPosible)
     }
 
     /// FER-51: la historia corporal por-noche — proyección pura del pase forward que ya corrió

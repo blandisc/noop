@@ -608,8 +608,11 @@ enum LiquidHoyBuilder {
         // héroe con otro dato. FER-10: con Salud conectada, el estado sin-base es la
         // ACRECIÓN del Ecosistema («Conociéndote · Noche n de m»).
         let heroFallback = suenoFallback(nights: nights,
-                                         healthConnected: healthConnected)
-        let calibracion: LiquidHoyModel.Calibracion? = healthConnected
+                                         healthConnected: healthConnected,
+                                         autonomicPosible: prep?.autonomicPossible ?? true)
+        // FER-76: los puntos de acreción también callan cuando la señal que los llenaría no existe
+        // — una barra de progreso que no puede avanzar es la misma promesa rota, en gráfico.
+        let calibracion: LiquidHoyModel.Calibracion? = (healthConnected && (prep?.autonomicPossible ?? true))
             ? {
                 let c = calibracionConteo(nights: nights)
                 // Solo mientras la base SE FORMA (gate /cso B2): en el tope, el estado es
@@ -725,7 +728,8 @@ enum LiquidHoyBuilder {
     /// haya o no sueño grabado (decisión del dueño: el héroe de sueño de anoche se retiró;
     /// el sueño vive en su tile y su detalle).
     private static func suenoFallback(nights: Int,
-                                      healthConnected: Bool) -> LiquidHoyModel.Hero {
+                                      healthConnected: Bool,
+                                      autonomicPosible: Bool = true) -> LiquidHoyModel.Hero {
         // Sin permiso de Salud, «duerme con tu Watch» es una instrucción imposible: el
         // único camino real es conceder el permiso (revote /inject).
         guard healthConnected else {
@@ -739,6 +743,16 @@ enum LiquidHoyBuilder {
         // Gate /cso B2: con `nights >= total` la base YA está sembrada — este estado llega
         // por «falta la lectura de hoy» o «base rancia», y decir «se está formando» con
         // los puntos llenos sería falso. Ahí el héroe dice la causa real, sin contador.
+        // FER-76 · Sin FC en reposo en NINGUNA noche de tu ventana, «tu rango se está formando»
+        // es una promesa que no se cumple nunca: quien duerme sin Apple Watch no tiene esa señal,
+        // y sin ella no habrá veredicto. Se dice la verdad, y qué haría falta.
+        guard autonomicPosible else {
+            return .demotado(
+                kicker: String(localized: "READINESS"),
+                title: String(localized: "hero.title.sinfc", defaultValue: "I can't read your mornings yet"),
+                subtitle: String(localized: "hero.sub.sinfc",
+                                 defaultValue: "Your verdict stands on your resting heart rate at night, and it hasn't arrived. Sleeping with your Apple Watch is what unlocks it."))
+        }
         let (noche, total) = calibracionConteo(nights: nights)
         guard noche < total else {
             return .demotado(

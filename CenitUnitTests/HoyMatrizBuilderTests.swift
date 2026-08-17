@@ -352,21 +352,38 @@ final class HoyMatrizBuilderTests: XCTestCase {
             XCTAssertEqual(n.count, 7)
         } else { XCTFail("stress") }
 
-        // Sellos: la identidad ahora es el HUE del orbe vivo (los glifos se
-        // retiraron con el rediseño FER-51; línea podrida cazada por verify).
+        // Identidad: hue + sello dibujado, uno por señal. Cuatro cambiaron de tono al
+        // alinearlos con la tabla 1:1 de tokens (el teal era de PASOS, tinta700 es un tono
+        // de TEXTO, verdePrimario es la voz de marca y también la zona «bajo» del medidor).
         XCTAssertEqual(seccion(model, id: "sleep")?.hue, LiquidColor.indigo)
         XCTAssertEqual(seccion(model, id: "rhr")?.hue, LiquidColor.rosa)
         XCTAssertEqual(seccion(model, id: "hrv")?.hue, LiquidColor.cian)
         XCTAssertEqual(seccion(model, id: "guardian")?.hue, LiquidColor.doradoTemp)
-        XCTAssertEqual(seccion(model, id: "carga")?.hue, LiquidColor.verdePrimario)
+        XCTAssertEqual(seccion(model, id: "carga")?.hue, LiquidColor.verdeCarga)
         // Dueño 2026-08-15: Effort = ÁMBAR (su detalle «Day Strain» y la hoja de resumen
         // son ámbar — estaba cruzado con Steps) y Steps = TEAL (su color en la hoja de
         // resumen; era tinta700 gris). Fuente de verdad: LiquidMetricSheetView.tono.
         XCTAssertEqual(seccion(model, id: "strain")?.hue, LiquidColor.ambar)
         // FER-59: Estrés RECEDE — era tinta900 (gritaba siendo referencia que no vota),
-        // ahora tinta500 (peso de las demás de contexto).
+        // ahora tinta500 (peso de las demás de contexto). Manda esta decisión sobre el
+        // ámbar que proponía el contrato de tokens: el sello lo dice sin subir el peso.
         XCTAssertEqual(seccion(model, id: "stress")?.hue, LiquidColor.tinta500)
         XCTAssertEqual(seccion(model, id: "steps")?.hue, LiquidColor.teal)
+
+        // Cada señal lleva SU sello; el guardián no (su sello VIVE: SelloGuardianVivo).
+        XCTAssertEqual(seccion(model, id: "sleep")?.sello, .sueno)
+        XCTAssertEqual(seccion(model, id: "rhr")?.sello, .reposo)
+        XCTAssertEqual(seccion(model, id: "hrv")?.sello, .hrv)
+        XCTAssertEqual(seccion(model, id: "carga")?.sello, .carga)
+        XCTAssertEqual(seccion(model, id: "strain")?.sello, .esfuerzo)
+        XCTAssertEqual(seccion(model, id: "stress")?.sello, .estres)
+        XCTAssertEqual(seccion(model, id: "steps")?.sello, .pasos)
+        XCTAssertNil(seccion(model, id: "guardian")?.sello)
+        XCTAssertNotNil(seccion(model, id: "guardian")?.selloGuardian)
+
+        // Los sellos de piel y respiración NO viven ya en Hoy: FER-80 fundió las dos filas
+        // del guardián en la costura (ver arriba, `renglones` es nil). Siguen encabezando
+        // sus hojas de resumen, y el andamiaje de `MatrizRenglon` los admite si vuelven.
 
         // Orden visual a11y.
         XCTAssertEqual(model.ordenA11y, [
