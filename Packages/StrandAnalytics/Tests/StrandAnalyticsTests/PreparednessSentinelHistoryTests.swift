@@ -144,17 +144,24 @@ final class PreparednessSentinelHistoryTests: XCTestCase {
 
     // MARK: The low-signal path reports nothing rather than something false
 
-    func testLowSignalPathYieldsEmptyHistory() {
-        // No autonomic readings at all → the composer returns early, before any raw is computed.
-        // `sentinel` is already nil on that path; the history must be empty for the same reason,
-        // so a caller can never draw a diagram the engine never produced.
+    /// FER-77 · CONTRATO NUEVO: sin señal autonómica no hay VEREDICTO, pero el centinela juzga
+    /// otras dos señales (temperatura y respiración) y su juicio sigue siendo válido — son
+    /// independientes del eje que faltó. Antes se devolvía todo vacío y el guardián perdía su
+    /// historia entera cada día sin veredicto. Lo que NO cambia: el centinela nunca vota aquí, y
+    /// la superficie sigue exigiendo por su lado el sello de noche y el par completo (FER-73).
+    func testLowSignalPathConservaLaHistoriaDelCentinela() {
         let days = (1...20).map { i in
             dm(String(format: "2026-06-%02d", i), hrv: nil, rhr: nil, resp: nil, temp: 0.0)
         }
         let r = read(days, asOf: "2026-06-20")
-        XCTAssertEqual(r.verdict, .lowSignal)
-        XCTAssertNil(r.sentinel)
-        XCTAssertTrue(r.sentinelHistory.isEmpty)
+        XCTAssertEqual(r.verdict, .lowSignal, "sin FC en reposo no hay veredicto")
+        XCTAssertFalse(r.sentinelHistory.isEmpty, "la historia del par no se borra")
+        XCTAssertEqual(r.sentinelHistory.last?.day, "2026-06-20")
+        XCTAssertFalse(r.autonomicPossible, "nunca hubo FC en reposo en la ventana")
+        // Y sin respiración, la noche queda marcada como NO juzgada: «no lo pude juzgar» jamás
+        // puede leerse como «en rango».
+        XCTAssertEqual(r.sentinelHistory.last?.respMissing, true)
+        XCTAssertEqual(r.sentinelHistory.last?.respJudged, false)
     }
 
     // MARK: «No lo pude juzgar» no puede leerse como «en rango» (hallazgo del gate numérico)
