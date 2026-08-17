@@ -119,7 +119,10 @@ final class SingleOracleTests: XCTestCase {
     /// seeds at last time's load and the raise is offered there, one tap away.
     func testEveryHoldingAdviceDefersAndKeepsTheWeight() {
         for advice in allAdvice where !TrainingRegulation.allowsRaise(advice) {
-            let state = ProgressionMath.classify(earnedInput(deferRaise: true))
+            // El `deferRaise` sale DEL CONSEJO del bucle, no de una constante: así la prueba ata el
+            // mapeo al clasificador en vez de comprobar cinco veces la misma llamada.
+            let state = ProgressionMath.classify(
+                earnedInput(deferRaise: !TrainingRegulation.allowsRaise(advice)))
             guard case .deferred(let kg) = state else {
                 return XCTFail("\(advice) should defer, got \(state)")
             }
@@ -130,7 +133,8 @@ final class SingleOracleTests: XCTestCase {
     /// The states that allow a raise really do let it through — no accidental hold on a silent day.
     func testAllowingAdviceLetsTheRaiseThrough() {
         for advice in allAdvice where TrainingRegulation.allowsRaise(advice) {
-            let state = ProgressionMath.classify(earnedInput(deferRaise: false))
+            let state = ProgressionMath.classify(
+                earnedInput(deferRaise: !TrainingRegulation.allowsRaise(advice)))
             guard case .readyToAdvance = state else {
                 return XCTFail("\(advice) should advance, got \(state)")
             }

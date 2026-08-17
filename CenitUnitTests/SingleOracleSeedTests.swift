@@ -284,8 +284,14 @@ final class SingleOracleSeedTests: XCTestCase {
     }
 
     /// A snapshot written before FER-82 (no `heldRaise` key) still decodes, with no offer.
+    ///
+    /// Se construye CON una subida retenida y se le quita la llave: si la sesión no la tuviera, el
+    /// JSON no traería el campo y la prueba no ejercitaría nada (la primera versión hacía eso).
     func testPreFER82SnapshotDecodesWithoutAnOffer() throws {
-        let snap = sessionWith(nil).snapshot(now: 200)
+        guard let raise = evaluate(.lighter)?.raise else { return XCTFail("expected a held raise") }
+        let snap = sessionWith(raise).snapshot(now: 200)
+        XCTAssertNotNil(try JSONSerialization.jsonObject(with: try JSONEncoder().encode(snap)),
+                        "el snapshot base tiene que ser codificable")
         let json = try JSONEncoder().encode(snap)
         var object = try XCTUnwrap(try JSONSerialization.jsonObject(with: json) as? [String: Any])
         var runs = try XCTUnwrap(object["runs"] as? [[String: Any]])

@@ -29,9 +29,15 @@ extension Repository {
     /// share one verdict: reading it per exercise leaves a window (each `await` on the store yields to
     /// the main actor, where a refresh publishes) for a table where some rows took the raise and others
     /// held it — one screen, two verdicts, which is the whole thing this epic removes.
+    /// `isNightAnchored` es la MISMA puerta que Hoy exige para pronunciar la palabra (FER-85): sin
+    /// noche anclada, Hoy degrada el día a «lectura de día» y NO dice el veredicto. Si Entrenar
+    /// actuara igual sobre ese veredicto, retendría una subida por una palabra que la otra pantalla
+    /// se está negando a decir — un oráculo con dos puertas es dos oráculos.
     var trainingAdvice: TrainingRegulation.Advice {
-        TrainingRegulation.advice(verdict: todayPreparedness?.verdict,
-                                  isPending: todayPreparedness == nil && !fullyLoaded)
+        let read = todayPreparedness
+        let usable = read?.isNightAnchored == true ? read?.verdict : nil
+        return TrainingRegulation.advice(verdict: usable,
+                                         isPending: read == nil && !fullyLoaded)
     }
 
     // MARK: - Routines

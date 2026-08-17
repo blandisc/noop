@@ -439,11 +439,19 @@ private struct EntrenarLanding: View {
         if let seeded = slotsAdvice, seeded != repo.trainingAdvice {
             Task {
                 // Un intento de reconstrucción, y luego SE ARRANCA pase lo que pase: el usuario pidió
-                // entrenar y el tap no se puede convertir en otra pantalla. Si la reconstrucción no
-                // publicó, la tabla que sigue en pie está sembrada de forma conservadora (con el peso
-                // anterior) y la subida sigue a un toque dentro de la sesión: nunca se entrena de más
-                // por esta ruta, solo, a lo sumo, de menos.
-                _ = await load()
+                // entrenar y el tap no se puede convertir en otra pantalla. Pero si la reconstrucción
+                // NO publicó, los slots que quedan son del pase anterior y pueden traer la subida
+                // APLICADA bajo un consejo que hoy la retiene: en ese caso se retiene aquí, para que
+                // por esta ruta nunca se entrene de más, solo a lo sumo de menos.
+                if await load() == false, !TrainingRegulation.allowsRaise(repo.trainingAdvice) {
+                    todaySlots = todaySlots.map { slot in
+                        guard var raise = slot.raise, !raise.waiting else { return slot }
+                        raise.waiting = true
+                        var held = slot
+                        held.raise = raise
+                        return held
+                    }
+                }
                 startTodayNow(r)
             }
             return
@@ -605,7 +613,9 @@ private struct EntrenarLanding: View {
         let strong = parts.map {
             Text(verbatim: $0)
                 .font(InstrumentoType.groteskNumber(13, weight: .bold, relativeTo: .subheadline))
-                .foregroundStyle(theme.dataRecovery)
+                // `dataRecovery` a 13 pt da 3.63:1 sobre el papel: reprueba el piso de texto normal.
+                // `positiveText` es el MISMO verde, oscurecido lo justo para llegar a 4.5:1.
+                .foregroundStyle(theme.positiveText)
         }
         var t = Text("Today you raise") + Text(verbatim: " ")
         for (i, s) in strong.enumerated() {
@@ -1371,46 +1381,35 @@ private struct EntrenarLanding: View {
         return String(localized: "Today · \(day)")
     }
 
-    /// El hilo del veredicto: la misma pastilla que es la puerta de Hoy, con la misma palabra y
-    /// el mismo consejo. Tocarla abre la boleta como hoja DENTRO de Entrenar (nunca cambia de
-    /// pestaña, decisión del handoff). Con el veredicto todavía calculándose no se dibuja: la
-    /// sección calla en vez de estrenar una pastilla hueca que va a cambiar en un segundo.
+    /// El hilo del veredicto: la misma pastilla que es la puerta de Hoy, construida por el MISMO
+    /// constructor (`LiquidHoyBuilder.hiloEntrenar`) para que las dos pantallas no puedan divergir.
+    ///
+    /// Derivarlo aquí por mi cuenta ya había producido dos contradicciones que el gate cazó: decía
+    /// la palabra-veredicto las mañanas en que Hoy la retira por no tener la noche anclada, y
+    /// colapsaba los tres estados sin veredicto en «Conociéndote», que le decía «te estoy
+    /// conociendo» a quien nunca conectó Apple Salud.
     @ViewBuilder private var hiloDelVeredicto: some View {
-        if advice != .pending {
-            EntrenarHilo(tone: hiloTono, word: hiloPalabra, advice: hiloConsejo) {
+        if let hilo = LiquidHoyBuilder.hiloEntrenar(
+            prep: repo.todayPreparedness,
+            nights: repo.todayPreparedness?.autonomicNights ?? 0,
+            healthConnected: healthConnected,
+            verdictPending: repo.todayPreparedness == nil && !repo.fullyLoaded,
+            hasPlan: todayRoutine != nil) {
+            EntrenarHilo(tone: hiloTono(hilo.tono),
+                         word: LocalizedStringKey(hilo.palabra),
+                         advice: hilo.consejo.map { LocalizedStringKey($0) },
+                         hint: "Opens today's ballot") {
                 showVeredictoActa = true
             }
         }
     }
 
-    private var hiloTono: EntrenarHilo.Tone {
-        switch advice {
-        case .planAsIs: return .clear
-        case .lighter:  return .caution
-        case .recover:  return .ease
-        case .silent, .pending: return .hollow
-        }
-    }
-
-    /// La palabra del veredicto: la MISMA que pinta Hoy, por la misma clave del catálogo.
-    private var hiloPalabra: LocalizedStringKey {
-        switch advice {
-        case .planAsIs: return "hero.title.full"
-        case .lighter:  return "hero.title.caution"
-        case .recover:  return "hero.title.easy"
-        case .silent, .pending:
-            return repo.todayPreparedness == nil ? "No reading today" : "hero.title.calibrando"
-        }
-    }
-
-    /// El consejo grueso del diccionario. Las variantes huecas no inventan consejo.
-    private var hiloConsejo: LocalizedStringKey? {
-        switch advice {
-        case .planAsIs: return "your plan for today, as it is"
-        case .lighter:  return "don't add weight"
-        case .recover:  return "easy today, or rest"
-        case .silent, .pending:
-            return repo.todayPreparedness == nil ? "sync in Today" : "no advice yet"
+    private func hiloTono(_ t: LiquidHoyBuilder.HiloEntrenar.Tono) -> EntrenarHilo.Tone {
+        switch t {
+        case .claro:    return .clear
+        case .atencion: return .caution
+        case .alerta:   return .ease
+        case .hueco:    return .hollow
         }
     }
 

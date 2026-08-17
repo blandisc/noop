@@ -66,6 +66,9 @@ public struct EntrenarHilo: View {
     private let tone: Tone
     private let word: LocalizedStringKey
     private let advice: LocalizedStringKey?
+    /// A dónde lleva, para VoiceOver: sin esto la puerta principal de la pantalla se anunciaba como
+    /// «botón» a secas y nadie sabía qué iba a abrir.
+    private let hint: LocalizedStringKey?
     private let action: (() -> Void)?
 
     @Environment(\.instrumentoTheme) private var theme
@@ -76,8 +79,9 @@ public struct EntrenarHilo: View {
     ///   - advice: el consejo grueso que la acompaña. `nil` en las variantes que no aconsejan.
     ///   - action: qué abre. `nil` deja la pastilla informativa (sin «›» y sin toque).
     public init(tone: Tone, word: LocalizedStringKey, advice: LocalizedStringKey? = nil,
-                action: (() -> Void)? = nil) {
-        self.tone = tone; self.word = word; self.advice = advice; self.action = action
+                hint: LocalizedStringKey? = nil, action: (() -> Void)? = nil) {
+        self.tone = tone; self.word = word; self.advice = advice
+        self.hint = hint; self.action = action
     }
 
     public var body: some View {
@@ -86,6 +90,7 @@ public struct EntrenarHilo: View {
                 .buttonStyle(EntrenarPressStyle())
                 .accessibilityElement(children: .combine)
                 .accessibilityAddTraits(.isButton)
+                .accessibilityHint(hint.map { Text($0) } ?? Text(""))
         } else {
             pill.accessibilityElement(children: .combine)
         }

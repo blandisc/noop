@@ -124,7 +124,7 @@ struct ExerciseDetailScreen: View {
                     // «la subida espera un día en rango» about a day nobody has judged. `speaks` is
                     // the same silence gate the hero uses; the task re-runs when the verdict lands.
                     let advice = repo.trainingAdvice
-                    if TrainingRegulation.speaks(advice) || TrainingRegulation.allowsRaise(advice) {
+                    if TrainingRegulation.hasLanded(advice) {
                         cycleState = ProgressionPlanner.evaluate(
                             re: re, history: history, inventory: inventory,
                             equipment: exercise.equipment, advice: advice)?.state

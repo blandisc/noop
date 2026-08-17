@@ -116,8 +116,12 @@ struct ProgressionSetupScreen: View {
                             $0 == .propose ? String(localized: "Propose") : String(localized: "Warn only")
                         }
                     }
-                    row(title: Text("Low recovery"),
-                        subtitle: Text("defers the raise, doesn't cancel it"), lastRow: true) {
+                    // FER-85: el rótulo decía «Recuperación baja» porque antes la compuerta era el
+                    // score. Ahora la pone el veredicto, y también aplaza los días ámbar, que no son
+                    // recuperación baja: el ajuste tiene que describir lo que de verdad hace.
+                    row(title: Text("Days that aren't in range"),
+                        subtitle: Text("defers the raise, doesn't cancel it: you take it with one tap in the session"),
+                        lastRow: true) {
                         SegmentedPillControl([false, true], selection: $ignoreRecovery, theme: theme) {
                             $0 ? String(localized: "Ignore") : String(localized: "Defer")
                         }

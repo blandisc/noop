@@ -584,6 +584,75 @@ enum LiquidHoyBuilder {
         }
     }
 
+    // MARK: El hilo de Entrenar (FER-85)
+    //
+    // La pastilla que encabeza Entrenar sale de AQUÍ, del mismo constructor que arma el héroe de
+    // Hoy, y por una razón concreta: derivarla por mi cuenta desde `verdict` ya había producido dos
+    // contradicciones reales. Hoy solo pronuncia la palabra-veredicto cuando la noche está anclada
+    // (`isNightAnchored`); si Entrenar la deriva sin esa puerta, dice «Hoy ve leve» las mañanas en
+    // que Hoy la retira a propósito. Y los tres estados SIN veredicto (sin permiso, sin base,
+    // sin lectura) no son el mismo estado, aunque los tres callen el consejo.
+
+    /// Lo que el hilo de Entrenar muestra hoy. `nil` = no mostrar nada (el veredicto aún se calcula).
+    struct HiloEntrenar: Equatable {
+        enum Tono: Equatable { case claro, atencion, alerta, hueco }
+        let tono: Tono
+        /// La palabra, YA localizada — la MISMA que el héroe de Hoy pone en su titular.
+        let palabra: String
+        /// El consejo grueso, ya localizado. `nil` en los estados que no aconsejan.
+        let consejo: String?
+    }
+
+    /// - Parameters:
+    ///   - hasPlan: si hay una rutina para hoy. Sin plan, el consejo no puede prometer «tu plan de
+    ///     hoy»: sería una frase sobre algo que el usuario todavía no tiene.
+    static func hiloEntrenar(prep: Preparedness.Read?, nights: Int, healthConnected: Bool,
+                             verdictPending: Bool, hasPlan: Bool) -> HiloEntrenar? {
+        if prep == nil, verdictPending { return nil }
+
+        // Con veredicto Y noche anclada: la palabra del héroe, tal cual, con su consejo.
+        if let prep, prep.verdict != .lowSignal, prep.isNightAnchored {
+            switch prep.verdict {
+            case .full:
+                return .init(tono: .claro, palabra: palabraVeredicto(.full),
+                             consejo: hasPlan ? String(localized: "your plan for today, as it is")
+                                              : String(localized: "nothing is holding you back"))
+            case .caution:
+                return .init(tono: .atencion, palabra: palabraVeredicto(.caution),
+                             consejo: String(localized: "don't add weight"))
+            case .easy:
+                return .init(tono: .alerta, palabra: palabraVeredicto(.easy),
+                             consejo: String(localized: "easy today, or rest"))
+            case .lowSignal:
+                break   // excluido por el guard
+            }
+        }
+
+        // Hay veredicto pero la noche NO está anclada: Hoy lo degrada a «lectura de día» y no
+        // pronuncia la palabra. El hilo hace lo mismo, en hueco.
+        if let prep, prep.verdict != .lowSignal, !prep.isNightAnchored {
+            return .init(tono: .hueco, palabra: String(localized: "Day reading"),
+                         consejo: String(localized: "no verdict without your night"))
+        }
+
+        // Sin veredicto: tres razones distintas, tres frases distintas. Colapsarlas en
+        // «Conociéndote» le decía «te estoy conociendo» a quien nunca conectó Salud.
+        if !healthConnected {
+            return .init(tono: .hueco, palabra: String(localized: "Connect Apple Health"), consejo: nil)
+        }
+        if prep?.autonomicPossible == false {
+            return .init(tono: .hueco, palabra: String(localized: "No reading today"),
+                         consejo: String(localized: "your resting heart rate needs a watch at night"))
+        }
+        if nights < Baselines.minNightsTrust {
+            return .init(tono: .hueco,
+                         palabra: String(localized: "hero.title.calibrando", defaultValue: "Getting to know you"),
+                         consejo: String(localized: "no advice yet"))
+        }
+        return .init(tono: .hueco, palabra: String(localized: "No reading today"),
+                     consejo: String(localized: "sync in Today"))
+    }
+
     // MARK: Héroe (tabla canónica — port literal de `TodayView.heroBlock`)
 
     static func hero(prep: Preparedness.Read?, nights: Int,
@@ -1414,6 +1483,10 @@ enum LiquidHoyBuilder {
         }
         return out
     }
+
+    /// La palabra del héroe, expuesta para que una prueba pueda afirmar la PARIDAD entre el
+    /// titular de Hoy y el hilo de Entrenar sin duplicar el diccionario en el test.
+    static func palabraVeredictoPublica(_ v: Preparedness.Verdict) -> String { palabraVeredicto(v) }
 
     /// La palabra del veredicto tal cual la dice el héroe (misma clave del catálogo).
     private static func palabraVeredicto(_ v: Preparedness.Verdict) -> String {

@@ -1253,10 +1253,15 @@ struct RoutineEditorScreen: View {
         // One verdict for the whole table (FER-82): read before the loop, never inside it, so the
         // session can't open with some exercises raised and others held.
         let advice = repo.trainingAdvice
+        // El gate se calcula con datos LOCALES, no con `startsSession`: esa propiedad mira `items`,
+        // que en este punto sigue vacío (se asigna al final del método), así que el editor cargaba
+        // SIEMPRE por la rama sin semilla y la sesión que arrancaba desde aquí no llevaba ni «la
+        // última vez» ni la subida. La fila «↑ X te espera» del héroe entra justo por esta puerta.
+        let willStart = !isPlanDay && !res.isEmpty
         var built: [EditorItem] = []
         for re in res {
             guard let ex = byId[re.exerciseId] else { continue }
-            if startsSession {
+            if willStart {
                 let seed = await repo.sessionSeed(re: re, exercise: ex, inventory: inventory, advice: advice)
                 built.append(EditorItem(re: re, exercise: ex, lastSets: seed.lastSets,
                                         raise: seed.evaluation?.raise))

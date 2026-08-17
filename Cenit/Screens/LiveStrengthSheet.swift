@@ -2206,8 +2206,6 @@ struct LiveStrengthSheet: View {
         }
     }
 
-    /// Today's recovery score (nil while calibrating) — feeds the muscle-fatigue readiness map.
-    private var recovery: Double? { model.repo.today?.recovery }
 
     /// The Apple Watch mirror line (FER-742): «Reloj grabando» when the watch confirms; «El reloj no
     /// respondió» + «Reintentar» on a first miss; «Sin reloj esta sesión» once the retry is spent. Nothing
@@ -2670,12 +2668,15 @@ struct LiveStrengthSheet: View {
                                    color: (raise.waiting ? theme.ink : theme.dataRecovery).opacity(0.55))   // token-exempt: subrayado punteado decorativo
                 }
             }
-            .foregroundStyle(raise.waiting ? theme.ink : theme.dataRecovery)
+            // La rama aplicada iba en `dataRecovery` a 12 pt (3.63:1): mismo verde, tono de lectura.
+            .foregroundStyle(raise.waiting ? theme.ink : theme.positiveText)
             .frame(minHeight: 44, alignment: .leading)   // HIG tap target: this tap IS «subir» (FER-82)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        // Sin series pendientes no es un botón atenuado sin explicación: deja de ser botón.
         .disabled(raise.waiting && !takeable)
+        .accessibilityRemoveTraits(raise.waiting && !takeable ? .isButton : [])
         // No cause is named here: the same line shows while the verdict is still being computed, and
         // «espera un día en rango» would be a reason the app doesn't have yet.
         .accessibilityLabel(raise.waiting
@@ -2693,6 +2694,11 @@ struct LiveStrengthSheet: View {
     /// only animates it. The line then turns into the usual green «hoy X · por qué».
     private func takeRaise(ei: Int) {
         withAnimation(StrandMotion.interactive) { session.takeHeldRaise(at: ei) }
+        // Si la sesión quedó mixta, deja de contar para el ciclo — y eso NO puede vivir tras un
+        // segundo toque: la tarjeta del «por qué» se abre sola con la frase que lo confiesa.
+        if session.runs.indices.contains(ei), session.runs[ei].raiseOptedOut {
+            withAnimation(StrandMotion.interactive) { whyRaiseOpen.insert(session.runs[ei].id) }
+        }
     }
 
     /// The «por qué» block (WhyRaiseCard, handoff 2b): connection surface, 2.5pt green bar, the arithmetic

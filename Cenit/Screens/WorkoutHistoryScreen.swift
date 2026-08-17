@@ -781,8 +781,10 @@ struct WorkoutHistoryScreen: View {
         // One verdict for the whole list, read before the loop (FER-82). While it is still being
         // computed the section stays empty rather than claiming raises wait on a day nobody has
         // judged yet — `speaks` is the same silence gate the hero uses.
+        // Mientras el veredicto no aterriza, la sección no afirma que una subida espera por un día
+        // que nadie ha juzgado todavía.
         let advice = repo.trainingAdvice
-        guard TrainingRegulation.speaks(advice) || TrainingRegulation.allowsRaise(advice) else { return [] }
+        guard TrainingRegulation.hasLanded(advice) else { return [] }
         let routines = await repo.routines()
         var seen = Set<String>()
         var slots: [RoutineExercise] = []

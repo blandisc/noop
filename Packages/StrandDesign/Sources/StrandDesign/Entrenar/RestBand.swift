@@ -97,13 +97,15 @@ public struct RestBand: View {
                     .font(InstrumentoType.grotesk(40, weight: .bold, relativeTo: .largeTitle))
                     .foregroundStyle(OKLab.darkened(theme.dataHeart, toContrast: 4.5, against: theme.paper))
             } else if let remaining {
+                // Una sola frase, no tres fragmentos: partida en «te faltan» + N + «lpm más» decía
+                // dos veces lo mismo y no se puede reordenar al traducir.
                 (Text("you need").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                  + Text(verbatim: " ")
                  + Text(verbatim: "\(remaining)")
                     .font(InstrumentoType.groteskNumber(40, weight: .bold, relativeTo: .largeTitle))
                     .foregroundStyle(theme.dataHeart)
                  + Text(verbatim: " ")
-                 + Text("bpm more").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary))
+                 + Text("bpm").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary))
                     .fixedSize(horizontal: false, vertical: true)
             } else {
                 Text("Waiting for your pulse")

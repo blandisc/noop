@@ -15653,22 +15653,6 @@
         }
       }
     },
-    "defers the raise, doesn't cancel it" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "defers the raise, doesn't cancel it"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "aplaza la subida, no la cancela"
-          }
-        }
-      }
-    },
     "Dejar la base como está" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -15997,23 +15981,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "¿Lo cumpliste hoy?"
-          }
-        }
-      }
-    },
-    "Did you know your routine can raise itself?" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Did you know your routine can raise itself?"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "¿Sabías que la rutina puede subir sola?"
           }
         }
       }
@@ -26181,22 +26148,6 @@
         }
       }
     },
-    "Low recovery" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Low recovery"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recuperación baja"
-          }
-        }
-      }
-    },
     "Low signal" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -35665,23 +35616,6 @@
         }
       }
     },
-    "Progression, rest by pulse, plate calculator… the workshop's tricks." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Progression, rest by pulse, plate calculator… the workshop's tricks."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Progresión, descanso por pulso, calculadora de discos… los trucos del taller."
-          }
-        }
-      }
-    },
     "projected" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -38172,6 +38106,72 @@
         }
       }
     },
+    "no verdict without your night" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sin tu noche no hay veredicto"
+          }
+        }
+      }
+    },
+    "your resting heart rate needs a watch at night" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tu FC en reposo necesita el reloj de noche"
+          }
+        }
+      }
+    },
+    "nothing is holding you back" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "nada te frena hoy"
+          }
+        }
+      }
+    },
+    "Opens today's ballot" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre la boleta de hoy"
+          }
+        }
+      }
+    },
+    "Days that aren't in range" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Días que no son en rango"
+          }
+        }
+      }
+    },
+    "defers the raise, doesn't cancel it: you take it with one tap in the session" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "aplaza la subida, no la cancela: la tomas con un toque en la sesión"
+          }
+        }
+      }
+    },
     "The raise waits:" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -38233,7 +38233,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ espera"
+            "value" : "te espera %@"
           }
         }
       }
@@ -41405,23 +41405,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ver el método ›"
-          }
-        }
-      }
-    },
-    "See the tricks" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "See the tricks"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ver los trucos"
           }
         }
       }

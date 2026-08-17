@@ -127,6 +127,11 @@ public enum TrainingRegulation {
     /// `.pending` never gates: a verdict that is merely late must not close a screen.
     public static func gatesTraining(_ advice: Advice) -> Bool { advice == .recover }
 
+    /// Whether the day's verdict has LANDED — the app already knows what it thinks, even if what it
+    /// thinks is «no usable read». Only `.pending` is false. Named because two screens were writing
+    /// `speaks(advice) || allowsRaise(advice)` to mean this, with a comment that claimed more.
+    public static func hasLanded(_ advice: Advice) -> Bool { advice != .pending }
+
     /// Whether Entrenar has anything to say about the day at all. Silence is a real answer here:
     /// without a usable read the section shows no advice line rather than falling back to a number.
     public static func speaks(_ advice: Advice) -> Bool {
