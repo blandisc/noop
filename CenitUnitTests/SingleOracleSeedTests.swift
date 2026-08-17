@@ -1,0 +1,137 @@
+import XCTest
+import StrandTraining
+import StrandAnalytics
+@testable import Cenit
+
+/// FER-82 — the app-layer half of «un solo oráculo», where the pure mapping meets the screen.
+///
+/// The acceptance criterion is a UI rule: «no existe combinación en la que la pantalla muestre "Hoy
+/// subes" junto a un veredicto caution o easy». The hero's «Hoy subes» is fed by exactly one thing —
+/// `ProgressionPlanner.evaluate`'s applied raise — and the session's table by exactly one other — the
+/// seed `StrengthSessionModel.make` builds from it. This suite drives both with a history that HAS
+/// earned the raise, across every advice, so the rule is checked where the screen reads it, not only
+/// where the mapping is written.
+@MainActor
+final class SingleOracleSeedTests: XCTestCase {
+
+    private let allAdvice: [TrainingRegulation.Advice] = [.planAsIs, .lighter, .recover, .silent, .pending]
+
+    /// A slot that has earned its raise: 3×8 at 80 kg, twice, with progression on.
+    private func earnedSlot() -> RoutineExercise {
+        RoutineExercise(id: "a", routineId: "rt", exerciseId: "bench", position: 0,
+                        targetSets: 3, targetReps: 8, targetWeightKg: 80,
+                        restMode: .fixed, restSeconds: 90,
+                        progressionEnabled: true, progressionSessions: 2, progressionIncrementKg: 2.5)
+    }
+
+    private func earnedHistory() -> [(startTs: Int, weightKg: Double, reps: Int, optedOut: Bool)] {
+        [1, 2].flatMap { session in
+            (0..<3).map { _ in (startTs: session * 1000, weightKg: 80.0, reps: 8, optedOut: false) }
+        }
+    }
+
+    private func evaluate(_ advice: TrainingRegulation.Advice)
+        -> (state: ProgressionState, raise: ProgressionPlanner.Raise?)? {
+        ProgressionPlanner.evaluate(re: earnedSlot(), history: earnedHistory(),
+                                    inventory: [], equipment: nil, advice: advice)
+    }
+
+    // MARK: The rule, at the surface that renders it
+
+    /// «Hoy subes» is drawn ONLY from an applied raise (`waiting == false`). No advice that eases off
+    /// may ever produce one — this is the criterion, checked at the planner the hero reads.
+    func testNoEasingAdviceEverProducesAnAppliedRaise() {
+        for advice in allAdvice {
+            guard let result = evaluate(advice) else { return XCTFail("\(advice): no evaluation") }
+            let applied = result.raise.map { !$0.waiting } ?? false
+            XCTAssertEqual(applied, TrainingRegulation.allowsRaise(advice),
+                           "\(advice): applied raise must match the advice's permission")
+        }
+    }
+
+    /// A held raise is held, not lost: the kilo is still there, flagged as waiting, so the session can
+    /// offer it in one tap and the hero can name it.
+    func testHeldRaiseKeepsItsWeightAndIsFlagged() {
+        for advice in allAdvice where !TrainingRegulation.allowsRaise(advice) {
+            guard let result = evaluate(advice), let raise = result.raise else {
+                return XCTFail("\(advice): the earned raise must survive as an offer")
+            }
+            XCTAssertTrue(raise.waiting, "\(advice)")
+            XCTAssertEqual(raise.toKg, 82.5, accuracy: 0.0001, "\(advice)")
+            XCTAssertEqual(raise.fromKg, 80, accuracy: 0.0001, "\(advice)")
+            XCTAssertFalse(raise.phrase.isEmpty, "\(advice): a held raise still explains itself")
+            guard case .deferred = result.state else {
+                return XCTFail("\(advice): expected .deferred, got \(result.state)")
+            }
+        }
+    }
+
+    func testCleanDayAppliesTheRaise() {
+        guard let result = evaluate(.planAsIs), let raise = result.raise else {
+            return XCTFail("expected a raise")
+        }
+        XCTAssertFalse(raise.waiting)
+        XCTAssertEqual(raise.toKg, 82.5, accuracy: 0.0001)
+        guard case .readyToAdvance = result.state else {
+            return XCTFail("expected .readyToAdvance, got \(result.state)")
+        }
+    }
+
+    /// No usable read is not a reason to hold back what the log earned: the plan runs as written.
+    func testUnreadableDayStillAppliesTheRaise() {
+        guard let result = evaluate(.silent), let raise = result.raise else {
+            return XCTFail("expected a raise")
+        }
+        XCTAssertFalse(raise.waiting, "a silent day must not quietly withhold the raise")
+    }
+
+    // MARK: The seeding rule the owner decided
+
+    /// «Con ámbar o rojo la sesión se siembra con el peso de la última vez, y la subida queda a un
+    /// toque»: every work cell opens at 80, not 82.5, while the offer travels with the run.
+    func testHeldRaiseSeedsAtLastTimesWeight() {
+        guard let raise = evaluate(.lighter)?.raise else { return XCTFail("expected a held raise") }
+        let slot = StrengthSessionModel.PlanSlot(
+            re: earnedSlot(),
+            exercise: Exercise(id: "bench", name: "Bench", type: .weightReps, equipment: nil,
+                               primaryMuscles: [], secondaryMuscles: [], instructions: []),
+            lastSets: [SetEntry(id: "s1", sessionId: "s", exerciseId: "bench", position: 0,
+                                kind: .work, weightKg: 80, reps: 8, done: true, ts: 1000)],
+            raise: raise)
+        let session = StrengthSessionModel.make(routineId: "rt", routineName: "Push",
+                                                slots: [slot], startTs: 100)
+        let run = session.runs.first
+        XCTAssertEqual(run?.sets.count, 3)
+        for set in run?.sets ?? [] {
+            XCTAssertEqual(set.weightKg, 80, accuracy: 0.0001, "a held raise must not seed the table")
+        }
+        XCTAssertEqual(run?.proposedRaise?.toKg, 82.5, "the offer travels into the session")
+        XCTAssertEqual(run?.proposedRaise?.waiting, true)
+    }
+
+    /// An applied raise keeps seeding every work set, unchanged (FER-E, owner's decision: all sets).
+    func testAppliedRaiseStillSeedsEveryWorkSet() {
+        guard let raise = evaluate(.planAsIs)?.raise else { return XCTFail("expected a raise") }
+        let slot = StrengthSessionModel.PlanSlot(
+            re: earnedSlot(),
+            exercise: Exercise(id: "bench", name: "Bench", type: .weightReps, equipment: nil,
+                               primaryMuscles: [], secondaryMuscles: [], instructions: []),
+            lastSets: [SetEntry(id: "s1", sessionId: "s", exerciseId: "bench", position: 0,
+                                kind: .work, weightKg: 80, reps: 8, done: true, ts: 1000)],
+            raise: raise)
+        let session = StrengthSessionModel.make(routineId: "rt", routineName: "Push",
+                                                slots: [slot], startTs: 100)
+        for set in session.runs.first?.sets ?? [] {
+            XCTAssertEqual(set.weightKg, 82.5, accuracy: 0.0001, "every work set arrives at the new load")
+        }
+    }
+
+    /// The per-exercise opt-out («ignora mi recuperación aquí») still wins over the day's verdict.
+    func testPerExerciseOptOutIgnoresTheVerdict() {
+        var re = earnedSlot()
+        re.progressionIgnoreRecovery = true
+        let result = ProgressionPlanner.evaluate(re: re, history: earnedHistory(),
+                                                 inventory: [], equipment: nil, advice: .recover)
+        XCTAssertEqual(result?.raise?.waiting, false, "the opt-out keeps the raise on the log alone")
+    }
+}

@@ -80,8 +80,9 @@ private struct EntrenarLanding: View {
     @State private var exerciseCounts: [String: Int] = [:]
     /// Exercises whose earned raise seeds today's session (FER-G): name + proposed kg for the hero's «Hoy subes» line.
     @State private var raisesToday: [(name: String, kg: Double)] = []
-    /// Exercises whose earned raise is deferred by low recovery today (gate copy in the hero).
-    @State private var deferredToday: [String] = []
+    /// Exercises whose earned raise today's verdict is holding — with the weight that waits, so the
+    /// hero can name it and the athlete knows exactly what is one tap away in the session (FER-82).
+    @State private var deferredToday: [(name: String, kg: Double)] = []
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
     private var unitSystem: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
     /// Top primary muscles per routine (Spanish display labels), built from the same per-routine exercise
@@ -132,16 +133,10 @@ private struct EntrenarLanding: View {
     /// Monday-first display order in the Calendar weekday convention.
     private let orderedWeekdays = [2, 3, 4, 5, 6, 7, 1]
     private var todayWeekday: Int { Calendar.current.component(.weekday, from: Date()) }
-    private var recovery: Double? { repo.today?.recovery }
-    /// FER-82 «un solo oráculo»: Entrenar lee EL MISMO veredicto que Hoy pinta. `nil` = sin lectura
-    /// usable (sin permiso, sin noche grabada o baja señal) y entonces la sección calla: ni consejo,
-    /// ni frase, ni subida propuesta.
-    private var verdict: Preparedness.Verdict? { repo.todayPreparedness?.verdict }
-    /// Whether this build has a verdict source at all. False only in fixtures/previews without a
-    /// dashboard: the legacy recovery path then keeps working exactly as before.
-    private var hasVerdictSource: Bool { repo.todayPreparedness != nil }
-    /// What Entrenar advises today, from that one verdict.
-    private var advice: TrainingRegulation.Advice { TrainingRegulation.advice(for: verdict) }
+    /// FER-82 «un solo oráculo»: Entrenar advises from the SAME verdict Hoy is painting, resolved once
+    /// in `Repository.trainingAdvice`. There is no recovery-score fallback here on purpose — a second
+    /// source of truth is exactly what let this section contradict Hoy on the same day.
+    private var advice: TrainingRegulation.Advice { repo.trainingAdvice }
 
     var body: some View {
         // Fixed section rhythm in a plain ScrollView (FER-786 hotfix): the earlier GeometryReader +
@@ -229,7 +224,12 @@ private struct EntrenarLanding: View {
         // The guided strength session (FER-347) is now presented at the shell (`RootTabView`) as a
         // full-screen cover with a floating pill on all five tabs (FER-716), so it survives tab switches
         // and no longer needs a «Resume» row here. The session lives in AppModel.
-        .task { await load() }
+        //
+        // Keyed to the repository's publish counter (FER-82): the seed and the advice line must come
+        // from the SAME pass. On a cold start the verdict only lands with the full refresh, and an
+        // unkeyed `.task` left the prefetched raise frozen on the pre-verdict evaluation while the
+        // advice line (a computed property) already spoke the new verdict.
+        .task(id: repo.refreshSeq) { await load() }
         // The Daily Brief's «Hoy en tu plan» → «Empezar» lands here via TabRouter: start today's session
         // reusing the slots this view prefetched on load (FER-613). Consumed once; if we're not loaded yet,
         // defer until `load()` finishes.
@@ -459,15 +459,27 @@ private struct EntrenarLanding: View {
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                } else if !deferredToday.isEmpty {
-                    Text("The raise for \(deferredToday.joined(separator: ", ")) waits for your next session.")
-                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                } else if showsHeldRaise, !deferredToday.isEmpty {
+                    // FER-82: the raise is held, not lost. Name the weight that waits and open the
+                    // session, where taking it is one tap. Editing by hand is never blocked.
+                    Button { openRoutine(r.id) } label: {
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                            heldRaiseText
+                                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .fixedSize(horizontal: false, vertical: true)
+                            StrandIcon.disclosure.image
+                                .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                        }
+                        .frame(minHeight: 44)   // HIG tap target — the row is one thin subhead line (FER-944)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
                 }
-                if showsAdviceLine {
+                if let line = adviceLine {
                     HStack(spacing: 7) {
                         Rectangle().fill(theme.dataRecovery).frame(width: 2, height: 10)  // token-exempt: filete de dato
-                        Text(recoveryLine(recovery ?? 0))
+                        Text(line)
                             .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -525,18 +537,31 @@ private struct EntrenarLanding: View {
         return t
     }
 
+    /// «La subida de Press banca a 82,5 kg te espera · tómala en la sesión» — the held raise, named.
+    /// Same shape as `raiseText` but in reading ink: it is a fact being held, not a green go-ahead.
+    private var heldRaiseText: Text {
+        let parts = deferredToday.map { "\($0.name) · \(UnitFormatter.massFromKilograms($0.kg, system: unitSystem))" }
+        let strong = parts.map {
+            Text(verbatim: $0).font(InstrumentoType.grotesk(13, weight: .bold)).foregroundStyle(theme.ink)
+        }
+        var t = Text("The raise waits:") + Text(verbatim: " ")
+        for (i, s) in strong.enumerated() {
+            if i > 0 { t = t + Text(verbatim: " · ") }
+            t = t + s
+        }
+        return t + Text(verbatim: " ") + Text("You can take it in the session.")
+    }
+
     // MARK: - ② Suggestion (engine is FER-532 — TrainingRegulation.lightAlternative)
     //
     // A CONTEXTUAL lighter/heavier alternative, derived from today's recovery against your personal
     // baseline. Within the normal band or with no signal the engine returns nil and the row falls back to
     // an INFORMATIONAL placeholder (FER-559) — not tappable, no destination.
 
-    /// The gentler option, from the ONE oracle. Without a verdict source we fall back to the legacy
-    /// recovery path so previews and fixtures keep behaving; with one, the verdict decides alone.
+    /// The gentler option, from the ONE oracle: only «Recupera» offers one. Silent and pending states
+    /// return nil, so the row hides instead of inventing a direction from a score.
     private var suggestionAlternative: TrainingRegulation.LightAlternative? {
-        hasVerdictSource
-            ? TrainingRegulation.lightAlternative(verdict: verdict)
-            : TrainingRegulation.lightAlternative(recovery: recovery)
+        TrainingRegulation.lightAlternative(advice)
     }
 
     @ViewBuilder private var suggestionRow: some View {
@@ -1281,29 +1306,19 @@ private struct EntrenarLanding: View {
         return String(localized: "Today · \(day)")
     }
 
-    /// Whether the hero shows its one-line advice at all. With the single oracle, `.silent` (no
-    /// usable read, no permission, low signal) means the section says NOTHING rather than falling back
-    /// to a number. Without a verdict source we keep the old gate on the recovery score.
-    private var showsAdviceLine: Bool {
-        hasVerdictSource ? advice != .silent : recovery != nil
-    }
+    /// Whether the hero may explain a held raise. Silence must be total: with no usable read (or none
+    /// yet) the section neither advises nor announces a raise it is holding.
+    private var showsHeldRaise: Bool { TrainingRegulation.explainsHeldRaise(advice) }
 
     /// The one-line advice under the hero. FER-82: it says exactly what the verdict Hoy showed says,
-    /// in the same four voices, so the two screens can never disagree. `.silent` shows nothing.
-    private func recoveryLine(_ rec: Double) -> String {
-        guard hasVerdictSource else {
-            // Legacy path (no verdict source): keep the score-driven copy for fixtures/previews.
-            switch TrainingRegulation.suggest(recovery: rec)?.reason {
-            case .recoveryHigh: return String(localized: "Recovery high for you · you can take on your full plan.")
-            case .recoveryLow:  return String(localized: "Recovery low for you · maybe ease the volume today.")
-            default:            return String(localized: "Recovery in your range · train at your usual load.")
-            }
-        }
+    /// in the same words, so the two screens can never disagree. Silent and pending show nothing —
+    /// there is no score to fall back to, by design.
+    private var adviceLine: String? {
         switch advice {
         case .planAsIs: return String(localized: "In range · your plan for today, as it is.")
-        case .lighter:  return String(localized: "Take it easy today · lighter, don't go up.")
+        case .lighter:  return String(localized: "Go light today · don't add weight.")
         case .recover:  return String(localized: "Recover · easy today, or rest.")
-        case .silent:   return ""
+        case .silent, .pending: return nil
         }
     }
 
@@ -1345,23 +1360,21 @@ private struct EntrenarLanding: View {
             // FER-E/G: «la última vez» + progression per slot, via the ONE `sessionSeed` implementation
             // the «Rutina» editor also calls — the raise the hero names is exactly the raise it seeds.
             let inventory = await MainActor.run { PlatesStore().inventory }
-            let recovery = repo.today?.recovery
             var raising: [(name: String, kg: Double)] = []
-            var deferredNames: [String] = []
+            var held: [(name: String, kg: Double)] = []
             for re in exs {
                 let ex = (ExerciseCatalog.byID(re.exerciseId) ?? customByID[re.exerciseId])?.applying(overrides)
-                let seed = await repo.sessionSeed(re: re, exercise: ex, inventory: inventory,
-                                                  recovery: recovery, verdict: verdict,
-                                                  hasVerdictSource: hasVerdictSource)
-                if let result = seed.evaluation {
+                let seed = await repo.sessionSeed(re: re, exercise: ex, inventory: inventory)
+                if let raise = seed.evaluation?.raise {
                     let name = ex.map(StrengthDisplay.name) ?? re.exerciseId
-                    if let raise = result.raise { raising.append((name: name, kg: raise.toKg)) }
-                    else if case .deferred = result.state { deferredNames.append(name) }
+                    // One evaluation, two readings: applied to the seed, or held by today's verdict.
+                    if raise.waiting { held.append((name: name, kg: raise.toKg)) }
+                    else { raising.append((name: name, kg: raise.toKg)) }
                 }
                 slots.append(.init(re: re, exercise: ex, lastSets: seed.lastSets, raise: seed.evaluation?.raise))
             }
             raisesToday = raising
-            deferredToday = deferredNames
+            deferredToday = held
         }
         routines = rs
         exerciseCounts = counts
@@ -1418,9 +1431,14 @@ private struct DiscPressStyle: ButtonStyle {
 // MARK: - «Hoy descansas. También cuenta.» (v3 · 2B) — a PUSHED screen now (FER-718)
 //
 // What «Empezar» opens on a rest day, and what the streak row protects. Reframed to the mock: the streak
-// is explicitly SAFE (resting does not break it), a card «Sugerido por tu recuperación» carries the one
-// cited light alternative (`TrainingRegulation.lightAlternative` — the only solid gate), a quieter «Si aun
-// así quieres entrenar» section lists the other ways, and a footer names tomorrow's routine from the split.
+// is explicitly SAFE (resting does not break it), a card carries the one cited light alternative, a
+// quieter «Si aun así quieres entrenar» section lists the other ways, and a footer names tomorrow's
+// routine from the split.
+//
+// FER-82: that card now speaks from the SAME verdict as Hoy and the landing (`repo.trainingAdvice`).
+// It used to read the 0–100 score, which meant a rest day could offer an OPTIONAL EXTRA session while
+// Hoy was painting «Recupera» — a second oracle, inside Entrenar, recommending the one thing the new
+// mapping says it must never recommend. Only «Recupera» surfaces a suggestion here now.
 
 struct RestDayScreen: View {
     var openIntervals: () -> Void
@@ -1436,9 +1454,9 @@ struct RestDayScreen: View {
     /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
     @ObserveInjection private var inject
 
-    private var recovery: Double? { repo.today?.recovery }
+    /// The gentler option, from the one oracle: present only when today's verdict is «Recupera».
     private var alt: TrainingRegulation.LightAlternative? {
-        TrainingRegulation.lightAlternative(recovery: recovery)
+        TrainingRegulation.lightAlternative(repo.trainingAdvice)
     }
 
     var body: some View {
@@ -1452,15 +1470,17 @@ struct RestDayScreen: View {
 
                 streakBullet.padding(.top, 16)
 
-                if let alt {
-                    suggestedCard(alt).padding(.top, CenitMetrics.sectionGap)
+                if alt == .softer {
+                    suggestedCard.padding(.top, CenitMetrics.sectionGap)
                 }
 
                 Text("If you still want to train").instrumentoOverline()
                     .foregroundStyle(theme.inkTertiary).padding(.top, CenitMetrics.sectionGap)
                 VStack(spacing: 0) {
+                    // Mobility moves up into the card when the day suggests it; the rest of the ways
+                    // to move are always here, because this list is a choice, not a recommendation.
                     if alt != .softer { row("figure.cooldown", "Mobility · 20 min") { model.startMobilityOneOff() } }
-                    if alt != .optionalLight { row("timer", "Intervals · 12 min") { openIntervals() } }
+                    row("timer", "Intervals · 12 min") { openIntervals() }
                     row("list.bullet", "Pick a routine") { openRoutines() }
                     row("wind", "Breathe", last: true) { openBreathe() }
                 }
@@ -1493,21 +1513,21 @@ struct RestDayScreen: View {
         }
     }
 
-    /// The one cited light alternative, in a card — the only solid recovery gate we surface here.
-    private func suggestedCard(_ alt: TrainingRegulation.LightAlternative) -> some View {
-        let name: LocalizedStringKey = alt == .softer ? "Mobility · 20 min" : "Intervals · 12 min"
-        let tag: LocalizedStringKey = alt == .softer ? "gentle" : "extra"
-        return VStack(alignment: .leading, spacing: 0) {
-            Text("Suggested by your recovery").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+    /// The one cited light alternative, in a card. Shown only when today's verdict is «Recupera», so
+    /// there is a single case to render: the gentler session. The overline names the day's verdict,
+    /// not a score — the same word Hoy is showing (FER-82).
+    private var suggestedCard: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Because today you recover").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             HStack(alignment: .firstTextBaseline, spacing: 9) {
-                Text(name).font(StrandFont.title2).foregroundStyle(theme.ink)
-                Text(tag).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                Text("Mobility · 20 min").font(StrandFont.title2).foregroundStyle(theme.ink)
+                Text("gentle").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                     .padding(.horizontal, 9).padding(.vertical, 2)
                     .background(theme.paper, in: Capsule())
                     .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
             }
             .padding(.top, 5)
-            StrandCTAButton("Empezar") { if alt == .softer { model.startMobilityOneOff() } else { openIntervals() } }
+            StrandCTAButton("Empezar") { model.startMobilityOneOff() }
                 .padding(.top, 14)
         }
         .padding(CenitMetrics.cardPadding)

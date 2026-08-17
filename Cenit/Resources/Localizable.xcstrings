@@ -37878,6 +37878,116 @@
         }
       }
     },
+    "Go light today · don't add weight." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoy ve leve · no subas el peso"
+          }
+        }
+      }
+    },
+    "The raise waits:" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Te espera la subida:"
+          }
+        }
+      }
+    },
+    "You can take it in the session." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Puedes tomarla en la sesión."
+          }
+        }
+      }
+    },
+    "Because today you recover" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Porque hoy recuperas"
+          }
+        }
+      }
+    },
+    "The raise to %@ waits for a day in range. You can take it anyway." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La subida a %@ espera un día en rango. Puedes tomarla de todos modos."
+          }
+        }
+      }
+    },
+    "What rose, what waits for a day in range, and what stalled." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lo que subió, lo que espera un día en rango y lo que se estancó."
+          }
+        }
+      }
+    },
+    "%@ waits" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ espera"
+          }
+        }
+      }
+    },
+    "raise" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "subir"
+          }
+        }
+      }
+    },
+    "The raise to %@ waits for a day in range" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La subida a %@ espera un día en rango"
+          }
+        }
+      }
+    },
+    "Raises every work set to that weight" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sube todas las series de trabajo a ese peso"
+          }
+        }
+      }
+    },
     "In range · your plan for today, as it is." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -37896,68 +38006,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Recupera · hoy suave o descansa"
-          }
-        }
-      }
-    },
-    "Take it easy today · lighter, don't go up." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hoy ve leve · hoy más suave, no subas"
-          }
-        }
-      }
-    },
-    "Recovery high for you · you can take on your full plan." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recovery high for you · you can take on your full plan."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recuperación alta para ti · puedes con tu plan completo."
-          }
-        }
-      }
-    },
-    "Recovery in your range · train at your usual load." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recovery in your range · train at your usual load."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recuperación en tu rango · entrena con tu carga de siempre."
-          }
-        }
-      }
-    },
-    "Recovery low for you · maybe ease the volume today." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recovery low for you · maybe ease the volume today."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recuperación baja para ti · quizá baja el volumen hoy."
           }
         }
       }
@@ -44561,22 +44609,6 @@
         }
       }
     },
-    "Suggested by your recovery" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Suggested by your recovery"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sugerido por tu recuperación"
-          }
-        }
-      }
-    },
     "Suggested for you" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -46166,39 +46198,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "La unidad del plan no es compatible, debe ser kg o lb."
-          }
-        }
-      }
-    },
-    "The raise for %@ waits for your next session." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The raise for %@ waits for your next session."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La subida de %@ espera a tu próxima sesión."
-          }
-        }
-      }
-    },
-    "The raise to %@ waits for your next session: recovery ran low." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The raise to %@ waits for your next session: recovery ran low."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La subida a %@ espera tu próxima sesión: la recuperación quedó baja."
           }
         }
       }
@@ -51000,17 +50999,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Qué mueve tu esfuerzo"
-          }
-        }
-      }
-    },
-    "What rose, what waits on recovery, and what stalled." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lo que subió, lo que espera recuperación y lo que se estancó."
           }
         }
       }

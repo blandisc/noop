@@ -2338,7 +2338,9 @@ struct LiveStrengthSheet: View {
             // arithmetic card; green because the raise IS the datum.
             if let raise = run.proposedRaise {
                 raiseLine(raise, ei: ei)
-                if whyRaiseOpen.contains(run.id) { whyRaiseCard(raise, ei: ei) }
+                // The arithmetic card belongs to an APPLIED raise: while the day is holding it, the
+                // line's tap takes the raise instead of opening an explanation (FER-82).
+                if !raise.waiting, whyRaiseOpen.contains(run.id) { whyRaiseCard(raise, ei: ei) }
             }
             HStack(spacing: 8) {
                 restChip(run, ei: ei)
@@ -2635,8 +2637,13 @@ struct LiveStrengthSheet: View {
 
     // MARK: Proposed raise (FER-E)
 
+    /// The raise, named where you train. Two readings of the same earned kilo (FER-82):
+    ///   • applied — «↑ hoy 102,5 · por qué», green, because the raise IS today's datum;
+    ///   • held by the day's verdict — «↑ 102,5 te espera · subir», in reading ink, and the tap TAKES
+    ///     it instead of explaining it. Advisory to the end: the app holds, the athlete decides.
     private func raiseLine(_ raise: ProgressionPlanner.Raise, ei: Int) -> some View {
         Button {
+            if raise.waiting { takeRaise(ei: ei); return }
             withAnimation(StrandMotion.interactive) {
                 let id = session.runs[ei].id
                 if whyRaiseOpen.contains(id) { whyRaiseOpen.remove(id) } else { whyRaiseOpen.insert(id) }
@@ -2645,19 +2652,40 @@ struct LiveStrengthSheet: View {
             HStack(spacing: 5) {
                 StrandIcon.up.image
                     .font(StrandFont.glyph(.chevron, weight: .bold))
-                Text("today \(massText(raise.toKg))")
+                Text(raise.waiting ? "\(massText(raise.toKg)) waits" : "today \(massText(raise.toKg))")
                     .font(InstrumentoType.grotesk(12, weight: .bold)).monospacedDigit()
                 Text("·").foregroundStyle(theme.inkTertiary)
-                Text("why")
+                Text(raise.waiting ? "raise" : "why")
                     .font(InstrumentoType.grotesk(12, weight: .bold))
                     .underline(pattern: .dot, color: theme.dataRecovery.opacity(0.55))   // token-exempt: subrayado punteado decorativo
             }
-            .foregroundStyle(theme.dataRecovery)
+            .foregroundStyle(raise.waiting ? theme.ink : theme.dataRecovery)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(Text("Today you raise to \(massText(raise.toKg))"))
-        .accessibilityHint(Text("Shows why, with your real dates"))
+        .accessibilityLabel(raise.waiting
+                            ? Text("The raise to \(massText(raise.toKg)) waits for a day in range")
+                            : Text("Today you raise to \(massText(raise.toKg))"))
+        .accessibilityHint(raise.waiting
+                           ? Text("Raises every work set to that weight")
+                           : Text("Shows why, with your real dates"))
+        // Fires only when THIS line's held raise is taken (the flag flips on this exercise).
+        .sensoryFeedback(.success, trigger: raise.waiting)
+    }
+
+    /// Take a held raise (FER-82): every UNDONE work set moves to the proposed weight — the same
+    /// all-work-sets rule an applied raise seeds with — and the line turns into the usual green
+    /// «hoy X · por qué». Done sets keep what was actually lifted. Mirror of `revertRaise`.
+    private func takeRaise(ei: Int) {
+        guard session.runs.indices.contains(ei),
+              let raise = session.runs[ei].proposedRaise, raise.waiting else { return }
+        withAnimation(StrandMotion.interactive) {
+            for si in session.runs[ei].sets.indices
+            where !session.runs[ei].sets[si].done && session.runs[ei].sets[si].kind == .work {
+                session.runs[ei].sets[si].weightKg = raise.toKg
+            }
+            session.runs[ei].proposedRaise?.waiting = false
+        }
     }
 
     /// The «por qué» block (WhyRaiseCard, handoff 2b): connection surface, 2.5pt green bar, the arithmetic

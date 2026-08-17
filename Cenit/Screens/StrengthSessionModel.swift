@@ -913,7 +913,10 @@ final class StrengthSessionModel: ObservableObject {
                 // the proposed weight (double progression trains all work sets at one load).
                 // Regla fantasma (decisión Fer, FER-952): «si no lleno nada, que sea lo mismo que la
                 // anterior» — la última vez gana al plan; la subida ganada (FER-E) sigue primero.
-                let weight = (type == .weightReps ? slot.raise?.toKg : nil) ?? lastWeight ?? p.weightKg ?? 0
+                // FER-82: a raise the day is HOLDING (`waiting`) does not seed — the table opens at
+                // last time's weight and the raise is offered inside the session, one tap away.
+                let earned = (type == .weightReps && slot.raise?.waiting == false) ? slot.raise?.toKg : nil
+                let weight = earned ?? lastWeight ?? p.weightKg ?? 0
                 let reps = usesReps ? (lastReps ?? p.reps ?? 8) : 0
                 // FER-715: keep the planned `RoutineSet` id (so a per-set rest edit can persist back to the
                 // routine) and carry the set's own rest override (nil = inherit the exercise at rest time).

@@ -404,7 +404,7 @@ struct WorkoutHistoryScreen: View {
                     .padding(.vertical, 4)
                     .accessibilityElement(children: .combine)
                 }
-                BarraAncla(String(localized: "What rose, what waits on recovery, and what stalled."),
+                BarraAncla(String(localized: "What rose, what waits for a day in range, and what stalled."),
                            color: theme.dataRecovery, theme: theme)
             }
         }
@@ -776,7 +776,6 @@ struct WorkoutHistoryScreen: View {
     /// ExerciseDetailScreen), classified into raised / deferred / stalled. Cap ~6 rows.
     private func loadProgressionRows() async -> [ProgressionRow] {
         let inventory = await MainActor.run { PlatesStore().inventory }
-        let recovery = repo.today?.recovery
         let routines = await repo.routines()
         var seen = Set<String>()
         var slots: [RoutineExercise] = []
@@ -789,7 +788,7 @@ struct WorkoutHistoryScreen: View {
         var rows: [ProgressionRow] = []
         for re in slots {
             let ex = await repo.resolvedExercise(re.exerciseId)
-            let seed = await repo.sessionSeed(re: re, exercise: ex, inventory: inventory, recovery: recovery)
+            let seed = await repo.sessionSeed(re: re, exercise: ex, inventory: inventory)
             guard let eval = seed.evaluation else { continue }
             let name = ex.map(StrengthDisplay.name) ?? re.exerciseId
             switch eval.state {
