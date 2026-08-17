@@ -213,6 +213,35 @@ final class SingleOracleSeedTests: XCTestCase {
         }
     }
 
+
+    /// La cadena completa del hallazgo más feo del gate: tomar la subida a media sesión, guardar, y
+    /// evaluar la SIGUIENTE sesión. El peso de origen tiene que seguir siendo el del ciclo (80), no
+    /// el peso tope de la sesión mixta (82.5), o la tabla del día siguiente abriría en el peso subido
+    /// justo en un día que retiene la subida.
+    func testAMixedSessionDoesNotBecomeTheNewCycleWeight() {
+        let mixed: [(startTs: Int, weightKg: Double, reps: Int, optedOut: Bool)] =
+            earnedHistory() + [
+                (startTs: 3000, weightKg: 80.0, reps: 8, optedOut: true),
+                (startTs: 3000, weightKg: 82.5, reps: 8, optedOut: true),
+                (startTs: 3000, weightKg: 82.5, reps: 8, optedOut: true),
+            ]
+        let result = ProgressionPlanner.evaluate(re: earnedSlot(), history: mixed,
+                                                 inventory: [], equipment: nil, advice: .recover)
+        guard let raise = result?.raise else { return XCTFail("expected the raise to still be offered") }
+        XCTAssertEqual(raise.fromKg, 80, accuracy: 0.0001, "the cycle weight is still 80")
+        XCTAssertEqual(raise.toKg, 82.5, accuracy: 0.0001)
+        XCTAssertTrue(raise.waiting, "a recover day still holds it")
+        XCTAssertFalse(raise.phrase.contains("—"), "the why keeps its real dates")
+    }
+
+    /// «No subas el peso» no es «no entrenes»: solo «Recupera» cierra una pantalla.
+    func testOnlyRecoverGatesTraining() {
+        XCTAssertTrue(TrainingRegulation.gatesTraining(.recover))
+        for advice in allAdvice where advice != .recover {
+            XCTAssertFalse(TrainingRegulation.gatesTraining(advice), "\(advice) must not gate training")
+        }
+    }
+
     // MARK: The offer survives a crash
 
     private func sessionWith(_ raise: ProgressionPlanner.Raise?) -> StrengthSessionModel {

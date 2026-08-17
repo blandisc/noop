@@ -76,7 +76,10 @@ struct MuscleMapScreen: View {
     ///
     /// The pure engine keeps its `recovery` parameter (E11 owns that API); here it is always fed
     /// `nil` so no score gate applies, and the verdict gate is applied at the call site.
-    private var systemicGate: Bool { !TrainingRegulation.allowsRaise(repo.trainingAdvice) }
+    /// Solo «Recupera» cierra la pantalla. «Hoy ve leve» retiene el PESO, no el entrenamiento, y un
+    /// veredicto que solo va tarde (`pending`) no afirma nada: sería inventar un descanso que nadie
+    /// ha dictaminado, y encima sin explicación porque la viñeta calla en ese estado.
+    private var systemicGate: Bool { TrainingRegulation.gatesTraining(repo.trainingAdvice) }
 
     private var loads: [MuscleFatigueMap.MuscleLoad] {
         MuscleFatigueMap.loads(events: events)
@@ -217,7 +220,7 @@ struct MuscleMapScreen: View {
         case .planAsIs: return "In range · today's gate doesn't hold you back."
         case .lighter:  return "Go light today · keep it moderate."
         case .recover:  return "Recover · today calls for rest or something gentle."
-        case .silent:   return "No reading today · the map shows muscle load only."
+        case .silent:   return "No reading today · the map goes by your log."
         case .pending:  return nil
         }
     }

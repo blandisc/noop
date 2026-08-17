@@ -17123,18 +17123,13 @@
         }
       }
     },
-    "Each set adds load to the muscles it works, decaying by half every two days: the time course of muscle protein synthesis (MacDougall 1995; Damas 2015). Color is relative to your most-loaded muscle, so it reads which of your muscles are hot right now. Weekly volume is judged against the 10–20 sets-per-week band (Schoenfeld 2017), a hypertrophy guide per muscle group; the volume shown is weighted by involvement, so secondary muscles count less. The recommendation crosses this with your recovery: a low-recovery day gates everything to rest." : {
+    "Each set adds load to the muscles it works, decaying by half every two days: the time course of muscle protein synthesis (MacDougall 1995; Damas 2015). Color is relative to your most-loaded muscle, so it reads which of your muscles are hot right now. Weekly volume is judged against the 10–20 sets-per-week band (Schoenfeld 2017), a hypertrophy guide per muscle group; the volume shown is weighted by involvement, so secondary muscles count less. The recommendation crosses this with today's verdict, the same one Hoy shows: a day that asks you to ease off gates everything to rest." : {
+      "extractionState" : "manual",
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Each set adds load to the muscles it works, decaying by half every two days: the time course of muscle protein synthesis (MacDougall 1995; Damas 2015). Color is relative to your most-loaded muscle, so it reads which of your muscles are hot right now. Weekly volume is judged against the 10–20 sets-per-week band (Schoenfeld 2017), a hypertrophy guide per muscle group; the volume shown is weighted by involvement, so secondary muscles count less. The recommendation crosses this with your recovery: a low-recovery day gates everything to rest."
-          }
-        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cada serie suma carga a los músculos que trabaja y decae a la mitad cada dos días: el curso temporal de la síntesis de proteína muscular (MacDougall 1995; Damas 2015). El color es relativo a tu músculo más cargado, así que lee cuáles de tus músculos están calientes ahora. El volumen semanal se juzga contra la banda de 10–20 series por semana (Schoenfeld 2017), una guía de hipertrofia por grupo muscular; el volumen mostrado está ponderado por involucramiento, así que los músculos secundarios cuentan menos. La recomendación lo cruza con tu recuperación: un día de recuperación baja lo manda todo a descanso."
+            "value" : "Cada serie suma carga a los músculos que trabaja y decae a la mitad cada dos días: el curso temporal de la síntesis de proteína muscular (MacDougall 1995; Damas 2015). El color es relativo a tu músculo más cargado, así que lee cuáles de tus músculos están calientes ahora. El volumen semanal se juzga contra la banda de 10–20 series por semana (Schoenfeld 2017), una guía de hipertrofia por grupo muscular; el volumen mostrado está ponderado por involucramiento, así que los músculos secundarios cuentan menos. La recomendación lo cruza con el veredicto de hoy, el mismo que muestra Hoy: un día que te pide bajarle lo manda todo a descanso."
           }
         }
       }
@@ -37909,13 +37904,13 @@
         }
       }
     },
-    "No reading today · the map shows muscle load only." : {
+    "No reading today · the map goes by your log." : {
       "extractionState" : "manual",
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hoy sin lectura · el mapa solo muestra la carga muscular."
+            "value" : "Hoy sin lectura · el mapa va por tu registro."
           }
         }
       }
@@ -37927,6 +37922,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "El veredicto de hoy pide bajarle: descansa o entrena suave."
+          }
+        }
+      }
+    },
+    "You took it mid-exercise, so this session doesn't count toward the cycle: neither a hit nor a miss." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La tomaste a media sesión, así que esta sesión no cuenta para el ciclo: ni acierto ni fallo."
           }
         }
       }

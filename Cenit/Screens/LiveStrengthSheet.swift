@@ -2709,6 +2709,14 @@ struct LiveStrengthSheet: View {
                 Text("Goal today: \(session.runs[ei].sets.count)×\(session.runs[ei].sets.first?.reps ?? 0) with the new weight. Losing a rep or two on a raise is normal; you win them back in 1 or 2 sessions.")
                     .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
+                // FER-82: tomarla a media sesión mezcla dos pesos, así que el ciclo ignora la sesión
+                // (ni acierto ni fallo). Decirlo es parte del trato: el atleta no puede descubrirlo
+                // mañana en «lo que se estancó».
+                if session.runs[ei].raiseOptedOut {
+                    Text("You took it mid-exercise, so this session doesn't count toward the cycle: neither a hit nor a miss.")
+                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 HStack(spacing: 18) {
                     Button { withAnimation(StrandMotion.interactive) { _ = whyRaiseOpen.remove(session.runs[ei].id) } } label: {
                         Text("Keep \(massText(raise.toKg))")
@@ -3554,11 +3562,14 @@ struct LiveStrengthSheet: View {
         }
         .background(theme.paper)
         .safeAreaInset(edge: .top, spacing: 0) { liveHead }
-        // Keyed to the repository pass (FER-82): the suggestions are gated by today's verdict, so a
-        // panel opened while it was still being computed would stay empty for the whole session.
-        // Recomputing on a new pass costs one bounded read and is the same rule the other three
-        // verdict-reading screens follow.
-        .task(id: model.repo.refreshSeq) {
+        // FER-82: las sugerencias las gatea el veredicto, así que una lista calculada mientras el
+        // veredicto todavía se computaba está vencida en cuanto aterriza. Se recalcula cuando el
+        // consejo con el que se calculó ya no es el de hoy.
+        //
+        // Deliberadamente NO se llavea a `repo.refreshSeq`: esta hoja no observa `Repository` (llega
+        // por `model`), así que la llave no cambiaría sola y sería un arreglo de mentira. Con `.task`
+        // a secas se recalcula cada vez que el panel aparece, que es cuando el usuario lo lee.
+        .task {
             guard freshSuggestions == nil || suggestionsAdvice != model.repo.trainingAdvice else { return }
             await loadFreshSuggestions()
         }
@@ -3600,7 +3611,6 @@ struct LiveStrengthSheet: View {
     /// user has history for), plus a note naming the single most-loaded muscle the picks are avoiding.
     private func loadFreshSuggestions() async {
         let advice = model.repo.trainingAdvice
-        suggestionsAdvice = advice
         let cal = Calendar.current
         guard let since = cal.date(byAdding: .day, value: -84, to: cal.startOfDay(for: Date())) else { return }
         let sinceTs = Int(since.timeIntervalSince1970)
@@ -3617,9 +3627,11 @@ struct LiveStrengthSheet: View {
         // ejercicio, ese músculo está fresco» on a day Entrenar is saying «Recupera» was the old second
         // oracle, alive inside the session. The score keeps deciding per-muscle freshness (that is what
         // it measures); whether to suggest ADDING work at all is the verdict's call.
-        let freshMuscles = TrainingRegulation.allowsRaise(advice)
-            ? MuscleFatigueMap.recommendation(loads: loads, recovery: recovery).readyMuscles
-            : []
+        // Igual que el mapa (MuscleMapScreen): el motor recibe `nil` —ningún gate por score— y la
+        // compuerta sistémica la pone el veredicto aquí. Solo «Recupera» corta las sugerencias.
+        let freshMuscles = TrainingRegulation.gatesTraining(advice)
+            ? []
+            : MuscleFatigueMap.recommendation(loads: loads, recovery: nil).readyMuscles
         var picked: [(exercise: Exercise, muscle: String)] = []
         var usedExerciseIds: Set<String> = []
         for muscle in freshMuscles {
@@ -3631,6 +3643,9 @@ struct LiveStrengthSheet: View {
         }
         // The per-exercise "last time" lookups are independent JOINs — run them concurrently, not one
         // await per loop iteration.
+        // El consejo se sella JUNTO con el resultado, no antes de las lecturas: si se marcara al
+        // entrar, una pasada abortada dejaría el sello puesto y la sección no se recalcularía nunca.
+        suggestionsAdvice = advice
         freshSuggestions = await withTaskGroup(of: QuickSuggestion.self) { group in
             for (ex, muscle) in picked {
                 group.addTask {

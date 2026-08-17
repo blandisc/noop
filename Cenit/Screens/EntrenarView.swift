@@ -388,11 +388,13 @@ private struct EntrenarLanding: View {
         // a verdict the screen has already stopped showing. Exactly one retry, never a loop.
         if let seeded = slotsAdvice, seeded != repo.trainingAdvice {
             Task {
-                // Only start on a rebuild that actually published. If it gave up (store down, or a
-                // third publish landed mid-rebuild), open the routine editor instead of starting a
-                // session on a table seeded under a verdict the screen no longer shows.
-                if await load(), slotsAdvice == repo.trainingAdvice { startTodayNow(r) }
-                else { openRoutine(r.id) }
+                // Un intento de reconstrucción, y luego SE ARRANCA pase lo que pase: el usuario pidió
+                // entrenar y el tap no se puede convertir en otra pantalla. Si la reconstrucción no
+                // publicó, la tabla que sigue en pie está sembrada de forma conservadora (con el peso
+                // anterior) y la subida sigue a un toque dentro de la sesión: nunca se entrena de más
+                // por esta ruta, solo, a lo sumo, de menos.
+                _ = await load()
+                startTodayNow(r)
             }
             return
         }
@@ -553,8 +555,12 @@ private struct EntrenarLanding: View {
     /// «Hoy subes Press banca · 82,5 kg y Press militar · 26 kg» — the names+loads in the raise green.
     private var raiseText: Text {
         let parts = raisesToday.map { "\($0.name) · \(UnitFormatter.massFromKilograms($0.kg, system: unitSystem))" }
+        // Grotesk RELATIVO al subhead, igual que su fila hermana: las dos pueden estar en pantalla a
+        // la vez y con Dynamic Type una crecía y la otra se quedaba clavada en 13 pt.
         let strong = parts.map {
-            Text(verbatim: $0).font(InstrumentoType.grotesk(13, weight: .bold)).foregroundStyle(theme.dataRecovery)
+            Text(verbatim: $0)
+                .font(InstrumentoType.groteskNumber(13, weight: .bold, relativeTo: .subheadline))
+                .foregroundStyle(theme.dataRecovery)
         }
         var t = Text("Today you raise") + Text(verbatim: " ")
         for (i, s) in strong.enumerated() {
@@ -1435,9 +1441,10 @@ private struct EntrenarLanding: View {
         }
         let recent = (try? await store.recentSessions(limit: 200)) ?? []
         // Every read is done: from here on there is no await, so the publish below is atomic. A pass
-        // that lost the race drops its work — but it must still leave the screen usable, so `loaded`
-        // is set either way (the winning pass owns the data; this one only owes the user a screen).
-        guard seq == repo.refreshSeq else { loaded = true; return false }
+        // that lost the race drops its work y NO toca `loaded`: el pase ganador ya está en vuelo y lo
+        // encenderá con datos. Encenderlo aquí pintaba el estado de PRIMER USO («Empecemos por tu
+        // plan») a alguien que sí tiene plan — cambiar un parpadeo en blanco por una mentira.
+        guard seq == repo.refreshSeq else { return false }
         raisesToday = raisingToday
         deferredToday = heldToday
         slotsAdvice = passAdvice

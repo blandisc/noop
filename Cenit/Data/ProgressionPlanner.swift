@@ -78,9 +78,16 @@ enum ProgressionPlanner {
         case .deferred(let kg):       newKg = kg; waiting = true
         default: return (state, nil)
         }
-        guard let fromKg = sessions.last?.session.workingKg else { return (state, nil) }
+        // FER-82: TODO lo que se muestra sale de las sesiones que el ciclo ve. Una sesión marcada
+        // opt-out (se tomó la subida a media sesión, o se pulsó «Volver a X») tiene como peso tope el
+        // NUEVO: leerla aquí devolvía fromKg = toKg —la siguiente sesión sembraba el peso subido
+        // incluso en un día que retiene la subida— y cortaba la racha de fechas, dejando la frase
+        // del «por qué» sin ninguna («Hiciste 3×8 con 82.5 kg el —»). El clasificador ya las ignora;
+        // estas dos derivaciones también.
+        let visible = sessions.filter { !$0.session.optedOut }
+        guard let fromKg = visible.last?.session.workingKg else { return (state, nil) }
         // The qualifying dates: the trailing run of met sessions at the current weight, oldest first.
-        let met = sessions.reversed().prefix {
+        let met = visible.reversed().prefix {
             abs($0.session.workingKg - fromKg) < 0.0001 &&
             $0.session.workSetReps.count >= targetSets &&
             $0.session.workSetReps.allSatisfy { $0 >= targetReps }

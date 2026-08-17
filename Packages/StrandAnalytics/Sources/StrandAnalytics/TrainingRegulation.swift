@@ -118,6 +118,15 @@ public enum TrainingRegulation {
         }
     }
 
+    /// Whether the day asks you to STOP, not merely to hold the weight. Only `.recover` does.
+    ///
+    /// This is a different question from `allowsRaise`, and conflating them is a mistake worth
+    /// naming: «no subas el peso» is not «no entrenes». The muscle map read `!allowsRaise` as its
+    /// systemic gate and ended up shouting «hoy toca descanso» on a `.lighter` morning while its own
+    /// bullet said «hoy ve leve» ten points below — a second oracle again, in a different tone.
+    /// `.pending` never gates: a verdict that is merely late must not close a screen.
+    public static func gatesTraining(_ advice: Advice) -> Bool { advice == .recover }
+
     /// Whether Entrenar has anything to say about the day at all. Silence is a real answer here:
     /// without a usable read the section shows no advice line rather than falling back to a number.
     public static func speaks(_ advice: Advice) -> Bool {
