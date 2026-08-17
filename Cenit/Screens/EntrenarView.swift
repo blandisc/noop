@@ -133,6 +133,15 @@ private struct EntrenarLanding: View {
     private let orderedWeekdays = [2, 3, 4, 5, 6, 7, 1]
     private var todayWeekday: Int { Calendar.current.component(.weekday, from: Date()) }
     private var recovery: Double? { repo.today?.recovery }
+    /// FER-82 «un solo oráculo»: Entrenar lee EL MISMO veredicto que Hoy pinta. `nil` = sin lectura
+    /// usable (sin permiso, sin noche grabada o baja señal) y entonces la sección calla: ni consejo,
+    /// ni frase, ni subida propuesta.
+    private var verdict: Preparedness.Verdict? { repo.todayPreparedness?.verdict }
+    /// Whether this build has a verdict source at all. False only in fixtures/previews without a
+    /// dashboard: the legacy recovery path then keeps working exactly as before.
+    private var hasVerdictSource: Bool { repo.todayPreparedness != nil }
+    /// What Entrenar advises today, from that one verdict.
+    private var advice: TrainingRegulation.Advice { TrainingRegulation.advice(for: verdict) }
 
     var body: some View {
         // Fixed section rhythm in a plain ScrollView (FER-786 hotfix): the earlier GeometryReader +
@@ -455,7 +464,7 @@ private struct EntrenarLanding: View {
                         .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                if recovery != nil {
+                if showsAdviceLine {
                     HStack(spacing: 7) {
                         Rectangle().fill(theme.dataRecovery).frame(width: 2, height: 10)  // token-exempt: filete de dato
                         Text(recoveryLine(recovery ?? 0))
@@ -522,8 +531,16 @@ private struct EntrenarLanding: View {
     // baseline. Within the normal band or with no signal the engine returns nil and the row falls back to
     // an INFORMATIONAL placeholder (FER-559) — not tappable, no destination.
 
+    /// The gentler option, from the ONE oracle. Without a verdict source we fall back to the legacy
+    /// recovery path so previews and fixtures keep behaving; with one, the verdict decides alone.
+    private var suggestionAlternative: TrainingRegulation.LightAlternative? {
+        hasVerdictSource
+            ? TrainingRegulation.lightAlternative(verdict: verdict)
+            : TrainingRegulation.lightAlternative(recovery: recovery)
+    }
+
     @ViewBuilder private var suggestionRow: some View {
-        if let alt = TrainingRegulation.lightAlternative(recovery: recovery) {
+        if let alt = suggestionAlternative {
             Button { suggestionAction(alt) } label: {
                 HStack(spacing: 11) {
                     Image(systemName: suggestionIcon(alt)).font(StrandFont.glyph(.lead)).foregroundStyle(theme.inkSecondary)
@@ -1264,11 +1281,29 @@ private struct EntrenarLanding: View {
         return String(localized: "Today · \(day)")
     }
 
+    /// Whether the hero shows its one-line advice at all. With the single oracle, `.silent` (no
+    /// usable read, no permission, low signal) means the section says NOTHING rather than falling back
+    /// to a number. Without a verdict source we keep the old gate on the recovery score.
+    private var showsAdviceLine: Bool {
+        hasVerdictSource ? advice != .silent : recovery != nil
+    }
+
+    /// The one-line advice under the hero. FER-82: it says exactly what the verdict Hoy showed says,
+    /// in the same four voices, so the two screens can never disagree. `.silent` shows nothing.
     private func recoveryLine(_ rec: Double) -> String {
-        switch TrainingRegulation.suggest(recovery: rec)?.reason {
-        case .recoveryHigh: return String(localized: "Recovery high for you · you can take on your full plan.")
-        case .recoveryLow:  return String(localized: "Recovery low for you · maybe ease the volume today.")
-        default:            return String(localized: "Recovery in your range · train at your usual load.")
+        guard hasVerdictSource else {
+            // Legacy path (no verdict source): keep the score-driven copy for fixtures/previews.
+            switch TrainingRegulation.suggest(recovery: rec)?.reason {
+            case .recoveryHigh: return String(localized: "Recovery high for you · you can take on your full plan.")
+            case .recoveryLow:  return String(localized: "Recovery low for you · maybe ease the volume today.")
+            default:            return String(localized: "Recovery in your range · train at your usual load.")
+            }
+        }
+        switch advice {
+        case .planAsIs: return String(localized: "In range · your plan for today, as it is.")
+        case .lighter:  return String(localized: "Take it easy today · lighter, don't go up.")
+        case .recover:  return String(localized: "Recover · easy today, or rest.")
+        case .silent:   return ""
         }
     }
 
@@ -1315,7 +1350,9 @@ private struct EntrenarLanding: View {
             var deferredNames: [String] = []
             for re in exs {
                 let ex = (ExerciseCatalog.byID(re.exerciseId) ?? customByID[re.exerciseId])?.applying(overrides)
-                let seed = await repo.sessionSeed(re: re, exercise: ex, inventory: inventory, recovery: recovery)
+                let seed = await repo.sessionSeed(re: re, exercise: ex, inventory: inventory,
+                                                  recovery: recovery, verdict: verdict,
+                                                  hasVerdictSource: hasVerdictSource)
                 if let result = seed.evaluation {
                     let name = ex.map(StrengthDisplay.name) ?? re.exerciseId
                     if let raise = result.raise { raising.append((name: name, kg: raise.toKg)) }

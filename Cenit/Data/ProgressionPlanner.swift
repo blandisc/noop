@@ -44,7 +44,8 @@ enum ProgressionPlanner {
                          history: [(startTs: Int, weightKg: Double, reps: Int, optedOut: Bool)],
                          inventory: [PlateMath.PlateStock],
                          equipment: String?,
-                         recovery: Double?, recoveryZ: Double? = nil)
+                         recovery: Double?, recoveryZ: Double? = nil,
+                         verdict: Preparedness.Verdict? = nil, hasVerdictSource: Bool = false)
         -> (state: ProgressionState, raise: Raise?)? {
         guard re.progressionEnabled else { return nil }
         let targetReps = re.plannedSets.first { $0.kind == .work }?.reps ?? re.targetReps ?? 8
@@ -52,14 +53,20 @@ enum ProgressionPlanner {
         let increment = re.progressionIncrementKg
             ?? PlateMath.minimumIncrement(for: .from(equipment: equipment), inventory: inventory)
         let sessions = pastSessions(from: history)
-        let reason = re.progressionIgnoreRecovery
-            ? nil : TrainingRegulation.suggest(recovery: recovery, recoveryZ: recoveryZ)?.reason
+        // FER-82 «un solo oráculo»: when the caller hands us Hoy's verdict, IT decides whether an
+        // earned raise goes through — the same word the user is reading at the top of the screen.
+        // The legacy score path stays for callers that have no verdict source (and for its tests).
+        let honoursRecovery = !re.progressionIgnoreRecovery
+        let deferByVerdict = honoursRecovery && hasVerdictSource
+            && !TrainingRegulation.allowsRaise(verdict: verdict)
+        let reason = (honoursRecovery && !hasVerdictSource)
+            ? TrainingRegulation.suggest(recovery: recovery, recoveryZ: recoveryZ)?.reason : nil
         let input = ProgressionMath.ProgressionInput(
             history: sessions.map(\.session),
             targetReps: targetReps, targetSets: targetSets,
             sessionsToAdvance: re.progressionSessions, incrementKg: increment,
             deloadWarnOnly: re.progressionDeload == .warn,
-            recoveryReason: reason)
+            recoveryReason: reason, deferRaise: deferByVerdict)
         let state = ProgressionMath.classify(input)
         guard case .readyToAdvance(let newKg) = state else { return (state, nil) }
         guard let fromKg = sessions.last?.session.workingKg else { return (state, nil) }

@@ -37878,6 +37878,39 @@
         }
       }
     },
+    "In range · your plan for today, as it is." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En rango · tu plan de hoy, tal cual"
+          }
+        }
+      }
+    },
+    "Recover · easy today, or rest." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recupera · hoy suave o descansa"
+          }
+        }
+      }
+    },
+    "Take it easy today · lighter, don't go up." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoy ve leve · hoy más suave, no subas"
+          }
+        }
+      }
+    },
     "Recovery high for you · you can take on your full plan." : {
       "extractionState" : "stale",
       "localizations" : {

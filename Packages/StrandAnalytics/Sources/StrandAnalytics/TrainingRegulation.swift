@@ -61,6 +61,67 @@ public enum TrainingRegulation {
     public static let zHigh = 0.5
     public static let zLow  = 0.5
 
+    // MARK: - The single oracle (FER-82)
+    //
+    // Entrenar used to read a 0–100 recovery score while Hoy painted its verdict from `Preparedness`
+    // (per-axis consensus, no number). Two oracles, two sets of cut-offs: the app could say «Recupera»
+    // in the thread and «Hoy subes 82.5 kg» three lines below. From here on Entrenar reads the SAME
+    // verdict Hoy shows, and this is the ONE place that translates it into training advice.
+    //
+    // Note there is no «push harder» advice: `Preparedness` has no "better than your normal" verdict
+    // (`.full` means *no axis out*, which already includes better-than-normal), so the honest mapping
+    // never tells anyone to exceed the plan. Autoregulation here only ever holds or eases.
+
+    /// What Entrenar advises today, derived from the verdict Hoy already showed.
+    public enum Advice: String, Equatable, Sendable {
+        /// «En rango» — the plan as written; an earned raise may go through.
+        case planAsIs
+        /// «Hoy ve leve» — keep today's load, do NOT raise.
+        case lighter
+        /// «Recupera» — ease off: offer the gentler option, do NOT raise.
+        case recover
+        /// No usable read (low signal, no reading yet, no Health permission) — say nothing at all.
+        case silent
+    }
+
+    /// Translate Hoy's verdict into Entrenar's advice. `nil` (no read at all) is `.silent`.
+    public static func advice(for verdict: Preparedness.Verdict?) -> Advice {
+        switch verdict {
+        case .full:      return .planAsIs
+        case .caution:   return .lighter
+        case .easy:      return .recover
+        case .lowSignal: return .silent
+        case nil:        return .silent
+        }
+    }
+
+    /// Whether an earned progression raise may go through today. Only a clean read allows it: with
+    /// `.lighter` or `.recover` the seed stays at last time's weight and the raise waits (the athlete
+    /// can still raise by hand — advisory, never a gate).
+    public static func allowsRaise(_ advice: Advice) -> Bool { advice == .planAsIs }
+
+    /// Convenience: does today's verdict allow an earned raise?
+    public static func allowsRaise(verdict: Preparedness.Verdict?) -> Bool {
+        allowsRaise(advice(for: verdict))
+    }
+
+    /// The verdict-driven suggestion, for the surfaces that already speak `Suggestion`.
+    /// `.silent` returns `nil` so the UI hides the row instead of inventing a direction.
+    public static func suggest(verdict: Preparedness.Verdict?) -> Suggestion? {
+        switch advice(for: verdict) {
+        case .planAsIs: return Suggestion(adjustment: .hold, reason: .withinNormal)
+        case .lighter:  return Suggestion(adjustment: .hold, reason: .recoveryLow)
+        case .recover:  return Suggestion(adjustment: .dialBack, reason: .recoveryLow)
+        case .silent:   return nil
+        }
+    }
+
+    /// The lighter alternative straight from today's verdict. Only `.recover` offers one: within
+    /// range there is nothing to suggest, and `.lighter` keeps the plan (it just blocks the raise).
+    public static func lightAlternative(verdict: Preparedness.Verdict?) -> LightAlternative? {
+        advice(for: verdict) == .recover ? .softer : nil
+    }
+
     /// A concrete lighter alternative to today's planned load, derived from the direction.
     ///
     /// The planner's «Sugerencia» row (FER-532) maps a `Suggestion` to one actionable option:

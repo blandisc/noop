@@ -87,14 +87,16 @@ extension Repository {
     /// raise the hero names is exactly the raise the editor seeds (FER-838 /simplify). The evaluation is
     /// nil when the slot didn't opt in or has no load to progress.
     func sessionSeed(re: RoutineExercise, exercise: Exercise?,
-                     inventory: [PlateMath.PlateStock], recovery: Double?) async
+                     inventory: [PlateMath.PlateStock], recovery: Double?,
+                     verdict: Preparedness.Verdict? = nil, hasVerdictSource: Bool = false) async
         -> (lastSets: [SetEntry], evaluation: (state: ProgressionState, raise: ProgressionPlanner.Raise?)?) {
         guard let store = await storeHandle() else { return ([], nil) }
         let last = (try? await store.lastWorkSets(exerciseId: re.exerciseId, limit: 4)) ?? []
         guard re.progressionEnabled, exercise?.type == .weightReps else { return (last, nil) }
         let history = (try? await store.workSetHistory(exerciseId: re.exerciseId)) ?? []
         let eval = ProgressionPlanner.evaluate(re: re, history: history, inventory: inventory,
-                                               equipment: exercise?.equipment, recovery: recovery)
+                                               equipment: exercise?.equipment, recovery: recovery,
+                                               verdict: verdict, hasVerdictSource: hasVerdictSource)
         return (last, eval)
     }
 
