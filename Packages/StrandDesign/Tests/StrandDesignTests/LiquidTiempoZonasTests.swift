@@ -70,14 +70,14 @@ final class LiquidTiempoZonasTests: XCTestCase {
         }
         // Y el mismo reparto alimenta la voz sin producir «nan%».
         XCTAssertEqual(
-            LiquidTiempoZonas.a11yValue(zonas: zonas([0, 0, 0, 0, 0, 0]), explicito: ""),
+            LiquidTiempoZonas.a11yValue(zonas: zonas([0, 0, 0, 0, 0, 0]), explicito: "", sinMedicion: ""),
             "Reposo 0%, Z1 0%, Z2 0%, Z3 0%, Z4 0%, Z5 0%")
     }
 
     /// Lista vacía (el caller no pasó zonas): ni reparto ni división — nada que decir.
     func test_sinZonas_repartoVacio() {
         XCTAssertTrue(LiquidTiempoZonas.partes([]).isEmpty)
-        XCTAssertEqual(LiquidTiempoZonas.a11yValue(zonas: [], explicito: ""), "")
+        XCTAssertEqual(LiquidTiempoZonas.a11yValue(zonas: [], explicito: "", sinMedicion: ""), "")
     }
 
     // MARK: VoiceOver · la frase del caller manda; si no la hay, se deriva del reparto
@@ -87,14 +87,14 @@ final class LiquidTiempoZonasTests: XCTestCase {
     func test_a11yValue_explicitoGana() {
         XCTAssertEqual(
             LiquidTiempoZonas.a11yValue(zonas: zonas([742, 260, 180, 96, 34, 8]),
-                                        explicito: "138 minutos en zona 3 o más alta"),
+                                        explicito: "138 minutos en zona 3 o más alta", sinMedicion: ""),
             "138 minutos en zona 3 o más alta")
     }
 
     /// Sin frase del caller, la voz lee el MISMO reparto que pinta la barra, en por ciento.
     func test_a11yValue_derivadoDelReparto() {
         XCTAssertEqual(
-            LiquidTiempoZonas.a11yValue(zonas: zonas([660, 660, 0, 0, 0, 0]), explicito: ""),
+            LiquidTiempoZonas.a11yValue(zonas: zonas([660, 660, 0, 0, 0, 0]), explicito: "", sinMedicion: ""),
             "Reposo 50%, Z1 50%, Z2 0%, Z3 0%, Z4 0%, Z5 0%")
     }
 }

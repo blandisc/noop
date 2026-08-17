@@ -75,6 +75,9 @@ public struct LiquidBandaEdad: View {
     /// Grosor de la banda de incertidumbre. Del papel: una cápsula de 7 pt sobre la regla de
     /// 3 — más gruesa que el riel para que se lea como el dato y no como chrome.
     private let grosorBanda: CGFloat = 7
+    /// Ancho mínimo de la banda, para que no desaparezca cuando sus dos extremos clampean al
+    /// mismo borde del dominio.
+    private let anchoBandaMinimo: CGFloat = 7
     /// Alturas de las dos etiquetas flotantes: el dato arriba de su marca, la referencia
     /// debajo de la suya — nunca en el mismo carril, así que no pueden encimarse.
     private let etiquetaDatoY: CGFloat = 9
@@ -91,7 +94,10 @@ public struct LiquidBandaEdad: View {
     ///   - tono: el tinte del dato (ver la convención de signo, arriba).
     ///   - bandaAnos: el ±N años de incertidumbre del modelo. **Es la lectura honesta**: el
     ///     original de papel dice de sí mismo «the band, not the point, is the honest read».
-    ///     `nil` deja la banda sin dibujar, para el caller que no puede afirmar un intervalo.
+    ///     Por eso el default es **5** (`VitalityEngine.bandYears`) y NO `nil`: con default
+    ///     apagado, quien porte la pantalla y olvide el argumento reproduce en silencio el
+    ///     defecto que este parámetro existe para arreglar. Pasar `nil` es una decisión
+    ///     explícita del caller que de verdad no puede afirmar un intervalo.
     ///   - etiquetaBandaBaja/Alta: los extremos YA formateados («26» / «36»).
     ///   - a11yLabel: qué es esto, para VoiceOver.
     ///   - a11yValue: qué dice hoy — obligatorio: esto es una gráfica.
@@ -101,7 +107,7 @@ public struct LiquidBandaEdad: View {
                 etiquetaCorporal: String,
                 etiquetaReal: String,
                 tono: Color,
-                bandaAnos: Double? = nil,
+                bandaAnos: Double? = 5,
                 etiquetaBandaBaja: String? = nil,
                 etiquetaBandaAlta: String? = nil,
                 a11yLabel: String,
@@ -170,8 +176,11 @@ public struct LiquidBandaEdad: View {
                 if let bandaAnos {
                     let xBaja = x(Self.posicion(edadCorporal - bandaAnos, en: dominio), ancho: w)
                     let xAlta = x(Self.posicion(edadCorporal + bandaAnos, en: dominio), ancho: w)
+                    // Piso de ancho: con una edad corporal fuera del dominio, los dos extremos
+                    // clampean al mismo borde y la banda colapsaría a 0 — borrando la lectura
+                    // honesta justo cuando el dato es más extremo y más incierto.
                     Capsule().fill(LiquidColor.tinta10)
-                        .frame(width: max(0, xAlta - xBaja), height: grosorBanda)
+                        .frame(width: max(anchoBandaMinimo, xAlta - xBaja), height: grosorBanda)
                         .position(x: (xBaja + xAlta) / 2, y: ejeY)
                 }
                 // REFERENCIA · la edad real, punteada y en tinta (el cero de la lectura).

@@ -57,6 +57,15 @@ public struct LiquidBarrasContribucion: View {
         }
     }
 
+    /// Los dos rótulos de polo, YA localizados («← te rejuvenece» / «te envejece →»).
+    ///
+    /// **No son decorativos: son el eje.** En una gráfica divergente sin eje rotulado,
+    /// izquierda y derecha dejan de significar algo, y la cabecera de esta pieza presume que
+    /// «el LADO ya codifica el signo sin depender del hue». Sin los polos, ese canal es
+    /// indescifrable — y para quien no distingue verde de ámbar, es el ÚNICO canal.
+    /// El original de papel los dibuja una vez sobre las barras y el caller real los pasa.
+    private let poloIzquierdo: String
+    private let poloDerecho: String
     private let factores: [Factor]
     private let maximo: Double
     private let a11y: String
@@ -101,7 +110,11 @@ public struct LiquidBarrasContribucion: View {
     ///     escala sea estable entre sesiones; el componente no normaliza contra su máximo local.
     ///   - a11yLabel: qué es esto, para VoiceOver.
     ///   - a11yValue: qué dice hoy — obligatorio: esto es una gráfica.
-    public init(factores: [Factor], maximo: Double, a11yLabel: String, a11yValue: String) {
+    public init(factores: [Factor], maximo: Double,
+                poloIzquierdo: String, poloDerecho: String,
+                a11yLabel: String, a11yValue: String) {
+        self.poloIzquierdo = poloIzquierdo
+        self.poloDerecho = poloDerecho
         self.factores = factores
         self.maximo = maximo
         self.a11y = a11yLabel
@@ -134,10 +147,23 @@ public struct LiquidBarrasContribucion: View {
 
     // MARK: Cuerpo
 
+    /// El eje de la gráfica divergente: qué significa cada lado. Se dibuja UNA vez, arriba.
+    private var polos: some View {
+        HStack(spacing: LiquidSpace.s200) {
+            Text(verbatim: poloIzquierdo)
+            Spacer(minLength: LiquidSpace.s300)
+            Text(verbatim: poloDerecho)
+        }
+        .font(LiquidType.captionLectura)
+        .foregroundStyle(LiquidColor.tinta500)
+        .accessibilityHidden(true)   // el valor del bloque ya dice el signo de cada factor
+    }
+
     public var body: some View {
         // Sin factores el bloque no dibuja nada (ni inventa un vacío): es el CALLER quien
         // decide no pintar la sección cuando no hay desglose que mostrar.
         VStack(alignment: .leading, spacing: LiquidSpace.s250) {
+            polos
             ForEach(factores) { fila($0) }
         }
         .onAppear {
@@ -229,6 +255,8 @@ private let factoresDemo: [LiquidBarrasContribucion.Factor] = [
 #Preview("Liquid · Barras de contribución (con datos)") {
     LiquidBarrasContribucion(
         factores: factoresDemo, maximo: 2,
+        poloIzquierdo: "← te rejuvenece",
+        poloDerecho: "te envejece →",
         a11yLabel: "Qué la está moviendo",
         a11yValue: "VO₂max te quita 1.8 años; FC en reposo, 1.4; VFC, 0.6. "
             + "Sueño no te mueve. Pasos te suma 0.3 años y Regularidad, 0.9.")
@@ -247,6 +275,8 @@ private let factoresDemo: [LiquidBarrasContribucion.Factor] = [
             .init(id: "sueno", etiqueta: "Sueño", efecto: 0, detalle: "0.0 años"),
         ],
         maximo: 2,
+        poloIzquierdo: "← te rejuvenece",
+        poloDerecho: "te envejece →",
         a11yLabel: "Qué la está moviendo",
         a11yValue: "VO₂max te quita 4.6 años; Pasos te suma 0.7. Sueño no te mueve.")
     .padding(LiquidSpace.s550)
@@ -258,6 +288,8 @@ private let factoresDemo: [LiquidBarrasContribucion.Factor] = [
 #Preview("Liquid · Barras de contribución (sin factores)") {
     LiquidBarrasContribucion(
         factores: [], maximo: 2,
+        poloIzquierdo: "← te rejuvenece",
+        poloDerecho: "te envejece →",
         a11yLabel: "Qué la está moviendo",
         a11yValue: "Todavía sin desglose")
     .padding(LiquidSpace.s550)
@@ -267,6 +299,8 @@ private let factoresDemo: [LiquidBarrasContribucion.Factor] = [
 #Preview("Liquid · Barras de contribución (AX)") {
     LiquidBarrasContribucion(
         factores: factoresDemo, maximo: 2,
+        poloIzquierdo: "← te rejuvenece",
+        poloDerecho: "te envejece →",
         a11yLabel: "Qué la está moviendo",
         a11yValue: "VO₂max te quita 1.8 años; FC en reposo, 1.4; VFC, 0.6. "
             + "Sueño no te mueve. Pasos te suma 0.3 años y Regularidad, 0.9.")

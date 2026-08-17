@@ -61,6 +61,10 @@ public struct LiquidTiempoZonas: View {
     private let zonas: [Zona]
     private let etiquetaVoz: String
     private let valorVoz: String
+    /// Lo que dicta VoiceOver cuando el día NO se midió. Llega del caller porque es copy.
+    /// Sin este parámetro el estado «sin medir» dictaba una cadena vacía — el estado que la
+    /// pieza existe para distinguir, mudo.
+    private let vozSinMedicion: String
 
     /// La leyenda de 6 filas no cabe en tres columnas cuando el texto crece: en tamaños de
     /// accesibilidad cada fila se apila (nombre + detalle arriba, riel completo debajo).
@@ -90,7 +94,9 @@ public struct LiquidTiempoZonas: View {
     /// real. No compite con las astillas.
     private let marcaCeroAlfa: Double = 0.35
 
-    public init(zonas: [Zona], a11yLabel: String, a11yValue: String) {
+    public init(zonas: [Zona], a11yLabel: String, a11yValue: String,
+                a11ySinMedicion: String = "") {
+        self.vozSinMedicion = a11ySinMedicion
         self.zonas = zonas
         self.etiquetaVoz = a11yLabel
         self.valorVoz = a11yValue
@@ -132,7 +138,7 @@ public struct LiquidTiempoZonas: View {
     /// total del día en minutos: la palabra «minutos» es copy y el DS no la inventa); si
     /// llega vacía, se deriva del mismo reparto que pinta la barra — cada zona con su parte
     /// del total, en por ciento, sin una sola palabra fabricada aquí.
-    static func a11yValue(zonas: [Zona], explicito: String, sinMedicion: String = "") -> String {
+    static func a11yValue(zonas: [Zona], explicito: String, sinMedicion: String) -> String {
         if !explicito.isEmpty { return explicito }
         // Un día sin una sola lectura NO puede narrarse como seis ceros medidos: eso afirma
         // que se midió y que todo salió en reposo. Sin frase del caller, se calla.
@@ -152,7 +158,7 @@ public struct LiquidTiempoZonas: View {
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(verbatim: etiquetaVoz))
-        .accessibilityValue(Text(verbatim: Self.a11yValue(zonas: zonas, explicito: valorVoz)))
+        .accessibilityValue(Text(verbatim: Self.a11yValue(zonas: zonas, explicito: valorVoz, sinMedicion: vozSinMedicion)))
     }
 
     /// La barra apilada: un segmento por zona, ancho ∝ su parte del total, sin gaps (el
@@ -162,9 +168,16 @@ public struct LiquidTiempoZonas: View {
         GeometryReader { geo in
             HStack(spacing: 0) {
                 ForEach(repartos) { parte in
-                    Rectangle()
-                        .fill(parte.zona.color)
-                        .frame(width: geo.size.width * CGFloat(parte.fraccion))
+                    // MISMA cuenta que los rieles (`anchoRiel`): el piso de astilla y la
+                    // ausencia de medición valen aquí también. Antes esta barra —la pieza
+                    // héroe del bloque— pintaba `fraccion` en crudo, así que los 8 minutos
+                    // reales de Z5 medían 0.87 pt y una zona sin medir se veía idéntica a una
+                    // medida en cero. La leyenda decía la verdad y la barra no.
+                    if let ancho = Self.anchoRiel(parte, ancho: geo.size.width), ancho > 0 {
+                        Rectangle()
+                            .fill(parte.zona.color)
+                            .frame(width: ancho)
+                    }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)

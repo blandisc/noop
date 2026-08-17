@@ -83,6 +83,14 @@ public struct LiquidGraficaSuperpuesta: View {
 
     private let series: [Serie]
     private let rango: ClosedRange<Date>
+    /// Cómo rotular las fechas del eje X (el DS no conoce locales). Sin él no hay eje — y una
+    /// comparación de 90 días sin una sola fecha no deja saber si el cruce fue el lunes o hace
+    /// tres semanas. El papel dibujaba 5 marcas.
+    private let formatoFechaEje: ((Date) -> String)?
+    /// Los tres rótulos de la rejilla. No llevan números —serían falsos con series de escalas
+    /// distintas— pero «alto/medio/bajo» SÍ es cierto para toda serie normalizada, y es lo que
+    /// el papel decía. YA localizados.
+    private let rotulosRejilla: (bajo: String, medio: String, alto: String)?
     @Binding private var seleccion: Date?
     private let formatoValor: (Serie, Double) -> String
     private let a11yLabel: String
@@ -104,8 +112,12 @@ public struct LiquidGraficaSuperpuesta: View {
                 seleccion: Binding<Date?>,
                 formatoValor: @escaping (Serie, Double) -> String,
                 a11yLabel: String,
+                formatoFechaEje: ((Date) -> String)? = nil,
+                rotulosRejilla: (bajo: String, medio: String, alto: String)? = nil,
                 mensajeMinimo: String? = nil,
                 mensajeSinLecturas: String? = nil) {
+        self.formatoFechaEje = formatoFechaEje
+        self.rotulosRejilla = rotulosRejilla
         self.series = series
         self.rango = rango
         self._seleccion = seleccion
@@ -176,6 +188,14 @@ public struct LiquidGraficaSuperpuesta: View {
     // MARK: - Plot
 
     private var plot: some View {
+        VStack(spacing: LiquidSpace.s100) {
+            lienzo
+            GeometryReader { geo in ejeX(geo.size.width) }
+                .frame(height: formatoFechaEje == nil ? 0 : LiquidChart.ejeXAlto)
+        }
+    }
+
+    private var lienzo: some View {
         GeometryReader { geo in
             let w: CGFloat = geo.size.width
             let h: CGFloat = geo.size.height
@@ -223,12 +243,46 @@ public struct LiquidGraficaSuperpuesta: View {
 
     /// Tres reglas mudas: piso, mitad y techo del plot. No llevan etiqueta porque no hay un
     /// número que sea verdad para todas las series — solo dan un suelo al ojo.
-    private func rejilla(_ w: CGFloat, _ h: CGFloat) -> some View {
+    @ViewBuilder private func rejilla(_ w: CGFloat, _ h: CGFloat) -> some View {
         ForEach([0.0, 0.5, 1.0], id: \.self) { (f: Double) in
             Rectangle()
                 .fill(LiquidColor.tinta900.opacity(LiquidChart.gridAlfa))
                 .frame(width: Swift.max(0, w), height: 1)
                 .offset(x: 0, y: yFraccion(f, h) - 0.5)
+        }
+        // Los tres rótulos de la rejilla. No llevan números —serían falsos con series de
+        // escalas distintas— pero «alto / medio / bajo» SÍ es cierto para toda serie
+        // normalizada, y es lo que el papel decía. Sin ellos la rejilla es decoración.
+        if let r = rotulosRejilla {
+            let textos: [String] = [r.bajo, r.medio, r.alto]
+            let alturas: [Double] = [0.0, 0.5, 1.0]
+            ForEach(0..<3, id: \.self) { (i: Int) in
+                Text(verbatim: textos[i])
+                    .font(LiquidType.unidadCompacta)
+                    .foregroundStyle(LiquidColor.tinta500)
+                    .fixedSize()
+                    .offset(x: 0, y: yFraccion(alturas[i], h) - LiquidSpace.s300)
+            }
+        }
+    }
+
+    /// El eje X: 5 marcas de fecha repartidas en la ventana, como el papel. Sin él, una
+    /// comparación de 90 días no deja saber si el cruce fue el lunes o hace tres semanas.
+    @ViewBuilder private func ejeX(_ w: CGFloat) -> some View {
+        if let formato = formatoFechaEje {
+            let span = rango.upperBound.timeIntervalSince(rango.lowerBound)
+            HStack(spacing: 0) {
+                ForEach(0..<5, id: \.self) { i in
+                    let t = rango.lowerBound.addingTimeInterval(span * Double(i) / 4)
+                    Text(verbatim: formato(t))
+                        .font(LiquidType.unidadCompacta)
+                        .foregroundStyle(LiquidColor.tinta500)
+                        .lineLimit(1)
+                        .frame(maxWidth: .infinity,
+                               alignment: i == 0 ? .leading : (i == 4 ? .trailing : .center))
+                }
+            }
+            .frame(width: Swift.max(0, w), height: LiquidChart.ejeXAlto)
         }
     }
 
