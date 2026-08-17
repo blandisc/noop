@@ -2,7 +2,7 @@ import XCTest
 import StrandAnalytics
 @testable import Cenit
 
-// MARK: - MorningReadingSchedulerTests (FER-114)
+// MARK: - MorningReadingSchedulerTests (FER-114 · FER-111)
 //
 // El aviso matutino se decide con funciones PURAS (`hayLectura`, `proximasOcurrencias`, `plan`,
 // `contenido`), justo para poder fijarlo aquí sin `UNUserNotificationCenter`, sin permisos y sin
@@ -10,18 +10,19 @@ import StrandAnalytics
 // encima de estas cuatro.
 //
 // Lo que estas pruebas defienden, en orden de importancia:
-//   1. Nunca se manda un aviso sin lectura que dar (calibrando, `lowSignal`, sin noche anclada,
-//      switch apagado → plan VACÍO).
-//   2. La palabra del aviso es LA MISMA del héroe, letra por letra, y solo viaja el día en que
-//      todavía es verdad. Un aviso de mañana jamás lleva la palabra de hoy.
+//   1. Nunca se programa un aviso sin lectura que dar (calibrando, `lowSignal`, sin noche anclada,
+//      switch apagado → plan VACÍO). La puerta sigue siendo `hayLectura`, aunque el texto ya no
+//      dependa de ella: a quien no tiene reloj no se le recuerda ir por una lectura que no existe.
+//   2. NINGÚN aviso lleva jamás la palabra del veredicto (FER-111). El aviso es un RECORDATORIO,
+//      no una entrega: Cénit no despierta sola, así que el texto se congela al programarse y sería
+//      mentira si nombrara una lectura. El plan no puede variar con el veredicto ni tratar distinto
+//      al aviso que cae hoy.
 //   3. Cambiar la hora mueve todas las fechas; el horizonte no se salta días ni cuando el reloj
 //      brinca por el horario de verano.
 //   4. «Todavía no hay lectura» NO es «el dueño lo apagó»: lo primero deja lo pendiente en paz, lo
 //      segundo lo cancela. Confundirlos dejaba al dueño sin su aviso cada mañana.
 
 final class MorningReadingSchedulerTests: XCTestCase {
-
-    private typealias Aviso = MorningReadingScheduler.Aviso
 
     // MARK: Fixtures
 
@@ -49,7 +50,7 @@ final class MorningReadingSchedulerTests: XCTestCase {
     }
 
     /// «Lectura de día» (FER-1033): hay señales, pero NINGUNA noche grabada. El héroe no da palabra
-    /// aquí, así que el aviso tampoco puede.
+    /// aquí, así que tampoco hay lectura que ir a leer.
     private func sinNocheAnclada() -> Preparedness.Read {
         Preparedness.Read(verdict: .full,
                           drivers: [.init(axis: .autonomic, state: .inRange, orientedZ: 0.1)],
@@ -75,6 +76,9 @@ final class MorningReadingSchedulerTests: XCTestCase {
     }
 
     // MARK: 1 · Callar es la opción por defecto
+    //
+    // El texto ya no depende del motor, pero PROGRAMAR sí: recordarle leerse a quien el motor no le
+    // puede dar veredicto es citarlo a una puerta que va a encontrar cerrada.
 
     func test_silencio_sinLecturaDelMotor() {
         XCTAssertTrue(plan(nil, now: fecha(2026, 8, 17, 6, 0)).isEmpty)
@@ -112,58 +116,52 @@ final class MorningReadingSchedulerTests: XCTestCase {
                            now: fecha(2026, 8, 17, 6, 0)).isEmpty)
     }
 
-    // MARK: 2 · La palabra es la del héroe, y solo el día en que sigue siendo verdad
+    // MARK: 2 · Ningún aviso lleva palabra, nunca (FER-111)
+    //
+    // Cénit no despierta sola: cero `UIBackgroundModes`, cero `enableBackgroundDelivery`, cero
+    // `BGTaskScheduler`. El texto de una notificación se congela al PROGRAMARSE, así que una palabra
+    // dentro de él solo puede envejecer o inventarse. El aviso es un recordatorio: un solo texto,
+    // igual todos los días.
 
-    func test_elAvisoDeHoy_llevaLaPalabraDelHeroe() {
-        let slots = plan(conVeredicto(.caution), hour: 7, now: fecha(2026, 8, 17, 6, 0))
-        XCTAssertEqual(slots.first?.aviso,
-                       Aviso.lectura(palabra: LiquidHoyBuilder.palabraVeredicto(.caution)))
-        XCTAssertEqual(slots.first?.fecha, fecha(2026, 8, 17, 7, 0))
-    }
-
-    /// Los tres veredictos que sí tienen palabra: la del aviso y la del héroe salen de la MISMA
-    /// clave del catálogo, así que cambiar `hero.title.*` cambia las dos a la vez.
-    func test_lasTresPalabras_sonLasDelHeroe() {
-        for v in [Preparedness.Verdict.full, .caution, .easy] {
-            let slots = plan(conVeredicto(v), hour: 7, now: fecha(2026, 8, 17, 6, 0))
-            XCTAssertEqual(slots.first?.aviso,
-                           Aviso.lectura(palabra: LiquidHoyBuilder.palabraVeredicto(v)),
-                           "el aviso de \(v) no dice la palabra del héroe")
-        }
-    }
-
-    /// Con la hora ya pasada, el siguiente aviso es MAÑANA: y mañana la lectura de hoy ya no será
-    /// verdad, así que va sin palabra. Este es el caso que evita que la app se contradiga.
-    func test_siLaHoraYaPaso_elSiguienteAvisoEsManana_ySinPalabra() {
-        let slots = plan(conVeredicto(.full), hour: 7, now: fecha(2026, 8, 17, 9, 30))
-        XCTAssertEqual(slots.first?.fecha, fecha(2026, 8, 18, 7, 0))
-        XCTAssertEqual(slots.first?.aviso, Aviso.cita)
-    }
-
-    func test_ningunAvisoDeUnDiaFuturo_llevaPalabra() {
-        let slots = plan(conVeredicto(.easy), hour: 7, now: fecha(2026, 8, 17, 6, 0))
-        XCTAssertEqual(slots.first?.aviso,
-                       Aviso.lectura(palabra: LiquidHoyBuilder.palabraVeredicto(.easy)))
-        let futuros: [Aviso] = Array(slots.dropFirst()).map(\.aviso)
-        XCTAssertEqual(futuros, [Aviso](repeating: .cita, count: slots.count - 1))
-    }
-
-    /// El texto de la cita no puede nombrar un veredicto: a esa hora nadie sabe cuál será.
-    func test_laCita_noNombraNingunVeredicto() {
-        let texto = MorningReadingScheduler.contenido(.cita)
+    /// El texto no nombra ningún veredicto: a esa hora nadie sabe cuál será. Las palabras salen de
+    /// `LiquidHoyBuilder`, o sea de la MISMA clave del catálogo que el héroe, así que la prueba
+    /// sigue siendo verdad en cualquier idioma.
+    func test_elTexto_noNombraNingunVeredicto() {
+        let texto = MorningReadingScheduler.contenido
         let completo = texto.titulo + " " + texto.cuerpo
         for v in [Preparedness.Verdict.full, .caution, .easy] {
             XCTAssertFalse(completo.localizedCaseInsensitiveContains(LiquidHoyBuilder.palabraVeredicto(v)),
-                           "la cita nombra «\(LiquidHoyBuilder.palabraVeredicto(v))» sin tener la lectura")
+                           "el aviso nombra «\(LiquidHoyBuilder.palabraVeredicto(v))» sin tener la lectura")
         }
         XCTAssertFalse(texto.titulo.isEmpty)
         XCTAssertFalse(texto.cuerpo.isEmpty)
     }
 
-    func test_elAvisoConLectura_titulaConLaPalabra() {
-        let texto = MorningReadingScheduler.contenido(.lectura(palabra: "En rango"))
-        XCTAssertEqual(texto.titulo, "En rango")
-        XCTAssertFalse(texto.cuerpo.isEmpty)
+    /// El veredicto NO se filtra al horario: con la misma hora y el mismo `now`, los tres veredictos
+    /// producen exactamente el mismo plan. Si alguien reintrodujera una rama que cambia el aviso
+    /// según la lectura, esta prueba lo caza.
+    func test_elPlan_noDependeDelVeredicto() {
+        let ahora = fecha(2026, 8, 17, 6, 0)
+        let base = plan(conVeredicto(.full), now: ahora)
+        XCTAssertFalse(base.isEmpty)
+        for v in [Preparedness.Verdict.caution, .easy] {
+            XCTAssertEqual(plan(conVeredicto(v), now: ahora), base,
+                           "el plan de \(v) no es el mismo que el de .full")
+        }
+    }
+
+    /// El aviso que cae HOY no se trata distinto del que cae mañana: era la única rama que podía
+    /// llevar palabra, y en la práctica solo le tocaba a quien ya había abierto la app. Los dos
+    /// planes traen los mismos identificadores y las fechas corridas exactamente un día.
+    func test_elAvisoDeHoy_noSeDistingueDelDeManana() {
+        let antes = plan(conVeredicto(.full), hour: 7, now: fecha(2026, 8, 17, 6, 0))
+        let despues = plan(conVeredicto(.full), hour: 7, now: fecha(2026, 8, 17, 9, 30))
+        XCTAssertEqual(antes.first?.fecha, fecha(2026, 8, 17, 7, 0), "antes de las 7:00 el primero es hoy")
+        XCTAssertEqual(despues.first?.fecha, fecha(2026, 8, 18, 7, 0), "pasadas las 7:00 el primero es mañana")
+        XCTAssertEqual(antes.map(\.id), despues.map(\.id))
+        for (uno, otro) in zip(antes, despues) {
+            XCTAssertEqual(cal.date(byAdding: .day, value: 1, to: uno.fecha), otro.fecha)
+        }
     }
 
     // MARK: 3 · El horizonte, y el reloj

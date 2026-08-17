@@ -13332,13 +13332,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "One notice a day, on your iPhone, at the time you pick. If that day I have no reading to give you, I stay quiet."
+            "value" : "One reminder a day, at the time you pick, on your iPhone. It's a reminder, not the reading: I compute the moment you open me, so your word for the day waits for you inside."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Un solo aviso al día, en tu iPhone, a la hora que elijas. Si ese día no tengo una lectura que darte, me quedo callado."
+            "value" : "Un solo recordatorio al día, a la hora que elijas, en tu iPhone. Es un recordatorio, no la lectura: yo calculo en cuanto me abres, así que tu palabra del día te espera adentro."
           }
         }
       }
@@ -13356,23 +13356,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "A qué hora"
-          }
-        }
-      }
-    },
-    "aviso.matutino.lectura.cuerpo" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your reading for today is ready."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ya está tu lectura de hoy."
           }
         }
       }
@@ -13417,13 +13400,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tell me when my reading is ready"
+            "value" : "Remind me to read myself in the morning"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Avísame cuando esté mi lectura"
+            "value" : "Recuérdame leerme en la mañana"
           }
         }
       }

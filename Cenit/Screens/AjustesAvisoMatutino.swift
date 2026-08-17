@@ -7,9 +7,13 @@ import StrandAnalytics
 
 // MARK: - Aviso matutino (FER-114) — la sección de Ajustes
 //
-// El onboarding promete «te aviso cuando esté»; esta sección es donde esa promesa se enciende. Vive en
-// su propio archivo (y no dentro de `AjustesView`) porque es una feature con su propio permiso del
-// sistema, su propio estado y su propio texto honesto; `AjustesLanding` solo la invoca.
+// El onboarding ofrece «te pongo un recordatorio a la hora que elijas»; esta sección es donde ese
+// recordatorio se enciende. Vive en su propio archivo (y no dentro de `AjustesView`) porque es una
+// feature con su propio permiso del sistema, su propio estado y su propio texto honesto;
+// `AjustesLanding` solo la invoca.
+//
+// FER-111 · Es un RECORDATORIO, no una entrega: Cénit no despierta sola, así que el aviso no puede
+// traer la lectura, solo acordarse por ti de venir por ella. El copy lo dice en voz alta.
 //
 // Cuatro verdades que la sección tiene que sostener a la vista:
 //   1. El permiso se pide AL ENCENDER el switch, nunca antes.
@@ -65,7 +69,7 @@ struct AvisoMatutinoSection: View {
 
             Toggle(isOn: Binding(get: { encendido }, set: { encender($0) })) {
                 Text(String(localized: "aviso.matutino.toggle",
-                            defaultValue: "Tell me when my reading is ready"))
+                            defaultValue: "Remind me to read myself in the morning"))
                     .font(StrandFont.body).foregroundStyle(theme.ink)
             }
             .toggleStyle(.instrumento)
@@ -91,7 +95,7 @@ struct AvisoMatutinoSection: View {
             }
 
             Text(String(localized: "aviso.matutino.glosa",
-                        defaultValue: "One notice a day, on your iPhone, at the time you pick. If that day I have no reading to give you, I stay quiet."))
+                        defaultValue: "One reminder a day, at the time you pick, on your iPhone. It's a reminder, not the reading: I compute the moment you open me, so your word for the day waits for you inside."))
                 .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                 .fixedSize(horizontal: false, vertical: true)
 

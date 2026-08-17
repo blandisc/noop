@@ -179,10 +179,10 @@ import UIKit
             .sink { [weak self] (days: [DailyMetric]) in self?.evaluateIllness(days) }
             .store(in: &hrCancellables)
 
-        // FER-114 · el aviso matutino se re-arma con cada lectura nueva del motor: es la ÚNICA
-        // forma de que lleve la palabra del día (Cénit solo calcula con la app abierta, y el texto
-        // de una notificación se congela al programarla). `MorningReadingScheduler` decide si hay
-        // algo honesto que decir.
+        // FER-114 · el aviso matutino se re-arma con cada lectura nueva del motor. El texto no
+        // cambia nunca (es un recordatorio, no la entrega de la lectura: el texto de una
+        // notificación se congela al programarla y Cénit solo calcula con la app abierta), pero
+        // sí cambia si HAY algo que recordar: `MorningReadingScheduler` decide si se programa.
         //
         // OJO con las dos trampas de este `.sink`, que el scheduler ya absorbe (ver `reschedule`):
         //   · `$dashboard` es `@Published`, así que esto dispara DE INMEDIATO con el valor de
