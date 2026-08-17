@@ -16,6 +16,8 @@ import StrandAnalytics
 //      todavía es verdad. Un aviso de mañana jamás lleva la palabra de hoy.
 //   3. Cambiar la hora mueve todas las fechas; el horizonte no se salta días ni cuando el reloj
 //      brinca por el horario de verano.
+//   4. «Todavía no hay lectura» NO es «el dueño lo apagó»: lo primero deja lo pendiente en paz, lo
+//      segundo lo cancela. Confundirlos dejaba al dueño sin su aviso cada mañana.
 
 final class MorningReadingSchedulerTests: XCTestCase {
 
@@ -200,6 +202,53 @@ final class MorningReadingSchedulerTests: XCTestCase {
         // Ningún par de avisos cae el mismo día civil.
         let dias = slots.map { ny.startOfDay(for: $0.fecha) }
         XCTAssertEqual(Set(dias).count, 7)
+    }
+
+    // MARK: 4 · «Sin plan» no es «apagado»
+    //
+    // El defecto que estas pruebas cierran tenía consecuencia DIARIA: `repo.$dashboard` es
+    // `@Published`, así que el `.sink` de `AppModel` dispara de inmediato con el valor de `init`
+    // (`preparedness == nil`). Con el `cancelAll()` incondicional de antes, abrir la app a las
+    // 06:00 —antes de que el reloj publicara la noche— borraba los 7 pendientes y nada los reponía:
+    // el aviso de las 07:00 nunca sonaba.
+
+    private func decision(_ prep: Preparedness.Read?, enabled: Bool = true,
+                          hour: Int = 7, minute: Int = 0, now: Date,
+                          cancelaSinPlan: Bool = false)
+        -> MorningReadingScheduler.Reprogramacion {
+        MorningReadingScheduler.reprogramacion(prep: prep, enabled: enabled, hour: hour,
+                                               minute: minute, now: now, calendar: cal,
+                                               cancelaSinPlan: cancelaSinPlan)
+    }
+
+    /// EL caso: sin lectura todavía, lo pendiente se queda donde está.
+    func test_sinLecturaTodavia_noSeTocaLoPendiente() {
+        XCTAssertEqual(decision(nil, now: fecha(2026, 8, 17, 6, 0)), .dejarComoEsta)
+        XCTAssertEqual(decision(calibrando(), now: fecha(2026, 8, 17, 6, 0)), .dejarComoEsta)
+        XCTAssertEqual(decision(sinNocheAnclada(), now: fecha(2026, 8, 17, 6, 0)), .dejarComoEsta)
+    }
+
+    /// Apagar el switch SÍ cancela: es la única forma de que el dueño calle el aviso.
+    func test_elDuenoLoApaga_cancela() {
+        XCTAssertEqual(decision(conVeredicto(.full), enabled: false, now: fecha(2026, 8, 17, 6, 0)),
+                       .cancelar)
+        // Y apagado manda incluso sin lectura: no hay nada que preservar.
+        XCTAssertEqual(decision(nil, enabled: false, now: fecha(2026, 8, 17, 6, 0)), .cancelar)
+    }
+
+    /// Cambiar la hora es la excepción: sin plan nuevo, lo viejo se cancela igual (si no, sonaría a
+    /// la hora anterior).
+    func test_cambioDeHoraSinLectura_cancela() {
+        XCTAssertEqual(decision(nil, now: fecha(2026, 8, 17, 6, 0), cancelaSinPlan: true), .cancelar)
+    }
+
+    func test_conLectura_reemplazaElHorarioEntero() {
+        let ahora = fecha(2026, 8, 17, 6, 0)
+        guard case let .reemplazar(slots) = decision(conVeredicto(.full), now: ahora) else {
+            return XCTFail("con lectura el horario se reemplaza")
+        }
+        XCTAssertEqual(slots, plan(conVeredicto(.full), now: ahora))
+        XCTAssertEqual(slots.count, MorningReadingScheduler.horizonteDias)
     }
 
     func test_proximasOcurrencias_sonEstrictamentePosterioresAAhora() {

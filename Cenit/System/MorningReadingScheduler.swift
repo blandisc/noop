@@ -21,9 +21,11 @@ import StrandAnalytics
 ///   (`LiquidHoyBuilder.palabraVeredicto`, nunca un string propio).
 /// - **Los días que no puede llevar palabra, el aviso no finge tenerla:** es una CITA («Hora de
 ///   leerte»), no un veredicto. No dice que tu lectura esté lista, porque a esa hora nadie lo sabe.
-/// - **Y si Cénit no puede dar veredicto, no hay aviso de ningún tipo.** Con la base calibrando, sin
-///   FC en reposo nocturna, con la base rancia o sin la noche de hoy, el plan sale VACÍO y todo lo
-///   pendiente se cancela: preferimos callar a mandar un aviso vacío.
+/// - **Y si Cénit no puede dar veredicto, no hay aviso NUEVO.** Con la base calibrando, sin FC en
+///   reposo nocturna, con la base rancia o sin la noche de hoy, el plan sale VACÍO: no se programa
+///   nada. Lo que ya estaba pendiente NO se borra por eso — ver `reschedule`: «sin plan» significa
+///   «todavía no sé», y cancelar ahí es lo que dejaba al dueño sin su aviso de las 7:00 cada vez
+///   que abría la app antes de que el reloj publicara la noche.
 ///
 /// El plan se re-arma con cada publicación del dashboard (`AppModel`) y cada vez que la pantalla de
 /// Ajustes aparece o cambia la hora; por eso se arma un horizonte de `horizonteDias` de una sola vez
@@ -131,6 +133,31 @@ enum MorningReadingScheduler {
             }
     }
 
+    /// Qué hacer con el horario cuando llega una publicación nueva. Es la parte que se equivocaba,
+    /// así que vive aparte y PURA para poder fijarla en pruebas (ver `MorningReadingSchedulerTests`);
+    /// los efectos (`cancelAll` / `add`) son la capa delgada de abajo.
+    enum Reprogramacion: Equatable {
+        /// Hay plan nuevo: se reemplaza el horario entero.
+        case reemplazar([Slot])
+        /// Callar de verdad: el dueño apagó el aviso, o cambió la hora y ya no hay plan que poner.
+        case cancelar
+        /// «Todavía no sé»: no hay lectura que anunciar. Lo pendiente se queda donde está.
+        case dejarComoEsta
+    }
+
+    /// - Parameter cancelaSinPlan: solo lo pide quien REEMPLAZA un horario (cambiar la hora): ahí,
+    ///   quedarse con lo pendiente haría sonar el aviso a la hora vieja.
+    static func reprogramacion(prep: Preparedness.Read?, enabled: Bool, hour: Int, minute: Int,
+                               now: Date, calendar: Calendar = .current,
+                               cancelaSinPlan: Bool = false,
+                               dias: Int = horizonteDias) -> Reprogramacion {
+        guard enabled else { return .cancelar }
+        let slots = plan(prep: prep, enabled: true, hour: hour, minute: minute,
+                         now: now, calendar: calendar, dias: dias)
+        if !slots.isEmpty { return .reemplazar(slots) }
+        return cancelaSinPlan ? .cancelar : .dejarComoEsta
+    }
+
     /// El texto del aviso. La cita NO nombra ningún veredicto (ni promete que la lectura esté lista):
     /// a esa hora nadie lo sabe todavía.
     static func contenido(_ aviso: Aviso) -> (titulo: String, cuerpo: String) {
@@ -160,16 +187,49 @@ enum MorningReadingScheduler {
         await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
     }
 
-    /// Reemplaza el horario entero por el plan de este momento. Cancela SIEMPRE antes de agregar (y
-    /// espera la cancelación) para que un cambio de hora no deje conviviendo la vieja con la nueva.
+    /// Reemplaza el horario entero por el plan de este momento.
+    ///
+    /// **«Sin plan» no es «apagado».** El `cancelAll()` incondicional de antes era un bug con
+    /// consecuencia diaria: `repo.$dashboard` es `@Published`, así que el `.sink` de `AppModel`
+    /// dispara de inmediato con el valor de `init` (`preparedness == nil`) → plan vacío → se
+    /// borraban los 7 pendientes y nada los reponía. Abrir la app a las 06:00, antes de que el
+    /// reloj publique la noche, dejaba el aviso de las 07:00 cancelado para siempre. Así que solo
+    /// se cancela lo pendiente cuando hay una razón REAL para callar:
+    ///
+    ///   · el dueño apagó el switch (`enabled == false`), o
+    ///   · hay plan nuevo que poner (y entonces se reemplaza entero), o
+    ///   · quien llama lo pide explícitamente (`cancelaSinPlan`: cambiar la hora, donde dejar lo
+    ///     viejo pendiente sonaría a la hora anterior).
+    ///
+    /// «Todavía no hay lectura» NO cancela: lo pendiente se armó cuando sí la había y sigue
+    /// siendo honesto (el aviso de HOY lleva la palabra que se leyó hoy; los demás son citas, que
+    /// no afirman nada del cuerpo).
+    ///
+    /// Todo esto corre EN COLA (`Cola.compartida`): dos publicaciones seguidas del dashboard
+    /// lanzaban dos tasks sueltas, y el `cancelAll()` de la vieja podía resolverse DESPUÉS del
+    /// `add` de la nueva — el horario quedaba vacío sin que nadie lo hubiera pedido.
     static func reschedule(prep: Preparedness.Read?, now: Date = Date(),
-                           calendar: Calendar = .current) async {
-        await cancelAll()
-        let slots = plan(prep: prep, enabled: isEnabled, hour: hour, minute: minute,
-                         now: now, calendar: calendar)
-        guard !slots.isEmpty else { return }
+                           calendar: Calendar = .current,
+                           cancelaSinPlan: Bool = false) async {
+        await Cola.compartida.encolar {
+            await aplicar(prep: prep, now: now, calendar: calendar, cancelaSinPlan: cancelaSinPlan)
+        }.value
+    }
+
+    /// El trabajo de `reschedule`, ya serializado por la cola. Cancela SIEMPRE antes de agregar (y
+    /// espera la cancelación) para que un cambio de hora no deje conviviendo la vieja con la nueva.
+    private static func aplicar(prep: Preparedness.Read?, now: Date,
+                                calendar: Calendar, cancelaSinPlan: Bool) async {
+        let slots: [Slot]
+        switch reprogramacion(prep: prep, enabled: isEnabled, hour: hour, minute: minute,
+                              now: now, calendar: calendar, cancelaSinPlan: cancelaSinPlan) {
+        case .cancelar:      await cancelAll(); return
+        case .dejarComoEsta: return
+        case let .reemplazar(nuevos): slots = nuevos
+        }
         // El permiso se pide al encender el switch; aquí solo se consulta (jamás un segundo diálogo).
         guard await authorizationStatus() == .authorized else { return }
+        await cancelAll()
         let center = UNUserNotificationCenter.current()
         for slot in slots {
             let texto = contenido(slot.aviso)
@@ -181,6 +241,24 @@ enum MorningReadingScheduler {
             let trigger = UNCalendarNotificationTrigger(dateMatching: cuando, repeats: false)
             try? await center.add(UNNotificationRequest(identifier: slot.id,
                                                         content: content, trigger: trigger))
+        }
+    }
+
+    /// La cola de reprogramaciones: una a la vez, en el orden en que llegaron. Cada trabajo espera
+    /// al anterior, así que un `cancelAll()` jamás puede aterrizar encima de los `add` de la
+    /// reprogramación siguiente.
+    private actor Cola {
+        static let compartida = Cola()
+        private var ultima: Task<Void, Never>?
+
+        func encolar(_ trabajo: @escaping @Sendable () async -> Void) -> Task<Void, Never> {
+            let anterior = ultima
+            let nueva = Task {
+                await anterior?.value
+                await trabajo()
+            }
+            ultima = nueva
+            return nueva
         }
     }
 

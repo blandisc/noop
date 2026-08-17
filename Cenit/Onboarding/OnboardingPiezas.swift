@@ -49,6 +49,11 @@ enum OnbGuion {
     static let silencio: Double = 0.30
     static let palabra: Double = LiquidEcosistemaMotion.palabraDur
     static let esperaInfo: Double = 0.40
+    /// El aire ENTRE la ⓘ y el resto del acto. Sin él los dos beats caían en el mismo cuadro:
+    /// `mostrarInfo` y `mostrarResto` se fijaban en el mismo runloop, así que los 400 ms que
+    /// `esperaInfo` compró para que la ⓘ llegara SOLA se gastaban en nada — entraba con el
+    /// titular, el subtítulo y el rótulo que la señala, y el gesto se perdía en el montón.
+    static let esperaResto: Double = 0.35
 
     /// El rótulo que enseña la ⓘ se va solo (o al primer toque).
     static let rotulo: Double = 4
@@ -221,6 +226,15 @@ enum OnbCopy {
         String(localized: "onb.4.sinfc.1",
                defaultValue: "I can't find your resting heart rate. Without it I can't give you the morning reading: it's the signal the whole judgement stands on.")
     }
+    /// La causa POSIBLE, nombrada. La rama más probable de `.sinRitmoEnReposo` es el permiso
+    /// parcial —lo que el acto 2 advirtió: «si me das solo una parte, me quedo mudo»—, y el acto
+    /// solo ofrecía Entrenar: mandaba a la mitad de la app que no vino a buscar a alguien a quien
+    /// un toque en Salud le arreglaría todo. HealthKit no revela el permiso de lectura, así que
+    /// esto se dice como sospecha («casi siempre»), nunca como diagnóstico.
+    static var sinFcCausa: String {
+        String(localized: "onb.4.sinfc.causa",
+               defaultValue: "Almost always it's one of two things: the heart permission stayed off in Health, or you don't sleep with a watch on yet.")
+    }
     static var sinFcCuerpo2: String {
         String(localized: "onb.4.sinfc.2",
                defaultValue: "If you have an Apple Watch, sleep with it and in 4 nights your first reading shows up. If you don't have one, I'd rather tell you today than leave you waiting.")
@@ -290,6 +304,14 @@ enum OnbCopy {
     static var perfilNotaSinPermiso: String {
         String(localized: "onb.perfil.nota.sinpermiso",
                defaultValue: "You didn't connect Apple Health, so I set these four myself to get started. Adjust them, or your zones will be an average person's instead of yours.")
+    }
+    /// Mientras el autollenado corre. Los cuatro campos están INERTES hasta que hay sello: el
+    /// `.task` corre después del primer cuadro, así que sin esta puerta un stepper tocado en ese
+    /// instante se lo llevaba el prellenado — y encima el campo quedaba sellado «Desde Apple
+    /// Salud», justo al revés de la doctrina del acto («lo que tú pongas manda»).
+    static var perfilBuscando: String {
+        String(localized: "onb.perfil.buscando",
+               defaultValue: "Looking for what Apple Health already knows about you.")
     }
     static var perfilMarcaSalud: String {
         String(localized: "onb.perfil.marca.salud", defaultValue: "From Apple Health")
@@ -544,12 +566,40 @@ enum OnbCopy {
 /// desbordamiento por Dynamic Type sigue scrolleando (el objetivo del flujo es **xxxLarge**, que
 /// es donde la raíz de la app capa el tamaño). Es el mismo patrón del wizard anterior — lo único
 /// que cambia es el suelo: papel de `LiquidColor.fondoGradient`, no `InstrumentoTheme.base.paper`.
-struct OnbShell<Content: View>: View {
-    @ViewBuilder var content: () -> Content
+///
+/// Dos cosas que el shell resuelve para los actos LARGOS:
+///
+///   · **`indicadores`.** Esconder la barra de scroll es estética que cuesta conversión cuando el
+///     contenido desborda: en un iPhone de 390×844 el acto del permiso apila ~900 pt en un
+///     viewport útil de ~750 y NADA insinuaba que hubiera más abajo. Los actos que desbordan por
+///     construcción (permiso, acta, ciclo) la enseñan.
+///
+///   · **`pie`.** Un CTA anclado al pie SOBRE el scroll, con el contenido pasando por debajo
+///     (`safeAreaInset`, que además reserva su alto para que el final del contenido siga siendo
+///     alcanzable). Es para el único gate del producto —el permiso—: sin ese toque no hay app, y
+///     ese botón no puede depender de que alguien adivine que hay scroll.
+struct OnbShell<Content: View, Pie: View>: View {
+    private let indicadores: Bool
+    private let content: () -> Content
+    private let pie: (() -> Pie)?
+
+    init(indicadores: Bool = false,
+         @ViewBuilder content: @escaping () -> Content,
+         @ViewBuilder pie: @escaping () -> Pie) {
+        self.indicadores = indicadores
+        self.content = content
+        self.pie = pie
+    }
+
+    fileprivate init(indicadores: Bool, content: @escaping () -> Content, pie: (() -> Pie)?) {
+        self.indicadores = indicadores
+        self.content = content
+        self.pie = pie
+    }
 
     var body: some View {
         GeometryReader { geo in
-            ScrollView(.vertical, showsIndicators: false) {
+            ScrollView(.vertical, showsIndicators: indicadores) {
                 VStack(alignment: .leading, spacing: 0) {
                     content()
                 }
@@ -557,7 +607,38 @@ struct OnbShell<Content: View>: View {
                 .padding(.horizontal, LiquidSpace.s600)
                 .padding(.vertical, LiquidSpace.s400)
             }
+            .safeAreaInset(edge: .bottom, spacing: 0) { pieAnclado }
         }
+    }
+
+    @ViewBuilder
+    private var pieAnclado: some View {
+        if let pie {
+            VStack(alignment: .leading, spacing: 0) {
+                pie()
+            }
+            .padding(.horizontal, LiquidSpace.s600)
+            .padding(.top, LiquidSpace.s400)
+            .padding(.bottom, LiquidSpace.s250)
+            .background(velo)
+        }
+    }
+
+    /// El velo bajo el pie anclado: el mismo papel del fondo, subiendo de transparente a opaco,
+    /// para que el texto que sigue scrolleando por debajo no se le encime al botón. No es vidrio
+    /// a propósito (el flujo vive sobre papel, y el vidrio-sobre-papel se lava).
+    private var velo: some View {
+        LinearGradient(colors: [LiquidColor.fondoBajo.opacity(0), LiquidColor.fondoBajo],  // token-exempt: el velo tiene que arrancar EN CERO
+                       startPoint: .top, endPoint: .bottom)
+            .allowsHitTesting(false)
+    }
+}
+
+extension OnbShell where Pie == EmptyView {
+    /// El acto normal: sin pie anclado (su CTA viaja al final de la columna, empujado por los
+    /// `Spacer`).
+    init(indicadores: Bool = false, @ViewBuilder content: @escaping () -> Content) {
+        self.init(indicadores: indicadores, content: content, pie: nil)
     }
 }
 
@@ -638,6 +719,13 @@ struct OnbHairline: View {
 /// El tono llega YA elegido para texto chico: el ámbar de dato (#C4631F) ronda 3.8:1 y no pasa
 /// AA a este tamaño, así que quien tiña con esa familia pasa `LiquidColor.atencionTexto` (el
 /// mismo criterio que `LiquidSheetHeader.tonoTexto` aplica dentro del paquete, que es interno).
+///
+/// El nombre va en `LiquidType.label` (rótulo 11.5/600 +1.5 que ESCALA, relativo a `.caption`) y
+/// no en `InstrumentoType.groteskLane` (12 FIJO): con la fuente fija, la glosa —que sí escala—
+/// crecía sola y a xxxLarge el título de la fila acababa ~30 % más chico que su descripción, en
+/// las 21 filas del flujo. Es el mismo defecto que ya arreglaron `LiquidBandsTable` y
+/// `LiquidBarrasContribucion` dentro del paquete; aquí se resuelve tomando el token de rótulo
+/// publicado en vez de acuñar un tamaño suelto.
 struct OnbFila: View {
     let nombre: String
     var tono: Color?
@@ -649,8 +737,8 @@ struct OnbFila: View {
         VStack(alignment: .leading, spacing: LiquidSpace.s150) {
             HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s200) {
                 Text(nombre)
-                    .font(InstrumentoType.groteskLane)
-                    .tracking(InstrumentoType.groteskLaneTracking)
+                    .font(LiquidType.label)
+                    .tracking(LiquidType.labelTracking)
                     .textCase(.uppercase)
                     .foregroundStyle(tono ?? LiquidColor.tinta700)
                     .fixedSize(horizontal: false, vertical: true)

@@ -24,7 +24,9 @@ struct OnbActoCiclo: View {
         // Los `Group` son puramente estructurales (tope de 10 hijos por builder); son
         // transparentes para el layout, así que cada pieza sigue siendo hermana directa del
         // `VStack` del shell y los `Spacer` siguen empujando el CTA al pie.
-        OnbShell {
+        //
+        // Acto largo (traducción + tarjeta + cierre + dock): enseña su barra de scroll.
+        OnbShell(indicadores: true) {
             Group {
                 OnbAtras(accion: onAtras)
 

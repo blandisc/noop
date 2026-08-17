@@ -21,6 +21,10 @@ import StrandAnalytics
 // va después (`OnbPerfilLuego`) en vez de suponerlo, y su CTA es literalmente el botón que la
 // persona apretó una pantalla antes.
 //
+// **Dónde se cobra.** En el camino con veredicto, DESPUÉS del acta (rumbo al ciclo) y no antes:
+// la ⓘ del reveal promete el acta, y meter un formulario entre la palabra y su explicación era
+// contestar una pregunta con otra cosa.
+//
 // Tres reglas de este acto:
 //
 //   · **La procedencia se VE, campo por campo.** «Desde Apple Salud» / «Lo pusiste tú» / «Lo puse
@@ -28,8 +32,11 @@ import StrandAnalytics
 //     exactamente el defecto que este issue arregla.
 //
 //   · **Lo que el usuario edita GANA.** El autollenado corre UNA vez por onboarding, y su sello
-//     vive en el wizard (no aquí): volver desde el acta reconstruye este acto, y un segundo
-//     autollenado pisaría lo que la persona acaba de corregir.
+//     vive en el wizard (no aquí): volver desde el ciclo reconstruye este acto, y un segundo
+//     autollenado pisaría lo que la persona acaba de corregir. Por eso mismo los cuatro controles
+//     están INERTES hasta que existe el sello: `.task` corre DESPUÉS del primer cuadro, así que
+//     hay una ventana —chica pero real— en la que los campos ya se ven, ya se dejan tocar, y el
+//     prellenado que viene en camino se llevaría por delante lo que se acabara de poner.
 //
 //   · **Fuera de rango se DESCARTA, no se recorta.** Un peso de 12 kg en Salud es un dato
 //     equivocado, no un peso bajo: recortarlo a 30 kg inventaría una medición que nadie hizo.
@@ -43,8 +50,8 @@ import StrandAnalytics
 /// vuelve a encontrar «Ir a Entrenar» al pie de este paso, no un «Continuar» que lo lleve a otro
 /// lado: el perfil se mete en el camino, no lo cambia.
 enum OnbPerfilLuego: Hashable {
-    /// El camino con veredicto: todavía quedan el acta y el ciclo.
-    case acta
+    /// El camino con veredicto: el acta ya se leyó y todavía queda el ciclo.
+    case ciclo
     /// Ya no hay nada más que explicar: entrar a la app.
     case entrar
     /// Igual que `entrar`, aterrizando en Entrenar (la mitad que sí funciona sin reloj).
@@ -156,8 +163,12 @@ struct OnbActoPerfil: View {
                     campoEstatura
                 }
                 .padding(.top, LiquidSpace.s600)
+                // Inertes hasta que el autollenado deja su sello (ver la regla 2 de la cabecera).
+                .disabled(buscando)
 
-                OnbCuerpo(nota, tono: LiquidColor.tinta500)
+                // Mientras busca, la nota dice justo eso. Poner ya «Lo puse yo» sería sellar como
+                // propio un valor que Apple Salud todavía puede estar a punto de corregir.
+                OnbCuerpo(buscando ? OnbCopy.perfilBuscando : nota, tono: LiquidColor.tinta500)
                     .padding(.top, LiquidSpace.s400)
 
                 fcMaxima
@@ -199,7 +210,13 @@ struct OnbActoPerfil: View {
             .pickerStyle(.segmented)
             .labelsHidden()
             .accessibilityLabel(Text(OnbCopy.perfilSexo))
+            // El sello del sexo cuelga FUERA del control (los otros tres viven dentro del label
+            // del `Stepper`), así que sin esto VoiceOver lo leía suelto —«Desde Apple Salud», sin
+            // decir de qué— después del selector. Ahora viaja como valor del campo, igual que en
+            // los otros tres, y el renglón visible se calla para no decirlo dos veces.
+            .accessibilityValue(Text(lectura(Self.etiquetaSexo(profile.sex), .sexo)))
             marca(.sexo)
+                .accessibilityHidden(true)
         }
     }
 
@@ -247,13 +264,20 @@ struct OnbActoPerfil: View {
     }
 
     /// El sello de procedencia del campo. Va en la voz de lectura (escala con Dynamic Type) y no
-    /// en versalitas: son tres palabras que se leen, no una etiqueta de chrome.
+    /// en versalitas: son tres palabras que se leen, no una etiqueta de chrome. Mientras el
+    /// autollenado corre no hay sello que enseñar: la procedencia todavía no se sabe.
+    @ViewBuilder
     private func marca(_ campo: OnbCampoPerfil) -> some View {
-        Text(textoMarca(campo))
-            .font(LiquidType.captionLectura)
-            .foregroundStyle(LiquidColor.tinta500)
-            .frame(maxWidth: .infinity, alignment: .leading)
+        if let texto = textoMarca(campo) {
+            Text(texto)
+                .font(LiquidType.captionLectura)
+                .foregroundStyle(LiquidColor.tinta500)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
     }
+
+    /// ¿El autollenado sigue en el aire? Sin sello no se sabe de dónde salió ningún valor.
+    private var buscando: Bool { sello == nil }
 
     // MARK: - Lo que se deriva
 
@@ -301,7 +325,7 @@ struct OnbActoPerfil: View {
 
     private var cta: String {
         switch luego {
-        case .acta:     return OnbCopy.continuar
+        case .ciclo:    return OnbCopy.continuar
         case .entrar:   return OnbCopy.entrar
         case .entrenar: return OnbCopy.sinFcCta
         }
@@ -318,18 +342,20 @@ struct OnbActoPerfil: View {
 
     // MARK: - Procedencia
 
-    private func textoMarca(_ campo: OnbCampoPerfil) -> String {
+    private func textoMarca(_ campo: OnbCampoPerfil) -> String? {
         switch procedencia(campo) {
+        case .none:     return nil
         case .salud:    return OnbCopy.perfilMarcaSalud
         case .tuyo:     return OnbCopy.perfilMarcaTuyo
         case .arranque: return OnbCopy.perfilMarcaMio
         }
     }
 
-    /// Lo que la persona editó GANA sobre lo que trajo Salud. Antes del autollenado (el primer
-    /// cuadro) los cuatro valores son el default de fábrica, y eso es exactamente lo que dicen.
-    private func procedencia(_ campo: OnbCampoPerfil) -> OnbProcedencia {
-        guard let s = sello else { return .arranque }
+    /// Lo que la persona editó GANA sobre lo que trajo Salud. `nil` = el autollenado todavía no
+    /// deja su sello: mientras tanto no hay procedencia que afirmar (y los controles están
+    /// inertes, así que tampoco hay nada que la persona haya podido poner).
+    private func procedencia(_ campo: OnbCampoPerfil) -> OnbProcedencia? {
+        guard let s = sello else { return nil }
         if editado(campo, contra: s) { return .tuyo }
         return s.deSalud.contains(campo) ? .salud : .arranque
     }
@@ -343,9 +369,11 @@ struct OnbActoPerfil: View {
         }
     }
 
-    /// Lo que VoiceOver lee como valor del campo: el número y de dónde salió.
+    /// Lo que VoiceOver lee como valor del campo: el número y de dónde salió (mientras el
+    /// autollenado corre, solo el número: la procedencia todavía no existe).
     private func lectura(_ valor: String, _ campo: OnbCampoPerfil) -> String {
-        "\(valor), \(textoMarca(campo))"
+        guard let marca = textoMarca(campo) else { return valor }
+        return "\(valor), \(marca)"
     }
 
     // MARK: - El autollenado
@@ -355,11 +383,11 @@ struct OnbActoPerfil: View {
     /// vino de allá. Sin permiso concedido no hay nada que preguntar, y ésa es precisamente la
     /// rama en la que los cuatro valores son el default de fábrica.
     ///
-    /// Corre UNA sola vez por onboarding, y el sello es lo que lo garantiza. El costo de esa
-    /// decisión: quien encienda el permiso en Salud DESPUÉS de haber pasado por este acto ya no
-    /// recibe el prellenado (sus cuatro campos siguen diciendo, con la verdad, «Lo puse yo»).
-    /// Prefiero ese hueco a la alternativa, que es un segundo autollenado capaz de borrar lo que
-    /// la persona acaba de escribir.
+    /// Corre UNA sola vez por onboarding, y el sello es lo que lo garantiza. La única excepción
+    /// la maneja el WIZARD (`replantearAutollenado`): si Salud se conecta después de haber pasado
+    /// por aquí —ruta real: «Ahora no» → perfil → Atrás → reconsiderar → Conectar— el sello se
+    /// tira y esto vuelve a correr, pero SOLO si nadie ha corregido nada todavía. Un segundo
+    /// autollenado sobre un campo editado borraría lo que la persona acaba de escribir.
     @MainActor
     private func autollenar() async {
         guard sello == nil else { return }
@@ -390,7 +418,7 @@ private struct OnbPerfilPreview: View {
     var body: some View {
         ZStack {
             LiquidColor.fondoGradient.ignoresSafeArea()
-            OnbActoPerfil(sello: $sello, luego: .acta,
+            OnbActoPerfil(sello: $sello, luego: .ciclo,
                           landing: .lectura(verdict: .full, noches: 22, diasHistoria: 180),
                           desdeSalida: false, onAtras: {}, onContinuar: {})
         }

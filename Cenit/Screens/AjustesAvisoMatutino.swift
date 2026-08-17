@@ -11,15 +11,19 @@ import StrandAnalytics
 // su propio archivo (y no dentro de `AjustesView`) porque es una feature con su propio permiso del
 // sistema, su propio estado y su propio texto honesto; `AjustesLanding` solo la invoca.
 //
-// Tres verdades que la sección tiene que sostener a la vista:
+// Cuatro verdades que la sección tiene que sostener a la vista:
 //   1. El permiso se pide AL ENCENDER el switch, nunca antes.
-//   2. Si el permiso se negó en Ajustes de iOS, el switch NO finge estar encendido: se ve apagado y
-//      la sección dice por qué, con el atajo para abrirlo.
-//   3. Si el motor todavía no tiene una lectura que dar, se dice también: el aviso callará hasta
+//   2. Si el permiso no está concedido, el switch NO finge estar encendido: se ve apagado y la
+//      sección dice por qué, con el atajo para abrirlo. Negado en Ajustes de iOS, además, el switch
+//      queda DESHABILITADO — ahí no hace nada (el diálogo del sistema ya no vuelve).
+//   3. El permiso se relee al volver al primer plano, no solo al entrar: conceder en Ajustes de iOS
+//      y regresar es justo el momento en que esta sección se quedaba congelada en su verdad vieja.
+//   4. Si el motor todavía no tiene una lectura que dar, se dice también: el aviso callará hasta
 //      tenerla, y es mejor decirlo aquí que dejar al dueño esperando un aviso que no va a llegar.
 
 struct AvisoMatutinoSection: View {
     @Environment(\.instrumentoTheme) private var theme
+    @Environment(\.scenePhase) private var scenePhase
     @EnvironmentObject private var repo: Repository
 
     /// La preferencia del dueño (lo que PIDIÓ), separada del permiso del sistema (lo que iOS permite).
@@ -27,12 +31,27 @@ struct AvisoMatutinoSection: View {
     @AppStorage(MorningReadingScheduler.hourKey) private var hora = MorningReadingScheduler.horaPorDefecto
     @AppStorage(MorningReadingScheduler.minuteKey) private var minuto = 0
 
-    @State private var permiso: UNAuthorizationStatus = .notDetermined
+    /// `nil` = todavía no se ha leído el permiso real (la consulta es asíncrona). No es lo mismo que
+    /// `.notDetermined`, que ya es una respuesta del sistema.
+    @State private var permiso: UNAuthorizationStatus?
     @State private var pidiendoPermiso = false
 
-    /// El switch solo se ve encendido cuando de verdad puede sonar.
-    private var encendido: Bool { quiereAviso && permiso != .denied }
-    private var negadoEnIOS: Bool { quiereAviso && permiso == .denied }
+    /// El switch solo se ve encendido cuando de verdad PUEDE sonar. Con cualquier estado que no sea
+    /// `.authorized` se ve apagado: `reschedule` no programa nada sin ese permiso, así que un switch
+    /// prendido sería la app prometiendo algo que ya sabe que no va a hacer. El caso que se colaba:
+    /// si `requestAuthorization()` lanzaba, el estado se quedaba en `.notDetermined` —ni concedido ni
+    /// negado— y el switch se veía prendido mientras no se programaba nada.
+    /// Mientras el permiso todavía no se ha leído se respeta la preferencia guardada, para no
+    /// parpadear en apagado un switch que el dueño dejó prendido.
+    private var encendido: Bool {
+        guard quiereAviso else { return false }
+        guard let permiso else { return true }
+        return permiso == .authorized
+    }
+    private var negadoEnIOS: Bool {
+        guard quiereAviso, let permiso else { return false }
+        return permiso == .denied
+    }
     /// «Lo pediste, iOS deja, pero hoy no tengo nada que decirte.»
     private var sinLecturaQueDar: Bool {
         encendido && !MorningReadingScheduler.hayLectura(repo.todayPreparedness)
@@ -51,7 +70,11 @@ struct AvisoMatutinoSection: View {
             }
             .toggleStyle(.instrumento)
             .frame(minHeight: 44)
-            .disabled(pidiendoPermiso)
+            // Con el permiso NEGADO en Ajustes de iOS el switch no hace nada (el diálogo del
+            // sistema ya no vuelve a aparecer): tocable e inerte era peor que deshabilitado. El
+            // camino real es el botón de abajo. Para APAGAR la preferencia no hace falta el switch:
+            // sin permiso ya no suena nada.
+            .disabled(pidiendoPermiso || negadoEnIOS)
 
             if encendido {
                 Divider().overlay(theme.hairline)
@@ -92,6 +115,13 @@ struct AvisoMatutinoSection: View {
             }
         }
         .task { await sincronizar() }
+        // Volver de Ajustes de iOS es EXACTAMENTE cuando el permiso pudo cambiar: sin esto, quien
+        // tocaba «Abrir Ajustes», concedía y regresaba encontraba la sección diciendo todavía que
+        // los avisos están apagados, y el aviso seguía sin programarse hasta la siguiente visita.
+        .onChange(of: scenePhase) { _, fase in
+            guard fase == .active else { return }
+            Task { await sincronizar() }
+        }
         // Cambiar la hora cancela lo pendiente y reprograma (lo hace `reschedule` entero).
         .onChange(of: hora) { _, _ in reprogramar() }
         .onChange(of: minuto) { _, _ in reprogramar() }
@@ -112,7 +142,10 @@ struct AvisoMatutinoSection: View {
     private func encender(_ on: Bool) {
         guard on else {
             quiereAviso = false
-            Task { await MorningReadingScheduler.cancelAll() }
+            // Por `reschedule` (y no `cancelAll` a secas) para que el borrado entre EN LA COLA:
+            // con el switch apagado el plan sale vacío y cancela, pero sin pisarse con una
+            // reprogramación en vuelo.
+            Task { await MorningReadingScheduler.reschedule(prep: repo.todayPreparedness) }
             return
         }
         pidiendoPermiso = true
@@ -136,9 +169,14 @@ struct AvisoMatutinoSection: View {
         }
     }
 
+    /// Cambiar la hora es la ÚNICA reprogramación que cancela aunque el plan salga vacío
+    /// (`cancelaSinPlan`): dejar lo pendiente ahí haría sonar el aviso a la hora anterior.
     private func reprogramar() {
         guard quiereAviso else { return }
-        Task { await MorningReadingScheduler.reschedule(prep: repo.todayPreparedness) }
+        Task {
+            await MorningReadingScheduler.reschedule(prep: repo.todayPreparedness,
+                                                     cancelaSinPlan: true)
+        }
     }
 
     /// La hora guardada (hora + minuto) vista como la `Date` que pide `DatePicker`. Solo se escriben

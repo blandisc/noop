@@ -67,7 +67,13 @@ struct OnbActoPermiso: View {
         // Los `Group` son puramente estructurales: SwiftUI tope los hijos de un builder en 10 y
         // este diagrama tiene 18. `Group` es transparente para el layout, así que cada renglón
         // sigue siendo hermano directo del `VStack` del shell (y los `Spacer` siguen empujando).
-        OnbShell {
+        //
+        // Éste es el ÚNICO gate del producto —sin este toque no hay app— y su contenido desborda
+        // el viewport por construcción (~900 pt de diagrama en ~750 útiles de un iPhone de 390).
+        // Por eso es el único acto con el CTA ANCLADO al pie: el botón está siempre a la vista y
+        // el diagrama sigue scrolleando por debajo. La barra de scroll también se enseña, para
+        // que se vea que hay más abajo.
+        OnbShell(indicadores: true) {
             Group {
                 OnbAtras(accion: onAtras)
 
@@ -137,21 +143,19 @@ struct OnbActoPermiso: View {
                 }
                 .padding(.top, LiquidSpace.s600)
                 .accessibilityElement(children: .combine)
-
-                Spacer(minLength: LiquidSpace.s600)
-
-                LiquidGlassButton(OnbCopy.conectar, variant: .primary, expands: true) {
-                    guard !pidiendo else { return }
-                    pidiendo = true
-                    Task { @MainActor in
-                        await onConectar()
-                        pidiendo = false
-                    }
-                }
-                .disabled(pidiendo)
-                OnbSalidaTexto(titulo: OnbCopy.ahoraNo, accion: onAhoraNo)
-                    .disabled(pidiendo)
             }
+        } pie: {
+            LiquidGlassButton(OnbCopy.conectar, variant: .primary, expands: true) {
+                guard !pidiendo else { return }
+                pidiendo = true
+                Task { @MainActor in
+                    await onConectar()
+                    pidiendo = false
+                }
+            }
+            .disabled(pidiendo)
+            OnbSalidaTexto(titulo: OnbCopy.ahoraNo, accion: onAhoraNo)
+                .disabled(pidiendo)
         }
     }
 }

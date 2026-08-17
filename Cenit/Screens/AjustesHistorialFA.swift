@@ -30,23 +30,45 @@ enum HistorialFAPuerta {
         case noLleganSeries
     }
 
-    /// Las dos claves que `HealthKitBridge.ingestNocturnalHRV()` escribe en la partición
-    /// `apple-health-noop`: `apple_rmssd_night` (SOLO si la noche salió densa) y
-    /// `apple_rr_clean_night` (los latidos limpios de esa noche, densa o no).
-    static let claves = ["apple_rmssd_night", "apple_rr_clean_night"]
+    /// Las TRES claves que `HealthKitBridge.ingestNocturnalHRV()` escribe en la partición
+    /// `apple-health-noop`: `apple_rmssd_night` (SOLO si la noche salió densa),
+    /// `apple_rr_clean_night` (los latidos limpios de esa noche, densa o no) y
+    /// `apple_rr_pairs_night` (los pares sucesivos de esa misma noche).
+    static let claveRmssd = "apple_rmssd_night"
+    static let claveLimpios = "apple_rr_clean_night"
+    static let clavePares = "apple_rr_pairs_night"
+    static let claves = [claveRmssd, claveLimpios, clavePares]
 
     /// Ventana de evidencia: los mismos 45 días que el bridge mantiene al día.
     static let ventanaDias = 45
 
     /// La lectura honesta de «ya llegan series de latidos»: existe una noche que el motor CONTÓ
-    /// (`apple_rmssd_night`), o una noche cuyos latidos limpios llegaron al piso de densidad del
-    /// propio motor (`NocturnalHRV.minCleanBeats`). Un goteo de tres latidos no es «ya llegan».
+    /// (`apple_rmssd_night`), o una noche que cumple LOS DOS pisos de densidad del motor la misma
+    /// noche (`nClean ≥ 60` **y** `nPairs ≥ 30`, `NocturnalHRV.night`).
+    ///
+    /// Los latidos limpios solos NO bastan, y el propio `NocturnalHRV` documenta por qué: «a sparse
+    /// wrist night can clear 60 clean beats while offering far fewer true successive pairs». Con el
+    /// piso de pares fuera, una sola noche rala de esas silenciaba la sección PARA SIEMPRE justo a
+    /// quien nunca va a recibir el co-voto — que es exactamente a quien la puerta le sirve.
     static func estado(filas: [MetricPoint]) -> Estado {
-        let llegan = filas.contains { fila in
-            fila.key == "apple_rmssd_night"
-                || (fila.key == "apple_rr_clean_night" && fila.value >= Double(NocturnalHRV.minCleanBeats))
+        // El veredicto de densidad del propio motor: si emitió RMSSD, la noche pasó los dos pisos.
+        if filas.contains(where: { $0.key == claveRmssd }) { return .yaLleganSeries }
+        var limpios: [String: Double] = [:]
+        var pares: [String: Double] = [:]
+        for fila in filas {
+            switch fila.key {
+            case claveLimpios: limpios[fila.day] = max(limpios[fila.day] ?? 0, fila.value)
+            case clavePares:   pares[fila.day] = max(pares[fila.day] ?? 0, fila.value)
+            default:           break
+            }
         }
-        return llegan ? .yaLleganSeries : .noLleganSeries
+        // Los dos pisos, en LA MISMA noche: 60 latidos de una noche y 30 pares de otra no son una
+        // noche densa, son dos noches ralas.
+        let densa = limpios.contains { dia, n in
+            n >= Double(NocturnalHRV.minCleanBeats)
+                && (pares[dia] ?? 0) >= Double(NocturnalHRV.minSuccessivePairs)
+        }
+        return densa ? .yaLleganSeries : .noLleganSeries
     }
 }
 

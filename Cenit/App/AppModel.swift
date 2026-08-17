@@ -182,7 +182,14 @@ import UIKit
         // FER-114 · el aviso matutino se re-arma con cada lectura nueva del motor: es la ÚNICA
         // forma de que lleve la palabra del día (Cénit solo calcula con la app abierta, y el texto
         // de una notificación se congela al programarla). `MorningReadingScheduler` decide si hay
-        // algo honesto que decir; apagado o sin lectura, esto cancela lo pendiente y calla.
+        // algo honesto que decir.
+        //
+        // OJO con las dos trampas de este `.sink`, que el scheduler ya absorbe (ver `reschedule`):
+        //   · `$dashboard` es `@Published`, así que esto dispara DE INMEDIATO con el valor de
+        //     `init` (`preparedness == nil`). Eso no es «no hay aviso que dar», es «todavía no sé»,
+        //     y por eso una publicación sin lectura ya no cancela lo pendiente.
+        //   · dos publicaciones seguidas lanzan dos tasks: el scheduler las pone EN COLA para que
+        //     el `cancelAll()` de la vieja no aterrice después de los `add` de la nueva.
         repo.$dashboard.map(\.preparedness)
             .removeDuplicates()
             .sink { (prep: Preparedness.Read?) in

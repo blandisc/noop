@@ -1526,6 +1526,23 @@
         }
       }
     },
+    "onb.4.sinfc.causa" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Almost always it's one of two things: the heart permission stayed off in Health, or you don't sleep with a watch on yet."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Casi siempre es una de dos cosas: el permiso del corazón quedó apagado en Salud, o todavía no duermes con un reloj puesto."
+          }
+        }
+      }
+    },
     "onb.4.sinfc.cta" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1675,6 +1692,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Esto no sale de tus señales, me lo tienes que decir tú: tu edad me da tus zonas de frecuencia cardiaca, y tu sexo, tu peso y tu estatura afinan lo que gastas al entrenar."
+          }
+        }
+      }
+    },
+    "onb.perfil.buscando" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Looking for what Apple Health already knows about you."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buscando lo que Apple Salud ya sabe de ti."
           }
         }
       }

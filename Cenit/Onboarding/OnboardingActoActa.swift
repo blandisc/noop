@@ -27,7 +27,10 @@ struct OnbActoActa: View {
         // Los `Group` son puramente estructurales: SwiftUI tope los hijos de un builder en 10 y
         // el acta tiene 24. `Group` es transparente para el layout, así que cada renglón sigue
         // siendo hermano directo del `VStack` del shell.
-        OnbShell {
+        //
+        // Acto largo por construcción (24 renglones): enseña su barra de scroll. Esconderla aquí
+        // era esconder que la mitad del acta vive abajo del pliegue.
+        OnbShell(indicadores: true) {
             Group {
                 OnbAtras(accion: onAtras)
 

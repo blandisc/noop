@@ -26,6 +26,11 @@ import StrandAnalytics
 //   4. **Actos 3 y 4 son la misma pantalla.** No hay corte entre «conectando» y «tu lectura»: la
 //      convergencia se densifica, se tiñe, calla, y la palabra entra en fade puro encima.
 //
+//   5. **Después de la palabra viene el ACTA, nunca un formulario.** La ⓘ del reveal dice «está
+//      aquí, siempre» señalando al acta, y es el único gesto de curiosidad del flujo: lo que sigue
+//      a la palabra tiene que ser lo que la explica. El perfil (los cuatro datos que no salen de
+//      tus señales) se cobra al SALIR del acta, rumbo al ciclo.
+//
 // Los actos viven en archivos hermanos (`OnboardingActoPromesa`, `OnboardingActoEncendido`,
 // `OnboardingActoPerfil`, `OnboardingActoActa`, `OnboardingActoCiclo`); aquí está la escena, el
 // lienzo y el cableado.
@@ -42,6 +47,9 @@ struct OnboardingWizard: View {
     @EnvironmentObject private var health: HealthKitBridge
     @EnvironmentObject private var repo: Repository
     @EnvironmentObject private var tabRouter: TabRouter
+    /// Solo para saber si el perfil sigue INTACTO cuando Salud se conecta tarde (ver
+    /// `replantearAutollenado`). El acto del perfil es quien lo edita.
+    @EnvironmentObject private var profile: ProfileStore
 
     @State private var acto: OnbActo = .promesa
     /// 0…1 de cuánta materia hay en el lienzo. Ver la regla 2 de la cabecera.
@@ -53,13 +61,13 @@ struct OnboardingWizard: View {
     /// El acto 4 ya reveló: el lienzo pasa de `.convergencia` a `.dentro`.
     @State private var revelado = false
 
-    // El acto 5 (el perfil) es la ÚLTIMA parada común de TODAS las ramas, así que de dónde vino y
-    // a dónde va se fijan al entrar (`irAPerfil`) en vez de que el acto los adivine.
+    // El perfil es la ÚLTIMA parada común de TODAS las ramas, así que de dónde vino y a dónde va
+    // se fijan al entrar (`irAPerfil`) en vez de que el acto los adivine.
     @State private var perfilAtras: OnbActo = .encendido
-    @State private var perfilLuego: OnbPerfilLuego = .acta
-    /// Lo que dejó el autollenado del perfil. Vive aquí y no en el acto porque volver desde el
-    /// acta lo reconstruye en blanco: sin este sello afuera, el autollenado correría una segunda
-    /// vez y pisaría lo que la persona acaba de corregir.
+    @State private var perfilLuego: OnbPerfilLuego = .ciclo
+    /// Lo que dejó el autollenado del perfil. Vive aquí y no en el acto porque volver al perfil
+    /// (desde el ciclo) lo reconstruye en blanco: sin este sello afuera, el autollenado correría
+    /// una segunda vez y pisaría lo que la persona acaba de corregir.
     @State private var perfilSello: OnbPerfilSello?
 
     var body: some View {
@@ -78,6 +86,17 @@ struct OnboardingWizard: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .animation(LiquidMotion.glassOut(LiquidMotion.gentle), value: acto)
+        // Conectar Salud DESPUÉS de haber pasado por el perfil (ruta real: «Ahora no» → perfil →
+        // Atrás → reconsiderar → Conectar) dejaba el sello ya puesto, así que el autollenado no
+        // volvía a correr: los cuatro campos seguían diciendo «Lo puse yo» y la nota le echaba a
+        // Apple la culpa de no haber dado datos… con Salud ya conectada. El sello se invalida
+        // aquí, en el wizard, porque el acto del perfil ni siquiera está en pantalla cuando el
+        // permiso cambia. Vive aquí también la excepción que protege la doctrina del acto: si la
+        // persona ya corrigió algo, su corrección GANA y el sello se queda.
+        .onChange(of: health.auth) { _, nuevo in
+            guard nuevo == .authorized else { return }
+            replantearAutollenado()
+        }
     }
 
     // MARK: El acto en turno
@@ -96,15 +115,17 @@ struct OnboardingWizard: View {
                 },
                 onAhoraNo: { ir(a: .salida) })
         case .encendido:
-            // Las TRES salidas del reveal pasan por el perfil, no solo la del veredicto: quien no
-            // trae reloj (o negó el permiso) es justo quien no tiene autollenado posible, y era el
-            // único que se quedaba con los cuatro valores de fábrica sin enterarse (FER-113).
+            // El reveal sale al ACTA, no al perfil. La ⓘ de la palabra promete «¿quieres ver cómo
+            // llegué a esa palabra? está aquí, siempre» y es el único gesto de curiosidad del
+            // flujo: aterrizarla en un formulario era contestar otra cosa. El perfil se cobra al
+            // SALIR del acta, rumbo al ciclo, y sigue siendo la última parada común de todas las
+            // ramas —incluidas las dos sin autollenado posible, que entran directo (FER-113).
             OnbActoEncendido(
                 densidad: $densidad,
                 tenido: $tenido,
                 landing: $landing,
                 revelado: $revelado,
-                onContinuar: { irAPerfil(desde: .encendido, luego: .acta) },
+                onContinuar: { ir(a: .acta) },
                 onEntrenar: { irAPerfil(desde: .encendido, luego: .entrenar) },
                 onEntrar: { irAPerfil(desde: .encendido, luego: .entrar) })
         case .perfil:
@@ -120,12 +141,12 @@ struct OnboardingWizard: View {
         case .acta:
             OnbActoActa(
                 landing: landing,
-                onAtras: { ir(a: .perfil) },
-                onContinuar: { ir(a: .ciclo) })
+                onAtras: { ir(a: .encendido) },
+                onContinuar: { irAPerfil(desde: .acta, luego: .ciclo) })
         case .ciclo:
             OnbActoCiclo(
                 landing: landing,
-                onAtras: { ir(a: .acta) },
+                onAtras: { ir(a: .perfil) },
                 onEntrar: { terminar() })
         case .salida:
             OnbActoSalida(
@@ -141,11 +162,15 @@ struct OnboardingWizard: View {
         case .promesa:            return .disperso
         case .permiso, .salida:   return .quieto
         case .encendido:          return revelado ? .dentro : .convergencia
-        // El perfil hereda la esfera ya formada del reveal: el orbe sigue ahí, girando despacio,
-        // mientras se corrigen cuatro datos. Descomponerlo aquí adelantaría el gesto del acta.
-        // Llegando por «Ahora no» nunca hubo encendido, así que el campo sigue CONGELADO: formar
-        // la esfera ahí dibujaría un orbe que ninguna evidencia sostiene.
-        case .perfil:             return revelado ? .dentro : .quieto
+        // El perfil hereda el campo tal como lo dejó el acto anterior. Viniendo del ACTA ya está
+        // descompuesto, y volver a juntarlo aquí para descomponerlo otra vez en el ciclo sería
+        // deshacer delante del usuario el gesto que el acta acaba de hacer. Viniendo del reveal
+        // (las ramas que salen directo a la app) hereda la esfera formada. Y llegando por «Ahora
+        // no» nunca hubo encendido, así que el campo sigue CONGELADO: formar la esfera ahí
+        // dibujaría un orbe que ninguna evidencia sostiene.
+        case .perfil:
+            if perfilAtras == .acta { return .descomposicion }
+            return revelado ? .dentro : .quieto
         case .acta:               return .descomposicion
         case .ciclo:              return .circulacion
         }
@@ -156,6 +181,9 @@ struct OnboardingWizard: View {
     /// medio), la misma que usa el héroe de Hoy. Sin palabra no hay tinte: el orbe se queda gris
     /// en vez de apostar un color.
     private var destinoTinte: (r: Double, g: Double, b: Double)? {
+        // `revelaColor` es la MISMA puerta que el acto 4 consulta para saber si el beat del teñido
+        // existe: si aquí hubiera color y allá no (o al revés), el guion se desincronizaría.
+        guard let landing, landing.revelaColor else { return nil }
         guard case let .lectura(verdict, _, _) = landing else { return nil }
         switch verdict {
         case .full:      return LiquidColor.ParticulaRGB.verde
@@ -182,10 +210,21 @@ struct OnboardingWizard: View {
 
     private func salirDelPerfil() {
         switch perfilLuego {
-        case .acta:     ir(a: .acta)
+        case .ciclo:    ir(a: .ciclo)
         case .entrar:   terminar()
         case .entrenar: terminar(irAEntrenar: true)
         }
+    }
+
+    /// Salud se conectó DESPUÉS de que el perfil ya corrió su autollenado: el sello se tira para
+    /// que vuelva a correr, ahora sí con la puerta abierta. La excepción es lo que sostiene la
+    /// regla del acto —lo que la persona edita GANA—: si algún campo ya no coincide con el sello,
+    /// hubo corrección a mano y el sello se queda como está (un segundo autollenado la borraría).
+    private func replantearAutollenado() {
+        guard let s = perfilSello else { return }
+        let intacto = profile.age == s.edad && profile.sex == s.sexo
+            && profile.weightKg == s.pesoKg && profile.heightCm == s.estaturaCm
+        if intacto { perfilSello = nil }
     }
 
     /// El final del flujo. «Ir a Entrenar» aterriza en la pestaña que sí funciona sin reloj,
@@ -205,11 +244,14 @@ enum OnbActo: Hashable {
     case permiso
     /// 3 y 4 · La conexión y la lectura: LA MISMA pantalla, que se transforma sin corte.
     case encendido
-    /// 5 · El perfil: los cuatro datos que el motor necesita de ti, precargados de Apple Salud.
-    /// Aparece en TODAS las ramas, incluida la salida de «Ahora no» (FER-113).
-    case perfil
-    /// 6 · El acta: de qué está hecha la palabra.
+    /// 5 · El acta: de qué está hecha la palabra. Es a DONDE APUNTA la ⓘ del reveal, así que va
+    /// inmediatamente después de la palabra: entre las dos no puede meterse un formulario.
     case acta
+    /// 6 · El perfil: los cuatro datos que el motor necesita de ti, precargados de Apple Salud.
+    /// Se cobra al salir del acta, y aparece en TODAS las ramas —incluidas las que salen directo
+    /// del reveal a la app y la salida de «Ahora no» (FER-113).
+    /// (Sus claves de copy van sin número a propósito: `onb.perfil.*`.)
+    case perfil
     /// 7 · El ciclo y la mañana.
     case ciclo
     /// La salida de «Ahora no».

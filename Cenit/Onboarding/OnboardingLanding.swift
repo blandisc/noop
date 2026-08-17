@@ -65,6 +65,15 @@ extension OnboardingLanding {
         }
     }
 
+    /// ¿Hay color que revelar? Solo el desenlace CON palabra tiñe el lienzo: sin veredicto el orbe
+    /// se queda gris en vez de apostar un tono (y `lowSignal` no tiene tono propio). El wizard lo
+    /// usa para elegir el destino del tinte, y el acto 4 para saltarse el beat del teñido cuando
+    /// no hay nada que teñir — 450 ms de espera muertos en tres de las cuatro ramas.
+    public var revelaColor: Bool {
+        guard case let .lectura(verdict, _, _) = self else { return false }
+        return verdict != .lowSignal
+    }
+
     /// Cuántos días de historia leyó, para el contador que rueda. Son días CON alguna fila de
     /// Apple (`AppleHealthCoverage.totalDays`), no el span del calendario: un hueco de tres meses
     /// no cuenta como historia.
