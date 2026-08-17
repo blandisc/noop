@@ -377,7 +377,11 @@ public struct MatrizHoyFace: View {
             // de Hoy (ver ScrubGesto abajo; patrón #118).
             VStack(alignment: .leading, spacing: LiquidSpace.s200) {
                 Button { tocar(s.id) } label: {
-                    encabezado(s).contentShape(Rectangle())
+                    encabezado(s)
+                        // FER-73 · INT-06: el encabezado del guardián medía 34 pt de alto
+                        // (`encabezadoMinH`) y era un botón: por debajo del piso HIG de 44. El
+                        // área crece hacia afuera, sin engordar el vidrio ni mover el renglón.
+                        .contentShape(Rectangle().inset(by: -LiquidSpace.s125))
                 }
                 .buttonStyle(.plain)
                 .accessibilityElement(children: .combine)
@@ -559,8 +563,8 @@ public struct MatrizHoyFace: View {
                       : (s.terciaria ? LiquidType.valorS : LiquidType.valorM))
                 .foregroundStyle(s.hue)
                 .monospacedDigit()
-                .contentTransition(.numericText())
-                .animation(.snappy, value: valor)
+                .contentTransition(reduceMotion ? .identity : .numericText())
+                .animation(reduceMotion ? nil : .snappy, value: valor)
             if let u = s.unidad, valor != "—" {
                 Text(u)
                     .font(LiquidType.caption)
@@ -633,8 +637,8 @@ public struct MatrizHoyFace: View {
                     .font(LiquidType.valorM)
                     .foregroundStyle(r.hue)
                     .monospacedDigit()
-                    .contentTransition(.numericText())
-                    .animation(.snappy, value: valor)
+                    .contentTransition(reduceMotion ? .identity : .numericText())
+                    .animation(reduceMotion ? nil : .snappy, value: valor)
                 if let u = r.unidad {
                     Text(u)
                         .font(LiquidType.caption)
@@ -846,9 +850,6 @@ private struct ScrubGesto: ViewModifier {
         if case .regla = chart { return MatrizTokens.reglaZona }
         return MatrizTokens.chartInset
     }
-    /// Vivo mientras el dedo arrastra; SwiftUI lo devuelve a `false` al terminar O cancelar.
-    @GestureState private var arrastrando = false
-
     func body(content: Content) -> some View {
         content.overlay(
             GeometryReader { geo in
@@ -857,37 +858,28 @@ private struct ScrubGesto: ViewModifier {
                     // Un toque limpio sobre la gráfica abre la hoja, como en las celdas
                     // sin scrub (panel B, DeepSeek BAJA: quedaba zona muerta).
                     .onTapGesture { onTap() }
-                    .simultaneousGesture(
-                        // simultaneous (no highPriority): el pan vertical del ScrollView
-                        // sigue vivo sobre las gemelas; el scrub solo actúa en arrastres
-                        // horizontales (guard de abajo) — panel B, DeepSeek MEDIA.
-                        DragGesture(minimumDistance: 6, coordinateSpace: .local)
-                            .updating($arrastrando) { _, estado, _ in estado = true }
-                            .onChanged { g in
-                                // Sólo scrub cuando el gesto es horizontal — un arrastre
-                                // vertical es intención de scroll, no de leer noches.
-                                guard abs(g.translation.width) >= abs(g.translation.height) else { return }
-                                let inset = MatrizTokens.chartInset
-                                let w = geo.size.width - inset - insetDerecho
-                                guard w > 0, noches.count > 1 else { return }
-                                let i = ScrubMapeo.indice(
-                                    x: g.location.x, inset: inset, ancho: w,
-                                    count: noches.count,
-                                    esSerie: ScrubMapeo.esSerie(chart))
-                                if scrub?.id != id || scrub?.idx != i {
-                                    scrub = (id, i)
-                                    tick &+= 1   // pulso háptico por noche cruzada
-                                }
+                    // FER-73 · H-S: el gesto NO EMPIEZA si el dedo va vertical (regla en
+                    // `gestureRecognizerShouldBegin`), así el scroll de Hoy sigue vivo aunque
+                    // el dedo arranque sobre la gráfica. Antes el `DragGesture` reconocía y en
+                    // iOS 18+ el pan del ScrollView cedía: la página no se movía.
+                    .liquidScrubPan(
+                        enabled: noches.count > 1,
+                        onChange: { p in
+                            let inset = MatrizTokens.chartInset
+                            let w = geo.size.width - inset - insetDerecho
+                            guard w > 0, noches.count > 1 else { return }
+                            let i = ScrubMapeo.indice(
+                                x: p.x, inset: inset, ancho: w,
+                                count: noches.count,
+                                esSerie: ScrubMapeo.esSerie(chart))
+                            if scrub?.id != id || scrub?.idx != i {
+                                scrub = (id, i)
+                                tick &+= 1   // pulso háptico por noche cruzada
                             }
-                            .onEnded { _ in scrub = nil }
-                    )
+                        },
+                        onEnd: { if scrub?.id == id { scrub = nil } })
             }
         )
-        // Red de seguridad ante cancelación: si el gesto muere sin `onEnded`, el estado
-        // vuelve a false y aquí soltamos el scrub (la celda regresa a HOY).
-        .onChange(of: arrastrando) { _, activo in
-            if !activo, scrub?.id == id { scrub = nil }
-        }
     }
 }
 

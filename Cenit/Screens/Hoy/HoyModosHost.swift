@@ -81,6 +81,10 @@ struct HoyMatrizHost: View {
             case .senalInsuficiente:
                 return String(localized: "hoy.senal.insuficiente",
                               defaultValue: "Night recorded · not enough signal for a verdict")
+            case .calibrando:
+                // FER-73 · H12: el héroe ya dice «Getting to know you · Night N of M»; una
+                // franja que diga «not enough signal» debajo lo contradice. Calla.
+                return nil
             }
         case .t4SinPermiso:
             // Revisión conceptual (dueño 2026-08-15): «pending sync» era MENTIRA aquí — sin
@@ -111,7 +115,10 @@ private struct AvisoDesconexion: View {
     let texto: String
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.liquidAmbientPaused) private var ambientPaused
-    private var quieto: Bool { reduceMotion || ambientPaused }
+    // FER-73 · M14: faltaba `liquidMotionDisabled` — en capturas/fixtures «sin motion» el aviso
+    // seguía respirando (y re-rasterizando su sombra) a 12 fps.
+    @Environment(\.liquidMotionDisabled) private var motionDisabled
+    private var quieto: Bool { reduceMotion || ambientPaused || motionDisabled }
 
     /// «estado · detalle» partido en el «·» → dos renglones con jerarquía, no un corte a media frase.
     private var partes: (estado: String, detalle: String?) {
@@ -121,33 +128,52 @@ private struct AvisoDesconexion: View {
     }
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: LiquidMotion.intervaloSello, paused: quieto)) { tl in
-            let fase = quieto ? 0.5 : (sin(tl.date.timeIntervalSinceReferenceDate * 1.5) * 0.5 + 0.5)
-            HStack(alignment: .center, spacing: LiquidSpace.s200) {
-                Circle()
-                    .fill(LiquidColor.rojoClaro)
-                    .frame(width: 6, height: 6)
-                    .opacity(0.55 + 0.45 * fase)   // token-exempt: latido del punto de aviso
-                VStack(alignment: .leading, spacing: LiquidSpace.s050) {
-                    Text(partes.estado)
-                        .font(InstrumentoType.grotesk(13, weight: .semibold))
-                        .foregroundStyle(LiquidColor.rojoClaro)
-                    if let detalle = partes.detalle {
-                        Text(detalle)
-                            .font(InstrumentoType.grotesk(12, weight: .regular))
-                            .foregroundStyle(LiquidColor.rojoClaro.opacity(0.72))   // token-exempt: detalle a susurro
-                    }
+        // FER-73 · M14: el TEXTO ya no vive dentro del TimelineView. Antes cada tick re-medía y
+        // re-rasterizaba los dos `Text` + la sombra variable de toda la tarjeta a 12 fps; ahora
+        // el reloj solo mueve una capa de respiro (punto + fondo + glow) detrás de un contenido
+        // estático. Mismo dibujo, una fracción del trabajo por cuadro.
+        HStack(alignment: .center, spacing: LiquidSpace.s200) {
+            latido
+            VStack(alignment: .leading, spacing: LiquidSpace.s050) {
+                Text(partes.estado)
+                    .font(InstrumentoType.grotesk(13, weight: .semibold))
+                    .foregroundStyle(LiquidColor.rojoClaro)
+                if let detalle = partes.detalle {
+                    Text(detalle)
+                        .font(InstrumentoType.grotesk(12, weight: .regular))
+                        .foregroundStyle(LiquidColor.rojoClaro.opacity(0.72))   // token-exempt: detalle a susurro
                 }
-                Spacer(minLength: 0)
             }
-            .padding(.vertical, LiquidSpace.s200)
-            .padding(.horizontal, LiquidSpace.s250)
-            .background(
-                RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous)
-                    .fill(LiquidColor.rojoClaro.opacity(0.06 + 0.04 * fase))   // token-exempt: fondo del aviso
-            )
-            .shadow(color: LiquidColor.rojoClaro.opacity(0.11 + 0.09 * fase),   // token-exempt: glow que respira
-                    radius: 7 + 4 * fase)
+            Spacer(minLength: 0)
         }
+        .padding(.vertical, LiquidSpace.s200)
+        .padding(.horizontal, LiquidSpace.s250)
+        .background(respiro)
+    }
+
+    /// El punto que late (la única pieza de texto-adyacente que se anima).
+    private var latido: some View {
+        TimelineView(.animation(minimumInterval: LiquidMotion.intervaloSello, paused: quieto)) { tl in
+            Circle()
+                .fill(LiquidColor.rojoClaro)
+                .frame(width: 6, height: 6)
+                .opacity(0.55 + 0.45 * Self.fase(tl.date, quieto: quieto))   // token-exempt: latido del punto de aviso
+        }
+        .frame(width: 6, height: 6)
+    }
+
+    /// Fondo + glow: una capa aparte, sin texto que re-medir por cuadro.
+    private var respiro: some View {
+        TimelineView(.animation(minimumInterval: LiquidMotion.intervaloSello, paused: quieto)) { tl in
+            let fase = Self.fase(tl.date, quieto: quieto)
+            RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous)
+                .fill(LiquidColor.rojoClaro.opacity(0.06 + 0.04 * fase))   // token-exempt: fondo del aviso
+                .shadow(color: LiquidColor.rojoClaro.opacity(0.11 + 0.09 * fase),   // token-exempt: glow que respira
+                        radius: 7 + 4 * fase)
+        }
+    }
+
+    private static func fase(_ date: Date, quieto: Bool) -> Double {
+        quieto ? 0.5 : (sin(date.timeIntervalSinceReferenceDate * 1.5) * 0.5 + 0.5)
     }
 }

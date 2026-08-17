@@ -1,6 +1,278 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "reading.vsPopulation.resp_rate.normal" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In a normal range."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En un rango normal."
+          }
+        }
+      }
+    },
+    "reading.vsPopulation.resp_rate.elevated" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Above the usual range."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Por encima del rango usual."
+          }
+        }
+      }
+    },
+    "matriz.sueno.rango.dentro" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "recommended range"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "rango recomendado"
+          }
+        }
+      }
+    },
+    "matriz.sueno.rango.fuera" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "below recommended"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "abajo del recomendado"
+          }
+        }
+      }
+    },
+    "matriz.guardian.sincomparar" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not compared yet"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todavía sin comparar"
+          }
+        }
+      }
+    },
+    "guardian.sincomparar.titulo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not compared yet"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todavía sin comparar"
+          }
+        }
+      }
+    },
+    "guardian.sincomparar.texto" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Both signals came in, but the guardian hasn't compared them against your pattern yet."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Llegaron las dos señales, pero el guardián todavía no las compara contra tu patrón."
+          }
+        }
+      }
+    },
+    "hero.sub.fc.arriba" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your resting heart rate came in above your base."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu FC en reposo amaneció por encima de tu base."
+          }
+        }
+      }
+    },
+    "acta.vigilantes.votaron" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Watching · they voted today"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vigilan · hoy sí votaron"
+          }
+        }
+      }
+    },
+    "acta.vigilantes.votaron.a11y" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Breathing and temperature moved out together: today they voted."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Respiración y temperatura se salieron juntas: hoy sí votaron."
+          }
+        }
+      }
+    },
+    "acta.resumen.leyendo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One moment: your night is still being read."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un momento: todavía estoy leyendo tu noche."
+          }
+        }
+      }
+    },
+    "acta.resumen.sinsync" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing has come in since last night: pull down on Today to sync."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No ha llegado nada desde anoche: jala hacia abajo en Hoy para sincronizar."
+          }
+        }
+      }
+    },
+    "acta.resumen.senal.insuficiente" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your sleep came in; your resting signal didn't, so there's no quorum."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu sueño llegó; tu señal en reposo no, así que no hay quórum."
+          }
+        }
+      }
+    },
+    "acta.nota.desconectado" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Health is disconnected: this is your last reading, not today's."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Salud está desconectada: esta es tu última lectura, no la de hoy."
+          }
+        }
+      }
+    },
+    "acta.nota.calibrando" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld more nights with your Apple Watch and your daily verdict appears."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld noches más con tu Apple Watch y aparece tu veredicto diario."
+          }
+        }
+      }
+    },
+    "acta.procedencia.cache" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Health · last reading"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Salud · última lectura"
+          }
+        }
+      }
+    },
+    "hoy.sincronizando" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Syncing…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sincronizando…"
+          }
+        }
+      }
+    },
     "\n" : {
 
     },

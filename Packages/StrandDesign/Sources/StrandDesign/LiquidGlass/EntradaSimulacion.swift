@@ -46,7 +46,11 @@ public enum EntradaSimulacion {
         /// Dónde ASIENTA el orbe (el cénit por defecto, si no hay frame del héroe) y a qué
         /// altura se REÚNEN antes de subir. La reunión es solo una `y`: el viaje es vertical.
         public static let cenit = CGPoint(x: 182, y: 250)
-        public static let reunionY: CGFloat = 430
+        /// FER-73 (dueño): la reunión ocurre en el CENTRO del teléfono. El lienzo se centra
+        /// verticalmente en la pantalla, así que la mitad del lienzo ES la mitad de la pantalla:
+        /// las partículas se juntan donde el ojo ya está, y de ahí el orbe sube a su sitio en
+        /// Hoy. Antes se reunían en y=430 (a dos tercios), abajo del centro.
+        public static let reunionY: CGFloat = lienzo.height / 2
         /// Cuánto REBASA el orbe al cénit antes de asentar, en pt (pico del lóbulo).
         public static let sobrepaso: CGFloat = 7
         /// Autorrotación del orbe (rad/s) — el mismo giro lento de la esfera del héroe.
@@ -71,18 +75,21 @@ public enum EntradaSimulacion {
         /// El respiro: el orbe ya armado se sostiene abajo, quieto.
         public static let respiroFin = 0.66
         /// El ascenso al cénit / destino.
-        public static let ascensoFin = 0.90
+        /// FER-73 (dueño): el ascenso TERMINA antes (0.86) para que el orbe se quede QUIETO en
+        /// su destino mientras ocurre el relevo. Un cruce de fundido entre dos dibujos que se
+        /// mueven se lee como brinco; entre dos dibujos parados, como un solo elemento.
+        public static let ascensoFin = 0.86
         /// En qué punto del ascenso queda el REBASE (y de ahí el orbe se posa).
         public static let cimaAscenso = 0.78
         /// Cuánto se ESCALONA la reunión entre partículas (fracción del tramo de reunión):
         /// las primeras salen a converger de inmediato, las últimas esperan hasta este tope.
         public static let reunirStagger = 0.34
         /// El teñido ARRANCA antes de que termine el ascenso (se solapa con su cola).
-        public static let tinteIni = 0.82
-        public static let tinteFin = 0.98
+        public static let tinteIni = 0.78
+        public static let tinteFin = 0.94
         /// El especular se enciende DESPUÉS del teñido (CA-2.5).
-        public static let especularIni = 0.90
-        public static let especularFin = 1.0
+        public static let especularIni = 0.86
+        public static let especularFin = 0.98
     }
 
     // MARK: Curvas

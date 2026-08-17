@@ -179,7 +179,8 @@ enum MatrizChartDraw {
 
     /// Parte la serie en tramos contiguos (los huecos nil cortan el trazo).
     static func tramos(_ puntos: [Double?], count: Int, width: CGFloat,
-                       dominio: ClosedRange<Double>, height: CGFloat) -> [[CGPoint]] {
+                       dominio: ClosedRange<Double>, height: CGFloat,
+                       inset: CGFloat = MatrizTokens.chartInset) -> [[CGPoint]] {
         var out: [[CGPoint]] = []
         var actual: [CGPoint] = []
         for (i, val) in puntos.enumerated() {
@@ -188,7 +189,7 @@ enum MatrizChartDraw {
                 actual.removeAll()
                 continue
             }
-            actual.append(CGPoint(x: xAt(index: i, count: count, width: width),
+            actual.append(CGPoint(x: xAt(index: i, count: count, width: width, inset: inset),
                                   y: yTop(v, domain: dominio, height: height)))
         }
         if actual.count > 1 { out.append(actual) }
@@ -438,8 +439,9 @@ public struct MatrizLineaRellena: View {
                 }
             }
         }
-        .frame(maxWidth: .infinity, minHeight: MatrizChartDraw.defaultHeight,
-               idealHeight: MatrizChartDraw.defaultHeight)
+        // FER-73 · M5: sin `minHeight` — el host fija el alto de la fila (VFC va en 40 pt) y
+        // el piso de 56 lo desbordaba sobre las filas vecinas.
+        .frame(maxWidth: .infinity, idealHeight: MatrizChartDraw.defaultHeight)
         .accessibilityHidden(true)
         .modifier(MatrizEntrada())
     }
@@ -511,6 +513,18 @@ public struct MatrizLineaSerena: View {
 
             guard count > 0, MatrizChartDraw.tieneDatos(puntos) else { return }
 
+            // FER-73 · M3/M4: UNA sola rejilla. La línea usaba `xAt` (inset 4) y los puntos, el
+            // anillo de HOY y el cursor del scrub un mapeo crudo `W·i/(n−1)`: dos rejillas que se
+            // separaban hasta 4 pt en los extremos, y el anillo de HOY caía justo en x=W, donde el
+            // Canvas lo recorta a la mitad. El aire vive ADENTRO del mapeo (como `LiquidChartPlot`),
+            // así que ya no hace falta el `.padding` exterior que encogía la banda.
+            let insetX = max(MatrizTokens.chartInset,
+                             LiquidChart.puntoDatoRadio + LiquidChart.endpointBorde * 0.5
+                                 + MatrizTokens.aroGap2)
+            func x(_ i: Int) -> CGFloat {
+                MatrizChartDraw.xAt(index: i, count: count, width: size.width, inset: insetX)
+            }
+
             // El MISMO idioma que la mini-gráfica de la hoja del guardián (LiquidChartPlot
             // .mini), con SUS tokens (LiquidChart.*) para que sean literalmente una familia:
             // trazo lineaAncho (2.2) en tono PLENO con líneas rectas entre puntos (no curva),
@@ -518,7 +532,7 @@ public struct MatrizLineaSerena: View {
             // borde del tono). Dueño 2026-08-15: «que se vean como esas, que tienen cada punto».
             let idxHoy = puntos.lastIndex(where: { $0 != nil })
             for tramo in MatrizChartDraw.tramos(puntos, count: count, width: size.width,
-                                                dominio: dom, height: size.height) {
+                                                dominio: dom, height: size.height, inset: insetX) {
                 var linea = Path()
                 for (k, pt) in tramo.enumerated() { k == 0 ? linea.move(to: pt) : linea.addLine(to: pt) }
                 ctx.stroke(linea, with: .color(hue),
@@ -526,15 +540,13 @@ public struct MatrizLineaSerena: View {
             }
             for (i, v) in puntos.enumerated() where i != idxHoy {
                 guard let v else { continue }
-                let x = count > 1 ? size.width * CGFloat(i) / CGFloat(count - 1) : size.width / 2
                 let y = MatrizChartDraw.yTop(v, domain: dom, height: size.height)
-                MatrizChartDraw.punto(ctx, en: CGPoint(x: x, y: y),
+                MatrizChartDraw.punto(ctx, en: CGPoint(x: x(i), y: y),
                                       radio: LiquidChart.puntoDatoRadio, hue: hue, alfa: 1)
             }
             if let idxHoy, let vHoy = puntos[idxHoy] {
-                let x = count > 1 ? size.width * CGFloat(idxHoy) / CGFloat(count - 1) : size.width / 2
                 let y = MatrizChartDraw.yTop(vHoy, domain: dom, height: size.height)
-                let c = CGPoint(x: x, y: y)
+                let c = CGPoint(x: x(idxHoy), y: y)
                 // Anillo hueco de HOY: papel adentro, borde del tono (endpointBorde) afuera.
                 let rExt = LiquidChart.puntoDatoRadio + LiquidChart.endpointBorde * 0.5
                 MatrizChartDraw.punto(ctx, en: c, radio: rExt, hue: hue, alfa: 1)
@@ -546,23 +558,21 @@ public struct MatrizLineaSerena: View {
             // Scrub (dueño 2026-08-15): cursor + punto pleno en la noche leída. Serie de tiempo:
             // el índice mapea a x uniforme, el cursor sigue al dedo.
             if let r = resaltado, puntos.indices.contains(r) {
-                let x = count > 1 ? size.width * CGFloat(r) / CGFloat(count - 1) : size.width / 2
+                let cursorX = x(r)
                 if let v = puntos[r] {
                     let y = MatrizChartDraw.yTop(v, domain: dom, height: size.height)
-                    MatrizChartDraw.punto(ctx, en: CGPoint(x: x, y: y),
+                    MatrizChartDraw.punto(ctx, en: CGPoint(x: cursorX, y: y),
                                           radio: MatrizTokens.hoyRadio, hue: hue,
                                           alfa: MatrizChartDraw.hoyAlfa)
                 }
-                MatrizChartDraw.cursorScrub(ctx, x: x, height: size.height, hue: hue,
+                MatrizChartDraw.cursorScrub(ctx, x: cursorX, height: size.height, hue: hue,
                                             fantasma: puntos[r] == nil)
             }
         }
-        .frame(maxWidth: .infinity, minHeight: MatrizChartDraw.defaultHeight,
-               idealHeight: MatrizChartDraw.defaultHeight)
-        // La joya de HOY (hoyRadio+0.6) y los puntos de la historia van al ras del ancho:
-        // sin este aire la joya se CORTA en el borde derecho (cazado en captura). El
-        // scrub mapea sobre este mismo lienzo, así que la lectura no se desalinea.
-        .padding(.horizontal, LiquidChart.puntoDatoRadio + LiquidChart.endpointBorde + LiquidChart.lineaAncho)
+        // FER-73 · M5: `idealHeight` SIN `minHeight`. El renglón del guardián reserva 32 pt y
+        // el `minHeight: 56` del Canvas le ganaba: la gráfica medía 56 y sus valores fuera de
+        // banda se pintaban encima del encabezado y del renglón vecino.
+        .frame(maxWidth: .infinity, idealHeight: MatrizChartDraw.defaultHeight)
         .accessibilityHidden(true)
     }
 }

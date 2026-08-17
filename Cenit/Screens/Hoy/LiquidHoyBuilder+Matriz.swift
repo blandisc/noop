@@ -75,6 +75,13 @@ extension LiquidHoyBuilder {
         // eficiencia, y `nil` no es «en rango»). Sin juicio → sólo la fecha.
         let enRango = String(localized: "matriz.rango.dentro", defaultValue: "in your range")
         let fueraRango = String(localized: "matriz.rango.fuera", defaultValue: "out of your range")
+        // FER-73 · H22: el SUEÑO se juzga contra el rango RECOMENDADO de salud (FER-44, gate
+        // /cso), no contra tu base — así lo dice el acta y su hoja. La Matriz decía «in your
+        // range» / «out of your range» (rango personal) para la misma noche.
+        let enRangoSueno = String(localized: "matriz.sueno.rango.dentro",
+                                  defaultValue: "recommended range")
+        let fueraRangoSueno = String(localized: "matriz.sueno.rango.fuera",
+                                     defaultValue: "below recommended")
         let scrubSueno: [MatrizSeccion.ScrubNoche] = keysSueno.enumerated().map { idx, day in
             let mins = byDay[day]?.totalSleepMin
             let offsetDesdeFin = keysSueno.count - 1 - idx
@@ -89,7 +96,7 @@ extension LiquidHoyBuilder {
             // Paréntesis obligatorio: sin ellos `?.sleepOut.map` aplica `.map` al Bool,
             // no al Bool? del optional-chaining (precedencia de `?.`).
             let juicio: Bool? = bodyByDay[day]?.sleepOut
-            let estado = juicio.map { $0 ? fueraRango : enRango }
+            let estado = juicio.map { $0 ? fueraRangoSueno : enRangoSueno }
             let sub = estado.map { "\(fecha) · \($0)" } ?? fecha
             return .init(valor: HoyGramatica.formatoDuracion(mins), sublabel: sub)
         }
@@ -103,7 +110,7 @@ extension LiquidHoyBuilder {
             guard let out = bodyByDay[hoyKey ?? ""]?.sleepOut else {
                 return String(localized: "matriz.sueno.anoche", defaultValue: "last night")
             }
-            let estado = out ? fueraRango : enRango
+            let estado = out ? fueraRangoSueno : enRangoSueno
             return String(format: String(localized: "matriz.sueno.anoche.estado",
                                          defaultValue: "last night · %@"), estado)
         }()
@@ -202,7 +209,16 @@ extension LiquidHoyBuilder {
             scrubNoches: scrubVFC)
 
         // —— 3. Guardián ——
-        let chip = chipGuardianModelo(prep?.sentinel)
+        // FER-73 · H3/H5/H18: el juicio del par vale SOLO para la noche que esta pantalla llama
+        // «hoy» (`sentinelHistory.last.day == hoyKey`; tras medianoche un prep viejo juzga OTRA
+        // noche) y solo si el par entero se leyó y se pudo juzgar. Sin eso, ni chip verde ni
+        // «dentro de tu banda»: se muestran los valores, sin afirmar patrón.
+        let nocheJuzgada: Preparedness.SentinelNight? = {
+            guard let n = prep?.sentinelHistory.last, let hk = hoyKey, n.day == hk else { return nil }
+            return n
+        }()
+        let sentinelHoy: Preparedness.SentinelRead? = nocheJuzgada == nil ? nil : prep?.sentinel
+        let chipJuzgado = chipGuardianJuzgado(sentinelHoy, noche: nocheJuzgada)
         var ptsTemp: [Double?] = keys20.map { byDay[$0]?.skinTempDevC }
         // HOY usa el dev térmico AJUSTADO (descuento lúteo ya aplicado) — el MISMO número
         // que juzga el guardián y que muestra la cara Cosmos (+Cosmos.swift), para que las
@@ -214,9 +230,15 @@ extension LiquidHoyBuilder {
         let ptsResp: [Double?] = keys20.map { byDay[$0]?.respRateBpm }
         let valorTemp = HoyGramatica.valorODash(ptsTemp.last.flatMap { $0 },
                                                 formato: HoyGramatica.formatoDeltaTemp)
-        let valorResp = HoyGramatica.valorODash(ptsResp.last.flatMap { $0 }) {
-            String(format: "%.1f", $0)
-        }
+        let valorResp = HoyGramatica.valorODash(ptsResp.last.flatMap { $0 }, formato: HoyGramatica.formatoResp)
+        let hayLecturaGuardianHoy = ptsTemp.last.flatMap { $0 } != nil || ptsResp.last.flatMap { $0 } != nil
+        let chip = chipGuardianModelo(chipJuzgado, noche: nocheJuzgada,
+                                      hayLecturaHoy: hayLecturaGuardianHoy,
+                                      calibrando: prep?.maturity == .calibrating)
+        // Juicio POR SEÑAL, solo si el motor la juzgó esta noche (temp: corte absoluto ⇒ basta
+        // que se haya leído; resp: además necesita base usable ⇒ `respJudged`).
+        let tempJuzgada = sentinelHoy != nil && nocheJuzgada?.tempMissing == false
+        let respJuzgada = sentinelHoy != nil && nocheJuzgada?.respJudged == true
         // Scrub de temp/resp (dueño 2026-08-15): día + lectura de esa noche, alineado 1:1 con la
         // serie que dibuja la línea serena. Serie de tiempo → el scrub se lee natural (a diferencia
         // de la colina de Carga, que es eje de valor y por eso NO se arrastra).
@@ -232,8 +254,8 @@ extension LiquidHoyBuilder {
                 return .init(valor: fmt(v), sublabel: fecha)
             }
         }
-        let scrubTemp = scrubGuardian(ptsTemp) { String(format: "%+.1f°", $0) }
-        let scrubResp = scrubGuardian(ptsResp) { String(format: "%.1f", $0) }
+        let scrubTemp = scrubGuardian(ptsTemp) { HoyGramatica.formatoDeltaTemp($0) }
+        let scrubResp = scrubGuardian(ptsResp) { HoyGramatica.formatoResp($0) }
         // Banda ± del guardián: corte térmico público (± thermalOutC) y resp ~ base±.
         let thermalBand = Preparedness.Config.default.thermalOutC
         let seccionGuardian = MatrizSeccion(
@@ -264,8 +286,10 @@ extension LiquidHoyBuilder {
                     // El juicio es POR SEÑAL (tempOut) y solo con lectura de hoy —
                     // afirmar «dentro de tu banda» sin dato o contra el flag del motor
                     // es copy que miente (gate del repo; Grok+DeepSeek convergieron).
-                    sublabel: valorTemp == "—" ? nil
-                        : ((prep?.sentinel?.tempOut ?? false)
+                    // FER-73 · H5: y solo si el motor la JUZGÓ esta noche (`tempOut ?? false`
+                    // convertía «sin juicio» en «dentro» durante la calibración).
+                    sublabel: (valorTemp == "—" || !tempJuzgada) ? nil
+                        : ((sentinelHoy?.tempOut ?? false)
                             ? String(localized: "matriz.temp.fuera", defaultValue: "outside your band")
                             : String(localized: "matriz.temp.enbanda", defaultValue: "within your band")),
                     hue: LiquidColor.doradoTemp,
@@ -278,8 +302,8 @@ extension LiquidHoyBuilder {
                     id: "resp",
                     titulo: String(localized: "Breathing"),
                     valor: valorResp, unidad: valorResp == "—" ? nil : String(localized: "rpm"),
-                    sublabel: valorResp == "—" ? nil
-                        : ((prep?.sentinel?.respOut ?? false)
+                    sublabel: (valorResp == "—" || !respJuzgada) ? nil
+                        : ((sentinelHoy?.respOut ?? false)
                             ? String(localized: "matriz.resp.fuera", defaultValue: "above your usual")
                             : String(localized: "matriz.resp.tipica", defaultValue: "typical for you")),
                     hue: LiquidColor.azul,
@@ -292,7 +316,7 @@ extension LiquidHoyBuilder {
             ],
             // FER-56 · Ola 3: el sello VIVO reacciona al MISMO estado que el chip (nunca lo
             // contradice) — se separa y tiñe cuando el par se sale, calla en calma.
-            selloGuardian: selloGuardianEstado(prep?.sentinel))
+            selloGuardian: selloGuardianEstado(chipJuzgado))
 
         // —— 4. Carga | Esfuerzo ——
         let pCarga = razonCarga  // razón natural (API del riel: 0.8…1.3)
@@ -523,13 +547,40 @@ extension LiquidHoyBuilder {
     }
 
 
+    /// FER-73 · H3: el chip del motor SOLO si el par entero se leyó y se pudo juzgar esa noche.
+    /// `.quiet` con una señal ausente o con la respiración sin base usable NO es calma — el motor
+    /// simplemente no marcó lo que no pudo leer (`respJudged` existe justo para esto).
+    static func chipGuardianJuzgado(_ sentinel: Preparedness.SentinelRead?,
+                                    noche: Preparedness.SentinelNight?) -> HoyGramatica.ChipGuardian? {
+        guard let chip = HoyGramatica.chipGuardian(sentinel: sentinel) else { return nil }
+        if chip == .calma, let noche, noche.tempMissing || noche.respMissing || !noche.respJudged {
+            return nil
+        }
+        return chip
+    }
+
     /// Chip §8 / criterio 10 — texto + tono resueltos; ordinal REAL de racha.
-    static func chipGuardianModelo(_ sentinel: Preparedness.SentinelRead?)
+    /// Sin juicio (`chip == nil`) dice POR QUÉ, en tinta terciaria y sin afirmar calma:
+    /// falta una señal → «Only one signal»; base formándose → «Getting to know you»; hay
+    /// lectura pero el motor no comparó → «Not compared yet»; nada leído → «No readings yet».
+    static func chipGuardianModelo(_ chip: HoyGramatica.ChipGuardian?,
+                                   noche: Preparedness.SentinelNight? = nil,
+                                   hayLecturaHoy: Bool = false,
+                                   calibrando: Bool = false)
         -> MatrizHoyModel.ChipGuardian? {
-        guard let chip = HoyGramatica.chipGuardian(sentinel: sentinel) else {
-            // Sin lectura del par esa noche (`sentinel == nil`): no se afirma calma (verde) —
-            // sería mentir— pero tampoco se deja el chip en blanco. Tinta terciaria, honesto.
-            return .init(texto: String(localized: "No readings yet"), tono: .terciario)
+        guard let chip else {
+            if let noche, noche.tempMissing || noche.respMissing {
+                return .init(texto: String(localized: "Only one signal"), tono: .terciario)
+            }
+            if !hayLecturaHoy {
+                return .init(texto: String(localized: "No readings yet"), tono: .terciario)
+            }
+            if calibrando || noche?.respJudged == false {
+                return .init(texto: String(localized: "hero.title.calibrando",
+                                           defaultValue: "Getting to know you"), tono: .terciario)
+            }
+            return .init(texto: String(localized: "matriz.guardian.sincomparar",
+                                       defaultValue: "Not compared yet"), tono: .terciario)
         }
         switch chip {
         case .calma:
@@ -553,8 +604,8 @@ extension LiquidHoyBuilder {
     /// FER-56 · Ola 3 — el estado del sello VIVO del guardián, proyectado 1:1 del chip (nunca
     /// lo contradice): sin lectura del par ⇒ sin datos; una sola fuera ⇒ vigila esa (frío, sin
     /// alarma, como el chip terciario); el par 1.ª noche ⇒ ámbar; el par en racha ⇒ rojo.
-    static func selloGuardianEstado(_ sentinel: Preparedness.SentinelRead?) -> SelloGuardianVivo.Estado {
-        guard let chip = HoyGramatica.chipGuardian(sentinel: sentinel) else { return .sinDatos }
+    static func selloGuardianEstado(_ chip: HoyGramatica.ChipGuardian?) -> SelloGuardianVivo.Estado {
+        guard let chip else { return .sinDatos }
         switch chip {
         case .calma:             return .calma
         case .vigilandoTemp:     return .vigilaTemp
@@ -583,12 +634,16 @@ extension LiquidHoyBuilder {
         String(localized: "\(ordinalMarcador(n)) night")
     }
 
+    /// FER-73 · HJ-07: UNA sola fuente para el vocabulario de las 4 bandas de carga —
+    /// `ReadinessEngine.LoadBand.shortLabel`, el mismo que usa su hoja. La Matriz mantenía un
+    /// set paralelo («Steady/Building/Unloading/Spike») y la hoja decía otra cosa para la misma
+    /// banda («In balance/Ramping up/Easing off/Ramping fast»).
     private static func sublabelCarga(_ key: String) -> String {
         switch key {
-        case "carga.estable":     return String(localized: "Steady")
-        case "carga.subiendo":    return String(localized: "Building")
-        case "carga.descargando": return String(localized: "Unloading")
-        case "carga.pico":        return String(localized: "Spike")
+        case "carga.estable":     return ReadinessEngine.LoadBand.sweetSpot.shortLabel
+        case "carga.subiendo":    return ReadinessEngine.LoadBand.buildingFast.shortLabel
+        case "carga.descargando": return ReadinessEngine.LoadBand.rampingDown.shortLabel
+        case "carga.pico":        return ReadinessEngine.LoadBand.spiking.shortLabel
         case "carga.calibrando":  return String(localized: "Calibrating")
         default:                  return String(localized: "Calibrating")
         }

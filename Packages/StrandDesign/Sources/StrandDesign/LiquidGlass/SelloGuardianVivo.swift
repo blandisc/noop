@@ -39,7 +39,11 @@ public struct SelloGuardianVivo: View {
     // FER-audit: misma disciplina de pausa del héroe (background + previews «sin motion»).
     @Environment(\.liquidAmbientPaused) private var ambientPaused
     @Environment(\.liquidMotionDisabled) private var motionDisabled
-    private var quieto: Bool { reduceMotion || ambientPaused || motionDisabled }
+    private var quieto: Bool {
+        // FER-73 · M11: «sin datos → quieto» estaba documentado pero no implementado: el reloj,
+        // el giro y la respiración seguían corriendo y solo cambiaba el color.
+        reduceMotion || ambientPaused || motionDisabled || estado == .sinDatos
+    }
 
     public init(radio: CGFloat, hueTemp: Color, hueResp: Color, estado: Estado) {
         self.radio = radio

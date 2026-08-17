@@ -232,7 +232,9 @@ final class LiquidHoyBuilderTests: XCTestCase {
             thermalDeviation: 0.1, resp: .init(14), nightKey: "2026-08-03")
         XCTAssertEqual(g?.estado, .tranquilo)
         XCTAssertEqual(g?.temp, "+0.1°")
-        XCTAssertEqual(g?.resp, "14 rpm")
+        // FER-73 · H17: una décima en las TRES superficies (antes el héroe redondeaba a entero
+        // y la Matriz mostraba «14.4» para la misma noche).
+        XCTAssertEqual(g?.resp, "14.0 rpm")
     }
 
     func test_guardian_unaFuera_soloEsaSeTiñe_yVeredictoNoCambia() {
@@ -403,8 +405,11 @@ final class LiquidHoyBuilderTests: XCTestCase {
         let g = LiquidHoyBuilder.guardian(
             prep: readConResp(thermal: .inRange, respOrientedZ: 0.3),   // su noche: 2026-08-03
             thermalDeviation: 0.1, resp: .init(14), nightKey: "2026-08-04")
-        XCTAssertEqual(g?.estado, .incompleto,
+        // FER-73 · HJ-02: sigue sin afirmar patrón, pero ya no dice «solo una señal» (están
+        // las dos): el estado honesto es «todavía no comparo».
+        XCTAssertEqual(g?.estado, .conociendote,
                        "juicio de otra noche + valores de hoy = vigilar, no afirmar")
+        XCTAssertFalse(hoja([], guardian: g).enPatron, "jamás afirma «dentro de tu patrón»")
     }
 
     /// FER-42 · Sin ninguna noche juzgada (historial vacío) tampoco hay juicio que sellar:
@@ -412,7 +417,8 @@ final class LiquidHoyBuilderTests: XCTestCase {
     func test_guardian_sinNocheJuzgada_conLecturas_noAfirmaPatron() {
         let g = LiquidHoyBuilder.guardian(prep: prep([]), thermalDeviation: 0.1,
                                           resp: .init(14), nightKey: "2026-08-04")
-        XCTAssertEqual(g?.estado, .incompleto)
+        XCTAssertEqual(g?.estado, .conociendote)
+        XCTAssertFalse(hoja([], guardian: g).enPatron)
     }
 
     /// Sin NINGUNA lectura sí es «sin lectura anoche»: ese caso no se tocó.

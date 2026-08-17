@@ -213,7 +213,9 @@ extension MetricInfo {
         let bands = engineBands(.respiration, value: value)
         return MetricInfo(
             id: "resp_rate",
-            name: "Respiratory Rate",
+            // FER-73 · HJ-08: la Matriz, el guardián y su hoja dicen «Breathing»; el catálogo
+            // decía «Respiratory Rate». Un dato, un nombre.
+            name: "Breathing",
             headline: "How many breaths you take per minute while you sleep. It's one of the steadiest signals your body has, so even a small rise from your own normal can be an early sign of strain, illness, or a late, heavy meal.",
             displayValue: value.map { String(format: "%.1f", $0) } ?? "—",
             unit: String(localized: "rpm"),
@@ -225,6 +227,9 @@ extension MetricInfo {
                 citation: "Respiration from RSA in the overnight inter-beat intervals; reported as the nightly mean."
             ),
             levelsMetric: .respiration,
+            // FER-73 · HJ-08: los cortes <20 / ≥20 son POBLACIONALES; quien compara contra TU
+            // base es el guardián, en Hoy. La leyenda lo dice, igual que en FC en reposo.
+            bandsCaption: "Population reference, not your verdict. Your own comparison lives in the guardian on Today, which reads this against your recent weeks.",
             levelsTodayValue: value
         )
     }

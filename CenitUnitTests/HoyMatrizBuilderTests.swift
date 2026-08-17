@@ -60,9 +60,13 @@ final class HoyMatrizBuilderTests: XCTestCase {
               rhrBaseCenter: rhrBase, hrvBaseCenter: hrvBase, rhrBand: rhrBand)
     }
 
+    /// FER-73 · H3/H18: con `sentinel` el motor SIEMPRE trae la noche que juzgó
+    /// (`sentinelHistory.last`); la Matriz ya no acepta un chip sin ese sello. Por defecto se
+    /// siembra la noche de HOY con el par completo (que es lo que estos fixtures representan).
     private func prep(verdict: Preparedness.Verdict = .full,
                       sleepOut: Bool = false, autonomicOut: Bool = false,
                       sentinel: Preparedness.SentinelRead? = nil,
+                      sentinelHistory: [Preparedness.SentinelNight]? = nil,
                       bodyHistory: [Preparedness.BodyNight] = [],
                       nights: Int = 21) -> Preparedness.Read {
         let drivers: [Preparedness.Driver] = [
@@ -71,10 +75,15 @@ final class HoyMatrizBuilderTests: XCTestCase {
             .init(axis: .sleep, state: sleepOut ? .low : .inRange, orientedZ: nil),
             .init(axis: .thermal, state: .inRange, orientedZ: nil),
         ]
+        let historia: [Preparedness.SentinelNight] = sentinelHistory ?? (sentinel == nil ? [] : [
+            .init(day: dayKey(0), tempOut: sentinel?.tempOut ?? false,
+                  respOut: sentinel?.respOut ?? false, tempMissing: false, respMissing: false,
+                  respJudged: true, gapBefore: false)
+        ])
         return Preparedness.Read(
             verdict: verdict, drivers: drivers, signalsPresent: 3, signalsTotal: 4,
             maturity: .trusted, autonomicNights: nights, trend: nil,
-            sentinel: sentinel, bodyHistory: bodyHistory)
+            sentinel: sentinel, sentinelHistory: historia, bodyHistory: bodyHistory)
     }
 
     private func inputs(prep: Preparedness.Read?,
@@ -111,6 +120,17 @@ final class HoyMatrizBuilderTests: XCTestCase {
               tempOut: tempOut, respOut: respOut)
     }
 
+    /// FER-73: la noche juzgada con el par COMPLETO (ambas señales leídas y la resp con base).
+    private func nocheCompleta(day: String = "2026-08-05") -> Preparedness.SentinelNight {
+        .init(day: day, tempOut: false, respOut: false, tempMissing: false, respMissing: false,
+              respJudged: true, gapBefore: false)
+    }
+
+    /// Chip del motor para un `SentinelRead` con el par completo (atajo de los tests viejos).
+    private func chipDe(_ s: Preparedness.SentinelRead?) -> HoyGramatica.ChipGuardian? {
+        LiquidHoyBuilder.chipGuardianJuzgado(s, noche: nocheCompleta())
+    }
+
     /// Texto resuelto y NO vacío en cada estado — un `""` (key sin valor) es el modo de falla
     /// que este guard cierra: «no hay literal inglés» pasaría con vacío; «no vacío» no. La
     /// cadena es-MX exacta se verifica en el simulador es-MX (CA7), no aquí (locale del test = en).
@@ -123,14 +143,13 @@ final class HoyMatrizBuilderTests: XCTestCase {
     }
 
     func test_10_chip_calma() {
-        let chip = LiquidHoyBuilder.chipGuardianModelo(sentinel(.quiet))
+        let chip = LiquidHoyBuilder.chipGuardianModelo(chipDe(sentinel(.quiet)))
         XCTAssertEqual(chip?.tono, .calma)
         assertTextoResuelto(chip, "calma")
     }
 
     func test_10_chip_vigilando_temp_sin_calidos() {
-        let chip = LiquidHoyBuilder.chipGuardianModelo(
-            sentinel(.watchingOneSignal, watching: .temp, tempOut: true))
+        let chip = LiquidHoyBuilder.chipGuardianModelo(chipDe(sentinel(.watchingOneSignal, watching: .temp, tempOut: true)))
         XCTAssertEqual(chip?.tono, .terciario)
         XCTAssertNotEqual(chip?.tono, .atencion)
         XCTAssertNotEqual(chip?.tono, .alarma)
@@ -138,23 +157,20 @@ final class HoyMatrizBuilderTests: XCTestCase {
     }
 
     func test_10_chip_vigilando_resp() {
-        let chip = LiquidHoyBuilder.chipGuardianModelo(
-            sentinel(.watchingOneSignal, watching: .resp, respOut: true))
+        let chip = LiquidHoyBuilder.chipGuardianModelo(chipDe(sentinel(.watchingOneSignal, watching: .resp, respOut: true)))
         XCTAssertEqual(chip?.tono, .terciario)
         assertTextoResuelto(chip, "vigilando resp")
     }
 
     func test_10_chip_ambas_primera_noche_ambar() {
-        let chip = LiquidHoyBuilder.chipGuardianModelo(
-            sentinel(.corroborated, streak: 1, tempOut: true, respOut: true))
+        let chip = LiquidHoyBuilder.chipGuardianModelo(chipDe(sentinel(.corroborated, streak: 1, tempOut: true, respOut: true)))
         XCTAssertEqual(chip?.tono, .atencion)
         assertTextoResuelto(chip, "ambas 1.ª noche")
     }
 
     func test_10_chip_racha_ordinal_real() {
         for n in [2, 3, 5, 11] {
-            let chip = LiquidHoyBuilder.chipGuardianModelo(
-                sentinel(.corroborated, streak: n, tempOut: true, respOut: true))
+            let chip = LiquidHoyBuilder.chipGuardianModelo(chipDe(sentinel(.corroborated, streak: n, tempOut: true, respOut: true)))
             XCTAssertEqual(chip?.tono, .alarma, "racha \(n)")
             // El ordinal REAL aparece en el texto (no un número fijo inventado).
             XCTAssertTrue(chip?.texto.contains("\(n)") == true,
@@ -186,22 +202,71 @@ final class HoyMatrizBuilderTests: XCTestCase {
         assertTextoResuelto(chip, "sin sentinel")
     }
 
+    /// FER-73 · H3: `.quiet` NO es calma si falta una señal o la respiración no tenía base —
+    /// el motor no marcó lo que no pudo leer. Chip terciario que dice por qué; sello sin datos.
+    func test_10_chip_quiet_sin_par_completo_no_afirma_calma() {
+        let s = sentinel(.quiet)
+        let faltaResp = Preparedness.SentinelNight(day: "2026-08-05", tempOut: false, respOut: false,
+                                                    tempMissing: false, respMissing: true,
+                                                    respJudged: false, gapBefore: false)
+        let sinBase = Preparedness.SentinelNight(day: "2026-08-05", tempOut: false, respOut: false,
+                                                  tempMissing: false, respMissing: false,
+                                                  respJudged: false, gapBefore: false)
+        XCTAssertNil(LiquidHoyBuilder.chipGuardianJuzgado(s, noche: faltaResp))
+        XCTAssertNil(LiquidHoyBuilder.chipGuardianJuzgado(s, noche: sinBase))
+        XCTAssertNotNil(LiquidHoyBuilder.chipGuardianJuzgado(s, noche: nocheCompleta()))
+        let chipFalta = LiquidHoyBuilder.chipGuardianModelo(nil, noche: faltaResp, hayLecturaHoy: true)
+        XCTAssertEqual(chipFalta?.tono, .terciario)
+        XCTAssertEqual(chipFalta?.texto, String(localized: "Only one signal"))
+        let chipCalibrando = LiquidHoyBuilder.chipGuardianModelo(nil, noche: nil, hayLecturaHoy: true,
+                                                                 calibrando: true)
+        XCTAssertEqual(chipCalibrando?.texto,
+                       String(localized: "hero.title.calibrando", defaultValue: "Getting to know you"))
+        XCTAssertEqual(LiquidHoyBuilder.chipGuardianModelo(nil, noche: nil, hayLecturaHoy: false)?.texto,
+                       String(localized: "No readings yet"))
+        XCTAssertEqual(LiquidHoyBuilder.selloGuardianEstado(
+            LiquidHoyBuilder.chipGuardianJuzgado(s, noche: sinBase)), .sinDatos)
+    }
+
+    /// FER-73 · H5: durante la calibración (ruta lowSignal ⇒ sin `sentinel`), la Matriz NO
+    /// afirma «within your band» / «typical for you» sobre valores que el motor no comparó.
+    func test_10_calibrando_sin_juicio_no_afirma_banda() {
+        let dias = (-19...0).map { metric(day: dayKey($0), rhr: 51, temp: 0.1, resp: 14.4) }
+        // Ruta lowSignal del motor: sin `sentinel` ni `sentinelHistory` (el eje autonómico
+        // todavía no tiene base) — exactamente lo que se ve durante la calibración.
+        let p = Preparedness.Read(verdict: .lowSignal, drivers: [], signalsPresent: 0,
+                                  signalsTotal: 3, maturity: .calibrating, autonomicNights: 2,
+                                  trend: nil)
+        let m = LiquidHoyBuilder.matriz(inputs(prep: p, dias: dias))
+        let guardian = seccion(m, id: "guardian")
+        XCTAssertNotNil(guardian)
+        let temp = guardian?.renglones?.first { $0.id == "skintemp" }
+        let resp = guardian?.renglones?.first { $0.id == "resp" }
+        XCTAssertEqual(temp?.valor, "+0.1°")
+        XCTAssertNil(temp?.sublabel, "sin juicio del motor no se afirma «within your band»")
+        XCTAssertNil(resp?.sublabel, "sin base usable no se afirma «typical for you»")
+        XCTAssertEqual(guardian?.chip?.tono, .terciario)
+        XCTAssertNotEqual(guardian?.chip?.texto, String(localized: "No readings yet"),
+                          "hay lecturas: el chip no puede decir que no las hay")
+        XCTAssertEqual(guardian?.selloGuardian, .sinDatos)
+    }
+
     // MARK: 10b — El sello VIVO del guardián espeja el chip (Ola 3, nunca lo contradice)
 
     func test_10_sello_guardian_espeja_el_chip() {
         // Sin lectura del par → sin datos (nunca un falso «calma» verde).
         XCTAssertEqual(LiquidHoyBuilder.selloGuardianEstado(nil), .sinDatos)
-        XCTAssertEqual(LiquidHoyBuilder.selloGuardianEstado(sentinel(.quiet)), .calma)
+        XCTAssertEqual(LiquidHoyBuilder.selloGuardianEstado(chipDe(sentinel(.quiet))), .calma)
         // Una sola fuera → vigila ESA, en frío (paridad con el chip terciario, sin alarma).
-        XCTAssertEqual(LiquidHoyBuilder.selloGuardianEstado(
-            sentinel(.watchingOneSignal, watching: .temp, tempOut: true)), .vigilaTemp)
-        XCTAssertEqual(LiquidHoyBuilder.selloGuardianEstado(
-            sentinel(.watchingOneSignal, watching: .resp, respOut: true)), .vigilaResp)
+        XCTAssertEqual(LiquidHoyBuilder.selloGuardianEstado(chipDe(
+            sentinel(.watchingOneSignal, watching: .temp, tempOut: true))), .vigilaTemp)
+        XCTAssertEqual(LiquidHoyBuilder.selloGuardianEstado(chipDe(
+            sentinel(.watchingOneSignal, watching: .resp, respOut: true))), .vigilaResp)
         // El par 1.ª noche → ámbar; el par en racha → rojo. Espeja atencion → alarma.
-        XCTAssertEqual(LiquidHoyBuilder.selloGuardianEstado(
-            sentinel(.corroborated, streak: 1, tempOut: true, respOut: true)), .ambasAmbar)
-        XCTAssertEqual(LiquidHoyBuilder.selloGuardianEstado(
-            sentinel(.corroborated, streak: 3, tempOut: true, respOut: true)), .ambasRoja)
+        XCTAssertEqual(LiquidHoyBuilder.selloGuardianEstado(chipDe(
+            sentinel(.corroborated, streak: 1, tempOut: true, respOut: true))), .ambasAmbar)
+        XCTAssertEqual(LiquidHoyBuilder.selloGuardianEstado(chipDe(
+            sentinel(.corroborated, streak: 3, tempOut: true, respOut: true))), .ambasRoja)
     }
 
     // MARK: 11 — Cero cálidos en día bueno

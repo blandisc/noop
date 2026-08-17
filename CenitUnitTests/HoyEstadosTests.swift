@@ -1,5 +1,6 @@
 import XCTest
 import StrandAnalytics
+import StrandModels
 @testable import Cenit
 
 // MARK: - HoyEstadosTests (FER-51 · Ola 4 · máquina T1–T5)
@@ -93,6 +94,51 @@ final class HoyEstadosTests: XCTestCase {
         // Watch). Ahora dice la verdad: noche registrada, falta señal.
         XCTAssertEqual(causa, .senalInsuficiente, "noche completa sin veredicto: señal insuficiente")
         XCTAssertNotEqual(causa, .nocheNoRegistrada)
+    }
+
+    /// FER-73 · H12: noche registrada + base FORMÁNDOSE ⇒ `.calibrando` (la franja calla; el
+    /// héroe ya dice «Night N of M»). Sin calibrar, el mismo caso sigue siendo señal insuficiente.
+    func test_causaT3_calibrando_gana_a_senalInsuficiente() {
+        let now = date(y: 2026, m: 8, d: 5, h: 13)
+        let v = ventana(now: now)
+        let lastSync = date(y: 2026, m: 8, d: 5, h: 7)
+        XCTAssertEqual(LiquidHoyBuilder.causaT3(
+            ventana: v, lastSync: lastSync, hayNocheRegistrada: true, calibrando: true), .calibrando)
+        // Sin noche registrada, calibrar NO tapa la causa útil («la noche no se registró»).
+        XCTAssertEqual(LiquidHoyBuilder.causaT3(
+            ventana: v, lastSync: lastSync, hayNocheRegistrada: false, calibrando: true), .nocheNoRegistrada)
+        // Un import viejo sigue ganando: «pull down to sync» es accionable aun calibrando.
+        XCTAssertEqual(LiquidHoyBuilder.causaT3(
+            ventana: v, lastSync: date(y: 2026, m: 8, d: 3, h: 12), hayNocheRegistrada: true,
+            calibrando: true), .sinSync)
+    }
+
+    /// FER-73 · H20: sync EN CURSO ⇒ `.leyendo` aunque `lastSync` sea nil (arranque en frío):
+    /// antes la franja pedía «pull down to sync» mientras el sync automático ya corría.
+    func test_causaT3_syncing_gana_a_sinSync() {
+        let now = date(y: 2026, m: 8, d: 5, h: 13)
+        let v = ventana(now: now)
+        XCTAssertEqual(LiquidHoyBuilder.causaT3(
+            ventana: v, lastSync: nil, hayNocheRegistrada: false, syncing: true), .leyendo)
+        XCTAssertEqual(LiquidHoyBuilder.causaT3(
+            ventana: v, lastSync: nil, hayNocheRegistrada: false, syncing: false), .sinSync)
+    }
+
+    /// FER-73 · H13: solo una sesión ≥ 3 h que TERMINA HOY sella la noche; una siesta de ayer
+    /// por la tarde (la sesión más tardía desde ayer al mediodía) ya no cierra la ventana.
+    func test_hayNocheQueTerminaHoy_ignora_siesta_de_ayer() {
+        let now = date(y: 2026, m: 8, d: 5, h: 8)
+        func s(_ ini: Date, _ fin: Date) -> CachedSleepSession {
+            CachedSleepSession(startTs: Int(ini.timeIntervalSince1970), endTs: Int(fin.timeIntervalSince1970),
+                               efficiency: nil, restingHr: nil, avgHrv: nil, stagesJSON: nil)
+        }
+        let siesta = s(date(y: 2026, m: 8, d: 4, h: 15), date(y: 2026, m: 8, d: 4, h: 16))
+        let noche = s(date(y: 2026, m: 8, d: 4, h: 23), date(y: 2026, m: 8, d: 5, h: 6, min: 40))
+        let siestaHoy = s(date(y: 2026, m: 8, d: 5, h: 6), date(y: 2026, m: 8, d: 5, h: 7))
+        XCTAssertFalse(TodayView.hayNocheQueTerminaHoy(sessions: [siesta], calendar: cal, now: now))
+        XCTAssertFalse(TodayView.hayNocheQueTerminaHoy(sessions: [siestaHoy], calendar: cal, now: now),
+                       "una hora que termina hoy no es la noche")
+        XCTAssertTrue(TodayView.hayNocheQueTerminaHoy(sessions: [siesta, noche], calendar: cal, now: now))
     }
 
     /// Ventana abierta ∧ import viejo → leyendo (SIEMPRE, sin importar el import).
