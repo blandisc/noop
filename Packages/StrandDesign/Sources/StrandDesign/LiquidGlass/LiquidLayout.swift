@@ -56,6 +56,12 @@ public enum LiquidSpace {
     ///     el aire de ABAJO — que es exactamente lo que el mockup aprobado ya muestra.
     /// El alto reservado compacto = `ecosistemaAlto − recorteTop − acercaVeredicto`.
     public static let ecosistemaRecorteTop: CGFloat = 42
+
+    /// Cuánto BAJA el lienzo al separar (dueño 2026-08-17, viéndolo en el teléfono). Con la
+    /// altura fija, el modo separado dejaba todo el aire abajo y la escena pegada arriba: este
+    /// descenso lo reparte y la centra. Viaja con la misma curva y el mismo retardo que el resto
+    /// de la coreografía, así que se lee como UN gesto y no como dos cosas moviéndose.
+    public static let ecosistemaDescensoSeparado: CGFloat = 34
     public static let ecosistemaAcercaVeredicto: CGFloat = 40
     /// Alto RESERVADO del héroe compacto: se fija directo (con `.frame(alignment: .top)`) para
     /// que el box ABRACE al contenido —orbe + veredicto + subtítulo + pastilla— sin espacio

@@ -283,6 +283,12 @@ public struct LiquidEcosistema: View {
     /// Cuánto sube el lienzo en modo compacto (SOLO el aire superior recortado), escalado con
     /// el lienzo. El aire de ABAJO lo recorta el jalón del veredicto (`acercaVeredicto`). 0 en
     /// modo pleno.
+    /// Cuánto BAJA el lienzo al separar, para que la escena use el aire de abajo en vez de
+    /// quedarse apretada arriba. Escala con el lienzo, como todo lo demás.
+    private var descensoSeparado: CGFloat {
+        esSeparadaEstable ? LiquidSpace.ecosistemaDescensoSeparado * escala : 0
+    }
+
     private var recorteCompacto: CGFloat {
         // En SEPARADO el contenido sube (las etiquetas «en tu rango» viven ARRIBA de las esferas):
         // jalar el aire superior le recorta la cabeza al hero. El estado separado no lleva veredicto
@@ -323,7 +329,7 @@ public struct LiquidEcosistema: View {
                 // que las esferas viajen de vuelta (mismo retardo que la palabra): subir
                 // el lienzo antes de tiempo les cortaba la cabeza a los vigías contra el
                 // clipped() del contenedor.
-                .offset(y: -recorteCompacto)
+                .offset(y: descensoSeparado - recorteCompacto)
                 // Pulido /inject (ojo del dueño): ambient (ease-in-out) en vez de glass-out
                 // — el arranque del glass-out se sentía un empujón. Al SEPARAR el lienzo
                 // espera la anticipación (el orbe toma aire) y PLANEA hacia abajo; al UNIR
