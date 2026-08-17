@@ -102,7 +102,7 @@ private struct EntrenarMapCell: View {
     @State private var seeded = false
 
     var body: some View {
-        EntrenarView(openRoutine: { _ in }, openBreathe: {}, openIntervals: {}, openDiet: {},
+        EntrenarView(openRoutine: { _ in }, openBreathe: {}, openIntervals: {},
                      openHistory: {}, openWeeklyPlan: {}, openRoutines: {}, openRestDay: {},
                      openOtherWays: {}, openWorkoutSession: { _ in })
             .environmentObject(model.repo)
@@ -387,7 +387,9 @@ private struct NewRoutineFlowMapCell: View {
 /// Mis entrenamientos→detalle / Respira / Intervalos / Dieta / Descanso / Otras formas / mapa de
 /// músculo / tickets, y «Empezar» presenta la Serie activa. Para verificar los flujos de punta a punta.
 private struct EntrenarFlowsMapCell: View {
-    private enum Route: String, Hashable { case breathe, intervals, dieta, history, weeklyPlan, restDay, otherWays, library }
+    // FER-92: `dieta` retirada — su fila llevaba un año comentada y la ruta no era alcanzable.
+    // `DietCaptureView` sigue en el repo, sin puerta, hasta que tenga su propio issue.
+    private enum Route: String, Hashable { case breathe, intervals, history, weeklyPlan, restDay, otherWays, library }
 
     @State private var model = AppModel()
     @StateObject private var media = MediaDownloadCoordinator()
@@ -403,7 +405,6 @@ private struct EntrenarFlowsMapCell: View {
                         openRoutine: { path.append(RoutineEditorRoute.today(routineId: $0)) },
                         openBreathe: { path.append(Route.breathe) },
                         openIntervals: { path.append(Route.intervals) },
-                        openDiet: { path.append(Route.dieta) },
                         openHistory: { path.append(Route.history) },
                         openWeeklyPlan: { path.append(Route.weeklyPlan) },
                         openRoutines: { path.append(Route.weeklyPlan) },
@@ -468,7 +469,6 @@ private struct EntrenarFlowsMapCell: View {
         switch r {
         case .breathe:   BreathingView()
         case .intervals: IntervalTimerView()
-        case .dieta:     DietCaptureView()
         case .history:   WorkoutHistoryScreen()
         case .weeklyPlan:
             WeeklyPlanEditorView(

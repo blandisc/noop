@@ -13,7 +13,7 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 // intermediate screen. «¿otro tipo?» under it opens the secondary chooser (otra rutina / intervals /
 // breathe / live). A rest day swaps the door for a quiet outline button that opens the «Hoy descansas»
 // sheet (F3). Below the hero: a contextual suggestion, the week strip + streak in one card (F10), the
-// plan as a collapsible disclosure with a single «Editar» action (F5), and Diet as a footer link.
+// plan as a collapsible disclosure with a single «Editar» action (F5).
 //
 // Color appears ONLY on the recovery datum (the today-dot, the Today recovery
 // line); everything else is ink on paper. Navigation is owned by the tab's `NavigationStack` in
@@ -31,7 +31,6 @@ struct EntrenarView: View {
     var openRoutine: (String) -> Void
     var openBreathe: () -> Void
     var openIntervals: () -> Void
-    var openDiet: () -> Void
     /// Push «Mis entrenamientos» (the completed-session history, FER-504).
     var openHistory: () -> Void
     /// Push the weekly plan editor (FER-533) — opened from «Tu plan · Editar» and the empty state.
@@ -48,7 +47,7 @@ struct EntrenarView: View {
 
     var body: some View {
         EntrenarLanding(openRoutine: openRoutine,
-                        openBreathe: openBreathe, openIntervals: openIntervals, openDiet: openDiet,
+                        openBreathe: openBreathe, openIntervals: openIntervals,
                         openHistory: openHistory, openWeeklyPlan: openWeeklyPlan,
                         openRoutines: openRoutines, openRestDay: openRestDay,
                         openOtherWays: openOtherWays, openWorkoutSession: openWorkoutSession)
@@ -66,7 +65,6 @@ private struct EntrenarLanding: View {
     var openRoutine: (String) -> Void
     var openBreathe: () -> Void
     var openIntervals: () -> Void
-    var openDiet: () -> Void
     var openHistory: () -> Void
     var openWeeklyPlan: () -> Void
     var openRoutines: () -> Void
@@ -910,12 +908,14 @@ private struct EntrenarLanding: View {
     }
 
     /// Quiet standalone foot row at the very bottom: history («consultar»), distinct from the discs'
-    /// «empezar» (mock 1a / v4b). FER-992: Dieta row off — re-enable the fork.knife utilityRow below.
+    /// «empezar» (mock 1a / v4b).
+    ///
+    /// FER-92: la fila de Dieta llevaba comentada desde FER-992 y su cableado seguía vivo (el
+    /// closure viajaba por dos vistas hasta una ruta que nadie podía alcanzar). El dueño pidió
+    /// retirar la ruta muerta; la PANTALLA (`DietCaptureView`) se queda intacta, esperando su issue.
     private var footRows: some View {
         VStack(alignment: .leading, spacing: 0) {
             utilityRow(icon: "chart.line.uptrend.xyaxis", label: "Mis entrenamientos y progreso") { openHistory() }
-            // FER-992: Dieta entry off — openDiet + DietCaptureView stay.
-            // utilityRow(icon: "fork.knife", label: "Dieta · registro de hoy") { openDiet() }
         }
     }
 

@@ -23,7 +23,9 @@ struct RootTabView: View {
     private enum SecondaryScreen: String, Hashable {
         case library                              // Entrenar hub — exercise library (FER-346)
         case workoutHistory = "workouthistory"    // Entrenar hub — «Mis entrenamientos» (FER-504)
-        case breathe, intervals, dieta            // Entrenar hub
+        // FER-92: `dieta` retirada del enum — su entrada de UI llevaba un año comentada y ninguna
+        // ruta la alcanzaba. `DietCaptureView` sigue en el repo, sin puerta, hasta su propio issue.
+        case breathe, intervals                   // Entrenar hub
         case weeklyPlan = "weeklyplan"            // Entrenar hub — weekly plan editor (FER-533)
         case misRutinas = "misrutinas"           // Entrenar hub — routine + folder management (FER-534)
         case restDay = "restday"                  // Entrenar hub — «Hoy descansas» (v3 · 2B, now a push, FER-718)
@@ -112,9 +114,6 @@ struct RootTabView: View {
                 openRoutine: { id in trainStack.append(RoutineEditorRoute.today(routineId: id)) },
                 openBreathe: { trainStack.append(SecondaryScreen.breathe) },
                 openIntervals: { trainStack.append(SecondaryScreen.intervals) },
-                // FER-992: Dieta UI entry off — SecondaryScreen.dieta + DietCaptureView stay.
-                // Re-enable: openDiet: { trainStack.append(SecondaryScreen.dieta) },
-                openDiet: { },
                 openHistory: { trainStack.append(SecondaryScreen.workoutHistory) },
                 openWeeklyPlan: { trainStack.append(SecondaryScreen.weeklyPlan) },
                 openRoutines: { trainStack.append(SecondaryScreen.weeklyPlan) },
@@ -381,7 +380,7 @@ struct RootTabView: View {
     /// screenshot-nav to it crashed the app. Listing every case makes that a compile error instead.
     private func hub(for screen: SecondaryScreen) -> Tab {
         switch screen {
-        case .library, .workoutHistory, .breathe, .intervals, .dieta, .weeklyPlan, .misRutinas,
+        case .library, .workoutHistory, .breathe, .intervals, .weeklyPlan, .misRutinas,
              .restDay, .otherWays, .routineToday:
             return .train
         case .explore, .compare, .workouts, .applehealth, .datasources, .support:
@@ -484,7 +483,6 @@ struct RootTabView: View {
                                 openIntervals: { trainStack.append(SecondaryScreen.intervals) },
                                 openBreathe: { trainStack.append(SecondaryScreen.breathe) })
         case .routineToday: RoutineEditorScreen(origin: .today(routineId: nil))
-        case .dieta:        DietCaptureView()
         case .explore:      MetricExplorerView()
         case .compare:      CompareView()
         case .workouts:     WorkoutsView()
