@@ -1,6 +1,118 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "The number you see is the HRV Apple records: SDNN, the overall spread of the time between your heartbeats. Your daily verdict does NOT read this signal (SDNN): it stands on your resting heart rate and your sleep, and on your nocturnal RMSSD when the night is dense enough. SDNN is shown here as a reference against your own average. The trend uses a different HRV measure, RMSSD, recomputed from the beat-to-beat intervals of your densest nights; RMSSD tracks the vagal, rest-and-repair branch specifically, while SDNN blends both branches, so the two won't always move together." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The number you see is the HRV Apple records: SDNN, the overall spread of the time between your heartbeats. Your daily verdict does NOT read this signal (SDNN): it stands on your resting heart rate and your sleep, and on your nocturnal RMSSD when the night is dense enough. SDNN is shown here as a reference against your own average. The trend uses a different HRV measure, RMSSD, recomputed from the beat-to-beat intervals of your densest nights; RMSSD tracks the vagal, rest-and-repair branch specifically, while SDNN blends both branches, so the two won't always move together."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El número que ves es la VFC que registra Apple: SDNN, la dispersión general del tiempo entre tus latidos. Tu veredicto diario NO lee esta señal (SDNN): se apoya en tu FC en reposo y en tu sueño, y en tu RMSSD nocturna cuando la noche trae suficientes latidos. El SDNN se muestra aquí como referencia contra tu propio promedio. La tendencia usa otra medida de VFC, RMSSD, recalculada desde los intervalos latido a latido de tus noches más densas; RMSSD sigue específicamente a la rama vagal, de descanso y reparación, mientras que SDNN mezcla las dos ramas, así que no siempre se mueven juntas."
+          }
+        }
+      }
+    },
+    "quien.dos" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Both of your votes fell outside today"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoy tus dos votos cayeron fuera"
+          }
+        }
+      }
+    },
+    "quien.uno" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One of your votes fell outside today"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoy uno de tus votos cayó fuera"
+          }
+        }
+      }
+    },
+    "quien.par.ejes" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your temperature and breathing moved out together, and both of your votes fell outside too"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu temperatura y tu respiración se salieron juntas, y además tus dos votos cayeron fuera"
+          }
+        }
+      }
+    },
+    "quien.par.eje" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your temperature and breathing moved out together, and one of your votes fell outside too"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu temperatura y tu respiración se salieron juntas, y además uno de tus votos cayó fuera"
+          }
+        }
+      }
+    },
+    "quien.par" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your temperature and breathing moved out together"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu temperatura y tu respiración se salieron juntas"
+          }
+        }
+      }
+    },
+    "hero.sub.desfase.fuera.fmt" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@; the verdict changes if that repeats two days in a row."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@; el veredicto cambia si eso se repite dos días seguidos."
+          }
+        }
+      }
+    },
     "The number you see is the HRV Apple records: SDNN, the overall spread of the time between your heartbeats. Your daily verdict does NOT read this signal: it stands on your resting heart rate and your sleep. HRV is shown here as a reference against your own average. The trend uses a different HRV measure, RMSSD, recomputed from the beat-to-beat intervals of your densest nights; RMSSD tracks the vagal, rest-and-repair branch specifically, while SDNN blends both branches, so the two won't always move together." : {
       "localizations" : {
         "en" : {

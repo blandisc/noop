@@ -166,7 +166,7 @@ extension MetricInfo {
                 ? "No HRV from last night. That can happen if you didn't wear your Apple Watch to sleep, or the night was too short for it to record."
                 : "HRV is personal. There are no universal good/bad thresholds: only your trend over time.",
             method: Method(
-                prose: "The number you see is the HRV Apple records: SDNN, the overall spread of the time between your heartbeats. Your daily verdict does NOT read this signal: it stands on your resting heart rate and your sleep. HRV is shown here as a reference against your own average. The trend uses a different HRV measure, RMSSD, recomputed from the beat-to-beat intervals of your densest nights; RMSSD tracks the vagal, rest-and-repair branch specifically, while SDNN blends both branches, so the two won't always move together.",
+                prose: "The number you see is the HRV Apple records: SDNN, the overall spread of the time between your heartbeats. Your daily verdict does NOT read this signal (SDNN): it stands on your resting heart rate and your sleep, and on your nocturnal RMSSD when the night is dense enough. SDNN is shown here as a reference against your own average. The trend uses a different HRV measure, RMSSD, recomputed from the beat-to-beat intervals of your densest nights; RMSSD tracks the vagal, rest-and-repair branch specifically, while SDNN blends both branches, so the two won't always move together.",
                 citation: "SDNN and RMSSD (Task Force, 1996); RMSSD is the vagal recovery measure (Shaffer & Ginsberg, 2017)."
             ),
             levelsTodayValue: value,

@@ -636,7 +636,8 @@ enum LiquidHoyBuilder {
         let fueraEjes = prep.drivers.filter {
             ($0.axis == .autonomic || $0.axis == .sleep) && $0.state.isOut
         }.count
-        let fuera = fueraEjes + (prep.sentinel?.state == .corroborated ? 1 : 0)
+        let parVoto = prep.sentinel?.state == .corroborated
+        let fuera = fueraEjes + (parVoto ? 1 : 0)
         guard desfaseDeHisteresis(verdict: prep.verdict, fuera: fuera) else { return nil }
         // El desfase tiene DOS direcciones y las dos mentían por su lado. Hacia arriba (verde
         // sostenido con algo fuera hoy) el héroe juraba que las dos señales amanecieron en rango
@@ -647,8 +648,37 @@ enum LiquidHoyBuilder {
             return String(localized: "hero.sub.desfase",
                           defaultValue: "Your signals came back into your range; the verdict changes once that repeats two days in a row.")
         }
-        return String(localized: "hero.sub.desfase.fuera",
-                      defaultValue: "One of your signals stepped out today; the verdict changes if that repeats two days in a row.")
+        // Y con algo fuera, QUIÉN se salió sale de la misma tabla que el acta. La frase fija en
+        // singular que puse en la séptima vuelta le bajaba la magnitud al día más delicado —dos
+        // ejes fuera bajo un titular verde, contados como «una»— y, con el par como único voto,
+        // culpaba a «una de tus señales» estando las dos dentro: los dos pecados que las vueltas
+        // anteriores ya habían matado en el acta, resucitados en el héroe por tener su propia
+        // tabla (octava vuelta). Una sola fuente, un solo relato.
+        let quien = quienSeSalioHoy(fueraEjes: fueraEjes, parVoto: parVoto)
+        return String(format: String(localized: "hero.sub.desfase.fuera.fmt",
+                                     defaultValue: "%@; the verdict changes if that repeats two days in a row."),
+                      quien)
+    }
+
+    /// QUIÉN se salió hoy, en un fragmento. Lo comparten el héroe y el acta: cada vez que cada
+    /// uno tuvo su propia tabla terminaron contradiciéndose sobre el cuerpo del mismo usuario
+    /// (el eje que estaba dentro, el plural, el empujón de tendencia, el desfase verde).
+    static func quienSeSalioHoy(fueraEjes: Int, parVoto: Bool) -> String {
+        switch (parVoto, fueraEjes) {
+        case (true, 0):
+            return String(localized: "quien.par",
+                          defaultValue: "Your temperature and breathing moved out together")
+        case (true, 1):
+            return String(localized: "quien.par.eje",
+                          defaultValue: "Your temperature and breathing moved out together, and one of your votes fell outside too")
+        case (true, _):
+            return String(localized: "quien.par.ejes",
+                          defaultValue: "Your temperature and breathing moved out together, and both of your votes fell outside too")
+        case (false, let n) where n >= 2:
+            return String(localized: "quien.dos", defaultValue: "Both of your votes fell outside today")
+        default:
+            return String(localized: "quien.uno", defaultValue: "One of your votes fell outside today")
+        }
     }
 
     /// Renglones 1 (full/caution/easy con noche): la palabra-veredicto con su tono.
@@ -1164,7 +1194,8 @@ enum LiquidHoyBuilder {
                                  esLecturaDeDia: esLecturaDeDia, calibrando: calibrando,
                                  healthConnected: healthConnected,
                                  verdictPending: verdictPending,
-                               autonomicPosible: prep?.autonomicPossible ?? true),
+                                 autonomicPosible: prep?.autonomicPossible ?? true,
+                                 causaT3: causaT3),
             conteo: resumen.texto, conteoClave: resumen.clave,
             filas: filas,
             // Vigilantes SOLO con veredicto (/ux D7): su drama vive en el guardián. Y el día
@@ -1201,7 +1232,8 @@ enum LiquidHoyBuilder {
                                       esLecturaDeDia: Bool, calibrando: Bool,
                                       healthConnected: Bool,
                                       verdictPending: Bool = false,
-                                      autonomicPosible: Bool = true) -> String {
+                                      autonomicPosible: Bool = true,
+                                      causaT3: CausaT3? = nil) -> String {
         if hayVeredicto { return palabraVeredicto(prep!.verdict) }
         if esLecturaDeDia { return String(localized: "Day reading") }
         if !healthConnected { return String(localized: "No reading") }
@@ -1209,8 +1241,11 @@ enum LiquidHoyBuilder {
         if prep == nil, verdictPending { return String(localized: "Reading your night…") }
         if prep == nil { return String(localized: "No reading") }
         // Con la base rancia la palabra grande es la del héroe: ni «sin lectura» (sí la hay) ni
-        // «conociéndote» (tu rango existe, solo caducó).
-        if prep?.maturity == .stale {
+        // «conociéndote» (tu rango existe, solo caducó). Pero DESPUÉS de la falta de sync, con
+        // la misma precedencia que el resumen: si el import está pendiente, el encabezado no
+        // puede culpar a los hábitos del usuario mientras el renglón de abajo culpa al import
+        // (octava vuelta).
+        if prep?.maturity == .stale, causaT3 != .sinSync {
             return String(localized: "hero.title.rancia", defaultValue: "Your range needs fresh nights")
         }
         if calibrando {

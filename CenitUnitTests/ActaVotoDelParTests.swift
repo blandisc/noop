@@ -269,6 +269,25 @@ final class ActaVotoDelParTests: XCTestCase {
                           "hoy un eje se salió: no puede jurar que los dos cayeron dentro")
     }
 
+    /// OCTAVA VUELTA · El héroe y el acta cuentan EL MISMO conteo. La frase fija en singular
+    /// que metí en la séptima decía «una de tus señales» con dos fuera, y culpaba a un eje que
+    /// estaba dentro cuando el único voto fuera era el del par.
+    func test_verdeConDesfase_elHeroeCuentaLoMismoQueElActa() {
+        // Dos ejes fuera bajo un titular verde: plural.
+        let dos = read(verdict: .full, autonomicOut: true, sleepOut: true, par: false)
+        let (heroDos, _, _) = LiquidHoyBuilder.hero(prep: dos, nights: 30, healthConnected: true)
+        guard case .veredicto(_, _, _, let subDos, _) = heroDos else { return XCTFail("veredicto") }
+        XCTAssertTrue(subDos.lowercased().contains("both of your votes")
+                      || subDos.lowercased().contains("tus dos votos"),
+                      "cayeron los dos: \(subDos)")
+        // Y con el par como único voto fuera, nombra al PAR, no a un eje que está dentro.
+        let par = read(verdict: .full, autonomicOut: false, sleepOut: false, par: true)
+        let (heroPar, _, _) = LiquidHoyBuilder.hero(prep: par, nights: 30, healthConnected: true)
+        guard case .veredicto(_, _, _, let subPar, _) = heroPar else { return XCTFail("veredicto") }
+        XCTAssertTrue(subPar.lowercased().contains("temperature") || subPar.lowercased().contains("temperatura"),
+                      "quien votó fue el par: \(subPar)")
+    }
+
     /// Sin par, la prosa de siempre no cambia (no se rompió el camino normal).
     func test_sinPar_laProsaDeSiempre() {
         let acta = LiquidHoyBuilder.acta(prep: read(verdict: .easy, autonomicOut: true,
