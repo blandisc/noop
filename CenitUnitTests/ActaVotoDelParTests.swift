@@ -204,6 +204,31 @@ final class ActaVotoDelParTests: XCTestCase {
                      "el resumen ya dice la causa y la nota ya dice la acción")
     }
 
+    // MARK: Quinta vuelta — la magnitud y las promesas que quedaban
+
+    /// La nota del par NO puede recetar el día rojo en un día ámbar. Con el par solo (los dos
+    /// ejes dentro) el motor da «ve leve»; mi nota de la ronda 4 decía «hoy toca recuperar, no
+    /// empujar» —el verbo del rojo— y encima repetía casi textual el resumen de arriba.
+    func test_parSoloEnDiaAmbar_noRecetaElDiaRojo() {
+        let acta = LiquidHoyBuilder.acta(prep: read(verdict: .caution, autonomicOut: false,
+                                                    sleepOut: false, par: true))
+        let aviso = acta.notas.first { $0.id == "aviso" }
+        XCTAssertNil(aviso, "un solo voto no escala a día de recuperación")
+        XCTAssertEqual(acta.notas.first { $0.id == "voto" }?.texto,
+                       String(localized: "One vote out lightens the day; it doesn't sink it."),
+                       "la magnitud la manda el veredicto, no el par")
+    }
+
+    /// Con Apple Salud desconectada, la barra «N de 4 noches» no puede avanzar: es la misma
+    /// promesa rota que FER-76 apagó en el héroe, en gráfico.
+    func test_saludDesconectada_elActaNoPintaLaBarraDeCalibracion() {
+        let acta = LiquidHoyBuilder.acta(prep: read(verdict: .lowSignal, autonomicOut: false,
+                                                    sleepOut: false, par: false,
+                                                    maturity: .calibrating),
+                                         healthConnected: false)
+        XCTAssertNil(acta.confianza, "sin Salud conectada no entra ninguna noche")
+    }
+
     /// Sin par, la prosa de siempre no cambia (no se rompió el camino normal).
     func test_sinPar_laProsaDeSiempre() {
         let acta = LiquidHoyBuilder.acta(prep: read(verdict: .easy, autonomicOut: true,

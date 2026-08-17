@@ -1,6 +1,38 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "hero.title.rancia" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your range needs fresh nights"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu rango necesita noches nuevas"
+          }
+        }
+      }
+    },
+    "hero.sub.rancia" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It's been too long since your last nights with the watch: your range went stale and I can't judge today against it."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pasó demasiado desde tus últimas noches con el reloj: tu rango se quedó viejo y no puedo juzgar hoy contra él."
+          }
+        }
+      }
+    },
     "hero.sub.desfase" : {
       "localizations" : {
         "en" : {
@@ -54,13 +86,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your night hasn't come in yet, so there's no quorum."
+            "value" : "Your night is recorded, but it hasn't reached the ballot yet, so there's no quorum."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tu noche todavía no entra, así que no hay quórum."
+            "value" : "Tu noche quedó registrada, pero todavía no llega a la boleta, así que no hay quórum."
           }
         }
       }
@@ -27084,13 +27116,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "From your recent weeks I learn your normal band for each signal. Each morning I compare the night against that band: in or out. The verdict counts how many voting signals stepped out. It is never a 0-100 score, because your watch doesn't measure with that precision and I won't pretend it does."
+            "value" : "From your recent weeks I learn your normal band for your resting heart rate, your temperature and your breathing; your sleep is measured against the recommended range for health. Each morning I compare the night: in or out. The verdict counts how many voting signals stepped out. It is never a 0-100 score, because your watch doesn't measure with that precision and I won't pretend it does."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "De tus últimas semanas aprendo tu banda normal de cada señal. Cada mañana comparo la noche contra esa banda: dentro o fuera. El veredicto cuenta cuántas señales votantes se salieron; nunca es un puntaje de 0 a 100, porque tu reloj no mide con esa precisión y no te voy a fingir que sí."
+            "value" : "De tus últimas semanas aprendo tu banda normal de FC en reposo, de temperatura y de respiración; tu sueño se mide contra el rango recomendado para la salud. Cada mañana comparo la noche: dentro o fuera. El veredicto cuenta cuántas señales votantes se salieron. Nunca es una calificación de 0 a 100, porque tu reloj no mide con esa precisión y no voy a fingir que sí."
           }
         }
       }
@@ -27186,13 +27218,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Every morning I read your night and tell you one thing: whether you woke up inside your own range. Not against tables: against you."
+            "value" : "Every morning I read your night and tell you one thing: whether you woke up inside your range. Your resting heart rate is compared against your own recent weeks; your sleep, against the recommended range for health."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cada mañana leo tu noche y te digo una sola cosa: si amaneciste dentro de tu propio rango: no contra tablas, contra ti."
+            "value" : "Cada mañana leo tu noche y te digo una cosa: si amaneciste dentro de tu rango. Tu FC en reposo se compara contra tus propias semanas recientes; tu sueño, contra el rango recomendado para la salud."
           }
         }
       }
@@ -27356,13 +27388,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "How much and how well you slept last night."
+            "value" : "How much and how well you slept last night, against the recommended range."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cuánto y qué tan bien dormiste anoche."
+            "value" : "Cuánto y qué tan bien dormiste anoche, contra el rango recomendado."
           }
         }
       }

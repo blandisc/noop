@@ -609,7 +609,8 @@ enum LiquidHoyBuilder {
         // ACRECIÓN del Ecosistema («Conociéndote · Noche n de m»).
         let heroFallback = suenoFallback(nights: nights,
                                          healthConnected: healthConnected,
-                                         autonomicPosible: prep?.autonomicPossible ?? true)
+                                         autonomicPosible: prep?.autonomicPossible ?? true,
+                                         baseRancia: prep?.maturity == .stale)
         // FER-76: los puntos de acreción también callan cuando la señal que los llenaría no existe
         // — una barra de progreso que no puede avanzar es la misma promesa rota, en gráfico.
         let calibracion: LiquidHoyModel.Calibracion? = (healthConnected && (prep?.autonomicPossible ?? true))
@@ -625,11 +626,6 @@ enum LiquidHoyBuilder {
         return (heroFallback, healthConnected ? .autonomic : .salud, calibracion)
     }
 
-    /// Renglones 1 (full/caution/easy con noche): la palabra-veredicto con su tono.
-    /// Pasada UX H8: con veredicto ámbar el subtítulo repetía el titular («Bien, con un
-    /// detalle» / «Vas bien, con un detalle a vigilar») y el usuario tenía que escanear los
-    /// tres orbes para saber CUÁL está fuera. `prep.drivers` ya lo sabe: se nombra el eje y
-    /// su dirección. `nil` = ninguno fuera → el caller usa la frase genérica.
     /// El subtítulo cuando NADA está fuera hoy y el veredicto que se muestra es el de ayer,
     /// sostenido por la histéresis. «Vas bien, con un detalle que cuidar» nombraba un detalle
     /// que no existe: los dos ejes dentro, el par callado, y el acta diciendo dos toques más
@@ -646,6 +642,11 @@ enum LiquidHoyBuilder {
                       defaultValue: "Your signals came back into your range; the verdict changes once that repeats two days in a row.")
     }
 
+    /// Renglones 1 (full/caution/easy con noche): la palabra-veredicto con su tono.
+    /// Pasada UX H8: con veredicto ámbar el subtítulo repetía el titular («Bien, con un
+    /// detalle» / «Vas bien, con un detalle a vigilar») y el usuario tenía que escanear los
+    /// tres orbes para saber CUÁL está fuera. `prep.drivers` ya lo sabe: se nombra el eje y
+    /// su dirección. `nil` = ninguno fuera → el caller usa la frase genérica.
     private static func subtituloDetalle(_ prep: Preparedness.Read?) -> String? {
         // El PAR manda sobre el eje suelto. Con el centinela corroborado, lo que empujó el día
         // son temperatura y respiración JUNTAS — pero el eje térmico también aparece «fuera»
@@ -745,7 +746,8 @@ enum LiquidHoyBuilder {
     /// el sueño vive en su tile y su detalle).
     private static func suenoFallback(nights: Int,
                                       healthConnected: Bool,
-                                      autonomicPosible: Bool = true) -> LiquidHoyModel.Hero {
+                                      autonomicPosible: Bool = true,
+                                      baseRancia: Bool = false) -> LiquidHoyModel.Hero {
         // Sin permiso de Salud, «duerme con tu Watch» es una instrucción imposible: el
         // único camino real es conceder el permiso (revote /inject).
         guard healthConnected else {
@@ -768,6 +770,17 @@ enum LiquidHoyBuilder {
                 title: String(localized: "hero.title.sinfc", defaultValue: "I can't read your mornings yet"),
                 subtitle: String(localized: "hero.sub.sinfc",
                                  defaultValue: "Your verdict stands on your resting heart rate at night, and it hasn't arrived. Sleeping with your Apple Watch is what unlocks it."))
+        }
+        // BASE RANCIA (quinta vuelta adversarial): quien deja el reloj dos semanas conserva su
+        // historia, así que `autonomicPossible` sigue en true y el conteo llega al tope — pero
+        // su base caducó y el eje se apaga. El héroe decía «tu lectura de hoy no ha llegado»
+        // mientras la Matriz mostraba, hoy, el número. Lo que no llegó es la base, no el dato.
+        if baseRancia {
+            return .demotado(
+                kicker: String(localized: "READINESS"),
+                title: String(localized: "hero.title.rancia", defaultValue: "Your range needs fresh nights"),
+                subtitle: String(localized: "hero.sub.rancia",
+                                 defaultValue: "It's been too long since your last nights with the watch: your range went stale and I can't judge today against it."))
         }
         let (noche, total) = calibracionConteo(nights: nights)
         guard noche < total else {
@@ -1150,12 +1163,12 @@ enum LiquidHoyBuilder {
                              defaultValue: "Breathing and temperature moved out together: today they voted.")
                     : String(localized: "Watching, not voting: breathing and temperature."))
                 : nil,
-            notas: notasBoleta(prep: prep, fuera: fuera,
+            notas: notasBoleta(prep: prep,
                                fueraEjes: fueraEjes, parVoto: parVoto, hayVeredicto: hayVeredicto,
                                esLecturaDeDia: esLecturaDeDia, desfase: desfase,
                                empujeTendencia: empujeTendencia,
                                healthConnected: healthConnected, calibrando: calibrando),
-            confianza: confianzaActa(prep: prep),
+            confianza: confianzaActa(prep: prep, healthConnected: healthConnected),
             plegable: plegableActa(),
             verMas: String(localized: "See more in Trends"),
             verMasHint: String(localized: "Opens the detail"),
@@ -1354,7 +1367,7 @@ enum LiquidHoyBuilder {
             // (cuarta vuelta: la rama que metí en la tercera afirmaba de más).
             if causaT3 == .senalInsuficiente {
                 return (String(localized: "acta.resumen.noche.sinentrar",
-                               defaultValue: "Your night hasn't come in yet, so there's no quorum."), nil)
+                               defaultValue: "Your night is recorded, but it hasn't reached the ballot yet, so there's no quorum."), nil)
             }
             return (String(localized: "Nothing came in last night: no sleep and no resting signals."), nil)
         }
@@ -1452,8 +1465,8 @@ enum LiquidHoyBuilder {
 
     /// Las notas de la boleta. El desfase y la tendencia YA viven en la frase-resumen; la
     /// carga solo aparece cuando HUBO entrenamiento (/ux D8).
-    private static func notasBoleta(prep: Preparedness.Read?, fuera: Int,
-                                    fueraEjes: Int = 0, parVoto: Bool = false,
+    private static func notasBoleta(prep: Preparedness.Read?,
+                                    fueraEjes: Int, parVoto: Bool,
                                     hayVeredicto: Bool, esLecturaDeDia: Bool,
                                     desfase: Bool, empujeTendencia: Bool,
                                     healthConnected: Bool,
@@ -1523,14 +1536,20 @@ enum LiquidHoyBuilder {
             // del par, que la boleta no dibuja: pegar «los dos fuera a la vez» debajo de una fila
             // dibujada DENTRO era la contradicción más visible de la hoja, y el resumen dos
             // renglones arriba ya lo decía bien (cuarta vuelta adversarial).
-            if parVoto, fueraEjes < 2 {
+            // La MAGNITUD la manda el veredicto, no el par. Con el par solo (los dos ejes dentro)
+            // el motor da ÁMBAR, y la nota que metí en la ronda 4 le recetaba el día ROJO —
+            // «hoy toca recuperar, no empujar»— debajo de un héroe que dice «ve leve»; y encima
+            // repetía casi textual el resumen de dos renglones arriba, justo la regla de «una
+            // voz por hueco» que esa misma ronda escribió (quinta vuelta adversarial). Con el
+            // par MÁS un eje sí son dos votos: ahí el rojo es la magnitud correcta.
+            if parVoto, fueraEjes == 1 {
                 out.append(.init(id: "aviso",
-                                 texto: fueraEjes == 1
-                                    ? String(localized: "acta.nota.par.eje",
-                                             defaultValue: "One vote out and your pair moved together: today is for recovering, not pushing.")
-                                    : String(localized: "acta.nota.par.solo",
-                                             defaultValue: "Your temperature and breathing moved out together: today is for recovering, not pushing."),
+                                 texto: String(localized: "acta.nota.par.eje",
+                                               defaultValue: "One vote out and your pair moved together: today is for recovering, not pushing."),
                                  avisa: true))
+            } else if parVoto, fueraEjes == 0 {
+                out.append(.init(id: "voto",
+                                 texto: String(localized: "One vote out lightens the day; it doesn't sink it.")))
             } else if fueraEjes >= 2 {
                 out.append(.init(id: "aviso",
                                  texto: String(localized: "Both out at once: today is for recovering, not pushing."),
@@ -1591,8 +1610,13 @@ enum LiquidHoyBuilder {
     /// `Baselines.minNightsSeed` (4) desbloquea, `Baselines.minNightsTrust` (14) da confianza
     /// plena. Y `LiquidCalibracionCard` («Calibrando tu base») SOLO mientras de verdad
     /// calibra: con la base ya usable, prosa sin barra de progreso.
-    private static func confianzaActa(prep: Preparedness.Read?) -> LiquidActa.Confianza? {
+    private static func confianzaActa(prep: Preparedness.Read?,
+                                      healthConnected: Bool = true) -> LiquidActa.Confianza? {
         guard let prep else { return nil }
+        // Sin Salud conectada no entra ninguna noche: la barra «N de 4» no puede avanzar y el
+        // héroe ya apaga su calibración por lo mismo (FER-76). Es la misma promesa rota, en
+        // gráfico, otra vez (quinta vuelta adversarial).
+        guard healthConnected else { return nil }
         let n = prep.autonomicNights
         // Sin FC nocturna posible, la tarjeta de calibración es una promesa que no se va a
         // cumplir: contar «0 de 4 noches» a quien el héroe acaba de decirle «todavía no puedo

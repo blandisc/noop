@@ -224,6 +224,23 @@ final class CosturaGuardianTests: XCTestCase {
                           "y jamás puede dibujarse más lejos que una noche que el motor SÍ marcó")
     }
 
+    /// ADVERSARIAL L3-1 (quinta vuelta) · La noche que el motor no pudo juzgar se CALLA. El
+    /// arreglo de la cuarta vuelta la apretaba a ≤0.98, o sea que la dibujaba DENTRO de tu
+    /// banda: cambiaba una mentira por su espejo, y encima afirmativa —con orilla, boca y joya—
+    /// mientras el chip decía «Conociéndote» y la hoja del guardián la dibujaba «sin dato».
+    func test_L3_1_laNocheSinJuicioNoSeDibujaNiFueraNiDentro() {
+        var dias = (-5...0).map { metric(dayKey($0), temp: 0.05, resp: 14.1) }
+        dias[1] = metric(dayKey(-4), temp: 0.05, resp: 17.8)
+        let n = costura(dias: dias, historia: (-5...0).map { noche(dayKey($0), respJudged: false) })
+        XCTAssertTrue(n.allSatisfy { $0.resp == nil },
+                      "sin juicio del motor no hay dónde poner la noche: la orilla se interrumpe")
+        XCTAssertTrue(n.allSatisfy { $0.respSinLectura })
+        // La TEMPERATURA sí se dibuja: su corte es público y absoluto (±0.8 °C) sobre una
+        // desviación ya normalizada contra tu base, así que su posición significa lo mismo con
+        // o sin veredicto del centinela. Es la asimetría que justifica tratarlas distinto.
+        XCTAssertTrue(n.contains { $0.temp != nil })
+    }
+
     /// ADVERSARIAL C4 · El par conserva su forma con una sola señal, para que cada número siga
     /// pintándose con el color de SU señal.
     func test_C4_elParConservaSuForma() {

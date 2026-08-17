@@ -332,8 +332,24 @@ extension LiquidHoyBuilder {
                 guard let magnitud else { return nil }
                 return fuera ? max(magnitud, 1.02) : min(magnitud, 0.98)
             }
-            let tAnclada = anclada(t, fuera: noche?.tempOut ?? false)
-            r = anclada(r, fuera: (noche?.respOut ?? false) && (noche?.respJudged ?? false))
+            // Y lo que el motor NO PUDO juzgar no se dibuja: ni fuera ni dentro. Apretarlo a
+            // ≤0.98 —el primer intento de la cuarta vuelta— cambiaba una mentira por su espejo:
+            // la noche de 17.8 rpm de tu tercera noche se colocaba a un pelo por dentro del
+            // filo, con su orilla, su boca y su joya, mientras el chip decía «Conociéndote» y la
+            // hoja del guardián dibujaba esa misma noche como «sin dato». El propio tipo lo
+            // documenta: `nil` = no se leyó **o no se pudo juzgar** (quinta vuelta adversarial).
+            //
+            // Es seguro para el ámbar del par: `respOut` solo puede ser true con base usable, o
+            // sea que ninguna noche que el guardián marcó se pierde por esta puerta.
+            // Las dos señales NO se tratan igual, y la diferencia es de fondo: la temperatura
+            // se juzga contra un corte PÚBLICO y absoluto (±`thermalOutC`) sobre una desviación
+            // que ya viene normalizada contra tu propia base, así que su posición significa lo
+            // mismo con o sin veredicto del centinela. La respiración se juzga con z contra tu
+            // base EWMA, y aquí solo hay una mediana/MAD aproximada: sin el juicio del motor no
+            // hay banda contra la cual colocarla, y el propio motor lo dice
+            // (`respJudged == false` significa «no evaluada», nunca «en rango»).
+            let tAnclada = noche != nil ? anclada(t, fuera: noche?.tempOut ?? false) : t
+            r = (noche?.respJudged ?? false) ? anclada(r, fuera: noche?.respOut ?? false) : nil
             // El par votó esa noche = el juicio del MOTOR para ESE día (nunca re-derivado aquí).
             let par = (noche?.tempOut ?? false) && (noche?.respOut ?? false)
             // Sin magnitud, la orilla se calla: `Noche` DERIVA sus banderas del valor (ya no se
@@ -794,6 +810,11 @@ extension LiquidHoyBuilder {
             guard prep?.autonomicPossible != false else {
                 return String(localized: "hero.title.sinfc", defaultValue: "I can't read your mornings yet")
             }
+            // Y solo si la base SE ESTÁ formando. A quien tiene meses de historia y dejó el
+            // reloj treinta días, la ventana de 20 días le sale vacía pero su rango ya existe:
+            // «Conociéndote» le decía que empezaba de cero justo debajo de un héroe que le
+            // habla de su rango de siempre (quinta vuelta adversarial).
+            guard prep == nil || prep?.maturity == .calibrating else { return nil }
             return String(localized: "hero.title.calibrando", defaultValue: "Getting to know you")
         }
         // Sin lectura de HOY o sin veredicto real (nil/lowSignal): no se afirma rango
