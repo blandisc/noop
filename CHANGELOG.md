@@ -20,6 +20,12 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **Hoy: la pantalla dice la verdad en todos sus estados, el scroll ya no se traba sobre las gráficas y la entrada ya no brinca / Today: honest copy in every state, scrolling over charts works, and the launch orb lands without a jump** (FER-73).
+  **ES** — Auditoría a fondo de Hoy y sus hojas. Mientras tu base se forma, el guardián ya no afirma «dentro de tu banda» sobre lecturas que nadie comparó, y la franja deja de contradecir al héroe. El acta cuenta el voto del par temperatura+respiración el día que sí empuja tu día, conoce el estado «leyendo tu noche» y avisa cuando el veredicto es de anoche porque Salud se desconectó. Un deslizamiento que empieza sobre una gráfica vuelve a mover la página. El punto de hoy ya no se corta contra el borde. La ⓘ del veredicto quedó a la altura de la palabra, y la animación de arranque reúne el orbe al centro y aterriza donde de verdad vive.
+  **EN** — Deep audit of Today and its sheets: no claimed pattern while your baseline is forming, no band contradicting the hero, the ballot counts the guardian's pair vote and knows the pending state, vertical scrolling works from any chart, the "today" ring no longer clips, the ⓘ sits on the word's baseline, and the launch orb gathers at the center and lands seamlessly.
+  ([TodayView.swift](Cenit/Screens/TodayView.swift), [LiquidHoyBuilder.swift](Cenit/Screens/Hoy/LiquidHoyBuilder.swift), [ScrubPan.swift](Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/ScrubPan.swift))
+
+
 - **Hoy: las gráficas de temperatura y respiración son ya la misma familia que la tarjeta del guardián, y Carga se arrastra por día / Today: skin-temp and breathing sparklines now share the guardian card's language; Load scrubs by day** (FER-72).
   **ES** — Trazo pleno, un punto por noche, HOY como anillo hueco — con los mismos tokens que la tarjeta que abre «Te vigila». Y la colina de Carga se arrastra: cada día muestra su razón, estado y fecha.
   **EN** — Full stroke, one dot per night, hollow "today" ring — same tokens as the guardian card. Load's hill now scrubs by day (ratio · state · date).
