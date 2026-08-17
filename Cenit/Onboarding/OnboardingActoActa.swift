@@ -53,7 +53,9 @@ struct OnbActoActa: View {
                         tono: nil, glosa: OnbCopy.actaGlosaCalibrando)
             }
 
-            // Los ejes que votan.
+            // Los TRES votos que cuenta el motor: autonómico, sueño y el centinela. El centinela
+            // ocupa dos renglones porque son dos señales, pero su etiqueta («en par») dice que
+            // entre las dos cargan UN voto y que ninguna cuenta sola.
             Group {
                 OnbOverline(OnbCopy.actaOverlineEjes)
                     .padding(.top, LiquidSpace.s800)
@@ -62,7 +64,9 @@ struct OnbActoActa: View {
                 OnbFila(nombre: OnbCopy.actaEjeSueno, tono: LiquidColor.indigo,
                         glosa: OnbCopy.actaEjeSuenoGlosa, etiqueta: OnbCopy.etiquetaVota)
                 OnbFila(nombre: OnbCopy.actaEjeTemp, tono: LiquidColor.doradoTemp,
-                        glosa: OnbCopy.actaEjeTempGlosa, etiqueta: OnbCopy.etiquetaVota)
+                        glosa: OnbCopy.actaEjeTempGlosa, etiqueta: OnbCopy.etiquetaEnPar)
+                OnbFila(nombre: OnbCopy.actaResp, tono: LiquidColor.azul,
+                        glosa: OnbCopy.actaRespGlosa, etiqueta: OnbCopy.etiquetaEnPar)
             }
 
             // Dentro del eje que manda: aquí sí aparecen los PESOS, porque es el único lugar del
@@ -79,13 +83,13 @@ struct OnbActoActa: View {
             }
 
             // Lo que no pesa, y por qué. Sin hue: la ausencia de identidad de color ES el dato.
+            // La respiración salió de aquí: en par con la temperatura SÍ mueve el veredicto, así
+            // que listarla como «aparte» era decir lo contrario de lo que hace el motor.
             Group {
                 OnbOverline(OnbCopy.actaOverlineNoPesa)
                     .padding(.top, LiquidSpace.s800)
                 OnbFila(nombre: OnbCopy.actaVfcDia, tono: nil, glosa: OnbCopy.actaVfcDiaGlosa,
                         etiqueta: OnbCopy.etiquetaFuera)
-                OnbFila(nombre: OnbCopy.actaResp, tono: nil, glosa: OnbCopy.actaRespGlosa,
-                        etiqueta: OnbCopy.etiquetaAparte)
                 OnbFila(nombre: OnbCopy.actaPasos, tono: nil, glosa: OnbCopy.actaPasosGlosa,
                         etiqueta: OnbCopy.etiquetaNunca)
             }

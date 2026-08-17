@@ -1,11 +1,16 @@
 import SwiftUI
 import StrandDesign
+import StrandAnalytics
 
 // MARK: - Acto 5 · el perfil (FER-113)
 //
 // Cuatro datos que el motor necesita de ti y que Apple Salud casi siempre ya sabe: edad, sexo,
-// peso y estatura. La edad manda tus zonas de frecuencia cardiaca (Tanaka, la misma fórmula que
-// Ajustes) y el peso, el gasto de cada entrenamiento.
+// peso y estatura. La EDAD, ella sola, manda tus zonas de frecuencia cardiaca (`Profile.hrMax` =
+// 208 − 0.7·edad, Tanaka, la misma fórmula que Ajustes: el sexo NO entra), y sexo, peso y estatura
+// afinan el gasto de cada entrenamiento.
+//
+// Lo que este acto NO alimenta: la base del veredicto. Ésa sale de tu historial de FC en reposo,
+// y ninguno de estos cuatro datos la toca — por eso el overline dejó de decir «para tu base».
 //
 // **Por qué es un acto propio y no una línea dentro del reveal.** FER-109 lo había convertido en
 // una línea confirmable (`OnbPerfilLinea`), y esa línea solo existía en TRES de las cinco ramas:
@@ -109,6 +114,12 @@ struct OnbActoPerfil: View {
 
     @Binding var sello: OnbPerfilSello?
     let luego: OnbPerfilLuego
+    /// El desenlace del reveal, para saber si el cuerpo puede apoyarse en una palabra ya dada.
+    /// `nil` en la rama de «Ahora no», donde el encendido nunca corrió.
+    let landing: OnboardingLanding?
+    /// ¿Se llegó por «Ahora no»? Lo sabe el wizard (`perfilAtras == .salida`), no este acto: sin
+    /// eso, la nota le echaría a Apple la culpa de una decisión que tomó la persona.
+    let desdeSalida: Bool
     let onAtras: () -> Void
     let onContinuar: () -> Void
 
@@ -130,7 +141,7 @@ struct OnbActoPerfil: View {
                     .padding(.top, LiquidSpace.s250)
                 OnbTitular(OnbCopy.perfilTitular)
                     .padding(.top, LiquidSpace.s250)
-                OnbCuerpo(OnbCopy.perfilCuerpo)
+                OnbCuerpo(cuerpo)
                     .padding(.top, LiquidSpace.s300)
             }
 
@@ -271,11 +282,21 @@ struct OnbActoPerfil: View {
 
     // MARK: - Copy que depende de la rama
 
-    /// La nota cambia con lo que DE VERDAD pasó: decirle «lo que Apple Salud sabía ya está puesto»
-    /// a quien nunca conectó Salud sería una mentira, y esa es justo la rama por la que este acto
-    /// existe.
+    /// El cuerpo se apoya en la palabra SOLO cuando la hay. En `.calibrando`, sin FC en reposo, sin
+    /// datos y en «Ahora no» no hubo veredicto que leer, así que decir «tu palabra ya salió» sería
+    /// hablarle de algo que la persona no vio.
+    private var cuerpo: String {
+        if case .lectura = landing { return OnbCopy.perfilCuerpo }
+        return OnbCopy.perfilCuerpoSinLectura
+    }
+
+    /// La nota cambia con lo que DE VERDAD pasó, en tres ramas: decirle «lo que Apple Salud sabía
+    /// ya está puesto» a quien nunca conectó Salud sería una mentira, y decirle «Apple Salud no me
+    /// dio ninguno de estos datos» a quien contestó «Ahora no» le carga a Apple una decisión suya.
+    /// El orden importa: lo que Salud SÍ llenó manda sobre de dónde se venía.
     private var nota: String {
-        (sello?.deSalud.isEmpty ?? true) ? OnbCopy.perfilNotaSinSalud : OnbCopy.perfilNotaSalud
+        if !(sello?.deSalud.isEmpty ?? true) { return OnbCopy.perfilNotaSalud }
+        return desdeSalida ? OnbCopy.perfilNotaSinPermiso : OnbCopy.perfilNotaSinSalud
     }
 
     private var cta: String {
@@ -369,7 +390,9 @@ private struct OnbPerfilPreview: View {
     var body: some View {
         ZStack {
             LiquidColor.fondoGradient.ignoresSafeArea()
-            OnbActoPerfil(sello: $sello, luego: .acta, onAtras: {}, onContinuar: {})
+            OnbActoPerfil(sello: $sello, luego: .acta,
+                          landing: .lectura(verdict: .full, noches: 22, diasHistoria: 180),
+                          desdeSalida: false, onAtras: {}, onContinuar: {})
         }
         .environmentObject(model.profile)
         .environmentObject(HealthKitBridge(repo: model.repo,

@@ -89,10 +89,15 @@ enum OnbCopy {
         String(localized: "onb.2.grupo.sostiene", defaultValue: "The one that holds it all up")
     }
     static var permisoGrupoVotan: String {
-        String(localized: "onb.2.grupo.votan", defaultValue: "The ones that vote with you")
+        String(localized: "onb.2.grupo.votan", defaultValue: "The other vote")
     }
-    static var permisoGrupoVigilan: String {
-        String(localized: "onb.2.grupo.vigilan", defaultValue: "The ones that watch and don't vote")
+    /// El centinela: temperatura y respiración cuentan UN voto, y solo el día que se salen juntas
+    /// (`Preparedness`: `sentinelOut = tempHigh && respHigh`). Por eso son un grupo, no dos filas.
+    static var permisoGrupoPar: String {
+        String(localized: "onb.2.grupo.par", defaultValue: "The two that only count together")
+    }
+    static var permisoGrupoFuera: String {
+        String(localized: "onb.2.grupo.fuera", defaultValue: "The one that no longer comes in")
     }
     static var permisoRhr: String {
         String(localized: "onb.2.rhr.nombre", defaultValue: "Resting heart rate")
@@ -103,14 +108,14 @@ enum OnbCopy {
     static var permisoSueno: String { String(localized: "onb.2.sueno.nombre", defaultValue: "Sleep") }
     static var permisoSuenoGlosa: String {
         String(localized: "onb.2.sueno.glosa",
-               defaultValue: "How much you slept against what your body asks for, and how even it was.")
+               defaultValue: "How much you slept against the hours a body asks for, and how even it was.")
     }
     static var permisoTemp: String {
         String(localized: "onb.2.temp.nombre", defaultValue: "Skin temperature")
     }
     static var permisoTempGlosa: String {
         String(localized: "onb.2.temp.glosa",
-               defaultValue: "It rises when something is brewing. Context, not a diagnosis.")
+               defaultValue: "It rises when something is brewing. On its own it doesn't count.")
     }
     static var permisoVfcNoche: String {
         String(localized: "onb.2.vfcnoche.nombre", defaultValue: "Night variability")
@@ -122,7 +127,12 @@ enum OnbCopy {
     static var permisoResp: String { String(localized: "onb.2.resp.nombre", defaultValue: "Breathing") }
     static var permisoRespGlosa: String {
         String(localized: "onb.2.resp.glosa",
-               defaultValue: "It warns you if you're coming down with something. It doesn't move the verdict.")
+               defaultValue: "It speeds up when something is coming on. On its own it doesn't count either.")
+    }
+    /// El pie del par: lo único que convierte dos filas en un voto.
+    static var permisoParPie: String {
+        String(localized: "onb.2.par.pie",
+               defaultValue: "The day both step out together, they add one vote. Either one on its own stays a heads-up.")
     }
     static var permisoVfcDia: String {
         String(localized: "onb.2.vfcdia.nombre", defaultValue: "All-day variability")
@@ -145,9 +155,12 @@ enum OnbCopy {
         String(localized: "onb.3.titular", defaultValue: "I'm reading your last 180 days")
     }
     static var conexionDias: String { String(localized: "onb.3.dias", defaultValue: "days read") }
+    /// El sueño NO se compara contra tu historia: su eje mide contra un PISO poblacional fijo
+    /// (`Preparedness`: `sleepNeedFloorMin`, `orientedZ: nil`). Decir «tus señales contra tu propio
+    /// rango» a secas era falso para la mitad del veredicto.
     static var conexionRegla: String {
         String(localized: "onb.3.regla",
-               defaultValue: "Every morning I compare your signals against your own range, never against anybody else's average. If none of them steps out, your day opens in range.")
+               defaultValue: "Every morning I compare your heart against your own range, the one that comes out of your nights. Your sleep I measure differently: against the hours any body asks for.")
     }
     static var conexionCalculando: String {
         String(localized: "onb.3.calculando", defaultValue: "Computing your baseline")
@@ -239,15 +252,27 @@ enum OnbCopy {
     //
     // Sus claves van SIN número (`onb.perfil.*`): este acto se insertó entre el 4 y el acta, y un
     // prefijo numérico obligaría a renumerar 60 claves ya traducidas cada vez que el guion cambie.
+    /// El overline NO dice «para tu base»: la base del veredicto es tu historial de FC en reposo, y
+    /// estos cuatro datos no la alimentan (`Profile.hrMax = 208 − 0.7·edad`, sin sexo). Lo único
+    /// cierto de los cuatro es que NO salen de tus señales.
     static var perfilOverline: String {
-        String(localized: "onb.perfil.overline", defaultValue: "For your zones and your baseline")
+        String(localized: "onb.perfil.overline", defaultValue: "What isn't in your signals")
     }
     static var perfilTitular: String {
-        String(localized: "onb.perfil.titular", defaultValue: "I still need four things about you")
+        String(localized: "onb.perfil.titular", defaultValue: "Now you're what's missing")
     }
+    /// La rama con veredicto ya dado: el cuerpo puede apoyarse en lo que la persona acaba de leer.
+    /// Nombra los CUATRO campos (el viejo prometía cuatro datos y justificaba tres: la estatura
+    /// nunca se explicaba) y no le atribuye al sexo las zonas, porque la fórmula no lo usa.
     static var perfilCuerpo: String {
         String(localized: "onb.perfil.cuerpo",
-               defaultValue: "Your age and your sex give me your heart rate zones. Your weight, the burn of every workout.")
+               defaultValue: "Your morning word already came out of your heart and your sleep. This is for the other half: your age gives me your heart rate zones, and your sex, your weight and your height fine-tune what you burn when you train.")
+    }
+    /// Y la rama sin palabra (calibrando, sin FC en reposo, sin datos, «Ahora no»): ahí no hay
+    /// lectura a la cual referirse, así que el cuerpo arranca de cero.
+    static var perfilCuerpoSinLectura: String {
+        String(localized: "onb.perfil.cuerpo.sinlectura",
+               defaultValue: "This doesn't come out of your signals, you have to tell me: your age gives me your heart rate zones, and your sex, your weight and your height fine-tune what you burn when you train.")
     }
     /// La nota cuando Apple Salud SÍ llenó algo: recupera el «Desde Apple Salud · editable» del
     /// wizard viejo, que es lo que hace que el prellenado no se sienta impuesto.
@@ -259,6 +284,12 @@ enum OnbCopy {
     static var perfilNotaSinSalud: String {
         String(localized: "onb.perfil.nota.sinsalud",
                defaultValue: "Apple Health gave me none of these, so I filled them in myself to get started. Adjust them, or your zones will be an average person's instead of yours.")
+    }
+    /// La tercera nota: quien llegó por «Ahora no» nunca conectó Salud, así que echarle la culpa a
+    /// Apple («no me dio ninguno de estos datos») es cargarle a otro una decisión que fue suya.
+    static var perfilNotaSinPermiso: String {
+        String(localized: "onb.perfil.nota.sinpermiso",
+               defaultValue: "You didn't connect Apple Health, so I set these four myself to get started. Adjust them, or your zones will be an average person's instead of yours.")
     }
     static var perfilMarcaSalud: String {
         String(localized: "onb.perfil.marca.salud", defaultValue: "From Apple Health")
@@ -281,31 +312,35 @@ enum OnbCopy {
     static var actaOverline: String {
         String(localized: "onb.5.overline", defaultValue: "What it's made of")
     }
+    /// TRES votos, no «ejes» a secas: el motor cuenta autonómico + sueño + centinela y la palabra
+    /// sale de ese conteo (`Preparedness`: `out == 0 ? .full : (out == 1 ? .caution : .easy)`).
     static var actaIntro: String {
         String(localized: "onb.5.intro",
-               defaultValue: "There is no 0 to 100 score. Your body votes by axis, and the word comes out of the agreement.")
+               defaultValue: "Your body votes three times every morning, and the word comes out of the count. There is no 0 to 100 score.")
     }
     static var actaOverlinePalabras: String {
         String(localized: "onb.5.overline.palabras", defaultValue: "The four words")
     }
+    // Las glosas cuentan VOTOS, no señales: seis señales entran al acta y solo tres votan, así que
+    // «una señal se salió» describía un conteo que el motor nunca hace.
     static var actaGlosaFull: String {
         String(localized: "onb.5.glosa.full",
-               defaultValue: "No signal stepped out of your range. Today your body takes whatever you put on it.")
+               defaultValue: "None of the three votes stepped out. Today your body isn't asking you to ease off.")
     }
     static var actaGlosaCaution: String {
         String(localized: "onb.5.glosa.caution",
-               defaultValue: "One signal stepped out of your range. Train, but don't chase a record.")
+               defaultValue: "One vote stepped out. Train, but don't chase a record.")
     }
     static var actaGlosaEasy: String {
         String(localized: "onb.5.glosa.easy",
-               defaultValue: "Two or more stepped out. Your body is paying for something. Bring the load down.")
+               defaultValue: "Two or all three stepped out. Your body is paying for something. Bring the load down.")
     }
     static var actaGlosaCalibrando: String {
         String(localized: "onb.5.glosa.calibrando",
                defaultValue: "I still have nothing to go on. I'd rather stay quiet than make up a word for you.")
     }
     static var actaOverlineEjes: String {
-        String(localized: "onb.5.overline.ejes", defaultValue: "The axes that vote")
+        String(localized: "onb.5.overline.ejes", defaultValue: "The three votes")
     }
     static var actaEjeAutonomico: String {
         String(localized: "onb.5.eje.autonomico", defaultValue: "Autonomic")
@@ -315,13 +350,15 @@ enum OnbCopy {
                defaultValue: "Your heart and your nervous system. If this one has no reading, there is no verdict.")
     }
     static var actaEjeSueno: String { String(localized: "onb.5.eje.sueno", defaultValue: "Sleep") }
+    /// El único eje que NO se compara contra tu historia: piso poblacional fijo, `orientedZ: nil`.
     static var actaEjeSuenoGlosa: String {
         String(localized: "onb.5.eje.sueno.glosa",
-               defaultValue: "How much you slept against what your body asks for.")
+               defaultValue: "How much you slept against the recommended hours. It's the only signal I don't compare against your history.")
     }
     static var actaEjeTemp: String { String(localized: "onb.5.eje.temp", defaultValue: "Temperature") }
     static var actaEjeTempGlosa: String {
-        String(localized: "onb.5.eje.temp.glosa", defaultValue: "How far it drifted from your own baseline.")
+        String(localized: "onb.5.eje.temp.glosa",
+               defaultValue: "How far it drifted from your own baseline. On its own it doesn't count: it only adds up the day your breathing steps out with it.")
     }
     static var actaOverlineDentro: String {
         String(localized: "onb.5.overline.dentro", defaultValue: "Inside the axis that leads")
@@ -351,7 +388,7 @@ enum OnbCopy {
     static var actaResp: String { String(localized: "onb.5.resp", defaultValue: "Your breathing") }
     static var actaRespGlosa: String {
         String(localized: "onb.5.resp.glosa",
-               defaultValue: "It works apart: it doesn't vote on the day, but it's one of the first to warn you if something is brewing.")
+               defaultValue: "On its own it doesn't vote. Together with your temperature, it does.")
     }
     static var actaPasos: String {
         String(localized: "onb.5.pasos", defaultValue: "Your steps, your rings, your streaks")
@@ -363,9 +400,11 @@ enum OnbCopy {
     static var actaOverlineContra: String {
         String(localized: "onb.5.overline.contra", defaultValue: "What I compare you against")
     }
+    /// Dos respuestas, no una: el corazón se mide contra TU historia y el sueño contra un piso que
+    /// es igual para todos. La versión anterior extendía la primera a todo el veredicto.
     static func actaContra(noches: Int) -> String {
         String(format: String(localized: "onb.5.contra",
-                              defaultValue: "Against your own %lld nights. Never against anybody else's average. That's why I need time before I say anything: by the fourth night I already give you a reading, by the fourteenth I know your normal."),
+                              defaultValue: "Your heart, against your own %lld nights, never against anybody else's average. Your sleep, against the hours a body asks for, because what you got used to sleeping isn't what you need. That's why I need time before I say anything: by the fourth night I already give you a reading, by the fourteenth I know your normal."),
                noches)
     }
     static var actaPie: String {
@@ -382,7 +421,8 @@ enum OnbCopy {
         String(localized: "onb.5.tag.acompana", defaultValue: "accompanies")
     }
     static var etiquetaFuera: String { String(localized: "onb.5.tag.fuera", defaultValue: "out") }
-    static var etiquetaAparte: String { String(localized: "onb.5.tag.aparte", defaultValue: "apart") }
+    /// La etiqueta del centinela: temperatura y respiración cargan UN voto entre las dos.
+    static var etiquetaEnPar: String { String(localized: "onb.5.tag.enpar", defaultValue: "paired") }
     static var etiquetaNunca: String { String(localized: "onb.5.tag.nunca", defaultValue: "never") }
 
     // Acto 7 · Ciclo y mañana (claves `onb.6.*`, mismo motivo)
@@ -423,9 +463,18 @@ enum OnbCopy {
     static var cierreTitular: String {
         String(localized: "onb.6.cierre.titular", defaultValue: "Sleep. I'll do the rest.")
     }
+    /// Cénit calcula SOLO con la app abierta: no hay `UIBackgroundModes`, ni
+    /// `enableBackgroundDelivery`, ni `BGTaskScheduler` en todo el proyecto. «Sin que abras nada»
+    /// prometía justo lo único que la app no puede hacer.
     static var cierreCuerpo: String {
         String(localized: "onb.6.cierre.cuerpo",
-               defaultValue: "With the watch on. In the morning your reading is already there, without you opening anything.")
+               defaultValue: "With the watch on. In the morning you open me and your word is already there: you don't have to log anything or ask me for anything.")
+    }
+    /// Lo único que sí ocurre sin abrir la app: el aviso local de `MorningReadingScheduler`
+    /// (FER-114), que hasta hoy era invisible porque el flujo no lo nombraba en ningún lado.
+    static var cierreAviso: String {
+        String(localized: "onb.6.cierre.aviso",
+               defaultValue: "If you want, I'll set you a reminder at whatever time you pick. It lives in Settings.")
     }
     static var cierreTitularSinReloj: String {
         String(localized: "onb.6.cierre.titular.sinreloj", defaultValue: "If you ever wear a watch")

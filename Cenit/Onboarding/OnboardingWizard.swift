@@ -111,6 +111,10 @@ struct OnboardingWizard: View {
             OnbActoPerfil(
                 sello: $perfilSello,
                 luego: perfilLuego,
+                landing: landing,
+                // Quien llegó por «Ahora no» nunca vio el diálogo de Salud: su nota no puede
+                // culpar a Apple de no haber dado datos que nadie le pidió.
+                desdeSalida: perfilAtras == .salida,
                 onAtras: { ir(a: perfilAtras) },
                 onContinuar: { salirDelPerfil() })
         case .acta:

@@ -66,6 +66,13 @@ struct OnbActoCiclo: View {
                     .padding(.top, LiquidSpace.s800)
                 OnbCuerpo(conReloj ? OnbCopy.cierreCuerpo : OnbCopy.cierreCuerpoSinReloj)
                     .padding(.top, LiquidSpace.s300)
+                // El aviso solo se ofrece donde puede existir: sin noches con reloj no hay lectura
+                // que anunciar y `MorningReadingScheduler.plan` sale vacío (`hayLectura`), así que
+                // aquí sería un recordatorio prometido que nunca va a sonar.
+                if conReloj {
+                    OnbCuerpo(OnbCopy.cierreAviso, tono: LiquidColor.tinta500)
+                        .padding(.top, LiquidSpace.s250)
+                }
             }
 
             // El dock REAL, no un dibujo: lo que se promete arriba es lo que se toca abajo.

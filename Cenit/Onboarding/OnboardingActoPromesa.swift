@@ -65,7 +65,7 @@ struct OnbActoPermiso: View {
 
     var body: some View {
         // Los `Group` son puramente estructurales: SwiftUI tope los hijos de un builder en 10 y
-        // este diagrama tiene 17. `Group` es transparente para el layout, así que cada renglón
+        // este diagrama tiene 18. `Group` es transparente para el layout, así que cada renglón
         // sigue siendo hermano directo del `VStack` del shell (y los `Spacer` siguen empujando).
         OnbShell {
             Group {
@@ -77,36 +77,53 @@ struct OnbActoPermiso: View {
                     .padding(.top, LiquidSpace.s300)
             }
 
-            // La que sostiene todo.
+            // Los grupos son LOS VOTOS DEL MOTOR, no una lista ordenada por importancia. En
+            // `Preparedness` el conteo es de tres: el eje autonómico, el sueño, y el centinela
+            // (temperatura Y respiración, que solo cuenta cuando las DOS se salen el mismo día).
+            //
+            // 1 · El eje autonómico entero: la FC en reposo y su acompañante viven en el MISMO
+            // voto, así que van juntas. Separar la VFC de la noche en un grupo aparte la hacía
+            // parecer un cuarto voto que el motor nunca cuenta.
             Group {
                 OnbOverline(OnbCopy.permisoGrupoSostiene)
                     .padding(.top, LiquidSpace.s800)
                 OnbFila(nombre: OnbCopy.permisoRhr, tono: LiquidColor.rosa,
                         glosa: OnbCopy.permisoRhrGlosa)
+                OnbFila(nombre: OnbCopy.permisoVfcNoche, tono: LiquidColor.cian,
+                        glosa: OnbCopy.permisoVfcNocheGlosa)
             }
 
-            // Las que votan contigo.
+            // 2 · El otro voto, solo.
             Group {
                 OnbOverline(OnbCopy.permisoGrupoVotan)
                     .padding(.top, LiquidSpace.s600)
                 OnbFila(nombre: OnbCopy.permisoSueno, tono: LiquidColor.indigo,
                         glosa: OnbCopy.permisoSuenoGlosa)
-                OnbFila(nombre: OnbCopy.permisoTemp, tono: LiquidColor.doradoTemp,
-                        glosa: OnbCopy.permisoTempGlosa)
-                OnbFila(nombre: OnbCopy.permisoVfcNoche, tono: LiquidColor.cian,
-                        glosa: OnbCopy.permisoVfcNocheGlosa)
             }
 
-            // El capilar separa a las que DECIDEN de las que solo miran: es la frontera del
+            // 3 · El centinela. Las dos llevan hue porque SÍ deciden (en par), y el pie es lo único
+            // que convierte dos renglones en un voto: sin él, dos filas teñidas se leen como dos
+            // votos, que es exactamente el error que este grupo viene a corregir.
+            Group {
+                OnbOverline(OnbCopy.permisoGrupoPar)
+                    .padding(.top, LiquidSpace.s600)
+                OnbFila(nombre: OnbCopy.permisoTemp, tono: LiquidColor.doradoTemp,
+                        glosa: OnbCopy.permisoTempGlosa)
+                OnbFila(nombre: OnbCopy.permisoResp, tono: LiquidColor.azul,
+                        glosa: OnbCopy.permisoRespGlosa)
+                OnbCuerpo(OnbCopy.permisoParPie, tono: LiquidColor.tinta500)
+                    .padding(.top, LiquidSpace.s150)
+            }
+
+            // El capilar separa a las que DECIDEN de la que ya no entra: es la frontera del
             // diagrama, y sin él las seis señales se leen como una sola lista con jerarquía
-            // tipográfica. Sin hue las de abajo: no votan, así que no llevan identidad de
-            // color, y esa ausencia ES el dato.
+            // tipográfica. Sin hue la de abajo: no vota, así que no lleva identidad de color, y
+            // esa ausencia ES el dato.
             Group {
                 OnbHairline()
                     .padding(.top, LiquidSpace.s600)
-                OnbOverline(OnbCopy.permisoGrupoVigilan)
+                OnbOverline(OnbCopy.permisoGrupoFuera)
                     .padding(.top, LiquidSpace.s600)
-                OnbFila(nombre: OnbCopy.permisoResp, tono: nil, glosa: OnbCopy.permisoRespGlosa)
                 OnbFila(nombre: OnbCopy.permisoVfcDia, tono: nil, glosa: OnbCopy.permisoVfcDiaGlosa)
             }
 
