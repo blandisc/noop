@@ -45,7 +45,6 @@ extension LiquidHoyBuilder {
         // Severidades de HOY (única fuente: HoyGramatica).
         let alertaSueno = mapaAlerta(HoyGramatica.severidad(senal: .sleep, prep: prep, razonCarga: razonCarga))
         let alertaFC = mapaAlerta(HoyGramatica.severidad(senal: .rhr, prep: prep, razonCarga: razonCarga))
-        let alertaGuardian = mapaAlerta(HoyGramatica.severidad(senal: .skintemp, prep: prep, razonCarga: razonCarga))
         let alertaCarga = mapaAlerta(HoyGramatica.severidad(senal: .carga, prep: prep, razonCarga: razonCarga))
 
 
@@ -243,93 +242,93 @@ extension LiquidHoyBuilder {
         // FER-79 · D3: las DOS filas del guardián comparten el mismo inicio vivo, para que sus
         // ejes sigan alineados entre sí (leer una contra la otra es parte de la regla del par).
         let iniGuardian = inicioVivo([ptsTemp, ptsResp])
-        let ptsTempVivos = Array(ptsTemp[iniGuardian...])
-        let ptsRespVivos = Array(ptsResp[iniGuardian...])
         let hayLecturaGuardianHoy = ptsTemp.last.flatMap { $0 } != nil || ptsResp.last.flatMap { $0 } != nil
         let chip = chipGuardianModelo(chipJuzgado, noche: nocheJuzgada,
                                       hayLecturaHoy: hayLecturaGuardianHoy,
                                       calibrando: prep?.maturity == .calibrating)
-        // Juicio POR SEÑAL, solo si el motor la juzgó esta noche (temp: corte absoluto ⇒ basta
-        // que se haya leído; resp: además necesita base usable ⇒ `respJudged`).
-        let tempJuzgada = sentinelHoy != nil && nocheJuzgada?.tempMissing == false
-        let respJuzgada = sentinelHoy != nil && nocheJuzgada?.respJudged == true
         // Scrub de temp/resp (dueño 2026-08-15): día + lectura de esa noche, alineado 1:1 con la
         // serie que dibuja la línea serena. Serie de tiempo → el scrub se lee natural (a diferencia
         // de la colina de Carga, que es eje de valor y por eso NO se arrastra).
-        func scrubGuardian(_ pts: [Double?], fmt: (Double) -> String) -> [MatrizSeccion.ScrubNoche] {
-            keys20.enumerated().map { idx, _ in
-                let fecha = weekdayLabel(offsetFromToday: keys20.count - 1 - idx, now: i.now,
-                                         calendar: i.calendar, formatter: diaFmt)
-                guard let v = pts[idx] else {
-                    return .init(valor: "—",
-                                 sublabel: String(format: String(localized: "matriz.scrub.sinlectura",
-                                                                 defaultValue: "%@ · no reading"), fecha))
-                }
-                return .init(valor: fmt(v), sublabel: fecha)
-            }
-        }
-        let scrubTemp = Array(scrubGuardian(ptsTemp) { HoyGramatica.formatoDeltaTemp($0) }[iniGuardian...])
-        let scrubResp = Array(scrubGuardian(ptsResp) { HoyGramatica.formatoResp($0) }[iniGuardian...])
         // Banda ± del guardián: corte térmico público (± thermalOutC) y resp ~ base±.
         let thermalBand = Preparedness.Config.default.thermalOutC
+        // FER-80 · LA COSTURA (propuesta C2, elegida por el dueño): las dos señales del par en
+        // UNA sola gráfica, espejadas sobre un eje común, con el espacio entre ellas pintado.
+        // Cada una se normaliza contra SU banda para que el espesor signifique lo mismo:
+        //   · temperatura → |dev| / corte térmico público (banda absoluta en °C);
+        //   · respiración → |rpm − base| / medio ancho de su banda típica.
+        // Así 1.0 = «justo en el filo de tu banda» para las dos, y la boca se abre igual.
+        let respBaseCostura: Double? = {
+            let vistos = ptsResp.compactMap { $0 }
+            guard vistos.count >= 3 else { return nil }
+            return vistos.reduce(0, +) / Double(vistos.count)
+        }()
+        let respMedioAncho: Double = {
+            guard let base = respBaseCostura else { return 2.0 }
+            let vistos = ptsResp.compactMap { $0 }
+            guard vistos.count >= 3 else { return 2.0 }
+            let desv = vistos.map { abs($0 - base) }.reduce(0, +) / Double(vistos.count)
+            return max(desv * 2, 0.8)          // piso: una banda plana no exagera el dibujo
+        }()
+        let nochesCostura: [MatrizCostura.Noche] = keys20.indices.map { idx in
+            let dia = keys20[idx]
+            let noche = sentByDay[dia]
+            let t: Double? = ptsTemp[idx].map { abs($0) / max(thermalBand, 0.01) }
+            let r: Double? = ptsResp[idx].flatMap { v in
+                guard let base = respBaseCostura else { return nil }
+                return abs(v - base) / respMedioAncho
+            }
+            // El par votó esa noche = el juicio del MOTOR para ESE día (nunca re-derivado aquí).
+            let par = (noche?.tempOut ?? false) && (noche?.respOut ?? false)
+            return .init(temp: t, resp: r, parFuera: par)
+        }
+        let nochesCosturaVivas = Array(nochesCostura[iniGuardian...])
+        // El scrub de la costura lee LA NOCHE COMPLETA: las dos señales y su fecha.
+        let scrubCostura: [MatrizSeccion.ScrubNoche] = keys20.indices.map { idx in
+            let fecha = weekdayLabel(offsetFromToday: keys20.count - 1 - idx, now: i.now,
+                                     calendar: i.calendar, formatter: diaFmt)
+            let t = ptsTemp[idx].map { HoyGramatica.formatoDeltaTemp($0) }
+            let r = ptsResp[idx].map { HoyGramatica.formatoResp($0) }
+            switch (t, r) {
+            case (nil, nil):
+                return .init(valor: "—",
+                             sublabel: String(format: String(localized: "matriz.scrub.sinlectura",
+                                                             defaultValue: "%@ · no reading"), fecha))
+            case (let t?, let r?):
+                return .init(valor: "\(t) · \(r)", sublabel: fecha)
+            case (let t?, nil):
+                return .init(valor: t, sublabel: fecha)
+            case (nil, let r?):
+                return .init(valor: r, sublabel: fecha)
+            }
+        }
+        let scrubCosturaVivo = Array(scrubCostura[iniGuardian...])
+        // El par de números vive en el encabezado: «+0.1° · 14.9».
+        let valorPar: String = {
+            switch (valorTemp == "—", valorResp == "—") {
+            case (false, false): return "\(valorTemp) · \(valorResp)"
+            case (false, true):  return valorTemp
+            case (true, false):  return valorResp
+            case (true, true):   return "—"
+            }
+        }()
+
         let seccionGuardian = MatrizSeccion(
             id: "guardian", hue: LiquidColor.doradoTemp,
             huesPar: (LiquidColor.doradoTemp, LiquidColor.azul),
             // P4: el MISMO nombre que su luna en el héroe (una sola llave).
             titulo: String(localized: "Guardian"),
-            valor: "",
-            // FER-57: la sublínea describe QUÉ vigila y CUÁNDO (el trabajo del vistazo, correcto en
-            // los 5 estados); la REGLA («una sola no empuja… dos noches») vive SOLO tras el «?» —
-            // repetirla en los dos lados era redundante (decisión dueño + experto UX). Dice
-            // «temperatura», no «fiebre» (piel ≠ fiebre: sin claim clínico).
+            // FER-80: los DOS números juntos, cada uno en su color, como manda la costura.
+            valor: valorPar,
+            // FER-57: la sublínea describe QUÉ vigila y CUÁNDO (el trabajo del vistazo, correcto
+            // en los 5 estados); la REGLA vive SOLO tras el «?».
             sublabel: String(localized: "matriz.guardian.sub",
                              defaultValue: "your temperature and breathing while you sleep"),
             chartID: "matriz-guardian",
-            // DEUDA (FER-56): esta gráfica de sección NO se dibuja — `MatrizHoyFace.seccionView`
-            // ignora `s.chart` cuando la sección trae `renglones` (guardián), que llevan su
-            // propia línea. Se conserva porque `chart` es obligatorio en `MatrizSeccion`; hacerlo
-            // opcional o darle un caso `.vacio` es su propio cambio, fuera del alcance de esta ola.
-            chart: .lineaSerena(puntos: ptsTempVivos, banda: -thermalBand...thermalBand,
-                                dominio: -1.5...1.5, alertaHoy: alertaGuardian),
+            // FER-80 · La costura: una sola gráfica para el par (antes dos filas que nunca se
+            // miraban). Ya no hay `renglones`: la sección DIBUJA su chart.
+            chart: .costura(noches: nochesCosturaVivas),
             chip: chip,
-            renglones: [
-                MatrizRenglon(
-                    id: "skintemp",
-                    titulo: String(localized: "Skin temp"),
-                    valor: valorTemp,
-                    // El juicio es POR SEÑAL (tempOut) y solo con lectura de hoy —
-                    // afirmar «dentro de tu banda» sin dato o contra el flag del motor
-                    // es copy que miente (gate del repo; Grok+DeepSeek convergieron).
-                    // FER-73 · H5: y solo si el motor la JUZGÓ esta noche (`tempOut ?? false`
-                    // convertía «sin juicio» en «dentro» durante la calibración).
-                    sublabel: (valorTemp == "—" || !tempJuzgada) ? nil
-                        : ((sentinelHoy?.tempOut ?? false)
-                            ? String(localized: "matriz.temp.fuera", defaultValue: "outside your band")
-                            : String(localized: "matriz.temp.enbanda", defaultValue: "within your band")),
-                    hue: LiquidColor.doradoTemp,
-                    chartID: "matriz-guardian-temp",
-                    chart: .lineaSerena(puntos: ptsTempVivos, banda: -thermalBand...thermalBand,
-                                        dominio: -1.5...1.5, alertaHoy: alertaGuardian),
-                    subrayado: alertaGuardian,
-                    scrubNoches: scrubTemp),
-                MatrizRenglon(
-                    id: "resp",
-                    titulo: String(localized: "Breathing"),
-                    valor: valorResp, unidad: valorResp == "—" ? nil : String(localized: "rpm"),
-                    sublabel: (valorResp == "—" || !respJuzgada) ? nil
-                        : ((sentinelHoy?.respOut ?? false)
-                            ? String(localized: "matriz.resp.fuera", defaultValue: "above your usual")
-                            : String(localized: "matriz.resp.tipica", defaultValue: "typical for you")),
-                    hue: LiquidColor.azul,
-                    chartID: "matriz-guardian-resp",
-                    chart: .lineaSerena(puntos: ptsRespVivos, banda: nil,
-                                        dominio: dominioLinea(ptsResp, base: nil, fallback: 8...22),
-                                        alertaHoy: alertaGuardian),
-                    subrayado: alertaGuardian,
-                    scrubNoches: scrubResp),
-            ],
-            // FER-56 · Ola 3: el sello VIVO reacciona al MISMO estado que el chip (nunca lo
-            // contradice) — se separa y tiñe cuando el par se sale, calla en calma.
+            scrubNoches: scrubCosturaVivo,
             selloGuardian: selloGuardianEstado(chipJuzgado))
 
         // —— 4. Carga | Esfuerzo ——
