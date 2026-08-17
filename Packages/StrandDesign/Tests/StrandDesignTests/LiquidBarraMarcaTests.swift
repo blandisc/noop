@@ -27,9 +27,41 @@ final class LiquidBarraMarcaTests: XCTestCase {
         XCTAssertNil(LiquidBarraMarca.deltaTexto(fraccion: 0.22, marca: nil))
     }
 
+    // MARK: - Sin medir ≠ medido en cero
+
+    /// El invariante central del épico, aplicado a esta pieza. `fraccion: nil` = esa etapa no
+    /// se midió anoche; `fraccion: 0` = se midió y dio cero. No pueden verse ni sonar igual:
+    /// con el fallback diario de Apple, «despierto» llega en 0 por construcción, y si el
+    /// componente los colapsara una noche sin etapas se leería como una noche de cero profundo.
+    func test_sinMedir_noDibujaRellenoNiAfirmaDelta() {
+        XCTAssertNil(LiquidBarraMarca.anchoRelleno(fraccion: nil, marca: 0.18),
+                     "sin medición no hay cápsula de color, ni siquiera de ancho cero")
+        XCTAssertNotNil(LiquidBarraMarca.anchoRelleno(fraccion: 0, marca: 0.18),
+                        "medido en cero SÍ dibuja: la cápsula está presente en su base")
+
+        XCTAssertNil(LiquidBarraMarca.deltaTexto(fraccion: nil, marca: 0.18),
+                     "un «−18» sobre una noche que nadie midió es una afirmación inventada")
+        XCTAssertNotNil(LiquidBarraMarca.deltaTexto(fraccion: 0, marca: 0.18),
+                        "con cero medido sí hay delta real contra el promedio")
+    }
+
+    /// Sin medición no hay juicio: el color del delta no puede opinar sobre lo que no existe.
+    func test_sinMedir_noJuzga() {
+        XCTAssertTrue(LiquidBarraMarca.mejora(fraccion: nil, marca: 0.18, masEsMejor: true))
+        XCTAssertTrue(LiquidBarraMarca.mejora(fraccion: nil, marca: 0.18, masEsMejor: false),
+                      "sin dato el juicio se calla, no cambia de signo")
+    }
+
+    /// La marca del promedio SÍ se sigue dibujando aunque anoche no se midiera: el promedio
+    /// existe por su cuenta, y verlo sin barra es la lectura honesta de «esto es tu típico,
+    /// de anoche no sabemos».
+    func test_sinMedir_laMarcaDelPromedioSobrevive() {
+        XCTAssertNotNil(LiquidBarraMarca.posicionMarca(fraccion: nil, marca: 0.18))
+    }
+
     /// Sin marca, el relleno se escala contra sí mismo: llega al tope de la fila, no al 100 %.
     func test_sinBase_elRellenoSigueTopandoEnElAire() {
-        XCTAssertEqual(LiquidBarraMarca.anchoRelleno(fraccion: 0.22, marca: nil),
+        XCTAssertEqual((LiquidBarraMarca.anchoRelleno(fraccion: 0.22, marca: nil) ?? -1),
                        tope, accuracy: 1e-9)
     }
 
@@ -43,7 +75,7 @@ final class LiquidBarraMarcaTests: XCTestCase {
     /// Fila entera en cero y sin base: nada que dibujar, y sin dividir entre cero.
     func test_todoEnCero_noExplota() {
         XCTAssertEqual(LiquidBarraMarca.denominador(fraccion: 0, marca: nil), 1)
-        XCTAssertEqual(LiquidBarraMarca.anchoRelleno(fraccion: 0, marca: nil), 0)
+        XCTAssertEqual((LiquidBarraMarca.anchoRelleno(fraccion: 0, marca: nil) ?? -1), 0)
         XCTAssertNil(LiquidBarraMarca.posicionMarca(fraccion: 0, marca: nil))
     }
 
@@ -53,23 +85,23 @@ final class LiquidBarraMarcaTests: XCTestCase {
     /// pase, relleno y marca viven en 0…1.
     func test_fueraDeRango_seClampea() {
         for (f, m) in [(1.4, 0.5), (-0.3, 0.5), (2.0, 3.0), (0.4, -1.0), (-1.0, -1.0)] {
-            let ancho = LiquidBarraMarca.anchoRelleno(fraccion: f, marca: m)
+            let ancho = LiquidBarraMarca.anchoRelleno(fraccion: f, marca: m) ?? -1
             XCTAssertTrue((0...1).contains(ancho), "ancho fuera de 0…1 con (\(f), \(m)): \(ancho)")
             if let pos = LiquidBarraMarca.posicionMarca(fraccion: f, marca: m) {
                 XCTAssertTrue((0...1).contains(pos), "marca fuera de 0…1 con (\(f), \(m)): \(pos)")
             }
         }
         // Clampeado, 1.4 se comporta como 1.0: sigue siendo el máximo de su fila.
-        XCTAssertEqual(LiquidBarraMarca.anchoRelleno(fraccion: 1.4, marca: 0.5),
+        XCTAssertEqual((LiquidBarraMarca.anchoRelleno(fraccion: 1.4, marca: 0.5) ?? -1),
                        tope, accuracy: 1e-9)
-        XCTAssertEqual(LiquidBarraMarca.anchoRelleno(fraccion: -0.3, marca: 0.5), 0)
+        XCTAssertEqual((LiquidBarraMarca.anchoRelleno(fraccion: -0.3, marca: 0.5) ?? -1), 0)
     }
 
     /// NaN / infinito (una división por cero río arriba en el caller) valen 0, no un
     /// `frame(width: nan)` que revienta el render.
     func test_noFinitos_valenCero() {
-        XCTAssertEqual(LiquidBarraMarca.anchoRelleno(fraccion: .nan, marca: 0.2), 0)
-        XCTAssertEqual(LiquidBarraMarca.anchoRelleno(fraccion: .infinity, marca: 0.2), 0)
+        XCTAssertEqual((LiquidBarraMarca.anchoRelleno(fraccion: .nan, marca: 0.2) ?? -1), 0)
+        XCTAssertEqual((LiquidBarraMarca.anchoRelleno(fraccion: .infinity, marca: 0.2) ?? -1), 0)
         XCTAssertNil(LiquidBarraMarca.posicionMarca(fraccion: 0.2, marca: .nan))
         XCTAssertEqual(LiquidBarraMarca.denominador(fraccion: .nan, marca: nil), 1)
     }
@@ -92,22 +124,22 @@ final class LiquidBarraMarcaTests: XCTestCase {
     /// firma visible de que cada barra tiene su propio denominador.
     func test_escalaPorFila_elMaximoTopaEnElAire() {
         // Anoche por ENCIMA del típico: manda el relleno.
-        XCTAssertEqual(LiquidBarraMarca.anchoRelleno(fraccion: 0.22, marca: 0.18),
+        XCTAssertEqual((LiquidBarraMarca.anchoRelleno(fraccion: 0.22, marca: 0.18) ?? -1),
                        tope, accuracy: 1e-9)
         XCTAssertEqual(LiquidBarraMarca.posicionMarca(fraccion: 0.22, marca: 0.18) ?? -1,
                        0.18 / (0.22 * aire), accuracy: 1e-9)
         // Anoche por DEBAJO: manda la marca, y ahora es ella la que topa.
         XCTAssertEqual(LiquidBarraMarca.posicionMarca(fraccion: 0.46, marca: 0.52) ?? -1,
                        tope, accuracy: 1e-9)
-        XCTAssertEqual(LiquidBarraMarca.anchoRelleno(fraccion: 0.46, marca: 0.52),
+        XCTAssertEqual((LiquidBarraMarca.anchoRelleno(fraccion: 0.46, marca: 0.52) ?? -1),
                        0.46 / (0.52 * aire), accuracy: 1e-9)
     }
 
     /// Dos filas de tamaños muy distintos llenan lo mismo: NO hay escala compartida. Si
     /// alguien «arregla» esto normalizando entre filas, el test lo caza.
     func test_escalaPorFila_noEsCompartida() {
-        XCTAssertEqual(LiquidBarraMarca.anchoRelleno(fraccion: 0.46, marca: 0.40),
-                       LiquidBarraMarca.anchoRelleno(fraccion: 0.06, marca: 0.05),
+        XCTAssertEqual((LiquidBarraMarca.anchoRelleno(fraccion: 0.46, marca: 0.40) ?? -1),
+                       (LiquidBarraMarca.anchoRelleno(fraccion: 0.06, marca: 0.05) ?? -1),
                        accuracy: 1e-9)
     }
 
@@ -139,7 +171,7 @@ final class LiquidBarraMarcaTests: XCTestCase {
         XCTAssertTrue(LiquidBarraMarca.mejora(fraccion: 0.13, marca: 0.06, masEsMejor: true))
         XCTAssertFalse(LiquidBarraMarca.mejora(fraccion: 0.13, marca: 0.06, masEsMejor: false))
         // Y el dibujo es idéntico en los dos sentidos (las funciones ni siquiera lo reciben).
-        XCTAssertEqual(LiquidBarraMarca.anchoRelleno(fraccion: 0.13, marca: 0.06),
+        XCTAssertEqual((LiquidBarraMarca.anchoRelleno(fraccion: 0.13, marca: 0.06) ?? -1),
                        tope, accuracy: 1e-9)
         XCTAssertEqual(LiquidBarraMarca.deltaTexto(fraccion: 0.13, marca: 0.06), "+7")
     }

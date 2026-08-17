@@ -140,14 +140,28 @@ final class LiquidFranjaAnoTests: XCTestCase {
         XCTAssertGreaterThan(piso ?? 0, 0, "sin dato ≠ tono al 0 %")
     }
 
-    /// La rampa completa: 0.20 … 1.00, lineal, clampeada fuera de 0…1 (misma rampa que el
-    /// heatmap de apego ya en producción).
-    func test_laRampaDeAlfaVaDe020A100() {
-        XCTAssertEqual(LiquidFranjaAno.alfa(0), 0.20)
-        XCTAssertEqual(LiquidFranjaAno.alfa(0.5) ?? 0, 0.60, accuracy: 0.0001)
-        XCTAssertEqual(LiquidFranjaAno.alfa(1), 1.00)
-        XCTAssertEqual(LiquidFranjaAno.alfa(-5), 0.20, "clampea por abajo")
-        XCTAssertEqual(LiquidFranjaAno.alfa(9), 1.00, "clampea por arriba")
+    /// La rampa completa: 0.26 … 1.00, lineal, clampeada fuera de 0…1.
+    func test_laRampaDeAlfaVaDe026A100() {
+        XCTAssertEqual(LiquidFranjaAno.alfa(0) ?? 0, 0.26, accuracy: 0.0001)
+        XCTAssertEqual(LiquidFranjaAno.alfa(1) ?? 0, 1.00, accuracy: 0.0001)
+        XCTAssertEqual(LiquidFranjaAno.alfa(-5) ?? 0, 0.26, accuracy: 0.0001, "clampea por abajo")
+        XCTAssertEqual(LiquidFranjaAno.alfa(9) ?? 0, 1.00, accuracy: 0.0001, "clampea por arriba")
+        XCTAssertGreaterThan(LiquidFranjaAno.alfa(0.5) ?? 0, LiquidFranjaAno.alfa(0) ?? 0)
+        XCTAssertLessThan(LiquidFranjaAno.alfa(0.5) ?? 0, LiquidFranjaAno.alfa(1) ?? 0)
+    }
+
+    /// **El candado que faltaba.** Las dos rejillas de calor se apilan en la MISMA pantalla:
+    /// Recuperación y Esfuerzo montan el calendario de 90 días y, debajo, esta franja. Si sus
+    /// rampas divergen, el mismo día se pinta de dos tonos distintos según quién lo dibuje, y
+    /// el usuario lee una diferencia de intensidad que no existe. La revisión adversarial de
+    /// F0a encontró exactamente esa divergencia (0.20 aquí contra 0.26 arriba).
+    func test_laRampaCoincideConLaDelCalendarioDe90Dias() {
+        for t in stride(from: 0.0, through: 1.0, by: 0.1) {
+            XCTAssertEqual(LiquidFranjaAno.alfa(t) ?? -1,
+                           LiquidCalendario90.alfa(intensidad: t),
+                           accuracy: 0.0001,
+                           "las dos rejillas tiñen el mismo día con el mismo alfa (t = \(t))")
+        }
     }
 
     /// Un año entero sin lecturas no pinta ni una celda de tono: la forma del año se conserva

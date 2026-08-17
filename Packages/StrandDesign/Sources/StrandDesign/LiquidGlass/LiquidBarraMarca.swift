@@ -28,7 +28,7 @@ import SwiftUI
 public struct LiquidBarraMarca: View {
 
     private let etiqueta: String
-    private let fraccion: Double
+    private let fraccion: Double?
     private let marca: Double?
     private let tono: Color
     private let valorTexto: String
@@ -64,6 +64,10 @@ public struct LiquidBarraMarca: View {
     /// - Parameters:
     ///   - etiqueta: «Profundo» — YA localizada; se pinta en caja alta.
     ///   - fraccion: 0…1, la parte de anoche. Fuera de rango se clampea (no rompe el layout).
+    ///     **`nil` = esa etapa NO se midió anoche**, que no es lo mismo que medirse en cero:
+    ///     sin medición no hay relleno, no hay delta y la voz lo dice. Con `0` sí hay dato y
+    ///     la cápsula se dibuja vacía pero presente. Colapsarlos haría que una noche sin
+    ///     etapas (el fallback diario de Apple) se leyera como una noche de cero profundo.
     ///   - marca: 0…1, el promedio típico. `nil` = todavía no hay base → no se dibuja marca.
     ///     `0` = base MEDIDA en cero: el tick no se pinta (caería sobre el borde izquierdo)
     ///     pero el delta sí se dice, igual que en el papel.
@@ -77,7 +81,7 @@ public struct LiquidBarraMarca: View {
     ///   - a11yValue: ármalo con `LiquidBarraMarca.a11yValue(anoche:tipico:)` para que, sin
     ///     base, la voz NO mencione promedio (regla 2).
     public init(etiqueta: String,
-                fraccion: Double,
+                fraccion: Double?,
                 marca: Double?,
                 tono: Color,
                 valorTexto: String,
@@ -112,28 +116,34 @@ public struct LiquidBarraMarca: View {
     /// de al lado, así que 22 % de profundo y 6 % de despierto pueden llenar lo mismo. La
     /// consecuencia visible es que el elemento más grande de cada fila llega siempre a
     /// ~84.7 % del ancho (1 / 1.18), nunca al 100 %.
-    static func denominador(fraccion: Double, marca: Double?) -> Double {
-        let tope = max(enRango(fraccion), enRango(marca ?? 0)) * aire
+    static func denominador(fraccion: Double?, marca: Double?) -> Double {
+        let tope = max(enRango(fraccion ?? 0), enRango(marca ?? 0)) * aire
         return tope > 0 ? tope : 1
     }
 
-    /// Ancho del relleno como fracción del ancho disponible (0…1).
-    static func anchoRelleno(fraccion: Double, marca: Double?) -> Double {
-        min(1, enRango(fraccion) / denominador(fraccion: fraccion, marca: marca))
+    /// Ancho del relleno como fracción del ancho disponible (0…1), o `nil` cuando la etapa no
+    /// se midió: sin medición no se dibuja cápsula de color, ni siquiera de ancho cero. La
+    /// diferencia se ve — un cero medido deja una cápsula presente en su base; un hueco deja
+    /// solo el riel.
+    static func anchoRelleno(fraccion: Double?, marca: Double?) -> Double? {
+        guard let fraccion else { return nil }
+        return min(1, enRango(fraccion) / denominador(fraccion: fraccion, marca: marca))
     }
 
     /// Posición del CENTRO del tick como fracción del ancho (0…1), o `nil` si no hay marca
     /// que dibujar (regla 2: sin base no se inventa nada; con base en 0 el tick caería sobre
     /// el borde, y el papel tampoco lo pinta).
-    static func posicionMarca(fraccion: Double, marca: Double?) -> Double? {
+    static func posicionMarca(fraccion: Double?, marca: Double?) -> Double? {
         guard let marca, enRango(marca) > 0 else { return nil }
         return min(1, enRango(marca) / denominador(fraccion: fraccion, marca: marca))
     }
 
     /// El delta en puntos porcentuales: «~0» cuando redondea a cero, «+4» arriba, «−4»
     /// abajo (signo menos U+2212, no un guion). `nil` sin base — no hay contra qué comparar.
-    static func deltaTexto(fraccion: Double, marca: Double?) -> String? {
-        guard let marca else { return nil }
+    static func deltaTexto(fraccion: Double?, marca: Double?) -> String? {
+        // Sin medición no hay delta que decir: un «−18» sobre una noche que nadie midió es
+        // una afirmación inventada, y es justo la mentira que esta familia existe para evitar.
+        guard let fraccion, let marca else { return nil }
         let diff = Int(((enRango(fraccion) - enRango(marca)) * escala).rounded())
         if diff == 0 { return "~0" }
         return diff > 0 ? "+\(abs(diff))" : "−\(abs(diff))"
@@ -141,8 +151,8 @@ public struct LiquidBarraMarca: View {
 
     /// Si el delta va en positivo o en atención. ÚNICO lugar donde `masEsMejor` cambia algo
     /// (regla 3). Sin base no hay juicio: se calla en verde.
-    static func mejora(fraccion: Double, marca: Double?, masEsMejor: Bool) -> Bool {
-        guard let marca else { return true }
+    static func mejora(fraccion: Double?, marca: Double?, masEsMejor: Bool) -> Bool {
+        guard let fraccion, let marca else { return true }
         let diff = enRango(fraccion) - enRango(marca)
         return masEsMejor ? diff >= 0 : diff <= 0
     }
@@ -164,10 +174,11 @@ public struct LiquidBarraMarca: View {
                     Capsule(style: .continuous)
                         .fill(LiquidColor.tinta7)
                         .frame(height: altoBarra)
-                    Capsule(style: .continuous)
-                        .fill(tono)
-                        .frame(width: w * CGFloat(Self.anchoRelleno(fraccion: fraccion, marca: marca)),
-                               height: altoBarra)
+                    if let ancho = Self.anchoRelleno(fraccion: fraccion, marca: marca) {
+                        Capsule(style: .continuous)
+                            .fill(tono)
+                            .frame(width: w * CGFloat(ancho), height: altoBarra)
+                    }
                     if let pos = Self.posicionMarca(fraccion: fraccion, marca: marca) {
                         // Tinta NEUTRA y posicionada por su CENTRO (regla 1): el promedio no
                         // opina, solo señala. Sobresale 2 pt por arriba y por abajo.
@@ -316,9 +327,10 @@ private struct BarraMarcaDemo: View {
     .background(LiquidSheetFondo(tone: LiquidColor.indigo))
 }
 
-#Preview("Barra · en cero") {
-    // Etapa no medida: la cápsula queda hueca (0 %) y el promedio sigue siendo la única
-    // referencia — el tick topa a ~84.7 % porque es el máximo de su fila.
+#Preview("Barra · cero medido vs sin medir") {
+    // Los DOS estados que no pueden verse igual, uno encima del otro:
+    // arriba se midió y dio cero (cápsula presente en su base, delta real contra el promedio);
+    // abajo NO se midió (solo el riel, sin delta, sin juicio).
     VStack(alignment: .leading, spacing: LiquidSpace.s400) {
         LiquidBarraMarca(etiqueta: "Despierto", fraccion: 0, marca: 0.06,
                          tono: LiquidColor.oro, valorTexto: "0:00 · 0 %",
@@ -326,11 +338,18 @@ private struct BarraMarcaDemo: View {
                          a11yLabel: "Despierto",
                          a11yValue: LiquidBarraMarca.a11yValue(anoche: "0 % anoche",
                                                                tipico: "típico 6 %"))
-        // Sin dato y sin base: hueca y muda, sin inventar una marca a media barra.
-        LiquidBarraMarca(etiqueta: "Profundo", fraccion: 0, marca: nil,
-                         tono: LiquidColor.indigo, valorTexto: "0:00 · 0 %", indice: 1,
+        // Etapa NO medida: sin relleno y sin delta, aunque exista promedio. Un «−6» aquí
+        // afirmaría algo sobre una noche que nadie midió.
+        LiquidBarraMarca(etiqueta: "Profundo", fraccion: nil, marca: 0.22,
+                         tono: LiquidColor.indigo, valorTexto: "—", indice: 1,
                          a11yLabel: "Profundo",
-                         a11yValue: LiquidBarraMarca.a11yValue(anoche: "0 % anoche", tipico: nil))
+                         a11yValue: LiquidBarraMarca.a11yValue(anoche: "sin medir anoche",
+                                                               tipico: "típico 22 %"))
+        // Sin dato y sin base: hueca y muda, sin inventar una marca a media barra.
+        LiquidBarraMarca(etiqueta: "REM", fraccion: nil, marca: nil,
+                         tono: LiquidColor.cian, valorTexto: "—", indice: 2,
+                         a11yLabel: "REM",
+                         a11yValue: LiquidBarraMarca.a11yValue(anoche: "sin medir anoche", tipico: nil))
     }
     .padding(LiquidSpace.s550)
     .background(LiquidSheetFondo(tone: LiquidColor.indigo))

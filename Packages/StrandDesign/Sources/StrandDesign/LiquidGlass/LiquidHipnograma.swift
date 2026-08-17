@@ -218,12 +218,20 @@ public struct LiquidHipnograma: View {
                 }
             }
             .contentShape(Rectangle())
-            // El gesto COMPARTIDO de la familia (`TrendChart.scrubGesture`): arrastre con
-            // `minimumDistance: 0` en iOS —el resaltado aparece al primer contacto y le gana
-            // el toque al ScrollView de la hoja—, hover en macOS, y transacción sin
-            // animación para que el cursor siga al dedo en el MISMO frame. Nunca se
-            // reimplementa aquí.
-            .scrubGesture(enabled: bandas.count > 1, hoverX: $dedoX)
+            // `liquidScrubPan`, NO `scrubGesture`. Los dos existen y NO son intercambiables:
+            // `scrubGesture` (`TrendChart.swift`) es un `highPriorityGesture(DragGesture(
+            // minimumDistance: 0))` que le gana el toque al ScrollView y CONGELA el scroll de
+            // la hoja mientras el dedo esté encima — exactamente el bug que FER-73 arregló.
+            // `liquidScrubPan` no arranca si el dedo va vertical, así que se puede seguir
+            // scrolleando la hoja pasando por encima del hipnograma.
+            //
+            // `LiquidBarrasDeuda` vive en la MISMA hoja de Sueño y usa este mismo gesto. Con
+            // el otro, la página se congelaría sobre una banda de 176 pt y no sobre la de al
+            // lado: la incoherencia se sentiría como un fallo, no como un modo.
+            .liquidScrubPan(
+                enabled: bandas.count > 1,
+                onChange: { p in dedoX = p.x },
+                onEnd: { dedoX = nil })
             // Háptica solo al CAER en un tramo nuevo, jamás al soltar (paridad `LiquidChartPlot`).
             .onChange(of: activa) { _, nuevo in if nuevo != nil { ChartHaptics.datumChanged() } }
         }

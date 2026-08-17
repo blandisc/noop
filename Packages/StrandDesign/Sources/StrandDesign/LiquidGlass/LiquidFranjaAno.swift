@@ -121,11 +121,18 @@ public struct LiquidFranjaAno: View {
     /// un trazo deja de existir en pantalla.
     private let bordeCeldaVacia: CGFloat = 0.5
 
-    /// 0.20 — alfa piso del tono: un día MEDIDO en el mínimo sigue leyéndose como dato. El
-    /// rango 0.20…1.00 es el del heatmap de apego ya en producción (`DietCaptureView`:
-    /// `opacity(0.20 + 0.80 * score/100)`), adoptado aquí para que las dos rejillas de calor
+    /// 0.26 — alfa piso del tono: un día MEDIDO en el mínimo sigue leyéndose como dato.
+    ///
+    /// **Es el MISMO piso que `LiquidCalendario90.alfa`, y tiene que seguir siéndolo.** Las dos
+    /// rejillas se apilan en la misma pantalla (Recuperación y Esfuerzo montan el calendario de
+    /// 90 días y, debajo, esta franja). Con pisos distintos —0.20 aquí y 0.26 arriba— el mismo
+    /// día se vería de dos tonos según la rejilla que lo dibuje, y el usuario leería una
+    /// diferencia de intensidad que no existe. El heatmap de apego (`DietCaptureView`) usa
+    /// 0.20, pero ese vive solo en su pantalla y no tiene un vecino con el que discrepar.
+    ///
+    /// El rango 0.26…1.00 está pensado para que las dos rejillas de calor
     /// del app tengan la misma rampa.
-    static let alfaPiso: Double = 0.20
+    static let alfaPiso: Double = 0.26
     /// 1.00 — alfa techo: el día más intenso del año va a tono pleno.
     static let alfaTecho: Double = 1.00
 
@@ -350,8 +357,14 @@ public struct LiquidFranjaAno: View {
                 .frame(width: m.celda, height: m.celda)
         } else if dia != nil {
             forma
-                .fill(LiquidColor.tinta10)
-                .overlay(forma.stroke(LiquidColor.tinta7, lineWidth: bordeCeldaVacia))
+                // Relleno CLARO con filo apenas más oscuro — el mismo par que
+                // `LiquidCalendario90`, que documenta por qué: en el papel el filo
+                // (`hairlineStrong` ≈17 %) es más oscuro que el relleno (`hairline` ≈8 %), y
+                // mapear por nombre invierte el par y deja un relleno más oscuro que su borde.
+                // Las dos rejillas se apilan en la misma pantalla: invertido aquí, el hueco de
+                // la franja se vería más pesado que el hueco del calendario de arriba.
+                .fill(LiquidColor.tinta7)
+                .overlay(forma.stroke(LiquidColor.tinta10, lineWidth: bordeCeldaVacia))
                 .frame(width: m.celda, height: m.celda)
         } else {
             forma
