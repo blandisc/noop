@@ -1,54 +1,6 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "acta.resumen.desfase.fmt" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@. A new verdict has to repeat two days in a row to replace yesterday's."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@. Un veredicto nuevo tiene que repetirse dos días seguidos para reemplazar al de ayer."
-          }
-        }
-      }
-    },
-    "The number you see is the HRV Apple records: SDNN, the overall spread of the time between your heartbeats. Your daily verdict does NOT read this signal (SDNN): it stands on your resting heart rate and your sleep, and on your nocturnal RMSSD when the night is dense enough. SDNN is shown here as a reference against your own average. The trend uses a different HRV measure, RMSSD, recomputed from the beat-to-beat intervals of your densest nights; RMSSD tracks the vagal, rest-and-repair branch specifically, while SDNN blends both branches, so the two won't always move together." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The number you see is the HRV Apple records: SDNN, the overall spread of the time between your heartbeats. Your daily verdict does NOT read this signal (SDNN): it stands on your resting heart rate and your sleep, and on your nocturnal RMSSD when the night is dense enough. SDNN is shown here as a reference against your own average. The trend uses a different HRV measure, RMSSD, recomputed from the beat-to-beat intervals of your densest nights; RMSSD tracks the vagal, rest-and-repair branch specifically, while SDNN blends both branches, so the two won't always move together."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El número que ves es la VFC que registra Apple: SDNN, la dispersión general del tiempo entre tus latidos. Tu veredicto diario NO lee esta señal (SDNN): se apoya en tu FC en reposo y en tu sueño, y en tu RMSSD nocturna cuando la noche trae suficientes latidos. El SDNN se muestra aquí como referencia contra tu propio promedio. La tendencia usa otra medida de VFC, RMSSD, recalculada desde los intervalos latido a latido de tus noches más densas; RMSSD sigue específicamente a la rama vagal, de descanso y reparación, mientras que SDNN mezcla las dos ramas, así que no siempre se mueven juntas."
-          }
-        }
-      }
-    },
-    "quien.dos" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Both of your votes fell outside today"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hoy tus dos votos cayeron fuera"
-          }
-        }
-      }
-    },
     "quien.uno" : {
       "localizations" : {
         "en" : {
@@ -113,82 +65,34 @@
         }
       }
     },
-    "hero.sub.desfase.fuera.fmt" : {
+    "quien.dos" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@; the verdict changes if that repeats two days in a row."
+            "value" : "Both of your votes fell outside today"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@; el veredicto cambia si eso se repite dos días seguidos."
+            "value" : "Hoy tus dos votos cayeron fuera"
           }
         }
       }
     },
-    "The number you see is the HRV Apple records: SDNN, the overall spread of the time between your heartbeats. Your daily verdict does NOT read this signal: it stands on your resting heart rate and your sleep. HRV is shown here as a reference against your own average. The trend uses a different HRV measure, RMSSD, recomputed from the beat-to-beat intervals of your densest nights; RMSSD tracks the vagal, rest-and-repair branch specifically, while SDNN blends both branches, so the two won't always move together." : {
+    "matriz.sueno.rango.fuera.v2" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The number you see is the HRV Apple records: SDNN, the overall spread of the time between your heartbeats. Your daily verdict does NOT read this signal: it stands on your resting heart rate and your sleep. HRV is shown here as a reference against your own average. The trend uses a different HRV measure, RMSSD, recomputed from the beat-to-beat intervals of your densest nights; RMSSD tracks the vagal, rest-and-repair branch specifically, while SDNN blends both branches, so the two won't always move together."
+            "value" : "outside the recommended range"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "El número que ves es la VFC que registra Apple: SDNN, la dispersión general del tiempo entre tus latidos. Tu veredicto diario NO lee esta señal: se apoya en tu FC en reposo y en tu sueño. La VFC se muestra aquí como referencia contra tu propio promedio. La tendencia usa otra medida de VFC, RMSSD, recalculada desde los intervalos latido a latido de tus noches más densas; RMSSD sigue específicamente a la rama vagal, de descanso y reparación, mientras que SDNN mezcla las dos ramas, así que no siempre se mueven juntas."
-          }
-        }
-      }
-    },
-    "hero.sub.desfase.fuera" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "One of your signals stepped out today; the verdict changes if that repeats two days in a row."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hoy una de tus señales se salió; el veredicto cambia si eso se repite dos días seguidos."
-          }
-        }
-      }
-    },
-    "hero.sub.sueno.rango" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your sleep came in below the recommended range."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu sueño quedó abajo del rango recomendado."
-          }
-        }
-      }
-    },
-    "acta.metodo.que" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The verdict for how you woke up: your resting HR against your own baseline; your sleep, against the recommended range."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El veredicto de cómo amaneciste: tu FC en reposo contra tu propia base; tu sueño, contra el rango recomendado."
+            "value" : "fuera del rango recomendado"
           }
         }
       }
@@ -209,6 +113,22 @@
         }
       }
     },
+    "hero.sub.sueno.rango" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your sleep came in below the recommended range."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu sueño quedó abajo del rango recomendado."
+          }
+        }
+      }
+    },
     "hero.sub.rancia" : {
       "localizations" : {
         "en" : {
@@ -221,6 +141,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Pasó demasiado desde tus últimas noches con el reloj: tu rango se quedó viejo y no puedo juzgar hoy contra él."
+          }
+        }
+      }
+    },
+    "hero.sub.desfase.fuera.fmt" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@; the verdict changes if that repeats two days in a row."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@; el veredicto cambia si eso se repite dos días seguidos."
+          }
+        }
+      }
+    },
+    "hero.sub.desfase.fuera" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One of your signals stepped out today; the verdict changes if that repeats two days in a row."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoy una de tus señales se salió; el veredicto cambia si eso se repite dos días seguidos."
           }
         }
       }
@@ -241,18 +193,34 @@
         }
       }
     },
-    "acta.nota.par.eje" : {
+    "acta.resumen.tendencia.par" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "One vote out and your pair moved together: today is for recovering, not pushing."
+            "value" : "Your temperature and breathing moved out together and your night HRV is trending down: that's why today asks for recovery."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Un voto fuera y tu par se movió junto: hoy toca recuperar, no empujar."
+            "value" : "Tu temperatura y tu respiración se salieron juntas y tu VFC nocturna viene bajando: por eso hoy pide recuperar."
+          }
+        }
+      }
+    },
+    "acta.resumen.par.clave" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "together"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "juntas"
           }
         }
       }
@@ -289,86 +257,6 @@
         }
       }
     },
-    "acta.resumen.tendencia.par" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your temperature and breathing moved out together and your night HRV is trending down: that's why today asks for recovery."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu temperatura y tu respiración se salieron juntas y tu VFC nocturna viene bajando: por eso hoy pide recuperar."
-          }
-        }
-      }
-    },
-    "acta.nota.sinfc" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sleeping with your Apple Watch is what unlocks your daily verdict."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dormir con tu Apple Watch es lo que destraba tu veredicto diario."
-          }
-        }
-      }
-    },
-    "Population reference, not your verdict. Your own comparison lives in the guardian on Today, which reads this against your recent weeks." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Population reference, not your verdict. Your own comparison lives in the guardian on Today, which reads this against your recent weeks."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Referencia poblacional, no tu veredicto. Tu comparación propia vive en el guardián de Hoy, que lee esto contra tus semanas recientes."
-          }
-        }
-      }
-    },
-    "matriz.sueno.rango.fuera.v2" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "outside the recommended range"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "fuera del rango recomendado"
-          }
-        }
-      }
-    },
-    "acta.nota.calibrando.una" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "One more night with your Apple Watch and your daily verdict appears."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Una noche más con tu Apple Watch y aparece tu veredicto diario."
-          }
-        }
-      }
-    },
     "acta.resumen.easy.par.sueno" : {
       "localizations" : {
         "en" : {
@@ -401,18 +289,2289 @@
         }
       }
     },
-    "acta.resumen.par.clave" : {
+    "acta.resumen.desfase.fmt" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "together"
+            "value" : "%@. A new verdict has to repeat two days in a row to replace yesterday's."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "juntas"
+            "value" : "%@. Un veredicto nuevo tiene que repetirse dos días seguidos para reemplazar al de ayer."
+          }
+        }
+      }
+    },
+    "acta.nota.sinfc" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sleeping with your Apple Watch is what unlocks your daily verdict."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dormir con tu Apple Watch es lo que destraba tu veredicto diario."
+          }
+        }
+      }
+    },
+    "acta.nota.par.eje" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One vote out and your pair moved together: today is for recovering, not pushing."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un voto fuera y tu par se movió junto: hoy toca recuperar, no empujar."
+          }
+        }
+      }
+    },
+    "acta.nota.calibrando.una" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One more night with your Apple Watch and your daily verdict appears."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Una noche más con tu Apple Watch y aparece tu veredicto diario."
+          }
+        }
+      }
+    },
+    "acta.metodo.que" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The verdict for how you woke up: your resting HR against your own baseline; your sleep, against the recommended range."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El veredicto de cómo amaneciste: tu FC en reposo contra tu propia base; tu sueño, contra el rango recomendado."
+          }
+        }
+      }
+    },
+    "The number you see is the HRV Apple records: SDNN, the overall spread of the time between your heartbeats. Your daily verdict does NOT read this signal: it stands on your resting heart rate and your sleep. HRV is shown here as a reference against your own average. The trend uses a different HRV measure, RMSSD, recomputed from the beat-to-beat intervals of your densest nights; RMSSD tracks the vagal, rest-and-repair branch specifically, while SDNN blends both branches, so the two won't always move together." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The number you see is the HRV Apple records: SDNN, the overall spread of the time between your heartbeats. Your daily verdict does NOT read this signal: it stands on your resting heart rate and your sleep. HRV is shown here as a reference against your own average. The trend uses a different HRV measure, RMSSD, recomputed from the beat-to-beat intervals of your densest nights; RMSSD tracks the vagal, rest-and-repair branch specifically, while SDNN blends both branches, so the two won't always move together."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El número que ves es la VFC que registra Apple: SDNN, la dispersión general del tiempo entre tus latidos. Tu veredicto diario NO lee esta señal: se apoya en tu FC en reposo y en tu sueño. La VFC se muestra aquí como referencia contra tu propio promedio. La tendencia usa otra medida de VFC, RMSSD, recalculada desde los intervalos latido a latido de tus noches más densas; RMSSD sigue específicamente a la rama vagal, de descanso y reparación, mientras que SDNN mezcla las dos ramas, así que no siempre se mueven juntas."
+          }
+        }
+      }
+    },
+    "The number you see is the HRV Apple records: SDNN, the overall spread of the time between your heartbeats. Your daily verdict does NOT read this signal (SDNN): it stands on your resting heart rate and your sleep, and on your nocturnal RMSSD when the night is dense enough. SDNN is shown here as a reference against your own average. The trend uses a different HRV measure, RMSSD, recomputed from the beat-to-beat intervals of your densest nights; RMSSD tracks the vagal, rest-and-repair branch specifically, while SDNN blends both branches, so the two won't always move together." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The number you see is the HRV Apple records: SDNN, the overall spread of the time between your heartbeats. Your daily verdict does NOT read this signal (SDNN): it stands on your resting heart rate and your sleep, and on your nocturnal RMSSD when the night is dense enough. SDNN is shown here as a reference against your own average. The trend uses a different HRV measure, RMSSD, recomputed from the beat-to-beat intervals of your densest nights; RMSSD tracks the vagal, rest-and-repair branch specifically, while SDNN blends both branches, so the two won't always move together."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El número que ves es la VFC que registra Apple: SDNN, la dispersión general del tiempo entre tus latidos. Tu veredicto diario NO lee esta señal (SDNN): se apoya en tu FC en reposo y en tu sueño, y en tu RMSSD nocturna cuando la noche trae suficientes latidos. El SDNN se muestra aquí como referencia contra tu propio promedio. La tendencia usa otra medida de VFC, RMSSD, recalculada desde los intervalos latido a latido de tus noches más densas; RMSSD sigue específicamente a la rama vagal, de descanso y reparación, mientras que SDNN mezcla las dos ramas, así que no siempre se mueven juntas."
+          }
+        }
+      }
+    },
+    "Population reference, not your verdict. Your own comparison lives in the guardian on Today, which reads this against your recent weeks." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Population reference, not your verdict. Your own comparison lives in the guardian on Today, which reads this against your recent weeks."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Referencia poblacional, no tu veredicto. Tu comparación propia vive en el guardián de Hoy, que lee esto contra tus semanas recientes."
+          }
+        }
+      }
+    },
+    "onb.1.titular" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your body has been keeping the record. Nobody has read it."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu cuerpo ya lleva el registro. Nadie lo ha leído."
+          }
+        }
+      }
+    },
+    "onb.1.cuerpo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I read it every morning and tell you, in one word, how you woke up. And when you train, I carry your routine and add weight the day it's due."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yo lo leo cada mañana y te digo, en una palabra, cómo amaneciste. Y cuando entrenas, te llevo la rutina y te subo el peso el día que te toca."
+          }
+        }
+      }
+    },
+    "onb.1.privacidad" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No account, no email, no cloud. Everything is computed on your iPhone. Put it in airplane mode and check right now."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin cuenta, sin correo, sin nube. Todo se calcula en tu iPhone. Ponlo en modo avión y compruébalo ahora mismo."
+          }
+        }
+      }
+    },
+    "onb.2.titular" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To read it, I need you to open the door"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Para leerlo necesito que me abras la puerta"
+          }
+        }
+      }
+    },
+    "onb.2.cuerpo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I don't go out looking for anything. Apple has to hand me your signals, and only you can authorize that."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yo no salgo a buscar nada. Apple me tiene que pasar tus señales, y eso lo autorizas tú."
+          }
+        }
+      }
+    },
+    "onb.2.grupo.sostiene" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The one that holds it all up"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La que sostiene todo"
+          }
+        }
+      }
+    },
+    "onb.2.grupo.votan" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The ones that vote with you"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las que votan contigo"
+          }
+        }
+      }
+    },
+    "onb.2.grupo.vigilan" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The ones that watch and don't vote"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las que vigilan y no votan"
+          }
+        }
+      }
+    },
+    "onb.2.rhr.nombre" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resting heart rate"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Frecuencia cardiaca en reposo"
+          }
+        }
+      }
+    },
+    "onb.2.rhr.glosa" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The backbone. Without it there is no reading."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La espina dorsal. Sin ella no hay lectura."
+          }
+        }
+      }
+    },
+    "onb.2.sueno.nombre" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sleep"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sueño"
+          }
+        }
+      }
+    },
+    "onb.2.sueno.glosa" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How much you slept against what your body asks for, and how even it was."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cuánto dormiste contra lo que tu cuerpo pide, y qué tan parejo."
+          }
+        }
+      }
+    },
+    "onb.2.temp.nombre" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skin temperature"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Temperatura de piel"
+          }
+        }
+      }
+    },
+    "onb.2.temp.glosa" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It rises when something is brewing. Context, not a diagnosis."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sube cuando algo se está incubando. Contexto, no diagnóstico."
+          }
+        }
+      }
+    },
+    "onb.2.vfcnoche.nombre" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Night variability"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Variabilidad de la noche"
+          }
+        }
+      }
+    },
+    "onb.2.vfcnoche.glosa" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It weighs half, and only when the night came with enough detail."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pesa la mitad, y solo cuando la noche vino con suficiente detalle."
+          }
+        }
+      }
+    },
+    "onb.2.resp.nombre" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Breathing"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Respiración"
+          }
+        }
+      }
+    },
+    "onb.2.resp.glosa" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It warns you if you're coming down with something. It doesn't move the verdict."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avisa si te estás enfermando. No mueve el veredicto."
+          }
+        }
+      }
+    },
+    "onb.2.vfcdia.nombre" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All-day variability"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Variabilidad de todo el día"
+          }
+        }
+      }
+    },
+    "onb.2.vfcdia.glosa" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It left the vote: it's a whole-day measure and it came out worse than your heart's."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Salió del voto: es medida de día entero y resultó peor que la del corazón."
+          }
+        }
+      }
+    },
+    "onb.2.nota.fuerte" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Look for “Turn On All” and switch it on."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Busca «Activar todo» y préndelo."
+          }
+        }
+      }
+    },
+    "onb.2.nota.cuerpo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple opens this permission switched off. If you give me only part of it, I go mute and I can't tell you which piece is missing."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple abre este permiso apagado. Si me das solo una parte, me quedo mudo y no puedo decirte cuál falta."
+          }
+        }
+      }
+    },
+    "onb.3.overline" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connecting"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conectando"
+          }
+        }
+      }
+    },
+    "onb.3.titular" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I'm reading your last 180 days"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estoy leyendo tus últimos 180 días"
+          }
+        }
+      }
+    },
+    "onb.3.dias" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "days read"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "días leídos"
+          }
+        }
+      }
+    },
+    "onb.3.progreso" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reading: %@ · %lld of 15"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leyendo: %@ · %lld de 15"
+          }
+        }
+      }
+    },
+    "onb.3.regla" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Every morning I compare your signals against your own range, never against anybody else's average. If none of them steps out, your day opens in range."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cada mañana comparo tus señales contra tu propio rango, no contra el promedio de nadie más. Si ninguna se sale, tu día abre en rango."
+          }
+        }
+      }
+    },
+    "onb.3.calculando" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Computing your baseline"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calculando tu base"
+          }
+        }
+      }
+    },
+    "onb.3.largo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This is going to take a while. I'll keep reading while you use the app."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esto va para largo. Sigo leyendo mientras usas la app."
+          }
+        }
+      }
+    },
+    "onb.4.overline.lectura" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your first reading"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu primera lectura"
+          }
+        }
+      }
+    },
+    "onb.4.titular.lectura" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I've read it. This is what it says today."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ya lo leí. Esto es lo que dice hoy."
+          }
+        }
+      }
+    },
+    "onb.4.historia" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I already have your %lld days of history, and %lld nights with the watch on."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ya tengo tus %lld días de historia, y %lld noches con el reloj puesto."
+          }
+        }
+      }
+    },
+    "onb.4.rotulo.info" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Want to see how I got to that word? It lives right here, always."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Quieres ver cómo llegué a esa palabra? Está aquí, siempre."
+          }
+        }
+      }
+    },
+    "onb.4.titular.calibrando" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I can't read you yet"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todavía no te leo"
+          }
+        }
+      }
+    },
+    "onb.4.calibrando.cuerpo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I already have your %lld days of history, but I've got %lld nights with the watch on. Your word arrives as soon as I gather %lld."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ya tengo tus %lld días de historia, pero llevo %lld noches con el reloj puesto. Tu palabra llega en cuanto junte %lld."
+          }
+        }
+      }
+    },
+    "onb.4.calibrando.cuerpo.sinhoy" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I already have your %lld days of history and your %lld nights. What I still don't have is today: your watch hasn't published this morning's resting heart rate yet."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ya tengo tus %lld días de historia y tus %lld noches. Lo que todavía no tengo es hoy: tu reloj no ha publicado tu frecuencia cardiaca en reposo de esta mañana."
+          }
+        }
+      }
+    },
+    "onb.4.calibrando.pie" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I'm not going to make up a verdict in the meantime."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No te voy a inventar un veredicto mientras tanto."
+          }
+        }
+      }
+    },
+    "onb.4.overline.encontre" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What I found"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lo que encontré"
+          }
+        }
+      }
+    },
+    "onb.4.titular.sinfc" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I can't read you"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No te puedo leer"
+          }
+        }
+      }
+    },
+    "onb.4.sinfc.1" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I can't find your resting heart rate. Without it I can't give you the morning reading: it's the signal the whole judgement stands on."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No encuentro tu frecuencia cardiaca en reposo. Sin ella no puedo darte la lectura de la mañana: es la señal que sostiene todo el juicio."
+          }
+        }
+      }
+    },
+    "onb.4.sinfc.2" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If you have an Apple Watch, sleep with it and in 4 nights your first reading shows up. If you don't have one, I'd rather tell you today than leave you waiting."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si tienes un Apple Watch, duerme con él y en 4 noches aparece tu primera lectura. Si no lo tienes, prefiero decírtelo hoy que dejarte esperando."
+          }
+        }
+      }
+    },
+    "onb.4.sinfc.3" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What does work without a watch is Train: your week's plan, your routines and the progression that climbs on its own."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lo que sí funciona sin reloj es Entrenar: tu plan de la semana, tus rutinas y la progresión que sube sola."
+          }
+        }
+      }
+    },
+    "onb.4.sinfc.cta" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Go to Train"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ir a Entrenar"
+          }
+        }
+      }
+    },
+    "onb.4.sinfc.cta2" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter Cénit anyway"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entrar a Cénit de todos modos"
+          }
+        }
+      }
+    },
+    "onb.4.titular.sindatos" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing reached me"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No me llegó nada"
+          }
+        }
+      }
+    },
+    "onb.4.sindatos.1" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing reached me from Apple Health. Almost always that means the permission stayed off."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No me llegó nada de Apple Salud. Casi siempre es que el permiso quedó apagado."
+          }
+        }
+      }
+    },
+    "onb.4.sindatos.2" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open the Health app, find Cénit in your list of apps and turn the signals on."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre la app Salud, busca Cénit en tu lista de apps y enciende las señales."
+          }
+        }
+      }
+    },
+    "onb.4.perfil.overline" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For your zones and your baseline"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Para tus zonas y tu base"
+          }
+        }
+      }
+    },
+    "onb.4.perfil.valor" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld years · %@ · %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld años · %@ · %@"
+          }
+        }
+      }
+    },
+    "onb.4.perfil.pie" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From Apple Health"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desde Apple Salud"
+          }
+        }
+      }
+    },
+    "onb.4.error" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't read Apple Health. Try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo leer Apple Salud. Inténtalo de nuevo."
+          }
+        }
+      }
+    },
+    "onb.5.overline" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What it's made of"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "De qué está hecho"
+          }
+        }
+      }
+    },
+    "onb.5.intro" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "There is no 0 to 100 score. Your body votes by axis, and the word comes out of the agreement."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No hay puntaje de 0 a 100. Tu cuerpo vota por ejes, y la palabra sale del acuerdo."
+          }
+        }
+      }
+    },
+    "onb.5.overline.palabras" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The four words"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las cuatro palabras"
+          }
+        }
+      }
+    },
+    "onb.5.glosa.full" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No signal stepped out of your range. Today your body takes whatever you put on it."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ninguna señal se salió de tu rango. Hoy tu cuerpo aguanta lo que le pongas."
+          }
+        }
+      }
+    },
+    "onb.5.glosa.caution" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One signal stepped out of your range. Train, but don't chase a record."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Una señal se salió de tu rango. Entrena, pero sin buscar récord."
+          }
+        }
+      }
+    },
+    "onb.5.glosa.easy" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Two or more stepped out. Your body is paying for something. Bring the load down."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dos o más se salieron. Tu cuerpo está pagando algo. Baja la carga."
+          }
+        }
+      }
+    },
+    "onb.5.glosa.calibrando" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I still have nothing to go on. I'd rather stay quiet than make up a word for you."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todavía no tengo con qué opinar. Prefiero callarme a inventarte una palabra."
+          }
+        }
+      }
+    },
+    "onb.5.overline.ejes" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The axes that vote"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los ejes que votan"
+          }
+        }
+      }
+    },
+    "onb.5.eje.autonomico" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Autonomic"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Autonómico"
+          }
+        }
+      }
+    },
+    "onb.5.eje.autonomico.glosa" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your heart and your nervous system. If this one has no reading, there is no verdict."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu corazón y tu sistema nervioso. Si este no tiene lectura, no hay veredicto."
+          }
+        }
+      }
+    },
+    "onb.5.eje.sueno" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sleep"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sueño"
+          }
+        }
+      }
+    },
+    "onb.5.eje.sueno.glosa" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How much you slept against what your body asks for."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cuánto dormiste contra lo que tu cuerpo pide."
+          }
+        }
+      }
+    },
+    "onb.5.eje.temp" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Temperature"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Temperatura"
+          }
+        }
+      }
+    },
+    "onb.5.eje.temp.glosa" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How far it drifted from your own baseline."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cuánto se separó de tu propia base."
+          }
+        }
+      }
+    },
+    "onb.5.overline.dentro" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inside the axis that leads"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dentro del eje que manda"
+          }
+        }
+      }
+    },
+    "onb.5.rhr" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resting heart"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Corazón en reposo"
+          }
+        }
+      }
+    },
+    "onb.5.rhr.glosa" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The densest, best validated signal your watch gives."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La señal más densa y mejor validada que da tu reloj."
+          }
+        }
+      }
+    },
+    "onb.5.vfcnoche" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Night variability"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Variabilidad de la noche"
+          }
+        }
+      }
+    },
+    "onb.5.vfcnoche.glosa" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It only counts if the night came with enough detail. It never votes alone."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Solo cuenta si la noche vino con suficiente detalle. Nunca vota sola."
+          }
+        }
+      }
+    },
+    "onb.5.overline.nopesa" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What doesn't count, and why"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lo que no pesa, y por qué"
+          }
+        }
+      }
+    },
+    "onb.5.vfcdia" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All-day variability"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La variabilidad de todo el día"
+          }
+        }
+      }
+    },
+    "onb.5.vfcdia.glosa" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It left the vote: it's a whole-day measure and it came out worse than your heart's. I still show it, but it doesn't vote."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Salió del voto: es una medida de día entero y resultó peor que la del corazón. La sigo mostrando, pero no vota."
+          }
+        }
+      }
+    },
+    "onb.5.resp" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your breathing"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu respiración"
+          }
+        }
+      }
+    },
+    "onb.5.resp.glosa" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It works apart: it doesn't vote on the day, but it's one of the first to warn you if something is brewing."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trabaja aparte: no vota el día, pero es de las primeras en avisar si algo se está gestando."
+          }
+        }
+      }
+    },
+    "onb.5.pasos" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your steps, your rings, your streaks"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus pasos, tus anillos, tus rachas"
+          }
+        }
+      }
+    },
+    "onb.5.pasos.glosa" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "They don't come in. What you did yesterday is context for understanding the number, not part of the number."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No entran. Lo que hiciste ayer es contexto para entender el número, no parte del número."
+          }
+        }
+      }
+    },
+    "onb.5.overline.contra" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What I compare you against"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Contra qué te comparo"
+          }
+        }
+      }
+    },
+    "onb.5.contra" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Against your own %lld nights. Never against anybody else's average. That's why I need time before I say anything: by the fourth night I already give you a reading, by the fourteenth I know your normal."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Contra tus propias %lld noches. Nunca contra el promedio de nadie más. Por eso necesito tiempo antes de opinar: a la cuarta noche ya te doy lectura, a la catorce ya conozco tu normal."
+          }
+        }
+      }
+    },
+    "onb.5.pie" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All of this lives in the ⓘ of your verdict. You can come back whenever you want."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todo esto vive en la ⓘ de tu veredicto. Puedes volver cuando quieras."
+          }
+        }
+      }
+    },
+    "onb.5.cta" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Got it"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entendido"
+          }
+        }
+      }
+    },
+    "onb.5.tag.manda" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "leads"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "manda"
+          }
+        }
+      }
+    },
+    "onb.5.tag.vota" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "votes"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "vota"
+          }
+        }
+      }
+    },
+    "onb.5.tag.espina" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "backbone"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "espina dorsal"
+          }
+        }
+      }
+    },
+    "onb.5.tag.acompana" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "accompanies"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "acompaña"
+          }
+        }
+      }
+    },
+    "onb.5.tag.fuera" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "out"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "fuera"
+          }
+        }
+      }
+    },
+    "onb.5.tag.aparte" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "apart"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "aparte"
+          }
+        }
+      }
+    },
+    "onb.5.tag.nunca" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "never"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "nunca"
+          }
+        }
+      }
+    },
+    "onb.6.overline" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "And with that, what"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Y con eso, qué"
+          }
+        }
+      }
+    },
+    "onb.6.titular" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today says. Train does."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoy dice. Entrenar hace."
+          }
+        }
+      }
+    },
+    "onb.6.cuerpo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The reading isn't a datum to file away. It's there to decide your day."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La lectura no es un dato para guardar. Es para decidir el día."
+          }
+        }
+      }
+    },
+    "onb.6.overline.traduce" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How it translates"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cómo se traduce"
+          }
+        }
+      }
+    },
+    "onb.6.full" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your routine adds weight. Cénit keeps track of which exercise is due."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu rutina sube de peso. Cénit lleva la cuenta de en qué ejercicio toca."
+          }
+        }
+      }
+    },
+    "onb.6.caution" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Same load as last time. Today is not for chasing a record."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Misma carga que la última vez. Hoy no se busca récord."
+          }
+        }
+      }
+    },
+    "onb.6.easy" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I suggest rest, or something gentle that won't send a bill."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Te propongo descanso, o algo suave que no cobre factura."
+          }
+        }
+      }
+    },
+    "onb.6.tarjeta.fuerte" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your routines add weight on their own."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus rutinas se suben solas."
+          }
+        }
+      }
+    },
+    "onb.6.tarjeta.cuerpo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You don't have to remember when to go heavier: Cénit keeps the count per exercise and tells you the day it's due."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No tienes que acordarte de cuándo subir peso: Cénit lleva la cuenta por ejercicio y te lo dice el día que toca."
+          }
+        }
+      }
+    },
+    "onb.6.pie" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "There's also a plan for the week, a live session and real rest days."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "También hay plan de la semana, sesión en vivo y días de descanso de verdad."
+          }
+        }
+      }
+    },
+    "onb.6.cierre.titular" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sleep. I'll do the rest."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Duerme. Yo hago el resto."
+          }
+        }
+      }
+    },
+    "onb.6.cierre.cuerpo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "With the watch on. In the morning your reading is already there, without you opening anything."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Con el reloj puesto. En la mañana tu lectura ya está lista, sin que abras nada."
+          }
+        }
+      }
+    },
+    "onb.6.cierre.titular.sinreloj" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If you ever wear a watch"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si algún día usas un reloj"
+          }
+        }
+      }
+    },
+    "onb.6.cierre.cuerpo.sinreloj" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That very night I start reading you, without you doing a thing."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esa misma noche empiezo a leerte, sin que hagas nada."
+          }
+        }
+      }
+    },
+    "onb.6.dock" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today says · Train does"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoy dice · Entrenar hace"
+          }
+        }
+      }
+    },
+    "onb.6.dock.pie" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resting counts too. There is no streak to lose here."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Descansar también cuenta. Aquí no hay racha que perder."
+          }
+        }
+      }
+    },
+    "onb.salida.overline" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That's okay"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Está bien"
+          }
+        }
+      }
+    },
+    "onb.salida.titular" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Without Apple Health I can do very little"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin Apple Salud puedo muy poco"
+          }
+        }
+      }
+    },
+    "onb.salida.cuerpo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I won't push you. But so you know where you stand: without permission I can't see your heart or your sleep, and the morning verdict is exactly that."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No te voy a insistir. Pero para que sepas dónde quedas: sin permiso no puedo ver tu corazón ni tu sueño, y el veredicto de la mañana es justamente eso."
+          }
+        }
+      }
+    },
+    "onb.salida.si" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The full Train tab: routines, the week's plan and the live session"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entrenar completo: rutinas, plan de la semana y sesión en vivo"
+          }
+        }
+      }
+    },
+    "onb.salida.no" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The morning verdict, no"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El veredicto de la mañana, no"
+          }
+        }
+      }
+    },
+    "onb.salida.pie" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Whenever you want, it connects in Settings in two taps."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cuando quieras, se conecta en Ajustes en dos toques."
+          }
+        }
+      }
+    },
+    "onb.salida.cta" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect it after all"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mejor sí conectarlo"
+          }
+        }
+      }
+    },
+    "onb.salida.cta2" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter like this"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entrar así"
+          }
+        }
+      }
+    },
+    "onb.etapa.rhr" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your resting heart"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu corazón en reposo"
+          }
+        }
+      }
+    },
+    "onb.etapa.avghr" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your daily rhythm"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu ritmo del día"
+          }
+        }
+      }
+    },
+    "onb.etapa.maxhr" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your peak rhythm"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu ritmo máximo"
+          }
+        }
+      }
+    },
+    "onb.etapa.hrv" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your variability"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu variabilidad"
+          }
+        }
+      }
+    },
+    "onb.etapa.spo2" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your oxygen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu oxígeno"
+          }
+        }
+      }
+    },
+    "onb.etapa.resp" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your breathing"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu respiración"
+          }
+        }
+      }
+    },
+    "onb.etapa.pasos" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your steps"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus pasos"
+          }
+        }
+      }
+    },
+    "onb.etapa.gasto" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your burn"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu gasto"
+          }
+        }
+      }
+    },
+    "onb.etapa.basal" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your resting burn"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu gasto en reposo"
+          }
+        }
+      }
+    },
+    "onb.etapa.vo2" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your VO₂ max"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu VO₂ máx"
+          }
+        }
+      }
+    },
+    "onb.etapa.temp" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your temperature"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu temperatura"
+          }
+        }
+      }
+    },
+    "onb.etapa.sueno" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your sleep"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu sueño"
+          }
+        }
+      }
+    },
+    "onb.etapa.entrenos" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your workouts"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus entrenamientos"
+          }
+        }
+      }
+    },
+    "onb.etapa.pulso" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your training pulse"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu pulso al entrenar"
+          }
+        }
+      }
+    },
+    "onb.etapa.guardando" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saving"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guardando"
           }
         }
       }
