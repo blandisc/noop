@@ -1415,21 +1415,27 @@ enum LiquidHoyBuilder {
             a11y = String(localized: "\(nombre), no data, \(sub).")
         }
 
-        // FER-84 · DEUDA EXPLÍCITA, decidida contra el gate adversarial (ronda 1 de E3).
+        // FER-84: la joya se coloca por la medición REAL, cada eje en SU vara.
         //
-        // El riel YA sabe colocar la joya por la desviación real (`LiquidVotoRiel.posicion`, con sus
-        // pruebas). La app todavía NO se la manda, y la razón es de honestidad, no de tiempo: el motor
-        // publica `orientedZ` SOLO para el eje autonómico (`Preparedness.sleepDriver` devuelve
-        // siempre `orientedZ: nil`, porque el sueño se juzga contra el rango recomendado, no contra
-        // una base personal). Cablearlo hoy dejaría media boleta midiendo —FC con bigotes y posición
-        // real— y media ilustrando —Sueño con su posición canónica—, con el mismo dibujo para las dos:
-        // el lector le aplicaría al segundo riel la gramática que le enseñó el primero, y leería como
-        // «−1.4σ» una noche que nadie midió así.
+        // Las dos varas son distintas a propósito. El autonómico se compara contra TU base, así que
+        // viene en sigmas; el riel las dibuja con el centro en tu normal. El sueño se compara contra
+        // el piso recomendado (nunca contra tu promedio: eso normalizaría la privación crónica), así
+        // que viene como fracción de esa necesidad y el riel pone el corte en su tick.
         //
-        // Para soltarlo hace falta que el sueño tenga su propia magnitud comparable (minutos contra el
-        // piso recomendado, sobre la geometría `.minimo` que su riel ya usa). Es una decisión de
-        // producto, no de código: la deja el dueño.
-        let desviacion: Double? = nil
+        // La dirección del autonómico se voltea porque `orientedZ` viene ORIENTADA (negativa = peor)
+        // y este riel dibuja la dirección CRUDA que la hoja ya usaba: FC alta a la derecha.
+        //
+        // Sin veredicto no se coloca nada: la hoja sin quórum habla en tinta y no afirma una
+        // posición que no votó.
+        let magnitud: LiquidVotoRiel.Magnitud? = {
+            guard hayVeredicto, estado.hasData else { return nil }
+            if esAuto {
+                guard let z = prep?.drivers.first(where: { $0.axis == .autonomic })?.orientedZ else { return nil }
+                return .sigmas(-z)
+            }
+            guard let sc = prep?.sleepScale else { return nil }
+            return .fraccionDeNecesidad(ratio: sc.ratio, corte: sc.outRatio, holgura: sc.slackRatio)
+        }()
 
         return LiquidActa.Fila(id: ax.rawValue, glifo: glifo, etiqueta: nombre, sub: sub,
                                estado: votoEstado, umbral: esAuto ? .rango : .minimo,

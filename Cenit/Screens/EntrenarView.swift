@@ -837,11 +837,14 @@ private struct EntrenarLanding: View {
                     RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous).fill(theme.patternBlock)
                 }
             }
-            .frame(width: 26, height: 26)
+            // FER-85 (decisión del dueño): los cuadros CONSERVAN lo que dicen —el desvío del plan
+            // en doble color y el toque por día— y solo cambian de piel para hacer juego con la
+            // sección nueva: el token de la semana en vez de un 26 suelto.
+            .frame(width: EntrenarMetrics.weekToken + 4, height: EntrenarMetrics.weekToken + 4)
             .accessibilityHidden(true)
         }
         .frame(maxWidth: .infinity)
-        .frame(minHeight: 44)   // HIG tap target (FER-947) — square stays 26pt; cell absorbs the rest
+        .frame(minHeight: EntrenarMetrics.row)   // HIG tap target (FER-947) — el dibujo es menor; la celda absorbe
         .contentShape(Rectangle())
 
         if let routineId {

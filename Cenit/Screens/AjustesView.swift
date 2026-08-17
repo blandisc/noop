@@ -105,6 +105,7 @@ private struct AjustesLanding: View {
     /// FER-93: las dos comodidades de la sesión, las dos apagadas por defecto.
     @AppStorage(SessionComfort.keepAwakeKey) private var keepScreenAwake = false
     @AppStorage(SessionComfort.restSoundKey) private var restSound = false
+    @AppStorage(SessionComfort.restNotifyKey) private var restNotify = false
     @EnvironmentObject private var mediaCoordinator: MediaDownloadCoordinator
     @State private var confirmDeleteMedia = false
     @State private var confirmRecalibrate = false
@@ -271,6 +272,20 @@ private struct AjustesLanding: View {
                 .toggleStyle(.instrumento)
                 .frame(minHeight: 44)
                 Text("A short system tone next to the haptic, for a rest counted by the clock. It follows your ring switch, and it only sounds with the app on screen: if the iPhone locked, there's no sound.")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+                divider
+                Toggle(isOn: $restNotify) {
+                    Text("Notify me when rest is up").font(StrandFont.body).foregroundStyle(theme.ink)
+                }
+                .toggleStyle(.instrumento)
+                .frame(minHeight: 44)
+                .onChange(of: restNotify) { _, on in
+                    // El permiso se pide AQUÍ, en el momento en que lo enciendes, no en un arranque
+                    // cualquiera ni a media serie.
+                    if on { RestEndNotifier.requestAuthorization() } else { RestEndNotifier.cancel() }
+                }
+                Text("The only notice that survives locking your phone: a notification your iPhone delivers on its own, for when you leave it on the floor between sets. It's scheduled and delivered on your device; nothing leaves it.")
                     .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                     .fixedSize(horizontal: false, vertical: true)
             }

@@ -1,4 +1,5 @@
 import XCTest
+import StrandTraining
 @testable import Cenit
 
 /// FER-93 — las dos comodidades de la sesión, con la regla que las hace aceptables: apagadas por
@@ -56,6 +57,46 @@ final class SessionComfortTests: XCTestCase {
         XCTAssertFalse(SessionComfort.isEnabled(SessionComfort.restSoundKey, defaults: defaults))
         // `playRestChime` con el interruptor apagado es un no-op: no revienta ni suena.
         SessionComfort.playRestChime(defaults: defaults)
+    }
+
+    /// El aviso nace apagado, como los otros dos.
+    func testLaNotificacionNaceApagada() {
+        XCTAssertFalse(SessionComfort.isEnabled(SessionComfort.restNotifyKey, defaults: defaults))
+    }
+
+    /// Un descanso ya vencido no merece aviso: sin esta guarda, reabrir la app con un descanso
+    /// viejo en el modelo dispararía una notificación de algo que terminó hace rato.
+    func testUnDescansoVencidoNoMereceAviso() {
+        let ahora = Date()
+        XCTAssertFalse(RestEndNotifier.shouldSchedule(endsAt: ahora.addingTimeInterval(-30), now: ahora))
+        XCTAssertFalse(RestEndNotifier.shouldSchedule(endsAt: ahora, now: ahora))
+        XCTAssertTrue(RestEndNotifier.shouldSchedule(endsAt: ahora.addingTimeInterval(90), now: ahora))
+    }
+
+    /// La regla que hace aceptable la notificación es que TODA salida del descanso la cancele. Lo
+    /// que se puede afirmar sin falsear el sistema de notificaciones es su precondición: todas las
+    /// salidas pasan por el MISMO embudo que limpia el descanso, que es donde vive la cancelación.
+    /// (Falsear `UNUserNotificationCenter` no se puede, y una prueba que finge hacerlo no probaría
+    /// nada — ese error ya lo cazó una revisión de esta misma sesión.)
+    func testTodaSalidaDelDescansoPasaPorElMismoEmbudo() {
+        let re = RoutineExercise(id: "a", routineId: "rt", exerciseId: "bench", position: 0,
+                                 targetSets: 2, targetReps: 8, targetWeightKg: 80,
+                                 restMode: .fixed, restSeconds: 90)
+        let ex = Exercise(id: "bench", name: "Bench", type: .weightReps, equipment: nil,
+                          primaryMuscles: [], secondaryMuscles: [], instructions: [])
+        let s = StrengthSessionModel.make(routineId: "rt", routineName: "Push",
+                                          slots: [.init(re: re, exercise: ex, lastSets: [])],
+                                          startTs: 100)
+        s.startRest(seconds: 90)
+        XCTAssertNotNil(s.restEndsAt, "el descanso arrancó")
+        s.skipRest()
+        XCTAssertNil(s.restEndsAt, "saltarlo limpia el descanso")
+
+        s.startRest(seconds: 90)
+        XCTAssertNotNil(s.restEndsAt)
+        s.registerCurrentSet()   // palomear la siguiente serie
+        s.skipRest()
+        XCTAssertNil(s.restEndsAt, "y el otro camino también")
     }
 
     override func tearDown() {

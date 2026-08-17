@@ -736,6 +736,11 @@ final class StrengthSessionModel: ObservableObject {
         restEndsAt = now.addingTimeInterval(TimeInterval(seconds))
         restStartedAt = now
         phase = .resting
+        // FER-93: el único aviso que sobrevive a que bloquees el teléfono. Se programa aquí, donde
+        // el descanso EMPIEZA, y se cancela en `clearRest`, por donde pasan todas las salidas.
+        if let end = restEndsAt, SessionComfort.isEnabled(SessionComfort.restNotifyKey) {
+            RestEndNotifier.schedule(endsAt: end)
+        }
     }
     func extendRest(byseconds delta: Int, now: Date = Date()) {
         guard let end = restEndsAt else { return }
@@ -770,6 +775,10 @@ final class StrengthSessionModel: ObservableObject {
     /// the next rest or a non-resting phase.
     private func clearRest() {
         restEndsAt = nil; restStartedAt = nil; currentRestTarget = nil; currentRestMode = .fixed
+        // FER-93: TODAS las salidas del descanso pasan por aquí (saltarlo, palomear la siguiente
+        // serie, cerrar la sesión), así que este es el sitio donde el aviso no puede sobrevivir.
+        // Un aviso que suena cuando ya volviste a entrenar es peor que no avisar.
+        RestEndNotifier.cancel()
     }
 
     /// Move focus to the next not-done set: rest of the current exercise, then later non-skipped exercises.
