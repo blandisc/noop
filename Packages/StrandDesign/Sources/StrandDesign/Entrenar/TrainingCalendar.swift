@@ -79,9 +79,10 @@ public struct TrainingCalendar: View {
 
 /// Una fila del módulo «MÚSCULOS CARGADOS».
 ///
-/// Un solo hue (ámbar) con la OPACIDAD llevando la recencia: más reciente, más opaco. «Fresco» NO
-/// es verde — es el riel vacío y tinta secundaria. Un semáforo aquí convertiría una estimación en
-/// un permiso, y el permiso lo da el veredicto, no el mapa.
+/// Un solo hue (ámbar): la carga se dibuja en el LARGO de la barra y se refuerza con la opacidad —
+/// las dos salen del mismo número, que ya trae la recencia dentro (la carga decae a la mitad cada
+/// dos días). «Fresco» NO es verde: es el riel vacío y tinta secundaria. Un semáforo aquí
+/// convertiría una estimación en un permiso, y el permiso lo da el veredicto, no el mapa.
 public struct MuscleLoadRow: View {
     private let name: String
     private let load: Double
@@ -98,19 +99,22 @@ public struct MuscleLoadRow: View {
 
     public var body: some View {
         HStack(spacing: CenitMetrics.gap) {
+            // Anchos RELATIVOS, no fijos: con Dynamic Type grande los 96/62/28 de antes dejaban al
+            // conteo de series fuera de su columna. El nombre manda, el riel cede, y los dos datos
+            // de la derecha se dimensionan por su contenido.
             Text(verbatim: name)
                 .font(StrandFont.subhead)
                 .foregroundStyle(isFresh ? theme.inkSecondary : theme.ink)
-                .frame(width: 96, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
-            rail
+            rail.frame(maxWidth: 120)
             Text(recency)
                 .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                .frame(width: 62, alignment: .trailing)
+                .fixedSize(horizontal: true, vertical: false)
             Text(verbatim: "\(sets)")
                 .font(InstrumentoType.groteskNumber(14, weight: .bold, relativeTo: .caption))
                 .foregroundStyle(isFresh ? theme.inkTertiary : theme.ink)
-                .frame(width: 28, alignment: .trailing)
+                .fixedSize(horizontal: true, vertical: false)
         }
         .frame(minHeight: EntrenarMetrics.row)
         .accessibilityElement(children: .combine)

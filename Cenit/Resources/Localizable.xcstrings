@@ -24373,7 +24373,15 @@
       }
     },
     "kg" : {
-
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "kg"
+          }
+        }
+      }
     },
     "KG" : {
       "extractionState" : "stale",
@@ -32415,7 +32423,15 @@
       }
     },
     "of %@" : {
-
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "de %@"
+          }
+        }
+      }
     },
     "of %lld" : {
       "extractionState" : "manual",
@@ -37969,6 +37985,149 @@
         }
       }
     },
+    "DIST" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DIST"
+          }
+        }
+      }
+    },
+    "PREV" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ANTERIOR"
+          }
+        }
+      }
+    },
+    "Exercise options" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opciones del ejercicio"
+          }
+        }
+      }
+    },
+    "Mark set done" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marcar la serie como hecha"
+          }
+        }
+      }
+    },
+    "Waiting for your pulse" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esperando tu pulso"
+          }
+        }
+      }
+    },
+    "bpm more" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "lpm más"
+          }
+        }
+      }
+    },
+    "you need" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "te faltan"
+          }
+        }
+      }
+    },
+    "no session" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sin sesión"
+          }
+        }
+      }
+    },
+    "planned" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "planeado"
+          }
+        }
+      }
+    },
+    "session done" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sesión hecha"
+          }
+        }
+      }
+    },
+    "Almost" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Casi"
+          }
+        }
+      }
+    },
+    "rest day" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "día de descanso"
+          }
+        }
+      }
+    },
+    "training day" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "día de entrenamiento"
+          }
+        }
+      }
+    },
     "The raise waits:" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -41708,7 +41867,15 @@
       }
     },
     "Set %@" : {
-
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Serie %@"
+          }
+        }
+      }
     },
     "Set %@ · %@ × %@ reps" : {
       "localizations" : {

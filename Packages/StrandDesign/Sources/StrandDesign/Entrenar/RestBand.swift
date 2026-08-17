@@ -27,15 +27,18 @@ public struct RestBand: View {
     private let isAlmost: Bool
     private let isReady: Bool
     private let trailing: String?
+    /// El pulso con el que empezó este descanso (el máximo visto). Sin él, el riel no coloca punto.
+    private let startBpm: Int?
     private let onSkip: (() -> Void)?
 
     @Environment(\.instrumentoTheme) private var theme
 
     public init(kicker: LocalizedStringKey, mode: RestBandMode, trailing: String? = nil,
                 note: LocalizedStringKey? = nil, isAlmost: Bool = false, isReady: Bool = false,
-                onSkip: (() -> Void)? = nil) {
+                startBpm: Int? = nil, onSkip: (() -> Void)? = nil) {
         self.kicker = kicker; self.mode = mode; self.trailing = trailing
-        self.note = note; self.isAlmost = isAlmost; self.isReady = isReady; self.onSkip = onSkip
+        self.note = note; self.isAlmost = isAlmost; self.isReady = isReady
+        self.startBpm = startBpm; self.onSkip = onSkip
     }
 
     public var body: some View {
@@ -87,6 +90,12 @@ public struct RestBand: View {
                 Text("Ready")
                     .font(InstrumentoType.grotesk(40, weight: .bold, relativeTo: .largeTitle))
                     .foregroundStyle(theme.positiveText)
+            } else if isAlmost {
+                // La banda de honestidad del motor (5 lpm) tiene su propia palabra, la que la nota
+                // promete: sin esto, «casi» era un parámetro que nadie leía y una promesa incumplida.
+                Text("Almost")
+                    .font(InstrumentoType.grotesk(40, weight: .bold, relativeTo: .largeTitle))
+                    .foregroundStyle(OKLab.darkened(theme.dataHeart, toContrast: 4.5, against: theme.paper))
             } else if let remaining {
                 (Text("you need").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                  + Text(verbatim: " ")
@@ -110,26 +119,55 @@ public struct RestBand: View {
         }
     }
 
-    /// El riel: tinta de fondo, punto de pulso en rosa y un tick para el objetivo. Sin pulso el riel
+    /// El riel: tinta de fondo, punto de pulso en rosa y un tick para el OBJETIVO. Sin pulso el riel
     /// dibuja el avance del reloj, en tinta — nunca en el hue de una señal que no se midió.
+    ///
+    /// El punto se coloca contra el objetivo REAL que recibe la banda, no contra una escala
+    /// inventada: el recorrido va del pulso con el que llegaste (el máximo visto en este descanso,
+    /// que el caller pasa como `startBpm`) hasta el objetivo. Sin ese dato, el riel no dibuja punto:
+    /// prefiere no decir nada a colocarlo en un lugar que no significa nada.
     @ViewBuilder private var rail: some View {
         GeometryReader { geo in
             let w = geo.size.width
             ZStack(alignment: .leading) {
                 Capsule().fill(theme.hairline)
-                if case .heartRate(let remaining, _, let current) = mode, current != nil {
-                    let progress = remaining.map { r in max(0, min(1, 1 - Double(r) / 40)) } ?? 0
+                if let p = railProgress {
                     Circle()
                         .fill(isReady ? theme.positiveText : theme.dataHeart)
                         .frame(width: 10, height: 10)
-                        .offset(x: max(0, w * progress - 5))
+                        .offset(x: max(0, w * p - 5))
                 }
             }
             .overlay(alignment: .trailing) {
+                // El tick del objetivo: donde el descanso se da por cumplido.
                 Rectangle().fill(theme.inkTertiary).frame(width: 1, height: 10)
             }
         }
         .frame(height: 4)
+    }
+
+    /// Cuánto del camino al objetivo llevas, 0…1. `nil` = no hay con qué colocarlo.
+    private var railProgress: Double? {
+        switch mode {
+        case .heartRate(let remaining, let target, let current):
+            guard let current, let start = startBpm, start > target else {
+                // Sin punto de partida no hay recorrido que dibujar; con el pulso ya en el objetivo,
+                // el punto se planta al final.
+                return (remaining.map { $0 <= 0 } ?? false) ? 1 : nil
+            }
+            let done = Double(start - current) / Double(start - target)
+            return max(0, min(1, done))
+        case .clock(let elapsed, let target):
+            guard let e = Self.seconds(elapsed), let t = Self.seconds(target), t > 0 else { return nil }
+            return max(0, min(1, Double(e) / Double(t)))
+        }
+    }
+
+    /// «1:18» → 78. Devuelve nil si el texto no tiene esa forma (el componente no adivina).
+    static func seconds(_ text: String) -> Int? {
+        let parts = text.split(separator: ":")
+        guard parts.count == 2, let m = Int(parts[0]), let s = Int(parts[1]) else { return nil }
+        return m * 60 + s
     }
 }
 

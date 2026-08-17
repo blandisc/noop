@@ -85,6 +85,9 @@ public struct SetTable: View {
     }
 
     private var tint: Color { family?.tint(theme) ?? theme.ink }
+    /// El relleno del badge en curso. Va en el tono de LECTURA de la familia, no en su hue: el
+    /// numeral que lleva encima es texto chico, y papel sobre el hue saturado se queda en 3.6:1.
+    private var badgeFill: Color { family?.reading(theme) ?? theme.ink }
 
     private var header: some View {
         HStack(spacing: EntrenarMetrics.columnGap) {
@@ -134,7 +137,7 @@ public struct SetTable: View {
             .frame(width: EntrenarMetrics.badge, height: EntrenarMetrics.badge)
             .background {
                 if row.isCurrent {
-                    Circle().fill(tint)
+                    Circle().fill(badgeFill)
                 } else if row.isWarmup {
                     Circle().strokeBorder(theme.hairlineStrong, style: StrokeStyle(lineWidth: 1, dash: [2, 2]))
                 } else {
@@ -163,8 +166,14 @@ public struct SetTable: View {
             .lineLimit(1)
         return Group {
             if let onTapCell {
-                Button { onTapCell(row.id) } label: { content }
-                    .buttonStyle(EntrenarPressStyle())
+                Button { onTapCell(row.id) } label: {
+                    // El blanco táctil es la CELDA, no el texto: un «82.5» mide 34 pt de ancho y
+                    // 18 de alto, y esta celda es un campo de captura que se toca todo el tiempo.
+                    content
+                        .frame(maxWidth: .infinity, minHeight: EntrenarMetrics.row, alignment: .trailing)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(EntrenarPressStyle())
             } else {
                 content
             }
@@ -175,7 +184,7 @@ public struct SetTable: View {
         Button { onToggle?(row.id) } label: {
             Image(systemName: row.done ? "checkmark.circle.fill" : "circle")
                 .font(.system(size: EntrenarMetrics.check))
-                .foregroundStyle(row.done ? theme.positiveText : theme.hairlineStrong)
+                .foregroundStyle(row.done ? theme.positiveText : theme.inkTertiary)
                 // La celda ENTERA es tocable, aunque el glifo mida 24 (HIG).
                 .frame(width: EntrenarMetrics.row, height: EntrenarMetrics.row)
                 .contentShape(Rectangle())

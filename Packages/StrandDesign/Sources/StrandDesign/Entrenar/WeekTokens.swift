@@ -40,11 +40,14 @@ public struct WeekTokens: View {
                         .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                 }
                 .frame(maxWidth: .infinity)
+                // Sin esto la tira se leía «L M X J V S D» y el estado de cada día —el dato
+                // entero de la fila— no llegaba a quien no la ve.
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(label(for: day, dayName: i < labels.count ? labels[i] : ""))
             }
         }
         .frame(minHeight: EntrenarMetrics.row)
         .contentShape(Rectangle())
-        .accessibilityElement(children: .combine)
 
         if let action {
             Button(action: action) { strip }
@@ -52,6 +55,17 @@ public struct WeekTokens: View {
                 .accessibilityAddTraits(.isButton)
         } else {
             strip
+        }
+    }
+
+    private func label(for day: EntrenarDayToken, dayName: String) -> Text {
+        let name = Text(verbatim: dayName) + Text(verbatim: ", ")
+        switch day {
+        case .done(let f):        return name + Text("trained") + Text(verbatim: ", ") + Text(f.label)
+        case .today(let isRest):  return name + Text("today") + Text(verbatim: ", ")
+                                       + (isRest ? Text("rest day") : Text("training day"))
+        case .planned(let f):     return name + Text("planned") + Text(verbatim: ", ") + Text(f.label)
+        case .rest:               return name + Text("rest day")
         }
     }
 
@@ -94,25 +108,39 @@ public struct SessionStatsBar: View {
     }
 
     public var body: some View {
-        HStack(spacing: CenitMetrics.gap) {
-            stat(volume, unit: "kg", tone: isPaused ? theme.inkSecondary : theme.ink)
-            dot
-            stat(sets, unit: "sets", tone: isPaused ? theme.inkSecondary : theme.ink)
-            if let pulse {
-                dot
-                stat(pulse, unit: "bpm", tone: isPaused ? theme.inkSecondary : theme.dataHeart)
-            }
-            Spacer(minLength: CenitMetrics.space2)
-            if let onPause {
-                control(isPaused ? "play.fill" : "pause.fill",
-                        label: isPaused ? Text("Resume session") : Text("Pause session"),
-                        action: onPause)
-            }
-            if let onFocus {
-                control("scope", label: Text("Focus mode"), action: onFocus)
+        // Con Dynamic Type grande tres numerales y dos controles de 44 no caben en una línea. En vez
+        // de aplastar el dato (que es lo que el usuario subió de tamaño), la barra se parte: los
+        // números arriba, los controles abajo. `ViewThatFits` elige sin medir a mano.
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: CenitMetrics.gap) { stats; Spacer(minLength: CenitMetrics.space2); controls }
+            VStack(alignment: .leading, spacing: CenitMetrics.space2) {
+                HStack(spacing: CenitMetrics.gap) { stats }
+                HStack(spacing: CenitMetrics.gap) { controls }
             }
         }
         .frame(minHeight: EntrenarMetrics.row)
+    }
+
+    @ViewBuilder private var stats: some View {
+        stat(volume, unit: "kg", tone: isPaused ? theme.inkSecondary : theme.ink)
+        dot
+        stat(sets, unit: "sets", tone: isPaused ? theme.inkSecondary : theme.ink)
+        if let pulse {
+            dot
+            // El rosa del pulso vive en el numeral, que es grande: ahí el hue saturado sí es legible.
+            stat(pulse, unit: "bpm", tone: isPaused ? theme.inkSecondary : theme.dataHeart)
+        }
+    }
+
+    @ViewBuilder private var controls: some View {
+        if let onPause {
+            control(isPaused ? "play.fill" : "pause.fill",
+                    label: isPaused ? Text("Resume session") : Text("Pause session"),
+                    action: onPause)
+        }
+        if let onFocus {
+            control("scope", label: Text("Focus mode"), action: onFocus)
+        }
     }
 
     private func stat(_ value: String, unit: LocalizedStringKey, tone: Color) -> some View {

@@ -1233,6 +1233,19 @@ enum LiquidHoyBuilder {
             a11y = String(localized: "\(nombre), no data, \(sub).")
         }
 
+        // FER-84: la joya se coloca por la desviación REAL, no por una posición canónica.
+        //
+        // `orientedZ` viene ORIENTADA (negativa = peor para ese eje). El riel, en cambio, dibuja la
+        // dirección CRUDA: sueño corto a la izquierda, FC alta a la derecha — el lenguaje que la
+        // hoja ya tenía. Para el autonómico (mejor cuando BAJA) hay que voltear el signo; para el
+        // sueño (mejor cuando SUBE) coinciden. Sin veredicto no se coloca nada: la hoja sin quórum
+        // habla en tinta y no afirma una posición que no votó.
+        let desviacion: Double? = {
+            guard hayVeredicto, estado.hasData else { return nil }
+            guard let z = prep?.drivers.first(where: { $0.axis == ax })?.orientedZ else { return nil }
+            return esAuto ? -z : z
+        }()
+
         return LiquidActa.Fila(id: ax.rawValue, glifo: glifo, etiqueta: nombre, sub: sub,
                                estado: votoEstado, umbral: esAuto ? .rango : .minimo,
                                // El wash dice «este voto volteó el veredicto»: sin

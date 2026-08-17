@@ -98,8 +98,11 @@ public enum EntrenarMetrics {
 /// El estado de una celda del calendario de entrenamiento. Es un token porque lo consumen dos
 /// tamaños del mismo componente y dos pantallas (landing y historial).
 public enum EntrenarCalendarState: Sendable, Hashable {
-    /// Sin sesión ese día.
+    /// Sin sesión ese día (ya pasó y no entrenaste).
     case empty
+    /// Todavía no llega: un día futuro de la rejilla. No es un hueco tuyo, así que se dibuja más
+    /// tenue que un día vacío en vez de acusarte de no haber entrenado mañana.
+    case future
     /// Sesión hecha, teñida por la familia que se entrenó.
     case done(EntrenarFamily)
     /// Hoy, sin sesión todavía: aro de tinta, nunca el color del veredicto.
@@ -110,6 +113,7 @@ public enum EntrenarCalendarState: Sendable, Hashable {
     public func fill(_ theme: InstrumentoTheme) -> Color {
         switch self {
         case .empty, .today: return theme.hairline
+        case .future:        return theme.paper
         case .done(let f):   return f.tint(theme)
         case .planned:       return theme.paper
         }
@@ -118,6 +122,7 @@ public enum EntrenarCalendarState: Sendable, Hashable {
     public func stroke(_ theme: InstrumentoTheme) -> Color? {
         switch self {
         case .empty:          return nil
+        case .future:         return theme.hairline
         case .today:          return theme.ink
         case .done:           return nil
         case .planned(let f): return f.tint(theme)
@@ -128,6 +133,7 @@ public enum EntrenarCalendarState: Sendable, Hashable {
     public var voiceOver: LocalizedStringKey {
         switch self {
         case .empty:          return "no session"
+        case .future:         return "not yet"
         case .done:           return "session done"
         case .today:          return "today"
         case .planned:        return "planned"

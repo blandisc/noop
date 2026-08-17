@@ -73,9 +73,12 @@ public struct EntrenarChip: View {
             }
         }
 
+        /// El tono del TEXTO del chip: los tres son texto chico, así que ninguno puede ir en el hue
+        /// saturado. El rosa del pulso sobre papel se queda en 4.24:1; oscurecido llega a 4.5:1 sin
+        /// dejar de ser rosa, que es lo que amarra el chip a su métrica.
         func tone(_ theme: InstrumentoTheme) -> Color {
             switch self {
-            case .rest:        return theme.dataHeart
+            case .rest:        return OKLab.darkened(theme.dataHeart, toContrast: 4.5, against: theme.paper)
             case .progression: return theme.positiveText
             case .warmup:      return theme.inkSecondary
             }
