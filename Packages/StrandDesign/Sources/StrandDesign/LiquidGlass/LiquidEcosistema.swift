@@ -226,6 +226,13 @@ public struct LiquidEcosistema: View {
                          calibracion: calibracion)
     }
 
+    /// El alto que el héroe RESERVA en el scroll (FER-79 · D4). Compacto manda sobre separado:
+    /// «El Tablero» ya viene apretado por su propia presentación.
+    private var altoReservado: CGFloat {
+        if compacto { return LiquidSpace.ecosistemaAltoCompacto }
+        return esSeparadaEstable ? LiquidSpace.ecosistemaAltoSeparado : LiquidSpace.ecosistemaAlto
+    }
+
     /// El radio que de verdad dibuja el plan para esta coreografía (FER-73 · M2).
     private var radioOrbeReal: CGFloat {
         if calibracion != nil { return Sim.Geometria.radioEmbrion }
@@ -316,9 +323,17 @@ public struct LiquidEcosistema: View {
                                         .delay(LiquidEcosistemaMotion.fusionDur * 0.85)),
                            value: esSeparadaEstable)
         }
-        .frame(height: (compacto ? LiquidSpace.ecosistemaAltoCompacto
-                                 : LiquidSpace.ecosistemaAlto) * escala,
-               alignment: .top)
+        // FER-79 · D4 (dueño): el alto reservado se ANIMA con la separación. Al separar, el
+        // bloque del veredicto se funde y la sección de abajo sube con él; al reunir, baja de
+        // vuelta con el mismo gesto (la misma curva y el mismo retardo que el lienzo, para que
+        // se lea como un solo movimiento y no como dos).
+        .frame(height: altoReservado * escala, alignment: .top)
+        .animation(still ? LiquidEcosistemaMotion.reduceCrossfadeAnim
+                         : (esSeparadaEstable
+                            ? LiquidMotion.ambient(0.9).delay(LiquidEcosistemaMotion.anticipacion)
+                            : LiquidMotion.ambient(0.9)
+                                .delay(LiquidEcosistemaMotion.fusionDur * 0.85)),
+                   value: esSeparadaEstable)
         .clipped()
         .modifier(EcosistemaVisibilidad { visible = $0 })
         .onAppear {

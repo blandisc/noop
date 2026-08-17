@@ -25,6 +25,8 @@ public enum MatrizChartPayload: Sendable, Equatable {
                   alertaHoy: MedidorLunar.Alerta = .ninguna)
     case barrasMini(valores: [Double?])
     case escalerita(niveles: [Int?])
+    /// FER-80 · La costura del par del guardián: temp y resp espejadas, ya normalizadas.
+    case costura(noches: [MatrizCostura.Noche])
 }
 
 /// Una sección de la Matriz (sello + título + valor + chart).
@@ -490,7 +492,11 @@ public struct MatrizHoyFace: View {
                 // con el numeral, no cae a su base — revisión del dueño); el grupo se
                 // ancla a la fila por la base del texto para no romper el ritmo del título.
                 HStack(alignment: .center, spacing: LiquidSpace.s150) {
-                    if let chip = s.chip {
+                    // FER-80 (marco acordado con el dueño para la costura): cuando la sección
+                    // trae chip Y valor —el guardián con su par de números—, mandan los DATOS
+                    // arriba; el estado en palabras baja a la sublínea, en su tono. Sin valor
+                    // (como era el guardián antes de la costura) el chip conserva su lugar.
+                    if let chip = s.chip, s.valor.isEmpty {
                         chipView(chip)
                     } else {
                         valorCompuesto(s, valor: valorEfectivo(s))
@@ -506,8 +512,16 @@ public struct MatrizHoyFace: View {
                 .layoutPriority(1)
             }
             let sub = sublabelEfectivo(s)
-            if s.vota || sub != nil {
+            let chipEnSublinea: MatrizHoyModel.ChipGuardian? = s.valor.isEmpty ? nil : s.chip
+            if s.vota || sub != nil || chipEnSublinea != nil {
                 HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s150) {
+                    if let chip = chipEnSublinea {
+                        // El estado del guardián, en palabras y en su tono (FER-80).
+                        Text(chip.texto)
+                            .font(LiquidType.caption)
+                            .foregroundStyle(Self.tonoChip(chip.tono))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                     if s.vota {
                         // P3: las votantes llevan su sello — el modelo se lee solo.
                         Text(String(localized: "matriz.vota", defaultValue: "votes"))
@@ -576,6 +590,16 @@ public struct MatrizHoyFace: View {
     /// rueda al refrescar (`numericText`) en vez de parpadear.
     private func valorCompuesto(_ s: MatrizSeccion, valor: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s050) {
+            // FER-80 · El par del guardián se escribe con SUS DOS colores («+0.1°» dorado ·
+            // «14.9» azul): son dos señales distintas, no un dato con dos partes.
+            if let par = s.huesPar, let corte = valor.range(of: " · ") {
+                (Text(valor[..<corte.lowerBound]).foregroundColor(par.0)
+                    + Text(verbatim: " · ").foregroundColor(LiquidColor.tinta500)
+                    + Text(valor[corte.upperBound...]).foregroundColor(par.1))
+                    .font(s.destacada ? LiquidType.valorL
+                          : (s.terciaria ? LiquidType.valorS : LiquidType.valorM))
+                    .monospacedDigit()
+            } else {
             Text(valor)
                 .font(s.destacada ? LiquidType.valorL
                       : (s.terciaria ? LiquidType.valorS : LiquidType.valorM))
@@ -583,6 +607,7 @@ public struct MatrizHoyFace: View {
                 .monospacedDigit()
                 .contentTransition(reduceMotion ? .identity : .numericText())
                 .animation(reduceMotion ? nil : .snappy, value: valor)
+            }
             if let u = s.unidad, valor != "—" {
                 Text(u)
                     .font(LiquidType.caption)
@@ -689,15 +714,18 @@ public struct MatrizHoyFace: View {
         }
     }
 
+    /// El color del estado del guardián — una sola fuente para el chip y para la sublínea.
+    static func tonoChip(_ tono: MatrizHoyModel.ChipGuardian.Tono) -> Color {
+        switch tono {
+        case .calma: return LiquidColor.verdePrimario
+        case .terciario: return LiquidColor.tinta500
+        case .atencion: return LiquidColor.atencion
+        case .alarma: return LiquidColor.negativo
+        }
+    }
+
     private func chipView(_ chip: MatrizHoyModel.ChipGuardian) -> some View {
-        let color: Color = {
-            switch chip.tono {
-            case .calma: return LiquidColor.verdePrimario
-            case .terciario: return LiquidColor.tinta500
-            case .atencion: return LiquidColor.atencion
-            case .alarma: return LiquidColor.negativo
-            }
-        }()
+        let color: Color = Self.tonoChip(chip.tono)
         return Text(chip.texto)
             .font(LiquidType.caption)
             .foregroundStyle(color)
@@ -729,6 +757,8 @@ public struct MatrizHoyFace: View {
             MatrizBarrasMini(chartID: chartID, valores: valores, hue: hue, resaltado: resaltado)
         case .escalerita(let niveles):
             MatrizEscalerita(chartID: chartID, niveles: niveles, hue: hue, resaltado: resaltado)
+        case .costura(let noches):
+            MatrizCostura(chartID: chartID, noches: noches, resaltado: resaltado)
         }
     }
 
@@ -742,6 +772,7 @@ public struct MatrizHoyFace: View {
         // FER-59: VFC (lineaRellena) es gemela de Estrés (escalerita) en Contexto → misma
         // altura, para que el borde inferior de la fila no quede dentado (antes 56 vs 40).
         case .lineaRellena: return MatrizTokens.alturaEscalera
+        case .costura: return MatrizTokens.alturaCostura
         default: return MatrizTokens.alturaLinea
         }
     }

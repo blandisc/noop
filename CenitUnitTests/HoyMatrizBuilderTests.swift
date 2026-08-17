@@ -240,15 +240,22 @@ final class HoyMatrizBuilderTests: XCTestCase {
         let m = LiquidHoyBuilder.matriz(inputs(prep: p, dias: dias))
         let guardian = seccion(m, id: "guardian")
         XCTAssertNotNil(guardian)
-        let temp = guardian?.renglones?.first { $0.id == "skintemp" }
-        let resp = guardian?.renglones?.first { $0.id == "resp" }
-        XCTAssertEqual(temp?.valor, "+0.1°")
-        XCTAssertNil(temp?.sublabel, "sin juicio del motor no se afirma «within your band»")
-        XCTAssertNil(resp?.sublabel, "sin base usable no se afirma «typical for you»")
+        // FER-80: el par vive en UNA sola gráfica (la costura), sin renglones que puedan
+        // afirmar «dentro de tu banda» sobre lecturas que el motor no comparó.
+        XCTAssertNil(guardian?.renglones, "la costura sustituyó las dos filas")
+        XCTAssertEqual(guardian?.valor, "+0.1° · 14.4", "los dos números, juntos")
         XCTAssertEqual(guardian?.chip?.tono, .terciario)
         XCTAssertNotEqual(guardian?.chip?.texto, String(localized: "No readings yet"),
                           "hay lecturas: el chip no puede decir que no las hay")
         XCTAssertEqual(guardian?.selloGuardian, .sinDatos)
+        // Y sin juicio del motor, ninguna noche puede pintarse como «el par votó».
+        if case .costura(let noches)? = guardian?.chart {
+            XCTAssertFalse(noches.contains { $0.parFuera },
+                           "sin centinela no se afirma que el par votó")
+            XCTAssertTrue(noches.contains { $0.temp != nil }, "las lecturas sí se dibujan")
+        } else {
+            XCTFail("el guardián dibuja la costura")
+        }
     }
 
     // MARK: 10b — El sello VIVO del guardián espeja el chip (Ola 3, nunca lo contradice)
@@ -374,11 +381,9 @@ final class HoyMatrizBuilderTests: XCTestCase {
         XCTAssertNil(seccion(model, id: "guardian")?.sello)
         XCTAssertNotNil(seccion(model, id: "guardian")?.selloGuardian)
 
-        // Las dos sub-señales del guardián: eran las únicas filas de Hoy sin nada a la
-        // izquierda; ahora arrancan detrás de su sello como el resto de la pantalla.
-        let renglones = seccion(model, id: "guardian")?.renglones
-        XCTAssertEqual(renglones?.first(where: { $0.id == "skintemp" })?.sello, .piel)
-        XCTAssertEqual(renglones?.first(where: { $0.id == "resp" })?.sello, .respiracion)
+        // Los sellos de piel y respiración NO viven ya en Hoy: FER-80 fundió las dos filas
+        // del guardián en la costura (ver arriba, `renglones` es nil). Siguen encabezando
+        // sus hojas de resumen, y el andamiaje de `MatrizRenglon` los admite si vuelven.
 
         // Orden visual a11y.
         XCTAssertEqual(model.ordenA11y, [

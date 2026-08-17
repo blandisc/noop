@@ -229,7 +229,10 @@ struct LiquidMetricSheetView: View {
             return LiquidColor.indigo
         case "hrv":                 return LiquidColor.cian
         case "rhr", "heart_rate":   return LiquidColor.rosa
-        case "strain", "skin_temp": return LiquidColor.ambar
+        case "strain":              return LiquidColor.ambar
+        // FER-79 · D2 (dueño): la temperatura de piel conserva su dorado propio también en la
+        // hoja — antes compartía el ámbar con Esfuerzo, que además es el color de atención.
+        case "skin_temp":           return LiquidColor.doradoTemp
         case "steps":               return LiquidColor.teal
         case "resp_rate", "spo2":   return LiquidColor.azul
         case "stress":
@@ -317,7 +320,9 @@ struct LiquidMetricSheetView: View {
 
     /// Las dos métricas cuyo hue (`tono`) ES el ámbar de la familia.
     private var tonoEsAmbar: Bool {
-        datoInfo.id == "strain" || datoInfo.id == "skin_temp"
+        // FER-79 · D2: solo Esfuerzo. `doradoTemp` ya está oscurecido para leerse como texto
+        // sobre el papel (ver LiquidColor.doradoTemp: contraste ≥4.5:1 verificado).
+        datoInfo.id == "strain"
     }
 
     // MARK: Cabecera
@@ -1105,9 +1110,16 @@ struct LiquidMetricSheetView: View {
         return (levelsValueFormat(ComparisonEngine.stat(w.values).mean), selloMedia(w.range))
     }
 
-    /// «HOY · 3 AGO». La fecha la compone la capa app (el DS no formatea fechas, contrato D3).
+    /// «HOY · 3 AGO» de día; «ANOCHE · 2 AGO» en lo que se mide durmiendo. La fecha la compone
+    /// la capa app (el DS no formatea fechas, contrato D3).
+    ///
+    /// FER-79 · D7 (dueño): lo NOCTURNO se fecha como la noche que fue. Antes el guardián decía
+    /// «anoche · 15 ago» y la hoja de la misma señal «hoy · 16 ago»: dos convenciones para la
+    /// misma noche. Lo que se mide despierto (pasos, esfuerzo, FC del día) conserva «hoy».
     private var selloHoy: String {
-        String(localized: "TODAY · \(Self.diaCorto(Date()))")
+        guard nightly else { return String(localized: "TODAY · \(Self.diaCorto(Date()))") }
+        let anoche = Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date()
+        return String(localized: "LAST NIGHT · \(Self.diaCorto(anoche))")
     }
 
     /// «MEDIA · 30 DÍAS» / «MEDIA · 30 NOCHES» / «MEDIA · 6 MESES» / «MEDIA · 1 AÑO» /
@@ -1416,7 +1428,11 @@ struct LiquidMetricSheetView: View {
     private func nivelesLista(_ d: MetricLevels.Classification,
                               conteos: Bool = true) -> some View {
         let highlight: Int? = nivelDestacado(d)
-        let hoyRotulo: String = String(localized: "· today")
+        // FER-79 · D7: en las hojas nocturnas el marcador de la fila activa dice «anoche», como
+        // el sello de la cabecera — es la misma noche.
+        let hoyRotulo: String = nightly
+            ? String(localized: "· last night")
+            : String(localized: "· today")
         let hint: String = String(localized: "Highlights this level on the chart")
         // Eco del scrub: qué carril contiene el valor bajo el dedo (rango half-open, igual
         // que la clasificación). `nil` cuando no hay scrub. La fila activa gana el wash.
@@ -1655,11 +1671,16 @@ struct LiquidMetricSheetView: View {
         .liquidGlass(.superficieSolida)
     }
 
-    /// «Ver más» (paridad `seeMoreLink` :1186-1231): ancho completo hacia Tendencias
-    /// para métricas con niveles, pastilla compacta para el resto.
+    /// «Ver más» (paridad `seeMoreLink` :1186-1231): ancho completo para métricas con
+    /// niveles, pastilla compacta para el resto.
+    ///
+    /// FER-79 · D6 (dueño): el rótulo dice A DÓNDE va. Desde una hoja de métrica esto abre el
+    /// DETALLE COMPLETO encima de Hoy, no la pestaña Tendencias; «en Tendencias» se reserva
+    /// para lo que sí cambia de pestaña (la hoja de Carga y el acta).
     @ViewBuilder private func verMas(_ action: @escaping () -> Void) -> some View {
         if datoInfo.usesLevels {
-            LiquidVerMas(title: String(localized: "See more in Trends"),
+            LiquidVerMas(title: String(localized: "hoja.vermas.detalle",
+                                       defaultValue: "See the full detail"),
                          hint: String(localized: "Opens the full detail"),
                          tone: tono, anchoCompleto: true, action: action)
         } else {

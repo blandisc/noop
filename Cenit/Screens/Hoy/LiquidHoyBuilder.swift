@@ -608,8 +608,11 @@ enum LiquidHoyBuilder {
         // héroe con otro dato. FER-10: con Salud conectada, el estado sin-base es la
         // ACRECIÓN del Ecosistema («Conociéndote · Noche n de m»).
         let heroFallback = suenoFallback(nights: nights,
-                                         healthConnected: healthConnected)
-        let calibracion: LiquidHoyModel.Calibracion? = healthConnected
+                                         healthConnected: healthConnected,
+                                         autonomicPosible: prep?.autonomicPossible ?? true)
+        // FER-76: los puntos de acreción también callan cuando la señal que los llenaría no existe
+        // — una barra de progreso que no puede avanzar es la misma promesa rota, en gráfico.
+        let calibracion: LiquidHoyModel.Calibracion? = (healthConnected && (prep?.autonomicPossible ?? true))
             ? {
                 let c = calibracionConteo(nights: nights)
                 // Solo mientras la base SE FORMA (gate /cso B2): en el tope, el estado es
@@ -725,7 +728,8 @@ enum LiquidHoyBuilder {
     /// haya o no sueño grabado (decisión del dueño: el héroe de sueño de anoche se retiró;
     /// el sueño vive en su tile y su detalle).
     private static func suenoFallback(nights: Int,
-                                      healthConnected: Bool) -> LiquidHoyModel.Hero {
+                                      healthConnected: Bool,
+                                      autonomicPosible: Bool = true) -> LiquidHoyModel.Hero {
         // Sin permiso de Salud, «duerme con tu Watch» es una instrucción imposible: el
         // único camino real es conceder el permiso (revote /inject).
         guard healthConnected else {
@@ -739,6 +743,16 @@ enum LiquidHoyBuilder {
         // Gate /cso B2: con `nights >= total` la base YA está sembrada — este estado llega
         // por «falta la lectura de hoy» o «base rancia», y decir «se está formando» con
         // los puntos llenos sería falso. Ahí el héroe dice la causa real, sin contador.
+        // FER-76 · Sin FC en reposo en NINGUNA noche de tu ventana, «tu rango se está formando»
+        // es una promesa que no se cumple nunca: quien duerme sin Apple Watch no tiene esa señal,
+        // y sin ella no habrá veredicto. Se dice la verdad, y qué haría falta.
+        guard autonomicPosible else {
+            return .demotado(
+                kicker: String(localized: "READINESS"),
+                title: String(localized: "hero.title.sinfc", defaultValue: "I can't read your mornings yet"),
+                subtitle: String(localized: "hero.sub.sinfc",
+                                 defaultValue: "Your verdict stands on your resting heart rate at night, and it hasn't arrived. Sleeping with your Apple Watch is what unlocks it."))
+        }
         let (noche, total) = calibracionConteo(nights: nights)
         guard noche < total else {
             return .demotado(
@@ -1085,7 +1099,10 @@ enum LiquidHoyBuilder {
             // El ⓘ dice QUÉ es (una línea) — el hedge «aproximación» vive SOLO en «Cómo se
             // calcula» para no repetir (revisión del dueño: el ⓘ y el método decían casi lo
             // mismo).
-            explicacion: String(localized: "The verdict for how you woke up: your signals against your own baseline."),
+            // FER-79 · D8 (dueño): SIN ⓘ en el encabezado. Tocabas la ⓘ del veredicto, se abría
+            // esta hoja… y arriba había otra ⓘ idéntica con otro significado. La frase del QUÉ
+            // ahora encabeza «Cómo se calcula», que es la única puerta al detalle.
+            explicacion: nil,
             infoMostrar: String(localized: "Show explanation"),
             infoOcultar: String(localized: "Hide explanation"),
             nivel: palabraBoleta(prep: prep, hayVeredicto: hayVeredicto,
@@ -1442,6 +1459,8 @@ enum LiquidHoyBuilder {
         // la histéresis, y la cita. Se quitó el «lee X de Y señales» (confundía) y el hedge
         // que ya no duplica al ⓘ.
         let lineas: [String] = [
+            // El QUÉ abre el método (FER-79 · D8): vivía tras la ⓘ del encabezado, que se retiró.
+            String(localized: "The verdict for how you woke up: your signals against your own baseline."),
             String(localized: "acta.metodo.fc",
                    defaultValue: "Your resting HR is your lowest pulse of the night, measured by your Apple Watch; when there's no overnight reading, Cénit uses Apple Health's resting heart rate."),
             String(localized: "acta.metodo.votos",

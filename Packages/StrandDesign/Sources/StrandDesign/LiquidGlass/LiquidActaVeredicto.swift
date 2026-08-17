@@ -117,7 +117,9 @@ public struct LiquidActa: Sendable {
     /// Procedencia YA compuesta («Apple Salud · esta mañana») — sin fecha (revisión del
     /// dueño: la fecha ya vive en el encabezado de Hoy).
     public let procedencia: String
-    public let explicacion: String
+    /// FER-79 · D8: `nil` = el encabezado NO lleva ⓘ (el acta ya es la explicación; su
+    /// detalle vive en «Cómo se calcula»).
+    public let explicacion: String?
     public let infoMostrar: String
     public let infoOcultar: String
     /// La palabra grande — la del veredicto (paridad héroe) o la del estado sin veredicto
@@ -142,7 +144,7 @@ public struct LiquidActa: Sendable {
     /// enciende en ámbar bajo palabra verde.)
     public let tono: Color
 
-    public init(titulo: String, procedencia: String, explicacion: String,
+    public init(titulo: String, procedencia: String, explicacion: String? = nil,
                 infoMostrar: String, infoOcultar: String,
                 nivel: String?,
                 conteo: String, conteoClave: String? = nil,

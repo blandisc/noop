@@ -331,6 +331,29 @@ final class Repository: ObservableObject {
         gen == latestGen && !(isFirstPaint && alreadyFull)
     }
 
+    /// FER-74 — **un recálculo sin la fila de hoy NO borra el veredicto que ya tenías.**
+    ///
+    /// El motor tiene una salida temprana: si la última fila de la ventana no es `asOf`, devuelve
+    /// `lowSignal` con `drivers` VACÍO (no evaluó nada; simplemente no encontró el día). Eso pasa
+    /// más de lo que parece: un jalón para sincronizar que no trae nada, un fetch de Apple Salud
+    /// que falla, o los segundos entre la medianoche y la primera muestra del día nuevo. Al
+    /// publicarlo tal cual, el héroe caía de «En rango» a «Conociéndote · Noche 0 de 4» con 40
+    /// noches en la base — y ese estado MIENTE dos veces: dice que no te conoce y promete un
+    /// progreso que ya hiciste.
+    ///
+    /// La regla: si el pase nuevo no trae juicio POR FALTA DE FILA y el anterior sí lo tenía, y
+    /// seguimos en el MISMO día civil, se conserva el anterior. Si el día cambió, no: el veredicto
+    /// de ayer no puede colarse a hoy (esa es exactamente la clase de bug que FER-1024 cerró).
+    /// Y un pase con datos SIEMPRE gana, aunque su veredicto sea peor.
+    nonisolated static func conservaVeredictoPrevio(nuevo: Preparedness.Read?,
+                                                    previo: Preparedness.Read?,
+                                                    diaPublicado: String?,
+                                                    diaAhora: String) -> Bool {
+        guard previo != nil, diaPublicado == diaAhora else { return false }
+        guard let nuevo else { return true }                    // sin juicio nuevo
+        return nuevo.verdict == .lowSignal && nuevo.drivers.isEmpty   // «no encontré tu día»
+    }
+
     private func performRefresh(windowDays nDays: Int, full: Bool) async {
         guard let store = await ensureStore() else { return }
         refreshGen += 1
@@ -516,6 +539,13 @@ final class Repository: ObservableObject {
         next.loaded = true
         next.fullyLoaded = full
         next.seq = dashboard.seq + 1
+        // FER-74: un pase que perdió la fila de hoy no borra el veredicto del MISMO día.
+        if Self.conservaVeredictoPrevio(nuevo: next.preparedness,
+                                        previo: dashboard.preparedness,
+                                        diaPublicado: lastRefreshDayKey,
+                                        diaAhora: Self.localDayKey(now)) {
+            next.preparedness = dashboard.preparedness
+        }
         // One assignment → one objectWillChange for the whole refresh (was four).
         self.dashboard = next
         // FER-1024: record the local day this published dashboard belongs to, so a later foreground
