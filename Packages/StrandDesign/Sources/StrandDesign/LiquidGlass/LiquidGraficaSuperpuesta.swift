@@ -70,7 +70,10 @@ public struct LiquidGraficaSuperpuesta: View {
     /// Lo que el comparador puede decir con lo que le dieron. Los dos estados honestos están
     /// separados porque su causa es distinta y su copy también: «elige al menos dos» le habla
     /// a quien no ha escogido; a quien ya escogió cuatro habría que mentirle para decírselo.
-    enum Estado: Equatable {
+    public enum Estado: Equatable {
+        // Público a propósito: el contrato de esta pieza le pide al caller que pregunte el
+        // estado ANTES de montar la vista y que repita el orden de la leyenda en su tooltip.
+        // Con estos símbolos internos, la app —que es otro módulo— no podía cumplirlo.
         /// El caller trajo menos de dos series: no hay comparación que dibujar.
         case minimo
         /// Hay dos o más, pero la ventana no deja dos con lecturas.
@@ -430,7 +433,7 @@ public struct LiquidGraficaSuperpuesta: View {
     /// Las series recortadas a la ventana, en el orden del caller, SIN las que se quedaron
     /// sin lecturas (paridad `CompareView.overlaySection`, que filtra `!rows.isEmpty` antes
     /// de dibujar y de armar la leyenda).
-    static func recortadas(_ series: [Serie], _ rango: ClosedRange<Date>) -> [Serie] {
+    public static func recortadas(_ series: [Serie], _ rango: ClosedRange<Date>) -> [Serie] {
         series.compactMap { (s: Serie) -> Serie? in
             let dentro = enRango(s.puntos, rango).sorted { $0.fecha < $1.fecha }
             guard !dentro.isEmpty else { return nil }
@@ -440,7 +443,7 @@ public struct LiquidGraficaSuperpuesta: View {
     }
 
     /// La unión ORDENADA y sin repetidos de las fechas visibles: lo que el dedo puede pisar.
-    static func fechasUnion(_ visibles: [Serie]) -> [Date] {
+    public static func fechasUnion(_ visibles: [Serie]) -> [Date] {
         var set = Set<Date>()
         for s in visibles { for p in s.puntos { set.insert(p.fecha) } }
         return set.sorted()
@@ -453,7 +456,7 @@ public struct LiquidGraficaSuperpuesta: View {
     /// Ojo (caller): el contrato es de 2 a 4 series. Con más de cuatro el componente NO
     /// recorta —tirar una serie en silencio sería mentir sobre lo que se está comparando—
     /// pero la lectura se degrada: cuatro colores es el techo legible sobre papel.
-    static func resolverEstado(series: [Serie], visibles: [Serie]) -> Estado {
+    public static func resolverEstado(series: [Serie], visibles: [Serie]) -> Estado {
         if series.count < 2 { return .minimo }
         if visibles.count < 2 { return .sinLecturas }
         return .datos
@@ -461,7 +464,7 @@ public struct LiquidGraficaSuperpuesta: View {
 
     /// El mismo veredicto, resuelto desde cero (lo que usan las pruebas y cualquier caller
     /// que quiera preguntar antes de montar la vista).
-    static func resolverEstado(_ series: [Serie], _ rango: ClosedRange<Date>) -> Estado {
+    public static func resolverEstado(_ series: [Serie], _ rango: ClosedRange<Date>) -> Estado {
         resolverEstado(series: series, visibles: recortadas(series, rango))
     }
 

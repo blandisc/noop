@@ -33,11 +33,14 @@ public struct LiquidTiempoZonas: View {
     public struct Zona: Identifiable, Sendable {
         public let id: Int
         public let etiqueta: String
-        public let minutos: Double
+        /// Minutos en la zona. **`nil` = el día no se midió**, que no es lo mismo que estar
+        /// cero minutos en esa zona. Sin medición el riel queda vacío y la voz lo dice; con
+        /// `0` la zona se dibuja presente en su base, porque «no estuviste aquí» es un dato.
+        public let minutos: Double?
         public let color: Color
         public let detalle: String?
 
-        public init(id: Int, etiqueta: String, minutos: Double, color: Color,
+        public init(id: Int, etiqueta: String, minutos: Double?, color: Color,
                     detalle: String? = nil) {
             self.id = id
             self.etiqueta = etiqueta
@@ -79,6 +82,13 @@ public struct LiquidTiempoZonas: View {
     /// Ancho mínimo del riel: con etiquetas largas («Zona 3 · moderada» + «120–140 lpm») el
     /// `HStack` le comía el ancho al riel hasta volverlo invisible, y el riel es el dato.
     private let rielMinimo: CGFloat = 56
+    /// Ancho mínimo del relleno de una zona CON minutos. Mismo patrón que el par
+    /// `altoHueco`/`altoMinimo` de `LiquidBarrasHora`: una lectura real nunca se vuelve
+    /// invisible por ser pequeña.
+    static let astillaMinima: CGFloat = 3
+    /// Alfa de la marca de «cero medido»: presente, pero claramente por debajo de una lectura
+    /// real. No compite con las astillas.
+    private let marcaCeroAlfa: Double = 0.35
 
     public init(zonas: [Zona], a11yLabel: String, a11yValue: String) {
         self.zonas = zonas
@@ -91,17 +101,42 @@ public struct LiquidTiempoZonas: View {
     /// dividir entre cero. **Nunca filtra**: entran 6 zonas, salen 6 partes — es el contrato
     /// que impide que una zona en cero se borre de la pantalla.
     static func partes(_ zonas: [Zona]) -> [Parte] {
-        let total = zonas.reduce(0) { $0 + max(0, $1.minutos) }
+        let total = zonas.reduce(0.0) { $0 + max(0, $1.minutos ?? 0) }
         guard total > 0 else { return zonas.map { Parte(zona: $0, fraccion: 0) } }
-        return zonas.map { Parte(zona: $0, fraccion: max(0, $0.minutos) / total) }
+        return zonas.map { z in
+            // Sin medición la fracción es 0, pero el riel NO la dibuja: la diferencia entre
+            // «no medido» y «cero minutos» la resuelve `anchoRiel`, no esta cuenta.
+            Parte(zona: z, fraccion: max(0, z.minutos ?? 0) / total)
+        }
+    }
+
+    /// ¿Se midió el día? Basta con que UNA zona traiga lectura.
+    static func hayMedicion(_ zonas: [Zona]) -> Bool {
+        zonas.contains { $0.minutos != nil }
+    }
+
+    /// Ancho del relleno del riel, o `nil` cuando esa zona no se midió.
+    ///
+    /// El piso es la parte que el papel no tenía y la revisión adversarial pidió: con los
+    /// minutos reales de un día (742/260/180/96/34/8 sobre 1320), la zona 5 es el 0.6 % del
+    /// total — 0.87 pt en un riel de 144. Sin piso, ocho minutos medidos se ven idénticos a
+    /// cero minutos, y la zona más dura del día desaparece. El piso la vuelve una astilla
+    /// visible sin mentir sobre su tamaño: cualquiera puede ver que es la más chica.
+    static func anchoRiel(_ parte: Parte, ancho: CGFloat) -> CGFloat? {
+        guard let minutos = parte.zona.minutos else { return nil }
+        guard minutos > 0 else { return 0 }
+        return max(astillaMinima, CGFloat(parte.fraccion) * ancho)
     }
 
     /// Lo que dicta VoiceOver como valor. El caller manda su frase (ahí es donde vive el
     /// total del día en minutos: la palabra «minutos» es copy y el DS no la inventa); si
     /// llega vacía, se deriva del mismo reparto que pinta la barra — cada zona con su parte
     /// del total, en por ciento, sin una sola palabra fabricada aquí.
-    static func a11yValue(zonas: [Zona], explicito: String) -> String {
+    static func a11yValue(zonas: [Zona], explicito: String, sinMedicion: String = "") -> String {
         if !explicito.isEmpty { return explicito }
+        // Un día sin una sola lectura NO puede narrarse como seis ceros medidos: eso afirma
+        // que se midió y que todo salió en reposo. Sin frase del caller, se calla.
+        guard hayMedicion(zonas) else { return sinMedicion }
         return partes(zonas)
             .map { "\($0.zona.etiqueta) \(Int(($0.fraccion * 100).rounded()))%" }
             .joined(separator: ", ")
@@ -165,16 +200,28 @@ public struct LiquidTiempoZonas: View {
         }
     }
 
-    /// El riel de la fila: la parte de la zona sobre el total, dibujada. Con 0 minutos el
-    /// relleno mide 0 y queda el riel VACÍO — la zona sigue en pantalla, diciendo que ahí
-    /// no estuviste.
+    /// El riel de la fila. Tres estados distintos, y los tres se ven distinto:
+    ///
+    /// · **sin medir** (`minutos == nil`) — riel vacío, sin relleno. El día no se midió.
+    /// · **cero minutos** — riel vacío pero con su base marcada: se midió y ahí no estuviste.
+    /// · **con minutos** — relleno proporcional, nunca por debajo de `astillaMinima`, para
+    ///   que ocho minutos reales en zona 5 no desaparezcan contra un riel de 144 pt.
     private func riel(_ p: Parte) -> some View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
                 Capsule().fill(LiquidColor.tinta7)
-                Capsule()
-                    .fill(p.zona.color)
-                    .frame(width: geo.size.width * CGFloat(p.fraccion))
+                if let ancho = Self.anchoRiel(p, ancho: geo.size.width) {
+                    if ancho > 0 {
+                        Capsule().fill(p.zona.color).frame(width: ancho)
+                    } else {
+                        // Cero MEDIDO: una marca de base en el tono, del ancho del propio
+                        // grosor del riel. Sin ella, «no estuviste en esta zona» y «no
+                        // sabemos» se dibujarían idénticos.
+                        Capsule()
+                            .fill(p.zona.color.opacity(marcaCeroAlfa))
+                            .frame(width: altoRiel)
+                    }
+                }
             }
         }
         .frame(height: altoRiel)

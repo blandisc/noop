@@ -30,6 +30,12 @@ public struct LiquidBandaEdad: View {
     private let edadCorporal: Double
     private let edadReal: Double
     private let dominio: ClosedRange<Double>
+    /// El ±N de la estimación. `VitalityEngine.bandYears` = 5. `nil` = el caller no puede
+    /// afirmar una incertidumbre y la banda no se dibuja (ver el porqué en la cabecera).
+    private let bandaAnos: Double?
+    /// Los extremos de la banda, YA formateados por el caller («26», «36»).
+    private let etiquetaBandaBaja: String?
+    private let etiquetaBandaAlta: String?
     private let etiquetaCorporal: String
     private let etiquetaReal: String
     private let tono: Color
@@ -66,6 +72,9 @@ public struct LiquidBandaEdad: View {
     /// Trazo y alto de la referencia punteada de la edad real.
     private let grosorTick: CGFloat = 1.3
     private let altoTick: CGFloat = 18
+    /// Grosor de la banda de incertidumbre. Del papel: una cápsula de 7 pt sobre la regla de
+    /// 3 — más gruesa que el riel para que se lea como el dato y no como chrome.
+    private let grosorBanda: CGFloat = 7
     /// Alturas de las dos etiquetas flotantes: el dato arriba de su marca, la referencia
     /// debajo de la suya — nunca en el mismo carril, así que no pueden encimarse.
     private let etiquetaDatoY: CGFloat = 9
@@ -80,6 +89,10 @@ public struct LiquidBandaEdad: View {
     ///   - etiquetaCorporal: «31 años», YA formateada y localizada.
     ///   - etiquetaReal: «34 años», YA formateada y localizada.
     ///   - tono: el tinte del dato (ver la convención de signo, arriba).
+    ///   - bandaAnos: el ±N años de incertidumbre del modelo. **Es la lectura honesta**: el
+    ///     original de papel dice de sí mismo «the band, not the point, is the honest read».
+    ///     `nil` deja la banda sin dibujar, para el caller que no puede afirmar un intervalo.
+    ///   - etiquetaBandaBaja/Alta: los extremos YA formateados («26» / «36»).
     ///   - a11yLabel: qué es esto, para VoiceOver.
     ///   - a11yValue: qué dice hoy — obligatorio: esto es una gráfica.
     public init(edadCorporal: Double,
@@ -88,8 +101,14 @@ public struct LiquidBandaEdad: View {
                 etiquetaCorporal: String,
                 etiquetaReal: String,
                 tono: Color,
+                bandaAnos: Double? = nil,
+                etiquetaBandaBaja: String? = nil,
+                etiquetaBandaAlta: String? = nil,
                 a11yLabel: String,
                 a11yValue: String) {
+        self.bandaAnos = bandaAnos
+        self.etiquetaBandaBaja = etiquetaBandaBaja
+        self.etiquetaBandaAlta = etiquetaBandaAlta
         self.edadCorporal = edadCorporal
         self.edadReal = edadReal
         self.dominio = dominio
@@ -145,6 +164,16 @@ public struct LiquidBandaEdad: View {
                 Capsule().fill(LiquidColor.tinta7)
                     .frame(width: max(0, w - 2 * margen), height: grosorRegla)
                     .position(x: w / 2, y: ejeY)
+                // LA BANDA · el ±N años del modelo, en tinta (no teñida: es incertidumbre,
+                // no dato). Va sobre el riel y bajo la marca. Sin ella, un punto pelado
+                // afirmaría una precisión que el motor no tiene.
+                if let bandaAnos {
+                    let xBaja = x(Self.posicion(edadCorporal - bandaAnos, en: dominio), ancho: w)
+                    let xAlta = x(Self.posicion(edadCorporal + bandaAnos, en: dominio), ancho: w)
+                    Capsule().fill(LiquidColor.tinta10)
+                        .frame(width: max(0, xAlta - xBaja), height: grosorBanda)
+                        .position(x: (xBaja + xAlta) / 2, y: ejeY)
+                }
                 // REFERENCIA · la edad real, punteada y en tinta (el cero de la lectura).
                 LiquidTickPunteado()
                     .stroke(LiquidColor.tinta500,
@@ -168,6 +197,26 @@ public struct LiquidBandaEdad: View {
                         .foregroundStyle(LiquidColor.tinta500)
                         .fixedSize()
                         .position(x: xReferencia, y: etiquetaReferenciaY)
+                    if let bandaAnos {
+                        if let baja = etiquetaBandaBaja {
+                            Text(verbatim: baja)
+                                .font(LiquidType.captionLectura)
+                                .foregroundStyle(LiquidColor.tinta500)
+                                .fixedSize()
+                                .position(x: x(Self.posicion(edadCorporal - bandaAnos, en: dominio),
+                                               ancho: w),
+                                          y: etiquetaReferenciaY)
+                        }
+                        if let alta = etiquetaBandaAlta {
+                            Text(verbatim: alta)
+                                .font(LiquidType.captionLectura)
+                                .foregroundStyle(LiquidColor.tinta500)
+                                .fixedSize()
+                                .position(x: x(Self.posicion(edadCorporal + bandaAnos, en: dominio),
+                                               ancho: w),
+                                          y: etiquetaReferenciaY)
+                        }
+                    }
                 }
             }
         }

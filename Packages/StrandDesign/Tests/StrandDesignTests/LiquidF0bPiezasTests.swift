@@ -94,6 +94,73 @@ final class LiquidF0bPiezasTests: XCTestCase {
         XCTAssertTrue(voz.contains("tu calma normal"))
     }
 
+    // MARK: - Tiempo en zonas · «no se midió» ≠ «cero minutos»
+
+    private func zona(_ id: Int, _ minutos: Double?) -> LiquidTiempoZonas.Zona {
+        LiquidTiempoZonas.Zona(id: id, etiqueta: "Z\(id)", minutos: minutos, color: LiquidColor.ambar)
+    }
+
+    /// El hallazgo de la revisión adversarial: la pieza no tenía forma de decir «el día no se
+    /// midió», así que un día sin lecturas se narraba como seis ceros medidos — afirmando que
+    /// sí se midió y que todo salió en reposo.
+    func test_zonas_diaSinMedir_noSeNarraComoSeisCeros() {
+        let sinMedir = (0..<6).map { zona($0, nil) }
+        XCTAssertFalse(LiquidTiempoZonas.hayMedicion(sinMedir))
+        XCTAssertEqual(LiquidTiempoZonas.a11yValue(zonas: sinMedir, explicito: "",
+                                                   sinMedicion: "sin lecturas hoy"),
+                       "sin lecturas hoy",
+                       "sin una sola lectura, la voz no puede recitar porcentajes")
+
+        let cerosMedidos = (0..<6).map { zona($0, 0) }
+        XCTAssertTrue(LiquidTiempoZonas.hayMedicion(cerosMedidos),
+                      "seis ceros MEDIDOS sí son una medición: el día se midió y fue tranquilo")
+    }
+
+    /// Sin medición no se dibuja relleno; con cero medido sí hay algo que ver.
+    func test_zonas_elRielDistingueLosTresEstados() {
+        let partes = LiquidTiempoZonas.partes([zona(0, nil), zona(1, 0), zona(2, 60)])
+        XCTAssertNil(LiquidTiempoZonas.anchoRiel(partes[0], ancho: 144),
+                     "sin medir no hay relleno")
+        XCTAssertEqual(LiquidTiempoZonas.anchoRiel(partes[1], ancho: 144), 0,
+                       "cero medido: ancho 0, pero presente — el render le pone su marca de base")
+        XCTAssertGreaterThan(LiquidTiempoZonas.anchoRiel(partes[2], ancho: 144) ?? 0, 0)
+    }
+
+    /// Con los minutos reales de un día (742/260/180/96/34/8 sobre 1320), la zona 5 es el
+    /// 0.6 % — 0.87 pt en un riel de 144. Sin piso, ocho minutos medidos se verían idénticos a
+    /// cero minutos y la zona más dura del día desaparecería.
+    func test_zonas_unaAstillaRealSigueSiendoVisible() {
+        let dia = [742.0, 260, 180, 96, 34, 8].enumerated().map { zona($0.offset, $0.element) }
+        let partes = LiquidTiempoZonas.partes(dia)
+        let z5 = LiquidTiempoZonas.anchoRiel(partes[5], ancho: 144)
+        XCTAssertGreaterThanOrEqual(z5 ?? 0, LiquidTiempoZonas.astillaMinima,
+                                    "ocho minutos reales no pueden desaparecer contra el riel")
+        XCTAssertLessThan(z5 ?? 999, LiquidTiempoZonas.anchoRiel(partes[0], ancho: 144) ?? 0,
+                          "pero sigue siendo claramente la más chica: el piso no miente sobre el tamaño")
+    }
+
+    // MARK: - Banda de edad · la incertidumbre es la lectura honesta
+
+    /// El hallazgo más grave de la revisión: el port había borrado la banda de ±N años. El
+    /// original dice de sí mismo «the band, not the point, is the honest read» — un punto sin
+    /// su intervalo afirma más precisión de la que el motor tiene.
+    func test_bandaEdad_laBandaSeDibujaYSeMueveConElDato() {
+        let dominio: ClosedRange<Double> = 20...60
+        let baja = LiquidBandaEdad.posicion(31 - 5, en: dominio)
+        let alta = LiquidBandaEdad.posicion(31 + 5, en: dominio)
+        XCTAssertLessThan(baja, alta, "la banda tiene ancho: no es un punto disfrazado")
+        XCTAssertEqual((baja + alta) / 2, LiquidBandaEdad.posicion(31, en: dominio), accuracy: 1e-9,
+                       "la banda está centrada en la edad corporal")
+    }
+
+    func test_bandaEdad_seClampeaSinRomperElLayout() {
+        let dominio: ClosedRange<Double> = 20...60
+        XCTAssertEqual(LiquidBandaEdad.posicion(5, en: dominio), 0, accuracy: 1e-9)
+        XCTAssertEqual(LiquidBandaEdad.posicion(99, en: dominio), 1, accuracy: 1e-9)
+        XCTAssertEqual(LiquidBandaEdad.posicion(30, en: 30...30), 0.5, accuracy: 1e-9,
+                       "dominio degenerado cae al centro, no a NaN")
+    }
+
     // MARK: - Gráfica superpuesta · cada serie con SU escala
 
     /// Comparar VFC en milisegundos con pasos en miles sobre un eje común es mentir sobre la
