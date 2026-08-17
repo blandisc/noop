@@ -105,6 +105,10 @@ private struct AjustesLanding: View {
     /// FER-93: las dos comodidades de la sesión, las dos apagadas por defecto.
     @AppStorage(SessionComfort.keepAwakeKey) private var keepScreenAwake = false
     @AppStorage(SessionComfort.restSoundKey) private var restSound = false
+    @AppStorage(SessionComfort.restNotifyKey) private var restNotify = false
+    /// iOS negó el permiso: se dice, con la ruta a Ajustes del sistema, en vez de dejar el
+    /// interruptor encendido prometiendo un aviso que nunca llegará.
+    @State private var notifDenegado = false
     @EnvironmentObject private var mediaCoordinator: MediaDownloadCoordinator
     @State private var confirmDeleteMedia = false
     @State private var confirmRecalibrate = false
@@ -271,6 +275,32 @@ private struct AjustesLanding: View {
                 .toggleStyle(.instrumento)
                 .frame(minHeight: 44)
                 Text("A short system tone next to the haptic, for a rest counted by the clock. It follows your ring switch, and it only sounds with the app on screen: if the iPhone locked, there's no sound.")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+                divider
+                Toggle(isOn: $restNotify) {
+                    Text("Notify me when rest is up").font(StrandFont.body).foregroundStyle(theme.ink)
+                }
+                .toggleStyle(.instrumento)
+                .frame(minHeight: 44)
+                .onChange(of: restNotify) { _, on in
+                    // El permiso se pide AQUÍ, en el momento en que lo enciendes, no en un arranque
+                    // cualquiera ni a media serie. Y si iOS lo niega, el interruptor se apaga solo:
+                    // dejarlo encendido sería prometer un aviso que jamás va a llegar.
+                    guard on else { RestEndNotifier.cancel(); return }
+                    Task { @MainActor in
+                        if await RestEndNotifier.requestAuthorization() == false {
+                            restNotify = false
+                            notifDenegado = true
+                        }
+                    }
+                }
+                if notifDenegado {
+                    Text("Your iPhone has notifications off for Cénit. You can turn them on in Settings.")
+                        .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Text("The only notice that survives locking your phone: a notification your iPhone delivers on its own, for when you leave it on the floor between sets. It's scheduled and delivered on your device; nothing leaves it.")
                     .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                     .fixedSize(horizontal: false, vertical: true)
             }

@@ -399,6 +399,8 @@ final class StrengthSessionModel: ObservableObject {
         guard !paused, summary == nil else { return }
         pausedAt = now
         paused = true
+        // Pausar congela la cuenta: un aviso programado al instante viejo sonaría en plena pausa.
+        RestEndNotifier.cancel()
     }
 
     /// Resume: fold the open pause into the accumulator and shift every absolute-time anchor forward by the
@@ -413,6 +415,8 @@ final class StrengthSessionModel: ObservableObject {
         if let t = timerStart { timerStart = t.addingTimeInterval(delta) }
         pausedAt = nil
         paused = false
+        // Al reanudar, el descanso tiene un final NUEVO (se corrió por el tiempo pausado).
+        reprogramarAviso()
     }
 
     // MARK: Set actions
@@ -736,10 +740,35 @@ final class StrengthSessionModel: ObservableObject {
         restEndsAt = now.addingTimeInterval(TimeInterval(seconds))
         restStartedAt = now
         phase = .resting
+        reprogramarAviso()
+    }
+
+    /// FER-93: el ÚNICO punto que programa el aviso del descanso, para que no haya dos verdades.
+    ///
+    /// Se llama desde todos los sitios que MUEVEN `restEndsAt` (empezar, alargar, reanudar): antes
+    /// solo lo hacía `startRest`, así que alargar el descanso dejaba el aviso sonando en el instante
+    /// original mientras la cuenta seguía corriendo al lado.
+    ///
+    /// Solo el descanso por RELOJ programa: en el descanso por pulso `restEndsAt` es un techo que la
+    /// app no usa para terminarlo (lo termina tu pulso), así que un aviso ahí anunciaría un final
+    /// que puede no haber ocurrido.
+    private func reprogramarAviso() {
+        guard debeAvisar else { RestEndNotifier.cancel(); return }
+        guard let end = restEndsAt else { return }
+        RestEndNotifier.schedule(endsAt: end)
+    }
+
+    /// Si este descanso, tal como está AHORA, merece un aviso programado. Separada del efecto para
+    /// que la regla se pueda afirmar en una prueba sin falsear el sistema de notificaciones —
+    /// falsearlo no se puede, y una prueba que finge hacerlo no prueba nada.
+    var debeAvisar: Bool {
+        phase == .resting && !paused && currentRestMode == .fixed && restEndsAt != nil
+            && SessionComfort.isEnabled(SessionComfort.restNotifyKey)
     }
     func extendRest(byseconds delta: Int, now: Date = Date()) {
         guard let end = restEndsAt else { return }
         restEndsAt = max(now, end.addingTimeInterval(TimeInterval(delta)))   // moves the ceiling, not the floor
+        reprogramarAviso()
     }
     func skipRest() { phase = .capturing; clearRest() }
 
@@ -770,6 +799,10 @@ final class StrengthSessionModel: ObservableObject {
     /// the next rest or a non-resting phase.
     private func clearRest() {
         restEndsAt = nil; restStartedAt = nil; currentRestTarget = nil; currentRestMode = .fixed
+        // FER-93: TODAS las salidas del descanso pasan por aquí (saltarlo, palomear la siguiente
+        // serie, cerrar la sesión), así que este es el sitio donde el aviso no puede sobrevivir.
+        // Un aviso que suena cuando ya volviste a entrenar es peor que no avisar.
+        RestEndNotifier.cancel()
     }
 
     /// Move focus to the next not-done set: rest of the current exercise, then later non-skipped exercises.

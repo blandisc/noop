@@ -12,6 +12,14 @@ final class VotoRielPosicionTests: XCTestCase {
 
     private func pos(_ z: Double) -> CGFloat { LiquidVotoRiel.posicion(desviacion: z) }
 
+    // La vara del SUEÑO: piso de 7 h (420 min) con 45 min de holgura, los números del motor.
+    private let corte = (420.0 - 45.0) / 420.0
+    private let holgura = 45.0 / 420.0
+    /// Coloca una noche de N minutos.
+    private func sueno(_ minutos: Double) -> CGFloat {
+        LiquidVotoRiel.posicion(ratio: minutos / 420.0, corte: corte, holgura: holgura) ?? -1
+    }
+
     func testBaseQuedaEnElCentro() {
         XCTAssertEqual(pos(0), 0.5, accuracy: 0.0001)
     }
@@ -69,6 +77,77 @@ final class VotoRielPosicionTests: XCTestCase {
             XCTAssertGreaterThanOrEqual(actual, previa, "z=\(step)")
             previa = actual
         }
+    }
+
+    // MARK: - La vara del sueño (FER-84)
+
+    /// El corte que VOTA cae exactamente en el tick del riel: el dibujo y el voto son el mismo sitio.
+    /// El motor vota fuera bajo 375 min (7 h menos la holgura de 45).
+    func testElCorteDelSuenoCaeEnSuTick() {
+        XCTAssertEqual(sueno(375), 0.36, accuracy: 0.0001)
+    }
+
+    /// El defecto que esta vara viene a resolver: dos noches distintas no se dibujan en el mismo
+    /// pixel. Se comprueba en TODO el rango humano, no solo en un par cómodo — la primera versión
+    /// de la escala pasaba con 3 h contra 6 h y apilaba 3 h contra 5 h.
+    func testNingunParDeNochesDistintasSeApila() {
+        let noches: [Double] = [180, 240, 300, 360, 420, 480, 540]
+        for (i, a) in noches.enumerated() {
+            for b in noches.dropFirst(i + 1) {
+                XCTAssertGreaterThan(abs(sueno(b) - sueno(a)), 0.04,
+                                     "\(Int(a)) min y \(Int(b)) min se dibujan casi igual")
+            }
+        }
+    }
+
+    /// Los extremos del rango humano tocan sus bigotes, y nada se sale.
+    func testLosExtremosDelRangoHumanoTocanSusBigotes() {
+        XCTAssertEqual(sueno(180), LiquidVotoRiel.bigoteLo, accuracy: 0.0001, "3 h")
+        XCTAssertEqual(sueno(540), LiquidVotoRiel.bigoteHi, accuracy: 0.0001, "9 h")
+        XCTAssertEqual(sueno(60), LiquidVotoRiel.bigoteLo, accuracy: 0.0001, "una hora se planta")
+        XCTAssertEqual(sueno(720), LiquidVotoRiel.bigoteHi, accuracy: 0.0001, "doce horas también")
+    }
+
+    /// Más sueño, más a la derecha, siempre.
+    func testLaEscalaDelSuenoEsMonotona() {
+        var previa = sueno(120)
+        for minutos in stride(from: 150.0, through: 600.0, by: 15) {
+            let actual = sueno(minutos)
+            XCTAssertGreaterThanOrEqual(actual, previa, "\(minutos) min")
+            previa = actual
+        }
+    }
+
+    /// El rango que un humano puede dormir cabe entero en el instrumento, sin salirse.
+    func testElRangoHumanoCabeEnElInstrumento() {
+        for minutos in [60.0, 180, 300, 420, 480, 540, 660] {
+            let p = sueno(minutos)
+            XCTAssertGreaterThanOrEqual(p, LiquidVotoRiel.bigoteLo, "\(minutos) min")
+            XCTAssertLessThanOrEqual(p, LiquidVotoRiel.bigoteHi, "\(minutos) min")
+        }
+    }
+
+    /// Una noche en el piso recomendado cae DENTRO de la banda, a la derecha del corte.
+    func testElPisoRecomendadoCaeDentroDeLaBanda() {
+        XCTAssertGreaterThan(sueno(420), 0.36)
+        XCTAssertLessThan(sueno(420), LiquidVotoRiel.bigoteHi)
+    }
+
+    /// Las dos varas no se mezclan: el mismo número significa cosas distintas en cada una, y el
+    /// tipo obliga a decir cuál es cuál.
+    func testLasDosVarasSonDistintas() {
+        let porSigmas = LiquidVotoRiel.posicion(.sigmas(0))
+        let porNecesidad = LiquidVotoRiel.posicion(
+            .fraccionDeNecesidad(ratio: corte, corte: corte, holgura: holgura))
+        XCTAssertEqual(porSigmas ?? -1, 0.5, accuracy: 0.0001, "la base del autonómico va al centro")
+        XCTAssertEqual(porNecesidad ?? -1, 0.36, accuracy: 0.0001, "el corte del sueño va a su tick")
+    }
+
+    /// Datos imposibles NO colocan joya: devolver el tick afirmaría «dormiste justo el mínimo».
+    func testLaVaraDelSuenoNoInventaCuandoElDatoEstaRoto() {
+        XCTAssertNil(LiquidVotoRiel.posicion(ratio: .nan, corte: corte, holgura: holgura))
+        XCTAssertNil(LiquidVotoRiel.posicion(ratio: 1, corte: corte, holgura: 0))
+        XCTAssertNil(LiquidVotoRiel.posicion(ratio: 1, corte: 5, holgura: holgura))
     }
 
     /// Simetría: la misma distancia a cada lado de la base se dibuja a la misma distancia del centro.

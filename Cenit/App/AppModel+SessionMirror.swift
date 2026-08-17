@@ -90,6 +90,10 @@ extension AppModel {
         guard strengthSession == nil else { return }                 // never clobber a live session
         guard let store = await repo.storeHandle() else { return }   // no store yet → retry next launch
         guard let snap = (try? await store.inProgressSession()) ?? nil else {
+            // FER-93: sin sesión que recuperar tampoco puede quedar vivo su aviso de descanso. Una
+            // app que murió a media serie dejaba programada una notificación que iOS entregaría
+            // igual, de una sesión que ya no existe.
+            RestEndNotifier.cancel()
             onNoRecoverableStrengthSession?()
             return
         }
@@ -98,6 +102,9 @@ extension AppModel {
             onNoRecoverableStrengthSession?()
             return
         }
+        // El descanso NO se restaura corriendo (la fase se re-deriva), así que un aviso viejo no
+        // tiene a qué corresponder: se retira y, si el usuario reanuda y descansa, se programa de nuevo.
+        RestEndNotifier.cancel()
         strengthSession = StrengthSessionModel.restore(from: snap)   // didSet binds the Live Activity
         strengthSheetPresented = false                               // the hub offers «Resume»; no auto-present
         acquireRealtimeHR("strength")                                // re-arm the HR stream as at start

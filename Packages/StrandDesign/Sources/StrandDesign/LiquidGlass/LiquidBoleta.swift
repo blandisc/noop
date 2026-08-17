@@ -48,14 +48,13 @@ public struct LiquidVotoRiel: View {
     private let umbral: Umbral
     private let tono: Color
     private let palabra: String
-    /// FER-84: la desviación REAL de hoy, en la dirección del riel (negativa = a la izquierda,
-    /// positiva = a la derecha), en unidades de σ contra tu propia base. `nil` = colocar por la
-    /// posición canónica del estado, como antes.
+    /// FER-84: la medición REAL de hoy, en la vara que le corresponde a este riel. `nil` = colocar
+    /// por la posición canónica del estado, como antes.
     ///
     /// Es la diferencia entre un pictograma y una lectura: con ella, la joya no dice «fuera», dice
-    /// CUÁNTO fuera, contra la MISMA banda de ±1σ que usa el veredicto para votar. Sigue sin haber
-    /// un solo número impreso: la posición es el dato.
-    private let desviacion: Double?
+    /// CUÁNTO fuera, contra el MISMO corte con el que el eje vota. Sigue sin haber un solo número
+    /// impreso: la posición es el dato.
+    private let magnitud: Magnitud?
     /// Progreso del sellado (0 = votos sin caer, 1 = asentado). El caller lo anima UNA vez
     /// al abrir; con Reduce Motion pasa directo a 1.
     private let sellado: Double
@@ -84,17 +83,68 @@ public struct LiquidVotoRiel: View {
     static let bigoteLo: CGFloat = 0.04, bigoteHi: CGFloat = 0.96
     /// La desviación que llega al tope del bigote.
     static let zTope: Double = 2.5
+    /// La noche más corta y la más larga que el riel dibuja sin apilar, en fracción del piso de
+    /// necesidad: de 3 h a 9 h con un piso de 7 h. Fuera de ahí la joya se planta en su bigote.
+    ///
+    /// La escala del sueño es de DOS tramos, no uno, y la razón es que el corte tiene que caer en el
+    /// tick (si el dibujo y el voto no coinciden, la boleta miente). Con un solo paso fijo, todo lo
+    /// que estaba por debajo de 5 h se apilaba en el mismo pixel — el defecto exacto que esta vara
+    /// venía a resolver, movido unas horas más abajo.
+    static let suenoRatioMin: Double = 180.0 / 420.0
+    static let suenoRatioMax: Double = 540.0 / 420.0
     private static let bigoteGrosor: CGFloat = 1
     private static let bigoteAlto: CGFloat = 5
 
+    /// En qué VARA viene la medición de este riel. Son dos varas distintas a propósito, porque los
+    /// dos ejes se juzgan distinto, y mezclarlas sería justo el error que este tipo previene:
+    ///
+    ///   • `.sigmas` — contra TU base (el eje autonómico). Centro = tu normal, borde de la banda = ±1σ.
+    ///   • `.fraccionDeNecesidad` — contra el piso recomendado (el sueño). El TICK es el corte que
+    ///     vota, y la escala avanza en unidades de la holgura del motor. El sueño NO se mide contra
+    ///     tu promedio: eso normalizaría la privación crónica.
+    public enum Magnitud: Sendable, Equatable {
+        case sigmas(Double)
+        case fraccionDeNecesidad(ratio: Double, corte: Double, holgura: Double)
+    }
+
     public init(estado: Estado, umbral: Umbral, tono: Color, palabra: String,
-                desviacion: Double? = nil, sellado: Double = 1) {
+                magnitud: Magnitud? = nil, sellado: Double = 1) {
         self.estado = estado
         self.umbral = umbral
         self.tono = tono
         self.palabra = palabra
-        self.desviacion = desviacion
+        self.magnitud = magnitud
         self.sellado = sellado
+    }
+
+    /// Dónde cae una medición en el riel, en la vara que traiga.
+    static func posicion(_ magnitud: Magnitud) -> CGFloat? {
+        switch magnitud {
+        case .sigmas(let z): return posicion(desviacion: z)
+        case .fraccionDeNecesidad(let ratio, let corte, let holgura):
+            return posicion(ratio: ratio, corte: corte, holgura: holgura)
+        }
+    }
+
+    /// La vara del SUEÑO. El tick del riel es el corte que vota; de ahí hacia abajo el tramo llega
+    /// al bigote izquierdo en la noche más corta que se dibuja, y de ahí hacia arriba al derecho en
+    /// la más larga. Dos tramos porque el corte no está a la mitad: forzar un solo paso apilaba las
+    /// noches cortas unas contra otras.
+    ///
+    /// `holgura` entra en la firma aunque el mapa no la use como paso: es el número del motor que
+    /// documenta cuál es «una diferencia que importa», y tenerla aquí obliga al llamador a traer la
+    /// escala completa del motor en vez de reconstruirla a ojo.
+    static func posicion(ratio: Double, corte: Double, holgura: Double) -> CGFloat? {
+        // Con datos rotos NO se coloca: devolver el tick afirmaría «dormiste justo el mínimo», que
+        // es un valor concreto, cuando lo que pasa es que no se sabe nada.
+        guard ratio.isFinite, corte.isFinite, holgura > 0,
+              corte > suenoRatioMin, corte < suenoRatioMax else { return nil }
+        if ratio <= corte {
+            let t = (ratio - suenoRatioMin) / (corte - suenoRatioMin)
+            return min(max(bigoteLo + CGFloat(t) * (minimoLo - bigoteLo), bigoteLo), minimoLo)
+        }
+        let t = (ratio - corte) / (suenoRatioMax - corte)
+        return min(max(minimoLo + CGFloat(t) * (bigoteHi - minimoLo), minimoLo), bigoteHi)
     }
 
     /// Dónde cae una desviación en el riel. El centro es tu base; el borde de la banda, tu ±1σ —
@@ -118,7 +168,9 @@ public struct LiquidVotoRiel: View {
     }
 
     private var bandaRango: ClosedRange<CGFloat> {
-        umbral == .rango ? Self.rangoLo...Self.rangoHi : Self.minimoLo...1.0
+        // El riel unilateral cierra en el tope del bigote, no en el borde del lienzo: con la banda
+        // llegando a 1.0, el bigote derecho quedaba DENTRO de ella y dejaba de leerse como tope.
+        umbral == .rango ? Self.rangoLo...Self.rangoHi : Self.minimoLo...Self.bigoteHi
     }
 
     private var posJoya: CGFloat? {
@@ -128,7 +180,7 @@ public struct LiquidVotoRiel: View {
         case .calibrando:  return 0.5
         case .sinLectura:  return nil
         case .dentro, .fueraAbajo, .fueraArriba:
-            if let z = desviacion { return Self.posicion(desviacion: z) }
+            if let magnitud, let pos = Self.posicion(magnitud) { return pos }
             return estado == .dentro ? Self.posDentro
                  : (estado == .fueraAbajo ? Self.posFueraAbajo : Self.posFueraArriba)
         }
@@ -202,7 +254,7 @@ public struct LiquidVotoRiel: View {
 
                 // Bigotes: los topes del rango plausible. Enseñan que la banda no es el mundo
                 // entero — sin ellos, una joya pegada al borde parecía el extremo del instrumento.
-                if estado != .sinLectura && estado != .calibrando && desviacion != nil {
+                if estado != .sinLectura && estado != .calibrando && magnitud != nil {
                     bigote(x: Self.bigoteLo * w, cy: cy)
                     bigote(x: Self.bigoteHi * w, cy: cy)
                 }
@@ -304,14 +356,14 @@ public struct LiquidBoletaCard: View {
         /// Label compuesto de VoiceOver, YA localizado («Sueño, votó fuera, anoche contra
         /// un mínimo fijo, fuera de tu rango.»).
         public let a11y: String
-        /// FER-84: la desviación real del día en la dirección del riel. `nil` = posición canónica.
-        public var desviacion: Double?
+        /// FER-84: la medición del día en la vara de este riel. `nil` = posición canónica.
+        public var magnitud: LiquidVotoRiel.Magnitud?
 
         public init(id: String, glifo: LiquidIcon.Glyph, nombre: String, sub: String,
                     estado: LiquidVotoRiel.Estado, umbral: LiquidVotoRiel.Umbral,
                     fuera: Bool, tonoVoto: Color, palabra: String,
                     hueMetrica: Color = LiquidColor.tinta700, a11y: String,
-                    desviacion: Double? = nil) {
+                    magnitud: LiquidVotoRiel.Magnitud? = nil) {
             self.id = id
             self.glifo = glifo
             self.nombre = nombre
@@ -323,7 +375,7 @@ public struct LiquidBoletaCard: View {
             self.palabra = palabra
             self.hueMetrica = hueMetrica
             self.a11y = a11y
-            self.desviacion = desviacion
+            self.magnitud = magnitud
         }
     }
 
@@ -388,7 +440,7 @@ public struct LiquidBoletaCard: View {
                     }
                     LiquidVotoRiel(estado: v.estado, umbral: v.umbral,
                                    tono: v.tonoVoto, palabra: v.palabra,
-                                   desviacion: v.desviacion, sellado: progreso)
+                                   magnitud: v.magnitud, sellado: progreso)
                         .padding(.leading, Self.gotaSize + LiquidSpace.s300)
                 }
             } else {
@@ -398,7 +450,7 @@ public struct LiquidBoletaCard: View {
                     Spacer(minLength: LiquidSpace.s200)
                     LiquidVotoRiel(estado: v.estado, umbral: v.umbral,
                                    tono: v.tonoVoto, palabra: v.palabra,
-                                   desviacion: v.desviacion, sellado: progreso)
+                                   magnitud: v.magnitud, sellado: progreso)
                 }
             }
         }

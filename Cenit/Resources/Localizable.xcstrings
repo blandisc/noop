@@ -41040,6 +41040,61 @@
         }
       }
     },
+    "Notify me when rest is up" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avisarme cuando termine el descanso"
+          }
+        }
+      }
+    },
+    "The only notice that survives locking your phone: a notification your iPhone delivers on its own, for when you leave it on the floor between sets. It's scheduled and delivered on your device; nothing leaves it." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El único aviso que sobrevive a que bloquees el teléfono: una notificación que tu iPhone entrega por su cuenta, para cuando lo dejas en el piso entre series. Se programa y se entrega en tu dispositivo; nada sale de ahí."
+          }
+        }
+      }
+    },
+    "Rest is up" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se acabó el descanso"
+          }
+        }
+      }
+    },
+    "Your next set is waiting." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Te espera la siguiente serie."
+          }
+        }
+      }
+    },
+    "Your iPhone has notifications off for Cénit. You can turn them on in Settings." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu iPhone tiene las notificaciones apagadas para Cénit. Puedes encenderlas en Ajustes."
+          }
+        }
+      }
+    },
     "The raise waits:" : {
       "extractionState" : "manual",
       "localizations" : {

@@ -36,6 +36,9 @@ enum SessionComfort {
     static let keepAwakeKey = "noop.session.keepScreenAwake"
     /// Sonar al terminar el descanso, además de la háptica. Apagado por defecto.
     static let restSoundKey = "noop.session.restSound"
+    /// Avisar por notificación cuando el descanso termina con el teléfono guardado o bloqueado.
+    /// Apagado por defecto y con permiso pedido en el momento de encenderlo (FER-93).
+    static let restNotifyKey = "noop.session.restNotify"
 
     /// El tono del sistema que suena al terminar el descanso. `1057` es el «Tink» de iOS: corto,
     /// discreto y ya instalado — no se empaqueta un archivo de audio para esto.
