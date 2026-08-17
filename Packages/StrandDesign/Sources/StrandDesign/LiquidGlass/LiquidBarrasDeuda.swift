@@ -57,12 +57,19 @@ public struct LiquidBarrasDeuda: View {
         /// noche perfecta.
         public let minutos: Double?
         public let esHoy: Bool
+        /// La SEGUNDA línea del popup: cuánto dormiste esa noche, YA formateado
+        /// («dormiste 7h 30m»). El papel la tenía (`sleptMin` + `sleptFormat`) y el caller
+        /// real la pasa; el port la había borrado. Sin ella el popup dice cuánto le debes a
+        /// la noche pero no cuánto dormiste — la mitad de la lectura.
+        public let detalle: String?
 
-        public init(id: String, etiqueta: String, minutos: Double?, esHoy: Bool) {
+        public init(id: String, etiqueta: String, minutos: Double?, esHoy: Bool,
+                    detalle: String? = nil) {
             self.id = id
             self.etiqueta = etiqueta
             self.minutos = minutos
             self.esHoy = esHoy
+            self.detalle = detalle
         }
     }
 
@@ -287,6 +294,7 @@ public struct LiquidBarrasDeuda: View {
         // existe para no contar.
         if let fmt = formatoValor, let minutos = dias[i].minutos {
             tooltip(texto: fmt(minutos),
+                    detalle: dias[i].detalle,
                     deficit: Self.esDeficit(minutos),
                     cx: cx,
                     plot: CGSize(width: w, height: h))
@@ -295,16 +303,18 @@ public struct LiquidBarrasDeuda: View {
 
     /// El popup de la familia, MEDIDO y colocado al lado del corte (nunca encima), anclado
     /// arriba como en el papel (`plot.minY + 8`) y clampeado al área de datos.
-    private func tooltip(texto: String, deficit: Bool, cx: CGFloat, plot: CGSize) -> some View {
+    private func tooltip(texto: String, detalle: String?, deficit: Bool,
+                         cx: CGFloat, plot: CGSize) -> some View {
         let tam: CGSize = tooltipMedido == .zero ? CGSize(width: 72, height: 30) : tooltipMedido
         let p = ChartTooltipPlacement.positionBeside(
             anchor: CGPoint(x: cx, y: LiquidSpace.s200),
             tooltipSize: tam,
             in: plot,
             gap: LiquidSpace.s200)
-        // Sin segunda línea: la letra del día ya la dice la regla que corta la columna, y el
-        // DS no tiene otro string que no haya inventado.
-        return LiquidScrubPopup(valor: texto, fecha: nil, color: color(deficit: deficit))
+        // La segunda línea es «cuánto dormiste», que el papel sí decía (`sleptFormat`) y el
+        // caller real pasa. La primera dice cuánto le debes a la noche; sin la segunda, la
+        // lectura queda a medias.
+        return LiquidScrubPopup(valor: texto, fecha: detalle, color: color(deficit: deficit))
             .background {
                 GeometryReader { g in
                     Color.clear

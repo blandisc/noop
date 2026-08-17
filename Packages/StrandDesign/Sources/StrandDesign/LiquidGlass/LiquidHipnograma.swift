@@ -77,6 +77,12 @@ public struct LiquidHipnograma: View {
     private let intervalos: [Intervalo]
     private let colores: [Etapa: Color]
     private let etiquetas: [Etapa: String]
+    /// Las 5 horas del eje, YA formateadas. `nil` cae a rotular solo los extremos.
+    private let horasEje: [String]?
+    /// Qué decir del tramo bajo el dedo: («Profundo», «23:42–00:04 · 22 min»), YA formateado.
+    /// Sin esto el scrub atenúa el 45 % de la noche y no dice nada a cambio — el papel sí
+    /// mostraba etapa, rango horario y duración.
+    private let textoTramo: ((Intervalo) -> (valor: String, detalle: String))?
     private let ejeInicio: String
     private let ejeFin: String
     private let vacio: String?
@@ -94,6 +100,11 @@ public struct LiquidHipnograma: View {
     ///     (el caller ya nombra las etapas en su leyenda).
     ///   - ejeInicio: hora YA formateada del inicio de la noche («23:38»).
     ///   - ejeFin: hora YA formateada del despertar («7:04»).
+    ///   - horasEje: las CINCO horas del eje, YA formateadas. El papel rotulaba las 5; con
+    ///     solo los extremos no se puede ubicar una banda en el tiempo y el eje deja de serlo.
+    ///   - textoTramo: qué decir del tramo bajo el dedo («Profundo» / «23:42–00:04 · 22 min»).
+    ///     Sin él el scrub atenúa el 45 % de la noche y no entrega nada a cambio — el papel
+    ///     sí mostraba etapa, rango horario y duración.
     ///   - vacio: la leyenda de «no hubo noche», ya localizada. Sin ella, el track queda
     ///     vacío y mudo — nunca se inventa una noche.
     ///   - alto: alto del área de datos. 176 = lo que monta la hoja de Sueño.
@@ -107,6 +118,8 @@ public struct LiquidHipnograma: View {
                 etiquetas: [Etapa: String] = [:],
                 ejeInicio: String,
                 ejeFin: String,
+                horasEje: [String]? = nil,
+                textoTramo: ((Intervalo) -> (valor: String, detalle: String))? = nil,
                 vacio: String? = nil,
                 alto: CGFloat = 176,
                 a11yLabel: String,
@@ -117,6 +130,8 @@ public struct LiquidHipnograma: View {
         self.etiquetas = etiquetas
         self.ejeInicio = ejeInicio
         self.ejeFin = ejeFin
+        self.horasEje = horasEje
+        self.textoTramo = textoTramo
         self.vacio = vacio
         self.alto = alto
         self.a11yLabel = a11yLabel
@@ -206,7 +221,8 @@ public struct LiquidHipnograma: View {
                         .position(x: banda.rect.midX, y: banda.rect.midY)
                 }
                 if let i = activa, bandas.indices.contains(i) {
-                    overlayScrub(bandas[i], alto: geo.size.height)
+                    overlayScrub(bandas[i], alto: geo.size.height,
+                                 ancho: geo.size.width, tramo: tramoVisible(i))
                 }
                 if bandas.isEmpty, let vacio {
                     Text(verbatim: vacio)
@@ -254,7 +270,8 @@ public struct LiquidHipnograma: View {
     /// I2 · el scrub es una REGLA VERTICAL punteada que corta el lienzo + un anillo sobre la
     /// banda leída. El anillo va con `strokeBorder` (queda DENTRO de su caja, como los
     /// anillos de `LiquidChartPlot`); el papel trazaba la línea media.
-    @ViewBuilder private func overlayScrub(_ banda: Banda, alto: CGFloat) -> some View {
+    @ViewBuilder private func overlayScrub(_ banda: Banda, alto: CGFloat,
+                                           ancho: CGFloat, tramo: Intervalo?) -> some View {
         let inflado = LiquidSpace.s150   // 6 pt de aire alrededor de la cápsula
         CrosshairRule(x: banda.rect.midX, height: alto, color: tintaCursor)
         RoundedRectangle(cornerRadius: (banda.rect.height + inflado) / 2)
@@ -262,7 +279,39 @@ public struct LiquidHipnograma: View {
             .frame(width: banda.rect.width + inflado, height: banda.rect.height + inflado)
             .position(x: banda.rect.midX, y: banda.rect.midY)
             .allowsHitTesting(false)
+        // Qué es el tramo que estás tocando. Sin esto el scrub atenúa el 45 % de la noche y
+        // no entrega nada a cambio: el papel sí decía etapa, rango horario y duración, y su
+        // vecina de hoja (`LiquidBarrasDeuda`) lo dice también. Misma pieza de la familia.
+        if let textoTramo, let tramo {
+            let t = textoTramo(tramo)
+            let tam: CGSize = popupMedido == .zero ? CGSize(width: 96, height: 34) : popupMedido
+            let p = ChartTooltipPlacement.positionBeside(
+                anchor: CGPoint(x: banda.rect.midX, y: LiquidSpace.s200),
+                tooltipSize: tam,
+                in: CGSize(width: ancho, height: alto),
+                gap: LiquidSpace.s200)
+            LiquidScrubPopup(valor: t.valor, fecha: t.detalle, color: color(banda.etapa))
+                .background {
+                    GeometryReader { g in
+                        Color.clear
+                            .onAppear { popupMedido = g.size }
+                            .onChange(of: g.size) { _, nuevo in popupMedido = nuevo }
+                    }
+                }
+                .position(x: p.x, y: p.y)
+                .allowsHitTesting(false)
+        }
     }
+
+    /// El intervalo detrás de la banda `i` (las bandas salen de la lista YA filtrada y
+    /// ordenada, así que el índice es el mismo).
+    private func tramoVisible(_ i: Int) -> Intervalo? {
+        let visibles = Self.visibles(intervalos)
+        return visibles.indices.contains(i) ? visibles[i] : nil
+    }
+
+    /// Medida del popup, para colocarlo sin que se salga del lienzo (patrón `LiquidBarrasDeuda`).
+    @State private var popupMedido: CGSize = .zero
 
     /// Los nombres de las etapas, uno por carril, pegados al lienzo. Cada uno ocupa un cuarto
     /// del alto, así que su línea base cae en el centro de su guía.
@@ -317,7 +366,11 @@ public struct LiquidHipnograma: View {
         .frame(height: altoEjeTiempo)
     }
 
+    /// El rótulo de la marca `i`. Si el caller mandó las 5 horas (como el papel), se usan;
+    /// si solo mandó inicio y fin, se rotulan los extremos. El papel dibujaba las 5 y sin
+    /// ellas no se puede ubicar una banda en el tiempo: el eje deja de ser eje.
     private func horaDeMarca(_ i: Int) -> String? {
+        if let horas = horasEje, horas.indices.contains(i) { return horas[i] }
         if i == 0 { return ejeInicio }
         if i == marcasEjeTiempo - 1 { return ejeFin }
         return nil
