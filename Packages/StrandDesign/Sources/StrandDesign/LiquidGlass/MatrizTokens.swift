@@ -122,6 +122,15 @@ public enum MatrizTokens {
     // MARK: Alturas de gráfica por forma
 
     public static let alturaLinea: CGFloat = 56
+    /// FER-80 · La COSTURA del par (temp + resp espejadas). Más alta que una línea suelta
+    /// porque lleva DOS orillas y el espacio entre ellas — pero menos que las dos filas que
+    /// sustituye (56 + 56 + su encabezado), así que la sección respira mejor.
+    public static let alturaCostura: CGFloat = 74
+    /// El relleno de la boca de la costura: tinta neutra a susurro. No es color de juicio —
+    /// el juicio lo pone el ámbar del tramo donde el par votó.
+    public static let costuraFillAlfa: Double = 0.10
+    /// El tramo donde el par se salió JUNTO: el único ámbar de la costura.
+    public static let costuraAlertaAlfa: Double = 0.22
     public static let alturaRenglon: CGFloat = 32
     public static let alturaBarras: CGFloat = 40
     public static let alturaEscalera: CGFloat = alturaBarras   // gemela de Steps (banda Stress|Steps)

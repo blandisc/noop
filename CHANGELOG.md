@@ -20,6 +20,12 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **Hoy: la costura del guardián — tus dos señales de la noche, en una sola gráfica / Today: the guardian's seam — both night signals in one chart** (FER-80).
+  **ES** — El guardián vigila un PAR, y su regla es que una sola señal nunca empuja tu día: solo las dos juntas. Ahora el dibujo lo dice solo. Temperatura arriba, respiración abajo, espejadas sobre un mismo eje, y lo que se pinta es el espacio entre ellas: delgado y sereno cuando las dos están en su sitio, abierto de su lado cuando una se aleja, y abierto entero y teñido solo el día en que las dos se salen juntas. Los dos números viven juntos arriba, cada uno en su color, y el arrastre lee la noche completa.
+  **EN** — The guardian watches a pair, and its rule is that one signal alone never pushes your day. Now the drawing says it: two mirrored edges with the space between them painted — thin when both are in place, open on one side when one drifts, open and tinted only when both step out together.
+  ([MatrizCostura.swift](Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/MatrizCostura.swift))
+
+
 - **Hoy: las siete decisiones del dueño sobre la auditoría / Today: the owner's seven calls from the audit** (FER-79).
   **ES** — La temperatura de piel es dorada en toda la app (el ámbar es el color de atención, no una identidad). Las gráficas ya no esperan 20 noches para verse: arrancan en tu primera lectura y crecen contigo. Al separar las señales, el hueco muerto se cierra y la sección de abajo sube. El sueño se compara contra el rango recomendado con una sola voz en toda la app. «Ver más en Tendencias» solo cuando de verdad va a Tendencias; desde una hoja dice «Ver el detalle completo». Lo que se mide durmiendo se fecha como la noche que fue («anoche · 15 ago»). Y el acta ya no abre con una ⓘ dentro de otra: su explicación encabeza «Cómo se calcula».
   **EN** — Skin temp is gold everywhere; charts grow with you instead of waiting for 20 nights; separating the signals no longer leaves dead air; sleep speaks of the recommended range in one voice; the "see more" label tells the truth; night-measured data is dated as the night; and the ballot has a single door inside.
