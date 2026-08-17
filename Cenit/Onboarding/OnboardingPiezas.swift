@@ -1,9 +1,9 @@
 import SwiftUI
 import StrandDesign
 
-// MARK: - Piezas del onboarding en seis actos (FER-109)
+// MARK: - Piezas del onboarding en siete actos (FER-109 · FER-113)
 //
-// El vocabulario visual compartido por los seis actos + el copy es-MX en un solo lugar.
+// El vocabulario visual compartido por los siete actos + el copy es-MX en un solo lugar.
 //
 // Tres reglas del acto que viven aquí, y no en cada pantalla, para que no puedan divergir:
 //
@@ -231,22 +231,53 @@ enum OnbCopy {
         String(localized: "onb.4.sindatos.2",
                defaultValue: "Open the Health app, find Cénit in your list of apps and turn the signals on.")
     }
-    static var perfilOverline: String {
-        String(localized: "onb.4.perfil.overline", defaultValue: "For your zones and your baseline")
-    }
-    /// `%lld años · %@ · %@` — edad · sexo · peso.
-    static func perfilValor(edad: Int, sexo: String, peso: String) -> String {
-        String(format: String(localized: "onb.4.perfil.valor", defaultValue: "%lld years · %@ · %@"),
-               edad, sexo, peso)
-    }
-    static var perfilPie: String {
-        String(localized: "onb.4.perfil.pie", defaultValue: "From Apple Health")
-    }
     static var errorSync: String {
         String(localized: "onb.4.error", defaultValue: "Couldn't read Apple Health. Try again.")
     }
 
-    // Acto 5 · El acta
+    // Acto 5 · El perfil (FER-113)
+    //
+    // Sus claves van SIN número (`onb.perfil.*`): este acto se insertó entre el 4 y el acta, y un
+    // prefijo numérico obligaría a renumerar 60 claves ya traducidas cada vez que el guion cambie.
+    static var perfilOverline: String {
+        String(localized: "onb.perfil.overline", defaultValue: "For your zones and your baseline")
+    }
+    static var perfilTitular: String {
+        String(localized: "onb.perfil.titular", defaultValue: "I still need four things about you")
+    }
+    static var perfilCuerpo: String {
+        String(localized: "onb.perfil.cuerpo",
+               defaultValue: "Your age and your sex give me your heart rate zones. Your weight, the burn of every workout.")
+    }
+    /// La nota cuando Apple Salud SÍ llenó algo: recupera el «Desde Apple Salud · editable» del
+    /// wizard viejo, que es lo que hace que el prellenado no se sienta impuesto.
+    static var perfilNotaSalud: String {
+        String(localized: "onb.perfil.nota.salud",
+               defaultValue: "What Apple Health already knew is filled in, and it stays editable. Fix anything that looks off: what you set wins.")
+    }
+    /// Y cuando no llenó nada, que es la rama entera por la que este acto existe.
+    static var perfilNotaSinSalud: String {
+        String(localized: "onb.perfil.nota.sinsalud",
+               defaultValue: "Apple Health gave me none of these, so I filled them in myself to get started. Adjust them, or your zones will be an average person's instead of yours.")
+    }
+    static var perfilMarcaSalud: String {
+        String(localized: "onb.perfil.marca.salud", defaultValue: "From Apple Health")
+    }
+    static var perfilMarcaTuyo: String {
+        String(localized: "onb.perfil.marca.tuyo", defaultValue: "You set this one")
+    }
+    static var perfilMarcaMio: String {
+        String(localized: "onb.perfil.marca.mio", defaultValue: "I filled this one in")
+    }
+    static var perfilFcMax: String {
+        String(localized: "onb.perfil.fcmax", defaultValue: "Your estimated max heart rate")
+    }
+    static var perfilFcMaxNota: String {
+        String(localized: "onb.perfil.fcmax.nota",
+               defaultValue: "It comes out of your age. If you know your real one from a test, you can set it by hand in Settings.")
+    }
+
+    // Acto 6 · El acta (sus claves conservan el prefijo `onb.5.*` de FER-109)
     static var actaOverline: String {
         String(localized: "onb.5.overline", defaultValue: "What it's made of")
     }
@@ -354,7 +385,7 @@ enum OnbCopy {
     static var etiquetaAparte: String { String(localized: "onb.5.tag.aparte", defaultValue: "apart") }
     static var etiquetaNunca: String { String(localized: "onb.5.tag.nunca", defaultValue: "never") }
 
-    // Acto 6 · Ciclo y mañana
+    // Acto 7 · Ciclo y mañana (claves `onb.6.*`, mismo motivo)
     static var cicloOverline: String {
         String(localized: "onb.6.overline", defaultValue: "And with that, what")
     }
@@ -447,8 +478,13 @@ enum OnbCopy {
     static var abrirSalud: String { String(localized: "Open Health") }
     static var entrar: String { String(localized: "Enter Cénit") }
     static var atras: String { String(localized: "Back") }
-    static var editar: String { String(localized: "Edit") }
-    static var listo: String { String(localized: "Done") }
+    // Los cuatro campos del perfil y la unidad de la FC máxima: las mismas claves que ya usan
+    // Ajustes y la hoja de «FC máxima», para que el onboarding no invente un vocabulario aparte.
+    static var perfilEdad: String { String(localized: "Age") }
+    static var perfilSexo: String { String(localized: "Sex") }
+    static var perfilPeso: String { String(localized: "Weight") }
+    static var perfilEstatura: String { String(localized: "Height") }
+    static var fcMaxUnidad: String { String(localized: "bpm · Tanaka") }
 }
 
 // MARK: - El shell de un acto

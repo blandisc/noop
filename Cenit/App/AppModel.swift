@@ -179,6 +179,17 @@ import UIKit
             .sink { [weak self] (days: [DailyMetric]) in self?.evaluateIllness(days) }
             .store(in: &hrCancellables)
 
+        // FER-114 · el aviso matutino se re-arma con cada lectura nueva del motor: es la ÚNICA
+        // forma de que lleve la palabra del día (Cénit solo calcula con la app abierta, y el texto
+        // de una notificación se congela al programarla). `MorningReadingScheduler` decide si hay
+        // algo honesto que decir; apagado o sin lectura, esto cancela lo pendiente y calla.
+        repo.$dashboard.map(\.preparedness)
+            .removeDuplicates()
+            .sink { (prep: Preparedness.Read?) in
+                Task { await MorningReadingScheduler.reschedule(prep: prep) }
+            }
+            .store(in: &hrCancellables)
+
         moments = (UserDefaults.standard.array(forKey: "moments") as? [Double] ?? [])
             .map { Date(timeIntervalSince1970: $0) }
 

@@ -73,7 +73,6 @@ Goal today: %@×%@ with the new weight. Losing a rep or two on a raise is normal
 Heart rate %@
 Heart rate %@, zone %@, %@ percent of your maximum
 I need at least 3 signals to work this out without guessing. You have %@.
-It looks like there's no data on this device. If you've used Cénit before, on this phone or another, restore your history and settings from an iCloud Drive backup.
 Kept **%@ of %@** days.
 Mark your meals · 0 of %@
 Miro la variabilidad de los latidos que tu reloj registra mientras duermes y la comparo con tu propio promedio, no con el de otra persona ni con un número fijo de población.

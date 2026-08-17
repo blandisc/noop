@@ -38,7 +38,6 @@ struct OnbActoEncendido: View {
 
     @EnvironmentObject private var health: HealthKitBridge
     @EnvironmentObject private var repo: Repository
-    @EnvironmentObject private var profile: ProfileStore
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.openURL) private var openURL
 
@@ -63,7 +62,6 @@ struct OnbActoEncendido: View {
     @State private var mostrarInfo = false
     @State private var mostrarResto = false
     @State private var mostrarRotulo = false
-    @State private var editandoPerfil = false
     @AccessibilityFocusState private var focoRevelado: Bool
 
     var body: some View {
@@ -80,7 +78,6 @@ struct OnbActoEncendido: View {
         // directos de su `VStack` para que los `Spacer` empujen el CTA al pie.
         .opacity(revelado ? 1 : opacidadLectura)
         .task { await correr() }
-        .sheet(isPresented: $editandoPerfil) { OnbPerfilEditor() }
     }
 
     // MARK: - Acto 3 · la lectura
@@ -242,13 +239,13 @@ struct OnbActoEncendido: View {
 
         Spacer(minLength: LiquidSpace.s600)
 
+        // El perfil dejó de pedirse aquí: era una línea confirmable que solo existía en tres de
+        // las cinco ramas, y faltaba justo donde no hay autollenado posible. Ahora es el acto
+        // siguiente, igual para todas (FER-113).
         if mostrarResto {
-            OnbPerfilLinea(onEditar: { editandoPerfil = true })
-                .liquidEntrada(index: 4)
-                .padding(.bottom, LiquidSpace.s400)
             LiquidGlassButton(OnbCopy.continuar, variant: .primary, expands: true,
                               action: onContinuar)
-                .liquidEntrada(index: 5)
+                .liquidEntrada(index: 4)
         }
     }
 
@@ -273,11 +270,8 @@ struct OnbActoEncendido: View {
 
         Spacer(minLength: LiquidSpace.s600)
 
-        OnbPerfilLinea(onEditar: { editandoPerfil = true })
-            .liquidEntrada(index: 4)
-            .padding(.bottom, LiquidSpace.s400)
         LiquidGlassButton(OnbCopy.continuar, variant: .primary, expands: true, action: onContinuar)
-            .liquidEntrada(index: 5)
+            .liquidEntrada(index: 4)
     }
 
     // (c) El tope: llegaron señales, pero cero FC en reposo. Esperar no lo arregla, así que el
@@ -303,13 +297,10 @@ struct OnbActoEncendido: View {
 
         Spacer(minLength: LiquidSpace.s600)
 
-        OnbPerfilLinea(onEditar: { editandoPerfil = true })
-            .liquidEntrada(index: 5)
-            .padding(.bottom, LiquidSpace.s400)
         LiquidGlassButton(OnbCopy.sinFcCta, variant: .primary, expands: true, action: onEntrenar)
-            .liquidEntrada(index: 6)
+            .liquidEntrada(index: 5)
         OnbSalidaTexto(titulo: OnbCopy.sinFcCtaSecundaria, accion: onEntrar)
-            .liquidEntrada(index: 7)
+            .liquidEntrada(index: 6)
     }
 
     // (d) No llegó ni una fila. Negar la lectura y tener Salud vacío se ven idénticos desde aquí,
@@ -352,7 +343,7 @@ struct OnbActoEncendido: View {
         guard !corriendo else { return }
         corriendo = true
 
-        // Volver del acta (acto 5 lleva «Atrás») reconstruye esta vista con su estado en blanco,
+        // Volver del perfil (el acto 5 lleva «Atrás») reconstruye esta vista con su estado en blanco,
         // pero el desenlace ya se conoce: se restaura la escena revelada en vez de volver a
         // sincronizar y volver a encender. El encendido pasa UNA vez por instalación.
         if landing != nil {
@@ -394,9 +385,6 @@ struct OnbActoEncendido: View {
             return
         }
 
-        // El perfil se rellena desde Salud ANTES del reveal, para que su línea no aparezca vacía
-        // y se corrija a la vista del usuario.
-        await rellenarPerfil()
         await encender(desenlace())
     }
 
@@ -542,17 +530,6 @@ struct OnbActoEncendido: View {
         withAnimation(LiquidMotion.glassOut(LiquidMotion.quick)) { mostrarRotulo = false }
     }
 
-    /// Prellena el Perfil desde Apple Salud, campo por campo (parcial: solo lo que Salud tiene).
-    /// Las ediciones del usuario son posteriores, así que ganan.
-    @MainActor
-    private func rellenarPerfil() async {
-        guard health.auth == .authorized else { return }
-        let c = await health.readProfileCharacteristics()
-        if let s = c.sex { profile.sex = s }
-        if let a = c.age, (13...100).contains(a) { profile.age = a }
-        if let w = c.weightKg, (30...250).contains(w) { profile.weightKg = w }
-        if let h = c.heightCm, (120...230).contains(h) { profile.heightCm = h }
-    }
 }
 
 // MARK: - La palabra, PRESTADA de Hoy
@@ -645,121 +622,5 @@ extension AttributedString {
         var copia = self
         if let r = copia.range(of: fragmento) { copia[r].foregroundColor = tono }
         return copia
-    }
-}
-
-// MARK: - El perfil, una línea
-
-/// Perfil, no formulario: una línea con lo que Apple Salud ya sabe y una acción de texto para
-/// corregirla. Un formulario de cuatro campos en medio del reveal apaga el momento.
-struct OnbPerfilLinea: View {
-    let onEditar: () -> Void
-
-    @EnvironmentObject private var profile: ProfileStore
-    @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
-    private var unitSystem: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: LiquidSpace.s150) {
-            OnbOverline(OnbCopy.perfilOverline)
-            HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s300) {
-                Text(OnbCopy.perfilValor(edad: profile.age,
-                                         sexo: OnbPerfilEditor.etiquetaSexo(profile.sex),
-                                         peso: UnitFormatter.massFromKilograms(profile.weightKg,
-                                                                               system: unitSystem)))
-                    .font(LiquidType.valorL)
-                    .foregroundStyle(LiquidColor.tinta900)
-                    .fixedSize(horizontal: false, vertical: true)
-                Spacer(minLength: 0)
-                Button(action: onEditar) {
-                    Text(OnbCopy.editar)
-                        .font(LiquidType.captionLectura)
-                        .foregroundStyle(LiquidColor.verdeProfundo)
-                        .frame(minWidth: LiquidControl.hitTarget, minHeight: LiquidControl.hitTarget,
-                               alignment: .trailing)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.liquidPress)
-            }
-            OnbCuerpo(OnbCopy.perfilPie, tono: LiquidColor.tinta500)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-}
-
-/// La corrección del perfil, en una hoja: los cuatro campos, y de vuelta al reveal.
-struct OnbPerfilEditor: View {
-    @EnvironmentObject private var profile: ProfileStore
-    @Environment(\.dismiss) private var dismiss
-    @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
-    private var unitSystem: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
-
-    static func etiquetaSexo(_ raw: String) -> String {
-        switch raw {
-        case "male":   return String(localized: "Male")
-        case "female": return String(localized: "Female")
-        default:       return String(localized: "Other")
-        }
-    }
-
-    private static let sexos = ["male", "female", "nonbinary"]
-
-    var body: some View {
-        ZStack {
-            LiquidColor.fondoGradient.ignoresSafeArea()
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(alignment: .leading, spacing: LiquidSpace.s400) {
-                    OnbOverline(OnbCopy.perfilOverline)
-
-                    Stepper(value: $profile.age, in: 13...100) {
-                        campo(String(localized: "Age"), "\(profile.age)")
-                    }
-                    .tint(LiquidColor.tinta700)
-
-                    VStack(alignment: .leading, spacing: LiquidSpace.s150) {
-                        OnbOverline(String(localized: "Sex"))
-                        Picker(String(localized: "Sex"), selection: $profile.sex) {
-                            ForEach(Self.sexos, id: \.self) { key in
-                                Text(Self.etiquetaSexo(key)).tag(key)
-                            }
-                        }
-                        .pickerStyle(.segmented)
-                        .labelsHidden()
-                    }
-
-                    Stepper(value: $profile.weightKg, in: 30...250, step: 0.5) {
-                        campo(String(localized: "Weight"),
-                              UnitFormatter.massFromKilograms(profile.weightKg, system: unitSystem))
-                    }
-                    .tint(LiquidColor.tinta700)
-
-                    Stepper(value: $profile.heightCm, in: 120...230, step: 1) {
-                        campo(String(localized: "Height"),
-                              UnitFormatter.heightFromCentimeters(profile.heightCm, system: unitSystem))
-                    }
-                    .tint(LiquidColor.tinta700)
-
-                    OnbCuerpo(OnbCopy.perfilPie, tono: LiquidColor.tinta500)
-
-                    LiquidGlassButton(OnbCopy.listo, variant: .primary, expands: true) { dismiss() }
-                        .padding(.top, LiquidSpace.s400)
-                }
-                .padding(.horizontal, LiquidSpace.s600)
-                .padding(.vertical, LiquidSpace.s800)
-            }
-        }
-        .preferredColorScheme(.light)
-    }
-
-    private func campo(_ label: String, _ valor: String) -> some View {
-        HStack {
-            Text(label)
-                .font(LiquidType.captionLectura)
-                .foregroundStyle(LiquidColor.tinta700)
-            Spacer()
-            Text(valor)
-                .font(LiquidType.valorL)
-                .foregroundStyle(LiquidColor.tinta900)
-        }
     }
 }

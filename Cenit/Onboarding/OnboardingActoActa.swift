@@ -2,7 +2,7 @@ import SwiftUI
 import StrandDesign
 import StrandAnalytics
 
-// MARK: - Acto 5 · El acta (FER-109)
+// MARK: - Acto 6 · El acta (FER-109)
 //
 // De qué está hecha la palabra. El lienzo entra en `.descomposicion`: el orbe se desarma en tres
 // pozos, uno por eje, DELANTE del usuario — es el mismo gesto que el acta explica en texto, y por

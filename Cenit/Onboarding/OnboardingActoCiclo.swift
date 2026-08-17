@@ -2,7 +2,7 @@ import SwiftUI
 import StrandDesign
 import StrandAnalytics
 
-// MARK: - Acto 6 · El ciclo y la mañana (FER-109)
+// MARK: - Acto 7 · El ciclo y la mañana (FER-109)
 //
 // El último acto contesta la única pregunta que queda: «y con eso, qué». La lectura no es un dato
 // para archivar; es lo que decide el día, y quien lo ejecuta es Entrenar.
@@ -36,7 +36,7 @@ struct OnbActoCiclo: View {
                     .padding(.top, LiquidSpace.s300)
             }
 
-            // Cómo se traduce: los mismos títulos del catálogo del acto 5, ahora con lo que HACEN.
+            // Cómo se traduce: los mismos títulos del catálogo del acta, ahora con lo que HACEN.
             Group {
                 OnbOverline(OnbCopy.cicloOverlineTraduce)
                     .padding(.top, LiquidSpace.s800)

@@ -1,6 +1,367 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "aviso.matutino.cita.cuerpo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Cénit and I will tell you what I found in your night."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre Cénit y te digo qué encontré en tu noche."
+          }
+        }
+      }
+    },
+    "aviso.matutino.cita.titulo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Time to read you"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hora de leerte"
+          }
+        }
+      }
+    },
+    "aviso.matutino.denegado" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notices are off in iOS Settings, so I cannot reach you."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los avisos están apagados en Ajustes de iOS, así que no puedo alcanzarte."
+          }
+        }
+      }
+    },
+    "aviso.matutino.glosa" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One notice a day, on your iPhone, at the time you pick. If that day I have no reading to give you, I stay quiet."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un solo aviso al día, en tu iPhone, a la hora que elijas. Si ese día no tengo una lectura que darte, me quedo callado."
+          }
+        }
+      }
+    },
+    "aviso.matutino.hora" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "At what time"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A qué hora"
+          }
+        }
+      }
+    },
+    "aviso.matutino.lectura.cuerpo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your reading for today is ready."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ya está tu lectura de hoy."
+          }
+        }
+      }
+    },
+    "aviso.matutino.overline" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Morning notice"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu aviso de la mañana"
+          }
+        }
+      }
+    },
+    "aviso.matutino.sinlectura" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I have no reading to give you yet, so I will stay quiet until I do."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todavía no tengo una lectura que darte: no te diré nada hasta tenerla."
+          }
+        }
+      }
+    },
+    "aviso.matutino.toggle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tell me when my reading is ready"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avísame cuando esté mi lectura"
+          }
+        }
+      }
+    },
+    "Heart rhythm" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Heart rhythm"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ritmo cardiaco"
+          }
+        }
+      }
+    },
+    "AFib History, in the Health app" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AFib History, in the Health app"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Historial de FA, en la app Salud"
+          }
+        }
+      }
+    },
+    "If you turn it on there, your Apple Watch measures your heartbeat beat by beat far more often while you sleep. That density is what my nightly HRV reading needs. The morning verdict rides on your resting heart rate, with it or without it." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If you turn it on there, your Apple Watch measures your heartbeat beat by beat far more often while you sleep. That density is what my nightly HRV reading needs. The morning verdict rides on your resting heart rate, with it or without it."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si lo enciendes ahí, tu Apple Watch mide tu latido a latido mucho más seguido mientras duermes. Esa densidad es la que necesita mi lectura de HRV nocturna. El veredicto de la mañana se sostiene en tu frecuencia cardiaca en reposo, con esto o sin esto."
+          }
+        }
+      }
+    },
+    "What it tunes" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What it tunes"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lo que afina"
+          }
+        }
+      }
+    },
+    "HRV joins your resting heart rate as a second, lighter signal on the nights that come in dense: at least 60 clean beats and 30 successive pairs. It is a tuning, not a requirement, and it never speaks on its own." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "HRV joins your resting heart rate as a second, lighter signal on the nights that come in dense: at least 60 clean beats and 30 successive pairs. It is a tuning, not a requirement, and it never speaks on its own."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La HRV entra junto a tu frecuencia cardiaca en reposo como un segundo dato, más ligero, en las noches que llegan densas: al menos 60 latidos limpios y 30 pares seguidos. Es una afinación, no un requisito, y nunca opina sola."
+          }
+        }
+      }
+    },
+    "What it costs" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What it costs"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lo que cuesta"
+          }
+        }
+      }
+    },
+    "To turn it on, Apple asks you to confirm that a doctor diagnosed you with atrial fibrillation. It is not intended for people under 22. And it switches off the real time irregular rhythm notifications: from then on your Apple Watch sends you a weekly summary instead." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To turn it on, Apple asks you to confirm that a doctor diagnosed you with atrial fibrillation. It is not intended for people under 22. And it switches off the real time irregular rhythm notifications: from then on your Apple Watch sends you a weekly summary instead."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Para encenderlo, Apple te pide confirmar que un médico te diagnosticó fibrilación auricular. No está pensado para menores de 22 años. Y apaga los avisos de ritmo irregular en tiempo real: a partir de ahí tu Apple Watch te manda un resumen semanal."
+          }
+        }
+      }
+    },
+    "Open the Health app" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open the Health app"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abrir la app Salud"
+          }
+        }
+      }
+    },
+    "Opens Apple's Health app" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens Apple's Health app"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre la app Salud de Apple"
+          }
+        }
+      }
+    },
+    "I am not recommending it and I am not talking you out of it: both sides are here so you can decide. Cénit does not diagnose anything, and none of this is medical advice." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I am not recommending it and I am not talking you out of it: both sides are here so you can decide. Cénit does not diagnose anything, and none of this is medical advice."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ni te lo recomiendo ni te lo desaconsejo: aquí tienes las dos caras para que decidas tú. Cénit no diagnostica nada y esto no es consejo médico."
+          }
+        }
+      }
+    },
+    "Restore from a backup file?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restore from a backup file?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Restauro desde tu archivo de respaldo?"
+          }
+        }
+      }
+    },
+    "Choose a backup file…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a backup file…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elegir mi archivo de respaldo…"
+          }
+        }
+      }
+    },
+    "There's no data on this iPhone yet. Cénit has no cloud of its own: the only thing I can restore is a backup file that you exported from Cénit and saved yourself, in iCloud Drive or wherever you keep your files. If you don't have one, there's nothing to bring back." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "There's no data on this iPhone yet. Cénit has no cloud of its own: the only thing I can restore is a backup file that you exported from Cénit and saved yourself, in iCloud Drive or wherever you keep your files. If you don't have one, there's nothing to bring back."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todavía no hay datos en este iPhone. Cénit no tiene nube propia: lo único que puedo restaurar es un archivo de respaldo que exportaste desde Cénit y guardaste tú, en iCloud Drive o donde guardes tus archivos. Si no tienes uno, no hay nada que traer de vuelta."
+          }
+        }
+      }
+    },
     "quien.uno" : {
       "localizations" : {
         "en" : {
@@ -1216,7 +1577,7 @@
         }
       }
     },
-    "onb.4.perfil.overline" : {
+    "onb.perfil.overline" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1233,24 +1594,75 @@
         }
       }
     },
-    "onb.4.perfil.valor" : {
+    "onb.perfil.titular" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld years · %@ · %@"
+            "value" : "I still need four things about you"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld años · %@ · %@"
+            "value" : "Me faltan cuatro datos tuyos"
           }
         }
       }
     },
-    "onb.4.perfil.pie" : {
+    "onb.perfil.cuerpo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your age and your sex give me your heart rate zones. Your weight, the burn of every workout."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Con tu edad y tu sexo saco tus zonas de frecuencia cardiaca. Con tu peso, lo que gastas en cada entrenamiento."
+          }
+        }
+      }
+    },
+    "onb.perfil.nota.salud" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What Apple Health already knew is filled in, and it stays editable. Fix anything that looks off: what you set wins."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lo que Apple Salud ya sabía quedó puesto, y sigue siendo editable. Corrige lo que no cuadre: lo que tú pongas manda."
+          }
+        }
+      }
+    },
+    "onb.perfil.nota.sinsalud" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Health gave me none of these, so I filled them in myself to get started. Adjust them, or your zones will be an average person's instead of yours."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Salud no me dio ninguno de estos datos, así que los puse yo para arrancar. Ajústalos, o tus zonas serán las de una persona promedio en vez de las tuyas."
+          }
+        }
+      }
+    },
+    "onb.perfil.marca.salud" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1263,6 +1675,74 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Desde Apple Salud"
+          }
+        }
+      }
+    },
+    "onb.perfil.marca.tuyo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You set this one"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lo pusiste tú"
+          }
+        }
+      }
+    },
+    "onb.perfil.marca.mio" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I filled this one in"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lo puse yo"
+          }
+        }
+      }
+    },
+    "onb.perfil.fcmax" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your estimated max heart rate"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu FC máxima estimada"
+          }
+        }
+      }
+    },
+    "onb.perfil.fcmax.nota" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It comes out of your age. If you know your real one from a test, you can set it by hand in Settings."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sale de tu edad. Si conoces la tuya de una prueba, puedes ponerla a mano en Ajustes."
           }
         }
       }
@@ -26250,10 +26730,6 @@
         }
       }
     },
-    "It looks like there's no data on this device. If you've used Cénit before, on this phone or another, restore your history and settings from an iCloud Drive backup." : {
-      "comment" : "A message in the alert that appears when the user is prompted to restore",
-      "isCommentAutoGenerated" : true
-    },
     "It watches two signals from your night, your skin temperature and your breathing, against your own pattern from recent weeks. It doesn't vote on your verdict: it only pushes toward a lighter day when both drift out together. An approximation, not a diagnosis." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -42445,23 +42921,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Restaurar desde un respaldo…"
-          }
-        }
-      }
-    },
-    "Restore your data?" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Restore your data?"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "¿Restaurar tus datos?"
           }
         }
       }
