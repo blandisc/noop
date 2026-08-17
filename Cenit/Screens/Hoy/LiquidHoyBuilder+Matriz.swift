@@ -123,7 +123,7 @@ extension LiquidHoyBuilder {
             chartID: "matriz-sleep",
             chart: .columnas(noches: noches, referencia: 7, referenciaTag: "7 h",
                              dominio: 4...10),
-            formaSello: .luna, scrubNoches: scrubSueno)
+            formaSello: .luna, sello: .sueno, scrubNoches: scrubSueno)
 
         // —— 2. FC | VFC (20) ——
         let keys20 = keys  // ya son 20
@@ -179,6 +179,7 @@ extension LiquidHoyBuilder {
             // Decisión del dueño (FER-55): el corazón de PARTÍCULAS (contorno denso,
             // quieto — gemelo de la luna), no la gota de las hojas.
             formaSello: .corazon,
+            sello: .reposo,
             scrubNoches: scrubFCVivo)
 
         let ptsVFC: [Double?] = keys20.map { byDay[$0]?.avgHrv }
@@ -214,6 +215,7 @@ extension LiquidHoyBuilder {
             chart: .lineaRellena(puntos: ptsVFCVivos, base: baseVFC,
                                  dominio: dominioLinea(ptsVFC, base: baseVFC, fallback: 20...80),
                                  alfa: 0.6, alertaHoy: .ninguna),
+            sello: .hrv,
             scrubNoches: scrubVFCVivo)
 
         // —— 3. Guardián ——
@@ -364,7 +366,7 @@ extension LiquidHoyBuilder {
                                                                        calendar: i.calendar, formatter: diaFmt)))
         }
         let seccionCarga = MatrizSeccion(
-            id: "carga", hue: LiquidColor.verdePrimario,
+            id: "carga", hue: LiquidColor.verdeCarga,
             titulo: String(localized: "Load"),
             valor: valorCarga,
             sublabel: sublabelCargaConZona(estadoCargaKey),
@@ -372,6 +374,7 @@ extension LiquidHoyBuilder {
             chart: .colina(p: pCarga,
                              zona: ReadinessEngine.acwrSweetSpotLow...ReadinessEngine.acwrSweetSpotHigh,
                              estela: estela, alertaHoy: alertaCarga),
+            sello: .carga,
             scrubNoches: scrubCarga.count > 1 ? scrubCarga : nil)
 
         let keysEsf = Array(keys.suffix(matrizVentanaEsfuerzo))
@@ -404,6 +407,7 @@ extension LiquidHoyBuilder {
                 : String(localized: "matriz.esf.sub", defaultValue: "today's effort so far"),
             chartID: "matriz-strain",
             chart: .barrasMini(valores: ptsEsf),
+            sello: .esfuerzo,
             scrubNoches: scrubEsf)
 
         // —— 5. Estrés | Pasos ——
@@ -456,6 +460,7 @@ extension LiquidHoyBuilder {
                 : String(localized: "matriz.stress.sub", defaultValue: "last 7 days"),
             chartID: "matriz-stress",
             chart: .escalerita(niveles: niveles),
+            sello: .estres,
             scrubNoches: scrubStress)
 
         let keysPasos = Array(keys.suffix(matrizVentanaPasos))
@@ -472,7 +477,8 @@ extension LiquidHoyBuilder {
             titulo: String(localized: "Steps"),
             valor: valorPasos, terciaria: true,
             chartID: "matriz-steps",
-            chart: .barrasMini(valores: ptsPasos))
+            chart: .barrasMini(valores: ptsPasos),
+            sello: .pasos)
 
         // sentByDay: reservado para los aros históricos del guardián — la API de línea serena
         // solo pinta alertaHoy hoy; la historia fuera se cubre en tests del modelo (deuda §7,

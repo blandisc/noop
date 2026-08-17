@@ -99,6 +99,11 @@ public enum LiquidColor {
     /// contraste ≥ 4.5:1 como texto sobre `papelMatriz` (verificado en MatrizContrasteTests);
     /// las partículas/puntos pueden usar la familia clara, el TEXTO usa este.
     public static let doradoTemp = Color(hex: "#8A6A2B")
+    /// Identidad de CARGA. Espejo de `InstrumentoTheme.dataOxygen` — un verde de bosque
+    /// que NO es `verdePrimario`: esa es la única voz de marca (CTA y veredicto) y también
+    /// la zona «bajo» del medidor de estrés, así que una métrica no puede vestirla sin
+    /// decir dos cosas con el mismo hex (auditoría de los sellos, ago-2026).
+    public static let verdeCarga = Color(hex: "#3F7A5E")
 
     /// FER-60 · Heatmap de ESTRÉS (contexto, NO vota): una rampa de calor de tres pasos
     /// — nivel bajo = la tinta neutra de la sección (`tinta500`, sin calor); medio y alto
