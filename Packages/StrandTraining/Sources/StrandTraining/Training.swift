@@ -356,13 +356,29 @@ public struct StrengthSessionSnapshot: Codable, Sendable, Equatable {
         /// Exercise-scoped note text (FER-932). Optional so a pre-FER-932 snapshot (key absent)
         /// still decodes; nil means no note, never confused with an empty string.
         public var note: String?
+        /// An earned raise today's verdict is HOLDING (FER-82): the cells opened at last time's
+        /// weight and the session offers it one tap away, so it has to survive a crash like anything
+        /// else the athlete can still act on. An APPLIED raise is not carried — its weights are
+        /// already in the cells. Optional so a pre-FER-82 snapshot (key absent) still decodes.
+        public var heldRaise: HeldRaise?
+
+        /// The three facts a held raise needs to be re-offered after a restore: where it comes from,
+        /// where it goes, and the arithmetic sentence that justifies it with real dates.
+        public struct HeldRaise: Codable, Sendable, Equatable {
+            public var fromKg: Double
+            public var toKg: Double
+            public var phrase: String
+            public init(fromKg: Double, toKg: Double, phrase: String) {
+                self.fromKg = fromKg; self.toKg = toKg; self.phrase = phrase
+            }
+        }
 
         public init(id: String, exerciseId: String, name: String, type: ExerciseType,
                     restSeconds: Int, restMode: RestMode, hrRestReference: HRRestReference,
                     hrRestValue: Double, lastWeightKg: Double? = nil, lastReps: Int? = nil,
                     lastTimeS: Int? = nil, lastDistanceM: Double? = nil, sets: [SetSnapshot],
                     currentSet: Int, skipped: Bool, raiseOptedOut: Bool? = nil,
-                    supersetGroup: Int? = nil, note: String? = nil) {
+                    supersetGroup: Int? = nil, note: String? = nil, heldRaise: HeldRaise? = nil) {
             self.id = id; self.exerciseId = exerciseId; self.name = name; self.type = type
             self.restSeconds = restSeconds; self.restMode = restMode
             self.hrRestReference = hrRestReference; self.hrRestValue = hrRestValue
@@ -372,6 +388,7 @@ public struct StrengthSessionSnapshot: Codable, Sendable, Equatable {
             self.raiseOptedOut = raiseOptedOut
             self.supersetGroup = supersetGroup
             self.note = note
+            self.heldRaise = heldRaise
         }
     }
     public var id: String

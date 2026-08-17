@@ -100,7 +100,9 @@ struct ExerciseDetailScreen: View {
         }
         .background(theme.paper.ignoresSafeArea())
         .saveErrorToast(isPresented: $saveError)
-        .task(id: exercise.id) {
+        // Keyed to the repository pass too (FER-82): the cycle line reads today's verdict, so a visit
+        // opened during a cold start corrects itself the moment the verdict lands.
+        .task(id: [exercise.id, String(repo.refreshSeq)]) {
             async let h = repo.exerciseHistory(exerciseId: exercise.id)
             async let ov = repo.exerciseTypeOverride(exercise.id)
             history = await h
@@ -118,9 +120,15 @@ struct ExerciseDetailScreen: View {
                 }
                 if let re = slot {
                     let inventory = PlatesStore().inventory
-                    cycleState = ProgressionPlanner.evaluate(
-                        re: re, history: history, inventory: inventory,
-                        equipment: exercise.equipment, recovery: repo.today?.recovery)?.state
+                    // FER-82: while the day's verdict is still being computed this line would claim
+                    // «la subida espera un día en rango» about a day nobody has judged. `speaks` is
+                    // the same silence gate the hero uses; the task re-runs when the verdict lands.
+                    let advice = repo.trainingAdvice
+                    if TrainingRegulation.speaks(advice) || TrainingRegulation.allowsRaise(advice) {
+                        cycleState = ProgressionPlanner.evaluate(
+                            re: re, history: history, inventory: inventory,
+                            equipment: exercise.equipment, advice: advice)?.state
+                    }
                 }
             }
             variants = Self.variants(for: exercise)
@@ -745,7 +753,9 @@ struct ExerciseDetailScreen: View {
         case .readyToAdvance(let newKg):
             return Text("Cycle complete: your next session arrives with \(kg(newKg)).")
         case .deferred(let newKg):
-            return Text("The raise to \(kg(newKg)) waits for your next session: recovery ran low.")
+            // FER-82: the cause is the day's verdict, not a recovery score. Naming the score here
+            // was a third voice that could contradict both Hoy and Entrenar on the same morning.
+            return Text("The raise to \(kg(newKg)) waits for a day in range. You can take it anyway.")
         case .stalled(let sessions):
             return Text("\(sessions) sessions without hitting the goal at this weight.")
         case .deloading(let fromKg, let toKg):

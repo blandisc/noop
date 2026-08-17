@@ -17427,18 +17427,13 @@
         }
       }
     },
-    "Each set adds load to the muscles it works, decaying by half every two days: the time course of muscle protein synthesis (MacDougall 1995; Damas 2015). Color is relative to your most-loaded muscle, so it reads which of your muscles are hot right now. Weekly volume is judged against the 10–20 sets-per-week band (Schoenfeld 2017), a hypertrophy guide per muscle group; the volume shown is weighted by involvement, so secondary muscles count less. The recommendation crosses this with your recovery: a low-recovery day gates everything to rest." : {
+    "Each set adds load to the muscles it works, decaying by half every two days: the time course of muscle protein synthesis (MacDougall 1995; Damas 2015). Color is relative to your most-loaded muscle, so it reads which of your muscles are hot right now. Weekly volume is judged against the 10–20 sets-per-week band (Schoenfeld 2017), a hypertrophy guide per muscle group; the volume shown is weighted by involvement, so secondary muscles count less. The recommendation crosses this with today's verdict, the same one Hoy shows: a day that asks you to ease off gates everything to rest." : {
+      "extractionState" : "manual",
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Each set adds load to the muscles it works, decaying by half every two days: the time course of muscle protein synthesis (MacDougall 1995; Damas 2015). Color is relative to your most-loaded muscle, so it reads which of your muscles are hot right now. Weekly volume is judged against the 10–20 sets-per-week band (Schoenfeld 2017), a hypertrophy guide per muscle group; the volume shown is weighted by involvement, so secondary muscles count less. The recommendation crosses this with your recovery: a low-recovery day gates everything to rest."
-          }
-        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cada serie suma carga a los músculos que trabaja y decae a la mitad cada dos días: el curso temporal de la síntesis de proteína muscular (MacDougall 1995; Damas 2015). El color es relativo a tu músculo más cargado, así que lee cuáles de tus músculos están calientes ahora. El volumen semanal se juzga contra la banda de 10–20 series por semana (Schoenfeld 2017), una guía de hipertrofia por grupo muscular; el volumen mostrado está ponderado por involucramiento, así que los músculos secundarios cuentan menos. La recomendación lo cruza con tu recuperación: un día de recuperación baja lo manda todo a descanso."
+            "value" : "Cada serie suma carga a los músculos que trabaja y decae a la mitad cada dos días: el curso temporal de la síntesis de proteína muscular (MacDougall 1995; Damas 2015). El color es relativo a tu músculo más cargado, así que lee cuáles de tus músculos están calientes ahora. El volumen semanal se juzga contra la banda de 10–20 series por semana (Schoenfeld 2017), una guía de hipertrofia por grupo muscular; el volumen mostrado está ponderado por involucramiento, así que los músculos secundarios cuentan menos. La recomendación lo cruza con el veredicto de hoy, el mismo que muestra Hoy: un día que te pide bajarle lo manda todo a descanso."
           }
         }
       }
@@ -31424,23 +31419,6 @@
         }
       }
     },
-    "No recovery reading today · the map shows muscle load only." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No recovery reading today · the map shows muscle load only."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sin lectura de recuperación hoy · el mapa muestra solo la carga muscular."
-          }
-        }
-      }
-    },
     "No recovery yet. Wear your Apple Watch to sleep and open this again after it syncs." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -38063,57 +38041,6 @@
         }
       }
     },
-    "Recovery %lld · keep it moderate today." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recovery %lld · keep it moderate today."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recuperación %lld · hoy modera la intensidad."
-          }
-        }
-      }
-    },
-    "Recovery %lld · today calls for rest." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recovery %lld · today calls for rest."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recuperación %lld · hoy manda el descanso."
-          }
-        }
-      }
-    },
-    "Recovery %lld · today's gate doesn't hold you back." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recovery %lld · today's gate doesn't hold you back."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recuperación %lld · el semáforo de hoy no te frena."
-          }
-        }
-      }
-    },
     "Recovery %lld. See detail." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -38182,53 +38109,233 @@
         }
       }
     },
-    "Recovery high for you · you can take on your full plan." : {
-      "extractionState" : "stale",
+    "Go light today · don't add weight." : {
+      "extractionState" : "manual",
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recovery high for you · you can take on your full plan."
-          }
-        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Recuperación alta para ti · puedes con tu plan completo."
+            "value" : "Hoy ve leve · no subas el peso"
           }
         }
       }
     },
-    "Recovery in your range · train at your usual load." : {
-      "extractionState" : "stale",
+    "The raises wait:" : {
+      "extractionState" : "manual",
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recovery in your range · train at your usual load."
-          }
-        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Recuperación en tu rango · entrena con tu carga de siempre."
+            "value" : "Te esperan las subidas:"
           }
         }
       }
     },
-    "Recovery low for you · maybe ease the volume today." : {
-      "extractionState" : "stale",
+    "You can take them in the session." : {
+      "extractionState" : "manual",
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recovery low for you · maybe ease the volume today."
-          }
-        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Recuperación baja para ti · quizá baja el volumen hoy."
+            "value" : "Puedes tomarlas en la sesión."
+          }
+        }
+      }
+    },
+    "and %lld more" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "y %lld más"
+          }
+        }
+      }
+    },
+    "The raise to %@ waits" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La subida a %@ espera"
+          }
+        }
+      }
+    },
+    "Raises the sets you have left to that weight" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sube las series que te faltan a ese peso"
+          }
+        }
+      }
+    },
+    "In range · today's gate doesn't hold you back." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En rango · hoy nada te frena."
+          }
+        }
+      }
+    },
+    "Go light today · keep it moderate." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoy ve leve · quédate en moderado."
+          }
+        }
+      }
+    },
+    "Recover · today calls for rest or something gentle." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recupera · hoy toca descanso o algo suave."
+          }
+        }
+      }
+    },
+    "No reading today · the map goes by your log." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoy sin lectura · el mapa va por tu registro."
+          }
+        }
+      }
+    },
+    "Today's verdict asks you to ease off: rest or train light." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El veredicto de hoy pide bajarle: descansa o entrena suave."
+          }
+        }
+      }
+    },
+    "You took it mid-exercise, so this session doesn't count toward the cycle: neither a hit nor a miss." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La tomaste a media sesión, así que esta sesión no cuenta para el ciclo: ni acierto ni fallo."
+          }
+        }
+      }
+    },
+    "The raise waits:" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Te espera la subida:"
+          }
+        }
+      }
+    },
+    "You can take it in the session." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Puedes tomarla en la sesión."
+          }
+        }
+      }
+    },
+    "Because today you recover" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Porque hoy recuperas"
+          }
+        }
+      }
+    },
+    "The raise to %@ waits for a day in range. You can take it anyway." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La subida a %@ espera un día en rango. Puedes tomarla de todos modos."
+          }
+        }
+      }
+    },
+    "What rose, what waits for a day in range, and what stalled." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lo que subió, lo que espera un día en rango y lo que se estancó."
+          }
+        }
+      }
+    },
+    "%@ waits" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ espera"
+          }
+        }
+      }
+    },
+    "raise" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "subir"
+          }
+        }
+      }
+    },
+    "In range · your plan for today, as it is." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En rango · tu plan de hoy, tal cual"
+          }
+        }
+      }
+    },
+    "Recover · easy today, or rest." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recupera · hoy suave o descansa"
           }
         }
       }
@@ -44832,22 +44939,6 @@
         }
       }
     },
-    "Suggested by your recovery" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Suggested by your recovery"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sugerido por tu recuperación"
-          }
-        }
-      }
-    },
     "Suggested for you" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -46437,39 +46528,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "La unidad del plan no es compatible, debe ser kg o lb."
-          }
-        }
-      }
-    },
-    "The raise for %@ waits for your next session." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The raise for %@ waits for your next session."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La subida de %@ espera a tu próxima sesión."
-          }
-        }
-      }
-    },
-    "The raise to %@ waits for your next session: recovery ran low." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The raise to %@ waits for your next session: recovery ran low."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La subida a %@ espera tu próxima sesión: la recuperación quedó baja."
           }
         }
       }
@@ -51275,17 +51333,6 @@
         }
       }
     },
-    "What rose, what waits on recovery, and what stalled." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lo que subió, lo que espera recuperación y lo que se estancó."
-          }
-        }
-      }
-    },
     "What the stages mean" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -54651,23 +54698,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tu recuperación va alta, pero %@ trae una señal abajo, ojo con eso hoy."
-          }
-        }
-      }
-    },
-    "Your recovery is low: rest or train light today." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your recovery is low: rest or train light today."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu recuperación está baja: descansa o entrena suave hoy."
           }
         }
       }

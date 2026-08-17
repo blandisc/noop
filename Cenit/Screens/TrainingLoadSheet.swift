@@ -234,6 +234,11 @@ struct TrainingLoadSheet: View {
         let hv = heroVentana
         return LiquidSheetHeader(
             icono: .carga,
+            // El mismo sello que la fila de Carga en la Matriz. Ojo: aquí `tono` es el
+            // VEREDICTO de la banda (verde/ámbar/rojo), no la identidad — el símbolo de
+            // sistema se teñía con él y el sello no puede (es multicolor por diseño). La
+            // gota sigue al veredicto; el dibujo dice la identidad.
+            selloMetrica: .carga,
             titulo: String(localized: "Training load"),
             tono: tono,
             numeral: hv.numeral,

@@ -139,9 +139,14 @@ final class StrengthSessionModel: ObservableObject {
         var sets: [WorkingSet]
         var currentSet: Int
         var skipped: Bool
-        /// An earned weight raise seeded into this run's cells (FER-E · 2b). nil = no proposal today.
-        /// Cleared by «Volver a X» (the per-session opt-out). Not carried by the crash snapshot — after
-        /// a restore the seeded weights survive; only the «por qué» affordance is gone.
+        /// An earned weight raise for this run (FER-E · 2b). nil = no proposal today.
+        /// Cleared by «Volver a X» (the per-session opt-out).
+        ///
+        /// Two readings (FER-82): APPLIED (`waiting == false`) means the cells already opened at the
+        /// new weight — the crash snapshot doesn't carry it because the weights themselves survive,
+        /// and only the «por qué» affordance is lost. HELD (`waiting == true`) means today's verdict
+        /// kept the seed at last time's weight and the raise is offered here, one tap away — THAT one
+        /// the snapshot does carry, because losing it would silently retract what the hero promised.
         var proposedRaise: ProgressionPlanner.Raise? = nil
         /// «Volver a X» was tapped for this exercise (FER-835). Persisted with the session at save so
         /// the progression cycle treats it as neither hit nor miss; carried by the crash snapshot.
@@ -300,6 +305,37 @@ final class StrengthSessionModel: ObservableObject {
     func supersetRounds(at index: Int) -> Int {
         guard runs.indices.contains(index) else { return 0 }
         return runs[index].sets.filter { $0.kind == .work }.count
+    }
+
+    // MARK: The held raise (FER-82)
+
+    /// Whether the run at `index` is offering a raise that can still be taken: earned, held by today's
+    /// verdict, and with at least one work set left to lift. A finished exercise offers nothing —
+    /// taking it would move no weight while the app claimed today's load went up.
+    func canTakeHeldRaise(at index: Int) -> Bool {
+        guard runs.indices.contains(index), runs[index].proposedRaise?.waiting == true else { return false }
+        return runs[index].sets.contains { !$0.done && $0.kind == .work }
+    }
+
+    /// Take the held raise: every UNDONE work set moves to the proposed weight (the same all-work-sets
+    /// rule an applied raise seeds with) and the proposal stops waiting. Done sets keep what was
+    /// actually lifted. Returns false when there was nothing to take, so the UI can stay quiet.
+    ///
+    /// Taking it MID-exercise makes the session mixed: some sets at the old load, the rest at the new
+    /// one. The cycle reads a session by its TOP weight and the reps done at that weight, so a mixed
+    /// session would look like «went up and missed the goal» — a failure the athlete never had. It is
+    /// marked opted-out, the same contract «Volver a X» uses: neither hit nor miss, invisible to the
+    /// cycle, and the earned raise is proposed again next session (FER-82 · FER-835).
+    @discardableResult
+    func takeHeldRaise(at index: Int) -> Bool {
+        guard canTakeHeldRaise(at: index), let toKg = runs[index].proposedRaise?.toKg else { return false }
+        let mixed = runs[index].sets.contains { $0.done && $0.kind == .work }
+        for si in runs[index].sets.indices where !runs[index].sets[si].done && runs[index].sets[si].kind == .work {
+            runs[index].sets[si].weightKg = toKg
+        }
+        runs[index].proposedRaise?.waiting = false
+        if mixed { runs[index].raiseOptedOut = true }
+        return true
     }
 
     // MARK: Editing the current set
@@ -840,7 +876,11 @@ final class StrengthSessionModel: ObservableObject {
                     },
                     currentSet: run.currentSet, skipped: run.skipped,
                     raiseOptedOut: run.raiseOptedOut ? true : nil,
-                    supersetGroup: run.supersetGroup, note: run.note)
+                    supersetGroup: run.supersetGroup, note: run.note,
+                    // FER-82: only a HELD raise travels — an applied one is already in the weights.
+                    heldRaise: run.proposedRaise.flatMap { r in
+                        r.waiting ? .init(fromKg: r.fromKg, toKg: r.toKg, phrase: r.phrase) : nil
+                    })
             },
             currentIndex: currentIndex, restEndsAt: restEndsAt, restStartedAt: restStartedAt,
             currentRestTarget: currentRestTarget, currentRestMode: currentRestMode,
@@ -865,6 +905,12 @@ final class StrengthSessionModel: ObservableObject {
                                        rpe: s.rpe, note: s.note)
                         },
                         currentSet: r.currentSet, skipped: r.skipped,
+                        // The held offer is re-armed exactly as it was: the table already opened at
+                        // last time's weight, so taking it stays one tap away after a restore (FER-82).
+                        proposedRaise: r.heldRaise.map {
+                            ProgressionPlanner.Raise(fromKg: $0.fromKg, toKg: $0.toKg,
+                                                     phrase: $0.phrase, waiting: true)
+                        },
                         raiseOptedOut: r.raiseOptedOut ?? false,
                         supersetGroup: r.supersetGroup, note: r.note)
         }
@@ -913,7 +959,14 @@ final class StrengthSessionModel: ObservableObject {
                 // the proposed weight (double progression trains all work sets at one load).
                 // Regla fantasma (decisión Fer, FER-952): «si no lleno nada, que sea lo mismo que la
                 // anterior» — la última vez gana al plan; la subida ganada (FER-E) sigue primero.
-                let weight = (type == .weightReps ? slot.raise?.toKg : nil) ?? lastWeight ?? p.weightKg ?? 0
+                // FER-82: a raise the day is HOLDING (`waiting`) does not seed — the table opens at
+                // the weight the raise would climb FROM (the cycle's working load, i.e. last session's
+                // top work set), and the raise is offered inside the session, one tap away. Using
+                // `lastWeight` here would open at the last row logged, which may be a back-off set:
+                // the hero would promise «la subida DESDE 82,5» over a table sitting at 70.
+                let held = (type == .weightReps && slot.raise?.waiting == true) ? slot.raise?.fromKg : nil
+                let earned = (type == .weightReps && slot.raise?.waiting == false) ? slot.raise?.toKg : nil
+                let weight = earned ?? held ?? lastWeight ?? p.weightKg ?? 0
                 let reps = usesReps ? (lastReps ?? p.reps ?? 8) : 0
                 // FER-715: keep the planned `RoutineSet` id (so a per-set rest edit can persist back to the
                 // routine) and carry the set's own rest override (nil = inherit the exercise at rest time).

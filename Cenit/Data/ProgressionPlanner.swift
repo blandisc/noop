@@ -18,6 +18,9 @@ enum ProgressionPlanner {
         let toKg: Double
         /// The one-sentence arithmetic justification («Hiciste 4×8 con 100 kg el jue 25 jun y el jue 2 jul»).
         let phrase: String
+        /// FER-82: `true` when today's verdict held the raise. The cells seed at `fromKg` and the raise
+        /// is offered, one tap away — held, never lost, and never a block on editing by hand.
+        var waiting: Bool = false
     }
 
     /// Group raw work-set rows (oldest→newest) into per-session facts for the classifier. A session's
@@ -38,13 +41,19 @@ enum ProgressionPlanner {
         }
     }
 
-    /// Classify one exercise and, when the raise is earned today, build the seed + phrase.
-    /// Returns (state, raise): `raise` is non-nil only for `.readyToAdvance`.
+    /// Classify one exercise and, when a raise is earned, build the seed + phrase.
+    ///
+    /// FER-82 «un solo oráculo»: `advice` is the SAME verdict Hoy is painting, translated once in
+    /// `TrainingRegulation`. It has no default — the day this parameter was optional, three screens
+    /// kept deciding by the old 0–100 score and the app contradicted itself on the same day.
+    ///
+    /// Returns (state, raise). `raise` is non-nil for `.readyToAdvance` (applied to the seed) AND for
+    /// `.deferred` (`waiting == true`: earned, held by today's verdict, offered one tap away).
     static func evaluate(re: RoutineExercise,
                          history: [(startTs: Int, weightKg: Double, reps: Int, optedOut: Bool)],
                          inventory: [PlateMath.PlateStock],
                          equipment: String?,
-                         recovery: Double?, recoveryZ: Double? = nil)
+                         advice: TrainingRegulation.Advice)
         -> (state: ProgressionState, raise: Raise?)? {
         guard re.progressionEnabled else { return nil }
         let targetReps = re.plannedSets.first { $0.kind == .work }?.reps ?? re.targetReps ?? 8
@@ -52,19 +61,33 @@ enum ProgressionPlanner {
         let increment = re.progressionIncrementKg
             ?? PlateMath.minimumIncrement(for: .from(equipment: equipment), inventory: inventory)
         let sessions = pastSessions(from: history)
-        let reason = re.progressionIgnoreRecovery
-            ? nil : TrainingRegulation.suggest(recovery: recovery, recoveryZ: recoveryZ)?.reason
+        // Per-exercise opt-out: «ignora mi recuperación en este ejercicio» keeps the raise on the log alone.
+        let honoursRecovery = !re.progressionIgnoreRecovery
         let input = ProgressionMath.ProgressionInput(
             history: sessions.map(\.session),
             targetReps: targetReps, targetSets: targetSets,
             sessionsToAdvance: re.progressionSessions, incrementKg: increment,
             deloadWarnOnly: re.progressionDeload == .warn,
-            recoveryReason: reason)
+            recoveryReason: nil,
+            deferRaise: honoursRecovery && !TrainingRegulation.allowsRaise(advice))
         let state = ProgressionMath.classify(input)
-        guard case .readyToAdvance(let newKg) = state else { return (state, nil) }
-        guard let fromKg = sessions.last?.session.workingKg else { return (state, nil) }
+        let newKg: Double
+        let waiting: Bool
+        switch state {
+        case .readyToAdvance(let kg): newKg = kg; waiting = false
+        case .deferred(let kg):       newKg = kg; waiting = true
+        default: return (state, nil)
+        }
+        // FER-82: TODO lo que se muestra sale de las sesiones que el ciclo ve. Una sesión marcada
+        // opt-out (se tomó la subida a media sesión, o se pulsó «Volver a X») tiene como peso tope el
+        // NUEVO: leerla aquí devolvía fromKg = toKg —la siguiente sesión sembraba el peso subido
+        // incluso en un día que retiene la subida— y cortaba la racha de fechas, dejando la frase
+        // del «por qué» sin ninguna («Hiciste 3×8 con 82.5 kg el —»). El clasificador ya las ignora;
+        // estas dos derivaciones también.
+        let visible = sessions.filter { !$0.session.optedOut }
+        guard let fromKg = visible.last?.session.workingKg else { return (state, nil) }
         // The qualifying dates: the trailing run of met sessions at the current weight, oldest first.
-        let met = sessions.reversed().prefix {
+        let met = visible.reversed().prefix {
             abs($0.session.workingKg - fromKg) < 0.0001 &&
             $0.session.workSetReps.count >= targetSets &&
             $0.session.workSetReps.allSatisfy { $0 >= targetReps }
@@ -82,6 +105,6 @@ enum ProgressionPlanner {
             phrase = String(format: String(localized: "You did %lld×%lld with %@ kg on %@."),
                             targetSets, targetReps, kgFmt, dates.last ?? "—")
         }
-        return (state, Raise(fromKg: fromKg, toKg: newKg, phrase: phrase))
+        return (state, Raise(fromKg: fromKg, toKg: newKg, phrase: phrase, waiting: waiting))
     }
 }

@@ -80,8 +80,12 @@ private struct EntrenarLanding: View {
     @State private var exerciseCounts: [String: Int] = [:]
     /// Exercises whose earned raise seeds today's session (FER-G): name + proposed kg for the hero's «Hoy subes» line.
     @State private var raisesToday: [(name: String, kg: Double)] = []
-    /// Exercises whose earned raise is deferred by low recovery today (gate copy in the hero).
-    @State private var deferredToday: [String] = []
+    /// Exercises whose earned raise today's verdict is holding — with the weight that waits, so the
+    /// hero can name it and the athlete knows exactly what is one tap away in the session (FER-82).
+    @State private var deferredToday: [(name: String, kg: Double)] = []
+    /// The verdict `todaySlots` were seeded with; `nil` until the first load. Guards «Empezar» from
+    /// handing the session a table built under a verdict that has since changed (FER-82).
+    @State private var slotsAdvice: TrainingRegulation.Advice?
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
     private var unitSystem: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
     /// Top primary muscles per routine (Spanish display labels), built from the same per-routine exercise
@@ -132,7 +136,10 @@ private struct EntrenarLanding: View {
     /// Monday-first display order in the Calendar weekday convention.
     private let orderedWeekdays = [2, 3, 4, 5, 6, 7, 1]
     private var todayWeekday: Int { Calendar.current.component(.weekday, from: Date()) }
-    private var recovery: Double? { repo.today?.recovery }
+    /// FER-82 «un solo oráculo»: Entrenar advises from the SAME verdict Hoy is painting, resolved once
+    /// in `Repository.trainingAdvice`. There is no recovery-score fallback here on purpose — a second
+    /// source of truth is exactly what let this section contradict Hoy on the same day.
+    private var advice: TrainingRegulation.Advice { repo.trainingAdvice }
 
     var body: some View {
         // Fixed section rhythm in a plain ScrollView (FER-786 hotfix): the earlier GeometryReader +
@@ -220,7 +227,12 @@ private struct EntrenarLanding: View {
         // The guided strength session (FER-347) is now presented at the shell (`RootTabView`) as a
         // full-screen cover with a floating pill on all five tabs (FER-716), so it survives tab switches
         // and no longer needs a «Resume» row here. The session lives in AppModel.
-        .task { await load() }
+        //
+        // Keyed to the repository's publish counter (FER-82): the seed and the advice line must come
+        // from the SAME pass. On a cold start the verdict only lands with the full refresh, and an
+        // unkeyed `.task` left the prefetched raise frozen on the pre-verdict evaluation while the
+        // advice line (a computed property) already spoke the new verdict.
+        .task(id: repo.refreshSeq) { await load() }
         // The Daily Brief's «Hoy en tu plan» → «Empezar» lands here via TabRouter: start today's session
         // reusing the slots this view prefetched on load (FER-613). Consumed once; if we're not loaded yet,
         // defer until `load()` finishes.
@@ -370,6 +382,28 @@ private struct EntrenarLanding: View {
     /// routine opens its plan to edit instead of an empty session; a rest day opens the «Hoy descansas» sheet.
     private func startToday() {
         guard let r = todayRoutine else { openRestDay(); return }
+        // FER-82: the slots carry the verdict they were seeded with. If it moved since the prefetch
+        // (the case that matters: they were built while the verdict was still being computed and it
+        // landed a second later), rebuild ONCE before starting — otherwise the whole session runs on
+        // a verdict the screen has already stopped showing. Exactly one retry, never a loop.
+        if let seeded = slotsAdvice, seeded != repo.trainingAdvice {
+            Task {
+                // Un intento de reconstrucción, y luego SE ARRANCA pase lo que pase: el usuario pidió
+                // entrenar y el tap no se puede convertir en otra pantalla. Si la reconstrucción no
+                // publicó, la tabla que sigue en pie está sembrada de forma conservadora (con el peso
+                // anterior) y la subida sigue a un toque dentro de la sesión: nunca se entrena de más
+                // por esta ruta, solo, a lo sumo, de menos.
+                _ = await load()
+                startTodayNow(r)
+            }
+            return
+        }
+        startTodayNow(r)
+    }
+
+    /// Start with the slots as they are — the terminal half of `startToday`, so the rebuild path can
+    /// call it without ever re-entering the verdict check.
+    private func startTodayNow(_ r: Routine) {
         guard !todaySlots.isEmpty else { openRoutine(r.id); return }
         model.startStrengthSession(routineId: r.id, routineName: r.name, slots: todaySlots)
     }
@@ -450,15 +484,31 @@ private struct EntrenarLanding: View {
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                } else if !deferredToday.isEmpty {
-                    Text("The raise for \(deferredToday.joined(separator: ", ")) waits for your next session.")
-                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
                 }
-                if recovery != nil {
+                // Both rows can be true at once: a slot with «Baja recuperación · Ignorar» raises on
+                // its log alone while the rest of the day is held. They coexist rather than one
+                // hiding the other, so the held weights never vanish from the screen (FER-82).
+                if showsHeldRaise, !deferredToday.isEmpty {
+                    // FER-82: the raise is held, not lost. Name the weight that waits and open the
+                    // session, where taking it is one tap. Editing by hand is never blocked.
+                    Button { openRoutine(r.id) } label: {
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                            heldRaiseText
+                                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .fixedSize(horizontal: false, vertical: true)
+                            StrandIcon.disclosure.image
+                                .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                        }
+                        .frame(minHeight: 44)   // HIG tap target — the row is one thin subhead line (FER-944)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+                if let line = adviceLine {
                     HStack(spacing: 7) {
                         Rectangle().fill(theme.dataRecovery).frame(width: 2, height: 10)  // token-exempt: filete de dato
-                        Text(recoveryLine(recovery ?? 0))
+                        Text(line)
                             .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -505,8 +555,12 @@ private struct EntrenarLanding: View {
     /// «Hoy subes Press banca · 82,5 kg y Press militar · 26 kg» — the names+loads in the raise green.
     private var raiseText: Text {
         let parts = raisesToday.map { "\($0.name) · \(UnitFormatter.massFromKilograms($0.kg, system: unitSystem))" }
+        // Grotesk RELATIVO al subhead, igual que su fila hermana: las dos pueden estar en pantalla a
+        // la vez y con Dynamic Type una crecía y la otra se quedaba clavada en 13 pt.
         let strong = parts.map {
-            Text(verbatim: $0).font(InstrumentoType.grotesk(13, weight: .bold)).foregroundStyle(theme.dataRecovery)
+            Text(verbatim: $0)
+                .font(InstrumentoType.groteskNumber(13, weight: .bold, relativeTo: .subheadline))
+                .foregroundStyle(theme.dataRecovery)
         }
         var t = Text("Today you raise") + Text(verbatim: " ")
         for (i, s) in strong.enumerated() {
@@ -516,14 +570,50 @@ private struct EntrenarLanding: View {
         return t
     }
 
+    /// «Te espera la subida: Press banca · 82,5 kg. Puedes tomarla en la sesión.» — the held raise,
+    /// named. Same shape as `raiseText` but in reading ink: a fact being held, not a green go-ahead.
+    ///
+    /// Two separators, two jobs: « · » binds a name to its weight, «, » separates exercises, and the
+    /// list closes with a period before the second sentence. Long days are capped at three names and
+    /// summarised, so the hero never turns into a paragraph.
+    private var heldRaiseText: Text {
+        let shown = deferredToday.prefix(3)
+        let rest = deferredToday.count - shown.count
+        let parts = shown.map { "\($0.name) · \(UnitFormatter.massFromKilograms($0.kg, system: unitSystem))" }
+        // Grotesk RELATIVE to the surrounding subhead: the weights are the datum of this sentence, so
+        // they have to grow with it — a fixed 13 pt stayed put while the prose reached xxxLarge.
+        let strong = parts.map {
+            Text(verbatim: $0)
+                .font(InstrumentoType.groteskNumber(13, weight: .bold, relativeTo: .subheadline))
+                .foregroundStyle(theme.ink)
+        }
+        var t = (deferredToday.count == 1 ? Text("The raise waits:") : Text("The raises wait:"))
+            + Text(verbatim: " ")
+        for (i, s) in strong.enumerated() {
+            if i > 0 { t = t + Text(verbatim: ", ") }
+            t = t + s
+        }
+        // Spanish takes no comma before «y», so the tail joins with a plain space.
+        if rest > 0 { t = t + Text(verbatim: " ") + Text("and \(rest) more") }
+        return t + Text(verbatim: ". ")
+            + (deferredToday.count == 1 ? Text("You can take it in the session.")
+                                        : Text("You can take them in the session."))
+    }
+
     // MARK: - ② Suggestion (engine is FER-532 — TrainingRegulation.lightAlternative)
     //
     // A CONTEXTUAL lighter/heavier alternative, derived from today's recovery against your personal
     // baseline. Within the normal band or with no signal the engine returns nil and the row falls back to
     // an INFORMATIONAL placeholder (FER-559) — not tappable, no destination.
 
+    /// The gentler option, from the ONE oracle: only «Recupera» offers one. Silent and pending states
+    /// return nil, so the row hides instead of inventing a direction from a score.
+    private var suggestionAlternative: TrainingRegulation.LightAlternative? {
+        TrainingRegulation.lightAlternative(advice)
+    }
+
     @ViewBuilder private var suggestionRow: some View {
-        if let alt = TrainingRegulation.lightAlternative(recovery: recovery) {
+        if let alt = suggestionAlternative {
             Button { suggestionAction(alt) } label: {
                 HStack(spacing: 11) {
                     Image(systemName: suggestionIcon(alt)).font(StrandFont.glyph(.lead)).foregroundStyle(theme.inkSecondary)
@@ -1264,19 +1354,35 @@ private struct EntrenarLanding: View {
         return String(localized: "Today · \(day)")
     }
 
-    private func recoveryLine(_ rec: Double) -> String {
-        switch TrainingRegulation.suggest(recovery: rec)?.reason {
-        case .recoveryHigh: return String(localized: "Recovery high for you · you can take on your full plan.")
-        case .recoveryLow:  return String(localized: "Recovery low for you · maybe ease the volume today.")
-        default:            return String(localized: "Recovery in your range · train at your usual load.")
+    /// Whether the hero may explain a held raise. Silence must be total: with no usable read (or none
+    /// yet) the section neither advises nor announces a raise it is holding.
+    private var showsHeldRaise: Bool { TrainingRegulation.explainsHeldRaise(advice) }
+
+    /// The one-line advice under the hero. FER-82: it says exactly what the verdict Hoy showed says,
+    /// in the same words, so the two screens can never disagree. Silent and pending show nothing —
+    /// there is no score to fall back to, by design.
+    private var adviceLine: String? {
+        switch advice {
+        case .planAsIs: return String(localized: "In range · your plan for today, as it is.")
+        case .lighter:  return String(localized: "Go light today · don't add weight.")
+        case .recover:  return String(localized: "Recover · easy today, or rest.")
+        case .silent, .pending: return nil
         }
     }
 
     // MARK: - Data
 
-    private func load() async {
+    /// Rebuild the whole screen from the store. Returns whether THIS pass published its work: false
+    /// when the store is unavailable or a newer pass won the race, so a caller that depends on fresh
+    /// slots (the «Empezar» rebuild) can tell «rebuilt» from «gave up» (FER-82).
+    @discardableResult
+    private func load() async -> Bool {
         loadFailed = false   // clear on every (re)try
-        guard let store = await repo.storeHandle() else { loadFailed = true; loaded = true; return }
+        // Sequence guard, same as TodayView/CuerpoView: `.task(id:)` cancels the old pass but none of
+        // the awaits below is a cancellation point, so without this an in-flight pre-verdict load
+        // would still reach the end and overwrite the post-verdict one it lost the race to (FER-82).
+        let seq = repo.refreshSeq
+        guard let store = await repo.storeHandle() else { loadFailed = true; loaded = true; return false }
         let rs = (try? await store.routines()) ?? []
         let customAll = (try? await store.customExercises()) ?? []
         let customAllByID = Dictionary(customAll.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
@@ -1302,6 +1408,10 @@ private struct EntrenarLanding: View {
         // today's routine is loaded (bounded), with the same catalog + override + «la última vez» resolution
         // «Rutina de hoy» uses, so the prefill matches.
         var slots: [StrengthSessionModel.PlanSlot] = []
+        var raisingToday: [(name: String, kg: Double)] = []
+        var heldToday: [(name: String, kg: Double)] = []
+        // The verdict this whole pass was built with, published together with the slots it seeded.
+        var passAdvice = repo.trainingAdvice
         if let tid = WeeklySplit.todayRoutineId(split: splitMap, todayWeekday: todayWeekday) {
             let exs = (try? await store.routineExercises(routineId: tid)) ?? []
             let custom = (try? await store.customExercises()) ?? []
@@ -1310,34 +1420,47 @@ private struct EntrenarLanding: View {
             // FER-E/G: «la última vez» + progression per slot, via the ONE `sessionSeed` implementation
             // the «Rutina» editor also calls — the raise the hero names is exactly the raise it seeds.
             let inventory = await MainActor.run { PlatesStore().inventory }
-            let recovery = repo.today?.recovery
+            // One verdict for the whole table (FER-82): read before the loop, never inside it.
+            let advice = repo.trainingAdvice
+            passAdvice = advice
             var raising: [(name: String, kg: Double)] = []
-            var deferredNames: [String] = []
+            var held: [(name: String, kg: Double)] = []
             for re in exs {
                 let ex = (ExerciseCatalog.byID(re.exerciseId) ?? customByID[re.exerciseId])?.applying(overrides)
-                let seed = await repo.sessionSeed(re: re, exercise: ex, inventory: inventory, recovery: recovery)
-                if let result = seed.evaluation {
+                let seed = await repo.sessionSeed(re: re, exercise: ex, inventory: inventory, advice: advice)
+                if let raise = seed.evaluation?.raise {
                     let name = ex.map(StrengthDisplay.name) ?? re.exerciseId
-                    if let raise = result.raise { raising.append((name: name, kg: raise.toKg)) }
-                    else if case .deferred = result.state { deferredNames.append(name) }
+                    // One evaluation, two readings: applied to the seed, or held by today's verdict.
+                    if raise.waiting { held.append((name: name, kg: raise.toKg)) }
+                    else { raising.append((name: name, kg: raise.toKg)) }
                 }
                 slots.append(.init(re: re, exercise: ex, lastSets: seed.lastSets, raise: seed.evaluation?.raise))
             }
-            raisesToday = raising
-            deferredToday = deferredNames
+            raisingToday = raising
+            heldToday = held
         }
+        let recent = (try? await store.recentSessions(limit: 200)) ?? []
+        // Every read is done: from here on there is no await, so the publish below is atomic. A pass
+        // that lost the race drops its work y NO toca `loaded`: el pase ganador ya está en vuelo y lo
+        // encenderá con datos. Encenderlo aquí pintaba el estado de PRIMER USO («Empecemos por tu
+        // plan») a alguien que sí tiene plan — cambiar un parpadeo en blanco por una mentira.
+        guard seq == repo.refreshSeq else { return false }
+        raisesToday = raisingToday
+        deferredToday = heldToday
+        slotsAdvice = passAdvice
         routines = rs
         exerciseCounts = counts
         routineMuscles = muscles
         routineCategory = categories
         split = splitMap
         todaySlots = slots
-        sessions = (try? await store.recentSessions(limit: 200)) ?? []
+        sessions = recent
         // After sessions + routines (→ routinesById): bucket once for Constancia + week strip (FER-948).
         constancyMonthsCache = computeConstancyMonths()
         loaded = true
         // A «Empezar» from the Daily Brief that arrived before the prefetch finished now has its slots (FER-613).
         if startWhenLoaded { startWhenLoaded = false; startToday() }
+        return true
     }
 
     /// Tally the primary muscles across a routine's exercises → the top three, as Spanish display labels
@@ -1381,9 +1504,14 @@ private struct DiscPressStyle: ButtonStyle {
 // MARK: - «Hoy descansas. También cuenta.» (v3 · 2B) — a PUSHED screen now (FER-718)
 //
 // What «Empezar» opens on a rest day, and what the streak row protects. Reframed to the mock: the streak
-// is explicitly SAFE (resting does not break it), a card «Sugerido por tu recuperación» carries the one
-// cited light alternative (`TrainingRegulation.lightAlternative` — the only solid gate), a quieter «Si aun
-// así quieres entrenar» section lists the other ways, and a footer names tomorrow's routine from the split.
+// is explicitly SAFE (resting does not break it), a card carries the one cited light alternative, a
+// quieter «Si aun así quieres entrenar» section lists the other ways, and a footer names tomorrow's
+// routine from the split.
+//
+// FER-82: that card now speaks from the SAME verdict as Hoy and the landing (`repo.trainingAdvice`).
+// It used to read the 0–100 score, which meant a rest day could offer an OPTIONAL EXTRA session while
+// Hoy was painting «Recupera» — a second oracle, inside Entrenar, recommending the one thing the new
+// mapping says it must never recommend. Only «Recupera» surfaces a suggestion here now.
 
 struct RestDayScreen: View {
     var openIntervals: () -> Void
@@ -1399,9 +1527,9 @@ struct RestDayScreen: View {
     /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
     @ObserveInjection private var inject
 
-    private var recovery: Double? { repo.today?.recovery }
+    /// The gentler option, from the one oracle: present only when today's verdict is «Recupera».
     private var alt: TrainingRegulation.LightAlternative? {
-        TrainingRegulation.lightAlternative(recovery: recovery)
+        TrainingRegulation.lightAlternative(repo.trainingAdvice)
     }
 
     var body: some View {
@@ -1415,15 +1543,17 @@ struct RestDayScreen: View {
 
                 streakBullet.padding(.top, 16)
 
-                if let alt {
-                    suggestedCard(alt).padding(.top, CenitMetrics.sectionGap)
+                if alt == .softer {
+                    suggestedCard.padding(.top, CenitMetrics.sectionGap)
                 }
 
                 Text("If you still want to train").instrumentoOverline()
                     .foregroundStyle(theme.inkTertiary).padding(.top, CenitMetrics.sectionGap)
                 VStack(spacing: 0) {
+                    // Mobility moves up into the card when the day suggests it; the rest of the ways
+                    // to move are always here, because this list is a choice, not a recommendation.
                     if alt != .softer { row("figure.cooldown", "Mobility · 20 min") { model.startMobilityOneOff() } }
-                    if alt != .optionalLight { row("timer", "Intervals · 12 min") { openIntervals() } }
+                    row("timer", "Intervals · 12 min") { openIntervals() }
                     row("list.bullet", "Pick a routine") { openRoutines() }
                     row("wind", "Breathe", last: true) { openBreathe() }
                 }
@@ -1456,21 +1586,21 @@ struct RestDayScreen: View {
         }
     }
 
-    /// The one cited light alternative, in a card — the only solid recovery gate we surface here.
-    private func suggestedCard(_ alt: TrainingRegulation.LightAlternative) -> some View {
-        let name: LocalizedStringKey = alt == .softer ? "Mobility · 20 min" : "Intervals · 12 min"
-        let tag: LocalizedStringKey = alt == .softer ? "gentle" : "extra"
-        return VStack(alignment: .leading, spacing: 0) {
-            Text("Suggested by your recovery").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+    /// The one cited light alternative, in a card. Shown only when today's verdict is «Recupera», so
+    /// there is a single case to render: the gentler session. The overline names the day's verdict,
+    /// not a score — the same word Hoy is showing (FER-82).
+    private var suggestedCard: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Because today you recover").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             HStack(alignment: .firstTextBaseline, spacing: 9) {
-                Text(name).font(StrandFont.title2).foregroundStyle(theme.ink)
-                Text(tag).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                Text("Mobility · 20 min").font(StrandFont.title2).foregroundStyle(theme.ink)
+                Text("gentle").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                     .padding(.horizontal, 9).padding(.vertical, 2)
                     .background(theme.paper, in: Capsule())
                     .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
             }
             .padding(.top, 5)
-            StrandCTAButton("Empezar") { if alt == .softer { model.startMobilityOneOff() } else { openIntervals() } }
+            StrandCTAButton("Empezar") { model.startMobilityOneOff() }
                 .padding(.top, 14)
         }
         .padding(CenitMetrics.cardPadding)

@@ -16,7 +16,7 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 //   .routine  → overline «Rutina»                (autosave on exit; no explicit Save CTA)
 //
 // The FER-A..G progression wiring survives the merge: the .today origin evaluates `ProgressionPlanner` per
-// opted-in slot (history + plates + today's recovery) and hands `raise` to the session's PlanSlots, exactly
+// opted-in slot (history + plates + today's verdict, FER-82) and hands `raise` to the session's PlanSlots, exactly
 // like «Rutina de hoy» did. Guards: Notes-style autosave on exit for every origin (dirty → persist on back),
 // a «Saved»/Undo chrome driven off the load-time `itemsSnapshot`, and a live session locks every editing
 // surface (cells, menus, swipes) — resuming is the only action then.
@@ -1250,12 +1250,14 @@ struct RoutineEditorScreen: View {
         // prefetch also calls (sub-épico 1 wiring). Only the .today origin can start a session, so the
         // save-only origins skip that per-exercise history I/O entirely.
         let inventory = plates.inventory
-        let recovery = repo.today?.recovery
+        // One verdict for the whole table (FER-82): read before the loop, never inside it, so the
+        // session can't open with some exercises raised and others held.
+        let advice = repo.trainingAdvice
         var built: [EditorItem] = []
         for re in res {
             guard let ex = byId[re.exerciseId] else { continue }
             if startsSession {
-                let seed = await repo.sessionSeed(re: re, exercise: ex, inventory: inventory, recovery: recovery)
+                let seed = await repo.sessionSeed(re: re, exercise: ex, inventory: inventory, advice: advice)
                 built.append(EditorItem(re: re, exercise: ex, lastSets: seed.lastSets,
                                         raise: seed.evaluation?.raise))
             } else {

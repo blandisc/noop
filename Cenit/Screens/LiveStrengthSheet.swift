@@ -125,6 +125,9 @@ struct LiveStrengthSheet: View {
         }
     }
     @State private var freshSuggestions: [QuickSuggestion]?
+    /// The verdict the suggestions above were computed under (FER-82): a panel first built while the
+    /// verdict was still pending must recompute when it lands, or it stays empty all session.
+    @State private var suggestionsAdvice: TrainingRegulation.Advice?
     @State private var loadedMuscle: String?
     /// Full-screen «Focus mode» cover — entry from the inline set list; dismiss returns to the table
     /// without ending the session (mock v21 handoff). Additive only; does not replace `inlineSession`.
@@ -2338,7 +2341,9 @@ struct LiveStrengthSheet: View {
             // arithmetic card; green because the raise IS the datum.
             if let raise = run.proposedRaise {
                 raiseLine(raise, ei: ei)
-                if whyRaiseOpen.contains(run.id) { whyRaiseCard(raise, ei: ei) }
+                // The arithmetic card belongs to an APPLIED raise: while the day is holding it, the
+                // line's tap takes the raise instead of opening an explanation (FER-82).
+                if !raise.waiting, whyRaiseOpen.contains(run.id) { whyRaiseCard(raise, ei: ei) }
             }
             HStack(spacing: 8) {
                 restChip(run, ei: ei)
@@ -2635,8 +2640,16 @@ struct LiveStrengthSheet: View {
 
     // MARK: Proposed raise (FER-E)
 
+    /// The raise, named where you train. Two readings of the same earned kilo (FER-82):
+    ///   • applied — «↑ hoy 102,5 · por qué», green, because the raise IS today's datum;
+    ///   • held by the day's verdict — «↑ 102,5 te espera · subir», in reading ink, and the tap TAKES
+    ///     it instead of explaining it. Advisory to the end: the app holds, the athlete decides.
     private func raiseLine(_ raise: ProgressionPlanner.Raise, ei: Int) -> some View {
-        Button {
+        // A held raise with nothing left to lift is not an offer: taking it would change no weight
+        // while the line turned green claiming today's load rose. It reads, it doesn't act.
+        let takeable = session.canTakeHeldRaise(at: ei)
+        return Button {
+            if raise.waiting { if takeable { takeRaise(ei: ei) }; return }
             withAnimation(StrandMotion.interactive) {
                 let id = session.runs[ei].id
                 if whyRaiseOpen.contains(id) { whyRaiseOpen.remove(id) } else { whyRaiseOpen.insert(id) }
@@ -2645,19 +2658,41 @@ struct LiveStrengthSheet: View {
             HStack(spacing: 5) {
                 StrandIcon.up.image
                     .font(StrandFont.glyph(.chevron, weight: .bold))
-                Text("today \(massText(raise.toKg))")
+                Text(raise.waiting ? "\(massText(raise.toKg)) waits" : "today \(massText(raise.toKg))")
                     .font(InstrumentoType.grotesk(12, weight: .bold)).monospacedDigit()
-                Text("·").foregroundStyle(theme.inkTertiary)
-                Text("why")
-                    .font(InstrumentoType.grotesk(12, weight: .bold))
-                    .underline(pattern: .dot, color: theme.dataRecovery.opacity(0.55))   // token-exempt: subrayado punteado decorativo
+                if takeable || !raise.waiting {
+                    Text("·").foregroundStyle(theme.inkTertiary)
+                    Text(raise.waiting ? "raise" : "why")
+                        .font(InstrumentoType.grotesk(12, weight: .bold))
+                        // The dotted rule follows the line's own tone: green belongs to an applied
+                        // raise, and a held one reads in ink (FER-82).
+                        .underline(pattern: .dot,
+                                   color: (raise.waiting ? theme.ink : theme.dataRecovery).opacity(0.55))   // token-exempt: subrayado punteado decorativo
+                }
             }
-            .foregroundStyle(theme.dataRecovery)
+            .foregroundStyle(raise.waiting ? theme.ink : theme.dataRecovery)
+            .frame(minHeight: 44, alignment: .leading)   // HIG tap target: this tap IS «subir» (FER-82)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(Text("Today you raise to \(massText(raise.toKg))"))
-        .accessibilityHint(Text("Shows why, with your real dates"))
+        .disabled(raise.waiting && !takeable)
+        // No cause is named here: the same line shows while the verdict is still being computed, and
+        // «espera un día en rango» would be a reason the app doesn't have yet.
+        .accessibilityLabel(raise.waiting
+                            ? Text("The raise to \(massText(raise.toKg)) waits")
+                            : Text("Today you raise to \(massText(raise.toKg))"))
+        // «las series que te faltan», not «todas»: what is already lifted keeps what was lifted.
+        .accessibilityHint(raise.waiting
+                           ? (takeable ? Text("Raises the sets you have left to that weight") : Text(""))
+                           : Text("Shows why, with your real dates"))
+        // Fires only when THIS line's held raise is taken (the flag flips on this exercise).
+        .sensoryFeedback(.success, trigger: raise.waiting)
+    }
+
+    /// Take a held raise (FER-82): the rule lives in the model (`takeHeldRaise`, tested); the view
+    /// only animates it. The line then turns into the usual green «hoy X · por qué».
+    private func takeRaise(ei: Int) {
+        withAnimation(StrandMotion.interactive) { session.takeHeldRaise(at: ei) }
     }
 
     /// The «por qué» block (WhyRaiseCard, handoff 2b): connection surface, 2.5pt green bar, the arithmetic
@@ -2674,6 +2709,14 @@ struct LiveStrengthSheet: View {
                 Text("Goal today: \(session.runs[ei].sets.count)×\(session.runs[ei].sets.first?.reps ?? 0) with the new weight. Losing a rep or two on a raise is normal; you win them back in 1 or 2 sessions.")
                     .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
+                // FER-82: tomarla a media sesión mezcla dos pesos, así que el ciclo ignora la sesión
+                // (ni acierto ni fallo). Decirlo es parte del trato: el atleta no puede descubrirlo
+                // mañana en «lo que se estancó».
+                if session.runs[ei].raiseOptedOut {
+                    Text("You took it mid-exercise, so this session doesn't count toward the cycle: neither a hit nor a miss.")
+                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 HStack(spacing: 18) {
                     Button { withAnimation(StrandMotion.interactive) { _ = whyRaiseOpen.remove(session.runs[ei].id) } } label: {
                         Text("Keep \(massText(raise.toKg))")
@@ -3519,8 +3562,15 @@ struct LiveStrengthSheet: View {
         }
         .background(theme.paper)
         .safeAreaInset(edge: .top, spacing: 0) { liveHead }
+        // FER-82: las sugerencias las gatea el veredicto, así que una lista calculada mientras el
+        // veredicto todavía se computaba está vencida en cuanto aterriza. Se recalcula cuando el
+        // consejo con el que se calculó ya no es el de hoy.
+        //
+        // Deliberadamente NO se llavea a `repo.refreshSeq`: esta hoja no observa `Repository` (llega
+        // por `model`), así que la llave no cambiaría sola y sería un arreglo de mentira. Con `.task`
+        // a secas se recalcula cada vez que el panel aparece, que es cuando el usuario lo lee.
         .task {
-            guard freshSuggestions == nil else { return }
+            guard freshSuggestions == nil || suggestionsAdvice != model.repo.trainingAdvice else { return }
             await loadFreshSuggestions()
         }
     }
@@ -3560,6 +3610,7 @@ struct LiveStrengthSheet: View {
     /// map, over the trailing 84 days — the top 3 fresh muscles, one exercise each (preferring one the
     /// user has history for), plus a note naming the single most-loaded muscle the picks are avoiding.
     private func loadFreshSuggestions() async {
+        let advice = model.repo.trainingAdvice
         let cal = Calendar.current
         guard let since = cal.date(byAdding: .day, value: -84, to: cal.startOfDay(for: Date())) else { return }
         let sinceTs = Int(since.timeIntervalSince1970)
@@ -3570,9 +3621,17 @@ struct LiveStrengthSheet: View {
         let loads = MuscleFatigueMap.loads(events: events)
         let historyIds = Set(history.map(\.exerciseId))
 
-        // Same engine call `MuscleMapScreen` reads (`.readyMuscles`), not a hand-rolled filter/sort: it
-        // already gates fresh muscles behind systemic recovery (a red-recovery day suggests nothing).
-        let freshMuscles = MuscleFatigueMap.recommendation(loads: loads, recovery: recovery).readyMuscles
+        // Same engine call `MuscleMapScreen` reads (`.readyMuscles`), not a hand-rolled filter/sort.
+        //
+        // FER-82: the SYSTEMIC gate is the day's verdict, not the 0–100 score. Suggesting «agrega este
+        // ejercicio, ese músculo está fresco» on a day Entrenar is saying «Recupera» was the old second
+        // oracle, alive inside the session. The score keeps deciding per-muscle freshness (that is what
+        // it measures); whether to suggest ADDING work at all is the verdict's call.
+        // Igual que el mapa (MuscleMapScreen): el motor recibe `nil` —ningún gate por score— y la
+        // compuerta sistémica la pone el veredicto aquí. Solo «Recupera» corta las sugerencias.
+        let freshMuscles = TrainingRegulation.gatesTraining(advice)
+            ? []
+            : MuscleFatigueMap.recommendation(loads: loads, recovery: nil).readyMuscles
         var picked: [(exercise: Exercise, muscle: String)] = []
         var usedExerciseIds: Set<String> = []
         for muscle in freshMuscles {
@@ -3584,6 +3643,9 @@ struct LiveStrengthSheet: View {
         }
         // The per-exercise "last time" lookups are independent JOINs — run them concurrently, not one
         // await per loop iteration.
+        // El consejo se sella JUNTO con el resultado, no antes de las lecturas: si se marcara al
+        // entrar, una pasada abortada dejaría el sello puesto y la sección no se recalcularía nunca.
+        suggestionsAdvice = advice
         freshSuggestions = await withTaskGroup(of: QuickSuggestion.self) { group in
             for (ex, muscle) in picked {
                 group.addTask {

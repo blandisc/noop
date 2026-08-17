@@ -72,14 +72,20 @@ public enum ProgressionMath {
         public let deloadWarnOnly: Bool
         /// Today's recovery reason, if known. `.recoveryLow` defers an earned raise.
         public let recoveryReason: TrainingRegulation.Reason?
+        /// Defer an earned raise regardless of `recoveryReason` (FER-82). The single oracle sets this
+        /// from Hoy's verdict: with «Hoy ve leve» or «Recupera» the raise waits for a better day. Kept
+        /// as its own flag so the legacy score-driven path keeps its exact behaviour.
+        public let deferRaise: Bool
 
         public init(history: [PastSession], targetReps: Int, targetSets: Int,
                     sessionsToAdvance: Int = 2, incrementKg: Double,
                     deloadWarnOnly: Bool = false,
-                    recoveryReason: TrainingRegulation.Reason? = nil) {
+                    recoveryReason: TrainingRegulation.Reason? = nil,
+                    deferRaise: Bool = false) {
             self.history = history; self.targetReps = targetReps; self.targetSets = targetSets
             self.sessionsToAdvance = sessionsToAdvance; self.incrementKg = incrementKg
             self.deloadWarnOnly = deloadWarnOnly; self.recoveryReason = recoveryReason
+            self.deferRaise = deferRaise
         }
     }
 
@@ -122,8 +128,12 @@ public enum ProgressionMath {
                 // A non-positive increment can't propose a raise (QA D2): stay honestly in-cycle.
                 guard input.incrementKg > 0 else { return .inCycle(done: metRun, of: n) }
                 let newKg = currentKg + input.incrementKg
-                // Recovery gate: a low-recovery day defers the earned raise, preserving progress.
-                if input.recoveryReason == .recoveryLow { return .deferred(newKg: newKg) }
+                // Recovery gate: a day the body didn't clear defers the earned raise, preserving
+                // progress. `deferRaise` is the single-oracle path (Hoy's verdict); `recoveryReason`
+                // is the legacy score path. Either one defers.
+                if input.deferRaise || input.recoveryReason == .recoveryLow {
+                    return .deferred(newKg: newKg)
+                }
                 return .readyToAdvance(newKg: newKg)
             }
             return .inCycle(done: metRun, of: n)
