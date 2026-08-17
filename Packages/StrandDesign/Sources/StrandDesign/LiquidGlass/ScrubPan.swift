@@ -31,27 +31,46 @@ public extension View {
         if #available(iOS 18.0, *) {
             self.gesture(ScrubPanRepresentable(enabled: enabled, onChange: onChange, onEnd: onEnd))
         } else {
-            self.simultaneousGesture(
+            self.modifier(ScrubPanArrastre(enabled: enabled, onChange: onChange, onEnd: onEnd))
+        }
+        #else
+        self.modifier(ScrubPanArrastre(enabled: enabled, onChange: onChange, onEnd: onEnd))
+        #endif
+    }
+}
+
+/// El camino de iOS 17 y macOS: `DragGesture` + LA RED DE CANCELACIÓN.
+///
+/// `onEnded` NO se dispara cuando el gesto se cancela (el scroll se lo lleva, una llamada
+/// entra, el sistema lo interrumpe): sin red, el encabezado se queda congelado en la noche
+/// donde iba el dedo y la tarjeta miente hasta el siguiente toque. `@GestureState` sí se
+/// restablece siempre —esa es su garantía— así que su flanco de bajada es el `onEnd` honesto.
+/// Vive AQUÍ y no en la vista que lo usa: la red es parte del gesto, no de quien lo pide
+/// (antes colgaba de `MatrizHoyFace` y se perdió al extraer el gesto a este archivo).
+private struct ScrubPanArrastre: ViewModifier {
+    let enabled: Bool
+    let onChange: (CGPoint) -> Void
+    let onEnd: () -> Void
+    @GestureState private var arrastrando = false
+
+    func body(content: Content) -> some View {
+        content
+            .simultaneousGesture(
                 DragGesture(minimumDistance: 6, coordinateSpace: .local)
+                    .updating($arrastrando) { _, activo, _ in activo = true }
                     .onChanged { g in
                         guard enabled,
                               abs(g.translation.width) >= abs(g.translation.height) else { return }
                         onChange(g.location)
                     }
-                    .onEnded { _ in onEnd() }
             )
-        }
-        #else
-        self.simultaneousGesture(
-            DragGesture(minimumDistance: 6, coordinateSpace: .local)
-                .onChanged { g in
-                    guard enabled,
-                          abs(g.translation.width) >= abs(g.translation.height) else { return }
-                    onChange(g.location)
-                }
-                .onEnded { _ in onEnd() }
-        )
-        #endif
+            // UN SOLO cierre, el del flanco: `@GestureState` se restablece tanto al levantar el
+            // dedo como al cancelarse, así que `onEnded` sobra — y sumarlo llamaba `onEnd()` dos
+            // veces, con una ventana (soltar y volver a agarrar en el mismo cuadro) donde el
+            // restablecimiento del gesto viejo apagaba el scrub del nuevo.
+            .onChange(of: arrastrando) { _, activo in
+                if !activo { onEnd() }
+            }
     }
 }
 

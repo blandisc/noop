@@ -169,6 +169,72 @@ final class PreparednessBodyHistoryTests: XCTestCase {
         XCTAssertTrue(r.autonomicPossible, "la baseline tiene FC en reposo")
     }
 
+    /// REVISIÓN ADVERSARIAL · La historia que devuelve la ruta SIN fila de hoy tiene que ser
+    /// EXACTAMENTE la misma que produce la ruta normal para esos mismos días. Es la propiedad que
+    /// justifica que exista un helper aparte: si diverge, la Matriz mostraría un juicio distinto
+    /// según si el día de hoy llegó o no — la clase de bug que nadie ve hasta que un usuario
+    /// jura que ayer estaba «dentro» y hoy aparece «fuera» sin que cambiara ese día.
+    /// Segunda vuelta adversarial · la cláusula «la última noche presente tiene que ser
+    /// nocturna» pertenece al camino que JUZGA un día (ahí sí: la base y el día juzgado no
+    /// pueden ser de constructos distintos). Copiarla al helper sin día que juzgar tenía un
+    /// precio peor que el que quería evitar: una sola noche sin reloj al final de la ventana
+    /// tiraba las otras 19 al constructo despierto y la banda de la Matriz saltaba ~8 bpm entre
+    /// dos refrescos consecutivos.
+    func testUnaNocheSinFCNocturnaNoTiraLaVentanaAlConstructoDespierto() {
+        let dias = baseline()                                   // FC despierta ~54-56
+        // Nocturna (~45) en 19 de las 20 noches: la ÚLTIMA presente no la tiene.
+        var nocturna: [String: Double] = [:]
+        for d in dias.dropLast() { nocturna[d.day] = 45 }
+        let r = Preparedness.evaluate(.init(days: dias, strainByDay: [:], trend: nil,
+                                            asOf: "2026-06-21",   // sin fila de hoy: ruta temprana
+                                            nocturnalRestingHr: nocturna, cyclePhase: nil,
+                                            nocturnalRmssd: nil))
+        let usados = r.bodyHistory.compactMap(\.rhrResolved)
+        XCTAssertFalse(usados.isEmpty, "la historia se publica aunque no haya fila de hoy")
+        XCTAssertTrue(usados.contains { $0 < 50 },
+                      "19 noches nocturnas mandan: una sola faltante no reescribe las demás al "
+                      + "constructo despierto (la banda saltaría ~8 bpm entre refrescos): \(usados)")
+    }
+
+    func testHistoriaSinFilaDeHoyNoDivergeDeLaRutaNormal() {
+        let dias = baseline()                        // 20 noches, la última: 2026-06-20
+        let normal = read(dias, asOf: "2026-06-20")  // ruta principal (hay fila de asOf)
+        let sinHoy = read(dias, asOf: "2026-06-21")  // ruta temprana (no hay fila de asOf)
+
+        XCTAssertEqual(sinHoy.verdict, .lowSignal)
+        XCTAssertFalse(normal.bodyHistory.isEmpty)
+        // Mismos días, mismos juicios, misma base por noche.
+        XCTAssertEqual(sinHoy.bodyHistory.map(\.day), normal.bodyHistory.map(\.day))
+        XCTAssertEqual(sinHoy.bodyHistory.map(\.autonomicOut), normal.bodyHistory.map(\.autonomicOut))
+        XCTAssertEqual(sinHoy.bodyHistory.map(\.sleepOut), normal.bodyHistory.map(\.sleepOut))
+        XCTAssertEqual(sinHoy.bodyHistory.map(\.rhrResolved), normal.bodyHistory.map(\.rhrResolved))
+        XCTAssertEqual(sinHoy.sentinelHistory.map(\.day), normal.sentinelHistory.map(\.day))
+        XCTAssertEqual(sinHoy.sentinelHistory.map(\.tempOut), normal.sentinelHistory.map(\.tempOut))
+        XCTAssertEqual(sinHoy.sentinelHistory.map(\.respOut), normal.sentinelHistory.map(\.respOut))
+        XCTAssertEqual(sinHoy.sentinelHistory.map(\.respJudged), normal.sentinelHistory.map(\.respJudged))
+        // Y la madurez que reporta es la del MISMO fold, no un cero.
+        XCTAssertEqual(sinHoy.autonomicNights, normal.autonomicNights)
+        XCTAssertEqual(sinHoy.maturity, normal.maturity)
+    }
+
+    /// REVISIÓN ADVERSARIAL (segunda vuelta) · La concesión de fase lútea vale SOLO para el día
+    /// que se juzga. Sin fila de hoy no hay día juzgado, así que la fase NO puede tocar ninguna
+    /// noche del historial. El helper de esa ruta pasaba el día de CADA fila como `asOf`, y con
+    /// eso las 20 noches recibían la concesión: la historia salía distinta de la del camino
+    /// principal sin que nadie lo notara.
+    func testSinFilaDeHoyLaFaseLuteaNoTocaLaHistoria() {
+        let dias = baseline()
+        let conFase = read(dias, asOf: "2026-06-21", cyclePhase: .lutealLean)
+        let sinFase = read(dias, asOf: "2026-06-21", cyclePhase: nil)
+        XCTAssertEqual(conFase.verdict, .lowSignal)
+        XCTAssertEqual(conFase.bodyHistory.map(\.day), sinFase.bodyHistory.map(\.day))
+        XCTAssertEqual(conFase.bodyHistory.map(\.autonomicOrientedZ),
+                       sinFase.bodyHistory.map(\.autonomicOrientedZ),
+                       "sin día juzgado, la fase no puede mover ninguna z del historial")
+        XCTAssertEqual(conFase.bodyHistory.map(\.autonomicOut), sinFase.bodyHistory.map(\.autonomicOut))
+        XCTAssertEqual(conFase.sentinelHistory.map(\.tempOut), sinFase.sentinelHistory.map(\.tempOut))
+    }
+
     func testRhrResolvedEsLaSerieResuelta() throws {
         // Sin nocturna y con suavizado N=1 (default), la FC resuelta de una noche es su restingHr.
         let r = read(baseline() + [dm("2026-06-21", rhr: 61)], asOf: "2026-06-21")

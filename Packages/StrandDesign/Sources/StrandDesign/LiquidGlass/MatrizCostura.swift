@@ -26,6 +26,15 @@ public struct MatrizCostura: View {
         public let resp: Double?
         /// El motor marcó las DOS fuera esa noche: el día que el par vota.
         public let parFuera: Bool
+        /// Revisión adversarial P-2: una señal sin magnitud no puede dibujarse como si hubiera
+        /// caído en el centro de tu banda. Un hueco es un hueco: su orilla se interrumpe.
+        ///
+        /// Se DERIVAN del valor, no se reciben: mientras fueron parámetros con default, el tipo
+        /// permitía construir `Noche(temp: nil, resp: 0.5)` —bandera en false, valor nil— y esa
+        /// noche se dibujaba pegada al eje con su joya encima. La mentira que P-2 mató seguía
+        /// siendo representable, esperando al próximo llamador (tercera vuelta adversarial).
+        public var tempSinLectura: Bool { temp == nil }
+        public var respSinLectura: Bool { resp == nil }
 
         public init(temp: Double?, resp: Double?, parFuera: Bool = false) {
             self.temp = temp
@@ -51,12 +60,61 @@ public struct MatrizCostura: View {
         self.resaltado = resaltado
     }
 
-    /// Cuánto se separa del eje una señal «en su filo» (normalizada = 1), en fracción del
-    /// medio alto. Deja aire arriba y abajo para que una noche MUY fuera siga cabiendo.
+    /// Cuánto se separa del eje, como fracción del medio alto, la noche MÁS extrema que el
+    /// dibujo puede representar. Deja aire arriba y abajo: el marco no se rompe nunca.
     private static let filoFrac: CGFloat = 0.58
     /// La separación mínima del eje: la costura nunca se cierra del todo, para que se lea como
     /// un objeto y no como una línea partida.
     private static let labioMin: CGFloat = 2.6
+    /// Dónde cae el filo de tu banda por el lado de ADENTRO, y dónde por el de AFUERA.
+    ///
+    /// El hueco entre los dos (0.17 del recorrido ≈ 3.2 pt) es DELIBERADO y es la pieza que
+    /// hace visible una garantía que antes solo era cierta en los números: lo que el motor
+    /// marcó fuera se dibuja más lejos del eje que lo que no marcó. Con el mapeo continuo
+    /// anterior, esas dos noches quedaban a 0.245 pt una de otra —bajo un trazo de 2.2 pt—,
+    /// así que el chip decía «vigilando tu temperatura» y la gráfica no lo respaldaba.
+    private static let filoDentro: CGFloat = 0.58
+    private static let filoFuera: CGFloat = 0.75
+    /// La suavidad de cada tramo (rpm/°C→pixeles).
+    private static let kDentro: Double = 0.8
+    private static let kFuera: Double = 1.2
+    /// Cuánto del recorrido puede ocupar el lado BAJO (por debajo de tu centro).
+    private static let ladoBajoFrac: CGFloat = 0.22
+
+    /// Magnitud firmada contra la banda de esa señal → fracción del recorrido del labio [0,1].
+    ///
+    /// Por tramos, con un salto en el filo. Tres cosas que el mapeo tiene que cumplir a la vez:
+    ///
+    /// 1. EL MARCO ES INVIOLABLE. Los dos tramos saturan (nunca pasan de 1), así que el labio
+    ///    es siempre menor que el medio alto. Recortar en seco —lo que hacía la primera vuelta
+    ///    de esta revisión— sacaba la orilla del Canvas y mandaba al mismo pixel una noche de
+    ///    17 rpm y una de 25.
+    /// 2. EL DIBUJO NO PUEDE CONTRADECIR AL MOTOR. De ahí el hueco: cualquier noche marcada
+    ///    fuera cae por encima de `filoFuera` y cualquiera no marcada, por debajo de
+    ///    `filoDentro`. **Esto solo se sostiene si el ANCLA del builder sigue viva** (empuja lo
+    ///    marcado a ≥1.02 y lo no marcado a ≤0.98): es ella la que mantiene VACÍA la banda
+    ///    (0.98, 1.02), y sin ella la escala aproximada de la respiración podría saltar el
+    ///    hueco por su cuenta y afirmar «fuera» donde el motor no dijo nada. El ancla no es
+    ///    cosmética: es el invariante que hace honesta esta discontinuidad.
+    /// 3. EL LADO BAJO EXISTE PERO NO GRITA. El centinela nunca marca una noche fría ni una
+    ///    respiración lenta, así que ese lado no puede parecer que te saliste — pero tampoco
+    ///    puede desaparecer contra el eje: dos noches distintas jamás se dibujan al mismo alto.
+    ///    (Su altura sí comparte rango con la parte baja del lado alto; es ambigüedad entre dos
+    ///    estados que NO votan, y el scrub la desambigua con el número.)
+    public static func fraccionFilo(_ v: Double) -> CGFloat {
+        func dentro(_ x: Double) -> CGFloat {
+            let norm = 1 / (1 + kDentro)                    // para que 1 banda = filoDentro
+            return filoDentro * CGFloat((x / (x + kDentro)) / norm)
+        }
+        // El lado bajo usa la MISMA curva, escalada. Sin `min`: acotarlo con un recorte lo
+        // aplanaba a partir de una banda —−0.9 °C y −1.1 °C caían en el mismo pixel—, que es
+        // justo lo que este mapeo existe para no hacer. La curva ya está acotada sola (tiende a
+        // 1.044·0.22 ≈ 0.23, muy por debajo del filo), así que el recorte nunca hizo falta.
+        if v < 0 { return dentro(-v) * ladoBajoFrac }
+        if v < 1 { return dentro(v) }
+        let u = v - 1
+        return filoFuera + (1 - filoFuera) * CGFloat(u / (u + kFuera))
+    }
 
     public var body: some View {
         Canvas(rendersAsynchronously: false) { ctx, size in
@@ -67,59 +125,109 @@ public struct MatrizCostura: View {
             }
 
             let medio = size.height / 2
-            let inset = max(MatrizTokens.chartInset,
-                            LiquidChart.puntoDatoRadio + LiquidChart.endpointBorde)
+            // P-3: el MISMO inset que usa el mapeo del dedo (una sola fuente).
+            let inset = MatrizHoyFace.chartInset(.costura(noches: noches))
             func x(_ i: Int) -> CGFloat {
                 MatrizChartDraw.xAt(index: i, count: n, width: size.width, inset: inset)
             }
             /// El labio de una señal: su distancia al eje, hacia arriba (temp) o abajo (resp).
             func labio(_ v: Double?) -> CGFloat {
                 guard let v else { return Self.labioMin }
-                let mag = min(abs(v), 1.9)          // techo: una noche extrema no rompe el marco
-                return Self.labioMin + CGFloat(mag) * (medio * Self.filoFrac - Self.labioMin)
+                return Self.labioMin + Self.fraccionFilo(v) * (medio * Self.filoFrac - Self.labioMin)
             }
 
             let arriba = noches.map { medio - labio($0.temp) }
             let abajo  = noches.map { medio + labio($0.resp) }
+            // P-2: los índices donde SÍ hubo lectura de cada señal. La boca solo existe donde
+            // existen las dos: sobre un hueco no se pinta un espacio que nadie midió.
+            let vivaT = noches.map { !$0.tempSinLectura }
+            let vivaR = noches.map { !$0.respSinLectura }
 
             // 1 · El relleno: el ESPACIO entre las dos señales. Neutro casi siempre; ámbar solo
             //     en el tramo donde el par votó (la única vez que el guardián empuja tu día).
+            //     Se dibuja por TRAMOS de noches con el par completo.
+            let paso = n > 1 ? (size.width - inset * 2) / CGFloat(n - 1) : size.width
             var boca = Path()
-            boca.move(to: CGPoint(x: x(0), y: arriba[0]))
-            for i in 1..<n { boca.addLine(to: CGPoint(x: x(i), y: arriba[i])) }
-            for i in stride(from: n - 1, through: 0, by: -1) {
-                boca.addLine(to: CGPoint(x: x(i), y: abajo[i]))
+            var tramo: [Int] = []
+            func cerrarTramo() {
+                defer { tramo.removeAll() }
+                guard let primero = tramo.first else { return }
+                // Una noche SUELTA (el par completo entre dos huecos) también se pinta: como
+                // columna angosta centrada en su día. Descartarla —lo que hacía el primer
+                // arreglo por tramos— borraba la boca entera en una serie de noches alternas,
+                // y con ella el ÁMBAR: el único día que el guardián empuja tu día desaparecía
+                // del dibujo mientras el sello y el chip seguían afirmándolo (COS-1).
+                guard tramo.count > 1 else {
+                    let cx = x(primero), semi = min(paso, 10) / 2
+                    boca.addRect(CGRect(x: cx - semi, y: arriba[primero],
+                                        width: semi * 2, height: abajo[primero] - arriba[primero]))
+                    return
+                }
+                boca.move(to: CGPoint(x: x(primero), y: arriba[primero]))
+                for i in tramo.dropFirst() { boca.addLine(to: CGPoint(x: x(i), y: arriba[i])) }
+                for i in tramo.reversed() { boca.addLine(to: CGPoint(x: x(i), y: abajo[i])) }
+                boca.closeSubpath()
             }
-            boca.closeSubpath()
+            for i in 0..<n {
+                if vivaT[i] && vivaR[i] { tramo.append(i) } else { cerrarTramo() }
+            }
+            cerrarTramo()
             ctx.fill(boca, with: .color(LiquidColor.tinta500.opacity(MatrizTokens.costuraFillAlfa)))
 
-            // El tramo del par fuera se tiñe encima, recortado a la boca.
-            if noches.contains(where: { $0.parFuera }) {
-                ctx.drawLayer { capa in
-                    capa.clip(to: boca)
-                    for (i, noche) in noches.enumerated() where noche.parFuera {
-                        let ancho = n > 1 ? (size.width - inset * 2) / CGFloat(n - 1) : size.width
-                        let rect = CGRect(x: x(i) - ancho / 2, y: 0, width: ancho, height: size.height)
-                        capa.fill(Path(rect), with: .color(LiquidColor.atencion.opacity(MatrizTokens.costuraAlertaAlfa)))
+            // El tramo del par fuera se tiñe encima. Donde HAY boca se recorta a ella (la lente
+            // que abre el par); donde no la hay —porque una de las dos señales no se pudo
+            // colocar en ninguna escala— se pinta la columna igual, más tenue.
+            //
+            // El ámbar es el JUICIO DEL MOTOR, no una consecuencia del dibujo: colgarlo de la
+            // boca hacía que el único día en que el guardián empuja tu día desapareciera de la
+            // gráfica mientras el sello seguía en ámbar y el chip seguía gritándolo (COS-1, y
+            // otra vez en la tercera vuelta cuando el arreglo hermano dejó la boca vacía).
+            let alerta = LiquidColor.atencion.opacity(MatrizTokens.costuraAlertaAlfa)
+            for (i, noche) in noches.enumerated() where noche.parFuera {
+                let rect = Path(CGRect(x: x(i) - paso / 2, y: 0, width: paso, height: size.height))
+                if vivaT[i] && vivaR[i] {
+                    ctx.drawLayer { capa in
+                        capa.clip(to: boca)
+                        capa.fill(rect, with: .color(alerta))
                     }
+                } else {
+                    ctx.fill(rect, with: .color(LiquidColor.atencion
+                        .opacity(MatrizTokens.costuraAlertaAlfa * 0.6)))
                 }
             }
 
-            // 2 · Las dos orillas, cada una en su tono.
-            func orilla(_ ys: [CGFloat], hue: Color) {
-                var p = Path()
-                p.move(to: CGPoint(x: x(0), y: ys[0]))
-                for i in 1..<n { p.addLine(to: CGPoint(x: x(i), y: ys[i])) }
-                ctx.stroke(p, with: .color(hue),
-                           style: StrokeStyle(lineWidth: LiquidChart.lineaAncho,
-                                              lineCap: .round, lineJoin: .round))
+            // 2 · Las dos orillas, cada una en su tono, POR TRAMOS: la línea se interrumpe en las
+            //     noches sin lectura (P-2) en vez de cruzarlas por el centro como si fueran
+            //     perfectas. Una noche suelta entre huecos se dibuja como punto.
+            func orilla(_ ys: [CGFloat], viva: [Bool], hue: Color) {
+                var actual: [Int] = []
+                func trazar() {
+                    defer { actual.removeAll() }
+                    guard let primero = actual.first else { return }
+                    if actual.count == 1 {
+                        MatrizChartDraw.punto(ctx, en: CGPoint(x: x(primero), y: ys[primero]),
+                                              radio: LiquidChart.puntoDatoRadio, hue: hue, alfa: 1)
+                        return
+                    }
+                    var p = Path()
+                    p.move(to: CGPoint(x: x(primero), y: ys[primero]))
+                    for i in actual.dropFirst() { p.addLine(to: CGPoint(x: x(i), y: ys[i])) }
+                    ctx.stroke(p, with: .color(hue),
+                               style: StrokeStyle(lineWidth: LiquidChart.lineaAncho,
+                                                  lineCap: .round, lineJoin: .round))
+                }
+                for i in 0..<n {
+                    if viva[i] { actual.append(i) } else { trazar() }
+                }
+                trazar()
             }
-            orilla(arriba, hue: hueTemp)
-            orilla(abajo, hue: hueResp)
+            orilla(arriba, viva: vivaT, hue: hueTemp)
+            orilla(abajo, viva: vivaR, hue: hueResp)
 
             // 3 · HOY: el anillo hueco de la familia, en las dos orillas.
             let iHoy = n - 1
-            for (ys, hue) in [(arriba, hueTemp), (abajo, hueResp)] {
+            for (ys, hue, viva) in [(arriba, hueTemp, vivaT[iHoy]), (abajo, hueResp, vivaR[iHoy])] {
+                guard viva else { continue }        // P-2: sin lectura de hoy, sin joya de hoy
                 let c = CGPoint(x: x(iHoy), y: ys[iHoy])
                 let rExt = LiquidChart.puntoDatoRadio + LiquidChart.endpointBorde * 0.5
                 MatrizChartDraw.punto(ctx, en: c, radio: rExt, hue: hue, alfa: 1)
@@ -133,10 +241,17 @@ public struct MatrizCostura: View {
                 MatrizChartDraw.cursorScrub(ctx, x: cx, height: size.height,
                                             hue: LiquidColor.tinta500,
                                             fantasma: noches[r].temp == nil && noches[r].resp == nil)
-                MatrizChartDraw.punto(ctx, en: CGPoint(x: cx, y: arriba[r]),
-                                      radio: MatrizTokens.hoyRadio, hue: hueTemp, alfa: 1)
-                MatrizChartDraw.punto(ctx, en: CGPoint(x: cx, y: abajo[r]),
-                                      radio: MatrizTokens.hoyRadio, hue: hueResp, alfa: 1)
+                // Cada joya sigue a SU señal (P-2, que el cursor se había saltado 14 líneas más
+                // abajo del guard que lo prohíbe): sobre una noche sin lectura de respiración,
+                // la joya azul pegada al eje afirmaba una medición que nadie tomó.
+                if vivaT[r] {
+                    MatrizChartDraw.punto(ctx, en: CGPoint(x: cx, y: arriba[r]),
+                                          radio: MatrizTokens.hoyRadio, hue: hueTemp, alfa: 1)
+                }
+                if vivaR[r] {
+                    MatrizChartDraw.punto(ctx, en: CGPoint(x: cx, y: abajo[r]),
+                                          radio: MatrizTokens.hoyRadio, hue: hueResp, alfa: 1)
+                }
             }
         }
         .frame(maxWidth: .infinity, idealHeight: MatrizTokens.alturaCostura)

@@ -596,8 +596,11 @@ final class LiquidHoyBuilderTests: XCTestCase {
                      // La cláusula en negrita del acta vive dentro de su método —
                      // el párrafo que SÍ renderiza `LiquidHoyBuilder.acta` (v3, FER-5/FER-9:
                      // respiración salió del voto y «solo vigila»), no el copy anterior.
-                     ("Your resting heart rate and your sleep are read as separate votes, so one rough night can't count against you twice. Your breathing and temperature only keep watch. They don't vote here.",
-                      "acta.metodo.clave")]
+                     // …apuntando al párrafo VIVO. Apuntaba al copy anterior, que ya no
+                     // renderiza nadie: el guard llevaba meses protegiendo una cadena muerta
+                     // —y manteniéndola viva en el catálogo— mientras el párrafo real podía
+                     // divergir sin que nada lo notara (cuarta vuelta adversarial).
+                     ("acta.metodo.votos", "acta.metodo.clave")]
         for lang in ["en", "es"] {
             for (titleKey, highlightKey) in pares {
                 let title = try XCTUnwrap(value(titleKey, lang), "\(titleKey) [\(lang)]")

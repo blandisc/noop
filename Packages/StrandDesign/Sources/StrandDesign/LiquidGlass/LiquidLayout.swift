@@ -67,7 +67,10 @@ public enum LiquidSpace {
     /// reservando sus 320 pt: quedaban ~90 pt de aire muerto antes de «Deciden tu día». Las
     /// esferas separadas viven en el tercio superior del lienzo, así que reservar hasta el
     /// ancla de la puerta (≈230) las respeta enteras y sube la sección de abajo.
-    public static let ecosistemaAltoSeparado: CGFloat = 232
+    // 244 y no 232: el elemento MÁS BAJO del modo separado es el hint «toca para unir»
+    // (`offset(y: 226)` + su línea de ~14 pt). Con 232 el `.clipped()` del héroe lo partía a
+    // la mitad — el texto que invita al gesto, cortado (revisión adversarial).
+    public static let ecosistemaAltoSeparado: CGFloat = 244
 
     /// Margen inferior del dock flotante. Negativo entra al área segura para pegarlo
     /// más al borde (pedido del dueño /inject: a 8 y a 0 seguía flotando muy arriba).

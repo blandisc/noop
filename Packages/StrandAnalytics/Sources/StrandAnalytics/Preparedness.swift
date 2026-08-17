@@ -443,6 +443,12 @@ public enum Preparedness {
         -> (maturity: BaselineStatus, nights: Int, autonomicPossible: Bool,
             sentinelHistory: [SentinelNight], bodyHistory: [BodyNight]) {
         guard !ordered.isEmpty else { return (.calibrating, 0, false, [], []) }
+        // El resolutor de constructo del camino principal SIN su cláusula «la última noche tiene
+        // que ser nocturna»: esa cláusula existe porque el DÍA QUE SE JUZGA no puede compararse
+        // contra una base de otro constructo — y aquí no hay día que juzgar. Copiarla (primer
+        // intento de esta revisión) tenía un precio peor: una sola noche sin reloj al final de la
+        // ventana tiraba las otras 19 al constructo despierto y la banda de la Matriz saltaba
+        // ~8 bpm de un refresh al siguiente. (Revisión adversarial, segunda vuelta.)
         let nocturnal: [Double?] = ordered.map { input.nocturnalRestingHr[$0.day] }
         let awake: [Double?] = ordered.map { $0.restingHr.map(Double.init) }
         let nocturnalUsable = nocturnal.compactMap { $0 }.count >= Baselines.minNightsSeed
@@ -452,10 +458,14 @@ public enum Preparedness {
         let priors = bodySignalPriorStates(ordered, rhrSeries: rhrSeries, config: config)
         // La base al final de la ventana (el fold sobre TODOS los días presentes).
         let base = priors.rhr?.last
+        // `asOf: input.asOf` (no el día de cada fila): el descuento lúteo y el término de RMSSD
+        // son concesiones que SOLO valen para el día juzgado. Pasando el día de cada fila, TODAS
+        // las noches del historial se juzgaban como si fueran «hoy» y la historia salía distinta
+        // de la que produce el camino principal. (Revisión adversarial: divergencia D-2.)
         let raws = ordered.indices.map {
             rawVerdictAt($0, ordered: ordered, priorStates: priors, rhrSeries: rhrSeries,
-                         cyclePhase: input.cyclePhase, asOf: ordered[$0].day,
-                         nocturnalRmssd: nil, config: config)
+                         cyclePhase: input.cyclePhase, asOf: input.asOf,
+                         nocturnalRmssd: input.nocturnalRmssd, config: config)
         }
         return (base?.status ?? .calibrating, base?.nValid ?? 0, posible,
                 sentinelNights(ordered: ordered, raws: raws, priorStates: priors),

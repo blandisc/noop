@@ -1217,8 +1217,7 @@ struct TodayView: View {
         // (la que de verdad juzga el guardián). La Matriz ya la usaba y el héroe y las hojas la
         // cruda: el mismo dato con dos valores, y un punto fuera de la banda ±0.8 bajo un título
         // que decía «dentro de tu patrón». Sin ajuste calculado, la cruda.
-        inputs.thermalDeviation = repo.todayPreparedness?.thermalAdjustedDevC
-            ?? resolveMeasured(todayOnly: true, { $0.skinTempDevC })?.value
+        inputs.thermalDeviation = tempDeHoyAjustada
         inputs.trainingLoad = trainingLoad
         inputs.sleep = resolveMeasured(todayOnly: true, { $0.totalSleepMin })
             .map { .init($0.value, fromApple: $0.fromApple) }
@@ -1356,9 +1355,18 @@ struct TodayView: View {
 
     /// FER-78 · La temperatura de HOY con el ajuste de fase ya aplicado — la MISMA cifra que juzga
     /// el guardián y que dibuja la Matriz. Sin ajuste calculado, la cruda.
+    /// Revisión adversarial H6: el ajuste viene del pase que lo calculó, y ese pase puede ser de
+    /// OTRO día civil (la app abierta cruzando la medianoche, o un veredicto conservado por
+    /// FER-74). Sin sellar, el guardián pintaba «+0.9°» de anteanoche bajo el rótulo «anoche».
+    /// Se acepta solo si el `Read` que lo trae juzgó HOY — el mismo patrón que la FC del motor.
     private var tempDeHoyAjustada: Double? {
-        repo.todayPreparedness?.thermalAdjustedDevC
-            ?? resolveMeasured(todayOnly: true) { $0.skinTempDevC }?.value
+        let hoy = Repository.localDayKey(Date())
+        if let prep = repo.todayPreparedness,
+           prep.bodyHistory.last?.day == hoy,
+           let ajustada = prep.thermalAdjustedDevC {
+            return ajustada
+        }
+        return resolveMeasured(todayOnly: true) { $0.skinTempDevC }?.value
     }
 
     /// ¿Hay una hoja encima de Hoy? (FER-73 · M8 — pausa el ambiente que nadie está viendo.)
