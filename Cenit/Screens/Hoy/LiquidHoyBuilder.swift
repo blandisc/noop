@@ -637,9 +637,18 @@ enum LiquidHoyBuilder {
             ($0.axis == .autonomic || $0.axis == .sleep) && $0.state.isOut
         }.count
         let fuera = fueraEjes + (prep.sentinel?.state == .corroborated ? 1 : 0)
-        guard fuera == 0, desfaseDeHisteresis(verdict: prep.verdict, fuera: fuera) else { return nil }
-        return String(localized: "hero.sub.desfase",
-                      defaultValue: "Your signals came back into your range; the verdict changes once that repeats two days in a row.")
+        guard desfaseDeHisteresis(verdict: prep.verdict, fuera: fuera) else { return nil }
+        // El desfase tiene DOS direcciones y las dos mentían por su lado. Hacia arriba (verde
+        // sostenido con algo fuera hoy) el héroe juraba que las dos señales amanecieron en rango
+        // mientras el acta decía «un voto cayó fuera hoy» — el héroe era el único que mentía, y
+        // sobre el cuerpo (séptima vuelta). Hacia abajo (ámbar/rojo sostenido con todo dentro)
+        // nombraba «un detalle que cuidar» que ya no existe (cuarta vuelta).
+        if fuera == 0 {
+            return String(localized: "hero.sub.desfase",
+                          defaultValue: "Your signals came back into your range; the verdict changes once that repeats two days in a row.")
+        }
+        return String(localized: "hero.sub.desfase.fuera",
+                      defaultValue: "One of your signals stepped out today; the verdict changes if that repeats two days in a row.")
     }
 
     /// Renglones 1 (full/caution/easy con noche): la palabra-veredicto con su tono.
@@ -664,8 +673,13 @@ enum LiquidHoyBuilder {
             ($0.axis == .autonomic || $0.axis == .sleep) && $0.state.isOut
         }) else { return nil }
         switch (fuera.axis, fuera.state) {
-        case (.sleep, .low):      return String(localized: "Your sleep came in below your range.")
-        case (.sleep, _):         return String(localized: "Your sleep came in above your range.")
+        // El sueño NO se juzga contra tu historial: `sleepDriver` usa un piso poblacional fijo
+        // (420 − 45 min, Hirshkowitz 2015) más un mínimo de eficiencia. «Tu rango» era la misma
+        // promesa personalizada que ya se corrigió en la Matriz, en el acta y en el manual, viva
+        // en la superficie MÁS visitada de todas: la primera frase de cada mañana (séptima
+        // vuelta). El motor nunca emite `.high` para este eje, así que la rama de arriba muere.
+        case (.sleep, _):         return String(localized: "hero.sub.sueno.rango",
+                                                defaultValue: "Your sleep came in below the recommended range.")
         // FER-73 · H7: el eje autonómico se orienta por «peor», no por valor: `.low` significa
         // FC en reposo ARRIBA de tu base (el motor nunca emite `.high` para este eje). Decir
         // «came in below your range» invertía el hecho para quien amaneció con el pulso alto.
@@ -705,8 +719,13 @@ enum LiquidHoyBuilder {
                 // ya no cuenta como tres, y el térmico bajó al guardián que vigila pero no vota.
                 // P1 (estudio en frío): el veredicto NOMBRA a sus votantes — los 4
                 // perfiles tropezaron con «both of your signals» sin saber cuáles.
-                subtitle: String(localized: "hero.sub.full.nombrado",
-                                 defaultValue: "Your sleep and your resting heart rate woke up in your range."),
+                // El DESFASE manda también en verde: con un eje fuera hoy, «amanecieron en tu
+                // rango» es falso. Aquí el orden es el inverso al de ámbar/rojo — el desfase
+                // primero, porque `subtituloDetalle` nombraría el eje sin explicar por qué el
+                // titular sigue verde, y la contradicción quedaría intacta (séptima vuelta).
+                subtitle: subtituloDesfase(prep) ??
+                    String(localized: "hero.sub.full.nombrado",
+                           defaultValue: "Your sleep and your resting heart rate woke up in your range."),
                 confianza: confianza)
         case .caution:
             return .veredicto(
@@ -1189,6 +1208,11 @@ enum LiquidHoyBuilder {
         // FER-73 · H19: mientras el motor lee, el acta dice lo mismo que el héroe.
         if prep == nil, verdictPending { return String(localized: "Reading your night…") }
         if prep == nil { return String(localized: "No reading") }
+        // Con la base rancia la palabra grande es la del héroe: ni «sin lectura» (sí la hay) ni
+        // «conociéndote» (tu rango existe, solo caducó).
+        if prep?.maturity == .stale {
+            return String(localized: "hero.title.rancia", defaultValue: "Your range needs fresh nights")
+        }
         if calibrando {
             // «Conociéndote» promete un proceso en marcha. Sin FC nocturna posible no hay tal
             // proceso: la palabra es la misma que la del héroe (tercera vuelta adversarial).
@@ -1345,6 +1369,13 @@ enum LiquidHoyBuilder {
             // franja de arriba está prometiendo que la noche sigue entrando, y el acta decía
             // «no llegó nada anoche» debajo. El chequeo vivía DENTRO del gate de la noche y solo
             // cubría la mitad de los casos (cuarta vuelta).
+            // BASE RANCIA: lo que falta es la BASE, no el dato. El acta sentenciaba «tu señal en
+            // reposo no llegó» mientras el héroe y la Matriz enseñaban el número de hoy (séptima
+            // vuelta). Va antes que todo lo demás: es la causa raíz del estado.
+            if prep?.maturity == .stale {
+                return (String(localized: "hero.sub.rancia",
+                               defaultValue: "It's been too long since your last nights with the watch: your range went stale and I can't judge today against it."), nil)
+            }
             if causaT3 == .leyendo {
                 return (hayNocheEnBoleta
                         ? String(localized: "acta.resumen.leyendo.parcial",

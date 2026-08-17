@@ -16,7 +16,8 @@ final class ActaVotoDelParTests: XCTestCase {
                       par: Bool,
                       trend: AutonomicTrend.Direction? = nil,
                       maturity: BaselineStatus = .trusted,
-                      autonomicPossible: Bool = true) -> Preparedness.Read {
+                      autonomicPossible: Bool = true,
+                      autonomicNights: Int = 30) -> Preparedness.Read {
         Preparedness.Read(
             verdict: verdict,
             // Sin FC nocturna posible el eje autonómico es `.noData` — con `.inRange` el
@@ -26,7 +27,7 @@ final class ActaVotoDelParTests: XCTestCase {
                             state: !autonomicPossible ? .noData : (autonomicOut ? .low : .inRange),
                             orientedZ: nil),
                       .init(axis: .sleep, state: sleepOut ? .low : .inRange, orientedZ: nil)],
-            signalsPresent: 3, signalsTotal: 3, maturity: maturity, autonomicNights: 30,
+            signalsPresent: 3, signalsTotal: 3, maturity: maturity, autonomicNights: autonomicNights,
             trend: trend,
             sentinel: par ? .init(state: .corroborated, streakNights: 2, watchingSignal: nil,
                                   tempOut: true, respOut: true)
@@ -232,10 +233,40 @@ final class ActaVotoDelParTests: XCTestCase {
     /// SEXTA VUELTA · «Tu veredicto se apoya en N noches tuyas» hablaba en presente de un
     /// veredicto que hoy no existe: cerraba la hoja de quien acaba de leer «Sin lectura».
     func test_sinVeredicto_laConfianzaNoHablaDeTuVeredicto() {
+        // 8 noches: POR DEBAJO de `minNightsTrust`, que es la única condición con la que el
+        // código viejo emitía la nota. Con 30 la prueba pasaba igual sin el arreglo — o sea que
+        // no fijaba nada (lo cazó la séptima vuelta revisando mis propias pruebas).
         let acta = LiquidHoyBuilder.acta(prep: read(verdict: .lowSignal, autonomicOut: false,
                                                     sleepOut: false, par: false,
-                                                    maturity: .stale))
+                                                    maturity: .stale, autonomicNights: 8))
         XCTAssertNil(acta.confianza, "sin veredicto no hay veredicto que apoyar")
+    }
+
+    /// SÉPTIMA VUELTA · Con la base RANCIA lo que falta es la BASE, no el dato: el acta
+    /// sentenciaba «tu señal en reposo no llegó» mientras el héroe y la Matriz enseñaban el
+    /// número de hoy.
+    func test_baseRancia_elActaHablaLaLenguaDelHeroe() {
+        let acta = LiquidHoyBuilder.acta(prep: read(verdict: .lowSignal, autonomicOut: false,
+                                                    sleepOut: false, par: false,
+                                                    maturity: .stale, autonomicNights: 8))
+        XCTAssertEqual(acta.nivel, String(localized: "hero.title.rancia",
+                                          defaultValue: "Your range needs fresh nights"))
+        XCTAssertNotEqual(acta.conteo,
+                          String(localized: "Nothing came in last night: no sleep and no resting signals."))
+    }
+
+    /// SÉPTIMA VUELTA · El VERDE sostenido por la histéresis juraba que las dos señales
+    /// amanecieron en rango mientras el acta decía «un voto cayó fuera hoy». El héroe era el
+    /// único que mentía, y mentía sobre el cuerpo.
+    func test_verdeConDesfase_elHeroeNoJuraQueTodoCayoDentro() {
+        let prep = read(verdict: .full, autonomicOut: false, sleepOut: true, par: false)
+        let (hero, _, _) = LiquidHoyBuilder.hero(prep: prep, nights: 30, healthConnected: true)
+        guard case .veredicto(_, _, _, let sub, _) = hero else {
+            return XCTFail("con veredicto el héroe es .veredicto")
+        }
+        XCTAssertNotEqual(sub, String(localized: "hero.sub.full.nombrado",
+                                      defaultValue: "Your sleep and your resting heart rate woke up in your range."),
+                          "hoy un eje se salió: no puede jurar que los dos cayeron dentro")
     }
 
     /// Sin par, la prosa de siempre no cambia (no se rompió el camino normal).

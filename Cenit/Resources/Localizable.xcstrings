@@ -1,6 +1,54 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "The number you see is the HRV Apple records: SDNN, the overall spread of the time between your heartbeats. Your daily verdict does NOT read this signal: it stands on your resting heart rate and your sleep. HRV is shown here as a reference against your own average. The trend uses a different HRV measure, RMSSD, recomputed from the beat-to-beat intervals of your densest nights; RMSSD tracks the vagal, rest-and-repair branch specifically, while SDNN blends both branches, so the two won't always move together." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The number you see is the HRV Apple records: SDNN, the overall spread of the time between your heartbeats. Your daily verdict does NOT read this signal: it stands on your resting heart rate and your sleep. HRV is shown here as a reference against your own average. The trend uses a different HRV measure, RMSSD, recomputed from the beat-to-beat intervals of your densest nights; RMSSD tracks the vagal, rest-and-repair branch specifically, while SDNN blends both branches, so the two won't always move together."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El número que ves es la VFC que registra Apple: SDNN, la dispersión general del tiempo entre tus latidos. Tu veredicto diario NO lee esta señal: se apoya en tu FC en reposo y en tu sueño. La VFC se muestra aquí como referencia contra tu propio promedio. La tendencia usa otra medida de VFC, RMSSD, recalculada desde los intervalos latido a latido de tus noches más densas; RMSSD sigue específicamente a la rama vagal, de descanso y reparación, mientras que SDNN mezcla las dos ramas, así que no siempre se mueven juntas."
+          }
+        }
+      }
+    },
+    "hero.sub.desfase.fuera" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One of your signals stepped out today; the verdict changes if that repeats two days in a row."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoy una de tus señales se salió; el veredicto cambia si eso se repite dos días seguidos."
+          }
+        }
+      }
+    },
+    "hero.sub.sueno.rango" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your sleep came in below the recommended range."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu sueño quedó abajo del rango recomendado."
+          }
+        }
+      }
+    },
     "acta.metodo.que" : {
       "localizations" : {
         "en" : {
@@ -77,22 +125,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Un voto fuera y tu par se movió junto: hoy toca recuperar, no empujar."
-          }
-        }
-      }
-    },
-    "acta.nota.par.solo" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your temperature and breathing moved out together: today is for recovering, not pushing."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu temperatura y tu respiración se salieron juntas: hoy toca recuperar, no empujar."
           }
         }
       }
@@ -7593,13 +7625,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your sleep and your resting HR are read as separate votes, so a bad night doesn't count twice. Your breathing and temperature only watch; they don't vote here."
+            "value" : "Your sleep and your resting HR are read as separate votes, so a bad night doesn't count twice. Your breathing and temperature only watch: a single one never counts, and they add one vote only on the day both step out together."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tu sueño y tu FC en reposo se leen como votos separados, para que una mala noche no cuente dos veces. Tu respiración y tu temperatura solo vigilan; aquí no votan."
+            "value" : "Tu sueño y tu FC en reposo se leen como votos separados, para que una mala noche no cuente dos veces. Tu respiración y tu temperatura solo vigilan: una sola nunca cuenta, y suman un voto únicamente el día que las dos se salen juntas."
           }
         }
       }
@@ -27076,13 +27108,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Two or more out, or the guardian confirmed its alert."
+            "value" : "Two or more votes out."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dos o más fuera, o el guardián corroboró su alerta."
+            "value" : "Dos votos o más fuera."
           }
         }
       }
@@ -27127,13 +27159,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "From your recent weeks I learn your normal band for your resting heart rate and your breathing; your temperature is measured by how far it drifts from your own baseline (0.8 °C or more counts as high), and your sleep against the recommended range for health. Each morning I compare the night: in or out. The verdict counts how many voting signals stepped out. It is never a 0-100 score, because your watch doesn't measure with that precision and I won't pretend it does."
+            "value" : "From your recent weeks I learn your normal band for your resting heart rate and your breathing; your temperature is measured by how far it drifts from your own baseline, against a fixed cut that is the same for everyone, and your sleep against the recommended range for health. Each morning I compare the night: in or out. The verdict counts how many voting signals stepped out. It is never a 0-100 score, because your watch doesn't measure with that precision and I won't pretend it does."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "De tus últimas semanas aprendo tu banda normal de FC en reposo y de respiración; tu temperatura se mide por cuánto se aleja de tu propia base (0.8 °C o más cuenta como alta), y tu sueño, contra el rango recomendado para la salud. Cada mañana comparo la noche: dentro o fuera. El veredicto cuenta cuántas señales votantes se salieron. Nunca es una calificación de 0 a 100, porque tu reloj no mide con esa precisión y no voy a fingir que sí."
+            "value" : "De tus últimas semanas aprendo tu banda normal de FC en reposo y de respiración; tu temperatura se mide por cuánto se aleja de tu propia base, contra un corte fijo que es igual para todos, y tu sueño, contra el rango recomendado para la salud. Cada mañana comparo la noche: dentro o fuera. El veredicto cuenta cuántas señales votantes se salieron. Nunca es una calificación de 0 a 100, porque tu reloj no mide con esa precisión y no voy a fingir que sí."
           }
         }
       }
@@ -46426,23 +46458,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "La noche"
-          }
-        }
-      }
-    },
-    "The number you see is the HRV Apple records: SDNN, the overall spread of the time between your heartbeats. Your daily verdict reads this same signal against your own baseline. The trend uses a different HRV measure, RMSSD, recomputed from the beat-to-beat intervals of your densest nights; RMSSD tracks the vagal, rest-and-repair branch specifically, while SDNN blends both branches, so the two won't always move together." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The number you see is the HRV Apple records: SDNN, the overall spread of the time between your heartbeats. Your daily verdict reads this same signal against your own baseline. The trend uses a different HRV measure, RMSSD, recomputed from the beat-to-beat intervals of your densest nights; RMSSD tracks the vagal, rest-and-repair branch specifically, while SDNN blends both branches, so the two won't always move together."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El número que ves es la VFC que registra Apple: SDNN, la dispersión total del tiempo entre tus latidos. Tu veredicto del día lee esta misma señal contra tu propia base. La tendencia usa otra medida de VFC, RMSSD, recalculada latido a latido de tus noches más densas; la RMSSD sigue específicamente la rama vagal (descansa y repara), mientras que la SDNN mezcla ambas ramas, así que las dos no siempre se mueven juntas."
           }
         }
       }

@@ -820,6 +820,9 @@ extension LiquidHoyBuilder {
             // reloj treinta días, la ventana de 20 días le sale vacía pero su rango ya existe:
             // «Conociéndote» le decía que empezaba de cero justo debajo de un héroe que le
             // habla de su rango de siempre (quinta vuelta adversarial).
+            if prep?.maturity == .stale {
+                return String(localized: "hero.title.rancia", defaultValue: "Your range needs fresh nights")
+            }
             guard prep == nil || prep?.maturity == .calibrating else { return nil }
             return String(localized: "hero.title.calibrando", defaultValue: "Getting to know you")
         }
