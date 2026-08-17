@@ -248,7 +248,7 @@ add('pasos', Point(13.35, 3.70).buffer(1.58, quad_segs=48), 'f', d)
 # sólidas recibían el upscale máximo). Ahora mezcla extensión y masa de tinta.
 TARGET_MAXDIM, TARGET_AREA = 15.9, 78.0
 SMIN, SMAX = 0.93, 1.08
-OUT, GEOM = {}, {}
+OUT, GEOM, SWIFT = {}, {}, {}
 print(f'{"glyph":10} {"maxdim":>7} {"area":>7} {"scale":>6} → {"maxdim":>7} {"area":>7}')
 for key, parts in PARTS.items():
     union = unary_union([p[0] for p in parts])
@@ -268,12 +268,14 @@ for key, parts in PARTS.items():
           f'{max(nx1-nx0, ny1-ny0):7.2f} {u2.area:7.1f}')
 
     gid = 'g_' + key
+    partes = []
     body, g2, g3, c2, c3, uses_grad = [], None, None, None, None, False
     for geom, mode, color, op in parts:
         if mode == 'g':
             dstr, holed = to_d(geom)
             fr = ' fill-rule="evenodd"' if holed else ''
             body.append(f'<path d="{dstr}" fill="url(#{gid})"{fr}/>')
+            partes.append((dstr, lighten(GRAD_HUE[key], 0.075), GRAD_HUE[key], holed))
             uses_grad = True
         elif mode == 'g2':
             g2, c2 = geom, color
@@ -284,12 +286,16 @@ for key, parts in PARTS.items():
             fr = ' fill-rule="evenodd"' if holed else ''
             o = f' fill-opacity="{op}"' if op != 1 else ''
             body.append(f'<path d="{dstr}" fill="{color}"{o}{fr}/>')
+            partes.append((dstr, None, color, holed))
     defs = grad(gid, GRAD_HUE[key]) if uses_grad else ''    # sin defs muertos
     if g2 is not None:
         defs += grad(gid+'L', c2) + grad(gid+'R', c3)
         body.insert(0, f'<path d="{to_d(g3)[0]}" fill="url(#{gid}R)"/>')
         body.insert(0, f'<path d="{to_d(g2)[0]}" fill="url(#{gid}L)"/>')
+        partes.insert(0, (to_d(g3)[0], lighten(c3, 0.075), c3, False))
+        partes.insert(0, (to_d(g2)[0], lighten(c2, 0.075), c2, False))
     OUT[key] = (f'<defs>{defs}</defs>' if defs else '') + ''.join(body)
+    SWIFT[key] = partes
 
 # ---- verificación adversarial: simetría, área segura, mínimos a 20 pt, huecos ----
 print()
@@ -346,3 +352,46 @@ src, n2 = re.subn(r'(?m)^  var DROP = .*$',
 assert n1 == 1 and n2 == 1, f'inyección fallida: FORGED={n1} DROP={n2}'
 open(page, 'w').write(src)
 print(f'forjados {len(OUT)} glifos · inyectados en {page}')
+
+# ---- emisión de Swift: los mismos paths, para StrandDesign (una sola fuente) ----
+CASO = {'sueno': 'sueno', 'reposo': 'reposo', 'guardian': 'guardian', 'piel': 'piel',
+        'resp': 'respiracion', 'carga': 'carga', 'esfuerzo': 'esfuerzo', 'hrv': 'hrv',
+        'estres': 'estres', 'pasos': 'pasos'}
+GOTA = {k: GRAD_HUE[k] for k in PARTS}
+GOTA['estres'] = AMBAR          # el medidor es tricolor: su identidad es el ámbar de aviso
+GOTA['guardian'] = C['dorado'][0]
+
+swift = ['// GENERADO por Tools/sellos-hoy/forge.py — NO editar a mano.',
+         '// Regenera con: cd Tools/sellos-hoy && python3 forge.py',
+         '//',
+         '// Los diez sellos de métrica de Hoy, en el viewBox 24x24 del forjador. Cada parte',
+         '// trae su relleno ya resuelto: plano o degradado vertical (claro arriba = el tono',
+         '// base aclarado en HSL L+0.075, la regla del sistema).',
+         'import SwiftUI', '',
+         'extension SelloMetrica {', '',
+         '    /// El tono de identidad del sello — el mismo de su gota al 10 %.',
+         '    var tono: Color {', '        switch self {']
+for k in PARTS:
+    swift.append(f'        case .{CASO[k]}: return Color(hex: "{GOTA[k]}")')
+swift += ['        }', '    }', '',
+          '    /// Las partes en orden de pintado, del fondo al frente.',
+          '    var partes: [Parte] {', '        switch self {']
+for k in PARTS:
+    swift.append(f'        case .{CASO[k]}:')
+    swift.append('            return [')
+    for (d, claro, base, holed) in SWIFT[k]:
+        rel = (f'.vertical(Color(hex: "{claro}"), Color(hex: "{base}"))' if claro
+               else f'.plano(Color(hex: "{base}"))')
+        swift.append(f'                Parte(d: "{d}",')
+        swift.append(f'                      relleno: {rel},')
+        swift.append(f'                      talla: {"true" if holed else "false"}),')
+    swift.append('            ]')
+swift += ['        }', '    }', '}', '']
+
+destino = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                       '..', '..', 'Packages', 'StrandDesign', 'Sources',
+                       'StrandDesign', 'LiquidGlass', 'SelloMetricaPaths.swift')
+destino = os.path.normpath(destino)
+with open(destino, 'w') as f:
+    f.write('\n'.join(swift))
+print('emitido', os.path.relpath(destino, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..')))

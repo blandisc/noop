@@ -14,6 +14,10 @@ import SwiftUI
 
 public struct LiquidSheetHeader: View {
     private let icono: LiquidIcon.Glyph?
+    /// El sello dibujado de la métrica. Si viene, encabeza la hoja en vez de `icono`
+    /// (que es un símbolo de sistema). Las hojas sin sello propio —el escudo del
+    /// guardián, el acta— siguen con su glifo.
+    private let selloMetrica: SelloMetrica?
     private let titulo: String
     private let tono: Color
     private let numeral: String?
@@ -48,7 +52,8 @@ public struct LiquidSheetHeader: View {
     ///
     /// `sello` · etiqueta corta de la ventana del dato («HOY · 3 AGO», «MEDIA · 30 DÍAS»),
     /// YA compuesta y localizada por el caller (contrato D3: el DS no formatea fechas).
-    public init(icono: LiquidIcon.Glyph?, titulo: String, tono: Color,
+    public init(icono: LiquidIcon.Glyph?, selloMetrica: SelloMetrica? = nil,
+                titulo: String, tono: Color,
                 numeral: String?, unidad: String? = nil, sufijo: String? = nil,
                 numeralTono: Color? = nil, sello: String? = nil,
                 origen: LiquidOrigen? = nil,
@@ -56,6 +61,7 @@ public struct LiquidSheetHeader: View {
                 infoMostrar: String? = nil, infoOcultar: String? = nil,
                 a11yLabel: String? = nil) {
         self.icono = icono
+        self.selloMetrica = selloMetrica
         self.titulo = titulo
         self.tono = tono
         self.numeral = numeral
@@ -135,7 +141,14 @@ public struct LiquidSheetHeader: View {
     public var body: some View {
         VStack(alignment: .leading, spacing: LiquidSpace.s150) {
             HStack(spacing: LiquidSpace.s150) {
-                if let icono {
+                if let selloMetrica {
+                    // El sello dibujado llena su gota: la proporción 34/16 de abajo está
+                    // hecha para símbolos de sistema, que traen su propio margen — estos
+                    // lo traen por dentro (ver `SelloMetrica`).
+                    SelloMetricaVista(selloMetrica, lado: 28, gota: false)
+                        .frame(width: 34, height: 34)
+                        .background(Circle().fill(tono.opacity(0.12)))
+                } else if let icono {
                     // Gota de HOJA: 34×34, glifo 16, tono al 12% (mock `.drop`), más grande
                     // que la gota de tile (24/14/10%) — auditoría de fidelidad 2026-08-03.
                     LiquidIconDrop(icono, tone: tono, size: 34, iconSize: 16, fillAlpha: 0.12)

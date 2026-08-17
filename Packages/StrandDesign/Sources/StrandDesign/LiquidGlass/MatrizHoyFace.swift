@@ -56,6 +56,9 @@ public struct MatrizSeccion: Sendable, Identifiable, Equatable {
     /// Glifo de gota (comparativa FER-55): si está presente, el sello es el
     /// `LiquidIconDrop` de las hojas de resumen en vez del orbe de partículas.
     public let glifoSello: LiquidIcon.Glyph?
+    /// El sello dibujado de la métrica (la luna, el termómetro, el medidor…). Presente
+    /// ⇒ manda sobre el orbe de partículas; el Guardián no lo lleva (su sello VIVE).
+    public let sello: SelloMetrica?
     /// Scrub (FER-55): cada noche con su lectura ya formateada (valor + sublabel).
     /// El índice mapea 1:1 a las barras; el último = hoy. `nil` = celda sin scrub.
     public let scrubNoches: [ScrubNoche]?
@@ -73,6 +76,7 @@ public struct MatrizSeccion: Sendable, Identifiable, Equatable {
                 renglones: [MatrizRenglon]? = nil,
                 formaSello: OrbeVivo.Forma = .esfera,
                 glifoSello: LiquidIcon.Glyph? = nil,
+                sello: SelloMetrica? = nil,
                 scrubNoches: [ScrubNoche]? = nil,
                 selloGuardian: SelloGuardianVivo.Estado? = nil) {
         self.id = id; self.hue = hue; self.huesPar = huesPar
@@ -84,6 +88,7 @@ public struct MatrizSeccion: Sendable, Identifiable, Equatable {
         self.renglones = renglones
         self.formaSello = formaSello
         self.glifoSello = glifoSello
+        self.sello = sello
         self.scrubNoches = scrubNoches
         self.selloGuardian = selloGuardian
     }
@@ -109,6 +114,7 @@ public struct MatrizSeccion: Sendable, Identifiable, Equatable {
             && lhs.vota == rhs.vota && lhs.terciaria == rhs.terciaria
             && lhs.formaSello == rhs.formaSello && lhs.scrubNoches == rhs.scrubNoches
             && lhs.glifoSello == rhs.glifoSello
+            && lhs.sello == rhs.sello
             && lhs.selloGuardian == rhs.selloGuardian
     }
 }
@@ -125,15 +131,21 @@ public struct MatrizRenglon: Sendable, Identifiable, Equatable {
     public let chartID: String
     public let chart: MatrizChartPayload
     public let subrayado: MedidorLunar.Alerta
+    /// El sello de la sub-señal (termómetro / onda). Antes estos renglones eran las dos
+    /// únicas filas de Hoy sin nada a la izquierda: colgaban del margen mientras el resto
+    /// de la pantalla arrancaba detrás de un sello.
+    public let sello: SelloMetrica?
 
     public init(id: String, titulo: String, valor: String, unidad: String? = nil,
                 sublabel: String? = nil,
                 hue: Color, chartID: String, chart: MatrizChartPayload,
-                subrayado: MedidorLunar.Alerta = .ninguna) {
+                subrayado: MedidorLunar.Alerta = .ninguna,
+                sello: SelloMetrica? = nil) {
         self.id = id; self.titulo = titulo; self.valor = valor; self.unidad = unidad
         self.sublabel = sublabel
         self.hue = hue
         self.chartID = chartID; self.chart = chart; self.subrayado = subrayado
+        self.sello = sello
     }
 
     public static func == (lhs: MatrizRenglon, rhs: MatrizRenglon) -> Bool {
@@ -141,6 +153,7 @@ public struct MatrizRenglon: Sendable, Identifiable, Equatable {
             && lhs.chartID == rhs.chartID && lhs.chart == rhs.chart
             && lhs.subrayado == rhs.subrayado && lhs.hue == rhs.hue
             && lhs.unidad == rhs.unidad && lhs.sublabel == rhs.sublabel
+            && lhs.sello == rhs.sello
     }
 }
 
@@ -423,6 +436,10 @@ public struct MatrizHoyFace: View {
                                           hueTemp: s.huesPar?.0 ?? s.hue,
                                           hueResp: s.huesPar?.1 ?? s.hue,
                                           estado: estado)
+                    } else if let sello = s.sello {
+                        // El sello dibujado: ocupa el mismo hueco que dejaba el orbe
+                        // (radio · 2.5) y llena su lado — ver nota en `SelloMetrica`.
+                        SelloMetricaVista(sello, lado: MatrizTokens.selloRadio * 2.5)
                     } else if let glifo = s.glifoSello {
                         // Comparativa FER-55: la gota de las hojas de resumen como sello.
                         LiquidIconDrop(glifo, tone: s.hue,
@@ -553,6 +570,12 @@ public struct MatrizHoyFace: View {
                 // Sentence-case a propósito: los renglones son SUB-señales del guardián
                 // (voz subordinada); el ritmo/baseline sí es el mismo del encabezado.
                 HStack(alignment: .firstTextBaseline, spacing: MatrizTokens.selloTexto) {
+                    if let sello = r.sello {
+                        SelloMetricaVista(sello, lado: MatrizTokens.selloRadio * 2.5)
+                            // Mismo anclaje óptico que el sello del encabezado: su centro
+                            // a la altura de las versalitas, no a la caja del texto.
+                            .alignmentGuide(.firstTextBaseline) { d in d.height * 0.78 }
+                    }
                     Text(r.titulo)
                         .font(LiquidType.tituloFila)
                         .foregroundStyle(LiquidColor.tinta700)
