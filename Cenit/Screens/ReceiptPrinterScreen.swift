@@ -126,7 +126,7 @@ struct ReceiptPrinterScreen: View {
         } else if let receipt {
             ticketStage(receipt)
         } else if loadFailed {
-            Text("No se pudo armar el recibo.")
+            Text(String(localized: "recibo.error", defaultValue: "The receipt couldn't be built."))
                 .font(StrandFont.subhead)
                 .foregroundStyle(theme.inkTertiary)
         } else {

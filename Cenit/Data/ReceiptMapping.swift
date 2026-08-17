@@ -51,16 +51,17 @@ enum ReceiptMapping {
         let (totalValue, totalUnit) = volumeParts(summary.volumeKg, system: system)
 
         return ThermalReceipt(
-            kind: "FUERZA — \(type)",
-            orderLine: "ORDEN:#\(orderN) · \(orderDateTime(end))",
+            kind: String(format: String(localized: "recibo.tipo.fmt", defaultValue: "STRENGTH — %@"), type),
+            orderLine: String(format: String(localized: "recibo.orden.fmt", defaultValue: "ORDER:#%@ · %@"), orderN, orderDateTime(end)),
             items: items,
-            totalCaption: "\(summary.exercises.count) ejercicios · \(summary.setCount) series",
+            totalCaption: String(format: String(localized: "recibo.total.caption.fmt", defaultValue: "%lld exercises · %lld sets"), summary.exercises.count, summary.setCount),
             total: "\(totalValue) \(totalUnit)",
             zones: zoneSlices(hr: hr, zoneSet: zoneSet),
             summary: summaryRows(summary: summary, hrr: hrr),
             footerCode: "CENIT · \(orderN) · \(year(end))",
-            footerTag: "tu esfuerzo, en tinta.",
-            barcodeSeed: sessionId
+            footerTag: String(localized: "recibo.tagline", defaultValue: "your effort, in ink."),
+            barcodeSeed: sessionId,
+            recordBadge: String(localized: "recibo.record", defaultValue: "RECORD")
         )
     }
 
@@ -145,14 +146,18 @@ enum ReceiptMapping {
     }
 
     /// Keyword match on the routine name — same idea as `TicketMapping.ticketType`.
+    ///
+    /// El MATCH se queda en español (y en inglés): compara contra el nombre que el usuario
+    /// escribió en su rutina, así que traducirlo rompería la clasificación. Lo que se traduce es
+    /// el rótulo que se PINTA, que es cosa distinta (FER-112).
     private static func ticketType(from routineName: String?) -> String {
-        guard let raw = routineName?.lowercased(), !raw.isEmpty else { return "FUERZA" }
-        if raw.contains("empuje") || raw.contains("push") { return "EMPUJE" }
+        guard let raw = routineName?.lowercased(), !raw.isEmpty else { return RecipeLabels.fuerza }
+        if raw.contains("empuje") || raw.contains("push") { return RecipeLabels.empuje }
         if raw.contains("tirón") || raw.contains("tiron")
             || raw.contains("jalón") || raw.contains("jalon")
-            || raw.contains("pull") { return "TIRÓN" }
-        if raw.contains("pierna") || raw.contains("legs") { return "PIERNA" }
-        return "FUERZA"
+            || raw.contains("pull") { return RecipeLabels.tiron }
+        if raw.contains("pierna") || raw.contains("legs") { return RecipeLabels.pierna }
+        return RecipeLabels.fuerza
     }
 
     // MARK: - Per-exercise detail / volume / zone
@@ -263,17 +268,17 @@ enum ReceiptMapping {
         hrr: (bpm: Int, risingIsGood: Bool)?
     ) -> [ThermalReceipt.SummaryRow] {
         var rows: [ThermalReceipt.SummaryRow] = [
-            .init(key: "DURACIÓN", value: durationHMS(summary.durationS))
+            .init(key: String(localized: "recibo.duracion", defaultValue: "DURATION"), value: durationHMS(summary.durationS))
         ]
         if let strain = summary.strain, strain > 0 {
             let v = strain.formatted(.number.precision(.fractionLength(1)))
-            rows.append(.init(key: "ESFUERZO", value: "\(v) / 21"))
+            rows.append(.init(key: String(localized: "recibo.esfuerzo", defaultValue: "EFFORT"), value: "\(v) / 21"))
         }
         if let avg = summary.avgHr {
-            rows.append(.init(key: "FC MEDIA", value: "\(avg) bpm"))
+            rows.append(.init(key: String(localized: "recibo.fcmedia", defaultValue: "AVG HR"), value: "\(avg) bpm"))
         }
         if let kcal = summary.energyKcal {
-            rows.append(.init(key: "CALORÍAS", value: "\(Int(kcal.rounded())) kcal"))
+            rows.append(.init(key: String(localized: "recibo.calorias", defaultValue: "CALORIES"), value: "\(Int(kcal.rounded())) kcal"))
         }
         if let hrr {
             let arrow = hrr.risingIsGood ? "↑" : "↓"

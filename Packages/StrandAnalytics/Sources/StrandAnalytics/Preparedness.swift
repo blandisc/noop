@@ -751,6 +751,10 @@ public enum Preparedness {
         guard let mins = day.totalSleepMin else { return Driver(axis: .sleep, state: .noData, orientedZ: nil) }
         let shortVsNeed = mins < config.sleepNeedFloorMin - config.sleepSlackMin
         let poorEfficiency = day.efficiency.map { $0 < config.sleepEffFloor } ?? false
+        // INVARIANTE: este eje jamás emite `.high`. Dormir de MÁS no se juzga (no hay evidencia
+        // que sostenga un techo personal), así que solo existen «corto o poco eficiente» (.low) y
+        // «dentro» (.inRange). Quien escriba copy para este eje no debe redactar el caso alto:
+        // se queda muerto para siempre, y un texto muerto es un texto que nadie revisa (FER-112).
         return Driver(axis: .sleep, state: (shortVsNeed || poorEfficiency) ? .low : .inRange, orientedZ: nil)
     }
 

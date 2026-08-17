@@ -18,6 +18,13 @@ public struct BehaviorDumbbell: View {
     /// Pre-formatted display strings (the caller owns units, e.g. "48", "56 lpm", "7.9 h").
     public var withText: String
     public var withoutText: String
+    /// Los tres rótulos, DESDE EL APP (FER-112). Nacían escritos aquí, en español, y este
+    /// paquete no tiene catálogo: habrían llegado a la pantalla en español pasara lo que
+    /// pasara con el idioma del teléfono. El default conserva el texto de siempre.
+    public var etiquetaSin: String = "SIN"
+    public var etiquetaCon: String = "CON"
+    /// Formato del rótulo de VoiceOver, con los dos valores: «Sin el hábito %@, con el hábito %@».
+    public var a11yFormato: String = "Sin el hábito %@, con el hábito %@"
     /// True when the WITH-habit mean is the better outcome (already resolved for metric direction).
     public var withIsBetter: Bool
     /// The metric's data hue — the only color, carried by the better mean.
@@ -25,7 +32,9 @@ public struct BehaviorDumbbell: View {
     public var theme: InstrumentoTheme
 
     public init(meanWith: Double, meanWithout: Double, withText: String, withoutText: String,
-                withIsBetter: Bool, hue: Color, theme: InstrumentoTheme) {
+                withIsBetter: Bool, hue: Color, theme: InstrumentoTheme,
+                etiquetaSin: String = "SIN", etiquetaCon: String = "CON",
+                a11yFormato: String = "Sin el hábito %@, con el hábito %@") {
         self.meanWith = meanWith
         self.meanWithout = meanWithout
         self.withText = withText
@@ -33,6 +42,9 @@ public struct BehaviorDumbbell: View {
         self.withIsBetter = withIsBetter
         self.hue = hue
         self.theme = theme
+        self.etiquetaSin = etiquetaSin
+        self.etiquetaCon = etiquetaCon
+        self.a11yFormato = a11yFormato
     }
 
     private let dotR: CGFloat = 4.5
@@ -41,13 +53,13 @@ public struct BehaviorDumbbell: View {
         VStack(spacing: 4) {
             track
             HStack(alignment: .firstTextBaseline, spacing: 0) {
-                valueLabel("SIN", withoutText, colored: !withIsBetter, align: .leading)
+                valueLabel(etiquetaSin, withoutText, colored: !withIsBetter, align: .leading)
                 Spacer(minLength: 8)
-                valueLabel("CON", withText, colored: withIsBetter, align: .trailing)
+                valueLabel(etiquetaCon, withText, colored: withIsBetter, align: .trailing)
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text("Sin el hábito \(withoutText), con el hábito \(withText)"))
+        .accessibilityLabel(Text(verbatim: String(format: a11yFormato, withoutText, withText)))
     }
 
     private var track: some View {

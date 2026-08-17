@@ -8,26 +8,58 @@ import SwiftUI
 
 public enum LiquidTab: String, CaseIterable, Sendable {
     case hoy, tendencias, entrenar, ajustes
+}
 
-    public var titulo: String {
-        switch self {
-        case .hoy: return "Hoy"
-        case .tendencias: return "Tendencias"
-        case .entrenar: return "Entrenar"
-        case .ajustes: return "Ajustes"
+/// Los rótulos del dock, que llegan DESDE LA APP.
+///
+/// `StrandDesign` no tiene catálogo de cadenas: cualquier texto que nazca dentro del paquete se
+/// queda para siempre en el idioma en que se escribió. Estos se escribieron en español, así que
+/// el dock decía «Hoy · Tendencias · Entrenar · Ajustes» también con el teléfono en inglés — la
+/// barra que el usuario ve en TODAS las pantallas, en el idioma equivocado (FER-112; el TODO
+/// llevaba abierto desde la sesión /inject).
+///
+/// No hay valor por defecto en `LiquidTabBar.init`: el compilador obliga a cada llamador a
+/// decidir de dónde vienen sus rótulos, y así el bug no puede volver a entrar en silencio.
+public struct LiquidTabRotulos: Sendable {
+    public let hoy: String
+    public let tendencias: String
+    public let entrenar: String
+    public let ajustes: String
+
+    public init(hoy: String, tendencias: String, entrenar: String, ajustes: String) {
+        self.hoy = hoy
+        self.tendencias = tendencias
+        self.entrenar = entrenar
+        self.ajustes = ajustes
+    }
+
+    /// SOLO para previews y demos del propio paquete, que no tienen catálogo al que preguntar.
+    /// Jamás para una pantalla de la app: ahí los rótulos salen de `Localizable.xcstrings`.
+    public static let demo = LiquidTabRotulos(hoy: "Hoy", tendencias: "Tendencias",
+                                              entrenar: "Entrenar", ajustes: "Ajustes")
+
+    func titulo(_ tab: LiquidTab) -> String {
+        switch tab {
+        case .hoy: return hoy
+        case .tendencias: return tendencias
+        case .entrenar: return entrenar
+        case .ajustes: return ajustes
         }
     }
 }
 
 public struct LiquidTabBar: View {
     private let active: LiquidTab
+    private let rotulos: LiquidTabRotulos
     private let onSelect: ((LiquidTab) -> Void)?
 
     /// El selector de vidrio que se desliza a la pestaña activa (patrón nativo iOS).
     @Namespace private var seleccion
 
-    public init(active: LiquidTab, onSelect: ((LiquidTab) -> Void)? = nil) {
+    public init(active: LiquidTab, rotulos: LiquidTabRotulos,
+                onSelect: ((LiquidTab) -> Void)? = nil) {
         self.active = active
+        self.rotulos = rotulos
         self.onSelect = onSelect
     }
 
@@ -74,7 +106,7 @@ public struct LiquidTabBar: View {
         return VStack(spacing: LiquidSpace.s075) {
             TabGlyph(tab: tab, color: color, showDot: isActive)
                 .frame(width: 22, height: 22)
-            Text(tab.titulo)
+            Text(rotulos.titulo(tab))
                 .font(LiquidType.tab(active: isActive))
                 .foregroundStyle(color)
         }
@@ -182,7 +214,7 @@ private struct TabGlyphPath: Shape {
         var body: some View {
             VStack {
                 Spacer()
-                LiquidTabBar(active: active) { active = $0 }
+                LiquidTabBar(active: active, rotulos: .demo) { active = $0 }
                     .padding(.horizontal, LiquidSpace.dockSide)
                     .padding(.bottom, LiquidSpace.dockBottom)
             }
