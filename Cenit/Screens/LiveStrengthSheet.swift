@@ -32,6 +32,8 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 /// navigator. The session itself lives in `AppModel`, so dismissing this sheet never ends it.
 struct LiveStrengthSheet: View {
     @Environment(AppModel.self) private var model
+    /// FER-93: para no soltar el aviso del descanso cuando la app vuelve del bloqueo.
+    @Environment(\.scenePhase) private var scenePhase
     @EnvironmentObject private var tabRouter: TabRouter
     @ObservedObject var session: StrengthSessionModel
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
@@ -241,13 +243,6 @@ struct LiveStrengthSheet: View {
         // de iOS — se lo damos. Hace lo MISMO que el botón: minimiza. La sesión sigue viva; deslizar
         // nunca la termina ni la descarta.
         .edgeSwipeToExit { model.strengthSheetPresented = false }
-        // FER-93: entre serie y serie pasan dos minutos sin tocar nada y el iPhone se duerme justo
-        // cuando lo levantas para anotar. Se suspende el auto-bloqueo mientras la hoja está a la
-        // vista, y se restaura al salir SIEMPRE: dejarlo apagado por accidente le come la batería a
-        // alguien que ya salió del gimnasio. (Minimizar la sesión también la restaura: si el
-        // teléfono ya no muestra la sesión, no hay razón para mantenerlo despierto.)
-        .onAppear { SessionComfort.applyKeepAwake(active: true) }
-        .onDisappear { SessionComfort.applyKeepAwake(active: false) }
         .enableInjection()
     }
 
@@ -1024,10 +1019,17 @@ struct LiveStrengthSheet: View {
                 let delay = end.timeIntervalSinceNow
                 if delay > 0 { try? await Task.sleep(for: .seconds(delay)) }
                 guard !Task.isCancelled, session.phase == .resting, !session.paused else { return }
-                // FER-93: con el teléfono en el suelo o en el bolsillo la háptica no llega. El
-                // sonido es opcional y está apagado por defecto (un gimnasio no es un lugar donde
-                // todos quieran que su teléfono suene).
-                SessionComfort.playRestChime()
+                // FER-93: el aviso del fin de descanso. La háptica es la que el copy promete y no
+                // existía (el descanso fijo terminaba en silencio absoluto); el tono es opcional.
+                //
+                // Las dos solo se disparan si el descanso acaba de terminar DE VERDAD y la app está
+                // al frente: si el iPhone se bloqueó, este `sleep` no corre y al volver soltaría un
+                // aviso rancio de un descanso que terminó hace minutos.
+                let fresco = abs(end.timeIntervalSinceNow) < 2 && scenePhase == .active
+                if fresco {
+                    model.buzz(loops: 1)
+                    SessionComfort.playRestChime()
+                }
                 withAnimation(StrandMotion.gentle) { session.skipRest() }
             }
             .padding(.vertical, 8)

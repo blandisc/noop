@@ -21,8 +21,8 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 ## Unreleased
 
 - **Entrenar: la pantalla no se duerme a media serie, y el descanso puede sonar / Train: the screen stays on, and rest can chime** (FER-93).
-  **ES** — Dos comodidades que se notaban por su ausencia, las dos con interruptor en Ajustes y las dos apagadas de fábrica. Entre serie y serie pasan dos minutos sin tocar nada y el iPhone se dormía justo cuando lo levantabas para anotar: ahora, si lo enciendes, la pantalla se queda despierta mientras tienes la sesión abierta, y al salir tu teléfono vuelve a su bloqueo normal, siempre. Y el descanso, que hasta hoy solo vibraba, puede avisarte con un tono corto para cuando el teléfono está en el suelo o en el bolsillo.
-  **EN** — Two comforts, both behind a Settings switch and both off by default: the screen can stay awake while a session is open (and your phone always returns to normal auto-lock when you leave), and rest can end with a short tone on top of the haptic.
+  **ES** — Dos comodidades que se notaban por su ausencia. Entre serie y serie pasan dos minutos sin tocar nada y el iPhone se dormía justo cuando lo levantabas para anotar: ahora, si enciendes el interruptor, la pantalla se queda despierta mientras la sesión vive, y al terminarla tu teléfono vuelve a su bloqueo normal, siempre. Y el descanso por tiempo, que terminaba en silencio absoluto, ahora vibra al acabarse y además puede sonar si lo pides. El sonido obedece a tu switch de silencio y solo suena con la app en pantalla: si el iPhone se bloqueó, no suena, y la app lo dice en vez de prometerlo.
+  **EN** — Two comforts: the screen can stay awake while the session lives (and always returns to normal auto-lock when it ends), and a timed rest now buzzes when it's up, with an optional tone. The tone follows your ring switch and only plays with the app on screen — and the app says so instead of promising otherwise.
   ([SessionComfort.swift](Cenit/Screens/SessionComfort.swift))
 
 - **La primera vez: seis actos, y sales con tu propia lectura / First run: six acts, and you leave with your own reading** (FER-109).

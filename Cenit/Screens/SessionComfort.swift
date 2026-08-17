@@ -12,15 +12,27 @@ import AudioToolbox
 //     el auto-bloqueo se suspende — y se restaura SIEMPRE al terminar, incluso si la app se va a
 //     segundo plano: dejar el auto-bloqueo apagado por accidente le come la batería a alguien que
 //     ya salió del gimnasio.
-//   • El descanso termina y solo hay háptica. Con el teléfono en el suelo o en el bolsillo, la
-//     háptica no llega; un sonido corto sí. Apagado por defecto: un gimnasio no es un lugar donde
-//     todos quieran que su teléfono suene.
+//   • El descanso por tiempo terminaba EN SILENCIO ABSOLUTO: ni háptica ni sonido (la háptica que
+//     el copy prometía no existía en ninguna parte). Ahora vibra siempre y, si lo pides, además
+//     suena. Apagado por defecto, porque un gimnasio no es lugar para que un teléfono suene sin
+//     que su dueño lo haya decidido.
+//
+// El alcance del sonido está acotado a lo que de verdad ocurre, y el copy lo dice: obedece al
+// switch de silencio (la app nunca fija una categoría de audio, así que se queda en `soloAmbient`)
+// y solo suena con la app en pantalla, porque el temporizador vive en la vista y el sistema
+// suspende el proceso cuando el iPhone se bloquea. Prometer el bolsillo pedía notificación local
+// o Live Activity: eso es otro requerimiento, no un parche aquí.
 //
 // Nada de esto toca la red ni guarda datos: son dos banderas locales y una llamada del sistema.
 
 enum SessionComfort {
     /// Mantener la pantalla encendida mientras hay una sesión viva. Apagado por defecto: cambiar el
     /// comportamiento del iPhone de alguien sin avisarle es de mala educación.
+    ///
+    /// La bandera la manejan `AppModel.startStrengthSession` / `endStrengthSession` /
+    /// `closeStrengthSummary`, no una vista: el modo foco y el recibo se presentan como
+    /// `fullScreenCover` DESDE la hoja, y una presentación así desmonta a quien presenta, así que
+    /// colgarla del ciclo de vida de la vista la apagaba justo donde más se quiere.
     static let keepAwakeKey = "noop.session.keepScreenAwake"
     /// Sonar al terminar el descanso, además de la háptica. Apagado por defecto.
     static let restSoundKey = "noop.session.restSound"

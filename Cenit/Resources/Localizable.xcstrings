@@ -40353,35 +40353,35 @@
         }
       }
     },
-    "Between sets two minutes pass without touching anything, and the phone falls asleep right when you pick it up to log. This only applies while a session is open; your iPhone goes back to its normal auto-lock when you leave." : {
+    "Between sets two minutes pass without touching anything, and the phone falls asleep right when you pick it up to log. It only applies while the session is open, and it uses more battery: your iPhone goes back to its normal auto-lock when the session ends." : {
       "extractionState" : "manual",
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Entre serie y serie pasan dos minutos sin tocar nada y el teléfono se duerme justo cuando lo levantas para anotar. Solo aplica mientras tienes una sesión abierta; al salir, tu iPhone vuelve a su bloqueo normal."
+            "value" : "Entre serie y serie pasan dos minutos sin tocar nada y el teléfono se duerme justo cuando lo levantas para anotar. Solo aplica mientras la sesión está abierta, y gasta más batería: al terminar la sesión, tu iPhone vuelve a su bloqueo normal."
           }
         }
       }
     },
-    "Sound when rest ends" : {
+    "Sound when a timed rest ends" : {
       "extractionState" : "manual",
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sonido al terminar el descanso"
+            "value" : "Sonido al terminar un descanso por tiempo"
           }
         }
       }
     },
-    "A short system tone on top of the haptic, for when the phone is on the floor or in your pocket. Off by default: a gym isn't a place where everyone wants their phone to make noise." : {
+    "A short system tone next to the haptic, for a rest counted by the clock. It follows your ring switch, and it only sounds with the app on screen: if the iPhone locked, there's no sound." : {
       "extractionState" : "manual",
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Un tono corto del sistema además de la háptica, para cuando el teléfono está en el suelo o en el bolsillo. Apagado por defecto: un gimnasio no es un lugar donde todos quieran que su teléfono suene."
+            "value" : "Un tono corto del sistema junto a la háptica, para el descanso que cuenta el reloj. Obedece a tu switch de silencio y solo suena con la app en pantalla: si el iPhone se bloqueó, no suena."
           }
         }
       }

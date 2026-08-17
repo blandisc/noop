@@ -261,16 +261,16 @@ private struct AjustesLanding: View {
                     // Apagarlo a media sesión tiene que surtir efecto ya, no en la siguiente.
                     if !on { SessionComfort.applyKeepAwake(active: false) }
                 }
-                Text("Between sets two minutes pass without touching anything, and the phone falls asleep right when you pick it up to log. This only applies while a session is open; your iPhone goes back to its normal auto-lock when you leave.")
+                Text("Between sets two minutes pass without touching anything, and the phone falls asleep right when you pick it up to log. It only applies while the session is open, and it uses more battery: your iPhone goes back to its normal auto-lock when the session ends.")
                     .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                     .fixedSize(horizontal: false, vertical: true)
                 divider
                 Toggle(isOn: $restSound) {
-                    Text("Sound when rest ends").font(StrandFont.body).foregroundStyle(theme.ink)
+                    Text("Sound when a timed rest ends").font(StrandFont.body).foregroundStyle(theme.ink)
                 }
                 .toggleStyle(.instrumento)
                 .frame(minHeight: 44)
-                Text("A short system tone on top of the haptic, for when the phone is on the floor or in your pocket. Off by default: a gym isn't a place where everyone wants their phone to make noise.")
+                Text("A short system tone next to the haptic, for a rest counted by the clock. It follows your ring switch, and it only sounds with the app on screen: if the iPhone locked, there's no sound.")
                     .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                     .fixedSize(horizontal: false, vertical: true)
             }

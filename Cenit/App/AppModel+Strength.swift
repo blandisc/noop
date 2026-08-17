@@ -34,6 +34,11 @@ extension AppModel {
             }
         }
         strengthSheetPresented = true
+        // FER-93: la pantalla encendida cuelga de la SESIÓN, no de una vista. Colgarla del
+        // `onAppear`/`onDisappear` de la hoja la apagaba en dos momentos donde el usuario sí la
+        // quiere: el modo foco y el recibo se presentan como `fullScreenCover` DESDE la hoja, y una
+        // presentación así desmonta a quien presenta.
+        SessionComfort.applyKeepAwake(active: true)
         // Arm the realtime HR stream for the duration of the session (FER-498) — without this, on a
         // WHOOP 4.0 the session sees no HR unless Live was opened first, and the receipt reads "no HR".
         acquireRealtimeHR("strength")
@@ -122,6 +127,7 @@ extension AppModel {
             }
             strengthSession = nil
             strengthSheetPresented = false
+            SessionComfort.applyKeepAwake(active: false)
             releaseRealtimeHR("strength")
             clearInProgressSession()   // FER-798: nothing to recover once discarded
             return
@@ -255,6 +261,9 @@ extension AppModel {
         if let s = strengthSession, s.summary == nil, s.saveError { return }
         strengthSession = nil
         strengthSheetPresented = false
+        // FER-93: aquí se cierra de verdad la sesión (el recibo ya se leyó), así que aquí se
+        // restaura el auto-bloqueo. Nunca se queda encendido más allá de la sesión.
+        SessionComfort.applyKeepAwake(active: false)
         releaseRealtimeHR("strength")   // last consumer leaves → stream stops (unless Live still holds it)
         clearInProgressSession()        // FER-798: belt-and-suspenders — the snapshot was cleared at save
     }
