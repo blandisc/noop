@@ -141,7 +141,7 @@ public struct LiquidVotoRiel: View {
             Text(verbatim: palabra)
                 .font(LiquidType.microEstado)
                 .foregroundStyle(tonoPalabra)
-                .opacity(0.4 + 0.6 * sellado)
+                .opacity(0.4 + 0.6 * sellado)   // token-exempt: la opacidad ES el progreso del sellado
                 .scaleEffect(0.92 + 0.08 * sellado, anchor: .trailing)
         }
         // Decorativo: la lectura audible es el label compuesto de la fila (contrato D3).
