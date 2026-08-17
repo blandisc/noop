@@ -400,8 +400,10 @@ struct OnbActoEncendido: View {
         await encender(desenlace())
     }
 
-    /// Vuelve a intentar la lectura desde cero, conservando el arranque (el reloj no miente sobre
-    /// cuánto lleva esperando quien ya esperó).
+    /// Vuelve a intentar la lectura **desde cero, con reloj nuevo**: un reintento explícito no es la
+    /// continuación de la espera anterior, así que merece su propio piso y su propio techo. Quien
+    /// fue a Salud, encendió los permisos y volvió no debe encontrarse «Esto va para largo» en el
+    /// segundo cero por lo que tardó el intento pasado.
     @MainActor
     private func reintentar() async {
         // `landing` a nil es lo que hace que esto REINTENTE de verdad. Sin eso, `correr()` toma la
@@ -417,6 +419,14 @@ struct OnbActoEncendido: View {
         syncListo = false
         corriendo = false
         avance = 0
+        // El reloj y el desfile arrancan limpios también: si no, el reintento hereda el techo
+        // alcanzado, la última etapa del intento anterior y los hitos ya anunciados, y VoiceOver se
+        // queda mudo durante toda la segunda lectura.
+        techoAlcanzado = false
+        ultimaEtapa = false
+        etapaClave = nil
+        etapaN = 1
+        anunciados.removeAll()
         arranque = Date()
         await correr()
     }
