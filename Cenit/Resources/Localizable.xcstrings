@@ -40331,6 +40331,61 @@
         }
       }
     },
+    "During a session" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Durante una sesión"
+          }
+        }
+      }
+    },
+    "Keep the screen on" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mantener la pantalla encendida"
+          }
+        }
+      }
+    },
+    "Between sets two minutes pass without touching anything, and the phone falls asleep right when you pick it up to log. This only applies while a session is open; your iPhone goes back to its normal auto-lock when you leave." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entre serie y serie pasan dos minutos sin tocar nada y el teléfono se duerme justo cuando lo levantas para anotar. Solo aplica mientras tienes una sesión abierta; al salir, tu iPhone vuelve a su bloqueo normal."
+          }
+        }
+      }
+    },
+    "Sound when rest ends" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sonido al terminar el descanso"
+          }
+        }
+      }
+    },
+    "A short system tone on top of the haptic, for when the phone is on the floor or in your pocket. Off by default: a gym isn't a place where everyone wants their phone to make noise." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un tono corto del sistema además de la háptica, para cuando el teléfono está en el suelo o en el bolsillo. Apagado por defecto: un gimnasio no es un lugar donde todos quieran que su teléfono suene."
+          }
+        }
+      }
+    },
     "The raise waits:" : {
       "extractionState" : "manual",
       "localizations" : {

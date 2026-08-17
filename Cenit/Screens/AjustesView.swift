@@ -102,6 +102,9 @@ private struct AjustesLanding: View {
     /// FER-722: opt-in exercise media download (default off — the first/only exception to offline
     /// for exercise thumbs/loops, gated end-to-end by `MediaDownloadCoordinator`).
     @AppStorage(MediaDownloadCoordinator.enabledKey) private var exerciseMediaEnabled = false
+    /// FER-93: las dos comodidades de la sesión, las dos apagadas por defecto.
+    @AppStorage(SessionComfort.keepAwakeKey) private var keepScreenAwake = false
+    @AppStorage(SessionComfort.restSoundKey) private var restSound = false
     @EnvironmentObject private var mediaCoordinator: MediaDownloadCoordinator
     @State private var confirmDeleteMedia = false
     @State private var confirmRecalibrate = false
@@ -245,6 +248,29 @@ private struct AjustesLanding: View {
                     model.reevaluateIllness()
                 }
                 Text("Cruza tu temperatura de muñeca y tu pulso en reposo nocturno para avisarte temprano de una posible enfermedad. Aproximado, no es un diagnóstico; necesita unas dos semanas de datos.")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            section("During a session") {
+                Toggle(isOn: $keepScreenAwake) {
+                    Text("Keep the screen on").font(StrandFont.body).foregroundStyle(theme.ink)
+                }
+                .toggleStyle(.instrumento)
+                .frame(minHeight: 44)
+                .onChange(of: keepScreenAwake) { _, on in
+                    // Apagarlo a media sesión tiene que surtir efecto ya, no en la siguiente.
+                    if !on { SessionComfort.applyKeepAwake(active: false) }
+                }
+                Text("Between sets two minutes pass without touching anything, and the phone falls asleep right when you pick it up to log. This only applies while a session is open; your iPhone goes back to its normal auto-lock when you leave.")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+                divider
+                Toggle(isOn: $restSound) {
+                    Text("Sound when rest ends").font(StrandFont.body).foregroundStyle(theme.ink)
+                }
+                .toggleStyle(.instrumento)
+                .frame(minHeight: 44)
+                Text("A short system tone on top of the haptic, for when the phone is on the floor or in your pocket. Off by default: a gym isn't a place where everyone wants their phone to make noise.")
                     .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                     .fixedSize(horizontal: false, vertical: true)
             }

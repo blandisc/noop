@@ -241,6 +241,13 @@ struct LiveStrengthSheet: View {
         // de iOS — se lo damos. Hace lo MISMO que el botón: minimiza. La sesión sigue viva; deslizar
         // nunca la termina ni la descarta.
         .edgeSwipeToExit { model.strengthSheetPresented = false }
+        // FER-93: entre serie y serie pasan dos minutos sin tocar nada y el iPhone se duerme justo
+        // cuando lo levantas para anotar. Se suspende el auto-bloqueo mientras la hoja está a la
+        // vista, y se restaura al salir SIEMPRE: dejarlo apagado por accidente le come la batería a
+        // alguien que ya salió del gimnasio. (Minimizar la sesión también la restaura: si el
+        // teléfono ya no muestra la sesión, no hay razón para mantenerlo despierto.)
+        .onAppear { SessionComfort.applyKeepAwake(active: true) }
+        .onDisappear { SessionComfort.applyKeepAwake(active: false) }
         .enableInjection()
     }
 
@@ -1017,6 +1024,10 @@ struct LiveStrengthSheet: View {
                 let delay = end.timeIntervalSinceNow
                 if delay > 0 { try? await Task.sleep(for: .seconds(delay)) }
                 guard !Task.isCancelled, session.phase == .resting, !session.paused else { return }
+                // FER-93: con el teléfono en el suelo o en el bolsillo la háptica no llega. El
+                // sonido es opcional y está apagado por defecto (un gimnasio no es un lugar donde
+                // todos quieran que su teléfono suene).
+                SessionComfort.playRestChime()
                 withAnimation(StrandMotion.gentle) { session.skipRest() }
             }
             .padding(.vertical, 8)
