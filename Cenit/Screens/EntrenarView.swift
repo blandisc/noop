@@ -840,7 +840,7 @@ private struct EntrenarLanding: View {
             // FER-85 (decisión del dueño): los cuadros CONSERVAN lo que dicen —el desvío del plan
             // en doble color y el toque por día— y solo cambian de piel para hacer juego con la
             // sección nueva: el token de la semana en vez de un 26 suelto.
-            .frame(width: EntrenarMetrics.weekToken + 4, height: EntrenarMetrics.weekToken + 4)
+            .frame(width: EntrenarMetrics.weekToken, height: EntrenarMetrics.weekToken)
             .accessibilityHidden(true)
         }
         .frame(maxWidth: .infinity)

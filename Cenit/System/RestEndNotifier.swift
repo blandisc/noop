@@ -1,4 +1,5 @@
 import Foundation
+import os
 import UserNotifications
 
 // MARK: - RestEndNotifier — el aviso del descanso cuando el teléfono está guardado (FER-93 · E12)
@@ -23,8 +24,12 @@ enum RestEndNotifier {
     /// Permiso, pedido en el momento en que el usuario enciende el interruptor — no en un arranque
     /// cualquiera ni a media sesión. Si lo niega, todo lo demás es un no-op silencioso: la sesión
     /// sigue vibrando y sonando con la app en pantalla.
-    static func requestAuthorization() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
+    /// Devuelve si el sistema lo concedió: quien enciende el interruptor tiene derecho a que la app
+    /// no se quede prometiendo algo que iOS ya negó.
+    @discardableResult
+    static func requestAuthorization() async -> Bool {
+        (try? await UNUserNotificationCenter.current()
+            .requestAuthorization(options: [.alert, .sound])) ?? false
     }
 
     /// Si este descanso merece un aviso. Pura y probada aparte: un `endsAt` ya vencido (el caso de
@@ -34,15 +39,23 @@ enum RestEndNotifier {
         endsAt.timeIntervalSince(now) > 0
     }
 
+    /// La generación viva del descanso. El alta de la notificación ocurre DENTRO del callback de
+    /// `getNotificationSettings`, así que una cancelación posterior podía ejecutarse ANTES del alta
+    /// y dejar un aviso huérfano programado. El token deja fuera al rezagado: si la generación
+    /// cambió mientras el sistema contestaba, ese alta ya no vale.
+    private static let generacion = OSAllocatedUnfairLock(initialState: 0)
+
     /// Programa el aviso para el final de este descanso. `endsAt` en el pasado (o sin permiso) no
     /// programa nada.
     static func schedule(endsAt: Date, now: Date = Date(),
                          center: UNUserNotificationCenter = .current()) {
         cancel(center: center)
         guard shouldSchedule(endsAt: endsAt, now: now) else { return }
+        let mia = generacion.withLock { $0 }
         let delay = endsAt.timeIntervalSince(now)
         center.getNotificationSettings { settings in
-            guard settings.authorizationStatus == .authorized else { return }
+            guard settings.authorizationStatus == .authorized,
+                  generacion.withLock({ $0 }) == mia else { return }
             let content = UNMutableNotificationContent()
             content.title = String(localized: "Rest is up")
             content.body = String(localized: "Your next set is waiting.")
@@ -56,6 +69,8 @@ enum RestEndNotifier {
     /// Retira el aviso pendiente (y el ya entregado, para no dejar basura en el centro de
     /// notificaciones). Se llama en cada salida del descanso, incluso cuando no había ninguno.
     static func cancel(center: UNUserNotificationCenter = .current()) {
+        // Invalida cualquier alta en vuelo antes de retirar lo ya programado.
+        generacion.withLock { $0 &+= 1 }
         center.removePendingNotificationRequests(withIdentifiers: [requestID])
         center.removeDeliveredNotifications(withIdentifiers: [requestID])
     }

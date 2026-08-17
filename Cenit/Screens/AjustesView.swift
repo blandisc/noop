@@ -106,6 +106,9 @@ private struct AjustesLanding: View {
     @AppStorage(SessionComfort.keepAwakeKey) private var keepScreenAwake = false
     @AppStorage(SessionComfort.restSoundKey) private var restSound = false
     @AppStorage(SessionComfort.restNotifyKey) private var restNotify = false
+    /// iOS negó el permiso: se dice, con la ruta a Ajustes del sistema, en vez de dejar el
+    /// interruptor encendido prometiendo un aviso que nunca llegará.
+    @State private var notifDenegado = false
     @EnvironmentObject private var mediaCoordinator: MediaDownloadCoordinator
     @State private var confirmDeleteMedia = false
     @State private var confirmRecalibrate = false
@@ -282,8 +285,20 @@ private struct AjustesLanding: View {
                 .frame(minHeight: 44)
                 .onChange(of: restNotify) { _, on in
                     // El permiso se pide AQUÍ, en el momento en que lo enciendes, no en un arranque
-                    // cualquiera ni a media serie.
-                    if on { RestEndNotifier.requestAuthorization() } else { RestEndNotifier.cancel() }
+                    // cualquiera ni a media serie. Y si iOS lo niega, el interruptor se apaga solo:
+                    // dejarlo encendido sería prometer un aviso que jamás va a llegar.
+                    guard on else { RestEndNotifier.cancel(); return }
+                    Task { @MainActor in
+                        if await RestEndNotifier.requestAuthorization() == false {
+                            restNotify = false
+                            notifDenegado = true
+                        }
+                    }
+                }
+                if notifDenegado {
+                    Text("Your iPhone has notifications off for Cénit. You can turn them on in Settings.")
+                        .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 Text("The only notice that survives locking your phone: a notification your iPhone delivers on its own, for when you leave it on the floor between sets. It's scheduled and delivered on your device; nothing leaves it.")
                     .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)

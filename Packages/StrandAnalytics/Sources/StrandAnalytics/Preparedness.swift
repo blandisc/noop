@@ -202,9 +202,16 @@ public enum Preparedness {
         /// La holgura del motor, en fracción del piso: la unidad de «diferencia que importa» con la
         /// que una superficie puede graduar la escala sin inventarse una propia.
         public let slackRatio: Double
+        /// El voto del sueño tiene DOS piernas: la noche fue corta, o fue mala aunque larga
+        /// (eficiencia bajo el piso, Ohayon 2017). Esta bandera dice que el voto lo cargó la
+        /// SEGUNDA — y eso importa para dibujar: una superficie que coloca por duración estaría
+        /// poniendo la joya cómodamente dentro de la banda bajo la palabra «fuera».
+        public let votedByEfficiencyOnly: Bool
 
-        public init(ratio: Double, outRatio: Double, slackRatio: Double) {
+        public init(ratio: Double, outRatio: Double, slackRatio: Double,
+                    votedByEfficiencyOnly: Bool = false) {
             self.ratio = ratio; self.outRatio = outRatio; self.slackRatio = slackRatio
+            self.votedByEfficiencyOnly = votedByEfficiencyOnly
         }
     }
 
@@ -576,9 +583,12 @@ public enum Preparedness {
         // FER-84: la magnitud del sueño sale del MISMO sitio que su voto, con los mismos números
         // de la config: si alguien mueve el piso o la holgura, el dibujo se mueve con el voto.
         let sleepScale: SleepScale? = today.totalSleepMin.map { mins in
-            SleepScale(ratio: mins / config.sleepNeedFloorMin,
-                       outRatio: (config.sleepNeedFloorMin - config.sleepSlackMin) / config.sleepNeedFloorMin,
-                       slackRatio: config.sleepSlackMin / config.sleepNeedFloorMin)
+            let corta = mins < config.sleepNeedFloorMin - config.sleepSlackMin
+            let malaContinuidad = today.efficiency.map { $0 < config.sleepEffFloor } ?? false
+            return SleepScale(ratio: mins / config.sleepNeedFloorMin,
+                              outRatio: (config.sleepNeedFloorMin - config.sleepSlackMin) / config.sleepNeedFloorMin,
+                              slackRatio: config.sleepSlackMin / config.sleepNeedFloorMin,
+                              votedByEfficiencyOnly: malaContinuidad && !corta)
         }
         // B2: luteal high-side temp allowance on asOf day only. Hoisted (FER-51) para exponer el
         // MISMO número que juzga el driver como `Read.thermalAdjustedDevC` — cero recomputación.

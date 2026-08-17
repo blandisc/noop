@@ -1422,18 +1422,27 @@ enum LiquidHoyBuilder {
         // el piso recomendado (nunca contra tu promedio: eso normalizaría la privación crónica), así
         // que viene como fracción de esa necesidad y el riel pone el corte en su tick.
         //
-        // La dirección del autonómico se voltea porque `orientedZ` viene ORIENTADA (negativa = peor)
-        // y este riel dibuja la dirección CRUDA que la hoja ya usaba: FC alta a la derecha.
+        // UNA sola gramática en la tarjeta: PEOR A LA IZQUIERDA, en los dos rieles. `orientedZ` ya
+        // viene así (negativa = peor), y coincide con el sueño (noche corta a la izquierda) y con la
+        // posición canónica de `fueraAbajo`, que es la que se sigue usando sin quórum. Voltear el
+        // signo hacía que la MISMA mañana se dibujara a un lado con veredicto y al otro sin él.
         //
         // Sin veredicto no se coloca nada: la hoja sin quórum habla en tinta y no afirma una
         // posición que no votó.
         let magnitud: LiquidVotoRiel.Magnitud? = {
             guard hayVeredicto, estado.hasData else { return nil }
             if esAuto {
-                guard let z = prep?.drivers.first(where: { $0.axis == .autonomic })?.orientedZ else { return nil }
-                return .sigmas(-z)
+                // La fila se llama «FC en reposo», así que coloca la FC EN REPOSO — no el compuesto
+                // del eje, que además lleva HRV y respiración: con RMSSD nocturno presente hasta un
+                // tercio del desplazamiento vendría de una señal que la fila no nombra.
+                guard let z = prep?.signals.first(where: { $0.signal == .rhr })?.orientedZ else { return nil }
+                return .sigmas(z)
             }
-            guard let sc = prep?.sleepScale else { return nil }
+            // El voto del sueño tiene DOS piernas: duración y continuidad. La posición solo sabe
+            // hablar de duración, así que cuando quien votó fue la eficiencia se cae a la posición
+            // canónica: dibujar la joya cómoda a la derecha bajo la palabra «fuera» sería justo la
+            // contradicción que esta vara vino a cerrar.
+            guard let sc = prep?.sleepScale, !sc.votedByEfficiencyOnly else { return nil }
             return .fraccionDeNecesidad(ratio: sc.ratio, corte: sc.outRatio, holgura: sc.slackRatio)
         }()
 
@@ -1450,7 +1459,7 @@ enum LiquidHoyBuilder {
                                hueMetrica: hayVeredicto
                                    ? (esAuto ? LiquidColor.rosa : LiquidColor.indigo)
                                    : LiquidColor.tinta700,
-                               a11y: a11y)
+                               a11y: a11y, magnitud: magnitud)
     }
 
     /// La frase-resumen bajo la palabra — sostiene el veredicto o cuenta el DESFASE de

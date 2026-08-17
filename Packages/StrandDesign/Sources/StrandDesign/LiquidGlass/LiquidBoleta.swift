@@ -118,7 +118,7 @@ public struct LiquidVotoRiel: View {
     }
 
     /// Dónde cae una medición en el riel, en la vara que traiga.
-    static func posicion(_ magnitud: Magnitud) -> CGFloat {
+    static func posicion(_ magnitud: Magnitud) -> CGFloat? {
         switch magnitud {
         case .sigmas(let z): return posicion(desviacion: z)
         case .fraccionDeNecesidad(let ratio, let corte, let holgura):
@@ -134,9 +134,11 @@ public struct LiquidVotoRiel: View {
     /// `holgura` entra en la firma aunque el mapa no la use como paso: es el número del motor que
     /// documenta cuál es «una diferencia que importa», y tenerla aquí obliga al llamador a traer la
     /// escala completa del motor en vez de reconstruirla a ojo.
-    static func posicion(ratio: Double, corte: Double, holgura: Double) -> CGFloat {
+    static func posicion(ratio: Double, corte: Double, holgura: Double) -> CGFloat? {
+        // Con datos rotos NO se coloca: devolver el tick afirmaría «dormiste justo el mínimo», que
+        // es un valor concreto, cuando lo que pasa es que no se sabe nada.
         guard ratio.isFinite, corte.isFinite, holgura > 0,
-              corte > suenoRatioMin, corte < suenoRatioMax else { return minimoLo }
+              corte > suenoRatioMin, corte < suenoRatioMax else { return nil }
         if ratio <= corte {
             let t = (ratio - suenoRatioMin) / (corte - suenoRatioMin)
             return min(max(bigoteLo + CGFloat(t) * (minimoLo - bigoteLo), bigoteLo), minimoLo)
@@ -166,7 +168,9 @@ public struct LiquidVotoRiel: View {
     }
 
     private var bandaRango: ClosedRange<CGFloat> {
-        umbral == .rango ? Self.rangoLo...Self.rangoHi : Self.minimoLo...1.0
+        // El riel unilateral cierra en el tope del bigote, no en el borde del lienzo: con la banda
+        // llegando a 1.0, el bigote derecho quedaba DENTRO de ella y dejaba de leerse como tope.
+        umbral == .rango ? Self.rangoLo...Self.rangoHi : Self.minimoLo...Self.bigoteHi
     }
 
     private var posJoya: CGFloat? {
@@ -176,7 +180,7 @@ public struct LiquidVotoRiel: View {
         case .calibrando:  return 0.5
         case .sinLectura:  return nil
         case .dentro, .fueraAbajo, .fueraArriba:
-            if let magnitud { return Self.posicion(magnitud) }
+            if let magnitud, let pos = Self.posicion(magnitud) { return pos }
             return estado == .dentro ? Self.posDentro
                  : (estado == .fueraAbajo ? Self.posFueraAbajo : Self.posFueraArriba)
         }

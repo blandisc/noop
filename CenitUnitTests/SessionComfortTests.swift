@@ -73,11 +73,38 @@ final class SessionComfortTests: XCTestCase {
         XCTAssertTrue(RestEndNotifier.shouldSchedule(endsAt: ahora.addingTimeInterval(90), now: ahora))
     }
 
-    /// La regla que hace aceptable la notificación es que TODA salida del descanso la cancele. Lo
-    /// que se puede afirmar sin falsear el sistema de notificaciones es su precondición: todas las
-    /// salidas pasan por el MISMO embudo que limpia el descanso, que es donde vive la cancelación.
-    /// (Falsear `UNUserNotificationCenter` no se puede, y una prueba que finge hacerlo no probaría
-    /// nada — ese error ya lo cazó una revisión de esta misma sesión.)
+    /// La regla del aviso, afirmada sobre el predicado que la decide (falsear
+    /// `UNUserNotificationCenter` no se puede, y una prueba que finge hacerlo no prueba nada):
+    /// apagado no avisa, el descanso por PULSO no avisa (su fin lo decide tu pulso, no el reloj),
+    /// y una sesión pausada tampoco.
+    func testSoloElDescansoPorRelojYConElInterruptorEncendidoAvisa() {
+        UserDefaults.standard.set(true, forKey: SessionComfort.restNotifyKey)
+        defer { UserDefaults.standard.removeObject(forKey: SessionComfort.restNotifyKey) }
+
+        let s = sesionDePrueba()
+        XCTAssertFalse(s.debeAvisar, "sin descanso corriendo no hay nada que avisar")
+        s.startRest(seconds: 90)
+        XCTAssertTrue(s.debeAvisar, "descanso por reloj con el interruptor encendido")
+        s.pause()
+        XCTAssertFalse(s.debeAvisar, "pausado, el aviso sonaría en plena pausa")
+        s.resume()
+        XCTAssertTrue(s.debeAvisar)
+
+        UserDefaults.standard.set(false, forKey: SessionComfort.restNotifyKey)
+        XCTAssertFalse(s.debeAvisar, "con el interruptor apagado, nunca")
+    }
+
+    private func sesionDePrueba() -> StrengthSessionModel {
+        let re = RoutineExercise(id: "a", routineId: "rt", exerciseId: "bench", position: 0,
+                                 targetSets: 2, targetReps: 8, targetWeightKg: 80,
+                                 restMode: .fixed, restSeconds: 90)
+        let ex = Exercise(id: "bench", name: "Bench", type: .weightReps, equipment: nil,
+                          primaryMuscles: [], secondaryMuscles: [], instructions: [])
+        return StrengthSessionModel.make(routineId: "rt", routineName: "Push",
+                                         slots: [.init(re: re, exercise: ex, lastSets: [])],
+                                         startTs: 100)
+    }
+
     func testTodaSalidaDelDescansoPasaPorElMismoEmbudo() {
         let re = RoutineExercise(id: "a", routineId: "rt", exerciseId: "bench", position: 0,
                                  targetSets: 2, targetReps: 8, targetWeightKg: 80,

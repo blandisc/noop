@@ -40796,6 +40796,17 @@
         }
       }
     },
+    "Your iPhone has notifications off for Cénit. You can turn them on in Settings." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu iPhone tiene las notificaciones apagadas para Cénit. Puedes encenderlas en Ajustes."
+          }
+        }
+      }
+    },
     "The raise waits:" : {
       "extractionState" : "manual",
       "localizations" : {

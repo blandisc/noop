@@ -17,7 +17,7 @@ final class VotoRielPosicionTests: XCTestCase {
     private let holgura = 45.0 / 420.0
     /// Coloca una noche de N minutos.
     private func sueno(_ minutos: Double) -> CGFloat {
-        LiquidVotoRiel.posicion(ratio: minutos / 420.0, corte: corte, holgura: holgura)
+        LiquidVotoRiel.posicion(ratio: minutos / 420.0, corte: corte, holgura: holgura) ?? -1
     }
 
     func testBaseQuedaEnElCentro() {
@@ -139,14 +139,15 @@ final class VotoRielPosicionTests: XCTestCase {
         let porSigmas = LiquidVotoRiel.posicion(.sigmas(0))
         let porNecesidad = LiquidVotoRiel.posicion(
             .fraccionDeNecesidad(ratio: corte, corte: corte, holgura: holgura))
-        XCTAssertEqual(porSigmas, 0.5, accuracy: 0.0001, "la base del autonómico va al centro")
-        XCTAssertEqual(porNecesidad, 0.36, accuracy: 0.0001, "el corte del sueño va a su tick")
+        XCTAssertEqual(porSigmas ?? -1, 0.5, accuracy: 0.0001, "la base del autonómico va al centro")
+        XCTAssertEqual(porNecesidad ?? -1, 0.36, accuracy: 0.0001, "el corte del sueño va a su tick")
     }
 
-    /// Datos imposibles no llegan al dibujo.
-    func testLaVaraDelSuenoAguantaDatosRotos() {
-        XCTAssertEqual(LiquidVotoRiel.posicion(ratio: .nan, corte: corte, holgura: holgura), 0.36, accuracy: 0.0001)
-        XCTAssertEqual(LiquidVotoRiel.posicion(ratio: 1, corte: corte, holgura: 0), 0.36, accuracy: 0.0001)
+    /// Datos imposibles NO colocan joya: devolver el tick afirmaría «dormiste justo el mínimo».
+    func testLaVaraDelSuenoNoInventaCuandoElDatoEstaRoto() {
+        XCTAssertNil(LiquidVotoRiel.posicion(ratio: .nan, corte: corte, holgura: holgura))
+        XCTAssertNil(LiquidVotoRiel.posicion(ratio: 1, corte: corte, holgura: 0))
+        XCTAssertNil(LiquidVotoRiel.posicion(ratio: 1, corte: 5, holgura: holgura))
     }
 
     /// Simetría: la misma distancia a cada lado de la base se dibuja a la misma distancia del centro.
