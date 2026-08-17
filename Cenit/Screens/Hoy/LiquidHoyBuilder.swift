@@ -1456,34 +1456,19 @@ enum LiquidHoyBuilder {
             // y cero explicación de por qué el veredicto no se movió— (adversarial, segunda
             // vuelta). Ahora el par entra AQUÍ, y si además un eje se salió, se nombran los dos:
             // la versión corta escondía justo el voto que sí cayó fuera.
-            if parVoto {
-                // Tres casos, no dos: el día más delicado —fiebre con los DOS ejes fuera— caía
-                // en «uno de tus votos» y le bajaba la magnitud a lo que estaba pasando. Es el
-                // mismo pecado de plural que la rama de abajo ya había arreglado, repetido
-                // ocho líneas más arriba (tercera vuelta adversarial).
-                let texto: String
-                switch fueraEjes {
-                case 0:
-                    texto = String(localized: "acta.resumen.par.desfase",
-                                   defaultValue: "Your temperature and breathing moved out together; the verdict changes once it repeats two days in a row.")
-                case 1:
-                    texto = String(localized: "acta.resumen.par.desfase.eje",
-                                   defaultValue: "Your temperature and breathing moved out together, and one of your votes fell outside too; the verdict changes once it repeats two days in a row.")
-                default:
-                    texto = String(localized: "acta.resumen.par.desfase.ejes",
-                                   defaultValue: "Your temperature and breathing moved out together, and both of your votes fell outside too; the verdict changes once it repeats two days in a row.")
-                }
-                return (texto, String(localized: "acta.resumen.par.clave", defaultValue: "together"))
-            }
+            // QUIÉN se salió lo dice `quienSeSalioHoy`, la MISMA fuente que usa el héroe; aquí
+            // solo se le pega la coletilla de la histéresis. Mientras cada uno tuvo su propia
+            // tabla se contradijeron cuatro veces en esta serie —el eje que estaba dentro, el
+            // plural, el empujón de tendencia, el desfase verde— y cada arreglo cerraba una
+            // puerta y abría la siguiente (octava vuelta).
             let esperado: Int = prep!.verdict == .full ? 0 : (prep!.verdict == .caution ? 1 : 2)
-            if fuera > esperado {
-                // El plural importa (revisión DeepSeek r2): con los DOS votos fuera hoy el
-                // singular «a vote» mentía la magnitud del desfase.
-                let texto = fuera >= 2
-                    ? String(localized: "Both votes fell outside today. A new verdict has to repeat two days in a row to replace yesterday's.")
-                    : String(localized: "A vote fell outside today. A new verdict has to repeat two days in a row to replace yesterday's.")
-                return (texto,
-                        String(localized: "acta.resumen.hist.fuera.clave", defaultValue: "outside today"))
+            if parVoto || fuera > esperado {
+                let texto = String(format: String(localized: "acta.resumen.desfase.fmt",
+                                                  defaultValue: "%@. A new verdict has to repeat two days in a row to replace yesterday's."),
+                                   quienSeSalioHoy(fueraEjes: fueraEjes, parVoto: parVoto))
+                return (texto, parVoto
+                        ? String(localized: "acta.resumen.par.clave", defaultValue: "together")
+                        : String(localized: "acta.resumen.hist.fuera.clave", defaultValue: "outside today"))
             }
             return (String(localized: "Your votes fell inside today. The verdict changes once the improvement repeats two days in a row."),
                     String(localized: "acta.resumen.hist.dentro.clave", defaultValue: "inside today"))

@@ -1,6 +1,22 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "acta.resumen.desfase.fmt" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@. A new verdict has to repeat two days in a row to replace yesterday's."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@. Un veredicto nuevo tiene que repetirse dos días seguidos para reemplazar al de ayer."
+          }
+        }
+      }
+    },
     "The number you see is the HRV Apple records: SDNN, the overall spread of the time between your heartbeats. Your daily verdict does NOT read this signal (SDNN): it stands on your resting heart rate and your sleep, and on your nocturnal RMSSD when the night is dense enough. SDNN is shown here as a reference against your own average. The trend uses a different HRV measure, RMSSD, recomputed from the beat-to-beat intervals of your densest nights; RMSSD tracks the vagal, rest-and-repair branch specifically, while SDNN blends both branches, so the two won't always move together." : {
       "localizations" : {
         "en" : {
@@ -289,22 +305,6 @@
         }
       }
     },
-    "acta.resumen.par.desfase.ejes" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your temperature and breathing moved out together, and both of your votes fell outside too; the verdict changes once it repeats two days in a row."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu temperatura y tu respiración se salieron juntas, y además tus dos votos cayeron fuera; el veredicto cambia cuando se repita dos días seguidos."
-          }
-        }
-      }
-    },
     "acta.nota.sinfc" : {
       "localizations" : {
         "en" : {
@@ -369,22 +369,6 @@
         }
       }
     },
-    "acta.resumen.par.desfase.eje" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your temperature and breathing moved out together, and one of your votes fell outside too; the verdict changes once it repeats two days in a row."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu temperatura y tu respiración se salieron juntas, y además uno de tus votos cayó fuera; el veredicto cambia cuando se repita dos días seguidos."
-          }
-        }
-      }
-    },
     "acta.resumen.easy.par.sueno" : {
       "localizations" : {
         "en" : {
@@ -429,22 +413,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "juntas"
-          }
-        }
-      }
-    },
-    "acta.resumen.par.desfase" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your temperature and breathing moved out together; the verdict changes once it repeats two days in a row."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu temperatura y tu respiración se salieron juntas; el veredicto cambia cuando se repita dos días seguidos."
           }
         }
       }
@@ -7177,23 +7145,6 @@
         }
       }
     },
-    "A vote fell outside today. A new verdict has to repeat two days in a row to replace yesterday's." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "A vote fell outside today. A new verdict has to repeat two days in a row to replace yesterday's."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hoy hubo un voto fuera. Un veredicto nuevo tiene que repetirse dos días seguidos para reemplazar al de ayer."
-          }
-        }
-      }
-    },
     "a weak" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -12004,23 +11955,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Las dos señales se leen de tu Apple Watch mientras duermes y se comparan contra tu propio patrón de las últimas semanas, no contra tablas de población. Una desviación aislada se ignora a propósito: un cuarto caliente o una cobija de más la producen solas."
-          }
-        }
-      }
-    },
-    "Both votes fell outside today. A new verdict has to repeat two days in a row to replace yesterday's." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Both votes fell outside today. A new verdict has to repeat two days in a row to replace yesterday's."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hoy los dos votos cayeron fuera. Un veredicto nuevo tiene que repetirse dos días seguidos para reemplazar al de ayer."
           }
         }
       }
