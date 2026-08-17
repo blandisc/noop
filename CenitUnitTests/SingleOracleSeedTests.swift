@@ -126,6 +126,60 @@ final class SingleOracleSeedTests: XCTestCase {
         }
     }
 
+    // MARK: The offer survives a crash
+
+    private func sessionWith(_ raise: ProgressionPlanner.Raise?) -> StrengthSessionModel {
+        let slot = StrengthSessionModel.PlanSlot(
+            re: earnedSlot(),
+            exercise: Exercise(id: "bench", name: "Bench", type: .weightReps, equipment: nil,
+                               primaryMuscles: [], secondaryMuscles: [], instructions: []),
+            lastSets: [SetEntry(id: "s1", sessionId: "s", exerciseId: "bench", position: 0,
+                                kind: .work, weightKg: 80, reps: 8, done: true, ts: 1000)],
+            raise: raise)
+        return StrengthSessionModel.make(routineId: "rt", routineName: "Push",
+                                         slots: [slot], startTs: 100)
+    }
+
+    /// A held raise is the ONLY place the one-tap offer lives, so it has to survive a crash: after a
+    /// restore the table is still at last time's weight and the raise is still one tap away.
+    func testHeldOfferSurvivesTheCrashSnapshot() {
+        guard let raise = evaluate(.lighter)?.raise else { return XCTFail("expected a held raise") }
+        let restored = StrengthSessionModel.restore(from: sessionWith(raise).snapshot(now: 200))
+        let run = restored.runs.first
+        XCTAssertEqual(run?.proposedRaise?.toKg, 82.5)
+        XCTAssertEqual(run?.proposedRaise?.fromKg, 80)
+        XCTAssertEqual(run?.proposedRaise?.waiting, true)
+        XCTAssertEqual(run?.proposedRaise?.phrase, raise.phrase, "the why survives with the offer")
+        for set in run?.sets ?? [] {
+            XCTAssertEqual(set.weightKg, 80, accuracy: 0.0001, "the table stays where it opened")
+        }
+    }
+
+    /// An applied raise is already in the weights, so it does not travel (pre-FER-82 behaviour kept):
+    /// what must survive is the load the athlete is lifting, and it does.
+    func testAppliedRaiseKeepsItsWeightsThroughARestore() {
+        guard let raise = evaluate(.planAsIs)?.raise else { return XCTFail("expected a raise") }
+        let restored = StrengthSessionModel.restore(from: sessionWith(raise).snapshot(now: 200))
+        let run = restored.runs.first
+        XCTAssertNil(run?.proposedRaise, "an applied raise is not re-offered")
+        for set in run?.sets ?? [] {
+            XCTAssertEqual(set.weightKg, 82.5, accuracy: 0.0001, "the raised load survives")
+        }
+    }
+
+    /// A snapshot written before FER-82 (no `heldRaise` key) still decodes, with no offer.
+    func testPreFER82SnapshotDecodesWithoutAnOffer() throws {
+        let snap = sessionWith(nil).snapshot(now: 200)
+        let json = try JSONEncoder().encode(snap)
+        var object = try XCTUnwrap(try JSONSerialization.jsonObject(with: json) as? [String: Any])
+        var runs = try XCTUnwrap(object["runs"] as? [[String: Any]])
+        runs = runs.map { var r = $0; r.removeValue(forKey: "heldRaise"); return r }
+        object["runs"] = runs
+        let stripped = try JSONSerialization.data(withJSONObject: object)
+        let decoded = try JSONDecoder().decode(StrengthSessionSnapshot.self, from: stripped)
+        XCTAssertNil(StrengthSessionModel.restore(from: decoded).runs.first?.proposedRaise)
+    }
+
     /// The per-exercise opt-out («ignora mi recuperación aquí») still wins over the day's verdict.
     func testPerExerciseOptOutIgnoresTheVerdict() {
         var re = earnedSlot()

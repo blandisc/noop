@@ -139,9 +139,14 @@ final class StrengthSessionModel: ObservableObject {
         var sets: [WorkingSet]
         var currentSet: Int
         var skipped: Bool
-        /// An earned weight raise seeded into this run's cells (FER-E · 2b). nil = no proposal today.
-        /// Cleared by «Volver a X» (the per-session opt-out). Not carried by the crash snapshot — after
-        /// a restore the seeded weights survive; only the «por qué» affordance is gone.
+        /// An earned weight raise for this run (FER-E · 2b). nil = no proposal today.
+        /// Cleared by «Volver a X» (the per-session opt-out).
+        ///
+        /// Two readings (FER-82): APPLIED (`waiting == false`) means the cells already opened at the
+        /// new weight — the crash snapshot doesn't carry it because the weights themselves survive,
+        /// and only the «por qué» affordance is lost. HELD (`waiting == true`) means today's verdict
+        /// kept the seed at last time's weight and the raise is offered here, one tap away — THAT one
+        /// the snapshot does carry, because losing it would silently retract what the hero promised.
         var proposedRaise: ProgressionPlanner.Raise? = nil
         /// «Volver a X» was tapped for this exercise (FER-835). Persisted with the session at save so
         /// the progression cycle treats it as neither hit nor miss; carried by the crash snapshot.
@@ -840,7 +845,11 @@ final class StrengthSessionModel: ObservableObject {
                     },
                     currentSet: run.currentSet, skipped: run.skipped,
                     raiseOptedOut: run.raiseOptedOut ? true : nil,
-                    supersetGroup: run.supersetGroup, note: run.note)
+                    supersetGroup: run.supersetGroup, note: run.note,
+                    // FER-82: only a HELD raise travels — an applied one is already in the weights.
+                    heldRaise: run.proposedRaise.flatMap { r in
+                        r.waiting ? .init(fromKg: r.fromKg, toKg: r.toKg, phrase: r.phrase) : nil
+                    })
             },
             currentIndex: currentIndex, restEndsAt: restEndsAt, restStartedAt: restStartedAt,
             currentRestTarget: currentRestTarget, currentRestMode: currentRestMode,
@@ -865,6 +874,12 @@ final class StrengthSessionModel: ObservableObject {
                                        rpe: s.rpe, note: s.note)
                         },
                         currentSet: r.currentSet, skipped: r.skipped,
+                        // The held offer is re-armed exactly as it was: the table already opened at
+                        // last time's weight, so taking it stays one tap away after a restore (FER-82).
+                        proposedRaise: r.heldRaise.map {
+                            ProgressionPlanner.Raise(fromKg: $0.fromKg, toKg: $0.toKg,
+                                                     phrase: $0.phrase, waiting: true)
+                        },
                         raiseOptedOut: r.raiseOptedOut ?? false,
                         supersetGroup: r.supersetGroup, note: r.note)
         }
