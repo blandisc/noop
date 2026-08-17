@@ -35,13 +35,23 @@ public struct EntrenarHilo: View {
         }
 
         /// El tono de lectura de la palabra: AA a tamaño de texto, siempre.
+        ///
+        /// El contraste se mide contra el FONDO REAL sobre el que cae —el relleno teñido de la
+        /// pastilla, no el papel—, que es más oscuro y come contraste. Medirlo contra el papel dejaba
+        /// las tres palabras por debajo de 4.5:1 justo donde el ojo las lee.
         func word(_ theme: InstrumentoTheme) -> Color {
             switch self {
-            case .clear:   return theme.positiveText
-            case .caution: return OKLab.darkened(theme.warning, toContrast: 4.5, against: theme.paper)
-            case .ease:    return theme.negativeText
-            case .hollow:  return theme.inkSecondary
+            case .hollow: return theme.inkSecondary
+            case .clear, .caution, .ease:
+                let base: Color = self == .clear ? theme.verdict
+                                : (self == .caution ? theme.warning : theme.critical)
+                return OKLab.darkened(base, toContrast: 4.5, against: fondoEfectivo(theme))
             }
+        }
+
+        /// El papel con el relleno de la pastilla encima: el color que de verdad hay bajo la palabra.
+        private func fondoEfectivo(_ theme: InstrumentoTheme) -> Color {
+            OKLab.blend(dot(theme), over: theme.paper, alpha: EntrenarMetrics.pillFillAlpha)
         }
 
         func background(_ theme: InstrumentoTheme) -> Color {
@@ -84,14 +94,11 @@ public struct EntrenarHilo: View {
     private var pill: some View {
         HStack(spacing: 9) {
             dot
-            Text(word)
-                .font(StrandFont.subhead.weight(.semibold))
-                .foregroundStyle(tone.word(theme))
-            if let advice {
-                Text(advice)
-                    .font(StrandFont.subhead)
-                    .foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+            // Con Dynamic Type grande la palabra y el consejo no caben lado a lado: en vez de
+            // aplastar el veredicto —que es el dato—, se apilan.
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 9) { palabra; consejo }
+                VStack(alignment: .leading, spacing: 2) { palabra; consejo }
             }
             Spacer(minLength: 8)
             if action != nil {
@@ -105,6 +112,22 @@ public struct EntrenarHilo: View {
         .background(tone.background(theme), in: Capsule())
         .overlay(Capsule().strokeBorder(tone.border(theme), lineWidth: 1))
         .contentShape(Capsule())
+    }
+
+    private var palabra: some View {
+        Text(word)
+            .font(StrandFont.subhead.weight(.semibold))
+            .foregroundStyle(tone.word(theme))
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    @ViewBuilder private var consejo: some View {
+        if let advice {
+            Text(advice)
+                .font(StrandFont.subhead)
+                .foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 
     @ViewBuilder private var dot: some View {

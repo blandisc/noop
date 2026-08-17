@@ -35,6 +35,21 @@ final class VotoRielPosicionTests: XCTestCase {
         XCTAssertLessThan(pos(-1.5), 1 - LiquidVotoRiel.posBandaHi)
     }
 
+    /// La saturación ocurre DONDE dice que ocurre: a 1.7σ y a 12σ la joya no puede estar en el
+    /// mismo pixel, o la caja no mide nada fuera de la banda.
+    func testEntreLaBandaYElTopeSigueHabiendoRecorrido() {
+        XCTAssertLessThan(pos(1.2), pos(1.7))
+        XCTAssertLessThan(pos(1.7), pos(2.2))
+        XCTAssertLessThan(pos(2.2), pos(LiquidVotoRiel.zTope))
+    }
+
+    /// Un z no finito no puede llegar a `.position(x:)`: se planta en el centro.
+    func testUnZNoFinitoSePlantaEnElCentro() {
+        XCTAssertEqual(pos(.nan), 0.5, accuracy: 0.0001)
+        XCTAssertEqual(pos(.infinity), LiquidVotoRiel.bigoteHi, accuracy: 0.0001)
+        XCTAssertEqual(pos(-.infinity), LiquidVotoRiel.bigoteLo, accuracy: 0.0001)
+    }
+
     /// Un extremo se ve extremo, pero nunca se sale del instrumento.
     func testLosExtremosSeDetienenEnElBigote() {
         for z in [2.5, 4.0, 12.0, 1_000.0] {

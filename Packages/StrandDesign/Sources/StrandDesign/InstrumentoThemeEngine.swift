@@ -108,6 +108,19 @@ enum OKLab {
     /// (contrast is monotonic in `L` on a light background), so it's deterministic and
     /// converges in a handful of iterations. Lets a data hue become AA-compliant for
     /// SMALL text against whatever paper is live, with no hand-tuned hex per hour.
+    /// El color que de verdad hay bajo un texto cuando encima del fondo se pinta un velo teñido:
+    /// `over` compuesto con `color` al `alpha` dado, en sRGB. Sin esto, medir contraste contra el
+    /// papel «pelón» miente en cuanto la superficie lleva un relleno (la pastilla del veredicto).
+    static func blend(_ color: Color, over bg: Color, alpha: Double) -> Color {
+        let a = min(max(alpha, 0), 1)
+        let f = color.rgbaComponents, b = bg.rgbaComponents
+        return Color(.sRGB,
+                     red: f.r * a + b.r * (1 - a),
+                     green: f.g * a + b.g * (1 - a),
+                     blue: f.b * a + b.b * (1 - a),
+                     opacity: 1)
+    }
+
     static func darkened(_ color: Color, toContrast ratio: Double, against bg: Color) -> Color {
         if contrastRatio(color, bg) >= ratio { return color }
         let c = color.rgbaComponents

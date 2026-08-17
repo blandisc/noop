@@ -78,8 +78,12 @@ public struct LiquidVotoRiel: View {
     private static let posFueraArriba: CGFloat = 0.90
     /// El borde de la banda en unidades de posición: ahí vive tu ±1σ.
     static let posBandaHi: CGFloat = 0.78
-    /// Los topes del bigote: el rango plausible (±2.5σ). La joya se detiene aquí.
+    /// Los topes del bigote: el rango plausible. La joya se detiene aquí — y la saturación ocurre
+    /// EXACTAMENTE en `zTope`, no antes: con los valores viejos el mapa se plantaba en 1.64σ y
+    /// dibujaba 1.7σ y 12σ en el mismo pixel, que es justo lo que la caja venía a resolver.
     static let bigoteLo: CGFloat = 0.04, bigoteHi: CGFloat = 0.96
+    /// La desviación que llega al tope del bigote.
+    static let zTope: Double = 2.5
     private static let bigoteGrosor: CGFloat = 1
     private static let bigoteAlto: CGFloat = 5
 
@@ -98,8 +102,19 @@ public struct LiquidVotoRiel: View {
     /// caminando hasta el tope del bigote y ahí se detiene: un valor extremo se ve extremo, pero
     /// nunca se sale del instrumento ni miente sobre cuánto más lejos está.
     static func posicion(desviacion z: Double) -> CGFloat {
-        let pos = 0.5 + CGFloat(z) * (posBandaHi - 0.5)
-        return min(max(pos, bigoteLo), bigoteHi)
+        // NaN (base degenerada) no tiene dirección: se planta en el centro, porque `.position(x:)`
+        // con NaN es la familia de «Invalid frame dimension» que este repo ya sufrió una vez. Un
+        // infinito SÍ tiene dirección, así que sigue el camino normal y satura en su bigote.
+        guard !z.isNaN else { return 0.5 }
+        // Dentro de la banda, ±1σ cae en su borde. Más allá, el recorrido restante se reparte hasta
+        // el tope del bigote, de modo que la saturación ocurra en `zTope` y no antes.
+        let magnitud = min(abs(z), zTope)
+        let dentro = posBandaHi - 0.5
+        let fuera = bigoteHi - posBandaHi
+        let avance: CGFloat = magnitud <= 1
+            ? CGFloat(magnitud) * dentro
+            : dentro + CGFloat((magnitud - 1) / (zTope - 1)) * fuera
+        return 0.5 + (z < 0 ? -avance : avance)
     }
 
     private var bandaRango: ClosedRange<CGFloat> {
@@ -133,11 +148,13 @@ public struct LiquidVotoRiel: View {
         .accessibilityHidden(true)
     }
 
-    /// Si la joya cayó fuera de la banda de ±1σ — el mismo corte con el que el eje vota.
-    private var fueraDeBanda: Bool {
-        guard let z = desviacion else { return estado == .fueraAbajo || estado == .fueraArriba }
-        return abs(z) > 1
-    }
+    /// Si este voto salió — y eso lo dice el VOTO, no un recálculo de la magnitud.
+    ///
+    /// Recalcularlo como `abs(z) > 1` parecía equivalente y no lo es: el eje autonómico vota por UN
+    /// lado (peor que tu base), así que una mañana espléndida —FC en reposo muy por debajo— daba
+    /// |z| > 1 y encendía el aro de alerta junto a la palabra «dentro». El aro dice «este voto se
+    /// salió»; quien sabe eso es el estado.
+    private var fueraDeBanda: Bool { estado == .fueraAbajo || estado == .fueraArriba }
 
     private var tonoPalabra: Color {
         switch estado {
@@ -225,7 +242,8 @@ public struct LiquidVotoRiel: View {
     /// distinga «el corte que vota» de «hasta dónde puede llegar el dato».
     private func bigote(x: CGFloat, cy: CGFloat) -> some View {
         RoundedRectangle(cornerRadius: LiquidRadius.hairline, style: .continuous)
-            .fill(LiquidColor.tinta10)
+            // En el color del eje eran invisibles: el tope tiene que leerse como tope.
+            .fill(LiquidColor.tinta500)
             .frame(width: Self.bigoteGrosor, height: Self.bigoteAlto)
             .position(x: x, y: cy)
     }
