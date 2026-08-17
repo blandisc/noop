@@ -1,6 +1,54 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "· last night" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "· last night"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "· anoche"
+          }
+        }
+      }
+    },
+    "hoja.vermas.detalle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "See the full detail"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ver el detalle completo"
+          }
+        }
+      }
+    },
+    "LAST NIGHT · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LAST NIGHT · %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ANOCHE · %@"
+          }
+        }
+      }
+    },
     "reading.vsPopulation.resp_rate.normal" : {
       "localizations" : {
         "en" : {
@@ -13430,13 +13478,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "close to your target"
+            "value" : "close to the recommended range"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "cerca de tu objetivo"
+            "value" : "cerca del rango recomendado"
           }
         }
       }
@@ -17696,13 +17744,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Enough, close to your target."
+            "value" : "Enough, close to the recommended range."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Suficiente, cerca de tu objetivo."
+            "value" : "Suficiente, cerca del rango recomendado."
           }
         }
       }
@@ -37007,13 +37055,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Enough, close to your target."
+            "value" : "Enough, close to the recommended range."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Suficiente, cerca de tu objetivo."
+            "value" : "Suficiente, cerca del rango recomendado."
           }
         }
       }
@@ -37058,13 +37106,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Right in your target range."
+            "value" : "Right in the recommended range."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Justo en tu rango objetivo."
+            "value" : "Justo en el rango recomendado."
           }
         }
       }
@@ -37075,13 +37123,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Short of your target."
+            "value" : "Below the recommended range."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Corto para tu objetivo."
+            "value" : "Abajo del rango recomendado."
           }
         }
       }
@@ -37092,13 +37140,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Short of your target last night."
+            "value" : "Below the recommended range last night."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Corto para tu objetivo anoche."
+            "value" : "Abajo del rango recomendado anoche."
           }
         }
       }
@@ -39799,13 +39847,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Right in your target range."
+            "value" : "Right in the recommended range."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Justo en tu rango objetivo."
+            "value" : "Justo en el rango recomendado."
           }
         }
       }
@@ -42004,13 +42052,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Short of your target"
+            "value" : "Below the recommended range"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Corto para tu objetivo"
+            "value" : "Abajo del rango recomendado"
           }
         }
       }
@@ -42021,13 +42069,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Short of your target last night."
+            "value" : "Below the recommended range last night."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Corto para tu objetivo anoche."
+            "value" : "Abajo del rango recomendado anoche."
           }
         }
       }
@@ -42038,13 +42086,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Short of your target."
+            "value" : "Below the recommended range."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Corto para tu objetivo."
+            "value" : "Abajo del rango recomendado."
           }
         }
       }
@@ -54970,13 +55018,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "your target range"
+            "value" : "the recommended range"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "tu rango objetivo"
+            "value" : "el rango recomendado"
           }
         }
       }
