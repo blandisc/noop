@@ -18,9 +18,27 @@ DEFAULT_FILES = [
     "Cenit/Screens/BucleView.swift",
     "Cenit/Screens/BucleSheets.swift",
     "Cenit/Screens/TodayView.swift",                                  # FER-744
-    "Packages/StrandDesign/Sources/StrandDesign/FiveRules.swift",     # FER-744
     "Cenit/Screens/EntrenarView.swift",                               # FER-816 (Formas/formOptions → catalog)
     "Cenit/Screens/Hoy/*.swift",                                      # FER-audit: la lógica de Hoy vive aquí
+    "Cenit/Data/ReceiptMapping.swift",                                # FER-112 (el recibo térmico)
+    "Cenit/Data/TicketMapping.swift",                                 # FER-112
+    "Cenit/Screens/ReceiptPrinterScreen.swift",                       # FER-112
+]
+
+# El PAQUETE de diseño, entero y sin excepciones (FER-112).
+#
+# Aquí la deuda no es que una cadena en español sea difícil de traducir: es que **no se puede**.
+# `StrandDesign` no tiene catálogo, así que cualquier texto que nazca dentro se queda para
+# siempre en el idioma en que se escribió. Así vivió el dock —la barra de TODAS las pantallas—
+# diciendo «Hoy · Tendencias · Entrenar · Ajustes» con el teléfono en inglés, con un TODO
+# abierto desde julio que nadie iba a ver.
+#
+# Por eso este barrido va sobre el paquete COMPLETO y no sobre una lista opt-in: los archivos
+# que aún no existen son justo los que hay que vigilar. Un componente que necesita texto lo
+# recibe del app (`LiquidTabRotulos`, `EcosistemaRotulos`, `ThermalReceipt`), nunca lo escribe.
+PAQUETES_SIN_CATALOGO = [
+    "Packages/StrandDesign/Sources/**/*.swift",
+    "Packages/StrandTraining/Sources/**/*.swift",
 ]
 
 # Engine/data values that are intentionally the metric's stored label, and the brand name.
@@ -34,13 +52,21 @@ CALL = r'(?:Text|Label|Button|String\(localized:|accessibilityLabel|accessibilit
 # A user-facing call whose first string literal contains a Spanish-only character.
 PAT = re.compile(CALL + r'\(\s*(?:[^)]*?,\s*)?"([^"]*[¿¡ñÑ«»áéíóúÁÉÍÓÚ][^"]*)"')
 
+# Bloques que NO llegan al usuario: `#if DEBUG` y los `#Preview` sueltos (no todos viven
+# dentro de un DEBUG). Se recortan conservando los saltos de línea para no mover los números.
+PREVIEW = re.compile(r"#if DEBUG.*?#endif|#Preview\([^)]*\)\s*\{.*?\n\}", re.S)
+
 def main(files):
     hits = []
     for path in files:
         try:
-            lines = open(path, encoding="utf-8").read().splitlines()
+            src = open(path, encoding="utf-8").read()
         except FileNotFoundError:
             print(f"skip (not found): {path}"); continue
+        # Lo que vive tras `#if DEBUG` (previews, demos, arneses) no llega al usuario: se ignora,
+        # pero conservando los saltos de línea para que los números de línea sigan siendo ciertos.
+        src = PREVIEW.sub(lambda m: "\n" * m.group(0).count("\n"), src)
+        lines = src.splitlines()
         for i, line in enumerate(lines, 1):
             s = line.strip()
             if s.startswith("//") or s.startswith("///"):
@@ -66,6 +92,6 @@ def main(files):
 
 if __name__ == "__main__":
     import glob
-    patterns = sys.argv[1:] or DEFAULT_FILES
-    files = [f for pat in patterns for f in (sorted(glob.glob(pat)) or [pat])]
+    patterns = sys.argv[1:] or (DEFAULT_FILES + PAQUETES_SIN_CATALOGO)
+    files = [f for pat in patterns for f in (sorted(glob.glob(pat, recursive=True)) or [pat])]
     sys.exit(main(files))

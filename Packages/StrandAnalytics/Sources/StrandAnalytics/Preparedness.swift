@@ -182,6 +182,39 @@ public enum Preparedness {
         }
     }
 
+    /// FER-84 — cuánto durmió la noche, en la vara con la que el sueño SE JUZGA.
+    ///
+    /// No es una z, y la diferencia importa: el eje autonómico se compara contra TU normal, pero el
+    /// sueño se compara contra el piso recomendado de la población (Hirshkowitz 2015). Medirlo
+    /// contra el promedio personal normalizaría la privación crónica — quien lleva meses durmiendo
+    /// cinco horas tendría cinco horas como «normal» (Van Dongen 2003, y el hallazgo #4 del CSO que
+    /// ya vive en la config de este archivo).
+    ///
+    /// Se expone para que una superficie pueda dibujar CUÁNTO y no solo «dentro/fuera», con el
+    /// MISMO corte que vota: sin esto, la boleta colocaba la joya del sueño en una posición
+    /// canónica y una noche de 3 h se dibujaba igual que una de 6 h.
+    public struct SleepScale: Sendable, Equatable {
+        /// Minutos dormidos entre el piso de necesidad. 1.0 = justo el piso.
+        public let ratio: Double
+        /// La fracción exacta en la que el eje vota fuera (piso menos la holgura). El dibujo y el
+        /// voto salen del mismo número, así que no se pueden separar.
+        public let outRatio: Double
+        /// La holgura del motor, en fracción del piso: la unidad de «diferencia que importa» con la
+        /// que una superficie puede graduar la escala sin inventarse una propia.
+        public let slackRatio: Double
+        /// El voto del sueño tiene DOS piernas: la noche fue corta, o fue mala aunque larga
+        /// (eficiencia bajo el piso, Ohayon 2017). Esta bandera dice que el voto lo cargó la
+        /// SEGUNDA — y eso importa para dibujar: una superficie que coloca por duración estaría
+        /// poniendo la joya cómodamente dentro de la banda bajo la palabra «fuera».
+        public let votedByEfficiencyOnly: Bool
+
+        public init(ratio: Double, outRatio: Double, slackRatio: Double,
+                    votedByEfficiencyOnly: Bool = false) {
+            self.ratio = ratio; self.outRatio = outRatio; self.slackRatio = slackRatio
+            self.votedByEfficiencyOnly = votedByEfficiencyOnly
+        }
+    }
+
     public struct Read: Sendable, Equatable {
         public let verdict: Verdict
         public let drivers: [Driver]
@@ -235,14 +268,18 @@ public enum Preparedness {
                     maturity: BaselineStatus, autonomicNights: Int, trend: AutonomicTrend.Direction?,
                     sentinel: SentinelRead? = nil, sentinelHistory: [SentinelNight] = [],
                     bodyHistory: [BodyNight] = [], thermalAdjustedDevC: Double? = nil,
-                    autonomicPossible: Bool = true) {
+                    autonomicPossible: Bool = true, sleepScale: SleepScale? = nil) {
             self.verdict = verdict; self.drivers = drivers; self.signals = signals
             self.signalsPresent = signalsPresent; self.signalsTotal = signalsTotal
             self.maturity = maturity; self.autonomicNights = autonomicNights; self.trend = trend
             self.sentinel = sentinel; self.sentinelHistory = sentinelHistory
             self.bodyHistory = bodyHistory; self.thermalAdjustedDevC = thermalAdjustedDevC
             self.autonomicPossible = autonomicPossible
+            self.sleepScale = sleepScale
         }
+
+        /// FER-84: la magnitud del sueño de esta noche, o `nil` si no hubo noche grabada.
+        public let sleepScale: SleepScale?
 
         /// Whether today's read is anchored by a RECORDED night of sleep (FER-1033). `false` means
         /// the body signals exist (Apple's day-aggregate SDNN / awake resting HR / respiration) but
@@ -543,6 +580,16 @@ public enum Preparedness {
         let signals = autonomicSignals(hrv: hrvZ, rhr: rhrZ, resp: respZ,
                                        nocturnalRmssdWeight: rmssdTerm?.weight ?? 0, cfg: config)
         let sleepAxis = sleepDriver(today, config: config)
+        // FER-84: la magnitud del sueño sale del MISMO sitio que su voto, con los mismos números
+        // de la config: si alguien mueve el piso o la holgura, el dibujo se mueve con el voto.
+        let sleepScale: SleepScale? = today.totalSleepMin.map { mins in
+            let corta = mins < config.sleepNeedFloorMin - config.sleepSlackMin
+            let malaContinuidad = today.efficiency.map { $0 < config.sleepEffFloor } ?? false
+            return SleepScale(ratio: mins / config.sleepNeedFloorMin,
+                              outRatio: (config.sleepNeedFloorMin - config.sleepSlackMin) / config.sleepNeedFloorMin,
+                              slackRatio: config.sleepSlackMin / config.sleepNeedFloorMin,
+                              votedByEfficiencyOnly: malaContinuidad && !corta)
+        }
         // B2: luteal high-side temp allowance on asOf day only. Hoisted (FER-51) para exponer el
         // MISMO número que juzga el driver como `Read.thermalAdjustedDevC` — cero recomputación.
         let tempDevToday = adjustedTempDev(today.skinTempDevC, cyclePhase: input.cyclePhase,
@@ -589,7 +636,7 @@ public enum Preparedness {
                         sentinelHistory: historiaCentinela,
                         bodyHistory: historiaCuerpo,
                         thermalAdjustedDevC: tempDevToday,
-                        autonomicPossible: autonomicPosible)
+                        autonomicPossible: autonomicPosible, sleepScale: sleepScale)
         }
 
         // --- Consensus + hysteresis over RAW body verdicts across history (deterministic, no persistence) ---
@@ -608,7 +655,7 @@ public enum Preparedness {
                     sentinelHistory: historiaCentinela,
                     bodyHistory: historiaCuerpo,
                     thermalAdjustedDevC: tempDevToday,
-                    autonomicPossible: autonomicPosible)
+                    autonomicPossible: autonomicPosible, sleepScale: sleepScale)
     }
 
     /// FER-51: la historia corporal por-noche — proyección pura del pase forward que ya corrió
@@ -751,6 +798,10 @@ public enum Preparedness {
         guard let mins = day.totalSleepMin else { return Driver(axis: .sleep, state: .noData, orientedZ: nil) }
         let shortVsNeed = mins < config.sleepNeedFloorMin - config.sleepSlackMin
         let poorEfficiency = day.efficiency.map { $0 < config.sleepEffFloor } ?? false
+        // INVARIANTE: este eje jamás emite `.high`. Dormir de MÁS no se juzga (no hay evidencia
+        // que sostenga un techo personal), así que solo existen «corto o poco eficiente» (.low) y
+        // «dentro» (.inRange). Quien escriba copy para este eje no debe redactar el caso alto:
+        // se queda muerto para siempre, y un texto muerto es un texto que nadie revisa (FER-112).
         return Driver(axis: .sleep, state: (shortVsNeed || poorEfficiency) ? .low : .inRange, orientedZ: nil)
     }
 

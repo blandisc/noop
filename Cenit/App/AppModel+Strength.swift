@@ -128,6 +128,7 @@ extension AppModel {
             strengthSession = nil
             strengthSheetPresented = false
             SessionComfort.applyKeepAwake(active: false)
+            RestEndNotifier.cancel()   // el aviso no puede sobrevivir a la sesión que lo pidió
             releaseRealtimeHR("strength")
             clearInProgressSession()   // FER-798: nothing to recover once discarded
             return
@@ -216,6 +217,9 @@ extension AppModel {
         session.saveError = false
         pendingStrengthSave = nil
         persistSessionTask?.cancel()            // FER-798: the session is saved — stop persisting
+        // FER-93: la sesión terminó y guardó. El descanso ya no existe, así que su aviso tampoco:
+        // este es el camino normal de «Terminar», que no pasa por `clearRest`.
+        RestEndNotifier.cancel()
         // Surface the receipt on the live session — the sheet renders summaryPhase (session stays alive).
         session.summary = await buildStrengthSummary(session: session, record: pending.record,
                                                      sets: pending.sets, prior: prior, store: store)
@@ -262,8 +266,10 @@ extension AppModel {
         strengthSession = nil
         strengthSheetPresented = false
         // FER-93: aquí se cierra de verdad la sesión (el recibo ya se leyó), así que aquí se
-        // restaura el auto-bloqueo. Nunca se queda encendido más allá de la sesión.
+        // restaura el auto-bloqueo y se retira cualquier aviso pendiente. Ninguno de los dos puede
+        // sobrevivir a la sesión que los pidió.
         SessionComfort.applyKeepAwake(active: false)
+        RestEndNotifier.cancel()
         releaseRealtimeHR("strength")   // last consumer leaves → stream stops (unless Live still holds it)
         clearInProgressSession()        // FER-798: belt-and-suspenders — the snapshot was cleared at save
     }

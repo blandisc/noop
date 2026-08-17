@@ -83,7 +83,7 @@ struct OnbActoCiclo: View {
                     Text(OnbCopy.cicloDock)
                         .groteskOverline()
                         .foregroundStyle(LiquidColor.tinta500)
-                    LiquidTabBar(active: .hoy)
+                    LiquidTabBar(active: .hoy, rotulos: .cenit)
                         .allowsHitTesting(false)
                         .accessibilityHidden(true)
                     OnbCuerpo(OnbCopy.cicloDockPie, tono: LiquidColor.tinta500)

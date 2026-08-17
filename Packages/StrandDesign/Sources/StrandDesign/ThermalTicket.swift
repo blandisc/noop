@@ -85,14 +85,21 @@ public struct ThermalReceipt: Equatable, Sendable {
     public var footerCode: String     // «CENIT · 0584 · 2025»
     public var footerTag: String      // tagline
     public var barcodeSeed: String
+    /// El sello de récord. Como TODO lo demás del recibo, el texto llega del app: nació escrito
+    /// aquí dentro y `StrandDesign` no tiene catálogo, así que decía «RÉCORD» también con el
+    /// teléfono en inglés (FER-112). El default conserva el texto de siempre para que ningún
+    /// llamador viejo cambie de comportamiento en silencio.
+    public var recordBadge: String
 
     public init(title: String = "RECIBO DE ENTRENAMIENTO", kind: String, orderLine: String,
                 items: [Item], totalCaption: String, total: String, zones: [ZoneSlice],
-                summary: [SummaryRow], footerCode: String, footerTag: String, barcodeSeed: String) {
+                summary: [SummaryRow], footerCode: String, footerTag: String, barcodeSeed: String,
+                recordBadge: String = "RÉCORD") {
         self.title = title; self.kind = kind; self.orderLine = orderLine; self.items = items
         self.totalCaption = totalCaption; self.total = total; self.zones = zones
         self.summary = summary; self.footerCode = footerCode; self.footerTag = footerTag
         self.barcodeSeed = barcodeSeed
+        self.recordBadge = recordBadge
     }
 }
 
@@ -107,10 +114,14 @@ public struct MiniTicket: Equatable, Identifiable, Sendable {
     public var value: String          // «9.424»
     public var unit: String           // «kg» / «km»
     public var bars: [Double]         // 0…1 mini bars
+    /// El sello «hoy» del mini-ticket, también desde el app (FER-112).
+    public var todayBadge: String
     public init(id: String, orderText: String, dateText: String, isToday: Bool = false,
-                type: String, isRecord: Bool = false, value: String, unit: String, bars: [Double]) {
+                type: String, isRecord: Bool = false, value: String, unit: String, bars: [Double],
+                todayBadge: String = "HOY") {
         self.id = id; self.orderText = orderText; self.dateText = dateText; self.isToday = isToday
         self.type = type; self.isRecord = isRecord; self.value = value; self.unit = unit; self.bars = bars
+        self.todayBadge = todayBadge
     }
 }
 
@@ -362,7 +373,7 @@ public struct ThermalTicketView: View {
                 HStack(spacing: 4) {
                     Text(item.name).font(StrandFont.mono(10.5, weight: .bold))
                     if item.isRecord {
-                        Text("RÉCORD").font(StrandFont.mono(7, weight: .bold)).tracking(0.5)
+                        Text(receipt.recordBadge).font(StrandFont.mono(7, weight: .bold)).tracking(0.5)
                             .foregroundStyle(.white)
                             .padding(.horizontal, 4).padding(.vertical, 1)
                             .background(ThermalPalette.recordPink, in: RoundedRectangle(cornerRadius: 3))
@@ -432,7 +443,7 @@ public struct MiniTicketView: View {
                 Text(ticket.orderText).font(StrandFont.mono(7.5)).foregroundStyle(ThermalPalette.faint)
                 Spacer(minLength: 4)
                 if ticket.isToday {
-                    Text("HOY").font(StrandFont.mono(7, weight: .bold))
+                    Text(ticket.todayBadge).font(StrandFont.mono(7, weight: .bold))
                         .foregroundStyle(.white)
                         .padding(.horizontal, 5).padding(.vertical, 1)
                         .background(ThermalPalette.zone4, in: RoundedRectangle(cornerRadius: 3))

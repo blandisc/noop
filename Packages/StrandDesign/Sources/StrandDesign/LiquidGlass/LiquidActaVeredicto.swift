@@ -50,9 +50,9 @@ public struct LiquidActa: Sendable {
         public let tonoVoto: Color
         /// La palabra del voto bajo el riel («dentro» / «fuera» / «sin dato» / «··»).
         public let palabra: String
-        /// FER-84: la desviación real del día en la dirección del riel (negativa = izquierda).
-        /// `nil` mantiene la posición canónica por estado (pictograma) — el comportamiento previo.
-        public var desviacion: Double?
+        /// FER-84: la medición del día en la vara de este riel (σ contra tu base para el eje
+        /// autonómico, fracción de la necesidad para el sueño). `nil` = posición canónica.
+        public var magnitud: LiquidVotoRiel.Magnitud?
         /// El hue de IDENTIDAD de la métrica (rosa FC · indigo Sueño) — tiñe gota y título
         /// para amarrar la fila a su celda de la Matriz (revisión del dueño). `tinta700` = sin
         /// identidad.
@@ -64,7 +64,7 @@ public struct LiquidActa: Sendable {
                     estado: LiquidVotoRiel.Estado, umbral: LiquidVotoRiel.Umbral,
                     fuera: Bool, tonoVoto: Color, palabra: String,
                     hueMetrica: Color = LiquidColor.tinta700, a11y: String,
-                    desviacion: Double? = nil) {
+                    magnitud: LiquidVotoRiel.Magnitud? = nil) {
             self.id = id
             self.glifo = glifo
             self.etiqueta = etiqueta
@@ -76,7 +76,7 @@ public struct LiquidActa: Sendable {
             self.palabra = palabra
             self.hueMetrica = hueMetrica
             self.a11y = a11y
-            self.desviacion = desviacion
+            self.magnitud = magnitud
         }
     }
 
@@ -229,7 +229,7 @@ public struct LiquidActaVeredicto: View {
                               estado: $0.estado, umbral: $0.umbral, fuera: $0.fuera,
                               tonoVoto: $0.tonoVoto, palabra: $0.palabra,
                               hueMetrica: $0.hueMetrica, a11y: $0.a11y,
-                              desviacion: $0.desviacion)
+                              magnitud: $0.magnitud)
                     })
                     // El aviso que cambia la lectura va PEGADO a la boleta (spec /ux D1).
                     ForEach(model.notas.filter(\.avisa)) { nota in

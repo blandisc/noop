@@ -29,7 +29,8 @@ enum TicketMapping {
             isRecord: false,
             value: value,
             unit: unit,
-            bars: bars(from: session.id)
+            bars: bars(from: session.id),
+            todayBadge: String(localized: "recibo.hoy", defaultValue: "TODAY")
         )
     }
 
@@ -39,7 +40,7 @@ enum TicketMapping {
     /// randomized per process in Swift and would reprint a different # each launch).
     private static func orderText(for sessionId: String) -> String {
         let n = Int(stableHash(sessionId) % 10_000)
-        return String(format: "CÉNIT · #%04d", n)
+        return String(format: String(localized: "recibo.orden.corta.fmt", defaultValue: "CÉNIT · #%04d"), n)
     }
 
     private static func stableHash(_ s: String) -> UInt64 {
@@ -64,14 +65,16 @@ enum TicketMapping {
     /// Keyword match on the routine name only.
     /// Simplification: we do **not** call `RoutineClassifier` (would need each exercise's primary
     /// muscles per session — out of scope / too expensive for this list path). Fallback: "FUERZA".
+    /// El match se queda en el idioma del usuario (compara contra SU nombre de rutina); lo que
+    /// se traduce es el rótulo pintado (FER-112).
     private static func ticketType(from routineName: String?) -> String {
-        guard let raw = routineName?.lowercased(), !raw.isEmpty else { return "FUERZA" }
-        if raw.contains("empuje") || raw.contains("push") { return "EMPUJE" }
+        guard let raw = routineName?.lowercased(), !raw.isEmpty else { return RecipeLabels.fuerza }
+        if raw.contains("empuje") || raw.contains("push") { return RecipeLabels.empuje }
         if raw.contains("tirón") || raw.contains("tiron")
             || raw.contains("jalón") || raw.contains("jalon")
-            || raw.contains("pull") { return "TIRÓN" }
-        if raw.contains("pierna") || raw.contains("legs") { return "PIERNA" }
-        return "FUERZA"
+            || raw.contains("pull") { return RecipeLabels.tiron }
+        if raw.contains("pierna") || raw.contains("legs") { return RecipeLabels.pierna }
+        return RecipeLabels.fuerza
     }
 
     // MARK: - Volume (value + unit split)
