@@ -87,11 +87,25 @@ final class VotoRielPosicionTests: XCTestCase {
         XCTAssertEqual(sueno(375), 0.36, accuracy: 0.0001)
     }
 
-    /// El defecto que esta vara viene a resolver: una noche de 3 h y una de 6 h ya NO se dibujan
-    /// en el mismo pixel.
-    func testTresHorasYSeisHorasNoSeDibujanIgual() {
-        XCTAssertNotEqual(sueno(180), sueno(360), accuracy: 0.02)
-        XCTAssertLessThan(sueno(180), sueno(360))
+    /// El defecto que esta vara viene a resolver: dos noches distintas no se dibujan en el mismo
+    /// pixel. Se comprueba en TODO el rango humano, no solo en un par cómodo — la primera versión
+    /// de la escala pasaba con 3 h contra 6 h y apilaba 3 h contra 5 h.
+    func testNingunParDeNochesDistintasSeApila() {
+        let noches: [Double] = [180, 240, 300, 360, 420, 480, 540]
+        for (i, a) in noches.enumerated() {
+            for b in noches.dropFirst(i + 1) {
+                XCTAssertGreaterThan(abs(sueno(b) - sueno(a)), 0.04,
+                                     "\(Int(a)) min y \(Int(b)) min se dibujan casi igual")
+            }
+        }
+    }
+
+    /// Los extremos del rango humano tocan sus bigotes, y nada se sale.
+    func testLosExtremosDelRangoHumanoTocanSusBigotes() {
+        XCTAssertEqual(sueno(180), LiquidVotoRiel.bigoteLo, accuracy: 0.0001, "3 h")
+        XCTAssertEqual(sueno(540), LiquidVotoRiel.bigoteHi, accuracy: 0.0001, "9 h")
+        XCTAssertEqual(sueno(60), LiquidVotoRiel.bigoteLo, accuracy: 0.0001, "una hora se planta")
+        XCTAssertEqual(sueno(720), LiquidVotoRiel.bigoteHi, accuracy: 0.0001, "doce horas también")
     }
 
     /// Más sueño, más a la derecha, siempre.

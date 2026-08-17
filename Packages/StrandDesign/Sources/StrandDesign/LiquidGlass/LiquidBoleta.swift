@@ -83,10 +83,15 @@ public struct LiquidVotoRiel: View {
     static let bigoteLo: CGFloat = 0.04, bigoteHi: CGFloat = 0.96
     /// La desviación que llega al tope del bigote.
     static let zTope: Double = 2.5
-    /// Cuánto avanza la joya del sueño por cada holgura del motor (45 min). Calibrado para que una
-    /// noche en el piso justo (7 h) caiga cómodamente dentro de la banda y una de 9 h llegue al
-    /// tope: el rango que un humano puede dormir cabe entero en el instrumento.
-    static let pasoPorHolgura: CGFloat = 0.19
+    /// La noche más corta y la más larga que el riel dibuja sin apilar, en fracción del piso de
+    /// necesidad: de 3 h a 9 h con un piso de 7 h. Fuera de ahí la joya se planta en su bigote.
+    ///
+    /// La escala del sueño es de DOS tramos, no uno, y la razón es que el corte tiene que caer en el
+    /// tick (si el dibujo y el voto no coinciden, la boleta miente). Con un solo paso fijo, todo lo
+    /// que estaba por debajo de 5 h se apilaba en el mismo pixel — el defecto exacto que esta vara
+    /// venía a resolver, movido unas horas más abajo.
+    static let suenoRatioMin: Double = 180.0 / 420.0
+    static let suenoRatioMax: Double = 540.0 / 420.0
     private static let bigoteGrosor: CGFloat = 1
     private static let bigoteAlto: CGFloat = 5
 
@@ -121,14 +126,23 @@ public struct LiquidVotoRiel: View {
         }
     }
 
-    /// La vara del SUEÑO: el tick del riel es el corte que vota, y cada holgura del motor (los 45
-    /// minutos que el motor considera «una diferencia que importa») mueve la joya un paso fijo. Así
-    /// una noche de 3 h y una de 6 h dejan de dibujarse en el mismo pixel sin inventar una escala.
+    /// La vara del SUEÑO. El tick del riel es el corte que vota; de ahí hacia abajo el tramo llega
+    /// al bigote izquierdo en la noche más corta que se dibuja, y de ahí hacia arriba al derecho en
+    /// la más larga. Dos tramos porque el corte no está a la mitad: forzar un solo paso apilaba las
+    /// noches cortas unas contra otras.
+    ///
+    /// `holgura` entra en la firma aunque el mapa no la use como paso: es el número del motor que
+    /// documenta cuál es «una diferencia que importa», y tenerla aquí obliga al llamador a traer la
+    /// escala completa del motor en vez de reconstruirla a ojo.
     static func posicion(ratio: Double, corte: Double, holgura: Double) -> CGFloat {
-        guard ratio.isFinite, corte.isFinite, holgura > 0 else { return minimoLo }
-        let pasos = (ratio - corte) / holgura
-        let pos = minimoLo + CGFloat(pasos) * pasoPorHolgura
-        return min(max(pos, bigoteLo), bigoteHi)
+        guard ratio.isFinite, corte.isFinite, holgura > 0,
+              corte > suenoRatioMin, corte < suenoRatioMax else { return minimoLo }
+        if ratio <= corte {
+            let t = (ratio - suenoRatioMin) / (corte - suenoRatioMin)
+            return min(max(bigoteLo + CGFloat(t) * (minimoLo - bigoteLo), bigoteLo), minimoLo)
+        }
+        let t = (ratio - corte) / (suenoRatioMax - corte)
+        return min(max(minimoLo + CGFloat(t) * (bigoteHi - minimoLo), minimoLo), bigoteHi)
     }
 
     /// Dónde cae una desviación en el riel. El centro es tu base; el borde de la banda, tu ±1σ —
