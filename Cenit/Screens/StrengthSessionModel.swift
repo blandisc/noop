@@ -320,13 +320,21 @@ final class StrengthSessionModel: ObservableObject {
     /// Take the held raise: every UNDONE work set moves to the proposed weight (the same all-work-sets
     /// rule an applied raise seeds with) and the proposal stops waiting. Done sets keep what was
     /// actually lifted. Returns false when there was nothing to take, so the UI can stay quiet.
+    ///
+    /// Taking it MID-exercise makes the session mixed: some sets at the old load, the rest at the new
+    /// one. The cycle reads a session by its TOP weight and the reps done at that weight, so a mixed
+    /// session would look like «went up and missed the goal» — a failure the athlete never had. It is
+    /// marked opted-out, the same contract «Volver a X» uses: neither hit nor miss, invisible to the
+    /// cycle, and the earned raise is proposed again next session (FER-82 · FER-835).
     @discardableResult
     func takeHeldRaise(at index: Int) -> Bool {
         guard canTakeHeldRaise(at: index), let toKg = runs[index].proposedRaise?.toKg else { return false }
+        let mixed = runs[index].sets.contains { $0.done && $0.kind == .work }
         for si in runs[index].sets.indices where !runs[index].sets[si].done && runs[index].sets[si].kind == .work {
             runs[index].sets[si].weightKg = toKg
         }
         runs[index].proposedRaise?.waiting = false
+        if mixed { runs[index].raiseOptedOut = true }
         return true
     }
 

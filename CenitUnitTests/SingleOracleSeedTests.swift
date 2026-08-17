@@ -187,6 +187,32 @@ final class SingleOracleSeedTests: XCTestCase {
         }
     }
 
+
+    /// Taking the raise MID-exercise makes the session mixed (some sets at the old load, some at the
+    /// new one). The cycle reads a session by its top weight and the reps at that weight, so a mixed
+    /// session would look like a failed attempt at the new load. It is marked opted-out instead:
+    /// neither hit nor miss, exactly like «Volver a X» (FER-82 · FER-835).
+    func testTakingTheRaiseMidExerciseHidesTheSessionFromTheCycle() {
+        guard let raise = evaluate(.lighter)?.raise else { return XCTFail("expected a held raise") }
+        let session = sessionWith(raise)
+        session.runs[0].sets[0].done = true          // one set already lifted at 80
+        XCTAssertTrue(session.takeHeldRaise(at: 0))
+        XCTAssertTrue(session.runs[0].raiseOptedOut,
+                      "a mixed session must be invisible to the cycle, not read as a miss")
+    }
+
+    /// Taking it BEFORE lifting anything is a clean session at the new weight: the cycle must still
+    /// see it, or the athlete would never bank the raise they just took.
+    func testTakingTheRaiseBeforeAnySetKeepsTheSessionInTheCycle() {
+        guard let raise = evaluate(.lighter)?.raise else { return XCTFail("expected a held raise") }
+        let session = sessionWith(raise)
+        XCTAssertTrue(session.takeHeldRaise(at: 0))
+        XCTAssertFalse(session.runs[0].raiseOptedOut, "nothing was lifted at the old weight")
+        for set in session.runs[0].sets {
+            XCTAssertEqual(set.weightKg, 82.5, accuracy: 0.0001)
+        }
+    }
+
     // MARK: The offer survives a crash
 
     private func sessionWith(_ raise: ProgressionPlanner.Raise?) -> StrengthSessionModel {

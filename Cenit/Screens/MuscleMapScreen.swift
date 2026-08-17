@@ -8,19 +8,20 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 // MARK: - Mapa muscular (Cuerpo) — FER-350 · rediseño «la respuesta lidera»
 //
 // The jewel of the loop: front/back silhouettes tinted by each muscle's recent training load, CROSSED
-// with the strap's systemic recovery — what to train today. A tracker without a strap (Fitbod) can't
-// cross in recovery; a strap without set logging (WHOOP) has no per-muscle load. NOOP has both.
+// with the day's VERDICT (FER-82 — the same word Hoy shows, never a recovery score) — what to train
+// today. A tracker without physiology (Fitbod) can't cross in a verdict; a physiology app without set
+// logging (WHOOP) has no per-muscle load. Cénit has both.
 //
 // Light «Instrumento diurno» language (warm paper, color ONLY on the datum, hierarchy by space). The
 // math is the pure, cited `MuscleFatigueMap` (StrandAnalytics): load = Σ involvement·decay(daysAgo) with
 // a 2-day half-life (MPS time course), a 3/7/14-day window that filters which sets count, freshness
-// relative to the user's own most-loaded muscle, weekly volume vs the Schoenfeld 10–20 band, and a
-// recovery gate. THIS screen is the glue: it reads work sets from the store, expands each over its
+// relative to the user's own most-loaded muscle, weekly volume vs the Schoenfeld 10–20 band. The
+// systemic gate is applied HERE, from the verdict (FER-82). THIS screen is the glue: it reads work sets from the store, expands each over its
 // exercise's `muscleInvolvement`, computes whole-day ages in the local calendar, and draws the result.
 //
 // Entrenar v3 · 1n (FER-719) — the handoff skin («Rediseño Hoy» voice):
-//   • A grotesk VERDICT headline leads (what's fresh, what still carries load), with the recovery
-//     bullet right under it — the old hero card and gate bar collapse into these two lines.
+//   • A grotesk VERDICT headline leads (what's fresh, what still carries load), with the day's
+//     verdict bullet right under it — the old hero card and gate bar collapse into these two lines.
 //   • The 3/7/14-day lens is RETIRED: the decay itself carries time (see `MuscleFatigueMap`), so a
 //     window filter double-encoded recency. The ranking is fixed to the last 7 days, showing each
 //     muscle's weekly sets.
@@ -68,8 +69,14 @@ struct MuscleMapScreen: View {
 
     private static let trendDays = 84
 
-    /// Today's systemic recovery (0–100), nil until a score exists — the gate the recommendation crosses.
-    private var recovery: Double? { repo.today?.recovery }
+    /// FER-82 «un solo oráculo»: the SYSTEMIC gate is the day's verdict (the same word Hoy shows),
+    /// never the 0–100 score. This screen is reachable from Entrenar, and a score-gated headline
+    /// could tell you to train on the morning the app is saying «Recupera». The per-muscle load and
+    /// its tint keep coming from the log alone — that is what they measure.
+    ///
+    /// The pure engine keeps its `recovery` parameter (E11 owns that API); here it is always fed
+    /// `nil` so no score gate applies, and the verdict gate is applied at the call site.
+    private var systemicGate: Bool { !TrainingRegulation.allowsRaise(repo.trainingAdvice) }
 
     private var loads: [MuscleFatigueMap.MuscleLoad] {
         MuscleFatigueMap.loads(events: events)
@@ -84,7 +91,10 @@ struct MuscleMapScreen: View {
         Dictionary(loads.map { ($0.muscle, $0) }, uniquingKeysWith: { a, _ in a })
     }
     private var recommendation: MuscleFatigueMap.Recommendation {
-        MuscleFatigueMap.recommendation(loads: loads, recovery: recovery)
+        guard !systemicGate else {
+            return MuscleFatigueMap.Recommendation(readyMuscles: [], gatedBySystemic: true)
+        }
+        return MuscleFatigueMap.recommendation(loads: loads, recovery: nil)
     }
     /// The most-loaded muscle (loads come back sorted by load, desc) — labels & outlines the figure.
     private var topMuscle: MuscleFatigueMap.MuscleLoad? { loads.first }
@@ -125,7 +135,7 @@ struct MuscleMapScreen: View {
                 load: loadByMuscle[sel.muscle],
                 weeklyTrend: weeklyTrend(for: sel.muscle),
                 hits: hitsByMuscle[sel.muscle] ?? [],
-                recovery: recovery
+                systemicGate: systemicGate
             )
             .preferredColorScheme(.light)
         }
@@ -184,33 +194,41 @@ struct MuscleMapScreen: View {
         return Text(MuscleAtlas.name(top.muscle)) + Text(" still carries load.")
     }
 
-    /// The recovery bullet — dot in the band's color, one honest line. Replaces the old gate bar.
-    private var recoveryBullet: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 7) {
-            Circle().fill(recovery.map(recoveryColor) ?? theme.inkTertiary)
-                .frame(width: 8, height: 8)
-                .alignmentGuide(.firstTextBaseline) { d in d[.bottom] - 1 }
-            Text(recoveryBulletText)
-                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
+    /// The verdict bullet — dot in the day's color, one honest line (FER-82). It used to print the
+    /// 0–100 score («Recuperación 62 · hoy toca descansar»), which is the second oracle this epic
+    /// removes: the same morning Hoy could be saying «En rango». It now says the day's word, and
+    /// says nothing at all when there is no usable read.
+    @ViewBuilder private var recoveryBullet: some View {
+        if let line = verdictBulletText {
+            HStack(alignment: .firstTextBaseline, spacing: 7) {
+                Circle().fill(verdictDotColor)
+                    .frame(width: 8, height: 8)
+                    .alignmentGuide(.firstTextBaseline) { d in d[.bottom] - 1 }
+                Text(line)
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .accessibilityElement(children: .combine)
         }
-        .accessibilityElement(children: .combine)
     }
 
-    private var recoveryBulletText: LocalizedStringKey {
-        guard let r = recovery else {
-            return "No recovery reading today · the map shows muscle load only."
+    private var verdictBulletText: LocalizedStringKey? {
+        switch repo.trainingAdvice {
+        case .planAsIs: return "In range · today's gate doesn't hold you back."
+        case .lighter:  return "Go light today · keep it moderate."
+        case .recover:  return "Recover · today calls for rest or something gentle."
+        case .silent:   return "No reading today · the map shows muscle load only."
+        case .pending:  return nil
         }
-        let score = Int(r.rounded())
-        if r < MuscleFatigueMap.recoveryRedMax { return "Recovery \(score) · today calls for rest." }
-        if r < MuscleFatigueMap.recoveryYellowMax { return "Recovery \(score) · keep it moderate today." }
-        return "Recovery \(score) · today's gate doesn't hold you back."
     }
 
-    private func recoveryColor(_ r: Double) -> Color {
-        if r < MuscleFatigueMap.recoveryRedMax { return theme.critical }
-        if r < MuscleFatigueMap.recoveryYellowMax { return theme.warning }
-        return theme.verdict
+    private var verdictDotColor: Color {
+        switch repo.trainingAdvice {
+        case .planAsIs: return theme.verdict
+        case .lighter:  return theme.warning
+        case .recover:  return theme.critical
+        case .silent, .pending: return theme.inkTertiary
+        }
     }
 
     // MARK: - Figures (detailed anatomical silhouettes)
@@ -464,7 +482,7 @@ struct MuscleMapScreen: View {
             .accessibilityLabel(Text("See the method"))
             .accessibilityAddTraits(showMethod ? [.isSelected] : [])
             if showMethod {
-                Text("Each set adds load to the muscles it works, decaying by half every two days: the time course of muscle protein synthesis (MacDougall 1995; Damas 2015). Color is relative to your most-loaded muscle, so it reads which of your muscles are hot right now. Weekly volume is judged against the 10–20 sets-per-week band (Schoenfeld 2017), a hypertrophy guide per muscle group; the volume shown is weighted by involvement, so secondary muscles count less. The recommendation crosses this with your recovery: a low-recovery day gates everything to rest.")
+                Text("Each set adds load to the muscles it works, decaying by half every two days: the time course of muscle protein synthesis (MacDougall 1995; Damas 2015). Color is relative to your most-loaded muscle, so it reads which of your muscles are hot right now. Weekly volume is judged against the 10–20 sets-per-week band (Schoenfeld 2017), a hypertrophy guide per muscle group; the volume shown is weighted by involvement, so secondary muscles count less. The recommendation crosses this with today's verdict, the same one Hoy shows: a day that asks you to ease off gates everything to rest.")
                     .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, 10)
@@ -627,7 +645,9 @@ private struct MuscleDetailView: View {
     let load: MuscleFatigueMap.MuscleLoad?
     let weeklyTrend: [Double]
     let hits: [MuscleHit]
-    let recovery: Double?
+    /// FER-82: the day's verdict already decided whether anything is cleared today; the sheet
+    /// receives that answer, never a score to re-judge with.
+    let systemicGate: Bool
 
     private var weeklySets: Double { load?.weeklySets ?? 0 }
     private var state: MuscleFatigueMap.LoadState { load?.state ?? .fresh }
@@ -777,7 +797,8 @@ private struct MuscleDetailView: View {
     }
 
     private var recommendation: some View {
-        let readiness = MuscleFatigueMap.readiness(state: state, recovery: recovery)
+        let readiness = systemicGate ? MuscleFatigueMap.Readiness.rest
+                                     : MuscleFatigueMap.readiness(state: state, recovery: nil)
         return Text(recommendationText(readiness))
             .font(InstrumentoType.groteskTileValue).foregroundStyle(theme.ink)
             .fixedSize(horizontal: false, vertical: true)
@@ -790,7 +811,7 @@ private struct MuscleDetailView: View {
 
     private func recommendationText(_ r: MuscleFatigueMap.Readiness) -> LocalizedStringKey {
         switch r {
-        case .rest: return "Your recovery is low: rest or train light today."
+        case .rest: return "Today's verdict asks you to ease off: rest or train light."
         case .caution: return "Still loaded: give it a day or two before training it again."
         case .ready: return "Fresh and ready: a good muscle to train today."
         }

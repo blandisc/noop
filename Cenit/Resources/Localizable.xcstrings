@@ -31120,23 +31120,6 @@
         }
       }
     },
-    "No recovery reading today · the map shows muscle load only." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No recovery reading today · the map shows muscle load only."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sin lectura de recuperación hoy · el mapa muestra solo la carga muscular."
-          }
-        }
-      }
-    },
     "No recovery yet. Wear your Apple Watch to sleep and open this again after it syncs." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -37759,57 +37742,6 @@
         }
       }
     },
-    "Recovery %lld · keep it moderate today." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recovery %lld · keep it moderate today."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recuperación %lld · hoy modera la intensidad."
-          }
-        }
-      }
-    },
-    "Recovery %lld · today calls for rest." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recovery %lld · today calls for rest."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recuperación %lld · hoy manda el descanso."
-          }
-        }
-      }
-    },
-    "Recovery %lld · today's gate doesn't hold you back." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recovery %lld · today's gate doesn't hold you back."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recuperación %lld · el semáforo de hoy no te frena."
-          }
-        }
-      }
-    },
     "Recovery %lld. See detail." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -37933,6 +37865,72 @@
         }
       }
     },
+    "Raises the sets you have left to that weight" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sube las series que te faltan a ese peso"
+          }
+        }
+      }
+    },
+    "In range · today's gate doesn't hold you back." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En rango · hoy nada te frena."
+          }
+        }
+      }
+    },
+    "Go light today · keep it moderate." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoy ve leve · quédate en moderado."
+          }
+        }
+      }
+    },
+    "Recover · today calls for rest or something gentle." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recupera · hoy toca descanso o algo suave."
+          }
+        }
+      }
+    },
+    "No reading today · the map shows muscle load only." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoy sin lectura · el mapa solo muestra la carga muscular."
+          }
+        }
+      }
+    },
+    "Today's verdict asks you to ease off: rest or train light." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El veredicto de hoy pide bajarle: descansa o entrena suave."
+          }
+        }
+      }
+    },
     "The raise waits:" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -38006,17 +38004,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "subir"
-          }
-        }
-      }
-    },
-    "Raises every work set to that weight" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sube todas las series de trabajo a ese peso"
           }
         }
       }
@@ -54401,23 +54388,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tu recuperación va alta, pero %@ trae una señal abajo, ojo con eso hoy."
-          }
-        }
-      }
-    },
-    "Your recovery is low: rest or train light today." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your recovery is low: rest or train light today."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu recuperación está baja: descansa o entrena suave hoy."
           }
         }
       }

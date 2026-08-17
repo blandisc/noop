@@ -387,7 +387,13 @@ private struct EntrenarLanding: View {
         // landed a second later), rebuild ONCE before starting — otherwise the whole session runs on
         // a verdict the screen has already stopped showing. Exactly one retry, never a loop.
         if let seeded = slotsAdvice, seeded != repo.trainingAdvice {
-            Task { await load(); startTodayNow(r) }
+            Task {
+                // Only start on a rebuild that actually published. If it gave up (store down, or a
+                // third publish landed mid-rebuild), open the routine editor instead of starting a
+                // session on a table seeded under a verdict the screen no longer shows.
+                if await load(), slotsAdvice == repo.trainingAdvice { startTodayNow(r) }
+                else { openRoutine(r.id) }
+            }
             return
         }
         startTodayNow(r)
@@ -568,8 +574,12 @@ private struct EntrenarLanding: View {
         let shown = deferredToday.prefix(3)
         let rest = deferredToday.count - shown.count
         let parts = shown.map { "\($0.name) · \(UnitFormatter.massFromKilograms($0.kg, system: unitSystem))" }
+        // Grotesk RELATIVE to the surrounding subhead: the weights are the datum of this sentence, so
+        // they have to grow with it — a fixed 13 pt stayed put while the prose reached xxxLarge.
         let strong = parts.map {
-            Text(verbatim: $0).font(InstrumentoType.grotesk(13, weight: .bold)).foregroundStyle(theme.ink)
+            Text(verbatim: $0)
+                .font(InstrumentoType.groteskNumber(13, weight: .bold, relativeTo: .subheadline))
+                .foregroundStyle(theme.ink)
         }
         var t = (deferredToday.count == 1 ? Text("The raise waits:") : Text("The raises wait:"))
             + Text(verbatim: " ")
@@ -577,7 +587,8 @@ private struct EntrenarLanding: View {
             if i > 0 { t = t + Text(verbatim: ", ") }
             t = t + s
         }
-        if rest > 0 { t = t + Text(verbatim: ", ") + Text("and \(rest) more") }
+        // Spanish takes no comma before «y», so the tail joins with a plain space.
+        if rest > 0 { t = t + Text(verbatim: " ") + Text("and \(rest) more") }
         return t + Text(verbatim: ". ")
             + (deferredToday.count == 1 ? Text("You can take it in the session.")
                                         : Text("You can take them in the session."))
@@ -1355,13 +1366,17 @@ private struct EntrenarLanding: View {
 
     // MARK: - Data
 
-    private func load() async {
+    /// Rebuild the whole screen from the store. Returns whether THIS pass published its work: false
+    /// when the store is unavailable or a newer pass won the race, so a caller that depends on fresh
+    /// slots (the «Empezar» rebuild) can tell «rebuilt» from «gave up» (FER-82).
+    @discardableResult
+    private func load() async -> Bool {
         loadFailed = false   // clear on every (re)try
         // Sequence guard, same as TodayView/CuerpoView: `.task(id:)` cancels the old pass but none of
         // the awaits below is a cancellation point, so without this an in-flight pre-verdict load
         // would still reach the end and overwrite the post-verdict one it lost the race to (FER-82).
         let seq = repo.refreshSeq
-        guard let store = await repo.storeHandle() else { loadFailed = true; loaded = true; return }
+        guard let store = await repo.storeHandle() else { loadFailed = true; loaded = true; return false }
         let rs = (try? await store.routines()) ?? []
         let customAll = (try? await store.customExercises()) ?? []
         let customAllByID = Dictionary(customAll.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
@@ -1418,7 +1433,11 @@ private struct EntrenarLanding: View {
             raisingToday = raising
             heldToday = held
         }
-        guard seq == repo.refreshSeq else { return }   // a newer pass owns the screen now
+        let recent = (try? await store.recentSessions(limit: 200)) ?? []
+        // Every read is done: from here on there is no await, so the publish below is atomic. A pass
+        // that lost the race drops its work — but it must still leave the screen usable, so `loaded`
+        // is set either way (the winning pass owns the data; this one only owes the user a screen).
+        guard seq == repo.refreshSeq else { loaded = true; return false }
         raisesToday = raisingToday
         deferredToday = heldToday
         slotsAdvice = passAdvice
@@ -1428,12 +1447,13 @@ private struct EntrenarLanding: View {
         routineCategory = categories
         split = splitMap
         todaySlots = slots
-        sessions = (try? await store.recentSessions(limit: 200)) ?? []
+        sessions = recent
         // After sessions + routines (→ routinesById): bucket once for Constancia + week strip (FER-948).
         constancyMonthsCache = computeConstancyMonths()
         loaded = true
         // A «Empezar» from the Daily Brief that arrived before the prefetch finished now has its slots (FER-613).
         if startWhenLoaded { startWhenLoaded = false; startToday() }
+        return true
     }
 
     /// Tally the primary muscles across a routine's exercises → the top three, as Spanish display labels

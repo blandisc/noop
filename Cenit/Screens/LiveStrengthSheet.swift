@@ -125,6 +125,9 @@ struct LiveStrengthSheet: View {
         }
     }
     @State private var freshSuggestions: [QuickSuggestion]?
+    /// The verdict the suggestions above were computed under (FER-82): a panel first built while the
+    /// verdict was still pending must recompute when it lands, or it stays empty all session.
+    @State private var suggestionsAdvice: TrainingRegulation.Advice?
     @State private var loadedMuscle: String?
     /// Full-screen «Focus mode» cover — entry from the inline set list; dismiss returns to the table
     /// without ending the session (mock v21 handoff). Additive only; does not replace `inlineSession`.
@@ -2661,7 +2664,10 @@ struct LiveStrengthSheet: View {
                     Text("·").foregroundStyle(theme.inkTertiary)
                     Text(raise.waiting ? "raise" : "why")
                         .font(InstrumentoType.grotesk(12, weight: .bold))
-                        .underline(pattern: .dot, color: theme.dataRecovery.opacity(0.55))   // token-exempt: subrayado punteado decorativo
+                        // The dotted rule follows the line's own tone: green belongs to an applied
+                        // raise, and a held one reads in ink (FER-82).
+                        .underline(pattern: .dot,
+                                   color: (raise.waiting ? theme.ink : theme.dataRecovery).opacity(0.55))   // token-exempt: subrayado punteado decorativo
                 }
             }
             .foregroundStyle(raise.waiting ? theme.ink : theme.dataRecovery)
@@ -2675,8 +2681,9 @@ struct LiveStrengthSheet: View {
         .accessibilityLabel(raise.waiting
                             ? Text("The raise to \(massText(raise.toKg)) waits")
                             : Text("Today you raise to \(massText(raise.toKg))"))
+        // «las series que te faltan», not «todas»: what is already lifted keeps what was lifted.
         .accessibilityHint(raise.waiting
-                           ? (takeable ? Text("Raises every work set to that weight") : Text(""))
+                           ? (takeable ? Text("Raises the sets you have left to that weight") : Text(""))
                            : Text("Shows why, with your real dates"))
         // Fires only when THIS line's held raise is taken (the flag flips on this exercise).
         .sensoryFeedback(.success, trigger: raise.waiting)
@@ -3547,8 +3554,12 @@ struct LiveStrengthSheet: View {
         }
         .background(theme.paper)
         .safeAreaInset(edge: .top, spacing: 0) { liveHead }
-        .task {
-            guard freshSuggestions == nil else { return }
+        // Keyed to the repository pass (FER-82): the suggestions are gated by today's verdict, so a
+        // panel opened while it was still being computed would stay empty for the whole session.
+        // Recomputing on a new pass costs one bounded read and is the same rule the other three
+        // verdict-reading screens follow.
+        .task(id: model.repo.refreshSeq) {
+            guard freshSuggestions == nil || suggestionsAdvice != model.repo.trainingAdvice else { return }
             await loadFreshSuggestions()
         }
     }
@@ -3588,6 +3599,8 @@ struct LiveStrengthSheet: View {
     /// map, over the trailing 84 days — the top 3 fresh muscles, one exercise each (preferring one the
     /// user has history for), plus a note naming the single most-loaded muscle the picks are avoiding.
     private func loadFreshSuggestions() async {
+        let advice = model.repo.trainingAdvice
+        suggestionsAdvice = advice
         let cal = Calendar.current
         guard let since = cal.date(byAdding: .day, value: -84, to: cal.startOfDay(for: Date())) else { return }
         let sinceTs = Int(since.timeIntervalSince1970)
@@ -3604,7 +3617,7 @@ struct LiveStrengthSheet: View {
         // ejercicio, ese músculo está fresco» on a day Entrenar is saying «Recupera» was the old second
         // oracle, alive inside the session. The score keeps deciding per-muscle freshness (that is what
         // it measures); whether to suggest ADDING work at all is the verdict's call.
-        let freshMuscles = TrainingRegulation.allowsRaise(model.repo.trainingAdvice)
+        let freshMuscles = TrainingRegulation.allowsRaise(advice)
             ? MuscleFatigueMap.recommendation(loads: loads, recovery: recovery).readyMuscles
             : []
         var picked: [(exercise: Exercise, muscle: String)] = []
