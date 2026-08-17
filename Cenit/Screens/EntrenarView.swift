@@ -86,6 +86,13 @@ private struct EntrenarLanding: View {
     /// The verdict `todaySlots` were seeded with; `nil` until the first load. Guards «Empezar» from
     /// handing the session a table built under a verdict that has since changed (FER-82).
     @State private var slotsAdvice: TrainingRegulation.Advice?
+    /// El puente de Apple Salud, para que la boleta de esta pestaña reciba el MISMO contexto que la
+    /// de Hoy (sin él afirmaba «anoche no llegó nada» a quien no ha conectado Salud).
+    @EnvironmentObject private var health: HealthKitBridge
+
+    /// FER-85/FER-84: la boleta del veredicto, servida DENTRO de Entrenar. El hilo la abre como
+    /// hoja; nunca cambia de pestaña. Es la misma acta que Hoy sirve, con el mismo modelo.
+    @State private var showVeredictoActa = false
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
     private var unitSystem: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
     /// Top primary muscles per routine (Spanish display labels), built from the same per-routine exercise
@@ -125,7 +132,6 @@ private struct EntrenarLanding: View {
     @State private var showHubImport = false
     /// «Lo que Cénit sabe hacer» (decisión Fer 2026-07-16): puerta permanente + tarjeta única.
     @State private var showTricks = false
-    @AppStorage("hubTricksCardDismissed") private var tricksCardDismissed = false
     /// FER-952: the hub's «New routine» — pushes the unified create flow (library → editor).
     @State private var showCreateRoutine = false
     /// FER-950: Quick / Mobility discs with a live strength session — confirm resume instead of
@@ -141,6 +147,15 @@ private struct EntrenarLanding: View {
     /// source of truth is exactly what let this section contradict Hoy on the same day.
     private var advice: TrainingRegulation.Advice { repo.trainingAdvice }
 
+    /// Salud «conectada» efectiva, con la misma excepción de fixtures que usa Hoy: en DEBUG con un
+    /// estado sembrado el permiso real nunca está concedido y la hoja caería al copy de conectar.
+    private var healthConnected: Bool {
+        #if DEBUG
+        if ScreenshotFixtures.activeState() != nil { return true }
+        #endif
+        return health.auth == .authorized
+    }
+
     var body: some View {
         // Fixed section rhythm in a plain ScrollView (FER-786 hotfix): the earlier GeometryReader +
         // `.frame(minHeight: geo.size.height)` + flexible/capped spacers (FER-784/785) fed the measured
@@ -150,6 +165,24 @@ private struct EntrenarLanding: View {
             VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                 // FER-952 (owner): the «Train» wordmark + tab glyph row retired — the dock already
                 // names the tab.
+                // FER-85: el hilo del veredicto — el ÚNICO portador del veredicto en Entrenar y la
+                // primera cosa que se lee. Vive FUERA del gate de carga porque habla del CUERPO, no
+                // del plan: no tiene por qué esperar a que la base de datos conteste, y así el «?»
+                // de ayuda tampoco aparece a destiempo.
+                HStack(spacing: CenitMetrics.space2) {
+                    hiloDelVeredicto
+                    // El «?» del handoff: los trucos siguen ahí para quien los busque, pero
+                    // dejan de ocupar una tarjeta en la pantalla principal (decisión del dueño).
+                    Button { showTricks = true } label: {
+                        Image(systemName: "questionmark.circle")
+                            .font(StrandFont.glyph(.lead))
+                            .foregroundStyle(theme.inkTertiary)
+                            .frame(width: EntrenarMetrics.row, height: EntrenarMetrics.row)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(EntrenarPressStyle())
+                    .accessibilityLabel(Text("Tricks"))
+                }
                 if loaded {
                     if loadFailed {
                         loadErrorState       // store couldn't be read — «No pudimos leer tus rutinas · Reintentar»
@@ -165,7 +198,6 @@ private struct EntrenarLanding: View {
                         heroSection       // ① open hero «Hoy · {día}» + «Empezar» + the five discs
                         suggestionRow     // ② contextual FER-532 nudge (shown only when the engine fires)
                         sesionDeHoy       // ③ «LA SESIÓN DE HOY» — big numerals + raise + recovery hint
-                        if !tricksCardDismissed { tricksCard }   // una-sola-vez (decisión Fer)
                         tuPlanSection     // ④ «TU PLAN» — week squares + every routine + new-routine row
                         constanciaSection // ⑤ 90-day dot grid — no streak guilt (mock 1a)
                         footRows          // ⑥ history (Dieta off — FER-992)
@@ -184,6 +216,26 @@ private struct EntrenarLanding: View {
         // The ③ «softer» suggestion (FER-554) opens the templates sheet straight on the mobility routine.
         // «Empezar» starts a one-off guided session (on the sheet's dismiss, so it never stacks — FER-171),
         // with «Add to my routines» as the secondary action. Theme doesn't cross the sheet boundary.
+        // La boleta del veredicto, dentro de Entrenar (FER-85): el mismo modelo y la misma vista
+        // que sirve Hoy, así que las dos pantallas no pueden divergir ni en la tabla ni en la
+        // gráfica de cajas. «Ver más» cierra la hoja sin cambiar de pestaña.
+        .sheet(isPresented: $showVeredictoActa) {
+            LiquidMetricSheet(tono: LiquidHoyBuilder.actaTono(repo.todayPreparedness),
+                              detent: .porContenido) {
+                // El MISMO contexto que Hoy le pasa a su acta: sin `healthConnected` la hoja afirmaba
+                // «anoche no llegó nada» a quien simplemente no ha conectado Salud, y sin él las dos
+                // pantallas contaban historias distintas del mismo día — justo lo que este épico mata.
+                LiquidActaVeredicto(
+                    LiquidHoyBuilder.acta(prep: repo.todayPreparedness,
+                                          healthConnected: healthConnected,
+                                          verdictPending: repo.todayPreparedness == nil && !repo.fullyLoaded),
+                    // Sin «Ver más»: ese botón lleva a Tendencias, y la decisión del handoff es que
+                    // esta hoja no cambia de pestaña. Un CTA de ancho completo que solo cierra la hoja
+                    // promete un viaje que no ocurre (y su hint de VoiceOver lo dice en voz alta).
+                    onVerMas: nil)
+            }
+            .preferredColorScheme(.light)
+        }
         .sheet(isPresented: $showMobilityTemplate, onDismiss: startPendingMobility) {
             StarterTemplatesSheet(initialSelection: StarterTemplates.byID("mobility"),
                                   onStart: { name, slots in pendingMobility = (name, slots) }) { await load() }
@@ -505,14 +557,9 @@ private struct EntrenarLanding: View {
                     }
                     .buttonStyle(.plain)
                 }
-                if let line = adviceLine {
-                    HStack(spacing: 7) {
-                        Rectangle().fill(theme.dataRecovery).frame(width: 2, height: 10)  // token-exempt: filete de dato
-                        Text(line)
-                            .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
+                // FER-85: la línea de consejo se RETIRA de aquí. El veredicto entra por un solo
+                // portador —el hilo, arriba— y esta línea decía exactamente lo mismo tres bloques
+                // abajo, con su propio filete verde aunque el consejo fuera «Recupera».
             }
         }
     }
@@ -695,36 +742,6 @@ private struct EntrenarLanding: View {
 
     /// Tarjeta de una-sola-vez hacia los trucos del taller (decisión Fer 2026-07-16): se descarta
     /// con ✕ y no vuelve; la puerta permanente es el chip «? Trucos».
-    private var tricksCard: some View {
-        Button { showTricks = true } label: {
-            VStack(alignment: .leading, spacing: 3) {
-                Text("Did you know your routine can raise itself?")
-                    .font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.ink)
-                Text("Progression, rest by pulse, plate calculator… the workshop's tricks.")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                Text("See the tricks").font(StrandFont.caption.weight(.semibold)).foregroundStyle(theme.dataStrain)
-                    .padding(.top, 4)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(CenitMetrics.receiptPadding)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
-                .strokeBorder(theme.hairline, lineWidth: 1))
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .overlay(alignment: .topTrailing) {
-            Button { withAnimation(StrandMotion.interactive) { tricksCardDismissed = true } } label: {
-                StrandIcon.close.image.font(StrandFont.glyph(.chevron, weight: .semibold))
-                    .foregroundStyle(theme.inkTertiary)
-                    .frame(width: 44, height: 44).contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(Text("Dismiss"))
-        }
-    }
-
     /// «＋ Nueva rutina» + the styled door-chips (FER-952). New routine goes STRAIGHT into the
     /// unified create flow (library push → editor) — no detour through Tu Plan. Folders left the
     /// hub: managing folders belongs where the routine list lives (Tu Plan).
@@ -1354,21 +1371,53 @@ private struct EntrenarLanding: View {
         return String(localized: "Today · \(day)")
     }
 
+    /// El hilo del veredicto: la misma pastilla que es la puerta de Hoy, con la misma palabra y
+    /// el mismo consejo. Tocarla abre la boleta como hoja DENTRO de Entrenar (nunca cambia de
+    /// pestaña, decisión del handoff). Con el veredicto todavía calculándose no se dibuja: la
+    /// sección calla en vez de estrenar una pastilla hueca que va a cambiar en un segundo.
+    @ViewBuilder private var hiloDelVeredicto: some View {
+        if advice != .pending {
+            EntrenarHilo(tone: hiloTono, word: hiloPalabra, advice: hiloConsejo) {
+                showVeredictoActa = true
+            }
+        }
+    }
+
+    private var hiloTono: EntrenarHilo.Tone {
+        switch advice {
+        case .planAsIs: return .clear
+        case .lighter:  return .caution
+        case .recover:  return .ease
+        case .silent, .pending: return .hollow
+        }
+    }
+
+    /// La palabra del veredicto: la MISMA que pinta Hoy, por la misma clave del catálogo.
+    private var hiloPalabra: LocalizedStringKey {
+        switch advice {
+        case .planAsIs: return "hero.title.full"
+        case .lighter:  return "hero.title.caution"
+        case .recover:  return "hero.title.easy"
+        case .silent, .pending:
+            return repo.todayPreparedness == nil ? "No reading today" : "hero.title.calibrando"
+        }
+    }
+
+    /// El consejo grueso del diccionario. Las variantes huecas no inventan consejo.
+    private var hiloConsejo: LocalizedStringKey? {
+        switch advice {
+        case .planAsIs: return "your plan for today, as it is"
+        case .lighter:  return "don't add weight"
+        case .recover:  return "easy today, or rest"
+        case .silent, .pending:
+            return repo.todayPreparedness == nil ? "sync in Today" : "no advice yet"
+        }
+    }
+
     /// Whether the hero may explain a held raise. Silence must be total: with no usable read (or none
     /// yet) the section neither advises nor announces a raise it is holding.
     private var showsHeldRaise: Bool { TrainingRegulation.explainsHeldRaise(advice) }
 
-    /// The one-line advice under the hero. FER-82: it says exactly what the verdict Hoy showed says,
-    /// in the same words, so the two screens can never disagree. Silent and pending show nothing —
-    /// there is no score to fall back to, by design.
-    private var adviceLine: String? {
-        switch advice {
-        case .planAsIs: return String(localized: "In range · your plan for today, as it is.")
-        case .lighter:  return String(localized: "Go light today · don't add weight.")
-        case .recover:  return String(localized: "Recover · easy today, or rest.")
-        case .silent, .pending: return nil
-        }
-    }
 
     // MARK: - Data
 

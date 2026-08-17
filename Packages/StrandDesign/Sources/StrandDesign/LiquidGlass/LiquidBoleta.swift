@@ -48,6 +48,14 @@ public struct LiquidVotoRiel: View {
     private let umbral: Umbral
     private let tono: Color
     private let palabra: String
+    /// FER-84: la desviación REAL de hoy, en la dirección del riel (negativa = a la izquierda,
+    /// positiva = a la derecha), en unidades de σ contra tu propia base. `nil` = colocar por la
+    /// posición canónica del estado, como antes.
+    ///
+    /// Es la diferencia entre un pictograma y una lectura: con ella, la joya no dice «fuera», dice
+    /// CUÁNTO fuera, contra la MISMA banda de ±1σ que usa el veredicto para votar. Sigue sin haber
+    /// un solo número impreso: la posición es el dato.
+    private let desviacion: Double?
     /// Progreso del sellado (0 = votos sin caer, 1 = asentado). El caller lo anima UNA vez
     /// al abrir; con Reduce Motion pasa directo a 1.
     private let sellado: Double
@@ -68,14 +76,45 @@ public struct LiquidVotoRiel: View {
     private static let posDentro: CGFloat = 0.52
     private static let posFueraAbajo: CGFloat = 0.10
     private static let posFueraArriba: CGFloat = 0.90
+    /// El borde de la banda en unidades de posición: ahí vive tu ±1σ.
+    static let posBandaHi: CGFloat = 0.78
+    /// Los topes del bigote: el rango plausible. La joya se detiene aquí — y la saturación ocurre
+    /// EXACTAMENTE en `zTope`, no antes: con los valores viejos el mapa se plantaba en 1.64σ y
+    /// dibujaba 1.7σ y 12σ en el mismo pixel, que es justo lo que la caja venía a resolver.
+    static let bigoteLo: CGFloat = 0.04, bigoteHi: CGFloat = 0.96
+    /// La desviación que llega al tope del bigote.
+    static let zTope: Double = 2.5
+    private static let bigoteGrosor: CGFloat = 1
+    private static let bigoteAlto: CGFloat = 5
 
     public init(estado: Estado, umbral: Umbral, tono: Color, palabra: String,
-                sellado: Double = 1) {
+                desviacion: Double? = nil, sellado: Double = 1) {
         self.estado = estado
         self.umbral = umbral
         self.tono = tono
         self.palabra = palabra
+        self.desviacion = desviacion
         self.sellado = sellado
+    }
+
+    /// Dónde cae una desviación en el riel. El centro es tu base; el borde de la banda, tu ±1σ —
+    /// el mismo corte con el que el motor decide si un eje se salió. Más allá, la joya sigue
+    /// caminando hasta el tope del bigote y ahí se detiene: un valor extremo se ve extremo, pero
+    /// nunca se sale del instrumento ni miente sobre cuánto más lejos está.
+    static func posicion(desviacion z: Double) -> CGFloat {
+        // NaN (base degenerada) no tiene dirección: se planta en el centro, porque `.position(x:)`
+        // con NaN es la familia de «Invalid frame dimension» que este repo ya sufrió una vez. Un
+        // infinito SÍ tiene dirección, así que sigue el camino normal y satura en su bigote.
+        guard !z.isNaN else { return 0.5 }
+        // Dentro de la banda, ±1σ cae en su borde. Más allá, el recorrido restante se reparte hasta
+        // el tope del bigote, de modo que la saturación ocurra en `zTope` y no antes.
+        let magnitud = min(abs(z), zTope)
+        let dentro = posBandaHi - 0.5
+        let fuera = bigoteHi - posBandaHi
+        let avance: CGFloat = magnitud <= 1
+            ? CGFloat(magnitud) * dentro
+            : dentro + CGFloat((magnitud - 1) / (zTope - 1)) * fuera
+        return 0.5 + (z < 0 ? -avance : avance)
     }
 
     private var bandaRango: ClosedRange<CGFloat> {
@@ -83,12 +122,15 @@ public struct LiquidVotoRiel: View {
     }
 
     private var posJoya: CGFloat? {
+        // Sin base usable no hay dónde colocarla: «calibrando» se queda centrada y punteada, y
+        // «sin lectura» no dibuja joya. La desviación solo manda cuando hay un veredicto que leer.
         switch estado {
-        case .dentro:      return Self.posDentro
-        case .fueraAbajo:  return Self.posFueraAbajo
-        case .fueraArriba: return Self.posFueraArriba
         case .calibrando:  return 0.5
         case .sinLectura:  return nil
+        case .dentro, .fueraAbajo, .fueraArriba:
+            if let z = desviacion { return Self.posicion(desviacion: z) }
+            return estado == .dentro ? Self.posDentro
+                 : (estado == .fueraAbajo ? Self.posFueraAbajo : Self.posFueraArriba)
         }
     }
 
@@ -99,12 +141,20 @@ public struct LiquidVotoRiel: View {
             Text(verbatim: palabra)
                 .font(LiquidType.microEstado)
                 .foregroundStyle(tonoPalabra)
-                .opacity(0.4 + 0.6 * sellado)
+                .opacity(0.4 + 0.6 * sellado)   // token-exempt: la opacidad ES el progreso del sellado
                 .scaleEffect(0.92 + 0.08 * sellado, anchor: .trailing)
         }
         // Decorativo: la lectura audible es el label compuesto de la fila (contrato D3).
         .accessibilityHidden(true)
     }
+
+    /// Si este voto salió — y eso lo dice el VOTO, no un recálculo de la magnitud.
+    ///
+    /// Recalcularlo como `abs(z) > 1` parecía equivalente y no lo es: el eje autonómico vota por UN
+    /// lado (peor que tu base), así que una mañana espléndida —FC en reposo muy por debajo— daba
+    /// |z| > 1 y encendía el aro de alerta junto a la palabra «dentro». El aro dice «este voto se
+    /// salió»; quien sabe eso es el estado.
+    private var fueraDeBanda: Bool { estado == .fueraAbajo || estado == .fueraArriba }
 
     private var tonoPalabra: Color {
         switch estado {
@@ -150,6 +200,13 @@ public struct LiquidVotoRiel: View {
                     }
                 }
 
+                // Bigotes: los topes del rango plausible. Enseñan que la banda no es el mundo
+                // entero — sin ellos, una joya pegada al borde parecía el extremo del instrumento.
+                if estado != .sinLectura && estado != .calibrando && desviacion != nil {
+                    bigote(x: Self.bigoteLo * w, cy: cy)
+                    bigote(x: Self.bigoteHi * w, cy: cy)
+                }
+
                 // La joya: papel ribeteado (nunca bola sólida), cae con el sellado.
                 if let pos = posJoya {
                     joya
@@ -181,6 +238,16 @@ public struct LiquidVotoRiel: View {
             .position(x: (lo + hi) / 2, y: cy)
     }
 
+    /// Un tope del bigote: hairline de tinta, más corto que el tick de umbral, para que el ojo
+    /// distinga «el corte que vota» de «hasta dónde puede llegar el dato».
+    private func bigote(x: CGFloat, cy: CGFloat) -> some View {
+        RoundedRectangle(cornerRadius: LiquidRadius.hairline, style: .continuous)
+            // En el color del eje eran invisibles: el tope tiene que leerse como tope.
+            .fill(LiquidColor.tinta500)
+            .frame(width: Self.bigoteGrosor, height: Self.bigoteAlto)
+            .position(x: x, y: cy)
+    }
+
     private func tick(x: CGFloat, cy: CGFloat) -> some View {
         RoundedRectangle(cornerRadius: LiquidRadius.hairline, style: .continuous)
             .fill(tono.opacity(LiquidChart.marcaAnilloAlfa))
@@ -198,6 +265,14 @@ public struct LiquidVotoRiel: View {
             Circle()
                 .fill(LiquidColor.papelAlto)
                 .overlay(Circle().strokeBorder(tono, lineWidth: LiquidChart.endpointBorde))
+                // Gramática de alerta del sistema: fuera de la banda se AÑADE un aro, nunca se
+                // cambia el hue. El color sigue diciendo qué señal es; el aro, que se salió.
+                .overlay {
+                    if fueraDeBanda {
+                        Circle().strokeBorder(tono.opacity(LiquidChart.marcaAnilloAlfa), lineWidth: 1)
+                            .padding(-3)
+                    }
+                }
                 .frame(width: Self.joyaDiametro, height: Self.joyaDiametro)
         }
     }
@@ -229,11 +304,14 @@ public struct LiquidBoletaCard: View {
         /// Label compuesto de VoiceOver, YA localizado («Sueño, votó fuera, anoche contra
         /// un mínimo fijo, fuera de tu rango.»).
         public let a11y: String
+        /// FER-84: la desviación real del día en la dirección del riel. `nil` = posición canónica.
+        public var desviacion: Double?
 
         public init(id: String, glifo: LiquidIcon.Glyph, nombre: String, sub: String,
                     estado: LiquidVotoRiel.Estado, umbral: LiquidVotoRiel.Umbral,
                     fuera: Bool, tonoVoto: Color, palabra: String,
-                    hueMetrica: Color = LiquidColor.tinta700, a11y: String) {
+                    hueMetrica: Color = LiquidColor.tinta700, a11y: String,
+                    desviacion: Double? = nil) {
             self.id = id
             self.glifo = glifo
             self.nombre = nombre
@@ -245,6 +323,7 @@ public struct LiquidBoletaCard: View {
             self.palabra = palabra
             self.hueMetrica = hueMetrica
             self.a11y = a11y
+            self.desviacion = desviacion
         }
     }
 
@@ -309,7 +388,7 @@ public struct LiquidBoletaCard: View {
                     }
                     LiquidVotoRiel(estado: v.estado, umbral: v.umbral,
                                    tono: v.tonoVoto, palabra: v.palabra,
-                                   sellado: progreso)
+                                   desviacion: v.desviacion, sellado: progreso)
                         .padding(.leading, Self.gotaSize + LiquidSpace.s300)
                 }
             } else {
@@ -319,7 +398,7 @@ public struct LiquidBoletaCard: View {
                     Spacer(minLength: LiquidSpace.s200)
                     LiquidVotoRiel(estado: v.estado, umbral: v.umbral,
                                    tono: v.tonoVoto, palabra: v.palabra,
-                                   sellado: progreso)
+                                   desviacion: v.desviacion, sellado: progreso)
                 }
             }
         }

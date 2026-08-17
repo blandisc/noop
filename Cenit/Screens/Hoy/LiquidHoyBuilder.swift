@@ -1342,6 +1342,22 @@ enum LiquidHoyBuilder {
             a11y = String(localized: "\(nombre), no data, \(sub).")
         }
 
+        // FER-84 · DEUDA EXPLÍCITA, decidida contra el gate adversarial (ronda 1 de E3).
+        //
+        // El riel YA sabe colocar la joya por la desviación real (`LiquidVotoRiel.posicion`, con sus
+        // pruebas). La app todavía NO se la manda, y la razón es de honestidad, no de tiempo: el motor
+        // publica `orientedZ` SOLO para el eje autonómico (`Preparedness.sleepDriver` devuelve
+        // siempre `orientedZ: nil`, porque el sueño se juzga contra el rango recomendado, no contra
+        // una base personal). Cablearlo hoy dejaría media boleta midiendo —FC con bigotes y posición
+        // real— y media ilustrando —Sueño con su posición canónica—, con el mismo dibujo para las dos:
+        // el lector le aplicaría al segundo riel la gramática que le enseñó el primero, y leería como
+        // «−1.4σ» una noche que nadie midió así.
+        //
+        // Para soltarlo hace falta que el sueño tenga su propia magnitud comparable (minutos contra el
+        // piso recomendado, sobre la geometría `.minimo` que su riel ya usa). Es una decisión de
+        // producto, no de código: la deja el dueño.
+        let desviacion: Double? = nil
+
         return LiquidActa.Fila(id: ax.rawValue, glifo: glifo, etiqueta: nombre, sub: sub,
                                estado: votoEstado, umbral: esAuto ? .rango : .minimo,
                                // El wash dice «este voto volteó el veredicto»: sin
