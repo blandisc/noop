@@ -24,6 +24,10 @@ struct ContentView: View {
     @State private var showWhatsNew = false
     /// FER-41: la entrada sigue puesta hasta que su coreografía termina (o el usuario la toca).
     @State private var entradaLista = false
+    /// El frame REAL del orbe del héroe en pantalla (para que la entrada aterrice sin costura).
+    /// Se mide del tamaño de pantalla + área segura; `nil` hasta medir → la entrada cae al
+    /// cénit fijo de siempre (sin regresión). Ver `heroDestinoRect`.
+    @State private var heroDestino: CGRect? = nil
     /// Whether Today is the active tab (RootTabView keeps this in sync). Drives the app's color scheme
     /// so the status bar is dark on Today's light paper and light on the dark instrument tabs.
     @State private var isTodayTab = true
@@ -88,7 +92,10 @@ struct ContentView: View {
             if mostrandoEntrada {
                 // El clima va como CIERRE: la entrada lo lee cuando el teñido arranca, no al
                 // montarse — a los 0 ms el veredicto todavía se está calculando.
-                LiquidOrbeEntrada(clima: { climaEntrada }) {
+                // `destino` es el frame REAL del orbe del héroe (responsivo al notch y al
+                // ancho): el ascenso aterriza AHÍ, no en un punto fijo, así que el fundido de
+                // salida no deja costura. Se lee tarde (durante el ascenso), cuando ya se midió.
+                LiquidOrbeEntrada(clima: { climaEntrada }, destino: { heroDestino }) {
                     EntradaDeArranque.marcarCorrida()
                     entradaLista = true
                 }
@@ -99,6 +106,10 @@ struct ContentView: View {
                 .zIndex(3)
             }
         }
+        // El héroe (LiquidEcosistema) publica el frame real de su orbe; la entrada lo lee para
+        // aterrizar sin costura sobre él. Antes de que llegue (o si el árbol no lo propaga), la
+        // entrada cae a su cénit fijo — sin regresión.
+        .onPreferenceChange(HeroOrbeFrameKey.self) { heroDestino = $0 }
         .animation(.easeInOut(duration: 0.35), value: onboarded)
         .animation(.easeInOut(duration: 0.35), value: acceptedTerms)
         .animation(.easeOut(duration: 0.2), value: entradaLista)
@@ -117,16 +128,25 @@ struct ContentView: View {
             .preferredColorScheme(.light)
         }
         .onAppear {
-            // Existing users who updated: their last-seen version is behind the current one.
-            if onboarded && lastSeenChangelog != AppChangelog.currentVersion {
-                showWhatsNew = true
-            }
+            // «What's new» RETIRADO (dueño 2026-08-14): su contenido era de la banda WHOOP
+            // (straps 4.0/5.0/MG), ajeno a un app Apple-only. Marcamos la versión como vista
+            // para que la hoja no se auto-presente; el binding queda inerte (nunca `true`).
+            lastSeenChangelog = AppChangelog.currentVersion
         }
         #if os(iOS)
         // Check at launch (covers updated users) and again the moment onboarding completes (covers a
         // fresh install / reinstall, where `onboarded` flips false→true after this view appears).
         .task { await maybeOfferRestore() }
         .onChange(of: onboarded) { _, done in if done { Task { await maybeOfferRestore() } } }
+        // Velo de papel BAJO el alert de restore (dueño 2026-08-15): el alert nativo es
+        // translúcido y el CTA verde «Connect Apple Health» del estado vacío quedaba justo
+        // detrás — sangraba a través del material como una mancha verde sobre el mensaje
+        // (parecía un subrayado roto). El velo opaca el fondo solo mientras el alert vive.
+        .overlay {
+            if showRestoreOffer {
+                InstrumentoTheme.base.paper.opacity(0.85).ignoresSafeArea()
+            }
+        }
         .alert("Restore your data?", isPresented: $showRestoreOffer) {
             Button("Restore from backup…") { Task { await runRestore() } }
             Button("Not now", role: .cancel) { }

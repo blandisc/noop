@@ -100,7 +100,7 @@ final class MatrizHoyFaceSnapshotTests: XCTestCase {
                         titulo: "Load", valor: "1.12",
                         sublabel: "Steady",
                         chartID: "matriz-carga",
-                        chart: .rielZona(p: 1.12, zona: 0.8...1.3, estela: estela)),
+                        chart: .colina(p: 1.12, zona: 0.8...1.3, estela: estela)),
                     der: MatrizSeccion(
                         id: "strain", hue: LiquidColor.teal,
                         titulo: "Effort", valor: "12.4",
@@ -170,7 +170,7 @@ final class MatrizHoyFaceSnapshotTests: XCTestCase {
                         titulo: "Load", valor: "—",
                         sublabel: "Calibrating",
                         chartID: "matriz-carga",
-                        chart: .rielZona(p: nil, zona: 0.8...1.3, estela: [])),
+                        chart: .colina(p: nil, zona: 0.8...1.3, estela: [])),
                     der: MatrizSeccion(
                         id: "strain", hue: LiquidColor.teal,
                         titulo: "Effort", valor: "—",
@@ -234,7 +234,7 @@ final class MatrizHoyFaceSnapshotTests: XCTestCase {
                         titulo: "Load", valor: "1.48",
                         sublabel: "Building",
                         chartID: "matriz-carga",
-                        chart: .rielZona(p: 1.48, zona: 0.8...1.3,
+                        chart: .colina(p: 1.48, zona: 0.8...1.3,
                                          estela: [1.0, 1.1, 1.2, 1.3, 1.4])),
                     der: MatrizSeccion(
                         id: "strain", hue: LiquidColor.teal,

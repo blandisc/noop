@@ -233,10 +233,12 @@ struct LiquidMetricSheetView: View {
         case "steps":               return LiquidColor.teal
         case "resp_rate", "spo2":   return LiquidColor.azul
         case "stress":
+            // FER-73 · HJ-09: el estrés ACOMPAÑA, no vota — Hoy le niega a propósito el verde
+            // del veredicto y el rojo de la alarma (FER-59/FER-60). La hoja usa la MISMA rampa
+            // de calor de la Matriz: tinta neutra abajo, ocre→siena arriba.
             switch datoInfo.headerTint {
-            case .good: return LiquidColor.verdePrimario
-            case .warn: return LiquidColor.atencion
-            case .bad:  return LiquidColor.negativo
+            case .warn: return LiquidColor.estresMedio
+            case .bad:  return LiquidColor.estresAlto
             default:    return LiquidColor.tinta500
             }
         default:                    return LiquidColor.verdePrimario   // recovery, vo2max
@@ -287,6 +289,8 @@ struct LiquidMetricSheetView: View {
     /// Liquid: banda verde → verde/profundo, ámbar → atención/texto (AA), rojo → negativo;
     /// neutral → tinta/500; métrica → su hue.
     private func tinte(_ t: MetricInfo.Tint) -> Color {
+        // FER-73 · HJ-09: el estrés nunca viste verde/rojo de juicio — habla en su rampa.
+        if datoInfo.id == "stress" { return tono }
         switch t {
         case .metric:  return tono
         case .neutral: return LiquidColor.tinta500
@@ -381,7 +385,11 @@ struct LiquidMetricSheetView: View {
     /// D8 · El título de la hoja. Con esfuerzo estimado dice lo mismo que el tile («Carga
     /// del día»), clave que ya existe en el catálogo (`LiquidHoyBuilder`).
     private var tituloHoja: String {
-        isStrainEstimado ? String(localized: "Day load") : String(localized: datoInfo.name)
+        // FER-73 · HJ-13: una métrica, un nombre. La Matriz dice «Effort» y la hoja decía «Day
+        // Strain» (y «Day load» si venía estimado): tres nombres para lo mismo. El matiz de
+        // «estimado por Apple Salud» ya vive en el chip de procedencia, no en el título.
+        if datoInfo.id == "strain" { return String(localized: "Effort") }
+        return String(localized: datoInfo.name)
     }
 
     private var cabecera: some View {

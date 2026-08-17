@@ -44,7 +44,10 @@ public enum LiquidSpace {
     /// 324 — alto de la zona del héroe «El Ecosistema» (FER-10): el lienzo de las esferas
     /// de partículas + la palabra del veredicto. Sustituye a `senalesAlto` (140), que
     /// murió con la fila de orbes y sus cables.
-    public static let ecosistemaAlto: CGFloat = 324
+    /// 306 (dueño 2026-08-15): eran 324 = el alto del lienzo de la simulación, pero bajo la
+    /// puerta («How I got here», ancla en y=298) solo quedaba AIRE — ese colchón separaba el
+    /// héroe de la franja/aviso de abajo en TODOS los estados. El clip recorta solo aire.
+    public static let ecosistemaAlto: CGFloat = 320   // al ras de la puerta (ancla 300 + ~24 de alto; el veredicto bajó 20, dueño 2026-08-15)
     /// La compresión COMPACTA del héroe para «El Tablero» (FER-28), en dos recortes que NO
     /// tocan el arte ni el shader —solo la presentación—:
     ///   · `ecosistemaRecorteTop` sube el lienzo recortando el aire SUPERIOR (el estado

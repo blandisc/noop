@@ -20,6 +20,17 @@ extension LiquidHoyBuilder {
         case leyendo
         case sinSync
         case nocheNoRegistrada
+        /// Ventana cerrada + noche registrada + sin veredicto (C2 de la revisión conceptual,
+        /// dueño 2026-08-15): el caso de quien registra sueño sin señal autonómica usable
+        /// (p. ej. iPhone solo, sin Watch). Antes decía «Reading your night…» PARA SIEMPRE —
+        /// una promesa que jamás se cumplía. Ahora dice la verdad: hay noche, falta señal.
+        case senalInsuficiente
+        /// Ventana cerrada + noche registrada + sin veredicto PORQUE la base todavía se está
+        /// formando (auditoría FER-73 · H12): el héroe ya dice «Getting to know you · Night N
+        /// of M · your range is taking shape»; una franja «Night recorded · not enough signal»
+        /// (o «Pending sync» con el fixture) debajo lo CONTRADICE. Aquí la franja calla: el
+        /// héroe es dueño del mensaje.
+        case calibrando
     }
 
     /// Ventana nocturna del veredicto (KNOB de producto, nombrado). Cerrada si hay sesión de
@@ -50,11 +61,21 @@ extension LiquidHoyBuilder {
     ///  1. sin veredicto ∧ ventana ABIERTA            ⇒ .leyendo (SIEMPRE, sin importar el import)
     ///  2. sin veredicto ∧ ventana CERRADA ∧ import anterior al inicio de ventana ⇒ .sinSync
     ///  3. sin veredicto ∧ ventana CERRADA ∧ import fresco ∧ noche vacía          ⇒ .nocheNoRegistrada
-    static func causaT3(ventana: VentanaNocturna, lastSync: Date?, hayNocheRegistrada: Bool) -> CausaT3 {
+    ///  4. sin veredicto ∧ ventana CERRADA ∧ import fresco ∧ noche REGISTRADA ∧ base formándose ⇒ .calibrando
+    ///     (FER-73 · H12: el héroe ya explica «Night N of M»; la franja calla)
+    ///  5. sin veredicto ∧ ventana CERRADA ∧ import fresco ∧ noche REGISTRADA     ⇒ .senalInsuficiente
+    ///     (C2: antes ⇒ .leyendo — «Reading your night…» eterno para quien duerme sin Watch)
+    ///  0. (antes de todo) sync EN CURSO ⇒ .leyendo — `lastSync` vive solo en memoria, así que en
+    ///     cada arranque en frío valía nil y la franja pedía «pull down to sync» mientras el sync
+    ///     automático ya corría (FER-73 · H20). Mientras se lee, se dice que se está leyendo.
+    static func causaT3(ventana: VentanaNocturna, lastSync: Date?, hayNocheRegistrada: Bool,
+                        syncing: Bool = false, calibrando: Bool = false) -> CausaT3 {
+        if syncing { return .leyendo }
         if ventana.abierta { return .leyendo }
         if let ls = lastSync, ls < ventana.inicio { return .sinSync }
         if lastSync == nil { return .sinSync }      // nil = conservador
-        return hayNocheRegistrada ? .leyendo : .nocheNoRegistrada
+        guard hayNocheRegistrada else { return .nocheNoRegistrada }
+        return calibrando ? .calibrando : .senalInsuficiente
     }
 
     /// Heurística T4 (§18): decisión PURA. Un tipo suma al ≥2 solo si (≥1 muestra en 14 d) ∧ (fetch 48h vacío).
@@ -70,8 +91,11 @@ extension LiquidHoyBuilder {
         if !hasAnySource { return .t5Dormido }
         // El VEREDICTO manda (estudio en frío R2): una franja «sin lectura · sync
         // pendiente» junto a un héroe que afirma «En tu rango» confundía a TODOS los
-        // perfiles. Con veredicto real, la franja calla — Salud desconectada ya tiene
-        // su propio banner (HealthAlertBanner).
+        // perfiles. Con veredicto real la franja calla — SALVO un aviso discreto si Salud
+        // está desconectada (lo pinta `estadoCopy` con `saludDesconectada`, FER-audit): el
+        // veredicto en caché es honesto, pero el usuario merece saber que es de anoche.
+        // (El comentario viejo decía que HealthAlertBanner ya avisaba: falso — ese banner
+        // solo es la alerta de enfermedad, nunca el estado de conexión.)
         if let prep, prep.verdict != .lowSignal {
             switch prep.verdict {
             case .caution, .easy: return .t2Provisional   // veredicto con menos certeza

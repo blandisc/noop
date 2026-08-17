@@ -132,6 +132,10 @@ enum LiquidHoyBuilder {
             // dos estados del héroe.
             heroPuerta: route == .salud ? String(localized: "Connect Health")
                                         : String(localized: "How I got here"),
+            // Dueño 2026-08-15 (gate UX+UI): con ruta autonómica la puerta es INFORMATIVA →
+            // ⓘ pegado a la palabra del veredicto (sin pastilla); con ruta .salud es una
+            // ACCIÓN («Connect Health») → pastilla de texto. Nunca un ⓘ para una acción.
+            heroInfo: route != .salud,
             calibracion: calibracion,
             rotulos: rotulos(locale: i.locale))
         return Output(model: model, heroRoute: route)
@@ -195,14 +199,14 @@ enum LiquidHoyBuilder {
         let tempSerie = serieMini(
             puntos: i.tempTrend, banda: comparando ? tempBand : nil,
             sinDatoAnoche: sinDatoAnoche || i.guardian?.temp == "—",
-            fmtValor: { String(format: "%+.1f°", $0) },
+            fmtValor: { HoyGramatica.formatoDeltaTemp($0) },
             fmtFecha: popupFechaFmt(locale: i.locale),
             a11y: String(localized: "Skin temperature, last 14 nights"),
             vacio: String(localized: "No readings yet."))
         let respSerie = serieMini(
             puntos: i.respTrend, banda: comparando ? respBand : nil,
             sinDatoAnoche: sinDatoAnoche || i.guardian?.resp == "—",
-            fmtValor: { "\(Int($0.rounded())) \(String(localized: "rpm"))" },
+            fmtValor: { "\(HoyGramatica.formatoResp($0)) \(String(localized: "rpm"))" },
             fmtFecha: popupFechaFmt(locale: i.locale),
             a11y: String(localized: "Breathing, last 14 nights"),
             vacio: String(localized: "No readings yet."))
@@ -270,7 +274,9 @@ enum LiquidHoyBuilder {
                 ocultar: String(localized: "Hide method"),
                 nota: String(localized: "Both signals are read from your Apple Watch while you sleep and compared against your own pattern from recent weeks, not population tables. An isolated deviation is ignored on purpose: a warm room or an extra blanket can produce it alone."),
                 origenEtiqueta: String(localized: "Apple Health"),
-                origenSufijo: String(localized: "last night")),
+                // FER-73 · HJ-17: sin lectura de anoche no se afirma «· anoche» (el mismo
+                // contrato de procedencia de las 9 hojas de métrica).
+                origenSufijo: estado == .sinLectura ? nil : String(localized: "last night")),
             calibracion: calibracion)
     }
 
@@ -327,6 +333,16 @@ enum LiquidHoyBuilder {
                 return (nil,
                         String(localized: "Reading your night"),
                         String(localized: "One moment: the guardian is still reading your signals."),
+                        nil, false, false)
+            }
+            // FER-73 · HJ-02: contar «una sola» solo cuando de verdad falta una. Con las dos
+            // presentes el estado es «no comparé todavía», no «faltó una».
+            let faltaUna = guardian.map { $0.temp == "—" || $0.resp == "—" } ?? true
+            guard faltaUna else {
+                return (nil,
+                        String(localized: "guardian.sincomparar.titulo", defaultValue: "Not compared yet"),
+                        String(localized: "guardian.sincomparar.texto",
+                               defaultValue: "Both signals came in, but the guardian hasn't compared them against your pattern yet."),
                         nil, false, false)
             }
             return (nil,
@@ -621,12 +637,20 @@ enum LiquidHoyBuilder {
         if prep?.sentinel?.state == .corroborated {
             return String(localized: "Your temperature and breathing moved out of your pattern together.")
         }
-        guard let fuera = prep?.drivers.first(where: { $0.state.isOut }) else { return nil }
+        // FER-73 · H8: solo los ejes que VOTAN pueden explicar el veredicto. Los vigías
+        // (térmico, carga) aparecen «fuera» por su propio corte sin haber empujado nada —
+        // el barrido culpaba a la temperatura sola, justo lo que la regla del guardián niega.
+        guard let fuera = prep?.drivers.first(where: {
+            ($0.axis == .autonomic || $0.axis == .sleep) && $0.state.isOut
+        }) else { return nil }
         switch (fuera.axis, fuera.state) {
         case (.sleep, .low):      return String(localized: "Your sleep came in below your range.")
         case (.sleep, _):         return String(localized: "Your sleep came in above your range.")
-        case (.autonomic, .low):  return String(localized: "Your autonomic signal came in below your range.")
-        case (.autonomic, _):     return String(localized: "Your autonomic signal came in above your range.")
+        // FER-73 · H7: el eje autonómico se orienta por «peor», no por valor: `.low` significa
+        // FC en reposo ARRIBA de tu base (el motor nunca emite `.high` para este eje). Decir
+        // «came in below your range» invertía el hecho para quien amaneció con el pulso alto.
+        case (.autonomic, _):     return String(localized: "hero.sub.fc.arriba",
+                                                defaultValue: "Your resting heart rate came in above your base.")
         case (.thermal, .low):    return String(localized: "Your skin temperature came in below your baseline.")
         case (.thermal, _):       return String(localized: "Your skin temperature came in above your baseline.")
         case (.load, .low):       return String(localized: "Your training load came in below your usual.")
@@ -757,8 +781,9 @@ enum LiquidHoyBuilder {
         let autHasData = aut?.state.hasData ?? false
         let autFuera = aut?.state.isOut ?? false
         out.append(.init(
-            id: "autonomico", label: String(localized: "At rest"),
-            caption: caption(for: aut?.state),
+            id: "autonomico", label: String(localized: "matriz.rhr.titulo.corto",
+                                             defaultValue: "Resting HR"),
+            caption: caption(for: aut?.state, eje: .autonomic),
             progress: autHasData ? positionFromZ(aut?.orientedZ) : nil,
             icon: .ondaSenal,
             state: autFuera ? .atencion : .ok,
@@ -776,7 +801,7 @@ enum LiquidHoyBuilder {
         let sleepFuera = sleep?.state.isOut ?? false
         out.append(.init(
             id: "sueno", label: String(localized: "Sleep"),
-            caption: caption(for: sleep?.state),
+            caption: caption(for: sleep?.state, eje: .sleep),
             progress: sleepHasData ? positionFromState(sleep!.state) : nil,
             icon: .lunaSenal,
             state: sleepFuera ? .atencion : .ok,
@@ -813,8 +838,9 @@ enum LiquidHoyBuilder {
     ///   si no coincide (o no hay sello), el guardián vigila en `.incompleto`.
     static func guardian(prep: Preparedness.Read?, thermalDeviation: Double?,
                          resp: Lectura?, nightKey: String?) -> LiquidHoyModel.Guardian? {
-        let tempStr = thermalDeviation.map { String(format: "%+.1f°", $0) } ?? "—"
-        let respStr = resp.map { "\(Int($0.value.rounded())) \(String(localized: "rpm"))" } ?? "—"
+        let tempStr = thermalDeviation.map { HoyGramatica.formatoDeltaTemp($0) } ?? "—"
+        // FER-73 · H17: una décima, la MISMA que la Matriz y la hoja de métrica.
+        let respStr = resp.map { "\(HoyGramatica.formatoResp($0.value)) \(String(localized: "rpm"))" } ?? "—"
 
         // El guardián compara contra TU patrón, y quien lo calcula es el motor: sin `prep` no
         // hay comparación que afirmar. Pasaba en el primer pintado (el veredicto solo sale del
@@ -853,10 +879,14 @@ enum LiquidHoyBuilder {
         // construcción: `Preparedness.evaluate` exige `ordered.last.day == asOf`.
         guard let nightKey, let ultimaNoche = prep?.sentinelHistory.last,
               ultimaNoche.day == nightKey else {
+            // FER-73 · H5/HJ-02: aquí hay LAS DOS lecturas (el guard de arriba ya lo garantiza);
+            // lo que falta es el JUICIO — la ruta lowSignal del motor no computa `sentinelHistory`
+            // mientras tu base se está formando. Decir «solo una señal» sobre una hoja que
+            // muestra las dos era falso; «Conociéndote» es la verdad de ese momento.
             let label = String(localized: "Watching")
             let a11y = "\(tempStr), \(respStr)"
             return .init(label: label, temp: tempStr, resp: respStr,
-                         estado: .incompleto, a11y: a11y)
+                         estado: .conociendote, a11y: a11y)
         }
 
         // «Conociéndote»: el guardián solo puede empujar cuando las DOS señales se salen
@@ -938,10 +968,18 @@ enum LiquidHoyBuilder {
         }
     }
 
-    private static func caption(for state: Preparedness.AxisState?) -> String {
+    /// FER-73 · H7: el estado del eje viene ORIENTADO por «peor», no por valor. En el eje
+    /// autonómico `.low` significa FC en reposo ARRIBA de tu base (el motor nunca emite `.high`
+    /// ahí), así que rotularlo «Below your base» invertía el hecho — y contradecía a la hoja,
+    /// que sí lo dice por señal. El sueño sí es direccional (`.low` = dormiste menos).
+    private static func caption(for state: Preparedness.AxisState?,
+                                eje: Preparedness.Axis = .sleep) -> String {
         switch state {
         case .inRange: return String(localized: "In range")
-        case .low: return String(localized: "Below your base")
+        case .low:
+            return eje == .autonomic
+                ? String(localized: "Above your base")
+                : String(localized: "Below your base")
         case .high: return String(localized: "Above your base")
         case .noData, nil: return String(localized: "No data")
         }
@@ -988,14 +1026,24 @@ enum LiquidHoyBuilder {
         }
     }
 
-    static func acta(prep: Preparedness.Read?, healthConnected: Bool = true) -> LiquidActa {
+    /// FER-73 · H10/H19/HJ-10: el acta recibe el MISMO contexto que el héroe y la franja
+    /// (`verdictPending`, la causa T3 y si Salud sigue conectada). Sin él afirmaba siempre
+    /// «no llegó nada anoche» mientras la pantalla decía «Reading your night…» o «Night
+    /// recorded · not enough signal», y callaba que el veredicto mostrado es de anoche.
+    static func acta(prep: Preparedness.Read?, healthConnected: Bool = true,
+                     verdictPending: Bool = false, causaT3: CausaT3? = nil) -> LiquidActa {
         // La boleta se SINTETIZA con sus dos votantes fijos, no se itera sobre `drivers`:
         // en el `lowSignal` por falta de fila de hoy, `Preparedness` devuelve `drivers`
         // VACÍO (:163-166) y una tabla derivada de ahí no existiría.
         let estados = ejesActa.map { ax in
             prep?.drivers.first { $0.axis == ax }?.state ?? .noData
         }
-        let fuera = estados.filter { $0.isOut }.count
+        // FER-73 · H2/HJ-01: el conteo del motor incluye al CENTINELA (`sentinelOut = tempHigh
+        // && respHigh` suma un voto en `rawVerdictAt`). El acta lo ignoraba y con el par fuera
+        // leía «faltan votos» ⇒ falso «desfase de histéresis» + «Watching, not voting» el día
+        // en que SÍ votaron. Aquí cuenta igual que en el motor.
+        let parVoto = prep?.sentinel?.state == .corroborated
+        let fuera = estados.filter { $0.isOut }.count + (parVoto ? 1 : 0)
         // D1 del verificador: `isNightAnchored` es OBLIGATORIO (ver historial).
         let hayVeredicto = prep != nil && prep?.verdict != .lowSignal
             && prep?.isNightAnchored == true
@@ -1019,13 +1067,21 @@ enum LiquidHoyBuilder {
                                     esLecturaDeDia: esLecturaDeDia,
                                     calibrando: calibrando,
                                     desfase: desfase, empujeTendencia: empujeTendencia,
-                                    healthConnected: healthConnected)
+                                    healthConnected: healthConnected,
+                                    verdictPending: verdictPending, causaT3: causaT3,
+                                    hayNocheEnBoleta: estados.indices.contains(1)
+                                        && estados[1].hasData)
 
         return LiquidActa(
-            titulo: String(localized: "Readiness"),
+            // FER-73 · HJ-19: la puerta se anuncia «How I got here» (y así se llamó siempre esta
+            // hoja); titularla «Readiness» dejaba al usuario buscando la palabra que le
+            // prometieron. El kicker READINESS ya vive en el héroe.
+            titulo: String(localized: "How I got here"),
             // Procedencia SIN fecha (revisión del dueño): la fecha del día ya vive en el
             // encabezado de Hoy; repetirla aquí confundía. Reusa la key ya traducida.
-            procedencia: String(localized: "Apple Health · this morning"),
+            procedencia: (hayVeredicto && !healthConnected)
+                ? String(localized: "acta.procedencia.cache", defaultValue: "Apple Health · last reading")
+                : String(localized: "Apple Health · this morning"),
             // El ⓘ dice QUÉ es (una línea) — el hedge «aproximación» vive SOLO en «Cómo se
             // calcula» para no repetir (revisión del dueño: el ⓘ y el método decían casi lo
             // mismo).
@@ -1034,19 +1090,29 @@ enum LiquidHoyBuilder {
             infoOcultar: String(localized: "Hide explanation"),
             nivel: palabraBoleta(prep: prep, hayVeredicto: hayVeredicto,
                                  esLecturaDeDia: esLecturaDeDia, calibrando: calibrando,
-                                 healthConnected: healthConnected),
+                                 healthConnected: healthConnected,
+                                 verdictPending: verdictPending),
             conteo: resumen.texto, conteoClave: resumen.clave,
             filas: filas,
-            // Vigilantes SOLO con veredicto (/ux D7): su drama vive en el guardián.
-            vigilantesLabel: hayVeredicto ? String(localized: "Watching, not voting") : nil,
+            // Vigilantes SOLO con veredicto (/ux D7): su drama vive en el guardián. Y el día
+            // que el par SÍ votó (centinela corroborado) el rótulo lo dice (FER-73 · H2).
+            vigilantesLabel: hayVeredicto
+                ? (parVoto
+                    ? String(localized: "acta.vigilantes.votaron", defaultValue: "Watching · they voted today")
+                    : String(localized: "Watching, not voting"))
+                : nil,
             vigilantes: hayVeredicto
                 ? [String(localized: "Breathing"), String(localized: "Temperature")] : [],
             vigilantesA11y: hayVeredicto
-                ? String(localized: "Watching, not voting: breathing and temperature.") : nil,
+                ? (parVoto
+                    ? String(localized: "acta.vigilantes.votaron.a11y",
+                             defaultValue: "Breathing and temperature moved out together: today they voted.")
+                    : String(localized: "Watching, not voting: breathing and temperature."))
+                : nil,
             notas: notasBoleta(prep: prep, fuera: fuera, hayVeredicto: hayVeredicto,
                                esLecturaDeDia: esLecturaDeDia, desfase: desfase,
                                empujeTendencia: empujeTendencia,
-                               healthConnected: healthConnected),
+                               healthConnected: healthConnected, calibrando: calibrando),
             confianza: confianzaActa(prep: prep),
             plegable: plegableActa(),
             verMas: String(localized: "See more in Trends"),
@@ -1058,10 +1124,14 @@ enum LiquidHoyBuilder {
     /// del estado sin veredicto — nunca nil.
     private static func palabraBoleta(prep: Preparedness.Read?, hayVeredicto: Bool,
                                       esLecturaDeDia: Bool, calibrando: Bool,
-                                      healthConnected: Bool) -> String {
+                                      healthConnected: Bool,
+                                      verdictPending: Bool = false) -> String {
         if hayVeredicto { return palabraVeredicto(prep!.verdict) }
         if esLecturaDeDia { return String(localized: "Day reading") }
-        if !healthConnected || prep == nil { return String(localized: "No reading") }
+        if !healthConnected { return String(localized: "No reading") }
+        // FER-73 · H19: mientras el motor lee, el acta dice lo mismo que el héroe.
+        if prep == nil, verdictPending { return String(localized: "Reading your night…") }
+        if prep == nil { return String(localized: "No reading") }
         if calibrando {
             return String(localized: "hero.title.calibrando", defaultValue: "Getting to know you")
         }
@@ -1169,7 +1239,10 @@ enum LiquidHoyBuilder {
                                       fuera: Int, hayVeredicto: Bool,
                                       esLecturaDeDia: Bool, calibrando: Bool,
                                       desfase: Bool, empujeTendencia: Bool,
-                                      healthConnected: Bool) -> (texto: String, clave: String?) {
+                                      healthConnected: Bool,
+                                      verdictPending: Bool = false,
+                                      causaT3: CausaT3? = nil,
+                                      hayNocheEnBoleta: Bool = false) -> (texto: String, clave: String?) {
         guard hayVeredicto else {
             if esLecturaDeDia {
                 return (String(localized: "No sleep recorded last night: without its vote there's no quorum for a verdict."), nil)
@@ -1177,11 +1250,26 @@ enum LiquidHoyBuilder {
             if !healthConnected {
                 return (String(localized: "Without Apple Health connected there's nothing to count."), nil)
             }
-            if prep == nil {
-                return (String(localized: "Nothing came in last night: no sleep and no resting signals."), nil)
+            // FER-73 · H19: el motor todavía está leyendo — el acta no puede sentenciar «no
+            // llegó nada» mientras el héroe promete un veredicto en camino.
+            if prep == nil, verdictPending {
+                return (String(localized: "acta.resumen.leyendo",
+                               defaultValue: "One moment: your night is still being read."), nil)
             }
             if calibrando {
                 return (String(localized: "The ballot is taking shape with your first nights."), nil)
+            }
+            // FER-73 · H10/HJ-10: la causa que ya conoce la franja manda sobre la sentencia
+            // genérica. «Nada llegó anoche» sobre una noche registrada era falso.
+            switch causaT3 {
+            case .sinSync:
+                return (String(localized: "acta.resumen.sinsync",
+                               defaultValue: "Nothing has come in since last night: pull down on Today to sync."), nil)
+            case .senalInsuficiente where hayNocheEnBoleta:
+                return (String(localized: "acta.resumen.senal.insuficiente",
+                               defaultValue: "Your sleep came in; your resting signal didn't, so there's no quorum."), nil)
+            default:
+                break
             }
             return (String(localized: "Nothing came in last night: no sleep and no resting signals."), nil)
         }
@@ -1231,8 +1319,30 @@ enum LiquidHoyBuilder {
     private static func notasBoleta(prep: Preparedness.Read?, fuera: Int,
                                     hayVeredicto: Bool, esLecturaDeDia: Bool,
                                     desfase: Bool, empujeTendencia: Bool,
-                                    healthConnected: Bool) -> [LiquidActa.Nota] {
+                                    healthConnected: Bool,
+                                    calibrando: Bool = false) -> [LiquidActa.Nota] {
         var out: [LiquidActa.Nota] = []
+        // FER-73 · HJ-15: con veredicto en CACHÉ y Salud desconectada, Hoy avisa arriba y el
+        // acta callaba: la fecha de procedencia decía «esta mañana» sobre una lectura de ayer.
+        if hayVeredicto, !healthConnected {
+            out.append(.init(id: "desconectado",
+                             texto: String(localized: "acta.nota.desconectado",
+                                           defaultValue: "Apple Health is disconnected: this is your last reading, not today's."),
+                             avisa: true))
+            return out
+        }
+        // FER-73 · H-T: mientras la base se forma, «mañana la boleta se llena sola» es falso —
+        // faltan varias noches y la tarjeta de abajo lo dice con su barra. Se dice cuántas.
+        if calibrando, let prep {
+            let (noche, total) = calibracionConteo(nights: prep.autonomicNights)
+            if noche < total {
+                out.append(.init(id: "calibrando",
+                                 texto: String(format: String(localized: "acta.nota.calibrando",
+                                                              defaultValue: "%lld more nights with your Apple Watch and your daily verdict appears."),
+                                               total - noche)))
+                return out
+            }
+        }
         guard let prep else {
             if !healthConnected {
                 out.append(.init(id: "permiso",
@@ -1437,9 +1547,10 @@ enum LiquidHoyBuilder {
         }
 
         return LiquidAutonomico(
-            // «En reposo», no «Autonómico» (Opción B del dueño): jerga fuera, y coincide con la
-            // etiqueta del orbe que abre esta hoja. Reusa la MISMA key que el orbe.
-            titulo: String(localized: "At rest"),
+            // Jerga fuera (Opción B del dueño) Y el MISMO nombre que el orbe que abre esta hoja
+            // (FER-73 · HJ-12: el orbe dice «FC en reposo» desde P4 y la hoja seguía en «En
+            // reposo» — dos nombres para una cosa). Reusa la key del rótulo del orbe.
+            titulo: String(localized: "matriz.rhr.titulo.corto", defaultValue: "Resting HR"),
             procedencia: String(localized: "Apple Health · this morning"),
             // Respiración salió de este desglose (vive en el Guardián), así que la explicación
             // ya no la menciona: FC en reposo decide, la VFC acompaña.
@@ -1698,7 +1809,7 @@ enum LiquidHoyBuilder {
         out.append(.init(
             id: "stress", label: String(localized: "Stress"),
             value: i.stress.map { String(format: "%.1f", $0) } ?? "—",
-            unit: i.stress == nil ? "" : "/ 3",
+            unit: i.stress == nil ? "" : (MetricFormat.forMetric(.stress).scaleSuffix ?? ""),
             delta: stressDelta.text, deltaTone: stressDelta.tone,
             tone: i.stress.map(stressTone) ?? LiquidColor.tinta500, icon: .estres,
             origen: .calculado))
@@ -1742,8 +1853,11 @@ enum LiquidHoyBuilder {
     // MARK: Formatters de sueño (fuente única; las copias muertas de TodayViewSupport se borraron · F2)
 
     /// «7:20» — sueño en formato reloj.
+    /// FER-73 · H16: una sola fuente de verdad para el reloj de sueño — el orbe TRUNCABA los
+    /// minutos y la Matriz los REDONDEA, así que la misma noche se leía «7:29» arriba y «7:30»
+    /// abajo. Delega en `HoyGramatica.formatoDuracion`.
     static func sleepClockText(_ mins: Double) -> String {
-        String(format: "%d:%02d", Int(mins) / 60, Int(mins) % 60)
+        HoyGramatica.formatoDuracion(mins)
     }
 
     /// «18m» / «1h 5m» — el delta de sueño en unidades de una letra.

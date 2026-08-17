@@ -47,21 +47,26 @@ public struct SelloMetricaVista: View {
     private let sello: SelloMetrica
     private let lado: CGFloat
     private let gota: Bool
+    private let tono: Color?
 
     /// - Parameters:
     ///   - lado: el lado del sello en puntos. 20 en la Matriz (el mismo hueco que dejaba el
     ///     orbe), 28 en la cabecera de una hoja de resumen.
     ///   - gota: el halo de identidad al 10 %. Se apaga donde el contexto ya lo pone.
-    public init(_ sello: SelloMetrica, lado: CGFloat, gota: Bool = true) {
+    ///   - tono: el tono del halo. Por defecto el del sello, pero la pantalla manda: Estrés
+    ///     recede a `tinta500` (FER-59) y su gota tiene que receder con él, no delatar el
+    ///     ámbar que el dibujo lleva dentro.
+    public init(_ sello: SelloMetrica, lado: CGFloat, gota: Bool = true, tono: Color? = nil) {
         self.sello = sello
         self.lado = lado
         self.gota = gota
+        self.tono = tono
     }
 
     public var body: some View {
         ZStack {
             if gota {
-                Circle().fill(sello.tono.opacity(0.10))
+                Circle().fill((tono ?? sello.tono).opacity(0.10))
             }
             Canvas(opaque: false) { ctx, size in
                 // El viewBox del forjador es 24×24; todo lo demás es proporción.

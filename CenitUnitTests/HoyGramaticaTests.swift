@@ -260,8 +260,13 @@ final class HoyGramaticaTests: XCTestCase {
     func testFormatoDeltaTempSiempreConSigno() {
         XCTAssertEqual(HoyGramatica.formatoDeltaTemp(0.2), "+0.2°")
         XCTAssertEqual(HoyGramatica.formatoDeltaTemp(0.9), "+0.9°")
-        XCTAssertEqual(HoyGramatica.formatoDeltaTemp(-0.4), "-0.4°")
-        XCTAssertEqual(HoyGramatica.formatoDeltaTemp(0.0), "+0.0°")
+        // FER-73 · H15: el negativo usa el MENOS tipográfico (U+2212), como el resto de la
+        // pantalla, no el guion ASCII; y un delta que redondea a cero se escribe «0.0°», nunca
+        // «-0.0°» (un cero con signo negativo se lee como «bajaste» sin haber bajado).
+        XCTAssertEqual(HoyGramatica.formatoDeltaTemp(-0.4), "\u{2212}0.4°")
+        XCTAssertEqual(HoyGramatica.formatoDeltaTemp(0.0), "0.0°")
+        XCTAssertEqual(HoyGramatica.formatoDeltaTemp(-0.02), "0.0°")
+        XCTAssertEqual(HoyGramatica.formatoDeltaTemp(0.04), "0.0°")
     }
 
     func testFormatoParGuardian() {

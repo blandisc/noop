@@ -279,6 +279,7 @@ public struct LiquidVeil: View {
 /// los prototipos canónicos (LIQUID-GLASS §11.3, DESIGN §8.9). `tone == nil` o
 /// `plasta: false` la omiten; el velo pasa por encima y la suaviza como luz bajo el papel.
 public struct LiquidSheetFondo: View {
+    @Environment(\.liquidAmbientPaused) private var ambientPaused
     private let tone: Color?
     /// Si es `false`, la hoja no pinta plasta aunque haya `tone` (escotilla de escape).
     private let plasta: Bool
@@ -342,7 +343,9 @@ public struct LiquidSheetFondo: View {
     /// Misma gramática que la plasta de Hoy (blur 52, coseno, freeze en t = 0).
     @ViewBuilder
     private func sheetPlasta(tone: Color) -> some View {
-        let still = reduceMotion || motionDisabled
+        // FER-73 · M9: la plasta de las hojas también respeta la pausa ambiental (el resto de
+        // las recetas —`LiquidPlasta`, `LiquidPatterns`— ya la sumaban).
+        let still = reduceMotion || motionDisabled || ambientPaused
         GeometryReader { geo in
             TimelineView(.animation(minimumInterval: LiquidMotion.intervaloAmbiente, paused: still)) { context in
                 let t = still ? 0 : context.date.timeIntervalSinceReferenceDate

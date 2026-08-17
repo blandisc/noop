@@ -2,16 +2,15 @@ import Foundation
 import StrandAnalytics
 import StrandModels
 
-// MARK: - FER-51 · Inputs compartidos de las caras Matriz / Cosmos (Lane C)
+// MARK: - FER-51 · Inputs de la cara Matriz
 //
-// Declara AQUÍ `MatrizInputs` y `CosmosExtraInputs` para que esta rama compile sola.
-// El director fusionará con la copia de la cara Matriz en un archivo único al integrar
-// (colisión esperada; no reescribir el struct en otro sitio de esta rama).
+// `MatrizInputs` es el material crudo día-alineado que Hoy resuelve una vez y las ventanas §7
+// del builder recortan.
 
 extension LiquidHoyBuilder {
 
-    /// Entradas día-alineadas de la Matriz (y base del Cosmos). Las ventanas §7 se recortan
-    /// en el builder de cada cara; aquí solo viaja el material crudo ya resuelto por Hoy.
+    /// Entradas día-alineadas de la Matriz. Las ventanas §7 se recortan en el builder; aquí
+    /// solo viaja el material crudo ya resuelto por Hoy.
     struct MatrizInputs {
         var prep: Preparedness.Read?
         /// suffix(21) + hoy, ordenado por `day` (de `repo.displayDays`).
@@ -23,19 +22,5 @@ extension LiquidHoyBuilder {
         var locale: Locale = .current
         var calendar: Calendar = .current
         var now: Date = Date()
-    }
-
-    /// Lecturas de HOY ya resueltas por los tiles (mismas resoluciones que `LiquidHoyBuilder.Inputs`).
-    /// `temp` es el delta de temp de piel mostrado; el medidor usa `prep.thermalAdjustedDevC`
-    /// cuando existe (descuento lúteo ya aplicado).
-    struct CosmosExtraInputs {
-        var sleep: Lectura?
-        var rhr: Lectura?
-        var hrv: Lectura?
-        var temp: Lectura?
-        var resp: Lectura?
-        var stress: Double?
-        var strain: Double?
-        var steps: Double?
     }
 }

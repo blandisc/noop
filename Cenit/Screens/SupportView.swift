@@ -22,7 +22,6 @@ struct SupportView: View {
 
 private struct SupportContent: View {
     @Environment(\.instrumentoTheme) private var theme
-    @State private var showWhatsNew = false
 
     var body: some View {
         ScrollView {
@@ -45,10 +44,6 @@ private struct SupportContent: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
-        .sheet(isPresented: $showWhatsNew) {
-            WhatsNewView(onClose: { showWhatsNew = false }, theme: theme)
-                .preferredColorScheme(.light)   // papel «Instrumento» → barra de estado en tinta oscura (FER-415)
-        }
     }
 
     // MARK: - About (identity + version + what's new + mission)
@@ -62,7 +57,6 @@ private struct SupportContent: View {
                     .padding(.horizontal, 9).padding(.vertical, 3)
                     .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
                 Spacer()
-                QuietButton("What's new") { showWhatsNew = true }
             }
 
             Text("A health app built on Apple Health. Everything stays on this device: your history, your nights, your numbers. Nothing is uploaded. \(ProjectInfo.appName) is an independent, experimental project.")

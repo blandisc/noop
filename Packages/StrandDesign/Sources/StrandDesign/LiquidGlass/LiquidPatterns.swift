@@ -194,7 +194,9 @@ struct LiquidAmbientOrbs: View {
 
     var body: some View {
         let still = reduceMotion || motionDisabled || ambientPaused
-        TimelineView(.animation(minimumInterval: LiquidMotion.intervaloAmbiente, paused: still)) { context in
+        // FER-73 · M16: 12 fps, no 20 — el desplazamiento de estas manchas dura decenas de
+            // segundos y cada tick re-rasteriza tres capas grandes con `blur`.
+            TimelineView(.animation(minimumInterval: LiquidMotion.intervaloSello, paused: still)) { context in
             let t = still ? 0 : context.date.timeIntervalSinceReferenceDate
             ZStack {
                 ForEach(Array(orbs.enumerated()), id: \.offset) { index, orb in

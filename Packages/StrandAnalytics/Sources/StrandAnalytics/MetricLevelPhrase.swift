@@ -99,7 +99,10 @@ public enum MetricLevelPhrase {
         // prominente que el rótulo que la aclara. El VEREDICTO sí compara contra tu propia base
         // (`ReadinessEngine`); esta línea no, y ahora su gramática lo dice.
         "rhr":       .vsPopulation,
-        "resp_rate": .vsBase,
+        // FER-73 · HJ-08: los niveles de respiración son un corte POBLACIONAL (<20 / ≥20), no
+        // tu base; decir «por encima de lo usual TUYO» sobre una tabla es el mismo pecado que
+        // FER-43 arregló en la FC. Quien SÍ compara contra tu base es el guardián, en Hoy.
+        "resp_rate": .vsPopulation,
         "skin_temp": .vsBase,
         "spo2":      .vsPopulation,
         "steps":     .vsPopulation,

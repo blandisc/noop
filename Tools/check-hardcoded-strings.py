@@ -20,6 +20,7 @@ DEFAULT_FILES = [
     "Cenit/Screens/TodayView.swift",                                  # FER-744
     "Packages/StrandDesign/Sources/StrandDesign/FiveRules.swift",     # FER-744
     "Cenit/Screens/EntrenarView.swift",                               # FER-816 (Formas/formOptions → catalog)
+    "Cenit/Screens/Hoy/*.swift",                                      # FER-audit: la lógica de Hoy vive aquí
 ]
 
 # Engine/data values that are intentionally the metric's stored label, and the brand name.
@@ -64,4 +65,7 @@ def main(files):
     return 0
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:] or DEFAULT_FILES))
+    import glob
+    patterns = sys.argv[1:] or DEFAULT_FILES
+    files = [f for pat in patterns for f in (sorted(glob.glob(pat)) or [pat])]
+    sys.exit(main(files))

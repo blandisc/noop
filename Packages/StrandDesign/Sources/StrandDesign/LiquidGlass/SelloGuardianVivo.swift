@@ -36,6 +36,14 @@ public struct SelloGuardianVivo: View {
     private let hueResp: Color
     private let estado: Estado
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    // FER-audit: misma disciplina de pausa del héroe (background + previews «sin motion»).
+    @Environment(\.liquidAmbientPaused) private var ambientPaused
+    @Environment(\.liquidMotionDisabled) private var motionDisabled
+    private var quieto: Bool {
+        // FER-73 · M11: «sin datos → quieto» estaba documentado pero no implementado: el reloj,
+        // el giro y la respiración seguían corriendo y solo cambiaba el color.
+        reduceMotion || ambientPaused || motionDisabled || estado == .sinDatos
+    }
 
     public init(radio: CGFloat, hueTemp: Color, hueResp: Color, estado: Estado) {
         self.radio = radio
@@ -83,11 +91,11 @@ public struct SelloGuardianVivo: View {
 
     public var body: some View {
         let lado = radio * 2.5
-        TimelineView(.animation(minimumInterval: 1.0 / 12, paused: reduceMotion)) { tl in
-            let t = reduceMotion ? 0 : tl.date.timeIntervalSinceReferenceDate
-            // Latido sutil solo en racha (el par lleva dos noches fuera): la esfera respira
-            // un punto más hondo. Reduce Motion lo apaga (t = 0 ⇒ escala 1).
-            let escala = late ? 1 + 0.05 * CGFloat(sin(t * 2.4)) : 1
+        TimelineView(.animation(minimumInterval: LiquidMotion.intervaloSello, paused: quieto)) { tl in
+            let t = quieto ? 0 : tl.date.timeIntervalSinceReferenceDate
+            // Respira SIEMPRE (vivo, no quieto): un latido muy sutil en calma, más hondo en
+            // racha (el par lleva dos noches fuera). Reduce Motion lo apaga (t = 0 ⇒ escala 1).
+            let escala = 1 + (late ? 0.05 : 0.022) * CGFloat(sin(t * (late ? 2.4 : 1.15)))
             ZStack {
                 capa(paridad: 0, hue: colorTemp, t: t)
                     .offset(x: -sepTemp * radio)
@@ -129,7 +137,7 @@ public struct SelloGuardianVivo: View {
         // recomponen el mismo orbe bicolor de hoy, mota por mota.
         let cuenta = min(240, max(36, Int(0.4 * radio * radio)))
         let fase = Double(MatrizDither.semilla(chartID: "sello-guardian", index: 0) % 628) / 100.0
-        let rot = fase + t * 0.12
+        let rot = fase + t * 0.32   // vivo: giro perceptible (antes 0.12 ≈ 1 vuelta/52 s)
         for (i, dir) in direcciones(cuenta).enumerated() where i % 2 == paridad {
             let p = EcosistemaSimulacion.particula(
                 dir: dir, indice: i, centro: centro, radio: radio,

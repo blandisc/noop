@@ -75,6 +75,13 @@ extension LiquidHoyBuilder {
         // eficiencia, y `nil` no es «en rango»). Sin juicio → sólo la fecha.
         let enRango = String(localized: "matriz.rango.dentro", defaultValue: "in your range")
         let fueraRango = String(localized: "matriz.rango.fuera", defaultValue: "out of your range")
+        // FER-73 · H22: el SUEÑO se juzga contra el rango RECOMENDADO de salud (FER-44, gate
+        // /cso), no contra tu base — así lo dice el acta y su hoja. La Matriz decía «in your
+        // range» / «out of your range» (rango personal) para la misma noche.
+        let enRangoSueno = String(localized: "matriz.sueno.rango.dentro",
+                                  defaultValue: "recommended range")
+        let fueraRangoSueno = String(localized: "matriz.sueno.rango.fuera",
+                                     defaultValue: "below recommended")
         let scrubSueno: [MatrizSeccion.ScrubNoche] = keysSueno.enumerated().map { idx, day in
             let mins = byDay[day]?.totalSleepMin
             let offsetDesdeFin = keysSueno.count - 1 - idx
@@ -89,7 +96,7 @@ extension LiquidHoyBuilder {
             // Paréntesis obligatorio: sin ellos `?.sleepOut.map` aplica `.map` al Bool,
             // no al Bool? del optional-chaining (precedencia de `?.`).
             let juicio: Bool? = bodyByDay[day]?.sleepOut
-            let estado = juicio.map { $0 ? fueraRango : enRango }
+            let estado = juicio.map { $0 ? fueraRangoSueno : enRangoSueno }
             let sub = estado.map { "\(fecha) · \($0)" } ?? fecha
             return .init(valor: HoyGramatica.formatoDuracion(mins), sublabel: sub)
         }
@@ -97,13 +104,13 @@ extension LiquidHoyBuilder {
         // (P2), y el dato del scrub la reemplaza al arrastrar. Mismo gate de honestidad.
         let sublabelSueno: String? = {
             if hoy?.totalSleepMin == nil && noches.allSatisfy({ $0.valor == nil }) {
-                return String(localized: "Getting to know you")
+                return String(localized: "hero.title.calibrando", defaultValue: "Getting to know you")
             }
             guard hoy?.totalSleepMin != nil else { return nil }
             guard let out = bodyByDay[hoyKey ?? ""]?.sleepOut else {
                 return String(localized: "matriz.sueno.anoche", defaultValue: "last night")
             }
-            let estado = out ? fueraRango : enRango
+            let estado = out ? fueraRangoSueno : enRangoSueno
             return String(format: String(localized: "matriz.sueno.anoche.estado",
                                          defaultValue: "last night · %@"), estado)
         }()
@@ -176,21 +183,44 @@ extension LiquidHoyBuilder {
         let valorVFC = HoyGramatica.valorODash(ptsVFC.last.flatMap { $0 }) {
             "\(Int($0.rounded()))"
         }
+        // Scrub de VFC (FER-62): día + valor. Sin estado de rango — la VFC NO vota, no hay
+        // corte honesto que afirmar (paridad con la hoja «Tu contexto»): solo la fecha.
+        let scrubVFC: [MatrizSeccion.ScrubNoche] = keys20.enumerated().map { idx, _ in
+            let fecha = weekdayLabel(offsetFromToday: keys20.count - 1 - idx, now: i.now,
+                                     calendar: i.calendar, formatter: diaFmt)
+            guard let v = ptsVFC[idx] else {
+                return .init(valor: "—",
+                             sublabel: String(format: String(localized: "matriz.scrub.sinlectura",
+                                                             defaultValue: "%@ · no reading"), fecha))
+            }
+            return .init(valor: "\(Int(v.rounded()))", sublabel: fecha)
+        }
         let seccionVFC = MatrizSeccion(
             id: "hrv", hue: LiquidColor.cian,
             titulo: String(localized: "HRV"),
             valor: valorVFC, unidad: String(localized: "ms"), terciaria: true,
-            // P3: el abstenido explica su papel y promete el porqué a un tap.
-            sublabel: String(localized: "matriz.vfc.referencia",
-                             defaultValue: "reference · does not vote · why?"),
+            // Sublabel DESCRIPTIVO, simétrico con sus gemelas de contexto (Carga/Esfuerzo/
+            // Estrés): el «no vota» ya no vive suelto aquí — lo lleva el rótulo de nivel
+            // «Contexto» + la hoja «Tu contexto» (FER-61), así que las cuatro se ven parejas.
+            sublabel: String(localized: "matriz.vfc.sub", defaultValue: "your daily HRV"),
             chartID: "matriz-hrv",
             chart: .lineaRellena(puntos: ptsVFC, base: baseVFC,
                                  dominio: dominioLinea(ptsVFC, base: baseVFC, fallback: 20...80),
                                  alfa: 0.6, alertaHoy: .ninguna),
-            sello: .hrv)
+            sello: .hrv,
+            scrubNoches: scrubVFC)
 
         // —— 3. Guardián ——
-        let chip = chipGuardianModelo(prep?.sentinel)
+        // FER-73 · H3/H5/H18: el juicio del par vale SOLO para la noche que esta pantalla llama
+        // «hoy» (`sentinelHistory.last.day == hoyKey`; tras medianoche un prep viejo juzga OTRA
+        // noche) y solo si el par entero se leyó y se pudo juzgar. Sin eso, ni chip verde ni
+        // «dentro de tu banda»: se muestran los valores, sin afirmar patrón.
+        let nocheJuzgada: Preparedness.SentinelNight? = {
+            guard let n = prep?.sentinelHistory.last, let hk = hoyKey, n.day == hk else { return nil }
+            return n
+        }()
+        let sentinelHoy: Preparedness.SentinelRead? = nocheJuzgada == nil ? nil : prep?.sentinel
+        let chipJuzgado = chipGuardianJuzgado(sentinelHoy, noche: nocheJuzgada)
         var ptsTemp: [Double?] = keys20.map { byDay[$0]?.skinTempDevC }
         // HOY usa el dev térmico AJUSTADO (descuento lúteo ya aplicado) — el MISMO número
         // que juzga el guardián y que muestra la cara Cosmos (+Cosmos.swift), para que las
@@ -202,9 +232,32 @@ extension LiquidHoyBuilder {
         let ptsResp: [Double?] = keys20.map { byDay[$0]?.respRateBpm }
         let valorTemp = HoyGramatica.valorODash(ptsTemp.last.flatMap { $0 },
                                                 formato: HoyGramatica.formatoDeltaTemp)
-        let valorResp = HoyGramatica.valorODash(ptsResp.last.flatMap { $0 }) {
-            String(format: "%.1f", $0)
+        let valorResp = HoyGramatica.valorODash(ptsResp.last.flatMap { $0 }, formato: HoyGramatica.formatoResp)
+        let hayLecturaGuardianHoy = ptsTemp.last.flatMap { $0 } != nil || ptsResp.last.flatMap { $0 } != nil
+        let chip = chipGuardianModelo(chipJuzgado, noche: nocheJuzgada,
+                                      hayLecturaHoy: hayLecturaGuardianHoy,
+                                      calibrando: prep?.maturity == .calibrating)
+        // Juicio POR SEÑAL, solo si el motor la juzgó esta noche (temp: corte absoluto ⇒ basta
+        // que se haya leído; resp: además necesita base usable ⇒ `respJudged`).
+        let tempJuzgada = sentinelHoy != nil && nocheJuzgada?.tempMissing == false
+        let respJuzgada = sentinelHoy != nil && nocheJuzgada?.respJudged == true
+        // Scrub de temp/resp (dueño 2026-08-15): día + lectura de esa noche, alineado 1:1 con la
+        // serie que dibuja la línea serena. Serie de tiempo → el scrub se lee natural (a diferencia
+        // de la colina de Carga, que es eje de valor y por eso NO se arrastra).
+        func scrubGuardian(_ pts: [Double?], fmt: (Double) -> String) -> [MatrizSeccion.ScrubNoche] {
+            keys20.enumerated().map { idx, _ in
+                let fecha = weekdayLabel(offsetFromToday: keys20.count - 1 - idx, now: i.now,
+                                         calendar: i.calendar, formatter: diaFmt)
+                guard let v = pts[idx] else {
+                    return .init(valor: "—",
+                                 sublabel: String(format: String(localized: "matriz.scrub.sinlectura",
+                                                                 defaultValue: "%@ · no reading"), fecha))
+                }
+                return .init(valor: fmt(v), sublabel: fecha)
+            }
         }
+        let scrubTemp = scrubGuardian(ptsTemp) { HoyGramatica.formatoDeltaTemp($0) }
+        let scrubResp = scrubGuardian(ptsResp) { HoyGramatica.formatoResp($0) }
         // Banda ± del guardián: corte térmico público (± thermalOutC) y resp ~ base±.
         let thermalBand = Preparedness.Config.default.thermalOutC
         let seccionGuardian = MatrizSeccion(
@@ -235,8 +288,10 @@ extension LiquidHoyBuilder {
                     // El juicio es POR SEÑAL (tempOut) y solo con lectura de hoy —
                     // afirmar «dentro de tu banda» sin dato o contra el flag del motor
                     // es copy que miente (gate del repo; Grok+DeepSeek convergieron).
-                    sublabel: valorTemp == "—" ? nil
-                        : ((prep?.sentinel?.tempOut ?? false)
+                    // FER-73 · H5: y solo si el motor la JUZGÓ esta noche (`tempOut ?? false`
+                    // convertía «sin juicio» en «dentro» durante la calibración).
+                    sublabel: (valorTemp == "—" || !tempJuzgada) ? nil
+                        : ((sentinelHoy?.tempOut ?? false)
                             ? String(localized: "matriz.temp.fuera", defaultValue: "outside your band")
                             : String(localized: "matriz.temp.enbanda", defaultValue: "within your band")),
                     hue: LiquidColor.doradoTemp,
@@ -244,13 +299,14 @@ extension LiquidHoyBuilder {
                     chart: .lineaSerena(puntos: ptsTemp, banda: -thermalBand...thermalBand,
                                         dominio: -1.5...1.5, alertaHoy: alertaGuardian),
                     subrayado: alertaGuardian,
-                    sello: .piel),
+                    sello: .piel,
+                    scrubNoches: scrubTemp),
                 MatrizRenglon(
                     id: "resp",
                     titulo: String(localized: "Breathing"),
                     valor: valorResp, unidad: valorResp == "—" ? nil : String(localized: "rpm"),
-                    sublabel: valorResp == "—" ? nil
-                        : ((prep?.sentinel?.respOut ?? false)
+                    sublabel: (valorResp == "—" || !respJuzgada) ? nil
+                        : ((sentinelHoy?.respOut ?? false)
                             ? String(localized: "matriz.resp.fuera", defaultValue: "above your usual")
                             : String(localized: "matriz.resp.tipica", defaultValue: "typical for you")),
                     hue: LiquidColor.azul,
@@ -259,44 +315,89 @@ extension LiquidHoyBuilder {
                                         dominio: dominioLinea(ptsResp, base: nil, fallback: 8...22),
                                         alertaHoy: alertaGuardian),
                     subrayado: alertaGuardian,
-                    sello: .respiracion),
+                    sello: .respiracion,
+                    scrubNoches: scrubResp),
             ],
             // FER-56 · Ola 3: el sello VIVO reacciona al MISMO estado que el chip (nunca lo
             // contradice) — se separa y tiñe cuando el par se sale, calla en calma.
-            selloGuardian: selloGuardianEstado(prep?.sentinel))
+            selloGuardian: selloGuardianEstado(chipJuzgado))
 
         // —— 4. Carga | Esfuerzo ——
         let pCarga = razonCarga  // razón natural (API del riel: 0.8…1.3)
-        // Estela: 5 posiciones PREVIAS (sin HOY), viejo → nuevo.
+        // Estela: 5 posiciones PREVIAS (sin HOY), viejo → nuevo. Pareo día+valor para que el
+        // scrub alinee 1:1 con los puntos que dibuja la colina.
         let keysEstelaPrev = Array(keys.dropLast().suffix(matrizVentanaEstela))
-        let estela: [Double] = keysEstelaPrev.compactMap { cargaSeriesByDay[$0] }
+        let estelaPairs: [(day: String, v: Double)] = keysEstelaPrev.compactMap { k in
+            cargaSeriesByDay[k].map { (k, $0) }
+        }
+        let estela: [Double] = estelaPairs.map(\.v)
         let valorCarga = HoyGramatica.valorODash(razonCarga) { String(format: "%.2f", $0) }
         let estadoCargaKey = HoyGramatica.estadoCarga(razon: razonCarga)
+        // Scrub de Carga «como la hoja de resumen» (dueño 2026-08-15, 2.ª vuelta): el dedo
+        // recorre los DÍAS en orden (índice uniforme, como toda serie de tiempo) y el marcador
+        // se dibuja donde ESE día cae en la cuesta — el dedo no salta; el punto sí, porque eso
+        // es el dato. Cada noche muestra razón + estado + fecha, como el popup de la hoja.
+        func offsetHoyCarga(_ day: String) -> Int {
+            guard let idx = keys.lastIndex(of: day) else { return 0 }
+            return max(0, (keys.count - 1) - idx)
+        }
+        func lecturaCarga(_ v: Double, fecha: String) -> MatrizSeccion.ScrubNoche {
+            let estado = HoyGramatica.estadoCarga(razon: v)
+            return .init(valor: String(format: "%.2f", v),
+                         sublabel: "\(fecha) · \(sublabelCargaConZona(estado))")
+        }
+        var scrubCarga: [MatrizSeccion.ScrubNoche] = estelaPairs.map { pair in
+            lecturaCarga(pair.v, fecha: weekdayLabel(offsetFromToday: offsetHoyCarga(pair.day),
+                                                      now: i.now, calendar: i.calendar, formatter: diaFmt))
+        }
+        if let hoyV = razonCarga {
+            scrubCarga.append(lecturaCarga(hoyV, fecha: weekdayLabel(offsetFromToday: 0, now: i.now,
+                                                                       calendar: i.calendar, formatter: diaFmt)))
+        }
         let seccionCarga = MatrizSeccion(
             id: "carga", hue: LiquidColor.verdeCarga,
             titulo: String(localized: "Load"),
             valor: valorCarga,
             sublabel: sublabelCargaConZona(estadoCargaKey),
             chartID: "matriz-carga",
-            chart: .rielZona(p: pCarga,
+            chart: .colina(p: pCarga,
                              zona: ReadinessEngine.acwrSweetSpotLow...ReadinessEngine.acwrSweetSpotHigh,
                              estela: estela, alertaHoy: alertaCarga),
-            sello: .carga)
+            sello: .carga,
+            scrubNoches: scrubCarga.count > 1 ? scrubCarga : nil)
 
         let keysEsf = Array(keys.suffix(matrizVentanaEsfuerzo))
         let ptsEsf: [Double?] = keysEsf.map { byDay[$0]?.strain }
         let valorEsf = HoyGramatica.valorODash(ptsEsf.last.flatMap { $0 }) {
             String(format: "%.1f", $0)
         }
+        // Scrub de Esfuerzo (FER-62): día + esfuerzo del día. Es una acumulación, no un
+        // juicio de rango → sublabel = solo la fecha.
+        let scrubEsf: [MatrizSeccion.ScrubNoche] = keysEsf.enumerated().map { idx, _ in
+            let fecha = weekdayLabel(offsetFromToday: keysEsf.count - 1 - idx, now: i.now,
+                                     calendar: i.calendar, formatter: diaFmt)
+            guard let v = ptsEsf[idx] else {
+                return .init(valor: "—",
+                             sublabel: String(format: String(localized: "matriz.scrub.sinlectura",
+                                                             defaultValue: "%@ · no reading"), fecha))
+            }
+            return .init(valor: String(format: "%.1f", v), sublabel: fecha)
+        }
         let seccionEsf = MatrizSeccion(
+            // Effort = Day Strain: su identidad es ÁMBAR (igual que la hoja de resumen y el
+            // detalle «Day Strain»). Antes teal — chocaba con la identidad naranja del detalle.
             id: "strain", hue: LiquidColor.ambar,
             titulo: String(localized: "Effort"),
-            valor: valorEsf, unidad: valorEsf == "—" ? nil : "/ 21",
+            valor: valorEsf,
+            // Fuente única del sufijo de escala (no un literal): la hoja de detalle usa el
+            // mismo `MetricFormat.scaleSuffix`, así que Matriz y hoja no divergen.
+            unidad: valorEsf == "—" ? nil : MetricFormat.forMetric(.strain).scaleSuffix,
             sublabel: valorEsf == "—" ? nil
                 : String(localized: "matriz.esf.sub", defaultValue: "today's effort so far"),
             chartID: "matriz-strain",
             chart: .barrasMini(valores: ptsEsf),
-            sello: .esfuerzo)
+            sello: .esfuerzo,
+            scrubNoches: scrubEsf)
 
         // —— 5. Estrés | Pasos ——
         let keysEstres = Array(keys.suffix(matrizVentanaEstres))
@@ -318,14 +419,38 @@ extension LiquidHoyBuilder {
             case .high: return String(localized: "High")
             }
         }()
+        // Scrub de Estrés (FER-62): día + nivel (palabra). Los cortes son fijos, no un
+        // juicio personal de rango → sublabel = solo la fecha.
+        let scrubStress: [MatrizSeccion.ScrubNoche] = keysEstres.enumerated().map { idx, day in
+            let fecha = weekdayLabel(offsetFromToday: keysEstres.count - 1 - idx, now: i.now,
+                                     calendar: i.calendar, formatter: diaFmt)
+            guard let v = stressByDay[day] else {
+                return .init(valor: "—",
+                             sublabel: String(format: String(localized: "matriz.scrub.sinlectura",
+                                                             defaultValue: "%@ · no reading"), fecha))
+            }
+            let palabra: String
+            switch StressBand(score: v) {
+            case .low: palabra = String(localized: "Low")
+            case .medium: palabra = String(localized: "Medium")
+            case .high: palabra = String(localized: "High")
+            }
+            return .init(valor: palabra, sublabel: fecha)
+        }
         let seccionStress = MatrizSeccion(
-            id: "stress", hue: LiquidColor.ambarEstres,
+            // FER-59: Estrés RECEDE (era tinta900, máximo contraste — gritaba siendo la
+            // referencia que no vota). tinta500 lo baja al peso de las demás de contexto.
+            id: "stress", hue: LiquidColor.tinta500,
             titulo: String(localized: "Stress"),
             valor: valorStress,
-            sublabel: stressHoy == nil ? nil : String(localized: "vs your 7 days"),
+            // FER-59: la escalerita es la tendencia de tus últimos 7 días — describir la
+            // VENTANA, no un «vs» (los cortes son fijos; no es una comparación personal).
+            sublabel: stressHoy == nil ? nil
+                : String(localized: "matriz.stress.sub", defaultValue: "last 7 days"),
             chartID: "matriz-stress",
             chart: .escalerita(niveles: niveles),
-            sello: .estres)
+            sello: .estres,
+            scrubNoches: scrubStress)
 
         let keysPasos = Array(keys.suffix(matrizVentanaPasos))
         let ptsPasos: [Double?] = keysPasos.map { day in
@@ -335,6 +460,8 @@ extension LiquidHoyBuilder {
         let valorPasos = HoyGramatica.valorODash(ptsPasos.last.flatMap { $0 },
                                                  formato: HoyGramatica.formatoMiles)
         let seccionPasos = MatrizSeccion(
+            // Steps = TEAL (el color de Pasos en la hoja de resumen). Antes gris (tinta700);
+            // probé ámbar pero ese es de Effort — teal es su identidad real.
             id: "steps", hue: LiquidColor.teal,
             titulo: String(localized: "Steps"),
             valor: valorPasos, terciaria: true,
@@ -365,8 +492,10 @@ extension LiquidHoyBuilder {
                 .nivel(String(localized: "matriz.nivel.vigila",
                               defaultValue: "Watches over you"), manualID: "guardian"),
                 .full(seccionGuardian),
+                // FER-61: el nivel gana su «?» → hoja «Tu contexto», el hogar único del
+                // «no deciden tu día» (resuelve la asimetría: antes solo VFC lo decía).
                 .nivel(String(localized: "matriz.nivel.contexto",
-                              defaultValue: "Context"), manualID: nil),
+                              defaultValue: "Context"), manualID: "manual.contexto"),
                 .split(izq: seccionCarga, der: seccionEsf),
                 .split(izq: seccionVFC, der: seccionStress),
                 .nivel(String(localized: "matriz.nivel.bitacora",
@@ -426,13 +555,40 @@ extension LiquidHoyBuilder {
     }
 
 
+    /// FER-73 · H3: el chip del motor SOLO si el par entero se leyó y se pudo juzgar esa noche.
+    /// `.quiet` con una señal ausente o con la respiración sin base usable NO es calma — el motor
+    /// simplemente no marcó lo que no pudo leer (`respJudged` existe justo para esto).
+    static func chipGuardianJuzgado(_ sentinel: Preparedness.SentinelRead?,
+                                    noche: Preparedness.SentinelNight?) -> HoyGramatica.ChipGuardian? {
+        guard let chip = HoyGramatica.chipGuardian(sentinel: sentinel) else { return nil }
+        if chip == .calma, let noche, noche.tempMissing || noche.respMissing || !noche.respJudged {
+            return nil
+        }
+        return chip
+    }
+
     /// Chip §8 / criterio 10 — texto + tono resueltos; ordinal REAL de racha.
-    static func chipGuardianModelo(_ sentinel: Preparedness.SentinelRead?)
+    /// Sin juicio (`chip == nil`) dice POR QUÉ, en tinta terciaria y sin afirmar calma:
+    /// falta una señal → «Only one signal»; base formándose → «Getting to know you»; hay
+    /// lectura pero el motor no comparó → «Not compared yet»; nada leído → «No readings yet».
+    static func chipGuardianModelo(_ chip: HoyGramatica.ChipGuardian?,
+                                   noche: Preparedness.SentinelNight? = nil,
+                                   hayLecturaHoy: Bool = false,
+                                   calibrando: Bool = false)
         -> MatrizHoyModel.ChipGuardian? {
-        guard let chip = HoyGramatica.chipGuardian(sentinel: sentinel) else {
-            // Sin lectura del par esa noche (`sentinel == nil`): no se afirma calma (verde) —
-            // sería mentir— pero tampoco se deja el chip en blanco. Tinta terciaria, honesto.
-            return .init(texto: String(localized: "No readings yet"), tono: .terciario)
+        guard let chip else {
+            if let noche, noche.tempMissing || noche.respMissing {
+                return .init(texto: String(localized: "Only one signal"), tono: .terciario)
+            }
+            if !hayLecturaHoy {
+                return .init(texto: String(localized: "No readings yet"), tono: .terciario)
+            }
+            if calibrando || noche?.respJudged == false {
+                return .init(texto: String(localized: "hero.title.calibrando",
+                                           defaultValue: "Getting to know you"), tono: .terciario)
+            }
+            return .init(texto: String(localized: "matriz.guardian.sincomparar",
+                                       defaultValue: "Not compared yet"), tono: .terciario)
         }
         switch chip {
         case .calma:
@@ -456,8 +612,8 @@ extension LiquidHoyBuilder {
     /// FER-56 · Ola 3 — el estado del sello VIVO del guardián, proyectado 1:1 del chip (nunca
     /// lo contradice): sin lectura del par ⇒ sin datos; una sola fuera ⇒ vigila esa (frío, sin
     /// alarma, como el chip terciario); el par 1.ª noche ⇒ ámbar; el par en racha ⇒ rojo.
-    static func selloGuardianEstado(_ sentinel: Preparedness.SentinelRead?) -> SelloGuardianVivo.Estado {
-        guard let chip = HoyGramatica.chipGuardian(sentinel: sentinel) else { return .sinDatos }
+    static func selloGuardianEstado(_ chip: HoyGramatica.ChipGuardian?) -> SelloGuardianVivo.Estado {
+        guard let chip else { return .sinDatos }
         switch chip {
         case .calma:             return .calma
         case .vigilandoTemp:     return .vigilaTemp
@@ -486,12 +642,16 @@ extension LiquidHoyBuilder {
         String(localized: "\(ordinalMarcador(n)) night")
     }
 
+    /// FER-73 · HJ-07: UNA sola fuente para el vocabulario de las 4 bandas de carga —
+    /// `ReadinessEngine.LoadBand.shortLabel`, el mismo que usa su hoja. La Matriz mantenía un
+    /// set paralelo («Steady/Building/Unloading/Spike») y la hoja decía otra cosa para la misma
+    /// banda («In balance/Ramping up/Easing off/Ramping fast»).
     private static func sublabelCarga(_ key: String) -> String {
         switch key {
-        case "carga.estable":     return String(localized: "Steady")
-        case "carga.subiendo":    return String(localized: "Building")
-        case "carga.descargando": return String(localized: "Unloading")
-        case "carga.pico":        return String(localized: "Spike")
+        case "carga.estable":     return ReadinessEngine.LoadBand.sweetSpot.shortLabel
+        case "carga.subiendo":    return ReadinessEngine.LoadBand.buildingFast.shortLabel
+        case "carga.descargando": return ReadinessEngine.LoadBand.rampingDown.shortLabel
+        case "carga.pico":        return ReadinessEngine.LoadBand.spiking.shortLabel
         case "carga.calibrando":  return String(localized: "Calibrating")
         default:                  return String(localized: "Calibrating")
         }
@@ -534,7 +694,7 @@ extension LiquidHoyBuilder {
     private static func sublabelFC(ptsFC: [Double?], prep: Preparedness.Read?,
                                    alerta: MedidorLunar.Alerta) -> String? {
         if ptsFC.allSatisfy({ $0 == nil }) {
-            return String(localized: "Getting to know you")
+            return String(localized: "hero.title.calibrando", defaultValue: "Getting to know you")
         }
         // Sin lectura de HOY o sin veredicto real (nil/lowSignal): no se afirma rango
         // (espejo del gate fantasma del Cosmos — Grok #3).

@@ -45,29 +45,10 @@ private final class PullProgressModel {
     var progress: Double = 0
 }
 
-/// Sello del dial (34 pt): se «da cuerda» con el tirón y gira al sincronizar.
-/// Lee `pullProgress.progress` en SU body — no en el de `TodayView`.
-private struct PullIndicator: View {
-    let pullProgress: PullProgressModel
-    let isSyncing: Bool
-    let reduceMotion: Bool
-    let hour: Double
-    let solar: SolarWindow?
-    let sleep: SleepWindow?
-
-    var body: some View {
-        let seal = DialSeal(hour: hour, solar: solar, sleep: sleep)
-        if isSyncing && !reduceMotion {
-            TimelineView(.animation) { context in
-                let angle = (context.date.timeIntervalSinceReferenceDate * 257)
-                    .truncatingRemainder(dividingBy: 360)
-                seal.rotationEffect(.degrees(angle))
-            }
-        } else {
-            seal.rotationEffect(.degrees(pullProgress.progress * 270))
-        }
-    }
-}
+// FER-73 · M12: aquí vivía `PullIndicator` (el sello del dial que giraba al sincronizar). No
+// tenía llamadores desde que el pull dejó de dibujar el dial, y su `TimelineView(.animation)`
+// no llevaba `minimumInterval` — 120 Hz en ProMotion si alguien lo hubiera montado. La señal de
+// «sincronizando» ahora la da `PullSyncHint`, que sí está montado.
 
 /// Pista del pull-to-refresh (chevron + microcopy). Se oculta al armar el tirón sin invalidar Hoy.
 private struct PullSyncHint: View {
@@ -79,7 +60,16 @@ private struct PullSyncHint: View {
 
     var body: some View {
         Group {
-            if shows {
+            if isSyncing {
+                // FER-73 · INT-01: el jalón era CIEGO — soltabas y no pasaba nada visible
+                // mientras HealthKit trabajaba (el sello que lo prometía nunca se montó).
+                // Una palabra basta, en la voz del sistema.
+                Text(String(localized: "hoy.sincronizando", defaultValue: "Syncing…"))
+                    .font(InstrumentoType.grotesk(12, weight: .medium))
+                    .foregroundStyle(LiquidColor.tinta500)
+                    .transition(.opacity)
+                    .accessibilityAddTraits(.updatesFrequently)
+            } else if shows {
                 VStack(spacing: CenitMetrics.space1) {
                     // Vestida de Liquid (/inject 2026-07-22): el chevron del sistema nuevo en
                     // tinta/500 — el único chrome no-Liquid que quedaba en Hoy. El microcopy
@@ -93,6 +83,7 @@ private struct PullSyncHint: View {
             }
         }
         .strandAnimation(StrandMotion.fade, value: shows)
+        .strandAnimation(StrandMotion.fade, value: isSyncing)
     }
 }
 #endif
@@ -115,6 +106,18 @@ struct TodayView: View {
     /// Apple Salud when the measured Key Metrics are empty; `showDataSources` presents Data Sources
     /// so they can connect in one tap instead of hunting through the More tab. (FER-94)
     @EnvironmentObject var health: HealthKitBridge
+
+    /// Salud «conectada» EFECTIVA. En modo fixture (DEBUG, simulador) el permiso real de
+    /// HealthKit nunca está concedido, así que TODOS los estados sin veredicto caían al héroe
+    /// de «Connect Apple Health» — calibrando e insuficiente se veían idénticos y con copy de
+    /// conectar (revisión conceptual del dueño, 2026-08-15). El fixture simula un usuario
+    /// conectado: se trata como tal para que cada estado pinte SU héroe real.
+    private var saludConectada: Bool {
+        #if DEBUG
+        if ScreenshotFixtures.activeState() != nil { return true }
+        #endif
+        return health.auth == .authorized
+    }
     /// Tab switcher — the «Explóralo en el Coach» handoff from the Detalle de Estrés (FER-452, mirrors Cuerpo).
     @EnvironmentObject var tabRouter: TabRouter
     @State private var showDataSources = false
@@ -135,6 +138,7 @@ struct TodayView: View {
     @State private var showGuardianHoja = false
     /// FER-54: la hoja-manual «¿Qué decide tu día?» (rótulo de nivel en la Matriz).
     @State private var showDecideManual = false
+    @State private var showContextoManual = false
     @AppStorage("today.ecosistemaSeparaciones") private var ecosistemaSeparaciones = 0
     /// Tras cuántas separaciones acumuladas se retira el hint «Toca para separar».
     private static let maxSeparacionHints = 3
@@ -150,7 +154,7 @@ struct TodayView: View {
     // queda en 0), pero el gesto sigue armando + disparando con su háptica.
     //
     // FER-972 P-09: el progreso NO es `@State` de la raíz — vive en `PullProgressModel`
-    // (`@Observable`). Solo `PullIndicator` / `PullSyncHint` lo leen, así el árbol grande
+    // (`@Observable`). Solo `PullSyncHint` lo lee, así el árbol grande
     // (héroe + tiles) no se reconstruye a 60–120 Hz durante el overscroll.
 
     /// Progreso del tirón (0→1) en un modelo observable aislado. Se queda en 0 bajo Reduce Motion.
@@ -188,12 +192,15 @@ struct TodayView: View {
     // FER-1045 «Hoy Liquid»: la ventana de la sesión de sueño de anoche (horas locales
     // 0–24) para el dial-sello; nil = sin sesión → el dial solo marca la hora.
     @State private var liquidNight: (start: Double, end: Double)? = nil
+    /// FER-73 · H13: ¿hubo una sesión de sueño de VERDAD (≥ 3 h) que TERMINÓ HOY? Es el sello
+    /// que cierra la ventana nocturna y marca «noche registrada» para la máquina T3. Antes se
+    /// reutilizaba `liquidNight` (la sesión más tardía desde ayer al mediodía — pensada para el
+    /// dial): una siesta de ayer por la tarde cerraba la ventana a las 8 de la mañana y la
+    /// franja saltaba a «Pending sync»/«Night recorded…» en vez de «Reading your night…».
+    @State private var nocheTerminaHoy = false
     // Pausa las animaciones ambientales Liquid (drift/pulsos) cuando Hoy no está activo.
     @Environment(\.scenePhase) private var scenePhase
 
-
-    // Support sheet (donate + contact) — always reachable from the home toolbar.
-    @State private var showingSupport = false
 
     // Metric-info sheet — tapping any Key Metrics row presents this.
     @State private var metricDetail: MetricInfo? = nil
@@ -305,6 +312,7 @@ struct TodayView: View {
                 let to = Int(Date().timeIntervalSince1970)
                 let sessions = await repo.sleepSessions(from: from, to: to)
                 liquidNight = Self.nightWindow(sessions: sessions, calendar: calendar)
+                nocheTerminaHoy = Self.hayNocheQueTerminaHoy(sessions: sessions, calendar: calendar)
             }
             // «Hoy» nunca pedía la carga del strap por su cuenta: dependía del sondeo del keep-alive
             // (cada ~60 s, y SUSPENDIDO durante el offload), así que tras el sync matutino la batería
@@ -312,32 +320,10 @@ struct TodayView: View {
             // enlace queda libre —recién conectado o terminó el backfill—, respetando no picar al strap
             // a mitad del offload (la WHOOP 4.0 la trae por GET_BATTERY_LEVEL, el mismo comando que ya
             // usan el keep-alive y Live; no se agrega ninguno nuevo al set seguro).
-            .toolbar {
-                ToolbarItem {
-                    Button { showingSupport = true } label: {
-                        // Rojo del TEMA, no `StrandPalette.metricRose` (token del sistema oscuro #FF4F73,
-                        // ≈2.7:1 sobre el papel claro de Hoy → falla 3:1 no-textual y rompe la disciplina
-                        // «Instrumento»). `theme.critical` es un rojo contenido theme-native (4.9:1) que
-                        // sigue leyéndose como corazón. (FER-273)
-                        StrandIcon.heart.image
-                            .foregroundStyle(theme.critical)
-                            .attentionWiggle(period: 4)
-                    }
-                    // Sin `.help()`: en iOS no dibuja nada (es el tooltip de macOS) pero SwiftUI igual
-                    // corre la cadena por `Text.assertUnstyled` → `AttributedString.init(markdown:)`
-                    // en CADA evaluación del body — parseo de markdown por pasada de layout, a cambio
-                    // de nada. `accessibilityLabel` es lo que de verdad expone el botón en iOS.
-                    .accessibilityLabel("Support Cénit · donate or get in touch")
-                }
-            }
-            .overlay {
-                if showingSupport {
-                    SupportModalOverlay(isPresented: $showingSupport)
-                }
-            }
-            // FER-38: la aparición del panel de soporte usa el token de fade del DS (antes una curva
-            // `easeOut(0.18)` suelta) y ahora respeta Reduce Motion vía `StrandMotion.gated`.
-            .animation(StrandMotion.gated(StrandMotion.fade, reduceMotion), value: showingSupport)
+            // FER-73 · INT-05: aquí vivía un `ToolbarItem` con el corazón de «Apoya a Cénit» y
+            // su `SupportModalOverlay`. Era un control MUERTO: Hoy no vive dentro de un
+            // `NavigationStack` (RootTabView monta `TodayView()` pelón), así que el toolbar
+            // nunca se pintaba y el overlay era inalcanzable. El soporte vive en Ajustes.
             // The summary sheet. On dismiss, run any pending "Ver más" hand-off (FER-251): presenting the
             // rich detail only AFTER this one is gone avoids SwiftUI swallowing a sheet-over-sheet present.
             // A plain swipe-to-close leaves `pendingSeeMore` nil, so nothing extra happens.
@@ -563,6 +549,10 @@ struct TodayView: View {
             present = { metricSpec = .steps(freshSteps) }
         case "spo2":
             present = { metricSpec = .spo2(resolveMeasured(todayOnly: true) { $0.spo2Pct }?.value) }
+        case "resp_rate":
+            // FER-73 · HJ-14/INT-03: Breathing era la ÚNICA vital sin «Ver más» aunque su
+            // detalle ya existe (Cuerpo lo abre con el mismo spec) y el loader vivía aquí.
+            present = { metricSpec = .respiratory(resolveMeasured(todayOnly: true) { $0.respRateBpm }?.value) }
         case "skin_temp":
             // Skin temp has its own rich Detalle (`SkinTempDetailScreen`, the SAME Cuerpo opens), not the
             // generic `MetricDetailScreen`, so «Ver más» presents its dedicated item. (FER-763)
@@ -623,7 +613,9 @@ struct TodayView: View {
                 .frame(height: LiquidSpace.s1400)
                 .ignoresSafeArea(edges: .top)
         }
-        .environment(\.liquidAmbientPaused, scenePhase != .active)
+        // FER-73 · M8: el héroe (60 fps) y los ~10 relojes de la Matriz también se pausan
+        // cuando una hoja los tapa — nadie los ve y seguían pintando bajo el modal.
+        .environment(\.liquidAmbientPaused, scenePhase != .active || hojaPresentada)
         .instrumentoTheme(.base)
         // El color scheme (y con él la barra de estado: Hoy = papel claro → tinta oscura) se decide
         // en ContentView según la pestaña activa, porque `preferredColorScheme` lo resuelve el
@@ -689,6 +681,13 @@ struct TodayView: View {
             }
             .preferredColorScheme(.light)
         }
+        // FER-61 · El manual «Tu contexto»: el hogar único del «no deciden tu día».
+        .sheet(isPresented: $showContextoManual) {
+            LiquidMetricSheet(tono: LiquidColor.tinta700, detent: .porContenido) {
+                HojaContexto()
+            }
+            .preferredColorScheme(.light)
+        }
         // La hoja del eje autonómico: el desglose de sus tres señales.
         .sheet(isPresented: $showAutonomicoHoja) {
             LiquidMetricSheet(tono: liquidAutonomicoTono, detent: .porContenido) {
@@ -719,10 +718,13 @@ struct TodayView: View {
                     VStack(alignment: .leading, spacing: CenitMetrics.space2) {
                         headerBlock
                         HealthAlertBanner()
-                        // La franja de carga se conserva: alguien puede registrar FUERZA sin
-                        // conceder Salud, y ese dato es suyo — borrarlo por estar en el estado
-                        // «vacío» sería esconderle algo que sí midió.
-                        if let trainingLoad {
+                        // La franja de carga se conserva SOLO con carga REAL: alguien puede
+                        // registrar FUERZA sin conceder Salud, y ese dato es suyo — borrarlo por
+                        // estar en el estado «vacío» sería esconderle algo que sí midió. Pero
+                        // `trainingLoad` nunca es nil (con acwr == nil pinta «calibrando» sin
+                        // punto): en el primer arranque salía «LOAD · CALIBRATING ··» sobre el
+                        // orbe dormido — ruido, no un dato (pregunta del dueño 2026-08-15).
+                        if let trainingLoad, trainingLoad.acwr != nil {
                             TrainingLoadStrip(model: trainingLoad, theme: theme) {
                                 trainingLoadItem = makeTrainingLoadItem(trainingLoad)
                             }
@@ -807,9 +809,16 @@ struct TodayView: View {
     @MainActor
     private func pullToSync() async {
         syncHaptic += 1                       // dispara la háptica `.medium` al provocar el gesto
-        // Ola 2: no band — pull-to-refresh only re-runs local recompute (Apple Health is passive).
-        try? await Task.sleep(for: .seconds(1.2))
-        await repo.refresh()
+        // Dueño 2026-08-15: el jalón era TEATRO — un sleep de 1.2 s + releer la DB local, sin
+        // tocar Apple Salud (vestigio de la banda). Ahora hace lo que la franja «pull down to
+        // sync» promete: un sync MANUAL real del bridge (trae noches nuevas de HealthKit, misma
+        // ruta que «Sync now» de Data Sources; idempotente, y termina refrescando el dashboard).
+        // Sin permiso, `sync` sale temprano → cae al recálculo local, que sigue siendo honesto.
+        if health.auth == .authorized {
+            await health.sync()
+        } else {
+            await repo.refresh()
+        }
     }
 
     /// Procesa el overscroll del tope del scroll (FER-222) para el pull-to-refresh propio. `overscroll` > 0
@@ -876,10 +885,9 @@ struct TodayView: View {
         return SleepWindow(bedtime: s.bedtime, wake: s.wake)
     }
 
-    /// El header del handoff «Hoy» 2026-07 (FER-709): fecha · batería de la banda · BPM vivo tocable ·
-    /// sello del dial (la firma de 24 h, que también es el spinner del pull-to-refresh). Debajo, en
-    /// reposo, la línea de frescura «última lectura hace N min»; sincronizando, «Sincronizando con tu
-    /// banda…». FER-222: la acción accesible «Sincronizar» reinstala para VoiceOver el gesto de jalar.
+    /// El header del handoff «Hoy» (FER-709): la fecha corta. La línea de texto de sync heredada de la
+    /// banda se retiró (FER-65) — el sello del dial es la señal visual del pull-to-refresh. FER-222: la
+    /// acción accesible «Sincronizar» reinstala para VoiceOver el gesto de jalar.
     private var headerBlock: some View {
         VStack(alignment: .leading, spacing: CenitMetrics.space1) {
             HStack(alignment: .center, spacing: CenitMetrics.space2) {
@@ -889,7 +897,6 @@ struct TodayView: View {
                     .foregroundStyle(theme.inkSecondary)
                 Spacer(minLength: CenitMetrics.space2)
             }
-            syncStatusLine
         }
         .accessibilityElement(children: .combine)
         .accessibilityAction(named: Text("Sync")) { triggerPullSync() }
@@ -900,17 +907,6 @@ struct TodayView: View {
 
     /// El header cuando la banda se desconectó de día (FER-711): en lugar del BPM vivo, un punto gris
     /// quieto + «SIN SEÑAL». El punto NO late (no hay señal), a diferencia del BPM.
-
-    /// La línea de estado bajo el header: «Sincronizando con tu banda…» durante el sync (con el conteo
-    /// de paquetes si ya fluyen), o la frescura «última lectura hace N min» en reposo. Nada sin banda vista.
-    // TODO(/pm): la línea de frescura "última lectura hace N min" perdió su fuente (banda); ¿equivalente con Apple Health?
-    @ViewBuilder private var syncStatusLine: some View {
-        if isSyncing {
-            Text("Syncing…")
-                .font(StrandFont.caption).monospacedDigit()
-                .foregroundStyle(theme.verdict)
-        }
-    }
 
 
 
@@ -971,8 +967,15 @@ struct TodayView: View {
         #if DEBUG
         if liquidDemo { return LiquidHoyBuilder.actaEjemplo }
         #endif
+        // FER-73: el acta ve el MISMO contexto que el héroe y la franja (nada de sentenciar
+        // «no llegó nada anoche» mientras la pantalla dice «Reading your night…»).
         return LiquidHoyBuilder.acta(prep: repo.todayPreparedness,
-                                     healthConnected: health.auth == .authorized)
+                                     healthConnected: saludConectada,
+                                     verdictPending: repo.todayPreparedness == nil && !repo.fullyLoaded,
+                                     causaT3: {
+                                         if case .t3SinVeredicto(let c) = plantillaActual { return c }
+                                         return nil
+                                     }())
     }
 
     private var liquidActaTono: Color {
@@ -989,7 +992,7 @@ struct TodayView: View {
         if liquidDemo { return LiquidHoyBuilder.autonomicoEjemplo }
         #endif
         return LiquidHoyBuilder.autonomico(prep: repo.todayPreparedness,
-                                           healthConnected: health.auth == .authorized)
+                                           healthConnected: saludConectada)
     }
 
     private var liquidAutonomicoTono: Color {
@@ -1017,7 +1020,6 @@ struct TodayView: View {
         let mInputs = liquidMatrizInputs()
         VStack(alignment: .leading, spacing: CenitMetrics.space1) {
             Group {
-                syncStatusLine
                 HealthAlertBanner()
             }
             // Mismo margen que la Matriz (auditoría de simetría: s550 dejaba la
@@ -1062,7 +1064,13 @@ struct TodayView: View {
             HoyMatrizHost(
                 matriz: LiquidHoyBuilder.matriz(mInputs),
                 plantilla: plantillaActual,
-                onTapSeccion: { abrirHojaCaras($0) })
+                // «Desconectada» = permiso revocado, no un dispositivo sin HealthKit
+                // (`.unavailable`). MISMA semántica que la pista «conecta Apple Salud» (l. 460).
+                saludDesconectada: !saludConectada && health.auth != .unavailable,
+                onTapSeccion: { abrirHojaCaras($0) },
+                // C6: el aviso de desconexión abre Data Sources — la misma ruta que la puerta
+                // «Connect Health» del héroe (una causa, una acción).
+                onTapAvisoSalud: { showDataSources = true })
             // /inject: la leyenda de origen se retiró de la superficie Liquid a pedido del
             // dueño (los puntos de origen por tile se quedan).
         }
@@ -1096,17 +1104,33 @@ struct TodayView: View {
     private var plantillaActual: LiquidHoyBuilder.Plantilla {
         let cal = Calendar.current
         let now = Date()
-        // Sesión que termina hoy: si hay ventana de noche ya resuelta para el dial, cierra.
-        let sesionFinHoy: Date? = liquidNight.map { _ in now }
+        // Sesión de sueño (≥ 3 h) que TERMINÓ hoy: cierra la ventana (FER-73 · H13: ya no
+        // cuenta cualquier sesión desde ayer al mediodía — una siesta no es la noche).
+        let sesionFinHoy: Date? = nocheTerminaHoy ? now : nil
         let ventana = LiquidHoyBuilder.VentanaNocturna.evaluar(
             now: now, calendar: cal, sesionFinHoy: sesionFinHoy)
         let hayNoche = (resolveMeasured(todayOnly: true, { $0.totalSleepMin }) != nil)
-            || liquidNight != nil
+            || nocheTerminaHoy
+        // FER-73 · H12/H20: la franja sabe si la base se está formando (el héroe ya lo dice) y
+        // si el sync corre ahora mismo (`lastSync` no persiste: nil en cada arranque en frío).
+        let prep = repo.todayPreparedness
+        let calibrando: Bool = {
+            guard let prep, prep.verdict == .lowSignal, prep.maturity == .calibrating else { return false }
+            let (noche, total) = LiquidHoyBuilder.calibracionConteo(nights: prep.autonomicNights)
+            return noche < total
+        }()
+        var lastSync = health.lastSync
+        #if DEBUG
+        // Con fixture no hay HealthKit que sincronizar: el import es «fresco» por definición
+        // (igual que `saludConectada`), si no la franja diría «Pending sync» sobre datos sembrados.
+        if ScreenshotFixtures.activeState() != nil { lastSync = now }
+        #endif
         let causa = LiquidHoyBuilder.causaT3(
-            ventana: ventana, lastSync: health.lastSync, hayNocheRegistrada: hayNoche)
+            ventana: ventana, lastSync: lastSync, hayNocheRegistrada: hayNoche,
+            syncing: health.syncing, calibrando: calibrando)
         return LiquidHoyBuilder.plantilla(
             prep: repo.todayPreparedness,
-            healthConnected: health.auth == .authorized,
+            healthConnected: saludConectada,
             hasAnySource: !noSources,
             silencioT4: silencioSaludActual,
             causaT3: causa)
@@ -1165,6 +1189,9 @@ struct TodayView: View {
         case "manual.deciden":
             // FER-54: el manual del modelo — el rótulo «Decide your day» tocado.
             showDecideManual = true
+        case "manual.contexto":
+            // FER-61: el manual «Tu contexto» — el rótulo «Context» tocado.
+            showContextoManual = true
         case "autonomico":
             openLiquidSenal("autonomico")
         default:
@@ -1176,7 +1203,7 @@ struct TodayView: View {
     /// el héroe actuales (paridad por construcción; el builder solo mapea/formatea).
     private func liquidInputs() -> LiquidHoyBuilder.Inputs {
         var inputs = LiquidHoyBuilder.Inputs()
-        inputs.healthConnected = health.auth == .authorized
+        inputs.healthConnected = saludConectada
         inputs.preparedness = repo.todayPreparedness
         // El veredicto SOLO se calcula en el refresh completo (`Repository`, para no puntuar la FC
         // despierta en el primer pintado y desdecirse segundos después). Mientras eso llega, el héroe
@@ -1249,7 +1276,9 @@ struct TodayView: View {
         case "resp":
             metricDetail = .respiratory(resolveMeasured(todayOnly: true) { $0.respRateBpm }?.value)
         case "stress":
-            metricDetail = .stress(stress?.score)
+            // FER-73 · H21: si el ancla del estrés NO es hoy, la celda muestra «—» y la hoja
+            // recibía el score de AYER — dos verdades distintas para el mismo toque.
+            metricDetail = .stress(stress?.anchorIsToday == true ? stress?.score : nil)
         default:
             break
         }
@@ -1272,6 +1301,16 @@ struct TodayView: View {
         }
     }
 
+    /// FER-73 · H13: ¿alguna sesión de la ventana consultada dura ≥ 3 h y termina HOY? Pura y
+    /// testeable: es el sello de «noche registrada» de la máquina T3, no el dial.
+    nonisolated static func hayNocheQueTerminaHoy(sessions: [CachedSleepSession],
+                                                  calendar: Calendar, now: Date = Date()) -> Bool {
+        sessions.contains { s in
+            let fin = Date(timeIntervalSince1970: TimeInterval(s.endTs))
+            return s.endTs - s.startTs >= 3 * 3600 && calendar.isDate(fin, inSameDayAs: now)
+        }
+    }
+
     /// La ventana de la noche para el dial: la sesión que terminó más tarde en la ventana
     /// consultada, en horas locales 0–24 (medianoche arriba del dial).
     private nonisolated static func nightWindow(sessions: [CachedSleepSession],
@@ -1287,10 +1326,21 @@ struct TodayView: View {
 
     /// El instrumento está sincronizando: offload en curso, su puente async (FER-480 `draining`) o el
     /// pull-to-sync manual. Fuente única para las señales del héroe (estado, dial, numeral, pista).
-    /// La pista del pull (FER-293) y el sello armado viven en `PullSyncHint` / `PullIndicator`
-    /// (FER-972 P-09): leen el progreso en su propio body para no invalidar Hoy por frame.
-    // TODO(/pm): sin banda, "sincronizando" solo refleja el pull-to-refresh del usuario, no un fetch real de Apple Health en curso.
-    private var isSyncing: Bool { pullSyncing }
+    /// La pista del pull (FER-293) vive en `PullSyncHint` (FER-972 P-09): lee el progreso en
+    /// su propio body para no invalidar Hoy por frame.
+    // `isSyncing` = el pull-to-refresh del usuario en curso (FER-222); alimenta el giro del sello del
+    // dial. No refleja un fetch de Apple Health en background (HealthKit sincroniza solo). El texto
+    // «Sincronizando…» que colgaba de aquí, heredado de la banda, se retiró en FER-65 — el dial es la señal.
+    private var isSyncing: Bool { pullSyncing || health.syncing }
+
+    /// ¿Hay una hoja encima de Hoy? (FER-73 · M8 — pausa el ambiente que nadie está viendo.)
+    private var hojaPresentada: Bool {
+        metricDetail != nil || sleepDetail != nil || strainDetail != nil
+            || stressDetail != nil || skinTempDetail != nil || metricSpec != nil
+            || trainingLoadItem != nil
+            || showDataSources || showVeredictoActa || showGuardianHoja
+            || showDecideManual || showContextoManual || showAutonomicoHoja
+    }
 
     /// Cero fuentes: ni strap visto, ni datos de Apple Health, ni permiso de Health concedido. (FER-364)
     /// Decide entre las DOS superficies de Hoy: la Liquid con datos y el orbe dormido sin ellos.

@@ -52,6 +52,10 @@ public enum LiquidMotion {
     public static let intervaloAmbiente: Double = 1.0 / 20.0
     /// 60 fps — simulaciones PLENAS (partículas del orbe, siembra de motas). (FER-31)
     public static let intervaloPleno: Double = 1.0 / 60.0
+    /// 12 fps — los SELLOS chicos de la Matriz (OrbeVivo, SelloGuardianVivo): un cuerpo de
+    /// pocos pt no delata más cuadros y son varios a la vez. Nombrado (FER-audit) en vez del
+    /// `1.0/12` suelto que vivía fuera del contrato de movimiento.
+    public static let intervaloSello: Double = 1.0 / 12.0
 
     // MARK: Easings
 
@@ -249,7 +253,10 @@ public enum LiquidEntradaMotion {
     /// Cuánto dura la coreografía completa: llegada → respiro → ascenso → teñido.
     public static let duracionTotal: Double = 2.8
     /// El fundido con el que la entrada se retira y descubre la app ya construida.
-    public static let salida: Double = 0.35
+    /// FER-73 (dueño): 0.35 → 0.5. El relevo pasa con el orbe YA parado en su destino, y medio
+    /// segundo de cruce hace que los dos dibujos (el de la entrada y el del héroe) se lean como
+    /// el mismo objeto en vez de un corte.
+    public static let salida: Double = 0.5
     /// Con «Reducir movimiento» no hay viaje: el orbe aparece asentado y teñido y solo se
     /// sostiene lo justo para que el relevo no lea como un parpadeo.
     public static let duracionReduce: Double = 0.45
