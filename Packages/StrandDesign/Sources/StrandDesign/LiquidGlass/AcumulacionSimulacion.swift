@@ -51,16 +51,24 @@ public enum AcumulacionSimulacion {
     // MARK: Guion (tiempos)
 
     public enum Guion {
-        /// Lo que tarda UNA mota en viajar de donde flotaba a su ranura.
-        public static let viaje: TimeInterval = 0.9
-        /// Escalón máximo entre motas que arrancan juntas, repartido por hash.
-        public static let escalon: TimeInterval = 0.35
+        /// Ancho, en densidad, del frente de llegada: la franja donde una mota está a medio camino
+        /// entre su deriva y su ranura. Sustituye a `viaje`/`escalon`, que se medían contra el reloj
+        /// de pared y por eso no se pintaban nunca. Es también la fracción del orbe que está en
+        /// vuelo en cualquier instante: 0.05 → una de cada veinte.
+        public static let anchoFrente: Double = 0.05
         /// Alfa de una mota en vuelo antes de empezar a materializarse.
         public static let alfaPiso: Double = 0.30
         /// La fracción FINAL del viaje donde la mota sube de `alfaPiso` a 1.
         public static let tramoMaterializa: Double = 0.40
         /// Vueltas por segundo del orbe ya formado (lenta: respira, no gira como ruleta).
+        /// 0.055 × 3600 = 198 vueltas EXACTAS: por eso el reloj de la vista puede envolverse cada
+        /// hora sin que la rotación dé un brinco.
         public static let rotacion: Double = 0.055
+        /// Cuánto se aleja y se acerca una mota de su ranura durante `.convergencia`, en fracción
+        /// del radio: la materia ya cayó hacia la esfera pero todavía no cuaja.
+        public static let respiroConvergencia: Double = 0.10
+        /// Vueltas por segundo de ese respiro.
+        public static let respiroFrecuencia: Double = 0.28
         /// Techo de densidad de `.sinRitmoEnReposo`: hay materia, nunca cuaja.
         public static let techoSinCuajar: Double = 0.34
     }
@@ -112,6 +120,17 @@ public enum AcumulacionSimulacion {
 
     /// El lugar de la mota `i` en la fila de encendido, en 0…1. Hasheado a propósito (ver cabecera).
     public static func rango(_ i: Int) -> Double { hash01(i, sal: 78.233) }
+
+    /// El ancho del frente para ESTA mota: `Guion.anchoFrente`, salvo para la cola de la fila.
+    /// `corte` no puede pasar de 1, así que a quien enciende en 0.98 le faltaría densidad que ya no
+    /// existe para terminar de llegar: el orbe «completo» se vería poroso para siempre. Estrechar
+    /// el frente en el último tramo las hace aterrizar más rápido —que es justo lo que el ojo
+    /// espera del final— y deja intacto el reparto de la fila, que es lo que codifica la evidencia.
+    /// Comprimir los umbrales en vez del frente habría latcheado el 57 % del orbe con la evidencia
+    /// del 50 %: barato de escribir, y una mentira sobre cuántas noches hay.
+    public static func frente(_ i: Int) -> Double {
+        max(0.000_001, min(Guion.anchoFrente, 1 - rango(i)))
+    }
 
     /// La densidad que la evidencia justifica. `noches >= umbral` → 1.
     public static func densidadHonesta(noches: Int, umbral: Int) -> Double {
@@ -166,15 +185,17 @@ public enum AcumulacionSimulacion {
         let destino = destinoLatcheada(i, t: t, modo: modo, centro: centro, radio: radio,
                                        centroB: centroB, reduce: reduce)
 
-        // El progreso del viaje. Con reduce no hay viaje: ya llegó.
-        let avance: Double = {
-            guard !reduce else { return 1 }
-            let retardo = hash01(i, sal: 41.9) * Guion.escalon
-            // `t` corre desde que la mota entró a la fila; sin estado por mota, se aproxima con
-            // el tiempo global: lo que importa visualmente es el escalón, no el origen exacto.
-            let u = (t - retardo) / Guion.viaje
-            return EntradaSimulacion.desacelera(min(1, max(0, u)))
-        }()
+        // El progreso del viaje. NO se mide contra el reloj, sino contra cuánto pasó el frente de
+        // densidad por encima del umbral de ESTA mota. Medirlo contra `t` era mentira dos veces:
+        // la vista pasa el reloj de pared, así que `t` ya llegaba enorme y el viaje nunca se
+        // pintaba (las motas teletransportaban a la esfera en un cuadro); y en cada frontera de
+        // hora `t` volvía a cero y las 300 motas replayeaban el vuelo a la vez — el orbe se
+        // desarmaba y se rearmaba solo. Contra la densidad, el viaje se pinta siempre y el escalón
+        // entre motas sale gratis del hash: cada una cruza el frente en su turno.
+        // Con reduce no hay viaje: ya llegó.
+        let avance: Double = reduce
+            ? 1
+            : EntradaSimulacion.desacelera(min(1, max(0, (corte - rango(i)) / frente(i))))
 
         let origen = puntoLibre(i, t: reduce ? 0 : t, lienzo: lienzo)
         let punto = CGPoint(x: origen.x + (destino.punto.x - origen.x) * avance,
@@ -209,6 +230,10 @@ public enum AcumulacionSimulacion {
                                          centro: CGPoint, radio: CGFloat,
                                          centroB: CGPoint?, reduce: Bool)
     -> (punto: CGPoint, profundidad: Double) {
+        // Cuánto se separa la mota de su ranura en la esfera. 1 = posada; solo `.convergencia` lo
+        // mueve (ver su caso).
+        var pulso: Double = 1
+
         switch modo {
         case .descomposicion:
             // Tres pozos, uno por eje: el número se desarma delante de ti.
@@ -231,6 +256,17 @@ public enum AcumulacionSimulacion {
             let r = radio * 0.42 * CGFloat(0.35 + 0.65 * abs(0.5 - s) * 2)
             return (CGPoint(x: cx + cos(ang) * r, y: cy + sin(ang) * r * 0.8), 0.55)
 
+        case .convergencia:
+            // La esfera existe, pero la materia todavía cae hacia ella: cada mota orbita su ranura
+            // a un radio que respira y no acaba de cuajar. Al revelar, `.dentro` deja el radio en 1
+            // y la esfera cuaja: ese aquietamiento ES el gesto físico del veredicto llegando, y sin
+            // él el acto 3 y el acto 4 pintaban el mismo cuadro bit a bit. Misma proyección de
+            // Fibonacci (abajo), radio × pulso; la fase es hash del índice, así que no hay estado
+            // por mota ni `Date()` — el respiro sigue siendo portable al shader.
+            let fase = hash01(i, sal: 23.1) * 2 * .pi
+            pulso = 1 + Guion.respiroConvergencia
+                * sin(fase + (reduce ? 0 : t * Guion.respiroFrecuencia * 2 * .pi))
+
         default:
             break
         }
@@ -241,8 +277,8 @@ public enum AcumulacionSimulacion {
         let cr = cos(rot), sr = sin(rot)
         let x = d.x * cr - d.z * sr
         let z = d.x * sr + d.z * cr
-        return (CGPoint(x: centro.x + CGFloat(x) * radio,
-                        y: centro.y + CGFloat(d.y) * radio * 0.97),
+        return (CGPoint(x: centro.x + CGFloat(x * pulso) * radio,
+                        y: centro.y + CGFloat(d.y * pulso) * radio * 0.97),
                 (z + 1) / 2)
     }
 

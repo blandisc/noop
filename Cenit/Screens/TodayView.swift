@@ -200,6 +200,11 @@ struct TodayView: View {
     @State private var nocheTerminaHoy = false
     // Pausa las animaciones ambientales Liquid (drift/pulsos) cuando Hoy no está activo.
     @Environment(\.scenePhase) private var scenePhase
+    /// FER-111: ¿el onboarding sigue encima? `ContentView` monta `RootTabView` y el onboarding como
+    /// HERMANOS de un `ZStack`, así que Hoy se pinta completo debajo de una capa opaca. Se lee aquí
+    /// —y no allá— porque el `.environment(\.liquidAmbientPaused)` de esta pantalla sobrescribe
+    /// cualquier valor que venga de arriba para todo su subárbol.
+    @AppStorage("noop.onboarded") private var onboarded = false
 
 
     // Metric-info sheet — tapping any Key Metrics row presents this.
@@ -616,7 +621,9 @@ struct TodayView: View {
         }
         // FER-73 · M8: el héroe (60 fps) y los ~10 relojes de la Matriz también se pausan
         // cuando una hoja los tapa — nadie los ve y seguían pintando bajo el modal.
-        .environment(\.liquidAmbientPaused, scenePhase != .active || hojaPresentada)
+        // FER-111: y cuando el onboarding los tapa, que es el mismo bug en el minuto MÁS caro
+        // (primer arranque, HealthKit machacando SQLite) y durando minutos, no segundos.
+        .environment(\.liquidAmbientPaused, scenePhase != .active || hojaPresentada || !onboarded)
         .instrumentoTheme(.base)
         // El color scheme (y con él la barra de estado: Hoy = papel claro → tinta oscura) se decide
         // en ContentView según la pestaña activa, porque `preferredColorScheme` lo resuelve el

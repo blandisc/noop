@@ -1,9 +1,9 @@
 import SwiftUI
 import StrandDesign
 
-// MARK: - Piezas del onboarding en seis actos (FER-109)
+// MARK: - Piezas del onboarding en siete actos (FER-109 · FER-113)
 //
-// El vocabulario visual compartido por los seis actos + el copy es-MX en un solo lugar.
+// El vocabulario visual compartido por los siete actos + el copy es-MX en un solo lugar.
 //
 // Tres reglas del acto que viven aquí, y no en cada pantalla, para que no puedan divergir:
 //
@@ -49,6 +49,11 @@ enum OnbGuion {
     static let silencio: Double = 0.30
     static let palabra: Double = LiquidEcosistemaMotion.palabraDur
     static let esperaInfo: Double = 0.40
+    /// El aire ENTRE la ⓘ y el resto del acto. Sin él los dos beats caían en el mismo cuadro:
+    /// `mostrarInfo` y `mostrarResto` se fijaban en el mismo runloop, así que los 400 ms que
+    /// `esperaInfo` compró para que la ⓘ llegara SOLA se gastaban en nada — entraba con el
+    /// titular, el subtítulo y el rótulo que la señala, y el gesto se perdía en el montón.
+    static let esperaResto: Double = 0.35
 
     /// El rótulo que enseña la ⓘ se va solo (o al primer toque).
     static let rotulo: Double = 4
@@ -89,10 +94,15 @@ enum OnbCopy {
         String(localized: "onb.2.grupo.sostiene", defaultValue: "The one that holds it all up")
     }
     static var permisoGrupoVotan: String {
-        String(localized: "onb.2.grupo.votan", defaultValue: "The ones that vote with you")
+        String(localized: "onb.2.grupo.votan", defaultValue: "The other vote")
     }
-    static var permisoGrupoVigilan: String {
-        String(localized: "onb.2.grupo.vigilan", defaultValue: "The ones that watch and don't vote")
+    /// El centinela: temperatura y respiración cuentan UN voto, y solo el día que se salen juntas
+    /// (`Preparedness`: `sentinelOut = tempHigh && respHigh`). Por eso son un grupo, no dos filas.
+    static var permisoGrupoPar: String {
+        String(localized: "onb.2.grupo.par", defaultValue: "The two that only count together")
+    }
+    static var permisoGrupoFuera: String {
+        String(localized: "onb.2.grupo.fuera", defaultValue: "The one that no longer comes in")
     }
     static var permisoRhr: String {
         String(localized: "onb.2.rhr.nombre", defaultValue: "Resting heart rate")
@@ -103,14 +113,14 @@ enum OnbCopy {
     static var permisoSueno: String { String(localized: "onb.2.sueno.nombre", defaultValue: "Sleep") }
     static var permisoSuenoGlosa: String {
         String(localized: "onb.2.sueno.glosa",
-               defaultValue: "How much you slept against what your body asks for, and how even it was.")
+               defaultValue: "How much you slept against the hours a body asks for, and how even it was.")
     }
     static var permisoTemp: String {
         String(localized: "onb.2.temp.nombre", defaultValue: "Skin temperature")
     }
     static var permisoTempGlosa: String {
         String(localized: "onb.2.temp.glosa",
-               defaultValue: "It rises when something is brewing. Context, not a diagnosis.")
+               defaultValue: "It rises when something is brewing. On its own it doesn't count.")
     }
     static var permisoVfcNoche: String {
         String(localized: "onb.2.vfcnoche.nombre", defaultValue: "Night variability")
@@ -122,7 +132,12 @@ enum OnbCopy {
     static var permisoResp: String { String(localized: "onb.2.resp.nombre", defaultValue: "Breathing") }
     static var permisoRespGlosa: String {
         String(localized: "onb.2.resp.glosa",
-               defaultValue: "It warns you if you're coming down with something. It doesn't move the verdict.")
+               defaultValue: "It speeds up when something is coming on. On its own it doesn't count either.")
+    }
+    /// El pie del par: lo único que convierte dos filas en un voto.
+    static var permisoParPie: String {
+        String(localized: "onb.2.par.pie",
+               defaultValue: "The day both step out together, they add one vote. Either one on its own stays a heads-up.")
     }
     static var permisoVfcDia: String {
         String(localized: "onb.2.vfcdia.nombre", defaultValue: "All-day variability")
@@ -145,9 +160,12 @@ enum OnbCopy {
         String(localized: "onb.3.titular", defaultValue: "I'm reading your last 180 days")
     }
     static var conexionDias: String { String(localized: "onb.3.dias", defaultValue: "days read") }
+    /// El sueño NO se compara contra tu historia: su eje mide contra un PISO poblacional fijo
+    /// (`Preparedness`: `sleepNeedFloorMin`, `orientedZ: nil`). Decir «tus señales contra tu propio
+    /// rango» a secas era falso para la mitad del veredicto.
     static var conexionRegla: String {
         String(localized: "onb.3.regla",
-               defaultValue: "Every morning I compare your signals against your own range, never against anybody else's average. If none of them steps out, your day opens in range.")
+               defaultValue: "Every morning I compare your heart against your own range, the one that comes out of your nights. Your sleep I measure differently: against the hours any body asks for.")
     }
     static var conexionCalculando: String {
         String(localized: "onb.3.calculando", defaultValue: "Computing your baseline")
@@ -208,6 +226,15 @@ enum OnbCopy {
         String(localized: "onb.4.sinfc.1",
                defaultValue: "I can't find your resting heart rate. Without it I can't give you the morning reading: it's the signal the whole judgement stands on.")
     }
+    /// La causa POSIBLE, nombrada. La rama más probable de `.sinRitmoEnReposo` es el permiso
+    /// parcial —lo que el acto 2 advirtió: «si me das solo una parte, me quedo mudo»—, y el acto
+    /// solo ofrecía Entrenar: mandaba a la mitad de la app que no vino a buscar a alguien a quien
+    /// un toque en Salud le arreglaría todo. HealthKit no revela el permiso de lectura, así que
+    /// esto se dice como sospecha («casi siempre»), nunca como diagnóstico.
+    static var sinFcCausa: String {
+        String(localized: "onb.4.sinfc.causa",
+               defaultValue: "Almost always it's one of two things: the heart permission stayed off in Health, or you don't sleep with a watch on yet.")
+    }
     static var sinFcCuerpo2: String {
         String(localized: "onb.4.sinfc.2",
                defaultValue: "If you have an Apple Watch, sleep with it and in 4 nights your first reading shows up. If you don't have one, I'd rather tell you today than leave you waiting.")
@@ -231,50 +258,111 @@ enum OnbCopy {
         String(localized: "onb.4.sindatos.2",
                defaultValue: "Open the Health app, find Cénit in your list of apps and turn the signals on.")
     }
-    static var perfilOverline: String {
-        String(localized: "onb.4.perfil.overline", defaultValue: "For your zones and your baseline")
-    }
-    /// `%lld años · %@ · %@` — edad · sexo · peso.
-    static func perfilValor(edad: Int, sexo: String, peso: String) -> String {
-        String(format: String(localized: "onb.4.perfil.valor", defaultValue: "%lld years · %@ · %@"),
-               edad, sexo, peso)
-    }
-    static var perfilPie: String {
-        String(localized: "onb.4.perfil.pie", defaultValue: "From Apple Health")
-    }
     static var errorSync: String {
         String(localized: "onb.4.error", defaultValue: "Couldn't read Apple Health. Try again.")
     }
 
-    // Acto 5 · El acta
+    // Acto 5 · El perfil (FER-113)
+    //
+    // Sus claves van SIN número (`onb.perfil.*`): este acto se insertó entre el 4 y el acta, y un
+    // prefijo numérico obligaría a renumerar 60 claves ya traducidas cada vez que el guion cambie.
+    /// El overline NO dice «para tu base»: la base del veredicto es tu historial de FC en reposo, y
+    /// estos cuatro datos no la alimentan (`Profile.hrMax = 208 − 0.7·edad`, sin sexo). Lo único
+    /// cierto de los cuatro es que NO salen de tus señales.
+    static var perfilOverline: String {
+        String(localized: "onb.perfil.overline", defaultValue: "What isn't in your signals")
+    }
+    static var perfilTitular: String {
+        String(localized: "onb.perfil.titular", defaultValue: "Now you're what's missing")
+    }
+    /// La rama con veredicto ya dado: el cuerpo puede apoyarse en lo que la persona acaba de leer.
+    /// Nombra los CUATRO campos (el viejo prometía cuatro datos y justificaba tres: la estatura
+    /// nunca se explicaba) y no le atribuye al sexo las zonas, porque la fórmula no lo usa.
+    static var perfilCuerpo: String {
+        String(localized: "onb.perfil.cuerpo",
+               defaultValue: "Your morning word already came out of your heart and your sleep. This is for the other half: your age gives me your heart rate zones, and your sex, your weight and your height fine-tune what you burn when you train.")
+    }
+    /// Y la rama sin palabra (calibrando, sin FC en reposo, sin datos, «Ahora no»): ahí no hay
+    /// lectura a la cual referirse, así que el cuerpo arranca de cero.
+    static var perfilCuerpoSinLectura: String {
+        String(localized: "onb.perfil.cuerpo.sinlectura",
+               defaultValue: "This doesn't come out of your signals, you have to tell me: your age gives me your heart rate zones, and your sex, your weight and your height fine-tune what you burn when you train.")
+    }
+    /// La nota cuando Apple Salud SÍ llenó algo: recupera el «Desde Apple Salud · editable» del
+    /// wizard viejo, que es lo que hace que el prellenado no se sienta impuesto.
+    static var perfilNotaSalud: String {
+        String(localized: "onb.perfil.nota.salud",
+               defaultValue: "What Apple Health already knew is filled in, and it stays editable. Fix anything that looks off: what you set wins.")
+    }
+    /// Y cuando no llenó nada, que es la rama entera por la que este acto existe.
+    static var perfilNotaSinSalud: String {
+        String(localized: "onb.perfil.nota.sinsalud",
+               defaultValue: "Apple Health gave me none of these, so I filled them in myself to get started. Adjust them, or your zones will be an average person's instead of yours.")
+    }
+    /// La tercera nota: quien llegó por «Ahora no» nunca conectó Salud, así que echarle la culpa a
+    /// Apple («no me dio ninguno de estos datos») es cargarle a otro una decisión que fue suya.
+    static var perfilNotaSinPermiso: String {
+        String(localized: "onb.perfil.nota.sinpermiso",
+               defaultValue: "You didn't connect Apple Health, so I set these four myself to get started. Adjust them, or your zones will be an average person's instead of yours.")
+    }
+    /// Mientras el autollenado corre. Los cuatro campos están INERTES hasta que hay sello: el
+    /// `.task` corre después del primer cuadro, así que sin esta puerta un stepper tocado en ese
+    /// instante se lo llevaba el prellenado — y encima el campo quedaba sellado «Desde Apple
+    /// Salud», justo al revés de la doctrina del acto («lo que tú pongas manda»).
+    static var perfilBuscando: String {
+        String(localized: "onb.perfil.buscando",
+               defaultValue: "Looking for what Apple Health already knows about you.")
+    }
+    static var perfilMarcaSalud: String {
+        String(localized: "onb.perfil.marca.salud", defaultValue: "From Apple Health")
+    }
+    static var perfilMarcaTuyo: String {
+        String(localized: "onb.perfil.marca.tuyo", defaultValue: "You set this one")
+    }
+    static var perfilMarcaMio: String {
+        String(localized: "onb.perfil.marca.mio", defaultValue: "I filled this one in")
+    }
+    static var perfilFcMax: String {
+        String(localized: "onb.perfil.fcmax", defaultValue: "Your estimated max heart rate")
+    }
+    static var perfilFcMaxNota: String {
+        String(localized: "onb.perfil.fcmax.nota",
+               defaultValue: "It comes out of your age. If you know your real one from a test, you can set it by hand in Settings.")
+    }
+
+    // Acto 6 · El acta (sus claves conservan el prefijo `onb.5.*` de FER-109)
     static var actaOverline: String {
         String(localized: "onb.5.overline", defaultValue: "What it's made of")
     }
+    /// TRES votos, no «ejes» a secas: el motor cuenta autonómico + sueño + centinela y la palabra
+    /// sale de ese conteo (`Preparedness`: `out == 0 ? .full : (out == 1 ? .caution : .easy)`).
     static var actaIntro: String {
         String(localized: "onb.5.intro",
-               defaultValue: "There is no 0 to 100 score. Your body votes by axis, and the word comes out of the agreement.")
+               defaultValue: "Your body votes three times every morning, and the word comes out of the count. There is no 0 to 100 score.")
     }
     static var actaOverlinePalabras: String {
         String(localized: "onb.5.overline.palabras", defaultValue: "The four words")
     }
+    // Las glosas cuentan VOTOS, no señales: seis señales entran al acta y solo tres votan, así que
+    // «una señal se salió» describía un conteo que el motor nunca hace.
     static var actaGlosaFull: String {
         String(localized: "onb.5.glosa.full",
-               defaultValue: "No signal stepped out of your range. Today your body takes whatever you put on it.")
+               defaultValue: "None of the three votes stepped out. Today your body isn't asking you to ease off.")
     }
     static var actaGlosaCaution: String {
         String(localized: "onb.5.glosa.caution",
-               defaultValue: "One signal stepped out of your range. Train, but don't chase a record.")
+               defaultValue: "One vote stepped out. Train, but don't chase a record.")
     }
     static var actaGlosaEasy: String {
         String(localized: "onb.5.glosa.easy",
-               defaultValue: "Two or more stepped out. Your body is paying for something. Bring the load down.")
+               defaultValue: "Two or all three stepped out. Your body is paying for something. Bring the load down.")
     }
     static var actaGlosaCalibrando: String {
         String(localized: "onb.5.glosa.calibrando",
                defaultValue: "I still have nothing to go on. I'd rather stay quiet than make up a word for you.")
     }
     static var actaOverlineEjes: String {
-        String(localized: "onb.5.overline.ejes", defaultValue: "The axes that vote")
+        String(localized: "onb.5.overline.ejes", defaultValue: "The three votes")
     }
     static var actaEjeAutonomico: String {
         String(localized: "onb.5.eje.autonomico", defaultValue: "Autonomic")
@@ -284,13 +372,15 @@ enum OnbCopy {
                defaultValue: "Your heart and your nervous system. If this one has no reading, there is no verdict.")
     }
     static var actaEjeSueno: String { String(localized: "onb.5.eje.sueno", defaultValue: "Sleep") }
+    /// El único eje que NO se compara contra tu historia: piso poblacional fijo, `orientedZ: nil`.
     static var actaEjeSuenoGlosa: String {
         String(localized: "onb.5.eje.sueno.glosa",
-               defaultValue: "How much you slept against what your body asks for.")
+               defaultValue: "How much you slept against the recommended hours. It's the only signal I don't compare against your history.")
     }
     static var actaEjeTemp: String { String(localized: "onb.5.eje.temp", defaultValue: "Temperature") }
     static var actaEjeTempGlosa: String {
-        String(localized: "onb.5.eje.temp.glosa", defaultValue: "How far it drifted from your own baseline.")
+        String(localized: "onb.5.eje.temp.glosa",
+               defaultValue: "How far it drifted from your own baseline. On its own it doesn't count: it only adds up the day your breathing steps out with it.")
     }
     static var actaOverlineDentro: String {
         String(localized: "onb.5.overline.dentro", defaultValue: "Inside the axis that leads")
@@ -320,7 +410,7 @@ enum OnbCopy {
     static var actaResp: String { String(localized: "onb.5.resp", defaultValue: "Your breathing") }
     static var actaRespGlosa: String {
         String(localized: "onb.5.resp.glosa",
-               defaultValue: "It works apart: it doesn't vote on the day, but it's one of the first to warn you if something is brewing.")
+               defaultValue: "On its own it doesn't vote. Together with your temperature, it does.")
     }
     static var actaPasos: String {
         String(localized: "onb.5.pasos", defaultValue: "Your steps, your rings, your streaks")
@@ -332,9 +422,11 @@ enum OnbCopy {
     static var actaOverlineContra: String {
         String(localized: "onb.5.overline.contra", defaultValue: "What I compare you against")
     }
+    /// Dos respuestas, no una: el corazón se mide contra TU historia y el sueño contra un piso que
+    /// es igual para todos. La versión anterior extendía la primera a todo el veredicto.
     static func actaContra(noches: Int) -> String {
         String(format: String(localized: "onb.5.contra",
-                              defaultValue: "Against your own %lld nights. Never against anybody else's average. That's why I need time before I say anything: by the fourth night I already give you a reading, by the fourteenth I know your normal."),
+                              defaultValue: "Your heart, against your own %lld nights, never against anybody else's average. Your sleep, against the hours a body asks for, because what you got used to sleeping isn't what you need. That's why I need time before I say anything: by the fourth night I already give you a reading, by the fourteenth I know your normal."),
                noches)
     }
     static var actaPie: String {
@@ -351,10 +443,11 @@ enum OnbCopy {
         String(localized: "onb.5.tag.acompana", defaultValue: "accompanies")
     }
     static var etiquetaFuera: String { String(localized: "onb.5.tag.fuera", defaultValue: "out") }
-    static var etiquetaAparte: String { String(localized: "onb.5.tag.aparte", defaultValue: "apart") }
+    /// La etiqueta del centinela: temperatura y respiración cargan UN voto entre las dos.
+    static var etiquetaEnPar: String { String(localized: "onb.5.tag.enpar", defaultValue: "paired") }
     static var etiquetaNunca: String { String(localized: "onb.5.tag.nunca", defaultValue: "never") }
 
-    // Acto 6 · Ciclo y mañana
+    // Acto 7 · Ciclo y mañana (claves `onb.6.*`, mismo motivo)
     static var cicloOverline: String {
         String(localized: "onb.6.overline", defaultValue: "And with that, what")
     }
@@ -392,9 +485,18 @@ enum OnbCopy {
     static var cierreTitular: String {
         String(localized: "onb.6.cierre.titular", defaultValue: "Sleep. I'll do the rest.")
     }
+    /// Cénit calcula SOLO con la app abierta: no hay `UIBackgroundModes`, ni
+    /// `enableBackgroundDelivery`, ni `BGTaskScheduler` en todo el proyecto. «Sin que abras nada»
+    /// prometía justo lo único que la app no puede hacer.
     static var cierreCuerpo: String {
         String(localized: "onb.6.cierre.cuerpo",
-               defaultValue: "With the watch on. In the morning your reading is already there, without you opening anything.")
+               defaultValue: "With the watch on. In the morning you open me and your word is already there: you don't have to log anything or ask me for anything.")
+    }
+    /// Lo único que sí ocurre sin abrir la app: el aviso local de `MorningReadingScheduler`
+    /// (FER-114), que hasta hoy era invisible porque el flujo no lo nombraba en ningún lado.
+    static var cierreAviso: String {
+        String(localized: "onb.6.cierre.aviso",
+               defaultValue: "If you want, I'll set you a reminder at whatever time you pick. It lives in Settings.")
     }
     static var cierreTitularSinReloj: String {
         String(localized: "onb.6.cierre.titular.sinreloj", defaultValue: "If you ever wear a watch")
@@ -447,8 +549,13 @@ enum OnbCopy {
     static var abrirSalud: String { String(localized: "Open Health") }
     static var entrar: String { String(localized: "Enter Cénit") }
     static var atras: String { String(localized: "Back") }
-    static var editar: String { String(localized: "Edit") }
-    static var listo: String { String(localized: "Done") }
+    // Los cuatro campos del perfil y la unidad de la FC máxima: las mismas claves que ya usan
+    // Ajustes y la hoja de «FC máxima», para que el onboarding no invente un vocabulario aparte.
+    static var perfilEdad: String { String(localized: "Age") }
+    static var perfilSexo: String { String(localized: "Sex") }
+    static var perfilPeso: String { String(localized: "Weight") }
+    static var perfilEstatura: String { String(localized: "Height") }
+    static var fcMaxUnidad: String { String(localized: "bpm · Tanaka") }
 }
 
 // MARK: - El shell de un acto
@@ -459,12 +566,40 @@ enum OnbCopy {
 /// desbordamiento por Dynamic Type sigue scrolleando (el objetivo del flujo es **xxxLarge**, que
 /// es donde la raíz de la app capa el tamaño). Es el mismo patrón del wizard anterior — lo único
 /// que cambia es el suelo: papel de `LiquidColor.fondoGradient`, no `InstrumentoTheme.base.paper`.
-struct OnbShell<Content: View>: View {
-    @ViewBuilder var content: () -> Content
+///
+/// Dos cosas que el shell resuelve para los actos LARGOS:
+///
+///   · **`indicadores`.** Esconder la barra de scroll es estética que cuesta conversión cuando el
+///     contenido desborda: en un iPhone de 390×844 el acto del permiso apila ~900 pt en un
+///     viewport útil de ~750 y NADA insinuaba que hubiera más abajo. Los actos que desbordan por
+///     construcción (permiso, acta, ciclo) la enseñan.
+///
+///   · **`pie`.** Un CTA anclado al pie SOBRE el scroll, con el contenido pasando por debajo
+///     (`safeAreaInset`, que además reserva su alto para que el final del contenido siga siendo
+///     alcanzable). Es para el único gate del producto —el permiso—: sin ese toque no hay app, y
+///     ese botón no puede depender de que alguien adivine que hay scroll.
+struct OnbShell<Content: View, Pie: View>: View {
+    private let indicadores: Bool
+    private let content: () -> Content
+    private let pie: (() -> Pie)?
+
+    init(indicadores: Bool = false,
+         @ViewBuilder content: @escaping () -> Content,
+         @ViewBuilder pie: @escaping () -> Pie) {
+        self.indicadores = indicadores
+        self.content = content
+        self.pie = pie
+    }
+
+    fileprivate init(indicadores: Bool, content: @escaping () -> Content, pie: (() -> Pie)?) {
+        self.indicadores = indicadores
+        self.content = content
+        self.pie = pie
+    }
 
     var body: some View {
         GeometryReader { geo in
-            ScrollView(.vertical, showsIndicators: false) {
+            ScrollView(.vertical, showsIndicators: indicadores) {
                 VStack(alignment: .leading, spacing: 0) {
                     content()
                 }
@@ -472,7 +607,38 @@ struct OnbShell<Content: View>: View {
                 .padding(.horizontal, LiquidSpace.s600)
                 .padding(.vertical, LiquidSpace.s400)
             }
+            .safeAreaInset(edge: .bottom, spacing: 0) { pieAnclado }
         }
+    }
+
+    @ViewBuilder
+    private var pieAnclado: some View {
+        if let pie {
+            VStack(alignment: .leading, spacing: 0) {
+                pie()
+            }
+            .padding(.horizontal, LiquidSpace.s600)
+            .padding(.top, LiquidSpace.s400)
+            .padding(.bottom, LiquidSpace.s250)
+            .background(velo)
+        }
+    }
+
+    /// El velo bajo el pie anclado: el mismo papel del fondo, subiendo de transparente a opaco,
+    /// para que el texto que sigue scrolleando por debajo no se le encime al botón. No es vidrio
+    /// a propósito (el flujo vive sobre papel, y el vidrio-sobre-papel se lava).
+    private var velo: some View {
+        LinearGradient(colors: [LiquidColor.fondoBajo.opacity(0), LiquidColor.fondoBajo],  // token-exempt: el velo tiene que arrancar EN CERO
+                       startPoint: .top, endPoint: .bottom)
+            .allowsHitTesting(false)
+    }
+}
+
+extension OnbShell where Pie == EmptyView {
+    /// El acto normal: sin pie anclado (su CTA viaja al final de la columna, empujado por los
+    /// `Spacer`).
+    init(indicadores: Bool = false, @ViewBuilder content: @escaping () -> Content) {
+        self.init(indicadores: indicadores, content: content, pie: nil)
     }
 }
 
@@ -553,6 +719,13 @@ struct OnbHairline: View {
 /// El tono llega YA elegido para texto chico: el ámbar de dato (#C4631F) ronda 3.8:1 y no pasa
 /// AA a este tamaño, así que quien tiña con esa familia pasa `LiquidColor.atencionTexto` (el
 /// mismo criterio que `LiquidSheetHeader.tonoTexto` aplica dentro del paquete, que es interno).
+///
+/// El nombre va en `LiquidType.label` (rótulo 11.5/600 +1.5 que ESCALA, relativo a `.caption`) y
+/// no en `InstrumentoType.groteskLane` (12 FIJO): con la fuente fija, la glosa —que sí escala—
+/// crecía sola y a xxxLarge el título de la fila acababa ~30 % más chico que su descripción, en
+/// las 21 filas del flujo. Es el mismo defecto que ya arreglaron `LiquidBandsTable` y
+/// `LiquidBarrasContribucion` dentro del paquete; aquí se resuelve tomando el token de rótulo
+/// publicado en vez de acuñar un tamaño suelto.
 struct OnbFila: View {
     let nombre: String
     var tono: Color?
@@ -564,8 +737,8 @@ struct OnbFila: View {
         VStack(alignment: .leading, spacing: LiquidSpace.s150) {
             HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s200) {
                 Text(nombre)
-                    .font(InstrumentoType.groteskLane)
-                    .tracking(InstrumentoType.groteskLaneTracking)
+                    .font(LiquidType.label)
+                    .tracking(LiquidType.labelTracking)
                     .textCase(.uppercase)
                     .foregroundStyle(tono ?? LiquidColor.tinta700)
                     .fixedSize(horizontal: false, vertical: true)

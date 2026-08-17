@@ -2,7 +2,7 @@ import SwiftUI
 import StrandDesign
 import StrandAnalytics
 
-// MARK: - Acto 6 · El ciclo y la mañana (FER-109)
+// MARK: - Acto 7 · El ciclo y la mañana (FER-109)
 //
 // El último acto contesta la única pregunta que queda: «y con eso, qué». La lectura no es un dato
 // para archivar; es lo que decide el día, y quien lo ejecuta es Entrenar.
@@ -24,7 +24,9 @@ struct OnbActoCiclo: View {
         // Los `Group` son puramente estructurales (tope de 10 hijos por builder); son
         // transparentes para el layout, así que cada pieza sigue siendo hermana directa del
         // `VStack` del shell y los `Spacer` siguen empujando el CTA al pie.
-        OnbShell {
+        //
+        // Acto largo (traducción + tarjeta + cierre + dock): enseña su barra de scroll.
+        OnbShell(indicadores: true) {
             Group {
                 OnbAtras(accion: onAtras)
 
@@ -36,7 +38,7 @@ struct OnbActoCiclo: View {
                     .padding(.top, LiquidSpace.s300)
             }
 
-            // Cómo se traduce: los mismos títulos del catálogo del acto 5, ahora con lo que HACEN.
+            // Cómo se traduce: los mismos títulos del catálogo del acta, ahora con lo que HACEN.
             Group {
                 OnbOverline(OnbCopy.cicloOverlineTraduce)
                     .padding(.top, LiquidSpace.s800)
@@ -66,6 +68,13 @@ struct OnbActoCiclo: View {
                     .padding(.top, LiquidSpace.s800)
                 OnbCuerpo(conReloj ? OnbCopy.cierreCuerpo : OnbCopy.cierreCuerpoSinReloj)
                     .padding(.top, LiquidSpace.s300)
+                // El aviso solo se ofrece donde puede existir: sin noches con reloj no hay lectura
+                // que anunciar y `MorningReadingScheduler.plan` sale vacío (`hayLectura`), así que
+                // aquí sería un recordatorio prometido que nunca va a sonar.
+                if conReloj {
+                    OnbCuerpo(OnbCopy.cierreAviso, tono: LiquidColor.tinta500)
+                        .padding(.top, LiquidSpace.s250)
+                }
             }
 
             // El dock REAL, no un dibujo: lo que se promete arriba es lo que se toca abajo.

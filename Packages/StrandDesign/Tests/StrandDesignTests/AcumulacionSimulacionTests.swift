@@ -119,6 +119,124 @@ final class AcumulacionSimulacionTests: XCTestCase {
                        "El radio cambió entre vuelo y reposo: eso es un pop de escala.")
     }
 
+    // MARK: El viaje se mide contra la DENSIDAD, no contra el reloj (FER-111)
+    //
+    // La vista pasa `t = reloj de pared % 3600`. Cualquier avance medido contra `t` vale 1 en
+    // 3598.75 de cada 3600 segundos, así que el viaje NO se pintaba nunca (las motas
+    // teletransportaban a la esfera) y en cada frontera de hora las 300 lo replayeaban a la vez.
+    // Estas pruebas corren en los `t` que la pantalla SÍ produce — los 0.1/1.7/3.3 s de las demás
+    // son justo los que tapaban el defecto.
+
+    func testAMediaHoraElViajeSeSiguePintando() {
+        let densidad = 0.5
+        let ancho = AcumulacionSimulacion.Guion.anchoFrente
+        let motas = AcumulacionSimulacion.cuadro(t: 1800, densidad: densidad, modo: .dentro,
+                                                 centro: centro, radio: radio, lienzo: lienzo)
+        var enVuelo: [Int] = [], posadas: [Int] = []
+        for i in 0..<AcumulacionSimulacion.Geometria.nEsfera {
+            let paso = densidad - AcumulacionSimulacion.rango(i)
+            if paso > 0, paso < ancho { enVuelo.append(i) } else if paso >= ancho { posadas.append(i) }
+        }
+        XCTAssertGreaterThan(enVuelo.count, 0,
+                             "El frente de llegada quedó vacío: la prueba no está probando nada.")
+        for i in enVuelo {
+            XCTAssertFalse(motas[i].latcheada,
+                           "La mota \(i) está DENTRO del frente y ya aparece posada: a media hora "
+                           + "de reloj el viaje no se está pintando.")
+        }
+        for i in posadas {
+            XCTAssertTrue(motas[i].latcheada,
+                          "La mota \(i) ya rebasó el frente y sigue en vuelo: nunca aterrizaría.")
+        }
+        // Y el viaje se VE, no es solo una bandera: alguna de las que vienen en camino todavía
+        // está fuera de la silueta de la esfera.
+        let hayCamino = enVuelo.contains {
+            hypot(motas[$0].punto.x - centro.x, motas[$0].punto.y - centro.y) > radio
+        }
+        XCTAssertTrue(hayCamino, "Ninguna mota en vuelo está lejos del orbe: están apareciendo ya "
+                      + "en su ranura, que es el pop de POSICIÓN que el archivo prohíbe.")
+    }
+
+    func testLaFronteraDeHoraNoDesarmaElOrbe() {
+        // La vista envuelve el reloj cada hora. Medido contra `t`, ese instante hacía que las 300
+        // motas replayearan su viaje a la vez: el orbe se desarmaba y se rearmaba solo.
+        let densidad = 0.8
+        let ancho = AcumulacionSimulacion.Guion.anchoFrente
+        let antes = AcumulacionSimulacion.cuadro(t: 3599.9, densidad: densidad, modo: .dentro,
+                                                 centro: centro, radio: radio, lienzo: lienzo)
+        let despues = AcumulacionSimulacion.cuadro(t: 0.1, densidad: densidad, modo: .dentro,
+                                                   centro: centro, radio: radio, lienzo: lienzo)
+        for i in 0..<AcumulacionSimulacion.Geometria.nEsfera {
+            XCTAssertEqual(antes[i].latcheada, despues[i].latcheada,
+                           "La mota \(i) cambió de estado al cruzar la hora: el orbe se desarma.")
+        }
+        // Las que ya se posaron tampoco se MUEVEN: la rotación es continua en la frontera
+        // (0.055 × 3600 = 198 vueltas exactas), así que solo queda su avance de ~4°.
+        for i in 0..<AcumulacionSimulacion.Geometria.nEsfera
+        where AcumulacionSimulacion.rango(i) <= densidad - ancho {
+            let salto = hypot(antes[i].punto.x - despues[i].punto.x,
+                              antes[i].punto.y - despues[i].punto.y)
+            XCTAssertLessThan(salto, 8,
+                              "La mota \(i) saltó \(salto) pt al cruzar la hora: eso es el estallido.")
+        }
+    }
+
+    func testConDensidadPlenaNadieSeQuedaAMedioVuelo() {
+        // `corte` no puede pasar de 1, así que a la cola de la fila le faltaría densidad que ya
+        // no existe para terminar de llegar: el frente se estrecha al final (`frente`) para que la
+        // ÚLTIMA mota aterrice EXACTAMENTE en densidad 1. Sin eso, un orbe «completo» se queda con
+        // un 5 % de sus motas colgadas a medio vuelo para siempre — y
+        // `testDensidadPlenaLatcheaLaEsferaCompleta` no lo vería, porque corre con `reduce`.
+        let motas = AcumulacionSimulacion.cuadro(t: 1800, densidad: 1, modo: .dentro,
+                                                 centro: centro, radio: radio, lienzo: lienzo)
+        let deOrbe = motas.prefix(AcumulacionSimulacion.Geometria.nEsfera)
+        XCTAssertTrue(deOrbe.allSatisfy(\.latcheada),
+                      "Con densidad 1 hay motas todavía en vuelo: el orbe lleno se ve poroso.")
+    }
+
+    func testLaMaterializacionDeAlfaSePinta() {
+        // `alfaPiso` y `tramoMaterializa` eran código muerto en pantalla mientras el avance se
+        // medía contra el reloj: la mota aparecía de golpe ya a su alfa final. Entrar cuesta.
+        guard let i = (0..<AcumulacionSimulacion.Geometria.nEsfera)
+            .first(where: { AcumulacionSimulacion.rango($0) < 0.5 }) else {
+            return XCTFail("No hay ninguna mota con umbral bajo: el hash está mal repartido.")
+        }
+        let umbral = AcumulacionSimulacion.rango(i)
+        let ancho = AcumulacionSimulacion.Guion.anchoFrente
+        let entrando = AcumulacionSimulacion.mota(indice: i, t: 1800, densidad: umbral + ancho * 0.1,
+                                                  modo: .dentro, centro: centro, radio: radio,
+                                                  lienzo: lienzo)
+        let posada = AcumulacionSimulacion.mota(indice: i, t: 1800, densidad: umbral + ancho * 2,
+                                                modo: .dentro, centro: centro, radio: radio,
+                                                lienzo: lienzo)
+        XCTAssertLessThan(entrando?.alfa ?? 1, posada?.alfa ?? 0,
+                          "La mota entra ya a alfa final: no se materializa, aparece.")
+    }
+
+    // MARK: Cada acto pinta lo suyo
+
+    func testConvergenciaYDentroNoPintanElMismoCuadro() {
+        // El acto 3 → 4 tiene que ser un GESTO: la materia que orbitaba su ranura se aquieta y la
+        // esfera cuaja. Si los dos modos dan el mismo punto, el reveal del veredicto es un no-op.
+        let n = AcumulacionSimulacion.Geometria.nEsfera
+        let conv = AcumulacionSimulacion.cuadro(t: 1800, densidad: 1, modo: .convergencia,
+                                                centro: centro, radio: radio, lienzo: lienzo)
+        let dentro = AcumulacionSimulacion.cuadro(t: 1800, densidad: 1, modo: .dentro,
+                                                  centro: centro, radio: radio, lienzo: lienzo)
+        let distintas = (0..<n).filter { conv[$0].punto != dentro[$0].punto }.count
+        XCTAssertGreaterThan(distintas, n * 3 / 4,
+                             "`.convergencia` y `.dentro` pintan el mismo cuadro: el acto 3 no "
+                             + "tiene gesto propio y el veredicto llega sin que nada se aquiete.")
+        // Y el gesto es RADIAL: mientras no cuaja, algo queda por fuera de la silueta — imposible
+        // en `.dentro`, donde toda mota está exactamente en su ranura.
+        func fuera(_ ms: [AcumulacionSimulacion.Mota]) -> Int {
+            (0..<n).filter { hypot(ms[$0].punto.x - centro.x, ms[$0].punto.y - centro.y) > radio }.count
+        }
+        XCTAssertEqual(fuera(dentro), 0, "En `.dentro` la esfera ya cuajó: nada sobresale.")
+        XCTAssertGreaterThan(fuera(conv), 0, "En `.convergencia` la materia todavía cae: el radio "
+                             + "respira y algo tiene que quedar fuera de la silueta.")
+    }
+
     // MARK: Reduce Motion
 
     func testConReduceNadieQuedaAMedioViaje() {
