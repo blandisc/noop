@@ -229,6 +229,11 @@ public struct LiquidEcosistema: View {
 
     /// El alto que el héroe RESERVA en el scroll (FER-79 · D4). Compacto manda sobre separado:
     /// «El Tablero» ya viene apretado por su propia presentación.
+    /// El alto de la línea del hint, que SÍ crece con Dynamic Type (`microEstado` es
+    /// `relativeTo: .caption2`). El 244 del token se midió a un solo tamaño de texto: en xxLarge
+    /// el margen volvía a ser cero y el rótulo se partía otra vez (tercera vuelta adversarial).
+    @ScaledMetric(relativeTo: .caption2) private var altoHint: CGFloat = 14
+
     private var altoReservado: CGFloat {
         if compacto { return LiquidSpace.ecosistemaAltoCompacto }
         guard esSeparadaEstable else { return LiquidSpace.ecosistemaAlto }
@@ -238,8 +243,15 @@ public struct LiquidEcosistema: View {
         // usuario sin permiso de Salud le desaparecía su única salida por separar el orbe
         // (revisión adversarial).
         if heroPuerta != nil, !heroInfo { return LiquidSpace.ecosistemaAlto }
-        return LiquidSpace.ecosistemaAltoSeparado
+        return min(LiquidSpace.ecosistemaAlto,
+                   max(LiquidSpace.ecosistemaAltoSeparado,
+                       Self.hintUnirY + altoHint + LiquidSpace.s100))
     }
+
+    /// Dónde vive el hint «toca para unir» dentro del lienzo. Una sola fuente: el `offset` que
+    /// lo dibuja y el alto que lo tiene que dejar entrar (antes eran dos números sueltos que se
+    /// desincronizaron en cuanto uno de los dos se movió).
+    static let hintUnirY: CGFloat = 226
 
     /// El radio que de verdad dibuja el plan para esta coreografía (FER-73 · M2).
     private var radioOrbeReal: CGFloat {
@@ -336,12 +348,15 @@ public struct LiquidEcosistema: View {
         // vuelta con el mismo gesto (la misma curva y el mismo retardo que el lienzo, para que
         // se lea como un solo movimiento y no como dos).
         .frame(height: altoReservado * escala, alignment: .top)
+        // Se anima con el ALTO, no con la fase: el alto también cambia sin que la fase se mueva
+        // —conceder el permiso de Salud hace aparecer la pastilla y con ella los 76 pt que
+        // reserva— y con `value: esSeparadaEstable` ese salto entraba en seco (tercera vuelta).
         .animation(still ? LiquidEcosistemaMotion.reduceCrossfadeAnim
                          : (esSeparadaEstable
                             ? LiquidMotion.ambient(0.9).delay(LiquidEcosistemaMotion.anticipacion)
                             : LiquidMotion.ambient(0.9)
                                 .delay(LiquidEcosistemaMotion.fusionDur * 0.85)),
-                   value: esSeparadaEstable)
+                   value: altoReservado)
         .clipped()
         .modifier(EcosistemaVisibilidad { visible = $0 })
         .onAppear {
@@ -414,7 +429,12 @@ public struct LiquidEcosistema: View {
         // movía 88 pt de layout con la hoja abierta: el usuario la cerraba y encontraba otra
         // pantalla (revisión adversarial). La fase la manda el ciclo de vida, no la batería.
         .onChange(of: scenePhase) { _, fase in
-            if fase != .active { normalizarFase() }
+            // SOLO `.background`. `!= .active` era tan ancho como el `ambientPaused` que vino a
+            // reemplazar: iOS pone `.inactive` al jalar el Centro de Control, al girar el
+            // teléfono, al tomar una captura o cuando entra el banner de una llamada — y en
+            // todos ellos el orbe se reunía solo mientras el usuario lo estaba leyendo
+            // (tercera vuelta adversarial). Irse de la app sí lo reúne; asomarse a otra cosa no.
+            if fase == .background { normalizarFase() }
         }
         .accessibilityElement(children: .ignore)
         .accessibilityAddTraits(.isHeader)
@@ -528,7 +548,7 @@ public struct LiquidEcosistema: View {
                                : LiquidMotion.glassOut(LiquidMotion.quick).delay(retardoHint),
                                value: esSeparadaEstable)
                 Text(rotulos.hintUnir)
-                    .offset(y: 226)
+                    .offset(y: Self.hintUnirY)
                     .opacity(esSeparadaEstable ? 1 : 0)
                     .animation(esSeparadaEstable
                                ? LiquidMotion.glassOut(LiquidMotion.quick).delay(retardoHint)

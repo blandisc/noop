@@ -101,6 +101,21 @@ final class CosturaGuardianTests: XCTestCase {
                       "y si no hay dónde ponerla, la orilla se interrumpe: nada de joya de HOY")
     }
 
+    /// ADVERSARIAL COS-1 (tercera vuelta) · El ÁMBAR es el juicio del motor y no puede
+    /// depender de que el dibujo tenga con qué pintar la boca: sin escala de respiración, la
+    /// orilla azul se calla —correcto— pero la noche en que el par votó tiene que seguir
+    /// marcada, o el sello se pone ámbar y la gráfica no lo respalda.
+    func test_COS1_elAmbarSobreviveAunqueLaOrillaSeCalle() {
+        // Respiración solo en 2 noches: no hay escala. Y el motor marcó el par fuera HOY.
+        let dias = (-19...0).map { d in metric(dayKey(d), temp: 0.9, resp: d >= -1 ? 15 : nil) }
+        var historia = (-19 ... -1).map { noche(dayKey($0), respMissing: true, respJudged: false) }
+        historia.append(noche(dayKey(0), tempOut: true, respOut: true))
+        let n = costura(dias: dias, historia: historia)
+        XCTAssertTrue(n.last?.parFuera ?? false,
+                      "el par votó: el dibujo tiene que saberlo aunque no pueda colocar la orilla")
+        XCTAssertTrue(n.last?.respSinLectura ?? false, "…y aun así la orilla azul se calla")
+    }
+
     /// ADVERSARIAL A1/A3 (motor) · H6 selló el héroe pero no la Matriz: pasada la medianoche la
     /// última casilla es el día NUEVO, y plantar ahí el ajuste térmico de anteanoche hacía que
     /// el guardián mostrara una temperatura que el héroe ya no muestra.
@@ -170,6 +185,23 @@ final class CosturaGuardianTests: XCTestCase {
                                                                             respJudged: false),
                                                           hayLecturaHoy: true)
         XCTAssertEqual(unaSola?.texto, String(localized: "Only one signal"))
+    }
+
+    /// ADVERSARIAL COSTURA-1 (tercera vuelta) · El ÁMBAR es el juicio del motor y no puede
+    /// depender de que el dibujo tenga con qué pintar la boca. Con respiración leída pero sin
+    /// escala usable, el arreglo hermano (COS-2) dejaba las 20 noches sin orilla azul ⇒ boca
+    /// vacía ⇒ el ámbar se recortaba contra la nada, mientras el sello del guardián seguía en
+    /// ámbar y el chip seguía diciendo que el par votó.
+    func test_COSTURA1_elParFueraSobreviveAunqueLaRespiracionNoTengaEscala() {
+        // Respiración solo en 2 noches: no hay mediana ni MAD ⇒ sin escala.
+        let dias = (-19...0).map { d in metric(dayKey(d), temp: d == 0 ? 1.2 : 0.05,
+                                               resp: d >= -1 ? 17 : nil) }
+        var historia = (-19 ... -1).map { noche(dayKey($0)) }
+        historia.append(noche(dayKey(0), tempOut: true, respOut: true))
+        let n = costura(dias: dias, historia: historia)
+        XCTAssertTrue(n.last?.parFuera ?? false,
+                      "el día que el guardián empuja tu día no puede desaparecer del dibujo")
+        XCTAssertTrue(n.allSatisfy { $0.respSinLectura }, "sin escala, la orilla azul se calla")
     }
 
     /// ADVERSARIAL C4 · El par conserva su forma con una sola señal, para que cada número siga

@@ -84,7 +84,7 @@ extension LiquidHoyBuilder {
         // contrario de lo que pasó, y `bodyHistory` no expone el lado — así que el rótulo dice
         // lo único que el motor sí juzgó: que quedó fuera.
         let fueraRangoSueno = String(localized: "matriz.sueno.rango.fuera.v2",
-                                     defaultValue: "outside recommended")
+                                     defaultValue: "outside the recommended range")
         let scrubSueno: [MatrizSeccion.ScrubNoche] = keysSueno.enumerated().map { idx, day in
             let mins = byDay[day]?.totalSleepMin
             let offsetDesdeFin = keysSueno.count - 1 - idx
@@ -266,14 +266,16 @@ extension LiquidHoyBuilder {
         //
         // Cómo se convierte cada señal en «cuánto se abre su labio» (1.0 = justo en el filo de
         // tu banda), tras la revisión adversarial:
-        //   · temperatura → max(0, dev) / corte térmico público. SOLO el lado alto: el centinela
-        //     nunca marca una noche fría, así que dibujarla abierta sería afirmar lo que el
-        //     motor no dijo (C1).
-        //   · respiración → max(0, rpm − centro) / medio ancho, con centro = MEDIANA y ancho =
+        //   · temperatura → dev / corte térmico público, FIRMADO.
+        //   · respiración → (rpm − centro) / medio ancho, FIRMADO, con centro = MEDIANA y ancho =
         //     MAD de las noches que el motor juzgó DENTRO. Mediana y MAD porque son robustas
         //     (con media, una noche enferma corría el centro y engordaba el ancho, diluyendo
         //     justo la que debía abrirse — P-1); y solo las sanas porque una racha larga
         //     arrastraba la base hasta volverse invisible (C3).
+        //
+        // Qué se hace con el SIGNO no se decide aquí: lo decide el dibujo, en
+        // `MatrizCostura.fraccionFilo`, que aprieta el lado bajo contra el eje porque el
+        // centinela nunca marca una noche fría (C1) pero tampoco puede borrarla (COS-4).
         //
         // Y sobre las dos, el ANCLA: el labio se somete al juicio del motor por noche. Ninguna
         // escala aproximada puede dibujar «dentro» lo que el motor marcó fuera, ni al revés.
@@ -327,14 +329,13 @@ extension LiquidHoyBuilder {
             }
             // El par votó esa noche = el juicio del MOTOR para ESE día (nunca re-derivado aquí).
             let par = (noche?.tempOut ?? false) && (noche?.respOut ?? false)
-            // Las banderas salen del VALOR, no de la lectura cruda (adversarial COS-2): con
-            // lectura pero sin escala (menos de 3 noches de respiración) la magnitud es nil, y
-            // dibujar esa orilla pegada al eje con su joya de HOY volvía a afirmar «justo en el
-            // centro de tu banda» — la misma mentira, por otra puerta — mientras el chip de la
-            // misma tarjeta decía «Conociéndote». Sin escala no hay dónde poner la noche: la
-            // orilla se calla, y el número crudo sigue vivo en el encabezado y en el scrub.
-            return .init(temp: tAnclada, resp: r, parFuera: par,
-                         tempSinLectura: tAnclada == nil, respSinLectura: r == nil)
+            // Sin magnitud, la orilla se calla: `Noche` DERIVA sus banderas del valor (ya no se
+            // pasan). Con lectura pero sin escala —menos de 3 noches de respiración— dibujarla
+            // pegada al eje con su joya de HOY afirmaba «justo en el centro de tu banda»
+            // mientras el chip de la misma tarjeta decía «Conociéndote» (adversarial COS-2).
+            // Lo que se calla es la POSICIÓN: el número crudo sigue vivo en el encabezado y en
+            // el scrub, y el ámbar del par ya no depende de que esta orilla exista (COS-1).
+            return .init(temp: tAnclada, resp: r, parFuera: par)
         }
         let nochesCosturaVivas = Array(nochesCostura[iniGuardian...])
         // El scrub de la costura lee LA NOCHE COMPLETA: las dos señales y su fecha.

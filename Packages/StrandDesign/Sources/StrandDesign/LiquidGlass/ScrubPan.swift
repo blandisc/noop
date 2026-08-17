@@ -63,8 +63,11 @@ private struct ScrubPanArrastre: ViewModifier {
                               abs(g.translation.width) >= abs(g.translation.height) else { return }
                         onChange(g.location)
                     }
-                    .onEnded { _ in onEnd() }
             )
+            // UN SOLO cierre, el del flanco: `@GestureState` se restablece tanto al levantar el
+            // dedo como al cancelarse, así que `onEnded` sobra — y sumarlo llamaba `onEnd()` dos
+            // veces, con una ventana (soltar y volver a agarrar en el mismo cuadro) donde el
+            // restablecimiento del gesto viejo apagaba el scrub del nuevo.
             .onChange(of: arrastrando) { _, activo in
                 if !activo { onEnd() }
             }

@@ -38,7 +38,33 @@ final class MatrizCosturaMapeoTests: XCTestCase {
         let dentro = MatrizCostura.fraccionFilo(0.98)
         let fuera = MatrizCostura.fraccionFilo(1.9)      // el peor caso: cruda muy alta, no marcada
         XCTAssertGreaterThan(fuera, dentro, "el escalón existe: el motor las juzgó distinto")
-        XCTAssertLessThan(fuera - dentro, 0.3, "pero no puede ser media gráfica")
+        XCTAssertLessThan(fuera - dentro, 0.35, "pero no puede ser media gráfica")
+    }
+
+    /// LA GARANTÍA DEL MOTOR SE VE (COSTURA-2, tercera vuelta). No basta con que la noche
+    /// marcada fuera salga «más lejos» en los números: con el mapeo continuo anterior salía
+    /// 0.245 pt más lejos, bajo un trazo de 2.2 pt. O sea que el chip afirmaba que vigilaba una
+    /// señal y la gráfica no podía respaldarlo. El hueco del filo lo vuelve visible por
+    /// construcción, y esta prueba lo mide en el peor caso: las dos noches que el ANCLA deja
+    /// pegadas a los bordes de la banda vacía (0.98 y 1.02).
+    func test_loQueElMotorMarcoFueraSeVeMasLejos() {
+        let salto = MatrizCostura.fraccionFilo(1.02) - MatrizCostura.fraccionFilo(0.98)
+        let recorrido = 74.0 / 2 * 0.58 - 2.6          // el recorrido real del labio, en puntos
+        XCTAssertGreaterThan(Double(salto) * recorrido, 2.2,
+                             "el escalón tiene que medir MÁS que el grosor de la línea (2.2 pt)")
+    }
+
+    /// Y la banda del hueco tiene que estar VACÍA de datos: es el ancla del builder quien lo
+    /// garantiza (empuja lo marcado a ≥1.02 y lo no marcado a ≤0.98). Si alguien la quitara, la
+    /// escala aproximada de la respiración podría saltar el hueco sola y afirmar «fuera» donde
+    /// el motor no dijo nada. Aquí se fija el otro lado del contrato: ninguna magnitud dentro de
+    /// la banda puede caer del lado de afuera.
+    func test_laBandaDelHuecoSeparaLosDosMundos() {
+        XCTAssertLessThan(MatrizCostura.fraccionFilo(0.999), MatrizCostura.fraccionFilo(1.0),
+                          "por debajo del filo, siempre por dentro")
+        XCTAssertGreaterThanOrEqual(MatrizCostura.fraccionFilo(1.0),
+                                    MatrizCostura.fraccionFilo(0.999) + 0.14,
+                                    "y el salto en el filo es el hueco, no un continuo")
     }
 
     /// EL LADO BAJO EXISTE PERO NO GRITA (COS-4). Recortar a 0 aplanaba media serie contra el

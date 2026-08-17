@@ -1090,7 +1090,8 @@ enum LiquidHoyBuilder {
                                     healthConnected: healthConnected,
                                     verdictPending: verdictPending, causaT3: causaT3,
                                     hayNocheEnBoleta: estados.indices.contains(1)
-                                        && estados[1].hasData)
+                                        && estados[1].hasData,
+                                    autonomicPosible: prep?.autonomicPossible ?? true)
 
         return LiquidActa(
             // FER-73 · HJ-19: la puerta se anuncia «How I got here» (y así se llamó siempre esta
@@ -1114,7 +1115,8 @@ enum LiquidHoyBuilder {
             nivel: palabraBoleta(prep: prep, hayVeredicto: hayVeredicto,
                                  esLecturaDeDia: esLecturaDeDia, calibrando: calibrando,
                                  healthConnected: healthConnected,
-                                 verdictPending: verdictPending),
+                                 verdictPending: verdictPending,
+                               autonomicPosible: prep?.autonomicPossible ?? true),
             conteo: resumen.texto, conteoClave: resumen.clave,
             filas: filas,
             // Vigilantes SOLO con veredicto (/ux D7): su drama vive en el guardián. Y el día
@@ -1148,7 +1150,8 @@ enum LiquidHoyBuilder {
     private static func palabraBoleta(prep: Preparedness.Read?, hayVeredicto: Bool,
                                       esLecturaDeDia: Bool, calibrando: Bool,
                                       healthConnected: Bool,
-                                      verdictPending: Bool = false) -> String {
+                                      verdictPending: Bool = false,
+                                      autonomicPosible: Bool = true) -> String {
         if hayVeredicto { return palabraVeredicto(prep!.verdict) }
         if esLecturaDeDia { return String(localized: "Day reading") }
         if !healthConnected { return String(localized: "No reading") }
@@ -1156,6 +1159,11 @@ enum LiquidHoyBuilder {
         if prep == nil, verdictPending { return String(localized: "Reading your night…") }
         if prep == nil { return String(localized: "No reading") }
         if calibrando {
+            // «Conociéndote» promete un proceso en marcha. Sin FC nocturna posible no hay tal
+            // proceso: la palabra es la misma que la del héroe (tercera vuelta adversarial).
+            if !autonomicPosible {
+                return String(localized: "hero.title.sinfc", defaultValue: "I can't read your mornings yet")
+            }
             return String(localized: "hero.title.calibrando", defaultValue: "Getting to know you")
         }
         return String(localized: "No reading")
@@ -1266,7 +1274,8 @@ enum LiquidHoyBuilder {
                                       healthConnected: Bool,
                                       verdictPending: Bool = false,
                                       causaT3: CausaT3? = nil,
-                                      hayNocheEnBoleta: Bool = false) -> (texto: String, clave: String?) {
+                                      hayNocheEnBoleta: Bool = false,
+                                      autonomicPosible: Bool = true) -> (texto: String, clave: String?) {
         guard hayVeredicto else {
             if esLecturaDeDia {
                 return (String(localized: "No sleep recorded last night: without its vote there's no quorum for a verdict."), nil)
@@ -1281,31 +1290,51 @@ enum LiquidHoyBuilder {
                                defaultValue: "One moment: your night is still being read."), nil)
             }
             if calibrando {
+                // Sin FC nocturna posible la base NO se está formando: no hay con qué formarla.
+                // La hoja decía «se está formando con tus primeras noches» mientras el héroe,
+                // dos dedos arriba, decía «todavía no puedo leer tus mañanas» (tercera vuelta).
+                if !autonomicPosible {
+                    return (String(localized: "hero.sub.sinfc",
+                                   defaultValue: "Your verdict stands on your resting heart rate at night, and it hasn't arrived. Sleeping with your Apple Watch is what unlocks it."), nil)
+                }
                 return (String(localized: "The ballot is taking shape with your first nights."), nil)
             }
             // FER-73 · H10/HJ-10: la causa que ya conoce la franja manda sobre la sentencia
             // genérica. «Nada llegó anoche» sobre una noche registrada era falso.
-            switch causaT3 {
-            case .sinSync:
+            if causaT3 == .sinSync {
                 return (String(localized: "acta.resumen.sinsync",
                                defaultValue: "Nothing has come in since last night: pull down on Today to sync."), nil)
-            case .senalInsuficiente where hayNocheEnBoleta:
+            }
+            // Con la noche en la boleta, la sentencia depende de si TODAVÍA SE ESTÁ LEYENDO.
+            // Decir «tu señal en reposo no llegó» mientras la pantalla promete que sigue leyendo
+            // —jalón manual, o la ventana de la mañana aún abierta tras una noche corta— es
+            // sentenciar antes de tiempo (tercera vuelta adversarial); y la rama que solo miraba
+            // `.senalInsuficiente` dejaba fuera justo esos dos casos (segunda vuelta).
+            if hayNocheEnBoleta {
+                if causaT3 == .leyendo {
+                    return (String(localized: "acta.resumen.leyendo.parcial",
+                                   defaultValue: "Your sleep is in; the rest of your night is still being read."), nil)
+                }
                 return (String(localized: "acta.resumen.senal.insuficiente",
                                defaultValue: "Your sleep came in; your resting signal didn't, so there's no quorum."), nil)
-            default:
-                break
             }
-            // La sentencia genérica solo puede decirse cuando de verdad NO llegó nada. Con la
-            // fila de Sueño llena justo arriba, «ni sueño ni señales de reposo» es falso — y el
-            // switch de arriba no la cubría en la ventana de la mañana, cuando la causa todavía
-            // es `.leyendo` (adversarial, segunda vuelta).
-            if hayNocheEnBoleta {
+            // «Ni sueño ni señales de reposo» solo si de verdad no llegó nada: si la franja ya
+            // afirmó que hubo noche, el acta no puede negarla (tercera vuelta).
+            if causaT3 == .senalInsuficiente {
                 return (String(localized: "acta.resumen.senal.insuficiente",
                                defaultValue: "Your sleep came in; your resting signal didn't, so there's no quorum."), nil)
             }
             return (String(localized: "Nothing came in last night: no sleep and no resting signals."), nil)
         }
         if empujeTendencia {
+            // El voto que cuenta puede ser el del PAR (temperatura∧respiración), y entonces
+            // «un voto cayó fuera» sale con las dos filas de la boleta dibujadas DENTRO: la
+            // misma mentira que H3 mató en la rama de al lado (tercera vuelta adversarial).
+            if parVoto, fueraEjes == 0 {
+                return (String(localized: "acta.resumen.tendencia.par",
+                               defaultValue: "Your temperature and breathing moved out together and your night HRV is trending down: that's why today asks for recovery."),
+                        String(localized: "acta.resumen.tendencia.clave", defaultValue: "trending down"))
+            }
             return (String(localized: "One vote fell outside and your night HRV is trending down: that's why today asks for recovery."),
                     String(localized: "acta.resumen.tendencia.clave", defaultValue: "trending down"))
         }
@@ -1316,11 +1345,22 @@ enum LiquidHoyBuilder {
             // vuelta). Ahora el par entra AQUÍ, y si además un eje se salió, se nombran los dos:
             // la versión corta escondía justo el voto que sí cayó fuera.
             if parVoto {
-                let texto = fueraEjes > 0
-                    ? String(localized: "acta.resumen.par.desfase.eje",
-                             defaultValue: "Your temperature and breathing moved out together, and one of your votes fell outside too; the verdict changes once it repeats two days in a row.")
-                    : String(localized: "acta.resumen.par.desfase",
-                             defaultValue: "Your temperature and breathing moved out together; the verdict changes once it repeats two days in a row.")
+                // Tres casos, no dos: el día más delicado —fiebre con los DOS ejes fuera— caía
+                // en «uno de tus votos» y le bajaba la magnitud a lo que estaba pasando. Es el
+                // mismo pecado de plural que la rama de abajo ya había arreglado, repetido
+                // ocho líneas más arriba (tercera vuelta adversarial).
+                let texto: String
+                switch fueraEjes {
+                case 0:
+                    texto = String(localized: "acta.resumen.par.desfase",
+                                   defaultValue: "Your temperature and breathing moved out together; the verdict changes once it repeats two days in a row.")
+                case 1:
+                    texto = String(localized: "acta.resumen.par.desfase.eje",
+                                   defaultValue: "Your temperature and breathing moved out together, and one of your votes fell outside too; the verdict changes once it repeats two days in a row.")
+                default:
+                    texto = String(localized: "acta.resumen.par.desfase.ejes",
+                                   defaultValue: "Your temperature and breathing moved out together, and both of your votes fell outside too; the verdict changes once it repeats two days in a row.")
+                }
                 return (texto, String(localized: "acta.resumen.par.clave", defaultValue: "together"))
             }
             let esperado: Int = prep!.verdict == .full ? 0 : (prep!.verdict == .caution ? 1 : 2)
@@ -1399,6 +1439,16 @@ enum LiquidHoyBuilder {
         // faltan varias noches y la tarjeta de abajo lo dice con su barra. Se dice cuántas.
         // (…y solo si esas noches pueden llegar: sin FC nocturna posible la promesa no se
         // cumple nunca — el mismo hallazgo que sacó la tarjeta de calibración del acta.)
+        // Sin FC nocturna posible el flujo NO puede seguir: caía a «duerme con tu Apple Watch y
+        // mañana la boleta se llena sola», que para este usuario es más falso todavía —aunque se
+        // ponga un reloj esta noche faltan cuatro— y contradice a la confianza de la misma hoja
+        // (tercera vuelta adversarial: el arreglo dejaba el resultado PEOR que el bug).
+        if calibrando, let prep, !prep.autonomicPossible {
+            out.append(.init(id: "sinfc",
+                             texto: String(localized: "acta.nota.sinfc",
+                                           defaultValue: "Sleeping with your Apple Watch is what unlocks your daily verdict.")))
+            return out
+        }
         if calibrando, let prep, prep.autonomicPossible {
             let (noche, total) = calibracionConteo(nights: prep.autonomicNights)
             if noche < total {
@@ -1504,8 +1554,11 @@ enum LiquidHoyBuilder {
         // leer tus mañanas» le hace esperar un progreso que nunca avanza (adversarial, segunda
         // vuelta). El acta dice lo que falta, no cuántas noches faltan.
         if !prep.autonomicPossible {
-            return .nota(String(localized: "acta.confianza.sinfc",
-                                defaultValue: "Your verdict is waiting on a resting heart rate from your night; Apple Health isn't providing one yet."))
+            // La MISMA causa y la MISMA acción que el héroe dos dedos arriba. La primera
+            // redacción culpaba a Apple Salud de no entregar algo que nunca se le pidió: quien
+            // duerme sin reloj no tiene FC nocturna que entregar (tercera vuelta adversarial).
+            return .nota(String(localized: "hero.sub.sinfc",
+                                defaultValue: "Your verdict stands on your resting heart rate at night, and it hasn't arrived. Sleeping with your Apple Watch is what unlocks it."))
         }
         if prep.maturity == .calibrating {
             let meta = Baselines.minNightsSeed

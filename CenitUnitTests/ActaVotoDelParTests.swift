@@ -13,13 +13,16 @@ final class ActaVotoDelParTests: XCTestCase {
 
     private func read(verdict: Preparedness.Verdict,
                       autonomicOut: Bool, sleepOut: Bool,
-                      par: Bool) -> Preparedness.Read {
+                      par: Bool,
+                      trend: AutonomicTrend.Direction? = nil,
+                      maturity: BaselineStatus = .trusted,
+                      autonomicPossible: Bool = true) -> Preparedness.Read {
         Preparedness.Read(
             verdict: verdict,
             drivers: [.init(axis: .autonomic, state: autonomicOut ? .low : .inRange, orientedZ: nil),
                       .init(axis: .sleep, state: sleepOut ? .low : .inRange, orientedZ: nil)],
-            signalsPresent: 3, signalsTotal: 3, maturity: .trusted, autonomicNights: 30,
-            trend: nil,
+            signalsPresent: 3, signalsTotal: 3, maturity: maturity, autonomicNights: 30,
+            trend: trend,
             sentinel: par ? .init(state: .corroborated, streakNights: 2, watchingSignal: nil,
                                   tempOut: true, respOut: true)
                           : .init(state: .quiet, streakNights: 0, watchingSignal: nil,
@@ -30,7 +33,8 @@ final class ActaVotoDelParTests: XCTestCase {
             bodyHistory: [.init(day: Repository.localDayKey(Date()), rhrResolved: 55,
                                 autonomicOrientedZ: 0.1, autonomicOut: autonomicOut,
                                 sleepOut: sleepOut, rhrBaseCenter: 55, hrvBaseCenter: 45,
-                                rhrBand: 53...57)])
+                                rhrBand: 53...57)],
+            autonomicPossible: autonomicPossible)
     }
 
     /// El resfriado clásico: los dos ejes DENTRO y el par fuera. La prosa decía «la FC en reposo
@@ -102,6 +106,62 @@ final class ActaVotoDelParTests: XCTestCase {
         }
         XCTAssertFalse(acta.notas.contains { $0.id == "calibrando" },
                        "ni la nota de «N noches más con tu Apple Watch»")
+    }
+
+    // MARK: Tercera vuelta — lo que los arreglos de la segunda dejaron abierto
+
+    /// El plural otra vez, en la rama nueva: con los DOS ejes fuera, «uno de tus votos» le baja
+    /// la magnitud a lo que está pasando, justo el día más delicado.
+    func test_desfaseConParYLosDosEjes_diceQueFueronLosDos() {
+        let acta = LiquidHoyBuilder.acta(prep: read(verdict: .full, autonomicOut: true,
+                                                    sleepOut: true, par: true))
+        let t = acta.conteo.lowercased()
+        XCTAssertFalse(t.contains("one of your votes") || t.contains("uno de tus votos"),
+                       "cayeron los dos: \(acta.conteo)")
+        XCTAssertTrue(t.contains("both of your votes") || t.contains("tus dos votos"),
+                      "\(acta.conteo)")
+    }
+
+    /// El empujón de tendencia también puede venir del PAR: «un voto cayó fuera» salía con las
+    /// dos filas de la boleta dibujadas DENTRO.
+    func test_tendenciaConPar_noNombraUnVotoQueNoExiste() {
+        let acta = LiquidHoyBuilder.acta(prep: read(verdict: .easy, autonomicOut: false,
+                                                    sleepOut: false, par: true, trend: .below))
+        let t = acta.conteo.lowercased()
+        XCTAssertTrue(t.contains("trending down") || t.contains("bajando"),
+                      "sigue contando el empujón de la tendencia: \(acta.conteo)")
+        XCTAssertTrue(t.contains("together") || t.contains("juntas"),
+                      "y dice quién votó de verdad: \(acta.conteo)")
+    }
+
+    /// Sin FC nocturna posible, la hoja entera tiene que contar la MISMA historia que el héroe:
+    /// ni «Conociéndote», ni «tu base se está formando», ni «mañana la boleta se llena sola».
+    func test_sinFCNocturnaPosible_todaLaHojaCuentaLaMismaHistoria() {
+        let acta = LiquidHoyBuilder.acta(prep: read(verdict: .lowSignal, autonomicOut: false,
+                                                    sleepOut: false, par: false,
+                                                    maturity: .calibrating,
+                                                    autonomicPossible: false))
+        XCTAssertNotEqual(acta.nivel, String(localized: "hero.title.calibrando",
+                                             defaultValue: "Getting to know you"),
+                          "la palabra grande no puede prometer un proceso que no corre")
+        XCTAssertNotEqual(acta.conteo,
+                          String(localized: "The ballot is taking shape with your first nights."))
+        XCTAssertFalse(acta.notas.contains { $0.id == "noche" },
+                       "«duerme con tu Watch y MAÑANA se llena sola» es falso: faltan cuatro noches")
+        XCTAssertTrue(acta.notas.contains { $0.id == "sinfc" }, "y dice qué es lo que destraba")
+    }
+
+    /// Mientras la pantalla promete que sigue leyendo —jalón manual, o noche corta con la
+    /// ventana de la mañana todavía abierta— el acta no puede sentenciar que la señal no llegó.
+    func test_mientrasLee_elActaNoSentenciaQueFaltaLaSenal() {
+        let sinQuorum = read(verdict: .lowSignal, autonomicOut: false, sleepOut: false, par: false)
+        let sentencia = String(localized: "acta.resumen.senal.insuficiente",
+                               defaultValue: "Your sleep came in; your resting signal didn't, so there's no quorum.")
+        XCTAssertNotEqual(LiquidHoyBuilder.acta(prep: sinQuorum, causaT3: .leyendo).conteo,
+                          sentencia, "todavía está leyendo: no puede sentenciar")
+        // Con la ventana ya cerrada, sí lo dice — y jamás «no llegó nada» con la noche llena.
+        XCTAssertEqual(LiquidHoyBuilder.acta(prep: sinQuorum, causaT3: .senalInsuficiente).conteo,
+                       sentencia)
     }
 
     /// Sin par, la prosa de siempre no cambia (no se rompió el camino normal).

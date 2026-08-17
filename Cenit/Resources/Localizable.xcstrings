@@ -1,6 +1,70 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "acta.resumen.leyendo.parcial" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your sleep is in; the rest of your night is still being read."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu sueño ya llegó; seguimos leyendo el resto de tu noche."
+          }
+        }
+      }
+    },
+    "acta.resumen.tendencia.par" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your temperature and breathing moved out together and your night HRV is trending down: that's why today asks for recovery."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu temperatura y tu respiración se salieron juntas y tu VFC nocturna viene bajando: por eso hoy pide recuperar."
+          }
+        }
+      }
+    },
+    "acta.resumen.par.desfase.ejes" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your temperature and breathing moved out together, and both of your votes fell outside too; the verdict changes once it repeats two days in a row."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu temperatura y tu respiración se salieron juntas, y además tus dos votos cayeron fuera; el veredicto cambia cuando se repita dos días seguidos."
+          }
+        }
+      }
+    },
+    "acta.nota.sinfc" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sleeping with your Apple Watch is what unlocks your daily verdict."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dormir con tu Apple Watch es lo que destraba tu veredicto diario."
+          }
+        }
+      }
+    },
     "Population reference, not your verdict. Your own comparison lives in the guardian on Today, which reads this against your recent weeks." : {
       "localizations" : {
         "en" : {
@@ -22,13 +86,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "outside recommended"
+            "value" : "outside the recommended range"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "fuera del recomendado"
+            "value" : "fuera del rango recomendado"
           }
         }
       }
@@ -61,22 +125,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tu temperatura y tu respiración se salieron juntas, y además uno de tus votos cayó fuera; el veredicto cambia cuando se repita dos días seguidos."
-          }
-        }
-      }
-    },
-    "acta.confianza.sinfc" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your verdict is waiting on a resting heart rate from your night; Apple Health isn't providing one yet."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu veredicto espera una frecuencia cardiaca en reposo de tu noche; Apple Salud todavía no la entrega."
           }
         }
       }
@@ -269,22 +317,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "rango recomendado"
-          }
-        }
-      }
-    },
-    "matriz.sueno.rango.fuera" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "below recommended"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "abajo del recomendado"
           }
         }
       }

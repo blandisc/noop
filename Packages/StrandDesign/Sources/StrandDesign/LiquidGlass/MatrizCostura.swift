@@ -26,18 +26,20 @@ public struct MatrizCostura: View {
         public let resp: Double?
         /// El motor marcó las DOS fuera esa noche: el día que el par vota.
         public let parFuera: Bool
-        /// Revisión adversarial P-2: una señal que NO SE LEYÓ no puede dibujarse como si hubiera
+        /// Revisión adversarial P-2: una señal sin magnitud no puede dibujarse como si hubiera
         /// caído en el centro de tu banda. Un hueco es un hueco: su orilla se interrumpe.
-        public let tempSinLectura: Bool
-        public let respSinLectura: Bool
+        ///
+        /// Se DERIVAN del valor, no se reciben: mientras fueron parámetros con default, el tipo
+        /// permitía construir `Noche(temp: nil, resp: 0.5)` —bandera en false, valor nil— y esa
+        /// noche se dibujaba pegada al eje con su joya encima. La mentira que P-2 mató seguía
+        /// siendo representable, esperando al próximo llamador (tercera vuelta adversarial).
+        public var tempSinLectura: Bool { temp == nil }
+        public var respSinLectura: Bool { resp == nil }
 
-        public init(temp: Double?, resp: Double?, parFuera: Bool = false,
-                    tempSinLectura: Bool = false, respSinLectura: Bool = false) {
+        public init(temp: Double?, resp: Double?, parFuera: Bool = false) {
             self.temp = temp
             self.resp = resp
             self.parFuera = parFuera
-            self.tempSinLectura = tempSinLectura
-            self.respSinLectura = respSinLectura
         }
     }
 
@@ -64,32 +66,50 @@ public struct MatrizCostura: View {
     /// La separación mínima del eje: la costura nunca se cierra del todo, para que se lea como
     /// un objeto y no como una línea partida.
     private static let labioMin: CGFloat = 2.6
-    /// Más allá de 3 bandas ya no hay forma que ganar: 3 y 8 son «muy fuera» igual.
-    private static let bandasTope: Double = 3
-    /// La suavidad de la saturación (rpm/°C→pixeles). Con 0.9, el filo de tu banda cae al 68 %
-    /// del recorrido: adentro se distingue bien y afuera todavía queda camino que mostrar.
-    private static let saturaK: Double = 0.9
+    /// Dónde cae el filo de tu banda por el lado de ADENTRO, y dónde por el de AFUERA.
+    ///
+    /// El hueco entre los dos (0.17 del recorrido ≈ 3.2 pt) es DELIBERADO y es la pieza que
+    /// hace visible una garantía que antes solo era cierta en los números: lo que el motor
+    /// marcó fuera se dibuja más lejos del eje que lo que no marcó. Con el mapeo continuo
+    /// anterior, esas dos noches quedaban a 0.245 pt una de otra —bajo un trazo de 2.2 pt—,
+    /// así que el chip decía «vigilando tu temperatura» y la gráfica no lo respaldaba.
+    private static let filoDentro: CGFloat = 0.58
+    private static let filoFuera: CGFloat = 0.75
+    /// La suavidad de cada tramo (rpm/°C→pixeles).
+    private static let kDentro: Double = 0.8
+    private static let kFuera: Double = 1.2
     /// Cuánto del recorrido puede ocupar el lado BAJO (por debajo de tu centro).
     private static let ladoBajoFrac: CGFloat = 0.22
 
     /// Magnitud firmada contra la banda de esa señal → fracción del recorrido del labio [0,1].
     ///
-    /// Satura en vez de recortar. Recortar en seco (el primer intento de esta revisión, un
-    /// `min(|v|, 1.9)` lineal) tenía tres precios que la segunda vuelta cobró: la noche de 17
-    /// rpm y la de 25 caían en el MISMO pixel; el labio resultante (38 pt) no cabía en un marco
-    /// de 37 y la orilla se salía; y entre una noche juzgada fuera y otra dentro se abría un
-    /// acantilado de 17 pt por 0.1 rpm de diferencia (COS-3 y COS-5). Con saturación el marco
-    /// es inviolable por construcción, dos noches muy fuera siguen distinguiéndose, y ese
-    /// escalón —que TIENE que existir, porque el motor sí las juzgó distinto— mide ~4 pt.
+    /// Por tramos, con un salto en el filo. Tres cosas que el mapeo tiene que cumplir a la vez:
     ///
-    /// El lado bajo vive apretado contra el eje (COS-4): el centinela nunca marca una noche
-    /// fría ni una respiración lenta, así que no puede parecer que te saliste — pero dos noches
-    /// distintas tampoco pueden dibujarse al mismo alto.
+    /// 1. EL MARCO ES INVIOLABLE. Los dos tramos saturan (nunca pasan de 1), así que el labio
+    ///    es siempre menor que el medio alto. Recortar en seco —lo que hacía la primera vuelta
+    ///    de esta revisión— sacaba la orilla del Canvas y mandaba al mismo pixel una noche de
+    ///    17 rpm y una de 25.
+    /// 2. EL DIBUJO NO PUEDE CONTRADECIR AL MOTOR. De ahí el hueco: cualquier noche marcada
+    ///    fuera cae por encima de `filoFuera` y cualquiera no marcada, por debajo de
+    ///    `filoDentro`. **Esto solo se sostiene si el ANCLA del builder sigue viva** (empuja lo
+    ///    marcado a ≥1.02 y lo no marcado a ≤0.98): es ella la que mantiene VACÍA la banda
+    ///    (0.98, 1.02), y sin ella la escala aproximada de la respiración podría saltar el
+    ///    hueco por su cuenta y afirmar «fuera» donde el motor no dijo nada. El ancla no es
+    ///    cosmética: es el invariante que hace honesta esta discontinuidad.
+    /// 3. EL LADO BAJO EXISTE PERO NO GRITA. El centinela nunca marca una noche fría ni una
+    ///    respiración lenta, así que ese lado no puede parecer que te saliste — pero tampoco
+    ///    puede desaparecer contra el eje: dos noches distintas jamás se dibujan al mismo alto.
+    ///    (Su altura sí comparte rango con la parte baja del lado alto; es ambigüedad entre dos
+    ///    estados que NO votan, y el scrub la desambigua con el número.)
     public static func fraccionFilo(_ v: Double) -> CGFloat {
-        let x = min(abs(v), bandasTope)
-        let cima = bandasTope / (bandasTope + saturaK)          // para que 3 bandas = 1.0
-        let sat = CGFloat((x / (x + saturaK)) / cima)
-        return v < 0 ? sat * ladoBajoFrac : sat
+        func dentro(_ x: Double) -> CGFloat {
+            let norm = 1 / (1 + kDentro)                    // para que 1 banda = filoDentro
+            return filoDentro * CGFloat((x / (x + kDentro)) / norm)
+        }
+        if v < 0 { return min(dentro(-v), filoDentro) * ladoBajoFrac }
+        if v < 1 { return dentro(v) }
+        let u = v - 1
+        return filoFuera + (1 - filoFuera) * CGFloat(u / (u + kFuera))
     }
 
     public var body: some View {
@@ -150,14 +170,25 @@ public struct MatrizCostura: View {
             cerrarTramo()
             ctx.fill(boca, with: .color(LiquidColor.tinta500.opacity(MatrizTokens.costuraFillAlfa)))
 
-            // El tramo del par fuera se tiñe encima, recortado a la boca.
-            if noches.contains(where: { $0.parFuera }) {
-                ctx.drawLayer { capa in
-                    capa.clip(to: boca)
-                    for (i, noche) in noches.enumerated() where noche.parFuera {
-                        let rect = CGRect(x: x(i) - paso / 2, y: 0, width: paso, height: size.height)
-                        capa.fill(Path(rect), with: .color(LiquidColor.atencion.opacity(MatrizTokens.costuraAlertaAlfa)))
+            // El tramo del par fuera se tiñe encima. Donde HAY boca se recorta a ella (la lente
+            // que abre el par); donde no la hay —porque una de las dos señales no se pudo
+            // colocar en ninguna escala— se pinta la columna igual, más tenue.
+            //
+            // El ámbar es el JUICIO DEL MOTOR, no una consecuencia del dibujo: colgarlo de la
+            // boca hacía que el único día en que el guardián empuja tu día desapareciera de la
+            // gráfica mientras el sello seguía en ámbar y el chip seguía gritándolo (COS-1, y
+            // otra vez en la tercera vuelta cuando el arreglo hermano dejó la boca vacía).
+            let alerta = LiquidColor.atencion.opacity(MatrizTokens.costuraAlertaAlfa)
+            for (i, noche) in noches.enumerated() where noche.parFuera {
+                let rect = Path(CGRect(x: x(i) - paso / 2, y: 0, width: paso, height: size.height))
+                if vivaT[i] && vivaR[i] {
+                    ctx.drawLayer { capa in
+                        capa.clip(to: boca)
+                        capa.fill(rect, with: .color(alerta))
                     }
+                } else {
+                    ctx.fill(rect, with: .color(LiquidColor.atencion
+                        .opacity(MatrizTokens.costuraAlertaAlfa * 0.6)))
                 }
             }
 
