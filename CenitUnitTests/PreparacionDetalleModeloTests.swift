@@ -160,7 +160,7 @@ final class PreparacionDetalleModeloTests: XCTestCase {
             healthConnected: true, asOf: Date(), calendario: cal)
         let aviso = try? XCTUnwrap(m.avisoVentanaSinVeredicto)
         XCTAssertEqual(aviso, String(localized: "prep.vacio.imposible",
-                                     defaultValue: "None of these 30 mornings had enough signal. Preparation needs your resting signals while you sleep, and they haven't come in — if you don't wear your watch at night, I won't be able to read them."),
+                                     defaultValue: "None of these 30 mornings had enough signal. Preparation needs your resting signals while you sleep, and they haven't come in: if you don't wear your watch at night, I won't be able to read them."),
                        "sin señal posible NO se promete una base que nunca va a formarse")
     }
 
@@ -173,7 +173,7 @@ final class PreparacionDetalleModeloTests: XCTestCase {
             healthConnected: true, asOf: Date(), calendario: cal)
         XCTAssertNotEqual(m.avisoVentanaSinVeredicto,
                           String(localized: "prep.vacio.imposible",
-                                 defaultValue: "None of these 30 mornings had enough signal. Preparation needs your resting signals while you sleep, and they haven't come in — if you don't wear your watch at night, I won't be able to read them."))
+                                 defaultValue: "None of these 30 mornings had enough signal. Preparation needs your resting signals while you sleep, and they haven't come in: if you don't wear your watch at night, I won't be able to read them."))
         XCTAssertTrue(m.avisoVentanaSinVeredicto?.contains("4") == true,
                       "le dice cuántas noches lleva")
     }

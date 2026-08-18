@@ -432,7 +432,7 @@ struct PreparacionDetalleModelo {
                                                  defaultValue: "Temperature and breathing"),
                   dias: leidas.filter(\.sentinelOut).count,
                   pie: String(localized: "prep.atr.centinela",
-                              defaultValue: "Both ran high together — one alone never counts")),
+                              defaultValue: "Both ran high together; one alone never counts")),
             .init(id: "leidas", nombre: String(localized: "prep.atr.leidas.nombre",
                                                defaultValue: "Mornings read"),
                   dias: conLectura,
@@ -495,7 +495,7 @@ struct PreparacionDetalleModelo {
         }
         if !prep.autonomicPossible {
             return String(localized: "prep.vacio.imposible",
-                          defaultValue: "None of these 30 mornings had enough signal. Preparation needs your resting signals while you sleep, and they haven't come in — if you don't wear your watch at night, I won't be able to read them.")
+                          defaultValue: "None of these 30 mornings had enough signal. Preparation needs your resting signals while you sleep, and they haven't come in: if you don't wear your watch at night, I won't be able to read them.")
         }
         return String(format: String(localized: "prep.vacio.formando.fmt",
                                      defaultValue: "None of these 30 mornings had a verdict yet: I'm still learning your normal. Night %1$d of %2$d."),
