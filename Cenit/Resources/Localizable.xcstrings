@@ -20951,7 +20951,41 @@
         }
       }
     },
-    "Enough sleep" : {
+    "Hours slept" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hours slept"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Horas dormidas"
+          }
+        }
+      }
+    },
+    "Regularity · of 100" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Regularity · of 100"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Regularidad · de 100"
+          }
+        }
+      }
+    },
+  "Enough sleep" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {

@@ -170,17 +170,21 @@ struct SleepDetailScreen: View {
             titulo: String(localized: "Sleep"),
             glifo: .luna,
             datos: [
+                // Opción 2 del dueño (2026-08-17): los DOS numerales quedan limpios y la
+                // unidad/escala baja al rótulo. El «/100» pegado a la diagonal apretaba, y la
+                // «h» a 20 competía con el numeral; el rótulo ya es una línea de texto chico
+                // donde caben sin estorbar.
                 .init(valor: hoursOnly(night.stages.asleep),
-                      rotulo: String(localized: "hours"),
+                      rotulo: String(localized: "Hours slept"),
                       // «7:12» se dicta como hora del reloj («siete doce»); VoiceOver dice horas.
                       a11y: horasHabladas(night.stages.asleep)),
                 // Sin base todavía, el numeral NO miente: «··» atenuado con su motivo, no un
                 // número. El tipo `Dato` cuelga del genérico del campo, así que se nombra
                 // SIEMPRE por `.init`/`.calibrando` — escribirlo completo rompe la inferencia.
                 model.regularity.map {
-                    .init(valor: "\($0.score)", unidad: "/100",
-                          rotulo: String(localized: "regularity"))
-                } ?? .calibrando(rotulo: String(localized: "regularity"),
+                    .init(valor: "\($0.score)",
+                          rotulo: String(localized: "Regularity · of 100"))
+                } ?? .calibrando(rotulo: String(localized: "Regularity · of 100"),
                                  motivo: calibrandoMotivo),
             ],
             veredicto: heroVerdictTitle(night),
