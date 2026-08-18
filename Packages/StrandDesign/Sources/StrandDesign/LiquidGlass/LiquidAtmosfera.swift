@@ -69,6 +69,12 @@ public struct LiquidAtmosfera: View {
     /// instantáneo (y honesto: el color del veredicto se ve al momento).
     private var crossfade: TimeInterval { still ? 0 : LiquidEcosistemaMotion.ambienteCrossfade }
 
+    /// Cota del reloj de sesión: un `Float` resuelve bien hasta ~1 día, pero Hoy puede vivir
+    /// semanas en background. Cada vez que el polvo REANUDA (vuelve la pestaña, se cierra la hoja,
+    /// vuelve la app) y ya lleva más de esto, `inicio` se re-basa: las motas saltan a su posición
+    /// inicial en un momento en que nadie las está mirando, y el reloj vuelve a resolver fino.
+    static let maxSesion: TimeInterval = 3600
+
     public var body: some View {
         ZStack {
             LiquidColor.papelTarjeta
@@ -77,6 +83,9 @@ public struct LiquidAtmosfera: View {
         .ignoresSafeArea()
         .allowsHitTesting(false)
         .accessibilityHidden(true)
+        .onChange(of: paused) { _, p in
+            if !p, Date().timeIntervalSince(inicio) > Self.maxSesion { inicio = Date() }
+        }
         #if os(iOS) && canImport(MetalKit)
         .onAppear { metal.preparar() }
         #endif

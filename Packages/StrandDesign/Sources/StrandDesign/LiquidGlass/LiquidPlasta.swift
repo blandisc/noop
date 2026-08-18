@@ -44,8 +44,8 @@ private struct LiquidPlastaMasa {
 }
 
 /// La plasta del veredicto: fondo casi blanco + 4 masas monocromas del clima + viñeta de luz.
-/// Es el fondo completo de la pantalla «El Tablero» — sustituye a `LiquidAmbientBackground.hoy`
-/// en Hoy (el resto del sistema sigue usando la de orbes).
+/// Es el fondo completo de la pantalla «El Tablero» (los orbes drift de Hoy se retiraron en
+/// FER-118: Hoy vive sobre `LiquidAtmosfera`).
 public struct LiquidPlasta: View {
     private let ambiente: LiquidAmbiente
 

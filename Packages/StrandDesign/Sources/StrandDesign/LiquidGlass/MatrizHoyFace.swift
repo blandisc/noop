@@ -493,7 +493,9 @@ public struct MatrizHoyFace: View {
     private func filaTitulo(_ s: MatrizSeccion) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: MatrizTokens.selloTexto) {
             sello(s)
-                // El sello no es texto: ancla su centro óptico a las caps del título.
+                // El sello no es texto: ancla su centro óptico a la altura de la mayúscula
+                // inicial del título (caja normal desde FER-118; verificado en captura: el 0.78
+                // calibrado para versalitas sigue centrando con la inicial en mayúscula).
                 .alignmentGuide(.firstTextBaseline) { d in d.height * 0.78 }
                 // Acuse del tacto: el eco del héroe responde al dedo (§micro).
                 .scaleEffect(latido == s.id ? 1.10 : 1)
@@ -593,16 +595,23 @@ public struct MatrizHoyFace: View {
         let fuente = s.destacada ? LiquidType.valorTileL : LiquidType.valorTileM
         return HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s050) {
             // FER-80 · El par del guardián se escribe con SUS DOS colores («+0.1°» dorado ·
-            // «14.9» azul): son dos señales distintas, no un dato con dos partes.
+            // «14.9» azul): son dos señales distintas, no un dato con dos partes. FER-118: tres
+            // `Text` adyacentes (no una concatenación multicolor, cuyo rodado por dígito no está
+            // documentado), cada uno con su propio `numericText`.
             if let par = s.huesPar, let corte = valor.range(of: " · ") {
-                (Text(valor[..<corte.lowerBound]).foregroundColor(par.0)
-                    + Text(verbatim: " · ").foregroundColor(LiquidColor.tinta500)
-                    + Text(valor[corte.upperBound...]).foregroundColor(par.1))
-                    .font(fuente)
-                    .tracking(LiquidType.valorTileTracking)
-                    .monospacedDigit()
-                    .contentTransition(reduceMotion ? .identity : .numericText())
-                    .animation(reduceMotion ? nil : .snappy, value: valor)
+                let temp = String(valor[..<corte.lowerBound]), resp = String(valor[corte.upperBound...])
+                HStack(alignment: .firstTextBaseline, spacing: 0) {
+                    Text(temp).foregroundStyle(par.0)
+                        .contentTransition(reduceMotion ? .identity : .numericText())
+                        .animation(reduceMotion ? nil : .snappy, value: temp)
+                    Text(verbatim: " · ").foregroundStyle(LiquidColor.tinta500)
+                    Text(resp).foregroundStyle(par.1)
+                        .contentTransition(reduceMotion ? .identity : .numericText())
+                        .animation(reduceMotion ? nil : .snappy, value: resp)
+                }
+                .font(fuente)
+                .tracking(LiquidType.valorTileTracking)
+                .monospacedDigit()
             } else {
                 Text(valor)
                     .font(fuente)
@@ -848,7 +857,9 @@ public struct MatrizHoyFace: View {
 
 /// El estilo del botón de un módulo: NO escala su label (el label es solo el encabezado);
 /// reporta el estado presionado a la cara, que escala el VIDRIO ENTERO con `pressScale` — la
-/// única gramática de toque (`.liquidPress`), aplicada al objeto correcto.
+/// única gramática de toque (`.liquidPress`), aplicada al objeto correcto. Un solo `presionado`
+/// para toda la cara: dos dedos en dos módulos a la vez es un caso raro y el peor efecto es que
+/// el primero deje de ceder antes de soltarlo (decisión registrada; sin estado colgado).
 private struct PresionaModulo: ButtonStyle {
     let id: String
     @Binding var presionado: String?
@@ -861,10 +872,15 @@ private struct PresionaModulo: ButtonStyle {
 }
 
 /// El hint de barrido (FER-118): una luz tenue de tinta cruza la gráfica una vez, 0.9 s después
-/// de aparecer, para enseñar que se arrastra. Decorativo: sin hit, sin VoiceOver.
+/// de que la gráfica ENTRA A LA VISTA, para enseñar que se arrastra. Decorativo: sin hit, sin
+/// VoiceOver. Cuenta como «mostrado» solo si de verdad se vio: el `ScrollView` de Hoy no es
+/// lazy y monta la Matriz entera al abrir, así que un `onAppear` a secas quemaba el contador de
+/// 3 en tres lanzamientos sin que nadie hubiera bajado hasta el guardián (revisión adversarial).
+/// En iOS 18+ lo decide `onScrollVisibilityChange`; antes, el `onAppear` de siempre.
 private struct HintBarrido: View {
     let onMostrado: () -> Void
     @State private var cruzo = false
+    @State private var disparado = false
     var body: some View {
         GeometryReader { geo in
             LinearGradient(colors: [LiquidColor.tinta900.opacity(0), LiquidColor.tinta7,
@@ -873,15 +889,31 @@ private struct HintBarrido: View {
                 .frame(width: MatrizTokens.hintAncho)
                 .offset(x: cruzo ? geo.size.width + MatrizTokens.hintAncho
                                  : -MatrizTokens.hintAncho * 1.2)
-                .onAppear {
-                    onMostrado()
-                    withAnimation(.easeInOut(duration: MatrizTokens.hintDuracion)
-                                    .delay(MatrizTokens.hintEspera)) { cruzo = true }
-                }
         }
+        .modifier(HintVisibilidad { visible in
+            guard visible, !disparado else { return }
+            disparado = true
+            onMostrado()
+            withAnimation(.easeInOut(duration: MatrizTokens.hintDuracion)
+                            .delay(MatrizTokens.hintEspera)) { cruzo = true }
+        })
         .clipShape(RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous))
         .allowsHitTesting(false)
         .accessibilityHidden(true)
+    }
+}
+
+/// «¿La gráfica está a la vista?» — iOS 18+ lo sabe (`onScrollVisibilityChange`, ≥ 60 % dentro
+/// del viewport); antes se asume visible al aparecer (el estado seguro de siempre).
+private struct HintVisibilidad: ViewModifier {
+    let cambio: (Bool) -> Void
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if #available(iOS 18.0, macOS 15.0, watchOS 11.0, *) {
+            content.onScrollVisibilityChange(threshold: 0.6) { cambio($0) }
+        } else {
+            content.onAppear { cambio(true) }
+        }
     }
 }
 

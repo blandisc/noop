@@ -20,7 +20,8 @@ import SwiftUI
 //   · la banda SOLO se dibuja si ese hilo tiene al menos una noche con valor (sin base
 //     —respiración sin juicio, calibración— no hay banda ni hilo central en ese hilo);
 //   · sin lectura = una marca mínima gris sobre la base, del color de nadie (P-2);
-//   · la noche en que el PAR votó (`parFuera`, el juicio del motor) es la única con ámbar:
+//   · la noche en que el PAR votó (`parFuera`, el juicio del motor) es la única con ámbar
+//     (`atencion`, el mismo de la costura — el claro de ambiente no pasa 3:1 sobre blanco):
 //     columna, los dos puntos y un nudo punteado que los une.
 public struct MatrizHilos: View {
     private let chartID: String
@@ -157,13 +158,15 @@ public struct MatrizHilos: View {
                 let col = CGRect(x: x(i) - paso * MatrizTokens.hilosColumnaFactor / 2, y: LiquidSpace.s100,
                                  width: paso * MatrizTokens.hilosColumnaFactor,
                                  height: size.height - LiquidSpace.s100 * 2)
+                // `atencion`, no `ambarClaro`: el claro es un tono de AMBIENTE (2.3:1 sobre blanco)
+                // y ésta es la marca de dato más importante de la gráfica (revisión ronda 3).
                 ctx.fill(Path(roundedRect: col, cornerRadius: LiquidSpace.s150),
-                         with: .color(LiquidColor.ambarClaro.opacity(MatrizTokens.hilosAlertaAlfa * 0.5)))
+                         with: .color(LiquidColor.atencion.opacity(MatrizTokens.hilosAlertaAlfa * 0.5)))
                 if let t = noche.temp, let r = noche.resp {
                     var nudo = Path()
                     nudo.move(to: CGPoint(x: x(i), y: Geometria.y(t, base: MatrizTokens.hilosBaseTemp)))
                     nudo.addLine(to: CGPoint(x: x(i), y: Geometria.y(r, base: MatrizTokens.hilosBaseResp)))
-                    ctx.stroke(nudo, with: .color(LiquidColor.ambarClaro),
+                    ctx.stroke(nudo, with: .color(LiquidColor.atencion),
                                style: StrokeStyle(lineWidth: MatrizTokens.hilosNudoTrazo,
                                                   dash: MatrizTokens.hilosNudoDash))
                 }
@@ -187,7 +190,7 @@ public struct MatrizHilos: View {
                         continue
                     }
                     let estilo = Geometria.estilo(v: v, parFuera: noches[i].parFuera, leido: leyendo == i)
-                    let tinta = noches[i].parFuera ? LiquidColor.ambarClaro : hue
+                    let tinta = noches[i].parFuera ? LiquidColor.atencion : hue
                     let c = CGPoint(x: x(i), y: Geometria.y(v, base: base))
                     MatrizChartDraw.punto(ctx, en: c, radio: Geometria.radio(estilo),
                                           hue: tinta, alfa: Geometria.alfa(estilo))
