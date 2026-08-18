@@ -31,6 +31,12 @@ struct SessionKeypad: View {
     /// Hides the keypad without registering anything (canvas pass 2026-07-15) — every keystroke has
     /// already committed live to the model, so dismissing loses nothing.
     var onHide: () -> Void = {}
+    /// Pausa/reanuda sin cerrar el teclado (FER-86). El teclado OCUPA el sitio de la barra de estado,
+    /// que es donde vive la pausa; sin este accesorio, el control desaparece justo mientras registras
+    /// una serie — que es cuando te interrumpen. `nil` lo oculta, nunca lo deshabilita.
+    var onPause: (() -> Void)? = nil
+    /// Qué cara pone el accesorio: ❚❚ para pausar, ▶ para reanudar.
+    var isPaused: Bool = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -58,6 +64,17 @@ struct SessionKeypad: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text("Hide keyboard"))
+                if let onPause {
+                    Button(action: onPause) {
+                        Image(systemName: isPaused ? "play.fill" : "pause.fill")
+                            .font(StrandFont.glyph(.inline, weight: .semibold))
+                            .foregroundStyle(theme.inkSecondary)
+                            .frame(width: 34, height: 34)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(isPaused ? Text("Resume session") : Text("Pause session"))
+                }
                 pill(String(localized: "copy last"), enabled: canCopyPrevious, action: onCopyPrevious)
                 pill(stepLabel, action: onStep)
                 // FER-815: each accessory appears only when its function exists — never a permanent

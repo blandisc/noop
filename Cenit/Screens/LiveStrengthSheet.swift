@@ -1078,7 +1078,13 @@ struct LiveStrengthSheet: View {
             onCopyPrevious: { if let run { prefillTapped(ei: ei, si: si, run: run); syncBufferFromModel(cell) } },
             onStep: { keypadStep(cell) },
             onPlates: { openPlates(ei: ei, si: si) },
-            onHide: { withAnimation(.snappy(duration: 0.22)) { activeCell = nil } }
+            onHide: { withAnimation(.snappy(duration: 0.22)) { activeCell = nil } },
+            // La MISMA pausa que la barra de estado, no una segunda: el teclado ocupa el sitio de
+            // esa barra, así que sin esto el control desaparece justo mientras registras una serie
+            // — que es exactamente cuando te interrumpen. Una decisión, dos superficies del mismo
+            // borde inferior.
+            onPause: alternarPausa,
+            isPaused: session.paused
         )
         .transition(.move(edge: .bottom))
     }
@@ -1377,13 +1383,21 @@ struct LiveStrengthSheet: View {
             sets: "\(session.doneCount)/\(sessionSetsTotal)",
             pulse: model.watchBpm.map { "\($0)" },
             isPaused: session.paused,
-            onPause: puedeControlarPausa ? {
-                if session.paused { model.resumeStrengthSessionFromPause() }
-                else { model.pauseStrengthSession() }
-            } : nil,
+            onPause: alternarPausa,
             onFocus: puedeEnfocar ? { focusMode = true } : nil
         )
         .accessibilityElement(children: .contain)
+    }
+
+    /// Pausar o reanudar, según toque. Una sola definición para las DOS superficies del borde
+    /// inferior (la barra de estado y el teclado, que se turnan el mismo sitio): así no pueden
+    /// divergir ni quedar una sin la otra. `nil` cuando no hay sesión que pausar.
+    private var alternarPausa: (() -> Void)? {
+        guard puedeControlarPausa else { return nil }
+        return {
+            if session.paused { model.resumeStrengthSessionFromPause() }
+            else { model.pauseStrengthSession() }
+        }
     }
 
     /// La pausa solo existe mientras hay sesión que pausar: una sesión ad hoc vacía no se pausa, se

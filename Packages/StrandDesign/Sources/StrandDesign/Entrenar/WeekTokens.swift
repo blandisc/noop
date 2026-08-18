@@ -127,8 +127,12 @@ public struct SessionStatsBar: View {
         stat(sets, unit: "sets", tone: isPaused ? theme.inkSecondary : theme.ink)
         if let pulse {
             dot
-            // El rosa del pulso vive en el numeral, que es grande: ahí el hue saturado sí es legible.
-            stat(pulse, unit: "bpm", tone: isPaused ? theme.inkSecondary : theme.dataHeart)
+            // El numeral son 17 pt, no 24: por debajo del piso, el hue saturado NO se puede usar
+            // en texto. `dataHeart` da 4.24:1 sobre el papel. Va su tono de LECTURA — el mismo par
+            // «hue de dato / tono de lectura» que `EntrenarFamily.reading` ya obliga en la sección.
+            stat(pulse, unit: "bpm",
+                 tone: isPaused ? theme.inkSecondary
+                                : OKLab.darkened(theme.dataHeart, toContrast: 4.5, against: theme.paper))
         }
     }
 
@@ -140,6 +144,7 @@ public struct SessionStatsBar: View {
         }
         if let onFocus {
             control("scope", label: Text("Focus mode"), action: onFocus)
+                .accessibilityHint(Text("Opens a full-screen set logger"))
         }
     }
 
