@@ -33,9 +33,11 @@ final class PreparednessVerdictHistoryTests: XCTestCase {
     }
 
     private func read(_ days: [DailyMetric], asOf: String,
-                      trend: AutonomicTrend.Read? = nil) -> Preparedness.Read {
+                      trend: AutonomicTrend.Read? = nil,
+                      nocturnalRestingHr: [String: Double] = [:]) -> Preparedness.Read {
         Preparedness.evaluate(.init(days: days, strainByDay: [:], trend: trend, asOf: asOf,
-                                    nocturnalRestingHr: [:], cyclePhase: nil, nocturnalRmssd: nil))
+                                    nocturnalRestingHr: nocturnalRestingHr,
+                                    cyclePhase: nil, nocturnalRmssd: nil))
     }
 
     /// La tendencia cayendo, como la arma `PreparednessTests`.
@@ -297,5 +299,62 @@ final class PreparednessVerdictHistoryTests: XCTestCase {
     func testVentanaVaciaNoCrashea() {
         let r = read([], asOf: "2026-06-20")
         XCTAssertTrue(r.verdictHistory.isEmpty, "sin días, la serie es vacía — sin celda fantasma")
+    }
+
+    // MARK: - Causalidad: el hueco REAL, demostrado y no escondido
+
+    /// 🔴 LA PRUEBA QUE EL REQUERIMIENTO PIDE POR NOMBRE, y que un fixture que solo mueve HRV
+    /// jamás habría cazado.
+    ///
+    /// `nocturnalUsable` decide **para TODA la ventana** si la FC corre sobre el constructo
+    /// nocturno o el despierto, y una de sus condiciones es que **la noche de HOY sea
+    /// nocturna**. Quitar la lectura nocturna de hoy —sin tocar un solo dato viejo— voltea la
+    /// serie entera y **repinta veredictos ya mostrados**.
+    ///
+    /// El fixture importa: con una serie plana (todos los días en rango) cambiar de constructo
+    /// no voltea nada y la prueba pasaría en vacío. Aquí la FC despierta es plana y la nocturna
+    /// trae un pico real en un día viejo, así que ese día es «fuera» bajo un constructo y
+    /// «dentro» bajo el otro. Es la diferencia entre documentar el hueco y solo decir que existe.
+    ///
+    /// Esta prueba NO corrige la limitación: la DEMUESTRA, y por eso la pantalla no puede
+    /// afirmar que cada cuadro es la foto de lo que el usuario vio esa mañana.
+    func testQuitarLaLecturaNocturnaDeHoyRepintaLaHistoria() {
+        // FC despierta PLANA: bajo este constructo ningún día se sale.
+        let dias = (1...20).map { i in
+            dm(String(format: "2026-06-%02d", i), hrv: 55, rhr: 55, resp: 14)
+        }
+        // FC nocturna plana SALVO un pico gordo en un día viejo (el 8).
+        var nocturna: [String: Double] = [:]
+        for (i, d) in dias.enumerated() { nocturna[d.day] = (i == 7) ? 70 : 46 }
+
+        let conHoy = read(dias, asOf: dias.last!.day, nocturnalRestingHr: nocturna)
+        var sinHoy = nocturna
+        sinHoy.removeValue(forKey: dias.last!.day)
+        let sinLaDeHoy = read(dias, asOf: dias.last!.day, nocturnalRestingHr: sinHoy)
+
+        XCTAssertEqual(conHoy.verdictHistory.count, sinLaDeHoy.verdictHistory.count)
+
+        // El día 8 es un día VIEJO: su dato no se tocó, y aun así cambia de lectura.
+        let clave = dias[7].day
+        let antes = conHoy.verdictHistory.first { $0.day == clave }
+        let despues = sinLaDeHoy.verdictHistory.first { $0.day == clave }
+        XCTAssertNotNil(antes); XCTAssertNotNil(despues)
+        XCTAssertTrue(antes?.autonomicOut == true,
+                      "con el constructo nocturno el pico del día 8 se sale")
+        XCTAssertFalse(despues?.autonomicOut == true,
+                       "LIMITACIÓN DEMOSTRADA: al perder la lectura nocturna de HOY, la ventana entera cae al constructo despierto y un día VIEJO deja de estar fuera, sin que su propio dato cambiara")
+    }
+
+    /// Cruzar `Baselines.minNightsSeed` por abajo es la OTRA mitad del mismo gate: con pocas
+    /// noches nocturnas la ventana corre despierta aunque hoy sí traiga la suya.
+    func testConPocasNochesNocturnasLaVentanaNoUsaElConstructoNocturno() {
+        let dias = baseline(20)
+        var pocas: [String: Double] = [:]
+        for d in dias.suffix(2) { pocas[d.day] = 46 }   // 2 noches: por debajo del semillero
+
+        let a = read(dias, asOf: dias.last!.day, nocturnalRestingHr: pocas)
+        let b = read(dias, asOf: dias.last!.day, nocturnalRestingHr: [:])
+        XCTAssertEqual(a.verdictHistory.map(\.verdict), b.verdictHistory.map(\.verdict),
+                       "por debajo del semillero, un puñado de noches nocturnas no cambia nada: la ventana corre entera sobre el constructo despierto")
     }
 }

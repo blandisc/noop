@@ -580,7 +580,9 @@ public enum Preparedness {
                 // («termina en la última noche que SÍ existe, no en asOf»). La serie termina donde
                 // termina la historia, igual que `bodyHistory`.
                 verdictNights(ordered: ordered, raws: raws,
-                              hysteresisDays: config.hysteresisDays, verdictFinal: nil))
+                              serieEstable: hysteresedSeries(raws.map(\.verdict),
+                                                             hysteresisDays: config.hysteresisDays),
+                              verdictFinal: nil))
     }
 
     public static func evaluate(_ input: Input, config: Config = .default) -> Read {
@@ -714,7 +716,9 @@ public enum Preparedness {
                         // elemento a eso mismo. Con UNA noche sin lectura, el pliegue genérico se
                         // quedaría pegado al veredicto de ayer y el mosaico contradiría al héroe.
                         verdictHistory: verdictNights(ordered: ordered, raws: raws,
-                                                      hysteresisDays: config.hysteresisDays,
+                                                      serieEstable: hysteresedSeries(
+                                                          raws.map(\.verdict),
+                                                          hysteresisDays: config.hysteresisDays),
                                                       verdictFinal: .lowSignal),
                         thermalAdjustedDevC: tempDevToday,
                         autonomicPossible: autonomicPosible, sleepScale: sleepScale)
@@ -724,7 +728,12 @@ public enum Preparedness {
         // ONE forward pass yields the per-day RawDay (verdict + illness-sentinel signals): hysteresis
         // rides the verdicts, the sentinel STREAK (FER-8) rides the temp/resp flags — same pass, no
         // extra cost, and no drift between the vote and the sentinel.
-        let stable = hysteresed(raws.map(\.verdict), hysteresisDays: config.hysteresisDays)
+        // El pliegue corre UNA vez y su resultado se reparte: `stable` es su último elemento y
+        // `verdictNights` recibe la serie ya hecha. Antes `hysteresed` plegaba aquí y
+        // `verdictNights` volvía a plegar adentro sobre los MISMOS datos — dos pases O(n) y dos
+        // arreglos de hasta ~4000 elementos por refresh completo, para tirar uno de los dos.
+        let serieEstable = hysteresedSeries(raws.map(\.verdict), hysteresisDays: config.hysteresisDays)
+        let stable = serieEstable.last ?? .lowSignal
         // Trend nudge (post-hysteresis): a sustained falling RMSSD trend pushes a borderline day
         // (`caution`) to `easy`. It never overrides a clean `full`. `/cso` may widen this.
         let final: Verdict = (stable == .caution && input.trend?.direction == .below) ? .easy : stable
@@ -736,7 +745,7 @@ public enum Preparedness {
                     sentinelHistory: historiaCentinela,
                     bodyHistory: historiaCuerpo,
                     verdictHistory: verdictNights(ordered: ordered, raws: raws,
-                                                  hysteresisDays: config.hysteresisDays,
+                                                  serieEstable: serieEstable,
                                                   verdictFinal: final),
                     thermalAdjustedDevC: tempDevToday,
                     autonomicPossible: autonomicPosible, sleepScale: sleepScale)
@@ -785,10 +794,11 @@ public enum Preparedness {
     /// discrepar del héroe el mismo día — basta una noche sin lectura, porque la histéresis pide
     /// dos días para moverse y se queda pegada al veredicto de ayer.
     private static func verdictNights(ordered: [DailyMetric], raws: [RawDay],
-                                      hysteresisDays: Int,
+                                      serieEstable: [Verdict],
                                       verdictFinal: Verdict?) -> [VerdictNight] {
-        guard !ordered.isEmpty, ordered.count == raws.count else { return [] }
-        var serie = hysteresedSeries(raws.map(\.verdict), hysteresisDays: hysteresisDays)
+        guard !ordered.isEmpty, ordered.count == raws.count,
+              serieEstable.count == raws.count else { return [] }
+        var serie = serieEstable
         // 🔴 Una noche SIN lectura no puede heredar el veredicto de ayer. El estable la
         // enmascaraba: la histéresis pide 2 días para moverse, así que una noche suelta sin
         // reloj salía pintada con el veredicto anterior. Medido en una sonda de 30 días con
