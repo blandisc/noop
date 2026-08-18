@@ -20,6 +20,34 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **El acta de la sesión: el esfuerzo sube a héroe, el costo pierde su caja, los músculos se vuelven una línea / The session's receipt: effort becomes the hero, the cost box goes, muscles become a line** (FER-87).
+  **ES** — El recibo con el que cierra cada sesión de fuerza se re-viste sobre el mismo dato de siempre.
+  Cuando hay lectura de FC, el Esfuerzo (sobre 21) sube a numeral dominante en ámbar, con el mismo
+  formato del héroe de Hoy; sin reloj o sin permiso, el dominante cae a la duración en tinta y el
+  bloque de costo cardiovascular no se dibuja. El costo cardiovascular deja su caja rellena: ahora
+  Ligero / Moderado / Alto se leen los tres, con el activo subrayado en su tono de lectura (nunca el
+  color crudo del dato sobre texto chico). Músculos de hoy deja de ser una fila de chips con fondo:
+  es una línea de tinta separada por «·», con una sola puerta tocable, «Ver mapa», que sigue abriendo
+  el mismo mapa muscular. Se agrega una fila nueva, «Guardado en Salud», que confirma que la sesión
+  llegó a Apple Salud (con sus kcal, si las hay) solo cuando eso es cierto para esa sesión — el reloj
+  o el interruptor opcional del iPhone, prendido. El bloque de Dieta se retira: desde que la fila de
+  Dieta salió de Entrenar (FER-92), su botón solo cerraba el recibo sin nada que mostrar. Nada del
+  cálculo cambió: las marcas, la comparación contra tu última sesión y el texto fijo por banda de
+  costo son los mismos de siempre.
+  **EN** — The receipt that closes every strength session gets re-dressed over the exact same data.
+  With an HR reading, Effort (out of 21) becomes the dominant amber numeral, in the same format as
+  Today's hero; without a watch or permission, the dominant falls back to duration in ink and the
+  cardiovascular-cost block doesn't draw. Cardiovascular cost drops its filled box: Light / Moderate /
+  High now all read, with the active one underlined in its AA reading-tone (never the raw data hue on
+  small text). Today's muscles stops being a row of chips-with-background: it's one line of ink text
+  separated by «·», with a single tap door, «See map», that still opens the same fatigue map. A new
+  row, «Saved to Health», confirms the session actually reached Apple Health (with its kcal, when
+  known) only when that's true for THIS session — the Watch, or the iPhone's opt-in toggle, on. The
+  Diet block is retired: since Diet left Entrenar (FER-92), its button only closed the receipt with
+  nothing to show. Nothing about the math changed: records, the comparison against your last session,
+  and the fixed per-band cost text are exactly as before.
+  ([LiveStrengthSheet.swift](Cenit/Screens/LiveStrengthSheet.swift), [InstrumentoThemeEngine.swift](Packages/StrandDesign/Sources/StrandDesign/InstrumentoThemeEngine.swift))
+
 - **Las pantallas satélite de Entrenar se visten con el mismo hilo / Entrenar's satellite screens dress in the same thread** (FER-120).
   **ES** — Descanso, Respirar, el temporizador de intervalos y el taller de trucos ya se ven y se sienten como el resto de Entrenar, sin cambiar una sola regla de cómo funcionan. La fila «Mobility · Intervals · Pick a routine · Breathe» del día de descanso ahora cede al tocarla igual que el resto de la sección, y su blanco táctil crece a los 44 pt de siempre. La píldora de estado quieta y la tarjeta de superficie que Respirar y el temporizador dibujaban cada una por su cuenta —palabra por palabra, dos veces— pasan a ser una sola pieza compartida. El orbe de Respirar y el anillo del temporizador se congelan de verdad con «Reducir movimiento» en vez de seguir latiendo de fondo, y ambos dejan de anunciarse a VoiceOver porque lo que dicen ya se lee en texto al lado. Nada del taller de trucos cambió: sus seis filas ya estaban bien.
   **EN** — Rest day, Breathe, the interval timer and the workshop of tricks now look and feel like the rest of Entrenar, without changing a single rule of how they work. The rest day's «Mobility · Intervals · Pick a routine · Breathe» row now yields under a tap the same way the rest of the section does, and its touch target grows to the usual 44 pt. The quiet status pill and the surface card that Breathe and the interval timer each drew on their own — word for word, twice — become one shared piece. Breathe's orb and the interval timer's ring now truly freeze under Reduce Motion instead of quietly pulsing in the background, and both stop announcing themselves to VoiceOver since what they say is already read in text beside them. Nothing about the workshop of tricks changed: its six rows were already right.

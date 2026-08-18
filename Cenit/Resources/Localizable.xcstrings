@@ -4737,6 +4737,23 @@
     "%@ nights" : {
 
     },
+    "%@ of %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ of %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ de %@"
+          }
+        }
+      }
+    },
     "%@ of %@ days" : {
       "localizations" : {
         "en" : {
@@ -15769,23 +15786,6 @@
         }
       }
     },
-    "Calories · estimated" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Calories · estimated"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Calorías · estimado"
-          }
-        }
-      }
-    },
     "Calories in kilocalories, optional" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -21249,23 +21249,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Estimado por la fuente."
-          }
-        }
-      }
-    },
-    "estimated from this session." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "estimated from this session."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "estimadas de esta sesión."
           }
         }
       }
@@ -29123,23 +29106,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Registrado"
-          }
-        }
-      }
-    },
-    "logged from this session." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "logged from this session."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "registradas de esta sesión."
           }
         }
       }
@@ -44269,6 +44235,57 @@
         }
       }
     },
+    "Saved to Health" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saved to Health"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guardado en Salud"
+          }
+        }
+      }
+    },
+    "Saved to Health · %lld kcal" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saved to Health · %lld kcal"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guardado en Salud · %lld kcal"
+          }
+        }
+      }
+    },
+    "Saved to Health · %lld kcal estimated" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saved to Health · %lld kcal estimated"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guardado en Salud · %lld kcal estimadas"
+          }
+        }
+      }
+    },
     "Saving…" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -48593,23 +48610,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Toca un músculo para ver su carga"
-          }
-        }
-      }
-    },
-    "Tap a muscle to see when to train it again." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tap a muscle to see when to train it again."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Toca un músculo para ver cuándo volver a entrenarlo."
           }
         }
       }

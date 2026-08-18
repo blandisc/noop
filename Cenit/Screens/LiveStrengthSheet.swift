@@ -37,6 +37,10 @@ struct LiveStrengthSheet: View {
     @EnvironmentObject private var tabRouter: TabRouter
     @ObservedObject var session: StrengthSessionModel
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
+    /// FER-87 · the acta's «Guardado en Salud» row needs to know whether the iPhone's opt-in Health
+    /// mirror is even on (off by default) — the same gate `saveStrengthWorkoutIfEnabled` itself reads
+    /// (`HealthKitBridge.swift`), so the row never claims a save the engine wouldn't have attempted.
+    @AppStorage(HealthKitBridge.saveStrengthWorkoutsKey) private var saveStrengthWorkouts = false
     var theme: InstrumentoTheme = .base
 
     @Environment(\.dynamicTypeSize) private var typeSize
@@ -1492,7 +1496,7 @@ struct LiveStrengthSheet: View {
     private var statsBar: some View {
         SessionStatsBar(
             // kcal NO viaja aquí: la barra del handoff es volumen · series · pulso, y el dato
-            // sobrevive donde de verdad se lee, en el acta (`receiptDietBlock`, línea ~3973). Bajar
+            // sobrevive donde de verdad se lee, en el acta (`receiptHealthSaved`, FER-87). Bajar
             // de cuatro cifras a tres en una barra que se mira de reojo a media serie es la
             // jerarquía que pidió el handoff, no una pérdida silenciosa.
             volume: massText(sessionVolumeKg),
@@ -3825,8 +3829,8 @@ struct LiveStrengthSheet: View {
             receiptHeader(s)
             if s.watchRecorded { receiptWatchOrigin }
             receiptHeadline(s)
+            receiptHero(s)
             receiptStats(s)
-            if let kcal = s.energyKcal { receiptDietBlock(kcal: kcal, estimated: s.energySource == .estimated) }
             if let c = s.comparison { receiptComparison(s, c) }
 
             if !s.prs.isEmpty {
@@ -3843,6 +3847,11 @@ struct LiveStrengthSheet: View {
             if !s.muscles.isEmpty { summaryMuscles(s.muscles) }
 
             if let band = s.costBand { receiptCost(band, tomorrowPct: s.costTomorrowPct) }
+
+            // FER-87: the workout only really reached Apple Health when the Watch recorded it
+            // (always true) or the iPhone's opt-in mirror is on — the exact gate the save itself
+            // reads, so this row never claims a save the app never attempted.
+            if s.watchRecorded || saveStrengthWorkouts { receiptHealthSaved(s) }
 
             Button { shareReceipt = ShareRef(sessionId: session.id) } label: {
                 Label("Share…", systemImage: "square.and.arrow.up")
@@ -3941,23 +3950,101 @@ struct LiveStrengthSheet: View {
         return String(localized: "\(s.setCount) sets logged.")
     }
 
-    /// The four receipt metrics (duración · volumen · strain · kcal). Strain is the one colored datum;
-    /// with no strain but captured HR, the avg-HR slot proves the strap was read (FER-498). No dashes:
-    /// a metric without data simply isn't rendered.
+    /// The receipt's dominant numeral (FER-87): promotes Effort/21 to a hero — same
+    /// `MetricFormat.forMetric(.strain)` grammar as the Hoy hero/sheet (never a bespoke
+    /// `String(format:)`), colored `theme.dataStrain` — never the RPE hue (a different datum; see
+    /// `focusQuickLinks`' RPE link for that one). Without cardiac data (`s.strain == nil`: no Watch,
+    /// no HR permission, or a session too short) it falls back to the session's duration in plain
+    /// `theme.ink` — never invents a strain. `SessionRecoveryCost.cost(sessionStrain:)` (unchanged,
+    /// called with no `meanHRRPct` fallback in `AppModel+Strength.swift`) already guarantees
+    /// `s.costBand == nil` whenever `s.strain == nil`, so the COST block below stays correctly
+    /// hidden with no extra guard.
+    private func receiptHero(_ s: StrengthSummary) -> some View {
+        Group {
+            if let strain = s.strain {
+                let format = MetricFormat.forMetric(.strain)
+                let value = format.numeral(strain)
+                let zero = format.numeral(0)
+                let numeral = Text(receiptCountUp ? value : zero)
+                    .instrumentoHero(76).monospacedDigit().contentTransition(.numericText())
+                    .foregroundStyle(theme.dataStrain)
+                    .lineLimit(1).minimumScaleFactor(0.6)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Effort").groteskOverline(small: true).foregroundStyle(theme.inkTertiary)
+                    if reflow, let suffix = format.scaleSuffix {
+                        numeral
+                        Text(suffix).font(StrandFont.unit).foregroundStyle(theme.dataStrain)
+                    } else {
+                        HStack(alignment: .firstTextBaseline, spacing: 3) {
+                            numeral
+                            if let suffix = format.scaleSuffix {
+                                Text(suffix).font(StrandFont.unit).foregroundStyle(theme.dataStrain)
+                            }
+                        }
+                    }
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text("Effort"))
+                .accessibilityValue(Text(Self.strainAccessibilityValue(value, scaleSuffix: format.scaleSuffix)))
+            } else {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Duration").groteskOverline(small: true).foregroundStyle(theme.inkTertiary)
+                    Text(receiptCountUp ? Self.clock(s.durationS) : "0:00")
+                        .instrumentoHero(76).monospacedDigit().contentTransition(.numericText())
+                        .foregroundStyle(theme.ink)
+                        .lineLimit(1).minimumScaleFactor(0.6)
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text("Duration"))
+                .accessibilityValue(Text(Self.clock(s.durationS)))
+            }
+        }
+    }
+
+    /// VoiceOver value for the Effort hero — «13.8 of 21», never «13.8 of nil» or a hardcoded scale:
+    /// derives the bare number from `MetricFormat`'s own `scaleSuffix` («/ 21») so a future change to
+    /// strain's scale can't silently desync the spoken value from the printed one (the exact class of
+    /// bug `MetricFormat`'s header doc warns about — one metric, two numbers, two places). `static`
+    /// (not `private`) so `CenitUnitTests` can call it directly, same as `Self.clock` below.
+    static func strainAccessibilityValue(_ value: String, scaleSuffix: String?) -> String {
+        guard let scaleSuffix else { return value }
+        let scale = scaleSuffix.trimmingCharacters(in: CharacterSet(charactersIn: "/ "))
+        return scale.isEmpty ? value : String(localized: "\(value) of \(scale)")
+    }
+
+    /// Which datum fills `receiptStats`' third slot (FER-87) — mutually exclusive with the Effort
+    /// hero above, which already shows strain: a session WITH strain never repeats it here (`.sets`
+    /// instead); a session withOUT strain but with captured HR still proves the strap was read
+    /// (`.avgHr`, FER-498); neither → nothing invented (`.none`). Pure and `static` so the exclusivity
+    /// itself — not just today's happy path — is what the test locks down.
+    enum ReceiptStatsThirdSlot: Equatable {
+        case sets(Int)
+        case avgHr(Int)
+        case none
+    }
+
+    static func receiptStatsThirdSlot(strain: Double?, setCount: Int, avgHr: Int?) -> ReceiptStatsThirdSlot {
+        if strain != nil { return .sets(setCount) }
+        if let avgHr { return .avgHr(avgHr) }
+        return .none
+    }
+
+    /// The receipt's secondary metrics (FER-87: duración · volumen · series-o-FC-promedio). Strain
+    /// and calories moved out — strain is now the hero above (never repeated here), calories moved to
+    /// «Guardado en Salud» below. No dashes: a metric without data simply isn't rendered.
     private func receiptStats(_ s: StrengthSummary) -> some View {
+        let thirdSlot = Self.receiptStatsThirdSlot(strain: s.strain, setCount: s.setCount, avgHr: s.avgHr)
         let cells = Group {
             receiptStat("Duration", value: Self.clock(s.durationS), zero: "0:00")
             receiptStat("Volume", value: plateNumber(displayWeight(s.volumeKg)), zero: "0",
                         unit: UnitFormatter.massUnit(units))
-            if let strain = s.strain {
-                receiptStat("Strain", value: Self.strainText(strain), zero: Self.strainText(0),
-                            color: theme.dataStrain)
-            } else if let avgHr = s.avgHr {
-                receiptStat("Avg HR", value: "\(avgHr)", zero: "0", unit: String(localized: "bpm"))
-            }
-            if let kcal = s.energyKcal {
-                receiptStat(s.energySource == .estimated ? "Calories · estimated" : "Calories",
-                            value: "\(Int(kcal.rounded()))", zero: "0", unit: "kcal")
+            switch thirdSlot {
+            case .sets(let count):
+                receiptStat("Sets", value: "\(count)", zero: "0")
+            case .avgHr(let bpm):
+                receiptStat("Avg HR", value: "\(bpm)", zero: "0", unit: String(localized: "bpm"))
+            case .none:
+                EmptyView()
             }
         }
         return Group {
@@ -3988,33 +4075,35 @@ struct LiveStrengthSheet: View {
         .accessibilityElement(children: .combine)
     }
 
-    /// The Diet block (decision: link ONLY, no target-% math): the session's kcal in prose + «Dieta →».
-    /// Until the Diet section lands, the link parks the user on «Entrenar» (where it will live).
-    private func receiptDietBlock(kcal: Double, estimated: Bool) -> some View {
-        Button {
-            tabRouter.select(.train)
-            model.closeStrengthSummary()
-        } label: {
-            HStack(spacing: 10) {
-                (Text(verbatim: "\(Int(kcal.rounded())) kcal ").fontWeight(.semibold).foregroundColor(theme.ink)
-                    + Text(estimated ? "estimated from this session." : "logged from this session.")
-                        .foregroundColor(theme.inkSecondary))
-                    .font(StrandFont.caption)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                HStack(spacing: 3) {
-                    Text("Diet").font(StrandFont.caption).fontWeight(.semibold)
-                    Image(systemName: "arrow.right").font(StrandFont.glyph(.chevron, weight: .semibold))
-                }
+    /// «Guardado en Salud» (FER-87, new): confirms the session reached Apple Health, with its kcal
+    /// when known. Shown only when that's actually true for THIS session — the Watch path always is
+    /// (`s.watchRecorded`); the iPhone path is opt-in and off by default, so the call site gates on
+    /// `saveStrengthWorkouts` (the same `UserDefaults` key `saveStrengthWorkoutIfEnabled` itself
+    /// checks before writing). `StrengthSummary` carries no per-session save-succeeded flag — adding
+    /// one is a model change, out of this light-lane phase — so a denied permission after opt-in is
+    /// this row's one known blind spot, same as the rest of the app's best-effort Health mirror.
+    /// Replaces the retired Diet block (FER-92/E11 already turned Diet into a dead route from Entrenar).
+    private func receiptHealthSaved(_ s: StrengthSummary) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: "checkmark.seal.fill")
+                .font(StrandFont.glyph(.inline, weight: .semibold))
                 .foregroundStyle(theme.dataRecovery)
-                .fixedSize()
-            }
-            .padding(.leading, 12).padding(.trailing, 12).padding(.vertical, 9)
-            .patternBlock(theme, bar: theme.dataStrain)
-            .contentShape(Rectangle())
+                .accessibilityHidden(true)
+            Text(Self.healthSavedText(s)).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
+    }
+
+    /// The kcal figure carries the same «estimated» qualifier `receiptStats` used to show (FER-715
+    /// origin: Keytel over strap HR vs. MET fallback) — moved here so it isn't lost, not dropped.
+    /// `static` (not `private`) so `CenitUnitTests` can call it directly, same as `Self.clock` below.
+    static func healthSavedText(_ s: StrengthSummary) -> String {
+        guard let kcal = s.energyKcal else { return String(localized: "Saved to Health") }
+        let kcalInt = Int(kcal.rounded())
+        return s.energySource == .estimated
+            ? String(localized: "Saved to Health · \(kcalInt) kcal estimated")
+            : String(localized: "Saved to Health · \(kcalInt) kcal")
     }
 
     /// «Contra tu última {rutina}» — three bars (volumen / series / duración) against the previous
@@ -4159,13 +4248,29 @@ struct LiveStrengthSheet: View {
         }
     }
 
-    /// Recovery cost + tomorrow's projection (conserves FER-409/442) as a «patrón» block whose left bar
-    /// wears the band's color.
+    /// Recovery cost + tomorrow's projection (conserves FER-409/442). FER-87 drops the filled
+    /// `patternBlock` box: the active band now reads as its name UNDERLINED in its AA reading-tone
+    /// (`OKLab.darkened`, never the raw data hue on text <24pt) among the other two bands, dimmed —
+    /// plain ink on paper, no molding. `Self.bandDetail`'s fixed per-band text is unchanged (still no
+    /// `SessionRecoveryCost.Result.basis` — `StrengthSummary.costBand` only ever stores the `Band`).
     private func receiptCost(_ band: SessionRecoveryCost.Band, tomorrowPct: Int?) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 8) {
             Text("Recovery cost").groteskOverline(small: true).foregroundStyle(theme.inkTertiary)
-            Text(Self.bandLabel(band)).font(StrandFont.subhead).fontWeight(.semibold)
-                .foregroundStyle(bandColor(band))
+            Group {
+                if reflow {
+                    VStack(alignment: .leading, spacing: 4) {
+                        bandNameText(.light, active: band)
+                        bandNameText(.moderate, active: band)
+                        bandNameText(.high, active: band)
+                    }
+                } else {
+                    HStack(spacing: 14) {
+                        bandNameText(.light, active: band)
+                        bandNameText(.moderate, active: band)
+                        bandNameText(.high, active: band)
+                    }
+                }
+            }
             Text(Self.bandDetail(band)).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
             // Tomorrow's projection given today's cost (FER-442): the prose in ink, the datum in
@@ -4179,10 +4284,22 @@ struct LiveStrengthSheet: View {
             Text("Estimate · you decide").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                 .padding(.top, 2)
         }
-        .padding(.horizontal, 12).padding(.vertical, 11)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .patternBlock(theme, bar: bandColor(band))
         .accessibilityElement(children: .combine)
+    }
+
+    /// One name in the LIGERO / MODERADO / ALTO tri-state row — underlined + AA reading-tone when
+    /// active, tenue ink otherwise. Inactive names stay OUT of VoiceOver (`accessibilityHidden`) so
+    /// the block reads exactly as it did before FER-87: only the active band's name is spoken.
+    private func bandNameText(_ b: SessionRecoveryCost.Band, active: SessionRecoveryCost.Band) -> some View {
+        let isActive = b == active
+        return Text(Self.bandLabel(b))
+            .font(StrandFont.caption.weight(isActive ? .semibold : .regular))
+            .textCase(.uppercase)
+            .underline(isActive)
+            .foregroundStyle(isActive
+                ? OKLab.darkened(bandColor(b), toContrast: 4.5, against: theme.paper)
+                : theme.inkTertiary)
+            .accessibilityHidden(!isActive)
     }
 
     /// The beaten record, for the «prior → new» framing. Volume compares totals (kg), matching `prValue`.
@@ -4194,25 +4311,28 @@ struct LiveStrengthSheet: View {
         }
     }
 
+    /// «Músculos de hoy» (FER-87): retires the per-muscle chip-with-background (`ChipFlow`) for one
+    /// line of running ink text — the muscles are context here, not N separate controls. The only tap
+    /// target left is «Ver mapa» (same copy/pattern `WorkoutHistoryScreen` already uses for its own
+    /// muscle-map door — toque 44, HIG §8.7-4), which still opens the same fatigue map via
+    /// `openFatigueMap()`. The old per-chip hint («Tap a muscle to see when to train it again.») is
+    /// retired with it — it described a per-muscle tap that no longer exists.
     private func summaryMuscles(_ muscles: [String]) -> some View {
-        VStack(alignment: .leading, spacing: 9) {
-            Text("Today's muscles").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Text("Tap a muscle to see when to train it again.")
-                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                .fixedSize(horizontal: false, vertical: true)
-            ChipFlow(spacing: 7) {
-                ForEach(muscles, id: \.self) { m in
-                    Button { openFatigueMap() } label: {
-                        Text(m).font(StrandFont.subhead).foregroundStyle(theme.ink)
-                            .padding(.horizontal, 11).padding(.vertical, 6)
-                            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
-                            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
-                                .strokeBorder(theme.hairlineStrong, lineWidth: 1))
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityHint(Text("Opens the fatigue map"))
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text("Today's muscles").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Spacer(minLength: 8)
+                Button { openFatigueMap() } label: {
+                    Text("See map").font(StrandFont.subhead).foregroundStyle(theme.ink)
+                        .frame(minHeight: CenitMetrics.touchTarget)   // toque 44 (HIG §8.7-4)
+                        .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
+                .accessibilityHint(Text("Opens the fatigue map"))
             }
+            Text(muscles.joined(separator: " · "))
+                .font(StrandFont.subhead).foregroundStyle(theme.ink)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -4223,8 +4343,6 @@ struct LiveStrengthSheet: View {
     }
 
     // MARK: Summary formatting
-
-    private static func strainText(_ v: Double) -> String { String(format: "%.1f", v) }
 
     private func prValue(_ pr: StrengthSummary.PR) -> String {
         switch pr.metric {
@@ -4372,36 +4490,6 @@ private extension View {
                                 bottom: bottom, trailing: CenitMetrics.screenPadding))
     }
 
-}
-
-/// Minimal flow layout: lays subviews left-to-right, wrapping to a new row when the next would overflow
-/// the proposed width. Used for the summary's muscle chips (FER-409) so they wrap instead of truncating
-/// at large Dynamic Type sizes.
-private struct ChipFlow: Layout {
-    var spacing: CGFloat = 7
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let maxW = proposal.width ?? .infinity
-        var x: CGFloat = 0, y: CGFloat = 0, rowH: CGFloat = 0
-        for v in subviews {
-            let sz = v.sizeThatFits(.unspecified)
-            if x > 0, x + sz.width > maxW { x = 0; y += rowH + spacing; rowH = 0 }
-            x += sz.width + spacing
-            rowH = max(rowH, sz.height)
-        }
-        return CGSize(width: maxW.isFinite ? maxW : x, height: y + rowH)
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        var x: CGFloat = 0, y: CGFloat = 0, rowH: CGFloat = 0
-        for v in subviews {
-            let sz = v.sizeThatFits(.unspecified)
-            if x > 0, x + sz.width > bounds.width { x = 0; y += rowH + spacing; rowH = 0 }
-            v.place(at: CGPoint(x: bounds.minX + x, y: bounds.minY + y), proposal: ProposedViewSize(sz))
-            x += sz.width + spacing
-            rowH = max(rowH, sz.height)
-        }
-    }
 }
 
 // MARK: - Live BPM dot (FER-716)

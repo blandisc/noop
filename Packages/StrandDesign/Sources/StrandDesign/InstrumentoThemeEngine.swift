@@ -41,8 +41,14 @@ public struct SolarWindow: Equatable, Sendable {
 // to <2e-3 per channel (asserted in tests). Used for perceptually-even colour mixes and
 // the WCAG-contrast `darkened(_:toContrast:against:)` that keeps the data hues and
 // `positiveText` legible on the warm paper.
+//
+// `darkened(_:toContrast:against:)` is `public` (FER-87) so app-target screens can compute a data
+// hue's own AA reading-tone for colored text <24pt outside StrandDesign — the same pattern the
+// package's own call sites (`RestBand`, `WeekTokens`, `EntrenarHilo`, `EntrenarNivel`,
+// `EntrenarFamily.reading`) already use internally. The rest of the type stays internal — no other
+// member is a needed app-facing API.
 
-enum OKLab {
+public enum OKLab {
     struct Lab { var L, a, b: Double }
 
     static func srgbToLinear(_ c: Double) -> Double {
@@ -108,7 +114,7 @@ enum OKLab {
     /// (contrast is monotonic in `L` on a light background), so it's deterministic and
     /// converges in a handful of iterations. Lets a data hue become AA-compliant for
     /// SMALL text against whatever paper is live, with no hand-tuned hex per hour.
-    static func darkened(_ color: Color, toContrast ratio: Double, against bg: Color) -> Color {
+    public static func darkened(_ color: Color, toContrast ratio: Double, against bg: Color) -> Color {
         if contrastRatio(color, bg) >= ratio { return color }
         let c = color.rgbaComponents
         var lab = toLab((c.r, c.g, c.b))
