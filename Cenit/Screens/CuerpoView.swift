@@ -542,9 +542,6 @@ private struct CuerpoLanding: View {
         periodWindow.compactMap(pick)
     }
 
-    /// The Recovery hero trend over the selected period (was a fixed 14 days in FER-186). Computed, not
-    /// memoized, so it re-windows when the selector changes.
-    private var recoverySpark: [Double] { windowedSpark(\.recovery) }
 
     /// The stress sparkline over the selected period. Reads the model's DERIVED daily trend (`fullTrend`) —
     /// the same source the Stress value uses (stored "stress" series where present, else derived from
@@ -774,12 +771,16 @@ private struct CuerpoLanding: View {
 
     // MARK: - Recovery hero (the single dominant element — Instrumento rule 1)
 
+    /// El héroe del aterrizaje. **Ya no lee `recovery`**, que es `nil` en producción desde que
+    /// la app dejó de tener banda (`AppleHealthImport.swift:70` y `HealthKitBridge.swift:452` lo
+    /// escriben nil, y `RecoveryScorer.recovery(...)` no tiene un solo consumidor). El número
+    /// nunca llegaba: la pantalla llevaba meses mostrando un guion o una calibración eterna.
+    ///
+    /// Ahora muestra lo que la app SÍ calcula: el veredicto de Preparación de hoy. Es
+    /// categórico a propósito — el puntaje 0–100 se retiró y no vuelve por la puerta de atrás.
     private var recoveryHero: some View {
-        let score = repo.today?.recovery.map { Int($0.rounded()) }
+        let prep = repo.todayPreparedness
         let cal = recoveryCalibration
-        let spark = recoverySpark
-        let showSpark = spark.count > 1 && score != nil
-        let color = score.map(recoveryColor) ?? theme.inkTertiary
         return Button {
             // FER-954: present the loading state IMMEDIATELY; the model builds off-main and swaps
             // in under the same id (same pattern as `sleepStat`, FER-953).
@@ -794,14 +795,11 @@ private struct CuerpoLanding: View {
         } label: {
             HStack(spacing: 14) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Recovery").font(InstrumentoType.grotesk(12, weight: .bold)).tracking(2.4).textCase(.uppercase).foregroundStyle(theme.ink)   // grotesk group header (FER-901)
-                    recoveryHeroNumeral(score: score, calibrating: cal, color: color)
-                    Text(recoverySubtitle(score: score, calibrating: cal))
-                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    Text("Preparation").font(InstrumentoType.grotesk(12, weight: .bold)).tracking(2.4).textCase(.uppercase).foregroundStyle(theme.ink)   // grotesk group header (FER-901)
+                    preparacionHeroe(prep, calibrando: cal)
                 }
                 Spacer(minLength: 8)
-                recoveryHeroAccessory(score: score, calibrating: cal,
-                                      spark: showSpark ? spark : nil, color: color)
+                recoveryHeroAccessory(calibrating: cal)
                 // Sin chevron (FER-837): el renglón «Toca cualquier dato…» ya comunica el toque; el chevron
                 // queda solo en las tarjetas que abren pantalla/herramienta distinta.
             }
@@ -815,6 +813,63 @@ private struct CuerpoLanding: View {
         // on top, clipped to the same rounded shape. (FER-186 follow-up)
         .buttonStyle(SurfacePressStyle(tint: theme.ink.opacity(0.05))) // token-exempt: press-fill <0.10
         .accessibilityElement(children: .combine)
+    }
+
+    /// El héroe de Preparación: la PALABRA del veredicto, no un número.
+    ///
+    /// Las palabras son las de Hoy (`hero.title.*`, FER-10, aprobadas por el dueño en 6
+    /// iteraciones y pasadas por `/cso`) — no las del comentario del motor, que quedaron
+    /// obsoletas cuando estas las sustituyeron.
+    @ViewBuilder
+    private func preparacionHeroe(_ prep: Preparedness.Read?, calibrando: Int?) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            if let v = prep?.verdict, v != .lowSignal {
+                Text(Self.palabraVeredicto(v))
+                    .font(InstrumentoType.grotesk(32, weight: .bold))
+                    .foregroundStyle(Self.tonoVeredicto(v, theme: theme))
+                Text(Self.clausulaVeredicto(v))
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+            } else if let calibrando {
+                Text("\(calibrando)").instrumentoHero(48).foregroundStyle(theme.ink)
+                Text(recoverySubtitle(score: nil, calibrating: calibrando))
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+            } else {
+                Text("—").instrumentoHero(56).foregroundStyle(theme.inkTertiary)
+                Text(recoverySubtitle(score: nil, calibrating: nil))
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+            }
+        }
+    }
+
+    /// Las palabras vivas del veredicto — las mismas que pinta Hoy.
+    static func palabraVeredicto(_ v: Preparedness.Verdict) -> String {
+        switch v {
+        case .full:      return String(localized: "hero.title.full", defaultValue: "In range")
+        case .caution:   return String(localized: "hero.title.caution", defaultValue: "Go light today")
+        case .easy:      return String(localized: "hero.title.easy", defaultValue: "Recover")
+        // Hoy nunca titula `lowSignal` (cae al respaldo de SUEÑO), así que no hay clave
+        // `hero.title.lowSignal` en el catálogo: esta frase es propia y se traduce sola.
+        case .lowSignal: return String(localized: "Not enough signal")
+        }
+    }
+
+    /// La línea quieta bajo la palabra: qué señales la sostienen.
+    static func clausulaVeredicto(_ v: Preparedness.Verdict) -> String {
+        switch v {
+        case .full:      return String(localized: "Your resting signals woke up in your range.")
+        case .caution:   return String(localized: "One of your signals woke up outside your range.")
+        case .easy:      return String(localized: "More than one signal is off: give yourself the day.")
+        case .lowSignal: return String(localized: "Not enough signal to read you this morning.")
+        }
+    }
+
+    static func tonoVeredicto(_ v: Preparedness.Verdict?, theme: InstrumentoTheme) -> Color {
+        switch v {
+        case .full:      return theme.verdict
+        case .caution:   return theme.warning
+        case .easy:      return theme.warning
+        default:         return theme.inkTertiary
+        }
     }
 
     /// The hero numeral — the screen's one dominant figure (SF Mono). Scored → tinted by band + «/100»;
@@ -836,28 +891,15 @@ private struct CuerpoLanding: View {
         }
     }
 
-    /// The hero's right accessory: the 14-day trend (scored), a calibration progress bar (calibrating),
-    /// or nothing — decorative, so it's hidden from VoiceOver (the numeral + subtitle carry meaning).
+    /// El acompañante del héroe: la barra de calibración mientras la base madura.
+    ///
+    /// FER-119 le quitó la sparkline: su serie era `windowedSpark(\.recovery)` y los dos
+    /// escritores de filas guardan `recovery: nil` (AppleHealthImport:70, HealthKitBridge:452),
+    /// así que la serie salía vacía y la rama nunca se dibujaba. Preparación es categórica: su
+    /// historia se lee como veredictos por noche en la pantalla de detalle, no como una curva.
     @ViewBuilder
-    private func recoveryHeroAccessory(score: Int?, calibrating: Int?, spark: [Double]?, color: Color) -> some View {
-        if let spark, let score, spark.count > 1 {
-            let mean = spark.reduce(0, +) / Double(spark.count)
-            let delta = score - Int(mean.rounded())
-            VStack(alignment: .trailing, spacing: 7) {
-                Sparkline(values: spark,
-                          gradient: ChartWell.fillGradient(color),
-                          meanLine: mean, meanLineColor: theme.hairlineStrong,
-                          lineWidth: 2.4, showsArea: true, showsHead: false, showsScrub: false)
-                    .frame(width: 104, height: 46)
-                // The trend's own baseline, read as a signed delta vs the 14-day mean (datum hue).
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text(delta >= 0 ? "+\(delta)" : "\(delta)")
-                        .font(StrandFont.number(13, weight: .semibold)).foregroundStyle(color)
-                    Text("vs your average").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                }
-            }
-            .accessibilityHidden(true)
-        } else if let calibrating {
+    private func recoveryHeroAccessory(calibrating: Int?) -> some View {
+        if let calibrating {
             Capsule().fill(theme.hairline)
                 .frame(width: 104, height: 6)
                 .overlay(alignment: .leading) {
@@ -1293,7 +1335,15 @@ private struct CuerpoLanding: View {
         let days: [DailyMetric] = repo.days
         let displayDays: [DailyMetric] = repo.displayDays
         let appleHealthDays: Set<String> = repo.appleHealthDays
-        let hasRecovery: Bool = repo.today?.recovery != nil
+        // FER-119: esto apaga el contador de calibración (`guard !hasRecovery`, RecoveryScorer:140).
+        // Colgaba de `recovery`, que los dos escritores de filas dejan en `nil`
+        // (AppleHealthImport:70, HealthKitBridge:452) — así que era SIEMPRE falso y el aterrizaje
+        // se quedaba «calibrando» para siempre, aun con el veredicto ya en firme. Ahora cuelga del
+        // veredicto real: `lowSignal` es «no hubo lectura», no una lectura, y sigue calibrando.
+        let hasRecovery: Bool = {
+            guard let v = repo.todayPreparedness?.verdict else { return false }
+            return v != .lowSignal
+        }()
         let sleeps = repo.sleeps
         let appleSleeps = repo.appleSleeps   // FER-1026: real Apple sleep sessions feed regularity too (no strap)
         let age: Int = model.profile.age
