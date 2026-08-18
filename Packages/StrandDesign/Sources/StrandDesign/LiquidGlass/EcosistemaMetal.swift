@@ -510,7 +510,10 @@ final class EcosistemaPolvoRenderer: NSObject {
     /// La paleta que se ve en `t`: lerp lineal en sRGB entre `desde` y `hacia`, como el
     /// `ambienteCrossfadeAnim` del héroe.
     func paleta(en t: TimeInterval) -> EcosistemaPaleta {
-        guard duracionCrossfade > 0 else { return paletaHacia }
+        // Un reloj que RETROCEDE (la atmósfera re-basa `inicio` al reanudar tras `maxSesion`) no
+        // reabre un fundido ya terminado: `t < inicioCrossfade` daría k = 0 y devolvería
+        // `paletaDesde` — el color del veredicto ANTERIOR — durante una hora (revisión final).
+        guard duracionCrossfade > 0, t >= inicioCrossfade else { return paletaHacia }
         let k = Float(min(1, max(0, (t - inicioCrossfade) / duracionCrossfade)))
         guard k < 1 else { return paletaHacia }
         func mix(_ a: SIMD4<Float>, _ b: SIMD4<Float>) -> SIMD4<Float> { a + (b - a) * k }
@@ -610,7 +613,9 @@ extension EcosistemaPolvoRenderer: MTKViewDelegate {
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {}
 
     func draw(in view: MTKView) {
-        guard let paso = view.currentRenderPassDescriptor,
+        // Antes del primer layout los bounds son 0×0: nada que dibujar (y nada entre lo que dividir).
+        guard view.bounds.width > 0, view.bounds.height > 0,
+              let paso = view.currentRenderPassDescriptor,
               let drawable = view.currentDrawable,
               let buffer = recursos.cola.makeCommandBuffer(),
               let enc = buffer.makeRenderCommandEncoder(descriptor: paso) else { return }

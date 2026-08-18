@@ -52,7 +52,7 @@ final class PolvoSimulacionTests: XCTestCase {
         XCTAssertEqual(P.cuenta(lienzo: lienzo), Int(402.0 * 874.0 / Double(F.ptPorParticula)))
         XCTAssertEqual(P.cuenta(lienzo: CGSize(width: 10, height: 10)), F.nMin)
         XCTAssertEqual(P.cuenta(lienzo: CGSize(width: 4000, height: 4000)), F.nMax)
-        XCTAssertEqual(P.cuenta(lienzo: .zero), F.nMin)
+        XCTAssertEqual(P.cuenta(lienzo: .zero), 0, "sin lienzo no hay motas")
     }
 
     // MARK: Marco infinito

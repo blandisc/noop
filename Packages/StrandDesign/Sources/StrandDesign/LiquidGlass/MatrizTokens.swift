@@ -135,8 +135,12 @@ public enum MatrizTokens {
     public static let estanteGap: CGFloat = LiquidSpace.s550
     /// La cabecera de un estante (rótulo + «?») deja este aire antes de sus módulos.
     public static let estanteCabeceraPad: CGFloat = LiquidSpace.s250
-    /// Pasos (ancho, horizontal): el ancho mínimo de la columna número + subtítulo.
-    public static let moduloTextoMinAncho: CGFloat = 88
+    /// Pasos (ancho, horizontal): el ancho FIJO de la columna número + subtítulo. Fijo, no
+    /// mínimo: si la columna midiera su texto, el subtítulo del scrub («mié 12 · sin lectura»)
+    /// la ensancharía a media pasada del dedo, la gráfica se encogería debajo y `ScrubMapeo`
+    /// mapearía la misma x a otro índice (revisión final). Cabe «12 345» a 30 pt y el subtítulo
+    /// de scrub más largo en una línea.
+    public static let moduloTextoAncho: CGFloat = 120
     /// El hint de barrido del guardián: una luz de `hintAncho` cruza la gráfica una vez, en
     /// `hintDuracion` s, `hintEspera` s después de aparecer.
     public static let hintAncho: CGFloat = 60
@@ -185,6 +189,9 @@ public enum MatrizTokens {
     public static let hilosNudoTrazo: CGFloat = 1.5
     public static let hilosNudoDash: [CGFloat] = [2, 2.5]
     public static let hilosColumnaFactor: CGFloat = 1.2
+    /// El anillo de HOY late en alfa de 1 a `1 − hilosLatidoAlfa` (0.3) con la misma fase que
+    /// crece `hilosAnilloLatido`.
+    public static let hilosLatidoAlfa: Double = 0.7
     /// Sin lectura esa noche: una marca mínima sobre la base, del color de nadie (misma regla
     /// P-2 de la costura: un hueco es un hueco, no un punto en el centro de tu banda).
     public static let hilosHuecoRadio: CGFloat = 1.4
