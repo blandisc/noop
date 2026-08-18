@@ -364,9 +364,7 @@ struct TodayView: View {
             .sheet(item: $sleepDetail) { item in
                 SleepDetailScreen(theme: theme, model: item.model,
                                   loadNightHR: { from, to in await repo.hrSamples(from: from, to: to) },
-                                  loadNightRR: { from, to in await repo.rrIntervals(from: from, to: to) },
-                                  loadNightThirds: { await repo.nightThirdsDeltas() },
-                                  loadDCBaseline: { await repo.nocturnalDCBaseline() })
+                                  loadNightThirds: { await repo.nightThirdsDeltas() })
                     .recEntranceGate()
             }
             .sheet(item: $strainDetail) { item in

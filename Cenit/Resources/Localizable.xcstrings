@@ -6220,6 +6220,23 @@
         }
       }
     },
+    "%lld hours %lld minutes" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld hours %2$lld minutes"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld horas %2$lld minutos"
+          }
+        }
+      }
+    },
     "%lld m" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -33716,6 +33733,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sin datos"
+          }
+        }
+      }
+    },
+    "No data in Apple Health" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No data in Apple Health"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sin dato en Apple Salud"
           }
         }
       }
