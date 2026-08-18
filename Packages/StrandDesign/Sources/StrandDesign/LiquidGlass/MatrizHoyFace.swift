@@ -769,7 +769,8 @@ public struct MatrizHoyFace: View {
         case .escalerita(let niveles):
             MatrizEscalerita(chartID: chartID, niveles: niveles, hue: hue, resaltado: resaltado)
         case .costura(let noches):
-            MatrizCostura(chartID: chartID, noches: noches, resaltado: resaltado)
+            // FER-118: los dos hilos de puntos sustituyen a la costura; mismos datos.
+            MatrizHilos(chartID: chartID, noches: noches, resaltado: resaltado)
         }
     }
 
@@ -783,8 +784,8 @@ public struct MatrizHoyFace: View {
             return max(MatrizTokens.chartInset,
                        LiquidChart.puntoDatoRadio + LiquidChart.endpointBorde * 0.5 + MatrizTokens.aroGap2)
         case .costura:
-            return max(MatrizTokens.chartInset,
-                       LiquidChart.puntoDatoRadio + LiquidChart.endpointBorde)
+            // FER-118: el anillo de HOY latiendo llega a 8 pt del centro (era 5, y se cortaba).
+            return max(MatrizTokens.chartInset, MatrizTokens.hilosInset)
         default:
             return MatrizTokens.chartInset
         }
@@ -800,7 +801,7 @@ public struct MatrizHoyFace: View {
         // FER-59: VFC (lineaRellena) es gemela de Estrés (escalerita) en Contexto → misma
         // altura, para que el borde inferior de la fila no quede dentado (antes 56 vs 40).
         case .lineaRellena: return MatrizTokens.alturaEscalera
-        case .costura: return MatrizTokens.alturaCostura
+        case .costura: return MatrizTokens.alturaHilos
         default: return MatrizTokens.alturaLinea
         }
     }
