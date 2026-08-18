@@ -25,7 +25,6 @@ import UIKit
 
 struct PreparacionDetailScreen: View {
     let modelo: PreparacionDetalleModelo
-    var onCerrar: (() -> Void)? = nil
 
     @Environment(\.dynamicTypeSize) private var tipo
     @State private var diaTocado: String? = nil
@@ -45,7 +44,9 @@ struct PreparacionDetailScreen: View {
                 }
             }
         }
-        .background(LiquidColor.fondoGradient.ignoresSafeArea())
+        // La misma plasta teñida que respira detrás de Sueño (`SleepDetailScreen:110`). El
+        // gradiente neutro dejaba esta pantalla plana al lado de sus hermanas.
+        .background { LiquidSheetFondo(tone: tono).ignoresSafeArea() }
         .scrollIndicators(.hidden)
     }
 
@@ -57,9 +58,9 @@ struct PreparacionDetailScreen: View {
             titulo: String(localized: "prep.titulo", defaultValue: "Preparation"),
             datos: [],
             veredicto: modelo.palabraHoy,
-            clausula: modelo.clausulaHoy,
-            volverTitulo: String(localized: "prep.volver", defaultValue: "Back"),
-            onVolver: onCerrar
+            // Sin `onVolver`: esta pantalla siempre vive dentro de `DetailChrome`, que ya pone
+            // su propio «‹ Tendencias». El botón del campo nunca llegaba a pintarse.
+            clausula: modelo.clausulaHoy
         ) {
             if let sello = modelo.selloConfianza {
                 LiquidCampoSello(sello)
@@ -91,8 +92,11 @@ struct PreparacionDetailScreen: View {
                                           defaultValue: "%1$d of %2$d mornings have a reading"),
                            hechas, total)
                 },
+                inicialesDia: modelo.inicialesDia,
                 pistaVacia: String(localized: "prep.mosaico.pista",
-                                   defaultValue: "Tap a morning to read it."))
+                                   defaultValue: "Tap a morning to read it."),
+                a11yPista: String(localized: "prep.mosaico.a11yPista",
+                                  defaultValue: "Swipe up or down to move between the mornings that have a reading."))
                 .liquidSeccion()
 
             if let aviso = modelo.avisoVentanaSinVeredicto {
@@ -171,31 +175,28 @@ struct PreparacionDetailScreen: View {
     }
 
     private var metodo: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            LiquidFranjaSeccion(String(localized: "prep.metodo.titulo",
-                                       defaultValue: "See the method"), tono: tono)
+        // El componente compartido de la familia (`LiquidMetodo` + `LiquidNotaLine`), no un
+        // bloque a mano: plegable, cerrado por omisión, y CON su cita en pantalla. Sueño ya lo
+        // hacía así; aquí las fuentes vivían solo en comentarios del motor, que el usuario
+        // nunca ve. CLAUDE.md pide citar el método, y citarlo donde se lee.
+        LiquidMetodo(title: String(localized: "prep.metodo.titulo",
+                                   defaultValue: "See the method"),
+                     mostrar: String(localized: "prep.metodo.mostrar", defaultValue: "Show the method"),
+                     ocultar: String(localized: "prep.metodo.ocultar", defaultValue: "Hide the method")) {
             VStack(alignment: .leading, spacing: LiquidSpace.s300) {
-                // Este texto pasó por el gate de ciencia y NO es libre: `docs/ANALYTICS.md`
-                // prohíbe el marco de «tres señales», la VFC de Apple NO vota (`wHRV = 0`) y el
-                // sueño NO se juzga contra la base del usuario sino contra un piso poblacional
-                // fijo (Hirshkowitz 2015). Cualquier reescritura vuelve a pasar por el allow-list.
                 Text(String(localized: "prep.metodo.como",
                             defaultValue: "Every morning I look at three things. Your resting heart rate, against your own base: that's the axis that votes, and your HRV measured while you sleep rides along with it only on nights that have enough of it, never on its own (the all-day HRV you see elsewhere in the app never votes). Your sleep, against the floor sleep science recommends, not against your own history. And the sentinel, skin temperature and breathing, which only counts when both run high together. None out is «all in range»; one is «one signal out»; two or more is «two or more out». A sustained downward trend can also bring that change forward."))
-                // §4: el mosaico se recalcula con la base de HOY. Decirlo no es un detalle legal:
-                // sin esta línea la pantalla afirmaría, sin querer, que muestra lo que el usuario
-                // leyó cada una de esas mañanas.
-                // La limitación REAL, no la que yo supuse: el pliegue es hacia adelante, así que
-                // un día viejo no se repinta (`testAgregarDiasPosterioresNoRepintaLaHistoria`).
-                // Lo que sí difiere es que los días históricos NO llevan el empujón de tendencia,
-                // que sí aplicaba en vivo esa mañana (`Read.verdictHistory`, la nota del motor).
                 Text(String(localized: "prep.metodo.limite",
                             defaultValue: "Each square is judged with the base you had up to that day, so it doesn't change if you come back to look later. What it can't carry is the trend nudge that only applies to the morning you're living: that's why an older square can differ from what Today said out loud that day. Training load doesn't vote here."))
+                    .font(LiquidType.cuerpo)
+                    .foregroundStyle(LiquidColor.tinta700)
+                LiquidNotaLine("Hirshkowitz et al., 2015 (sleep need); Task Force of the European Society of Cardiology, 1996 (HRV); Mishra et al., 2020 (illness sentinel).")
             }
             .font(LiquidType.cuerpo)
-            .foregroundStyle(LiquidColor.tinta500)
+            .foregroundStyle(LiquidColor.tinta700)
             .fixedSize(horizontal: false, vertical: true)
-            .liquidSeccion()
         }
+        .liquidSeccion()
     }
 
     // MARK: - Estados de pantalla
@@ -276,6 +277,8 @@ struct PreparacionDetalleModelo {
     let ejesHoy: [EjeHoy]
     let copySinPermiso: Bienvenida
     let copySinHistoria: Bienvenida
+    /// Las 7 iniciales de la canaleta, YA rotadas al día en que arranca esta ventana.
+    let inicialesDia: [String]
 
     /// La ventana del mosaico. Fija: la histéresis pide dos días para mover el veredicto, así que
     /// 30 días son ~15 tramos independientes — alargarla aparenta una resolución que no existe.
@@ -299,6 +302,11 @@ struct PreparacionDetalleModelo {
     /// Los ejes que vinieron fuera esa noche, nombrados. Son los CRUDOS de la noche: pueden no
     /// cuadrar con el veredicto, que es post-histéresis, y por eso la nota de la atribución lo
     /// advierte. Nombrarlos es lo único que contesta «¿cuál fue?» de un día pasado.
+    /// Cuántos de los tres ejes vinieron fuera esa noche, en crudo.
+    static func ejesFuera(_ n: Preparedness.VerdictNight) -> Int {
+        (n.autonomicOut ? 1 : 0) + (n.sleepOut ? 1 : 0) + (n.sentinelOut ? 1 : 0)
+    }
+
     static func quienSeSalio(_ n: Preparedness.VerdictNight) -> String {
         var partes: [String] = []
         if n.autonomicOut { partes.append(String(localized: "Resting HR")) }
@@ -310,12 +318,42 @@ struct PreparacionDetalleModelo {
         return ListFormatter.localizedString(byJoining: partes)
     }
 
-    static func unidadDias(_ n: Int) -> String {
-        String(format: String(localized: "prep.dias.fmt", defaultValue: "%d days"), n)
+    /// 🔴 La canaleta tiene que decir el día REAL de cada columna.
+    ///
+    /// El default del componente venía de `LiquidCalendario90.inicialesPorLocale()`, una fila
+    /// FIJA lunes-primero. Aquella pieza puede permitírselo porque ancla sus columnas a semanas
+    /// de calendario, rellenando el arranque. Esta NO: son 30 días consecutivos que terminan
+    /// hoy, partidos en bloques de 7, así que la primera columna es el día que caiga hace 29 y
+    /// **rota cada día**. La fila fija acertaba 1 de cada 7 días del año; los otros 6 le decía
+    /// «lunes» a una columna de martes. (Cazado por la revisión de UI; el día que se revisó en
+    /// el simulador la ventana arrancaba en lunes por casualidad, así que se veía bien.)
+    ///
+    /// Se conserva el ritmo disperso de la hermana (etiqueta sí, etiqueta no) para que las dos
+    /// canaletas se lean igual.
+    static func inicialesDesde(_ inicio: Date, calendario: Calendar = .current) -> [String] {
+        let simbolos = calendario.shortWeekdaySymbols
+        guard simbolos.count == 7 else { return Array(repeating: "", count: 7) }
+        return (0..<7).map { i in
+            guard i % 2 == 0 else { return "" }
+            let d = calendario.date(byAdding: .day, value: i, to: inicio) ?? inicio
+            // `weekday` es 1-based (1 = domingo), y `shortWeekdaySymbols` es 0-based.
+            return simbolos[calendario.component(.weekday, from: d) - 1]
+        }
     }
 
+    /// «5 días» / «1 día». Reusa la clave que YA pluraliza bien y que Hoy y el onboarding ya
+    /// usan: yo había acuñado una clave PLANA (`prep.dias.fmt` = «%d días»), que con un solo
+    /// día imprimía «1 días» en el reparto, en la atribución y en el sello. Cazado por la
+    /// revisión quisquillosa.
+    static func unidadDias(_ n: Int) -> String {
+        String(format: String(localized: "%lld days"), n)
+    }
+
+    /// La unidad suelta de una cajita, que ya lleva su número aparte: también tiene que
+    /// concordar con él.
     static func unidadDiasCorta(_ n: Int) -> String {
-        String(localized: "prep.dias.corta", defaultValue: "days")
+        String(format: String(localized: "%lld days"), n)
+            .replacingOccurrences(of: "\(n)", with: "").trimmingCharacters(in: .whitespaces)
     }
 
     private static func tono(_ v: Preparedness.Verdict) -> Color {
@@ -349,7 +387,8 @@ struct PreparacionDetalleModelo {
         estado: .cargando, palabraHoy: nil, clausulaHoy: nil, selloConfianza: nil,
         tonoHoy: LiquidColor.tinta500, rejilla: [], peldanos: peldanosBase, conteos: [:],
         pistaCobertura: nil, avisoVentanaSinVeredicto: nil, atribucion: [], ejesHoy: [],
-        copySinPermiso: bienvenidaSinPermiso, copySinHistoria: bienvenidaSinHistoria)
+        copySinPermiso: bienvenidaSinPermiso, copySinHistoria: bienvenidaSinHistoria,
+        inicialesDia: Array(repeating: "", count: 7))
 
     /// Se lee del repo en main y se deriva FUERA (patrón FER-955/FER-1040): el pliegue sobre 30
     /// días no tiene por qué correr en el hilo que dibuja.
@@ -394,7 +433,17 @@ struct PreparacionDetalleModelo {
             // El motor ya sabe CUÁL eje se salió esa noche; sin decirlo, tocar un cuadro rojo
             // dejaba al usuario con la pregunta obvia («¿cuál de las dos fue?») sin respuesta
             // para cualquier día que no fuera hoy.
-            let quienes = quienSeSalio(noche)
+            var quienes = quienSeSalio(noche)
+            // 🔴 El veredicto de esta celda es POST-histéresis y, en el día de hoy, además lleva
+            // el empujón de tendencia; los tres ejes son los CRUDOS de esa noche. Cuando el
+            // empujón sube un día de «una señal fuera» a «dos o más», la etiqueta decía «Dos o
+            // más fuera · FC en reposo» nombrando UNA sola: se lee como un bug aunque no lo sea.
+            // Si el peldaño promete más ejes de los que hay, se dice quién lo empujó.
+            if noche.verdict == .easy && ejesFuera(noche) < 2 {
+                let empujon = String(localized: "prep.dia.tendencia",
+                                     defaultValue: "downward trend")
+                quienes = quienes.isEmpty ? empujon : quienes + ", " + empujon
+            }
             let cola = quienes.isEmpty ? "" : " · " + quienes
             return .init(id: clave, fecha: fecha, peldano: idPeldano(noche.verdict),
                          etiqueta: "\(etiquetaDia) · \(lectura)\(cola)")
@@ -468,6 +517,7 @@ struct PreparacionDetalleModelo {
         else if prep == nil || (prep?.verdictHistory ?? []).isEmpty { estado = .sinHistoria }
         else { estado = .conVentana }
 
+        let primerDia = claves.first.flatMap { parser.date(from: $0) } ?? asOf
         return PreparacionDetalleModelo(
             estado: estado,
             palabraHoy: hayVeredicto ? LiquidHoyBuilder.palabraVeredicto(prep!.verdict) : nil,
@@ -483,7 +533,8 @@ struct PreparacionDetalleModelo {
             atribucion: atribucion,
             ejesHoy: ejesHoy,
             copySinPermiso: bienvenidaSinPermiso,
-            copySinHistoria: bienvenidaSinHistoria)
+            copySinHistoria: bienvenidaSinHistoria,
+            inicialesDia: inicialesDesde(primerDia, calendario: calendario))
     }
 
     /// Las tres razones de «sin veredicto» NO son la misma, y por eso no comparten frase: al que
@@ -504,9 +555,10 @@ struct PreparacionDetalleModelo {
 
     private static func sello(_ prep: Preparedness.Read?) -> String? {
         guard let prep, prep.verdict != .lowSignal, prep.isNightAnchored else { return nil }
+        // Mismo caso: «1 noches de tu base» con una sola noche.
         return String(format: String(localized: "prep.sello.fmt",
-                                     defaultValue: "%d nights of your baseline"),
-                      prep.autonomicNights)
+                                     defaultValue: "%1$@ of your baseline"),
+                      String(format: String(localized: "%lld nights"), prep.autonomicNights))
     }
 
     static let bienvenidaSinPermiso = Bienvenida(

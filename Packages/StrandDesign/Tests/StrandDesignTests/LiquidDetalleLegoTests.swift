@@ -24,6 +24,10 @@ struct LiquidDetalleLegoTests {
         ("rosa", LiquidColor.rosa),
         ("atencion", LiquidColor.atencion),
         ("verdePrimario", LiquidColor.verdePrimario),
+        // FER-126: `negativo` tiñe el campo de Preparación en un día «dos o más fuera», y
+        // faltaba de esta familia — nadie había verificado su calado porque nadie lo había
+        // usado como campo. Cazado por la revisión de UI.
+        ("negativo", LiquidColor.negativo),
     ]
 
     private static func rgb(_ c: Color) -> (r: Double, g: Double, b: Double) {

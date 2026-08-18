@@ -193,38 +193,6 @@
         }
       }
     },
-    "prep.dias.corta" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "days"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "días"
-          }
-        }
-      }
-    },
-    "prep.dias.fmt" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%d days"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%d días"
-          }
-        }
-      }
-    },
     "prep.eje.dentro" : {
       "localizations" : {
         "en" : {
@@ -486,13 +454,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%d nights of your baseline"
+            "value" : "%1$@ of your baseline"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%d noches de tu base"
+            "value" : "%1$@ de tu base"
           }
         }
       }
@@ -593,18 +561,66 @@
         }
       }
     },
-    "prep.volver" : {
+    "prep.dia.tendencia" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Back"
+            "value" : "downward trend"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Atrás"
+            "value" : "tendencia a la baja"
+          }
+        }
+      }
+    },
+    "prep.metodo.mostrar" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show the method"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ver el método"
+          }
+        }
+      }
+    },
+    "prep.metodo.ocultar" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hide the method"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ocultar el método"
+          }
+        }
+      }
+    },
+    "prep.mosaico.a11yPista" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Swipe up or down to move between the mornings that have a reading."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desliza hacia arriba o abajo para moverte entre las mañanas que sí tienen lectura."
           }
         }
       }
