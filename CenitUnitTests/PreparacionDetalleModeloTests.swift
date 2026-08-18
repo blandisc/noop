@@ -267,4 +267,40 @@ final class PreparacionDetalleModeloTests: XCTestCase {
         XCTAssertFalse(sub.localizedCaseInsensitiveContains("sueño y tu FC en reposo amanecieron en tu rango"),
                        "el sueño no tiene «tu rango»: se compara contra el piso recomendado")
     }
+
+    // MARK: - Tocar un día pasado
+
+    /// Tocar un cuadro rojo y que solo diga «dos o más fuera» deja sin respuesta la pregunta
+    /// obvia: ¿cuál de las dos? El motor ya trae los ejes por noche; hay que nombrarlos.
+    func testTocarUnDiaPasadoNombraLaSenalQueSeSalio() throws {
+        let claves = PreparacionDetalleModelo.dayKeys(endingAt: Date(), calendar: cal, count: 30)
+        let historia = claves.enumerated().map { i, k -> Preparedness.VerdictNight in
+            i == 5 ? noche(k, .easy, auto: true, sleep: true) : noche(k, .full)
+        }
+        let m = PreparacionDetalleModelo.build(prep: read(historia), healthConnected: true,
+                                               asOf: Date(), calendario: cal)
+        let etiqueta = try XCTUnwrap(m.rejilla[5]).etiqueta
+        XCTAssertTrue(etiqueta.contains(String(localized: "Resting HR")),
+                      "nombra la FC en reposo: «\(etiqueta)»")
+        XCTAssertTrue(etiqueta.contains(String(localized: "Sleep")),
+                      "y también el sueño, que se salió esa misma noche")
+
+        // Un día limpio no arrastra una cola vacía ni un separador suelto.
+        let limpio = try XCTUnwrap(m.rejilla[6]).etiqueta
+        XCTAssertFalse(limpio.hasSuffix(" · "), "sin ejes fuera no se cuelga un separador: «\(limpio)»")
+    }
+
+    /// El centinela se nombra como par, nunca como una señal suelta: una sola alta jamás vota.
+    func testElCentinelaSeNombraComoPar() throws {
+        let claves = PreparacionDetalleModelo.dayKeys(endingAt: Date(), calendar: cal, count: 30)
+        let historia = claves.enumerated().map { i, k -> Preparedness.VerdictNight in
+            i == 3 ? noche(k, .caution, sent: true) : noche(k, .full)
+        }
+        let m = PreparacionDetalleModelo.build(prep: read(historia), healthConnected: true,
+                                               asOf: Date(), calendario: cal)
+        let etiqueta = try XCTUnwrap(m.rejilla[3]).etiqueta
+        XCTAssertTrue(etiqueta.localizedCaseInsensitiveContains("emperature")
+                      || etiqueta.localizedCaseInsensitiveContains("emperatura"),
+                      "el par se nombra junto: «\(etiqueta)»")
+    }
 }

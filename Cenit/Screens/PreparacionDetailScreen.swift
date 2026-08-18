@@ -27,6 +27,7 @@ struct PreparacionDetailScreen: View {
     let modelo: PreparacionDetalleModelo
     var onCerrar: (() -> Void)? = nil
 
+    @Environment(\.dynamicTypeSize) private var tipo
     @State private var diaTocado: String? = nil
     @State private var metodoAbierto = false
 
@@ -135,13 +136,29 @@ struct PreparacionDetailScreen: View {
                 VStack(spacing: 0) {
                     ForEach(Array(modelo.ejesHoy.enumerated()), id: \.element.id) { i, eje in
                         if i > 0 { LiquidCapilar(eje: .horizontal) }
-                        HStack(spacing: LiquidSpace.s250) {
-                            Text(eje.nombre).font(LiquidType.cuerpo)
-                                .foregroundStyle(LiquidColor.tinta900)
-                            Spacer(minLength: LiquidSpace.s250)
-                            Text(eje.estado).font(LiquidType.label)
-                                .foregroundStyle(eje.fuera ? tono : LiquidColor.tinta500)
+                        // A tallas de accesibilidad se apila, como el reparto y las cajitas de
+                        // esta misma pantalla: `LiquidType.cuerpo` es fijo y `label` escala, así
+                        // que en una fila el rótulo se quedaba chico junto a un estado partido
+                        // en dos líneas.
+                        Group {
+                            if tipo.isAccessibilitySize {
+                                VStack(alignment: .leading, spacing: LiquidSpace.s075) {
+                                    Text(eje.nombre).font(LiquidType.cuerpo)
+                                        .foregroundStyle(LiquidColor.tinta900)
+                                    Text(eje.estado).font(LiquidType.label)
+                                        .foregroundStyle(eje.fuera ? tono : LiquidColor.tinta500)
+                                }
+                            } else {
+                                HStack(spacing: LiquidSpace.s250) {
+                                    Text(eje.nombre).font(LiquidType.cuerpo)
+                                        .foregroundStyle(LiquidColor.tinta900)
+                                    Spacer(minLength: LiquidSpace.s250)
+                                    Text(eje.estado).font(LiquidType.label)
+                                        .foregroundStyle(eje.fuera ? tono : LiquidColor.tinta500)
+                                }
+                            }
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.vertical, LiquidSpace.s250)
                         .accessibilityElement(children: .combine)
                     }
@@ -163,7 +180,7 @@ struct PreparacionDetailScreen: View {
                 // sueño NO se juzga contra la base del usuario sino contra un piso poblacional
                 // fijo (Hirshkowitz 2015). Cualquier reescritura vuelve a pasar por el allow-list.
                 Text(String(localized: "prep.metodo.como",
-                            defaultValue: "Every morning I look at three things. Your resting heart rate, against your own base: that's the axis that votes, and your HRV rides along with it only on nights that have enough of it, never on its own. Your sleep, against the floor sleep science recommends, not against your own history. And the sentinel, skin temperature and breathing, which only counts when both run high together. None out is «all in range»; one is «one signal out»; two or more is «two or more out». A sustained downward trend can also bring that change forward."))
+                            defaultValue: "Every morning I look at three things. Your resting heart rate, against your own base: that's the axis that votes, and your HRV measured while you sleep rides along with it only on nights that have enough of it, never on its own (the all-day HRV you see elsewhere in the app never votes). Your sleep, against the floor sleep science recommends, not against your own history. And the sentinel, skin temperature and breathing, which only counts when both run high together. None out is «all in range»; one is «one signal out»; two or more is «two or more out». A sustained downward trend can also bring that change forward."))
                 // §4: el mosaico se recalcula con la base de HOY. Decirlo no es un detalle legal:
                 // sin esta línea la pantalla afirmaría, sin querer, que muestra lo que el usuario
                 // leyó cada una de esas mañanas.
@@ -279,6 +296,20 @@ struct PreparacionDetalleModelo {
         }
     }
 
+    /// Los ejes que vinieron fuera esa noche, nombrados. Son los CRUDOS de la noche: pueden no
+    /// cuadrar con el veredicto, que es post-histéresis, y por eso la nota de la atribución lo
+    /// advierte. Nombrarlos es lo único que contesta «¿cuál fue?» de un día pasado.
+    static func quienSeSalio(_ n: Preparedness.VerdictNight) -> String {
+        var partes: [String] = []
+        if n.autonomicOut { partes.append(String(localized: "Resting HR")) }
+        if n.sleepOut { partes.append(String(localized: "Sleep")) }
+        if n.sentinelOut {
+            partes.append(String(localized: "prep.atr.centinela.nombre",
+                                 defaultValue: "Temperature and breathing"))
+        }
+        return ListFormatter.localizedString(byJoining: partes)
+    }
+
     static func unidadDias(_ n: Int) -> String {
         String(format: String(localized: "prep.dias.fmt", defaultValue: "%d days"), n)
     }
@@ -360,8 +391,13 @@ struct PreparacionDetalleModelo {
             guard let noche = porDia[clave], let fecha = parser.date(from: clave) else { return nil }
             let etiquetaDia = fmtDia.string(from: fecha)
             let lectura = peldano(noche.verdict)
+            // El motor ya sabe CUÁL eje se salió esa noche; sin decirlo, tocar un cuadro rojo
+            // dejaba al usuario con la pregunta obvia («¿cuál de las dos fue?») sin respuesta
+            // para cualquier día que no fuera hoy.
+            let quienes = quienSeSalio(noche)
+            let cola = quienes.isEmpty ? "" : " · " + quienes
             return .init(id: clave, fecha: fecha, peldano: idPeldano(noche.verdict),
-                         etiqueta: "\(etiquetaDia) · \(lectura)")
+                         etiqueta: "\(etiquetaDia) · \(lectura)\(cola)")
         }
 
         // Los días SIN fila y los días con veredicto `lowSignal` caen en el MISMO peldaño: el
@@ -462,8 +498,8 @@ struct PreparacionDetalleModelo {
                           defaultValue: "None of these 30 mornings had enough signal. Preparation needs your resting signals while you sleep, and they haven't come in — if you don't wear your watch at night, I won't be able to read them.")
         }
         return String(format: String(localized: "prep.vacio.formando.fmt",
-                                     defaultValue: "None of these 30 mornings had a verdict yet: I'm still learning your normal. You have %d nights so far."),
-                      prep.autonomicNights)
+                                     defaultValue: "None of these 30 mornings had a verdict yet: I'm still learning your normal. Night %1$d of %2$d."),
+                      prep.autonomicNights, Baselines.minNightsSeed)
     }
 
     private static func sello(_ prep: Preparedness.Read?) -> String? {

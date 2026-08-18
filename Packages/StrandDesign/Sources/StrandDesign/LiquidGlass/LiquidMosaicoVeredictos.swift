@@ -11,10 +11,16 @@ import SwiftUI
 // disfrazarse de número para entrar. Comparten los DOS contratos de accesibilidad (abajo) y la
 // receta visual; no comparten anatomía.
 //
-// POR QUÉ LOS CUATRO PELDAÑOS PESAN IGUAL: el reparto no titula ni ordena por «lo bueno». Darle
-// a «todo en rango» color, tamaño o primer lugar reintroduce por la puerta lateral la psicología
-// que el requerimiento prohíbe (proteger el número verde). Los cuatro renglones son idénticos
-// salvo su pip.
+// POR QUÉ LOS CUATRO PELDAÑOS PESAN IGUAL: tipografía, tamaño, peso y padding son IDÉNTICOS en
+// los cuatro renglones; lo único que los distingue es su pip. Darle a «todo en rango» color o
+// tamaño propios reintroduciría por la puerta lateral la psicología que el requerimiento prohíbe
+// (proteger el número verde).
+//
+// EL ORDEN NO ES UN RANKING, ES LA ESCALA DEL MOTOR: 0 ejes fuera → 1 → 2 o más → sin lectura.
+// Es la misma variable ordinal que el motor calcula, en su orden natural, como la leyenda de
+// cualquier escala. (Una revisión adversarial señaló con razón que este comentario antes decía
+// que no había «primer lugar» cuando el verde siempre va primero: la afirmación era falsa. Lo
+// que se sostiene es la equivalencia visual, y el orden se declara por lo que es.)
 //
 // LA REJILLA ES DENSA, LA SERIE ES DISPERSA: quien llama construye 30 claves de calendario y
 // busca cada una en su diccionario (patrón `dayKeys`, `LiquidHoyBuilder+Matriz.swift:623-630`).

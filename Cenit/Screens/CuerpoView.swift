@@ -838,7 +838,10 @@ private struct CuerpoLanding: View {
             // decir, y titularlo teñido contradiría al texto de la propia pantalla.
             if let prep, prep.verdict != .lowSignal, prep.isNightAnchored {
                 Text(LiquidHoyBuilder.palabraVeredicto(prep.verdict))
-                    .font(InstrumentoType.grotesk(32, weight: .bold))
+                    // `relativeTo:` es obligatorio: sin él la palabra queda FIJA mientras su
+                    // cláusula (`StrandFont.subhead`) sí escala, y a tallas de accesibilidad el
+                    // texto de apoyo terminaba más grande que el dato que manda.
+                    .font(InstrumentoType.grotesk(32, weight: .bold, relativeTo: .title2))
                     .foregroundStyle(LiquidHoyBuilder.actaTono(prep))
                 Text(LiquidHoyBuilder.clausulaVeredicto(prep))
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
@@ -1303,6 +1306,7 @@ private struct CuerpoLanding: View {
         // (AppleHealthImport:70, HealthKitBridge:452) — así que era SIEMPRE falso y el aterrizaje
         // se quedaba «calibrando» para siempre, aun con el veredicto ya en firme. Ahora cuelga del
         // veredicto real: `lowSignal` es «no hubo lectura», no una lectura, y sigue calibrando.
+        let prepNights: Int? = repo.todayPreparedness?.autonomicNights
         let hasRecovery: Bool = {
             guard let p = repo.todayPreparedness else { return false }
             return p.verdict != .lowSignal && p.isNightAnchored
@@ -1317,10 +1321,18 @@ private struct CuerpoLanding: View {
         // Pure StrandAnalytics engines off MainActor (FER-955). Same expressions as before; only the
         // executor moves. Assignments return to main below, gated by `seq`.
         let engines: CuerpoLandingEngines = await Task.detached(priority: .userInitiated) { () -> CuerpoLandingEngines in
-            let nightlyHrv: [Double?] = days.map(\.avgHrv)
-            let recoveryCalibration = RecoveryScorer.calibrationNights(
-                nightlyHrv: nightlyHrv,
-                hasRecovery: hasRecovery)
+            // FER-119: el contador cuenta AHORA lo mismo que madura el veredicto. Antes salía
+            // de `RecoveryScorer.calibrationNights(nightlyHrv:)`, que cuenta noches con VFC
+            // (SDNN) — pero la madurez del veredicto sale de la base de FC EN REPOSO
+            // (`Preparedness.autonomicNights`, y `wHRV = 0`: la VFC de Apple ni siquiera vota).
+            // Son dos constructos distintos que divergen: quien acumule noches de VFC más
+            // rápido veía la barra llenarse hasta «4 de 4», desaparecer, y caer a «—» sin
+            // veredicto — el mismo síntoma que este cambio venía a quitar, por otra puerta.
+            let recoveryCalibration: Int? = {
+                guard !hasRecovery, let n = prepNights, (1..<Baselines.minNightsSeed).contains(n)
+                else { return nil }
+                return n
+            }()
 
             let stressModel: StressModel? = StressModel(days: displayDays, stored: stored,
                                                         todayKey: todayKey, appleDays: appleHealthDays)
