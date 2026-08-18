@@ -368,10 +368,7 @@ struct TodayView: View {
             // (Sueño/Esfuerzo) are unaffected (their number appears after the gate flips anyway).
             .sheet(item: $sleepDetail) { item in
                 SleepDetailScreen(theme: theme, model: item.model,
-                                  loadNightHR: { from, to in await repo.hrSamples(from: from, to: to) },
-                                  loadNightRR: { from, to in await repo.rrIntervals(from: from, to: to) },
-                                  loadNightThirds: { await repo.nightThirdsDeltas() },
-                                  loadDCBaseline: { await repo.nocturnalDCBaseline() })
+                                  sinPermiso: health.auth != .authorized && health.auth != .unavailable)
                     .recEntranceGate()
             }
             .sheet(item: $strainDetail) { item in

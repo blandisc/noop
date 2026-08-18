@@ -34,6 +34,7 @@ public struct LiquidStageBar: View {
 
     private let etapas: [Etapa]
     private let overline: String
+    private let mostrarOverline: Bool
     private let ventana: String?
 
     /// La leyenda de 4 etapas no cabe en una fila cuando el texto crece: en tamaños de
@@ -47,7 +48,13 @@ public struct LiquidStageBar: View {
     /// B7 · `ventana` es OPCIONAL: el fallback diario de Apple fabrica noches con
     /// `startTs == endTs`, y el caller que no puede afirmar un horario real pasa `nil` en vez
     /// de imprimir «6:00 → 6:00». Sin ventana no se pinta el reloj ni entra a VoiceOver.
-    public init(etapas: [Etapa], overline: String, ventana: String? = nil) {
+    /// - Parameter mostrarOverline: `false` dibuja la barra sin su rótulo pero **conserva**
+    ///   `overline` como nombre de VoiceOver. Sin esto, un caller que ya pinta el título
+    ///   arriba pasaba `""` y dejaba la barra como un elemento anónimo que dictaba duraciones
+    ///   sin decir de qué eran. (FER-102)
+    public init(etapas: [Etapa], overline: String, ventana: String? = nil,
+                mostrarOverline: Bool = true) {
+        self.mostrarOverline = mostrarOverline
         self.etapas = etapas
         self.overline = overline
         self.ventana = ventana
@@ -88,17 +95,24 @@ public struct LiquidStageBar: View {
 
     public var body: some View {
         VStack(alignment: .leading, spacing: LiquidSpace.s200) {
+            // La fila del rótulo desaparece entera cuando no hay nada que poner en ella: con
+            // el overline oculto y sin ventana, un `Text("")` dejaba una fila vacía sobre la
+            // barra. El nombre de VoiceOver sigue viniendo de `overline` (ver el label abajo).
+            if mostrarOverline || ventana != nil {
             HStack(alignment: .firstTextBaseline) {
-                Text(verbatim: overline)
-                    .font(LiquidType.microEstado)
-                    .textCase(.uppercase)
-                    .foregroundStyle(LiquidColor.tinta500)
+                if mostrarOverline {
+                    Text(verbatim: overline)
+                        .font(LiquidType.microEstado)
+                        .textCase(.uppercase)
+                        .foregroundStyle(LiquidColor.tinta500)
+                }
                 if let ventana {
                     Spacer(minLength: LiquidSpace.s200)
                     Text(verbatim: ventana)
                         .font(LiquidType.microEstado)
                         .foregroundStyle(LiquidColor.tinta700)
                 }
+            }
             }
             GeometryReader { geo in
                 let w = anchos(en: geo.size.width)
@@ -117,17 +131,21 @@ public struct LiquidStageBar: View {
         .accessibilityValue(Text(verbatim: Self.a11yValue(etapas: etapas, ventana: ventana)))
     }
 
-    /// Fila de 4 items; en tamaños de accesibilidad, rejilla 2×2 (el cambio es SOLO visual:
-    /// el bloque entero es un único elemento de a11y, ver `.accessibilityElement`).
+    /// Fila de 4 items, con rejilla 2×2 de respaldo cuando la fila no cabe (el cambio es SOLO
+    /// visual: el bloque entero es un único elemento de a11y, ver `.accessibilityElement`).
+    ///
+    /// El disparo NO puede ser solo `isAccessibilitySize`: en es-MX las etiquetas son largas
+    /// («Profundo», «Despierto») y a tamaño DEFAULT los cuatro items ya no caben en 393 pt —
+    /// las palabras se partían a la mitad («Profun / do»). `ViewThatFits` mide de verdad, así
+    /// que cubre el idioma y el Dynamic Type con un solo mecanismo.
     @ViewBuilder private var leyenda: some View {
-        if tamanoTexto.isAccessibilitySize {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: LiquidSpace.s300) {
+                ForEach(etapasVisibles) { item($0) }
+            }
             LazyVGrid(columns: [GridItem(.flexible(), alignment: .topLeading),
                                 GridItem(.flexible(), alignment: .topLeading)],
                       alignment: .leading, spacing: LiquidSpace.s200) {
-                ForEach(etapasVisibles) { item($0) }
-            }
-        } else {
-            HStack(spacing: LiquidSpace.s300) {
                 ForEach(etapasVisibles) { item($0) }
             }
         }
@@ -144,9 +162,13 @@ public struct LiquidStageBar: View {
             Text(verbatim: etapa.etiqueta)
                 .font(LiquidType.microEstado)
                 .foregroundStyle(LiquidColor.tinta500)
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
             Text(verbatim: etapa.duracion)
                 .font(LiquidType.captionLectura)
                 .foregroundStyle(LiquidColor.tinta700)
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
         }
     }
 }

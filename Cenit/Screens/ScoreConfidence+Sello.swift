@@ -21,8 +21,28 @@ extension ScoreConfidence {
         }
     }
 
+    /// El MISMO rótulo, ya resuelto a `String` — las piezas Liquid (la pastilla de
+    /// `LiquidCampoMetrica`) reciben texto, no `LocalizedStringKey`. Mismas claves.
+    var confidenceLabelText: String {
+        switch self {
+        case .solid:       return String(localized: "High confidence")
+        case .building:    return String(localized: "Medium confidence")
+        case .calibrating: return String(localized: "Calibrating")
+        }
+    }
+
     /// VoiceOver phrase — spells out "confidence: …" so the tier is never announced as a
     /// bare adjective.
+    /// La misma frase de VoiceOver, resuelta a `String` — las piezas Liquid piden texto, no
+    /// claves (gemela de `confidenceLabelText`).
+    var confidenceA11yText: String {
+        switch self {
+        case .solid:       return String(localized: "Confidence: high")
+        case .building:    return String(localized: "Confidence: medium")
+        case .calibrating: return String(localized: "Confidence: calibrating")
+        }
+    }
+
     var confidenceA11y: LocalizedStringKey {
         switch self {
         case .solid:       return "Confidence: high"

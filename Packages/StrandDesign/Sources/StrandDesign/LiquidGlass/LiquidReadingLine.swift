@@ -10,6 +10,7 @@ import SwiftUI
 public struct LiquidReadingLine: View {
     private let text: String
     private let highlight: String?
+    private let highlights: [String]?
     private let highlightTone: Color
 
     // 17 (#inject r3 — antes 16, antes 14; pedido del dueño: la frase-veredicto es lo
@@ -21,6 +22,22 @@ public struct LiquidReadingLine: View {
                 highlightTone: Color = LiquidColor.verdePrimario) {
         self.text = text
         self.highlight = highlight
+        self.highlights = nil
+        self.highlightTone = highlightTone
+    }
+
+    /// Varios trozos destacados en la MISMA frase. Nace del veredicto de etapas de Sueño
+    /// («Profundo y REM por encima de tu típico»), que destaca DOS nombres y por eso se
+    /// dibujaba a mano con 42 líneas de recorrido de rangos dentro de la pantalla.
+    ///
+    /// Los trozos se ordenan y se recortan solos: si dos se solapan gana el primero, y los
+    /// que no aparecen en `text` se ignoran — un traductor puede reescribir la frase sin
+    /// romper el render.
+    public init(_ text: String, highlights: [String],
+                highlightTone: Color = LiquidColor.verdePrimario) {
+        self.text = text
+        self.highlight = nil
+        self.highlights = highlights
         self.highlightTone = highlightTone
     }
 
@@ -47,6 +64,7 @@ public struct LiquidReadingLine: View {
 
     private var composed: Text {
         let base = Font.system(size: cuerpoSize)
+        if let highlights { return compuestoMulti(highlights, base: base) }
         let trozo: String? = highlight ?? Self.clausulaVeredicto(text)
         guard let highlight = trozo,
               let range = text.range(of: highlight, options: .backwards) else {
@@ -59,6 +77,38 @@ public struct LiquidReadingLine: View {
             + Text(verbatim: String(text[range.upperBound...])).font(base)
             .foregroundColor(LiquidColor.tinta700)
     }
+
+    /// Recorre la frase UNA vez y va alternando tinta / tono. Los rangos se calculan primero,
+    /// se ordenan por posición y se descartan los que se solapan con uno ya aceptado.
+    private func compuestoMulti(_ trozos: [String], base: Font) -> Text {
+        var rangos: [Range<String.Index>] = []
+        for t in trozos where !t.isEmpty {
+            guard let r = text.range(of: t) else { continue }
+            if rangos.contains(where: { $0.overlaps(r) }) { continue }
+            rangos.append(r)
+        }
+        guard !rangos.isEmpty else {
+            return Text(verbatim: text).font(base).foregroundColor(LiquidColor.tinta700)
+        }
+        rangos.sort { $0.lowerBound < $1.lowerBound }
+
+        var salida = Text(verbatim: "")
+        var cursor = text.startIndex
+        for r in rangos {
+            if cursor < r.lowerBound {
+                salida = salida + Text(verbatim: String(text[cursor..<r.lowerBound]))
+                    .font(base).foregroundColor(LiquidColor.tinta700)
+            }
+            salida = salida + Text(verbatim: String(text[r]))
+                .font(base).fontWeight(.bold).foregroundColor(highlightTone)
+            cursor = r.upperBound
+        }
+        if cursor < text.endIndex {
+            salida = salida + Text(verbatim: String(text[cursor...]))
+                .font(base).foregroundColor(LiquidColor.tinta700)
+        }
+        return salida
+    }
 }
 
 #if DEBUG
@@ -69,6 +119,8 @@ public struct LiquidReadingLine: View {
         LiquidReadingLine("Debajo de tu base — tu cuerpo sigue procesando el esfuerzo de ayer.",
                           highlight: "Debajo de tu base", highlightTone: LiquidColor.atencionTexto)
         LiquidReadingLine("Sin lectura esta noche.")
+        LiquidReadingLine("Profundo y REM por encima de tu típico",
+                          highlights: ["Profundo", "REM"], highlightTone: LiquidColor.indigo)
     }
     .padding(LiquidSpace.s550)
     .background(LiquidSheetFondo())

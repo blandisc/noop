@@ -6,90 +6,84 @@ import CenitStore
 import BiometricStreams
 import Foundation
 
-// MARK: - SleepDetailScreen — el «Detalle de Sueño» en esqueleto «Tendencias Final» (FER-858)
+// MARK: - SleepDetailScreen — el «Detalle de Sueño» en vidrio Liquid (FER-102)
 //
-// Hermana de `RecoveryDetailScreen` (FER-857): el mismo andamiaje del handoff «Detalle de
-// Tendencias Final» — héroe invertido (hue fijo `dataSleep`) → Anoche (hipnograma) → Forma de
-// la noche → Anoche vs tu típico → Métricas → Reserva para bajar de marcha → Deuda → Historial
-// (`GraficaRangos`) → Calendario 90 noches → Método + sello. Solo presentación: reusa
-// `SleepDetailModel` + `NightAutonomicShape` + `NocturnalDC` TAL CUAL; no toca motores.
+// Migración PURAMENTE VISUAL del esqueleto «Tendencias Final» (papel «Instrumento») a los legos
+// Liquid: campo teñido a sangre (`LiquidCampoMetrica`) → costuras de sección
+// (`LiquidFranjaSeccion`) → mosaicos (`LiquidCajita`) → las gráficas de la familia. Los motores,
+// el modelo y los loaders NO cambian: `SleepDetailModel`, `NightAutonomicShape` y `Baselines` se
+// leen tal cual, y esta pantalla sigue siendo pura presentación (cero DB).
 //
-// Se presenta vía `.sheet(item:)` con el tema vivo pasado EXPLÍCITO (no propaga por `.sheet`,
-// FER-162) y SIN `NavigationStack` anidado (FER-171).
+// Tres decisiones del dueño (2026-08-17) van dentro:
+//   1. el héroe conserva LOS DOS datos (horas | regularidad) en UN solo campo;
+//   2. se ELIMINAN los tres bloques que no podían dibujarse: «Reserva para bajar de marcha»
+//      (necesita latido a latido, que Apple no entrega) y «Forma de la noche» + «Primer tercio
+//      vs último» (necesitan la FC MIENTRAS DUERMES, y la app solo importa la de los
+//      entrenamientos). Con ellos se van sus loaders inyectados y el cómputo que quedó sin
+//      lector. Traer la FC nocturna es un issue aparte; entonces los bloques vuelven;
+//   3. entra una sección de Regularidad con la MISMA tarjeta de la hoja de resumen;
+//   4. el orden es de tres actos: lo que dormiste → cómo se compara → el tiempo.
+//
+// Se presenta como hoja (TodayView) o como capa (CuerpoView, `DetailChrome`), con el tema vivo
+// explícito (FER-162 — hoy solo lo consume `SleepStagesInfoSheet`, que sigue en papel) y SIN
+// `NavigationStack` anidado (FER-171).
 
-/// Light «Instrumento» Detalle de Sueño. Built once from a `SleepDetailModel` (the caller injects
-/// the model so the screen stays DB-free), themed explicitly for the sheet boundary.
+/// Detalle de Sueño en vidrio Liquid. Se arma UNA vez desde un `SleepDetailModel` (el caller
+/// inyecta el modelo para que la pantalla siga sin tocar la base de datos).
 struct SleepDetailScreen: View {
-    /// The live «Instrumento» theme, passed explicitly (sheets start a fresh environment). (FER-162)
+    /// El tema vivo «Instrumento», pasado explícito (las hojas arrancan un environment nuevo).
+    /// Solo lo usa la hoja de etapas, que no está en el alcance de esta migración. (FER-162)
     var theme: InstrumentoTheme = .base
-    /// Everything the screen draws, derived ONCE by the caller from `repo` (no DB access here).
+    /// Todo lo que la pantalla dibuja, derivado UNA vez por el caller desde `repo`.
     let model: SleepDetailModel
-    /// Loads the night's HR samples for a `[from, to)` window — injected by the caller (which owns
-    /// `repo`) so the screen stays DB-free. The night-shape block (FER-832) needs the raw 1 Hz HR.
-    var loadNightHR: (_ from: Int, _ to: Int) async -> [HRSample] = { _, _ in [] }
-    /// Loads the night's raw R-R intervals for a `[from, to)` window — injected for nocturnal DC
-    /// («reserva para bajar de marcha», FER-849). Empty by default.
-    var loadNightRR: (_ from: Int, _ to: Int) async -> [RRInterval] = { _, _ in [] }
+    /// `true` cuando Apple Salud NO está autorizado. Sin esto, quien nunca dio permiso leía
+    /// «Aún no hay noches»: le decíamos que no tiene datos cuando el problema es que no
+    /// podemos verlos. Mismo predicado que ya usan Hoy y el aterrizaje. (Dueño 2026-08-18)
+    var sinPermiso: Bool = false
 
-    /// FER-7 · Veredicto v4 Fase 4: the persisted per-night first-third − last-third sleeping-HR
-    /// deltas (bpm), read from the Apple-computed partition. Empty ⇒ the tercios module hides.
-    var loadNightThirds: () async -> [(day: String, value: Double)] = { [] }
-    /// Loads the user's recent DC baseline (ms) for the trend read. nil ⇒ no "vs your normal".
-    var loadDCBaseline: () async -> Double? = { nil }
 
-    /// The metric whose info card is open (tap a Tonight's-metrics tile). (FER-227)
+    /// La métrica cuya hoja de info está abierta (tocar una cajita de «Métricas de la noche»).
     @State private var metricInfo: MetricInfo?
-    /// Whether the combined "Sleep stages" explainer card is open (from «See the method»). (FER-227)
+    /// Si la tarjeta combinada «Etapas del sueño» está abierta (desde «Cómo se calcula»).
     @State private var showStages = false
-    /// The hero's ⓘ toggles the «Qué medimos» card under the inverted field. (FER-858)
+    /// El ⓘ del campo abre la tarjeta «Qué medimos» bajo él.
     @State private var infoOpen = false
-    /// The duration history's period window. Defaults to a month.
+    /// La ventana del historial de duración. Por omisión, un mes.
     @State private var range: ExploreRange = .month
-    /// Duration series with each day key parsed once in `.task`.
+    /// Serie de duración con cada llave de día parseada UNA vez en el `.task`.
     @State private var durationParsed: [(day: String, date: Date?, value: Double)] = []
-    /// The 90-night heat grid, built ONCE in `.task` (90 `DateFormatter` passes) instead of on every
-    /// body eval — the recompute was jank on open. (FER-878+)
+    /// La retícula de 90 noches, construida UNA vez en el `.task` (90 pasadas de `DateFormatter`)
+    /// en vez de en cada evaluación del body — el recálculo daba jank al abrir. (FER-878+)
     @State private var sleepHeatCache: [RecoveryDay] = []
-    /// The tapped night for the calendar read-out. (FER-830)
-    @State private var selectedSleepNight: RecoveryDay? = nil
-    /// The nocturnal HR-fall shape — loaded async; `nil` until loaded or when unreadable. (FER-832)
-    @State private var nightShape: NightAutonomicShape.Result? = nil
-    /// Downsampled HR series (asleep window) for the fall curve. Built with the shape. (FER-832)
-    @State private var nightShapeCurve: [Double] = []
+    /// La noche tocada en el calendario, por su llave de día. (FER-830)
+    @State private var selectedNightID: String? = nil
+    /// El carril del historial que el dedo explora; `nil` = ninguno (paridad `GraficaRangos`).
+    @State private var bandaExplorada: Int? = nil
 
-    /// FER-7 · Fase 4: tonight's first-third vs last-third sleeping-HR reading (nil ⇒ section hidden).
-    @State private var nightThirds: NightThirdsUI? = nil
-    /// Nocturnal Deceleration Capacity (FER-849). `nil` until loaded / Apple-only / no R-R.
-    @State private var nightDC: NocturnalDC.Result? = nil
+    /// El tono de la pantalla: el sueño es índigo en toda la app (paridad `LiquidMetricSheetView`).
+    private static let tono = LiquidColor.indigo
+    /// El tono de las lecturas del CORAZÓN dentro de esta pantalla (forma de la noche, tercios).
+    private static let tonoCorazon = LiquidColor.rosa
 
-    // MARK: - Body — esqueleto estándar «Detalle de Tendencias Final» (FER-858)
-    //
-    // Héroe invertido → Anoche → Forma de la noche → Anoche vs tu típico → Métricas →
-    // Reserva → Deuda → Historial → Calendario 90 noches → Método + sello.
+    // MARK: - Body — tres actos (lo que dormiste → lo que hizo tu corazón → el tiempo)
 
     var body: some View {
         ScrollView {
-            // FER-964: Lazy so the model reveal (FER-953 swap) only builds the visible sections —
-            // an eager VStack laid out the whole fold (charts + Calendario 90 + método) in one frame.
+            // FER-964: Lazy para que el swap del modelo (FER-953) solo arme las secciones visibles.
             LazyVStack(alignment: .leading, spacing: 0) {
                 if let night = model.night {
-                    heroField(night)
-                    if infoOpen { whatWeMeasureCard }
-                    seccion(String(localized: "Last night")) { lastNightContent(night) }
-                    if let shape = nightShape {
-                        seccion(String(localized: "Night shape")) { nightShapeContent(shape) }
+                    campo(night)
+                    if infoOpen { queMedimosCard }
+                    seccion(String(localized: "Last night"), pista: ventanaNoche(night)) {
+                        lastNightContent(night)
                     }
-                    if let thirds = nightThirds {
-                        seccion(String(localized: "First third vs last")) { nightThirdsContent(thirds) }
+                    seccion(String(localized: "Last night vs your typical")) {
+                        stagesVsTypicalContent(night)
                     }
-                    seccion(String(localized: "Last night vs your typical")) { stagesVsTypicalContent(night) }
-                    seccion(String(localized: "Tonight's metrics")) { nightMetricsContent(night) }
-                    if let dc = nightDC, dc.confidence != .unreadable {
-                        seccion(String(localized: "Braking reserve"),
-                                pista: String(localized: "EXPERIMENTAL")) {
-                            nightDCContent(dc)
-                        }
+                    seccion(String(localized: "Tonight's metrics")) {
+                        nightMetricsContent(night)
                     }
+                    seccion(String(localized: "Regularity")) { regularidadContent }
                     if let debt = model.weeklyDebtMinutes, debt >= 15, model.weeklyDebtNights.count >= 2 {
                         seccion(String(localized: "Weekly debt")) { weeklyDebtContent(debt) }
                     }
@@ -99,32 +93,30 @@ struct SleepDetailScreen: View {
                     if durationParsed.contains(where: { $0.value > 0 }) {
                         seccion(String(localized: "Calendar · 90 nights")) { calendarContent }
                     }
-                    PieMetodo(theme: theme) {
-                        metodoBlock
-                    } sello: {
-                        sourceFooter
-                    }
-                } else if !model.loaded {
-                    Group {
-                        heroFlat
-                        ChartWell(theme).loading(height: 160).padding(.top, 22)
-                    }
-                    .padding(CenitMetrics.screenPadding)
+                    pieMetodo
                 } else {
-                    heroFlat.padding(CenitMetrics.screenPadding)
+                    campoApagado
+                    if !model.loaded {
+                        LiquidSheetSkeleton(a11yCargando: String(localized: "Loading your sleep history…"))
+                            .liquidSeccion()
+                    }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(theme.paper)
+        // El fondo va en las DOS formas de presentación: `background` para la capa de Tendencias
+        // (`DetailChrome`, que no es una hoja) y `presentationBackground` para la hoja de Hoy —
+        // el mismo par que la pantalla de papel tenía con `theme.paper` + `.sheetPaper`.
+        .background { LiquidSheetFondo(tone: Self.tono).ignoresSafeArea() }
+        .presentationBackground { LiquidSheetFondo(tone: Self.tono) }
         .presentationDragIndicator(.visible)
-        .sheetPaper(theme)
-        // FER-953: re-run when the placeholder model is replaced by the real one; parse + heat off-main.
+        .presentationCornerRadius(LiquidRadius.hoja)
+        // FER-953: corre cuando el modelo placeholder se cambia por el real; parseo + heat off-main.
         .task(id: model.loaded) {
-            guard model.loaded else { return }   // placeholder pass — nothing to parse yet (FER-953)
+            guard model.loaded else { return }   // pasada placeholder — nada que parsear (FER-953)
             range = .month
             let series = model.durationSeries
-            let todayKey = Repository.localDayKey(Date())   // main-isolated: resolve before the hop
+            let todayKey = Repository.localDayKey(Date())   // main-isolated: resolver antes del hop
             let (parsed, heat) = await Task.detached(priority: .userInitiated) {
                 (series.map { ($0.day, Repository.parseDayKey($0.day), $0.value) },
                  Self.buildSleepHeat(durationSeries: series, todayKey: todayKey))
@@ -132,20 +124,8 @@ struct SleepDetailScreen: View {
             durationParsed = parsed
             sleepHeatCache = heat
         }
-        .task(id: model.night?.startTs) {
-            let (shape, curve) = await loadNightShape()
-            nightShape = shape
-            nightShapeCurve = curve
-        }
-        .task(id: model.night?.startTs) {
-            nightThirds = await loadNightThirdsUI()
-        }
-        .task(id: model.night?.startTs) {
-            nightDC = await loadNightDC()
-        }
         .sheet(item: $metricInfo) { info in
-            // Cutover F6 (decisión D1 del revote): las submétricas de sueño abren la
-            // hoja Liquid (variante clásica).
+            // Cutover F6 (decisión D1 del revote): las submétricas de sueño abren la hoja Liquid.
             LiquidMetricSheetView(info: info, trendLoader: trendLoader(for: info.id))
         }
         .sheet(isPresented: $showStages) {
@@ -153,131 +133,127 @@ struct SleepDetailScreen: View {
         }
     }
 
-    /// One skeleton section: shared `SeccionBloque` (franja + handoff padding 14 · 20 · 22).
-    private func seccion(_ title: String, pista: String? = nil,
-                         @ViewBuilder content: () -> some View) -> some View {
-        SeccionBloque(title, pista: pista, theme: theme, content: content)
+    /// Una sección: la costura a sangre + su contenido con el margen del sistema.
+    @ViewBuilder
+    private func seccion<Content: View>(_ titulo: String, pista: String? = nil,
+                                        @ViewBuilder content: () -> Content) -> some View {
+        LiquidFranjaSeccion(titulo, pista: pista, tono: Self.tono)
+        content().liquidSeccion()
     }
 
-    // MARK: - 1. Héroe invertido — hue fijo `dataSleep` (no semáforo)
+    // MARK: - 1. El campo (héroe) — dos datos, un veredicto de dos niveles
 
-    /// Inverted hero: the ONE field at 100% indigo. Double datum (hours | regularity) + two-level verdict.
-    private func heroField(_ night: SleepDetailModel.Night) -> some View {
-        HeroInvertido(
-            glyph: .sleep,
-            title: "Sleep",
-            hue: theme.dataSleep,
-            theme: theme,
-            onInfo: { withAnimation(StrandMotion.interactive) { infoOpen.toggle() } },
-            numeral: {
-                // Dual 44pt datum (hours | regularity). Not HeroNumeral: compound layout.
-                HStack(alignment: .center, spacing: 0) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(hoursOnly(night.stages.asleep))
-                            .font(InstrumentoType.groteskNumber(44, weight: .bold))
-                            .tracking(-1.2)
-                            .foregroundStyle(theme.paper)
-                            .monospacedDigit()
-                            .recRise()
-                        Text("hours")
-                            .font(InstrumentoType.grotesk(10, weight: .semibold))
-                            .tracking(1.2)
-                            .textCase(.uppercase)
-                            .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    Rectangle()
-                        .fill(theme.paper.opacity(OnFieldOpacity.divider))
-                        .frame(width: 1, height: 52)
-                    VStack(alignment: .leading, spacing: 4) {
-                        if let r = model.regularity {
-                            HStack(alignment: .firstTextBaseline, spacing: 2) {
-                                Text("\(r.score)")
-                                    .font(InstrumentoType.groteskNumber(44, weight: .bold))
-                                    .tracking(-1.2)
-                                    .foregroundStyle(theme.paper)
-                                    .monospacedDigit()
-                                    .recRise(second: true)
-                                Text(verbatim: "/100")
-                                    .font(InstrumentoType.grotesk(13))
-                                    .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
-                            }
-                        } else {
-                            Text(verbatim: "—")
-                                .font(InstrumentoType.groteskNumber(44, weight: .bold))
-                                .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
-                                .recRise(second: true)
-                        }
-                        Text("regularity")
-                            .font(InstrumentoType.grotesk(10, weight: .semibold))
-                            .tracking(1.2)
-                            .textCase(.uppercase)
-                            .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.leading, 16)
-                }
-            },
-            verdict: {
-                // Dynamic String (already localized via String(localized:)); HeroVeredictoBicolor
-                // takes LocalizedStringKey and would re-key lookup. Keep verbatim markup.
-                (Text(verbatim: heroVerdictTitle(night))
-                    .font(InstrumentoType.grotesk(15, weight: .semibold))
-                    .foregroundColor(theme.paper)
-                 + Text(verbatim: " · ")
-                    .font(InstrumentoType.grotesk(14))
-                    .foregroundColor(theme.paper.opacity(OnFieldOpacity.secondary))
-                 + Text(verbatim: heroVerdictClause(night))
-                    .font(InstrumentoType.grotesk(14))
-                    .foregroundColor(theme.paper.opacity(OnFieldOpacity.secondary)))
+    /// El campo teñido a sangre: par de numerales (horas | regularidad) + veredicto + cláusula,
+    /// con el ⓘ en la cabecera y, al pie, el aviso de siestas y el sello de confianza.
+    private func campo(_ night: SleepDetailModel.Night) -> some View {
+        LiquidCampoMetrica(
+            tono: Self.tono,
+            titulo: String(localized: "Sleep"),
+            glifo: .luna,
+            datos: [
+                // Opción 2 del dueño (2026-08-17): los DOS numerales quedan limpios y la
+                // unidad/escala baja al rótulo. El «/100» pegado a la diagonal apretaba, y la
+                // «h» a 20 competía con el numeral; el rótulo ya es una línea de texto chico
+                // donde caben sin estorbar.
+                .init(valor: hoursOnly(night.stages.asleep),
+                      rotulo: String(localized: "Hours slept"),
+                      // «7:12» se dicta como hora del reloj («siete doce»); VoiceOver dice horas.
+                      a11y: horasHabladas(night.stages.asleep)),
+                // Sin base todavía, el numeral NO miente: «··» atenuado con su motivo, no un
+                // número. El tipo `Dato` cuelga del genérico del campo, así que se nombra
+                // SIEMPRE por `.init`/`.calibrando` — escribirlo completo rompe la inferencia.
+                model.regularity.map {
+                    .init(valor: "\($0.score)",
+                          rotulo: String(localized: "Regularity · of 100"))
+                } ?? .calibrando(rotulo: String(localized: "Regularity · of 100"),
+                                 motivo: calibrandoMotivo),
+            ],
+            veredicto: heroVerdictTitle(night),
+            clausula: heroVerdictClause(night),
+            infoAbierto: infoOpen,
+            infoEtiqueta: String(localized: "What we measure"),
+            onInfo: { withAnimation(LiquidMotion.lift) { infoOpen.toggle() } }
+        ) {
+            pieCampo
+        }
+    }
+
+    /// El pie del campo: el aviso de siestas (prosa) y el sello de confianza, que es justo lo
+    /// que la ranura libre existe para cargar.
+    @ViewBuilder private var pieCampo: some View {
+        VStack(alignment: .leading, spacing: LiquidSpace.s150) {
+            if model.excludedNapCount > 0 {
+                Text(napNotice)
+                    .font(LiquidType.captionLectura)
+                    .foregroundStyle(LiquidColor.papelAlto.opacity(LiquidCampo.alfaRotulo))
                     .fixedSize(horizontal: false, vertical: true)
-            },
-            trailing: {
-                VStack(alignment: .leading, spacing: 8) {
-                    if model.excludedNapCount > 0 {
-                        Text(napNotice)
-                            .font(InstrumentoType.grotesk(11))
-                            .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    if let tier = model.confidence {
-                        tier.sello(theme: theme, onField: true)
-                            .padding(.top, 2)
-                    }
-                }
             }
-        )
-    }
-
-    /// The ⓘ card under the hero: what the score measures, in plain language (mock FER-858).
-    private var whatWeMeasureCard: some View {
-        QueMedimosCard(title: "What we measure", explanation: heroExplanation, theme: theme)
-    }
-
-    /// Flat hero for empty / loading: no inverted field without a night.
-    private var heroFlat: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            InstrumentoScreenTitle("Sleep", theme: theme, explanation: heroExplanation, glyph: .sleep)
-            VStack(alignment: .leading, spacing: 10) {
-                Text(verbatim: "—")
-                    .instrumentoHero(46)
-                    .foregroundStyle(theme.inkTertiary)
-                Text(model.loaded
-                     ? "No nights yet. Connect Apple Health in Data Sources to see your sleep stages and trends."
-                     : "Loading your sleep history…")
-                    .font(StrandFont.headline)
-                    .foregroundStyle(theme.ink)
-                    .fixedSize(horizontal: false, vertical: true)
+            if let tier = model.confidence {
+                LiquidCampoSello(tier.confidenceLabelText, a11y: tier.confidenceA11yText)
             }
         }
     }
 
-    /// Hero ⓘ copy: regularity = mid-sleep point movement; naps don't count; need = 7–9 h target.
+    /// Por qué la regularidad todavía no tiene número (la MISMA frase que la cláusula del campo).
+    private var calibrandoMotivo: String {
+        let missing = max(0, SleepRegularity.minNights - model.regularityNights)
+        return String(localized: "Still learning your schedule · \(missing) nights to go")
+    }
+
+    /// La tarjeta del ⓘ bajo el campo: qué mide el puntaje, en lenguaje llano.
+    private var queMedimosCard: some View {
+        VStack(alignment: .leading, spacing: LiquidSpace.s150) {
+            Text("What we measure")
+                .font(LiquidType.tituloFila)
+                .foregroundStyle(LiquidColor.tinta900)
+            Text(heroExplanation)
+                .font(LiquidType.cuerpo)
+                .lineSpacing(LiquidType.cuerpoLineSpacing)
+                .foregroundStyle(LiquidColor.tinta700)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .liquidTarjetaSeccion()
+        .liquidSeccion(top: LiquidSpace.s400, bottom: LiquidSpace.s200)
+    }
+
+    /// El campo APAGADO: sin noche (vacío o cargando) el numeral es un guion, nunca un cero.
+    private var campoApagado: some View {
+        LiquidCampoMetrica(
+            tono: Self.tono,
+            titulo: String(localized: "Sleep"),
+            glifo: .luna,
+            datos: [.init(valor: LiquidCajita.sinDato,
+                          rotulo: String(localized: "hours"),
+                          a11y: String(localized: "no data"),
+                          ausente: true)],
+            clausula: clausulaVacia) {
+            if sinPermiso {
+                LiquidVerMas(title: String(localized: "Manage Apple Health permissions"),
+                             tone: LiquidColor.papelAlto) { abrirAjustesSalud() }
+            }
+        }
+    }
+
+    /// Tres vacíos distintos, no uno: cargando · sin permiso · con permiso y sin noches.
+    private var clausulaVacia: String {
+        guard model.loaded else { return String(localized: "Loading your sleep history…") }
+        return sinPermiso
+            ? String(localized: "Cénit can't read your sleep: Apple Health hasn't granted permission. Turn it on and the nights you already have will appear here.")
+            : String(localized: "No nights yet. Connect Apple Health in Data Sources to see your sleep stages and trends.")
+    }
+
+    /// Abre Ajustes de iOS en la ficha de la app, que es donde vive el permiso de Salud.
+    private func abrirAjustesSalud() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
+    }
+
+    /// Copy del ⓘ: regularidad = movimiento del punto medio; las siestas no cuentan; «necesidad» = 7–9 h.
     private var heroExplanation: LocalizedStringKey {
         "Regularity is how much your mid-sleep point moves night to night (the midpoint between falling asleep and waking): it predicts your health better than total hours. Naps don't count. \"Need\" is the 7–9 h target, not a measurement of you."
     }
 
-    /// Two-level verdict title (sufficiency + schedule), from the same model words as before.
+    /// Veredicto de dos niveles (suficiencia + horario), con las mismas palabras del modelo.
     private func heroVerdictTitle(_ night: SleepDetailModel.Night) -> String {
         let perf = model.performancePct.map { Int(min(100, $0).rounded()) }
         let suff = sufficiencyWord(perf)
@@ -287,7 +263,7 @@ struct SleepDetailScreen: View {
         return suff
     }
 
-    /// Quiet second clause of the hero verdict (need % + regularity word, or calibration note).
+    /// La segunda cláusula, quieta (necesidad % + palabra de regularidad, o la nota de calibración).
     private func heroVerdictClause(_ night: SleepDetailModel.Night) -> String {
         let perf = model.performancePct.map { Int(min(100, $0).rounded()) }
         if let r = model.regularity, let p = perf {
@@ -329,97 +305,147 @@ struct SleepDetailScreen: View {
         }
     }
 
-    // MARK: - 2. Anoche — hipnograma (instrumento firma) + tiles de etapa
+    // MARK: - 2. Anoche — el hipnograma (firma de la pantalla) + su lectura
 
+    /// La ventana de la noche («23:38 → 7:04»), solo cuando hay reloj de verdad: el fallback
+    /// diario de Apple fabrica noches con `startTs == endTs` y ahí no se afirma horario. (FER-1026)
+    private func ventanaNoche(_ night: SleepDetailModel.Night) -> String? {
+        guard night.endTs > night.startTs else { return nil }
+        let inicio = Self.clockFmt.string(from: night.onsetDate)
+        let fin = Self.clockFmt.string(from: Date(timeIntervalSince1970: TimeInterval(night.endTs)))
+        return "\(inicio) → \(fin)"
+    }
+
+    @ViewBuilder
     private func lastNightContent(_ night: SleepDetailModel.Night) -> some View {
-        let s = night.stages
-        return VStack(alignment: .leading, spacing: 12) {
-            lastNightHeader(night)
+        VStack(alignment: .leading, spacing: LiquidSpace.s300) {
             if model.intervals.count >= 2 {
-                Hypnogram(intervals: model.intervals,
-                          height: 176,
-                          showsStageAxis: true,
-                          showsScrub: true,
-                          nightStart: night.onsetDate,
-                          stageColor: { stage in
-                              switch stage {
-                              case .awake: return theme.dataSleepAwake
-                              case .rem:   return theme.dataSleepLight
-                              case .light: return theme.dataSleepLightest
-                              case .deep:  return theme.dataSleepDeep
-                              }
-                          })
-                    .padding(16)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .instrumentoCard(.card, theme: theme)
+                HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s200) {
+                    LiquidNotaLine(nightTitle, tono: LiquidColor.tinta700)
+                    Spacer(minLength: 0)
+                    LiquidNotaLine(awakeText(night))
+                }
+                hipnograma(night)
             } else {
-                stageBar(s)
-                    .padding(16)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .instrumentoCard(.card, theme: theme)
+                // Sin tarjeta: el dueño pidió que las secciones sean planas y llenen el ancho
+                // («nada flotando»). Y sin `ventana:` — la franja de la sección ya lleva el
+                // reloj como pista, y repetirlo dentro leía como dos encabezados.
+                HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s200) {
+                    LiquidNotaLine(nightTitle, tono: LiquidColor.tinta700)
+                    Spacer(minLength: 0)
+                    LiquidNotaLine(awakeText(night))
+                }
+                // `overline` es también el label de VoiceOver del componente: con "" la barra
+                // quedaba como un elemento anónimo que dictaba las duraciones sin decir de qué.
+                // El título va arriba en la fila, así que aquí se pasa oculto a la vista.
+                LiquidStageBar(etapas: sleepEtapas(night), overline: nightTitle, ventana: nil,
+                               mostrarOverline: false)
                 if model.isAppleHealth {
-                    HStack(spacing: 6) {
-                        StrandIcon.heart.image
-                            .font(StrandFont.glyph(.chevron))
-                            .foregroundStyle(theme.dataSpO2)
-                        Text("Apple Health")
-                            .font(StrandFont.footnote)
-                            .foregroundStyle(theme.inkTertiary)
-                    }
+                    LiquidOrigenChip(glyph: .luna, badgeTono: Self.tono,
+                                     etiqueta: String(localized: "Apple Health"))
                 }
             }
         }
     }
 
-    /// Header for «Last night»: the shape of the night in words + the clock. The per-stage breakdown that
-    /// used to live here as four tiles is gone — «Last night vs your typical» below already draws the same
-    /// stages, against your average, as bars (no need to say it twice). Left: cycle count and how much of
-    /// the night was awake. Right: the wall-clock — asleep at / awake at. Shown whenever the night has a
-    /// real clock (a strap night OR a real Apple Health session, FER-486): only the degenerate daily
-    /// fallback (`appleHealthNight`, `startTs == endTs`) has no clock and hides the times. (FER-1026)
-    private func lastNightHeader(_ night: SleepDetailModel.Night) -> some View {
-        let awakePct = pct(night.stages.awake, night.stages.total)
-        let title = remBoutCount.flatMap { $0 > 0 ? $0 : nil }
+    /// «Anoche · N ciclos» (o solo «Anoche» sin conteo de REM).
+    private var nightTitle: String {
+        remBoutCount.flatMap { $0 > 0 ? $0 : nil }
             .map { String(localized: "Night · \($0) cycles") } ?? String(localized: "Night")
-        return HStack(alignment: .top, spacing: 12) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text(verbatim: title)
-                    .font(InstrumentoType.grotesk(16, weight: .semibold))
-                    .foregroundColor(theme.ink)
-                Text(String(localized: "\(awakePct)% awake"))
-                    .font(InstrumentoType.grotesk(14))
-                    .foregroundColor(theme.inkSecondary)
-            }
-            Spacer(minLength: 0)
-            if night.endTs > night.startTs {   // real clock (strap or real Apple session); daily fallback has start == end
-                VStack(alignment: .trailing, spacing: 3) {
-                    clockLine(String(localized: "Asleep"), night.onsetDate)
-                    clockLine(String(localized: "Awake"),
-                              Date(timeIntervalSince1970: TimeInterval(night.endTs)))
-                }
-            }
-        }
-        .fixedSize(horizontal: false, vertical: true)
     }
 
-    /// One right-aligned clock line: a quiet label + the wall-clock time (locale-aware 12/24 h).
-    private func clockLine(_ label: String, _ date: Date) -> some View {
-        HStack(spacing: 5) {
-            Text(verbatim: label)
-                .font(InstrumentoType.grotesk(13))
-                .foregroundColor(theme.inkTertiary)
-            Text(verbatim: Self.clockFmt.string(from: date))
-                .font(InstrumentoType.grotesk(14, weight: .semibold))
-                .foregroundColor(theme.ink)
-                .monospacedDigit()
+    private func awakeText(_ night: SleepDetailModel.Night) -> String {
+        String(localized: "\(pct(night.stages.awake, night.stages.total))% awake")
+    }
+
+    /// El hipnograma Liquid, con su scrub (etapa · rango horario · duración) y su eje de 5 horas.
+    private func hipnograma(_ night: SleepDetailModel.Night) -> some View {
+        let intervalos = model.intervals.map { iv in
+            LiquidHipnograma.Intervalo(inicio: night.onsetDate.addingTimeInterval(iv.start),
+                                       fin: night.onsetDate.addingTimeInterval(iv.end),
+                                       etapa: Self.etapaLiquid(iv.stage))
+        }
+        return LiquidHipnograma(
+            intervalos: intervalos,
+            colores: Self.coloresEtapa,
+            etiquetas: Self.etiquetasEtapa,
+            ejeInicio: Self.clockFmt.string(from: night.onsetDate),
+            ejeFin: Self.clockFmt.string(from: Date(timeIntervalSince1970: TimeInterval(night.endTs))),
+            horasEje: LiquidHipnograma.horasDelEje(intervalos) { Self.clockFmt.string(from: $0) },
+            textoTramo: { tramo in
+                (valor: Self.etiquetasEtapa[tramo.etapa] ?? "",
+                 detalle: Self.rangoTramo(tramo))
+            },
+            a11yLabel: nightTitle,
+            a11yValue: stagesA11y(night.stages))
+        // Sin tarjeta, como la barra de etapas: el dueño pidió secciones planas que llenen el
+        // ancho («nada flotando»). La sección ya tiene su margen; envolverla otra vez metía un
+        // segundo sistema visual dentro del mismo bloque.
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// «23:42 – 0:04 · 22 min» — el detalle del tramo bajo el dedo (el papel lo decía igual).
+    private static func rangoTramo(_ tramo: LiquidHipnograma.Intervalo) -> String {
+        let minutos = Int((tramo.duracion / 60).rounded())
+        return "\(clockFmt.string(from: tramo.inicio)) – \(clockFmt.string(from: tramo.fin)) · \(minutos) min"
+    }
+
+    /// Lo que VoiceOver dice de la noche: el reparto por etapa en porcentaje (clave existente).
+    private func stagesA11y(_ s: SleepDetailModel.Stages) -> String {
+        String(localized: "Sleep stages: deep \(pct(s.deep, s.total)) percent, light \(pct(s.light, s.total)) percent, REM \(pct(s.rem, s.total)) percent, awake \(pct(s.awake, s.total)) percent")
+    }
+
+    /// La rampa Liquid de etapas: índigo graduado por opacidad para lo dormido y ORO para
+    /// despierto (decisión del dueño /inject). Copiada de `LiquidMetricSheetView.sleepEtapas`
+    /// para que la hoja de Hoy y este detalle pinten la MISMA noche con los mismos tonos.
+    static let coloresEtapa: [LiquidHipnograma.Etapa: Color] = [
+        .profundo: LiquidColor.indigo,
+        .rem: LiquidColor.indigo.opacity(0.78),    // token-exempt: rampa graduada de etapas
+        .ligero: LiquidColor.indigo.opacity(0.52), // token-exempt: rampa graduada de etapas
+        .despierto: LiquidColor.oro,
+    ]
+
+    private static var etiquetasEtapa: [LiquidHipnograma.Etapa: String] {
+        [.despierto: String(localized: "Awake"),
+         .rem: String(localized: "REM"),
+         .ligero: String(localized: "Light"),
+         .profundo: String(localized: "Deep")]
+    }
+
+    private static func etapaLiquid(_ stage: SleepStage) -> LiquidHipnograma.Etapa {
+        switch stage {
+        case .deep:  return .profundo
+        case .rem:   return .rem
+        case .light: return .ligero
+        case .awake: return .despierto
         }
     }
 
+    /// Las cuatro etapas para la barra de fallback (sin línea de tiempo por época).
+    private func sleepEtapas(_ night: SleepDetailModel.Night) -> [LiquidStageBar.Etapa] {
+        let s = night.stages
+        return [
+            .init(minutos: s.deep, color: Self.coloresEtapa[.profundo] ?? Self.tono,
+                  etiqueta: String(localized: "Deep"), duracion: hoursOnly(s.deep)),
+            .init(minutos: s.rem, color: Self.coloresEtapa[.rem] ?? Self.tono,
+                  etiqueta: String(localized: "REM"), duracion: hoursOnly(s.rem)),
+            .init(minutos: s.light, color: Self.coloresEtapa[.ligero] ?? Self.tono,
+                  etiqueta: String(localized: "Light"), duracion: hoursOnly(s.light)),
+            .init(minutos: s.awake, color: Self.coloresEtapa[.despierto] ?? LiquidColor.oro,
+                  etiqueta: String(localized: "Awake"), duracion: hoursOnly(s.awake)),
+        ]
+    }
+
+    /// El reloj de pared de la noche. Plantilla «Hmm», la MISMA que usa la hoja de resumen
+    /// (`LiquidMetricSheetView.clockFmt`): con `timeStyle = .short` el detalle imprimía
+    /// «10:48 p.m. → 6:36 a.m.» mientras la hoja, un toque antes, decía «22:48 → 6:36». La
+    /// misma noche en dos formatos a un tap de distancia se lee como dos apps.
+    /// (Por plantilla, nunca con `dateFormat`: regla de la casa.)
     private static let clockFmt: DateFormatter = {
-        let f = DateFormatter(); f.timeStyle = .short; f.dateStyle = .none; return f
+        let f = DateFormatter(); f.setLocalizedDateFormatFromTemplate("Hmm"); return f
     }()
 
-    /// Count contiguous REM bouts from the existing hypnogram intervals (presentation only).
+    /// Cuenta los tramos REM contiguos a partir de los intervalos (solo presentación).
     private var remBoutCount: Int? {
         guard !model.intervals.isEmpty else { return nil }
         var n = 0
@@ -434,284 +460,102 @@ struct SleepDetailScreen: View {
         return n
     }
 
-    private func stageColor(_ stage: SleepStage) -> Color {
-        switch stage {
-        case .deep:  return theme.dataSleepDeep
-        case .light: return theme.dataSleepLightest
-        case .rem:   return theme.dataSleepLight
-        case .awake: return theme.dataSleepAwake
+    // MARK: - Regularidad — la MISMA tarjeta de la hoja de resumen
+
+    /// `LiquidRegularityCard`, sin variante: es la pieza que ya usa la hoja
+    /// (`LiquidMetricSheetView`), con su mismo copy y su mismo ⓘ. El dueño pidió que el
+    /// detalle reutilice los componentes del resumen en vez de acuñar gemelos.
+    ///
+    /// El héroe sigue mostrando el 88 (decisión del dueño: el campo lleva los dos datos);
+    /// esta sección es la que lo EXPLICA — su palabra de nivel y qué mide.
+    private var regularidadContent: some View {
+        LiquidRegularityCard(
+            // Sin título: la franja de la sección ya dice «Regularidad». Repetirlo dentro
+            // dejaba dos encabezados a 8 pt de distancia.
+            titulo: "",
+            puntaje: model.regularity?.score,
+            leyenda: regularidadLeyenda,
+            tono: Self.tono,
+            explicacion: String(localized: "How steady your sleep schedule is: we take each night's midpoint (between falling asleep and waking) and measure how much it shifts night to night. Less drift, closer to 100."),
+            infoMostrar: String(localized: "Show explanation"),
+            infoOcultar: String(localized: "Hide explanation"))
+    }
+
+    /// La palabra de nivel de la regularidad, o cuántas noches faltan para tener base.
+    private var regularidadLeyenda: String {
+        guard let r = model.regularity else {
+            let faltan = max(0, SleepRegularity.minNights - model.regularityNights)
+            return String(localized: "Still learning your schedule · \(faltan) nights to go")
         }
+        return regularityWordText(r.score)
     }
 
-    /// Full-width proportional stacked stage bar (fallback when there are no epoch segments).
-    @ViewBuilder
-    private func stageBar(_ s: SleepDetailModel.Stages) -> some View {
-        let total = max(1, s.total)
-        GeometryReader { geo in
-            HStack(spacing: 2) {
-                stageSegment(.deep, s.deep, total, geo.size.width)
-                stageSegment(.light, s.light, total, geo.size.width)
-                stageSegment(.rem, s.rem, total, geo.size.width)
-                stageSegment(.awake, s.awake, total, geo.size.width)
-            }
-        }
-        .frame(height: 30)
-        .clipShape(RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text("Sleep stages: deep \(pct(s.deep, s.total)) percent, light \(pct(s.light, s.total)) percent, REM \(pct(s.rem, s.total)) percent, awake \(pct(s.awake, s.total)) percent"))
-    }
-
-    @ViewBuilder
-    private func stageSegment(_ stage: SleepStage, _ minutes: Double, _ total: Double, _ width: CGFloat) -> some View {
-        Rectangle()
-            .fill(stageColor(stage))
-            .frame(width: max(0, CGFloat(minutes / total) * width))
-    }
-
-    // MARK: - 3. Forma de la noche (FER-832) — promovida a sección estándar
-
-    @ViewBuilder
-    private func nightShapeContent(_ shape: NightAutonomicShape.Result) -> some View {
-        if shape.confidence == .unreadable {
-            Text("There isn't enough signal tonight to read how your heart eased off.")
-                .font(StrandFont.caption)
-                .foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        } else {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(verbatim: "−\(Int(shape.dipPct.rounded()))%")
-                        .font(InstrumentoType.groteskNumber(24, weight: .bold))
-                        .foregroundStyle(theme.dataHeart)
-                        .monospacedDigit()
-                    Text("your pulse dropped as you fell asleep")
-                        .font(InstrumentoType.grotesk(13))
-                        .foregroundStyle(theme.inkSecondary)
-                }
-                if nightShapeCurve.count >= 2 {
-                    // Line in `dataHeart`; area wash fades to transparent via Sparkline's own area path.
-                    Sparkline(values: nightShapeCurve,
-                              gradient: Gradient(colors: [theme.dataHeart, theme.dataHeart]),
-                              lineWidth: 2,
-                              showsArea: true,
-                              showsHead: true,
-                              showsScrub: false)
-                        .frame(height: 64)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .recFade()
-                        .accessibilityHidden(true)
-                }
-                HStack(alignment: .top, spacing: 8) {
-                    TileSurface(label: String(localized: "lowest point"),
-                                value: clockLabel(shape.nadirHour),
-                                valueSize: 15, theme: theme)
-                    if model.rhrBaseline != nil {
-                        TileSurface(label: String(localized: "below your resting"),
-                                    value: "\(Int((shape.fractionBelowRHR * 100).rounded()))%",
-                                    valueSize: 15,
-                                    caption: String(localized: "of the night"),
-                                    theme: theme)
-                    }
-                }
-                BarraAncla(String(localized: String.LocalizationValue(dipCopyKey(shape.dipShape))),
-                           color: theme.dataHeart, theme: theme)
-            }
-        }
-    }
-
-    private func dipCopyKey(_ shape: NightAutonomicShape.DipShape) -> String {
-        switch shape {
-        case .pronounced:
-            return "A marked, early drop: a sign you settled into rest. It's a pattern, not a diagnosis."
-        case .moderate:
-            return "A moderate drop overnight. It's a pattern, not a diagnosis."
-        case .blunted:
-            return "A gentler drop than a deep-rest night usually shows. It's a pattern, not a diagnosis."
-        }
-    }
-
-    // MARK: - First third vs last (FER-7 · Fase 4) — descriptive, never a vote
-
-    /// How tonight's first-third→last-third rise compares to the user's own trailing normal.
-    enum ThirdsTone: Equatable { case calibrating(Int), usual, higher, lower }
-    struct NightThirdsUI: Equatable { let deltaBpm: Double; let tone: ThirdsTone }
-
-    @ViewBuilder
-    private func nightThirdsContent(_ r: NightThirdsUI) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(verbatim: signedBpm(r.deltaBpm))
-                    .font(InstrumentoType.groteskNumber(24, weight: .bold))
-                    .foregroundStyle(theme.dataHeart)
-                    .monospacedDigit()
-                Text("from the first third of the night to the last")
-                    .font(InstrumentoType.grotesk(13))
-                    .foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            BarraAncla(String(localized: String.LocalizationValue(thirdsCopyKey(r.tone))),
-                       color: theme.dataHeart, theme: theme)
-        }
-    }
-
-    /// "+12 lpm" / "−3 lpm" / "0 lpm" — signed, U+2212 minus, localized unit.
-    private func signedBpm(_ d: Double) -> String {
-        let n = Int(d.rounded())
-        let sign = n > 0 ? "+" : (n < 0 ? "\u{2212}" : "")
-        return "\(sign)\(abs(n)) \(String(localized: "bpm"))"
-    }
-
-    private func thirdsCopyKey(_ tone: ThirdsTone) -> String {
-        switch tone {
-        case .calibrating:
-            return "Getting to know your nights: a few more and we'll compare this to your usual."
-        case .higher:
-            return "Higher than your usual overnight rise: last night's start may have run hot (a workout, a late meal, a drink). It's a pattern, not a diagnosis."
-        case .usual:
-            return "About your usual overnight rise. It's a pattern, not a diagnosis."
-        case .lower:
-            return "A gentler overnight rise than your usual. It's a pattern, not a diagnosis."
-        }
-    }
-
-    /// Read the persisted per-night thirds deltas, pick THIS night's, and score it against the user's
-    /// own trailing normal (PAST nights only, so tonight isn't compared to itself). `nil` ⇒ hidden.
-    private func loadNightThirdsUI() async -> NightThirdsUI? {
-        guard let night = model.night else { return nil }
-        let series = await loadNightThirds()
-        guard !series.isEmpty else { return nil }
-        let nightDay = Repository.localDayKey(Date(timeIntervalSince1970: TimeInterval(night.endTs)))
-        guard let tonight = series.first(where: { $0.day == nightDay })?.value else { return nil }
-        let cfg = Baselines.metricCfg["night_thirds_delta"]!
-        let past: [Double?] = series.filter { $0.day < nightDay }.sorted { $0.day < $1.day }.map { $0.value }
-        let state = Baselines.rollingMeanSD(past, cfg: cfg, window: 30)
-        let tone: ThirdsTone
-        if !state.trusted {
-            tone = .calibrating(max(0, Baselines.minNightsTrust - state.nValid))
-        } else {
-            let dev = Baselines.deviation(tonight, state: state)
-            tone = dev.inNormalRange ? .usual : (dev.z > 0 ? .higher : .lower)
-        }
-        return NightThirdsUI(deltaBpm: tonight, tone: tone)
-    }
-
-    private static let clockFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.timeStyle = .short
-        return f
-    }()
-
-    private func clockLabel(_ hour: Double) -> String {
-        var h = Int(hour) % 24
-        var m = Int(((hour - Double(Int(hour))) * 60).rounded())
-        if m == 60 { m = 0; h = (h + 1) % 24 }
-        var comps = DateComponents(); comps.hour = h; comps.minute = m
-        let cal = Calendar.current
-        if let date = cal.date(from: comps) {
-            return Self.clockFormatter.string(from: date)
-        }
-        return String(format: "%d:%02d", h, m)
-    }
-
-    // MARK: - 4. Anoche vs tu típico — barras con marca de promedio
+    // MARK: - 3. Anoche vs lo típico — barras con marca de promedio
 
     private func stagesVsTypicalContent(_ night: SleepDetailModel.Night) -> some View {
         let s = night.stages
-        return VStack(alignment: .leading, spacing: 12) {
-            vsTypicalVerdictText(s)
-                .fixedSize(horizontal: false, vertical: true)
-            stageVsTypicalRow("Deep", lastMin: s.deep, total: s.total,
-                              typicalPct: model.typicalDeepPct, color: theme.dataSleepDeep,
+        // El bloque FLOTA en la tarjeta del resumen: el dueño pidió combinar los componentes
+        // flotantes de la hoja con las secciones que cierran del detalle, y este es una
+        // LECTURA con su propio marco (como las cajitas de métricas), no la gráfica de la
+        // sección. El hipnograma y la barra de etapas siguen planos a propósito.
+        return VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+            vsTypicalVerdict(s)
+            stageVsTypicalRow(String(localized: "Deep"), lastMin: s.deep, dormido: dormidoAnoche(s),
+                              typicalPct: model.typicalDeepPct,
+                              color: Self.coloresEtapa[.profundo] ?? Self.tono,
                               higherIsBetter: true, index: 0)
-            stageVsTypicalRow("REM", lastMin: s.rem, total: s.total,
-                              typicalPct: model.typicalRemPct, color: theme.dataSleepLight,
+            stageVsTypicalRow(String(localized: "REM"), lastMin: s.rem, dormido: dormidoAnoche(s),
+                              typicalPct: model.typicalRemPct,
+                              color: Self.coloresEtapa[.rem] ?? Self.tono,
                               higherIsBetter: true, index: 1)
-            stageVsTypicalRow("Light", lastMin: s.light, total: s.total,
-                              typicalPct: model.typicalLightPct, color: theme.dataSleepLightest,
+            stageVsTypicalRow(String(localized: "Light"), lastMin: s.light, dormido: dormidoAnoche(s),
+                              typicalPct: model.typicalLightPct,
+                              color: Self.coloresEtapa[.ligero] ?? Self.tono,
                               higherIsBetter: false, index: 2)
-            BarraAncla(String(localized: "The mark is your average."),
-                       color: theme.ink, theme: theme)
+            LiquidNotaLine(String(localized: "The mark is your average."))
         }
+        .liquidTarjetaSeccion()
     }
 
-    /// Stage-name portion(s) in `theme.dataSleep`; rest of the phrase in `theme.ink`.
-    /// Uses the same five localized full strings as before (no new copy keys).
-    private func vsTypicalVerdictText(_ s: SleepDetailModel.Stages) -> Text {
-        let font = InstrumentoType.grotesk(16, weight: .semibold)
+    /// El tiempo DORMIDO de la noche: el total menos lo que estuviste despierto. Es el
+    /// denominador de las tres barras, el mismo que usa `typicalDeepPct` y compañía.
+    private func dormidoAnoche(_ s: SleepDetailModel.Stages) -> Double {
+        Swift.max(0, s.total - s.awake)
+    }
+
+    /// El nombre de la etapa TEÑIDO dentro de la frase; el resto en tinta. Mismas cinco frases
+    /// localizadas de siempre (sin claves nuevas).
+    /// El veredicto de etapas: la MISMA frase de siempre, con el nombre de la etapa teñido.
+    ///
+    /// Antes esto eran 42 líneas que recorrían la frase a mano buscando rangos sin traslape y
+    /// concatenando `Text` — exactamente lo que hace `LiquidReadingLine`, que la hoja de
+    /// resumen ya usaba. Se extendió el componente para destacar VARIOS trozos (el caso
+    /// «Profundo y REM») en vez de forkear la pantalla. De paso la frase vuelve a escalar con
+    /// Dynamic Type: `LiquidType.titulo` no es relativo a ningún estilo y la congelaba.
+    @ViewBuilder private func vsTypicalVerdict(_ s: SleepDetailModel.Stages) -> some View {
         let deep = stageShareAbove(s.deep, s.total, model.typicalDeepPct)
         let rem = stageShareAbove(s.rem, s.total, model.typicalRemPct)
-        let full: String
-        let stageNames: [String]
-        if deep && rem {
-            full = String(localized: "Deep and REM above your typical")
-            stageNames = [String(localized: "Deep"), String(localized: "REM")]
-        } else if deep {
-            full = String(localized: "Deep above your typical")
-            stageNames = [String(localized: "Deep")]
-        } else if rem {
-            full = String(localized: "REM above your typical")
-            stageNames = [String(localized: "REM")]
-        } else if let light = model.typicalLightPct {
-            let last = s.total > 0 ? s.light / s.total * 100 : 0
-            if last > light + 1 {
-                full = String(localized: "More light sleep than your typical")
-                // EN source phrase uses "light sleep"; es-MX uses "sueño ligero".
-                let candidates = ["light sleep", "sueño ligero"]
-                stageNames = candidates.filter { full.range(of: $0, options: .caseInsensitive) != nil }
-            } else {
-                full = String(localized: "Close to your typical stage mix")
-                stageNames = []
+        let (frase, etapas): (String, [String]) = {
+            if deep && rem {
+                return (String(localized: "Deep and REM above your typical"),
+                        [String(localized: "Deep"), String(localized: "REM")])
             }
-        } else {
-            full = String(localized: "Close to your typical stage mix")
-            stageNames = []
-        }
-        return coloredStageVerdict(full: full, stageNames: stageNames, font: font)
-    }
-
-    /// Walks `full` and paints each occurrence of a stage name in `theme.dataSleep`.
-    private func coloredStageVerdict(full: String, stageNames: [String], font: Font) -> Text {
-        guard !stageNames.isEmpty else {
-            return Text(verbatim: full)
-                .font(font)
-                .foregroundColor(theme.ink)
-        }
-        // Collect non-overlapping matches, left-to-right.
-        var matches: [(range: Range<String.Index>, name: String)] = []
-        for name in stageNames {
-            var searchFrom = full.startIndex
-            while searchFrom < full.endIndex,
-                  let r = full.range(of: name, options: .caseInsensitive, range: searchFrom..<full.endIndex) {
-                let overlaps = matches.contains { $0.range.overlaps(r) }
-                if !overlaps { matches.append((r, name)) }
-                searchFrom = r.upperBound
+            if deep { return (String(localized: "Deep above your typical"),
+                              [String(localized: "Deep")]) }
+            if rem  { return (String(localized: "REM above your typical"),
+                              [String(localized: "REM")]) }
+            if let light = model.typicalLightPct {
+                let ultima = s.total > 0 ? s.light / s.total * 100 : 0
+                if ultima > light + 1 {
+                    let f = String(localized: "More light sleep than your typical")
+                    // La frase fuente en EN dice «light sleep»; es-MX dice «sueño ligero».
+                    let cand = ["light sleep", "sueño ligero"]
+                    return (f, cand.filter { f.range(of: $0, options: .caseInsensitive) != nil })
+                }
             }
-        }
-        matches.sort { $0.range.lowerBound < $1.range.lowerBound }
-        guard !matches.isEmpty else {
-            return Text(verbatim: full)
-                .font(font)
-                .foregroundColor(theme.ink)
-        }
-        var result: Text?
-        var cursor = full.startIndex
-        for m in matches {
-            if cursor < m.range.lowerBound {
-                let plain = String(full[cursor..<m.range.lowerBound])
-                let t = Text(verbatim: plain).font(font).foregroundColor(theme.ink)
-                result = result.map { $0 + t } ?? t
-            }
-            let stage = String(full[m.range])
-            let t = Text(verbatim: stage).font(font).foregroundColor(theme.dataSleep)
-            result = result.map { $0 + t } ?? t
-            cursor = m.range.upperBound
-        }
-        if cursor < full.endIndex {
-            let plain = String(full[cursor...])
-            let t = Text(verbatim: plain).font(font).foregroundColor(theme.ink)
-            result = result.map { $0 + t } ?? t
-        }
-        return result ?? Text(verbatim: full).font(font).foregroundColor(theme.ink)
+            return (String(localized: "Close to your typical stage mix"), [])
+        }()
+        LiquidReadingLine(frase, highlights: etapas, highlightTone: Self.tono)
     }
 
     private func stageShareAbove(_ min: Double, _ total: Double, _ typical: Double?) -> Bool {
@@ -719,122 +563,122 @@ struct SleepDetailScreen: View {
         return (min / total * 100) > typical + 0.5
     }
 
-    @ViewBuilder
-    private func stageVsTypicalRow(_ label: LocalizedStringKey, lastMin: Double, total: Double,
+    /// Una fila del bloque, ya como pieza del sistema: el relleno mide anoche y el tick de tinta
+    /// marca tu promedio. El delta (y su color) los calcula el componente.
+    private func stageVsTypicalRow(_ label: String, lastMin: Double, dormido: Double,
                                    typicalPct: Double?, color: Color,
                                    higherIsBetter: Bool, index: Int) -> some View {
-        let lastPct = total > 0 ? lastMin / total * 100 : 0
-        let scaleMax = max(lastPct, typicalPct ?? 0) * 1.18
-        let denom = scaleMax > 0 ? scaleMax : 1
-        let deltaText: String? = {
-            guard let typicalPct else { return nil }
-            let diff = Int((lastPct - typicalPct).rounded())
-            if diff == 0 { return "~0" }
-            return diff > 0 ? "+\(abs(diff))" : "−\(abs(diff))"
-        }()
-        let improves: Bool = {
-            guard let typicalPct else { return true }
-            let diff = lastPct - typicalPct
-            return higherIsBetter ? diff >= 0 : diff <= 0
-        }()
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(label)
-                    .font(InstrumentoType.grotesk(10, weight: .semibold))
-                    .tracking(1.1)
-                    .textCase(.uppercase)
-                    .foregroundStyle(theme.inkTertiary)
-                Spacer()
-                Text("\(Int(lastPct.rounded()))%")
-                    .font(InstrumentoType.groteskNumber(12, weight: .medium))
-                    .foregroundStyle(theme.ink)
-                    .monospacedDigit()
-                if let deltaText {
-                    Text(deltaText)
-                        .font(InstrumentoType.groteskNumber(11, weight: .semibold))
-                        .foregroundStyle(improves ? theme.verdict : theme.warning)
-                        .monospacedDigit()
-                }
-            }
-            GeometryReader { geo in
-                let w = geo.size.width
-                ZStack(alignment: .leading) {
-                    Capsule(style: .continuous)
-                        .fill(theme.trackWarm)
-                        .frame(height: 10)
-                    Capsule(style: .continuous)
-                        .fill(color)
-                        .frame(width: w * CGFloat(min(1, lastPct / denom)), height: 10)
-                        .recGrow(index: index, origin: .leading)
-                    if let typicalPct, typicalPct > 0 {
-                        Rectangle()
-                            .fill(theme.ink)
-                            .frame(width: 2, height: 14)
-                            .position(x: w * CGFloat(min(1, typicalPct / denom)), y: 5)
-                    }
-                }
-            }
-            .frame(height: 10)
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(stageAccessibilityLabel(label, lastPct: lastPct, typicalPct: typicalPct))
+        // DENOMINADOR: tiempo DORMIDO, no tiempo en cama. Los dos lados de la barra tienen
+        // que medir lo mismo — el típico (`typicalDeepPct`) siempre se calculó sobre dormido,
+        // y anoche se calculaba sobre el total con despierto incluido. El sesgo era
+        // 1 − despierto/total: un profundo real de 18.0 % se mostraba 16.2 % y la fila decía
+        // «−2» en ámbar cuando el cambio verdadero era CERO. (Decisión del dueño 2026-08-18;
+        // mueve los deltas de la base instalada, y por eso se decidió arriba, no aquí.)
+        let lastPct = dormido > 0 ? lastMin / dormido * 100 : 0
+        // Las MISMAS dos claves del papel («…, 22% last night» + «, typical 18%»), unidas igual:
+        // sin base, la voz NO menciona promedio (regla 2 de `LiquidBarraMarca`).
+        let voz = String(localized: "\(label), \(Int(lastPct.rounded()))% last night")
+            + (typicalPct.map { String(localized: ", typical \(Int($0.rounded()))%") } ?? "")
+        return LiquidBarraMarca(
+            etiqueta: label,
+            fraccion: dormido > 0 ? lastPct / 100 : nil,
+            marca: typicalPct.map { $0 / 100 },
+            tono: color,
+            valorTexto: "\(Int(lastPct.rounded()))%",
+            masEsMejor: higherIsBetter,
+            indice: index,
+            a11yLabel: label,
+            a11yValue: voz)
+    }
+
+    /// **Latencia**: cuánto tardaste en dormirte, derivada del hipnograma.
+    ///
+    /// Es el tramo DESPIERTO con el que abre la noche, antes de la primera etapa de sueño.
+    /// Apple no entrega un dato de latencia y el modelo la traía fija en `nil` desde siempre
+    /// (`latencyMin: nil`, comentado «the cache carries no onset-latency»), así que la cajita
+    /// enseñaba un guion eterno al lado de «10–20 sano» — una norma clínica sin dato.
+    ///
+    /// Devuelve `nil` —y lo DICE— cuando la noche abre ya dormida: si la sesión empezó en el
+    /// sueño y no en la cama, no hubo espera que medir, y fabricar un 0 sería inventar que te
+    /// dormiste al instante. Honesto sobre un límite real de la fuente.
+    static func latenciaMin(_ intervalos: [SleepInterval]) -> Double? {
+        let orden = intervalos.filter { $0.end > $0.start }.sorted { $0.start < $1.start }
+        guard let primero = orden.first, primero.stage == .awake else { return nil }
+
+        // El primer tramo de SUEÑO es la condición: sin él no hubo latencia que medir, hubo
+        // una noche en vela. Sin esta guarda, una sesión de 8 h enteramente despierta
+        // devolvía 480 y la cajita imprimía «480 min» junto a «10–20 sano».
+        guard let onset = orden.first(where: { $0.stage != .awake }) else { return nil }
+
+        // El despierto de apertura puede venir partido en tramos contiguos, pero NUNCA puede
+        // pasarse del onset: dos fuentes de sueño escribiendo a la vez producen tramos
+        // solapados, y sin el tope un awake 0–30 que solapa un sueño que arrancó en el 10
+        // reportaba 30 (el triple de lo real).
+        var fin = primero.end
+        for iv in orden.dropFirst() {
+            guard iv.stage == .awake, iv.start <= fin + 1 else { break }
+            fin = max(fin, iv.end)
         }
+        let minutos = (min(fin, onset.start) - primero.start) / 60
+        return minutos > 0 ? minutos : nil
     }
 
-    private func stageAccessibilityLabel(_ label: LocalizedStringKey, lastPct: Double, typicalPct: Double?) -> Text {
-        let head = Text("\(Text(label)), \(Int(lastPct.rounded()))% last night")
-        guard let typicalPct else { return head }
-        return head + Text(", typical \(Int(typicalPct.rounded()))%")
-    }
+    /// La latencia de ESTA noche, o nil si la noche abre ya dormida.
+    private var latenciaNoche: Double? { Self.latenciaMin(model.intervals) }
 
-    // MARK: - 5. Métricas de la noche (grid 6 tiles; respiración promovida aquí)
+    // MARK: - 4. Métricas de la noche — seis cajitas tocables
 
     private func nightMetricsContent(_ night: SleepDetailModel.Night) -> some View {
-        LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)],
-                  alignment: .leading, spacing: 8) {
-            metricTileButton(label: String(localized: "Performance"),
-                             value: model.performancePct.map { "\(Int(min(100, $0).rounded()))%" } ?? "—",
-                             caption: performanceCaptionString,
-                             info: .sleepPerformance(model.performancePct))
-            metricTileButton(label: String(localized: "Efficiency"),
-                             value: efficiencyPct(night).map { "\(Int($0.rounded()))%" } ?? "—",
-                             caption: String(localized: "vs time in bed"),
-                             info: .sleepEfficiency(efficiencyPct(night)))
-            metricTileButton(label: String(localized: "Restorative"),
-                             value: restorativePct(night.stages).map { "\(Int($0.rounded()))%" } ?? "—",
-                             caption: String(localized: "Deep + REM"),
-                             info: .sleepRestorative(restorativePct(night.stages)))
-            if let latency = model.latencyMin {
-                metricTileButton(label: String(localized: "Latency"),
-                                 value: "\(Int(latency.rounded())) min",
-                                 caption: String(localized: "10–20 healthy"),
-                                 info: .sleepLatency(latency))
-            } else {
-                metricTileButton(label: String(localized: "Latency"),
-                                 value: "—",
-                                 caption: String(localized: "10–20 healthy"),
-                                 info: .sleepLatency(nil))
-            }
-            metricTileButton(label: String(localized: "Respiration"),
-                             value: night.respRate.map { String(format: "%.1f", $0) } ?? "—",
-                             caption: String(localized: "rpm"),
-                             valueColor: night.respRate != nil ? theme.dataSpO2 : nil,
-                             info: .respiratory(night.respRate))
-            metricTileButton(label: String(localized: "Awakenings"),
-                             value: model.awakenings.map { "\($0)" } ?? "—",
-                             caption: String(localized: "times"),
-                             info: .sleepAwakenings(model.awakenings))
+        LiquidCajitaGrid {
+            cajitaMetrica(rotulo: String(localized: "Performance"),
+                          valor: model.performancePct.map { "\(Int(min(100, $0).rounded()))" },
+                          unidad: "%",
+                          pie: performanceCaptionString,
+                          info: .sleepPerformance(model.performancePct))
+            cajitaMetrica(rotulo: String(localized: "Efficiency"),
+                          valor: efficiencyPct(night).map { "\(Int($0.rounded()))" },
+                          unidad: "%",
+                          pie: String(localized: "vs time in bed"),
+                          info: .sleepEfficiency(efficiencyPct(night)))
+            cajitaMetrica(rotulo: String(localized: "Restorative"),
+                          valor: restorativePct(night.stages).map { "\(Int($0.rounded()))" },
+                          unidad: "%",
+                          pie: String(localized: "Deep + REM"),
+                          info: .sleepRestorative(restorativePct(night.stages)))
+            // La latencia se DERIVA del hipnograma (ver `latenciaMin`): el modelo la traía fija
+            // en nil desde siempre y la cajita mostraba un guion eterno junto a un rango sano
+            // que nunca se podía contrastar.
+            cajitaMetrica(rotulo: String(localized: "Latency"),
+                          valor: latenciaNoche.map { "\(Int($0.rounded()))" },
+                          unidad: String(localized: "min"),
+                          pie: latenciaNoche == nil
+                              ? String(localized: "your night starts already asleep")
+                              : String(localized: "10–20 healthy · see method"),
+                          info: .sleepLatency(latenciaNoche))
+            cajitaMetrica(rotulo: String(localized: "Respiration"),
+                          valor: night.respRate.map { String(format: "%.1f", $0) },
+                          pie: String(localized: "rpm"),
+                          tono: LiquidColor.azul,
+                          info: .respiratory(night.respRate))
+            cajitaMetrica(rotulo: String(localized: "Awakenings"),
+                          valor: model.awakenings.map { "\($0)" },
+                          pie: String(localized: "times"),
+                          info: .sleepAwakenings(model.awakenings))
         }
     }
 
-    private func metricTileButton(label: String, value: String, caption: String?,
-                                  valueColor: Color? = nil, info: MetricInfo) -> some View {
-        Button { metricInfo = info } label: {
-            TileSurface(label: label, value: value,
-                        valueColor: valueColor ?? (value == "—" ? theme.inkTertiary : theme.dataSleep),
-                        valueSize: 21, caption: caption, theme: theme)
-        }
-        .buttonStyle(.plain)
-        .accessibilityHint(Text("Shows what this means"))
+    /// Una cajita que abre su hoja de info. `valor == nil` ⇒ «—» (y sin unidad: un guion no
+    /// lleva unidades).
+    private func cajitaMetrica(rotulo: String, valor: String?, unidad: String = "",
+                               pie: String?, tono: Color? = nil,
+                               info: MetricInfo) -> some View {
+        LiquidCajita(rotulo: rotulo,
+                     valor: valor ?? LiquidCajita.sinDato,
+                     unidad: valor == nil ? "" : unidad,
+                     pie: pie,
+                     tono: valor == nil ? nil : tono,
+                     action: { metricInfo = info })
+            .accessibilityHint(Text("Shows what this means"))
     }
 
     private var performanceCaptionString: String? {
@@ -857,107 +701,44 @@ struct SleepDetailScreen: View {
         return { pts }
     }
 
-    // MARK: - 6. Reserva para bajar de marcha (FER-849) — promovida; sin flag experimental de carga
-
-    @ViewBuilder
-    private func nightDCContent(_ dc: NocturnalDC.Result) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text(verbatim: String(format: "%.1f", dc.dcMs))
-                    .font(InstrumentoType.groteskNumber(24, weight: .bold))
-                    .foregroundStyle(theme.dataHeart)
-                    .monospacedDigit()
-                Text(verbatim: "ms")
-                    .font(InstrumentoType.grotesk(13))
-                    .foregroundStyle(theme.dataHeart)
-                Text("resting vagal reserve")
-                    .font(InstrumentoType.grotesk(13))
-                    .foregroundStyle(theme.inkSecondary)
-            }
-            HStack(alignment: .top, spacing: 8) {
-                if let trend = dc.trend {
-                    TileSurface(label: String(localized: "vs your base"),
-                                value: String(localized: String.LocalizationValue(dcTrendWord(trend))),
-                                valueColor: dcTrendColor(trend),
-                                valueSize: 15, theme: theme)
-                }
-                TileSurface(label: String(localized: "read"),
-                            value: String(localized: String.LocalizationValue(
-                                dc.confidence == .solid ? "Solid" : "Estimate")),
-                            valueSize: 15, theme: theme)
-            }
-            BarraAncla(String(localized: String.LocalizationValue(dcCopyKey(dc.trend))),
-                       color: theme.dataSleep, theme: theme)
-        }
-    }
-
-    private func dcTrendWord(_ t: NocturnalDC.Trend) -> String {
-        switch t {
-        case .above:  return "Above"
-        case .around: return "In range"
-        case .below:  return "Below"
-        }
-    }
-
-    private func dcTrendColor(_ t: NocturnalDC.Trend) -> Color {
-        switch t {
-        case .above:  return theme.verdict
-        case .around: return theme.ink
-        case .below:  return theme.warning
-        }
-    }
-
-    private func dcCopyKey(_ trend: NocturnalDC.Trend?) -> String {
-        switch trend {
-        case .above:
-            return "Last night your heart had more room to ease off the gas than your base. A personal pattern: follow it over time."
-        case .below:
-            return "Last night your heart had less room to ease off the gas than your base. A personal pattern: follow it over time."
-        case .around:
-            return "Your resting braking reserve was in your usual range last night. A personal pattern: follow it over time."
-        case .none:
-            return "Your resting braking reserve last night. It reads best as a personal trend: follow it over time."
-        }
-    }
-
-    // MARK: - 7. Deuda semanal
+    // MARK: - 7. Deuda de la semana
 
     private func weeklyDebtContent(_ debt: Double) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(hoursMinutes(debt))
-                    .font(InstrumentoType.groteskNumber(24, weight: .bold))
-                    .foregroundStyle(theme.warning)
-                    .monospacedDigit()
-                Text("behind this week")
-                    .font(InstrumentoType.grotesk(13))
-                    .foregroundStyle(theme.inkSecondary)
-            }
-            weeklyDebtBars
-            BarraAncla(
-                String(localized: "What you missed versus what your body needs. One good night won't clear it."),
-                color: theme.warning, theme: theme)
+        VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+            LiquidFraseNivel(nivel: hoursMinutes(debt),
+                             conteo: String(localized: "behind this week"),
+                             tono: LiquidColor.atencionTexto)
+            weeklyDebtBars(debt)
+            LiquidNotaLine(
+                String(localized: "What you missed versus what your body needs. One good night won't clear it."))
         }
+        // Flota porque trae su PROPIO titular («1 h 45 m · de retraso esta semana»): la
+        // tarjeta existe para amarrar el titular a su evidencia. Los bloques cuyo título lo
+        // pone la franja —hipnograma, calendario— van planos; envolverlos sería un marco
+        // dentro de otro marco. Era el único bloque que rompía la regla.
+        .liquidTarjetaSeccion()
     }
 
-    private var weeklyDebtBars: some View {
-        DebtBars(
-            nights: model.weeklyDebtNights.map {
-                DebtNightBar(date: $0.date, vsNeedMin: $0.vsNeedMin, sleptMin: $0.sleptMin)
-            },
-            deficitColor: theme.warning,
-            surplusColor: theme.verdict,
-            ruleColor: theme.hairlineStrong,
-            axisLabelColor: theme.inkTertiary,
-            height: 96,
-            weekdayLabel: Self.weekdayNarrow,
-            valueFormat: { vsNeedMin in
-                vsNeedMin < 0 ? "−\(hoursMinutes(-vsNeedMin))" : "+\(hoursMinutes(vsNeedMin))"
-            },
-            sleptFormat: { slept in String(localized: "slept \(hoursMinutes(slept))") }
-        )
-        .accessibilityElement()
-        .accessibilityLabel(Text("Hours above or below your sleep need, each of the last 7 nights"))
+    private func weeklyDebtBars(_ debt: Double) -> some View {
+        let nights = model.weeklyDebtNights
+        let ultima = nights.count - 1
+        let dias: [LiquidBarrasDeuda.Dia] = nights.enumerated().map { i, n in
+            .init(id: "\(Int(n.date.timeIntervalSince1970))",
+                  etiqueta: Self.weekdayNarrow(n.date),
+                  minutos: n.vsNeedMin,
+                  esHoy: i == ultima,
+                  detalle: String(localized: "slept \(hoursMinutes(n.sleptMin))"))
+        }
+        // El tope lo manda el caller para que la escala sea estable entre semanas: el mayor
+        // desvío de ESTA semana, con un piso de una hora para que un desvío chico no se infle.
+        let maximo = Swift.max(60, nights.map { abs($0.vsNeedMin) }.max() ?? 60)
+        return LiquidBarrasDeuda(
+            dias: dias,
+            tono: LiquidColor.atencion,
+            maximo: maximo,
+            a11yLabel: String(localized: "Hours above or below your sleep need, each of the last 7 nights"),
+            a11yValue: "\(hoursMinutes(debt)) \(String(localized: "behind this week"))",
+            formatoValor: { m in m < 0 ? "−\(hoursMinutes(-m))" : "+\(hoursMinutes(m))" })
     }
 
     private static let weekdayFormatter: DateFormatter = {
@@ -968,165 +749,369 @@ struct SleepDetailScreen: View {
     }()
     private static func weekdayNarrow(_ date: Date) -> String { weekdayFormatter.string(from: date) }
 
-    // MARK: - 8. Historial — SegmentedPillControl + GraficaRangos + tiles
+    // MARK: - 8. Historial — selector + gráfica de niveles + cajitas + carriles
 
     private var trendContent: some View {
         let window = MetricWindowMath.make(durationParsed, selected: range)
         let stat = ComparisonEngine.stat(window.values)
         let pctChange = range.periodComparison(of: model.durationSeries)?.pctChange
         let lastNightHrs = model.night.map { $0.stages.asleep / 60.0 }
-        return VStack(alignment: .leading, spacing: 8) {
-            SegmentedPillControl(ExploreRange.allCases, selection: $range, theme: theme) { $0.label }
+        return VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+            LiquidRangeSelector(opciones: ExploreRange.allCases.map(\.label),
+                                seleccion: rangeSeleccion,
+                                tono: Self.tono)
             if window.values.count >= 2 {
-                GraficaRangos(
-                    points: window.values,
-                    bands: Self.sleepDurationBands(theme),
-                    ticks: [.init(v: 10, label: "10"), .init(v: 9, label: "9"),
-                            .init(v: 7, label: "7"), .init(v: 5, label: "5")],
-                    wash: .init(lo: 7, hi: 9, label: String(localized: "optimal 7–9 h")),
-                    hue: theme.dataSleep, ymin: 5, ymax: 10,
-                    startLabel: window.rows.first.flatMap { MetricWindowMath.axisLabel($0.day) } ?? "",
-                    endLabel: window.rows.last.flatMap { MetricWindowMath.axisLabel($0.day) } ?? "",
-                    mediaValue: window.values.count > 1
-                        ? String(format: "%.1f h", stat.mean) : "—",
-                    mediaNote: String(localized: "average of the \(range.name)"),
-                    mediaDelta: pctChange.map {
-                        $0 >= 0 ? "+\(Int($0.rounded()))%" : "\(Int($0.rounded()))%"
-                    },
-                    deltaColor: pctChange.map { $0 >= 0 ? theme.positiveText : theme.warning },
-                    countUnit: "n",
-                    anchorMedia: String(localized: "Hours asleep per night. The wash is the optimal 7–9 h band."),
-                    anchorRangos: String(localized: "How many nights of the period fell in each band. Tap one to see its nights on the chart."),
-                    scrub: true,
-                    labels: window.rows.map { MetricWindowMath.axisLabel($0.day) ?? "" },
-                    fmt: { String(format: "%.1f h", $0) },
-                    theme: theme)
-                    .padding(.top, 6)
-                    .id(range)
-                HStack(alignment: .top, spacing: 8) {
-                    TileSurface(label: String(localized: "Average"),
-                                value: window.values.count > 1
-                                    ? String(format: "%.1f h", stat.mean) : "—",
-                                theme: theme)
-                    TileSurface(label: String(localized: "Range"),
-                                value: window.values.count > 1
-                                    ? String(format: "%.1f–%.1f", stat.min, stat.max) : "—",
-                                theme: theme)
-                    TileSurface(label: String(localized: "Last night"),
-                                value: lastNightHrs.map { hoursOnly($0 * 60) } ?? "—",
-                                valueColor: lastNightHrs != nil ? theme.dataSleep : nil,
-                                theme: theme)
+                VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+                    // La MISMA frase que encabeza la gráfica en la hoja de resumen: el
+                    // CARRIL en que cayó anoche y cuántas noches del periodo cayeron con
+                    // ella. Antes aquí iba la media, que no se pierde — vive en su cajita
+                    // «Promedio», dos filas abajo.
+                    fraseNivelHistorial(window)
+                    if let pctChange {
+                        LiquidNotaLine(pctChange >= 0 ? "+\(Int(pctChange.rounded()))%"
+                                                      : "\(Int(pctChange.rounded()))%",
+                                       tono: pctChange >= 0 ? LiquidColor.positivo
+                                                            : LiquidColor.atencionTexto)
+                    }
+                    graficaHistorial(window)
+                    // La nota describe la GRÁFICA: va pegada a ella, dentro de la tarjeta.
+                    // Suelta al final quedaba después de la escalera, describiendo algo que
+                    // el ojo ya había dejado atrás.
+                    LiquidNotaLine(String(localized: "Hours asleep per night, with your bands behind."))
+                    // `LiquidResumenVentana`: la pieza del sistema para Promedio · Rango ·
+                    // Anoche — columnas con capilares y SIN superficie propia, apilada DENTRO
+                    // de la tarjeta de la gráfica, que es como la declara §11.3. Tres tiles
+                    // flotantes eran cuatro superficies donde el sistema pide una.
+                    LiquidResumenVentana(celdas: [
+                        .init(rotulo: String(localized: "Average"),
+                              valor: String(format: "%.1f h", stat.mean)),
+                        .init(rotulo: String(localized: "Range"),
+                              valor: String(format: "%.1f–%.1f", stat.min, stat.max)),
+                        .init(rotulo: String(localized: "Last night"),
+                              valor: lastNightHrs.map { hoursOnly($0 * 60) } ?? LiquidCajita.sinDato,
+                              tono: lastNightHrs != nil ? Self.tono : nil),
+                    ], a11yLabel: String(localized: "History"))
                 }
-                .padding(.top, 4)
+                .liquidTarjetaSeccion()
+                LiquidLevelsList(filas: carrilesHistorial(window), tono: Self.tono)
+                LiquidNotaLine(String(localized: "How many nights of the period fell in each band. Tap one to see its nights on the chart."))
             } else {
-                ChartWell(theme, icon: "moon.zzz", cornerRadius: CenitMetrics.cardRadius)
-                    .empty(text: "Not enough nights yet to draw a trend.")
+                LiquidGraficaNiveles(
+                    puntos: [], bandas: [], dominio: Self.dominioSueno, ticksY: [],
+                    tono: Self.tono,
+                    estadoVacio: String(localized: "Not enough nights yet to draw a trend."),
+                    a11yLabel: String(localized: "History"))
             }
         }
     }
 
-    /// Three duration lanes for `GraficaRangos`: Suficiente ≥7 · Algo corta 6.3–7 · Corta <6.3.
-    static func sleepDurationBands(_ theme: InstrumentoTheme) -> [GraficaRangos.Banda] {
-        [
-            .init(label: String(localized: "Enough sleep"), lo: 7, hi: nil,
-                  color: theme.dataSleep, range: "≥ 7"),
-            .init(label: String(localized: "A bit short"), lo: 6.3, hi: 7,
-                  color: theme.dataSleepLight, range: "6.3–7"),
-            .init(label: String(localized: "Short sleep"), lo: nil, hi: 6.3,
-                  color: theme.warning, range: "< 6.3"),
-        ]
+    /// El índice del selector ⇄ `ExploreRange`; cambiar de rango suelta el carril explorado.
+    private var rangeSeleccion: Binding<Int> {
+        Binding(
+            get: { ExploreRange.allCases.firstIndex(of: range) ?? 0 },
+            set: { idx in
+                range = ExploreRange.allCases[idx]
+                bandaExplorada = nil
+            })
     }
+
+    private func graficaHistorial(_ window: MetricWindow) -> some View {
+        let puntos = MetricWindowMath
+            .decimatedPoints(rows: window.rows, values: window.values, maxPoints: 80)
+            .map { (fecha: $0.date, valor: $0.value) }
+        let horas: (Double) -> String = { String(format: "%.1f h", $0) }
+        return LiquidGraficaNiveles(
+            puntos: puntos,
+            bandas: Self.bandasSueno.enumerated().map { i, b in
+                LiquidChartBanda(lo: b.lo, hi: b.hi, color: b.color, activa: i == bandaExplorada)
+            },
+            dominio: Self.dominioSueno,
+            ticksY: [(10, "10"), (9, "9"), (7, "7"), (5, "5")],
+            tono: Self.tono,
+            // La joya de la última noche, igual que la hoja de resumen (:1334): sin ella la
+            // misma gráfica marcaba «hoy» en el resumen y no lo marcaba en el detalle. Anillo
+            // hueco mientras exploras un carril, para que la joya no compita con lo explorado.
+            puntoHoy: puntos.last,
+            hoyAnillo: bandaExplorada != nil,
+            formatoScrub: { v, f in "\(horas(v)) · \(Self.ejeFechaFmt.string(from: f))" },
+            formatoValorScrub: horas,
+            formatoFechaScrub: { Self.ejeFechaFmt.string(from: $0) },
+            formatoFechaEje: { Self.ejeFechaFmt.string(from: $0) },
+            // Los puntos se apagan SOLO cuando el usuario explora un carril (paridad `GraficaRangos`).
+            atenuarFuera: bandaExplorada != nil,
+            estadoVacio: String(localized: "Not enough nights yet to draw a trend."),
+            a11yLabel: String(localized: "History"))
+    }
+
+    /// El carril de ANOCHE y cuántas noches del periodo cayeron con ella — el mismo contrato
+    /// que `LiquidMetricSheetView.nivelesFrase`, con `LiquidFraseNivel`, la misma pieza.
+    ///
+    /// Sin lectura de anoche calla el nivel y dice cuántas noches tiene el rango, igual que la
+    /// hoja: el nombre del carril es una afirmación sobre TU noche, y sin noche no se afirma.
+    @ViewBuilder private func fraseNivelHistorial(_ window: MetricWindow) -> some View {
+        let horas = model.night.map { $0.stages.asleep / 60.0 }
+        let i = horas.flatMap(Self.indiceCarril)
+        if let i {
+            let b = Self.bandasSueno[i]
+            let n = window.values.filter { v in
+                (b.lo == nil || v >= b.lo!) && (b.hi == nil || v < b.hi!)
+            }.count
+            LiquidFraseNivel(
+                nivel: b.label,
+                conteo: String(localized: "\(n) of your last \(window.values.count) nights"),
+                tono: Self.tono)
+        } else {
+            LiquidFraseNivel(
+                nivel: nil,
+                conteo: String(localized: "\(window.values.count) nights with data in this range"),
+                tono: Self.tono,
+                sinLectura: String(localized: "No reading last night"))
+        }
+    }
+
+    /// Los tres carriles tocables bajo la gráfica: tocar uno resalta sus noches; re-tocarlo limpia.
+    private func carrilesHistorial(_ window: MetricWindow) -> [LiquidLevelsList.Fila] {
+        let hint = String(localized: "Highlights this level on the chart")
+        return Self.bandasSueno.indices.map { i in
+            let b = Self.bandasSueno[i]
+            let n = window.values.filter { v in
+                (b.lo == nil || v >= b.lo!) && (b.hi == nil || v < b.hi!)
+            }.count
+            return LiquidLevelsList.Fila(
+                etiqueta: b.label,
+                rango: b.range,
+                conteo: n == 1 ? String(localized: "\(n) night") : String(localized: "\(n) nights"),
+                activa: i == bandaExplorada,
+                a11yHint: hint,
+                onTap: {
+                    withAnimation(LiquidMotion.lift) {
+                        bandaExplorada = (bandaExplorada == i) ? nil : i
+                    }
+                })
+        }
+    }
+
+    /// Un carril de duración: los MISMOS cortes de siempre (≥7 · 6.3–7 · <6.3).
+    struct BandaSueno {
+        /// La clave estable del motor («short» / «adequate» / «optimal» / «extended»). Nunca
+        /// se muestra: mapea color e intensidad sin depender del orden ni del idioma.
+        let key: String
+        let label: String
+        let lo: Double?
+        let hi: Double?
+        let color: Color
+        let range: String
+    }
+
+    /// Los carriles de duración, **derivados de la escalera del motor** — no escritos aquí.
+    ///
+    /// `MetricLevels.levels(for: .sleep)` son 360 / 420 / 510 minutos (< 6:00 · 6:00–7:00 ·
+    /// 7:00–8:30 · ≥ 8:30), citados a Hirshkowitz 2015, y `MetricInfoCatalog` declara por
+    /// escrito que la app tiene **UNA sola** escalera de sueño. Esta pantalla venía usando una
+    /// propia de tres peldaños con un corte de 6.3 h que no existía en ningún otro archivo:
+    /// una noche de 8.7 h era «Extenso» en la hoja de resumen y «Suficiente» aquí, a un tap.
+    /// (El calendario ya cortaba en 6.0, o sea coincidía con el motor, y esta migración lo
+    /// había movido a 6.3 — alineándolo al lado equivocado.) Decisión del dueño 2026-08-18:
+    /// todo a la escalera del motor.
+    ///
+    /// El color sigue siendo de la pantalla: el motor da los cortes y el nombre, no la paleta.
+    static let bandasSueno: [BandaSueno] = MetricLevels.levels(for: .sleep).map { nivel in
+        BandaSueno(
+            key: nivel.key,
+            label: String(localized: String.LocalizationValue(MetricLevels.name(for: nivel.key))),
+            lo: nivel.lower.map { $0 / 60 },
+            hi: nivel.upper.map { $0 / 60 },
+            color: colorCarril(nivel.key),
+            range: rangoReloj(lo: nivel.lower, hi: nivel.upper))
+    }
+
+    /// El tono de cada carril. «Corto» es el único que avisa; los otros tres son grados del
+    /// mismo índigo, del más lleno (tu objetivo) al más tenue.
+    private static func colorCarril(_ key: String) -> Color {
+        switch key {
+        case "short":    return LiquidColor.atencion
+        case "adequate": return LiquidColor.indigo.opacity(0.52)  // token-exempt: rampa de sueño
+        case "optimal":  return LiquidColor.indigo
+        default:         return LiquidColor.indigo.opacity(0.72)  // token-exempt: rampa de sueño
+        }
+    }
+
+    /// «< 6:00» · «6:00–7:00» · «≥ 8:30» — los cortes en reloj, desde los minutos del motor.
+    private static func rangoReloj(lo: Double?, hi: Double?) -> String {
+        func hm(_ min: Double) -> String { horasReloj(min / 60) }
+        switch (lo, hi) {
+        case let (nil, .some(h)):        return "< \(hm(h))"
+        case let (.some(l), nil):        return "≥ \(hm(l))"
+        case let (.some(l), .some(h)):   return "\(hm(l))–\(hm(h))"
+        default:                          return ""
+        }
+    }
+
+    /// El dominio Y del historial: 5–10 h, como el papel.
+    private static let dominioSueno: ClosedRange<Double> = 5...10
+
+    private static let ejeFechaFmt: DateFormatter = {
+        let f = DateFormatter()
+        f.setLocalizedDateFormatFromTemplate("dMMM")
+        return f
+    }()
 
     // MARK: - 9. Calendario · 90 noches
 
     private var calendarContent: some View {
-        HeatCalendarSection(
-            days: sleepHeatCache,
-            selected: $selectedSleepNight,
-            tint: sleepHeatTint,
-            readoutValue: { m in String(format: "%d:%02d", Int(m), Int((m - Double(Int(m))) * 60)) },
-            readoutWord: { sleepWord($0) },
-            emptyHint: "Tap a night to see its sleep.",
-            legend: [(theme.dataSleep, String(localized: "enough")),
-                     (theme.dataSleepLight, String(localized: "ok")),
-                     (theme.warning, String(localized: "short")),
-                     (theme.rangeBand, String(localized: "no data"))],
-            theme: theme
-        )
+        LiquidCalendario90(
+            dias: calendarioDias,
+            tono: Self.tono,
+            leyenda: Self.leyendaCalendario,
+            seleccion: $selectedNightID,
+            a11yLabel: String(localized: "Calendar · 90 nights"),
+            pistaVacia: String(localized: "Tap a night to see its sleep."),
+            sinLectura: String(localized: "no data"),
+            a11yConteo: { conDato, total in
+                String(localized: "\(conDato) of your last \(total) nights")
+            })
     }
 
-    /// The canonical UTC day-key formatter — read side of the day-key contract (FER-754).
-    /// FER-978: `nonisolated` so it's reachable from nonisolated contexts (DateFormatter is Sendable
-    /// under strict concurrency; the property is immutable).
+    /// Las 90 noches, ya resueltas: la retícula Liquid no formatea ni una fecha.
+    private var calendarioDias: [LiquidCalendario90.Dia] {
+        var mesVisto: String? = nil
+        return sleepHeatCache.map { dia -> LiquidCalendario90.Dia in
+            let key = Self.calDayFmt.string(from: dia.date)
+            let mes = Self.mesFmt.string(from: dia.date)
+            let rotuloMes: String? = mes == mesVisto ? nil : mes
+            mesVisto = mes
+            // `score` ya viene en HORAS (`durationSeries` está documentada «in hours» y es
+            // quien llena el heat). Dividirlo entre 60 dejaba 7.5 h en 0.125: las 90 celdas
+            // caían al peldaño más pálido y la lectura decía «0:07 · Sueño corto» sobre una
+            // noche de siete horas y media. Se veía en pantalla y se leyó como «faltan datos».
+            let horas = dia.score
+            return LiquidCalendario90.Dia(
+                id: key,
+                fecha: dia.date,
+                intensidad: horas.map(Self.intensidadSueno),
+                etiqueta: Self.ejeFechaFmt.string(from: dia.date),
+                valor: horas.map(Self.horasReloj),
+                palabra: horas.map { Self.sleepWord($0) },
+                mes: rotuloMes)
+        }
+    }
+
+    /// La leyenda se construye con los MISMOS alfas de la retícula (`alfa(intensidad:)`) sobre el
+    /// mismo tono. La de papel pintaba cuatro hues distintos y mentía sobre lo que decodificaba.
+    private static var leyendaCalendario: [LiquidCalendario90.NivelLeyenda] {
+        [
+            .init(id: "enough", color: tono.opacity(LiquidCalendario90.alfa(intensidad: 1)),
+                  etiqueta: String(localized: "Enough sleep")),
+            .init(id: "ok", color: tono.opacity(LiquidCalendario90.alfa(intensidad: 0.5)),
+                  etiqueta: String(localized: "A bit short")),
+            .init(id: "short", color: tono.opacity(LiquidCalendario90.alfa(intensidad: 0)),
+                  etiqueta: String(localized: "Short sleep")),
+            .init(id: "nodata", color: LiquidColor.tinta7,
+                  etiqueta: String(localized: "no data")),
+        ]
+    }
+
+    /// Horas decimales → reloj «7:30». Nombrada (y no un `String(format:)` suelto en el
+    /// call site) para que la prueba pueda fijar la unidad: el defecto que la motiva confundía
+    /// horas con minutos y nadie podía verlo sin correr la app.
+    static func horasReloj(_ horas: Double) -> String {
+        // Clampeo como su hermano `hoursOnly`: un valor negativo imprimía «0:-30» y un
+        // ±infinito hacía TRAP al convertir a Int. Hoy no es alcanzable (la serie filtra > 0),
+        // pero un formateador no debe depender de que su llamador lo proteja.
+        guard horas.isFinite else { return "—" }
+        let total = Int((Swift.max(0, horas) * 60).rounded())
+        return String(format: "%d:%02d", total / 60, total % 60)
+    }
+
+    /// El peldaño de la retícula. Se mapea por CLAVE, no por índice: con la escalera del motor
+    /// el último carril es «extenso» (≥ 8:30), y por índice habría quedado más oscuro que
+    /// «óptimo» — o sea, la retícula diría que dormir de más es mejor que dormir bien.
+    /// La celda más llena es tu objetivo; «extenso» baja un escalón, no dos.
+    static func intensidadSueno(_ horas: Double) -> Double {
+        guard let i = indiceCarril(horas) else { return 0 }
+        switch bandasSueno[i].key {
+        case "optimal":  return 1.0
+        case "extended": return 0.8
+        case "adequate": return 0.55
+        default:         return 0        // «short» — el más tenue
+        }
+    }
+
+    /// La palabra del carril — la MISMA que la escalera del historial y que la hoja de resumen.
+    static func sleepWord(_ horas: Double) -> String {
+        guard let i = indiceCarril(horas) else { return bandasSueno.first?.label ?? "" }
+        return bandasSueno[i].label
+    }
+
+    /// El carril en que cae un valor. Único predicado de la pantalla: lo usan la frase del
+    /// historial, los conteos, el calendario y su lectura.
+    static func indiceCarril(_ horas: Double) -> Int? {
+        bandasSueno.firstIndex { b in
+            (b.lo == nil || horas >= b.lo!) && (b.hi == nil || horas < b.hi!)
+        }
+    }
+
+    private static let mesFmt: DateFormatter = {
+        let f = DateFormatter()
+        f.setLocalizedDateFormatFromTemplate("MMM")
+        return f
+    }()
+
+    /// El formateador canónico de llave de día en UTC — el lado de LECTURA del contrato (FER-754).
     nonisolated private static let calDayFmt = DayKey.utcFormatter
 
-    /// Builds the 90-night heat grid from a duration series snapshot (FER-953: pure / off-main-safe).
-    /// `todayKey` llega del caller en MainActor (`Repository.localDayKey` es main-isolated). (FER-953)
+    /// Arma la retícula de 90 noches desde una foto de la serie de duración (FER-953: pura).
     private nonisolated static func buildSleepHeat(durationSeries: [(day: String, value: Double)],
                                                    todayKey: String) -> [RecoveryDay] {
-        var mins: [String: Double] = [:]
-        for r in durationSeries { mins[r.day] = r.value }
+        // HORAS, no minutos: el nombre viejo («mins») fue la mitad del defecto.
+        var horasPorDia: [String: Double] = [:]
+        for r in durationSeries { horasPorDia[r.day] = r.value }
         var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "UTC")!
         // Ancla la ventana de 90 dias al dia LOCAL, igual que Recovery.buildHeat. Anclar al dia UTC
         // hace que en husos negativos, por la tarde, la ventana empiece en otro dia de la semana que
-        // Recovery y el grid dibuje 13 vs 14 columnas, con celdas de otro tamano. Asi los cuatro
-        // calendarios (Recuperacion, Sueno, Esfuerzo, Estres) miden igual. (FER calendarios mismo tamano)
+        // Recovery y el grid dibuje 13 vs 14 columnas, con celdas de otro tamano.
         guard let today = Repository.parseDayKey(todayKey) else { return [] }
         return stride(from: 89, through: 0, by: -1).compactMap { off -> RecoveryDay? in
             guard let date = cal.date(byAdding: .day, value: -off, to: today) else { return nil }
             let key = Self.calDayFmt.string(from: date)
-            return RecoveryDay(date: date.addingTimeInterval(12 * 3600), score: mins[key])
+            return RecoveryDay(date: date.addingTimeInterval(12 * 3600), score: horasPorDia[key])
         }
-    }
-
-    private func sleepHeatTint(_ hours: Double) -> Color {
-        if hours >= 7 { return theme.dataSleep }
-        if hours >= 6 { return theme.dataSleepLight }
-        return theme.warning
-    }
-
-    /// A short state word for the calendar read-out (matches the legend rungs and the tint thresholds).
-    private func sleepWord(_ hours: Double) -> LocalizedStringKey {
-        if hours >= 7 { return "enough" }
-        if hours >= 6 { return "ok" }
-        return "short"
     }
 
     // MARK: - 10. Método + sello
 
-    private var metodoBlock: some View {
-        Metodo(title: String(localized: "How it's calculated"), theme: theme) {
-            Text("Regularity is the night-to-night variability of your mid-sleep point (the midpoint between falling asleep and waking): a steadier schedule predicts health more strongly than how long you sleep. Naps don't count: only your main night (at least 3 h) feeds regularity. Stages are estimated from movement, heart rate and HRV, so they're approximate; deep sleep repairs the body, REM consolidates memory and emotion. \"Need\" is a 7–9 h population target, not a measurement of you.")
-                .font(StrandFont.subhead)
-                .foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-            Text("Windred et al., Sleep 2024 (regularity); Miller et al., J Sports Sci 2020 (wrist staging vs PSG); Hirshkowitz et al., 2015 (sleep need).")
-                .font(StrandFont.caption)
-                .foregroundStyle(theme.inkTertiary)
-                .fixedSize(horizontal: false, vertical: true)
-            Button { showStages = true } label: {
-                HStack(spacing: 6) {
-                    Text("Sleep stages in detail")
-                    StrandIcon.disclosure.image
-                        .font(StrandFont.glyph(.chevron, weight: .semibold))
-                }
-                .font(StrandFont.subhead)
-                .foregroundStyle(theme.dataSleep)
+    private var pieMetodo: some View {
+        VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+            LiquidCapilar(eje: .horizontal)
+            LiquidMetodo(title: String(localized: "How it's calculated"),
+                         mostrar: String(localized: "Show explanation"),
+                         ocultar: String(localized: "Hide explanation")) {
+                LiquidNotaLine(String(localized: "Regularity is the night-to-night variability of your mid-sleep point (the midpoint between falling asleep and waking): a steadier schedule predicts health more strongly than how long you sleep. Naps don't count: only your main night (at least 3 h) feeds regularity. Stages are estimated from movement, heart rate and HRV, so they're approximate; deep sleep repairs the body, REM consolidates memory and emotion. \"Need\" is a 7–9 h population target, not a measurement of you."),
+                               tono: LiquidColor.tinta700)
+                LiquidNotaLine(String(localized: "Windred et al., Sleep 2024 (regularity); Miller et al., J Sports Sci 2020 (wrist staging vs PSG); Hirshkowitz et al., 2015 (sleep need)."))
+                LiquidVerMas(title: String(localized: "Sleep stages in detail"),
+                             tone: Self.tono) { showStages = true }
             }
-            .buttonStyle(.plain)
-        }
-    }
-
-    private var sourceFooter: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            OriginStamp(origin: model.isAppleHealth ? .apple : .band,
-                        when: String(localized: "last night"), theme: theme)
+            // SIEMPRE Apple Salud. El sello decía «Medido por tu banda» cuando
+            // `isAppleHealth` era falso, y eso es una MENTIRA: la app es solo-Apple y ningún
+            // usuario tuvo banda nunca (axioma «cero banda»). Ese flag no distingue la
+            // FUENTE, distingue si la noche trae tramos por época o se derivó del resumen
+            // diario — las dos vienen de Apple Salud. (FER-102)
+            LiquidOrigenChip(glyph: .luna,
+                             badgeTono: Self.tono,
+                             etiqueta: DataOrigin.apple.label,
+                             sufijo: String(localized: "last night"))
             if let agreement = model.sourceAgreement {
+                // Pieza compartida con las otras pantallas de detalle: se conserva tal cual
+                // (migrarla es trabajo del sistema de diseño, no de esta pantalla).
                 FusionAgreementRow(point: agreement, theme: theme, format: Self.sleepTotalHM)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.top, 2)
+        // El pie NO lleva franja (es pie, no sección), así que su padding superior se sumaba
+        // al inferior de la sección de arriba: 22 + 22 + el capilar = un hueco muerto de casi
+        // 60 pt donde no había nada que separar. El capilar YA hace la separación; el aire
+        // solo tiene que dejarlo respirar. (Reportado por el dueño en el simulador.)
+        .liquidSeccion(top: LiquidSpace.s200, bottom: LiquidSpace.s800)
     }
 
     private static func sleepTotalHM(_ minutes: Double) -> String {
@@ -1134,77 +1119,8 @@ struct SleepDetailScreen: View {
         return "\(m / 60) h \(String(format: "%02d", m % 60)) m"
     }
 
-    // MARK: - Async loaders (FER-832 / FER-849) — mismos motores, sin math nueva
 
-    private func loadNightShape() async -> (shape: NightAutonomicShape.Result?, curve: [Double]) {
-        guard let night = model.night, !model.isAppleHealth, !model.intervals.isEmpty else { return (nil, []) }
-
-        let hr = await loadNightHR(night.startTs, night.endTs)
-        guard hr.count >= 2 else { return (nil, []) }
-
-        // FER-953: HR load stays on the caller's path; pure shape/curve derivation hops off-main.
-        let intervals = model.intervals
-        let rhrBaseline = model.rhrBaseline
-        let onsetDate = night.onsetDate
-        return await Task.detached(priority: .userInitiated) { () -> (NightAutonomicShape.Result?, [Double]) in
-            let asleep = intervals
-                .filter { $0.stage != .awake }
-                .map { NightAutonomicShape.AsleepSpan(start: Int($0.start), end: Int($0.end)) }
-            guard !asleep.isEmpty else { return (nil, []) }
-
-            let awakeSpans = intervals.filter { $0.stage == .awake }
-            let awakeHR = hr.filter { s in awakeSpans.contains { Int($0.start) <= s.ts && s.ts < Int($0.end) } }
-            let wakingRef: Double? = {
-                if awakeHR.count >= 30 {
-                    return Double(awakeHR.reduce(0) { $0 + $1.bpm }) / Double(awakeHR.count)
-                }
-                let sorted = hr.map { Double($0.bpm) }.sorted()
-                guard !sorted.isEmpty else { return nil }
-                let idx = Int((0.90 * Double(sorted.count - 1)).rounded())
-                return sorted[idx]
-            }()
-
-            let tz = TimeZone.current.secondsFromGMT(for: onsetDate)
-            let shape = NightAutonomicShape.compute(hr: hr, asleep: asleep,
-                                                    wakingReferenceHR: wakingRef,
-                                                    rhrBaseline: rhrBaseline,
-                                                    tzOffsetSeconds: tz)
-
-            let asleepHR = hr.filter { s in asleep.contains { $0.start <= s.ts && s.ts < $0.end } }
-                             .sorted { $0.ts < $1.ts }
-            let curve = Self.downsampleBpm(asleepHR, maxPoints: 48)
-            return (shape, curve)
-        }.value
-    }
-
-    private nonisolated static func downsampleBpm(_ hr: [HRSample], maxPoints: Int) -> [Double] {
-        guard hr.count > maxPoints else { return hr.map { Double($0.bpm) } }
-        var out: [Double] = []
-        out.reserveCapacity(maxPoints)
-        for b in 0..<maxPoints {
-            let lo = b * hr.count / maxPoints
-            let hi = (b + 1) * hr.count / maxPoints
-            guard hi > lo else { continue }
-            let sum = hr[lo..<hi].reduce(0) { $0 + $1.bpm }
-            out.append(Double(sum) / Double(hi - lo))
-        }
-        return out
-    }
-
-    /// No experimental flag: the handoff promotes DC to a standard section; the view still hides
-    /// unreadable nights (`confidence == .unreadable`).
-    private func loadNightDC() async -> NocturnalDC.Result? {
-        guard let night = model.night, !model.isAppleHealth else { return nil }
-        let rr = await loadNightRR(night.startTs, night.endTs)
-        guard !rr.isEmpty else { return nil }
-        let baseline = await loadDCBaseline()
-        // FER-953: RR/baseline loads stay; map + NocturnalDC.compute hop off-main.
-        return await Task.detached(priority: .userInitiated) {
-            NocturnalDC.compute(rawRR: rr.map { Double($0.rrMs) }, baselineDcMs: baseline)
-        }.value
-    }
-
-    // MARK: - Formatting helpers
+    // MARK: - Formateo
 
     private func pct(_ minutes: Double, _ total: Double) -> Int {
         total > 0 ? Int((minutes / total * 100).rounded()) : 0
@@ -1215,11 +1131,18 @@ struct SleepDetailScreen: View {
         return String(format: "%d:%02d", m / 60, m % 60)
     }
 
-    private var napNotice: LocalizedStringKey {
+    /// Cómo VoiceOver dice una duración de sueño: «7 horas 12 minutos». «7:12» se dicta como
+    /// hora del reloj («siete doce»), que no es lo que el numeral quiere decir.
+    private func horasHabladas(_ minutes: Double) -> String {
+        let m = Swift.max(0, Int(minutes.rounded()))
+        return String(localized: "\(m / 60) hours \(m % 60) minutes")
+    }
+
+    private var napNotice: String {
         if let minutes = model.excludedNapMinutes {
-            return "We didn't count your \(napDurationText(minutes)) nap, regularity uses only your main night."
+            return String(localized: "We didn't count your \(napDurationText(minutes)) nap, regularity uses only your main night.")
         }
-        return "We didn't count your naps (under \(napDurationText(Int(SleepMainNight.minDurationMinutes)))), regularity uses only your main night."
+        return String(localized: "We didn't count your naps (under \(napDurationText(Int(SleepMainNight.minDurationMinutes)))), regularity uses only your main night.")
     }
 
     private func napDurationText(_ minutes: Int) -> String {
@@ -1259,70 +1182,79 @@ struct SleepDetailScreen: View {
 // FER-162); no nested `NavigationStack` (FER-171). The stage hues are the fixed `StrandPalette` sleep
 // colors, the same dots the legend uses (color only in the datum).
 
+/// «Etapas de sueño en detalle» — la hoja que abre desde el pie del método.
+///
+/// EN VIDRIO. Era el último trozo de papel de la pantalla, y el único con dibujo a mano:
+/// spacings sueltos, `Divider`, un swatch con radio literal y tipos de la escala vieja. Tocabas
+/// un enlace dentro de una pantalla de vidrio y aterrizabas en el lenguaje anterior — la
+/// costura que esta migración existe para cerrar.
 struct SleepStagesInfoSheet: View {
+    /// Se conserva en la firma: los callers la presentan con el tema vivo y quitarla obligaría
+    /// a tocarlos. La hoja ya no lo usa.
     var theme: InstrumentoTheme = .base
 
-    private struct StageRow: Identifiable {
+    private struct Etapa: Identifiable {
         let id = UUID()
-        let stage: SleepStage
-        let name: LocalizedStringKey
-        let detail: LocalizedStringKey
+        let etapa: LiquidHipnograma.Etapa
+        let nombre: String
+        let detalle: String
     }
 
-    private let rows: [StageRow] = [
-        StageRow(stage: .rem,   name: "REM",   detail: "Dreams and memory. It consolidates what you learned and processes emotion."),
-        StageRow(stage: .deep,  name: "Deep",  detail: "Physical repair. Your body restores itself and releases growth hormone."),
-        StageRow(stage: .light, name: "Light", detail: "Most of the night. A transition in which your body winds down."),
-        StageRow(stage: .awake, name: "Awake", detail: "Brief awakenings. They're normal and don't mean a bad night."),
-    ]
+    private var etapas: [Etapa] {
+        [
+            Etapa(etapa: .rem, nombre: String(localized: "REM"),
+                  detalle: String(localized: "Dreams and memory. It consolidates what you learned and processes emotion.")),
+            Etapa(etapa: .profundo, nombre: String(localized: "Deep"),
+                  detalle: String(localized: "Physical repair. Your body restores itself and releases growth hormone.")),
+            Etapa(etapa: .ligero, nombre: String(localized: "Light"),
+                  detalle: String(localized: "Most of the night. A transition in which your body winds down.")),
+            Etapa(etapa: .despierto, nombre: String(localized: "Awake"),
+                  detalle: String(localized: "Brief awakenings. They're normal and don't mean a bad night.")),
+        ]
+    }
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                Text("Sleep stages")
-                    .font(InstrumentoType.groteskHeadline(22))
-                    .foregroundStyle(theme.ink)
-                Text("Your night moves through four phases. The watch estimates them from your movement and heart rate, so they're approximate: it gets about 2 of 3 right.")
-                    .font(StrandFont.subhead)
-                    .foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: LiquidSpace.s400) {
+                Text(String(localized: "Sleep stages"))
+                    .font(LiquidType.tituloHoja)
+                    .foregroundStyle(LiquidColor.tinta900)
+                LiquidNotaLine(String(localized: "Your night moves through four phases. The watch estimates them from your movement and heart rate, so they're approximate: it gets about 2 of 3 right."),
+                               tono: LiquidColor.tinta700)
                 VStack(spacing: 0) {
-                    ForEach(Array(rows.enumerated()), id: \.element.id) { i, row in
-                        stageRow(row)
-                        if i < rows.count - 1 {
-                            Divider().overlay(theme.hairline)
-                        }
+                    ForEach(Array(etapas.enumerated()), id: \.element.id) { i, e in
+                        fila(e)
+                        if i < etapas.count - 1 { LiquidCapilar(eje: .horizontal) }
                     }
                 }
-                Text("Proportions, not minutes. A clinical measurement needs a sleep study.")
-                    .font(StrandFont.caption)
-                    .foregroundStyle(theme.inkTertiary)
-                    .fixedSize(horizontal: false, vertical: true)
+                .liquidTarjetaSeccion()
+                LiquidNotaLine(String(localized: "Proportions, not minutes. A clinical measurement needs a sleep study."))
             }
-            .padding(20)
+            .padding(LiquidSpace.s550)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(theme.paper)
+        .background(LiquidSheetFondo(tone: LiquidColor.indigo))
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
-        .sheetPaper(theme)
     }
 
-    private func stageRow(_ row: StageRow) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            RoundedRectangle(cornerRadius: 3, style: .continuous) // token-exempt: geometría de dato (swatch de leyenda)
-                .fill(StrandPalette.sleepStageColor(row.stage))
-                .frame(width: 10, height: 10)
-                .padding(.top, 4)
-            VStack(alignment: .leading, spacing: 3) {
-                Text(row.name).font(StrandFont.headline).foregroundStyle(theme.ink)
-                Text(row.detail)
-                    .font(StrandFont.caption)
-                    .foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+    private func fila(_ e: Etapa) -> some View {
+        HStack(alignment: .top, spacing: LiquidSpace.s300) {
+            // El swatch usa la MISMA rampa que pinta el hipnograma: si la leyenda eligiera
+            // sus colores a mano, volvería a mentir sobre lo que decodifica.
+            RoundedRectangle(cornerRadius: LiquidRadius.hairline * 6, style: .continuous)
+                .fill(SleepDetailScreen.coloresEtapa[e.etapa] ?? LiquidColor.indigo)
+                .frame(width: LiquidSpace.s250, height: LiquidSpace.s250)
+                .padding(.top, LiquidSpace.s100)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: LiquidSpace.s075) {
+                Text(e.nombre)
+                    .font(LiquidType.tituloFila)
+                    .foregroundStyle(LiquidColor.tinta900)
+                LiquidNotaLine(e.detalle)
             }
         }
-        .padding(.vertical, 13)
+        .padding(.vertical, LiquidSpace.s300)
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
     }

@@ -6220,6 +6220,23 @@
         }
       }
     },
+    "%lld hours %lld minutes" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld hours %2$lld minutes"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld horas %2$lld minutos"
+          }
+        }
+      }
+    },
     "%lld m" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -20934,6 +20951,108 @@
         }
       }
     },
+    "Hours slept" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hours slept"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Horas dormidas"
+          }
+        }
+      }
+    },
+    "Regularity · of 100" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Regularity · of 100"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Regularidad · de 100"
+          }
+        }
+      }
+    },
+    "your night starts already asleep" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "your night starts already asleep"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+          "state" : "translated",
+            "value" : "tu noche empieza ya dormida"
+          }
+        }
+      }
+    },
+    "10–20 healthy · see method" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "10–20 healthy · see method"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "10–20 sano · ver método"
+          }
+        }
+      }
+    },
+    "Cénit can't read your sleep: Apple Health hasn't granted permission. Turn it on and the nights you already have will appear here." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cénit can't read your sleep: Apple Health hasn't granted permission. Turn it on and the nights you already have will appear here."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cénit no puede leer tu sueño: Apple Salud no le ha dado permiso. Actívalo y las noches que ya tienes aparecen aquí."
+          }
+        }
+      }
+    },
+    "Hours asleep per night, with your bands behind." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hours asleep per night, with your bands behind."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Horas dormidas por noche, con tus bandas de fondo."
+          }
+        }
+      }
+    },
     "Enough sleep" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -24664,19 +24783,19 @@
         }
       }
     },
-    "Hours asleep per night. The wash is the optimal 7–9 h band." : {
+    "Hours asleep per night, with your three bands behind." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hours asleep per night. The wash is the optimal 7–9 h band."
+            "value" : "Hours asleep per night, with your three bands behind."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Horas dormidas por noche. La banda sombreada es el rango óptimo de 7–9 h."
+            "value" : "Horas dormidas por noche, con tus tres bandas de fondo."
           }
         }
       }
@@ -33699,6 +33818,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sin datos"
+          }
+        }
+      }
+    },
+    "No data in Apple Health" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No data in Apple Health"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sin dato en Apple Salud"
           }
         }
       }

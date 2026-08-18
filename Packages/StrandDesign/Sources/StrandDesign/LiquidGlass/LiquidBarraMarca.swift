@@ -249,9 +249,12 @@ public struct LiquidBarraMarca: View {
             Text(verbatim: texto)
                 .font(LiquidType.microEstado)
                 .monospacedDigit()
+                // `atencionTexto`, no `atencion`: a 10.5 pt el ámbar de marca da 4.08:1
+                // sobre blanco y 3.77:1 sobre el papel de tarjeta — bajo el mínimo AA de 4.5.
+                // El token oscuro existe justo para texto chico y da 6.8:1. (FER-102)
                 .foregroundStyle(Self.mejora(fraccion: fraccion, marca: marca,
                                              masEsMejor: masEsMejor)
-                                 ? LiquidColor.positivo : LiquidColor.atencion)
+                                 ? LiquidColor.positivo : LiquidColor.atencionTexto)
         }
     }
 }
