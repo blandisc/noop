@@ -190,6 +190,16 @@ public enum LiquidType {
     /// `numeralCampo` — 56/700 tabular. El numeral del campo teñido de la pantalla de
     /// detalle. Gemelo de `numeralHoja` (52): el campo es más ancho que la hoja y el dueño
     /// lo subió un escalón (2026-08-17). Escala con Dynamic Type (`.largeTitle`).
+    /// La unidad del campo: 30 % del numeral. A `numeralHojaUnidad` (title3, 20) pesaba
+    /// demasiado junto a un numeral de 56 y el par se leía como dos datos; a 13 desaparecía.
+    public static let unidadCampo = InstrumentoType.grotesk(17, weight: .medium,
+                                                             relativeTo: .body)
+
+    /// La cláusula del campo — la línea que explica el veredicto. Va en 13 (`.footnote`), no
+    /// en `captionLectura` (10.5): es una frase completa, no un pie de foto, y a 10.5 quedaba
+    /// dos escalones por debajo del veredicto (17) con nada en medio.
+    public static let clausulaCampo = InstrumentoType.grotesk(13, relativeTo: .footnote)
+
     public static let numeralCampoTamano: CGFloat = 56
     public static let numeralCampo = InstrumentoType.groteskNumber(numeralCampoTamano,
                                                                     relativeTo: .largeTitle)

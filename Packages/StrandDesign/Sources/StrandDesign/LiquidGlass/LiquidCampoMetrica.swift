@@ -137,7 +137,7 @@ public struct LiquidCampoMetrica<Pie: View>: View {
             }
             if let clausula {
                 Text(clausula)
-                    .font(LiquidType.captionLectura)
+                    .font(LiquidType.clausulaCampo)
                     .foregroundStyle(LiquidColor.papelAlto.opacity(LiquidCampo.alfaRotulo))
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -229,7 +229,7 @@ public struct LiquidCampoMetrica<Pie: View>: View {
             .frame(width: 1)
             .frame(maxHeight: .infinity)
             .fixedSize(horizontal: true, vertical: false)
-            .padding(.horizontal, LiquidSpace.s400)
+            .padding(.horizontal, LiquidSpace.s550)
             .accessibilityHidden(true)
     }
 
@@ -237,7 +237,7 @@ public struct LiquidCampoMetrica<Pie: View>: View {
         // Un dato ausente se atenúa: «··» a alfa pleno es indistinguible de una medición.
         let alfa = dato.ausente ? LiquidCampo.alfaRotulo : 1.0
         return VStack(alignment: .leading, spacing: LiquidSpace.s050) {
-            HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s100) {
+            HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s150) {
                 Text(dato.valor)
                     .font(LiquidType.numeralCampo)
                     .lineSpacing(LiquidType.numeralCampoLineSpacing)
@@ -246,7 +246,7 @@ public struct LiquidCampoMetrica<Pie: View>: View {
                     .minimumScaleFactor(0.7)
                 if !dato.unidad.isEmpty {
                     Text(dato.unidad)
-                        .font(LiquidType.numeralHojaUnidad)
+                        .font(LiquidType.unidadCampo)
                         .foregroundStyle(LiquidColor.papelAlto.opacity(LiquidCampo.alfaRotulo))
                 }
             }

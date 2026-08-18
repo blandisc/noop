@@ -513,3 +513,27 @@ public struct LiquidSphere: View {
     .environment(\.liquidMotionDisabled, true)
 }
 #endif
+
+// MARK: - Tarjeta de sección (FER-102)
+
+public extension View {
+    /// La tarjeta de papel que flota dentro de una sección: el bloque se apoya en su propia
+    /// superficie en vez de descansar sobre el suelo de la pantalla.
+    ///
+    /// Es la receta que la hoja de resumen ya venía escribiendo A MANO en tres lugares
+    /// (`LiquidMetricSheetView`: la tarjeta de la gráfica, el aviso de conectar Apple, el
+    /// bloque de niveles). Extraerla la vuelve una sola cosa y deja que el detalle use
+    /// EXACTAMENTE la misma superficie que el resumen — que es lo que pidió el dueño: los
+    /// componentes que flotan del resumen, dentro de las secciones que cierran del detalle.
+    ///
+    /// No la usan el hipnograma ni la barra de etapas: esos van planos, a sangre, por decisión
+    /// del dueño («que llenen de izquierda a derecha, nada flotando»). Flota lo que es una
+    /// LECTURA con su propio marco; se queda plano lo que es la GRÁFICA de la sección.
+    func liquidTarjetaSeccion(padding: CGFloat = LiquidSpace.s400) -> some View {
+        self
+            .padding(padding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .clipShape(RoundedRectangle(cornerRadius: LiquidRadius.tarjeta, style: .continuous))
+            .liquidGlass(.superficieSolida)
+    }
+}

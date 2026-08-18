@@ -88,6 +88,7 @@ struct SleepDetailScreen: View {
                     seccion(String(localized: "Tonight's metrics")) {
                         nightMetricsContent(night)
                     }
+                    seccion(String(localized: "Regularity")) { regularidadContent }
                     if let shape = nightShape {
                         seccion(String(localized: "Night shape")) { nightShapeContent(shape, night) }
                     }
@@ -484,10 +485,42 @@ struct SleepDetailScreen: View {
         return n
     }
 
+    // MARK: - Regularidad — la MISMA tarjeta de la hoja de resumen
+
+    /// `LiquidRegularityCard`, sin variante: es la pieza que ya usa la hoja
+    /// (`LiquidMetricSheetView`), con su mismo copy y su mismo ⓘ. El dueño pidió que el
+    /// detalle reutilice los componentes del resumen en vez de acuñar gemelos.
+    ///
+    /// El héroe sigue mostrando el 88 (decisión del dueño: el campo lleva los dos datos);
+    /// esta sección es la que lo EXPLICA — su palabra de nivel y qué mide.
+    private var regularidadContent: some View {
+        LiquidRegularityCard(
+            titulo: String(localized: "Regularity"),
+            puntaje: model.regularity?.score,
+            leyenda: regularidadLeyenda,
+            tono: Self.tono,
+            explicacion: String(localized: "How steady your sleep schedule is: we take each night's midpoint (between falling asleep and waking) and measure how much it shifts night to night. Less drift, closer to 100."),
+            infoMostrar: String(localized: "Show explanation"),
+            infoOcultar: String(localized: "Hide explanation"))
+    }
+
+    /// La palabra de nivel de la regularidad, o cuántas noches faltan para tener base.
+    private var regularidadLeyenda: String {
+        guard let r = model.regularity else {
+            let faltan = max(0, SleepRegularity.minNights - model.regularityNights)
+            return String(localized: "Still learning your schedule · \(faltan) nights to go")
+        }
+        return regularityWordText(r.score)
+    }
+
     // MARK: - 3. Anoche vs lo típico — barras con marca de promedio
 
     private func stagesVsTypicalContent(_ night: SleepDetailModel.Night) -> some View {
         let s = night.stages
+        // El bloque FLOTA en la tarjeta del resumen: el dueño pidió combinar los componentes
+        // flotantes de la hoja con las secciones que cierran del detalle, y este es una
+        // LECTURA con su propio marco (como las cajitas de métricas), no la gráfica de la
+        // sección. El hipnograma y la barra de etapas siguen planos a propósito.
         return VStack(alignment: .leading, spacing: LiquidSpace.s300) {
             vsTypicalVerdictText(s)
                 .fixedSize(horizontal: false, vertical: true)
@@ -505,6 +538,7 @@ struct SleepDetailScreen: View {
                               higherIsBetter: false, index: 2)
             LiquidNotaLine(String(localized: "The mark is your average."))
         }
+        .liquidTarjetaSeccion()
     }
 
     /// El nombre de la etapa TEÑIDO dentro de la frase; el resto en tinta. Mismas cinco frases
