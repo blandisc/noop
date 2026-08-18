@@ -566,11 +566,7 @@ struct LiquidMetricSheetView: View {
                         etapas: sleepEtapas(night),
                         overline: overlineNoche,
                         ventana: ventanaNoche)
-                    .padding(LiquidSpace.s400)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .clipShape(RoundedRectangle(cornerRadius: LiquidRadius.tarjeta,
-                                                style: .continuous))
-                    .liquidGlass(.superficieSolida)
+                    .liquidTarjetaSeccion()
                 }
                 // F4b · Regularidad como tarjeta propia (ya no en el héroe ni en
                 // `LiquidDobleDato`). `puntaje == nil` ⇒ «··» calibrando (lo maneja la tarjeta).
@@ -1194,11 +1190,7 @@ struct LiquidMetricSheetView: View {
                         nivelesFrase(d)
                         nivelesGrafica(d, window: window)
                     }
-                    .padding(LiquidSpace.s400)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .clipShape(RoundedRectangle(cornerRadius: LiquidRadius.tarjeta,
-                                                style: .continuous))
-                    .liquidGlass(.superficieSolida)
+                    .liquidTarjetaSeccion()
                     extras()
                     nivelesLista(d)
                     if let caption = datoInfo.bandsCaption {
@@ -1666,9 +1658,7 @@ struct LiquidMetricSheetView: View {
             LiquidNotaLine(String(localized: "This reading can come from Apple Health. Connect it from Today to see it here."),
                            tono: LiquidColor.atencionTexto)
         }
-        .padding(LiquidSpace.s300)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .liquidGlass(.superficieSolida)
+        .liquidTarjetaSeccion(padding: LiquidSpace.s300)
     }
 
     /// «Ver más» (paridad `seeMoreLink` :1186-1231): ancho completo para métricas con

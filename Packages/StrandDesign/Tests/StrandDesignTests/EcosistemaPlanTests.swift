@@ -368,7 +368,14 @@ final class EcosistemaPlanTests: XCTestCase {
         XCTAssertEqual(MemoryLayout<EcosistemaPolvoU>.stride, 192)
         XCTAssertEqual(MemoryLayout<EcosistemaPolvoU>.stride % 16, 0)
         // Y no solo el total: los offsets clave (una transposición de dos campos del mismo tamaño
-        // conservaría el stride y desalinearía el shader en silencio).
+        // conservaría el stride y desalinearía el shader en silencio) — los SEIS colores uno por uno:
+        // `colorReposo`/`colorSueno` transpuestos pintarían el sueño con la tinta del reposo sin que
+        // el stride ni `colorVigiaResp` se enteraran (revisión adversarial, ronda 4).
+        XCTAssertEqual(MemoryLayout<EcosistemaPolvoU>.offset(of: \.colorClima), 0)
+        XCTAssertEqual(MemoryLayout<EcosistemaPolvoU>.offset(of: \.colorNeutra), 16)
+        XCTAssertEqual(MemoryLayout<EcosistemaPolvoU>.offset(of: \.colorReposo), 32)
+        XCTAssertEqual(MemoryLayout<EcosistemaPolvoU>.offset(of: \.colorSueno), 48)
+        XCTAssertEqual(MemoryLayout<EcosistemaPolvoU>.offset(of: \.colorVigiaTemp), 64)
         XCTAssertEqual(MemoryLayout<EcosistemaPolvoU>.offset(of: \.colorVigiaResp), 80)
         XCTAssertEqual(MemoryLayout<EcosistemaPolvoU>.offset(of: \.lienzo), 96)
         XCTAssertEqual(MemoryLayout<EcosistemaPolvoU>.offset(of: \.t), 104)

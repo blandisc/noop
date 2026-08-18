@@ -57,6 +57,13 @@ run_lint() {
   if changed_files | grep -qE 'Localizable\.xcstrings$' && [ -f Tools/check-xcstrings-cycles.py ]; then
     python3 Tools/check-xcstrings-cycles.py || fail "ciclo en un String Catalog (FER-395)."
   fi
+  # Espejo local del gate `i18n-guard` (FER-123): una clave nueva sin entrada en el catálogo —o sin
+  # su valor `es`— se ve aquí, al editar, y no dos horas después en el PR. Barre el árbol entero en
+  # ~0.2 s, así que basta con que el cambio toque Swift o el catálogo para correrlo.
+  if { [ -n "$files" ] || changed_files | grep -qE 'Localizable\.xcstrings$|^Tools/(check-xcstrings-es\.py|i18n-(es|keys)-baseline\.txt)$'; } && [ -f Tools/check-xcstrings-es.py ]; then
+    python3 Tools/check-xcstrings-es.py --self-test || fail "el extractor de claves i18n se rompió (--self-test)."
+    python3 Tools/check-xcstrings-es.py || fail "i18n: falta una clave en el catálogo, o su traducción es."
+  fi
   echo "verify: linters OK"
 }
 

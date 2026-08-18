@@ -297,6 +297,10 @@ public struct MatrizHoyFace: View {
 
     /// Toca una sección: dispara su hoja + el latido del sello.
     private func tocar(_ id: String) {
+        // El estilo del botón limpia `presionado` en `onChange(isPressed)`, pero la acción abre
+        // una hoja en el mismo ciclo: si esa transición se pierde, el módulo se quedaría al 97 %
+        // al volver. `tocar` corre al SOLTAR: aquí se limpia sin depender de nadie.
+        presionado = nil
         if !reduceMotion {
             withAnimation(.spring(duration: 0.3)) { latido = id }
             Task { @MainActor in
@@ -374,6 +378,9 @@ public struct MatrizHoyFace: View {
                                            defaultValue: "How this works",
                                            bundle: .main)))
         } else {
+            // Cabecera decorativa (sin hoja): hoy NINGÚN emisor la usa —los tres estantes de la
+            // app y de las fixtures llevan `manualID`— pero es un camino del componente
+            // (`manualID: String?`), no un huérfano: se conserva y se declara.
             nivelTexto(rotulo)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .accessibilityHidden(true)
@@ -417,8 +424,9 @@ public struct MatrizHoyFace: View {
             // la gráfica abre la hoja igual).
             HStack(alignment: .bottom, spacing: LiquidSpace.s400) {
                 botonEncabezado(s, expandir: false) { textos(s) }
-                    .frame(minWidth: MatrizTokens.moduloTextoMinAncho, alignment: .leading)
-                    .fixedSize(horizontal: true, vertical: false)
+                    // Ancho FIJO: la gráfica no puede cambiar de ancho bajo el dedo (el
+                    // subtítulo del scrub es más largo que el de reposo).
+                    .frame(width: MatrizTokens.moduloTextoAncho, alignment: .leading)
                 grafica(s, noches: s.scrubNoches ?? [])
             }
         } else {
@@ -893,9 +901,11 @@ private struct HintBarrido: View {
         .modifier(HintVisibilidad { visible in
             guard visible, !disparado else { return }
             disparado = true
-            onMostrado()
+            // Se cuenta cuando el cruce TERMINÓ, no cuando arranca: si el contador subiera aquí,
+            // en la tercera vez el host apagaría `mostrarHintScrub` en el mismo ciclo y el hint se
+            // desmontaría antes de moverse — se verían dos, contados tres (revisión final).
             withAnimation(.easeInOut(duration: MatrizTokens.hintDuracion)
-                            .delay(MatrizTokens.hintEspera)) { cruzo = true }
+                            .delay(MatrizTokens.hintEspera)) { cruzo = true } completion: { onMostrado() }
         })
         .clipShape(RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous))
         .allowsHitTesting(false)

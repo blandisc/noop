@@ -273,13 +273,53 @@ enum ScreenshotFixtures {
             let total = max(3600, Int(d.totalSleepMin ?? 445) * 60)   // piso defensivo (endTs > startTs)
             let deep = Int(d.deepMin ?? 95), rem = Int(d.remMin ?? 110)
             let light = Int(d.lightMin ?? 235), awake = 28
-            let stages = "{\"deep\":\(deep),\"rem\":\(rem),\"light\":\(light),\"awake\":\(awake)}"
+            // TRAMOS por época, no totales. `decodeSegments` espera un ARREGLO de
+            // {start,end,stage} con marcas absolutas y descarta cualquier otra cosa: con el
+            // objeto de totales que había aquí, `intervals` salía vacío y el detalle de Sueño
+            // caía siempre a la barra apilada — el hipnograma no se podía ver ni en capturas
+            // ni en el simulador. (FER-102)
+            let stages = hipnogramaJSON(onset: onset, deep: deep, rem: rem,
+                                        light: light, awake: awake)
             // La VENTANA en cama = dormido + despierto (revisión Grok): sin sumar `awake`,
             // las etapas exceden el reloj acostarse→despertar por 28 min cada noche.
             return CachedSleepSession(startTs: onset, endTs: onset + total + awake * 60,
                                       efficiency: d.efficiency, restingHr: d.restingHr,
                                       avgHrv: d.avgHrv, stagesJSON: stages)
         }
+    }
+
+
+    /// Una noche con FORMA: ciclos de ~90 min (ligero → profundo → ligero → REM) con
+    /// microdespertares, en el formato que `SleepDetailScreen.decodeSegments` sabe leer.
+    ///
+    /// No es un adorno de la fixture: sin tramos, la pantalla de detalle no puede dibujar su
+    /// hipnograma, que es la pieza firma de la sección «Anoche». Los minutos por etapa suman
+    /// exactamente los que pide el caller, para que la barra, la leyenda y el hipnograma
+    /// cuenten lo mismo.
+    private static func hipnogramaJSON(onset: Int, deep: Int, rem: Int,
+                                       light: Int, awake: Int) -> String {
+        // 4 ciclos: el profundo pesa al principio de la noche y el REM al final, como en la
+        // fisiología real (y como lo cuenta el bloque «Forma de la noche»).
+        let pesosProfundo = [0.40, 0.30, 0.20, 0.10]
+        let pesosRem      = [0.10, 0.20, 0.30, 0.40]
+        let pesosLigero   = [0.25, 0.25, 0.25, 0.25]
+        var t = onset
+        var segs: [String] = []
+        func tramo(_ nombre: String, _ minutos: Int) {
+            guard minutos > 0 else { return }
+            let fin = t + minutos * 60
+            segs.append("{\"start\":\(t),\"end\":\(fin),\"stage\":\"\(nombre)\"}")
+            t = fin
+        }
+        for i in 0..<4 {
+            tramo("light", Int(Double(light) * pesosLigero[i] * 0.5))
+            tramo("deep",  Int(Double(deep) * pesosProfundo[i]))
+            tramo("light", Int(Double(light) * pesosLigero[i] * 0.5))
+            tramo("rem",   Int(Double(rem) * pesosRem[i]))
+            if i < 3 { tramo("wake", awake / 4) }   // el microdespertar entre ciclos
+        }
+        tramo("wake", awake - (awake / 4) * 3)      // el resto del despierto, al final
+        return "[" + segs.joined(separator: ",") + "]"
     }
 
     /// Six recent sessions (newest first by start time) for the Workouts strip on Today.

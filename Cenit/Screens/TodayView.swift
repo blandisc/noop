@@ -266,7 +266,7 @@ struct TodayView: View {
     /// (vía `loadAll()`). FER-982: la derivación pesada (3–4× `ReadinessEngine.evaluate`, cada uno ordena
     /// TODO `repo.days`, + máscaras) ya NO corre en el MainActor — se snapshotean los
     /// inputs value-type en main y el cómputo puro hopea a un executor de fondo (mismo patrón que
-    /// `RecoveryDetailModel.buildDetached`, FER-953/954). Solo los resultados vuelven a main; el body
+    /// `PreparacionDetalleModelo.buildDetached`, FER-953/954). Solo los resultados vuelven a main; el body
     /// sigue sin recalcular en cada frame gracias a los `@State memo*` (FER-172), con el fallback en frío
     /// (memo aún nil) cubriendo el breve hueco del hop, igual que en el primer paint.
     private func recomputeDerived() async {
@@ -368,10 +368,7 @@ struct TodayView: View {
             // (Sueño/Esfuerzo) are unaffected (their number appears after the gate flips anyway).
             .sheet(item: $sleepDetail) { item in
                 SleepDetailScreen(theme: theme, model: item.model,
-                                  loadNightHR: { from, to in await repo.hrSamples(from: from, to: to) },
-                                  loadNightRR: { from, to in await repo.rrIntervals(from: from, to: to) },
-                                  loadNightThirds: { await repo.nightThirdsDeltas() },
-                                  loadDCBaseline: { await repo.nocturnalDCBaseline() })
+                                  sinPermiso: health.auth != .authorized && health.auth != .unavailable)
                     .recEntranceGate()
             }
             .sheet(item: $strainDetail) { item in
@@ -637,7 +634,12 @@ struct TodayView: View {
         // cuando una hoja los tapa — nadie los ve y seguían pintando bajo el modal.
         // FER-111: y cuando el onboarding los tapa, que es el mismo bug en el minuto MÁS caro
         // (primer arranque, HealthKit machacando SQLite) y durando minutos, no segundos.
-        .environment(\.liquidAmbientPaused, scenePhase != .active || hojaPresentada || !onboarded)
+        // FER-118: y cuando otra PESTAÑA tapa a Hoy (`atmosfera.visible`, on/offAppear): el polvo
+        // ya se paraba por su cuenta, pero los relojes de la Matriz (los hilos del guardián, los
+        // sellos, las gráficas) seguían pintando detrás de Tendencias. Leer solo `.visible` aquí no
+        // recompone la pantalla por scroll: Observation rastrea por propiedad.
+        .environment(\.liquidAmbientPaused,
+                     scenePhase != .active || hojaPresentada || !onboarded || !atmosfera.visible)
         .instrumentoTheme(.base)
         // El color scheme (y con él la barra de estado: Hoy = papel claro → tinta oscura) se decide
         // en ContentView según la pestaña activa, porque `preferredColorScheme` lo resuelve el

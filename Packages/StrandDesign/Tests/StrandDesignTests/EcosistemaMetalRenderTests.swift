@@ -435,5 +435,11 @@ extension EcosistemaMetalRenderTests {
         // Duración 0 (Reduce Motion): instantáneo.
         r.fijar(paleta: verde, en: 30, duracion: 0)
         XCTAssertEqual(r.paleta(en: 30), verde)
+        // Y un reloj que RETROCEDE (la atmósfera re-basa `inicio` al reanudar tras `maxSesion`)
+        // no reabre un fundido terminado: con el fundido a rojo fijado en t = 4000 y completado,
+        // t = 3 (después del re-base) tiene que seguir dando ROJO, no el verde de antes.
+        r.fijar(paleta: roja, en: 4000, duracion: 1.6)
+        XCTAssertEqual(r.paleta(en: 4001.6), roja)
+        XCTAssertEqual(r.paleta(en: 3), roja, "el reloj retrocedió: el color del veredicto no puede volver al anterior")
     }
 }

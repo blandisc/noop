@@ -5,6 +5,22 @@ import StrandAnalytics
 import CenitStore
 import Foundation
 
+// FER-119: vivía en `RecoveryDetailScreen`, que se retiró con el puntaje 0–100. Sus tres
+// consumidores siguen vivos (las columnas de Cuerpo y esta hoja), así que la extensión se muda
+// al archivo de la carga —su usuario principal— en vez de irse con la pantalla.
+extension ReadinessEngine.Flag {
+    /// El único mapeo bandera → color «Instrumento»: bien → veredicto, neutro → tinta quieta,
+    /// vigilar → aviso, mal → crítico.
+    func color(_ theme: InstrumentoTheme) -> Color {
+        switch self {
+        case .good:    return theme.verdict
+        case .neutral: return theme.inkSecondary
+        case .watch:   return theme.warning
+        case .bad:     return theme.critical
+        }
+    }
+}
+
 // MARK: - Carga de entrenamiento — franja en «Hoy» + hoja Liquid Glass (FER-705 · migración Liquid)
 //
 // La carga de entrenamiento (ACWR) entra a «Hoy» como una FRANJA fija bajo las pestañas que al
