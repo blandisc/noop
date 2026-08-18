@@ -127,6 +127,15 @@ final class PreparacionDetalleModeloTests: XCTestCase {
         XCTAssertNil(m.palabraHoy)
     }
 
+    /// 🔴 Con permiso pero SIN una sola noche, no se dibuja un mosaico de 30 huecos: eso no es
+    /// información, es un reproche. Va la bienvenida. Distinto de la ventana sin veredicto de
+    /// abajo, donde SÍ hay noches y el mosaico sí tiene algo que contar.
+    func testConPermisoYSinUnaSolaNocheVaLaBienvenidaNoElMosaico() {
+        let m = PreparacionDetalleModelo.build(prep: read([]), healthConnected: true,
+                                               asOf: Date(), calendario: cal)
+        XCTAssertEqual(m.estado, .sinHistoria, "sin historia no se dibuja mosaico")
+    }
+
     /// Una ventana ENTERA sin veredicto SÍ dibuja el mosaico —todo en el peldaño vacío— y lo
     /// dice. Nunca «0 de 0»: el denominador sigue siendo 30.
     func testVentanaEnteraSinVeredictoSeDibujaYLoDice() {
@@ -207,5 +216,55 @@ final class PreparacionDetalleModeloTests: XCTestCase {
             XCTAssertNotEqual(neutra, LiquidHoyBuilder.palabraVeredicto(v),
                               "el peldaño de \(v) no puede ser la palabra de consejo de Hoy")
         }
+    }
+
+    // MARK: - El gate de ciencia, convertido en prueba
+
+    /// El texto ESPAÑOL que de verdad se le muestra al usuario. `String(localized:)` no sirve
+    /// aquí: la suite corre en inglés, así que resolvería el valor `en` y una aserción sobre
+    /// frases en español pasaría en vacío. (Lo comprobé: la primera versión de estas dos
+    /// pruebas pasaba con el copy viejo, que es exactamente lo que venían a impedir.)
+    private func es(_ clave: String) throws -> String {
+        let ruta = try XCTUnwrap(Bundle.main.path(forResource: "es", ofType: "lproj"),
+                                 "el bundle no trae español")
+        let bundleES = try XCTUnwrap(Bundle(path: ruta))
+        let v = bundleES.localizedString(forKey: clave, value: "‹AUSENTE›", table: nil)
+        XCTAssertNotEqual(v, "‹AUSENTE›", "la clave \(clave) no llegó al catálogo en español")
+        return v
+    }
+
+    /// El allow-list de `docs/ANALYTICS.md` es PR-blocking y prohíbe tres cosas que este copy
+    /// dijo en su primera versión, todas cazadas por el gate de ciencia:
+    ///   · que la VFC vota (`wHRV = 0`; la RMSSD nocturna nunca sola y NUNCA históricamente,
+    ///     así que sobre 30 días este eje es solo la FC en reposo),
+    ///   · que el sueño se juzga contra la base del usuario (es un piso poblacional fijo),
+    ///   · el marco de «tres señales», prohibido por nombre desde la hoja del eje autonómico.
+    func testElMetodoNoReintroduceLasAfirmacionesQueElGateProhibe() throws {
+        let metodo = try es("prep.metodo.como")
+        XCTAssertFalse(metodo.localizedCaseInsensitiveContains("tres señales"),
+                       "el marco de «tres señales» está prohibido en el allow-list")
+        XCTAssertFalse(metodo.localizedCaseInsensitiveContains("señales en reposo contra tu propia base"),
+                       "el sueño NO se compara contra la base del usuario, sino contra un piso fijo")
+
+        let auto = try es("prep.atr.auto")
+        XCTAssertFalse(auto.localizedCaseInsensitiveContains("VFC"),
+                       "la atribución de 30 días es SOLO FC en reposo: la VFC de Apple no vota y la RMSSD nocturna nunca cuenta históricamente")
+    }
+
+    /// La atribución del sueño no puede decir solo «dormiste menos»: el eje vota con
+    /// `shortVsNeed || poorEfficiency`, así que una noche fragmentada de duración normal
+    /// vota igual y quedaría sin explicación.
+    func testLaAtribucionDeSuenoNombraLasDosFormasDeVotar() throws {
+        let pie = try es("prep.atr.sueno")
+        XCTAssertTrue(pie.localizedCaseInsensitiveContains("continua"),
+                      "falta la noche fragmentada, que vota igual que la corta")
+    }
+
+    /// El héroe más visto de la app prometía un «rango» de sueño personal que el motor no
+    /// tiene: el eje se juzga contra un piso poblacional fijo (Hirshkowitz 2015).
+    func testElHeroeNoPrometeUnRangoDeSuenoPersonal() throws {
+        let sub = try es("hero.sub.full.nombrado")
+        XCTAssertFalse(sub.localizedCaseInsensitiveContains("sueño y tu FC en reposo amanecieron en tu rango"),
+                       "el sueño no tiene «tu rango»: se compara contra el piso recomendado")
     }
 }

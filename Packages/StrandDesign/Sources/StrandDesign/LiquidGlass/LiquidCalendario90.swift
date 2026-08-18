@@ -563,7 +563,7 @@ private struct LiquidCalendarioAnchoKey: PreferenceKey {
 
 #if DEBUG
 // El caller es quien formatea: estos helpers hacen de pantalla de Tendencias para las previews
-// (fechas → etiquetas y rótulos de mes) justo como lo hará `RecoveryDetailScreen`. Cada closure
+// (fechas → etiquetas y rótulos de mes) justo como lo hacen las hojas de detalle. Cada closure
 // y literal va con su tipo explícito: la preview del componente de papel tumbó una vez el build
 // de CI por inferencia («unable to type-check this expression in reasonable time», FER-985).
 private enum CalendarioDemo {

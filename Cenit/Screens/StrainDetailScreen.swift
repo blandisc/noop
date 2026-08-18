@@ -7,7 +7,7 @@ import Foundation
 
 // MARK: - StrainDetailScreen — el «Detalle de Esfuerzo» en «Instrumento» (FER-238 · FER-859)
 //
-// Hermana de `RecoveryDetailScreen` (FER-857): reutiliza el esqueleto del handoff «Detalle de
+// Hermana del detalle de Recuperación que se retiró en FER-119 (patrón FER-857): reutiliza el esqueleto del handoff «Detalle de
 // Tendencias Final» — héroe invertido → niveles → historial siempre abierto
 // (`GraficaRangos`) → calendario 90 días → método + sello. NO extiende `MetricDetailScreen`/
 // `MetricDetailSpec` (esos son para vitales de serie escalar). El esfuerzo es una métrica
@@ -441,7 +441,7 @@ struct StrainDetailModel {
     var confidence: ScoreConfidence? = nil
     /// The trailing 90 calendar days as `RecoveryDay` (score = strain 0–21, nil where there's no
     /// reading), precomputed here (FER-976) instead of a per-render view computed property — same
-    /// seam as `RecoveryDetailModel.heat`/`.buildHeat`. Defaulted so existing call sites/previews that
+    /// seam as `StrainDetailModel.heat`/`.buildHeat`. Defaulted so existing call sites/previews that
     /// don't pass it keep compiling.
     var strainHeat: [RecoveryDay] = []
 
@@ -486,7 +486,7 @@ struct StrainDetailModel {
 
     /// The trailing 90 calendar days as `RecoveryDay` (score = strain 0–21, nil where there's no
     /// reading). Moved from the view's per-render `strainHeat` computed property (FER-976) — same
-    /// UTC-anchored-to-local-day math as `RecoveryDetailModel.buildHeat`, unchanged, just relocated +
+    /// UTC-anchored-to-local-day math as the retired recovery detail's `buildHeat`, unchanged, just relocated +
     /// reading `series` (day,value — the model already has it) instead of the view's `parsed`.
     private static let calDayFmt = DayKey.utcFormatter
 

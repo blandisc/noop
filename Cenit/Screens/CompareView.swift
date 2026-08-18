@@ -541,7 +541,7 @@ struct CompareView: View {
     /// Recompute the pair cache if (and only if) the correlation inputs changed. Dispatches the
     /// (expensive) scan to `Task.detached` off a Sendable (id, rows) snapshot — never a raw
     /// `CompareSeries` (it carries a `Color`) — then reattaches + assigns `pairCache` back on MainActor
-    /// (FER-976), same seam as `RecoveryDetailModel.buildDetached`.
+    /// (FER-976), same seam as `PreparacionDetalleModelo.buildDetached`.
     private func refreshPairCache(_ series: [CompareSeries]) {
         let key = correlationKey(series)
         guard key != pairCacheKey else { return }

@@ -775,8 +775,13 @@ enum LiquidHoyBuilder {
             // nombrar, y los vigías (térmico, carga) que aparecen «fuera» por su propio
             // corte no empujaron nada. Es la misma composición que el héroe, tal cual.
             return subtituloDesfase(prep)
+                // El sueño NO tiene «tu rango»: se juzga contra un piso poblacional fijo
+                // (`sleepNeedFloorMin`, Hirshkowitz 2015). Es la MISMA promesa personalizada
+                // falsa que este archivo ya corrigió en la Matriz, en el acta y en el manual
+                // (`subtituloDetalle`, caso `.sleep`) y que aquí había sobrevivido, en la línea
+                // más vista de la app. Cazada por el gate de ciencia de FER-119.
                 ?? String(localized: "hero.sub.full.nombrado",
-                          defaultValue: "Your sleep and your resting heart rate woke up in your range.")
+                          defaultValue: "Your resting heart rate woke up in your base, and your sleep reached the recommended range.")
         }
     }
 

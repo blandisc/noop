@@ -38,13 +38,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your resting heart rate or HRV came in outside your base"
+            "value" : "Your resting heart rate came in outside your base"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tu FC en reposo o tu VFC vinieron fuera de tu base"
+            "value" : "Tu FC en reposo vino fuera de tu base"
           }
         }
       }
@@ -118,13 +118,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You slept less than your body asks for"
+            "value" : "You slept less than recommended, or your sleep came broken up"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dormiste menos de lo que te pide el cuerpo"
+            "value" : "Dormiste menos de lo recomendado, o dormiste de forma poco continua"
           }
         }
       }
@@ -278,13 +278,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Every morning I compare three resting signals against your own baseline: the autonomic one (your resting heart rate and HRV), your sleep, and the sentinel (skin temperature and breathing, which only counts when both run high together). None outside is «all in range»; one is «one signal out»; two or more is «two or more out». It takes two days in a row for a change to move your verdict, so one odd night doesn't tip it."
+            "value" : "Every morning I look at three things. Your resting heart rate, against your own base: that's the axis that votes, and your HRV rides along with it only on nights that have enough of it, never on its own. Your sleep, against the floor sleep science recommends, not against your own history. And the sentinel, skin temperature and breathing, which only counts when both run high together. None out is «all in range»; one is «one signal out»; two or more is «two or more out». A sustained downward trend can also bring that change forward."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cada mañana comparo tres señales en reposo contra tu propia base: la autonómica (tu FC en reposo y tu VFC), tu sueño, y el centinela (temperatura de piel y respiración, que solo cuenta cuando las dos van altas juntas). Ninguna fuera es «todo en rango»; una es «una señal fuera»; dos o más es «dos o más fuera». Un cambio necesita dos días seguidos para mover tu veredicto, así que una noche rara no lo tumba."
+            "value" : "Cada mañana miro tres cosas. Tu FC en reposo, contra tu propia base: ese es el eje que vota, y tu VFC lo acompaña solo en las noches que traen suficiente, nunca sola. Tu sueño, contra el piso que recomienda la ciencia del sueño, no contra tu propio historial. Y el centinela, temperatura de piel y respiración, que solo cuenta cuando las dos van altas juntas. Ninguna fuera es «todo en rango»; una es «una señal fuera»; dos o más es «dos o más fuera». Una tendencia sostenida a la baja también puede adelantar ese cambio."
           }
         }
       }
@@ -294,13 +294,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Each square is recalculated with what I know about you today — it isn't a snapshot of what you saw that morning. If your baseline has moved since then, an older day can read differently now. Training load doesn't vote here."
+            "value" : "Each square is judged with the base you had up to that day, so it doesn't change if you come back to look later. What it can't carry is the trend nudge that only applies to the morning you're living: that's why an older square can differ from what Today said out loud that day. Training load doesn't vote here."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cada cuadro se vuelve a calcular con lo que sé de ti hoy, no es la foto de lo que viste esa mañana. Si tu base se movió desde entonces, un día viejo puede leerse distinto ahora. La carga de entrenamiento no vota aquí."
+            "value" : "Cada cuadro se juzga con la base que tenías hasta ese día, así que no cambia si regresas a verlo después. Lo que no puede cargar es el ajuste de tendencia que solo aplica a la mañana que estás viviendo: por eso un cuadro viejo puede diferir de lo que Hoy dijo en voz alta ese día. La carga de entrenamiento no vota aquí."
           }
         }
       }
@@ -24787,13 +24787,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your sleep and your resting heart rate woke up in your range."
+            "value" : "Your resting heart rate woke up in your base, and your sleep reached the recommended range."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tu sueño y tu FC en reposo amanecieron en tu rango."
+            "value" : "Tu FC en reposo amaneció en tu base y tu sueño llegó al rango recomendado."
           }
         }
       }

@@ -261,7 +261,7 @@ struct TodayView: View {
     /// (vía `loadAll()`). FER-982: la derivación pesada (3–4× `ReadinessEngine.evaluate`, cada uno ordena
     /// TODO `repo.days`, + máscaras) ya NO corre en el MainActor — se snapshotean los
     /// inputs value-type en main y el cómputo puro hopea a un executor de fondo (mismo patrón que
-    /// `RecoveryDetailModel.buildDetached`, FER-953/954). Solo los resultados vuelven a main; el body
+    /// `PreparacionDetalleModelo.buildDetached`, FER-953/954). Solo los resultados vuelven a main; el body
     /// sigue sin recalcular en cada frame gracias a los `@State memo*` (FER-172), con el fallback en frío
     /// (memo aún nil) cubriendo el breve hueco del hop, igual que en el primer paint.
     private func recomputeDerived() async {

@@ -158,13 +158,21 @@ struct PreparacionDetailScreen: View {
             LiquidFranjaSeccion(String(localized: "prep.metodo.titulo",
                                        defaultValue: "See the method"), tono: tono)
             VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+                // Este texto pasó por el gate de ciencia y NO es libre: `docs/ANALYTICS.md`
+                // prohíbe el marco de «tres señales», la VFC de Apple NO vota (`wHRV = 0`) y el
+                // sueño NO se juzga contra la base del usuario sino contra un piso poblacional
+                // fijo (Hirshkowitz 2015). Cualquier reescritura vuelve a pasar por el allow-list.
                 Text(String(localized: "prep.metodo.como",
-                            defaultValue: "Every morning I compare three resting signals against your own baseline: the autonomic one (your resting heart rate and HRV), your sleep, and the sentinel (skin temperature and breathing, which only counts when both run high together). None outside is «all in range»; one is «one signal out»; two or more is «two or more out». It takes two days in a row for a change to move your verdict, so one odd night doesn't tip it."))
+                            defaultValue: "Every morning I look at three things. Your resting heart rate, against your own base: that's the axis that votes, and your HRV rides along with it only on nights that have enough of it, never on its own. Your sleep, against the floor sleep science recommends, not against your own history. And the sentinel, skin temperature and breathing, which only counts when both run high together. None out is «all in range»; one is «one signal out»; two or more is «two or more out». A sustained downward trend can also bring that change forward."))
                 // §4: el mosaico se recalcula con la base de HOY. Decirlo no es un detalle legal:
                 // sin esta línea la pantalla afirmaría, sin querer, que muestra lo que el usuario
                 // leyó cada una de esas mañanas.
+                // La limitación REAL, no la que yo supuse: el pliegue es hacia adelante, así que
+                // un día viejo no se repinta (`testAgregarDiasPosterioresNoRepintaLaHistoria`).
+                // Lo que sí difiere es que los días históricos NO llevan el empujón de tendencia,
+                // que sí aplicaba en vivo esa mañana (`Read.verdictHistory`, la nota del motor).
                 Text(String(localized: "prep.metodo.limite",
-                            defaultValue: "Each square is recalculated with what I know about you today — it isn't a snapshot of what you saw that morning. If your baseline has moved since then, an older day can read differently now. Training load doesn't vote here."))
+                            defaultValue: "Each square is judged with the base you had up to that day, so it doesn't change if you come back to look later. What it can't carry is the trend nudge that only applies to the morning you're living: that's why an older square can differ from what Today said out loud that day. Training load doesn't vote here."))
             }
             .font(LiquidType.cuerpo)
             .foregroundStyle(LiquidColor.tinta500)
@@ -374,12 +382,16 @@ struct PreparacionDetalleModelo {
         let atribucion: [EjeAtribucion] = leidas.isEmpty ? [] : [
             .init(id: "autonomic", nombre: String(localized: "Resting HR"),
                   dias: leidas.filter(\.autonomicOut).count,
+                  // La VFC de Apple no vota (`wHRV = 0`) y la RMSSD nocturna «nunca sola, nunca
+                  // históricamente»: sobre 30 días este eje es SOLO la FC en reposo.
                   pie: String(localized: "prep.atr.auto",
-                              defaultValue: "Your resting heart rate or HRV came in outside your base")),
+                              defaultValue: "Your resting heart rate came in outside your base")),
             .init(id: "sleep", nombre: String(localized: "Sleep"),
                   dias: leidas.filter(\.sleepOut).count,
+                  // El eje vota con `shortVsNeed || poorEfficiency`: decir solo «dormiste menos»
+                  // deja fuera la noche fragmentada de duración normal, que vota igual.
                   pie: String(localized: "prep.atr.sueno",
-                              defaultValue: "You slept less than your body asks for")),
+                              defaultValue: "You slept less than recommended, or your sleep came broken up")),
             .init(id: "sentinel", nombre: String(localized: "prep.atr.centinela.nombre",
                                                  defaultValue: "Temperature and breathing"),
                   dias: leidas.filter(\.sentinelOut).count,
@@ -405,10 +417,19 @@ struct PreparacionDetalleModelo {
                           fuera: d.state.isOut)
         } : []
 
+        // Dos vacíos que NO son el mismo, y el orden importa:
+        //   · SERIE VACÍA (sin historia, o sin permiso) → no se dibuja mosaico: 30 cuadros
+        //     grises no son información, son un reproche. Va el estado de bienvenida.
+        //   · VENTANA SIN VEREDICTO (hay noches, todas sin lectura) → el mosaico SÍ se dibuja,
+        //     entero en el peldaño vacío, y lo dice. Nunca «0 de 0»: el denominador son 30.
+        //
+        // La versión anterior escribía la primera rama como `historia.isEmpty && !ventanaVacia`,
+        // que es una contradicción: sin historia TODAS las celdas caen en «sin lectura», así que
+        // `ventanaVacia` siempre es cierto y la rama nunca corría. El usuario sin historia veía
+        // un mosaico de 30 huecos en vez de su bienvenida.
         let estado: Estado
         if !healthConnected { estado = .sinPermiso }
-        else if (prep?.verdictHistory ?? []).isEmpty && !ventanaVacia { estado = .sinHistoria }
-        else if prep == nil { estado = .sinHistoria }
+        else if prep == nil || (prep?.verdictHistory ?? []).isEmpty { estado = .sinHistoria }
         else { estado = .conVentana }
 
         return PreparacionDetalleModelo(
