@@ -14,9 +14,10 @@ import SwiftUI
 //   · el ancla del builder (marcado fuera ≥ 1.02, no marcado ≤ 0.98) + el hueco del filo del
 //     mapeo garantizan que lo que el motor marcó fuera cae por encima de `filoFuera` y lo que no,
 //     por debajo de `filoDentro`: «fuera» se lee del valor (v ≥ 1), sin banderas aparte (P-2);
-//   · la banda de tu rango es el tramo entre |v| = 1 de cada lado CON EL MISMO MAPEO — asimétrica
-//     a propósito: el borde de arriba es el filo que el guardián vigila; el de abajo existe pero
-//     no grita. Un punto «al filo» cae exactamente en el borde de la banda;
+//   · la banda de tu rango va de `A·filoBanda` (0.58, el borde de ADENTRO del hueco del filo —
+//     NO `fraccionFilo(1)` = 0.75) arriba a `y(−1)` abajo, asimétrica a propósito: el borde de
+//     arriba es el filo que el guardián vigila; el de abajo existe pero no grita. Un punto al filo
+//     (v = 1) cae FUERA de la banda, con aire (≥ 2.5 pt): ese es el punto (§13.21);
 //   · la banda SOLO se dibuja si ese hilo tiene al menos una noche con valor (sin base
 //     —respiración sin juicio, calibración— no hay banda ni hilo central en ese hilo);
 //   · sin lectura = una marca mínima gris sobre la base, del color de nadie (P-2);
@@ -132,6 +133,9 @@ public struct MatrizHilos: View {
                 MatrizChartDraw.xAt(index: i, count: n, width: size.width, inset: inset)
             }
             let paso = n > 1 ? (size.width - inset * 2) / CGFloat(n - 1) : size.width
+            // La columna del par no puede alcanzar a la noche vecina (con n = 2 el paso es casi
+            // el lienzo) ni inundarlo (n = 1): tope a la mitad del ancho útil (revisión final).
+            let anchoColumna = min(paso * MatrizTokens.hilosColumnaFactor, (size.width - inset * 2) * 0.5)
             let iHoy = n - 1
             let leyendo = resaltado.map { noches.indices.contains($0) ? $0 : nil } ?? nil
 
@@ -154,9 +158,13 @@ public struct MatrizHilos: View {
 
             // La noche en que el par votó: columna ámbar y nudo entre los dos puntos. Es el
             // juicio del motor (`parFuera`), nunca re-derivado del dibujo (COS-1).
-            for (i, noche) in noches.enumerated() where noche.parFuera {
-                let col = CGRect(x: x(i) - paso * MatrizTokens.hilosColumnaFactor / 2, y: LiquidSpace.s100,
-                                 width: paso * MatrizTokens.hilosColumnaFactor,
+            // …y solo si esa noche tiene al menos un punto que la sostenga: con < 3 lecturas
+            // de respiración en la ventana el builder no arma su escala (`resp` nil en todas) y
+            // el hilo no se dibuja; una columna ámbar sobre nada afirmaría con el dibujo lo que
+            // solo el scrub puede decir con palabras (revisión final).
+            for (i, noche) in noches.enumerated() where noche.parFuera && (noche.temp != nil || noche.resp != nil) {
+                let col = CGRect(x: x(i) - anchoColumna / 2, y: LiquidSpace.s100,
+                                 width: anchoColumna,
                                  height: size.height - LiquidSpace.s100 * 2)
                 // `atencion`, no `ambarClaro`: el claro es un tono de AMBIENTE (2.3:1 sobre blanco)
                 // y ésta es la marca de dato más importante de la gráfica (revisión ronda 3).
@@ -200,7 +208,7 @@ public struct MatrizHilos: View {
                         let radio = MatrizTokens.hilosAnillo + MatrizTokens.hilosAnilloLatido * fase
                         let anillo = Path(ellipseIn: CGRect(x: c.x - radio, y: c.y - radio,
                                                             width: radio * 2, height: radio * 2))
-                        ctx.stroke(anillo, with: .color(hue.opacity(1 - 0.7 * fase)),
+                        ctx.stroke(anillo, with: .color(hue.opacity(1 - MatrizTokens.hilosLatidoAlfa * fase)),
                                    lineWidth: MatrizTokens.hilosAnilloTrazo)
                     }
                 }

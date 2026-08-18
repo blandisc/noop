@@ -637,7 +637,12 @@ struct TodayView: View {
         // cuando una hoja los tapa — nadie los ve y seguían pintando bajo el modal.
         // FER-111: y cuando el onboarding los tapa, que es el mismo bug en el minuto MÁS caro
         // (primer arranque, HealthKit machacando SQLite) y durando minutos, no segundos.
-        .environment(\.liquidAmbientPaused, scenePhase != .active || hojaPresentada || !onboarded)
+        // FER-118: y cuando otra PESTAÑA tapa a Hoy (`atmosfera.visible`, on/offAppear): el polvo
+        // ya se paraba por su cuenta, pero los relojes de la Matriz (los hilos del guardián, los
+        // sellos, las gráficas) seguían pintando detrás de Tendencias. Leer solo `.visible` aquí no
+        // recompone la pantalla por scroll: Observation rastrea por propiedad.
+        .environment(\.liquidAmbientPaused,
+                     scenePhase != .active || hojaPresentada || !onboarded || !atmosfera.visible)
         .instrumentoTheme(.base)
         // El color scheme (y con él la barra de estado: Hoy = papel claro → tinta oscura) se decide
         // en ContentView según la pestaña activa, porque `preferredColorScheme` lo resuelve el

@@ -95,6 +95,9 @@ public enum PolvoSimulacion {
     /// Cuántas partículas caben en un lienzo: área / `ptPorParticula`, acotado.
     public static func cuenta(lienzo: CGSize) -> Int {
         let area = max(0, lienzo.width) * max(0, lienzo.height)
+        // Sin lienzo no hay motas (el primer `draw` de un `MTKView` puede llegar con bounds 0):
+        // 600 instancias sobre un lienzo de 0×0 dividirían entre cero en el shader.
+        guard area > 0 else { return 0 }
         let n = Int(area / Fisica.ptPorParticula)
         return min(Fisica.nMax, max(Fisica.nMin, n))
     }

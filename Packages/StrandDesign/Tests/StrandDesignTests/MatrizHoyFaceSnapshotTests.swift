@@ -10,17 +10,17 @@ import AppKit
 final class MatrizHoyFaceSnapshotTests: XCTestCase {
 
     @MainActor func test_t1_bueno() throws {
-        try render(MatrizHoyFace(model: Self.t1Bueno, onTapSeccion: { _ in }),
+        try render(MatrizHoyFace(model: Self.t1Bueno, onTapSeccion: { _ in }), ambiente: .bien,
                    to: "matriz_hoy_t1_bueno", size: CGSize(width: 390, height: 1040))
     }
 
     @MainActor func test_t2_calibrando() throws {
-        try render(MatrizHoyFace(model: Self.t2Calibrando, onTapSeccion: { _ in }),
+        try render(MatrizHoyFace(model: Self.t2Calibrando, onTapSeccion: { _ in }), ambiente: .neutro,
                    to: "matriz_hoy_t2_calibrando", size: CGSize(width: 390, height: 1040))
     }
 
     @MainActor func test_t3_alerta() throws {
-        try render(MatrizHoyFace(model: Self.t3Alerta, onTapSeccion: { _ in }),
+        try render(MatrizHoyFace(model: Self.t3Alerta, onTapSeccion: { _ in }), ambiente: .alerta,
                    to: "matriz_hoy_t3_alerta", size: CGSize(width: 390, height: 1040))
     }
 
@@ -258,10 +258,12 @@ final class MatrizHoyFaceSnapshotTests: XCTestCase {
     /// FER-118: la cara se rinde SOBRE la atmósfera real (blanco + polvo estático del Canvas) —
     /// el vidrio al 30 % tiene que dejar ver las motas y el canto de tinta tiene que recortar
     /// cada módulo. Motion apagado ⇒ vidrio de imitación (rasterizable) y polvo determinista.
-    @MainActor private func render<V: View>(_ content: V, to name: String,
+    /// `ambiente` es el del ESTADO que se rinde (verde / neutro / rojo): con uno fijo, dos de los
+    /// tres PNG mentirían sobre el color del polvo (revisión final).
+    @MainActor private func render<V: View>(_ content: V, ambiente: LiquidAmbiente, to name: String,
                                             size: CGSize) throws {
         let view = ZStack(alignment: .top) {
-            LiquidAtmosfera(ambiente: .bien, estado: AtmosferaEstado())
+            LiquidAtmosfera(ambiente: ambiente, estado: AtmosferaEstado())
             content
         }
             .frame(width: size.width, height: size.height)

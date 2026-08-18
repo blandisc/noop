@@ -99,10 +99,14 @@ public struct LiquidAtmosfera: View {
     private var capa: some View {
         #if os(iOS) && canImport(MetalKit)
         if let recursos = metal.recursos, recursos.polvo != nil, !motionDisabled {
+            // `estado.desplazamiento` se lee AQUÍ, en el body de la capa (no dentro del closure
+            // del TimelineView): así Observation registra la dependencia con certeza y el parallax
+            // sigue al dedo en cada cambio de scroll, no solo al tic de 20 Hz.
+            let desplazamiento = still ? 0 : estado.desplazamiento
             TimelineView(.animation(minimumInterval: LiquidMotion.intervaloAmbiente, paused: paused)) { ctx in
                 AtmosferaMetalLienzo(recursos: recursos, paleta: paleta,
                                      t: ctx.date.timeIntervalSince(inicio),
-                                     desplazamiento: still ? 0 : estado.desplazamiento,
+                                     desplazamiento: desplazamiento,
                                      neutra: neutra, still: still, crossfade: crossfade)
             }
         } else {
@@ -119,9 +123,9 @@ public struct LiquidAtmosfera: View {
         let paleta = self.paleta
         let neutra = self.neutra
         let still = self.still
+        let desplazamiento = still ? 0 : estado.desplazamiento
         return TimelineView(.animation(minimumInterval: LiquidMotion.intervaloSello, paused: paused)) { ctx in
             let t = ctx.date.timeIntervalSince(inicio)
-            let desplazamiento = still ? 0 : estado.desplazamiento
             Canvas(rendersAsynchronously: false) { gc, size in
                 let n = PolvoSimulacion.cuenta(lienzo: size) / 2
                 for i in 0..<n {
