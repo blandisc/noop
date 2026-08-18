@@ -122,18 +122,43 @@ public enum MatrizTokens {
     // MARK: Alturas de gráfica por forma
 
     public static let alturaLinea: CGFloat = 56
-    /// FER-80 · La COSTURA del par (temp + resp espejadas). Más alta que una línea suelta
-    /// porque lleva DOS orillas y el espacio entre ellas — pero menos que las dos filas que
-    /// sustituye (56 + 56 + su encabezado), así que la sección respira mejor.
-    /// 58 y no 74: con varas —y no orillas— el alto sobrante se leía como una gráfica vacía.
-    /// Las noches serenas dibujan poco por definición, así que el marco tiene que apretarse a
-    /// ellas en vez de dejarlas nadando (revisión del dueño 2026-08-17).
-    public static let alturaCostura: CGFloat = 58
-    /// El relleno de la boca de la costura: tinta neutra a susurro. No es color de juicio —
-    /// el juicio lo pone el ámbar del tramo donde el par votó.
-    public static let costuraFillAlfa: Double = 0.10
-    /// El tramo donde el par se salió JUNTO: el único ámbar de la costura.
-    public static let costuraAlertaAlfa: Double = 0.22
+
+    // MARK: Los dos hilos de puntos del guardián (FER-118)
+    //
+    // Sustituyen a la costura (FER-80): una fila de puntos por señal —temperatura arriba,
+    // respiración abajo—, uno por noche, con la banda de tu rango detrás de cada hilo. Misma
+    // regla de honestidad que la costura (el mapeo `MatrizCostura.fraccionFilo` sigue vivo);
+    // otra figura, elegida por el dueño sobre el prototipo aprobado.
+
+    /// El alto de la gráfica: dos hilos con su banda y aire para el nudo del par.
+    public static let alturaHilos: CGFloat = 96
+    /// La línea base (tu centro) de cada hilo, en puntos desde arriba.
+    public static let hilosBaseTemp: CGFloat = 28
+    public static let hilosBaseResp: CGFloat = 68
+    /// Cuánto puede alejarse un punto de su base (fracción 1 de `fraccionFilo`).
+    public static let hilosAmplitud: CGFloat = 16
+    /// La banda de tu rango detrás de cada hilo: el hue de la señal a susurro (el prototipo
+    /// aprobó «la banda de rango al 10 %»). Era `costuraFillAlfa`.
+    public static let hilosFillAlfa: Double = 0.10
+    /// La línea base al centro de la banda: el hue de la señal, tenue.
+    public static let hilosBaseAlfa: Double = 0.30
+    /// La noche en que el par se salió JUNTO: el único ámbar de la gráfica (columna + nudo).
+    /// Era `costuraAlertaAlfa`; la columna se pinta a la mitad, como hacía la costura.
+    public static let hilosAlertaAlfa: Double = 0.22
+    /// Radios de los puntos: dentro de tu banda (tenue), fuera (lleno y mayor), y el que el
+    /// dedo está leyendo.
+    public static let hilosPuntoDentro: CGFloat = 3
+    public static let hilosPuntoFuera: CGFloat = 4
+    public static let hilosPuntoLeido: CGFloat = 5
+    public static let hilosPuntoDentroAlfa: Double = 0.45
+    /// El anillo de HOY (los dos puntos de anoche): radio, trazo y cuánto crece al latir.
+    public static let hilosAnillo: CGFloat = 5.2
+    public static let hilosAnilloTrazo: CGFloat = 1.6
+    public static let hilosAnilloLatido: CGFloat = 2
+    /// Sin lectura esa noche: una marca mínima sobre la base, del color de nadie (misma regla
+    /// P-2 de la costura: un hueco es un hueco, no un punto en el centro de tu banda).
+    public static let hilosHuecoRadio: CGFloat = 1.4
+    public static let hilosHuecoAlfa: Double = 0.35
     public static let alturaRenglon: CGFloat = 32
     public static let alturaBarras: CGFloat = 40
     public static let alturaEscalera: CGFloat = alturaBarras   // gemela de Steps (banda Stress|Steps)

@@ -84,6 +84,29 @@ final class MatrizChartSnapshotTests: XCTestCase {
         }, to: "matriz_escalerita")
     }
 
+    /// FER-118 · Los dos hilos de puntos del guardián, en sus estados: calma (HOY con anillo),
+    /// una fuera, el par ámbar con nudo, sin base de respiración (sin banda abajo), leyendo una
+    /// noche (cursor, anillo apagado) y sin datos (rejilla fantasma). Motion apagado ⇒ el anillo
+    /// queda fijo (fase 0), así el PNG es determinista.
+    @MainActor func test_hilos() throws {
+        func serie(_ f: (Int) -> (Double?, Double?, Bool)) -> [MatrizCostura.Noche] {
+            (0..<20).map { i in let (t, r, p) = f(i); return .init(temp: t, resp: r, parFuera: p) }
+        }
+        let calma = serie { i in (0.2 + 0.3 * sin(Double(i) / 2), 0.2 + 0.3 * cos(Double(i) / 3), false) }
+        let unaFuera = serie { i in (i == 15 ? 1.35 : 0.2, 0.25, false) }
+        let parFuera = serie { i in (i == 15 ? 1.5 : 0.2, i == 15 ? 1.4 : 0.24, i == 15) }
+        let sinResp = serie { i in (0.2 + 0.3 * sin(Double(i)), nil, false) }
+        let vacio = serie { _ in (nil, nil, false) }
+        try render(VStack(spacing: 14) {
+            MatrizHilos(chartID: "h-calma", noches: calma).frame(width: 340, height: 96)
+            MatrizHilos(chartID: "h-una", noches: unaFuera).frame(width: 340, height: 96)
+            MatrizHilos(chartID: "h-par", noches: parFuera).frame(width: 340, height: 96)
+            MatrizHilos(chartID: "h-sinresp", noches: sinResp).frame(width: 340, height: 96)
+            MatrizHilos(chartID: "h-leyendo", noches: calma, resaltado: 12).frame(width: 340, height: 96)
+            MatrizHilos(chartID: "h-vacio", noches: vacio).frame(width: 340, height: 96)
+        }.environment(\.liquidMotionDisabled, true), to: "matriz_hilos")
+    }
+
     @MainActor private func render<V: View>(_ content: V, to name: String) throws {
         let renderer = ImageRenderer(content: content.padding(24).background(LiquidColor.papelMatriz))
         renderer.scale = 2
