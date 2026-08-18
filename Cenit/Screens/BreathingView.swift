@@ -17,6 +17,7 @@ struct BreathingView: View {
 
     @Environment(AppModel.self) private var model
     @Environment(\.instrumentoTheme) private var theme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     // MARK: Pace presets
 
@@ -139,8 +140,8 @@ struct BreathingView: View {
 
     private var statusRow: some View {
         HStack(spacing: 10) {
-            pill(running ? "Session live" : "Ready",
-                 dotColor: running ? theme.dataRecovery : nil)
+            EntrenarStatusPill(running ? "Session live" : "Ready",
+                               dotColor: running ? theme.dataRecovery : nil)
 
             Spacer()
 
@@ -154,35 +155,6 @@ struct BreathingView: View {
                     .foregroundStyle(theme.inkSecondary)
             }
         }
-    }
-
-    /// A quiet «Instrumento» status pill — surface capsule, ink label, an optional
-    /// colored dot (the only place a hue rides chrome here, to mark live/warn state).
-    private func pill(_ text: LocalizedStringKey, dotColor: Color?) -> some View {
-        HStack(spacing: 6) {
-            if let dotColor {
-                Circle().fill(dotColor).frame(width: 6, height: 6)
-            }
-            Text(text)
-                .font(StrandFont.caption)
-                .foregroundStyle(theme.ink)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .background(theme.surface, in: Capsule(style: .continuous))
-        .overlay(Capsule(style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
-    }
-
-    /// A contained «Instrumento» group — surface card with a hairline edge. Used
-    /// sparingly (rule 3); the orb / readouts need a held surface to sit on.
-    @ViewBuilder
-    private func card<V: View>(padding: CGFloat = 16, @ViewBuilder _ content: () -> V) -> some View {
-        content()
-            .padding(padding)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
-                .strokeBorder(theme.hairline, lineWidth: 1))
     }
 
     // MARK: - Pace selector
@@ -236,14 +208,14 @@ struct BreathingView: View {
                     .strokeBorder(selected ? theme.softStroke(theme.dataHrv) : theme.hairline, lineWidth: 1)
             )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(EntrenarPressStyle())
         .accessibilityAddTraits(selected ? [.isSelected] : [])
     }
 
     // MARK: - The orb
 
     private var orbCard: some View {
-        card(padding: 24) {
+        EntrenarToolCard(padding: 24) {
             VStack(spacing: 18) {
                 HStack {
                     Text(pace.label).groteskOverline().foregroundStyle(theme.inkTertiary)
@@ -260,8 +232,8 @@ struct BreathingView: View {
                 Text(running ? phaseWord : pace.tagline)
                     .font(StrandFont.subhead)
                     .foregroundStyle(running ? theme.ink : theme.inkSecondary)
-                    .animation(.easeInOut(duration: 0.2), value: phaseWord)
-                    .animation(.easeInOut(duration: 0.2), value: running)
+                    .strandAnimation(.easeInOut(duration: 0.2), value: phaseWord)
+                    .strandAnimation(.easeInOut(duration: 0.2), value: running)
             }
         }
     }
@@ -274,18 +246,16 @@ struct BreathingView: View {
     }
 
     /// Orb only — progress is scoped here via TimelineView so the rest of the screen
-    /// does not re-evaluate each animation frame (FER-876).
+    /// does not re-evaluate each animation frame (FER-876). Paused whenever the breath
+    /// isn't running OR Reduce Motion is on — frozen at rest, never animated (mismo
+    /// patrón que `OrbeVivo`). Hidden from VoiceOver: `phaseWord` already says
+    /// «Breathe in…/out…», so the orb is redundant motion, not information.
     private var breathingOrb: some View {
-        Group {
-            if running {
-                TimelineView(.animation) { timeline in
-                    orbGeometry(progress: easedProgress(at: timeline.date))
-                }
-            } else {
-                // At rest: fully contracted, no TimelineView ticks.
-                orbGeometry(progress: 0)
-            }
+        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !running || reduceMotion)) { timeline in
+            let progress = (running && !reduceMotion) ? easedProgress(at: timeline.date) : 0
+            orbGeometry(progress: progress)
         }
+        .accessibilityHidden(true)
     }
 
     /// easeInOut cubic progress for the current phase at `date`.
@@ -366,7 +336,7 @@ struct BreathingView: View {
                     .background(running ? theme.critical : theme.ink,
                                 in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(EntrenarPressStyle())
 
             Button {
                 model.buzz(loops: 1)
@@ -381,7 +351,7 @@ struct BreathingView: View {
                     .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
                         .strokeBorder(theme.hairlineStrong, lineWidth: 1))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(EntrenarPressStyle())
         }
     }
 
@@ -406,7 +376,7 @@ struct BreathingView: View {
     /// `String(localized:)` en cada rama.
     private func readoutTile(label: LocalizedStringKey, value: String, unit: LocalizedStringKey,
                              accent: Color, caption: String) -> some View {
-        card(padding: 14) {
+        EntrenarToolCard(padding: 14) {
             VStack(alignment: .leading, spacing: 0) {
                 Text(label).groteskOverline().foregroundStyle(theme.inkTertiary)
                 Spacer(minLength: 6)
@@ -444,7 +414,7 @@ struct BreathingView: View {
     private func stop() {
         running = false
         phaseDeadline = .distantFuture
-        // Orb snaps to contracted rest (progress 0) via the !running branch of breathingOrb.
+        // Orb snaps to contracted rest (progress 0) and pauses: `breathingOrb` gates on `running`.
     }
 
     /// Begin a breath phase: set the target, schedule its end, and (optionally)
@@ -480,3 +450,18 @@ struct BreathingView: View {
         return String(format: "%02d:%02d", m, s)
     }
 }
+
+#if DEBUG
+#Preview("Breathe · Instrumento") {
+    BreathingView()
+        .environment(AppModel.preview)
+        .frame(width: 390, height: 900)
+}
+
+#Preview("Breathe · xxxLarge (AX5)") {
+    BreathingView()
+        .environment(AppModel.preview)
+        .frame(width: 390, height: 1100)
+        .dynamicTypeSize(.accessibility5)
+}
+#endif

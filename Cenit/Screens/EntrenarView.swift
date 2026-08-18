@@ -1614,10 +1614,11 @@ struct RestDayScreen: View {
                 Text(title).font(StrandFont.body).foregroundStyle(theme.ink)
                 Spacer(minLength: 8)
                 StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkDim)
+                    .accessibilityHidden(true)
             }
-            .padding(.vertical, 14).contentShape(Rectangle())
+            .frame(minHeight: EntrenarMetrics.row).contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(EntrenarPressStyle())
         .overlay(alignment: .bottom) { if !last { Divider().overlay(theme.hairline) } }
     }
 

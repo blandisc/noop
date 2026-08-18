@@ -18,6 +18,7 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 struct IntervalTimerView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.instrumentoTheme) private var theme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     // MARK: Config (persisted only in-view)
 
@@ -139,7 +140,7 @@ struct IntervalTimerView: View {
                     .foregroundStyle(theme.ink)
             }
 
-            card {
+            EntrenarToolCard {
                 VStack(alignment: .leading, spacing: 14) {
                     configStepper(title: "Work", unit: "sec", value: $workSeconds,
                                   range: 5...600, step: 5, tint: theme.dataStrain)
@@ -169,7 +170,7 @@ struct IntervalTimerView: View {
                     .padding(.vertical, 13)
                     .background(theme.dataStrain, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(EntrenarPressStyle())
         }
     }
 
@@ -179,46 +180,19 @@ struct IntervalTimerView: View {
         HStack(spacing: 10) {
             Spacer()
             if running {
-                pill("Running", dotColor: theme.dataStrain)
+                EntrenarStatusPill("Running", dotColor: theme.dataStrain)
             } else if isFinished {
-                pill("Complete", dotColor: theme.dataRecovery)
+                EntrenarStatusPill("Complete", dotColor: theme.dataRecovery)
             } else {
-                pill("Paused", dotColor: nil)
+                EntrenarStatusPill("Paused")
             }
         }
-    }
-
-    /// A quiet «Instrumento» status pill — surface capsule, ink label, optional dot.
-    private func pill(_ text: LocalizedStringKey, dotColor: Color?) -> some View {
-        HStack(spacing: 6) {
-            if let dotColor {
-                Circle().fill(dotColor).frame(width: 6, height: 6)
-            }
-            Text(text)
-                .font(StrandFont.caption)
-                .foregroundStyle(theme.ink)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .background(theme.surface, in: Capsule(style: .continuous))
-        .overlay(Capsule(style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
-    }
-
-    /// A contained «Instrumento» group — surface card with a hairline edge.
-    @ViewBuilder
-    private func card<V: View>(@ViewBuilder _ content: () -> V) -> some View {
-        content()
-            .padding(CenitMetrics.cardPadding)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
-                .strokeBorder(theme.hairline, lineWidth: 1))
     }
 
     // MARK: Stage card — the big glanceable face
 
     private var stageCard: some View {
-        card {
+        EntrenarToolCard {
             VStack(spacing: 18) {
                 // Phase + round line
                 HStack(alignment: .firstTextBaseline) {
@@ -251,7 +225,7 @@ struct IntervalTimerView: View {
                             .instrumentoHero(96)
                             .foregroundStyle(isFinished ? theme.dataRecovery : theme.ink)
                             .contentTransition(.numericText())
-                            .animation(.snappy, value: remaining)
+                            .strandAnimation(.snappy, value: remaining)
                         Text(isFinished ? "SESSION DONE" : "SECONDS")
                             .instrumentoOverline()
                             .foregroundStyle(theme.inkTertiary)
@@ -265,6 +239,8 @@ struct IntervalTimerView: View {
         }
     }
 
+    /// Hidden from VoiceOver: the numeral (`remaining`) and `phase.label`, already read as part of
+    /// `stageCard`, cover the same ground in text — the ring is redundant motion, not information.
     private var intervalRing: some View {
         ZStack {
             // Flat track — a faint warm rule, no glow (Instrumento drops the dark
@@ -275,9 +251,10 @@ struct IntervalTimerView: View {
                 .trim(from: 0, to: isFinished ? 1 : intervalProgress)
                 .stroke(phaseColor, style: StrokeStyle(lineWidth: 16, lineCap: .round))
                 .rotationEffect(.degrees(-90))
-                .animation(.linear(duration: 0.9), value: intervalProgress)
+                .strandAnimation(.linear(duration: 0.9), value: intervalProgress)
         }
         .frame(width: 240, height: 240)
+        .accessibilityHidden(true)
     }
 
     /// Compact round progress bars above the ring (one capsule per planned round).
@@ -323,7 +300,7 @@ struct IntervalTimerView: View {
                     .padding(.vertical, 13)
                     .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(EntrenarPressStyle())
 
             Button {
                 stopAndReset()
@@ -337,7 +314,7 @@ struct IntervalTimerView: View {
                     .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
                         .strokeBorder(theme.hairlineStrong, lineWidth: 1))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(EntrenarPressStyle())
             .disabled(!running && remaining == phaseDuration && currentRound == 1 && phase == .work && elapsed == 0)
         }
     }
@@ -345,7 +322,7 @@ struct IntervalTimerView: View {
     // MARK: Overview card — elapsed / planned
 
     private var overviewCard: some View {
-        card {
+        EntrenarToolCard {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(alignment: .firstTextBaseline) {
                     Text("Session").instrumentoOverline().foregroundStyle(theme.inkTertiary)
@@ -363,7 +340,7 @@ struct IntervalTimerView: View {
                         Capsule()
                             .fill(theme.dataStrain)
                             .frame(width: geo.size.width * sessionProgress)
-                            .animation(.linear(duration: 0.9), value: sessionProgress)
+                            .strandAnimation(.linear(duration: 0.9), value: sessionProgress)
                     }
                 }
                 .frame(height: 8)
@@ -463,7 +440,7 @@ struct IntervalTimerView: View {
     }
 
     private func finishSession() {
-        withAnimation(.snappy) {
+        withAnimation(StrandMotion.gated(.snappy, reduceMotion)) {
             phase = .done
             remaining = 0
             running = false
@@ -526,5 +503,12 @@ struct IntervalTimerView: View {
     IntervalTimerView()
         .environment(AppModel.preview)
         .frame(width: 720, height: 900)
+}
+
+#Preview("Interval Timer · xxxLarge (AX5)") {
+    IntervalTimerView()
+        .environment(AppModel.preview)
+        .frame(width: 390, height: 1100)
+        .dynamicTypeSize(.accessibility5)
 }
 #endif

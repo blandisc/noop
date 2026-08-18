@@ -104,5 +104,12 @@ struct WorkshopTricksScreen: View {
         .instrumentoTheme(.base)
         .preferredColorScheme(.light)
 }
+
+#Preview("Trucos del taller · xxxLarge (AX5)") {
+    NavigationStack { WorkshopTricksScreen() }
+        .instrumentoTheme(.base)
+        .preferredColorScheme(.light)
+        .dynamicTypeSize(.accessibility5)
+}
 #endif
 #endif
