@@ -466,7 +466,6 @@ final class Repository: ObservableObject {
                 // Si esta lectura devuelve exactamente el límite (80_000), puede venir truncada para
                 // las noches más viejas de la ventana — no se rellena ni se reintenta; el diccionario
                 // simplemente refleja lo que trajo esta única lectura (honesto, no inventado).
-                var thirdsRows: [MetricPoint] = []
                 for session in recentSleeps {
                     let dayKey = Self.localDayKey(Date(timeIntervalSince1970: Double(session.endTs)))
                     // Decode the hypnogram ONCE for this night; both reads below use it.
@@ -491,24 +490,6 @@ final class Repository: ObservableObject {
                         nocturnalRestingHr[dayKey] = bpm
                     }
 
-                    // FER-7 · Veredicto v4 Fase 4: first-third vs last-third delta of the sleeping HR,
-                    // computed HERE (same wall-clock frame as `sessionHR`, so never the coordinate
-                    // mismatch that returns nil) and persisted per night; the sleep-detail screen reads
-                    // the scalar. Asleep = non-wake stage segments, or the whole session window when
-                    // staging is unavailable (same fallback as NightAutonomicShape). Descriptive only.
-                    let asleepSpans: [NightAutonomicShape.AsleepSpan] = {
-                        let nonWake = segs.filter { $0.stage != "wake" }
-                            .map { NightAutonomicShape.AsleepSpan(start: $0.start, end: $0.end) }
-                        return nonWake.isEmpty
-                            ? [NightAutonomicShape.AsleepSpan(start: session.startTs, end: session.endTs)]
-                            : nonWake
-                    }()
-                    if let thirds = NightThirds.compute(hr: sessionHR, asleep: asleepSpans) {
-                        thirdsRows.append(MetricPoint(day: dayKey, key: "night_thirds_delta", value: thirds.deltaBpm))
-                    }
-                }
-                if !thirdsRows.isEmpty {
-                    _ = try? await store.upsertMetricSeries(thirdsRows, deviceId: Self.appleComputedDeviceId)
                 }
             }
         }
@@ -901,16 +882,6 @@ final class Repository: ObservableObject {
     /// Sleep spans (wall-clock seconds) overlapping `[from, to]`, to exclude from the waking reference.
     private func sleepSpans(from: Int, to: Int) async -> [ClosedRange<Int>] {
         (await sleepSessions(from: from, to: to)).compactMap { $0.startTs <= $0.endTs ? $0.startTs...$0.endTs : nil }
-    }
-
-    /// Median nocturnal Deceleration Capacity (ms) over the last `nights` strap nights, for the DC-trend
-    /// baseline the «reserva para bajar de marcha» surface reads against (FER-849). One R-R read per night,
-    /// so it's heavy — the caller runs it off the hot path (async loader). Each night's DC is computed over
-    /// its sleep session span (same span the surface uses tonight, so the trend isn't biased by method).
-    /// nil unless at least 3 recent nights read cleanly (an honest "no baseline yet" ⇒ no trend arrow).
-    func nocturnalDCBaseline(nights: Int = 14) async -> Double? {
-        // FER-1003: strap nocturnal-DC path is dormant under Apple-only.
-        return nil
     }
 
     /// Per-day intraday-stress summaries (FER-378), reassembled from `metricSeries`, last `days` days.

@@ -1,5 +1,6 @@
 #if os(iOS)
 import XCTest
+import StrandDesign
 @testable import Cenit
 
 /// El calendario de 90 noches del detalle de Sueño consume HORAS, no minutos.
@@ -62,6 +63,78 @@ final class SleepCalendarUnitTests: XCTestCase {
             let suficiente = SleepDetailScreen.sleepWord(horas) == String(localized: "Enough sleep")
             XCTAssertEqual(lleno, suficiente, "a \(horas) h el color y la palabra discrepan")
         }
+    }
+}
+
+// MARK: - Latencia
+
+/// La latencia se deriva del hipnograma: el tramo despierto con el que abre la noche, antes
+/// del primer sueño. Estos casos salen del arnés de la auditoría numérica, que probó en frío
+/// que la primera versión reportaba 480 min sobre una noche donde nunca hubo sueño.
+extension SleepCalendarUnitTests {
+
+    private func iv(_ s: SleepStage, _ desdeMin: Double, _ hastaMin: Double) -> SleepInterval {
+        SleepInterval(stage: s, start: desdeMin * 60, end: hastaMin * 60)
+    }
+
+    func test_latencia_abreDespiertoYLuegoDuerme() {
+        XCTAssertEqual(SleepDetailScreen.latenciaMin([iv(.awake, 0, 12), iv(.light, 12, 300)])!,
+                       12, accuracy: 0.001)
+    }
+
+    func test_latencia_uneTramosDespiertosContiguos() {
+        let n = [iv(.awake, 0, 5), iv(.awake, 5, 18), iv(.light, 18, 300)]
+        XCTAssertEqual(SleepDetailScreen.latenciaMin(n)!, 18, accuracy: 0.001)
+    }
+
+    /// El defecto que motiva estas pruebas: 8 h de vigilia NO son una latencia.
+    func test_latencia_esNil_siLaNocheNuncaLlegaADormirse() {
+        XCTAssertNil(SleepDetailScreen.latenciaMin([iv(.awake, 0, 480)]),
+                     "480 min de vigilia se reportaban como latencia")
+        XCTAssertNil(SleepDetailScreen.latenciaMin([iv(.awake, 0, 100), iv(.awake, 100, 400)]),
+                     "dos tramos despiertos sin sueño tampoco son latencia")
+    }
+
+    /// Dos fuentes escribiendo a la vez producen tramos solapados; sin tope, un despierto
+    /// 0–30 que solapa un sueño que arrancó en el 10 reportaba 30 — el triple.
+    func test_latencia_noSobreReportaConTramosSolapados() {
+        let n = [iv(.awake, 0, 30), iv(.light, 10, 300)]
+        XCTAssertEqual(SleepDetailScreen.latenciaMin(n)!, 10, accuracy: 0.001)
+    }
+
+    func test_latencia_esNil_siLaNocheAbreDormida() {
+        XCTAssertNil(SleepDetailScreen.latenciaMin([iv(.light, 0, 300)]))
+    }
+
+    func test_latencia_toleraDesordenYTramosDeCeroSegundos() {
+        let n = [iv(.light, 12, 300), iv(.awake, 0, 0), iv(.awake, 0, 12)]
+        XCTAssertEqual(SleepDetailScreen.latenciaMin(n)!, 12, accuracy: 0.001)
+    }
+
+    func test_latencia_vacio() {
+        XCTAssertNil(SleepDetailScreen.latenciaMin([]))
+    }
+
+    // MARK: - El formateador no depende de que lo protejan
+
+    func test_horasReloj_clampeaNegativosYNoTruenaConInfinito() {
+        XCTAssertEqual(SleepDetailScreen.horasReloj(-0.5), "0:00", "imprimía «0:-30»")
+        XCTAssertEqual(SleepDetailScreen.horasReloj(.infinity), "—", "hacía TRAP")
+        XCTAssertEqual(SleepDetailScreen.horasReloj(.nan), "—")
+    }
+
+    // MARK: - La unión que las pruebas dicen proteger
+
+    /// Los peldaños del calendario se derivan de `bandasSueno`, no de números re-escritos:
+    /// mover la escalera del historial dejaba el calendario divergente con la suite en verde.
+    func test_losPeldañosSalenDeLaEscaleraDelHistorial() {
+        let b = SleepDetailScreen.bandasSueno
+        XCTAssertEqual(SleepDetailScreen.intensidadSueno(b[0].lo!), 1)
+        XCTAssertEqual(SleepDetailScreen.sleepWord(b[0].lo!), b[0].label)
+        XCTAssertEqual(SleepDetailScreen.intensidadSueno(b[1].lo!), 0.5)
+        XCTAssertEqual(SleepDetailScreen.sleepWord(b[1].lo!), b[1].label)
+        XCTAssertEqual(SleepDetailScreen.intensidadSueno(b[1].lo! - 0.01), 0)
+        XCTAssertEqual(SleepDetailScreen.sleepWord(b[1].lo! - 0.01), b[2].label)
     }
 }
 #endif

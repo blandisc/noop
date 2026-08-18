@@ -16,10 +16,13 @@ import Foundation
 //
 // Tres decisiones del dueño (2026-08-17) van dentro:
 //   1. el héroe conserva LOS DOS datos (horas | regularidad) en UN solo campo;
-//   2. «Forma de la noche» se abre a Apple (solo necesita la FC del reloj, que Apple sí entrega)
-//      y «Reserva para bajar de marcha» (DC nocturna) se ELIMINA — con ella se van `loadNightRR`
-//      y `loadDCBaseline`, que no tenían otro consumidor;
-//   3. el orden es de tres actos: lo que dormiste → lo que hizo tu corazón → el tiempo.
+//   2. se ELIMINAN los tres bloques que no podían dibujarse: «Reserva para bajar de marcha»
+//      (necesita latido a latido, que Apple no entrega) y «Forma de la noche» + «Primer tercio
+//      vs último» (necesitan la FC MIENTRAS DUERMES, y la app solo importa la de los
+//      entrenamientos). Con ellos se van sus loaders inyectados y el cómputo que quedó sin
+//      lector. Traer la FC nocturna es un issue aparte; entonces los bloques vuelven;
+//   3. entra una sección de Regularidad con la MISMA tarjeta de la hoja de resumen;
+//   4. el orden es de tres actos: lo que dormiste → cómo se compara → el tiempo.
 //
 // Se presenta como hoja (TodayView) o como capa (CuerpoView, `DetailChrome`), con el tema vivo
 // explícito (FER-162 — hoy solo lo consume `SleepStagesInfoSheet`, que sigue en papel) y SIN
@@ -636,13 +639,22 @@ struct SleepDetailScreen: View {
     static func latenciaMin(_ intervalos: [SleepInterval]) -> Double? {
         let orden = intervalos.filter { $0.end > $0.start }.sorted { $0.start < $1.start }
         guard let primero = orden.first, primero.stage == .awake else { return nil }
-        // El despierto de apertura puede venir partido en varios tramos contiguos.
+
+        // El primer tramo de SUEÑO es la condición: sin él no hubo latencia que medir, hubo
+        // una noche en vela. Sin esta guarda, una sesión de 8 h enteramente despierta
+        // devolvía 480 y la cajita imprimía «480 min» junto a «10–20 sano».
+        guard let onset = orden.first(where: { $0.stage != .awake }) else { return nil }
+
+        // El despierto de apertura puede venir partido en tramos contiguos, pero NUNCA puede
+        // pasarse del onset: dos fuentes de sueño escribiendo a la vez producen tramos
+        // solapados, y sin el tope un awake 0–30 que solapa un sueño que arrancó en el 10
+        // reportaba 30 (el triple de lo real).
         var fin = primero.end
         for iv in orden.dropFirst() {
             guard iv.stage == .awake, iv.start <= fin + 1 else { break }
             fin = max(fin, iv.end)
         }
-        let minutos = (fin - orden[0].start) / 60
+        let minutos = (min(fin, onset.start) - primero.start) / 60
         return minutos > 0 ? minutos : nil
     }
 
@@ -882,9 +894,7 @@ struct SleepDetailScreen: View {
             }.count
             LiquidFraseNivel(
                 nivel: b.label,
-                conteo: n == 1
-                    ? String(localized: "\(n) of your last \(window.values.count) nights")
-                    : String(localized: "\(n) of your last \(window.values.count) nights"),
+                conteo: String(localized: "\(n) of your last \(window.values.count) nights"),
                 tono: Self.tono)
         } else {
             LiquidFraseNivel(
@@ -928,8 +938,7 @@ struct SleepDetailScreen: View {
 
     /// Los tres carriles de duración. El corte bajo es 6.3 h, el mismo que usa el calendario
     /// desde esta migración (antes el calendario cortaba en 6 y las dos piezas discrepaban).
-    static var bandasSueno: [BandaSueno] {
-        [
+    static let bandasSueno: [BandaSueno] = [
             .init(label: String(localized: "Enough sleep"), lo: 7, hi: nil,
                   color: LiquidColor.indigo, range: "≥ 7"),
             .init(label: String(localized: "A bit short"), lo: 6.3, hi: 7,
@@ -937,8 +946,7 @@ struct SleepDetailScreen: View {
                   range: "6.3–7"),
             .init(label: String(localized: "Short sleep"), lo: nil, hi: 6.3,
                   color: LiquidColor.atencion, range: "< 6.3"),
-        ]
-    }
+    ]
 
     /// El dominio Y del historial: 5–10 h, como el papel.
     private static let dominioSueno: ClosedRange<Double> = 5...10
@@ -1008,7 +1016,11 @@ struct SleepDetailScreen: View {
     /// call site) para que la prueba pueda fijar la unidad: el defecto que la motiva confundía
     /// horas con minutos y nadie podía verlo sin correr la app.
     static func horasReloj(_ horas: Double) -> String {
-        let total = Int((horas * 60).rounded())
+        // Clampeo como su hermano `hoursOnly`: un valor negativo imprimía «0:-30» y un
+        // ±infinito hacía TRAP al convertir a Int. Hoy no es alcanzable (la serie filtra > 0),
+        // pero un formateador no debe depender de que su llamador lo proteja.
+        guard horas.isFinite else { return "—" }
+        let total = Int((Swift.max(0, horas) * 60).rounded())
         return String(format: "%d:%02d", total / 60, total % 60)
     }
 

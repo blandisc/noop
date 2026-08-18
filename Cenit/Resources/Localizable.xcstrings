@@ -20985,7 +20985,24 @@
         }
       }
     },
-  "Enough sleep" : {
+    "your night starts already asleep" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "your night starts already asleep"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+          "state" : "translated",
+            "value" : "tu noche empieza ya dormida"
+          }
+        }
+      }
+    },
+    "Enough sleep" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
