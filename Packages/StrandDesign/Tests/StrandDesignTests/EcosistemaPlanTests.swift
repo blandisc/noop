@@ -363,6 +363,57 @@ final class EcosistemaPlanTests: XCTestCase {
         XCTAssertEqual(MemoryLayout<EcosistemaMarcoU>.stride, 16)
         // Y un draw de átomos debe caber en el límite de 4 KB de `setVertexBytes`.
         XCTAssertLessThanOrEqual(MemoryLayout<EcosistemaAtomoU>.stride * 80, 4096)
+        // El polvo de la atmósfera (FER-118): 6 colores (96) + lienzo/t/desplazamiento (16) +
+        // 16 tokens de física (64) + 4 uint (16) = 192, múltiplo de 16 como exige `constant`.
+        XCTAssertEqual(MemoryLayout<EcosistemaPolvoU>.stride, 192)
+        XCTAssertEqual(MemoryLayout<EcosistemaPolvoU>.stride % 16, 0)
+        // Y no solo el total: los offsets clave (una transposición de dos campos del mismo tamaño
+        // conservaría el stride y desalinearía el shader en silencio) — los SEIS colores uno por uno:
+        // `colorReposo`/`colorSueno` transpuestos pintarían el sueño con la tinta del reposo sin que
+        // el stride ni `colorVigiaResp` se enteraran (revisión adversarial, ronda 4).
+        XCTAssertEqual(MemoryLayout<EcosistemaPolvoU>.offset(of: \.colorClima), 0)
+        XCTAssertEqual(MemoryLayout<EcosistemaPolvoU>.offset(of: \.colorNeutra), 16)
+        XCTAssertEqual(MemoryLayout<EcosistemaPolvoU>.offset(of: \.colorReposo), 32)
+        XCTAssertEqual(MemoryLayout<EcosistemaPolvoU>.offset(of: \.colorSueno), 48)
+        XCTAssertEqual(MemoryLayout<EcosistemaPolvoU>.offset(of: \.colorVigiaTemp), 64)
+        XCTAssertEqual(MemoryLayout<EcosistemaPolvoU>.offset(of: \.colorVigiaResp), 80)
+        XCTAssertEqual(MemoryLayout<EcosistemaPolvoU>.offset(of: \.lienzo), 96)
+        XCTAssertEqual(MemoryLayout<EcosistemaPolvoU>.offset(of: \.t), 104)
+        XCTAssertEqual(MemoryLayout<EcosistemaPolvoU>.offset(of: \.desplazamiento), 108)
+        XCTAssertEqual(MemoryLayout<EcosistemaPolvoU>.offset(of: \.radioMin), 112)
+        XCTAssertEqual(MemoryLayout<EcosistemaPolvoU>.offset(of: \.derivaYRango), 160)
+        XCTAssertEqual(MemoryLayout<EcosistemaPolvoU>.offset(of: \.umbralClima), 172)
+        XCTAssertEqual(MemoryLayout<EcosistemaPolvoU>.offset(of: \.neutra), 176)
+        XCTAssertEqual(MemoryLayout<EcosistemaPolvoU>.offset(of: \.still), 180)
+        XCTAssertEqual(MemoryLayout<EcosistemaPolvoU>.offset(of: \.bordeFade), 184)
+    }
+
+    /// Los tokens del polvo que viajan al shader salen de `PolvoSimulacion.Fisica`, no del
+    /// renderer: si alguien cambia un número allá, la GPU lo ve sin tocar el shader.
+    func testLaFisicaDelPolvoSaleDeLosTokens() {
+        typealias F = PolvoSimulacion.Fisica
+        let paleta = EcosistemaPaleta.desde(clima: LiquidColor.particulaVerde)
+        let u = EcosistemaPolvoU(paleta: paleta, lienzo: CGSize(width: 402, height: 874), t: 3,
+                                 desplazamiento: 120, neutra: false, still: false)
+        XCTAssertEqual(u.radioMin, Float(F.radioMin)); XCTAssertEqual(u.radioMax, Float(F.radioMax))
+        XCTAssertEqual(u.alfaBase, Float(F.alfaBase)); XCTAssertEqual(u.alfaRango, Float(F.alfaRango))
+        XCTAssertEqual(u.densidadPiso, Float(F.densidadPiso))
+        XCTAssertEqual(u.densidadDesde, Float(F.densidadDesde))
+        XCTAssertEqual(u.densidadHasta, Float(F.densidadHasta))
+        XCTAssertEqual(u.respiracionAmp, Float(F.respiracionAmp))
+        XCTAssertEqual(u.respiracionWMin, Float(F.respiracionWMin))
+        XCTAssertEqual(u.respiracionWRango, Float(F.respiracionWRango))
+        XCTAssertEqual(u.derivaXMax, Float(F.derivaXMax)); XCTAssertEqual(u.derivaYMin, Float(F.derivaYMin))
+        XCTAssertEqual(u.derivaYRango, Float(F.derivaYRango)); XCTAssertEqual(u.parallax, Float(F.parallax))
+        XCTAssertEqual(u.alfaNeutra, Float(F.alfaNeutra)); XCTAssertEqual(u.umbralClima, Float(F.umbralClima))
+        XCTAssertEqual(u.bordeFade, Float(F.bordeFade))
+        XCTAssertEqual(u.lienzo, SIMD2<Float>(402, 874)); XCTAssertEqual(u.t, 3)
+        XCTAssertEqual(u.desplazamiento, 120); XCTAssertEqual(u.neutra, 0); XCTAssertEqual(u.still, 0)
+        XCTAssertEqual(u.colorClima, paleta.clima); XCTAssertEqual(u.colorSueno, paleta.sueno)
+        // El overscroll del pull (negativo) NO llega al shader.
+        let arriba = EcosistemaPolvoU(paleta: paleta, lienzo: CGSize(width: 402, height: 874), t: 0,
+                                      desplazamiento: -60, neutra: true, still: true)
+        XCTAssertEqual(arriba.desplazamiento, 0); XCTAssertEqual(arriba.neutra, 1); XCTAssertEqual(arriba.still, 1)
     }
 
     /// La física que viaja al shader sale de los MISMOS tokens que usa el Canvas.

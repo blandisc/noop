@@ -103,7 +103,8 @@ final class EcosistemaMetalRenderTests: XCTestCase {
         let recursos = EcosistemaMetal.Recursos(device: device, cola: cola,
                                                 nube: try pipeline("vsNube"),
                                                 nubeMorfo: try pipeline("vsNubeMorfo"),
-                                                atomo: try pipeline("vsAtomo"))
+                                                atomo: try pipeline("vsAtomo"),
+                                                polvo: try pipeline("vsPolvo"))
         let descriptor = MTLTextureDescriptor.texture2DDescriptor(
             pixelFormat: EcosistemaMetal.formato, width: Self.ancho, height: Self.alto,
             mipmapped: false)
@@ -314,3 +315,131 @@ final class EcosistemaMetalRenderTests: XCTestCase {
     }
 }
 #endif
+
+
+// MARK: - El polvo de la atmósfera (FER-118), renderizado de verdad
+
+/// `vsPolvo` compila en la MISMA librería que el héroe y pinta lo que `PolvoSimulacion` manda.
+/// Es el gate del PR: un error de compilación aquí tumbaría también el Metal del héroe.
+extension EcosistemaMetalRenderTests {
+    private func renderizarPolvo(t: TimeInterval, desplazamiento: CGFloat = 0, neutra: Bool = false,
+                                 still: Bool = false, ambiente: LiquidAmbiente = .bien) throws -> [Float] {
+        guard let device = MTLCreateSystemDefaultDevice(), let cola = device.makeCommandQueue() else {
+            throw XCTSkip("sin GPU de Metal en este entorno")
+        }
+        guard let url = Bundle.module.url(forResource: "EcosistemaShaders", withExtension: "msl"),
+              let fuente = try? String(contentsOf: url, encoding: .utf8) else {
+            throw XCTSkip("no se encontró EcosistemaShaders.msl en el bundle")
+        }
+        let libreria: MTLLibrary
+        do { libreria = try device.makeLibrary(source: fuente, options: nil) } catch {
+            throw XCTSkip("el compilador de MSL no está disponible: \(error)")
+        }
+        let d = MTLRenderPipelineDescriptor()
+        d.vertexFunction = try XCTUnwrap(libreria.makeFunction(name: "vsPolvo"))
+        d.fragmentFunction = try XCTUnwrap(libreria.makeFunction(name: "fsTrazo"))
+        let a = try XCTUnwrap(d.colorAttachments[0])
+        a.pixelFormat = EcosistemaMetal.formato
+        a.isBlendingEnabled = true
+        a.rgbBlendOperation = .add; a.alphaBlendOperation = .add
+        a.sourceRGBBlendFactor = .one; a.sourceAlphaBlendFactor = .one
+        a.destinationRGBBlendFactor = .oneMinusSourceAlpha; a.destinationAlphaBlendFactor = .oneMinusSourceAlpha
+        let polvo = try device.makeRenderPipelineState(descriptor: d)
+        // Los pipelines del héroe no hacen falta para el polvo, pero `Recursos` los exige.
+        let recursos = EcosistemaMetal.Recursos(device: device, cola: cola, nube: polvo,
+                                                nubeMorfo: polvo, atomo: polvo, polvo: polvo)
+        let ancho = 200, alto = 400
+        let descriptor = MTLTextureDescriptor.texture2DDescriptor(
+            pixelFormat: EcosistemaMetal.formato, width: ancho, height: alto, mipmapped: false)
+        descriptor.usage = [.renderTarget, .shaderRead]
+        #if os(macOS)
+        descriptor.storageMode = .managed
+        #endif
+        let textura = try XCTUnwrap(device.makeTexture(descriptor: descriptor))
+        let renderer = try XCTUnwrap(EcosistemaPolvoRenderer(
+            recursos: recursos, paleta: .desde(clima: ambiente.particulaColor)))
+        renderer.t = t
+        renderer.desplazamiento = desplazamiento
+        renderer.neutra = neutra
+        renderer.still = still
+        renderer.renderizar(en: textura)
+        var bytes = [UInt8](repeating: 0, count: ancho * alto * 4)
+        bytes.withUnsafeMutableBytes { crudo in
+            textura.getBytes(crudo.baseAddress!, bytesPerRow: ancho * 4,
+                             from: MTLRegionMake2D(0, 0, ancho, alto), mipmapLevel: 0)
+        }
+        return stride(from: 3, to: bytes.count, by: 4).map { Float(bytes[$0]) / 255 }
+    }
+
+    func testElPolvoCompilaYPintaAlgo() throws {
+        let alfa = try renderizarPolvo(t: 3)
+        let cubiertos = alfa.filter { $0 > 0.01 }.count
+        XCTAssertGreaterThan(cubiertos, 200, "el polvo tiene que pintar motas")
+        XCTAssertLessThan(cubiertos, alfa.count / 4, "y no lavar el lienzo: son motas, no un velo")
+    }
+
+    func testElPolvoEsDeterminista() throws {
+        XCTAssertEqual(try renderizarPolvo(t: 3), try renderizarPolvo(t: 3))
+    }
+
+    func testElPolvoVive() throws {
+        let a = try renderizarPolvo(t: 3), b = try renderizarPolvo(t: 6)
+        XCTAssertNotEqual(a, b, "con el tiempo las motas se mueven y respiran")
+    }
+
+    func testElPolvoQuietoIgnoraElTiempoYElParallax() throws {
+        let a = try renderizarPolvo(t: 0, still: true)
+        XCTAssertEqual(a, try renderizarPolvo(t: 99, still: true))
+        XCTAssertEqual(a, try renderizarPolvo(t: 99, desplazamiento: 300, still: true))
+    }
+
+    func testElParallaxMueveElPolvo() throws {
+        let quieto = try renderizarPolvo(t: 3), movido = try renderizarPolvo(t: 3, desplazamiento: 200)
+        XCTAssertNotEqual(quieto, movido)
+    }
+
+    func testElPolvoNeutroPintaMasTenue() throws {
+        let color = try renderizarPolvo(t: 3), neutro = try renderizarPolvo(t: 3, neutra: true, ambiente: .neutro)
+        XCTAssertLessThan(neutro.reduce(0, +), color.reduce(0, +) * 0.75,
+                          "sin veredicto el polvo baja a ~55 % de alfa")
+    }
+
+    /// El crossfade del clima interpola la paleta en el renderer, no en SwiftUI.
+    func testElCrossfadeDelClimaInterpolaLaPaleta() throws {
+        guard let device = MTLCreateSystemDefaultDevice(), let cola = device.makeCommandQueue() else {
+            throw XCTSkip("sin GPU de Metal en este entorno")
+        }
+        // El renderer necesita un pipeline real solo para inicializarse; aquí solo se prueba
+        // la interpolación, así que se toma prestado el del héroe.
+        guard let url = Bundle.module.url(forResource: "EcosistemaShaders", withExtension: "msl"),
+              let fuente = try? String(contentsOf: url, encoding: .utf8),
+              let libreria = try? device.makeLibrary(source: fuente, options: nil) else {
+            throw XCTSkip("sin compilador de MSL")
+        }
+        let d = MTLRenderPipelineDescriptor()
+        d.vertexFunction = libreria.makeFunction(name: "vsPolvo")
+        d.fragmentFunction = libreria.makeFunction(name: "fsTrazo")
+        d.colorAttachments[0].pixelFormat = EcosistemaMetal.formato
+        let p = try device.makeRenderPipelineState(descriptor: d)
+        let recursos = EcosistemaMetal.Recursos(device: device, cola: cola, nube: p, nubeMorfo: p, atomo: p, polvo: p)
+        let verde = EcosistemaPaleta.desde(clima: LiquidColor.particulaVerde)
+        let roja = EcosistemaPaleta.desde(clima: LiquidColor.particulaRoja)
+        let r = try XCTUnwrap(EcosistemaPolvoRenderer(recursos: recursos, paleta: verde))
+        r.fijar(paleta: roja, en: 10, duracion: 1.6)
+        XCTAssertEqual(r.paleta(en: 10), verde)
+        XCTAssertEqual(r.paleta(en: 11.6), roja)
+        XCTAssertEqual(r.paleta(en: 20), roja)
+        let medio = r.paleta(en: 10.8).clima
+        XCTAssertEqual(medio.x, (verde.clima.x + roja.clima.x) / 2, accuracy: 0.002)
+        XCTAssertEqual(medio.y, (verde.clima.y + roja.clima.y) / 2, accuracy: 0.002)
+        // Duración 0 (Reduce Motion): instantáneo.
+        r.fijar(paleta: verde, en: 30, duracion: 0)
+        XCTAssertEqual(r.paleta(en: 30), verde)
+        // Y un reloj que RETROCEDE (la atmósfera re-basa `inicio` al reanudar tras `maxSesion`)
+        // no reabre un fundido terminado: con el fundido a rojo fijado en t = 4000 y completado,
+        // t = 3 (después del re-base) tiene que seguir dando ROJO, no el verde de antes.
+        r.fijar(paleta: roja, en: 4000, duracion: 1.6)
+        XCTAssertEqual(r.paleta(en: 4001.6), roja)
+        XCTAssertEqual(r.paleta(en: 3), roja, "el reloj retrocedió: el color del veredicto no puede volver al anterior")
+    }
+}

@@ -73,25 +73,79 @@ struct EcosistemaMarcoU {
     var _pad: SIMD2<Float> = .zero
 }
 
-#if canImport(Metal)
-import Metal
+/// El uniform del POLVO de «Hoy en atmósfera» (FER-118): espejo campo a campo de `PolvoU` en
+/// `EcosistemaShaders.msl` (mismo orden, padding explícito a múltiplo de 16 B; el stride se
+/// afirma en `EcosistemaPlanTests.testLayoutDeLosUniformes`). Los colores ya resueltos de la
+/// paleta del héroe + CADA token de `PolvoSimulacion.Fisica`: el shader no tiene números propios.
+struct EcosistemaPolvoU {
+    var colorClima: SIMD4<Float>
+    var colorNeutra: SIMD4<Float>
+    var colorReposo: SIMD4<Float>
+    var colorSueno: SIMD4<Float>
+    var colorVigiaTemp: SIMD4<Float>
+    var colorVigiaResp: SIMD4<Float>
+    var lienzo: SIMD2<Float>
+    /// Segundos desde que el fondo apareció (NUNCA el reloj absoluto: ver `EcosistemaFisicaU`).
+    var t: Float
+    var desplazamiento: Float
+    var radioMin: Float
+    var radioMax: Float
+    var alfaBase: Float
+    var alfaRango: Float
+    var densidadPiso: Float
+    var densidadDesde: Float
+    var densidadHasta: Float
+    var respiracionAmp: Float
+    var respiracionWMin: Float
+    var respiracionWRango: Float
+    var derivaXMax: Float
+    var derivaYMin: Float
+    var derivaYRango: Float
+    var parallax: Float
+    var alfaNeutra: Float
+    var umbralClima: Float
+    var neutra: UInt32
+    var still: UInt32
+    var bordeFade: Float
+    var _p1: UInt32 = 0
 
-// MARK: - «El Ecosistema» · Fase B (FER-13) — el héroe de Hoy en Metal
-//
-// El Canvas de Fase A recorría el plan en CPU y pedía ~40 `fill` por cuadro con ~850
-// elipses adentro. Aquí el MISMO plan (`EcosistemaSimulacion.plan`) se encodea como draws
-// INSTANCIADOS: una nube = un draw, y la posición de cada partícula la deriva el vertex
-// shader de su índice — la GPU nunca recibe una lista de partículas.
-//
-// Qué NO se movió a la GPU, a propósito:
-//   · Los rótulos orbitales: el texto sigue siendo texto real del sistema de diseño,
-//     dibujado por un `EcosistemaCanvas(soloEtiquetas: true)` encima (≤3 rótulos/cuadro,
-//     ya resueltos una sola vez por FER-14 #1).
-//   · El plan mismo: son ~20 structs por cuadro en CPU, ruido frente a lo que ahorra.
-//
-// El Canvas completo sigue siendo el camino de macOS/watchOS, de las previews y de los
-// renders deterministas de QA — y el fallback si este dispositivo no da Metal.
+    init(paleta: EcosistemaPaleta, lienzo: CGSize, t: TimeInterval, desplazamiento: CGFloat,
+         neutra: Bool, still: Bool) {
+        typealias F = PolvoSimulacion.Fisica
+        colorClima = paleta.clima
+        colorNeutra = paleta.neutra
+        colorReposo = paleta.reposo
+        colorSueno = paleta.sueno
+        colorVigiaTemp = paleta.vigiaTemp
+        colorVigiaResp = paleta.vigiaResp
+        self.lienzo = SIMD2<Float>(Float(lienzo.width), Float(lienzo.height))
+        self.t = Float(t)
+        self.desplazamiento = Float(max(0, desplazamiento))
+        radioMin = Float(F.radioMin)
+        radioMax = Float(F.radioMax)
+        alfaBase = Float(F.alfaBase)
+        alfaRango = Float(F.alfaRango)
+        densidadPiso = Float(F.densidadPiso)
+        densidadDesde = Float(F.densidadDesde)
+        densidadHasta = Float(F.densidadHasta)
+        respiracionAmp = Float(F.respiracionAmp)
+        respiracionWMin = Float(F.respiracionWMin)
+        respiracionWRango = Float(F.respiracionWRango)
+        derivaXMax = Float(F.derivaXMax)
+        derivaYMin = Float(F.derivaYMin)
+        derivaYRango = Float(F.derivaYRango)
+        parallax = Float(F.parallax)
+        alfaNeutra = Float(F.alfaNeutra)
+        umbralClima = Float(F.umbralClima)
+        self.neutra = neutra ? 1 : 0
+        self.still = still ? 1 : 0
+        bordeFade = Float(F.bordeFade)
+    }
+}
 
+// La paleta vive FUERA de `#if canImport(Metal)` a propósito (FER-118): es SIMD puro (sin tipos
+// de Metal) y la comparte el `Canvas` de respaldo de la atmósfera, que también compila en watchOS,
+// donde Metal no existe.
 /// Los tokens de partícula ya resueltos a RGBA lineal-de-textura para el shader.
 struct EcosistemaPaleta: Equatable {
     var clima: SIMD4<Float>
@@ -148,6 +202,26 @@ struct EcosistemaPaleta: Equatable {
     }
 }
 
+
+#if canImport(Metal)
+import Metal
+
+// MARK: - «El Ecosistema» · Fase B (FER-13) — el héroe de Hoy en Metal
+//
+// El Canvas de Fase A recorría el plan en CPU y pedía ~40 `fill` por cuadro con ~850
+// elipses adentro. Aquí el MISMO plan (`EcosistemaSimulacion.plan`) se encodea como draws
+// INSTANCIADOS: una nube = un draw, y la posición de cada partícula la deriva el vertex
+// shader de su índice — la GPU nunca recibe una lista de partículas.
+//
+// Qué NO se movió a la GPU, a propósito:
+//   · Los rótulos orbitales: el texto sigue siendo texto real del sistema de diseño,
+//     dibujado por un `EcosistemaCanvas(soloEtiquetas: true)` encima (≤3 rótulos/cuadro,
+//     ya resueltos una sola vez por FER-14 #1).
+//   · El plan mismo: son ~20 structs por cuadro en CPU, ruido frente a lo que ahorra.
+//
+// El Canvas completo sigue siendo el camino de macOS/watchOS, de las previews y de los
+// renders deterministas de QA — y el fallback si este dispositivo no da Metal.
+
 // MARK: - Recursos de Metal (compilados una vez por proceso, fuera del hilo principal)
 
 /// El shader viaja como fuente en el bundle y se compila en runtime (SwiftPM no compila
@@ -164,6 +238,12 @@ final class EcosistemaMetal: ObservableObject {
         let nube: MTLRenderPipelineState
         let nubeMorfo: MTLRenderPipelineState
         let atomo: MTLRenderPipelineState
+        /// El pipeline del POLVO de la atmósfera (FER-118). OPCIONAL a propósito: se arma
+        /// aparte de los del héroe, así un fallo suyo manda solo al polvo al `Canvas` y el
+        /// héroe conserva su Metal. (Ojo: la LIBRERÍA es una sola — un error de compilación
+        /// en `vsPolvo` tumba todo el archivo; eso lo cazan el test offscreen y la assertion
+        /// de DEBUG de `biblioteca(_:)`; este opcional cubre solo `makeRenderPipelineState`.)
+        var polvo: MTLRenderPipelineState? = nil
     }
 
     static let compartido = EcosistemaMetal()
@@ -198,7 +278,9 @@ final class EcosistemaMetal: ObservableObject {
               let atomo = pipeline(device, libreria, vertex: "vsAtomo")
         else { return nil }
         return Recursos(device: device, cola: cola, nube: nube, nubeMorfo: nubeMorfo,
-                        atomo: atomo)
+                        atomo: atomo,
+                        // Fuera del `guard`: si el polvo no arma, el héroe sigue en Metal.
+                        polvo: pipeline(device, libreria, vertex: "vsPolvo"))
     }
 
     /// El shader viaja con extensión `.msl`, no `.metal`, A PROPÓSITO: Xcode compila
@@ -384,6 +466,93 @@ final class EcosistemaMetalRenderer: NSObject {
     }
 }
 
+// MARK: - El polvo de la atmósfera (FER-118): un draw instanciado a pantalla completa
+
+/// Recorre `PolvoSimulacion` en la GPU: UN draw de `n` quads cuya posición deriva el vertex
+/// shader del índice (`vsPolvo`). Hermano de `EcosistemaMetalRenderer` (no un trazo más del
+/// plan del héroe): el héroe vive en un lienzo de 364×324 dentro del scroll a 60 Hz; el polvo es
+/// fijo, a pantalla completa y a 20 Hz. Comparten `Recursos` (una sola compilación del shader).
+final class EcosistemaPolvoRenderer: NSObject {
+    let recursos: EcosistemaMetal.Recursos
+    let pipeline: MTLRenderPipelineState
+
+    var t: TimeInterval = 0
+    var desplazamiento: CGFloat = 0
+    var neutra = false
+    var still = false
+
+    /// El crossfade del clima (1.6 s, `LiquidEcosistemaMotion.ambienteCrossfade`) vive aquí y no
+    /// en SwiftUI: la paleta es un uniform, y `withAnimation` no interpola un `SIMD4`.
+    private var paletaDesde: EcosistemaPaleta
+    private var paletaHacia: EcosistemaPaleta
+    private var inicioCrossfade: TimeInterval = 0
+    private var duracionCrossfade: TimeInterval = 0
+
+    /// `nil` si `recursos.polvo` no armó (el llamador cae al `Canvas`).
+    init?(recursos: EcosistemaMetal.Recursos, paleta: EcosistemaPaleta) {
+        guard let pipeline = recursos.polvo else { return nil }
+        self.recursos = recursos
+        self.pipeline = pipeline
+        self.paletaDesde = paleta
+        self.paletaHacia = paleta
+    }
+
+    /// Cambia el clima: desde la paleta VISIBLE en `t` (aunque un crossfade previo siga a
+    /// medias) hacia `nueva`, en `duracion` segundos (0 = instantáneo, p. ej. Reduce Motion).
+    func fijar(paleta nueva: EcosistemaPaleta, en t: TimeInterval, duracion: TimeInterval) {
+        guard nueva != paletaHacia else { return }
+        paletaDesde = paleta(en: t)
+        paletaHacia = nueva
+        inicioCrossfade = t
+        duracionCrossfade = max(0, duracion)
+    }
+
+    /// La paleta que se ve en `t`: lerp lineal en sRGB entre `desde` y `hacia`, como el
+    /// `ambienteCrossfadeAnim` del héroe.
+    func paleta(en t: TimeInterval) -> EcosistemaPaleta {
+        // Un reloj que RETROCEDE (la atmósfera re-basa `inicio` al reanudar tras `maxSesion`) no
+        // reabre un fundido ya terminado: `t < inicioCrossfade` daría k = 0 y devolvería
+        // `paletaDesde` — el color del veredicto ANTERIOR — durante una hora (revisión final).
+        guard duracionCrossfade > 0, t >= inicioCrossfade else { return paletaHacia }
+        let k = Float(min(1, max(0, (t - inicioCrossfade) / duracionCrossfade)))
+        guard k < 1 else { return paletaHacia }
+        func mix(_ a: SIMD4<Float>, _ b: SIMD4<Float>) -> SIMD4<Float> { a + (b - a) * k }
+        let a = paletaDesde, b = paletaHacia
+        return EcosistemaPaleta(clima: mix(a.clima, b.clima), atencion: mix(a.atencion, b.atencion),
+                                negativo: mix(a.negativo, b.negativo), neutra: mix(a.neutra, b.neutra),
+                                vigia: mix(a.vigia, b.vigia), blanco: mix(a.blanco, b.blanco),
+                                sueno: mix(a.sueno, b.sueno), reposo: mix(a.reposo, b.reposo),
+                                vigiaTemp: mix(a.vigiaTemp, b.vigiaTemp),
+                                vigiaResp: mix(a.vigiaResp, b.vigiaResp))
+    }
+
+    /// Encodea el cuadro en un render pass YA abierto sobre un lienzo de `lienzo` puntos.
+    func encodar(en enc: MTLRenderCommandEncoder, lienzo: CGSize) {
+        let n = PolvoSimulacion.cuenta(lienzo: lienzo)
+        var u = EcosistemaPolvoU(paleta: paleta(en: t), lienzo: lienzo, t: t,
+                                 desplazamiento: desplazamiento, neutra: neutra, still: still)
+        enc.setRenderPipelineState(pipeline)
+        enc.setVertexBytes(&u, length: MemoryLayout<EcosistemaPolvoU>.stride, index: 0)
+        enc.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4, instanceCount: n)
+    }
+
+    /// Un cuadro completo a una textura (el camino de los tests offscreen). El lienzo en puntos
+    /// es el tamaño de la textura.
+    func renderizar(en textura: MTLTexture) {
+        let paso = MTLRenderPassDescriptor()
+        paso.colorAttachments[0].texture = textura
+        paso.colorAttachments[0].loadAction = .clear
+        paso.colorAttachments[0].storeAction = .store
+        paso.colorAttachments[0].clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 0)
+        guard let buffer = recursos.cola.makeCommandBuffer(),
+              let enc = buffer.makeRenderCommandEncoder(descriptor: paso) else { return }
+        encodar(en: enc, lienzo: CGSize(width: textura.width, height: textura.height))
+        enc.endEncoding()
+        buffer.commit()
+        buffer.waitUntilCompleted()
+    }
+}
+
 #if os(iOS) && canImport(MetalKit)
 import MetalKit
 
@@ -436,6 +605,73 @@ struct EcosistemaMetalLienzo: UIViewRepresentable {
         renderer.escena = escena
         renderer.t = t
         renderer.paleta = paleta
+        vista.setNeedsDisplay()
+    }
+}
+
+extension EcosistemaPolvoRenderer: MTKViewDelegate {
+    func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {}
+
+    func draw(in view: MTKView) {
+        // Antes del primer layout los bounds son 0×0: nada que dibujar (y nada entre lo que dividir).
+        guard view.bounds.width > 0, view.bounds.height > 0,
+              let paso = view.currentRenderPassDescriptor,
+              let drawable = view.currentDrawable,
+              let buffer = recursos.cola.makeCommandBuffer(),
+              let enc = buffer.makeRenderCommandEncoder(descriptor: paso) else { return }
+        // El lienzo en PUNTOS: `drawableSize` ya trae la escala; el shader convierte pt → clip.
+        encodar(en: enc, lienzo: view.bounds.size)
+        enc.endEncoding()
+        buffer.present(drawable)
+        buffer.commit()
+    }
+}
+
+/// El polvo de la atmósfera como `MTKView` manejada por SwiftUI (misma receta que
+/// `EcosistemaMetalLienzo`): sin reloj propio, redibuja cuando `LiquidAtmosfera` entrega un `t`
+/// nuevo (20 Hz) o cambia el desplazamiento del scroll (parallax bajo demanda).
+struct AtmosferaMetalLienzo: UIViewRepresentable {
+    let recursos: EcosistemaMetal.Recursos
+    let paleta: EcosistemaPaleta
+    let t: TimeInterval
+    let desplazamiento: CGFloat
+    let neutra: Bool
+    let still: Bool
+    /// Duración del crossfade al cambiar de clima (0 = instantáneo).
+    let crossfade: TimeInterval
+
+    final class Coordinador {
+        var renderer: EcosistemaPolvoRenderer?
+    }
+
+    func makeCoordinator() -> Coordinador { Coordinador() }
+
+    func makeUIView(context: Context) -> MTKView {
+        let vista = MTKView(frame: .zero, device: recursos.device)
+        let renderer = EcosistemaPolvoRenderer(recursos: recursos, paleta: paleta)
+        context.coordinator.renderer = renderer
+        vista.delegate = renderer
+        vista.colorPixelFormat = EcosistemaMetal.formato
+        vista.isPaused = true
+        vista.enableSetNeedsDisplay = true
+        vista.isOpaque = false
+        vista.layer.isOpaque = false
+        // (`framebufferOnly` se queda en su default: el vidrio del sistema muestrea la capa en el
+        // compositor, no leyendo la textura del drawable; bajarlo costaría perf a pantalla
+        // completa. Si en device el vidrio saliera gris plano, es el plan B, no la base.)
+        vista.backgroundColor = .clear
+        vista.clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 0)
+        vista.isUserInteractionEnabled = false
+        return vista
+    }
+
+    func updateUIView(_ vista: MTKView, context: Context) {
+        guard let renderer = context.coordinator.renderer else { return }
+        renderer.fijar(paleta: paleta, en: t, duracion: crossfade)
+        renderer.t = t
+        renderer.desplazamiento = desplazamiento
+        renderer.neutra = neutra
+        renderer.still = still
         vista.setNeedsDisplay()
     }
 }

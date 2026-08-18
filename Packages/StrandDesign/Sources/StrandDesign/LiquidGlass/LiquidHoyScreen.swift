@@ -5,7 +5,7 @@ import SwiftUI
 // Dos capas:
 //   • `LiquidHoyContent` — la columna de Hoy COMPONIBLE: sin ScrollView, sin TabBar, sin
 //     fondo y sin safe-areas propios. El app es dueño del scroll (pull-to-sync), del dock
-//     y monta `LiquidAmbientBackground` detrás. Las acciones llegan por closures con IDs
+//     y monta `LiquidAtmosfera` detrás (FER-118). Las acciones llegan por closures con IDs
 //     estables del modelo.
 //   • `LiquidHoyScreen` — la pantalla de REFERENCIA standalone (previews/render tests):
 //     envuelve el content con fondo, velo, scroll y TabBar, con el mock del ensamble.
@@ -362,6 +362,8 @@ public struct LiquidHoyScreen: View {
     private let model: LiquidHoyModel
     private let onSelectTab: ((LiquidTab) -> Void)?
     private let scrolls: Bool
+    /// El fondo de referencia es el mismo de la app (FER-118): la atmósfera con su estado propio.
+    @State private var atmosfera = AtmosferaEstado()
 
     public init(model: LiquidHoyModel = .ejemplo, onSelectTab: ((LiquidTab) -> Void)? = nil) {
         self.init(model: model, onSelectTab: onSelectTab, scrolls: true)
@@ -378,7 +380,7 @@ public struct LiquidHoyScreen: View {
 
     public var body: some View {
         ZStack {
-            LiquidAmbientBackground.tablero(model.ambiente)
+            LiquidAtmosfera(ambiente: model.ambiente, estado: atmosfera)
             if scrolls {
                 ScrollView(.vertical, showsIndicators: false) { column }
             } else {
@@ -389,7 +391,8 @@ public struct LiquidHoyScreen: View {
             }
         }
         .overlay(alignment: .top) {
-            LiquidVeil(tone: model.ambiente.acento).frame(height: LiquidSpace.s1400)
+            // FER-118: el clima ya no tiñe el chrome (vive en el polvo y en los números).
+            LiquidVeil(tone: nil).frame(height: LiquidSpace.s1400)
         }
         .overlay(alignment: .bottom) {
             LiquidTabBar(active: .hoy, rotulos: .demo, onSelect: onSelectTab)

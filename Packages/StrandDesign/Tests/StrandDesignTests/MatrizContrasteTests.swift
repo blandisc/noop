@@ -48,6 +48,85 @@ final class MatrizContrasteTests: XCTestCase {
         }
     }
 
+    /// FER-118 · Hoy en atmósfera: los módulos son vidrio blanco al 30 % sobre BLANCO PURO, así
+    /// que el fondo efectivo de cada número es `papelTarjeta` (#FFFFFF). Todo hue que pinta un
+    /// numeral (30/26 pt → AA-large 3:1) y los dos grises de texto normal (título/sublabel,
+    /// 4.5:1) tienen que leer ahí. Es la misma garantía que sobre `papelMatriz`, fijada para el
+    /// fondo nuevo: si alguien oscurece el vidrio o aclara un hue, este gate lo dice.
+    func testHuesDeModulosPasanSobreElVidrioDeLaAtmosfera() {
+        let fondo = LiquidColor.papelTarjeta
+        for (nombre, hue) in [("indigo · sueño", LiquidColor.indigo),
+                              ("rosa · FC", LiquidColor.rosa),
+                              ("doradoTemp · guardián", LiquidColor.doradoTemp),
+                              ("azul · resp", LiquidColor.azul),
+                              ("verdeCarga · carga", LiquidColor.verdeCarga),
+                              ("ambar · esfuerzo", LiquidColor.ambar),
+                              ("cian · VFC", LiquidColor.cian),
+                              ("teal · pasos", LiquidColor.teal),
+                              ("verdePrimario · veredicto", LiquidColor.verdePrimario)] {
+            XCTAssertGreaterThanOrEqual(contrast(hue, fondo), 3.0,
+                                        "\(nombre) no pasa AA-large sobre el vidrio de la atmósfera")
+        }
+        for (nombre, tinta) in [("tinta700 · título", LiquidColor.tinta700),
+                                ("tinta500 · sublabel", LiquidColor.tinta500)] {
+            XCTAssertGreaterThanOrEqual(contrast(tinta, fondo), 4.5,
+                                        "\(nombre) no pasa AA texto normal sobre el vidrio de la atmósfera")
+        }
+        // Y el vidrio de veras es blanco al 30 %: compuesto sobre blanco sigue siendo blanco.
+        XCTAssertEqual(LiquidColor.vidrioAtmosfera.rgbaComponents.a, 0.30, accuracy: 0.001)
+        XCTAssertEqual(LiquidColor.vidrioCanto.rgbaComponents.a, 0.08, accuracy: 0.001)
+    }
+
+    /// El blanco puro es el fondo MÁS favorable, así que aquí se mide también el peor píxel
+    /// TEÓRICO: el que cae justo encima de una mota roja a su alfa máximo (`alfaBase +
+    /// alfaRango` = 0.31: hash, respiración y densidad a 1 a la vez), con el vidrio al 30 %
+    /// encima y SIN contar el blanqueo propio del material (no modelable aquí):
+    /// `0.30·blanco + 0.70·(0.31·rojo + 0.69·blanco)` = `0.783·blanco + 0.217·rojo`.
+    ///
+    /// Medido, ese píxel NO da AA pleno para todos: ámbar 2.85, teal 2.75, verdePrimario 2.86,
+    /// `atencion` 2.85 y `tinta500` 3.86. Y no hace falta que lo dé — WCAG G18 mide los píxeles
+    /// ADYACENTES a la letra, y una mota (≤ 4.6 pt de diámetro, una cada ~234 pt², a ese alfa
+    /// casi nunca) no es el fondo de un numeral de 30 pt: el fondo es blanco (test de arriba).
+    /// Este test es el PISO DE REGRESIÓN, con la holgura real y registrada (§13.29 del
+    /// requerimiento): dispara si alguien sube el alfa del polvo, oscurece la partícula roja o
+    /// aclara un hue más allá de lo que hoy se midió — no afirma AA sobre la mota.
+    /// El ámbar del par (`atencion`) entra a la lista: pinta puntos y nudo, y es dato, no ambiente.
+    func testHuesDeModulosAguantanElPeorPixelDeLaAtmosfera() {
+        let alfaMota = PolvoSimulacion.Fisica.alfaBase + PolvoSimulacion.Fisica.alfaRango
+        let alfaVidrio = LiquidColor.vidrioAtmosfera.rgbaComponents.a
+        let pesoRojo = (1 - alfaVidrio) * alfaMota
+        XCTAssertEqual(pesoRojo, 0.217, accuracy: 0.001, "la física del polvo o el vidrio cambiaron: re-medir")
+        let peor = mezcla(LiquidColor.papelTarjeta, LiquidColor.particulaRoja, pesoRojo)
+        let pisoNumeral = 2.7, pisoTexto = 3.8   // AA-large 3:1 y AA 4.5:1 sobre blanco; esto es la holgura medida
+        for (nombre, hue) in [("indigo · sueño", LiquidColor.indigo),
+                              ("rosa · FC", LiquidColor.rosa),
+                              ("doradoTemp · guardián", LiquidColor.doradoTemp),
+                              ("azul · resp", LiquidColor.azul),
+                              ("verdeCarga · carga", LiquidColor.verdeCarga),
+                              ("ambar · esfuerzo", LiquidColor.ambar),
+                              ("cian · VFC", LiquidColor.cian),
+                              ("teal · pasos", LiquidColor.teal),
+                              ("verdePrimario · veredicto", LiquidColor.verdePrimario),
+                              ("atencion · par del guardián", LiquidColor.atencion)] {
+            XCTAssertGreaterThanOrEqual(contrast(hue, peor), pisoNumeral,
+                                        "\(nombre) bajó del piso medido sobre el peor píxel de la atmósfera")
+        }
+        for (nombre, tinta) in [("tinta700 · título", LiquidColor.tinta700),
+                                ("tinta500 · sublabel", LiquidColor.tinta500)] {
+            XCTAssertGreaterThanOrEqual(contrast(tinta, peor), pisoTexto,
+                                        "\(nombre) bajó del piso medido sobre el peor píxel de la atmósfera")
+        }
+        // Y sobre blanco (el fondo real de los numerales) `atencion` sí da AA-large.
+        XCTAssertGreaterThanOrEqual(contrast(LiquidColor.atencion, LiquidColor.papelTarjeta), 3.0)
+    }
+
+    /// Mezcla lineal en sRGB (lo que hace el compositor con alfa premultiplicado): `(1−k)·a + k·b`.
+    private func mezcla(_ a: Color, _ b: Color, _ k: Double) -> Color {
+        let ka = a.rgbaComponents, kb = b.rgbaComponents
+        return Color(.sRGB, red: (1 - k) * ka.r + k * kb.r, green: (1 - k) * ka.g + k * kb.g,
+                     blue: (1 - k) * ka.b + k * kb.b, opacity: 1)
+    }
+
     /// La identidad de CARGA no puede ser la voz de marca: `verdePrimario` es el CTA y el
     /// veredicto, y además es la zona «bajo» del medidor de estrés — el mismo hex diciendo
     /// dos cosas a tres sellos de distancia.

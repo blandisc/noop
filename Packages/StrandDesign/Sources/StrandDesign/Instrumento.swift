@@ -428,11 +428,20 @@ public extension InstrumentoTheme {
     /// The movement-family hue shared by History, the Library and the live session's rail:
     /// pull = teal (`dataHrv`) · legs = indigo (`dataSleep`) · push / everything else = ember
     /// (`dataStrain`). Classified from an exercise's primary muscles (free-exercise-db vocabulary).
+    /// FER-88: clasifica igual que antes, pero el COLOR ya no se decide aquí — lo da
+    /// `EntrenarFamily.tint`, la fuente única. Antes esta función tenía su propia tabla y podía
+    /// (y llegó a) divergir de las otras dos.
     func movementFamilyTint(primaryMuscles: [String]) -> Color {
+        movementFamily(primaryMuscles: primaryMuscles).tint(self)
+    }
+
+    /// La familia de movimiento que sugieren unos músculos primarios. Separada del color para que
+    /// la clasificación se pueda probar sin mirar píxeles.
+    func movementFamily(primaryMuscles: [String]) -> EntrenarFamily {
         let m = primaryMuscles.joined(separator: " ").lowercased()
-        if ["lats", "back", "biceps", "traps", "forearms"].contains(where: m.contains) { return dataHrv }
-        if ["quadriceps", "hamstrings", "glutes", "calves", "abductors", "adductors"].contains(where: m.contains) { return dataSleep }
-        return dataStrain
+        if ["lats", "back", "biceps", "traps", "forearms"].contains(where: m.contains) { return .pull }
+        if ["quadriceps", "hamstrings", "glutes", "calves", "abductors", "adductors"].contains(where: m.contains) { return .legs }
+        return .push
     }
 }
 

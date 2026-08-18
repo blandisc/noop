@@ -63,7 +63,9 @@ final class CenitScreenshotTests: XCTestCase {
         "-AppleLanguages",               "(es)",
         "-AppleLocale",                  "es_MX",
         "-noop.onboarded",               "YES",
-        "-noop.acceptedTermsVersion",    "1.0",
+        // Debe igualar `Terms.currentVersion` (Cenit/App/Terms.swift): con "1.0" desde FER-1003 el
+        // arnés capturaba la puerta de Términos en vez de la pantalla (FER-118 · F lo cazó).
+        "-noop.acceptedTermsVersion",    "2.0",
         "-noop.lastSeenChangelogVersion","1.80",
         "-noop.didOfferRestore",         "YES",
     ]
@@ -234,8 +236,10 @@ final class CenitScreenshotTests: XCTestCase {
         a.launch()
         XCTAssertTrue(a.wait(for: .runningForeground, timeout: 15))
 
-        // Seeding writes to the store asynchronously; give it extra time on non-empty states.
-        wait(state == "empty" ? 2 : 5)
+        // Seeding writes to the store asynchronously; and the empty state is not faster: its hero
+        // enters with the same ~2.8 s choreography (FER-41), so at 2 s the frame was still white
+        // (FER-118 · F). Same wait for every state.
+        wait(5)
 
         // Frame 1 = top (the frame `SHOT_SRC` maps onto the state wall; the rest are scroll context)
         let prefix = state == "empty" ? "today" : "today_\(state)"

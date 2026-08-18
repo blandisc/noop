@@ -39,13 +39,9 @@ public struct MatrizSeccion: Sendable, Identifiable, Equatable {
     public let valor: String
     /// Unidad del valor («ms», «bpm», «rpm») — se pinta chica, mismo hue (Grok-UI #7).
     public let unidad: String?
-    /// Protagonista del veredicto (sueño / FC): numeral grande; el resto, medio (UX #3).
+    /// Protagonista del veredicto (sueño / FC): numeral grande (`valorTileL`); el resto, medio
+    /// (`valorTileM`) — dos tamaños, como el prototipo (FER-118).
     public let destacada: Bool
-    /// ¿Esta señal VOTA el veredicto? Pinta el sello «vota» (P3 del estudio en frío:
-    /// «si etiquetas al abstenido, etiqueta a los votantes» — Sofía).
-    public let vota: Bool
-    /// Bitácora/referencia (VFC, pasos): numeral un nivel abajo (P7).
-    public let terciaria: Bool
     public let sublabel: String?
     public let chartID: String
     public let chart: MatrizChartPayload
@@ -75,7 +71,6 @@ public struct MatrizSeccion: Sendable, Identifiable, Equatable {
     public init(id: String, hue: Color,
                 huesPar: (Color, Color)? = nil, titulo: String, valor: String,
                 unidad: String? = nil, destacada: Bool = false,
-                vota: Bool = false, terciaria: Bool = false,
                 sublabel: String? = nil, chartID: String, chart: MatrizChartPayload,
                 chip: MatrizHoyModel.ChipGuardian? = nil,
                 renglones: [MatrizRenglon]? = nil,
@@ -88,7 +83,6 @@ public struct MatrizSeccion: Sendable, Identifiable, Equatable {
         self.id = id; self.hue = hue; self.huesPar = huesPar
         self.titulo = titulo; self.valor = valor
         self.unidad = unidad; self.destacada = destacada
-        self.vota = vota; self.terciaria = terciaria
         self.sublabel = sublabel
         self.chartID = chartID; self.chart = chart; self.chip = chip
         self.renglones = renglones
@@ -118,7 +112,6 @@ public struct MatrizSeccion: Sendable, Identifiable, Equatable {
             && lhs.hue == rhs.hue
             && lhs.huesPar?.0 == rhs.huesPar?.0 && lhs.huesPar?.1 == rhs.huesPar?.1
             && lhs.unidad == rhs.unidad && lhs.destacada == rhs.destacada
-            && lhs.vota == rhs.vota && lhs.terciaria == rhs.terciaria
             && lhs.formaSello == rhs.formaSello && lhs.scrubNoches == rhs.scrubNoches
             && lhs.glifoSello == rhs.glifoSello
             && lhs.sello == rhs.sello
@@ -225,14 +218,24 @@ public struct MatrizHoyModel: Sendable, Equatable {
 
 // MARK: - Face view
 
-/// Cara Matriz completa: héroe compacto + 5 bandas §7 + filos 1 px.
-/// Breakpoint: Dynamic Type ≥ accessibility1 o ancho estrecho → columna única con scroll.
+/// La cara de «Hoy en atmósfera» (FER-118): tres estantes con su «?» y, dentro, módulos de
+/// vidrio (`.superficieAtmosfera`) en cuadrícula de dos columnas sobre el polvo. El modelo NO
+/// cambió: `.nivel` = cabecera de estante, `.split` = dos módulos gemelos, `.full` = un módulo
+/// ancho (Pasos, horizontal; el guardián, vertical). Sin filos, sin chevron, sin sello «vota».
+/// Breakpoint: Dynamic Type ≥ accessibility1 → columna única (y Pasos vuelve a vertical).
 public struct MatrizHoyFace: View {
     private let model: MatrizHoyModel
     private let onTapSeccion: (String) -> Void
+    /// El hint de barrido: una luz cruza la gráfica del guardián una vez, hasta que el host lo
+    /// apague (3 apariciones o el primer scrub). La cara no lee `AppStorage`: recibe el bool y
+    /// avisa cuando lo mostró y cuando el usuario ya barrió.
+    private let mostrarHintScrub: Bool
+    private let onHintMostrado: () -> Void
+    private let onScrubCompletado: () -> Void
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.liquidMotionDisabled) private var motionDisabled
     /// Acuse del sello: el orbe de la sección tocada late una vez (cariño §micro).
     @State private var latido: String?
     /// Scrub activo (FER-55): qué sección y qué noche está leyendo el dedo. `nil` =
@@ -240,25 +243,37 @@ public struct MatrizHoyFace: View {
     @State private var scrub: (id: String, idx: Int)?
     /// Pulso háptico: cambia al cruzar de barra durante el scrub (tick por noche).
     @State private var scrubTick: Int = 0
+    /// El módulo cuyo encabezado está presionado: el vidrio ENTERO cede (`pressScale`), aunque el
+    /// botón sea solo el encabezado — la gráfica lleva el gesto de scrub, separada (patrón #118).
+    @State private var presionado: String?
 
-    public init(model: MatrizHoyModel, onTapSeccion: @escaping (String) -> Void) {
+    public init(model: MatrizHoyModel, onTapSeccion: @escaping (String) -> Void,
+                mostrarHintScrub: Bool = false,
+                onHintMostrado: @escaping () -> Void = {},
+                onScrubCompletado: @escaping () -> Void = {}) {
         self.model = model
         self.onTapSeccion = onTapSeccion
+        self.mostrarHintScrub = mostrarHintScrub
+        self.onHintMostrado = onHintMostrado
+        self.onScrubCompletado = onScrubCompletado
     }
 
     public var body: some View {
-        // El héroe de la pantalla es el ecosistema de partículas que ya vive arriba — la
-        // Matriz NO repite orbe ni palabra, NO trae fondo propio (la telemetría se imprime
-        // directo sobre el suelo vivo de Hoy) y NO scrollea por su cuenta: mide su contenido
-        // y el scroll es el de la pantalla (revisión del dueño en vivo, 2026-08-06).
+        // La cara NO trae fondo ni scroll propios: mide su contenido sobre la atmósfera y el
+        // scroll es el de la pantalla (revisión del dueño en vivo, 2026-08-06; se conserva).
         let columnaUnica = dynamicTypeSize >= .accessibility1
-        VStack(spacing: 0) {
-            ForEach(Array(model.bandas.enumerated()), id: \.offset) { _, banda in
-                bandaView(banda, columnaUnica: columnaUnica)
-                if case .nivel = banda {} else { filo() }
+        let bandas = model.bandas
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(Array(bandas.enumerated()), id: \.offset) { i, banda in
+                bandaView(banda, columnaUnica: columnaUnica,
+                          primera: i == 0,
+                          sigueACabecera: i > 0 && Self.esNivel(bandas[i - 1]))
+                    // Entrada en cascada: los índices siguen a los del héroe (0 y 1).
+                    .liquidEntrada(index: 2 + i)
             }
         }
         .frame(maxWidth: .infinity)
+        .padding(.horizontal, MatrizTokens.margenModulos)
         .padding(.bottom, LiquidSpace.s600)
         // FER-audit: solo en la transición «se puso» (tap), no también en la limpieza a nil
         // 320 ms después — que hacía vibrar DOS veces por un solo toque.
@@ -267,17 +282,25 @@ public struct MatrizHoyFace: View {
         .accessibilityElement(children: .contain)
     }
 
-    /// El texto de un rótulo de nivel (compartido por el decorativo y el tocable).
-    private func nivelTexto(_ rotulo: String) -> some View {
-        Text(rotulo)
-            .font(LiquidType.micro)
-            .tracking(LiquidType.microTracking)
-            .textCase(.uppercase)
-            .foregroundStyle(LiquidColor.tinta500)
+    private static func esNivel(_ b: MatrizHoyModel.Banda) -> Bool {
+        if case .nivel = b { return true }
+        return false
+    }
+
+    /// Un módulo se compone horizontal SOLO si viene de una banda `.full` Y su gráfica es de
+    /// barras (Pasos): `seccionView` no sabe de qué banda viene y Esfuerzo (`.split`, también
+    /// barras) tiene que seguir vertical — por eso el contexto lo pasa `bandaView`.
+    private static func esHorizontal(_ s: MatrizSeccion) -> Bool {
+        if case .barrasMini = s.chart { return true }
+        return false
     }
 
     /// Toca una sección: dispara su hoja + el latido del sello.
     private func tocar(_ id: String) {
+        // El estilo del botón limpia `presionado` en `onChange(isPressed)`, pero la acción abre
+        // una hoja en el mismo ciclo: si esa transición se pierde, el módulo se quedaría al 97 %
+        // al volver. `tocar` corre al SOLTAR: aquí se limpia sin depender de nadie.
+        presionado = nil
         if !reduceMotion {
             withAnimation(.spring(duration: 0.3)) { latido = id }
             Task { @MainActor in
@@ -288,280 +311,257 @@ public struct MatrizHoyFace: View {
         onTapSeccion(id)
     }
 
+    // MARK: Estantes y filas
+
     @ViewBuilder
-    private func bandaView(_ banda: MatrizHoyModel.Banda, columnaUnica: Bool) -> some View {
+    private func bandaView(_ banda: MatrizHoyModel.Banda, columnaUnica: Bool,
+                           primera: Bool, sigueACabecera: Bool) -> some View {
         switch banda {
-        case .full(let s):
-            seccionView(s)
-                .padding(.vertical, MatrizTokens.bandaV)
         case .nivel(let rotulo, let manualID):
-            if let manualID {
-                // FER-54: la fila entera es el hit (≥44 pt); el «?» hueco en el mismo
-                // gris del rótulo — visible al que busca, invisible al que ya sabe.
-                Button { tocar(manualID) } label: {
-                    // firstTextBaseline: el «?» centrado ópticamente con las caps del
-                    // rótulo (con .center caía bajo — revisión del dueño).
-                    HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s150) {
-                        nivelTexto(rotulo)
-                        Image(systemName: "questionmark.circle")
-                            .font(LiquidType.infoGlifoCompacto.weight(.medium))
-                            .foregroundStyle(LiquidColor.tinta500)
-                        Spacer(minLength: 0)
-                    }
-                    .padding(.top, MatrizTokens.bandaV)
-                    // Zona táctil ≥44 pt (HIG) SIN inflar el layout (dueño 2026-08-15): antes
-                    // `.frame(minHeight: hitTarget, alignment: .bottomLeading)` estiraba la fila
-                    // a 44 con el rótulo al pie — ~32 pt de AIRE encima de CADA título de sección
-                    // (el hueco «entre How I got here y Decide your day»). El hit crece hacia
-                    // afuera con contentShape; la fila mide lo que mide el texto.
-                    // rótulo micro ≈14 pt + 2×s400 = ~46 pt táctiles ≥ hitTarget (44).
-                    .contentShape(Rectangle().inset(by: -LiquidSpace.s400))
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(Text(rotulo))
-                .accessibilityHint(Text(String(localized: "matriz.nivel.manual.hint",
-                                               defaultValue: "How this works",
-                                               bundle: .main)))
-            } else {
-                nivelTexto(rotulo)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.top, MatrizTokens.bandaV)
-                    .accessibilityHidden(true)
-            }
+            cabeceraEstante(rotulo, manualID: manualID)
+                .padding(.top, primera ? 0 : MatrizTokens.estanteGap)
+                .padding(.bottom, MatrizTokens.estanteCabeceraPad)
+        case .full(let s):
+            // Un módulo ancho mide su contenido (sin estirarse: no hay gemela que igualar).
+            modulo(s, horizontal: !columnaUnica && Self.esHorizontal(s), estirar: false)
+                .padding(.top, primera || sigueACabecera ? 0 : MatrizTokens.moduloGap)
         case .split(let izq, let der):
-            if columnaUnica {
-                VStack(spacing: 0) {
-                    seccionView(izq).padding(.vertical, MatrizTokens.bandaV)
-                    filo()
-                    seccionView(der).padding(.vertical, MatrizTokens.bandaV)
-                }
-            } else {
-                // Mitades iguales: el filo vertical parte la banda al centro.
-                HStack(alignment: .top, spacing: 0) {
-                    seccionView(izq)
-                        // La celda mide su CONTENIDO: sin esto una propuesta alta del
-                        // layout inflaba el encabezado flexible y el chart caía al
-                        // fondo (regresión cazada en vivo).
-                        .fixedSize(horizontal: false, vertical: true)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.trailing, MatrizTokens.colGap)
-                        .padding(.vertical, MatrizTokens.bandaV)
-                    Rectangle()
-                        .fill(LiquidColor.tinta900.opacity(MatrizTokens.filoAlfa))
-                        .frame(width: 1)
-                        // Mismo borde que las columnas que separa (edge-to-edge, como
-                        // los filos horizontales — convergencia de simetría R2).
-                        .padding(.vertical, MatrizTokens.bandaV)
-                    seccionView(der)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.leading, MatrizTokens.colGap)
-                        .padding(.vertical, MatrizTokens.bandaV)
+            Group {
+                if columnaUnica {
+                    VStack(spacing: MatrizTokens.moduloGap) {
+                        modulo(izq, horizontal: false, estirar: false)
+                        modulo(der, horizontal: false, estirar: false)
+                    }
+                } else {
+                    // Gemelas IGUAL de altas: la fila mide el módulo más alto y el otro se
+                    // estira (el vidrio se aplica al módulo ya estirado).
+                    HStack(alignment: .top, spacing: MatrizTokens.moduloGap) {
+                        modulo(izq, horizontal: false, estirar: true)
+                        modulo(der, horizontal: false, estirar: true)
+                    }
+                    .fixedSize(horizontal: false, vertical: true)
                 }
             }
+            .padding(.top, primera || sigueACabecera ? 0 : MatrizTokens.moduloGap)
         }
     }
 
+    /// El texto de un rótulo de estante (compartido por el decorativo y el tocable).
+    private func nivelTexto(_ rotulo: String) -> some View {
+        Text(rotulo)
+            .font(LiquidType.micro)
+            .tracking(LiquidType.microTracking)
+            .textCase(.uppercase)
+            .foregroundStyle(LiquidColor.tinta700)
+    }
+
+    /// La cabecera de un estante: rótulo en versalitas + el mismo «?» de siempre (FER-54: la
+    /// fila entera es el hit ≥ 44 pt, el glifo hueco anuncia la hoja-manual de ese nivel).
     @ViewBuilder
-    private func seccionView(_ s: MatrizSeccion) -> some View {
-        if let renglones = s.renglones {
-            // Sección con renglones (guardián): SIN botón contenedor — anidar botones
-            // rompe hit-testing y el foco de VoiceOver (hallazgo Grok #1). El encabezado
-            // es su propio botón y cada renglón el suyo.
-            VStack(alignment: .leading, spacing: LiquidSpace.s200) {
-                Button {
-                    tocar(s.id)
-                } label: {
-                    encabezado(s)
-                        .contentShape(Rectangle())
+    private func cabeceraEstante(_ rotulo: String, manualID: String?) -> some View {
+        if let manualID {
+            Button { tocar(manualID) } label: {
+                // firstTextBaseline: el «?» centrado ópticamente con las caps del rótulo.
+                HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s150) {
+                    nivelTexto(rotulo)
+                    Image(systemName: "questionmark.circle")
+                        .font(LiquidType.infoGlifoCompacto.weight(.medium))
+                        .foregroundStyle(LiquidColor.tinta500)
+                    Spacer(minLength: 0)
                 }
-                .buttonStyle(.plain)
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel(Text(verbatim: a11yLabel(s)))
-                .accessibilityAddTraits(.isButton)
-                .accessibilityIdentifier("matriz-seccion-\(s.id)")
+                // Zona táctil ≥ 44 pt (HIG) SIN inflar el layout: el hit crece hacia afuera.
+                .contentShape(Rectangle().inset(by: -LiquidSpace.s400))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text(rotulo))
+            .accessibilityHint(Text(String(localized: "matriz.nivel.manual.hint",
+                                           defaultValue: "How this works",
+                                           bundle: .main)))
+        } else {
+            // Cabecera decorativa (sin hoja): hoy NINGÚN emisor la usa —los tres estantes de la
+            // app y de las fixtures llevan `manualID`— pero es un camino del componente
+            // (`manualID: String?`), no un huérfano: se conserva y se declara.
+            nivelTexto(rotulo)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityHidden(true)
+        }
+    }
+
+    // MARK: El módulo de vidrio
+
+    /// El módulo: su contenido con el padding del prototipo, y encima la receta de vidrio sobre
+    /// la atmósfera. `estirar` (gemelas): toma el alto de la fila; si no, mide su contenido.
+    /// Cede entero al presionar su encabezado.
+    private func modulo(_ s: MatrizSeccion, horizontal: Bool, estirar: Bool) -> some View {
+        contenido(s, horizontal: horizontal)
+            .padding(.horizontal, MatrizTokens.moduloPadH)
+            .padding(.top, MatrizTokens.moduloPadTop)
+            .padding(.bottom, MatrizTokens.moduloPadBottom)
+            .frame(maxWidth: .infinity, maxHeight: estirar ? .infinity : nil, alignment: .topLeading)
+            // Sin gemela, el módulo mide su CONTENIDO (el `Spacer` interior no se infla aunque el
+            // contenedor proponga alto de sobra — p. ej. un render con marco fijo).
+            .fixedSize(horizontal: false, vertical: !estirar)
+            .liquidGlass(.superficieAtmosfera)
+            .scaleEffect(presionado == s.id ? LiquidMotion.pressScale : 1)
+            .animation(LiquidMotion.press, value: presionado == s.id)
+    }
+
+    @ViewBuilder
+    private func contenido(_ s: MatrizSeccion, horizontal: Bool) -> some View {
+        if let renglones = s.renglones {
+            // Camino legado (guardián en dos filas; hoy sin emisor, con previews): SIN botón
+            // contenedor — anidar botones rompe hit-testing y el foco de VoiceOver.
+            VStack(alignment: .leading, spacing: LiquidSpace.s200) {
+                botonEncabezado(s) { textos(s) }
                 ForEach(renglones) { r in
                     renglónView(r)
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        } else if s.scrubNoches != nil {
-            // FER-audit: el scrub es manipulación directa 1:1 con el dedo, no una animación
-            // del sistema — así que SIGUE vivo bajo Reduce Motion (antes se apagaba entero, y
-            // un vidente con RM perdía la función). RM apaga solo la ANIMACIÓN del cruce/cursor.
-            // Sección con SCRUB (Sueño): el encabezado es su propio botón (abre la hoja)
-            // y la gráfica lleva el gesto de arrastre — separados, como el guardián, para
-            // que un toque abra y un arrastre lea sin pelear (hallazgos Grok/DeepSeek/Sonnet:
-            // un DragGesture dentro del Button es ambiguo). El gesto usa simultaneousGesture
-            // + guard de intención horizontal, para no robarle el pan vertical al ScrollView
-            // de Hoy (ver ScrubGesto abajo; patrón #118).
-            VStack(alignment: .leading, spacing: LiquidSpace.s200) {
-                Button { tocar(s.id) } label: {
-                    encabezado(s)
-                        // FER-73 · INT-06: el encabezado del guardián medía 34 pt de alto
-                        // (`encabezadoMinH`) y era un botón: por debajo del piso HIG de 44. El
-                        // área crece hacia afuera, sin engordar el vidrio ni mover el renglón.
-                        .contentShape(Rectangle().inset(by: -LiquidSpace.s125))
-                }
-                .buttonStyle(.plain)
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel(Text(verbatim: a11yLabel(s)))
-                .accessibilityAddTraits(.isButton)
-                .accessibilityIdentifier("matriz-seccion-\(s.id)")
-                chartView(s.chart, hue: s.hue, chartID: s.chartID,
-                          resaltado: scrub?.id == s.id ? scrub?.idx : nil)
-                    .frame(height: Self.chartAltura(s.chart))
-                    .modifier(ScrubGesto(id: s.id, noches: s.scrubNoches ?? [], chart: s.chart,
-                                         scrub: $scrub, tick: $scrubTick, onTap: { tocar(s.id) }))
-                    // VoiceOver no arrastra: la gráfica es su propio control ajustable.
-                    .accessibilityElement()
-                    .accessibilityLabel(Text(verbatim: scrubA11yLabel(s)))
-                    .modifier(ScrubA11y(aplica: true, valor: scrubA11yValue(s),
-                                        hint: scrubA11yHint,
-                                        ajustar: { scrubAjustar(s, $0) }))
+        } else if horizontal {
+            // Pasos (ancho): fila de título + [número · subtítulo] a la izquierda y la gráfica
+            // ocupando el resto, al pie. El encabezado (texto) es el botón; la gráfica, el gesto.
+            // Con o sin scrub la anatomía es la MISMA (sin scrub el pan va apagado y el toque en
+            // la gráfica abre la hoja igual).
+            HStack(alignment: .bottom, spacing: LiquidSpace.s400) {
+                botonEncabezado(s, expandir: false) { textos(s) }
+                    // Ancho FIJO: la gráfica no puede cambiar de ancho bajo el dedo (el
+                    // subtítulo del scrub es más largo que el de reposo).
+                    .frame(width: MatrizTokens.moduloTextoAncho, alignment: .leading)
+                grafica(s, noches: s.scrubNoches ?? [])
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
         } else {
-            Button {
-                tocar(s.id)
-            } label: {
-                VStack(alignment: .leading, spacing: LiquidSpace.s200) {
-                    encabezado(s)
-                    chartView(s.chart, hue: s.hue, chartID: s.chartID)
-                        .frame(height: Self.chartAltura(s.chart))
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
+            // La anatomía vertical: título · número · subtítulo · (aire) · gráfica al pie. El
+            // encabezado es su propio botón (abre la hoja) y la gráfica lleva el arrastre —
+            // separados, para que un toque abra y un arrastre lea sin pelear (patrón #118).
+            VStack(alignment: .leading, spacing: 0) {
+                botonEncabezado(s) { textos(s) }
+                Spacer(minLength: LiquidSpace.s300)
+                grafica(s, noches: s.scrubNoches ?? [])
             }
-            .buttonStyle(.plain)
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel(Text(verbatim: a11yLabel(s)))
-            .accessibilityAddTraits(.isButton)
-            .accessibilityIdentifier("matriz-seccion-\(s.id)")
         }
     }
 
-    private func encabezado(_ s: MatrizSeccion) -> some View {
-        // Dos renglones a lo ANCHO de la celda: [orbe · título · valor · ›] y debajo
-        // [sello vota · estado]. El sello/estado dentro del VStack del título competía
-        // con el Spacer y se estrujaba a 1 carácter por línea (torre — cazada en arnés).
-        VStack(alignment: .leading, spacing: LiquidSpace.s050) {
-            HStack(alignment: .firstTextBaseline, spacing: MatrizTokens.selloTexto) {
-                // Orbe de partículas puro, sin glifo (revisión del dueño en vivo): el
-                // eco del héroe junto a cada título, con el hue de identidad.
-                Group {
-                    if let estado = s.selloGuardian {
-                        // FER-56 · Ola 3: el sello del guardián VIVO — un orbe bicolor que en
-                        // calma es uno solo (dorado+azul intercalados, respirando) y al salirse
-                        // el par se SEPARA y tiñe (ámbar 1.ª noche → rojo en racha). Dice la
-                        // regla «solo la pareja» sin texto. Reduce Motion lo deja asentado.
-                        SelloGuardianVivo(radio: MatrizTokens.selloRadio,
-                                          hueTemp: s.huesPar?.0 ?? s.hue,
-                                          hueResp: s.huesPar?.1 ?? s.hue,
-                                          estado: estado)
-                    } else if let sello = s.sello {
-                        // El sello dibujado: ocupa el mismo hueco que dejaba el orbe
-                        // (radio · 2.5) y llena su lado — ver nota en `SelloMetrica`.
-                        SelloMetricaVista(sello, lado: MatrizTokens.selloRadio * 2.5,
-                                          tono: s.hue)
-                    } else if let glifo = s.glifoSello {
-                        // Comparativa FER-55: la gota de las hojas de resumen como sello.
-                        LiquidIconDrop(glifo, tone: s.hue,
-                                       size: MatrizTokens.selloRadio * 2.5,
-                                       iconSize: MatrizTokens.selloRadio * 1.4)
-                    } else {
-                        OrbeVivo(radio: MatrizTokens.selloRadio, hue: s.huesPar?.0 ?? s.hue,
-                                 semillaID: "sello-\(s.id)", huePar: s.huesPar?.1, fps: 12,
-                                 forma: s.formaSello)
-                    }
+    /// El botón del encabezado de un módulo (abre la hoja): su label son los textos. `expandir`
+    /// = ocupa todo el ancho del módulo (vertical); en Pasos horizontal el texto hugs.
+    private func botonEncabezado<L: View>(_ s: MatrizSeccion, expandir: Bool = true,
+                                          @ViewBuilder label: () -> L) -> some View {
+        Button { tocar(s.id) } label: {
+            label()
+                .frame(maxWidth: expandir ? .infinity : nil, alignment: .leading)
+                // Hit ≥ 44 pt (HIG) hacia afuera, sin engordar el vidrio ni mover la gráfica.
+                .contentShape(Rectangle().inset(by: -LiquidSpace.s125))
+        }
+        .buttonStyle(PresionaModulo(id: s.id, presionado: $presionado))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text(verbatim: a11yLabel(s)))
+        .accessibilityAddTraits(.isButton)
+        .accessibilityIdentifier("matriz-seccion-\(s.id)")
+    }
+
+    /// La gráfica de un módulo con su scrub y su control ajustable de VoiceOver.
+    private func grafica(_ s: MatrizSeccion, noches: [MatrizSeccion.ScrubNoche]) -> some View {
+        chartView(s.chart, hue: s.hue, chartID: s.chartID,
+                  resaltado: scrub?.id == s.id ? scrub?.idx : nil)
+            .frame(height: Self.chartAltura(s.chart))
+            .modifier(ScrubGesto(id: s.id, noches: noches, chart: s.chart,
+                                 scrub: $scrub, tick: $scrubTick, onTap: { tocar(s.id) },
+                                 onCompletado: onScrubCompletado))
+            // El hint de barrido: solo sobre la gráfica del par (la que estrena la figura), y
+            // solo mientras el host lo pida; nunca bajo Reduce Motion ni en renders.
+            .overlay {
+                if case .costura = s.chart, mostrarHintScrub, !reduceMotion, !motionDisabled {
+                    HintBarrido(onMostrado: onHintMostrado)
                 }
-                    // El orbe no es texto: ancla su centro óptico al centro de las
-                    // versalitas del título (hallazgo Grok-UI #3; afinado en vivo).
-                    .alignmentGuide(.firstTextBaseline) { d in d.height * 0.78 }
-                    // Acuse del tacto: el eco del héroe responde al dedo (§micro).
-                    .scaleEffect(latido == s.id ? 1.10 : 1)
-                Text(s.titulo)
-                    // Las gemelas destacadas (Sueño · Reposo) usan el título gemelo, un
-                    // punto más grande, para que el par pese igual (FER-56). El resto de
-                    // secciones conserva el título de fila.
-                    .font(s.destacada ? LiquidType.tituloGemela : LiquidType.tituloFila)
-                    .foregroundStyle(LiquidColor.tinta700)
-                    .textCase(.uppercase)
-                    // UNA sola línea siempre (revisión del dueño: «RESTING HR» / «FC EN
-                    // REPOSO» se partían en dos en la celda gemela angosta). Encoge lo
-                    // mínimo para caber en la línea en vez de quebrar.
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                Spacer(minLength: LiquidSpace.s200)
-                // Valor + chevrón como un grupo alineado al CENTRO (el chevrón se centra
-                // con el numeral, no cae a su base — revisión del dueño); el grupo se
-                // ancla a la fila por la base del texto para no romper el ritmo del título.
-                HStack(alignment: .center, spacing: LiquidSpace.s150) {
-                    // FER-80 (marco acordado con el dueño para la costura): cuando la sección
-                    // trae chip Y valor —el guardián con su par de números—, mandan los DATOS
-                    // arriba; el estado en palabras baja a la sublínea, en su tono. Sin valor
-                    // (como era el guardián antes de la costura) el chip conserva su lugar.
-                    if let chip = s.chip, s.valor.isEmpty, scrub?.id != s.id {
-                        chipView(chip)
-                    } else {
-                        valorCompuesto(s, valor: valorEfectivo(s))
-                    }
-                    // Affordance de tap discreta (UX #6): cada sección abre su detalle.
-                    LiquidIcon(.chevron, size: 8, color: LiquidColor.tinta500)
-                }
-                .alignmentGuide(.firstTextBaseline) { d in d[.firstTextBaseline] }
-                // El numeral NO cede su talla (simetría de gemelas — el dueño cazó
-                // «52» más chico que «7:12»): el título es quien encoge (minScale 0.7,
-                // 1 línea), nunca el dato. Seguro contra la torre: el sublabel ya vive
-                // en su propio renglón a lo ancho, no dentro de esta fila.
-                .layoutPriority(1)
             }
-            let sub = sublabelEfectivo(s)
-            // Adversarial C3: el chip dice el estado de HOY. Mientras el dedo lee OTRA noche, el
-            // encabezado ya muestra los números de ESA noche: dejar el chip encima hacía que la
-            // tarjeta afirmara «2.ª noche» sobre un martes que el motor vio en calma. Al arrastrar
-            // esta sección, el chip se calla y manda la lectura de la noche leída.
-            let leyendoOtraNoche = scrub?.id == s.id
-            let chipEnSublinea: MatrizHoyModel.ChipGuardian? =
-                (s.valor.isEmpty || leyendoOtraNoche) ? nil : s.chip
-            if s.vota || sub != nil || chipEnSublinea != nil {
-                HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s150) {
-                    if let chip = chipEnSublinea {
-                        // El estado del guardián, en palabras y en su tono (FER-80).
-                        Text(chip.texto)
-                            .font(LiquidType.caption)
-                            .foregroundStyle(Self.tonoChip(chip.tono))
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    if s.vota {
-                        // P3: las votantes llevan su sello — el modelo se lee solo.
-                        Text(String(localized: "matriz.vota", defaultValue: "votes"))
-                            .font(LiquidType.micro)
-                            .foregroundStyle(LiquidColor.verdePrimario)
-                            .padding(.horizontal, LiquidSpace.s150)
-                            .padding(.vertical, LiquidSpace.s025)
-                            .overlay(Capsule().strokeBorder(
-                                LiquidColor.verdePrimario.opacity(0.45), lineWidth: 1)) // token-exempt: aro del sello «vota» al 45 %
-                            .fixedSize()
-                    }
-                    if let sub {
-                        Text(sub)
-                            .font(LiquidType.caption)
-                            .foregroundStyle(LiquidColor.tinta500)
-                            .fixedSize(horizontal: false, vertical: true)
-                            // El dato del scrub cambia con un cruce suave (es texto —
-                            // numericText sólo aplica a dígitos, hallazgo Grok BAJA). Bajo
-                            // Reduce Motion el valor salta sin cruce (FER-audit).
-                            .animation(reduceMotion ? nil : .easeInOut(duration: 0.15), value: sub)
-                    }
-                }
-                // Alineado con el título (después del orbe), a lo ancho de la celda.
-                .padding(.leading, MatrizTokens.selloRadio * 2 + MatrizTokens.selloTexto)
+            // VoiceOver no arrastra: la gráfica es su propio control ajustable (solo si hay
+            // lecturas que recorrer; sin scrub queda oculta y el botón del encabezado la representa).
+            .accessibilityElement()
+            .accessibilityLabel(Text(verbatim: scrubA11yLabel(s)))
+            .accessibilityHidden(noches.count <= 1)
+            .modifier(ScrubA11y(aplica: noches.count > 1, valor: scrubA11yValue(s),
+                                hint: scrubA11yHint,
+                                ajustar: { scrubAjustar(s, $0) }))
+    }
+
+    /// Los textos del módulo: fila de título (sello · título · estado) · número · subtítulo.
+    private func textos(_ s: MatrizSeccion) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            filaTitulo(s)
+            numero(s)
+                .padding(.top, LiquidSpace.s200)
+            subtitulo(s)
+                .padding(.top, LiquidSpace.s100)
+        }
+    }
+
+    /// [sello · Título ····· estado]. El título va en caja normal (`tituloGemela` para todos):
+    /// la jerarquía es estante = versalitas, módulo = título en caja normal (prototipo). El estado
+    /// del guardián (chip) vive SIEMPRE aquí, a la derecha — y se calla mientras el dedo lee otra
+    /// noche (adversarial C3: el chip dice el estado de HOY, no el de la noche leída).
+    private func filaTitulo(_ s: MatrizSeccion) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: MatrizTokens.selloTexto) {
+            sello(s)
+                // El sello no es texto: ancla su centro óptico a la altura de la mayúscula
+                // inicial del título (caja normal desde FER-118; verificado en captura: el 0.78
+                // calibrado para versalitas sigue centrando con la inicial en mayúscula).
+                .alignmentGuide(.firstTextBaseline) { d in d.height * 0.78 }
+                // Acuse del tacto: el eco del héroe responde al dedo (§micro).
+                .scaleEffect(latido == s.id ? 1.10 : 1)
+            Text(s.titulo)
+                .font(LiquidType.tituloGemela)
+                .foregroundStyle(LiquidColor.tinta700)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+            Spacer(minLength: LiquidSpace.s200)
+            if let chip = s.chip, scrub?.id != s.id {
+                chipView(chip)
             }
         }
-        // Techo común en bandas divididas: reservar la línea de sublabel aunque
-        // falte, para que los lienzos gemelos arranquen parejos (Grok-UI #6).
-        .frame(minHeight: MatrizTokens.encabezadoMinH, alignment: .top)
+    }
+
+    /// El sello del módulo: el guardián VIVO (FER-56 · Ola 3), el glifo del sistema
+    /// (FER-117), el sello dibujado o el orbe de partículas — los mismos de siempre.
+    @ViewBuilder
+    private func sello(_ s: MatrizSeccion) -> some View {
+        if let estado = s.selloGuardian {
+            SelloGuardianVivo(radio: MatrizTokens.selloRadio,
+                              hueTemp: s.huesPar?.0 ?? s.hue,
+                              hueResp: s.huesPar?.1 ?? s.hue,
+                              estado: estado)
+        } else if let sello = s.sello {
+            SelloMetricaVista(sello, lado: MatrizTokens.selloRadio * 2.5, tono: s.hue)
+        } else if let glifo = s.glifoSello {
+            LiquidIconDrop(glifo, tone: s.hue,
+                           size: MatrizTokens.selloRadio * 2.5,
+                           iconSize: MatrizTokens.selloRadio * 1.4)
+        } else {
+            OrbeVivo(radio: MatrizTokens.selloRadio, hue: s.huesPar?.0 ?? s.hue,
+                     semillaID: "sello-\(s.id)", huePar: s.huesPar?.1, fps: 12,
+                     forma: s.formaSello)
+        }
+    }
+
+    /// El número grande del módulo (o nada si el valor viene vacío).
+    @ViewBuilder
+    private func numero(_ s: MatrizSeccion) -> some View {
+        let valor = valorEfectivo(s)
+        if !valor.isEmpty {
+            valorCompuesto(s, valor: valor)
+        }
+    }
+
+    /// El subtítulo: la frase de HOY o la de la noche leída. Sin subtítulo se reserva la línea
+    /// (un espacio en la misma caption, invisible) para que las gemelas arranquen parejas.
+    private func subtitulo(_ s: MatrizSeccion) -> some View {
+        let sub = sublabelEfectivo(s)
+        return Text(sub ?? " ")
+            .font(LiquidType.caption)
+            .foregroundStyle(LiquidColor.tinta500)
+            .fixedSize(horizontal: false, vertical: true)
+            .opacity(sub == nil ? 0 : 1)
+            // El dato del scrub cambia con un cruce suave (es texto — numericText sólo aplica a
+            // dígitos). Bajo Reduce Motion el valor salta sin cruce (FER-audit).
+            .animation(reduceMotion ? nil : .easeInOut(duration: 0.15), value: sub)
     }
 
     /// Valor a mostrar: la noche del scrub si esta sección la está leyendo, si no HOY.
@@ -596,28 +596,38 @@ public struct MatrizHoyFace: View {
         return s.sublabel
     }
 
-    /// Numeral + unidad chica en el mismo hue (Grok-UI #7); los protagonistas del
-    /// veredicto (sueño/FC) en `valorL`, el resto en `valorM` (UX #3). El numeral
-    /// rueda al refrescar (`numericText`) en vez de parpadear.
+    /// Numeral + unidad chica en el mismo hue. Dos tamaños (prototipo): las decisoras (Sueño ·
+    /// FC) en `valorTileL`, el resto en `valorTileM`. El numeral RUEDA al refrescar
+    /// (`numericText`) en vez de parpadear — también el par del guardián.
     private func valorCompuesto(_ s: MatrizSeccion, valor: String) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s050) {
+        let fuente = s.destacada ? LiquidType.valorTileL : LiquidType.valorTileM
+        return HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s050) {
             // FER-80 · El par del guardián se escribe con SUS DOS colores («+0.1°» dorado ·
-            // «14.9» azul): son dos señales distintas, no un dato con dos partes.
+            // «14.9» azul): son dos señales distintas, no un dato con dos partes. FER-118: tres
+            // `Text` adyacentes (no una concatenación multicolor, cuyo rodado por dígito no está
+            // documentado), cada uno con su propio `numericText`.
             if let par = s.huesPar, let corte = valor.range(of: " · ") {
-                (Text(valor[..<corte.lowerBound]).foregroundColor(par.0)
-                    + Text(verbatim: " · ").foregroundColor(LiquidColor.tinta500)
-                    + Text(valor[corte.upperBound...]).foregroundColor(par.1))
-                    .font(s.destacada ? LiquidType.valorL
-                          : (s.terciaria ? LiquidType.valorS : LiquidType.valorM))
-                    .monospacedDigit()
-            } else {
-            Text(valor)
-                .font(s.destacada ? LiquidType.valorL
-                      : (s.terciaria ? LiquidType.valorS : LiquidType.valorM))
-                .foregroundStyle(s.hue)
+                let temp = String(valor[..<corte.lowerBound]), resp = String(valor[corte.upperBound...])
+                HStack(alignment: .firstTextBaseline, spacing: 0) {
+                    Text(temp).foregroundStyle(par.0)
+                        .contentTransition(reduceMotion ? .identity : .numericText())
+                        .animation(reduceMotion ? nil : .snappy, value: temp)
+                    Text(verbatim: " · ").foregroundStyle(LiquidColor.tinta500)
+                    Text(resp).foregroundStyle(par.1)
+                        .contentTransition(reduceMotion ? .identity : .numericText())
+                        .animation(reduceMotion ? nil : .snappy, value: resp)
+                }
+                .font(fuente)
+                .tracking(LiquidType.valorTileTracking)
                 .monospacedDigit()
-                .contentTransition(reduceMotion ? .identity : .numericText())
-                .animation(reduceMotion ? nil : .snappy, value: valor)
+            } else {
+                Text(valor)
+                    .font(fuente)
+                    .tracking(LiquidType.valorTileTracking)
+                    .foregroundStyle(s.hue)
+                    .monospacedDigit()
+                    .contentTransition(reduceMotion ? .identity : .numericText())
+                    .animation(reduceMotion ? nil : .snappy, value: valor)
             }
             if let u = s.unidad, valor != "—" {
                 Text(u)
@@ -625,9 +635,7 @@ public struct MatrizHoyFace: View {
                     .foregroundStyle(s.hue)
             }
         }
-        // El numeral JAMÁS se parte («46» → «4/6»): una línea, encoge antes de
-        // envolver. Sin layoutPriority: estrangulaba al título hasta volverlo una
-        // torre de 1 carácter (regresión cazada en vivo).
+        // El numeral JAMÁS se parte («46» → «4/6»): una línea, encoge antes de envolver.
         .lineLimit(1)
         .minimumScaleFactor(0.6)
     }
@@ -648,7 +656,8 @@ public struct MatrizHoyFace: View {
                     .frame(height: MatrizTokens.alturaRenglon)
                     .modifier(ScrubGesto(id: r.id, noches: noches, chart: r.chart,
                                          scrub: $scrub, tick: $scrubTick,
-                                         onTap: { onTapSeccion(r.id) }))
+                                         onTap: { onTapSeccion(r.id) },
+                                         onCompletado: onScrubCompletado))
             }
             .accessibilityElement(children: .combine)
             .accessibilityLabel(Text(verbatim: "\(r.titulo), \(r.valor)"))
@@ -672,8 +681,7 @@ public struct MatrizHoyFace: View {
 
     /// El encabezado del renglón (título · valor · chevron + estado). Compartido por los dos
     /// caminos (con/sin scrub). VStack PROPIO — devolver la tupla suelta dejaba que el label
-    /// del Button la acomodara HORIZONTAL y el sublabel se subía junto al título (regresión
-    /// cazada en captura, 2026-08-15).
+    /// del Button la acomodara HORIZONTAL y el sublabel se subía junto al título.
     private func encabezadoRenglon(_ r: MatrizRenglon) -> some View {
         // El valor/fecha EFECTIVOS: la noche del scrub si el dedo está leyendo este renglón.
         let valor = valorEfectivoRenglon(r)
@@ -769,7 +777,8 @@ public struct MatrizHoyFace: View {
         case .escalerita(let niveles):
             MatrizEscalerita(chartID: chartID, niveles: niveles, hue: hue, resaltado: resaltado)
         case .costura(let noches):
-            MatrizCostura(chartID: chartID, noches: noches, resaltado: resaltado)
+            // FER-118: los dos hilos de puntos sustituyen a la costura; mismos datos.
+            MatrizHilos(chartID: chartID, noches: noches, resaltado: resaltado)
         }
     }
 
@@ -783,8 +792,8 @@ public struct MatrizHoyFace: View {
             return max(MatrizTokens.chartInset,
                        LiquidChart.puntoDatoRadio + LiquidChart.endpointBorde * 0.5 + MatrizTokens.aroGap2)
         case .costura:
-            return max(MatrizTokens.chartInset,
-                       LiquidChart.puntoDatoRadio + LiquidChart.endpointBorde)
+            // FER-118: el anillo de HOY latiendo llega a 8 pt del centro (era 5, y se cortaba).
+            return max(MatrizTokens.chartInset, MatrizTokens.hilosInset)
         default:
             return MatrizTokens.chartInset
         }
@@ -800,15 +809,9 @@ public struct MatrizHoyFace: View {
         // FER-59: VFC (lineaRellena) es gemela de Estrés (escalerita) en Contexto → misma
         // altura, para que el borde inferior de la fila no quede dentado (antes 56 vs 40).
         case .lineaRellena: return MatrizTokens.alturaEscalera
-        case .costura: return MatrizTokens.alturaCostura
+        case .costura: return MatrizTokens.alturaHilos
         default: return MatrizTokens.alturaLinea
         }
-    }
-
-    private func filo() -> some View {
-        Rectangle()
-            .fill(LiquidColor.tinta900.opacity(MatrizTokens.filoAlfa))
-            .frame(height: 1)
     }
 
     private func a11yLabel(_ s: MatrizSeccion) -> String {
@@ -857,6 +860,70 @@ public struct MatrizHoyFace: View {
         }
         scrub = (id: s.id, idx: nuevo)
         scrubTick += 1
+    }
+}
+
+/// El estilo del botón de un módulo: NO escala su label (el label es solo el encabezado);
+/// reporta el estado presionado a la cara, que escala el VIDRIO ENTERO con `pressScale` — la
+/// única gramática de toque (`.liquidPress`), aplicada al objeto correcto. Un solo `presionado`
+/// para toda la cara: dos dedos en dos módulos a la vez es un caso raro y el peor efecto es que
+/// el primero deje de ceder antes de soltarlo (decisión registrada; sin estado colgado).
+private struct PresionaModulo: ButtonStyle {
+    let id: String
+    @Binding var presionado: String?
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .onChange(of: configuration.isPressed) { _, pressed in
+                if pressed { presionado = id } else if presionado == id { presionado = nil }
+            }
+    }
+}
+
+/// El hint de barrido (FER-118): una luz tenue de tinta cruza la gráfica una vez, 0.9 s después
+/// de que la gráfica ENTRA A LA VISTA, para enseñar que se arrastra. Decorativo: sin hit, sin
+/// VoiceOver. Cuenta como «mostrado» solo si de verdad se vio: el `ScrollView` de Hoy no es
+/// lazy y monta la Matriz entera al abrir, así que un `onAppear` a secas quemaba el contador de
+/// 3 en tres lanzamientos sin que nadie hubiera bajado hasta el guardián (revisión adversarial).
+/// En iOS 18+ lo decide `onScrollVisibilityChange`; antes, el `onAppear` de siempre.
+private struct HintBarrido: View {
+    let onMostrado: () -> Void
+    @State private var cruzo = false
+    @State private var disparado = false
+    var body: some View {
+        GeometryReader { geo in
+            LinearGradient(colors: [LiquidColor.tinta900.opacity(0), LiquidColor.tinta7,
+                                    LiquidColor.tinta900.opacity(0)],
+                           startPoint: .leading, endPoint: .trailing)
+                .frame(width: MatrizTokens.hintAncho)
+                .offset(x: cruzo ? geo.size.width + MatrizTokens.hintAncho
+                                 : -MatrizTokens.hintAncho * 1.2)
+        }
+        .modifier(HintVisibilidad { visible in
+            guard visible, !disparado else { return }
+            disparado = true
+            // Se cuenta cuando el cruce TERMINÓ, no cuando arranca: si el contador subiera aquí,
+            // en la tercera vez el host apagaría `mostrarHintScrub` en el mismo ciclo y el hint se
+            // desmontaría antes de moverse — se verían dos, contados tres (revisión final).
+            withAnimation(.easeInOut(duration: MatrizTokens.hintDuracion)
+                            .delay(MatrizTokens.hintEspera)) { cruzo = true } completion: { onMostrado() }
+        })
+        .clipShape(RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous))
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+}
+
+/// «¿La gráfica está a la vista?» — iOS 18+ lo sabe (`onScrollVisibilityChange`, ≥ 60 % dentro
+/// del viewport); antes se asume visible al aparecer (el estado seguro de siempre).
+private struct HintVisibilidad: ViewModifier {
+    let cambio: (Bool) -> Void
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if #available(iOS 18.0, macOS 15.0, watchOS 11.0, *) {
+            content.onScrollVisibilityChange(threshold: 0.6) { cambio($0) }
+        } else {
+            content.onAppear { cambio(true) }
+        }
     }
 }
 
@@ -929,6 +996,8 @@ private struct ScrubGesto: ViewModifier {
     @Binding var scrub: (id: String, idx: Int)?
     @Binding var tick: Int
     var onTap: () -> Void = {}
+    /// FER-118: avisa cuando un arrastre terminó (para apagar el hint de barrido).
+    var onCompletado: () -> Void = {}
     /// La regla reserva su zona a la derecha: el mapeo del dedo debe usar el MISMO
     /// ancho útil que usa la curva, o el índice se corre cerca del margen.
     private var insetDerecho: CGFloat {
@@ -964,7 +1033,9 @@ private struct ScrubGesto: ViewModifier {
                                 tick &+= 1   // pulso háptico por noche cruzada
                             }
                         },
-                        onEnd: { if scrub?.id == id { scrub = nil } })
+                        onEnd: {
+                            if scrub?.id == id { scrub = nil; onCompletado() }
+                        })
             }
         )
     }
