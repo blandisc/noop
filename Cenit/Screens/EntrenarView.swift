@@ -418,10 +418,17 @@ private struct EntrenarLanding: View {
     /// Routine-day CTA: `StrandCTAButton` con el tinte de región de la rutina (auditoría FER-952:
     /// el chrome se copiaba a mano; ahora el componente acepta `tint`).
     private var tintedEmpezarButton: some View {
-        // El tinte sigue a la rutina que el botón VA A ABRIR, no a la de hoy: teñirlo de empuje
-        // para reanudar un tirón era color 1:1 mintiendo sobre su propio destino.
-        StrandCTAButton(empezarLabel,
-                        tint: routineTint(region(name: sesionVivaDeOtraRutina ?? todayRoutine?.name ?? ""))) {
+        // FER-86, decisión del dueño: como el handoff. VERDE y COMPACTO, no ámbar de ancho completo.
+        //
+        // No es gusto, es contraste medido: el texto blanco sobre el tinte de familia daba 4.08:1
+        // con el ámbar de empuje — bajo el piso de 4.5 — porque `StrandCTAButton` calibró su
+        // etiqueta contra el fondo de tinta, no contra un hue que lo sustituye. El verde del
+        // handoff da 5.61:1. Y el tinte de familia se queda donde sí significa algo: los tres
+        // numerales de arriba, que son el dato.
+        //
+        // Que sea el MISMO verde de «avanza» en toda la app, y no un verde nuevo, es a propósito:
+        // `positiveText` es el verde del veredicto ya oscurecido hasta cumplir contraste de texto.
+        StrandCTAButton(empezarLabel, tint: theme.positiveText, fillsWidth: false) {
             startOrResume()
         }
     }

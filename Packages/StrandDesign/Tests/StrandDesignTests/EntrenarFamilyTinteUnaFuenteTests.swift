@@ -138,3 +138,42 @@ final class SessionStatsBarContrasteTests: XCTestCase {
         }
     }
 }
+
+/// FER-86 — el botón «Empezar» del héroe se teñía con el hue de familia y pintaba su etiqueta en
+/// papel encima. La etiqueta de `StrandCTAButton` se calibró contra el fondo de TINTA por omisión,
+/// y nadie recalculó el par cuando un tinte lo sustituye. Decisión del dueño: como el handoff,
+/// verde. Estas pruebas clavan por qué, con números y no con gusto.
+final class BotonEmpezarContrasteTests: XCTestCase {
+
+    private let theme = InstrumentoTheme.base
+
+    /// El defecto es REAL pero más angosto de lo que yo afirmé: de los tres tintes, solo el ÁMBAR
+    /// de empuje reprueba como fondo de una etiqueta clara (3.87:1). El cian de tirón (4.61) y el
+    /// índigo de pierna (5.78) sí pasan.
+    ///
+    /// O sea: el botón mentía su contraste SOLO en los días de empuje. Eso no lo salva —un día de
+    /// cada tres con el texto por debajo del piso sigue siendo un defecto— pero decirlo como «los
+    /// tres fallan» habría sido exagerar para justificar la decisión. La prueba clava el hecho
+    /// exacto, y truena si algún día otro tinte cruza el piso en cualquier dirección.
+    func testSoloElAmbarDeEmpujeReprobabaComoFondoDeTextoClaro() {
+        let reprueban = EntrenarFamily.allCases.filter {
+            OKLab.contrastRatio(theme.paperHi, $0.tint(theme)) < 4.5
+        }
+        XCTAssertEqual(reprueban, [.push],
+                       "cambió qué familias reprueban como fondo: revisar la decisión del botón")
+    }
+
+    /// Y el verde del handoff sí: es el verde del veredicto ya oscurecido hasta cumplir contraste
+    /// de texto, así que el mismo token sirve de fondo con etiqueta clara.
+    func testElVerdeDelHandoffSiSirve() {
+        XCTAssertGreaterThanOrEqual(OKLab.contrastRatio(theme.paperHi, theme.positiveText), 4.5)
+    }
+
+    /// Es el MISMO verde de «avanza» de la app, no uno nuevo: `positiveText` deriva de `verdict`.
+    /// Un verde inventado para este botón sería una cuarta voz de color en la sección.
+    func testEsElVerdeDeLaAppYNoUnoNuevo() {
+        XCTAssertLessThan(OKLab.relativeLuminance(theme.positiveText),
+                          OKLab.relativeLuminance(theme.verdict),
+                          "positiveText tiene que ser el verdict oscurecido, no un token suelto")
+    }
+}

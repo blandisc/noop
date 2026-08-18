@@ -30,12 +30,19 @@ public struct StrandCTAButton: View {
     private let tint: Color?
     private let action: () -> Void
 
+    /// FER-86: el héroe de Entrenar lo quiere COMPACTO, como su handoff lo dibuja (pastilla de
+    /// 46 con aire a los lados), no como una banda de ancho completo. Por omisión sigue llenando
+    /// el ancho, así que ningún otro sitio cambia.
+    private let fillsWidth: Bool
+
     public init(_ title: LocalizedStringKey, systemImage: String? = nil,
-                kind: Kind = .solid, tint: Color? = nil, action: @escaping () -> Void) {
+                kind: Kind = .solid, tint: Color? = nil, fillsWidth: Bool = true,
+                action: @escaping () -> Void) {
         self.title = title
         self.systemImage = systemImage
         self.kind = kind
         self.tint = tint
+        self.fillsWidth = fillsWidth
         self.action = action
     }
 
@@ -45,7 +52,8 @@ public struct StrandCTAButton: View {
                 .font(InstrumentoType.grotesk(15, weight: .bold))
                 .tracking(0.3)
                 .foregroundStyle(kind == .solid ? theme.paperHi : theme.ink)
-                .frame(maxWidth: .infinity)
+                .frame(maxWidth: fillsWidth ? .infinity : nil)
+                .padding(.horizontal, fillsWidth ? 0 : CenitMetrics.sectionGapCompact + CenitMetrics.gap)
                 .padding(.vertical, 15)
                 .background {
                     let shape = RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous)
