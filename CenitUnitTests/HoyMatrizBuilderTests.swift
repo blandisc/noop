@@ -622,7 +622,7 @@ final class HoyMatrizBuilderTests: XCTestCase {
         let m = LiquidHoyBuilder.matriz(inputs(
             prep: prep(sentinel: sentinel(.quiet), sentinelHistory: historia), dias: dias))
         guard let g = seccion(m, id: "guardian"), let noches = g.scrubNoches,
-              case .costura(let costura)? = g.chart else { return XCTFail("guardián") }
+              case .costura(let costura) = g.chart else { return XCTFail("guardián") }
         XCTAssertEqual(noches.count, 15, "recortó las 5 noches sin lectura")
         XCTAssertEqual(costura.count, noches.count, "scrub y costura, mismo largo")
         let iPar = costura.firstIndex { $0.parFuera }
