@@ -41564,28 +41564,6 @@
         }
       }
     },
-    "The raise to %@ waits for a day in range. You can take it anyway." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La subida a %@ espera un día en rango. Puedes tomarla de todos modos."
-          }
-        }
-      }
-    },
-    "What rose, what waits for a day in range, and what stalled." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lo que subió, lo que espera un día en rango y lo que se estancó."
-          }
-        }
-      }
-    },
     "%@ waits" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -59334,6 +59312,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Continuar %@"
+          }
+        }
+      }
+    },
+    "The raise to %@ waits for a day that doesn't hold it back. You can take it anyway." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La subida a %@ espera un día que no la detenga. Puedes tomarla de todos modos."
+          }
+        }
+      }
+    },
+    "What rose, what waits for a day that doesn't hold it back, and what stalled." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lo que subió, lo que espera un día que no lo detenga y lo que se estancó."
           }
         }
       }

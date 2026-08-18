@@ -755,7 +755,11 @@ struct ExerciseDetailScreen: View {
         case .deferred(let newKg):
             // FER-82: the cause is the day's verdict, not a recovery score. Naming the score here
             // was a third voice that could contradict both Hoy and Entrenar on the same morning.
-            return Text("The raise to \(kg(newKg)) waits for a day in range. You can take it anyway.")
+            // FER-86: decía «espera un día en rango», pero el oráculo también la libera con
+            // `.silent` — un día SIN lectura, que el hilo rotula «Sin lectura de hoy», jamás «En
+            // rango». El texto prometía una condición más estrecha que la real, y se cumplía sola
+            // el día que la pantalla llamaba de otro modo.
+            return Text("The raise to \(kg(newKg)) waits for a day that doesn't hold it back. You can take it anyway.")
         case .stalled(let sessions):
             return Text("\(sessions) sessions without hitting the goal at this weight.")
         case .deloading(let fromKg, let toKg):

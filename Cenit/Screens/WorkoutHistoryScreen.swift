@@ -406,7 +406,7 @@ struct WorkoutHistoryScreen: View {
                     .padding(.vertical, 4)
                     .accessibilityElement(children: .combine)
                 }
-                BarraAncla(String(localized: "What rose, what waits for a day in range, and what stalled."),
+                BarraAncla(String(localized: "What rose, what waits for a day that doesn't hold it back, and what stalled."),
                            color: theme.dataRecovery, theme: theme)
             }
         }
