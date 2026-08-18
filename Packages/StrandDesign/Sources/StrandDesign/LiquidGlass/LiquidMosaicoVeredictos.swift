@@ -160,7 +160,7 @@ public struct LiquidMosaicoVeredictos: View {
 
     private func color(_ peldanoID: String?) -> Color {
         guard let peldanoID, let p = peldanos.first(where: { $0.id == peldanoID }) else {
-            return LiquidColor.tinta900.opacity(0.07)
+            return LiquidColor.celdaVacia
         }
         return p.color
     }
@@ -335,7 +335,7 @@ private let mosaicoPeldanos: [LiquidMosaicoVeredictos.Peldano] = [
     .init(id: "full", color: LiquidColor.verdePrimario, etiqueta: "Todo en rango"),
     .init(id: "caution", color: LiquidColor.atencion, etiqueta: "Una señal fuera"),
     .init(id: "easy", color: LiquidColor.negativo, etiqueta: "Dos o más fuera"),
-    .init(id: "none", color: LiquidColor.tinta900.opacity(0.14), etiqueta: "Sin lectura"),
+    .init(id: "none", color: LiquidColor.celdaVaciaPip, etiqueta: "Sin lectura"),
 ]
 
 private struct MosaicoDemo: View {

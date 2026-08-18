@@ -33,6 +33,582 @@
         }
       }
     },
+    "prep.atr.auto" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your resting heart rate or HRV came in outside your base"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu FC en reposo o tu VFC vinieron fuera de tu base"
+          }
+        }
+      }
+    },
+    "prep.atr.centinela" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Both ran high together — one alone never counts"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las dos altas juntas; una sola nunca cuenta"
+          }
+        }
+      }
+    },
+    "prep.atr.centinela.nombre" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Temperature and breathing"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Temperatura y respiración"
+          }
+        }
+      }
+    },
+    "prep.atr.leidas" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The rest didn't have enough signal"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El resto no tuvo señal suficiente"
+          }
+        }
+      }
+    },
+    "prep.atr.leidas.nombre" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mornings read"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mañanas leídas"
+          }
+        }
+      }
+    },
+    "prep.atr.sueno" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You slept less than your body asks for"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dormiste menos de lo que te pide el cuerpo"
+          }
+        }
+      }
+    },
+    "prep.atribucion.nota" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "These are the nights each signal came in outside your range. A single night out doesn't move your verdict on its own, so these numbers won't add up to the mosaic above."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Son las noches en que cada señal vino fuera de tu rango. Una noche fuera no mueve tu veredicto por sí sola, así que estos números no cuadran con el mosaico de arriba."
+          }
+        }
+      }
+    },
+    "prep.atribucion.titulo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What went out, and how often"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qué se salió, y cuántas veces"
+          }
+        }
+      }
+    },
+    "prep.cargando" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reading your mornings…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leyendo tus mañanas…"
+          }
+        }
+      }
+    },
+    "prep.cobertura.fmt" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d with a reading"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d con lectura"
+          }
+        }
+      }
+    },
+    "prep.dias.corta" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "days"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "días"
+          }
+        }
+      }
+    },
+    "prep.dias.fmt" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d days"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d días"
+          }
+        }
+      }
+    },
+    "prep.eje.dentro" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In your range"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En tu rango"
+          }
+        }
+      }
+    },
+    "prep.eje.fuera" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Outside your range"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fuera de tu rango"
+          }
+        }
+      }
+    },
+    "prep.hoy.titulo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Why today"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Por qué hoy"
+          }
+        }
+      }
+    },
+    "prep.metodo.como" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Every morning I compare three resting signals against your own baseline: the autonomic one (your resting heart rate and HRV), your sleep, and the sentinel (skin temperature and breathing, which only counts when both run high together). None outside is «all in range»; one is «one signal out»; two or more is «two or more out». It takes two days in a row for a change to move your verdict, so one odd night doesn't tip it."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cada mañana comparo tres señales en reposo contra tu propia base: la autonómica (tu FC en reposo y tu VFC), tu sueño, y el centinela (temperatura de piel y respiración, que solo cuenta cuando las dos van altas juntas). Ninguna fuera es «todo en rango»; una es «una señal fuera»; dos o más es «dos o más fuera». Un cambio necesita dos días seguidos para mover tu veredicto, así que una noche rara no lo tumba."
+          }
+        }
+      }
+    },
+    "prep.metodo.limite" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Each square is recalculated with what I know about you today — it isn't a snapshot of what you saw that morning. If your baseline has moved since then, an older day can read differently now. Training load doesn't vote here."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cada cuadro se vuelve a calcular con lo que sé de ti hoy, no es la foto de lo que viste esa mañana. Si tu base se movió desde entonces, un día viejo puede leerse distinto ahora. La carga de entrenamiento no vota aquí."
+          }
+        }
+      }
+    },
+    "prep.metodo.titulo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "See the method"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ver el método"
+          }
+        }
+      }
+    },
+    "prep.mosaico.a11y" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your last 30 mornings"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus últimas 30 mañanas"
+          }
+        }
+      }
+    },
+    "prep.mosaico.conteo.fmt" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$d of %2$d mornings have a reading"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$d de %2$d mañanas tienen lectura"
+          }
+        }
+      }
+    },
+    "prep.mosaico.pista" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap a morning to read it."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toca una mañana para leerla."
+          }
+        }
+      }
+    },
+    "prep.mosaico.titulo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your last 30 mornings"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus últimas 30 mañanas"
+          }
+        }
+      }
+    },
+    "prep.peldano.caution" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One signal out"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Una señal fuera"
+          }
+        }
+      }
+    },
+    "prep.peldano.easy" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Two or more out"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dos o más fuera"
+          }
+        }
+      }
+    },
+    "prep.peldano.full" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All in range"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todo en rango"
+          }
+        }
+      }
+    },
+    "prep.peldano.sin" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No reading"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin lectura"
+          }
+        }
+      }
+    },
+    "prep.permiso.cuerpo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preparation is built from what your watch already saves in Apple Health: resting heart rate, HRV, sleep, temperature and breathing. Without that permission there's nothing to read. Everything stays on your iPhone."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preparación se arma con lo que tu reloj ya guarda en Apple Salud: FC en reposo, VFC, sueño, temperatura y respiración. Sin ese permiso no hay nada que leer. Todo se queda en tu iPhone."
+          }
+        }
+      }
+    },
+    "prep.permiso.titulo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I need to see your Health"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Necesito ver tu Salud"
+          }
+        }
+      }
+    },
+    "prep.sello.fmt" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d nights of your baseline"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d noches de tu base"
+          }
+        }
+      }
+    },
+    "prep.sinHistoria.cuerpo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "There's no history to show yet. Sleep with your watch on and this fills in on its own, one morning at a time."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todavía no hay historia que mostrar. Duerme con el reloj puesto y esto se va llenando solo, una mañana a la vez."
+          }
+        }
+      }
+    },
+    "prep.sinHistoria.titulo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your first mornings"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus primeras mañanas"
+          }
+        }
+      }
+    },
+    "prep.titulo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preparation"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preparación"
+          }
+        }
+      }
+    },
+    "prep.vacio.formando.fmt" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "None of these 30 mornings had a verdict yet: I'm still learning your normal. You have %d nights so far."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ninguna de estas 30 mañanas tuvo veredicto todavía: sigo aprendiendo tu normal. Llevas %d noches."
+          }
+        }
+      }
+    },
+    "prep.vacio.imposible" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "None of these 30 mornings had enough signal. Preparation needs your resting signals while you sleep, and they haven't come in — if you don't wear your watch at night, I won't be able to read them."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ninguna de estas 30 mañanas tuvo señal suficiente. Preparación necesita tus señales en reposo mientras duermes, y no han llegado: si no traes el reloj de noche, no voy a poder leerlas."
+          }
+        }
+      }
+    },
+    "prep.vacio.sinDatos" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "None of these 30 mornings had enough signal to read."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ninguna de estas 30 mañanas tuvo señal suficiente para leerse."
+          }
+        }
+      }
+    },
+    "prep.volver" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Back"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Atrás"
+          }
+        }
+      }
+    },
     "recibo.hoy" : {
       "localizations" : {
         "en" : {

@@ -193,7 +193,7 @@ private struct CuerpoLanding: View {
     /// Light «Instrumento» Detalle de Recuperación (FER-225): the recovery hero now opens this rich detail
     /// (superset of the old `MetricInfoSheet`), built fresh on tap from the in-memory dashboard, theme
     /// passed explicitly.
-    @State private var recoveryDetail: RecoveryDetailItem? = nil
+    @State private var recoveryDetail: PreparacionDetalleItem? = nil
     /// Dark screen / catalog-detail sheet, for everything without a light sheet yet.
     @State private var darkSheet: CuerpoSheet? = nil
     /// Light «Instrumento» Comparar (FER-268) — the «Compare» row now opens the reskinned overlay screen
@@ -449,7 +449,7 @@ private struct CuerpoLanding: View {
                 todayKey: Repository.localDayKey(Date())
             )
         } else if let item = recoveryDetail {
-            RecoveryDetailScreen(theme: theme, model: item.model)
+            PreparacionDetailScreen(modelo: item.modelo)
         } else if let item = strainDetail {
             StrainDetailScreen(theme: theme, model: item.model, estimated: item.estimated)
         } else if let item = sleepDetail {
@@ -778,18 +778,28 @@ private struct CuerpoLanding: View {
     ///
     /// Ahora muestra lo que la app SÍ calcula: el veredicto de Preparación de hoy. Es
     /// categórico a propósito — el puntaje 0–100 se retiró y no vuelve por la puerta de atrás.
+    /// Salud «conectada» EFECTIVA, con la misma regla que Hoy (`TodayView.saludConectada`): en
+    /// modo fixture el permiso real nunca está concedido, y sin este escape la pantalla de
+    /// Preparación se vería siempre en su estado «sin permiso» en las capturas.
+    private var saludConectada: Bool {
+        #if DEBUG
+        if ScreenshotFixtures.activeState() != nil { return true }
+        #endif
+        return health.auth == .authorized
+    }
+
     private var recoveryHero: some View {
         let prep = repo.todayPreparedness
         let cal = recoveryCalibration
         return Button {
             // FER-954: present the loading state IMMEDIATELY; the model builds off-main and swaps
             // in under the same id (same pattern as `sleepStat`, FER-953).
-            let item = RecoveryDetailItem(model: .loading)
+            let item = PreparacionDetalleItem(modelo: .cargando)
             recoveryDetail = item
             Task {
-                let m = await RecoveryDetailModel.buildDetached(repo: repo)
+                let m = await PreparacionDetalleModelo.buildDetached(repo: repo, healthConnected: saludConectada)
                 if recoveryDetail?.id == item.id {
-                    recoveryDetail = RecoveryDetailItem(id: item.id, model: m)
+                    recoveryDetail = PreparacionDetalleItem(id: item.id, modelo: m)
                 }
             }
         } label: {
