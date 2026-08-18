@@ -384,10 +384,10 @@ struct SleepDetailScreen: View {
             },
             a11yLabel: nightTitle,
             a11yValue: stagesA11y(night.stages))
-        .padding(LiquidSpace.s400)
+        // Sin tarjeta, como la barra de etapas: el dueño pidió secciones planas que llenen el
+        // ancho («nada flotando»). La sección ya tiene su margen; envolverla otra vez metía un
+        // segundo sistema visual dentro del mismo bloque.
         .frame(maxWidth: .infinity, alignment: .leading)
-        .clipShape(RoundedRectangle(cornerRadius: LiquidRadius.tarjeta, style: .continuous))
-        .liquidGlass(.superficieSolida)
     }
 
     /// Las CINCO horas del eje del hipnograma, repartidas por el span real de la noche.
@@ -1113,9 +1113,14 @@ struct SleepDetailScreen: View {
                 LiquidVerMas(title: String(localized: "Sleep stages in detail"),
                              tone: Self.tono) { showStages = true }
             }
+            // SIEMPRE Apple Salud. El sello decía «Medido por tu banda» cuando
+            // `isAppleHealth` era falso, y eso es una MENTIRA: la app es solo-Apple y ningún
+            // usuario tuvo banda nunca (axioma «cero banda»). Ese flag no distingue la
+            // FUENTE, distingue si la noche trae tramos por época o se derivó del resumen
+            // diario — las dos vienen de Apple Salud. (FER-102)
             LiquidOrigenChip(glyph: .luna,
                              badgeTono: Self.tono,
-                             etiqueta: (model.isAppleHealth ? DataOrigin.apple : DataOrigin.band).label,
+                             etiqueta: DataOrigin.apple.label,
                              sufijo: String(localized: "last night"))
             if let agreement = model.sourceAgreement {
                 // Pieza compartida con las otras pantallas de detalle: se conserva tal cual
