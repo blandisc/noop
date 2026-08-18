@@ -337,14 +337,15 @@ struct SleepDetailScreen: View {
                 }
                 hipnograma(night)
             } else {
-                LiquidStageBar(etapas: sleepEtapas(night),
-                               overline: nightTitle,
-                               ventana: ventanaNoche(night))
-                    .padding(LiquidSpace.s400)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .clipShape(RoundedRectangle(cornerRadius: LiquidRadius.tarjeta, style: .continuous))
-                    .liquidGlass(.superficieSolida)
-                LiquidNotaLine(awakeText(night))
+                // Sin tarjeta: el dueño pidió que las secciones sean planas y llenen el ancho
+                // («nada flotando»). Y sin `ventana:` — la franja de la sección ya lleva el
+                // reloj como pista, y repetirlo dentro leía como dos encabezados.
+                HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s200) {
+                    LiquidNotaLine(nightTitle, tono: LiquidColor.tinta700)
+                    Spacer(minLength: 0)
+                    LiquidNotaLine(awakeText(night))
+                }
+                LiquidStageBar(etapas: sleepEtapas(night), overline: "", ventana: nil)
                 if model.isAppleHealth {
                     LiquidOrigenChip(glyph: .luna, badgeTono: Self.tono,
                                      etiqueta: String(localized: "Apple Health"))
@@ -455,8 +456,13 @@ struct SleepDetailScreen: View {
         ]
     }
 
+    /// El reloj de pared de la noche. Plantilla «Hmm», la MISMA que usa la hoja de resumen
+    /// (`LiquidMetricSheetView.clockFmt`): con `timeStyle = .short` el detalle imprimía
+    /// «10:48 p.m. → 6:36 a.m.» mientras la hoja, un toque antes, decía «22:48 → 6:36». La
+    /// misma noche en dos formatos a un tap de distancia se lee como dos apps.
+    /// (Por plantilla, nunca con `dateFormat`: regla de la casa.)
     private static let clockFmt: DateFormatter = {
-        let f = DateFormatter(); f.timeStyle = .short; f.dateStyle = .none; return f
+        let f = DateFormatter(); f.setLocalizedDateFormatFromTemplate("Hmm"); return f
     }()
 
     /// Cuenta los tramos REM contiguos a partir de los intervalos (solo presentación).
@@ -493,7 +499,7 @@ struct SleepDetailScreen: View {
                               typicalPct: model.typicalLightPct,
                               color: Self.coloresEtapa[.ligero] ?? Self.tono,
                               higherIsBetter: false, index: 2)
-            LiquidReadingLine(String(localized: "The mark is your average."))
+            LiquidNotaLine(String(localized: "The mark is your average."))
         }
     }
 
@@ -701,8 +707,7 @@ struct SleepDetailScreen: View {
                                      pie: String(localized: "of the night"))
                     }
                 }
-                LiquidReadingLine(String(localized: String.LocalizationValue(dipCopyKey(shape.dipShape))),
-                                  highlightTone: Self.tonoCorazon)
+                LiquidNotaLine(String(localized: String.LocalizationValue(dipCopyKey(shape.dipShape))))
             }
         }
     }
@@ -755,8 +760,7 @@ struct SleepDetailScreen: View {
             LiquidFraseNivel(nivel: signedBpm(r.deltaBpm),
                              conteo: String(localized: "from the first third of the night to the last"),
                              tono: Self.tonoCorazon)
-            LiquidReadingLine(String(localized: String.LocalizationValue(thirdsCopyKey(r.tone))),
-                              highlightTone: Self.tonoCorazon)
+            LiquidNotaLine(String(localized: String.LocalizationValue(thirdsCopyKey(r.tone))))
         }
     }
 
@@ -827,9 +831,8 @@ struct SleepDetailScreen: View {
                              conteo: String(localized: "behind this week"),
                              tono: LiquidColor.atencionTexto)
             weeklyDebtBars(debt)
-            LiquidReadingLine(
-                String(localized: "What you missed versus what your body needs. One good night won't clear it."),
-                highlightTone: LiquidColor.atencionTexto)
+            LiquidNotaLine(
+                String(localized: "What you missed versus what your body needs. One good night won't clear it."))
         }
     }
 
@@ -904,8 +907,8 @@ struct SleepDetailScreen: View {
                                  a11yValor: lastNightHrs.map { horasHabladas($0 * 60) })
                 }
                 LiquidLevelsList(filas: carrilesHistorial(window), tono: Self.tono)
-                LiquidReadingLine(String(localized: "Hours asleep per night. The wash is the optimal 7–9 h band."))
-                LiquidReadingLine(String(localized: "How many nights of the period fell in each band. Tap one to see its nights on the chart."))
+                LiquidNotaLine(String(localized: "Hours asleep per night. The wash is the optimal 7–9 h band."))
+                LiquidNotaLine(String(localized: "How many nights of the period fell in each band. Tap one to see its nights on the chart."))
             } else {
                 LiquidGraficaNiveles(
                     puntos: [], bandas: [], dominio: Self.dominioSueno, ticksY: [],
@@ -1044,11 +1047,11 @@ struct SleepDetailScreen: View {
     private static var leyendaCalendario: [LiquidCalendario90.NivelLeyenda] {
         [
             .init(id: "enough", color: tono.opacity(LiquidCalendario90.alfa(intensidad: 1)),
-                  etiqueta: String(localized: "enough")),
+                  etiqueta: String(localized: "Enough sleep")),
             .init(id: "ok", color: tono.opacity(LiquidCalendario90.alfa(intensidad: 0.5)),
-                  etiqueta: String(localized: "ok")),
+                  etiqueta: String(localized: "A bit short")),
             .init(id: "short", color: tono.opacity(LiquidCalendario90.alfa(intensidad: 0)),
-                  etiqueta: String(localized: "short")),
+                  etiqueta: String(localized: "Short sleep")),
             .init(id: "nodata", color: LiquidColor.tinta7,
                   etiqueta: String(localized: "no data")),
         ]
@@ -1061,11 +1064,13 @@ struct SleepDetailScreen: View {
         return 0
     }
 
-    /// La palabra de estado de la lectura (los mismos peldaños que la leyenda y la intensidad).
+    /// La palabra de estado de la lectura. Son las MISMAS tres palabras de la escalera del
+    /// historial («Suficiente · Algo corta · Corta»), no un vocabulario paralelo: la misma
+    /// noche decía «ok» aquí y «Algo corta» un scroll más arriba.
     private static func sleepWord(_ hours: Double) -> String {
-        if hours >= 7 { return String(localized: "enough") }
-        if hours >= 6.3 { return String(localized: "ok") }
-        return String(localized: "short")
+        if hours >= 7 { return String(localized: "Enough sleep") }
+        if hours >= 6.3 { return String(localized: "A bit short") }
+        return String(localized: "Short sleep")
     }
 
     private static let mesFmt: DateFormatter = {

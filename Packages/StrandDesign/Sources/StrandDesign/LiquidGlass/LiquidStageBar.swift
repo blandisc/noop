@@ -117,17 +117,21 @@ public struct LiquidStageBar: View {
         .accessibilityValue(Text(verbatim: Self.a11yValue(etapas: etapas, ventana: ventana)))
     }
 
-    /// Fila de 4 items; en tamaños de accesibilidad, rejilla 2×2 (el cambio es SOLO visual:
-    /// el bloque entero es un único elemento de a11y, ver `.accessibilityElement`).
+    /// Fila de 4 items, con rejilla 2×2 de respaldo cuando la fila no cabe (el cambio es SOLO
+    /// visual: el bloque entero es un único elemento de a11y, ver `.accessibilityElement`).
+    ///
+    /// El disparo NO puede ser solo `isAccessibilitySize`: en es-MX las etiquetas son largas
+    /// («Profundo», «Despierto») y a tamaño DEFAULT los cuatro items ya no caben en 393 pt —
+    /// las palabras se partían a la mitad («Profun / do»). `ViewThatFits` mide de verdad, así
+    /// que cubre el idioma y el Dynamic Type con un solo mecanismo.
     @ViewBuilder private var leyenda: some View {
-        if tamanoTexto.isAccessibilitySize {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: LiquidSpace.s300) {
+                ForEach(etapasVisibles) { item($0) }
+            }
             LazyVGrid(columns: [GridItem(.flexible(), alignment: .topLeading),
                                 GridItem(.flexible(), alignment: .topLeading)],
                       alignment: .leading, spacing: LiquidSpace.s200) {
-                ForEach(etapasVisibles) { item($0) }
-            }
-        } else {
-            HStack(spacing: LiquidSpace.s300) {
                 ForEach(etapasVisibles) { item($0) }
             }
         }
@@ -144,9 +148,13 @@ public struct LiquidStageBar: View {
             Text(verbatim: etapa.etiqueta)
                 .font(LiquidType.microEstado)
                 .foregroundStyle(LiquidColor.tinta500)
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
             Text(verbatim: etapa.duracion)
                 .font(LiquidType.captionLectura)
                 .foregroundStyle(LiquidColor.tinta700)
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
         }
     }
 }
