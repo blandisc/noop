@@ -18,12 +18,12 @@ public struct EntrenarCatalogView: View {
 
     private var rows: [EntrenarSetRow] {
         [
-            .init(id: "w", badge: "C", previous: "40 kg × 10", primary: "40", reps: "10",
-                  done: true, isWarmup: true),
-            .init(id: "1", badge: "1", previous: "80 kg × 8", primary: "82.5", reps: "8", done: true),
-            .init(id: "2", badge: "2", previous: "80 kg × 8", primary: "82.5", reps: "8",
-                  isCurrent: true, isRaiseTarget: true),
-            .init(id: "3", badge: "3", previous: "80 kg × 8", primary: "82.5", reps: "8"),
+            .init(id: "w", badge: "C", primary: "40", primaryState: .ghost, reps: "10", repsState: .ghost,
+                  isWarmup: true),
+            .init(id: "1", badge: "1", primary: "82,5", reps: "8", rpe: "8", done: true),
+            .init(id: "2", badge: "2", primary: "82,5", primaryState: .ghost, reps: "8", repsState: .ghost,
+                  isCurrent: true),
+            .init(id: "3", badge: "3", primary: "82,5", primaryState: .ghost, reps: "8", repsState: .ghost),
         ]
     }
 
@@ -67,22 +67,23 @@ public struct EntrenarCatalogView: View {
                     }
                 }
 
-                section("TABLA DE SERIES · PESO × REPS") {
-                    SetTable(kind: .weightReps, family: .legs, rows: rows,
-                             onToggle: { _ in }, onTapCell: { _ in })
+                section("TABLA DE SERIES · PESO × REPS, CON RPE") {
+                    SetTable(kind: .weightReps, rows: rows, showRPE: true,
+                             onToggle: { _ in }, onTapCell: { _, _ in }, onDelete: { _ in })
                 }
 
                 section("TABLA DE SERIES · LOS OTROS TRES TIPOS") {
-                    SetTable(kind: .bodyweight, family: .pull, rows: [
-                        .init(id: "1", badge: "1", previous: "12", primary: "12", done: true),
-                        .init(id: "2", badge: "2", previous: "12", primary: "12", isCurrent: true),
-                    ], onToggle: { _ in })
-                    SetTable(kind: .time, family: .push, rows: [
-                        .init(id: "1", badge: "1", previous: "0:45", primary: "1:00", isCurrent: true),
-                    ], onToggle: { _ in })
-                    SetTable(kind: .distance, family: .fullBody, rows: [
-                        .init(id: "1", badge: "1", primary: "400 m", isCurrent: true),
-                    ], onToggle: { _ in })
+                    SetTable(kind: .bodyweight, rows: [
+                        .init(id: "1", badge: "1", primary: "0", reps: "12", done: true),
+                        .init(id: "2", badge: "2", primary: "5", primaryState: .ghost, reps: "12", repsState: .ghost,
+                              isCurrent: true),
+                    ], onToggle: { _ in }, onTapCell: { _, _ in })
+                    SetTable(kind: .time, rows: [
+                        .init(id: "1", badge: "1", primary: "1:00", isCurrent: true),
+                    ], onToggle: { _ in }, onTapCell: { _, _ in })
+                    SetTable(kind: .distance, rows: [
+                        .init(id: "1", badge: "1", primary: "400 m", pairedTime: "1:32", isCurrent: true),
+                    ], onToggle: { _ in }, onTapCell: { _, _ in })
                 }
 
                 section("BANDA DE DESCANSO") {

@@ -80,10 +80,40 @@ public enum EntrenarMetrics {
     public static let bandGap: CGFloat = 12
     /// Canal entre columnas de la tabla.
     public static let columnGap: CGFloat = 12
-    /// Grosor del filo izquierdo que marca la fila actual.
+    /// Grosor del subrayado de tinta que marca la serie en curso bajo el numeral del badge
+    /// (`SetTable`, decisión 2026-07-19: aro `dataStrain` + subrayado, nunca relleno por familia).
+    /// Antes de FER-86 este mismo valor marcaba el filo IZQUIERDO de la fila — se retiró (r6, la
+    /// pantalla ya decidió «sin resaltado de fila»): el numeral subrayado es la única señal.
     public static let currentEdge: CGFloat = 2
     /// Alto de la barra de progreso de la sesión.
     public static let progressBar: CGFloat = 3
+    /// Ancho del subrayado de tinta bajo el numeral en curso (`SetTable.badge`).
+    public static let badgeUnderline: CGFloat = 16
+    /// Cuánto baja el subrayado de tinta respecto al numeral (`SetTable.badge`).
+    public static let badgeUnderlineOffset: CGFloat = 5
+    /// Ancho de la columna RPE — más angosta que KG/REPS/DIST/TIME (su contenido es «RPE» o «9,5»).
+    public static let rpeColumn: CGFloat = 44
+    /// Separación vertical del layout apilado de una fila en reflow (`SetTable`, Dynamic Type de
+    /// accesibilidad): badge+check arriba, datos abajo.
+    public static let reflowRowGap: CGFloat = 8
+    /// Separación horizontal entre celdas de dato en el layout apilado de reflow.
+    public static let reflowCellGap: CGFloat = 16
+    /// Ancho y alto del cursor de una celda EN EDICIÓN (`SetTable`, corazón de FER-952).
+    public static let caretWidth: CGFloat = 2
+    public static let caretHeight: CGFloat = 18
+    /// Grosor del subrayado de una celda de captura: fino en reposo, grueso mientras se edita.
+    public static let cellUnderline: CGFloat = 1
+    public static let cellUnderlineActive: CGFloat = 2
+    /// Cuánto crece una fila armada para borrar (long-press) antes de que aparezca su pastilla.
+    public static let armedLift: CGFloat = 1.03
+    /// Geometría de la sombra transitoria de esa misma fila armada.
+    public static let armedShadowRadius: CGFloat = 10
+    public static let armedShadowY: CGFloat = 4
+    /// Cuánto hay que sostener el toque para armar el borrado de una serie (`SetTable`).
+    public static let deleteHoldDuration: Double = 0.4
+    /// Relleno de la pastilla «Quitar serie» que aparece sobre la fila armada.
+    public static let deletePillPaddingH: CGFloat = 9
+    public static let deletePillPaddingV: CGFloat = 5
     /// Lado de una celda del calendario tipo contribuciones, en su tamaño chico y grande.
     public static let calendarCellMini: CGFloat = 9
     public static let calendarCell: CGFloat = 13
