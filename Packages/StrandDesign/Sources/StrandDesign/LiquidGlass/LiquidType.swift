@@ -58,6 +58,16 @@ public enum LiquidType {
     /// Numeral terciario (referencia/bitácora: VFC, pasos) — P7 del estudio en frío.
     public static let valorS = InstrumentoType.groteskNumber(14, relativeTo: .subheadline)
 
+    /// `valor/tile·l` — 30/700 tabular: el número grande de un módulo de vidrio de Hoy en
+    /// atmósfera (FER-118) para las decisoras (Sueño · FC en reposo). Escala con Dynamic Type.
+    public static let valorTileL = InstrumentoType.groteskNumber(30, relativeTo: .title)
+    /// `valor/tile·m` — 26/700 tabular: el número de los demás módulos (guardián, contexto,
+    /// bitácora). El prototipo aprobado tiene DOS tamaños de número, no tres: las terciarias
+    /// (VFC, pasos) también van en éste.
+    public static let valorTileM = InstrumentoType.groteskNumber(26, relativeTo: .title2)
+    /// Tracking de los dos numerales de módulo (mock `.cn { letter-spacing:-1px }`).
+    public static let valorTileTracking: CGFloat = -1
+
     /// `nivel/título` — 18/700, escala. El nombre del nivel destacado en la tarjeta de la
     /// gráfica (mock `.titfila {18px/700}`); más chico que `valorL` (22) para no competir con
     /// el numeral del héroe (52). Auditoría de fidelidad Grok+DeepSeek 2026-08-03.

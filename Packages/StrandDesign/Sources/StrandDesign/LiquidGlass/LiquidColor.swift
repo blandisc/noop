@@ -215,9 +215,24 @@ public enum LiquidColor {
     // un canto exterior de tinta hairline que dibuja el borde contra el papel, y la
     // «refracción honesta» (la plasta se ve más viva a través del vidrio que fuera).
 
-    /// Canto exterior hairline de un módulo — tinta/900 al 6 %, 0.5 pt. Es lo que separa
-    /// «caro» de «lavado» sobre fondo claro: un filo de tinta bajo el borde blanco.
-    public static let vidrioCanto = tinta900.opacity(0.06)
+    /// Canto exterior hairline de un módulo — tinta/900 al 8 %, 0.5 pt. Es lo que separa
+    /// «caro» de «lavado» sobre fondo claro: un filo de tinta bajo el borde blanco. Subido de
+    /// .06 a .08 al aprobarse el vidrio al 30 % sobre blanco puro (FER-118): sobre #FFFFFF un
+    /// borde blanco no existe y el canto de tinta es el único filo del módulo.
+    public static let vidrioCanto = tinta900.opacity(0.08)
+
+    // MARK: Vidrio de la ATMÓSFERA (FER-118 — módulos de Hoy sobre blanco puro + partículas)
+    //
+    // El dueño eligió el 30 % viendo 10 / 30 / 55: es el punto donde las partículas se ven a
+    // través del vidrio Y las gráficas conservan su silencio (al 55 % el vidrio no revelaba
+    // nada; al 10 % el fondo competía con las gráficas en los días ámbar y rojo).
+
+    /// `.30` — relleno del módulo de vidrio sobre la atmósfera (receta `.superficieAtmosfera`).
+    public static let vidrioAtmosfera = Color.white.opacity(0.30)
+    /// `.45` — el plan B OPACO de la misma receta si el vidrio real no sostiene 60 fps sobre la
+    /// capa Metal (condición del dueño: el blur tiene que ser real; si cae a sólido, sube a 45 %,
+    /// nunca 30 % opaco, que se ve gris sucio).
+    public static let vidrioAtmosferaSolida = Color.white.opacity(0.45)
 
     /// Factor de saturación del backdrop de un módulo («refracción honesta»): lo que pasa
     /// detrás del vidrio se ve 1.28× más vivo que fuera. En iOS 26 el vidrio nativo aporta
