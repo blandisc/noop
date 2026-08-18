@@ -606,6 +606,33 @@ final class HoyMatrizBuilderTests: XCTestCase {
         } else { XCTFail("costura") }
     }
 
+    /// Con las primeras noches SIN lectura el guardián recorta su ventana (`iniGuardian > 0`): el
+    /// scrub y la costura se recortan con el MISMO índice, así que la noche del par sigue alineada
+    /// 1:1 en los dos arreglos (índice 16 de 20 → 11 de 15 tras recortar 5).
+    func test_118_scrub_guardian_recortado_sigue_alineado() {
+        let keys = (-19...0).map { dayKey($0) }
+        let dias = keys.enumerated().map { i, k in
+            metric(day: k, temp: i < 5 ? nil : 0.1, resp: i < 5 ? nil : 14.0)
+        }
+        let historia: [Preparedness.SentinelNight] = keys.enumerated().map { i, k in
+            let fuera = i == 16
+            return .init(day: k, tempOut: fuera, respOut: fuera, tempMissing: i < 5,
+                         respMissing: i < 5, respJudged: i >= 5, gapBefore: false)
+        }
+        let m = LiquidHoyBuilder.matriz(inputs(
+            prep: prep(sentinel: sentinel(.quiet), sentinelHistory: historia), dias: dias))
+        guard let g = seccion(m, id: "guardian"), let noches = g.scrubNoches,
+              case .costura(let costura) = g.chart else { return XCTFail("guardián") }
+        XCTAssertEqual(noches.count, 15, "recortó las 5 noches sin lectura")
+        XCTAssertEqual(costura.count, noches.count, "scrub y costura, mismo largo")
+        let iPar = costura.firstIndex { $0.parFuera }
+        XCTAssertEqual(iPar, 11, "la noche del par cae en 16 − 5")
+        for (i, n) in noches.enumerated() {
+            let dice = n.sublabel.lowercased().contains("together") || n.sublabel.lowercased().contains("juntas")
+            XCTAssertEqual(dice, costura[i].parFuera, "índice \(i): el sublabel y la costura coinciden")
+        }
+    }
+
     func test_30_estela_excluye_hoy() {
         let keys = LiquidHoyBuilder.dayKeys(endingAt: now, calendar: cal, count: 20)
         // Serie con razón distinta cada día; HOY = 9.99 para detectarlo si se cuela.
