@@ -232,6 +232,9 @@ public enum LiquidType {
     /// `caption` — 10.5/500. Sin consumidor en componentes (los deltas usan
     /// `captionLectura`); se conserva para previews/debug.
     public static let caption = InstrumentoType.grotesk(10.5, weight: .medium)
+    /// La etiqueta de eje dentro de una gráfica de la Matriz (los «0.8 · 1.3» de la campana de
+    /// Carga): 8/500 tabular, la voz más chica del sistema — solo dentro de un `Canvas`.
+    public static let etiquetaEje = InstrumentoType.grotesk(8, weight: .medium)
     /// La variante de LECTURA del caption: escala con Dynamic Type (relativo a .caption2)
     /// — los deltas se leen, no son chrome (FER-1045).
     public static let captionLectura = InstrumentoType.grotesk(10.5, weight: .medium,

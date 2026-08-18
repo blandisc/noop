@@ -23,8 +23,10 @@ public enum PolvoSimulacion {
         public static let ptPorParticula: CGFloat = 234
         public static let nMin = 600
         public static let nMax = 2000
-        public static let radioMin: CGFloat = 0.6
-        public static let radioMax: CGFloat = 2.3
+        /// Radio 1.0–2.4 pt (FER-125: el dueño las vio «poco crisp» — a 0.6 pt una mota eran
+        /// menos de 2 px y el antialias del disco la volvía una nube; ahora la más chica mide 3 px).
+        public static let radioMin: CGFloat = 1.0
+        public static let radioMax: CGFloat = 2.4
         /// alfa = (alfaBase + alfaRango·densidad)·(0.5 + 0.5·h)·respiración
         public static let alfaBase: Double = 0.07
         public static let alfaRango: Double = 0.24
@@ -40,10 +42,12 @@ public enum PolvoSimulacion {
         public static let respiracionWMin: Double = 0.5
         public static let respiracionWRango: Double = 0.9
         /// Deriva en pt/s: horizontal simétrica en ±derivaXMax; vertical SIEMPRE hacia arriba
-        /// entre derivaYMin y derivaYMin + derivaYRango.
-        public static let derivaXMax: Double = 2.1
-        public static let derivaYMin: Double = 0.9
-        public static let derivaYRango: Double = 3.0
+        /// entre derivaYMin y derivaYMin + derivaYRango. FER-125 (dueño en simulador: «que se
+        /// muevan un poco más»): ×1.5 sobre el prototipo — a 20 Hz la mota más rápida avanza
+        /// ≤ 0.35 pt por cuadro (≈ 1 px a 3×), todavía una deriva, no un salto.
+        public static let derivaXMax: Double = 3.2
+        public static let derivaYMin: Double = 1.4
+        public static let derivaYRango: Double = 4.5
         /// Cuánto se mueve el campo con el scroll (fracción del desplazamiento).
         public static let parallax: CGFloat = 0.22
         /// Sin veredicto (calibración, T3, T4, T5, base rancia): tinta neutra y alfa × 0.55.

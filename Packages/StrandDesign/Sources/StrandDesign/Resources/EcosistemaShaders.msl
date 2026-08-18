@@ -109,6 +109,7 @@ struct VOut {
     float  radio;
     float  radioIni;
     float  grosor;
+    float  suavizado; // ancho del antialias del disco en fwidth: 1 = normal · < 1 = más nítido (polvo)
 };
 
 // El quad de la instancia, como triangle-strip de 4 vértices.
@@ -205,6 +206,7 @@ static VOut quadNube(NubeEval e, uint vid, float2 lienzo) {
     out.radio = e.tam;
     out.radioIni = 0.0;
     out.grosor = 0.0;
+    out.suavizado = 1.0;
     return out;
 }
 
@@ -306,7 +308,11 @@ vertex VOut vsPolvo(uint vid [[vertex_id]],
     e.tam = radio;
     e.alfa = alfa;
     e.color = color;
-    return quadNube(e, vid, u.lienzo);
+    VOut o = quadNube(e, vid, u.lienzo);
+    // FER-125: el polvo con el borde a MEDIO píxel de feather (el héroe conserva el suyo).
+    // A radios de 1–2.4 pt un feather de un píxel entero volvía nube cada mota.
+    o.suavizado = 0.5;
+    return o;
 }
 
 // MARK: Átomos sueltos (chispas, motas, espirales, el anillo y el especular)
@@ -329,6 +335,7 @@ vertex VOut vsAtomo(uint vid [[vertex_id]],
     out.radioIni = a.radioIni;
     // El fragmento necesita el grosor y el radio del trazo en unidades del quad.
     out.grosor = a.grosor > 0.0 ? a.grosor / alcance : a.grosor;
+    out.suavizado = 1.0;
     return out;
 }
 
@@ -352,7 +359,7 @@ fragment float4 fsTrazo(VOut in [[stage_in]]) {
         float g = 1.0 - clamp((dd - in.radioIni) / max(in.radio - in.radioIni, 1e-4), 0.0, 1.0);
         cobertura = g * (1.0 - smoothstep(1.0 - aa, 1.0, d));
     } else {
-        cobertura = 1.0 - smoothstep(1.0 - aa, 1.0, d);
+        cobertura = 1.0 - smoothstep(1.0 - aa * in.suavizado, 1.0, d);
     }
 
     float a = in.color.a * cobertura;

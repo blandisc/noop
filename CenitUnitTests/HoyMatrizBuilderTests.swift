@@ -339,13 +339,18 @@ final class HoyMatrizBuilderTests: XCTestCase {
             XCTAssertEqual(estela.count, 5) // 5 previas con datos
         } else { XCTFail("carga") }
 
-        // Esfuerzo / pasos: 14 barras.
-        if case .barrasMini(let v) = seccion(model, id: "strain")?.chart {
-            XCTAssertEqual(v.count, 14)
+        // Esfuerzo: 7 barras (FER-125, prototipo) sin referencia; pasos: 14 barras con su promedio.
+        if case .barrasMini(let v, let prom) = seccion(model, id: "strain")?.chart {
+            XCTAssertEqual(v.count, 7)
+            XCTAssertNil(prom)
         } else { XCTFail("strain") }
-        if case .barrasMini(let v) = seccion(model, id: "steps")?.chart {
+        if case .barrasMini(let v, let prom) = seccion(model, id: "steps")?.chart {
             XCTAssertEqual(v.count, 14)
+            XCTAssertEqual(prom ?? -1, 8000, accuracy: 0.001, "el promedio de la ventana es la referencia")
         } else { XCTFail("steps") }
+        // Pasos se lee en miles con «k» y su sublabel nombra la ventana (FER-125).
+        XCTAssertEqual(seccion(model, id: "steps")?.unidad, "k")
+        XCTAssertEqual(seccion(model, id: "steps")?.valor, "8.0")
 
         // Estrés: 7 niveles.
         if case .escalerita(let n) = seccion(model, id: "stress")?.chart {

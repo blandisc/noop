@@ -187,6 +187,15 @@ enum HoyGramatica {
     }
 
     /// Miles con espacio fino no separable («8 432»), para pasos.
+    /// Pasos en MILES con un decimal, sin unidad (la unidad «k» la pone el módulo): 6 200 →
+    /// «6,2» en es / «6.2» en en; 850 → «0,9». Redondea a centenas: el número corto del
+    /// prototipo (FER-125); el conteo exacto sigue en la hoja de Pasos.
+    static func formatoMilesK(_ v: Double, locale: Locale) -> String {
+        let miles = max(v, 0) / 1000
+        let sep = locale.decimalSeparator ?? "."
+        return String(format: "%.1f", miles).replacingOccurrences(of: ".", with: sep)
+    }
+
     static func formatoMiles(_ v: Double) -> String {
         let entero = Int(v.rounded())
         let crudo = String(entero)

@@ -279,6 +279,11 @@ final class HoyGramaticaTests: XCTestCase {
         XCTAssertEqual(HoyGramatica.formatoMiles(12345), "12\u{202F}345")
         XCTAssertEqual(HoyGramatica.formatoMiles(1234567), "1\u{202F}234\u{202F}567")
         XCTAssertEqual(HoyGramatica.formatoMiles(432), "432", "sin agrupar bajo mil")
+        // FER-125: los pasos de la Matriz se leen en miles con un decimal (la unidad la pone el módulo).
+        XCTAssertEqual(HoyGramatica.formatoMilesK(6200, locale: Locale(identifier: "es_MX")), "6,2")
+        XCTAssertEqual(HoyGramatica.formatoMilesK(6249, locale: Locale(identifier: "en_US")), "6.2")
+        XCTAssertEqual(HoyGramatica.formatoMilesK(850, locale: Locale(identifier: "es_MX")), "0,9")
+        XCTAssertEqual(HoyGramatica.formatoMilesK(12345, locale: Locale(identifier: "es_MX")), "12,3")
         XCTAssertEqual(HoyGramatica.formatoMiles(0), "0")
     }
 

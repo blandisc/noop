@@ -40,9 +40,6 @@ public enum MatrizTokens {
     public static let lineaAlfa: Double = 0.75
     /// Trazo de la curva serena (guardián — casi plana a propósito).
     public static let lineaSerenaAlfa: Double = 0.55
-    /// Trazo de la escalerita (estrés — geometría sin juicio; la curva conectora queda
-    /// NEUTRA para que el color viva en los puntos, no en la línea — FER-60).
-    public static let lineaEscaleraAlfa: Double = 0.40
     /// Puntos de historia del HEATMAP de estrés (FER-60): más presentes que `histAlfa`
     /// (0.32) porque en el heatmap el COLOR de cada día ES el dato — a 0.32 el ocre/siena
     /// se lavaba. HOY sigue en `hoyAlfa`; el par mantiene «historia serena, HOY presente».
@@ -75,8 +72,6 @@ public enum MatrizTokens {
     public static let filoCentralAlfa: Double = 0.22
     /// Riel base de la carga.
     public static let rielAlfa: Double = 0.14
-    /// Rieles fantasma de la escalerita.
-    public static let rielFantasmaAlfa: Double = 0.08
     /// Aro de alerta (trazo).
     public static let aroAlfa: Double = 0.8
     /// Separación del aro de alerta respecto al marcador (y del segundo aro).
@@ -97,21 +92,38 @@ public enum MatrizTokens {
     /// Media altura de los ticks que rematan la zona dulce.
     public static let zonaTickAlto: CGFloat = 6
 
-    // MARK: La mini-colina de carga (FER-60)
+    // MARK: La colina de carga — la CAMPANA del prototipo (FER-125; antes la cuesta, FER-60)
 
-    /// Aire bajo/sobre la silueta de la colina en la celda (la cima y el aro de HOY
-    /// necesitan cancha arriba; el pie deja sitio a la barra-susurro abajo).
+    /// Dominio de la razón en x (el prototipo aprobado: 0.5…1.8) y la campana
+    /// exp(−((v − centro)/σ)²) centrada en la mitad de la zona ideal (0.8–1.3 → 1.05).
+    public static let colinaLo: Double = 0.5
+    public static let colinaHi: Double = 1.8
+    public static let colinaCentro: Double = 1.05
+    public static let colinaSigma: Double = 0.32
+    /// Aire sobre la cima (el punto de HOY y su aro necesitan cancha) y bajo el pie (las dos
+    /// etiquetas de la zona viven ahí, en `etiquetaEje`).
     public static let colinaPadAlto: CGFloat = 8
-    public static let colinaPadBajo: CGFloat = 5
-    /// Barra-susurro de la zona de equilibrio (al pie): alto y alfa — un hint, no un juicio.
-    public static let colinaZonaAlto: CGFloat = 3
-    public static let colinaZonaAlfa: Double = 0.20
-    /// Área tenue bajo la colina (tinta chrome) y su trazo.
-    public static let colinaAreaAlfa: Double = 0.05
-    public static let colinaLineaAlfa: Double = 0.55
-    /// Pad vertical de la escalerita (un pelo más de aire que la familia:
-    /// sus puntos viven en 3 rieles fijos y el aro de HOY necesita cancha).
-    public static let escaleraPadV: CGFloat = chartPadV + 2
+    public static let colinaPadBajo: CGFloat = 12
+    /// La banda de la zona ideal (de arriba abajo, en el hue) y su radio.
+    public static let colinaBandaAlfa: Double = 0.10
+    public static let colinaBandaRadio: CGFloat = 3
+    /// Área bajo la campana y su trazo — en el HUE de la sección (decisión del dueño, mockup).
+    public static let colinaAreaAlfa: Double = 0.16
+    public static let colinaTrazo: CGFloat = 1.8
+    /// La estela de días previos sobre la curva (más antiguo → más tenue).
+    public static let colinaEstelaAlfaMin: Double = 0.22
+    public static let colinaEstelaAlfa: Double = 0.35
+    /// HOY: punto lleno con centro de papel + guía punteada al pie.
+    public static let colinaHoyRadio: CGFloat = 4.5
+    public static let colinaHoyCentro: CGFloat = 2.2
+    public static let colinaGuiaTrazo: CGFloat = 1.2
+    public static let colinaGuiaDash: [CGFloat] = [2, 2]
+    /// La cuadrícula de estrés (FER-125): 3 filas de celdas por día, con este aire entre
+    /// celdas y este radio; las apagadas son rejilla tenue.
+    public static let escaleraFilas: Int = 3
+    public static let escaleraCeldaGap: CGFloat = 4
+    public static let escaleraCeldaRadio: CGFloat = 2.5
+    public static let escaleraApagadaAlfa: Double = 0.08
 
     // MARK: Alturas de gráfica por forma
 
@@ -196,8 +208,13 @@ public enum MatrizTokens {
     /// P-2 de la costura: un hueco es un hueco, no un punto en el centro de tu banda).
     public static let hilosHuecoRadio: CGFloat = 1.4
     public static let hilosHuecoAlfa: Double = 0.35
+    /// La referencia punteada de las barras (el promedio de Pasos, FER-125): tinta tenue, guía.
+    public static let barrasPromedioAlfa: Double = 0.40
+    public static let barrasPromedioDash: [CGFloat] = [3, 3]
     public static let alturaRenglon: CGFloat = 32
-    public static let alturaBarras: CGFloat = 40
-    public static let alturaEscalera: CGFloat = alturaBarras   // gemela de Steps (banda Stress|Steps)
-    public static let alturaRiel: CGFloat = 40   // gemela de barras: el riel centra en el mismo alto
+    /// Las gráficas de Contexto (Carga · Esfuerzo · VFC · Estrés · Pasos) miden lo mismo: 48
+    /// (FER-125, el alto del prototipo aprobado; eran 40). Gemelas iguales por construcción.
+    public static let alturaBarras: CGFloat = 48
+    public static let alturaEscalera: CGFloat = alturaBarras   // gemela de VFC (banda VFC|Estrés)
+    public static let alturaRiel: CGFloat = alturaBarras       // gemela de Esfuerzo (banda Carga|Esfuerzo)
 }

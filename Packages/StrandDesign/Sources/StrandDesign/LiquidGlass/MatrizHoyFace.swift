@@ -23,7 +23,9 @@ public enum MatrizChartPayload: Sendable, Equatable {
                      dominio: ClosedRange<Double>, alertaHoy: MedidorLunar.Alerta)
     case colina(p: Double?, zona: ClosedRange<Double>, estela: [Double],
                   alertaHoy: MedidorLunar.Alerta = .ninguna)
-    case barrasMini(valores: [Double?])
+    /// `promedio`: si viene, se dibuja como línea punteada de referencia (Pasos: el promedio
+    /// de la ventana — FER-125, el prototipo aprobado). Esfuerzo no lo pasa.
+    case barrasMini(valores: [Double?], promedio: Double? = nil)
     case escalerita(niveles: [Int?])
     /// FER-80 · La costura del par del guardián: temp y resp espejadas, ya normalizadas.
     case costura(noches: [MatrizCostura.Noche])
@@ -772,8 +774,8 @@ public struct MatrizHoyFace: View {
         case .colina(let p, let zona, let estela, let alertaHoy):
             MatrizColina(chartID: chartID, p: p, zona: zona, estela: estela, hue: hue,
                            alertaHoy: alertaHoy, resaltado: resaltado)
-        case .barrasMini(let valores):
-            MatrizBarrasMini(chartID: chartID, valores: valores, hue: hue, resaltado: resaltado)
+        case .barrasMini(let valores, let promedio):
+            MatrizBarrasMini(chartID: chartID, valores: valores, hue: hue, promedio: promedio, resaltado: resaltado)
         case .escalerita(let niveles):
             MatrizEscalerita(chartID: chartID, niveles: niveles, hue: hue, resaltado: resaltado)
         case .costura(let noches):

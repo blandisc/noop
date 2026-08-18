@@ -21,7 +21,8 @@ extension LiquidHoyBuilder {
     static let matrizVentanaFC = 20
     static let matrizVentanaGuardian = 20
     static let matrizVentanaEstela = 5
-    static let matrizVentanaEsfuerzo = 14
+    /// FER-125: 7 días, como el prototipo aprobado (era 14; Esfuerzo se lee por semana).
+    static let matrizVentanaEsfuerzo = 7
     static let matrizVentanaPasos = 14
     static let matrizVentanaEstres = 7
 
@@ -519,12 +520,24 @@ extension LiquidHoyBuilder {
             }
         }
         let stressHoy = hoyKey.flatMap { stressByDay[$0] }
-        let valorStress: String = {
-            guard let v = stressHoy else { return "—" }
+        // FER-125 (prototipo aprobado): la palabra va en MINÚSCULA («bajo · medio · alto») y
+        // toma el color de calor de su nivel (la misma rampa que las celdas, FER-60).
+        func palabraStress(_ v: Double) -> String {
+            let p: String
             switch StressBand(score: v) {
-            case .low: return String(localized: "Low")
-            case .medium: return String(localized: "Medium")
-            case .high: return String(localized: "High")
+            case .low: p = String(localized: "Low")
+            case .medium: p = String(localized: "Medium")
+            case .high: p = String(localized: "High")
+            }
+            return p.lowercased(with: i.locale)
+        }
+        let valorStress: String = stressHoy.map(palabraStress) ?? "—"
+        let hueStress: Color = {
+            guard let v = stressHoy else { return LiquidColor.tinta500 }
+            switch StressBand(score: v) {
+            case .low: return LiquidColor.tinta500
+            case .medium: return LiquidColor.estresMedio
+            case .high: return LiquidColor.estresAlto
             }
         }()
         // Scrub de Estrés (FER-62): día + nivel (palabra). Los cortes son fijos, no un
@@ -537,18 +550,12 @@ extension LiquidHoyBuilder {
                              sublabel: String(format: String(localized: "matriz.scrub.sinlectura",
                                                              defaultValue: "%@ · no reading"), fecha))
             }
-            let palabra: String
-            switch StressBand(score: v) {
-            case .low: palabra = String(localized: "Low")
-            case .medium: palabra = String(localized: "Medium")
-            case .high: palabra = String(localized: "High")
-            }
-            return .init(valor: palabra, sublabel: fecha)
+            return .init(valor: palabraStress(v), sublabel: fecha)
         }
         let seccionStress = MatrizSeccion(
-            // FER-59: Estrés RECEDE (era tinta900, máximo contraste — gritaba siendo la
-            // referencia que no vota). tinta500 lo baja al peso de las demás de contexto.
-            id: "stress", hue: LiquidColor.tinta500,
+            // FER-59: Estrés RECEDE (era tinta900) — y desde FER-125 su hue es el CALOR de su
+            // nivel de hoy (tinta500 bajo · ocre medio · siena alto), como el prototipo.
+            id: "stress", hue: hueStress,
             titulo: String(localized: "Stress"),
             valor: valorStress,
             // FER-59: la escalerita es la tendencia de tus últimos 7 días — describir la
@@ -565,8 +572,15 @@ extension LiquidHoyBuilder {
             if let s = stepsByDay[day] { return s }
             return byDay[day]?.steps.map(Double.init)
         }
-        let valorPasos = HoyGramatica.valorODash(ptsPasos.last.flatMap { $0 },
-                                                 formato: HoyGramatica.formatoMiles)
+        // FER-125 (prototipo aprobado): los pasos se leen en MILES con un decimal y la unidad
+        // «k» («6,2 k» en es · «6.2 k» en en) — el número corto del mockup; el conteo exacto
+        // vive en la hoja. Escala 0…máximo de la ventana; el promedio de la ventana es la
+        // línea punteada de referencia de la gráfica.
+        let formatoK: (Double) -> String = { HoyGramatica.formatoMilesK($0, locale: i.locale) }
+        let valorPasos = HoyGramatica.valorODash(ptsPasos.last.flatMap { $0 }, formato: formatoK)
+        let pasosConDato = ptsPasos.compactMap { $0 }
+        let promedioPasos: Double? = pasosConDato.count >= 2
+            ? pasosConDato.reduce(0, +) / Double(pasosConDato.count) : nil
         // Scrub de Pasos (FER-118, «scrub en todas las gráficas» — era la única sin él): día +
         // pasos del día. Es un conteo, no un juicio de rango → sublabel = solo la fecha.
         let scrubPasos: [MatrizSeccion.ScrubNoche] = keysPasos.enumerated().map { idx, _ in
@@ -577,7 +591,7 @@ extension LiquidHoyBuilder {
                              sublabel: String(format: String(localized: "matriz.scrub.sinlectura",
                                                              defaultValue: "%@ · no reading"), fecha))
             }
-            return .init(valor: HoyGramatica.formatoMiles(v), sublabel: fecha)
+            return .init(valor: formatoK(v), sublabel: fecha)
         }
         let seccionPasos = MatrizSeccion(
             // Steps = TEAL (el color de Pasos en la hoja de resumen). Antes gris (tinta700);
@@ -585,8 +599,11 @@ extension LiquidHoyBuilder {
             id: "steps", hue: LiquidColor.teal,
             titulo: String(localized: "Steps"),
             valor: valorPasos,
+            unidad: valorPasos == "—" ? nil : String(localized: "matriz.pasos.k", defaultValue: "k"),
+            sublabel: valorPasos == "—" ? nil
+                : String(localized: "matriz.pasos.sub", defaultValue: "today · 14 days"),
             chartID: "matriz-steps",
-            chart: .barrasMini(valores: ptsPasos),
+            chart: .barrasMini(valores: ptsPasos, promedio: promedioPasos),
             glifoSello: .pasos,
             scrubNoches: scrubPasos)
 

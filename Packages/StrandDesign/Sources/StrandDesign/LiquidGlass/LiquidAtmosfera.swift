@@ -8,8 +8,8 @@ import Observation
 // como `.background` del scroll de Hoy; el héroe (`LiquidEcosistema`) NO es parte del fondo:
 // viaja con el contenido, y al bajar solo quedan las partículas atrás del vidrio.
 //
-// Un solo reloj (20 Hz, `LiquidMotion.intervaloAmbiente`: las derivas son ≤ 4 pt/s, o sea
-// ≤ 0.2 pt por cuadro — invisible a más), pausable con hoja abierta / background / onboarding /
+// Un solo reloj (20 Hz, `LiquidMotion.intervaloAmbiente`: las derivas son ≤ ~7 pt/s, o sea
+// ≤ 0.35 pt por cuadro, ≈ 1 px — sigue leyéndose como deriva), pausable con hoja abierta / background / onboarding /
 // pestaña oculta / Reduce Motion; y además el lienzo se redibuja bajo demanda cuando cambia el
 // desplazamiento del scroll, para que el parallax siga al dedo aunque el reloj vaya lento.
 //
