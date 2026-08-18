@@ -33,6 +33,16 @@ extension ScoreConfidence {
 
     /// VoiceOver phrase — spells out "confidence: …" so the tier is never announced as a
     /// bare adjective.
+    /// La misma frase de VoiceOver, resuelta a `String` — las piezas Liquid piden texto, no
+    /// claves (gemela de `confidenceLabelText`).
+    var confidenceA11yText: String {
+        switch self {
+        case .solid:       return String(localized: "Confidence: high")
+        case .building:    return String(localized: "Confidence: medium")
+        case .calibrating: return String(localized: "Confidence: calibrating")
+        }
+    }
+
     var confidenceA11y: LocalizedStringKey {
         switch self {
         case .solid:       return "Confidence: high"

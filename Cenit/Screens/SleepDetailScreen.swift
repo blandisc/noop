@@ -189,17 +189,7 @@ struct SleepDetailScreen: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             if let tier = model.confidence {
-                Text(tier.confidenceLabelText)
-                    .font(LiquidType.captionLectura)
-                    .foregroundStyle(LiquidColor.papelAlto.opacity(LiquidCampo.alfaRotulo))
-                    .padding(.horizontal, LiquidSpace.s250)
-                    .padding(.vertical, LiquidSpace.s075)
-                    .overlay(
-                        Capsule().strokeBorder(
-                            LiquidColor.papelAlto.opacity(LiquidCampo.alfaSeparador),
-                            lineWidth: 1)
-                    )
-                    .accessibilityLabel(Text(tier.confidenceA11y))
+                LiquidCampoSello(tier.confidenceLabelText, a11y: tier.confidenceA11yText)
             }
         }
     }
@@ -381,7 +371,7 @@ struct SleepDetailScreen: View {
             etiquetas: Self.etiquetasEtapa,
             ejeInicio: Self.clockFmt.string(from: night.onsetDate),
             ejeFin: Self.clockFmt.string(from: Date(timeIntervalSince1970: TimeInterval(night.endTs))),
-            horasEje: Self.horasEje(intervalos),
+            horasEje: LiquidHipnograma.horasDelEje(intervalos) { Self.clockFmt.string(from: $0) },
             textoTramo: { tramo in
                 (valor: Self.etiquetasEtapa[tramo.etapa] ?? "",
                  detalle: Self.rangoTramo(tramo))
@@ -392,20 +382,6 @@ struct SleepDetailScreen: View {
         // ancho («nada flotando»). La sección ya tiene su margen; envolverla otra vez metía un
         // segundo sistema visual dentro del mismo bloque.
         .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    /// Las CINCO horas del eje del hipnograma, repartidas por el span real de la noche.
-    private static func horasEje(_ intervalos: [LiquidHipnograma.Intervalo]) -> [String]? {
-        // El MISMO criterio que el componente usa por dentro (`visibles` + `ventana`), que es
-        // interno al paquete: un tramo de 0 min no existe, y el span va del primer inicio al
-        // último fin. Si las dos vistas discreparan, el eje rotularía horas que no son.
-        let visibles = intervalos.filter { $0.duracion > 0 }.sorted { $0.inicio < $1.inicio }
-        guard let primero = visibles.first else { return nil }
-        let ultimo = visibles.map(\.fin).max() ?? primero.fin
-        let span = Swift.max(1, ultimo.timeIntervalSince(primero.inicio))
-        return (0..<5).map { i in
-            clockFmt.string(from: primero.inicio.addingTimeInterval(span * Double(i) / 4))
-        }
     }
 
     /// «23:42 – 0:04 · 22 min» — el detalle del tramo bajo el dedo (el papel lo decía igual).
@@ -422,7 +398,7 @@ struct SleepDetailScreen: View {
     /// La rampa Liquid de etapas: índigo graduado por opacidad para lo dormido y ORO para
     /// despierto (decisión del dueño /inject). Copiada de `LiquidMetricSheetView.sleepEtapas`
     /// para que la hoja de Hoy y este detalle pinten la MISMA noche con los mismos tonos.
-    private static let coloresEtapa: [LiquidHipnograma.Etapa: Color] = [
+    static let coloresEtapa: [LiquidHipnograma.Etapa: Color] = [
         .profundo: LiquidColor.indigo,
         .rem: LiquidColor.indigo.opacity(0.78),    // token-exempt: rampa graduada de etapas
         .ligero: LiquidColor.indigo.opacity(0.52), // token-exempt: rampa graduada de etapas
@@ -494,7 +470,9 @@ struct SleepDetailScreen: View {
     /// esta sección es la que lo EXPLICA — su palabra de nivel y qué mide.
     private var regularidadContent: some View {
         LiquidRegularityCard(
-            titulo: String(localized: "Regularity"),
+            // Sin título: la franja de la sección ya dice «Regularidad». Repetirlo dentro
+            // dejaba dos encabezados a 8 pt de distancia.
+            titulo: "",
             puntaje: model.regularity?.score,
             leyenda: regularidadLeyenda,
             tono: Self.tono,
@@ -521,8 +499,7 @@ struct SleepDetailScreen: View {
         // LECTURA con su propio marco (como las cajitas de métricas), no la gráfica de la
         // sección. El hipnograma y la barra de etapas siguen planos a propósito.
         return VStack(alignment: .leading, spacing: LiquidSpace.s300) {
-            vsTypicalVerdictText(s)
-                .fixedSize(horizontal: false, vertical: true)
+            vsTypicalVerdict(s)
             stageVsTypicalRow(String(localized: "Deep"), lastMin: s.deep, dormido: dormidoAnoche(s),
                               typicalPct: model.typicalDeepPct,
                               color: Self.coloresEtapa[.profundo] ?? Self.tono,
@@ -548,82 +525,37 @@ struct SleepDetailScreen: View {
 
     /// El nombre de la etapa TEÑIDO dentro de la frase; el resto en tinta. Mismas cinco frases
     /// localizadas de siempre (sin claves nuevas).
-    private func vsTypicalVerdictText(_ s: SleepDetailModel.Stages) -> Text {
-        let font = LiquidType.titulo
+    /// El veredicto de etapas: la MISMA frase de siempre, con el nombre de la etapa teñido.
+    ///
+    /// Antes esto eran 42 líneas que recorrían la frase a mano buscando rangos sin traslape y
+    /// concatenando `Text` — exactamente lo que hace `LiquidReadingLine`, que la hoja de
+    /// resumen ya usaba. Se extendió el componente para destacar VARIOS trozos (el caso
+    /// «Profundo y REM») en vez de forkear la pantalla. De paso la frase vuelve a escalar con
+    /// Dynamic Type: `LiquidType.titulo` no es relativo a ningún estilo y la congelaba.
+    @ViewBuilder private func vsTypicalVerdict(_ s: SleepDetailModel.Stages) -> some View {
         let deep = stageShareAbove(s.deep, s.total, model.typicalDeepPct)
         let rem = stageShareAbove(s.rem, s.total, model.typicalRemPct)
-        let full: String
-        let stageNames: [String]
-        if deep && rem {
-            full = String(localized: "Deep and REM above your typical")
-            stageNames = [String(localized: "Deep"), String(localized: "REM")]
-        } else if deep {
-            full = String(localized: "Deep above your typical")
-            stageNames = [String(localized: "Deep")]
-        } else if rem {
-            full = String(localized: "REM above your typical")
-            stageNames = [String(localized: "REM")]
-        } else if let light = model.typicalLightPct {
-            let last = s.total > 0 ? s.light / s.total * 100 : 0
-            if last > light + 1 {
-                full = String(localized: "More light sleep than your typical")
-                // La frase fuente en EN dice "light sleep"; es-MX dice «sueño ligero».
-                let candidates = ["light sleep", "sueño ligero"]
-                stageNames = candidates.filter { full.range(of: $0, options: .caseInsensitive) != nil }
-            } else {
-                full = String(localized: "Close to your typical stage mix")
-                stageNames = []
+        let (frase, etapas): (String, [String]) = {
+            if deep && rem {
+                return (String(localized: "Deep and REM above your typical"),
+                        [String(localized: "Deep"), String(localized: "REM")])
             }
-        } else {
-            full = String(localized: "Close to your typical stage mix")
-            stageNames = []
-        }
-        return coloredStageVerdict(full: full, stageNames: stageNames, font: font)
-    }
-
-    /// Recorre `full` y pinta cada aparición del nombre de una etapa en el tono de la pantalla.
-    private func coloredStageVerdict(full: String, stageNames: [String], font: Font) -> Text {
-        guard !stageNames.isEmpty else {
-            return Text(verbatim: full)
-                .font(font)
-                .foregroundColor(LiquidColor.tinta900)
-        }
-        // Coincidencias sin traslape, de izquierda a derecha.
-        var matches: [(range: Range<String.Index>, name: String)] = []
-        for name in stageNames {
-            var searchFrom = full.startIndex
-            while searchFrom < full.endIndex,
-                  let r = full.range(of: name, options: .caseInsensitive, range: searchFrom..<full.endIndex) {
-                let overlaps = matches.contains { $0.range.overlaps(r) }
-                if !overlaps { matches.append((r, name)) }
-                searchFrom = r.upperBound
+            if deep { return (String(localized: "Deep above your typical"),
+                              [String(localized: "Deep")]) }
+            if rem  { return (String(localized: "REM above your typical"),
+                              [String(localized: "REM")]) }
+            if let light = model.typicalLightPct {
+                let ultima = s.total > 0 ? s.light / s.total * 100 : 0
+                if ultima > light + 1 {
+                    let f = String(localized: "More light sleep than your typical")
+                    // La frase fuente en EN dice «light sleep»; es-MX dice «sueño ligero».
+                    let cand = ["light sleep", "sueño ligero"]
+                    return (f, cand.filter { f.range(of: $0, options: .caseInsensitive) != nil })
+                }
             }
-        }
-        matches.sort { $0.range.lowerBound < $1.range.lowerBound }
-        guard !matches.isEmpty else {
-            return Text(verbatim: full)
-                .font(font)
-                .foregroundColor(LiquidColor.tinta900)
-        }
-        var result: Text?
-        var cursor = full.startIndex
-        for m in matches {
-            if cursor < m.range.lowerBound {
-                let plain = String(full[cursor..<m.range.lowerBound])
-                let t = Text(verbatim: plain).font(font).foregroundColor(LiquidColor.tinta900)
-                result = result.map { $0 + t } ?? t
-            }
-            let stage = String(full[m.range])
-            let t = Text(verbatim: stage).font(font).foregroundColor(Self.tono)
-            result = result.map { $0 + t } ?? t
-            cursor = m.range.upperBound
-        }
-        if cursor < full.endIndex {
-            let plain = String(full[cursor...])
-            let t = Text(verbatim: plain).font(font).foregroundColor(LiquidColor.tinta900)
-            result = result.map { $0 + t } ?? t
-        }
-        return result ?? Text(verbatim: full).font(font).foregroundColor(LiquidColor.tinta900)
+            return (String(localized: "Close to your typical stage mix"), [])
+        }()
+        LiquidReadingLine(frase, highlights: etapas, highlightTone: Self.tono)
     }
 
     private func stageShareAbove(_ min: Double, _ total: Double, _ typical: Double?) -> Bool {
@@ -842,22 +774,26 @@ struct SleepDetailScreen: View {
                                                             : LiquidColor.atencionTexto)
                     }
                     graficaHistorial(window)
+                    // La nota describe la GRÁFICA: va pegada a ella, dentro de la tarjeta.
+                    // Suelta al final quedaba después de la escalera, describiendo algo que
+                    // el ojo ya había dejado atrás.
+                    LiquidNotaLine(String(localized: "Hours asleep per night, with your bands behind."))
+                    // `LiquidResumenVentana`: la pieza del sistema para Promedio · Rango ·
+                    // Anoche — columnas con capilares y SIN superficie propia, apilada DENTRO
+                    // de la tarjeta de la gráfica, que es como la declara §11.3. Tres tiles
+                    // flotantes eran cuatro superficies donde el sistema pide una.
+                    LiquidResumenVentana(celdas: [
+                        .init(rotulo: String(localized: "Average"),
+                              valor: String(format: "%.1f h", stat.mean)),
+                        .init(rotulo: String(localized: "Range"),
+                              valor: String(format: "%.1f–%.1f", stat.min, stat.max)),
+                        .init(rotulo: String(localized: "Last night"),
+                              valor: lastNightHrs.map { hoursOnly($0 * 60) } ?? LiquidCajita.sinDato,
+                              tono: lastNightHrs != nil ? Self.tono : nil),
+                    ], a11yLabel: String(localized: "History"))
                 }
                 .liquidTarjetaSeccion()
-                LiquidCajitaGrid(columnas: 3) {
-                    LiquidCajita(rotulo: String(localized: "Average"),
-                                 valor: String(format: "%.1f h", stat.mean), compacto: true)
-                    LiquidCajita(rotulo: String(localized: "Range"),
-                                 valor: String(format: "%.1f–%.1f", stat.min, stat.max),
-                                 compacto: true)
-                    LiquidCajita(rotulo: String(localized: "Last night"),
-                                 valor: lastNightHrs.map { hoursOnly($0 * 60) } ?? LiquidCajita.sinDato,
-                                 tono: lastNightHrs != nil ? Self.tono : nil,
-                                 compacto: true,
-                                 a11yValor: lastNightHrs.map { horasHabladas($0 * 60) })
-                }
                 LiquidLevelsList(filas: carrilesHistorial(window), tono: Self.tono)
-                LiquidNotaLine(String(localized: "Hours asleep per night, with your three bands behind."))
                 LiquidNotaLine(String(localized: "How many nights of the period fell in each band. Tap one to see its nights on the chart."))
             } else {
                 LiquidGraficaNiveles(
@@ -1246,70 +1182,79 @@ struct SleepDetailScreen: View {
 // FER-162); no nested `NavigationStack` (FER-171). The stage hues are the fixed `StrandPalette` sleep
 // colors, the same dots the legend uses (color only in the datum).
 
+/// «Etapas de sueño en detalle» — la hoja que abre desde el pie del método.
+///
+/// EN VIDRIO. Era el último trozo de papel de la pantalla, y el único con dibujo a mano:
+/// spacings sueltos, `Divider`, un swatch con radio literal y tipos de la escala vieja. Tocabas
+/// un enlace dentro de una pantalla de vidrio y aterrizabas en el lenguaje anterior — la
+/// costura que esta migración existe para cerrar.
 struct SleepStagesInfoSheet: View {
+    /// Se conserva en la firma: los callers la presentan con el tema vivo y quitarla obligaría
+    /// a tocarlos. La hoja ya no lo usa.
     var theme: InstrumentoTheme = .base
 
-    private struct StageRow: Identifiable {
+    private struct Etapa: Identifiable {
         let id = UUID()
-        let stage: SleepStage
-        let name: LocalizedStringKey
-        let detail: LocalizedStringKey
+        let etapa: LiquidHipnograma.Etapa
+        let nombre: String
+        let detalle: String
     }
 
-    private let rows: [StageRow] = [
-        StageRow(stage: .rem,   name: "REM",   detail: "Dreams and memory. It consolidates what you learned and processes emotion."),
-        StageRow(stage: .deep,  name: "Deep",  detail: "Physical repair. Your body restores itself and releases growth hormone."),
-        StageRow(stage: .light, name: "Light", detail: "Most of the night. A transition in which your body winds down."),
-        StageRow(stage: .awake, name: "Awake", detail: "Brief awakenings. They're normal and don't mean a bad night."),
-    ]
+    private var etapas: [Etapa] {
+        [
+            Etapa(etapa: .rem, nombre: String(localized: "REM"),
+                  detalle: String(localized: "Dreams and memory. It consolidates what you learned and processes emotion.")),
+            Etapa(etapa: .profundo, nombre: String(localized: "Deep"),
+                  detalle: String(localized: "Physical repair. Your body restores itself and releases growth hormone.")),
+            Etapa(etapa: .ligero, nombre: String(localized: "Light"),
+                  detalle: String(localized: "Most of the night. A transition in which your body winds down.")),
+            Etapa(etapa: .despierto, nombre: String(localized: "Awake"),
+                  detalle: String(localized: "Brief awakenings. They're normal and don't mean a bad night.")),
+        ]
+    }
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                Text("Sleep stages")
-                    .font(InstrumentoType.groteskHeadline(22))
-                    .foregroundStyle(theme.ink)
-                Text("Your night moves through four phases. The watch estimates them from your movement and heart rate, so they're approximate: it gets about 2 of 3 right.")
-                    .font(StrandFont.subhead)
-                    .foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: LiquidSpace.s400) {
+                Text(String(localized: "Sleep stages"))
+                    .font(LiquidType.tituloHoja)
+                    .foregroundStyle(LiquidColor.tinta900)
+                LiquidNotaLine(String(localized: "Your night moves through four phases. The watch estimates them from your movement and heart rate, so they're approximate: it gets about 2 of 3 right."),
+                               tono: LiquidColor.tinta700)
                 VStack(spacing: 0) {
-                    ForEach(Array(rows.enumerated()), id: \.element.id) { i, row in
-                        stageRow(row)
-                        if i < rows.count - 1 {
-                            Divider().overlay(theme.hairline)
-                        }
+                    ForEach(Array(etapas.enumerated()), id: \.element.id) { i, e in
+                        fila(e)
+                        if i < etapas.count - 1 { LiquidCapilar(eje: .horizontal) }
                     }
                 }
-                Text("Proportions, not minutes. A clinical measurement needs a sleep study.")
-                    .font(StrandFont.caption)
-                    .foregroundStyle(theme.inkTertiary)
-                    .fixedSize(horizontal: false, vertical: true)
+                .liquidTarjetaSeccion()
+                LiquidNotaLine(String(localized: "Proportions, not minutes. A clinical measurement needs a sleep study."))
             }
-            .padding(20)
+            .padding(LiquidSpace.s550)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(theme.paper)
+        .background(LiquidSheetFondo(tone: LiquidColor.indigo))
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
-        .sheetPaper(theme)
     }
 
-    private func stageRow(_ row: StageRow) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            RoundedRectangle(cornerRadius: 3, style: .continuous) // token-exempt: geometría de dato (swatch de leyenda)
-                .fill(StrandPalette.sleepStageColor(row.stage))
-                .frame(width: 10, height: 10)
-                .padding(.top, 4)
-            VStack(alignment: .leading, spacing: 3) {
-                Text(row.name).font(StrandFont.headline).foregroundStyle(theme.ink)
-                Text(row.detail)
-                    .font(StrandFont.caption)
-                    .foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+    private func fila(_ e: Etapa) -> some View {
+        HStack(alignment: .top, spacing: LiquidSpace.s300) {
+            // El swatch usa la MISMA rampa que pinta el hipnograma: si la leyenda eligiera
+            // sus colores a mano, volvería a mentir sobre lo que decodifica.
+            RoundedRectangle(cornerRadius: LiquidRadius.hairline * 6, style: .continuous)
+                .fill(SleepDetailScreen.coloresEtapa[e.etapa] ?? LiquidColor.indigo)
+                .frame(width: LiquidSpace.s250, height: LiquidSpace.s250)
+                .padding(.top, LiquidSpace.s100)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: LiquidSpace.s075) {
+                Text(e.nombre)
+                    .font(LiquidType.tituloFila)
+                    .foregroundStyle(LiquidColor.tinta900)
+                LiquidNotaLine(e.detalle)
             }
         }
-        .padding(.vertical, 13)
+        .padding(.vertical, LiquidSpace.s300)
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
     }

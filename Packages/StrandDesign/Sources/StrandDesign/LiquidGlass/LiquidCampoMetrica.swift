@@ -39,6 +39,35 @@ public enum LiquidCampo {
     public static let alfaSeparador: Double = 0.28
     /// Alfa del especular superior: dice dónde empieza el material sin brillar.
     public static let alfaEspecularSuperior: Double = 0.55
+    /// Alfa del trazo de la pastilla del sello. Token propio y no `alfaSeparador`: aquel
+    /// documenta la regla ENTRE numerales, y reusarlo aquí era deriva semántica.
+    public static let alfaSelloBorde: Double = 0.42
+}
+
+/// La pastilla calada del campo: el sello de confianza, o cualquier etiqueta corta que deba
+/// leerse sobre el tono. Sin relleno — un fill traslúcido sobre el tono no pasa AA y además
+/// es vidrio decorativo dentro de una masa que el dueño pidió plana.
+public struct LiquidCampoSello: View {
+    private let texto: String
+    private let a11y: String?
+
+    public init(_ texto: String, a11y: String? = nil) {
+        self.texto = texto
+        self.a11y = a11y
+    }
+
+    public var body: some View {
+        Text(texto)
+            .font(LiquidType.captionLectura)
+            .foregroundStyle(LiquidColor.papelAlto.opacity(0.92))
+            .padding(.horizontal, LiquidSpace.s250)
+            .padding(.vertical, LiquidSpace.s075)
+            .overlay(
+                Capsule().strokeBorder(
+                    LiquidColor.papelAlto.opacity(LiquidCampo.alfaSelloBorde), lineWidth: 1)
+            )
+            .accessibilityLabel(Text(a11y ?? texto))
+    }
 }
 
 /// La cabecera teñida a sangre de una pantalla de detalle: numeral (o par de numerales),

@@ -21036,6 +21036,23 @@
         }
       }
     },
+    "Hours asleep per night, with your bands behind." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hours asleep per night, with your bands behind."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Horas dormidas por noche, con tus bandas de fondo."
+          }
+        }
+      }
+    },
     "Enough sleep" : {
       "extractionState" : "manual",
       "localizations" : {

@@ -394,6 +394,21 @@ public struct LiquidHipnograma: View {
     /// Los tramos que EXISTEN, ordenados por inicio. Un tramo de 0 minutos no se dibuja: el
     /// fallback diario de Apple fabrica etapas en 0 y dibujarlas insinuaría una medición que
     /// nunca ocurrió. El filtro es UNO solo para bandas, scrub y conteos.
+    /// Las CINCO horas del eje, repartidas por el span REAL de la noche.
+    ///
+    /// Vive aquí y no en el caller porque usa `visibles` + `ventana`, que son internos: la
+    /// pantalla las estaba reimplementando («el MISMO criterio… que es interno al paquete»,
+    /// decía su propio comentario), y si las dos versiones divergían el eje rotulaba horas
+    /// que la gráfica no dibuja. El caller solo dice CÓMO se escribe una hora.
+    public static func horasDelEje(_ intervalos: [Intervalo],
+                                   formato: (Date) -> String) -> [String]? {
+        let vis = visibles(intervalos)
+        guard let v = ventana(vis) else { return nil }
+        return (0..<5).map { i in
+            formato(v.origen.addingTimeInterval(v.span * Double(i) / 4))
+        }
+    }
+
     static func visibles(_ intervalos: [Intervalo]) -> [Intervalo] {
         intervalos.filter { $0.duracion > 0 }.sorted { $0.inicio < $1.inicio }
     }
