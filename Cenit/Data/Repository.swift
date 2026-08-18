@@ -892,14 +892,6 @@ final class Repository: ObservableObject {
         await series(key: key, source: computedDeviceId, days: days)
     }
 
-    /// FER-7 · Veredicto v4 Fase 4: the persisted first-third − last-third sleeping-HR delta per night
-    /// (bpm), written in the full refresh under the APPLE-computed source (`appleComputedDeviceId`,
-    /// "apple-health-noop") — NOT the strap `-noop` partition `computedSeries` reads. The sleep-detail
-    /// screen reads this scalar and z-scores it against the user's own history for a descriptive read.
-    func nightThirdsDeltas(days: Int = 60) async -> [(day: String, value: Double)] {
-        await series(key: "night_thirds_delta", source: Self.appleComputedDeviceId, days: days)
-    }
-
     // MARK: - Intraday stress summaries (FER-378) — persisted in metricSeries, no new table
 
     private static let stressPartPrefix = "stress-part-"     // + PartOfDay.rawValue

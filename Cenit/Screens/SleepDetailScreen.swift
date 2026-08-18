@@ -33,13 +33,7 @@ struct SleepDetailScreen: View {
     var theme: InstrumentoTheme = .base
     /// Todo lo que la pantalla dibuja, derivado UNA vez por el caller desde `repo`.
     let model: SleepDetailModel
-    /// Carga la FC de la noche para una ventana `[from, to)` — inyectada por el caller (que es
-    /// quien tiene `repo`). El bloque «Forma de la noche» (FER-832) necesita la FC cruda.
-    var loadNightHR: (_ from: Int, _ to: Int) async -> [HRSample] = { _, _ in [] }
 
-    /// FER-7 · Veredicto v4 Fase 4: los deltas persistidos (bpm) primer tercio − último tercio
-    /// por noche, leídos de la partición que calcula Apple. Vacío ⇒ el módulo de tercios se oculta.
-    var loadNightThirds: () async -> [(day: String, value: Double)] = { [] }
 
     /// La métrica cuya hoja de info está abierta (tocar una cajita de «Métricas de la noche»).
     @State private var metricInfo: MetricInfo?
@@ -56,12 +50,6 @@ struct SleepDetailScreen: View {
     @State private var sleepHeatCache: [RecoveryDay] = []
     /// La noche tocada en el calendario, por su llave de día. (FER-830)
     @State private var selectedNightID: String? = nil
-    /// La forma de la caída nocturna de la FC — async; `nil` hasta cargar o si es ilegible. (FER-832)
-    @State private var nightShape: NightAutonomicShape.Result? = nil
-    /// Serie de FC decimada (ventana dormida) para la curva de la caída. (FER-832)
-    @State private var nightShapeCurve: [Double] = []
-    /// FER-7 · Fase 4: la lectura primer tercio vs último de anoche (nil ⇒ sección oculta).
-    @State private var nightThirds: NightThirdsUI? = nil
     /// El carril del historial que el dedo explora; `nil` = ninguno (paridad `GraficaRangos`).
     @State private var bandaExplorada: Int? = nil
 
@@ -89,12 +77,6 @@ struct SleepDetailScreen: View {
                         nightMetricsContent(night)
                     }
                     seccion(String(localized: "Regularity")) { regularidadContent }
-                    if let shape = nightShape {
-                        seccion(String(localized: "Night shape")) { nightShapeContent(shape, night) }
-                    }
-                    if let thirds = nightThirds {
-                        seccion(String(localized: "First third vs last")) { nightThirdsContent(thirds) }
-                    }
                     if let debt = model.weeklyDebtMinutes, debt >= 15, model.weeklyDebtNights.count >= 2 {
                         seccion(String(localized: "Weekly debt")) { weeklyDebtContent(debt) }
                     }
@@ -134,14 +116,6 @@ struct SleepDetailScreen: View {
             }.value
             durationParsed = parsed
             sleepHeatCache = heat
-        }
-        .task(id: model.night?.startTs) {
-            let (shape, curve) = await loadNightShape()
-            nightShape = shape
-            nightShapeCurve = curve
-        }
-        .task(id: model.night?.startTs) {
-            nightThirds = await loadNightThirdsUI()
         }
         .sheet(item: $metricInfo) { info in
             // Cutover F6 (decisión D1 del revote): las submétricas de sueño abren la hoja Liquid.
@@ -649,6 +623,32 @@ struct SleepDetailScreen: View {
             a11yValue: voz)
     }
 
+    /// **Latencia**: cuánto tardaste en dormirte, derivada del hipnograma.
+    ///
+    /// Es el tramo DESPIERTO con el que abre la noche, antes de la primera etapa de sueño.
+    /// Apple no entrega un dato de latencia y el modelo la traía fija en `nil` desde siempre
+    /// (`latencyMin: nil`, comentado «the cache carries no onset-latency»), así que la cajita
+    /// enseñaba un guion eterno al lado de «10–20 sano» — una norma clínica sin dato.
+    ///
+    /// Devuelve `nil` —y lo DICE— cuando la noche abre ya dormida: si la sesión empezó en el
+    /// sueño y no en la cama, no hubo espera que medir, y fabricar un 0 sería inventar que te
+    /// dormiste al instante. Honesto sobre un límite real de la fuente.
+    static func latenciaMin(_ intervalos: [SleepInterval]) -> Double? {
+        let orden = intervalos.filter { $0.end > $0.start }.sorted { $0.start < $1.start }
+        guard let primero = orden.first, primero.stage == .awake else { return nil }
+        // El despierto de apertura puede venir partido en varios tramos contiguos.
+        var fin = primero.end
+        for iv in orden.dropFirst() {
+            guard iv.stage == .awake, iv.start <= fin + 1 else { break }
+            fin = max(fin, iv.end)
+        }
+        let minutos = (fin - orden[0].start) / 60
+        return minutos > 0 ? minutos : nil
+    }
+
+    /// La latencia de ESTA noche, o nil si la noche abre ya dormida.
+    private var latenciaNoche: Double? { Self.latenciaMin(model.intervals) }
+
     // MARK: - 4. Métricas de la noche — seis cajitas tocables
 
     private func nightMetricsContent(_ night: SleepDetailModel.Night) -> some View {
@@ -668,15 +668,16 @@ struct SleepDetailScreen: View {
                           unidad: "%",
                           pie: String(localized: "Deep + REM"),
                           info: .sleepRestorative(restorativePct(night.stages)))
-            // `latencyMin` es hoy SIEMPRE nil (el caché no trae latencia de conciliación): el pie
-            // lo dice en vez de prometer un rango sano que nunca se va a poder contrastar.
+            // La latencia se DERIVA del hipnograma (ver `latenciaMin`): el modelo la traía fija
+            // en nil desde siempre y la cajita mostraba un guion eterno junto a un rango sano
+            // que nunca se podía contrastar.
             cajitaMetrica(rotulo: String(localized: "Latency"),
-                          valor: model.latencyMin.map { "\(Int($0.rounded()))" },
+                          valor: latenciaNoche.map { "\(Int($0.rounded()))" },
                           unidad: String(localized: "min"),
-                          pie: model.latencyMin == nil
-                              ? String(localized: "No data in Apple Health")
+                          pie: latenciaNoche == nil
+                              ? String(localized: "your night starts already asleep")
                               : String(localized: "10–20 healthy"),
-                          info: .sleepLatency(model.latencyMin))
+                          info: .sleepLatency(latenciaNoche))
             cajitaMetrica(rotulo: String(localized: "Respiration"),
                           valor: night.respRate.map { String(format: "%.1f", $0) },
                           pie: String(localized: "rpm"),
@@ -721,145 +722,6 @@ struct SleepDetailScreen: View {
         default:                  return nil
         }
         return { pts }
-    }
-
-    // MARK: - 5. Forma de la noche (FER-832) — ahora también para Apple
-
-    @ViewBuilder
-    private func nightShapeContent(_ shape: NightAutonomicShape.Result,
-                                   _ night: SleepDetailModel.Night) -> some View {
-        if shape.confidence == .unreadable {
-            LiquidNotaLine(String(localized: "There isn't enough signal tonight to read how your heart eased off."))
-        } else {
-            VStack(alignment: .leading, spacing: LiquidSpace.s300) {
-                LiquidFraseNivel(nivel: "−\(Int(shape.dipPct.rounded()))%",
-                                 conteo: String(localized: "your pulse dropped as you fell asleep"),
-                                 tono: Self.tonoCorazon)
-                if nightShapeCurve.count >= 2 { curvaNoche(night) }
-                LiquidCajitaGrid {
-                    LiquidCajita(rotulo: String(localized: "lowest point"),
-                                 valor: clockLabel(shape.nadirHour))
-                    if model.rhrBaseline != nil {
-                        LiquidCajita(rotulo: String(localized: "below your resting"),
-                                     valor: "\(Int((shape.fractionBelowRHR * 100).rounded()))",
-                                     unidad: "%",
-                                     pie: String(localized: "of the night"))
-                    }
-                }
-                LiquidNotaLine(String(localized: String.LocalizationValue(dipCopyKey(shape.dipShape))))
-            }
-        }
-    }
-
-    /// La curva de la caída, en la gramática de las gráficas Liquid: línea sin relleno, con
-    /// scrub. El eje X se calla a propósito — la serie está decimada por MUESTRAS, no por reloj,
-    /// así que afirmar una hora bajo cada punto sería inventar precisión que el motor no dio.
-    private func curvaNoche(_ night: SleepDetailModel.Night) -> some View {
-        let n = nightShapeCurve.count
-        let inicio = night.onsetDate
-        let span = Swift.max(1, Double(night.endTs - night.startTs))
-        let puntos: [(fecha: Date, valor: Double)] = nightShapeCurve.enumerated().map { i, v in
-            (fecha: inicio.addingTimeInterval(span * (Double(i) + 0.5) / Double(n)), valor: v)
-        }
-        let lo = nightShapeCurve.min() ?? 0
-        let hi = nightShapeCurve.max() ?? 1
-        let aire = Swift.max(1, (hi - lo) * 0.12)
-        let bpm: (Double) -> String = { "\(Int($0.rounded())) \(String(localized: "bpm"))" }
-        return LiquidGraficaNiveles(
-            puntos: puntos,
-            bandas: [],
-            dominio: (lo - aire)...(hi + aire),
-            ticksY: [],
-            tono: Self.tonoCorazon,
-            formatoScrub: { v, _ in bpm(v) },
-            formatoValorScrub: bpm,
-            estadoVacio: String(localized: "There isn't enough signal tonight to read how your heart eased off."),
-            a11yLabel: String(localized: "Night shape"))
-    }
-
-    private func dipCopyKey(_ shape: NightAutonomicShape.DipShape) -> String {
-        switch shape {
-        case .pronounced:
-            return "A marked, early drop: a sign you settled into rest. It's a pattern, not a diagnosis."
-        case .moderate:
-            return "A moderate drop overnight. It's a pattern, not a diagnosis."
-        case .blunted:
-            return "A gentler drop than a deep-rest night usually shows. It's a pattern, not a diagnosis."
-        }
-    }
-
-    // MARK: - 6. Primer tercio vs último (FER-7 · Fase 4) — descriptivo, jamás un voto
-
-    /// Cómo se compara el ascenso primer tercio→último tercio de anoche contra tu propio normal.
-    enum ThirdsTone: Equatable { case calibrating(Int), usual, higher, lower }
-    struct NightThirdsUI: Equatable { let deltaBpm: Double; let tone: ThirdsTone }
-
-    private func nightThirdsContent(_ r: NightThirdsUI) -> some View {
-        VStack(alignment: .leading, spacing: LiquidSpace.s300) {
-            LiquidFraseNivel(nivel: signedBpm(r.deltaBpm),
-                             conteo: String(localized: "from the first third of the night to the last"),
-                             tono: Self.tonoCorazon)
-            LiquidNotaLine(String(localized: String.LocalizationValue(thirdsCopyKey(r.tone))))
-        }
-    }
-
-    /// «+12 bpm» / «−3 bpm» / «0 bpm» — con signo, menos U+2212, unidad localizada.
-    private func signedBpm(_ d: Double) -> String {
-        let n = Int(d.rounded())
-        let sign = n > 0 ? "+" : (n < 0 ? "\u{2212}" : "")
-        return "\(sign)\(abs(n)) \(String(localized: "bpm"))"
-    }
-
-    private func thirdsCopyKey(_ tone: ThirdsTone) -> String {
-        switch tone {
-        case .calibrating:
-            return "Getting to know your nights: a few more and we'll compare this to your usual."
-        case .higher:
-            return "Higher than your usual overnight rise: last night's start may have run hot (a workout, a late meal, a drink). It's a pattern, not a diagnosis."
-        case .usual:
-            return "About your usual overnight rise. It's a pattern, not a diagnosis."
-        case .lower:
-            return "A gentler overnight rise than your usual. It's a pattern, not a diagnosis."
-        }
-    }
-
-    /// Lee los deltas persistidos, toma el de ESTA noche y lo puntúa contra tu normal (solo
-    /// noches PASADAS, para que anoche no se compare consigo misma). `nil` ⇒ oculta.
-    private func loadNightThirdsUI() async -> NightThirdsUI? {
-        guard let night = model.night else { return nil }
-        let series = await loadNightThirds()
-        guard !series.isEmpty else { return nil }
-        let nightDay = Repository.localDayKey(Date(timeIntervalSince1970: TimeInterval(night.endTs)))
-        guard let tonight = series.first(where: { $0.day == nightDay })?.value else { return nil }
-        let cfg = Baselines.metricCfg["night_thirds_delta"]!
-        let past: [Double?] = series.filter { $0.day < nightDay }.sorted { $0.day < $1.day }.map { $0.value }
-        let state = Baselines.rollingMeanSD(past, cfg: cfg, window: 30)
-        let tone: ThirdsTone
-        if !state.trusted {
-            tone = .calibrating(max(0, Baselines.minNightsTrust - state.nValid))
-        } else {
-            let dev = Baselines.deviation(tonight, state: state)
-            tone = dev.inNormalRange ? .usual : (dev.z > 0 ? .higher : .lower)
-        }
-        return NightThirdsUI(deltaBpm: tonight, tone: tone)
-    }
-
-    private static let clockFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.timeStyle = .short
-        return f
-    }()
-
-    private func clockLabel(_ hour: Double) -> String {
-        var h = Int(hour) % 24
-        var m = Int(((hour - Double(Int(hour))) * 60).rounded())
-        if m == 60 { m = 0; h = (h + 1) % 24 }
-        var comps = DateComponents(); comps.hour = h; comps.minute = m
-        let cal = Calendar.current
-        if let date = cal.date(from: comps) {
-            return Self.clockFormatter.string(from: date)
-        }
-        return String(format: "%d:%02d", h, m)
     }
 
     // MARK: - 7. Deuda de la semana
@@ -923,9 +785,11 @@ struct SleepDetailScreen: View {
                                 tono: Self.tono)
             if window.values.count >= 2 {
                 VStack(alignment: .leading, spacing: LiquidSpace.s300) {
-                    LiquidFraseNivel(nivel: String(format: "%.1f h", stat.mean),
-                                     conteo: String(localized: "average of the \(range.name)"),
-                                     tono: Self.tono)
+                    // La MISMA frase que encabeza la gráfica en la hoja de resumen: el
+                    // CARRIL en que cayó anoche y cuántas noches del periodo cayeron con
+                    // ella. Antes aquí iba la media, que no se pierde — vive en su cajita
+                    // «Promedio», dos filas abajo.
+                    fraseNivelHistorial(window)
                     if let pctChange {
                         LiquidNotaLine(pctChange >= 0 ? "+\(Int(pctChange.rounded()))%"
                                                       : "\(Int(pctChange.rounded()))%",
@@ -996,6 +860,39 @@ struct SleepDetailScreen: View {
             atenuarFuera: bandaExplorada != nil,
             estadoVacio: String(localized: "Not enough nights yet to draw a trend."),
             a11yLabel: String(localized: "History"))
+    }
+
+    /// El carril de ANOCHE y cuántas noches del periodo cayeron con ella — el mismo contrato
+    /// que `LiquidMetricSheetView.nivelesFrase`, con `LiquidFraseNivel`, la misma pieza.
+    ///
+    /// Sin lectura de anoche calla el nivel y dice cuántas noches tiene el rango, igual que la
+    /// hoja: el nombre del carril es una afirmación sobre TU noche, y sin noche no se afirma.
+    @ViewBuilder private func fraseNivelHistorial(_ window: MetricWindow) -> some View {
+        let horas = model.night.map { $0.stages.asleep / 60.0 }
+        let i = horas.flatMap { h in
+            Self.bandasSueno.indices.first { k in
+                let b = Self.bandasSueno[k]
+                return (b.lo == nil || h >= b.lo!) && (b.hi == nil || h < b.hi!)
+            }
+        }
+        if let i {
+            let b = Self.bandasSueno[i]
+            let n = window.values.filter { v in
+                (b.lo == nil || v >= b.lo!) && (b.hi == nil || v < b.hi!)
+            }.count
+            LiquidFraseNivel(
+                nivel: b.label,
+                conteo: n == 1
+                    ? String(localized: "\(n) of your last \(window.values.count) nights")
+                    : String(localized: "\(n) of your last \(window.values.count) nights"),
+                tono: Self.tono)
+        } else {
+            LiquidFraseNivel(
+                nivel: nil,
+                conteo: String(localized: "\(window.values.count) nights with data in this range"),
+                tono: Self.tono,
+                sinLectura: String(localized: "No reading last night"))
+        }
     }
 
     /// Los tres carriles tocables bajo la gráfica: tocar uno resalta sus noches; re-tocarlo limpia.
@@ -1199,64 +1096,6 @@ struct SleepDetailScreen: View {
         return "\(m / 60) h \(String(format: "%02d", m % 60)) m"
     }
 
-    // MARK: - Async loaders (FER-832) — mismos motores, sin math nueva
-
-    /// Decisión del dueño (2026-08-17): la forma de la noche SE ABRE a Apple. Solo necesita la FC
-    /// del reloj y la línea de tiempo de etapas, y las dos las entrega Apple Salud (FER-486).
-    private func loadNightShape() async -> (shape: NightAutonomicShape.Result?, curve: [Double]) {
-        guard let night = model.night, !model.intervals.isEmpty else { return (nil, []) }
-
-        let hr = await loadNightHR(night.startTs, night.endTs)
-        guard hr.count >= 2 else { return (nil, []) }
-
-        // FER-953: la carga de FC se queda en el camino del caller; la derivación pura sale de main.
-        let intervals = model.intervals
-        let rhrBaseline = model.rhrBaseline
-        let onsetDate = night.onsetDate
-        return await Task.detached(priority: .userInitiated) { () -> (NightAutonomicShape.Result?, [Double]) in
-            let asleep = intervals
-                .filter { $0.stage != .awake }
-                .map { NightAutonomicShape.AsleepSpan(start: Int($0.start), end: Int($0.end)) }
-            guard !asleep.isEmpty else { return (nil, []) }
-
-            let awakeSpans = intervals.filter { $0.stage == .awake }
-            let awakeHR = hr.filter { s in awakeSpans.contains { Int($0.start) <= s.ts && s.ts < Int($0.end) } }
-            let wakingRef: Double? = {
-                if awakeHR.count >= 30 {
-                    return Double(awakeHR.reduce(0) { $0 + $1.bpm }) / Double(awakeHR.count)
-                }
-                let sorted = hr.map { Double($0.bpm) }.sorted()
-                guard !sorted.isEmpty else { return nil }
-                let idx = Int((0.90 * Double(sorted.count - 1)).rounded())
-                return sorted[idx]
-            }()
-
-            let tz = TimeZone.current.secondsFromGMT(for: onsetDate)
-            let shape = NightAutonomicShape.compute(hr: hr, asleep: asleep,
-                                                    wakingReferenceHR: wakingRef,
-                                                    rhrBaseline: rhrBaseline,
-                                                    tzOffsetSeconds: tz)
-
-            let asleepHR = hr.filter { s in asleep.contains { $0.start <= s.ts && s.ts < $0.end } }
-                             .sorted { $0.ts < $1.ts }
-            let curve = Self.downsampleBpm(asleepHR, maxPoints: 48)
-            return (shape, curve)
-        }.value
-    }
-
-    private nonisolated static func downsampleBpm(_ hr: [HRSample], maxPoints: Int) -> [Double] {
-        guard hr.count > maxPoints else { return hr.map { Double($0.bpm) } }
-        var out: [Double] = []
-        out.reserveCapacity(maxPoints)
-        for b in 0..<maxPoints {
-            let lo = b * hr.count / maxPoints
-            let hi = (b + 1) * hr.count / maxPoints
-            guard hi > lo else { continue }
-            let sum = hr[lo..<hi].reduce(0) { $0 + $1.bpm }
-            out.append(Double(sum) / Double(hi - lo))
-        }
-        return out
-    }
 
     // MARK: - Formateo
 

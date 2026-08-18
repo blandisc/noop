@@ -453,9 +453,7 @@ private struct CuerpoLanding: View {
         } else if let item = strainDetail {
             StrainDetailScreen(theme: theme, model: item.model, estimated: item.estimated)
         } else if let item = sleepDetail {
-            SleepDetailScreen(theme: theme, model: item.model,
-                              loadNightHR: { from, to in await repo.hrSamples(from: from, to: to) },
-                              loadNightThirds: { await repo.nightThirdsDeltas() })
+            SleepDetailScreen(theme: theme, model: item.model)
         } else if let item = stressDetail {
             // FER-1027: el mapa intradía de estrés es de banda; en Apple-only no se muestra.
             StressDetailScreen(theme: theme, model: item.model,
