@@ -36,6 +36,10 @@ struct SleepDetailScreen: View {
     var theme: InstrumentoTheme = .base
     /// Todo lo que la pantalla dibuja, derivado UNA vez por el caller desde `repo`.
     let model: SleepDetailModel
+    /// `true` cuando Apple Salud NO está autorizado. Sin esto, quien nunca dio permiso leía
+    /// «Aún no hay noches»: le decíamos que no tiene datos cuando el problema es que no
+    /// podemos verlos. Mismo predicado que ya usan Hoy y el aterrizaje. (Dueño 2026-08-18)
+    var sinPermiso: Bool = false
 
 
     /// La métrica cuya hoja de info está abierta (tocar una cajita de «Métricas de la noche»).
@@ -232,9 +236,26 @@ struct SleepDetailScreen: View {
                           rotulo: String(localized: "hours"),
                           a11y: String(localized: "no data"),
                           ausente: true)],
-            clausula: model.loaded
-                ? String(localized: "No nights yet. Connect Apple Health in Data Sources to see your sleep stages and trends.")
-                : String(localized: "Loading your sleep history…"))
+            clausula: clausulaVacia) {
+            if sinPermiso {
+                LiquidVerMas(title: String(localized: "Manage Apple Health permissions"),
+                             tone: LiquidColor.papelAlto) { abrirAjustesSalud() }
+            }
+        }
+    }
+
+    /// Tres vacíos distintos, no uno: cargando · sin permiso · con permiso y sin noches.
+    private var clausulaVacia: String {
+        guard model.loaded else { return String(localized: "Loading your sleep history…") }
+        return sinPermiso
+            ? String(localized: "Cénit can't read your sleep: Apple Health hasn't granted permission. Turn it on and the nights you already have will appear here.")
+            : String(localized: "No nights yet. Connect Apple Health in Data Sources to see your sleep stages and trends.")
+    }
+
+    /// Abre Ajustes de iOS en la ficha de la app, que es donde vive el permiso de Salud.
+    private func abrirAjustesSalud() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
     }
 
     /// Copy del ⓘ: regularidad = movimiento del punto medio; las siestas no cuentan; «necesidad» = 7–9 h.
@@ -502,21 +523,27 @@ struct SleepDetailScreen: View {
         return VStack(alignment: .leading, spacing: LiquidSpace.s300) {
             vsTypicalVerdictText(s)
                 .fixedSize(horizontal: false, vertical: true)
-            stageVsTypicalRow(String(localized: "Deep"), lastMin: s.deep, total: s.total,
+            stageVsTypicalRow(String(localized: "Deep"), lastMin: s.deep, dormido: dormidoAnoche(s),
                               typicalPct: model.typicalDeepPct,
                               color: Self.coloresEtapa[.profundo] ?? Self.tono,
                               higherIsBetter: true, index: 0)
-            stageVsTypicalRow(String(localized: "REM"), lastMin: s.rem, total: s.total,
+            stageVsTypicalRow(String(localized: "REM"), lastMin: s.rem, dormido: dormidoAnoche(s),
                               typicalPct: model.typicalRemPct,
                               color: Self.coloresEtapa[.rem] ?? Self.tono,
                               higherIsBetter: true, index: 1)
-            stageVsTypicalRow(String(localized: "Light"), lastMin: s.light, total: s.total,
+            stageVsTypicalRow(String(localized: "Light"), lastMin: s.light, dormido: dormidoAnoche(s),
                               typicalPct: model.typicalLightPct,
                               color: Self.coloresEtapa[.ligero] ?? Self.tono,
                               higherIsBetter: false, index: 2)
             LiquidNotaLine(String(localized: "The mark is your average."))
         }
         .liquidTarjetaSeccion()
+    }
+
+    /// El tiempo DORMIDO de la noche: el total menos lo que estuviste despierto. Es el
+    /// denominador de las tres barras, el mismo que usa `typicalDeepPct` y compañía.
+    private func dormidoAnoche(_ s: SleepDetailModel.Stages) -> Double {
+        Swift.max(0, s.total - s.awake)
     }
 
     /// El nombre de la etapa TEÑIDO dentro de la frase; el resto en tinta. Mismas cinco frases
@@ -606,17 +633,23 @@ struct SleepDetailScreen: View {
 
     /// Una fila del bloque, ya como pieza del sistema: el relleno mide anoche y el tick de tinta
     /// marca tu promedio. El delta (y su color) los calcula el componente.
-    private func stageVsTypicalRow(_ label: String, lastMin: Double, total: Double,
+    private func stageVsTypicalRow(_ label: String, lastMin: Double, dormido: Double,
                                    typicalPct: Double?, color: Color,
                                    higherIsBetter: Bool, index: Int) -> some View {
-        let lastPct = total > 0 ? lastMin / total * 100 : 0
+        // DENOMINADOR: tiempo DORMIDO, no tiempo en cama. Los dos lados de la barra tienen
+        // que medir lo mismo — el típico (`typicalDeepPct`) siempre se calculó sobre dormido,
+        // y anoche se calculaba sobre el total con despierto incluido. El sesgo era
+        // 1 − despierto/total: un profundo real de 18.0 % se mostraba 16.2 % y la fila decía
+        // «−2» en ámbar cuando el cambio verdadero era CERO. (Decisión del dueño 2026-08-18;
+        // mueve los deltas de la base instalada, y por eso se decidió arriba, no aquí.)
+        let lastPct = dormido > 0 ? lastMin / dormido * 100 : 0
         // Las MISMAS dos claves del papel («…, 22% last night» + «, typical 18%»), unidas igual:
         // sin base, la voz NO menciona promedio (regla 2 de `LiquidBarraMarca`).
         let voz = String(localized: "\(label), \(Int(lastPct.rounded()))% last night")
             + (typicalPct.map { String(localized: ", typical \(Int($0.rounded()))%") } ?? "")
         return LiquidBarraMarca(
             etiqueta: label,
-            fraccion: total > 0 ? lastPct / 100 : nil,
+            fraccion: dormido > 0 ? lastPct / 100 : nil,
             marca: typicalPct.map { $0 / 100 },
             tono: color,
             valorTexto: "\(Int(lastPct.rounded()))%",
@@ -688,7 +721,7 @@ struct SleepDetailScreen: View {
                           unidad: String(localized: "min"),
                           pie: latenciaNoche == nil
                               ? String(localized: "your night starts already asleep")
-                              : String(localized: "10–20 healthy"),
+                              : String(localized: "10–20 healthy · see method"),
                           info: .sleepLatency(latenciaNoche))
             cajitaMetrica(rotulo: String(localized: "Respiration"),
                           valor: night.respRate.map { String(format: "%.1f", $0) },
@@ -881,12 +914,7 @@ struct SleepDetailScreen: View {
     /// hoja: el nombre del carril es una afirmación sobre TU noche, y sin noche no se afirma.
     @ViewBuilder private func fraseNivelHistorial(_ window: MetricWindow) -> some View {
         let horas = model.night.map { $0.stages.asleep / 60.0 }
-        let i = horas.flatMap { h in
-            Self.bandasSueno.indices.first { k in
-                let b = Self.bandasSueno[k]
-                return (b.lo == nil || h >= b.lo!) && (b.hi == nil || h < b.hi!)
-            }
-        }
+        let i = horas.flatMap(Self.indiceCarril)
         if let i {
             let b = Self.bandasSueno[i]
             let n = window.values.filter { v in
@@ -929,6 +957,9 @@ struct SleepDetailScreen: View {
 
     /// Un carril de duración: los MISMOS cortes de siempre (≥7 · 6.3–7 · <6.3).
     struct BandaSueno {
+        /// La clave estable del motor («short» / «adequate» / «optimal» / «extended»). Nunca
+        /// se muestra: mapea color e intensidad sin depender del orden ni del idioma.
+        let key: String
         let label: String
         let lo: Double?
         let hi: Double?
@@ -936,17 +967,49 @@ struct SleepDetailScreen: View {
         let range: String
     }
 
-    /// Los tres carriles de duración. El corte bajo es 6.3 h, el mismo que usa el calendario
-    /// desde esta migración (antes el calendario cortaba en 6 y las dos piezas discrepaban).
-    static let bandasSueno: [BandaSueno] = [
-            .init(label: String(localized: "Enough sleep"), lo: 7, hi: nil,
-                  color: LiquidColor.indigo, range: "≥ 7"),
-            .init(label: String(localized: "A bit short"), lo: 6.3, hi: 7,
-                  color: LiquidColor.indigo.opacity(0.52),  // token-exempt: rampa graduada de sueño
-                  range: "6.3–7"),
-            .init(label: String(localized: "Short sleep"), lo: nil, hi: 6.3,
-                  color: LiquidColor.atencion, range: "< 6.3"),
-    ]
+    /// Los carriles de duración, **derivados de la escalera del motor** — no escritos aquí.
+    ///
+    /// `MetricLevels.levels(for: .sleep)` son 360 / 420 / 510 minutos (< 6:00 · 6:00–7:00 ·
+    /// 7:00–8:30 · ≥ 8:30), citados a Hirshkowitz 2015, y `MetricInfoCatalog` declara por
+    /// escrito que la app tiene **UNA sola** escalera de sueño. Esta pantalla venía usando una
+    /// propia de tres peldaños con un corte de 6.3 h que no existía en ningún otro archivo:
+    /// una noche de 8.7 h era «Extenso» en la hoja de resumen y «Suficiente» aquí, a un tap.
+    /// (El calendario ya cortaba en 6.0, o sea coincidía con el motor, y esta migración lo
+    /// había movido a 6.3 — alineándolo al lado equivocado.) Decisión del dueño 2026-08-18:
+    /// todo a la escalera del motor.
+    ///
+    /// El color sigue siendo de la pantalla: el motor da los cortes y el nombre, no la paleta.
+    static let bandasSueno: [BandaSueno] = MetricLevels.levels(for: .sleep).map { nivel in
+        BandaSueno(
+            key: nivel.key,
+            label: String(localized: String.LocalizationValue(MetricLevels.name(for: nivel.key))),
+            lo: nivel.lower.map { $0 / 60 },
+            hi: nivel.upper.map { $0 / 60 },
+            color: colorCarril(nivel.key),
+            range: rangoReloj(lo: nivel.lower, hi: nivel.upper))
+    }
+
+    /// El tono de cada carril. «Corto» es el único que avisa; los otros tres son grados del
+    /// mismo índigo, del más lleno (tu objetivo) al más tenue.
+    private static func colorCarril(_ key: String) -> Color {
+        switch key {
+        case "short":    return LiquidColor.atencion
+        case "adequate": return LiquidColor.indigo.opacity(0.52)  // token-exempt: rampa de sueño
+        case "optimal":  return LiquidColor.indigo
+        default:         return LiquidColor.indigo.opacity(0.72)  // token-exempt: rampa de sueño
+        }
+    }
+
+    /// «< 6:00» · «6:00–7:00» · «≥ 8:30» — los cortes en reloj, desde los minutos del motor.
+    private static func rangoReloj(lo: Double?, hi: Double?) -> String {
+        func hm(_ min: Double) -> String { horasReloj(min / 60) }
+        switch (lo, hi) {
+        case let (nil, .some(h)):        return "< \(hm(h))"
+        case let (.some(l), nil):        return "≥ \(hm(l))"
+        case let (.some(l), .some(h)):   return "\(hm(l))–\(hm(h))"
+        default:                          return ""
+        }
+    }
 
     /// El dominio Y del historial: 5–10 h, como el papel.
     private static let dominioSueno: ClosedRange<Double> = 5...10
@@ -1024,20 +1087,32 @@ struct SleepDetailScreen: View {
         return String(format: "%d:%02d", total / 60, total % 60)
     }
 
-    /// Los tres peldaños de la retícula, con los cortes ALINEADOS al historial (7 · 6.3).
-    static func intensidadSueno(_ hours: Double) -> Double {
-        if hours >= 7 { return 1 }
-        if hours >= 6.3 { return 0.5 }
-        return 0
+    /// El peldaño de la retícula. Se mapea por CLAVE, no por índice: con la escalera del motor
+    /// el último carril es «extenso» (≥ 8:30), y por índice habría quedado más oscuro que
+    /// «óptimo» — o sea, la retícula diría que dormir de más es mejor que dormir bien.
+    /// La celda más llena es tu objetivo; «extenso» baja un escalón, no dos.
+    static func intensidadSueno(_ horas: Double) -> Double {
+        guard let i = indiceCarril(horas) else { return 0 }
+        switch bandasSueno[i].key {
+        case "optimal":  return 1.0
+        case "extended": return 0.8
+        case "adequate": return 0.55
+        default:         return 0        // «short» — el más tenue
+        }
     }
 
-    /// La palabra de estado de la lectura. Son las MISMAS tres palabras de la escalera del
-    /// historial («Suficiente · Algo corta · Corta»), no un vocabulario paralelo: la misma
-    /// noche decía «ok» aquí y «Algo corta» un scroll más arriba.
-    static func sleepWord(_ hours: Double) -> String {
-        if hours >= 7 { return String(localized: "Enough sleep") }
-        if hours >= 6.3 { return String(localized: "A bit short") }
-        return String(localized: "Short sleep")
+    /// La palabra del carril — la MISMA que la escalera del historial y que la hoja de resumen.
+    static func sleepWord(_ horas: Double) -> String {
+        guard let i = indiceCarril(horas) else { return bandasSueno.first?.label ?? "" }
+        return bandasSueno[i].label
+    }
+
+    /// El carril en que cae un valor. Único predicado de la pantalla: lo usan la frase del
+    /// historial, los conteos, el calendario y su lectura.
+    static func indiceCarril(_ horas: Double) -> Int? {
+        bandasSueno.firstIndex { b in
+            (b.lo == nil || horas >= b.lo!) && (b.hi == nil || horas < b.hi!)
+        }
     }
 
     private static let mesFmt: DateFormatter = {

@@ -362,7 +362,8 @@ struct TodayView: View {
             // (FER-1008). The gate holds the keyframes until the sheet lands; the late-swap screens
             // (Sueño/Esfuerzo) are unaffected (their number appears after the gate flips anyway).
             .sheet(item: $sleepDetail) { item in
-                SleepDetailScreen(theme: theme, model: item.model)
+                SleepDetailScreen(theme: theme, model: item.model,
+                                  sinPermiso: health.auth != .authorized && health.auth != .unavailable)
                     .recEntranceGate()
             }
             .sheet(item: $strainDetail) { item in

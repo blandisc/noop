@@ -350,14 +350,14 @@ extension MetricInfo {
         return MetricInfo(
             id: "sleep_latency",
             name: "Latency",
-            headline: "How long it took you to fall asleep after lights out. Ten to twenty minutes is a healthy range.",
+            headline: "The awake stretch your night opens with, before the first sleep stage. Ten to twenty minutes is a healthy range.",
             displayValue: minutes.map { "\(Int($0.rounded())) min" } ?? "—",
             unit: nil,
             headerTint: minutes == nil ? .neutral : .metric,
             bands: bands,
             note: minutes == nil
-                ? "Onset time isn't available for this night yet. The range above is the healthy reference."
-                : "One night says little on its own. What matters is whether your typical onset drifts over weeks."
+                ? "Your night opens already asleep, so there was no wait to measure. The range above is the healthy reference."
+                : "How it's measured: we read the awake stretch your hypnogram opens with. The clinical norm counts from getting into bed, and Apple Health doesn't record that moment, so treat the range as a reference and not as a verdict. One night says little on its own: what matters is whether your typical onset drifts over weeks."
         )
     }
 

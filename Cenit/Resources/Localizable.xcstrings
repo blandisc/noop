@@ -21002,6 +21002,40 @@
         }
       }
     },
+    "10–20 healthy · see method" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "10–20 healthy · see method"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "10–20 sano · ver método"
+          }
+        }
+      }
+    },
+    "Cénit can't read your sleep: Apple Health hasn't granted permission. Turn it on and the nights you already have will appear here." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cénit can't read your sleep: Apple Health hasn't granted permission. Turn it on and the nights you already have will appear here."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cénit no puede leer tu sueño: Apple Salud no le ha dado permiso. Actívalo y las noches que ya tienes aparecen aquí."
+          }
+        }
+      }
+    },
     "Enough sleep" : {
       "extractionState" : "manual",
       "localizations" : {
