@@ -773,6 +773,39 @@ identically:
   at all. It is compiled at runtime, in the background, and until it is ready (or forever, if it
   fails) the Canvas draws. Degrading is a designed state, not an error.
 
+**Hoy's background is a second, independent Metal layer: the atmosphere (FER-118).** The Today
+screen sits on pure white and the only thing alive behind the glass is *dust* — a full-screen
+field of particles that drift upward, breathe, take the verdict's colour and shift 22 % with the
+scroll (parallax). The hero is **not** part of the background: it scrolls with the content.
+- `PolvoSimulacion` (pure, Foundation-only) is the spec: particle `i` at time `t` is derived from
+  its index with an integer Wang hash (`hash(i, k)`), never from a stored list — the same
+  index-derived discipline as the hero. Every tunable lives in `PolvoSimulacion.Fisica` and travels
+  to the GPU in `EcosistemaPolvoU` (mirrored field-by-field by `PolvoU` in `EcosistemaShaders.msl`,
+  stride asserted in `EcosistemaPlanTests.testLayoutDeLosUniformes`); the shader owns no numbers.
+- **Backend Metal — `EcosistemaPolvoRenderer` + `vsPolvo`**: one instanced draw of `n` quads
+  (`n = area / 234 pt²`, clamped 600…2000), sharing `EcosistemaMetal.Recursos` (one shader
+  library, compiled once). `Recursos.polvo` is *optional on purpose*: it is built outside the
+  hero's `guard` chain, so a pipeline failure only sends the dust to the Canvas and the hero keeps
+  its Metal. (The library is still one file: a compile error in `vsPolvo` degrades both — that is
+  what the offscreen render tests and the DEBUG assertion in `biblioteca(_:)` are for.) The verdict
+  crossfade (1.6 s) is a lerp of the palette *inside the renderer* — a uniform cannot be animated
+  by `withAnimation`.
+- **Backend Canvas — `LiquidAtmosfera.lienzoCanvas`**: the same spec at half the count and 12 Hz
+  for macOS/watchOS, previews, deterministic renders (`liquidMotionDisabled`) and any device
+  without Metal.
+- **Clock and pause.** A single `TimelineView` at 20 Hz (`LiquidMotion.intervaloAmbiente` — the
+  drifts are ≤ 4 pt/s, i.e. ≤ 0.2 pt per frame), paused under `liquidAmbientPaused` (sheet open,
+  background, onboarding), when the tab is hidden (`AtmosferaEstado.visible`) and under Reduce
+  Motion (`still`: no time, no breathing, no parallax — but every particle drawn). Its `t` is
+  **session time** (`Date().timeIntervalSince(inicio)`), never the reference-date clock, so a
+  `Float` resolves it comfortably (see the ULP note above).
+- **Parallax without recomposing `TodayView`.** The screen owns an `@Observable`
+  `AtmosferaEstado` (`desplazamiento`, `visible`); the scroll's existing offset reader writes
+  `desplazamiento` (≥ 0, the pull overscroll does not count) and only `LiquidAtmosfera` reads it —
+  so a scroll frame invalidates the background alone. The `MTKView` is `isPaused` +
+  `enableSetNeedsDisplay` and redraws on demand when the offset changes, at scroll speed, while
+  the ambient clock stays at 20 Hz.
+
 ---
 
 ## 11. Design principles, restated
