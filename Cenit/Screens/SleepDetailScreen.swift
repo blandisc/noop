@@ -241,10 +241,7 @@ struct SleepDetailScreen: View {
                 .foregroundStyle(LiquidColor.tinta700)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(LiquidSpace.s400)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .clipShape(RoundedRectangle(cornerRadius: LiquidRadius.tarjeta, style: .continuous))
-        .liquidGlass(.superficieSolida)
+        .liquidTarjetaSeccion()
         .liquidSeccion(top: LiquidSpace.s400, bottom: LiquidSpace.s200)
     }
 
@@ -932,10 +929,7 @@ struct SleepDetailScreen: View {
                     }
                     graficaHistorial(window)
                 }
-                .padding(LiquidSpace.s400)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .clipShape(RoundedRectangle(cornerRadius: LiquidRadius.tarjeta, style: .continuous))
-                .liquidGlass(.superficieSolida)
+                .liquidTarjetaSeccion()
                 LiquidCajitaGrid(columnas: 3) {
                     LiquidCajita(rotulo: String(localized: "Average"),
                                  valor: String(format: "%.1f h", stat.mean), compacto: true)
@@ -984,6 +978,11 @@ struct SleepDetailScreen: View {
             dominio: Self.dominioSueno,
             ticksY: [(10, "10"), (9, "9"), (7, "7"), (5, "5")],
             tono: Self.tono,
+            // La joya de la última noche, igual que la hoja de resumen (:1334): sin ella la
+            // misma gráfica marcaba «hoy» en el resumen y no lo marcaba en el detalle. Anillo
+            // hueco mientras exploras un carril, para que la joya no compita con lo explorado.
+            puntoHoy: puntos.last,
+            hoyAnillo: bandaExplorada != nil,
             formatoScrub: { v, f in "\(horas(v)) · \(Self.ejeFechaFmt.string(from: f))" },
             formatoValorScrub: horas,
             formatoFechaScrub: { Self.ejeFechaFmt.string(from: $0) },
