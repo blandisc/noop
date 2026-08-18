@@ -132,3 +132,56 @@ final class SessionComfortTests: XCTestCase {
         super.tearDown()
     }
 }
+
+/// FER-86 — el descanso SÍ vuelve corriendo tras matar la app, contra lo que decía el comentario
+/// que vivía en la restauración. Como se cancelaba el aviso y nadie lo re-armaba, el descanso
+/// terminaba en silencio justo en el caso que el aviso existe para cubrir: el teléfono guardado.
+///
+/// Se prueba lo que se puede afirmar sin falsear el sistema de notificaciones (que no se puede
+/// falsear, y una prueba que finge hacerlo no prueba nada): que una sesión con un descanso a media
+/// cuenta MERECE aviso, que es la condición exacta que `reprogramarAviso` consulta al restaurar.
+@MainActor
+final class DescansoRestauradoTests: XCTestCase {
+
+    private func sesionDePrueba() -> StrengthSessionModel {
+        let re = RoutineExercise(id: "a", routineId: "rt", exerciseId: "bench", position: 0,
+                                 targetSets: 2, targetReps: 8, targetWeightKg: 80,
+                                 restMode: .fixed, restSeconds: 90)
+        let ex = Exercise(id: "bench", name: "Bench", type: .weightReps, equipment: nil,
+                          primaryMuscles: [], secondaryMuscles: [], instructions: [])
+        return StrengthSessionModel.make(routineId: "rt", routineName: "Push",
+                                         slots: [.init(re: re, exercise: ex, lastSets: [])],
+                                         startTs: 100)
+    }
+
+
+    /// El estado en que `restore(from:)` deja una sesión con descanso a media cuenta: `.resting`
+    /// con su `restEndsAt` intacto. Antes de FER-86 eso era verdad Y el aviso quedaba cancelado.
+    func testElDescansoRestauradoMereceAviso() {
+        UserDefaults.standard.set(true, forKey: SessionComfort.restNotifyKey)
+        defer { UserDefaults.standard.removeObject(forKey: SessionComfort.restNotifyKey) }
+
+        let s = sesionDePrueba()
+        s.startRest(seconds: 90)
+        XCTAssertTrue(s.debeAvisar, "un descanso por reloj, corriendo y sin pausa, sí merece aviso")
+    }
+
+    /// Si volvió pausado, NO: sonaría en plena pausa. La restauración conserva `paused`, así que
+    /// este caso es alcanzable.
+    func testElDescansoRestauradoEnPausaNoMereceAviso() {
+        UserDefaults.standard.set(true, forKey: SessionComfort.restNotifyKey)
+        defer { UserDefaults.standard.removeObject(forKey: SessionComfort.restNotifyKey) }
+
+        let s = sesionDePrueba()
+        s.startRest(seconds: 90)
+        s.pause()
+        XCTAssertFalse(s.debeAvisar)
+    }
+
+    /// Un descanso que venció mientras la app estaba muerta no debe soltar un aviso rancio: el
+    /// guard vive en `RestEndNotifier.shouldSchedule`, y esta es la mitad que sí se puede probar.
+    func testUnDescansoVencidoNoSeProgramaDeNuevo() {
+        XCTAssertFalse(RestEndNotifier.shouldSchedule(endsAt: Date().addingTimeInterval(-30)))
+        XCTAssertTrue(RestEndNotifier.shouldSchedule(endsAt: Date().addingTimeInterval(30)))
+    }
+}

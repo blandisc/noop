@@ -752,7 +752,10 @@ final class StrengthSessionModel: ObservableObject {
     /// Solo el descanso por RELOJ programa: en el descanso por pulso `restEndsAt` es un techo que la
     /// app no usa para terminarlo (lo termina tu pulso), así que un aviso ahí anunciaría un final
     /// que puede no haber ocurrido.
-    private func reprogramarAviso() {
+    /// Re-arma el aviso desde el estado ACTUAL. Interno (no privado) porque la restauración tras
+    /// matar la app también lo necesita: el descanso sí vuelve corriendo, y sin esto el aviso se
+    /// cancelaba y nadie lo volvía a poner (FER-86).
+    func reprogramarAviso() {
         guard debeAvisar else { RestEndNotifier.cancel(); return }
         guard let end = restEndsAt else { return }
         RestEndNotifier.schedule(endsAt: end)

@@ -102,10 +102,19 @@ extension AppModel {
             onNoRecoverableStrengthSession?()
             return
         }
-        // El descanso NO se restaura corriendo (la fase se re-deriva), así que un aviso viejo no
-        // tiene a qué corresponder: se retira y, si el usuario reanuda y descansa, se programa de nuevo.
+        // FER-86: el comentario que vivía aquí decía que el descanso «NO se restaura corriendo».
+        // Es falso: `restore(from:)` hace `phase = snap.restEndsAt != nil ? .resting : .capturing`,
+        // así que un descanso a media cuenta SÍ vuelve corriendo, con su `restEndsAt` intacto. Se
+        // cancelaba el aviso y nadie lo volvía a programar, así que el descanso terminaba en
+        // silencio justo en el caso que el aviso existe para cubrir: el teléfono guardado.
+        //
+        // Se cancela primero (el aviso viejo pudo quedar rancio mientras la app estaba muerta) y se
+        // re-arma desde el estado ya restaurado, que es quien sabe si sigue vivo, si está en pausa,
+        // y si el interruptor está encendido.
         RestEndNotifier.cancel()
-        strengthSession = StrengthSessionModel.restore(from: snap)   // didSet binds the Live Activity
+        let restaurada = StrengthSessionModel.restore(from: snap)
+        strengthSession = restaurada                                 // didSet binds the Live Activity
+        restaurada.reprogramarAviso()
         strengthSheetPresented = false                               // the hub offers «Resume»; no auto-present
         acquireRealtimeHR("strength")                                // re-arm the HR stream as at start
     }
