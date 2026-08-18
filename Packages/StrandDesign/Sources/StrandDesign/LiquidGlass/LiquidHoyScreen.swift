@@ -391,7 +391,8 @@ public struct LiquidHoyScreen: View {
             }
         }
         .overlay(alignment: .top) {
-            LiquidVeil(tone: model.ambiente.acento).frame(height: LiquidSpace.s1400)
+            // FER-118: el clima ya no tiñe el chrome (vive en el polvo y en los números).
+            LiquidVeil(tone: nil).frame(height: LiquidSpace.s1400)
         }
         .overlay(alignment: .bottom) {
             LiquidTabBar(active: .hoy, rotulos: .demo, onSelect: onSelectTab)

@@ -6,37 +6,7 @@ import SwiftUI
 // cabecera, dial-sello 24 h, cables vivos y hero de veredicto. Se componetizan con props
 // cuando aparezcan en una tercera pantalla.
 
-// MARK: Fondo ambiental (aurora + orbes drift)
-
-/// Un orbe de fondo: elipse radial del tono, difuminada, que deriva con `dur/drift`.
-public struct LiquidOrbSpec: Sendable {
-    let alignment: Alignment
-    let offset: CGSize
-    let size: CGSize
-    let tone: Color
-    let opacity: Double
-    let blur: CGFloat
-    let period: Double
-    let reverse: Bool
-    /// Radios del RECORRIDO del orbe (sesión /inject): el orbe circula por la pantalla en
-    /// una órbita suave de esta amplitud (pt), con un respiro de intensidad sutil. `.zero`
-    /// = el drift corto original del handoff.
-    let orbit: CGSize
-
-    public init(alignment: Alignment, offset: CGSize, size: CGSize, tone: Color,
-                opacity: Double, blur: CGFloat, period: Double, reverse: Bool = false,
-                orbit: CGSize = .zero) {
-        self.alignment = alignment
-        self.offset = offset
-        self.size = size
-        self.tone = tone
-        self.opacity = opacity
-        self.blur = blur
-        self.period = period
-        self.reverse = reverse
-        self.orbit = orbit
-    }
-}
+// MARK: El ambiente (el clima semántico del día)
 
 /// El ESTADO del ambiente (pedido del dueño /inject 2026-07-22): el color que respira
 /// detrás del vidrio y viaja por los cables es SEMÁNTICO — verde cuando el día está bien,
@@ -66,26 +36,6 @@ public enum LiquidAmbiente: Sendable, Equatable {
         }
     }
 
-    /// (tono de arranque, tono medio) de la aurora.
-    var aurora: (Color, Color) {
-        switch self {
-        case .bien: return (LiquidColor.verdeAurora, LiquidColor.verdePrimario)
-        case .atencion: return (LiquidColor.ambarClaro, LiquidColor.atencion)
-        case .alerta: return (LiquidColor.rosa, LiquidColor.negativo)
-        case .neutro: return (LiquidColor.tinta500, LiquidColor.tinta500)
-        }
-    }
-
-    /// (tono claro, tono profundo) de las manchas que circulan.
-    var orbes: (Color, Color) {
-        switch self {
-        case .bien: return (LiquidColor.verdeOrbe, LiquidColor.verdePrimario)
-        case .atencion: return (LiquidColor.ambarClaro, LiquidColor.atencion)
-        case .alerta: return (LiquidColor.rosa, LiquidColor.negativo)
-        case .neutro: return (LiquidColor.tinta500, LiquidColor.tinta500)
-        }
-    }
-
     /// Las 4 masas pálidas de la plasta de «El Tablero» (FER-28) para este clima. Un solo
     /// dial: la pantalla lee esto y `LiquidPlasta` las cruza con `ambienteCrossfade` (1.6 s).
     public var plasta: [Color] {
@@ -96,95 +46,14 @@ public enum LiquidAmbiente: Sendable, Equatable {
         case .neutro: return LiquidColor.plastaNeutra
         }
     }
-
-    /// El neutro baja la intensidad a la mitad (calma, no celebración).
-    var intensidad: Double { self == .neutro ? 0.5 : 1 }
 }
 
-/// El fondo de una pantalla Liquid: degradado de papel + aurora superior + orbes drift.
-/// La animación es un `TimelineView` ambiental (16–26 s); con Reduce Motion queda quieta.
-public struct LiquidAmbientBackground: View {
-    private let auroraStops: [Gradient.Stop]
-    private let orbs: [LiquidOrbSpec]
-
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.liquidMotionDisabled) private var motionDisabled
-    @Environment(\.liquidAmbientPaused) private var ambientPaused
-    @Environment(\.liquidDebugHide) private var debugHide
-
-    public init(auroraStops: [Gradient.Stop], orbs: [LiquidOrbSpec]) {
-        self.auroraStops = auroraStops
-        self.orbs = orbs
-    }
-
-    public var body: some View {
-        GeometryReader { geo in
-            let w = geo.size.width
-            let h = geo.size.height
-            ZStack {
-                // Fondo neutro (adiós beige en Hoy, /inject): el color lo ponen la aurora
-                // y los orbes que circulan.
-                LiquidColor.fondoGradient
-                // Aurora: radial 120 % × 55 % anclada arriba (50 % / −8 %).
-                if !debugHide.contains("aurora") {
-                    RadialGradient(stops: auroraStops,
-                                   center: UnitPoint(x: 0.5, y: -0.08),
-                                   startRadius: 0, endRadius: max(1, w * 1.2))
-                        .scaleEffect(x: 1, y: max(0.01, (h * 0.55) / (w * 1.2)),
-                                     anchor: UnitPoint(x: 0.5, y: -0.08))
-                }
-                if !debugHide.contains("orbes") {
-                    LiquidAmbientOrbs(orbs: orbs)
-                }
-            }
-        }
-        .ignoresSafeArea()
-        .allowsHitTesting(false)
-    }
-}
-
-/// El loop de manchas drift (compartido por `LiquidAmbientBackground` y el fondo de Hoy).
-struct LiquidAmbientOrbs: View {
-    let orbs: [LiquidOrbSpec]
-
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.liquidMotionDisabled) private var motionDisabled
-    @Environment(\.liquidAmbientPaused) private var ambientPaused
-
-    var body: some View {
-        let still = reduceMotion || motionDisabled || ambientPaused
-        // FER-73 · M16: 12 fps, no 20 — el desplazamiento de estas manchas dura decenas de
-        // segundos y cada tick re-rasteriza tres capas grandes con `blur`.
-        TimelineView(.animation(minimumInterval: LiquidMotion.intervaloSello, paused: still)) { context in
-            let t = still ? 0 : context.date.timeIntervalSinceReferenceDate
-            ZStack {
-                ForEach(Array(orbs.enumerated()), id: \.offset) { index, orb in
-                    let u = still ? 0 : LiquidMotion.driftProgress(
-                        time: t, period: orb.period, reverse: orb.reverse)
-                    // Órbita suave por la pantalla (/inject): desplazamiento Lissajous que
-                    // arranca en 0 (Reduce Motion = layout del handoff) con periodos
-                    // ≥16 s, + un respiro sutil de intensidad. Sin `.blur` (el degradado
-                    // radial YA es suave).
-                    let theta = still ? 0 : 2 * .pi * t / orb.period + Double(index) * 2.1
-                    let ox = orb.orbit.width * CGFloat(sin(theta))
-                    let oy = orb.orbit.height * CGFloat(sin(theta * 0.5))
-                    let breathe = still ? 1.0 : 0.8 + 0.2 * (0.5 + 0.5 * sin(theta))
-                    Ellipse()
-                        .fill(EllipticalGradient(
-                            colors: [orb.tone.opacity(orb.opacity * breathe),
-                                     orb.tone.opacity(0)],
-                            center: .center))
-                        .frame(width: orb.size.width, height: orb.size.height)
-                        .scaleEffect(1 + (LiquidMotion.driftScaleMax - 1) * u)
-                        .offset(x: orb.offset.width + ox,
-                                y: orb.offset.height + oy)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity,
-                               alignment: orb.alignment)
-                }
-            }
-        }
-    }
-}
+/// Espacio de nombres de los fondos ambientales de las pantallas Liquid. El fondo de Hoy es
+/// `LiquidAtmosfera` (FER-118: blanco + polvo de Metal); el de «El Tablero» sigue siendo
+/// `.tablero` (`LiquidPlasta`). La aurora + los orbes drift (`LiquidOrbSpec`,
+/// `LiquidAmbientOrbs`, `hoy(_:)`) se retiraron con FER-118: ya no había superficie que los
+/// montara.
+public enum LiquidAmbientBackground {}
 
 // MARK: Cabecera (kicker + elemento circular 40)
 
