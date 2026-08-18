@@ -1,8 +1,8 @@
-<!-- Requerimiento FER-118 · «Hoy en atmósfera». v6, convergido tras 5 rondas adversariales (Sonnet + Opus; DeepSeek sin saldo y Grok con límite de uso, sustituidos por Opus). Espeja el código de los PRs A–F (#1264–#1268 + F). Fuente viva del texto: este archivo; el issue FER-118 en Multica lleva la misma versión. Prototipo aprobado por el dueño: prototipo-atmosfera.html (junto a este archivo). -->
+<!-- Requerimiento FER-118 · «Hoy en atmósfera». v7: convergido tras 6 rondas adversariales del texto (Sonnet + Opus; DeepSeek sin saldo y Grok con límite de uso, sustituidos por Opus) + la revisión final extra-agresiva del código (3 lentes, 23 hallazgos aplicados en el PR F). Espeja el código de los PRs A–F (#1264–#1268 + F). Fuente viva del texto: este archivo; el issue FER-118 en Multica lleva la misma versión. Prototipo aprobado por el dueño: prototipo-atmosfera.html (junto a este archivo). -->
 
 # FER-118 · Hoy en atmósfera: fondo blanco con partículas vivas (Metal), el orbe viaja con el scroll y encima vidrio modular en tres estantes
 
-**Versión:** 6 (tras las rondas adversariales 1–5 — 24 + 35 + 23 + 20 + 11 hallazgos aplicados; espeja el código ya implementado en los PRs A–E, verificado premisa por premisa contra `fer-118-impl`) · **Fecha:** 2026-08-17 · **Carril:** PESADO
+**Versión:** 7 (tras las rondas adversariales 1–6 del requerimiento — 24 + 35 + 23 + 20 + 11 + 0 hallazgos — y la revisión final extra-agresiva del CÓDIGO en tres lentes, 23 hallazgos aplicados en el PR F; espeja el código ya implementado en los PRs A–E, verificado premisa por premisa contra `fer-118-impl`) · **Fecha:** 2026-08-17 · **Carril:** PESADO
 **Estado del issue:** `todo` → este documento sustituye la descripción actual de FER-118.
 **Prototipo aprobado (fuente visual de verdad):** artifact `31fada67-ad06-42dc-a989-95f34ec3f03c` · repo: rama `fer-118-hoy-atmosfera` → `design-handoff/hoy-en-blanco/prototipo-atmosfera.html`.
 
@@ -226,8 +226,8 @@ por su cuenta, en la spec y en el shader.
 `TimelineView(.animation(minimumInterval: LiquidMotion.intervaloAmbiente /* 20 Hz */, paused:))` — 20 Hz
 basta para derivas de 1–4 pt/s (movimiento sub-pixel entre cuadros) y cuesta un tercio que 60 Hz —
 y el Canvas de respaldo con el suyo a `intervaloSello` (12 Hz). `paused = ambientPaused || !estado.visible || still`, con
-`ambientPaused = @Environment(\.liquidAmbientPaused)` (Hoy ya lo pone en `true` con hoja abierta,
-app en background u onboarding tapando — `TodayView.swift`, `.environment(\.liquidAmbientPaused, …)`) y `still = reduceMotion || liquidMotionDisabled`.
+`ambientPaused = @Environment(\.liquidAmbientPaused)` (Hoy lo pone en `true` con hoja abierta,
+app en background, onboarding tapando **o la pestaña Hoy oculta (`!atmosfera.visible`, PR F)** — `TodayView.swift`, `.environment(\.liquidAmbientPaused, …)`; así los relojes de la Matriz —hilos, sellos, gráficas— también paran detrás de otra pestaña) y `still = reduceMotion || liquidMotionDisabled`. `estado.desplazamiento` se lee en el **body de la capa**, fuera del closure del `TimelineView` (Observation registra la dependencia con certeza).
 Además el lienzo Metal se redibuja **bajo demanda** cuando cambia `estado.desplazamiento` (parallax
 sigue al dedo aunque el reloj vaya a 20 Hz): `updateUIView → setNeedsDisplay()`, mismo patrón que
 `EcosistemaMetalLienzo`. `t` = `date.timeIntervalSince(inicio)` con `inicio` fijado en `onAppear`
@@ -439,7 +439,7 @@ real de estos tokens es la revisión de `LIQUID-GLASS.md` a mano.
      con altura nueva `MatrizTokens.alturaHilos = 96`.
   - **Pasos (ancho, `.full` con `.barrasMini` en Contexto):** anatomía horizontal como el prototipo:
     fila de título; debajo `HStack(alignment: .bottom)` con `[número + subtítulo]` (ancho mínimo 88 pt)
-    a la izquierda y la gráfica ocupando el resto (`alturaBarras`). Regla: **un módulo se compone
+    a la izquierda con **ancho fijo `MatrizTokens.moduloTextoAncho` (120)** y la gráfica ocupando el resto (`alturaBarras`). Regla: **un módulo se compone
     horizontal SOLO si viene de una banda `.full` Y su gráfica es `.barrasMini`** — y ese contexto
     lo pasa `bandaView` explícitamente: en su `case .full(let s)` llama
     `modulo(s, horizontal: !columnaUnica && esHorizontal(s))` con `esHorizontal` = «`case .barrasMini
@@ -549,7 +549,7 @@ frío/lento = abajo, apretado al 22 % como hoy). Así:
 - **La noche en que el par votó (`parFuera`)**: columna de resplandor ámbar
   (**`LiquidColor.atencion`** — el mismo de la costura; NO `ambarClaro`, que es un tono de AMBIENTE y
   da 2.3:1 sobre blanco, bajo el piso 3:1 de un objeto de dato — a alfa `hilosAlertaAlfa`·0.5 = 0.11,
-  ancho `hilosColumnaFactor` 1.2·paso, esquinas `s150`), los DOS puntos en `atencion` llenos, y un
+  ancho `min(hilosColumnaFactor 1.2·paso, ancho útil/2)` —con n = 1 ó 2 no inunda ni tapa a la vecina—, esquinas `s150`, **solo si esa noche tiene al menos un punto** (con < 3 lecturas de respiración en la ventana el builder no arma su escala y el hilo no se dibuja: una columna sobre nada afirmaría con el dibujo lo que solo el scrub dice con palabras), los DOS puntos en `atencion` llenos, y un
   **nudo**: línea punteada (`hilosNudoDash` [2, 2.5], `hilosNudoTrazo` 1.5, `atencion`) que une los
   dos puntos (solo si esa noche trae las dos lecturas). `atencion` entra a la lista de hues del test
   de contraste (4.08:1 sobre blanco). Todos los números de esta gráfica son tokens de `MatrizTokens` (§8, fila C): la CI de
@@ -559,7 +559,7 @@ frío/lento = abajo, apretado al 22 % como hoy). Así:
   `hilosAnillo` 5.2, trazo `hilosAnilloTrazo` 1.6, su hue) que **late** con la frecuencia del sello
   vivo en calma (`hilosLatidoW` 1.15 rad/s): fase `f = (sin(t·1.15) + 1)/2`, radio `5.2 + 2·f`
   (crece 2 pt, `hilosAnilloLatido`, como el `@keyframes late { r 5.2→7.2 }` del prototipo) y
-  alfa `1 − 0.7·f`; `TimelineView` a `LiquidMotion.intervaloSello`, pausado con `quieto =
+  alfa `1 − hilosLatidoAlfa (0.7)·f`; `TimelineView` a `LiquidMotion.intervaloSello`, pausado con `quieto =
   reduceMotion || ambientPaused || motionDisabled` (quieto = f 0: anillo fijo a 5.2 y alfa 1).
   De ahí el inset de 8 pt: 5.2 + 2 + 0.8 (medio trazo).
 - **Scrub (`resaltado`)**: la noche leída dibuja el cursor vertical (`LiquidColor.tinta500`, 1.2 pt,
@@ -582,7 +582,7 @@ frío/lento = abajo, apretado al 22 % como hoy). Así:
   `onScrollVisibilityChange(threshold: 0.6)` sobre el overlay del hint; antes, el `onAppear`.
   Vive en la cara (`MatrizHoyFace`) con el contador inyectado por `HoyMatrizHost` (la
   cara es del DS y no lee `AppStorage`: `MatrizHoyFace.init` gana `mostrarHintScrub: Bool = false`,
-  `onHintMostrado: () -> Void = {}` (la cara avisa cuando lo mostró; el host incrementa) y
+  `onHintMostrado: () -> Void = {}` (la cara avisa cuando el cruce TERMINÓ —`withAnimation … completion:`—, no cuando arranca: si contara al arrancar, la tercera vez el host apagaría `mostrarHintScrub` en el mismo ciclo y el hint se desmontaría sin verse; el host incrementa) y
   `onScrubCompletado: () -> Void = {}` (un arrastre terminó; el host pone el contador en 3; lo
   dispara `ScrubGesto` en su `onEnd` **solo si `scrub?.id == id`** — es decir, si hubo al menos un
   `onChange` — vía un nuevo parámetro `onCompletado`) — CON
@@ -723,7 +723,7 @@ Idiomas: es y en (todas las claves nuevas con `en` + `es`).
 | `…/LiquidGlass/LiquidType.swift` | + `valorTileL` (30, `.title`), + `valorTileM` (26, `.title2`), + `valorTileTracking = -1` | A |
 | `…/LiquidGlass/LiquidGlassRecipes.swift` | + `case superficieAtmosfera` + `LiquidGlassLayer.bordeSobreNativo` (opt-in; solo esta receta) + `#Preview` sobre blanco con polvo estático | A |
 | `…/LiquidGlass/MatrizTokens.swift` (**PR C**, con su consumidor — en A romperían el paquete porque `costuraAlertaAlfa`/`alturaCostura` aún tienen lector en `MatrizCostura.swift`) | + `alturaHilos 96`, `hilosBaseTemp 28`, `hilosBaseResp 68`, `hilosAmplitud 16`, `hilosBaseAlfa 0.30`, `hilosFillAlfa` (renombra `costuraFillAlfa`, 0.10), `hilosAlertaAlfa` (renombra `costuraAlertaAlfa`, 0.22), `hilosPuntoDentro 3`, `hilosPuntoFuera 4`, `hilosPuntoLeido 5`, `hilosPuntoDentroAlfa 0.45`, `hilosAnillo 5.2`, `hilosAnilloTrazo 1.6`, `hilosAnilloLatido 2`, `hilosLatidoW 1.15` (misma frecuencia que el sello vivo en calma), `hilosHuecoRadio 1.4`, `hilosHuecoAlfa 0.35`, `hilosNudoTrazo 1.5`, `hilosNudoDash [2, 2.5]`, `hilosColumnaFactor 1.2`; − `alturaCostura` | C |
-| `…/LiquidGlass/MatrizTokens.swift` (**PR E**, con su consumidor) | + `margenModulos = s400`, `moduloPadH = s400`, `moduloPadTop = s400`, `moduloPadBottom = s300`, `moduloGap = s300`, `moduloTextoMinAncho 88`, `estanteGap = s550`, `estanteCabeceraPad = s250`, `hintAncho 60`, `hintDuracion 1.4`, `hintEspera 0.9`; − `bandaV`, `colGap`, `filoAlfa`, `encabezadoMinH` (sin lector tras la anatomía nueva) | E |
+| `…/LiquidGlass/MatrizTokens.swift` (**PR E**, con su consumidor) | + `margenModulos = s400`, `moduloPadH = s400`, `moduloPadTop = s400`, `moduloPadBottom = s300`, `moduloGap = s300`, `moduloTextoAncho 120` (ancho FIJO de la columna de Pasos: si midiera su texto, el subtítulo del scrub la ensancharía a media pasada y la gráfica cambiaría de ancho bajo el dedo), `hilosLatidoAlfa 0.7`, `estanteGap = s550`, `estanteCabeceraPad = s250`, `hintAncho 60`, `hintDuracion 1.4`, `hintEspera 0.9`; − `bandaV`, `colGap`, `filoAlfa`, `encabezadoMinH` (sin lector tras la anatomía nueva) | E |
 | `docs/design-system/LIQUID-GLASS.md` | receta + tokens | A (+ remate en F, `63b2fe53`: l. 6 «recetas cerradas» y `vidrioCanto` 8 % en §10) |
 | `…/LiquidGlass/PolvoSimulacion.swift` (**nuevo**) | la spec pura + `Fisica` | B |
 | `…/Resources/EcosistemaShaders.msl` | + `PolvoU` + `vsPolvo` | B |
@@ -796,7 +796,7 @@ aceptable, ya visto por el dueño en el prototipo «Hoy en blanco»). Cada PR:
 tras D y E. Si `/qa` FALLA 3 rondas → parar y escalar al dueño (punto crítico).
 
 `PolvoSimulacionTests` (mínimo): determinismo (misma entrada → misma partícula); `hash` en [0,1) y
-distinto para índices vecinos; `cuenta` acotada y ≈ área/234; wrap (t grande → sigue en el lienzo);
+distinto para índices vecinos; `cuenta` acotada, ≈ área/234 y **0 con lienzo 0×0** (el primer `draw` de un `MTKView` puede llegar antes del layout; el renderer además se salta bounds 0); wrap (t grande → sigue en el lienzo);
 continuidad **al cuadro real (20 Hz)**: la posición en `t` y `t + 1/20` difiere < 0.3 pt (salvo cuando la mota envuelve el lienzo); densidad: alfa medio de las partículas con
 y > 0.8H mayor que con y < 0.23H; tono: en 2 000 índices, `.clima` ≈ 80 % ± 3 y cada satélite ≈ 5 % ± 2;
 `neutra` fuerza `.neutra` y multiplica alfa por 0.55; `still` ⇒ `particula(t: 0) == particula(t: 99)`
@@ -964,6 +964,15 @@ verifica el dueño al construir; el implementador lo verifica en simulador y lo 
     componente).
 31. **El arnés de capturas se corrige en F, no se rehace**: `baseArgs` sube `acceptedTermsVersion` a
     2.0 (la puerta de Términos tapaba las capturas desde FER-1003) y se corren solo los 8 `test_today_*` con el `xcodebuild` de §11 (el script corre la clase entera y apaga todos los simuladores; no se modifica).
+32. **Un reloj que retrocede no reabre un fundido**: `paleta(en:)` devuelve `paletaHacia` si `t <
+    inicioCrossfade` (el re-base tras `maxSesion` daba el color del veredicto ANTERIOR una hora).
+33. **`presionado = nil` en `tocar`** (sin módulo colgado al 97 % tras abrir una hoja); los snapshots
+    de la cara rinden cada estado con SU atmósfera (verde / neutro / rojo).
+34. **Registrado y NO arreglado (BAJO)**: el `Canvas` de respaldo rasteriza ~750 elipses a 12 Hz en
+    main mientras el shader compila al arrancar (cientos de ms) y en dispositivos sin Metal;
+    `MatrizHilos` re-rasteriza el hilo entero 12×/s para latir dos anillos; el `sin(w·t)` del shader
+    recibe `t` crudo acotado solo al reanudar (`maxSesion`). Deudas de rendimiento pequeñas, con
+    issue aparte si alguna se mide.
 
 ---
 
