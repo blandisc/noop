@@ -48,6 +48,12 @@ public enum MatrizCostura {
     /// así que el chip decía «vigilando tu temperatura» y la gráfica no lo respaldaba.
     private static let filoDentro: CGFloat = 0.58
     private static let filoFuera: CGFloat = 0.75
+    /// El borde SUPERIOR de la banda «tu rango esperado» de los hilos (FER-118): `filoDentro`, y NO
+    /// `fraccionFilo(1)` — el filo cae en el tramo de AFUERA del mapeo (0.75), y con 0.75 una noche
+    /// marcada a 1.02 (0.754) quedaría 0.07 pt «fuera» de un borde a 12 pt: dentro de la banda a
+    /// ojo, contradiciendo al motor. Con 0.58 lo no marcado (≤ 0.98 → ≤ 0.575) queda dentro y todo
+    /// lo marcado (≥ 1.02 → ≥ 0.754) queda claramente fuera: el hueco del filo se ve.
+    public static let filoBanda: CGFloat = filoDentro
     /// La suavidad de cada tramo (rpm/°C→pixeles).
     private static let kDentro: Double = 0.8
     private static let kFuera: Double = 1.2

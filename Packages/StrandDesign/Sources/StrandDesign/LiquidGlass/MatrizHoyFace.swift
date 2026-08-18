@@ -784,8 +784,8 @@ public struct MatrizHoyFace: View {
             return max(MatrizTokens.chartInset,
                        LiquidChart.puntoDatoRadio + LiquidChart.endpointBorde * 0.5 + MatrizTokens.aroGap2)
         case .costura:
-            return max(MatrizTokens.chartInset,
-                       LiquidChart.puntoDatoRadio + LiquidChart.endpointBorde)
+            // FER-118: el anillo de HOY latiendo llega a 8 pt del centro (era 5, y se cortaba).
+            return max(MatrizTokens.chartInset, MatrizTokens.hilosInset)
         default:
             return MatrizTokens.chartInset
         }

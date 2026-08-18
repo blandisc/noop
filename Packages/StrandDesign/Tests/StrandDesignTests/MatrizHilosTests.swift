@@ -45,20 +45,34 @@ final class MatrizHilosTests: XCTestCase {
         XCTAssertEqual(G.y(0, base: base), base, accuracy: 0.0001)
     }
 
-    /// La banda es el tramo entre |v| = 1 de cada lado CON EL MISMO MAPEO: asimétrica, y sus
-    /// bordes son exactamente donde cae una noche al filo — no hay pixel donde un punto «al
-    /// filo» quede fuera de la banda ni uno «fuera» quede dentro.
-    func test_laBandaTerminaDondeCaeElFilo() {
+    /// La banda: arriba `A·filoBanda` (0.58, el borde de adentro del hueco del filo — NO
+    /// `fraccionFilo(1)` = 0.75, que dejaría a lo marcado 0.07 pt «fuera», o sea dentro a ojo) y
+    /// abajo `y(−1)`, apretado. Todo lo no marcado (≤ 0.98) cae dentro; todo lo marcado (≥ 1.02)
+    /// cae fuera con su CENTRO a ≥ 2.5 pt del borde: el hueco del filo se ve.
+    func test_laBandaDejaFueraLoQueElMotorMarco() {
         let banda = G.banda(base: base)
-        XCTAssertEqual(banda.lowerBound, G.y(1, base: base), accuracy: 0.0001)
+        XCTAssertEqual(banda.lowerBound, base - MatrizCostura.filoBanda * A, accuracy: 0.0001)
         XCTAssertEqual(banda.upperBound, G.y(-1, base: base), accuracy: 0.0001)
-        XCTAssertLessThan(base - banda.lowerBound, banda.upperBound - base + A,
-                          "arriba (el filo) es el lado ancho…")
         XCTAssertGreaterThan(base - banda.lowerBound, (banda.upperBound - base) * 3,
-                             "…y abajo el lado apretado")
-        XCTAssertTrue(banda.contains(G.y(0.98, base: base)), "0.98 dentro de la banda")
-        XCTAssertFalse(banda.contains(G.y(1.02, base: base)), "1.02 fuera de la banda")
-        XCTAssertTrue(banda.contains(G.y(-0.9, base: base)))
+                             "arriba (el filo) es el lado ancho; abajo el apretado")
+        for v in [0.0, 0.3, 0.6, 0.9, 0.98] {
+            XCTAssertTrue(banda.contains(G.y(v, base: base)), "\(v) dentro de la banda")
+        }
+        for v in [1.02, 1.1, 1.5, 3, 500] {
+            let y = G.y(v, base: base)
+            XCTAssertFalse(banda.contains(y), "\(v) fuera de la banda")
+            XCTAssertGreaterThan(banda.lowerBound - y, 2.5, "\(v): el centro queda ≥ 2.5 pt fuera del borde")
+        }
+        XCTAssertTrue(banda.contains(G.y(-0.9, base: base)), "el lado frío vive dentro")
+    }
+
+    /// El inset de la gráfica deja sitio al anillo de HOY latiendo (8 pt) — y es el MISMO que
+    /// usa el dedo (fuente única P-3).
+    func test_elInsetDejaSitioAlAnilloDeHoy() {
+        let inset = MatrizHoyFace.chartInset(.costura(noches: []))
+        XCTAssertGreaterThanOrEqual(inset, MatrizTokens.hilosAnillo + MatrizTokens.hilosAnilloLatido
+                                            + MatrizTokens.hilosAnilloTrazo / 2)
+        XCTAssertEqual(inset, MatrizTokens.hilosInset)
     }
 
     /// Sin ninguna noche con valor NO hay base (ni banda ni hilo central); con una sola, sí.

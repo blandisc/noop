@@ -58,10 +58,12 @@ public struct MatrizHilos: View {
             return v < 0 ? base + d : base - d
         }
 
-        /// La banda de tu rango detrás de un hilo: entre `y(+1)` (arriba, el filo) y `y(−1)`
-        /// (abajo, apretado). Los bordes son EXACTAMENTE donde cae una noche al filo.
+        /// La banda de tu rango detrás de un hilo: arriba `A·filoBanda` (0.58 — el borde de
+        /// ADENTRO del hueco del filo, no `fraccionFilo(1)` = 0.75) y abajo `y(−1)` (apretado).
+        /// Así todo lo que el motor NO marcó (≤ 0.98) cae dentro y todo lo marcado (≥ 1.02) cae
+        /// fuera con su centro a ≥ 2.5 pt del borde: el hueco del filo se ve.
         public static func banda(base: CGFloat) -> ClosedRange<CGFloat> {
-            y(1, base: base)...y(-1, base: base)
+            (base - MatrizCostura.filoBanda * MatrizTokens.hilosAmplitud)...y(-1, base: base)
         }
 
         /// ¿Ese hilo tiene base? Sí en cuanto una noche trae valor (nil = no se leyó o no se pudo
@@ -102,7 +104,7 @@ public struct MatrizHilos: View {
         /// La fase del latido del anillo de HOY en [0, 1] (0 = anillo fijo). Misma frecuencia
         /// que el sello vivo en calma (`sin(t·1.15)`).
         public static func fase(_ t: TimeInterval, quieto: Bool) -> Double {
-            quieto ? 0 : (sin(t * 1.15) + 1) / 2
+            quieto ? 0 : (sin(t * MatrizTokens.hilosLatidoW) + 1) / 2
         }
     }
 
@@ -152,8 +154,9 @@ public struct MatrizHilos: View {
             // La noche en que el par votó: columna ámbar y nudo entre los dos puntos. Es el
             // juicio del motor (`parFuera`), nunca re-derivado del dibujo (COS-1).
             for (i, noche) in noches.enumerated() where noche.parFuera {
-                let col = CGRect(x: x(i) - paso * 0.6, y: LiquidSpace.s100,
-                                 width: paso * 1.2, height: size.height - LiquidSpace.s100 * 2)
+                let col = CGRect(x: x(i) - paso * MatrizTokens.hilosColumnaFactor / 2, y: LiquidSpace.s100,
+                                 width: paso * MatrizTokens.hilosColumnaFactor,
+                                 height: size.height - LiquidSpace.s100 * 2)
                 ctx.fill(Path(roundedRect: col, cornerRadius: LiquidSpace.s150),
                          with: .color(LiquidColor.ambarClaro.opacity(MatrizTokens.hilosAlertaAlfa * 0.5)))
                 if let t = noche.temp, let r = noche.resp {
@@ -161,7 +164,8 @@ public struct MatrizHilos: View {
                     nudo.move(to: CGPoint(x: x(i), y: Geometria.y(t, base: MatrizTokens.hilosBaseTemp)))
                     nudo.addLine(to: CGPoint(x: x(i), y: Geometria.y(r, base: MatrizTokens.hilosBaseResp)))
                     ctx.stroke(nudo, with: .color(LiquidColor.ambarClaro),
-                               style: StrokeStyle(lineWidth: 1.5, dash: [2, 2.5]))
+                               style: StrokeStyle(lineWidth: MatrizTokens.hilosNudoTrazo,
+                                                  dash: MatrizTokens.hilosNudoDash))
                 }
             }
 

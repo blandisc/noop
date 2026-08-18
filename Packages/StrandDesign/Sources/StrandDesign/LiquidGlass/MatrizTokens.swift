@@ -151,10 +151,20 @@ public enum MatrizTokens {
     public static let hilosPuntoFuera: CGFloat = 4
     public static let hilosPuntoLeido: CGFloat = 5
     public static let hilosPuntoDentroAlfa: Double = 0.45
-    /// El anillo de HOY (los dos puntos de anoche): radio, trazo y cuánto crece al latir.
+    /// El anillo de HOY (los dos puntos de anoche): radio, trazo, cuánto crece al latir y la
+    /// frecuencia del latido (la misma del sello vivo en calma).
     public static let hilosAnillo: CGFloat = 5.2
     public static let hilosAnilloTrazo: CGFloat = 1.6
     public static let hilosAnilloLatido: CGFloat = 2
+    public static let hilosLatidoW: Double = 1.15
+    /// El inset horizontal de la gráfica: el anillo de HOY latiendo llega a `hilosAnillo +
+    /// hilosAnilloLatido + hilosAnilloTrazo/2` = 8 pt del centro del último punto — el inset de la
+    /// familia (5) lo cortaba. Es también el inset del DEDO (fuente única, P-3).
+    public static let hilosInset: CGFloat = hilosAnillo + hilosAnilloLatido + hilosAnilloTrazo / 2
+    /// El nudo del par (línea punteada entre los dos puntos ámbar) y la columna que lo resalta.
+    public static let hilosNudoTrazo: CGFloat = 1.5
+    public static let hilosNudoDash: [CGFloat] = [2, 2.5]
+    public static let hilosColumnaFactor: CGFloat = 1.2
     /// Sin lectura esa noche: una marca mínima sobre la base, del color de nadie (misma regla
     /// P-2 de la costura: un hueco es un hueco, no un punto en el centro de tu banda).
     public static let hilosHuecoRadio: CGFloat = 1.4
