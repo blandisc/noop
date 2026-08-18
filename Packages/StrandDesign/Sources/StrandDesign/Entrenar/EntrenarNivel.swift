@@ -86,13 +86,36 @@ public struct EntrenarChip: View {
     }
 
     private let kind: Kind
-    private let text: LocalizedStringKey
+    private let text: Text
+    /// Icono que RESPALDA al de `kind` (FER-89) — hoy solo `.rest` lo necesita: distingue descanso
+    /// por FC (♥) de descanso por reloj (⏱), algo que el símbolo fijo de `Kind` no admite por sí
+    /// solo. `nil` (el default) conserva el símbolo de `kind` — los 3 call sites existentes
+    /// (`EntrenarCatalog.swift`, el `#Preview` de abajo) no cambian.
+    private let iconOverride: String?
+    /// Tono que RESPALDA al de `kind`, mismo criterio que `iconOverride`.
+    private let toneOverride: Color?
+    /// El chevron «›» que marca «esto abre algo» (FER-89) — aditivo, default `false`: los 3 call
+    /// sites existentes de `EntrenarChip` no lo mostraban y siguen sin mostrarlo.
+    private let showsDisclosure: Bool
     private let action: (() -> Void)?
 
     @Environment(\.instrumentoTheme) private var theme
 
-    public init(_ kind: Kind, text: LocalizedStringKey, action: (() -> Void)? = nil) {
-        self.kind = kind; self.text = text; self.action = action
+    public init(_ kind: Kind, text: LocalizedStringKey, icon: String? = nil, tone: Color? = nil,
+                showsDisclosure: Bool = false, action: (() -> Void)? = nil) {
+        self.kind = kind; self.text = Text(text)
+        self.iconOverride = icon; self.toneOverride = tone
+        self.showsDisclosure = showsDisclosure; self.action = action
+    }
+
+    /// El texto ya resuelto en tiempo de ejecución («90 s», «HR · 45%») — no una clave de catálogo.
+    /// `LocalizedStringKey` trataría un `String` dinámico como clave de búsqueda, que es incorrecto
+    /// para un rótulo ya formateado (FER-89, `RestChip`/`ProgressionChip`).
+    public init(_ kind: Kind, verbatim text: String, icon: String? = nil, tone: Color? = nil,
+                showsDisclosure: Bool = false, action: (() -> Void)? = nil) {
+        self.kind = kind; self.text = Text(verbatim: text)
+        self.iconOverride = icon; self.toneOverride = tone
+        self.showsDisclosure = showsDisclosure; self.action = action
     }
 
     public var body: some View {
@@ -108,13 +131,18 @@ public struct EntrenarChip: View {
 
     private var chip: some View {
         HStack(spacing: CenitMetrics.space1 + 2) {
-            Image(systemName: kind.symbol)
+            Image(systemName: iconOverride ?? kind.symbol)
                 .font(StrandFont.glyph(.lead))
-                .foregroundStyle(kind.tone(theme))
-            Text(text)
+                .foregroundStyle(toneOverride ?? kind.tone(theme))
+            text
                 .font(StrandFont.caption)
-                .foregroundStyle(kind.tone(theme))
+                .foregroundStyle(toneOverride ?? kind.tone(theme))
                 .fixedSize(horizontal: false, vertical: true)
+            if showsDisclosure {
+                StrandIcon.disclosure.image
+                    .font(StrandFont.glyph(.chevron, weight: .semibold))
+                    .foregroundStyle(theme.inkTertiary)
+            }
         }
         .padding(.horizontal, CenitMetrics.space2 + 1)
         .frame(minHeight: EntrenarMetrics.badge)
@@ -153,6 +181,14 @@ public struct EntrenarChip: View {
         HStack(spacing: 8) {
             EntrenarChip(.rest, text: "by heart rate · cap 2:30") {}
             EntrenarChip(.progression, text: "cycle") {}
+        }
+        // FER-89: RestChip distingue reloj/pulso con overrides de icono+tono + el chevron «›» que
+        // RestChip ya tenía (mismo grammar de antes, ahora desde la pieza compartida).
+        HStack(spacing: 8) {
+            EntrenarChip(.rest, verbatim: "90 s", icon: "clock", tone: InstrumentoTheme.base.dataStrain,
+                        showsDisclosure: true) {}
+            EntrenarChip(.rest, verbatim: "HR · 45%", icon: "heart.fill", tone: InstrumentoTheme.base.dataRecovery,
+                        showsDisclosure: true) {}
         }
     }
     .padding(24)

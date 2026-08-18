@@ -10,8 +10,11 @@ import SwiftUI
 public struct ExerciseCard: View {
     private let family: EntrenarFamily?
     private let name: String
-    private let meta: LocalizedStringKey?
+    private let meta: Text?
     private let thumb: Image?
+    /// Miniatura con su propia vista (p.ej. una que resuelve la imagen de forma async por id) en vez
+    /// de un `Image` ya resuelto — FER-89, ver el init `customThumb` abajo.
+    private let customThumb: AnyView?
     private let onMenu: (() -> Void)?
     private let onTap: (() -> Void)?
 
@@ -19,8 +22,20 @@ public struct ExerciseCard: View {
 
     public init(family: EntrenarFamily?, name: String, meta: LocalizedStringKey? = nil,
                 thumb: Image? = nil, onMenu: (() -> Void)? = nil, onTap: (() -> Void)? = nil) {
-        self.family = family; self.name = name; self.meta = meta
-        self.thumb = thumb; self.onMenu = onMenu; self.onTap = onTap
+        self.family = family; self.name = name; self.meta = meta.map { Text($0) }
+        self.thumb = thumb; self.customThumb = nil; self.onMenu = onMenu; self.onTap = onTap
+    }
+
+    /// FER-89 (`ChangeExerciseSheet`): un `meta` ya compuesto por quien llama (mezcla catálogo + dato
+    /// dinámico, p.ej. «Pecho · PR 82,5 kg» — un `LocalizedStringKey` trataría ese texto como clave de
+    /// búsqueda, que es incorrecto) y una miniatura que se resuelve sola (`SessionRunThumb`: carga
+    /// async por id, no un `Image` ya en mano). Aditivo — el init de arriba no cambia.
+    public init<Thumb: View>(family: EntrenarFamily?, name: String, metaText: Text? = nil,
+                             onMenu: (() -> Void)? = nil, onTap: (() -> Void)? = nil,
+                             @ViewBuilder customThumb: () -> Thumb) {
+        self.family = family; self.name = name; self.meta = metaText
+        self.thumb = nil; self.customThumb = AnyView(customThumb())
+        self.onMenu = onMenu; self.onTap = onTap
     }
 
     public var body: some View {
@@ -58,7 +73,7 @@ public struct ExerciseCard: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .multilineTextAlignment(.leading)
                 if let meta {
-                    Text(meta)
+                    meta
                         .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -69,24 +84,34 @@ public struct ExerciseCard: View {
         .contentShape(Rectangle())
     }
 
-    private var thumbnail: some View {
+    @ViewBuilder private var thumbnail: some View {
         let shape = RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
-        return Group {
-            if let thumb {
-                thumb.resizable().scaledToFill()
-            } else if let family {
-                RoutineRegionGlyph(family.glyph, tint: family.tint(theme)).padding(6)
-            } else {
-                Image(systemName: "dumbbell")
-                    .font(StrandFont.glyph(.lead))
-                    .foregroundStyle(theme.inkTertiary)
+        if let customThumb {
+            // La vista propia (p.ej. `SessionRunThumb`) ya dibuja su placeholder — solo se enmarca
+            // con el mismo aro de familia que el resto de las miniaturas, sin repetir su fondo.
+            customThumb
+                .frame(width: EntrenarMetrics.row, height: EntrenarMetrics.row)
+                .clipShape(shape)
+                .overlay(shape.strokeBorder(family?.tint(theme) ?? theme.hairlineStrong, lineWidth: 1.5))
+                .accessibilityHidden(true)
+        } else {
+            Group {
+                if let thumb {
+                    thumb.resizable().scaledToFill()
+                } else if let family {
+                    RoutineRegionGlyph(family.glyph, tint: family.tint(theme)).padding(6)
+                } else {
+                    Image(systemName: "dumbbell")
+                        .font(StrandFont.glyph(.lead))
+                        .foregroundStyle(theme.inkTertiary)
+                }
             }
+            .frame(width: EntrenarMetrics.row, height: EntrenarMetrics.row)
+            .background(theme.paper, in: shape)
+            .clipShape(shape)
+            .overlay(shape.strokeBorder(family?.tint(theme) ?? theme.hairlineStrong, lineWidth: 1.5))
+            .accessibilityHidden(true)
         }
-        .frame(width: EntrenarMetrics.row, height: EntrenarMetrics.row)
-        .background(theme.paper, in: shape)
-        .clipShape(shape)
-        .overlay(shape.strokeBorder(family?.tint(theme) ?? theme.hairlineStrong, lineWidth: 1.5))
-        .accessibilityHidden(true)
     }
 }
 

@@ -13,17 +13,16 @@ struct ProgressionChip: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
-            HStack(spacing: 3) {
-                StrandIcon.up.image
-                    .font(StrandFont.glyph(.chevron, weight: .semibold))
-                Text(Self.summary(re, system: system, derived: derivedIncrementKg))
-                    .font(StrandFont.caption)
-            }
-            .foregroundStyle(theme.dataRecovery)
-        }
-        .buttonStyle(.plain)
-        .disabled(disabled)
+        // FER-89: construido sobre `EntrenarChip` (E2) — encaja 1:1 con `.progression` (icono
+        // `arrow.up.right`, tono `theme.positiveText`). Antes el icono (`StrandIcon.up`, «arrow.up»
+        // liso) y el texto vivían en `theme.dataRecovery` — el hue de DATO de Recuperación, mal
+        // aplicado a un chip de progresión (auditoría FER-89) — la migración corrige el tono de paso.
+        // `theme` queda sin uso en el cuerpo (EntrenarChip lee `@Environment(\.instrumentoTheme)`
+        // solo), pero se conserva en la firma: el call site de `RoutineEditorScreen.swift:375` (E7,
+        // fuera de esta fase) sigue pasándolo tal cual.
+        EntrenarChip(.progression, verbatim: Self.summary(re, system: system, derived: derivedIncrementKg),
+                    action: action)
+            .disabled(disabled)
     }
 
     /// «+2,5 kg cada 2 ✓» — el plan activo, SIEMPRE con su incremento.

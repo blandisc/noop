@@ -164,6 +164,9 @@ struct ProgressionSetupScreen: View {
             // title's width (which collapsed the row labels to 0pt). Title flexes, control is bounded.
             control().frame(maxWidth: 184, alignment: .trailing)
         }
+        // FER-89: 52, no `EntrenarMetrics.row` (44) — la fila lleva título + subtítulo en DOS
+        // líneas, no un solo control; 52 ya cumple el piso de 44 (HIG), así que no se fuerza al
+        // token exacto solo por igualarlo (auditoría de re-vestido, sin forzar el número).
         .frame(minHeight: 52)
         .overlay(alignment: .bottom) { if !lastRow { Divider().overlay(theme.hairline) } }
     }
@@ -185,8 +188,11 @@ struct ProgressionSetupScreen: View {
         }
     }
 
+    /// FER-89: era 32 pt (bajo el piso de 44, HIG) — `StepperButton` recorta su propio
+    /// `contentShape` al `size` que recibe, así que no hay forma de agrandar SOLO el toque sin
+    /// tocar el paquete; se sube el dibujo al piso.
     private func incrementStep(_ system: String, _ action: @escaping () -> Void) -> some View {
-        StepperButton(system: system, size: 32, shape: .circle,
+        StepperButton(system: system, size: EntrenarMetrics.row, shape: .circle,
                       glyph: StrandFont.caption, theme: theme, action: action)
     }
 

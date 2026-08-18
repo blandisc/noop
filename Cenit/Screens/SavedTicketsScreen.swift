@@ -23,6 +23,9 @@ struct SavedTicketsScreen: View {
     @State private var routineNames: [String: String] = [:]
     @State private var volumes: [String: (volumeKg: Double, setCount: Int)] = [:]
     @State private var loaded = false
+    /// `repo.storeHandle()` came back nil — a real read failure, distinct from «cero tickets»
+    /// (Estados, decisión #16 del épico, FER-90).
+    @State private var readError = false
 
     /// The receipt being reprinted (tap → reconstruct summary → present the printer). nil = closed.
     @State private var receiptTarget: ReceiptTarget?
@@ -56,7 +59,9 @@ struct SavedTicketsScreen: View {
                 header
                 segmentControl
                 if loaded {
-                    if filteredSessions.isEmpty {
+                    if readError {
+                        readErrorBanner
+                    } else if filteredSessions.isEmpty {
                         emptyState
                     } else {
                         ticketGrid
@@ -127,6 +132,18 @@ struct SavedTicketsScreen: View {
         .padding(.vertical, CenitMetrics.sectionGap)
     }
 
+    /// «Error de lectura» (Estados, decisión #16 del épico): sustituye la ilustración de «sin datos» —
+    /// mismo tratamiento visual que el `saveError` de `WorkoutHistoryScreen`/`WorkoutEditSheet`
+    /// (`patternBlock` con barra crítica); no se descarta solo porque la condición no cambia sin un
+    /// reintento.
+    private var readErrorBanner: some View {
+        Text("Couldn't read your saved tickets. Try again.")
+            .font(.system(size: 13))   // token-exempt: cuerpo de banner (13pt, igual que saveError/ConfirmCard)
+            .foregroundStyle(theme.ink)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .patternBlock(theme, bar: theme.critical)
+    }
+
     private var emptyTitle: LocalizedStringKey {
         switch segment {
         case .cardio: return "No cardio tickets yet"
@@ -164,6 +181,13 @@ struct SavedTicketsScreen: View {
     }
 
     private func load() async {
+        // Estados → «Error de lectura»: igual que `WorkoutHistoryScreen.load()`, adelantada al frente.
+        guard await repo.storeHandle() != nil else {
+            readError = true
+            loaded = true
+            return
+        }
+        readError = false
         async let s = repo.recentSessions()
         async let r = repo.routines()
         async let v = repo.sessionVolumes()

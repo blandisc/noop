@@ -117,8 +117,6 @@ private struct EntrenarLanding: View {
     @State private var startWhenLoaded = false
     /// Presents the live-HR workout sheet from the «Formas de entrenar» → «En vivo» chip (same sheet the
     /// rest-day / other-ways screens use).
-    /// The Constancia day currently popped open (tap-to-reveal what you trained that day).
-    @State private var constancyPopup: ConstancyPopup? = nil
     /// Presents the starter-templates list from the first-use «Rutinas de plantilla» row (mock 5a).
     @State private var showTemplates = false
     /// FER-952: the hub's Import door-chip.
@@ -1029,27 +1027,26 @@ private struct EntrenarLanding: View {
         return muscles.isEmpty ? row.days : ([row.days] + muscles).joined(separator: " · ")
     }
 
-    // MARK: - ④ Constancia — a 90-day dot grid above the dock (mock 1a, replaces the week strip + streak)
+    // MARK: - ④ Constancia — TrainingCalendar(.mini), 63 días (9 semanas) terminando hoy (FER-90 · E9)
     //
-    // Three months side by side; every day is a faint base dot, a day you trained lights up in its
-    // routine's tint, today is a paper-filled ring in the scheduled routine's tint. No streak, no «2 of 4»,
-    // no guilt: a gap breaks nothing — the pattern just reads itself. Data is the last-90-days of completed
-    // strength sessions, bucketed by day and routine.
+    // Migrado desde el dot-grid hecho a mano por mes (sus tres ayudantes se retiraron con este
+    // cambio): la pieza compartida ya cubre agrupar por semana + teñir por familia + el resumen de
+    // VoiceOver. Sin `onTapDay`: la landing es un resumen, no un punto de entrada a una sesión — eso
+    // vive en el historial (`WorkoutHistoryScreen`, punto 2 de FER-90). `constancyMonthsCache`/
+    // `ConstancyMonth`/`computeConstancyMonths()` NO se tocan aquí: siguen alimentando la tira semanal
+    // (`trainedThisWeek`, debajo) — esta migración calcula su propia ventana de 63 días directo sobre
+    // `sessions`/`routineCategory`, sin pasar por ese caché mensual.
 
     private var constanciaSection: some View {
-        let months = constancyMonthsCache
-        let total = months.reduce(0) { $0 + $1.count }
+        let days = constanciaCalendarDays
+        let total = days.filter { if case .done = $0.state { return true }; return false }.count
         return VStack(alignment: .leading, spacing: 12) {
             InstrumentoSectionBand("Consistency") {
-                Text("\(total) sessions · 90 days")
+                Text("\(total) sessions · 63 days")
                     .font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
             }
-            HStack(alignment: .top, spacing: 0) {
-                ForEach(months) { m in
-                    monthColumn(m)
-                    if m.id != months.last?.id { Spacer(minLength: 6) }
-                }
-            }
+            TrainingCalendar(days: days, size: .mini, summary: constanciaSummary(total),
+                              monthLabels: constanciaMonthLabels)
             if total == 0 {
                 Text("Your sessions will appear here, each in its routine's color.")
                     .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
@@ -1058,89 +1055,73 @@ private struct EntrenarLanding: View {
         }
     }
 
-    /// One month block: label «Jul · 6» over the dot grid, with the temporal fade (older months quieter).
-    private func monthColumn(_ m: ConstancyMonth) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            (Text(m.label) + Text(verbatim: " · ") + Text("\(m.count)"))
-                .groteskOverline()
-                .foregroundStyle(m.isCurrent ? theme.ink : theme.inkTertiary)
-            monthGrid(m)
+    /// Día local (`yyyy-MM-dd`, `Calendar.current`) — el mismo criterio que el historial usa, para no
+    /// repetir el día fantasma UTC vs local ya documentado en memoria del repo.
+    private static let dayKeyFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.calendar = Calendar.current
+        f.timeZone = .current
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
+
+    /// La sesión más reciente por día local — gana la de `startTs` mayor si dos cayeron el mismo día
+    /// (mismo criterio que el historial). Lee `sessions` directo, sin pasar por `constancyMonthsCache`.
+    private var constanciaLatestSessionByDay: [String: StrengthSession] {
+        var out: [String: StrengthSession] = [:]
+        for s in sessions where s.endTs != nil {
+            let key = Self.dayKeyFormatter.string(from: Date(timeIntervalSince1970: TimeInterval(s.startTs)))
+            if let existing = out[key], existing.startTs >= s.startTs { continue }
+            out[key] = s
         }
-        .opacity(m.fade)
+        return out
     }
 
-    /// The 7-wide dot grid for a month: a faint base dot per day, a tinted dot for days trained, and a
-    /// ring for today. Days fill row by row (day 1 top-left).
-    private func monthGrid(_ m: ConstancyMonth) -> some View {
-        let cell: CGFloat = 14, cols = 7
-        let rows = (m.daysInMonth + cols - 1) / cols
-        return VStack(spacing: 0) {
-            ForEach(0..<rows, id: \.self) { r in
-                HStack(spacing: 0) {
-                    ForEach(0..<cols, id: \.self) { c in
-                        let day = r * cols + c + 1
-                        dayCell(m, day: day, cell: cell)
-                    }
-                }
+    /// Los últimos 63 días locales (9 semanas), más viejo primero — la misma ventana que el propio
+    /// componente ya usa como su ejemplo de referencia (`demoDays`/`#Preview` de `TrainingCalendar.swift`,
+    /// «27 sessions in the last 9 weeks», verificado en el código de este worktree). `.done(.push)` es
+    /// el mismo respaldo visual que `routineFill(nil)` ya usaba (cae en `theme.dataStrain`, y
+    /// `EntrenarFamily.push.tint` es ese mismo color): el tono de reserva no cambia.
+    private var constanciaCalendarDays: [EntrenarCalendarDay] {
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        let byDay = constanciaLatestSessionByDay
+        return (0..<63).reversed().compactMap { offset in
+            guard let day = cal.date(byAdding: .day, value: -offset, to: today) else { return nil }
+            let key = Self.dayKeyFormatter.string(from: day)
+            guard let s = byDay[key] else { return EntrenarCalendarDay(id: key, state: .empty) }
+            if let rid = s.routineId, let region = routineCategory[rid] {
+                return EntrenarCalendarDay(id: key, state: .done(region.family))
             }
-        }
-    }
-
-    @ViewBuilder
-    private func dayCell(_ m: ConstancyMonth, day: Int, cell: CGFloat) -> some View {
-        // Expand the hit/VO frame to ≥44pt without growing the visible 14pt dot: pad out, shape, then
-        // cancel the layout growth with equal negative padding (FER-947).
-        let hitPad = max(0, (44 - cell) / 2)
-        let inMonth = day <= m.daysInMonth
-        let trainedName = inMonth ? m.trained[day] : nil
-        ZStack {
-            if inMonth {
-                Circle().fill(theme.hairlineStrong).frame(width: 4, height: 4)
-                if let name = trainedName {
-                    EntrenarFamilyDot(routineFill(region(name: name)))
-                }
-                if m.isCurrent && day == todayDayOfMonth {
-                    Circle().fill(theme.surface)
-                        .overlay(Circle().strokeBorder(todayRingTint, lineWidth: 1.5))
-                        .frame(width: 12, height: 12)
-                }
-            }
-        }
-        .frame(width: cell, height: cell)
-        .padding(hitPad)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            guard let name = trainedName else { return }
-            constancyPopup = ConstancyPopup(monthId: m.id, day: day, name: name)
-        }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(verbatim: inMonth ? dayCellAccessibilityLabel(m, day: day) : ""))
-        .accessibilityAddTraits(trainedName != nil ? .isButton : [])
-        .accessibilityHidden(!inMonth)
-        .padding(-hitPad)
-        .popover(isPresented: Binding(
-            get: { constancyPopup?.monthId == m.id && constancyPopup?.day == day },
-            set: { if !$0 { constancyPopup = nil } }
-        )) {
-            if let popup = constancyPopup { constancyPopoverContent(popup, month: m) }
+            return EntrenarCalendarDay(id: key, state: .done(.push))
         }
     }
 
-    /// VoiceOver label for a Constancia day: date + trained-with-routine / no training / today.
-    private func dayCellAccessibilityLabel(_ m: ConstancyMonth, day: Int) -> String {
-        let isToday = m.isCurrent && day == todayDayOfMonth
-        let head: String = {
-            if isToday { return String(localized: "Today") }
-            guard let date = Calendar.current.date(from: DateComponents(year: m.year, month: m.month, day: day)) else {
-                return "\(day)"
+    /// Qué filas (de 7 días) llevan rótulo de mes — mismo mecanismo que el historial: fila 0 siempre,
+    /// y cualquier fila cuyo primer día caiga en un mes distinto al de la fila anterior.
+    private var constanciaMonthLabels: [Int: LocalizedStringKey] {
+        let cal = Calendar.current
+        let days = constanciaCalendarDays
+        var labels: [Int: LocalizedStringKey] = [:]
+        var lastMonth: Int?
+        for (rowIndex, start) in stride(from: 0, to: days.count, by: 7).enumerated() {
+            guard let date = Self.dayKeyFormatter.date(from: days[start].id) else { continue }
+            let month = cal.component(.month, from: date)
+            if rowIndex == 0 || month != lastMonth {
+                labels[rowIndex] = LocalizedStringKey(cal.shortMonthSymbols[(month - 1) % 12].lowercased())
             }
-            return date.formatted(.dateTime.day().month(.wide))
-        }()
-        if let name = m.trained[day] {
-            if name.isEmpty { return String(localized: "\(head), trained") }
-            return String(localized: "\(head), you trained \(name)")
+            lastMonth = month
         }
-        return String(localized: "\(head), no training")
+        return labels
+    }
+
+    /// Resumen para VoiceOver: la rejilla es UN solo elemento, nunca celda por celda (Estados). Antes
+    /// de esta migración cada día tenía su propia etiqueta de accesibilidad (retirada con el resto del
+    /// dot-grid a mano) — no se pierde alcance real: esa pieza tampoco navegaba a ningún lado al tocar
+    /// un día (solo abría un popover informativo), y toda sesión sigue disponible completa en el
+    /// historial.
+    private func constanciaSummary(_ total: Int) -> LocalizedStringKey {
+        "\(total) sessions in the last 9 weeks"
     }
 
     /// The «hoy» ring tint: today's scheduled routine, or a neutral hairline on a rest day.
@@ -1161,31 +1142,6 @@ private struct EntrenarLanding: View {
             return constancyMonthsCache.first { $0.year == y && $0.month == mo }?.trained[d]
         }
         return nil
-    }
-
-    /// Which Constancia day is popped open (month + day identify the cell; name is what to show) — one
-    /// popover shared across the whole grid, gated per-cell by matching identity in `dayCell`.
-    private struct ConstancyPopup: Equatable {
-        let monthId: Int
-        let day: Int
-        let name: String
-    }
-
-    /// The tapped day's popover: routine name + its date, paper-toned to match Instrumento.
-    @ViewBuilder
-    private func constancyPopoverContent(_ popup: ConstancyPopup, month: ConstancyMonth) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(popup.name).font(StrandFont.subhead).foregroundStyle(theme.ink)
-            if let date = Calendar.current.date(from: DateComponents(year: month.year, month: month.month, day: popup.day)) {
-                Text(date.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated)))
-                    .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
-            }
-        }
-        .padding(.horizontal, 14).padding(.vertical, 10)
-        // `presentationBackground` paints the popover container AND its anchor arrow in one paper
-        // piece — a plain `.background` leaves the arrow in the system tint (same seam PaperMenu had).
-        .presentationBackground(theme.surface)
-        .presentationCompactAdaptation(.popover)
     }
 
     // MARK: - Empty state B (no split yet → build the week)
@@ -1285,8 +1241,6 @@ private struct EntrenarLanding: View {
     private var routinesById: [String: Routine] { Dictionary(routines.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a }) }
     private var todayRoutineId: String? { WeeklySplit.todayRoutineId(split: split, todayWeekday: todayWeekday) }
     private var todayRoutine: Routine? { todayRoutineId.flatMap { routinesById[$0] } }
-
-    private var todayDayOfMonth: Int { Calendar.current.component(.day, from: Date()) }
 
     /// One month's worth of Constancia dot-grid data.
     private struct ConstancyMonth: Identifiable {

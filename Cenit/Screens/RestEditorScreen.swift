@@ -12,6 +12,42 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 // «save to routine» toggle decide where it lands. On apply it hands back a `RestConfig` + the scope +
 // whether to persist to the backing routine.
 
+// MARK: - Pure mapping (FER-89) — extracted so it's testable without mounting the View
+//
+// Antes de FER-89 la hoja solo conocía 2 de las 5 formas reales (`RestMode.fixed` + 2 de los 4
+// `HRRestReference`); `.peakDrop`/`.fixedBpm` no tenían UI y, peor, un `RestConfig` YA GUARDADO en
+// esas dos formas se degradaba en silencio a `.restingMargin` al reabrir el editor (pérdida de
+// contenido real, no solo de alcance de UI).
+
+enum RestEditorMapping {
+    /// El `hrRef` con el que abre la hoja: exactamente el persistido, las CUATRO formas. Código
+    /// viejo (`current.hrReference == .karvonenReserve ? .karvonenReserve : .restingMargin`)
+    /// tronaría aquí para `.peakDrop`/`.fixedBpm` — devolvía `.restingMargin` y el método guardado se
+    /// perdía al reabrir el editor.
+    static func seedHRRef(_ current: RestConfig) -> HRRestReference { current.hrReference }
+
+    /// La `RestConfig` que arma el CTA «Aplicar» — una rama por cada una de las 5 formas reales.
+    /// Código viejo (el switch de 2 ramas de antes de FER-89) no compilaría con las 4 del enum, o
+    /// perdería `.peakDrop`/`.fixedBpm` si alguien lo redujera de vuelta a un ternario.
+    static func buildConfig(mode: RestMode, hrRef: HRRestReference, seconds: Int,
+                            margin: Int, reserve: Double, peakDropFraction: Double,
+                            fixedTargetBpm: Int) -> RestConfig {
+        guard mode == .heartRate else {
+            return RestConfig(mode: .fixed, seconds: seconds, hrReference: .restingMargin, hrValue: 0)
+        }
+        switch hrRef {
+        case .restingMargin:
+            return RestConfig(mode: .heartRate, seconds: seconds, hrReference: .restingMargin, hrValue: Double(margin))
+        case .karvonenReserve:
+            return RestConfig(mode: .heartRate, seconds: seconds, hrReference: .karvonenReserve, hrValue: reserve)
+        case .peakDrop:
+            return RestConfig(mode: .heartRate, seconds: seconds, hrReference: .peakDrop, hrValue: peakDropFraction)
+        case .fixedBpm:
+            return RestConfig(mode: .heartRate, seconds: seconds, hrReference: .fixedBpm, hrValue: Double(fixedTargetBpm))
+        }
+    }
+}
+
 struct RestEditorScreen: View {
     let theme: InstrumentoTheme
     let exerciseName: String
@@ -32,13 +68,24 @@ struct RestEditorScreen: View {
 
     @State private var mode: RestMode
     @State private var seconds: Int
-    /// Which HR method drives the target: a margin over the user's resting HR (FER-759) or the
-    /// Karvonen reserve. Both resolve to a bpm target through the same cited engine.
+    /// Cuál de las 4 formas de `HRRestReference` maneja el target — las 5 formas reales del motor son
+    /// `RestMode.fixed` + estas 4 (FER-89: `.restingMargin`/`.karvonenReserve` ya vivían aquí;
+    /// `.peakDrop`/`.fixedBpm` no tenían UI hasta esta fase). Todas resuelven a un bpm por el mismo
+    /// motor citado (`RestTarget.resolve`).
     @State private var hrRef: HRRestReference
     /// Margin in bpm over resting HR for the `.restingMargin` method (target = resting + margin, FER-759).
     @State private var margin: Int
     /// Fraction of HR reserve for the Karvonen threshold (0.35 exigente … 0.50 suave).
     @State private var reserve: Double
+    /// Fracción de caída desde el pico de esta serie para `.peakDrop` (FER-89: el motor ya la calcula
+    /// — `RestTarget.resolve(reference: .peakDrop, ...)` — pero nunca tuvo UI). Sin `peakHR` a la mano
+    /// en este editor (se conoce EN VIVO, durante la serie, no al configurar el descanso), el preview
+    /// siempre es solo-porcentaje — igual que `.karvonenReserve` sin perfil de FC.
+    @State private var peakDropFraction: Double
+    /// Objetivo fijo en lpm para `.fixedBpm` (FER-89): un número que el usuario pone directo, sin
+    /// depender de su FC en reposo — ya persistido y formateado por `restChipLabel`, pero invisible en
+    /// esta hoja hasta esta fase.
+    @State private var fixedTargetBpm: Int
     @State private var applyToAll: Bool
     @State private var saveToRoutine: Bool
 
@@ -52,9 +99,9 @@ struct RestEditorScreen: View {
         self.onCancel = onCancel; self.onApply = onApply
         _mode = State(initialValue: current.mode)
         _seconds = State(initialValue: max(15, current.seconds))
-        // Method: honor a saved Karvonen config; everything else (incl. the FER-348 default) starts on the
-        // simpler «margin over rest» method.
-        _hrRef = State(initialValue: current.hrReference == .karvonenReserve ? .karvonenReserve : .restingMargin)
+        // FER-89: honra el método persistido tal cual — las 4 formas, no solo Karvonen. Antes de esta
+        // fase, un config .peakDrop/.fixedBpm se degradaba en silencio a .restingMargin al reabrir.
+        _hrRef = State(initialValue: RestEditorMapping.seedHRRef(current))
         // Seed the margin from a restingMargin config, else the +20 default (parity with FER-348) so an
         // existing routine keeps its target until the user drags it down.
         _margin = State(initialValue: current.hrReference == .restingMargin && current.hrValue > 0
@@ -62,6 +109,10 @@ struct RestEditorScreen: View {
         // Seed the reserve from a karvonenReserve config, else the «Normal» 41 % anchor.
         _reserve = State(initialValue: current.hrReference == .karvonenReserve && current.hrValue > 0
                          ? min(0.6, max(0.3, current.hrValue)) : 0.41)
+        _peakDropFraction = State(initialValue: current.hrReference == .peakDrop && current.hrValue > 0
+                                  ? min(0.50, max(0.10, current.hrValue)) : 0.25)
+        _fixedTargetBpm = State(initialValue: current.hrReference == .fixedBpm && current.hrValue > 0
+                                ? min(170, max(80, Int(current.hrValue.rounded()))) : 120)
         _applyToAll = State(initialValue: defaultApplyToAll)
         _saveToRoutine = State(initialValue: persistsToRoutine)
     }
@@ -73,6 +124,30 @@ struct RestEditorScreen: View {
                            peakHR: nil, restingHR: restingHR, maxHR: maxHR)
     }
 
+    // MARK: Front control (2 of 5 forms) — FER-89
+
+    /// Lo que el control de 2 opciones AL FRENTE puede representar. `.other` no es un item del
+    /// control (no aparece en `items`) — existe solo para que `selection` pueda decir «ninguna de las
+    /// 2 de aquí» cuando una de las 3 formas de «más opciones» está activa, sin inventar un tercer
+    /// segmento visible.
+    private enum FrontChoice: Hashable { case fixed, restingMargin, other }
+
+    private var frontChoice: Binding<FrontChoice> {
+        Binding(
+            get: {
+                if mode == .fixed { return .fixed }
+                return hrRef == .restingMargin ? .restingMargin : .other
+            },
+            set: { choice in
+                switch choice {
+                case .fixed:         mode = .fixed
+                case .restingMargin: mode = .heartRate; hrRef = .restingMargin
+                case .other:         break   // no es un segmento tocable — nunca se asigna desde el control
+                }
+            }
+        )
+    }
+
     /// Inject: los hooks van en la vista NO privada más externa del archivo (ver `EntrenarView`).
     @ObserveInjection private var inject
     var body: some View {
@@ -82,11 +157,14 @@ struct RestEditorScreen: View {
                 InstrumentoFlowTitle(
                     overline: Text(setNumber.map { String(localized: "\(exerciseName) · set \($0)") } ?? exerciseName),
                     Text("Rest when you finish"))
-                // Canvas pass 2026-07-15: FC carries its heart glyph (handoff «♥ FC»).
-                SegmentedPillControl([RestMode.fixed, .heartRate], selection: $mode, theme: theme,
+                // FER-89: las 2 formas AL FRENTE — por tiempo fijo y sobre tu reposo (el default de
+                // FC). Las otras 3 (Karvonen, caída desde el pico, lpm fijo) viven en «más opciones»
+                // dentro de `hrSection`; si una de ellas está activa, ningún segmento de este control
+                // se resalta — es honesto: ninguna de las 2 de aquí es la que de verdad está activa.
+                SegmentedPillControl([FrontChoice.fixed, .restingMargin], selection: frontChoice, theme: theme,
                                      inkThumb: true,
-                                     icon: { $0 == .heartRate ? "heart.fill" : nil }) {
-                    $0 == .fixed ? String(localized: "By time") : String(localized: "By heart rate")
+                                     icon: { $0 == .restingMargin ? "heart.fill" : nil }) {
+                    $0 == .fixed ? String(localized: "By time") : String(localized: "Over your rest")
                 }
                 if mode == .heartRate {
                     hrSection
@@ -141,12 +219,41 @@ struct RestEditorScreen: View {
                 Text(String(localized: "your rest") + ": " + "\(Int(resting.rounded())) bpm")
                     .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
             }
-            // The method selector rides the data hue (handoff: HR selector in the HRV blue-teal).
-            SegmentedPillControl([HRRestReference.restingMargin, .karvonenReserve], selection: $hrRef,
+            // FER-89: el cuerpo refleja SIEMPRE el `hrRef` activo — así un config ya guardado en una
+            // de las 3 formas de «más opciones» se ve completo aunque el disclosure siga plegado.
+            hrRefBody
+            moreOptionsSection
+        }
+    }
+
+    /// El cuerpo de la forma activa — una de las 4. Reemplaza el ternario de 2 ramas de antes de
+    /// FER-89 (`hrRef == .restingMargin ? marginBody : reserveBody`), que no tenía dónde poner
+    /// `.peakDrop`/`.fixedBpm`.
+    @ViewBuilder private var hrRefBody: some View {
+        switch hrRef {
+        case .restingMargin:   marginBody
+        case .karvonenReserve: reserveBody
+        case .peakDrop:        peakDropBody
+        case .fixedBpm:        fixedBpmBody
+        }
+    }
+
+    /// «Más opciones» (FER-89, primera vez que esta hoja pliega algo): las 3 formas que no van al
+    /// frente. Candidato de reuso evaluado — `Metodo<Content>` (`TendenciasDetalle.swift:322`), el
+    /// `DisclosureGroup` ya estandarizado (radio 12, padding 14, plegado por defecto) — su label es un
+    /// `Text` genérico, no prosa forzada, así que encaja sin fork: se reusa tal cual en vez de construir
+    /// `EntrenarDisclosure` para lo mismo.
+    private var moreOptionsSection: some View {
+        Metodo(title: String(localized: "More options"), theme: theme) {
+            SegmentedPillControl([HRRestReference.karvonenReserve, .peakDrop, .fixedBpm], selection: $hrRef,
                                  theme: theme, inkThumb: true, thumbTint: theme.dataHrv) {
-                $0 == .restingMargin ? String(localized: "Over your rest") : String(localized: "Karvonen")
+                switch $0 {
+                case .karvonenReserve: return String(localized: "Karvonen")
+                case .peakDrop:        return String(localized: "Peak drop")
+                case .fixedBpm:        return String(localized: "Fixed bpm")
+                case .restingMargin:   return ""   // no es un item de este control
+                }
             }
-            if hrRef == .restingMargin { marginBody } else { reserveBody }
         }
     }
 
@@ -208,6 +315,59 @@ struct RestEditorScreen: View {
         }
     }
 
+    /// «Caída desde el pico» (FER-89, motor citado sin exponer hasta esta fase): un % de caída desde
+    /// el pico de FC de esta serie. `RestTarget.resolve(reference: .peakDrop, ...)` necesita `peakHR`
+    /// — el pico de la serie que se acaba de hacer — y este editor lo abre ANTES de la serie (config,
+    /// no en vivo), así que `peakHR` siempre es `nil` aquí: el preview es siempre solo-porcentaje,
+    /// igual que Karvonen sin perfil de FC.
+    private var peakDropBody: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .center, spacing: 4) {
+                Text("Rest down to").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(verbatim: "\(Int((peakDropFraction * 100).rounded()))")
+                        .groteskSheetNumeral().monospacedDigit().foregroundStyle(theme.dataRecovery)
+                    Text(verbatim: "%").font(InstrumentoType.grotesk(14, weight: .bold)).foregroundStyle(theme.inkSecondary)
+                }
+                (Text(verbatim: "\(Int((peakDropFraction * 100).rounded()))% ") + Text("below your peak heart rate"))
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+            }
+            .frame(maxWidth: .infinity)
+            Slider(value: $peakDropFraction, in: 0.10...0.50, step: 0.01).tint(theme.dataRecovery)
+            HStack {
+                Text("10% hard").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                Spacer()
+                Text("50% easy").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+            }
+        }
+    }
+
+    /// «Lpm fijo» (FER-89): un objetivo directo, sin arithmetic sobre tu FC en reposo — ya persistido
+    /// y formateado por `RoutineSetEditing.restChipLabel` (`HR · N bpm`), pero invisible en esta hoja
+    /// hasta esta fase.
+    private var fixedBpmBody: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .center, spacing: 4) {
+                Text("Rest down to").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(verbatim: "\(fixedTargetBpm)")
+                        .groteskSheetNumeral().monospacedDigit().foregroundStyle(theme.dataRecovery)
+                    Text(verbatim: "bpm").font(InstrumentoType.grotesk(14, weight: .bold)).foregroundStyle(theme.inkSecondary)
+                }
+                Text("the same bpm every session, not from your resting heart rate")
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+            }
+            .frame(maxWidth: .infinity)
+            Slider(value: Binding(get: { Double(fixedTargetBpm) }, set: { fixedTargetBpm = Int($0.rounded()) }),
+                   in: 80...170, step: 1).tint(theme.dataRecovery)
+            HStack {
+                Text("80 bpm hard").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                Spacer()
+                Text("170 bpm easy").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+            }
+        }
+    }
+
     // MARK: Time mode
 
     private var timeSection: some View {
@@ -260,14 +420,9 @@ struct RestEditorScreen: View {
 
     private var cta: some View {
         StrandCTAButton("Apply") {
-            let config: RestConfig
-            if mode == .heartRate {
-                config = hrRef == .karvonenReserve
-                    ? RestConfig(mode: .heartRate, seconds: seconds, hrReference: .karvonenReserve, hrValue: reserve)
-                    : RestConfig(mode: .heartRate, seconds: seconds, hrReference: .restingMargin, hrValue: Double(margin))
-            } else {
-                config = RestConfig(mode: .fixed, seconds: seconds, hrReference: .restingMargin, hrValue: 0)
-            }
+            let config = RestEditorMapping.buildConfig(
+                mode: mode, hrRef: hrRef, seconds: seconds, margin: margin, reserve: reserve,
+                peakDropFraction: peakDropFraction, fixedTargetBpm: fixedTargetBpm)
             onApply(config, applyToAll, saveToRoutine && persistsToRoutine)
         }
         .padding(.top, 4)

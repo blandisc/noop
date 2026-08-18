@@ -135,14 +135,11 @@ struct RootTabView: View {
                     route: route,
                     openRoutine: { id in trainStack.append(RoutineEditorRoute.routine(routineId: id)) }))
             }
-            // Decisión Fer (2026-07-16): «Ver mapa» abre el MAPA muscular real (las siluetas de
-            // Tendencias) — el mismo MuscleMapScreen, empujado; las barras vs banda viven como
-            // pantalla hija enlazada desde el mapa.
+            // Decisión Fer (2026-07-16): «Ver mapa» abre «Tu cuerpo» real (las siluetas de
+            // Tendencias), empujado — FER-91 · E10 fusionó el mapa y el volumen en una sola
+            // pantalla, así que las dos rutas viejas convergen aquí.
             .navigationDestination(for: MuscleVolumeRoute.self) { _ in
-                trainChrome(MuscleMapScreen(theme: .base, showsVolumeLink: true))
-            }
-            .navigationDestination(for: MuscleVolumeBarsRoute.self) { _ in
-                trainChrome(MuscleVolumeScreen())
+                trainChrome(TrainingBodyScreen(theme: .base))
             }
             .navigationDestination(for: SavedTicketsRoute.self) { _ in
                 trainChrome(SavedTicketsScreen())
@@ -465,7 +462,11 @@ struct RootTabView: View {
     private func secondaryDestination(_ screen: SecondaryScreen) -> some View {
         switch screen {
         case .library:      ExerciseLibraryScreen()
-        case .workoutHistory: WorkoutHistoryScreen()
+        // FER-90: el toque de un día del calendario empuja SU sesión. El agente cableó esto en
+        // `AppMap.swift` (el arnés de desarrollo) y no aquí, que es la navegación real: en la app
+        // el día se habría podido tocar y no habría pasado nada. `WorkoutSessionRoute` ya tiene su
+        // `navigationDestination` registrado arriba, así que basta empujarla a la pila.
+        case .workoutHistory: WorkoutHistoryScreen(openWorkoutSession: { trainStack.append($0) })
         case .breathe:      BreathingView()
         case .intervals:    IntervalTimerView()
         // FER-890: «Tu Plan» is one unified screen (week + routines). Both routes resolve to it — the old

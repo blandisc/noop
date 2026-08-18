@@ -129,7 +129,9 @@ struct RPESheet: View {
                 Text("Ok ✓")
                     .font(InstrumentoType.grotesk(17, weight: .semibold))
                     .foregroundStyle(theme.paper)
-                    .frame(maxWidth: .infinity, minHeight: 52)
+                    // FER-89: re-vestido con el token del héroe de hoja — EntrenarMetrics.primaryButton
+                    // (46) en vez del 52 suelto.
+                    .frame(maxWidth: .infinity, minHeight: EntrenarMetrics.primaryButton)
                     .background(theme.verdictDeep, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
             }
             .buttonStyle(.plain)
@@ -240,7 +242,8 @@ struct NoteSheet: View {
             Spacer()
             Button { onSave(scope, text) } label: {
                 Text("Save").font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.verdictDeep)
-                    .frame(minWidth: 44, minHeight: 44, alignment: .trailing)   // toque 44 (HIG §8.7-4)
+                    // toque 44 (HIG §8.7-4) — FER-89: mismo valor, ahora con el token compartido.
+                    .frame(minWidth: EntrenarMetrics.row, minHeight: EntrenarMetrics.row, alignment: .trailing)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -302,6 +305,32 @@ struct NoteSheet: View {
     }
 }
 
+// MARK: - Pure ranking (FER-89) — extracted so it's testable without mounting the View
+//
+// «orden por uso reciente» (criterio de aceptación): `repo.recentWorkSets(sinceTs:)` ya expande
+// exactamente `(exerciseId, startTs)` por serie de trabajo, más reciente primero (un solo JOIN en
+// `StrengthStore.workSetsSince`, ya usado por el mapa de fatiga muscular) — se reusa ESE, no
+// `recentSessions()` (que no carga `exerciseId` por sesión y forzaría un fetch de sets por sesión
+// encima, un N+1 que el spec no pide).
+enum ChangeExerciseRanking {
+    /// Reduce las filas de uso (ya DESC por `startTs`, como las entrega `workSetsSince`) al timestamp
+    /// MÁS RECIENTE por ejercicio — la primera aparición de cada id gana porque la entrada ya viene
+    /// ordenada. Código viejo que asumiera orden ASC, o que se quedara con la ÚLTIMA aparición en vez
+    /// de la primera, tronaría contra `testMostRecentUseKeepsFirstOccurrence`.
+    static func mostRecentUse(_ rows: [(exerciseId: String, startTs: Int)]) -> [String: Int] {
+        var out: [String: Int] = [:]
+        for r in rows where out[r.exerciseId] == nil { out[r.exerciseId] = r.startTs }
+        return out
+    }
+
+    /// Ordena por uso reciente, más reciente primero; los nunca-usados (sin entrada en `recency`)
+    /// se quedan al final, en su orden relativo original (`sorted` es estable desde Swift 5). Código
+    /// viejo que comparara con `<` en vez de `>` invertiría el orden.
+    static func sortByRecentUse<T>(_ items: [T], id: (T) -> String, recency: [String: Int]) -> [T] {
+        items.sorted { (recency[id($0)] ?? -1) > (recency[id($1)] ?? -1) }
+    }
+}
+
 struct ChangeExerciseSheet: View {
     let theme: InstrumentoTheme
     let run: StrengthSessionModel.ExerciseRun
@@ -313,16 +342,32 @@ struct ChangeExerciseSheet: View {
     @State private var all: [Exercise] = []
     @State private var primaryMuscle: String?
     @State private var loaded = false
+    /// exerciseId → timestamp de su serie de trabajo más reciente (FER-89, orden por uso reciente).
+    @State private var recentByExercise: [String: Int] = [:]
+    /// exerciseId → mejor marca `.maxWeight` (FER-89, «la mejor marca por ejercicio»). Se llena solo
+    /// para los candidatos visibles (`filtered`), no para toda la biblioteca.
+    @State private var bestKg: [String: Double] = [:]
+    /// Autocontenido (comentario propio del archivo): la hoja no recibe `system:` — igual que
+    /// `ExerciseLibraryScreen`, lee su propia unidad para no forzar un cambio de firma en el call
+    /// site de E5 (`LiveStrengthSheet.swift:394`, fuera de esta fase).
+    @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
+    private var units: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
+    @State private var showLibrary = false
 
     /// Same-muscle shortlist when the field is empty; a name search over the whole library otherwise. The
-    /// current exercise is always excluded (you don't replace it with itself).
+    /// current exercise is always excluded (you don't replace it with itself). FER-89: ahora también
+    /// ordenado por uso reciente (antes: solo coincidencia de músculo, sin orden).
     private var filtered: [Exercise] {
         let q = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let base: [Exercise]
         if q.isEmpty {
             guard let m = primaryMuscle else { return [] }
-            return Array(all.filter { $0.id != run.exerciseId && $0.primaryMuscles.contains(m) }.prefix(12))
+            base = all.filter { $0.id != run.exerciseId && $0.primaryMuscles.contains(m) }
+        } else {
+            base = all.filter { $0.id != run.exerciseId && StrengthDisplay.name($0).lowercased().contains(q) }
         }
-        return Array(all.filter { $0.id != run.exerciseId && StrengthDisplay.name($0).lowercased().contains(q) }.prefix(20))
+        let ranked = ChangeExerciseRanking.sortByRecentUse(base, id: \.id, recency: recentByExercise)
+        return Array(ranked.prefix(q.isEmpty ? 12 : 20))
     }
 
     /// Inject: los hooks van en la vista NO privada más externa del archivo (ver `EntrenarView`).
@@ -344,6 +389,11 @@ struct ChangeExerciseSheet: View {
                             .font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
                             .fixedSize(horizontal: false, vertical: true).padding(.top, 8)
                     }
+                    // FER-89: la puerta nueva — hoy 0 apariciones de `ExerciseLibraryScreen` en este
+                    // archivo. Reusa `EntrenarNivel` (ya garantiza el toque de 44 pt + el chevron
+                    // «›» + `accessibilityElement(children: .combine)`) en vez de un botón a mano.
+                    EntrenarNivel("See full library") { showLibrary = true }
+                        .padding(.top, 8)
                 }
                 .padding(.horizontal, CenitMetrics.screenPadding)
                 .padding(.vertical, 16)
@@ -358,16 +408,41 @@ struct ChangeExerciseSheet: View {
                     Button("Done") { onClose() }.foregroundStyle(theme.ink)
                 }
             }
+            // FER-89: solo una puerta — el interior de `ExerciseLibraryScreen` no se re-viste aquí
+            // (fuera de alcance del spec). Modo BROWSE (sin `onAdd`): abre el detalle al tocar, no
+            // sustituye el ejercicio por sí sola — la biblioteca completa es para EXPLORAR, «Use» en
+            // esta hoja sigue siendo el único gesto que de verdad cambia el ejercicio de la sesión.
+            .navigationDestination(isPresented: $showLibrary) {
+                ExerciseLibraryScreen()
+                    .instrumentoTheme(theme)
+            }
         }
         .task {
             guard !loaded else { return }
             async let exercisesTask = repo.allExercises()
             async let currentTask = repo.resolvedExercise(run.exerciseId)
+            async let recentTask = repo.recentWorkSets(sinceTs: 0)
             all = await exercisesTask
             primaryMuscle = await currentTask?.primaryMuscles.first
+            recentByExercise = ChangeExerciseRanking.mostRecentUse(await recentTask)
             loaded = true
+            await loadBestMarks()
         }
+        .onChange(of: query) { _, _ in Task { await loadBestMarks() } }
         .enableInjection()   // Inject: recarga en caliente (no-op en Release)
+    }
+
+    /// La mejor marca `.maxWeight` de cada candidato hoy visible — solo para los que aún no están en
+    /// caché, así que reabrir la búsqueda sobre lo ya visto no vuelve a leer la DB.
+    private func loadBestMarks() async {
+        let ids = filtered.map(\.id).filter { bestKg[$0] == nil }
+        guard !ids.isEmpty else { return }
+        for id in ids {
+            let prs = await repo.personalRecords(exerciseId: id)
+            if let best = prs.first(where: { $0.metric == .maxWeight })?.valueKg {
+                bestKg[id] = best
+            }
+        }
     }
 
     private var searchField: some View {
@@ -383,28 +458,45 @@ struct ChangeExerciseSheet: View {
             .strokeBorder(theme.hairline, lineWidth: 1))
     }
 
+    /// «Pecho · PR 82,5 kg» — músculo + mejor marca combinados en un solo texto (`ExerciseCard.meta`
+    /// solo acepta una línea). `Text` compuesto por quien llama, no `LocalizedStringKey`: el peso ya
+    /// viene formateado en la unidad del usuario, no es una clave de catálogo.
+    private func metaText(for ex: Exercise) -> Text? {
+        let muscle = ex.primaryMuscles.first.map { Text(MuscleAtlas.name($0)) }
+        let pr = bestKg[ex.id].map { Text(verbatim: String(localized: "PR") + " " + StrengthDisplay.weight($0, system: units)) }
+        switch (muscle, pr) {
+        case let (m?, p?): return m + Text(verbatim: " · ") + p
+        case let (m?, nil): return m
+        case let (nil, p?): return p
+        case (nil, nil): return nil
+        }
+    }
+
+    /// FER-89: la identidad (miniatura + nombre + músculo/PR) ahora reusa `ExerciseCard` en vez del
+    /// `HStack` a mano de antes. «Use» se queda FUERA de `ExerciseCard` (sin `onTap` en la identidad):
+    /// antes tocar el nombre/miniatura no hacía nada — dejarlo inerte conserva ESE comportamiento en
+    /// vez de convertir la fila entera en un gesto de «cambiar de ejercicio» que hoy no existe.
     private func row(_ ex: Exercise) -> some View {
         HStack(spacing: 12) {
-            SessionRunThumb(exerciseId: ex.id)
-            VStack(alignment: .leading, spacing: 1) {
-                Text(StrengthDisplay.name(ex)).font(StrandFont.body).foregroundStyle(theme.ink)
-                if let m = ex.primaryMuscles.first {
-                    Text(MuscleAtlas.name(m)).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                }
+            ExerciseCard(family: nil, name: StrengthDisplay.name(ex), metaText: metaText(for: ex)) {
+                SessionRunThumb(exerciseId: ex.id)
             }
-            Spacer(minLength: 8)
-            Button { onUse(ex) } label: {
-                Text("Use").font(StrandFont.caption).foregroundStyle(theme.ink)
-                    .padding(.horizontal, 12).padding(.vertical, 5)
-                    .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
-                    .frame(minHeight: 44)   // toque 44: la cápsula queda visualmente igual
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(Text("Use \(StrengthDisplay.name(ex))"))
+            useButton(ex)
         }
         .padding(.vertical, 8)
         .overlay(alignment: .bottom) { Divider().overlay(theme.hairline) }
+    }
+
+    private func useButton(_ ex: Exercise) -> some View {
+        Button { onUse(ex) } label: {
+            Text("Use").font(StrandFont.caption).foregroundStyle(theme.ink)
+                .padding(.horizontal, 12).padding(.vertical, 5)
+                .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                .frame(minHeight: 44)   // toque 44: la cápsula queda visualmente igual
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text("Use \(StrengthDisplay.name(ex))"))
     }
 }
 

@@ -20,6 +20,82 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **Historial, calendario y tickets / History, calendar and tickets** (FER-90).
+  **ES** — «Mis entrenamientos» ya no trunca a 3 sesiones con un «Ver todas» que empujaba a una segunda
+  pantalla: ahora es una sola lista siempre completa, con un calendario tipo GitHub de 91 días arriba —
+  cada día teñido por la familia de la rutina que entrenaste, tocar un día con sesión te lleva directo a
+  su detalle. El detalle de una sesión gana el mismo punto de color junto al nombre de la rutina, y el
+  toggle de un ejercicio ahora responde al tacto igual que el resto de Entrenar. El selector de rutina al
+  editar un entrenamiento también gana su punto de color. «Constancia», en el hub de Entrenar, migra del
+  dot-grid hecho a mano a la misma pieza de calendario, recortada a 63 días (9 semanas). Las tres
+  pantallas (además de «Tickets guardados») distinguen ahora «no se pudo leer tu historial» de «cero
+  sesiones» con un aviso propio, en vez de mostrar la misma ilustración vacía para los dos casos.
+  **EN** — «My workouts» no longer truncates to 3 sessions behind a «See all» that pushed to a second
+  screen: it's now one always-complete list, with a 91-day GitHub-style calendar on top — each day tinted
+  by the routine's movement family, tapping a day with a session opens its detail directly. A session's
+  detail gains the same family dot next to the routine name, and an exercise's toggle now responds to
+  touch like the rest of Entrenar. The routine picker in the workout editor also gains its color dot.
+  «Consistency», on the Entrenar hub, migrates from the hand-built dot-grid to the same calendar piece,
+  trimmed to 63 days (9 weeks). All three screens (plus «Saved tickets») now distinguish «couldn't read
+  your history» from «zero sessions» with their own banner, instead of showing the same empty
+  illustration for both.
+
+- **Las hojas de la sesión y el vocabulario común / The session's sheets and the shared vocabulary** (FER-89).
+  **ES** — Las últimas seis hojas de Entrenar en el lenguaje viejo (Descanso, Discos, Progresión, Nota,
+  Cambiar ejercicio, RPE) se re-visten con el vocabulario compartido de la sección. La hoja de Descanso
+  ahora expone las 5 formas reales del motor, no 2: por tiempo fijo y sobre tu reposo al frente, y
+  Karvonen, caída desde el pico y lpm fijo tras «Más opciones» — dos de esas tres nunca habían tenido
+  interfaz, aunque el motor ya las calculaba. Cambiar ejercicio reusa la tarjeta de ejercicio compartida,
+  ordena las sugerencias por uso reciente y muestra tu mejor marca junto al músculo; gana además una
+  puerta a la biblioteca completa. El chip de descanso y el de progresión, que cada uno reimplementaba a
+  mano el mismo papel con borde, ahora se construyen sobre la pieza compartida `EntrenarChip` — de paso
+  se corrige el tono del chip de progresión, que pintaba en el color de Recuperación en vez del suyo
+  propio. Discos adopta el mismo gesto de presión que el resto de la sección en sus dos botones. Nada
+  del cálculo de descanso, progresión o discos cambió — es la misma lectura, en el mismo cristal que ya
+  llevan las demás pantallas de Entrenar.
+  **EN** — The last six Entrenar sheets still in the old language (Rest, Plates, Progression, Note,
+  Change exercise, RPE) get dressed in the section's shared vocabulary. The rest editor now exposes the
+  engine's 5 real forms, not 2: by fixed time and over your resting HR up front, with Karvonen, peak
+  drop and a fixed bpm target behind «More options» — two of those three never had a UI before, even
+  though the engine already computed them. Change exercise reuses the shared exercise card, orders its
+  suggestions by recent use, and shows your best mark next to the muscle; it also gains a door to the
+  full library. The rest chip and the progression chip, each hand-rolling the same paper-and-border look,
+  now build on the shared `EntrenarChip` piece — which also fixes the progression chip's color, painted
+  in Recovery's hue instead of its own. Plates adopts the same press feedback as the rest of the section
+  on its two buttons. Nothing about the rest, progression or plate math changed — it's the same reading,
+  in the same glass the rest of Entrenar already wears.
+  ([LiveStrengthSheets.swift](Cenit/Screens/LiveStrengthSheets.swift), [RestEditorScreen.swift](Cenit/Screens/RestEditorScreen.swift), [PlatesScreen.swift](Cenit/Screens/PlatesScreen.swift), [ProgressionSetupScreen.swift](Cenit/Screens/ProgressionSetupScreen.swift), [ProgressionChip.swift](Cenit/Screens/ProgressionChip.swift), [RoutineSetEditing.swift](Cenit/Screens/RoutineSetEditing.swift), [EntrenarNivel.swift](Packages/StrandDesign/Sources/StrandDesign/Entrenar/EntrenarNivel.swift), [ExerciseCard.swift](Packages/StrandDesign/Sources/StrandDesign/Entrenar/ExerciseCard.swift))
+
+- **«Tu cuerpo»: el mapa muscular y el volumen por músculo se vuelven una sola pantalla / «Your body»: the muscle map and the per-muscle volume become one screen** (FER-91).
+  **ES** — El mapa muscular (siluetas + «Más cargados · 7 días») y «Volumen por músculo» (30 d/90 d/6
+  m/1 a contra la banda 10–20) eran dos pantallas separadas que decían cosas parecidas de dos formas
+  distintas. Ahora son una: «Tu cuerpo», con el atlas y la lista de dos lecturas arriba, la sección de
+  volumen inline debajo (mismo selector de periodo, mismas barras, sin más *push*) y una sola nota de
+  método al pie — la segunda explicación de volumen se retiró para no repetir la misma cita
+  (Schoenfeld 2017). La lista de músculos deja de tener su fila hecha a mano: ahora usa `MuscleLoadRow`
+  (ya construida por E2), que creció para poder sustituirla — abre el detalle al tocar, muestra series
+  con decimal (un músculo secundario carga a medias, ya no se trunca a entero) y trae el nombre
+  correctamente traducido. De paso desaparece una inconsistencia de color: la ficha del músculo tocado
+  pintaba «fresco» en verde (el color del veredicto del día), como si fuera un segundo veredicto; ahora
+  ese verde queda solo para la viñeta del día. El gate que puede cerrar la pantalla («Recupera») sigue
+  siendo el mismo de siempre y solo ese estado cierra — «Hoy ve leve» nunca lo hizo, y ahora hay una
+  prueba que lo prueba. Los cuatro caminos para llegar (Entrenar, «Mis entrenamientos», la tarjeta de
+  Cuerpo, «Músculos de hoy» del acta) abren la misma pantalla nueva.
+  **EN** — The muscle map (silhouettes + «Most loaded · 7 days») and «Volume per muscle» (30d/90d/6m/1y
+  against the 10–20 band) used to be two separate screens saying similar things two different ways.
+  Now they're one: «Your body», with the atlas and the two-reading list on top, the volume section
+  inline below it (same span picker, same bars, no more push), and a single method note at the foot —
+  the volume screen's second explanation was dropped so it wouldn't repeat the same citation
+  (Schoenfeld 2017). The muscle list drops its hand-rolled row: it now uses `MuscleLoadRow` (already
+  built by E2), which grew to be able to replace it — it opens the detail on tap, shows decimal sets
+  (a secondary muscle loads at half a set, no longer truncated to a whole number), and carries the
+  muscle's name properly translated. A color inconsistency also goes away: the tapped muscle's card
+  used to paint «fresh» in green (the day's verdict color), like a second verdict; that green is now
+  reserved for the day's own bullet. The gate that can close the screen («Recover») is still the exact
+  same one, and only that state closes it — «Go light today» never did, and there's now a test that
+  proves it. All four ways in (Entrenar, «My workouts», the Body tab's card, the receipt's «Today's
+  muscles») open the same new screen.
+
 - **El acta de la sesión: el esfuerzo sube a héroe, el costo pierde su caja, los músculos se vuelven una línea / The session's receipt: effort becomes the hero, the cost box goes, muscles become a line** (FER-87).
   **ES** — El recibo con el que cierra cada sesión de fuerza se re-viste sobre el mismo dato de siempre.
   Cuando hay lectura de FC, el Esfuerzo (sobre 21) sube a numeral dominante en ámbar, con el mismo

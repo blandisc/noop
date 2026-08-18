@@ -2,6 +2,7 @@
 import SwiftUI
 import StrandDesign
 import StrandTraining
+import CenitStore   // store.routineExercises(routineId:) — clasificación de familia (Alcance punto 5, FER-90)
 import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 // WorkoutEditSheet.swift — edit a SAVED strength session (FER-556). Opened from
@@ -39,6 +40,9 @@ struct WorkoutEditSheet: View {
 
     @State private var routines: [Routine] = []
     @State private var exercisesByID: [String: Exercise] = [:]
+    /// La familia por rutina, para el punto de tinte junto a la rutina YA elegida (Alcance punto 5).
+    /// Vacío si `storeHandle()` falla — el picker sigue funcionando, solo sin punto (Estados).
+    @State private var routineRegions: [String: RoutineRegion] = [:]
 
     // MARK: Transient UI
 
@@ -138,6 +142,20 @@ struct WorkoutEditSheet: View {
             routines = await repo.routines()
             let all = await repo.allExercises()
             exercisesByID = Dictionary(all.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+            // Mismo patrón de clasificación que `WorkoutHistoryScreen.load()`, sin la segunda llamada a
+            // `customExercises()`: `allExercises()` ya fusiona catálogo + ejercicios propios en
+            // `exercisesByID` (Alcance punto 5).
+            if let store = await repo.storeHandle() {
+                var regions: [String: RoutineRegion] = [:]
+                for r in routines {
+                    let exs = (try? await store.routineExercises(routineId: r.id)) ?? []
+                    let perExercise = exs.compactMap { exercisesByID[$0.exerciseId]?.primaryMuscles }
+                    if let cat = RoutineClassifier.classify(primaryMusclesPerExercise: perExercise) {
+                        regions[r.id] = cat
+                    }
+                }
+                routineRegions = regions
+            }
         }
         .enableInjection()   // Inject: recarga en caliente (no-op en Release)
     }
@@ -199,7 +217,12 @@ struct WorkoutEditSheet: View {
             Text("Routine").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             Spacer(minLength: 12)
             Button { showRoutineMenu = true } label: {
-                HStack(spacing: 5) {
+                HStack(spacing: 6) {
+                    // El punto vive solo junto a la rutina YA elegida (Alcance punto 5) — el picker
+                    // (`PaperMenuItem`) es un componente general de la app, sin swatch por opción.
+                    if let region = routineId.flatMap({ routineRegions[$0] }) {
+                        EntrenarFamilyDot(region.tint(theme))
+                    }
                     Text(routineLabel).font(StrandFont.body).foregroundStyle(theme.ink)
                     Image(systemName: "chevron.up.chevron.down")
                         .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)

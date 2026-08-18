@@ -7256,19 +7256,53 @@
         }
       }
     },
-    "%lld sessions · 90 days" : {
-      "extractionState" : "stale",
+    "%lld sessions · 63 days" : {
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld sessions · 90 days"
+            "value" : "%lld sessions · 63 days"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld sesiones · 90 días"
+            "value" : "%lld sesiones · 63 días"
+          }
+        }
+      }
+    },
+    "%lld sessions in the last 13 weeks" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld sessions in the last 13 weeks"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld sesiones en las últimas 13 semanas"
+          }
+        }
+      }
+    },
+    "%lld sessions in the last 9 weeks" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld sessions in the last 9 weeks"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld sesiones en las últimas 9 semanas"
           }
         }
       }
@@ -8139,6 +8173,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "+30 suave"
+          }
+        }
+      }
+    },
+    "170 bpm easy" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "170 bpm easy"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "170 lpm suave"
+          }
+        }
+      }
+    },
+    "80 bpm hard" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "80 bpm hard"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "80 lpm exigente"
           }
         }
       }
@@ -15518,6 +15586,40 @@
         }
       }
     },
+    "Fixed bpm" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fixed bpm"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lpm fijo"
+          }
+        }
+      }
+    },
+    "Peak drop" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Peak drop"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Caída desde el pico"
+          }
+        }
+      }
+    },
     "C" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -18000,6 +18102,40 @@
         }
       }
     },
+    "Couldn't read your saved tickets. Try again." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't read your saved tickets. Try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudieron leer tus tickets. Intenta de nuevo."
+          }
+        }
+      }
+    },
+    "Couldn't read your workout history. Try again." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't read your workout history. Try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo leer tu historial. Intenta de nuevo."
+          }
+        }
+      }
+    },
     "Couldn't remember that folder. Try a folder in iCloud Drive." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -20258,23 +20394,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ej. Svend press"
-          }
-        }
-      }
-    },
-    "Each bar counts the WORK sets that loaded that muscle as a primary mover, averaged per week over the selected span. Warm-ups don't count." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Each bar counts the WORK sets that loaded that muscle as a primary mover, averaged per week over the selected span. Warm-ups don't count."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cada barra cuenta las series de TRABAJO que cargaron ese músculo como principal, promediadas por semana en el rango elegido. Los calentamientos no cuentan."
           }
         }
       }
@@ -24977,23 +25096,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cómo se mueven juntas"
-          }
-        }
-      }
-    },
-    "How this is measured" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "How this is measured"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cómo se mide"
           }
         }
       }
@@ -32721,22 +32823,6 @@
         }
       }
     },
-    "Muscle map" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Muscle map"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mapa muscular"
-          }
-        }
-      }
-    },
     "MUSCLE MAP" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -35874,6 +35960,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "de tu reserva cardíaca"
+          }
+        }
+      }
+    },
+    "below your peak heart rate" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "below your peak heart rate"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "por debajo de tu frecuencia cardiaca máxima"
+          }
+        }
+      }
+    },
+    "the same bpm every session, not from your resting heart rate" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "the same bpm every session, not from your resting heart rate"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "el mismo lpm cada sesión, no calculado desde tu frecuencia cardiaca en reposo"
           }
         }
       }
@@ -41667,6 +41787,17 @@
         }
       }
     },
+    "Your body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu cuerpo"
+          }
+        }
+      }
+    },
     "Your iPhone has notifications off for Cénit. You can turn them on in Settings." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -44817,6 +44948,23 @@
         }
       }
     },
+    "See full library" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "See full library"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ver toda la biblioteca"
+          }
+        }
+      }
+    },
     "See effect chart" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -45600,22 +45748,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "series · 7 d"
-          }
-        }
-      }
-    },
-    "Sets per week · the gray band is the 10–20 range (Schoenfeld 2017)" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sets per week · the gray band is the 10–20 range (Schoenfeld 2017)"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Series por semana · la franja gris es la banda 10–20 (Schoenfeld 2017)"
           }
         }
       }
@@ -49377,22 +49509,6 @@
     },
     "The «vs your base» bars show each signal's deviation in σ (above your base = right). HRV, resting heart rate and respiration are z-scored that way; sleep and skin temperature carry no σ, so they show their state, not a position. Your base and normal range are your recent average ± one σ. Steadiness is the coefficient of variation (CV). Training load is the acute:chronic workload ratio (ACWR): context for recovery, never an injury claim." : {
 
-    },
-    "The 10–20 band is a hypertrophy guide per muscle group (Schoenfeld 2017); the number shown is sets weighted by involvement, so secondary muscles count less." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The 10–20 band is a hypertrophy guide per muscle group (Schoenfeld 2017); the number shown is sets weighted by involvement, so secondary muscles count less."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La banda 10–20 es una guía de hipertrofia por grupo muscular (Schoenfeld 2017); el número mostrado son series ponderadas por involucramiento, así que los músculos secundarios cuentan menos."
-          }
-        }
-      }
     },
     "The average for your age is around %lld." : {
       "extractionState" : "manual",

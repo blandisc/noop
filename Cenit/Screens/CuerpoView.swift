@@ -334,10 +334,11 @@ private struct CuerpoLanding: View {
         .animation(StrandMotion.interactive, value: detailPresented)
         .task(id: repo.refreshSeq) { await loadAll() }
         .sheet(isPresented: $showMuscleMap) {
-            // Light «Instrumento» Mapa muscular (FER-350) — theme injected at the root (it doesn't cross
-            // the `.sheet` boundary, FER-162) and `repo` re-supplied (a sheet starts a fresh environment).
-            // NO nested NavigationStack (FER-171); the per-muscle detail rides its own nested sheet.
-            MuscleMapScreen(theme: theme)
+            // Light «Instrumento» «Tu cuerpo» (FER-350, fusionado por FER-91 · E10) — theme injected
+            // at the root (it doesn't cross the `.sheet` boundary, FER-162) and `repo` re-supplied (a
+            // sheet starts a fresh environment). NO nested NavigationStack (FER-171); the per-muscle
+            // detail rides its own nested sheet.
+            TrainingBodyScreen(theme: theme)
                 .instrumentoTheme(theme)
                 .environmentObject(repo)
                 .preferredColorScheme(.light)
@@ -709,13 +710,15 @@ private struct CuerpoLanding: View {
         .accessibilityHint("Opens the training-load explainer.")
     }
 
-    /// Muscle map (FER-350) — a navigational card into the front/back fatigue map. The whole card is the
+    /// «Tu cuerpo» (FER-350) — a navigational card into the front/back fatigue map. The whole card is the
     /// tap target (it opens a screen, not a metric detail), so it's a full button, not a `domainCard`.
+    /// FER-91 · E10: the eyebrow label was «Muscle map», matching the destination screen's OLD
+    /// overline; both became «Your body» together so the door's name still matches the destination.
     private var muscleMapCard: some View {
         Button { showMuscleMap = true } label: {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 8) {
-                    Text("Muscle map").font(InstrumentoType.grotesk(12, weight: .bold)).tracking(2.4).textCase(.uppercase).foregroundStyle(theme.ink)   // grotesk group header (FER-901)
+                    Text("Your body").font(InstrumentoType.grotesk(12, weight: .bold)).tracking(2.4).textCase(.uppercase).foregroundStyle(theme.ink)   // grotesk group header (FER-901)
                     // Provisional placement here, pending a product decision on its permanent home (likely
                     // Entrenar / Patrones). (FER-566 / handoff «DE MOMENTO»)
                     Spacer(minLength: 8)

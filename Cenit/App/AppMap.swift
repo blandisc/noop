@@ -419,8 +419,8 @@ private struct EntrenarFlowsMapCell: View {
                         WorkoutSessionDetailScreen(route: route,
                             openRoutine: { path.append(RoutineEditorRoute.routine(routineId: $0)) })
                     }
-                    .navigationDestination(for: MuscleVolumeRoute.self) { _ in MuscleMapScreen(theme: .base, showsVolumeLink: true) }
-                    .navigationDestination(for: MuscleVolumeBarsRoute.self) { _ in MuscleVolumeScreen() }
+                    // FER-91 · E10 fusionó el mapa muscular y el volumen en una sola pantalla.
+                    .navigationDestination(for: MuscleVolumeRoute.self) { _ in TrainingBodyScreen(theme: .base) }
                     .navigationDestination(for: SavedTicketsRoute.self) { _ in SavedTicketsScreen() }
                 }
             } else {
@@ -468,7 +468,10 @@ private struct EntrenarFlowsMapCell: View {
         switch r {
         case .breathe:   BreathingView()
         case .intervals: IntervalTimerView()
-        case .history:   WorkoutHistoryScreen()
+        // FER-90 · E9: el toque de un día del calendario navega a su detalle — mismo patrón que
+        // `EntrenarView`'s `openWorkoutSession` dos líneas arriba, la única `.navigationDestination(for:
+        // WorkoutSessionRoute.self)` de este mapa (línea 418).
+        case .history:   WorkoutHistoryScreen(openWorkoutSession: { path.append($0) })
         case .weeklyPlan:
             WeeklyPlanEditorView(
                 openRoutine: { path.append(RoutineEditorRoute.routine(routineId: $0)) },

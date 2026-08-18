@@ -49,6 +49,11 @@ struct SavedTicketsRoute: Hashable {}
 // MARK: - List
 
 struct WorkoutHistoryScreen: View {
+    /// Push a completed session's detail from a tapped calendar day (Alcance punto 2, FER-90) — the
+    /// list rows still navigate via `NavigationLink(value:)`, which doesn't need this. Same pattern as
+    /// `WorkoutSessionDetailScreen.openRoutine`: default nil so no other call site breaks.
+    var openWorkoutSession: ((WorkoutSessionRoute) -> Void)? = nil
+
     @Environment(\.instrumentoTheme) private var theme
     @EnvironmentObject private var repo: Repository
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
@@ -62,13 +67,15 @@ struct WorkoutHistoryScreen: View {
     @State private var muscleEvents: [MuscleFatigueMap.MuscleSetEvent] = []
     /// Progression signals (raised / waiting / stalled) for exercises with progression enabled.
     @State private var progressionRows: [ProgressionRow] = []
-    /// Movement family per routine (for the session rows' glyph/tint) — classified once at load.
+    /// Movement family per routine (for the session rows' glyph/tint AND the calendar's cells) —
+    /// classified once at load, from the same `RoutineClassifier` pass (Alcance punto 2).
     @State private var routineRegions: [String: RoutineRegion] = [:]
     @State private var loaded = false
     /// FER-969 / X-05a: undo-restore write failure on the list.
     @State private var saveError = false
-    /// Empuja el historial completo. Las tres de arriba son un asomo; esta es la lista entera.
-    @State private var showAllSessions = false
+    /// `repo.storeHandle()` came back nil — a real read failure, distinct from «cero sesiones»
+    /// (Estados, decisión #16 del épico, FER-90).
+    @State private var readError = false
     /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
     @ObserveInjection private var inject
 
@@ -77,14 +84,23 @@ struct WorkoutHistoryScreen: View {
             VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                 header
                 if loaded {
-                    if sessions.isEmpty {
-                        emptyState
-                    } else {
+                    // The calendar (inside `sessionsSection`, as its header) draws every time — even
+                    // with zero sessions or a read error — so «no data» and «couldn't load» never look
+                    // like the same 91 empty cells with no explanation (Alcance punto 2, Estados).
+                    // `tuMes`/`progressionBlock`/`muscleVolumeInline` stay hidden without sessions:
+                    // they have nothing honest to show.
+                    if !sessions.isEmpty {
                         // Handoff v2: TU MES (card) → progression → muscle → sessions → tickets.
                         tuMes
                         progressionBlock
                         muscleVolumeInline
-                        sessionsSection
+                    }
+                    sessionsSection
+                    if readError {
+                        readErrorBanner
+                    } else if sessions.isEmpty {
+                        emptyState
+                    } else {
                         savedTicketsEntry
                     }
                 }
@@ -95,7 +111,6 @@ struct WorkoutHistoryScreen: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
-        .navigationDestination(isPresented: $showAllSessions) { allSessionsList }
         // The detail push (`WorkoutSessionRoute`) is registered once on the Entrenar NavigationStack in
         // RootTabView (alongside the other train routes), so it isn't re-declared here.
         // «Undo» toast after a delete (FER-527), now seeded by the list OR the detail via the coordinator.
@@ -412,73 +427,119 @@ struct WorkoutHistoryScreen: View {
         }
     }
 
-    /// Cuántas sesiones se asoman aquí. El resto vive en su propia pantalla: esta es un panorama del mes
-    /// —tarjeta del mes, progresión, volumen por músculo— y una lista sin fondo la convertía en un archivo
-    /// por el que hay que hacer scroll para llegar a todo lo demás (petición Fer 2026-07-18).
-    private static let sessionsPreviewCount = 3
-
+    /// La cabecera «Sessions»: el calendario tipo GitHub (91 días · 13 semanas terminando hoy) seguido
+    /// de la lista COMPLETA — ya no una vista previa de 3 con «See all» empujando a una segunda
+    /// pantalla (FER-90 · E9, Alcance puntos 1-2). `ForEach(sessions)` sobre un arreglo vacío no dibuja
+    /// nada, así que esta misma vista sirve de cabecera-sola cuando `sessions.isEmpty` (el calendario
+    /// dibuja sus 91 celdas `.empty`) sin una rama aparte.
     private var sessionsSection: some View {
         VStack(alignment: .leading, spacing: 4) {
             InstrumentoSectionBand("Sessions")
-            LazyVStack(alignment: .leading, spacing: 0) {
-                let shown = Array(sessions.prefix(Self.sessionsPreviewCount))
-                ForEach(shown) { session in
-                    NavigationLink(value: route(for: session)) {
-                        sessionRow(session)
-                    }
-                    .buttonStyle(.plain)
-                    // The long-press delete `contextMenu` was retired (FER-951): iOS draws it as a
-                    // system balloon that ignores the theme; «Delete» lives in the detail's «···» menu.
-                    if session.id != shown.last?.id { Divider().overlay(theme.hairline) }
-                }
-                if sessions.count > Self.sessionsPreviewCount {
-                    Divider().overlay(theme.hairline)
-                    seeAllSessionsRow
-                }
-            }
-        }
-    }
-
-    /// La puerta al historial completo. Dice el TOTAL, no solo «ver todas»: el número es el dato y de paso
-    /// responde «¿cuántas llevo?» sin tener que entrar.
-    private var seeAllSessionsRow: some View {
-        Button { showAllSessions = true } label: {
-            HStack(spacing: 8) {
-                Text("See all sessions").font(StrandFont.body).foregroundStyle(theme.ink)
-                Text(verbatim: "\(sessions.count)")
-                    .font(InstrumentoType.groteskNumber(15)).foregroundStyle(theme.inkTertiary)
-                Spacer(minLength: 0)
-                StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold))
-                    .foregroundStyle(theme.inkTertiary)
-            }
-            .padding(.vertical, 13)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(Text("See all sessions"))
-        .accessibilityValue(Text(verbatim: "\(sessions.count)"))
-    }
-
-    /// El historial completo. Vive aquí dentro a propósito: reusa `sessionRow` y `route(for:)` tal cual,
-    /// así una sesión se dibuja igual en las dos pantallas y no hay dos verdades que mantener.
-    private var allSessionsList: some View {
-        ScrollView {
+            TrainingCalendar(
+                days: historyCalendarDays, size: .full, summary: historyCalendarSummary,
+                onTapDay: { day in
+                    // Atajo visual, no el camino accesible (VoiceOver lee `summary`, ver Estados);
+                    // toda sesión sigue alcanzable por la fila de la lista de abajo (44+ pt).
+                    guard let dest = sessionRouteByDay[day.id] else { return }
+                    openWorkoutSession?(dest)
+                },
+                monthLabels: historyMonthLabels
+            )
+            .padding(.top, 6).padding(.bottom, 2)
             LazyVStack(alignment: .leading, spacing: 0) {
                 ForEach(sessions) { session in
                     NavigationLink(value: route(for: session)) {
                         sessionRow(session)
                     }
                     .buttonStyle(.plain)
+                    // The long-press delete `contextMenu` was retired (FER-951): iOS draws it as a
+                    // system balloon that ignores the theme; «Delete» lives in the detail's «···» menu.
                     if session.id != sessions.last?.id { Divider().overlay(theme.hairline) }
                 }
             }
-            .padding(.horizontal, CenitMetrics.screenPadding)
-            .padding(.bottom, CenitMetrics.screenPadding)
         }
-        .background(theme.paper.ignoresSafeArea())
-        .navigationTitle(Text("Sessions"))
-        .navigationBarTitleDisplayMode(.inline)
-        .keepsSwipeBack()
+    }
+
+    /// Día local (`yyyy-MM-dd`, `Calendar.current` — nunca UTC, ver memoria: fila fantasma UTC vs
+    /// local) → clave del calendario y del diccionario de navegación (Alcance punto 2).
+    static let dayKeyFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.calendar = Calendar.current
+        f.timeZone = .current
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
+
+    /// La sesión más reciente por día local — si dos cayeron el mismo día, gana la de `startTs` mayor
+    /// (Alcance punto 2). Mismo filtro `endTs != nil` que `computeConstancyMonths` ya usa para no
+    /// bucketizar una sesión sin cerrar. Extraída como función pura (no `private`, sin `self`) para que
+    /// `WorkoutHistoryLocalDayTests` la pruebe sin instanciar la vista — antes de FER-90 esta reducción
+    /// vivía inline en un computed var privado, imposible de probar desde `CenitUnitTests`.
+    static func latestSessionByLocalDay(_ sessions: [StrengthSession]) -> [String: StrengthSession] {
+        var out: [String: StrengthSession] = [:]
+        for s in sessions where s.endTs != nil {
+            let key = dayKeyFormatter.string(from: Date(timeIntervalSince1970: TimeInterval(s.startTs)))
+            if let existing = out[key], existing.startTs >= s.startTs { continue }
+            out[key] = s
+        }
+        return out
+    }
+
+    private var latestSessionByDay: [String: StrengthSession] {
+        Self.latestSessionByLocalDay(sessions)
+    }
+
+    /// Día local → su ruta, para que el toque del calendario navegue (Alcance punto 2).
+    private var sessionRouteByDay: [String: WorkoutSessionRoute] {
+        latestSessionByDay.mapValues(route(for:))
+    }
+
+    /// 91 días (13 semanas) terminando hoy, más viejo primero — así las 13 filas se leen de arriba
+    /// (hace 13 semanas) a abajo (hoy), igual que la lista de sesiones que sigue. Cada día se tiñe con
+    /// el MISMO `routineRegions` que `sessionRow`/`sessionTint` ya usan (Alcance punto 2) — sin rutina
+    /// clasificable, el mismo respaldo que `sessionTint` («push», que ES `dataStrain`), así que un día
+    /// se lee igual en el calendario y en la fila de abajo.
+    private var historyCalendarDays: [EntrenarCalendarDay] {
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        let byDay = latestSessionByDay
+        return (0..<91).reversed().compactMap { offset in
+            guard let day = cal.date(byAdding: .day, value: -offset, to: today) else { return nil }
+            let key = Self.dayKeyFormatter.string(from: day)
+            guard let s = byDay[key] else { return EntrenarCalendarDay(id: key, state: .empty) }
+            if let rid = s.routineId, let region = routineRegions[rid] {
+                return EntrenarCalendarDay(id: key, state: .done(region.family))
+            }
+            return EntrenarCalendarDay(id: key, state: .done(.push))
+        }
+    }
+
+    /// Qué filas (de 7 días) llevan rótulo de mes: la fila 0 siempre, y cualquier fila cuyo primer día
+    /// caiga en un mes distinto al de la fila anterior (Alcance punto 2).
+    private var historyMonthLabels: [Int: LocalizedStringKey] {
+        let cal = Calendar.current
+        let days = historyCalendarDays
+        var labels: [Int: LocalizedStringKey] = [:]
+        var lastMonth: Int?
+        for (rowIndex, start) in stride(from: 0, to: days.count, by: 7).enumerated() {
+            guard let date = Self.dayKeyFormatter.date(from: days[start].id) else { continue }
+            let month = cal.component(.month, from: date)
+            if rowIndex == 0 || month != lastMonth { labels[rowIndex] = Self.monthLabel(month) }
+            lastMonth = month
+        }
+        return labels
+    }
+
+    /// Abreviatura del mes en el idioma/calendario actual («jul», «ago») — no pasa por el catálogo de
+    /// copy: la resuelve `Calendar.current`, igual que `computeConstancyMonths` en `EntrenarView`.
+    private static func monthLabel(_ month: Int) -> LocalizedStringKey {
+        LocalizedStringKey(Calendar.current.shortMonthSymbols[(month - 1) % 12].lowercased())
+    }
+
+    /// Resumen para VoiceOver: la rejilla es UN solo elemento (Estados → VoiceOver), nunca celda por
+    /// celda.
+    private var historyCalendarSummary: LocalizedStringKey {
+        "\(latestSessionByDay.count) sessions in the last 13 weeks"
     }
 
     /// Handoff v2 session row: family glyph chip · name + «vie 10 jul · 48 min · 4.320 kg» · one right
@@ -606,6 +667,18 @@ struct WorkoutHistoryScreen: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 34)
+    }
+
+    /// «Error de lectura» (Estados, decisión #16 del épico): sustituye la ilustración de «sin datos» —
+    /// una lectura fallida de la base no es lo mismo que cero sesiones, y no debe leerse como tal. Mismo
+    /// tratamiento visual que `saveError` (`patternBlock` con barra crítica); a diferencia de ese aviso
+    /// no se descarta solo, porque la condición no cambia sin un reintento (releer la pantalla).
+    private var readErrorBanner: some View {
+        Text("Couldn't read your workout history. Try again.")
+            .font(.system(size: 13))   // token-exempt: cuerpo de banner (13pt, igual que saveError/ConfirmCard)
+            .foregroundStyle(theme.ink)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .patternBlock(theme, bar: theme.critical)
     }
 
     // MARK: - Monthly + weekly aggregates (v3 · 1m)
@@ -738,6 +811,16 @@ struct WorkoutHistoryScreen: View {
     }
 
     private func load() async {
+        // Estados → «Error de lectura»: adelantado al frente, la misma llamada que ya usaba la
+        // clasificación de rutinas más abajo. nil = fallo persistente de apertura/migración
+        // (`Repository.swift`, memoizado en `store`) — las demás llamadas volverían vacías de todos
+        // modos, así que no se disparan.
+        guard let store = await repo.storeHandle() else {
+            readError = true
+            loaded = true
+            return
+        }
+        readError = false
         async let s = repo.recentSessions()
         async let r = repo.routines()
         async let v = repo.sessionVolumes()
@@ -754,22 +837,21 @@ struct WorkoutHistoryScreen: View {
         self.volumes = volumes
         self.muscleEvents = muscleEvents
         self.loaded = true
-        // Classify each routine's movement family for the session rows (same resolution as the hub).
-        if let store = await repo.storeHandle() {
-            var regions: [String: RoutineRegion] = [:]
-            let custom = (try? await store.customExercises()) ?? []
-            let customByID = Dictionary(custom.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
-            for r in routines {
-                let exs = (try? await store.routineExercises(routineId: r.id)) ?? []
-                let perExercise = exs.compactMap { re in
-                    (ExerciseCatalog.byID(re.exerciseId) ?? customByID[re.exerciseId])?.primaryMuscles
-                }
-                if let cat = RoutineClassifier.classify(primaryMusclesPerExercise: perExercise) {
-                    regions[r.id] = cat
-                }
+        // Classify each routine's movement family for the session rows AND the calendar (same
+        // resolution as the hub).
+        var regions: [String: RoutineRegion] = [:]
+        let custom = (try? await store.customExercises()) ?? []
+        let customByID = Dictionary(custom.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+        for r in routines {
+            let exs = (try? await store.routineExercises(routineId: r.id)) ?? []
+            let perExercise = exs.compactMap { re in
+                (ExerciseCatalog.byID(re.exerciseId) ?? customByID[re.exerciseId])?.primaryMuscles
             }
-            self.routineRegions = regions
+            if let cat = RoutineClassifier.classify(primaryMusclesPerExercise: perExercise) {
+                regions[r.id] = cat
+            }
         }
+        self.routineRegions = regions
         // Progression can take a beat (routines × exercises); paint the rest of the screen first.
         self.progressionRows = await loadProgressionRows()
     }
@@ -878,6 +960,17 @@ struct WorkoutSessionDetailScreen: View {
         return s.routineId.flatMap { routineNames[$0] } ?? String(localized: "Strength workout")
     }
     private var dispRoutineId: String? { fullSession?.routineId }
+    /// La familia de la rutina para el punto de `heading` (Alcance punto 7) — mismo criterio de
+    /// clasificación que el punto 5 de `WorkoutEditSheet` (`RoutineClassifier` sobre las primary
+    /// muscles), pero sin llamada nueva al store: usa `routineExercises`/`exercisesByID`, que `load()`
+    /// ya llena cuando la sesión viene de una rutina guardada. nil cuando la sesión no tiene rutina, o
+    /// cuando `routineExercises` llegó vacío por un fallo de lectura benigno (Estados) — no hay nada
+    /// que teñir en ninguno de los dos casos.
+    private var dispRoutineRegion: RoutineRegion? {
+        guard !routineExercises.isEmpty else { return nil }
+        let perExercise = routineExercises.compactMap { exercisesByID[$0.exerciseId]?.primaryMuscles }
+        return RoutineClassifier.classify(primaryMusclesPerExercise: perExercise)
+    }
 
     var body: some View {
         ScrollView {
@@ -1110,8 +1203,13 @@ struct WorkoutSessionDetailScreen: View {
         coordinator.bumpReload()
     }
 
+    /// El punto de familia (Alcance punto 7) cierra el salto de estilo que hoy existe: tocar una fila
+    /// teñida de la lista o un día del calendario (puntos 1-2) aterrizaba en un detalle sin ninguna
+    /// identidad. `InstrumentoFlowTitle.title` es un `Text` puro (no admite una vista compuesta), así
+    /// que el punto vive AL LADO del bloque de título, no incrustado en el propio texto.
     private var heading: some View {
-        VStack(alignment: .leading, spacing: 3) {
+        HStack(alignment: .center, spacing: 8) {
+            if let region = dispRoutineRegion { EntrenarFamilyDot(region.tint(theme)) }
             InstrumentoFlowTitle(overline: Text(StrengthHistoryFormat.dateTime(dispStart)),
                                  Text(verbatim: dispRoutineName))
         }
@@ -1364,9 +1462,10 @@ struct WorkoutSessionDetailScreen: View {
                         .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
                     Spacer(minLength: 0)
                 }
+                .frame(minHeight: EntrenarMetrics.row)
                 .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(EntrenarPressStyle())
             .accessibilityHint(Text("Opens the exercise"))
         } else {
             Text(g.name).font(StrandFont.headline).foregroundStyle(theme.ink)

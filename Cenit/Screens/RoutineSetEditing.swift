@@ -165,29 +165,25 @@ struct RestChip: View {
 
     var body: some View {
         let isHR = cfg.mode == .heartRate
-        // FER-952 (owner): SAME chip grammar as the live session's troquel rest chip (r15) — the hue
-        // lives ONLY in the leading icon (♥ recovery for HR, clock ember for time), value in ink.
-        return Button(action: action) {
-            HStack(spacing: 6) {
-                (isHR ? StrandIcon.heart.image : StrandIcon.clock.image)
-                    .font(StrandFont.glyph(.chevron))
-                    .foregroundStyle(isHR ? theme.dataRecovery : theme.dataStrain)
-                Text(RoutineSetEditing.restChipLabel(cfg))
-                    .font(InstrumentoType.groteskNumber(12, weight: .medium))
-                    .foregroundStyle(theme.ink).lineLimit(1)
-                StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
-            }
-            .troquelChip(theme)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        // 2026-07-19: la sesión activa reimplementaba este chip entero, con un comentario que ya
-        // afirmaba «MISMO chip que el editor» mientras el código los tenía separados. Al unificarlos se
-        // conservó la MEJOR accesibilidad de las dos —la de la sesión—: etiqueta y valor separados, para
-        // que VoiceOver anuncie el descanso al cambiar sin releer la acción. De paso se corrige el copy:
-        // FER-952 hizo el descanso por EJERCICIO, así que «de esta serie» llevaba meses mintiendo.
-        .accessibilityLabel(Text("Edit rest"))
-        .accessibilityValue(Text(RoutineSetEditing.restChipLabel(cfg)))
+        // FER-89: construido sobre `EntrenarChip` (E2) con sus overrides de icono/tono — la ÚNICA
+        // forma de conservar la distinción reloj/pulso (r15: el hue vive SOLO en el icono, ♥
+        // recovery para FC, reloj ember para tiempo fijo) que `EntrenarChip.Kind.rest` no admite por
+        // sí solo (ver `EntrenarNivel.swift`). Mismo papel + borde `hairlineStrong` + chevron «›» de
+        // antes, ahora desde la pieza compartida — el texto pasa de Grotesk tabular (12, medium) al
+        // `StrandFont.caption` que `EntrenarChip` ya usa para descanso/progresión/calentamiento: es
+        // el punto de la migración (converger en UN vocabulario), documentado, no un descuido.
+        EntrenarChip(.rest, verbatim: RoutineSetEditing.restChipLabel(cfg),
+                    icon: isHR ? "heart.fill" : "clock",
+                    tone: isHR ? theme.dataRecovery : theme.dataStrain,
+                    showsDisclosure: true, action: action)
+            // 2026-07-19: la sesión activa reimplementaba este chip entero, con un comentario que ya
+            // afirmaba «MISMO chip que el editor» mientras el código los tenía separados. Al
+            // unificarlos se conservó la MEJOR accesibilidad de las dos —la de la sesión—: etiqueta y
+            // valor separados, para que VoiceOver anuncie el descanso al cambiar sin releer la acción.
+            // De paso se corrige el copy: FER-952 hizo el descanso por EJERCICIO, así que «de esta
+            // serie» llevaba meses mintiendo. FER-89 conserva esto tal cual sobre la pieza nueva.
+            .accessibilityLabel(Text("Edit rest"))
+            .accessibilityValue(Text(RoutineSetEditing.restChipLabel(cfg)))
     }
 }
 

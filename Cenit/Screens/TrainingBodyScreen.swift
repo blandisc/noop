@@ -5,7 +5,7 @@ import StrandAnalytics
 import StrandTraining
 import Inject   // recarga en caliente (dev-only, inerte en Release)
 
-// MARK: - Mapa muscular (Cuerpo) — FER-350 · rediseño «la respuesta lidera»
+// MARK: - «Tu cuerpo» (Cuerpo) — FER-350 · rediseño «la respuesta lidera» · FER-91 · E10 fusión
 //
 // The jewel of the loop: front/back silhouettes tinted by each muscle's recent training load, CROSSED
 // with the day's VERDICT (FER-82 — the same word Hoy shows, never a recovery score) — what to train
@@ -31,18 +31,34 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 //   • The manual «mark all recovered» reset (FER-525) is PRESERVED: it filters which sets feed the
 //     map (nothing deleted), which is orthogonal to the decay math.
 //
+// FER-91 · E10 — «mapa y dosis en una sola pantalla»: this file used to be `MuscleMapScreen.swift`
+// (the atlas + the «most loaded» ranking); `MuscleVolumeScreen.swift` (the 30d/90d/6m/1y span picker
+// vs the Schoenfeld band) folded in as `volumeSection` below, inline — no more push to a child screen.
+// Three changes came with the fusion, each documented at its call site: (1) `ranking`/`peekCard`'s
+// hand-rolled rows became `MuscleLoadRow` (StrandDesign · E2), which also DROPPED the 3-way
+// fresh/moderate/loaded color word — that was a second, inconsistent color language for the same
+// «recency» concept `theme.verdict` already owns for the day's bullet (see `loadRow` below); (2) the
+// volume section's own «ⓘ How this is measured» sheet was NOT carried over — its citation (Schoenfeld
+// 2017, the 10–20 band) is already inside this screen's ONE `method` foot, and the épico explicitly
+// forbids a second note repeating the same cite; (3) the top-level empty-state gate now also waits on
+// the volume fetch (`loadedVolume`) and checks `volumeEvents`, not just the map's own 84-day
+// `hasHistory` — before the fusion, «Volumen por músculo» was reachable on its own and could show a
+// wider window (up to a year) even on a stretch with nothing in the map's 84-day lookback; gating the
+// WHOLE fused screen behind the map's narrower window alone would have hidden that data, which is
+// exactly the loss this épico exists to catch.
+//
 // Presented as a light `.sheet` from Cuerpo (theme passed explicitly — it doesn't cross the `.sheet`
 // boundary, FER-162); the per-muscle detail rides a nested `.sheet(item:)`, NO nested NavigationStack
 // (FER-171).
 
-/// Ruta de las barras «volumen vs banda 10–20» (hija del mapa en el stack de Entrenar, 2026-07-16).
-struct MuscleVolumeBarsRoute: Hashable {}
+/// Ruta de «Volumen por músculo», empujada desde el stack de Entrenar y desde «Mis entrenamientos»
+/// (`WorkoutHistoryScreen.swift`). Antes de FER-91 llevaba solo al mapa (con su enlace propio a las
+/// barras); ahora lleva a la pantalla fusionada `TrainingBodyScreen`, que YA incluye ambas lecturas —
+/// el nombre del tipo no cambió a propósito, así que ningún call site externo necesitó tocarse.
+struct MuscleVolumeRoute: Hashable {}
 
-struct MuscleMapScreen: View {
+struct TrainingBodyScreen: View {
     let theme: InstrumentoTheme
-    /// true cuando vive EMPUJADO en el stack de Entrenar: muestra el enlace a las barras vs banda.
-    /// false como hoja desde Cuerpo (ahí no hay stack — el enlace sería inerte, FER-171).
-    var showsVolumeLink: Bool = false
     @EnvironmentObject var repo: Repository
 
     /// All completed work sets in the trailing 84 days, expanded to per-muscle events (one fetch). The
@@ -69,6 +85,41 @@ struct MuscleMapScreen: View {
 
     private static let trendDays = 84
 
+    // MARK: - Volume per muscle (Entrenar v3 · 3d, FER-719 — folded in by FER-91 · E10)
+    //
+    // A DIFFERENT question from the list above: not «what's still loaded right now» but «did this
+    // muscle get its weekly dose, averaged over a span you choose» — judged against the Schoenfeld
+    // 10–20 band. It ignores the manual recovery reset on purpose (it reads history, not freshness)
+    // and fetches its own trailing year independently of the map's 84-day window.
+
+    /// The span the average runs over. Raw value = trailing days.
+    private enum Span: Int, CaseIterable {
+        case d30 = 30, d90 = 90, m6 = 182, y1 = 365
+        var label: String {
+            switch self {
+            case .d30: return String(localized: "30 d")
+            case .d90: return String(localized: "90 d")
+            case .m6:  return String(localized: "6 m")
+            case .y1:  return String(localized: "1 y")
+            }
+        }
+    }
+
+    @State private var span: Span = .d30
+    /// Work sets over the trailing year, expanded to per-muscle events (one fetch; the span slices).
+    /// Independent of `events` above: this one ignores the recovery reset and reaches back further.
+    @State private var volumeEvents: [MuscleFatigueMap.MuscleSetEvent] = []
+    @State private var loadedVolume = false
+
+    private var volumes: [MuscleFatigueMap.MuscleWeeklyVolume] {
+        MuscleFatigueMap.weeklyVolumes(events: volumeEvents, days: span.rawValue)
+    }
+    private var belowBand: [MuscleFatigueMap.MuscleWeeklyVolume] {
+        volumes.filter { $0.band == .below }
+    }
+    /// The band rail draws 0…30 sets/week, like the muscle detail (band at 10–20 sits centered).
+    private var railTop: Double { MuscleFatigueMap.weeklyVolumeRailTop }
+
     /// FER-82 «un solo oráculo»: the SYSTEMIC gate is the day's verdict (the same word Hoy shows),
     /// never the 0–100 score. This screen is reachable from Entrenar, and a score-gated headline
     /// could tell you to train on the morning the app is saying «Recupera». The per-muscle load and
@@ -78,7 +129,9 @@ struct MuscleMapScreen: View {
     /// `nil` so no score gate applies, and the verdict gate is applied at the call site.
     /// Solo «Recupera» cierra la pantalla. «Hoy ve leve» retiene el PESO, no el entrenamiento, y un
     /// veredicto que solo va tarde (`pending`) no afirma nada: sería inventar un descanso que nadie
-    /// ha dictaminado, y encima sin explicación porque la viñeta calla en ese estado.
+    /// ha dictaminado, y encima sin explicación porque la viñeta calla en ese estado. Regresión
+    /// probada en `TrainingRegulationTests.testOnlyRecoverGatesTraining` (StrandAnalytics): SOLO
+    /// `.recover` gatea, `.lighter` nunca.
     private var systemicGate: Bool { TrainingRegulation.gatesTraining(repo.trainingAdvice) }
 
     private var loads: [MuscleFatigueMap.MuscleLoad] {
@@ -113,13 +166,13 @@ struct MuscleMapScreen: View {
         ScrollView {
             VStack(alignment: .leading, spacing: CenitMetrics.gap) {
                 header
-                if loaded {
-                    if loads.isEmpty && !hasHistory {
+                if loaded && loadedVolume {
+                    if loads.isEmpty && !hasHistory && volumeEvents.isEmpty {
                         emptyState
                     } else {
                         figures
                         if !rankingLoads.isEmpty { ranking }
-                        if showsVolumeLink { volumeBarsLink }
+                        volumeSection
                         method
                     }
                 }
@@ -130,7 +183,11 @@ struct MuscleMapScreen: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
-        .task { await load() }
+        .task {
+            async let mapLoad: () = load()
+            async let volumeLoad: () = loadVolume()
+            _ = await (mapLoad, volumeLoad)
+        }
         .sheet(item: $selected) { sel in
             MuscleDetailView(
                 theme: theme,
@@ -149,7 +206,7 @@ struct MuscleMapScreen: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Muscle map").groteskOverline().foregroundStyle(theme.inkTertiary)
+            Text("Your body").groteskOverline().foregroundStyle(theme.inkTertiary)
             verdictHeadline
                 .padding(.top, 4)
             if loaded && !(loads.isEmpty && !hasHistory) {
@@ -297,39 +354,36 @@ struct MuscleMapScreen: View {
         .accessibilityElement(children: .combine)
     }
 
-    /// The mini load indicator for the peeked muscle — a tap target into the full detail.
-    private func peekCard(_ muscle: String) -> some View {
+    /// One muscle's row, fed straight from the engine's two readings (recency load + 7-day sets) —
+    /// `MuscleLoadRow` (StrandDesign · E2), never a hand-rolled row. Shared by `ranking` and
+    /// `peekCard` (FER-91 · E10): before the fusion each had its own bespoke HStack, and `peekCard`
+    /// additionally painted a 3-way fresh/moderate/loaded color word (`stateWord`/`stateColor`,
+    /// retired with it) — a second color language for the same «how loaded is it» question the
+    /// ranking already answered with ink + the ámbar rail alone. `theme.verdict` (green) now appears
+    /// ONLY on the day's verdict bullet above, never on a muscle row (the inconsistency this fusion
+    /// closes).
+    private func loadRow(_ muscle: String) -> MuscleLoadRow {
         let load = loadByMuscle[muscle]
-        let relative = load?.relative ?? 0
         let state = load?.state ?? .fresh
-        return Button { selected = MuscleSelection(muscle: muscle) } label: {
-            HStack(spacing: 10) {
-                Circle().fill(theme.muscleStateColor(relative))
-                    .frame(width: 9, height: 9)
-                VStack(spacing: 5) {
-                    HStack {
-                        Text(MuscleAtlas.name(muscle)).font(StrandFont.body).fontWeight(.semibold).foregroundStyle(theme.ink)
-                        Spacer()
-                        Text(stateWord(state)).font(StrandFont.caption).fontWeight(.semibold)
-                            .foregroundStyle(stateColor(state))
-                    }
-                    GeometryReader { geo in
-                        ZStack(alignment: .leading) {
-                            RoundedRectangle(cornerRadius: 3).fill(theme.hairline)  // token-exempt: geometría de dato
-                            RoundedRectangle(cornerRadius: 3).fill(theme.muscleStateColor(relative))  // token-exempt: geometría de dato
-                                .frame(width: max(load != nil ? 6 : 0, geo.size.width * relative))
-                        }
-                    }
-                    .frame(height: 6)
-                }
-                StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
-            }
-            .padding(.horizontal, 11).padding(.vertical, 9)
+        let daysSinceLast = load?.daysSinceLast ?? 0
+        return MuscleLoadRow(
+            name: MuscleAtlas.name(muscle),
+            load: load?.relative ?? 0,
+            recency: state == .fresh ? "fresh" : (daysSinceLast == 0 ? "today" : "\(daysSinceLast) d ago"),
+            sets: load?.weeklySets ?? 0,
+            isFresh: state == .fresh,
+            action: { selected = MuscleSelection(muscle: muscle) }
+        )
+    }
+
+    /// The mini load indicator for the peeked muscle — a tap target into the full detail. Kept in its
+    /// own bordered card (unlike the plain `ranking` rows) so the atlas's active selection still reads
+    /// as a callout, not just another list row.
+    private func peekCard(_ muscle: String) -> some View {
+        loadRow(muscle)
+            .padding(.horizontal, 11).padding(.vertical, 3)
             .instrumentoCard(.inset, theme: theme, fill: theme.paper, stroke: theme.hairlineStrong)
-        }
-        .buttonStyle(.plain)
-        .padding(.horizontal, 4)
-        .accessibilityHint(Text("Opens the full detail"))
+            .padding(.horizontal, 4)
     }
 
     private var resetRow: some View {
@@ -370,22 +424,6 @@ struct MuscleMapScreen: View {
         Task { await load() }
     }
 
-    private func stateWord(_ s: MuscleFatigueMap.LoadState) -> LocalizedStringKey {
-        switch s {
-        case .fresh: return "fresh"
-        case .moderate: return "moderate"
-        case .loaded: return "loaded"
-        }
-    }
-
-    private func stateColor(_ s: MuscleFatigueMap.LoadState) -> Color {
-        switch s {
-        case .fresh: return theme.verdict
-        case .moderate: return theme.warning
-        case .loaded: return theme.muscleLoadColor(1)
-        }
-    }
-
     private func stateSuffix(_ s: MuscleFatigueMap.LoadState) -> LocalizedStringKey {
         switch s {
         case .fresh: return "· fresh"
@@ -415,56 +453,14 @@ struct MuscleMapScreen: View {
     /// «Más cargados · 7 días» — fixed to the last 7 days (the mock); each row carries its weekly
     /// sets, the raw number the Schoenfeld band judges.
     private var ranking: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 0) {
             Text("Most loaded · 7 days").groteskOverline().foregroundStyle(theme.inkTertiary)
-            ForEach(rankingLoads, id: \.muscle) { m in
-                Button { selected = MuscleSelection(muscle: m.muscle) } label: {
-                    VStack(spacing: 6) {
-                        HStack(alignment: .firstTextBaseline) {
-                            Text(MuscleAtlas.name(m.muscle))
-                                .font(StrandFont.body)
-                                .fontWeight(m.state == .fresh ? .semibold : .regular)
-                                .foregroundStyle(m.state == .fresh ? theme.verdict : theme.ink)
-                                .lineLimit(1).minimumScaleFactor(0.85)
-                            Spacer(minLength: 8)
-                            if m.state == .fresh {
-                                Text("fresh").font(StrandFont.caption).fontWeight(.semibold).foregroundStyle(theme.verdict)
-                            } else {
-                                Text("\(setsText(m.weeklySets)) sets")
-                                    .font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
-                            }
-                        }
-                        GeometryReader { geo in
-                            ZStack(alignment: .leading) {
-                                RoundedRectangle(cornerRadius: 4).fill(theme.hairline)  // token-exempt: geometría de dato
-                                RoundedRectangle(cornerRadius: 4)  // token-exempt: geometría de dato
-                                    .fill(theme.muscleStateColor(m.relative))
-                                    .frame(width: max(6, geo.size.width * m.relative))
-                            }
-                        }
-                        .frame(height: 7)
-                    }
-                }
-                .buttonStyle(.plain)
-                .accessibilityElement(children: .combine)
+                .padding(.bottom, 8)
+            ForEach(Array(rankingLoads.enumerated()), id: \.element.muscle) { i, m in
+                if i > 0 { Divider().overlay(theme.hairline) }
+                loadRow(m.muscle)
             }
         }
-    }
-
-    /// Enlace quieto a «Volumen por músculo» (barras vs banda 10–20) — solo en el stack de Entrenar.
-    private var volumeBarsLink: some View {
-        NavigationLink(value: MuscleVolumeBarsRoute()) {
-            HStack(spacing: 8) {
-                Image(systemName: "chart.bar").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkSecondary)
-                Text("Volume vs the 10-20 band").font(StrandFont.subhead).foregroundStyle(theme.ink)
-                Spacer(minLength: 0)
-                StrandIcon.disclosure.image
-                    .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
-            }
-            .frame(minHeight: 44)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
     }
 
     // MARK: - Method foot — the one-line method with its cite, expanding into the full paragraph
@@ -564,6 +560,171 @@ struct MuscleMapScreen: View {
             dict.values.sorted { ($0.primary ? 0 : 1, $0.name) < ($1.primary ? 0 : 1, $1.name) }
         }
         loaded = true
+    }
+
+    // MARK: - Volume section — «Volumen por músculo» (FER-719), folded in inline by FER-91 · E10
+    //
+    // A DIFFERENT reading from `ranking` above: not this week's recency, but the average weekly dose
+    // over a span you pick, judged against the Schoenfeld 10–20 band. It keeps its own rows (bar vs
+    // band + `movementFamilyTint`, not `MuscleLoadRow`'s ámbar recency rail) — the two rails answer
+    // different questions and the épico's own spec preserves this section's rows as-is.
+
+    private var volumeSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Volume per muscle").groteskOverline().foregroundStyle(theme.inkTertiary)
+            volumeSpanPicker
+                .padding(.top, 12)
+            if volumes.isEmpty {
+                volumeEmptyState.padding(.top, 20)
+            } else {
+                volumeRows.padding(.top, 6)
+                volumeRailAxisMarks.padding(.top, 4)
+                volumeInsightLine.padding(.top, 12)
+            }
+        }
+        .padding(.top, 20)
+        .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 1) }
+    }
+
+    private var volumeSpanPicker: some View {
+        SegmentedPillControl(Span.allCases, selection: $span, theme: theme) { $0.label }
+    }
+
+    private var volumeRows: some View {
+        VStack(spacing: 0) {
+            ForEach(volumes, id: \.muscle) { v in
+                volumeRow(v)
+            }
+        }
+    }
+
+    private func volumeRow(_ v: MuscleFatigueMap.MuscleWeeklyVolume) -> some View {
+        let below = v.band == .below
+        return HStack(spacing: 12) {
+            Text(MuscleAtlas.name(v.muscle))
+                .font(StrandFont.body).foregroundStyle(theme.ink)
+                .lineLimit(1).minimumScaleFactor(0.85)
+                .frame(width: 96, alignment: .leading)
+            GeometryReader { geo in
+                let w = geo.size.width
+                let lo = MuscleFatigueMap.weeklyBandLow / railTop
+                let hi = MuscleFatigueMap.weeklyBandHigh / railTop
+                ZStack(alignment: .leading) {
+                    // the 10–20 band, the fixed reference
+                    RoundedRectangle(cornerRadius: 3).fill(theme.hairline)  // token-exempt: geometría de dato
+                        .frame(width: w * (hi - lo), height: 14)
+                        .offset(x: w * lo)
+                    // the datum — each muscle wears its movement-family hue (handoff «Mis
+                    // entrenamientos»: bars tell apart at a glance); below-band keeps the warning.
+                    RoundedRectangle(cornerRadius: 3)  // token-exempt: geometría de dato
+                        .fill(below ? theme.warning : theme.movementFamilyTint(primaryMuscles: [v.muscle]))
+                        .frame(width: max(4, w * min(v.setsPerWeek, railTop) / railTop), height: 6)
+                }
+                .frame(height: 14, alignment: .leading)
+            }
+            .frame(height: 14)
+            Text(setsText(v.setsPerWeek))
+                .font(StrandFont.captionNumber)
+                .fontWeight(below ? .semibold : .regular)
+                .foregroundStyle(below ? theme.warning : theme.ink)
+                .frame(minWidth: 34, alignment: .trailing)
+        }
+        .frame(minHeight: 46)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(MuscleAtlas.name(v.muscle)))
+        .accessibilityValue(Text("\(setsText(v.setsPerWeek)) sets per week") + Text(verbatim: ", ") + Text(volumeBandWord(v.band)))
+    }
+
+    private func volumeBandWord(_ b: MuscleFatigueMap.VolumeBand) -> LocalizedStringKey {
+        switch b {
+        case .below:  return "below the band"
+        case .within: return "within the band"
+        case .above:  return "above the band"
+        }
+    }
+
+    // Rail axis marks — 0 / railTop/3 / 2·railTop/3 / railTop, under the bars only. Tick labels
+    // aligned to the flexible rail column (same 96 + 12 + rail + 12 + 34 layout as `volumeRow`).
+    private var volumeRailAxisMarks: some View {
+        // Derived from `railTop` so a future band-rail change keeps the ticks honest (today 0 / 10 / 20 / 30).
+        let marks: [Double] = [0, railTop / 3, 2 * railTop / 3, railTop]
+        return HStack(spacing: 12) {
+            Color.clear.frame(width: 96)
+            GeometryReader { geo in
+                let w = geo.size.width
+                let h = geo.size.height
+                ZStack {
+                    // Edge ticks: "0" flush leading, top mark flush trailing (inside the rail width).
+                    HStack {
+                        Text("\(Int(marks[0].rounded()))")
+                            .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                        Spacer(minLength: 0)
+                        Text("\(Int(marks[marks.count - 1].rounded()))")
+                            .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                    }
+                    // Mid ticks centered on their proportional positions along the rail.
+                    ForEach(Array(marks.dropFirst().dropLast().enumerated()), id: \.offset) { _, mark in
+                        Text("\(Int(mark.rounded()))")
+                            .font(StrandFont.footnote)
+                            .foregroundStyle(theme.inkTertiary)
+                            .position(x: w * CGFloat(mark / railTop), y: h / 2)
+                    }
+                }
+            }
+            .frame(height: 14)
+            Color.clear.frame(width: 34)
+        }
+        .accessibilityHidden(true)
+    }
+
+    // Insight foot — names the below-band muscles, actionably. The verdict-like line stays ON the
+    // screen (FER-952 v2): which muscles sit below the band today.
+
+    @ViewBuilder private var volumeInsightText: some View {
+        if belowBand.isEmpty {
+            Text("Every muscle you train is inside or above the band.")
+        } else {
+            let names = belowBand.prefix(2).map { MuscleAtlas.name($0.muscle) }
+            let lead: Text = names.count >= 2
+                ? Text(names[0]) + Text(" and ") + Text(names[1])
+                : Text(names[0])
+            lead + Text(" below the band · they could take 2–3 more sets a week.")
+        }
+    }
+
+    private var volumeInsightLine: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 7) {
+            Circle().fill(belowBand.isEmpty ? theme.verdict : theme.warning)
+                .frame(width: 8, height: 8)
+                .alignmentGuide(.firstTextBaseline) { d in d[.bottom] - 1 }
+            volumeInsightText
+                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
+    }
+
+    private var volumeEmptyState: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("No sets in this range")
+                .font(InstrumentoType.groteskHeadline(20)).foregroundStyle(theme.ink)
+            Text("Log your workouts and you'll see each muscle's weekly volume against the band.")
+                .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    /// Fetch the max span (a year) once; the span picker re-slices in memory (`volumes`) with no more I/O.
+    /// Unlike `load()` above, this ignores the manual recovery reset (FER-525): it reads history, not
+    /// freshness — MuscleVolumeScreen's original contract, unchanged by the fusion.
+    private func loadVolume() async {
+        let cal = Calendar.current
+        guard let since = cal.date(byAdding: .day, value: -Span.y1.rawValue, to: cal.startOfDay(for: Date())) else {
+            loadedVolume = true; return
+        }
+        volumeEvents = await repo.muscleSetEvents(sinceTs: Int(since.timeIntervalSince1970))
+        loadedVolume = true
     }
 }
 

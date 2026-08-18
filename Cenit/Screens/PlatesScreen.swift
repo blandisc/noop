@@ -26,6 +26,7 @@ struct PlatesScreen: View {
     var startAtWarmup = false
 
     @State private var editingInventory = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var loading: PlateMath.Loading {
         PlateMath.perSide(targetKg: targetKg, barKg: store.barKg, inventory: store.inventory)
@@ -144,11 +145,22 @@ struct PlatesScreen: View {
             HStack {
                 Text("YOUR INVENTORY · PER SIDE").groteskOverline().foregroundStyle(theme.inkTertiary)
                 Spacer()
-                Button(action: { withAnimation(.snappy) { editingInventory.toggle() } }) {
+                // FER-89 (auditoría Reduce Motion): sin esto el pliegue del editor de inventario
+                // animaba siempre, sin alternativa quieta. `StrandMotion.gated` apaga la animación
+                // cuando el sistema pide Reducir movimiento — el mismo patrón que ya usa el paquete
+                // (`ReduceMotion.swift`) en vez de un `reduceMotion ? nil : x` a mano.
+                Button(action: { withAnimation(StrandMotion.gated(.snappy, reduceMotion)) { editingInventory.toggle() } }) {
                     // UI·armonía #2: acción de UI en tinta, no en hue de dato de salud.
                     Text(editingInventory ? "Done" : "Edit")
                         .font(StrandFont.caption.weight(.semibold)).foregroundStyle(theme.ink)
+                        // FER-89: sin esto el toque real era del tamaño del texto (~20 pt) — bajo el
+                        // piso de 44 pt (HIG). El dibujo no cambia (texto pegado al filo derecho);
+                        // solo crece, hacia la izquierda, el área que responde.
+                        .frame(minWidth: EntrenarMetrics.row, minHeight: EntrenarMetrics.row, alignment: .trailing)
+                        .contentShape(Rectangle())
                 }
+                // FER-89: adopta el press de la sección — antes no tenía NINGÚN buttonStyle explícito.
+                .buttonStyle(EntrenarPressStyle())
             }
             if editingInventory {
                 inventoryEditor
@@ -208,8 +220,11 @@ struct PlatesScreen: View {
     }
 
     /// Circular − / + control (bordered circle, hairline stroke) — matches the session stepper vocabulary.
+    /// FER-89: era 34 pt (bajo el piso de 44, HIG) — `StepperButton` recorta su propio `contentShape`
+    /// al `size` que recibe, así que no hay forma de agrandar SOLO el toque sin tocar el paquete; se
+    /// sube el dibujo al piso.
     private func pairStepper(system: String, _ action: @escaping () -> Void) -> some View {
-        StepperButton(system: system, size: 34, shape: .circle,
+        StepperButton(system: system, size: EntrenarMetrics.row, shape: .circle,
                       glyph: StrandFont.glyph(.inline, weight: .semibold), theme: theme, action: action)
     }
 
@@ -226,7 +241,7 @@ struct PlatesScreen: View {
     // MARK: Warm-up
 
     private var warmupSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: EntrenarMetrics.bandGap) {
             Text("Suggested warm-up up to \(kg(targetKg)) kg")
                 .groteskOverline().foregroundStyle(theme.inkTertiary)
 
@@ -273,7 +288,8 @@ struct PlatesScreen: View {
                 .frame(maxWidth: .infinity).padding(.vertical, 15)
                 .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous))
         }
-        .buttonStyle(.plain).padding(.top, 6)
+        // FER-89: adopta el press de la sección en vez de `.plain` (sin feedback de toque).
+        .buttonStyle(EntrenarPressStyle()).padding(.top, 6)
     }
 
     // MARK: Formatting
