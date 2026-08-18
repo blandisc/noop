@@ -23,13 +23,6 @@ struct StarterTemplatesSheet: View {
     /// Called after a template is copied, so the hub reloads «My routines» and the new one shows.
     var onAdded: () async -> Void
 
-    /// When set, the preview offers «Empezar» as the PRIMARY action (start a one-off guided session now,
-    /// without saving), with «Add to my routines» demoted to secondary. The planner's «do it now»
-    /// suggestion passes this so a contextual lighter session can be started on the spot (FER-560); the
-    /// library / plan-builder entry points leave it nil, keeping «Add to my routines» as the only action.
-    /// The caller stashes (name, slots) and starts AFTER this sheet dismisses, so two sheets never stack.
-    var onStart: ((String, [StrengthSessionModel.PlanSlot]) -> Void)?
-
     /// nil = the grouped list; non-nil = that template's preview.
     @State private var selected: StarterTemplate?
     @State private var saving = false
@@ -37,14 +30,10 @@ struct StarterTemplatesSheet: View {
     /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
     @ObserveInjection private var inject
 
-    /// `initialSelection` opens the sheet straight on a template's preview (the planner's «softer»
-    /// suggestion lands here on the mobility routine — FER-554); nil opens the grouped list.
-    init(initialSelection: StarterTemplate? = nil,
-         onStart: ((String, [StrengthSessionModel.PlanSlot]) -> Void)? = nil,
-         onAdded: @escaping () async -> Void) {
-        self.onStart = onStart
+    /// La hoja abre SIEMPRE en la lista agrupada. El atajo que la abría clavada en una plantilla
+    /// («Empezar» directo, sin guardar) era del camino «suave», y ese camino se retiró en FER-85.
+    init(onAdded: @escaping () async -> Void) {
         self.onAdded = onAdded
-        _selected = State(initialValue: initialSelection)
     }
 
     var body: some View {
@@ -170,33 +159,21 @@ struct StarterTemplatesSheet: View {
                 .strokeBorder(theme.hairline, lineWidth: 1))
 
             VStack(spacing: 10) {
-                if let onStart {
-                    // «Do it now» context (the planner's softer suggestion): start the session now is primary;
-                    // saving it for later is the quiet secondary.
-                    // FER-952: «Empezar» = la puerta ámbar del módulo con el glifo play — ahora vía
-                    // StrandCTAButton(tint:), el chrome ya no se copia a mano (auditoría D).
-                    StrandCTAButton("Empezar", systemImage: "play.fill", tint: theme.dataStrain) {
-                        start(t, via: onStart)
-                    }
-                    StrandCTAButton("Add to my routines", kind: .outline) { add(t) }
-                        .disabled(saving)
-                } else {
-                    Button { add(t) } label: {
-                        Text("Add to my routines")
-                            .font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3)
-                            .foregroundStyle(theme.paper)
-                            .frame(maxWidth: .infinity).padding(.vertical, 15)
-                            .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous))
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(saving)
-                    .opacity(saving ? 0.6 : 1)
-
-                    Text("It's copied into «My routines». You can edit it like any routine.")
-                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                        .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
-                        .frame(maxWidth: .infinity)
+                Button { add(t) } label: {
+                    Text("Add to my routines")
+                        .font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3)
+                        .foregroundStyle(theme.paper)
+                        .frame(maxWidth: .infinity).padding(.vertical, 15)
+                        .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous))
                 }
+                .buttonStyle(.plain)
+                .disabled(saving)
+                .opacity(saving ? 0.6 : 1)
+
+                Text("It's copied into «My routines». You can edit it like any routine.")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity)
             }
             .padding(.top, 2)
         }
@@ -240,21 +217,6 @@ struct StarterTemplatesSheet: View {
                 saveError = true
             }
         }
-    }
-
-    // MARK: - Start now (FER-560) — a one-off guided session, no save
-
-    /// Build the template into guided-session slots and hand them to the caller, then dismiss. The caller
-    /// starts the session AFTER this sheet is gone (so the session sheet never stacks on this one — FER-171).
-    private func start(_ t: StarterTemplate, via onStart: (String, [StrengthSessionModel.PlanSlot]) -> Void) {
-        let name = String(localized: templateName(t.id))
-        let now = Int(Date().timeIntervalSince1970)
-        let (_, exercises) = t.makeRoutine(name: name, now: now)
-        let slots = exercises.map {
-            StrengthSessionModel.PlanSlot(re: $0, exercise: ExerciseCatalog.byID($0.exerciseId), lastSets: [])
-        }
-        onStart(name, slots)
-        dismiss()
     }
 
     // MARK: - Bits

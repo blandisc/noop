@@ -1,14 +1,20 @@
 import SwiftUI
 
-// MARK: - EntrenarHilo — el hilo del veredicto (FER-83 · E2)
+// MARK: - EntrenarHilo — el hilo del veredicto (FER-83 · E2 · reescrito en FER-85)
 //
-// El ÚNICO portador del veredicto en toda la sección Entrenar: la misma pastilla que es la puerta
-// de Hoy. Fondo al 12 % y borde al 38 % del tono, bolita con el hue saturado, palabra en el TONO DE
-// LECTURA (nunca el hue saturado en texto chico), consejo al lado en tinta, fila de 44 pt y «›».
+// El ÚNICO portador del veredicto en toda la sección Entrenar, y la puerta al acta de Hoy.
 //
-// Seis variantes: tres con veredicto (en rango · ve leve · recupera) y tres huecas (conociéndote ·
-// sin lectura · sin permiso). Las huecas no inventan consejo: bolita hueca, texto en tinta500, borde
-// tenue, sin fondo. Nunca hay dos portadores del veredicto en una pantalla.
+// La pastilla teñida se retiró: el handoff v3 la revierte con todas sus letras («el veredicto entra
+// como ORBE VIVO … SIN pastilla de fondo»), y el ADN la prohibía desde antes — el hue no llena
+// fondos ni molduras. Lo que queda es el orbe, la palabra en su tono de lectura, el consejo en
+// tinta y «›», sobre papel pelón.
+//
+// El orbe es `OrbeVivo` tal cual, no una re-derivación: el mismo material que gira en Hoy, con otro
+// radio. Cuatro variantes: tres con veredicto (en rango · ve leve · recupera) y la hueca, que no
+// inventa consejo ni color — un aro punteado de 22 y texto en tinta secundaria.
+//
+// Sin pastilla, la palabra cae sobre el PAPEL: su contraste se mide contra el papel, no contra un
+// relleno que ya no existe.
 
 public struct EntrenarHilo: View {
 
@@ -22,10 +28,11 @@ public struct EntrenarHilo: View {
         case caution
         /// «Recupera» — rojo.
         case ease
-        /// Sin lectura usable: bolita hueca y nada de color.
+        /// Sin lectura usable: aro punteado y nada de color.
         case hollow
 
-        func dot(_ theme: InstrumentoTheme) -> Color {
+        /// El hue de la señal: el que gira en el orbe. Nunca toca texto.
+        func hue(_ theme: InstrumentoTheme) -> Color {
             switch self {
             case .clear:   return theme.verdict
             case .caution: return theme.warning
@@ -34,38 +41,20 @@ public struct EntrenarHilo: View {
             }
         }
 
-        /// El tono de lectura de la palabra: AA a tamaño de texto, siempre.
-        ///
-        /// El contraste se mide contra el FONDO REAL sobre el que cae —el relleno teñido de la
-        /// pastilla, no el papel—, que es más oscuro y come contraste. Medirlo contra el papel dejaba
-        /// las tres palabras por debajo de 4.5:1 justo donde el ojo las lee.
+        /// El tono de LECTURA de la palabra: el mismo hue oscurecido hasta AA sobre el papel.
+        /// Es el par obligatorio de `hue` — hue de dato, tono de lectura — y sin la pastilla el
+        /// fondo real bajo la palabra es el papel, sin velo de por medio.
         func word(_ theme: InstrumentoTheme) -> Color {
-            switch self {
-            case .hollow: return theme.inkSecondary
-            case .clear, .caution, .ease:
-                let base: Color = self == .clear ? theme.verdict
-                                : (self == .caution ? theme.warning : theme.critical)
-                return OKLab.darkened(base, toContrast: 4.5, against: fondoEfectivo(theme))
-            }
-        }
-
-        /// El papel con el relleno de la pastilla encima: el color que de verdad hay bajo la palabra.
-        private func fondoEfectivo(_ theme: InstrumentoTheme) -> Color {
-            OKLab.blend(dot(theme), over: theme.paper, alpha: EntrenarMetrics.pillFillAlpha)
-        }
-
-        func background(_ theme: InstrumentoTheme) -> Color {
-            self == .hollow ? .clear : dot(theme).opacity(EntrenarMetrics.pillFillAlpha)
-        }
-
-        func border(_ theme: InstrumentoTheme) -> Color {
-            self == .hollow ? theme.hairlineStrong : dot(theme).opacity(EntrenarMetrics.pillBorderAlpha)
+            self == .hollow ? theme.inkSecondary
+                            : OKLab.darkened(hue(theme), toContrast: 4.5, against: theme.paper)
         }
     }
 
     private let tone: Tone
     private let word: LocalizedStringKey
     private let advice: LocalizedStringKey?
+    /// El radio del orbe. Landing 15.5 · sesión 11 · hoja 20 (handoff v3).
+    private let radio: CGFloat
     /// A dónde lleva, para VoiceOver: sin esto la puerta principal de la pantalla se anunciaba como
     /// «botón» a secas y nadie sabía qué iba a abrir.
     private let hint: LocalizedStringKey?
@@ -77,28 +66,30 @@ public struct EntrenarHilo: View {
     ///   - tone: el color del día, ya traducido por la app.
     ///   - word: la palabra del veredicto («En rango», «Recupera», «Conociéndote»…).
     ///   - advice: el consejo grueso que la acompaña. `nil` en las variantes que no aconsejan.
-    ///   - action: qué abre. `nil` deja la pastilla informativa (sin «›» y sin toque).
+    ///   - radio: el radio del orbe; por omisión el de la landing.
+    ///   - action: qué abre. `nil` deja el hilo informativo (sin «›» y sin toque).
     public init(tone: Tone, word: LocalizedStringKey, advice: LocalizedStringKey? = nil,
+                radio: CGFloat = EntrenarMetrics.orbeLanding,
                 hint: LocalizedStringKey? = nil, action: (() -> Void)? = nil) {
         self.tone = tone; self.word = word; self.advice = advice
-        self.hint = hint; self.action = action
+        self.radio = radio; self.hint = hint; self.action = action
     }
 
     public var body: some View {
         if let action {
-            Button(action: action) { pill }
+            Button(action: action) { hilo }
                 .buttonStyle(EntrenarPressStyle())
                 .accessibilityElement(children: .combine)
                 .accessibilityAddTraits(.isButton)
                 .accessibilityHint(hint.map { Text($0) } ?? Text(""))
         } else {
-            pill.accessibilityElement(children: .combine)
+            hilo.accessibilityElement(children: .combine)
         }
     }
 
-    private var pill: some View {
+    private var hilo: some View {
         HStack(spacing: 9) {
-            dot
+            cuerpo
             // Con Dynamic Type grande la palabra y el consejo no caben lado a lado: en vez de
             // aplastar el veredicto —que es el dato—, se apilan.
             ViewThatFits(in: .horizontal) {
@@ -112,11 +103,8 @@ public struct EntrenarHilo: View {
                     .foregroundStyle(theme.inkTertiary)
             }
         }
-        .padding(.horizontal, 13)
         .frame(minHeight: EntrenarMetrics.row)
-        .background(tone.background(theme), in: Capsule())
-        .overlay(Capsule().strokeBorder(tone.border(theme), lineWidth: 1))
-        .contentShape(Capsule())
+        .contentShape(Rectangle())
     }
 
     private var palabra: some View {
@@ -135,11 +123,22 @@ public struct EntrenarHilo: View {
         }
     }
 
-    @ViewBuilder private var dot: some View {
+    /// El orbe cuando hay lectura; el aro punteado cuando no la hay.
+    ///
+    /// El aro ocupa el MISMO ancho que el orbe para que la palabra no baile de sitio entre un día
+    /// con veredicto y uno sin él: el hilo es la misma fila, cambie o no lo que tiene que decir.
+    @ViewBuilder private var cuerpo: some View {
+        let lado = radio * 2.5
         if tone == .hollow {
-            Circle().strokeBorder(theme.inkTertiary, lineWidth: 1.5).frame(width: 9, height: 9)
+            Circle()
+                .strokeBorder(theme.inkTertiary,
+                              style: StrokeStyle(lineWidth: 1.5, dash: [2, 3]))
+                .frame(width: EntrenarMetrics.aroHueco, height: EntrenarMetrics.aroHueco)
+                .frame(width: lado, height: lado)
         } else {
-            Circle().fill(tone.dot(theme)).frame(width: 9, height: 9)
+            OrbeVivo(radio: radio, hue: tone.hue(theme), semillaID: "entrenar-hilo")
+                .frame(width: lado, height: lado)
+                .accessibilityHidden(true)
         }
     }
 }
@@ -158,13 +157,12 @@ public struct EntrenarPressStyle: ButtonStyle {
 }
 
 #if DEBUG
-#Preview("EntrenarHilo · 6 variantes") {
-    VStack(spacing: 10) {
+#Preview("EntrenarHilo · 4 variantes") {
+    VStack(alignment: .leading, spacing: 6) {
         EntrenarHilo(tone: .clear, word: "In range", advice: "your plan for today, as it is") {}
         EntrenarHilo(tone: .caution, word: "Go light today", advice: "don't add weight") {}
         EntrenarHilo(tone: .ease, word: "Recover", advice: "easy today, or rest") {}
         EntrenarHilo(tone: .hollow, word: "Getting to know you", advice: "no advice yet")
-        EntrenarHilo(tone: .hollow, word: "No reading today", advice: "sync in Today") {}
         EntrenarHilo(tone: .hollow, word: "Connect Apple Health") {}
     }
     .padding(24)
@@ -172,10 +170,24 @@ public struct EntrenarPressStyle: ButtonStyle {
     .instrumentoTheme(.base)
 }
 
+#Preview("EntrenarHilo · los tres radios") {
+    VStack(alignment: .leading, spacing: 6) {
+        EntrenarHilo(tone: .clear, word: "In range", advice: "landing · 15.5") {}
+        EntrenarHilo(tone: .clear, word: "In range", advice: "session · 11",
+                     radio: EntrenarMetrics.orbeSesion) {}
+        EntrenarHilo(tone: .clear, word: "In range", advice: "sheet · 20",
+                     radio: EntrenarMetrics.orbeHoja) {}
+    }
+    .padding(24)
+    .background(InstrumentoTheme.base.paper)
+    .instrumentoTheme(.base)
+}
+
 #Preview("EntrenarHilo · xxxLarge") {
-    VStack(spacing: 10) {
+    VStack(alignment: .leading, spacing: 6) {
         EntrenarHilo(tone: .clear, word: "In range", advice: "your plan for today, as it is") {}
         EntrenarHilo(tone: .ease, word: "Recover", advice: "easy today, or rest") {}
+        EntrenarHilo(tone: .hollow, word: "Getting to know you", advice: "no advice yet")
     }
     .padding(24)
     .background(InstrumentoTheme.base.paper)

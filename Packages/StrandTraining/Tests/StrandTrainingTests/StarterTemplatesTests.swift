@@ -59,11 +59,12 @@ final class StarterTemplatesTests: XCTestCase {
         }
     }
 
-    func testMobilityTemplateIsOfferedForTheSofterDay() {
-        // FER-554: the planner's ④ «softer» suggestion routes here, so the template must exist, sit in
-        // its own group, and carry the curated mobility / light-cardio slots (all bodyweight).
+    func testLaPlantillaDeMovilidadExisteParaSusTresPuertas() {
+        // La plantilla la piden tres puertas VIVAS: el pliegue «Otra forma», la fila del día de
+        // descanso y «Otra forma de entrenar». (La cuarta —la sugerencia «suave» de FER-554— se
+        // retiró en FER-85; las otras tres siguen, así que la plantilla no se va con ella.)
         let t = StarterTemplates.byID("mobility")
-        XCTAssertNotNil(t, "the mobility template must exist for the planner's softer suggestion")
+        XCTAssertNotNil(t, "la plantilla de movilidad la necesitan el pliegue y el día de descanso")
         XCTAssertEqual(t?.group, .mobility)
         XCTAssertEqual(t?.slots.map(\.exerciseId), [
             "Chest_And_Front_Of_Shoulder_Stretch", "Worlds_Greatest_Stretch", "Cat_Stretch", "Bodyweight_Walking_Lunge", "Mountain_Climbers", "Hamstring_Stretch",

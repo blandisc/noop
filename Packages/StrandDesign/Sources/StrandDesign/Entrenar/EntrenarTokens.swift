@@ -89,10 +89,13 @@ public enum EntrenarMetrics {
     /// Esquina de una celda del calendario: la única esquina de la sección que no es un radio de
     /// control, porque la celda es un pixel de gráfico, no un contenedor.
     public static let calendarRadius: CGFloat = 3
-    /// La pastilla del hilo: fondo al 12 % y borde al 38 % del tono del veredicto. Son alfas de
-    /// IDENTIDAD (así se dibuja la puerta de Hoy), por eso viven aquí y no sueltas en la vista.
-    public static let pillFillAlpha: Double = 0.12
-    public static let pillBorderAlpha: Double = 0.38
+    /// El radio del orbe del veredicto, por superficie (handoff v3). La pastilla teñida que
+    /// vivía aquí se retiró con FER-85: el hue no llena fondos, y el handoff lo revierte explícito.
+    public static let orbeLanding: CGFloat = 15.5
+    public static let orbeSesion: CGFloat = 11
+    public static let orbeHoja: CGFloat = 20
+    /// El aro punteado que ocupa el lugar del orbe cuando no hay lectura.
+    public static let aroHueco: CGFloat = 22
 }
 
 /// El estado de una celda del calendario de entrenamiento. Es un token porque lo consumen dos

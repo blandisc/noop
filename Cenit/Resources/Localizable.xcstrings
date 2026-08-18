@@ -21454,23 +21454,6 @@
         }
       }
     },
-    "Feeling good? Add intervals · 12 min" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Feeling good? Add intervals · 12 min"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "¿Con energía? Suma intervalos · 12 min"
-          }
-        }
-      }
-    },
     "Female" : {
       "localizations" : {
         "en" : {
@@ -28027,23 +28010,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "día más leve"
-          }
-        }
-      }
-    },
-    "Lighter day? Mobility · 20 min" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lighter day? Mobility · 20 min"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "¿Hoy más suave? Movilidad · 20 min"
           }
         }
       }
@@ -40825,17 +40791,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Puedes tomarla en la sesión."
-          }
-        }
-      }
-    },
-    "Because today you recover" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Porque hoy recuperas"
           }
         }
       }
@@ -58459,6 +58414,83 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "σ"
+          }
+        }
+      }
+    },
+    "Other ways" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Otra forma"
+          }
+        }
+      }
+    },
+    "Starts empty, you log as you go" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Empieza vacío, registras sobre la marcha"
+          }
+        }
+      }
+    },
+    "Rounds by time, same logging" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Series por tiempo, con el mismo registro"
+          }
+        }
+      }
+    },
+    "Guided, no weights · 20 min" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guiada, sin pesas · 20 min"
+          }
+        }
+      }
+    },
+    "Guided breathing · 3 min" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Respiración guiada · 3 min"
+          }
+        }
+      }
+    },
+    "Resumes the session you have open" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retoma la sesión que tienes abierta"
+          }
+        }
+      }
+    },
+    "Your routine for today stays put: this is separate, no guilt." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu rutina del día no se toca: esto es aparte, sin culpa."
           }
         }
       }

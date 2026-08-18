@@ -77,20 +77,23 @@ final class SingleOracleTests: XCTestCase {
         }
     }
 
-    /// Only «Recupera» offers the gentler session. Within range there is nothing to suggest, «Hoy ve
-    /// leve» keeps the plan (it only holds the raise), and the silent states invent nothing.
-    func testOnlyRecoverOffersTheGentlerOption() {
-        XCTAssertEqual(TrainingRegulation.lightAlternative(.recover), .softer)
-        for advice in allAdvice where advice != .recover {
-            XCTAssertNil(TrainingRegulation.lightAlternative(advice), "\(advice)")
-        }
-    }
-
-    /// There is no «push harder» voice anywhere in the verdict path: `Preparedness.full` already
-    /// includes better-than-normal, so the honest mapping never tells anyone to exceed the plan.
-    func testNoAdviceEverSuggestsAnExtraSession() {
-        for advice in allAdvice {
-            XCTAssertNotEqual(TrainingRegulation.lightAlternative(advice), .optionalLight, "\(advice)")
+    /// El oráculo NO propone alternativas. Antes sí: `lightAlternative(.recover)` devolvía
+    /// «movilidad · 20 min» y una fila de la pantalla la ofrecía. El dueño mandó retirar ese camino
+    /// (FER-85) y el enum entero se fue con él, así que la garantía ya no puede escribirse como
+    /// «nunca devuelve `.optionalLight`»: se escribe sobre el vocabulario.
+    ///
+    /// Los cinco casos son TODO lo que el veredicto sabe decir, y ninguno manda hacer algo distinto
+    /// del plan: tres hablan, dos callan, y el más permisivo (`allowsRaise`) solo deja pasar la
+    /// progresión que el plan ya traía. Un sexto caso —una alternativa, un «súbele», un «haz esto
+    /// otro»— truena aquí, que es exactamente donde tiene que doler.
+    func testElVocabularioDelOraculoSonCincoCasosYNingunoProponeOtraCosa() {
+        XCTAssertEqual(Set(allAdvice.map(\.rawValue)),
+                       ["planAsIs", "lighter", "recover", "silent", "pending"],
+                       "el vocabulario del veredicto cambió: ¿alguien metió una recomendación?")
+        // Ninguno de los cinco permite MÁS carga que la del plan: `allowsRaise` es permiso para la
+        // progresión ya ganada, no una sugerencia de añadir nada.
+        for advice in allAdvice where TrainingRegulation.allowsRaise(advice) {
+            XCTAssertTrue(advice == .planAsIs || advice == .silent, "\(advice) permite subir")
         }
     }
 

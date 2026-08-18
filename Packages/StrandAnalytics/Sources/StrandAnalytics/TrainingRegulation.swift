@@ -148,42 +148,12 @@ public enum TrainingRegulation {
         speaks(advice) && !allowsRaise(advice)
     }
 
-    /// The lighter alternative straight from today's advice. Only `.recover` offers one: within
-    /// range there is nothing to suggest, and `.lighter` keeps the plan (it just holds the raise).
-    public static func lightAlternative(_ advice: Advice) -> LightAlternative? {
-        advice == .recover ? .softer : nil
-    }
-
-    /// A concrete lighter alternative to today's planned load, derived from the direction.
-    ///
-    /// The planner's «Sugerencia» row (FER-532) maps a `Suggestion` to one actionable option:
-    ///   • `.softer` — recovery is BELOW your normal (`dialBack`): offer a gentler session.
-    ///   • `.optionalLight` — recovery is ABOVE your normal (`dialUp`): offer an OPTIONAL short add-on.
-    /// Within your normal band (`hold`) or with no signal there is nothing to suggest, so the row hides.
-    /// Still advisory: an alternative the athlete may take or ignore, never a block.
-    public enum LightAlternative: String, Equatable, Sendable {
-        case softer         // baja — a gentler option than the plan
-        case optionalLight  // alta — an optional light add-on
-    }
-
-    /// Map a direction to a concrete lighter alternative, or `nil` when none applies (`hold` / no signal),
-    /// so the UI shows the row ONLY when it carries a suggestion.
-    public static func lightAlternative(for suggestion: Suggestion?) -> LightAlternative? {
-        switch suggestion?.adjustment {
-        case .dialBack: return .softer
-        case .dialUp:   return .optionalLight
-        case .hold, nil: return nil
-        }
-    }
-
-    /// Convenience: the lighter alternative straight from today's recovery inputs (same contract as
-    /// `suggest`). Returns `nil` within the normal band or with no recovery signal.
-    ///
-    /// LEGACY (FER-82): no Cénit screen calls this any more — Entrenar reads the verdict, like Hoy.
-    /// Kept with its tests as the pure score API; removal is tracked in the cleanup phase (FER-92).
-    public static func lightAlternative(recovery: Double?, recoveryZ: Double? = nil) -> LightAlternative? {
-        lightAlternative(for: suggest(recovery: recovery, recoveryZ: recoveryZ))
-    }
+    // FER-85: `LightAlternative` se retiró entero. Nació para la fila «Sugerencia» (FER-532) y su
+    // único caso vivo, `.softer`, ofrecía una sesión de movilidad el día del veredicto «Recupera».
+    // El dueño mandó quitar ese camino: el veredicto se dice UNA vez, en el hilo, y no propone una
+    // alternativa. `.optionalLight` ya era código muerto — el único productor de producción
+    // (`lightAlternative(_ advice:)`) no podía devolverlo nunca, y `testNoAdviceEverSuggestsAnExtraSession`
+    // lo blindaba. El enum y sus tres productores se van juntos; nada más los consumía.
 
     /// Pre-workout suggestion, or `nil` when there is no recovery signal (the UI then hides the band).
     /// - Parameters:

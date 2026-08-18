@@ -41,7 +41,6 @@ struct EntrenarView: View {
     /// Push «Hoy descansas» (v3 · 2B) — the rest-day screen (was a sheet, now a push, FER-718).
     var openRestDay: () -> Void
     /// Push «Otra forma de entrenar» (v3 · 3e) — the alternative-training chooser (was a sheet, now a push).
-    var openOtherWays: () -> Void
     /// Push a completed strength session's detail (from a «done» day in the week strip).
     var openWorkoutSession: (WorkoutSessionRoute) -> Void
 
@@ -50,7 +49,7 @@ struct EntrenarView: View {
                         openBreathe: openBreathe, openIntervals: openIntervals,
                         openHistory: openHistory, openWeeklyPlan: openWeeklyPlan,
                         openRoutines: openRoutines, openRestDay: openRestDay,
-                        openOtherWays: openOtherWays, openWorkoutSession: openWorkoutSession)
+                        openWorkoutSession: openWorkoutSession)
             .instrumentoTheme(.base)
             .enableInjection()   // Inject: ver la nota en `inject` arriba (no-op en Release)
     }
@@ -69,7 +68,6 @@ private struct EntrenarLanding: View {
     var openWeeklyPlan: () -> Void
     var openRoutines: () -> Void
     var openRestDay: () -> Void
-    var openOtherWays: () -> Void
     var openWorkoutSession: (WorkoutSessionRoute) -> Void
 
     @State private var loaded = false
@@ -111,12 +109,9 @@ private struct EntrenarLanding: View {
     /// Today's routine resolved into guided-session slots, prefetched on load so «Empezar» starts in one
     /// tap (F1). Empty when today is a rest day or the routine has no exercises.
     @State private var todaySlots: [StrengthSessionModel.PlanSlot] = []
-    /// Drives the templates sheet opened straight on the mobility routine from the ③ «softer» suggestion
-    /// (a TRAINING-day nudge; the rest sheet starts mobility directly instead). FER-554.
-    @State private var showMobilityTemplate = false
-    /// «Empezar» from the mobility template stashes its (name, slots) here; the session starts on the
-    /// sheet's dismiss so it never stacks on the templates sheet (FER-560).
-    @State private var pendingMobility: (name: String, slots: [StrengthSessionModel.PlanSlot])? = nil
+    /// El pliegue de «Otra forma»: privado de la vista y SIN persistir — cada visita abre cerrado.
+    @State private var otraFormaAbierta = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// The Daily Brief's «Empezar» arrived (via `TabRouter`) before this view finished loading its
     /// prefetched slots — start today's session as soon as `load()` completes (FER-613).
     @State private var startWhenLoaded = false
@@ -187,15 +182,13 @@ private struct EntrenarLanding: View {
                     } else if split.isEmpty {
                         emptyStateB          // hero «Empecemos por tu plan» + «Crear mi plan» (mock 5a)
                         plantillaRow         // «O empieza sin plan» → Rutinas de plantilla (the one kept row)
-                        formasDiscos         // the five training discs (same doors as the planned state)
+                        otraForma            // «Otra forma ›» — las mismas cuatro puertas, plegadas
                         constanciaSection    // empty Constancia — «tus sesiones aparecerán aquí»
                         footRows
                     } else {
                         // Handoff v4b order (FER-939): open hero + discs up top, then the sunken-band
                         // sections (session · plan · consistency), then the quiet foot rows.
                         heroSection       // ① open hero «Hoy · {día}» + «Empezar» + the five discs
-                        suggestionRow     // ② contextual FER-532 nudge (shown only when the engine fires)
-                        sesionDeHoy       // ③ «LA SESIÓN DE HOY» — big numerals + raise + recovery hint
                         tuPlanSection     // ④ «TU PLAN» — week squares + every routine + new-routine row
                         constanciaSection // ⑤ 90-day dot grid — no streak guilt (mock 1a)
                         footRows          // ⑥ history (Dieta off — FER-992)
@@ -211,9 +204,6 @@ private struct EntrenarLanding: View {
         // FER-969: el fallo de escritura es un banner honesto, no éxito silencioso. Componente
         // compartido desde 2026-07-19 (era la misma copia en tres pantallas).
         .saveErrorToast(isPresented: $saveError)
-        // The ③ «softer» suggestion (FER-554) opens the templates sheet straight on the mobility routine.
-        // «Empezar» starts a one-off guided session (on the sheet's dismiss, so it never stacks — FER-171),
-        // with «Add to my routines» as the secondary action. Theme doesn't cross the sheet boundary.
         // La boleta del veredicto, dentro de Entrenar (FER-85): el mismo modelo y la misma vista
         // que sirve Hoy, así que las dos pantallas no pueden divergir ni en la tabla ni en la
         // gráfica de cajas. «Ver más» cierra la hoja sin cambiar de pestaña.
@@ -233,11 +223,6 @@ private struct EntrenarLanding: View {
                     onVerMas: nil)
             }
             .preferredColorScheme(.light)
-        }
-        .sheet(isPresented: $showMobilityTemplate, onDismiss: startPendingMobility) {
-            StarterTemplatesSheet(initialSelection: StarterTemplates.byID("mobility"),
-                                  onStart: { name, slots in pendingMobility = (name, slots) }) { await load() }
-                .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
         }
         // First-use «Rutinas de plantilla» (mock 5a): the grouped templates list. «Add to my routines»
         // is the only action here (no `onStart`), so a copy lands in «My routines» and the landing
@@ -332,16 +317,14 @@ private struct EntrenarLanding: View {
                     if let muscles = routineMuscleLine(r.id) {
                         Text(muscles).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     }
+                    // Los tres numerales suben al héroe (handoff v2 §4): la forma de la sesión se lee
+                    // junto a su nombre, no tres bloques abajo. Y son la ÚNICA marca de familia del
+                    // bloque — la regla vertical teñida que iba junto al nombre se retiró: dos marcas
+                    // del mismo color en el mismo sitio es decir la identidad dos veces.
+                    sesionMetrics(r.id).padding(.top, CenitMetrics.space1)
+                    subidaDelDia
                 }
-                .padding(.leading, 11)
                 .padding(.top, 8)
-                .background(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 1.5, style: .continuous)  // token-exempt: geometría de dato
-                        .fill(routineFill(region(name: r.name)))
-                        .frame(width: 3)
-                        .padding(.vertical, 2)
-                        .accessibilityHidden(true)   // el color no porta significado por sí solo
-                }
             } else {
                 Text("Rest")
                     .font(InstrumentoType.grotesk(32, weight: .bold)).tracking(-1)
@@ -355,7 +338,7 @@ private struct EntrenarLanding: View {
             // FER-944 rhythm: the datum→action border (16) reads clearly wider than the hero's inner
             // gaps (4/8), so the block squints as three masses — text, button, discs.
             empezarButton.padding(.top, CenitMetrics.sectionGapCompact)
-            formasDiscos.padding(.top, CenitMetrics.gap)
+            otraForma.padding(.top, CenitMetrics.space2)
         }
     }
 
@@ -521,51 +504,46 @@ private struct EntrenarLanding: View {
     // green line (FER-G — it lives where you start), and the recovery hint on a thin green filete.
     // Rest days and empty routines skip the whole section — nothing to detail.
 
-    @ViewBuilder private var sesionDeHoy: some View {
+    /// La subida del día, dentro del héroe. La banda «LA SESIÓN DE HOY» que la envolvía se colapsó
+    /// (FER-85): con los numerales ya en el héroe, la banda quedaba como un encabezado sobre nada el
+    /// día que no hay subida — un rótulo de sección vacío. Lo que decía de verdad son estas dos
+    /// filas, y su sitio es junto al botón: la subida vive donde empiezas.
+    @ViewBuilder private var subidaDelDia: some View {
         if let r = todayRoutine {
-            VStack(alignment: .leading, spacing: 12) {
-                InstrumentoSectionBand("The session today")
-                sesionMetrics(r.id)
-                if !raisesToday.isEmpty {
-                    Button { openRoutine(r.id) } label: {
-                        HStack(alignment: .firstTextBaseline, spacing: 8) {
-                            StrandIcon.up.image
-                                .font(StrandFont.glyph(.chevron, weight: .bold)).foregroundStyle(theme.dataRecovery)
-                            raiseText
-                                .font(StrandFont.subhead).foregroundStyle(theme.ink)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .fixedSize(horizontal: false, vertical: true)
-                            StrandIcon.disclosure.image
-                                .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
-                        }
-                        .frame(minHeight: 44)   // HIG tap target — the row is one thin subhead line (FER-944)
-                        .contentShape(Rectangle())
+            if !raisesToday.isEmpty {
+                Button { openRoutine(r.id) } label: {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        StrandIcon.up.image
+                            .font(StrandFont.glyph(.chevron, weight: .bold)).foregroundStyle(theme.dataRecovery)
+                        raiseText
+                            .font(StrandFont.subhead).foregroundStyle(theme.ink)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                        StrandIcon.disclosure.image
+                            .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
                     }
-                    .buttonStyle(.plain)
+                    .frame(minHeight: 44)   // HIG tap target — the row is one thin subhead line (FER-944)
+                    .contentShape(Rectangle())
                 }
-                // Both rows can be true at once: a slot with «Baja recuperación · Ignorar» raises on
-                // its log alone while the rest of the day is held. They coexist rather than one
-                // hiding the other, so the held weights never vanish from the screen (FER-82).
-                if showsHeldRaise, !deferredToday.isEmpty {
-                    // FER-82: the raise is held, not lost. Name the weight that waits and open the
-                    // session, where taking it is one tap. Editing by hand is never blocked.
-                    Button { openRoutine(r.id) } label: {
-                        HStack(alignment: .firstTextBaseline, spacing: 8) {
-                            heldRaiseText
-                                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .fixedSize(horizontal: false, vertical: true)
-                            StrandIcon.disclosure.image
-                                .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
-                        }
-                        .frame(minHeight: 44)   // HIG tap target — the row is one thin subhead line (FER-944)
-                        .contentShape(Rectangle())
+                .buttonStyle(.plain)
+            }
+            // Las dos filas pueden ser verdad a la vez: un ejercicio con «Baja recuperación · Ignorar»
+            // sube por su propia bitácora mientras el resto del día se detiene. Conviven en vez de
+            // taparse, para que los kilos que esperan nunca desaparezcan de la pantalla (FER-82).
+            if showsHeldRaise, !deferredToday.isEmpty {
+                Button { openRoutine(r.id) } label: {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        heldRaiseText
+                            .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                        StrandIcon.disclosure.image
+                            .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
                     }
-                    .buttonStyle(.plain)
+                    .frame(minHeight: 44)   // HIG tap target — the row is one thin subhead line (FER-944)
+                    .contentShape(Rectangle())
                 }
-                // FER-85: la línea de consejo se RETIRA de aquí. El veredicto entra por un solo
-                // portador —el hilo, arriba— y esta línea decía exactamente lo mismo tres bloques
-                // abajo, con su propio filete verde aunque el consejo fuera «Recupera».
+                .buttonStyle(.plain)
             }
         }
     }
@@ -595,7 +573,11 @@ private struct EntrenarLanding: View {
     }
 
     private func bigStat(_ value: Text, unit: Text, valueColor: Color? = nil) -> Text {
-        value.font(InstrumentoType.groteskNumber(20)).foregroundStyle(valueColor ?? theme.ink)
+        // 24 pt, no 22: el tinte de familia solo está sancionado en numerales de 24 para arriba
+        // («Hue saturado: … numerales ≥ 24 pt», EntrenarTokens). A 22, el ámbar da 3.61:1 y el teal
+        // 3.48:1 sobre el papel — bajo el piso. El handoff los dibujó a 22 pero solo rendereó días
+        // de pierna, y el índigo (5.43:1) es el único de los tres que pasaba.
+        value.font(InstrumentoType.groteskNumber(24)).foregroundStyle(valueColor ?? theme.ink)
             + Text(verbatim: " ")
             + unit.font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
     }
@@ -653,58 +635,6 @@ private struct EntrenarLanding: View {
         return t + Text(verbatim: ". ")
             + (deferredToday.count == 1 ? Text("You can take it in the session.")
                                         : Text("You can take them in the session."))
-    }
-
-    // MARK: - ② Suggestion (engine is FER-532 — TrainingRegulation.lightAlternative)
-    //
-    // A CONTEXTUAL lighter/heavier alternative, derived from today's recovery against your personal
-    // baseline. Within the normal band or with no signal the engine returns nil and the row falls back to
-    // an INFORMATIONAL placeholder (FER-559) — not tappable, no destination.
-
-    /// The gentler option, from the ONE oracle: only «Recupera» offers one. Silent and pending states
-    /// return nil, so the row hides instead of inventing a direction from a score.
-    private var suggestionAlternative: TrainingRegulation.LightAlternative? {
-        TrainingRegulation.lightAlternative(advice)
-    }
-
-    @ViewBuilder private var suggestionRow: some View {
-        if let alt = suggestionAlternative {
-            Button { suggestionAction(alt) } label: {
-                HStack(spacing: 11) {
-                    Image(systemName: suggestionIcon(alt)).font(StrandFont.glyph(.lead)).foregroundStyle(theme.inkSecondary)
-                    Text(suggestionLabel(alt)).font(StrandFont.subhead).foregroundStyle(theme.ink)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Spacer(minLength: 8)
-                    StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
-                }
-                .padding(.horizontal, 15).padding(.vertical, 13)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous)
-                    .strokeBorder(theme.hairlineStrong, lineWidth: 1))
-            }
-            .buttonStyle(.plain)
-        }
-    }
-
-    private func suggestionIcon(_ alt: TrainingRegulation.LightAlternative) -> String {
-        switch alt {
-        case .softer:        return "figure.cooldown"
-        case .optionalLight: return "figure.run"
-        }
-    }
-
-    private func suggestionLabel(_ alt: TrainingRegulation.LightAlternative) -> LocalizedStringKey {
-        switch alt {
-        case .softer:        return "Lighter day? Mobility · 20 min"
-        case .optionalLight: return "Feeling good? Add intervals · 12 min"
-        }
-    }
-
-    private func suggestionAction(_ alt: TrainingRegulation.LightAlternative) {
-        switch alt {
-        case .softer:        showMobilityTemplate = true
-        case .optionalLight: openIntervals()
-        }
     }
 
     // MARK: - ③ Week strip + streak (one card now — F10)
@@ -880,44 +810,136 @@ private struct EntrenarLanding: View {
     // at the foot of the screen. Color still lands ONLY on the datum (each icon's data-token tint over
     // paper), so no raw hex or new tokens.
 
-    private struct FormOption: Identifiable {
-        let icon: String            // SF Symbol — native, static
+    // MARK: - «Otra forma ›» — el pliegue de las cuatro puertas (FER-85)
+    //
+    // Los cuatro discos teñidos que vivían aquí se fueron: llenaban cajas con el hue —lo único que
+    // el ADN prohíbe sin excepción— y le peleaban el ojo al botón y al orbe. Las mismas cuatro
+    // puertas siguen vivas, con los mismos destinos, detrás de un enlace tranquilo.
+    //
+    // No navega: se despliega en su sitio. La flecha va HACIA ABAJO y no «›» a propósito — en esta
+    // misma pantalla «›» aparece tres veces en los encabezados de nivel y ahí siempre significa «te
+    // llevo a otro lado». El pliegue abre aquí.
+    //
+    // REGLA DURA: este bloque NUNCA lee `repo.trainingAdvice`. Reordenar las puertas por el
+    // veredicto —subir Movilidad el día que dice «Recupera»— es exactamente la funcionalidad
+    // «suave» que este mismo issue retira, resucitada detrás de un toque. Lo único que sabe es un
+    // HECHO, no una opinión: si ya hay una sesión abierta, las dos puertas que rebotan al confirm
+    // de FER-950 lo dicen en su subtítulo, en vez de sorprender. La prueba de aceptación es que el
+    // pliegue se vea idéntico en los ocho estados de veredicto.
+
+    /// Una puerta del pliegue: el mismo destino que tenía su disco.
+    private struct Puerta: Identifiable {
+        let icon: String            // SF Symbol — nativo, estático
         let label: LocalizedStringKey
+        let subtitle: LocalizedStringKey
         let hint: LocalizedStringKey
-        let tint: Color
         let action: () -> Void
         var id: String { icon }
     }
 
-    /// The five training doors in the icon grid. Diet sits as a quiet full-width row below (not a chip).
-    /// Icons are native SF Symbols, static (FER-944, «reposo + toque»). Labels + hints are
-    /// `LocalizedStringKey`, so the disc row follows the app language (es/en).
-    private var formOptions: [FormOption] {
-        [
-            FormOption(icon: "bolt.fill", label: "Quick",
-                       hint: "Starts a quick strength session, no routine.",
-                       tint: theme.dataStrain) { startQuickStrength() },
-            FormOption(icon: "timer", label: "Intervals",
-                       hint: "Opens the interval timer.",
-                       tint: theme.dataSleep) { openIntervals() },
-            FormOption(icon: "figure.run", label: "Mobility",
-                       hint: "Starts a guided mobility session.",
-                       tint: theme.dataHrv) { startMobilityFromDisc() },
-            FormOption(icon: "wind", label: "Breathe",
-                       hint: "Opens guided breathing.",
-                       tint: theme.dataRecovery) { openBreathe() },
+    /// Las cuatro puertas, SIEMPRE en el mismo orden: la memoria del dedo no se traiciona.
+    ///
+    /// Movilidad usa `figure.cooldown`, no `figure.run`: las otras dos puertas a la misma sesión
+    /// (día de descanso y «Otra forma de entrenar») ya usaban cooldown. Un solo vocabulario.
+    private var puertas: [Puerta] {
+        let sesionViva = model.strengthSession != nil
+        return [
+            Puerta(icon: "bolt.fill", label: "Quick",
+                   subtitle: sesionViva ? "Resumes the session you have open"
+                                        : "Starts empty, you log as you go",
+                   hint: "Starts a quick strength session, no routine.") { startQuickStrength() },
+            Puerta(icon: "timer", label: "Intervals",
+                   subtitle: "Rounds by time, same logging",
+                   hint: "Opens the interval timer.") { openIntervals() },
+            Puerta(icon: "figure.cooldown", label: "Mobility",
+                   subtitle: sesionViva ? "Resumes the session you have open"
+                                        : "Guided, no weights · 20 min",
+                   hint: "Starts a guided mobility session.") { startMobilityFromDisc() },
+            Puerta(icon: "wind", label: "Breathe",
+                   subtitle: "Guided breathing · 3 min",
+                   hint: "Opens guided breathing.") { openBreathe() },
         ]
     }
 
-    /// The five discs alone — they now ride the hero, directly under «Empezar» (FER-939, the FER-920
-    /// placement decision finally applied). No overline: their position IS the label. Static icons at
-    /// rest; the only motion is the press feedback when you tap one (FER-944, «reposo + toque»).
-    private var formasDiscos: some View {
-        HStack(alignment: .top, spacing: CenitMetrics.space2) {
-            ForEach(formOptions) { opt in
-                formChip(opt)
+    /// El enlace + el pliegue, como una sola pieza. Se coloca en los dos estados (con plan y sin
+    /// plan): una vista, dos colocaciones, para que no nazcan dos comportamientos.
+    private var otraForma: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Button {
+                withAnimation(reduceMotion ? StrandMotion.fade : StrandMotion.gentle) {
+                    otraFormaAbierta.toggle()
+                }
+            } label: {
+                HStack(spacing: CenitMetrics.space1) {
+                    Text("Other ways")
+                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    StrandIcon.down.image
+                        .font(StrandFont.glyph(.chevron, weight: .semibold))
+                        .foregroundStyle(theme.inkTertiary)
+                        .rotationEffect(.degrees(otraFormaAbierta ? 180 : 0))
+                    Spacer(minLength: 0)
+                }
+                .frame(maxWidth: .infinity, minHeight: EntrenarMetrics.row, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(EntrenarPressStyle())
+            .accessibilityValue(Text(otraFormaAbierta ? "expanded" : "collapsed"))
+
+            if otraFormaAbierta {
+                VStack(alignment: .leading, spacing: 0) {
+                    filoDelPliegue
+                    ForEach(Array(puertas.enumerated()), id: \.element.id) { i, puerta in
+                        puertaRow(puerta)
+                        if i < puertas.count - 1 { filoDelPliegue }
+                    }
+                    filoDelPliegue
+                    Text("Your routine for today stays put: this is separate, no guilt.")
+                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, CenitMetrics.rowVPad)
+                }
+                .padding(.top, CenitMetrics.space2)
+                .transition(.opacity)
+                .accessibilityElement(children: .contain)
             }
         }
+    }
+
+    private var filoDelPliegue: some View {
+        Rectangle().fill(theme.hairline).frame(height: 1)
+    }
+
+    /// Una fila del pliegue: glifo, título y subtítulo. Sin «›» al final — dos de las cuatro no
+    /// navegan, arrancan, y «›» ya significa «navega» en esta pantalla.
+    ///
+    /// El glifo va en `StrandFont.body`, no en `StrandFont.glyph(.lead)`: el doc de `glyph` lo
+    /// reserva para chrome pareado a texto QUE NO ESCALA, y aquí el texto sí escala. Y `minWidth`,
+    /// nunca `width`, para que a AX5 no le corte la cabeza al símbolo.
+    private func puertaRow(_ puerta: Puerta) -> some View {
+        Button {
+            otraFormaAbierta = false   // cierra SIEMPRE, en las cuatro: una regla, no cuatro casos
+            puerta.action()
+        } label: {
+            HStack(alignment: .firstTextBaseline, spacing: 9) {
+                Image(systemName: puerta.icon)
+                    .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
+                    .frame(minWidth: 22, alignment: .leading)
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(puerta.label).font(StrandFont.body).foregroundStyle(theme.ink)
+                    Text(puerta.subtitle)
+                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: CenitMetrics.space2)
+            }
+            .padding(.vertical, CenitMetrics.space2)
+            .frame(maxWidth: .infinity, minHeight: EntrenarMetrics.row, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(EntrenarPressStyle())
+        .accessibilityElement(children: .combine)
+        .accessibilityHint(puerta.hint)
     }
 
     /// Quiet standalone foot row at the very bottom: history («consultar»), distinct from the discs'
@@ -952,44 +974,6 @@ private struct EntrenarLanding: View {
         }
         .buttonStyle(.plain)
     }
-
-    /// One card chip in the «Formas de entrenar» row (FER-939): the handoff's square card SHAPE
-    /// (rounded rect, label inside) carrying the FER-920 «troquel» color — solid data-token fill,
-    /// glyph AND label knocked out in paper. The dark `dataEdge` rim is gone (FER-944): the solid
-    /// fill on paper cuts itself out; less line, more instrument. Static native icon; the only motion
-    /// is the press feedback (`DiscPressStyle`). Runs its door's action.
-    private func formChip(_ opt: FormOption) -> some View {
-        Button {
-            opt.action()
-        } label: {
-            VStack(spacing: CenitMetrics.space1 + 1) {
-                Image(systemName: opt.icon).font(StrandFont.glyph(.lead, weight: .semibold))
-                    .foregroundStyle(theme.paper)
-                    .frame(height: 20)   // equal glyph slot — SF symbols vary in intrinsic height
-                    .accessibilityHidden(true)
-                // Uniform label (FER-944): the real cause of the uneven look was the 2pt letter-spacing,
-                // which inflated the long words («Intervalos»/«Movilidad») until they scaled down while
-                // the short ones didn't. Tight tracking at 9pt lets ALL five fit on one line at the SAME
-                // size; the minimumScaleFactor is only a safety net for the largest Dynamic Type steps.
-                Text(opt.label)
-                    .font(InstrumentoType.groteskOverlineSmall).tracking(0.2)
-                    .foregroundStyle(theme.paper)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2).minimumScaleFactor(0.9)   // AX5: the long labels wrap instead of truncating
-            }
-            .padding(.vertical, CenitMetrics.gap - 1)
-            .padding(.horizontal, CenitMetrics.space1)
-            .frame(maxWidth: .infinity, minHeight: 52)   // HIG tap target + a touch taller for even discs
-            .background(opt.tint, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(DiscPressStyle())
-        .accessibilityLabel(opt.label)
-        .accessibilityHint(opt.hint)
-    }
-
-    /// «En vivo» from the expanded pill: start (or resume) the live HR workout and present its sheet — the
-    /// same door `RestDayScreen`/`OtherWaysScreen` use, so it lands directly without the 3e chooser.
 
     /// One «También en tu plan» routine: the whole row is a single tap target that opens the routine
     /// (FER-784). The trailing chevron carries THAT routine's tint (same color as the leading dot) — a
@@ -1251,13 +1235,6 @@ private struct EntrenarLanding: View {
                 StrandCTAButton("Retry", kind: .outline) { Task { await load() } }
             }
         }
-    }
-
-    /// Start the mobility session «Empezar» queued from the TRAINING-day template sheet (FER-560).
-    private func startPendingMobility() {
-        guard let p = pendingMobility else { return }
-        pendingMobility = nil
-        model.startStrengthSession(routineId: nil, routineName: p.name, slots: p.slots)
     }
 
     // MARK: - Card shell + bits
@@ -1536,22 +1513,6 @@ private struct EntrenarLanding: View {
     }
 }
 
-// MARK: - Disc press feedback (FER-944 · «reposo + toque»)
-//
-// The discs sit still; the only motion is the tactile press — the chip dips slightly and springs back
-// when tapped, so the tap registers physically. Feedback, not decoration (HIG). Reduce Motion drops
-// the scale to a plain opacity dip so there's still a press cue without movement.
-
-private struct DiscPressStyle: ButtonStyle {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(!reduceMotion && configuration.isPressed ? 0.93 : 1)
-            .opacity(reduceMotion && configuration.isPressed ? 0.7 : 1)
-            .animation(StrandMotion.interactive, value: configuration.isPressed)
-    }
-}
-
 // MARK: - «Hoy descansas. También cuenta.» (v3 · 2B) — a PUSHED screen now (FER-718)
 //
 // What «Empezar» opens on a rest day, and what the streak row protects. Reframed to the mock: the streak
@@ -1578,11 +1539,6 @@ struct RestDayScreen: View {
     /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
     @ObserveInjection private var inject
 
-    /// The gentler option, from the one oracle: present only when today's verdict is «Recupera».
-    private var alt: TrainingRegulation.LightAlternative? {
-        TrainingRegulation.lightAlternative(repo.trainingAdvice)
-    }
-
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
@@ -1594,16 +1550,13 @@ struct RestDayScreen: View {
 
                 streakBullet.padding(.top, 16)
 
-                if alt == .softer {
-                    suggestedCard.padding(.top, CenitMetrics.sectionGap)
-                }
-
                 Text("If you still want to train").instrumentoOverline()
                     .foregroundStyle(theme.inkTertiary).padding(.top, CenitMetrics.sectionGap)
                 VStack(spacing: 0) {
-                    // Mobility moves up into the card when the day suggests it; the rest of the ways
-                    // to move are always here, because this list is a choice, not a recommendation.
-                    if alt != .softer { row("figure.cooldown", "Mobility · 20 min") { model.startMobilityOneOff() } }
+                    // Las cuatro formas de moverse, siempre completas: esta lista es una elección,
+                    // no una recomendación. La movilidad ya no sube ni baja según el veredicto —el
+                    // camino «suave» se retiró (FER-85)— así que la fila es incondicional.
+                    row("figure.cooldown", "Mobility · 20 min") { model.startMobilityOneOff() }
                     row("timer", "Intervals · 12 min") { openIntervals() }
                     row("list.bullet", "Pick a routine") { openRoutines() }
                     row("wind", "Breathe", last: true) { openBreathe() }
@@ -1637,29 +1590,6 @@ struct RestDayScreen: View {
         }
     }
 
-    /// The one cited light alternative, in a card. Shown only when today's verdict is «Recupera», so
-    /// there is a single case to render: the gentler session. The overline names the day's verdict,
-    /// not a score — the same word Hoy is showing (FER-82).
-    private var suggestedCard: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text("Because today you recover").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            HStack(alignment: .firstTextBaseline, spacing: 9) {
-                Text("Mobility · 20 min").font(StrandFont.title2).foregroundStyle(theme.ink)
-                Text("gentle").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-                    .padding(.horizontal, 9).padding(.vertical, 2)
-                    .background(theme.paper, in: Capsule())
-                    .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
-            }
-            .padding(.top, 5)
-            StrandCTAButton("Empezar") { model.startMobilityOneOff() }
-                .padding(.top, 14)
-        }
-        .padding(CenitMetrics.cardPadding)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
-    }
-
     private func row(_ icon: String, _ title: LocalizedStringKey, last: Bool = false, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 12) {
@@ -1690,63 +1620,4 @@ struct RestDayScreen: View {
     }
 }
 
-// MARK: - «Otra forma de entrenar» (v3 · 3e) — a PUSHED screen now (FER-718)
-//
-// The alternative-training chooser, reframed to the mock: four large rows (Mobility · Intervals · Breathe
-// · Live) and a footer that reassures nothing here breaks the streak or the plan.
-
-struct OtherWaysScreen: View {
-    var openIntervals: () -> Void
-    var openBreathe: () -> Void
-
-    @Environment(\.instrumentoTheme) private var theme
-    @Environment(AppModel.self) private var model
-    /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
-    @ObserveInjection private var inject
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                Text("Another type?").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                Text("Another way to train").font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking)
-                    .foregroundStyle(theme.ink).padding(.top, 3)
-
-                VStack(spacing: 0) {
-                    bigRow("figure.cooldown", "Mobility", subtitle: String(localized: "Gentle · 20 min")) { model.startMobilityOneOff() }
-                    bigRow("timer", "Intervals", subtitle: String(localized: "Bursts · 12 min")) { openIntervals() }
-                    bigRow("wind", "Breathe", subtitle: String(localized: "Slow it down"), last: true) { openBreathe() }
-                }
-                .padding(.top, CenitMetrics.sectionGap)
-
-                Text("None of this breaks your streak or your plan.")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                    .frame(maxWidth: .infinity, alignment: .center).padding(.top, CenitMetrics.sectionGap)
-            }
-            .padding(.top, 20)
-            .padding(.horizontal, CenitMetrics.screenPadding)
-            .padding(.bottom, CenitMetrics.screenPadding)
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .background(theme.paper.ignoresSafeArea())
-        .enableInjection()
-    }
-
-    private func bigRow(_ icon: String, _ title: LocalizedStringKey, subtitle: String, last: Bool = false, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 15) {
-                Image(systemName: icon).font(.system(size: 22)).foregroundStyle(theme.inkSecondary).frame(width: 30)  // token-exempt: glifo 22pt fuera de banda lead
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(InstrumentoType.grotesk(16, weight: .semibold)).foregroundStyle(theme.ink)
-                    Text(subtitle).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                }
-                Spacer(minLength: 8)
-                StrandIcon.disclosure.image.font(StrandFont.glyph(.inline, weight: .semibold)).foregroundStyle(theme.inkDim)
-            }
-            .padding(.vertical, 18).contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .overlay(alignment: .bottom) { if !last { Divider().overlay(theme.hairline) } }
-    }
-
-}
 #endif

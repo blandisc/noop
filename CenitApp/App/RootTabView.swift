@@ -29,7 +29,6 @@ struct RootTabView: View {
         case weeklyPlan = "weeklyplan"            // Entrenar hub — weekly plan editor (FER-533)
         case misRutinas = "misrutinas"           // Entrenar hub — routine + folder management (FER-534)
         case restDay = "restday"                  // Entrenar hub — «Hoy descansas» (v3 · 2B, now a push, FER-718)
-        case otherWays = "otherways"              // Entrenar hub — «Otra forma de entrenar» (v3 · 3e, now a push, FER-718)
         case routineToday                         // Entrenar hub — «Rutina de hoy» (DEBUG screenshot-nav)
         // Reachable via DEBUG screenshot-nav (pushed onto the Ajustes stack). Explore/Compare/Workouts
         // also still open from Cuerpo's footer; the rest open as sheets from the Ajustes root (FER-337).
@@ -118,7 +117,6 @@ struct RootTabView: View {
                 openWeeklyPlan: { trainStack.append(SecondaryScreen.weeklyPlan) },
                 openRoutines: { trainStack.append(SecondaryScreen.weeklyPlan) },
                 openRestDay: { trainStack.append(SecondaryScreen.restDay) },
-                openOtherWays: { trainStack.append(SecondaryScreen.otherWays) },
                 openWorkoutSession: { trainStack.append($0) }
             )
             .barReservation(barHeight)
@@ -381,7 +379,7 @@ struct RootTabView: View {
     private func hub(for screen: SecondaryScreen) -> Tab {
         switch screen {
         case .library, .workoutHistory, .breathe, .intervals, .weeklyPlan, .misRutinas,
-             .restDay, .otherWays, .routineToday:
+             .restDay, .routineToday:
             return .train
         case .explore, .compare, .workouts, .applehealth, .datasources, .support:
             return .settings
@@ -479,9 +477,6 @@ struct RootTabView: View {
                                 openIntervals: { trainStack.append(SecondaryScreen.intervals) },
                                 openBreathe: { trainStack.append(SecondaryScreen.breathe) },
                                 openRoutines: { trainStack.append(SecondaryScreen.misRutinas) })
-        case .otherWays:    OtherWaysScreen(
-                                openIntervals: { trainStack.append(SecondaryScreen.intervals) },
-                                openBreathe: { trainStack.append(SecondaryScreen.breathe) })
         case .routineToday: RoutineEditorScreen(origin: .today(routineId: nil))
         case .explore:      MetricExplorerView()
         case .compare:      CompareView()
