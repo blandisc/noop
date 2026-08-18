@@ -873,6 +873,11 @@ struct SleepDetailScreen: View {
             LiquidNotaLine(
                 String(localized: "What you missed versus what your body needs. One good night won't clear it."))
         }
+        // Flota porque trae su PROPIO titular («1 h 45 m · de retraso esta semana»): la
+        // tarjeta existe para amarrar el titular a su evidencia. Los bloques cuyo título lo
+        // pone la franja —hipnograma, calendario— van planos; envolverlos sería un marco
+        // dentro de otro marco. Era el único bloque que rompía la regla.
+        .liquidTarjetaSeccion()
     }
 
     private func weeklyDebtBars(_ debt: Double) -> some View {
