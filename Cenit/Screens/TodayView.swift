@@ -140,6 +140,11 @@ struct TodayView: View {
     @State private var showDecideManual = false
     @State private var showContextoManual = false
     @AppStorage("today.ecosistemaSeparaciones") private var ecosistemaSeparaciones = 0
+    /// El fondo de Hoy en atmósfera (FER-118): lo que la pantalla le empuja al polvo de Metal
+    /// —el desplazamiento del scroll para el parallax y si la pestaña está a la vista— SIN que
+    /// esta vista se recomponga por cada cuadro de scroll: `body` solo pasa el objeto; quien lee
+    /// `desplazamiento` es `LiquidAtmosfera`.
+    @State private var atmosfera = AtmosferaEstado()
     /// Tras cuántas separaciones acumuladas se retira el hint «Toca para separar».
     private static let maxSeparacionHints = 3
 
@@ -613,12 +618,21 @@ struct TodayView: View {
         // `liquidAmbientPaused`). Sin bifurcar por `noSources` (FER-41): el estado vacío ya no
         // es papel crema del ADN retirado, así que Hoy tiene UN fondo, siempre el mismo, y sin
         // fuentes `liquidAmbiente` ya vale `.neutro` — el gris honesto de «aún no sé».
-        .background { LiquidAmbientBackground.hoy(liquidAmbiente) }
+        // FER-118 «Hoy en atmósfera»: el fondo es BLANCO PURO y lo único vivo detrás del vidrio son
+        // las partículas de Metal (`LiquidAtmosfera`), fijas respecto al scroll con un parallax del
+        // 22 %. Sustituye a la aurora + orbes drift (`LiquidAmbientBackground.hoy`, retirado). El
+        // héroe NO es parte del fondo: viaja con el scroll. Aplica a las dos ramas (con el orbe
+        // dormido sin fuentes, `liquidAmbiente` ya vale `.neutro`).
+        .background { LiquidAtmosfera(ambiente: liquidAmbiente, estado: atmosfera) }
         .overlay(alignment: .top) {
-            LiquidVeil(tone: liquidAmbiente.acento)
+            // El clima ya no tiñe el chrome superior: vive en las partículas y en los números.
+            LiquidVeil(tone: nil)
                 .frame(height: LiquidSpace.s1400)
                 .ignoresSafeArea(edges: .top)
         }
+        // La pestaña oculta detiene el reloj del polvo (y lo reanuda al volver).
+        .onAppear { atmosfera.visible = true }
+        .onDisappear { atmosfera.visible = false }
         // FER-73 · M8: el héroe (60 fps) y los ~10 relojes de la Matriz también se pausan
         // cuando una hoja los tapa — nadie los ve y seguían pintando bajo el modal.
         // FER-111: y cuando el onboarding los tapa, que es el mismo bug en el minuto MÁS caro
@@ -839,6 +853,11 @@ struct TodayView: View {
     /// sigue en la raíz (write raro: umbral / reset al tope).
     @MainActor
     private func handlePullOffset(_ overscroll: CGFloat) {
+        // FER-118 · el parallax del polvo: `overscroll` es positivo al jalar en el tope y negativo
+        // conforme el contenido sube; el fondo solo quiere lo segundo (≥ 0). Se escribe solo si
+        // cambió, y quien lo lee es `LiquidAtmosfera` — no esta vista.
+        let desplazamiento = max(0, -overscroll)
+        if atmosfera.desplazamiento != desplazamiento { atmosfera.desplazamiento = desplazamiento }
         let pull = max(0, overscroll)
         guard pull > 0 else {
             if pullProgressModel.progress != 0 { pullProgressModel.progress = 0 }

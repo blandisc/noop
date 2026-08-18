@@ -553,6 +553,59 @@ final class HoyMatrizBuilderTests: XCTestCase {
         XCTAssertEqual(keys20.first, dayKey(-19))
     }
 
+    // MARK: FER-118 — tres estantes, y el scrub del guardián dice si el par votó
+
+    /// El prototipo aprobado tiene TRES estantes (Deciden tu día · Te vigila · Contexto), cada uno
+    /// con su «?»; el rótulo «Bitácora» se retiró y Pasos cierra Contexto, ancho. El orden de las
+    /// 8 secciones (y por tanto `ordenA11y`) no cambia.
+    func test_118_tres_estantes_sin_bitacora_y_pasos_cierra_contexto() {
+        let dias = (-19...0).map { metric(day: dayKey($0)) }
+        let m = LiquidHoyBuilder.matriz(inputs(prep: prep(), dias: dias))
+        let niveles = m.bandas.compactMap { b -> String? in
+            if case .nivel(let rotulo, _) = b { return rotulo } else { return nil }
+        }
+        XCTAssertEqual(niveles.count, 3, "tres estantes")
+        XCTAssertFalse(niveles.contains { $0.lowercased().contains("logbook") || $0.lowercased().contains("bitácora") },
+                       "sin estante Bitácora")
+        // Cada estante trae su «?».
+        for b in m.bandas {
+            if case .nivel(_, let manualID) = b { XCTAssertNotNil(manualID, "cada estante con su «?»") }
+        }
+        // La última banda es Pasos, ancha (`.full`), dentro de Contexto.
+        if case .full(let s)? = m.bandas.last { XCTAssertEqual(s.id, "steps") } else { XCTFail("Pasos cierra, ancho") }
+        XCTAssertEqual(m.ordenA11y, ["sleep", "rhr", "guardian", "carga", "strain", "hrv", "stress", "steps"])
+    }
+
+    /// Mientras el dedo lee una noche del guardián, el subtítulo dice si el PAR votó — solo esa
+    /// noche, y solo con el juicio del motor (`parFuera`, del arreglo sin recortar). Las demás
+    /// noches llevan la fecha sola. Sin lectura, «sin lectura», como siempre.
+    func test_118_scrub_guardian_dice_si_el_par_voto() {
+        let keys = (-19...0).map { dayKey($0) }
+        let dias = keys.map { metric(day: $0, temp: 0.1, resp: 14.0) }
+        // El motor marcó el par FUERA hace 3 noches (índice 16 de 20) y en calma el resto.
+        let historia: [Preparedness.SentinelNight] = keys.enumerated().map { i, k in
+            let fuera = i == 16
+            return .init(day: k, tempOut: fuera, respOut: fuera, tempMissing: false,
+                         respMissing: false, respJudged: true, gapBefore: false)
+        }
+        let m = LiquidHoyBuilder.matriz(inputs(
+            prep: prep(sentinel: sentinel(.quiet), sentinelHistory: historia), dias: dias))
+        guard let noches = seccion(m, id: "guardian")?.scrubNoches else { return XCTFail("scrub del guardián") }
+        XCTAssertEqual(noches.count, 20)
+        let par = noches[16].sublabel, vecina = noches[15].sublabel
+        XCTAssertTrue(par.contains(" · "), "la noche del par lleva la frase tras la fecha: \(par)")
+        XCTAssertTrue(par.lowercased().contains("together") || par.lowercased().contains("juntas"),
+                      "dice que las dos se salieron juntas: \(par)")
+        XCTAssertFalse(vecina.lowercased().contains("together") || vecina.lowercased().contains("juntas"),
+                       "la vecina en calma NO lo dice: \(vecina)")
+        XCTAssertFalse(vecina.contains(" · "), "la vecina lleva solo la fecha")
+        // Y la afirmación viene del motor: sin `parFuera` en la costura, sin frase en el scrub.
+        if case .costura(let costura)? = seccion(m, id: "guardian")?.chart {
+            XCTAssertTrue(costura[16].parFuera)
+            XCTAssertFalse(costura[15].parFuera)
+        } else { XCTFail("costura") }
+    }
+
     func test_30_estela_excluye_hoy() {
         let keys = LiquidHoyBuilder.dayKeys(endingAt: now, calendar: cal, count: 20)
         // Serie con razón distinta cada día; HOY = 9.99 para detectarlo si se cuela.

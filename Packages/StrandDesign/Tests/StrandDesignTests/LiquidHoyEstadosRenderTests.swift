@@ -37,8 +37,10 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
     @MainActor
     func test_renderEstados() throws {
         for (nombre, model, fase) in Self.estados {
+            // FER-118: el fondo real de Hoy es la atmósfera (blanco + polvo; con motion apagado el
+            // Canvas la pinta estática y determinista) — no la plasta del Tablero.
             let view = ZStack {
-                LiquidAmbientBackground.tablero(model.ambiente)
+                LiquidAtmosfera(ambiente: model.ambiente, estado: AtmosferaEstado())
                 VStack(spacing: 0) {
                     LiquidHoyContent(model: model, ecosistemaFase: fase)
                         .padding(.top, LiquidSpace.s550)
@@ -80,7 +82,8 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
         let piezas: [(String, AnyView)] = [
             ("0_orbe_dormido", AnyView(
                 ZStack {
-                    LiquidColor.fondoGradient.ignoresSafeArea()
+                    // FER-118: el orbe dormido también vive sobre la atmósfera (neutra).
+                    LiquidAtmosfera(ambiente: .neutro, estado: AtmosferaEstado())
                     VStack(spacing: 0) {
                         LiquidOrbeDormidoEstado(
                             titulo: "El orbe aún duerme",
