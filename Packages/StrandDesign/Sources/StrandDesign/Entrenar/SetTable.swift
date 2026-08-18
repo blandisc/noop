@@ -53,6 +53,16 @@ import SwiftUI
 //     inalcanzables uno por uno; el resto usa `.contain` (como la pantalla real).
 // 12. `isRaiseTarget` se RETIRA: sin productor en todo el repo (ni la pantalla, ni el catálogo salvo
 //     su propio demo) — API muerta desde que se escribió.
+//
+// Adopción en `LiveStrengthSheet` (FER-86 · E5): la sesión viva interrumpe la tabla a media serie —
+// el descanso en línea se abre justo bajo la serie que acabas de registrar, y la regla «WORK SETS»
+// separa el calentamiento de la serie de trabajo. Ninguna de las dos es contenido de `SetTable` (son
+// de la pantalla, como la fila de cardio activa del Punto 6), pero SÍ parten sus filas en más de un
+// tramo — y un ejercicio solo lleva UN encabezado, no uno por tramo.
+// 13. `showHeader` (init, default `true`): el llamador apaga el encabezado en los tramos que no son
+//     el primero. Sin esto, cada tramo hubiera dibujado su propio «SET · KG · REPS · RPE» — un
+//     encabezado repetido a media tabla, exactamente la clase de defecto que este épico ya perdió
+//     contenido por no comparar superficies antes de adoptar.
 
 /// El tipo de ejercicio, del lado del diseño: decide qué columnas se dibujan.
 public enum EntrenarExerciseKind: String, Sendable, CaseIterable, Hashable {
@@ -153,6 +163,7 @@ public struct SetTable: View {
     private let kind: EntrenarExerciseKind
     private let rows: [EntrenarSetRow]
     private let showRPE: Bool
+    private let showHeader: Bool
     private let onToggle: ((String) -> Void)?
     private let onTapCell: ((String, EntrenarCellKind) -> Void)?
     private let onDelete: ((String) -> Void)?
@@ -163,11 +174,16 @@ public struct SetTable: View {
     /// serie»; cualquier otro toque la desarma. `nil` = ninguna.
     @State private var armedRowId: String?
 
+    /// - Parameter showHeader: adopción FER-86 (sesión viva): un ejercicio con descanso a medio
+    ///   tabla o el corte «WORK SETS» entre calentamiento y serie de trabajo parte sus filas en más
+    ///   de una `SetTable` — el llamador apaga el encabezado en los tramos que no son el primero,
+    ///   porque UN ejercicio lleva UN encabezado, no uno por tramo.
     public init(kind: EntrenarExerciseKind, rows: [EntrenarSetRow], showRPE: Bool = false,
+                showHeader: Bool = true,
                 onToggle: ((String) -> Void)? = nil,
                 onTapCell: ((String, EntrenarCellKind) -> Void)? = nil,
                 onDelete: ((String) -> Void)? = nil) {
-        self.kind = kind; self.rows = rows; self.showRPE = showRPE
+        self.kind = kind; self.rows = rows; self.showRPE = showRPE; self.showHeader = showHeader
         self.onToggle = onToggle; self.onTapCell = onTapCell; self.onDelete = onDelete
     }
 
@@ -178,7 +194,7 @@ public struct SetTable: View {
 
     public var body: some View {
         VStack(spacing: 0) {
-            header
+            if showHeader { header }
             ForEach(rows) { row in
                 Divider().overlay(theme.hairline)
                 line(row)

@@ -121,4 +121,22 @@ final class SetTableTests: XCTestCase {
             XCTAssertFalse(kind.hasPairedTimeColumn, "\(kind) no debería tener columna pareada")
         }
     }
+
+    // MARK: Punto 13 — `showHeader`, adopción FER-86 en `LiveStrengthSheet`
+
+    /// Un ejercicio con descanso a media tabla o el corte «WORK SETS» parte sus filas en más de una
+    /// `SetTable` — por defecto CADA una dibuja su encabezado, así que sin que el llamador lo apague
+    /// explícitamente en los tramos que no son el primero, un ejercicio terminaría con un «SET · KG ·
+    /// REPS · RPE» repetido a media tabla.
+    func testShowHeaderPorDefectoEsVerdadero() {
+        let table = SetTable(kind: .weightReps, rows: [])
+        let value = Mirror(reflecting: table).children.first { $0.label == "showHeader" }?.value as? Bool
+        XCTAssertEqual(value, true, "sin llamador que lo apague, el encabezado debe seguir dibujándose")
+    }
+
+    func testShowHeaderSeApagaCuandoElLlamadorLoPide() {
+        let table = SetTable(kind: .weightReps, rows: [], showHeader: false)
+        let value = Mirror(reflecting: table).children.first { $0.label == "showHeader" }?.value as? Bool
+        XCTAssertEqual(value, false, "el tramo que no es el primero debe poder apagar su encabezado")
+    }
 }

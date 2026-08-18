@@ -82,8 +82,6 @@ struct LiveStrengthSheet: View {
     /// dashed border until it's logged (the guard `!set.done` retires the hint the moment it's marked).
     /// Id de la fila recién añadida — solo dispara la háptica ligera del renglón nuevo (r22).
     @State private var addedSetId: String?
-    /// r15: la fila «armada» para borrar (long-press) — brinca en su lugar y ofrece «Quitar serie».
-    @State private var armedDeleteSetId: String?
     /// FER-936: which exercise's «≡» reorder handle is momentarily emphasised (ember) after picking
     /// «Reordenar» from its menu — a discoverability nudge toward the drag that already reorders.
     @State private var reorderHint: Int?
@@ -91,9 +89,6 @@ struct LiveStrengthSheet: View {
     /// row shows the handoff's «SOLTAR AQUÍ · POSICIÓN N» drop zone. Entered by long-press on any rail row
     /// or the menu's «Reordenar» item; exits via «Listo». A view-layer toggle only — the model is untouched.
     @State private var reorderMode = false
-    /// r20 (auditoría UX #6f): las celdas de captura crecen con Dynamic Type intermedio (tope 1.3×
-    /// para que la retícula SERIE/KG/REPS/RPE no desborde antes del reflow AX1).
-    @ScaledMetric(relativeTo: .body) private var cellDynamicScale: CGFloat = 1
     /// r20: el proxy del ScrollView, capturado al aparecer — «Agregar serie» lo usa para que la
     /// fila nueva no nazca tapada por la barra/teclado.
     @State private var scrollProxy: ScrollViewProxy?
@@ -865,62 +860,202 @@ struct LiveStrengthSheet: View {
         }
     }
 
+    /// Adopción FER-86 (E5): la tabla es `SetTable` (`StrandDesign`) — el dibujo a mano se retira.
+    /// El descanso en línea (r7/r12) y la regla «WORK SETS» (FER-937) siguen siendo de la pantalla:
+    /// ninguna de las dos es contenido de la pieza, pero SÍ parten sus filas en más de un tramo, así
+    /// que cada tramo es su propia `SetTable` — con el encabezado apagado salvo en el primero
+    /// (`showHeader`, Punto 13 de `SetTable`). La fila de cronómetro/distancia ACTIVA (Punto 6 de
+    /// `SetTable`, fuera de su alcance) también corta la tabla: reemplaza su fila entera y sigue
+    /// siendo de la pantalla — `cardioInlineRow` no cambió.
     @ViewBuilder
     private func activeExerciseSets(_ run: StrengthSessionModel.ExerciseRun, ei: Int) -> some View {
-        ForEach(Array(run.sets.enumerated()), id: \.element.id) { si, set in
-            activeExerciseSetSlice(run: run, ei: ei, si: si, set: set)
+        ForEach(entrenarSegments(run, ei: ei)) { segment in
+            segmentView(segment, run: run, ei: ei)
+                .padding(.horizontal, CenitMetrics.receiptPadding)
         }
+    }
+
+    /// Un tramo de la tabla del ejercicio activo: filas dibujables por UNA `SetTable`, el descanso en
+    /// línea, la regla «WORK SETS», o la fila de cardio activa (fuera del alcance de `SetTable`).
+    private enum SetSegment: Identifiable {
+        case table([EntrenarSetRow], showHeader: Bool)
+        case divider
+        case rest
+        case cardio(si: Int, set: StrengthSessionModel.WorkingSet)
+
+        var id: String {
+            switch self {
+            case let .table(rows, _): return "table-\(rows.first?.id ?? "empty")"
+            case .divider: return "divider"
+            case .rest: return "rest"
+            case let .cardio(_, set): return "cardio-\(set.id)"
+            }
+        }
+    }
+
+    /// Parte `run.sets` en tramos en el mismo orden que el dibujo a mano recorría: descanso primero,
+    /// luego la regla «WORK SETS», luego la fila (de tabla o de cardio activo) — espejo exacto de la
+    /// vieja `activeExerciseSetSlice`, solo que agrupando filas consecutivas en UNA `SetTable` en vez
+    /// de dibujar cada una por separado.
+    private func entrenarSegments(_ run: StrengthSessionModel.ExerciseRun, ei: Int) -> [SetSegment] {
+        guard !run.sets.isEmpty else { return [.table([], showHeader: true)] }
+        var segments: [SetSegment] = []
+        var pending: [EntrenarSetRow] = []
+        var headerUsed = false
+        func flush() {
+            guard !pending.isEmpty else { return }
+            segments.append(.table(pending, showHeader: !headerUsed))
+            headerUsed = true
+            pending = []
+        }
+        let restSlot = restSlotIndex(run, ei: ei)
+        for (si, set) in run.sets.enumerated() {
+            // El descanso vive DENTRO del bloque, pegado a su fila (r7/r12).
+            if restSlot == si { flush(); segments.append(.rest) }
+            // FER-937: la regla «SERIES DE TRABAJO» separa el calentamiento «C» de la serie
+            // de trabajo numerada — en el primer renglón de trabajo tras un calentamiento.
+            let afterWarmup = set.kind == .work && si > 0 && run.sets[si - 1].kind == .warmup
+            if afterWarmup { flush(); segments.append(.divider) }
+            let active = ei == session.currentIndex && si == run.currentSet && !set.done
+            let cardio = run.type == .time || run.type == .distance
+            if active && cardio {
+                flush()
+                segments.append(.cardio(si: si, set: set))
+            } else {
+                pending.append(entrenarRow(ei: ei, si: si, run: run, set: set))
+            }
+        }
+        flush()
+        return segments
     }
 
     @ViewBuilder
-    private func activeExerciseSetSlice(
-        run: StrengthSessionModel.ExerciseRun,
-        ei: Int,
-        si: Int,
-        set: StrengthSessionModel.WorkingSet
-    ) -> some View {
-        // FER-937: a «SERIES DE TRABAJO» rule separates the collapsible warm-up «C» rows
-        // from the numbered work sets — drawn on the first work row after a warm-up.
-        let afterWarmup = set.kind == .work && si > 0 && run.sets[si - 1].kind == .warmup
-        VStack(spacing: 0) {
-            // El descanso vive DENTRO del bloque, pegado a su fila (r7/r12).
-            if restSlotIndex(run, ei: ei) == si { restInlineSlice(run) }
-            if afterWarmup { workSetsDivider.padding(.top, 12).padding(.bottom, 6) }
-            // r15 (owner): borrar es interacción PROPIA — el contextMenu del sistema es
-            // por CELDA (todos los long-press caían en la fila 1) y su lift fotografiaba
-            // la tarjeta entera. Ahora la fila armada brinca EN SU LUGAR sobre la tarjeta
-            // (scale + hover, mismo lenguaje que la tarjeta de descanso) y ofrece la
-            // pastilla «Quitar serie»; cualquier otro toque la desarma.
-            armedSetRow(ei: ei, si: si, run: run, set: set)
+    private func segmentView(_ segment: SetSegment, run: StrengthSessionModel.ExerciseRun, ei: Int) -> some View {
+        switch segment {
+        case let .table(rows, showHeader):
+            SetTable(kind: entrenarKind(run.type), rows: rows, showRPE: true, showHeader: showHeader,
+                     onToggle: { rowId in toggleEntrenarSet(ei: ei, run: run, rowId: rowId) },
+                     onTapCell: { rowId, cellKind in tapEntrenarCell(ei: ei, run: run, rowId: rowId, cellKind: cellKind) },
+                     onDelete: { rowId in deleteEntrenarSet(ei: ei, run: run, rowId: rowId) })
+        case .divider:
+            workSetsDivider.padding(.top, 12).padding(.bottom, 6)
+        case .rest:
+            restInlineSlice(run)
+        case let .cardio(si, set):
+            cardioInlineRow(ei: ei, si: si, run: run, set: set)
         }
-        .padding(.horizontal, CenitMetrics.receiptPadding)
-        .zIndex(armedDeleteSetId == set.id ? 2 : 0)
     }
 
-    private func armedSetRow(
-        ei: Int,
-        si: Int,
-        run: StrengthSessionModel.ExerciseRun,
-        set: StrengthSessionModel.WorkingSet
-    ) -> some View {
-        setRow(ei: ei, si: si, run: run, set: set, last: si == run.sets.count - 1)
-            .scaleEffect(armedDeleteSetId == set.id ? 1.03 : 1)
-            .shadow(color: .black.opacity(armedDeleteSetId == set.id ? 0.10 : 0),  // token-exempt: sombra transitoria de lift (hover), no superficie
-                    radius: 10, y: 4)
-            .overlay(alignment: .trailing) {
-                if armedDeleteSetId == set.id { deleteSetPill(ei: ei, si: si) }
+    /// `ExerciseType` (StrandTraining) → `EntrenarExerciseKind` (StrandDesign, del lado del diseño):
+    /// los cuatro casos espejan uno a uno — el paquete de diseño no importa StrandTraining (mismo
+    /// precedente que `EntrenarFamily`), así que la pantalla traduce.
+    private func entrenarKind(_ type: ExerciseType) -> EntrenarExerciseKind {
+        switch type {
+        case .weightReps: return .weightReps
+        case .bodyweight: return .bodyweight
+        case .time:       return .time
+        case .distance:   return .distance
+        }
+    }
+
+    /// El puente `WorkingSet` → `EntrenarSetRow`: espejo de lo que `badge`/`dataCells`/`numberCell`/
+    /// `capturedCell` calculaban por separado. El estado de captura (Punto 2 de `SetTable`) usa la
+    /// MISMA `ghost` de siempre (`!done && !touched`, una sola bandera para toda la fila — el modelo
+    /// no distingue peso tocado de reps tocadas) y muestra el buffer crudo mientras esa celda es
+    /// `activeCell` (antes, `numberCell` hacía exactamente esto por separado en cada llamada).
+    private func entrenarRow(ei: Int, si: Int, run: StrengthSessionModel.ExerciseRun,
+                             set: StrengthSessionModel.WorkingSet) -> EntrenarSetRow {
+        let isWarmup = set.kind == .warmup
+        let workNumber = run.sets.prefix(si + 1).reduce(0) { $0 + ($1.kind == .work ? 1 : 0) }
+        let badgeText = isWarmup ? String(localized: "C") : "\(workNumber)"
+        // Espejo de la vieja `badge(run:si:)` — ninguna fila alcanzable aquí puede tener
+        // `ei != session.currentIndex` con un `currentSet` pendiente (`advanceToNextPending` solo
+        // mueve el foco a OTRO ejercicio cuando este ya no tiene series pendientes), así que esta
+        // fórmula por-ejercicio coincide exactamente con la vieja `isActivePending` de `checkButton`
+        // (que además comparaba `ei == session.currentIndex`) para toda fila que SetTable dibuje.
+        let isCurrent = si == run.currentSet && !set.done
+        let ghost = !set.done && !set.touched
+        switch run.type {
+        case .weightReps, .bodyweight:
+            let weightEditing = activeCell == .weight(ei, si)
+            let repsEditing = activeCell == .reps(ei, si)
+            return EntrenarSetRow(
+                id: set.id, badge: badgeText,
+                primary: weightEditing ? buffer : formatCell(displayWeight(set.weightKg), isInt: false),
+                primaryState: weightEditing ? .editing : (ghost ? .ghost : .touched),
+                reps: repsEditing ? buffer : formatCell(Double(set.reps), isInt: true),
+                repsState: repsEditing ? .editing : (ghost ? .ghost : .touched),
+                rpe: set.rpe.map(Self.formatDecimalComma),
+                done: set.done, isWarmup: isWarmup, isCurrent: isCurrent)
+        case .time:
+            let time = (set.timeS ?? 0) > 0 ? Self.clock(set.timeS ?? 0) : nil
+            return EntrenarSetRow(id: set.id, badge: badgeText, primary: time,
+                                  done: set.done, isWarmup: isWarmup, isCurrent: isCurrent)
+        case .distance:
+            let dist = (set.distanceM ?? 0) > 0 ? distanceText(set.distanceM ?? 0) : nil
+            let time = (set.timeS ?? 0) > 0 ? Self.clock(set.timeS ?? 0) : nil
+            return EntrenarSetRow(id: set.id, badge: badgeText, primary: dist, pairedTime: time,
+                                  done: set.done, isWarmup: isWarmup, isCurrent: isCurrent)
+        }
+    }
+
+    /// El ✓ de `SetTable` — espejo exacto de la vieja `checkButton`: desmarcar una serie hecha es
+    /// corrección sin descanso; palomear CUALQUIER pendiente (r10) la selecciona (si no era ya la
+    /// activa) y registra con su descanso.
+    private func toggleEntrenarSet(ei: Int, run: StrengthSessionModel.ExerciseRun, rowId: String) {
+        guard let si = run.sets.firstIndex(where: { $0.id == rowId }) else { return }
+        let set = run.sets[si]
+        let isCurrent = si == run.currentSet && !set.done
+        withAnimation(.snappy) {
+            if set.done {
+                session.toggleDone(exercise: ei, set: si)
+            } else {
+                activeCell = nil
+                if !isCurrent { session.select(exerciseIndex: ei, setIndex: si) }
+                registerActiveSet()
             }
-            .simultaneousGesture(LongPressGesture(minimumDuration: 0.4).onEnded { _ in
-                withAnimation(StrandMotion.gentle) { armedDeleteSetId = set.id }
-            })
-            .simultaneousGesture(TapGesture().onEnded {
-                if armedDeleteSetId != nil {
-                    withAnimation(StrandMotion.gentle) { armedDeleteSetId = nil }
-                }
-            })
-            .accessibilityActions {
-                Button("Delete set") { withAnimation(.snappy) { session.removeSet(exercise: ei, set: si) } }
+        }
+    }
+
+    /// El contrato de toque de `SetTable` (Punto 4): `.primary`/`.reps` de peso×reps/peso corporal
+    /// abren el teclado propio (la MISMA `activeCell` de siempre — el `.onChange` en
+    /// `inlineSessionScroll` ya selecciona la fila y siembra el buffer); `.primary`/`.pairedTime` de
+    /// tiempo/distancia seleccionan la fila (expande el cronómetro, espejo de la vieja
+    /// `capturedCell`); `.rpe` abre la hoja de RPE.
+    private func tapEntrenarCell(ei: Int, run: StrengthSessionModel.ExerciseRun, rowId: String,
+                                 cellKind: EntrenarCellKind) {
+        guard let si = run.sets.firstIndex(where: { $0.id == rowId }) else { return }
+        switch cellKind {
+        case .primary:
+            if run.type == .weightReps || run.type == .bodyweight {
+                withAnimation(.snappy(duration: 0.22)) { activeCell = .weight(ei, si) }
+            } else {
+                withAnimation(StrandMotion.gentle) { session.select(exerciseIndex: ei, setIndex: si) }
             }
+        case .reps:
+            withAnimation(.snappy(duration: 0.22)) { activeCell = .reps(ei, si) }
+        case .rpe:
+            let set = run.sets[si]
+            rpeTarget = RPETarget(id: set.id, runId: run.id, setNumber: si + 1,
+                                  weightKg: displayWeight(set.weightKg), reps: set.reps, currentRPE: set.rpe)
+        case .pairedTime:
+            withAnimation(StrandMotion.gentle) { session.select(exerciseIndex: ei, setIndex: si) }
+        }
+    }
+
+    /// El gesto de borrar de `SetTable` (Punto 7, long-press + «Quitar serie») — espejo exacto de la
+    /// vieja `deleteSetPill`: si la serie borrada era la ÚLTIMA «C» del ejercicio, también apaga su
+    /// calentamiento persistente. `SetTable` ya desarma su propio estado tras llamar este cierre, y su
+    /// `.accessibilityAction` de VoiceOver pasa por AQUÍ también — antes, el rotor de VoiceOver borraba
+    /// sin pasar por esta limpieza; unificar el camino corrige esa inconsistencia de paso.
+    private func deleteEntrenarSet(ei: Int, run: StrengthSessionModel.ExerciseRun, rowId: String) {
+        guard let si = run.sets.firstIndex(where: { $0.id == rowId }) else { return }
+        let wasWarmup = run.sets[si].kind == .warmup
+        withAnimation(.snappy) { session.removeSet(exercise: ei, set: si) }
+        if wasWarmup, session.runs.indices.contains(ei),
+           !session.runs[ei].sets.contains(where: { $0.kind == .warmup }) {
+            model.plates.setWarmupAlways(session.runs[ei].exerciseId, false)
+        }
     }
 
     @ViewBuilder
@@ -954,25 +1089,6 @@ struct LiveStrengthSheet: View {
                 .offset(x: -20)
                 .allowsHitTesting(false)
         }
-    }
-
-    /// The armed row's destructive affordance (r15) — a quiet critical-outline pill riding the
-    /// lifted row's trailing edge (it covers the check so the only offered act is the deletion).
-    /// La pastilla es el `DeleteSetPill` compartido; el ACTO es de esta pantalla — borra la captura y,
-    /// si esa era la última «C» del ejercicio, apaga su calentamiento persistente (r22).
-    private func deleteSetPill(ei: Int, si: Int) -> some View {
-        DeleteSetPill {
-            let wasWarmup = session.runs.indices.contains(ei)
-                && session.runs[ei].sets.indices.contains(si)
-                && session.runs[ei].sets[si].kind == .warmup
-            withAnimation(.snappy) { session.removeSet(exercise: ei, set: si) }
-            if wasWarmup, session.runs.indices.contains(ei),
-               !session.runs[ei].sets.contains(where: { $0.kind == .warmup }) {
-                model.plates.setWarmupAlways(session.runs[ei].exerciseId, false)
-            }
-            armedDeleteSetId = nil
-        }
-        .accessibilityLabel(Text("Delete set"))
     }
 
     /// The exercise the current rest belongs to (canvas pass 2026-07-15, owner bug #4): registering the
@@ -2298,7 +2414,8 @@ struct LiveStrengthSheet: View {
                 noteChip(run, ei: ei)
             }
             supersetNoRestCaption(ei)
-            if !reflow { columnHeader(run.type) }
+            // El encabezado de columnas (SET · KG · REPS · RPE) ahora es de `SetTable` — dibuja el
+            // suyo, adopción FER-86 (E5). Ver `activeExerciseSets`.
         }
         .padding(.top, first ? CenitMetrics.gap : CenitMetrics.sectionGap)
     }
@@ -2811,99 +2928,13 @@ struct LiveStrengthSheet: View {
         }
     }
 
-    /// The quiet column header (overline). Hidden at accessibility sizes — each reflowed cell self-labels.
-    private func columnHeader(_ type: ExerciseType) -> some View {
-        let titles = columnTitles(type)
-        return HStack(spacing: 8) {   // = spacing de gridRow: header y datos comparten geometría
-            // El badge vive en un frame de 44 (26 visual + aire): el header usa el MISMO ancho,
-            // si no, todas las columnas arrancan corridas (bug de alineación, canvas 2026-07-16).
-            Text("SET").groteskOverline(small: true).foregroundStyle(theme.inkTertiary).frame(width: 44, alignment: .center)
-            // FER-952 (modelo fantasma): la columna PREV murió — la última vez vive dentro de las
-            // celdas como semilla tenue. El hueco flexible mantiene las columnas pegadas a la derecha.
-            Spacer(minLength: 0)
-            ForEach(titles.indices, id: \.self) { i in
-                let isRPE = hasRPEColumn(type) && i == titles.indices.last
-                Text(titles[i]).groteskOverline(small: true).foregroundStyle(theme.inkTertiary)
-                    .frame(width: isRPE ? rpeColumnWidth : cellWidth(type), alignment: .center)
-            }
-            Color.clear.frame(width: 44, height: 1)
-        }
-        .padding(.bottom, 4)
-        .overlay(alignment: .bottom) { Rectangle().fill(theme.hairline).frame(height: 1) }
-    }
-
-    private func columnTitles(_ type: ExerciseType) -> [LocalizedStringKey] {
-        switch type {
-        case .weightReps: return [massUnitTitle, "REPS", "RPE"]
-        case .bodyweight: return ["+LOAD", "REPS", "RPE"]
-        case .time:       return ["TIME"]
-        case .distance:   return [imperial ? "MI" : "KM", "TIME"]
-        }
-    }
-    private var massUnitTitle: LocalizedStringKey { imperial ? "LB" : "KG" }
-    /// La columna RPE: más angosta que las de captura (su contenido es «RPE» o «9,5»).
-    private let rpeColumnWidth: CGFloat = 44
-    /// ¿La última columna de este tipo es RPE? (weightReps/bodyweight sí; time/distance no.)
-    private func hasRPEColumn(_ type: ExerciseType) -> Bool {
-        type == .weightReps || type == .bodyweight
-    }
-    private func cellWidth(_ type: ExerciseType) -> CGFloat {
-        switch type {
-        // FER-952 fantasma: sin columna PREV las celdas recuperan aire.
-        case .weightReps: return 64
-        case .bodyweight: return 64
-        case .time:       return 70
-        case .distance:   return 60
-        }
-    }
-
     // MARK: A single set row
-
-    @ViewBuilder private func setRow(ei: Int, si: Int, run: StrengthSessionModel.ExerciseRun,
-                                     set: StrengthSessionModel.WorkingSet, last: Bool) -> some View {
-        let active = ei == session.currentIndex && si == run.currentSet && !set.done && session.summary == nil
-        // A time / distance set, when it's the active row, expands inline with a compact stopwatch +
-        // live HR zone (FER-716: this replaces the modal «Foco»). Other rows are the flat logging row.
-        let cardio = run.type == .time || run.type == .distance
-        Group {
-            if active && cardio { cardioInlineRow(ei: ei, si: si, run: run, set: set) }
-            else if reflow { reflowRow(ei: ei, si: si, run: run, set: set) }
-            else { gridRow(ei: ei, si: si, run: run, set: set) }
-        }
-        .padding(.vertical, reflow ? 8 : 2)
-        // r6: sin resaltado de fila (desbordaba el borde de la tarjeta) — la serie en curso se marca
-        // solo con su numeral subrayado. El divisor vive a nivel rebanada (recibo, borde a borde).
-        // FER-938 retirado: la fila copiada llega como semilla tenue (modelo fantasma) y se explica sola.
-        .transition(.opacity)
-        .accessibilityElement(children: .contain)
-        // r13: «Delete set» reaches VoiceOver through the row's context menu (actions rotor) — the
-        // manual accessibilityAction duplicated it.
-    }
-
-    private func gridRow(ei: Int, si: Int, run: StrengthSessionModel.ExerciseRun,
-                         set: StrengthSessionModel.WorkingSet) -> some View {
-        // Modelo fantasma (decisión Fer, FER-952): la columna PREV murió — «la última vez» vive
-        // DENTRO de las celdas como semilla en tinta tenue hasta que la tocas; palomear una fila
-        // sin tocar registra exactamente lo de la vez pasada.
-        HStack(spacing: 8) {
-            badge(run: run, si: si)
-            Spacer(minLength: 0)
-            dataCells(ei: ei, si: si, run: run, set: set)
-            checkButton(ei: ei, si: si, set: set)
-        }
-    }
-
-    private func reflowRow(ei: Int, si: Int, run: StrengthSessionModel.ExerciseRun,
-                           set: StrengthSessionModel.WorkingSet) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                badge(run: run, si: si)
-                Spacer()
-                checkButton(ei: ei, si: si, set: set)
-            }
-            HStack(spacing: 16) { dataCells(ei: ei, si: si, run: run, set: set) }
-        }
-    }
+    //
+    // La tabla de series (SET · KG/DIST/TIME · REPS · RPE · ✓, con su encabezado, sus estados de
+    // captura y su gesto de borrar) es `SetTable` desde la adopción FER-86 (E5) — ver
+    // `activeExerciseSets`/`entrenarSegments`/`entrenarRow` arriba. `badge`/`checkButton` sobreviven
+    // porque `cardioInlineRow`, la fila de cronómetro/distancia ACTIVA, sigue siendo de la pantalla
+    // (fuera del alcance de `SetTable`, Punto 6) y los usa tal cual.
 
     /// The active time / distance row, expanded inline (FER-716) — a compact stopwatch (the elapsed /
     /// captured time as the dominant datum), a Start/Stop capsule (Stop registers the set and starts the
@@ -3162,6 +3193,9 @@ struct LiveStrengthSheet: View {
     /// aporta —nada urge—, y en plena serie «cuál voy» es el dato más urgente de la pantalla, así que
     /// el anillo deja de ser cromo y pasa a ser el dato. La auditoría de duplicación marcó esto como
     /// divergencia a corregir; se revisó y se decidió CONSERVARLA. Nota gemela allá.
+    ///
+    /// Desde la adopción FER-86 (E5) solo `cardioInlineRow` la usa — el badge de las demás filas es
+    /// el de `SetTable`, que ya sigue la MISMA decisión (ver su Punto 8).
     private func badge(run: StrengthSessionModel.ExerciseRun, si: Int) -> some View {
         let isWarmup = run.sets[si].kind == .warmup
         let workNumber = run.sets.prefix(si + 1).reduce(0) { $0 + ($1.kind == .work ? 1 : 0) }
@@ -3183,78 +3217,13 @@ struct LiveStrengthSheet: View {
             .accessibilityLabel(Text(isWarmup ? "Warm-up set" : "Set \(workNumber)"))
     }
 
-    /// The editable / captured data columns, by exercise type.
-    @ViewBuilder private func dataCells(ei: Int, si: Int, run: StrengthSessionModel.ExerciseRun,
-                                        set: StrengthSessionModel.WorkingSet) -> some View {
-        let ghost = !set.done && !set.touched
-        switch run.type {
-        case .weightReps:
-            numberCell(.weight(ei, si), value: displayWeight(set.weightKg), isInt: false, done: set.done, type: run.type, ghost: ghost)
-            numberCell(.reps(ei, si), value: Double(set.reps), isInt: true, done: set.done, type: run.type, ghost: ghost)
-            rpeCell(ei: ei, si: si, run: run, set: set)
-        case .bodyweight:
-            HStack(spacing: 1) {
-                Text("+").font(StrandFont.body).foregroundStyle(set.done ? theme.inkSecondary : theme.inkTertiary)
-                numberCell(.weight(ei, si), value: displayWeight(set.weightKg), isInt: false, done: set.done, type: run.type, width: run.type == .bodyweight ? 48 : 56, ghost: ghost)
-            }
-            .frame(width: reflow ? nil : cellWidth(run.type), alignment: reflow ? .leading : .center)
-            numberCell(.reps(ei, si), value: Double(set.reps), isInt: true, done: set.done, type: run.type, ghost: ghost)
-            rpeCell(ei: ei, si: si, run: run, set: set)
-        case .time:
-            capturedCell(ei: ei, si: si, run: run,
-                         text: (set.timeS ?? 0) > 0 ? Self.clock(set.timeS ?? 0) : nil)
-        case .distance:
-            capturedCell(ei: ei, si: si, run: run,
-                         text: (set.distanceM ?? 0) > 0 ? distanceText(set.distanceM ?? 0) : nil)
-            capturedCell(ei: ei, si: si, run: run,
-                         text: (set.timeS ?? 0) > 0 ? Self.clock(set.timeS ?? 0) : nil)
-        }
-    }
-
-    /// An editable numeric cell — a form field on paper (a faint underline you fill «with pen»). An empty or
-    /// unparseable entry keeps the previous value (the buffer is dropped on blur). FER-497.
-    /// An editable numeric cell — a form field on paper filled «with the pen». Tapping it activates the
-    /// custom keypad (FER-716, no native keyboard, no «Foco»); while active it shows the working buffer
-    /// with a caret and a 2px ink underline, otherwise the formatted value with a hairline underline.
-    private func numberCell(_ ref: CellRef, value: Double, isInt: Bool, done: Bool,
-                            type: ExerciseType, width: CGFloat? = nil, ghost: Bool = false) -> some View {
-        let active = activeCell == ref
-        let shown = active ? buffer : formatCell(value, isInt: isInt)
-        // Canvas pass 2026-07-15 (UX·anim #1): opening the keypad animates like closing it — the
-        // `.move(edge: .bottom)` transition only runs inside withAnimation; bare assignment popped.
-        return Button { withAnimation(.snappy(duration: 0.22)) { activeCell = ref } } label: {
-            HStack(spacing: 1) {
-                Text(shown.isEmpty ? " " : shown)
-                    // r20 (auditoría UX #6f): el numeral escala con Dynamic Type intermedio.
-                    .font(InstrumentoType.groteskNumber(16, weight: .medium, relativeTo: .body)).monospacedDigit()
-                    // Fantasma FER-952: la semilla («la última vez») habla tenue hasta que la tocas;
-                    // el ✓ la registra tal cual — «si no lleno nada, es lo mismo que la anterior».
-                    .foregroundStyle(done ? theme.inkSecondary : (ghost && !active ? theme.inkDim : theme.ink))
-                if active {
-                    Rectangle().fill(theme.ink).frame(width: 2, height: 18)   // caret
-                        .opacity(0.9) // token-exempt: opacidad de caret >0.70
-                }
-            }
-            // `minHeight`, no alto fijo: la fuente escala con Dynamic Type (`relativeTo: .body`, arriba),
-            // así que una caja de alto fijo recorta el número en los pasos grandes. El ancho SÍ se fija
-            // —lo escala `cellDynamicScale`— porque las columnas tienen que seguir alineadas con su
-            // encabezado. Mismo arreglo que ya recibió la celda del editor en el PR #1062, que no alcanzó
-            // a esta por ser preexistente y no regresión. Lo señaló el gate de QA.
-            .frame(width: (width ?? (reflow ? 64 : cellWidth(type))) * min(cellDynamicScale, 1.3))
-            .frame(minHeight: 44)
-            .contentShape(Rectangle())
-            .overlay(alignment: .bottom) {
-                Rectangle().fill(active ? theme.ink : theme.hairlineStrong)
-                    .frame(height: active ? 2 : 1)
-                    .padding(.bottom, 6)
-            }
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(Text(cellLabel(ref)))
-        .accessibilityValue(Text(shown))
-    }
-
     // MARK: Custom keypad input (FER-716)
+    //
+    // Las celdas editables (KG/+LOAD, REPS) y las capturadas (TIME/DIST) son de `SetTable` desde la
+    // adopción FER-86 (E5) — ver `entrenarRow`/`tapEntrenarCell` arriba. Lo que sigue es el teclado
+    // propio: sigue siendo de la pantalla, y sigue enfocando por `activeCell` igual que siempre —
+    // `tapEntrenarCell` solo lo asigna, el `.onChange(of: activeCell)` de `inlineSessionScroll` hace
+    // el resto (seleccionar la fila, sembrar el buffer).
 
     /// The active cell's current model value as a display string (seeds the buffer on activate).
     private func currentCellString(_ ref: CellRef) -> String {
@@ -3306,63 +3275,19 @@ struct LiveStrengthSheet: View {
     /// Re-seed the buffer from the model after a mutation that didn't come from typing (± / copy last).
     private func syncBufferFromModel(_ cell: CellRef) { buffer = currentCellString(cell); bufferTyped = false }
 
-    /// The RPE cell (FER-930): tap opens the RPE sheet for this set. Shows the captured value in
-    /// `dataEffort` (the datum's own color) when set, else a tenue «RPE» placeholder — never a nag, never
-    /// blocking the check button next to it. Entirely independent of `done`.
-    private func rpeCell(ei: Int, si: Int, run: StrengthSessionModel.ExerciseRun,
-                         set: StrengthSessionModel.WorkingSet) -> some View {
-        Button {
-            rpeTarget = RPETarget(id: set.id, runId: run.id, setNumber: si + 1,
-                                  weightKg: displayWeight(set.weightKg), reps: set.reps, currentRPE: set.rpe)
-        } label: {
-            Group {
-                if let rpe = set.rpe {
-                    Text(Self.formatDecimalComma(rpe))
-                        .font(InstrumentoType.groteskNumber(16, weight: .medium)).monospacedDigit()
-                        .foregroundStyle(theme.dataEffort)
-                } else {
-                    Text("RPE").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                }
-            }
-            .frame(width: reflow ? nil : rpeColumnWidth, height: 44)
-            .contentShape(Rectangle())
-            .overlay(alignment: .bottom) {
-                Rectangle().fill(theme.hairline).frame(height: 1).padding(.bottom, 6)
-            }
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(Text("RPE"))
-        .accessibilityValue(Text(set.rpe.map(Self.formatDecimalComma) ?? String(localized: "Not recorded")))
-    }
-
     /// es-MX decimal formatting: comma decimal, no trailing zero on whole numbers (8, not 8,0; 8,5).
-    /// Shared by RPE values and, in `RPESheet`, the set's weight (FER-930).
+    /// Shared by `RPESheet`'s set weight (FER-930) and, since la adopción FER-86, `entrenarRow`'s RPE
+    /// column — la celda RPE en sí (con su toque a `rpeTarget`) ahora es de `SetTable`.
     static func formatDecimalComma(_ v: Double) -> String {
         v.truncatingRemainder(dividingBy: 1) == 0 ? String(format: "%.0f", v) : String(format: "%.1f", v).replacingOccurrences(of: ".", with: ",")
-    }
-
-    /// A captured (non-typed) time / distance cell — tap to select the row, which expands it inline with the
-    /// stopwatch (FER-716: the Foco is gone). Shows «—» until set.
-    private func capturedCell(ei: Int, si: Int, run: StrengthSessionModel.ExerciseRun, text: String?) -> some View {
-        Button { withAnimation(StrandMotion.gentle) { session.select(exerciseIndex: ei, setIndex: si) } } label: {
-            Group {
-                if let text {
-                    Text(text).font(InstrumentoType.groteskNumber(16, weight: .medium)).monospacedDigit().foregroundStyle(theme.ink)
-                } else {
-                    Image(systemName: "play.circle").font(StrandFont.glyph(.lead)).foregroundStyle(theme.inkTertiary)
-                }
-            }
-            .frame(width: reflow ? nil : cellWidth(run.type))
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(Text(text ?? String(localized: "Not recorded")))
-        .accessibilityHint(Text("Expands the timer"))
     }
 
     /// The done toggle (the datum's color — green when logged). 44pt touch target. Checking the ACTIVE
     /// pending set registers it and starts the rest (FER-716: the rest card appears inline); any other
     /// tap is a plain toggle (a correction that starts no rest).
+    ///
+    /// Desde la adopción FER-86 (E5) solo `cardioInlineRow` la usa — el ✓ de las demás filas es el de
+    /// `SetTable` (ver `toggleEntrenarSet`, que replica esta misma lógica por id de fila).
     private func checkButton(ei: Int, si: Int, set: StrengthSessionModel.WorkingSet) -> some View {
         let curSet = session.runs.indices.contains(ei) ? session.runs[ei].currentSet : -1
         let isActivePending = ei == session.currentIndex && si == curSet && !set.done
@@ -3819,13 +3744,6 @@ struct LiveStrengthSheet: View {
         return t.isEmpty ? nil : Double(t)
     }
     private func storedKg(fromDisplay v: Double) -> Double { imperial ? v * Self.kgPerPound : v }
-
-    private func cellLabel(_ ref: CellRef) -> LocalizedStringKey {
-        switch ref {
-        case let .weight(_, si): return "Weight, set \(si + 1)"
-        case let .reps(_, si):   return "Reps, set \(si + 1)"
-        }
-    }
 
     /// The editable cells in row-major order, for the keyboard «Next» button.
     private var editableCells: [CellRef] {
