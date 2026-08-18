@@ -1,0 +1,37 @@
+# Línea base de `missing-key` (Tools/check-xcstrings-es.py, chequeo 2).
+#
+# Cada línea NO comentada es el `repr()` de Python de una clave que el código USA y que no
+# existe en su catálogo. Se escribe con repr —y no en crudo— para que un salto de línea, un
+# espacio final o una comilla se vean en el archivo y en el diff en vez de perderse. La razón
+# va en la línea de ARRIBA: aquí no hay comentarios al final de línea (una clave puede
+# contener «#» y se comería la clave).
+#
+# Esto NO es una lista de «strings que no se traducen»: es la deuda que ya existía el día que
+# se encendió el gate (FER-123). Salvo las dos últimas, todas son un string que el usuario ve
+# sin pasar por el catálogo — en inglés con el teléfono en español, o en español con el
+# teléfono en inglés. Para bajar la base: agrega la clave al catálogo con su valor `es`
+# (SIEMPRE bajo la llave «es», nunca «es-MX») y quita su línea de aquí.
+#
+# Antes de agregar una línea nueva, pregúntate si de verdad no se traduce. Si es copy, va al
+# catálogo; esta lista es para lo que no lo es.
+
+# --- Deuda heredada: copy en inglés que nunca llegó al catálogo (se resuelve en FER-124).
+'%d days ago'
+'Early warning: take it easy'
+'Measured by your band'
+'On-device estimate (approximate): not a diagnosis.'
+'This set'
+'What this means'
+
+# --- Deuda heredada: literal en ESPAÑOL usado como clave, que nunca traduce al inglés
+#     (la misma clase que caza check-hardcoded-strings.py, en archivos fuera de su alcance; FER-124).
+'*** COPIA PARA TI ***'
+'Tu línea base se re-anclará desde hoy y se ignorarán tus noches anteriores. Perderás tu número de recuperación unos días mientras se recalibra. Tus datos e historial no se borran.'
+'¿Borrar toda la media de ejercicios descargada?'
+'¿Recalibrar tu recuperación?'
+
+# --- No es copy: se lee igual en los dos idiomas.
+# el nombre del método (Karvonen 1957), no una palabra traducible
+'Karvonen'
+# el sufijo de horas del reloj de Sueño («7:25 h»)
+'h'

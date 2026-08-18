@@ -1,31 +1,45 @@
-# Guards the localized surface (FER-472 · ampliado FER-audit). Tres chequeos, Python-only,
+# Guards the localized surface (FER-472 · ampliado FER-audit · FER-123). Cuatro chequeos, Python-only,
 # sin Xcode ni secretos:
 #   1. hardcoded-strings — un literal en español colado como clave (Tools/check-hardcoded-strings.py).
 #   2. es-emdash — guion largo en un valor ESPAÑOL del catálogo (el punto ciego: design-lint solo
 #      mira .swift, no el catálogo, así que el copy es-MX que ve el usuario se colaba).
 #   3. missing-es — una clave NUEVA sin traducción es-MX (con línea base para las heredadas).
+#   4. missing-key — una clave que el CÓDIGO usa y que NO existe en el catálogo. El 3 no la veía:
+#      solo itera lo que YA está en el catálogo, así que una clave nueva que nadie agregó era
+#      invisible y el gate pasaba en verde (FER-119 metió 6 strings así). Corre en el mismo script.
+#
+# El disparo cubre TODO el Swift que el chequeo 4 barre, no solo `Cenit/Screens/**`: una clave nueva
+# nacida en `Cenit/System/`, en un widget o en un paquete no disparaba el workflow y el gate ni corría.
 name: i18n guard
 
 on:
   pull_request:
     paths:
-      - 'Cenit/Screens/**'
-      - 'Cenit/Resources/Localizable.xcstrings'
-      - 'Packages/StrandDesign/Sources/StrandDesign/FiveRules.swift'
+      - 'Cenit/**'
+      - 'CenitApp/**'
+      - 'CenitShared/**'
+      - 'CenitWatch/**'
+      - 'CenitWidgets/**'
+      - 'Packages/**'
       - 'Tools/check-hardcoded-strings.py'
       - 'Tools/check-xcstrings-emdash.py'
       - 'Tools/check-xcstrings-es.py'
       - 'Tools/i18n-es-baseline.txt'
+      - 'Tools/i18n-keys-baseline.txt'
       - '.github/workflows/i18n-guard.yml'
   push:
     paths:
-      - 'Cenit/Screens/**'
-      - 'Cenit/Resources/Localizable.xcstrings'
-      - 'Packages/StrandDesign/Sources/StrandDesign/FiveRules.swift'
+      - 'Cenit/**'
+      - 'CenitApp/**'
+      - 'CenitShared/**'
+      - 'CenitWatch/**'
+      - 'CenitWidgets/**'
+      - 'Packages/**'
       - 'Tools/check-hardcoded-strings.py'
       - 'Tools/check-xcstrings-emdash.py'
       - 'Tools/check-xcstrings-es.py'
       - 'Tools/i18n-es-baseline.txt'
+      - 'Tools/i18n-keys-baseline.txt'
       - '.github/workflows/i18n-guard.yml'
   workflow_dispatch:
 
@@ -38,5 +52,9 @@ jobs:
         run: python3 Tools/check-hardcoded-strings.py
       - name: Em-dash in Spanish catalog copy
         run: python3 Tools/check-xcstrings-emdash.py
-      - name: New keys missing an es translation
+      # Primero el extractor se prueba a sí mismo: si alguien afloja una regex, el gate se queda
+      # ciego en silencio y vuelve el falso negativo de FER-119. Aquí se ve, y falla.
+      - name: Self-test of the key extractor
+        run: python3 Tools/check-xcstrings-es.py --self-test
+      - name: New keys missing an es translation, and used keys missing from the catalog
         run: python3 Tools/check-xcstrings-es.py
