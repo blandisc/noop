@@ -10,7 +10,7 @@ import Foundation
 // The «Cuerpo» tab of the 3-layer IA redesign (FER-182 placed it; this screen replaces its interim
 // `TrendsView`). A curated landing in the light «Instrumento diurno» language: warm paper, color ONLY
 // on the datum, hierarchy by space. The body is a column of DOMAIN CARDS, not a flat list: a title +
-// date frame → Recovery (the single hero numeral + 14-day trend) → Rest & load / Vitals / Activity /
+// date frame → Preparación (the verdict word + its clause) → Rest & load / Vitals / Activity /
 // Longevity, each a `theme.surface` card whose grouped stats (label · value in its data hue · optional
 // legend) tap straight into their detail, with the «How you wake after each sport» insight nested under
 // a hairline inside Activity → connect nudge → global actions (Compare · See all metrics) at the foot.
@@ -823,71 +823,24 @@ private struct CuerpoLanding: View {
     @ViewBuilder
     private func preparacionHeroe(_ prep: Preparedness.Read?, calibrando: Int?) -> some View {
         VStack(alignment: .leading, spacing: 3) {
-            if let v = prep?.verdict, v != .lowSignal {
-                Text(Self.palabraVeredicto(v))
+            // `isNightAnchored` es OBLIGATORIO, el MISMO gate que Hoy pone antes de titular
+            // (`LiquidHoyBuilder.actaTono`, `:1185`): sin noche grabada no hay veredicto que
+            // decir, y titularlo teñido contradiría al texto de la propia pantalla.
+            if let prep, prep.verdict != .lowSignal, prep.isNightAnchored {
+                Text(LiquidHoyBuilder.palabraVeredicto(prep.verdict))
                     .font(InstrumentoType.grotesk(32, weight: .bold))
-                    .foregroundStyle(Self.tonoVeredicto(v, theme: theme))
-                Text(Self.clausulaVeredicto(v))
+                    .foregroundStyle(LiquidHoyBuilder.actaTono(prep))
+                Text(LiquidHoyBuilder.clausulaVeredicto(prep))
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
             } else if let calibrando {
                 Text("\(calibrando)").instrumentoHero(48).foregroundStyle(theme.ink)
-                Text(recoverySubtitle(score: nil, calibrating: calibrando))
+                Text(recoverySubtitle(calibrating: calibrando))
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
             } else {
                 Text("—").instrumentoHero(56).foregroundStyle(theme.inkTertiary)
-                Text(recoverySubtitle(score: nil, calibrating: nil))
+                Text(recoverySubtitle(calibrating: nil))
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
             }
-        }
-    }
-
-    /// Las palabras vivas del veredicto — las mismas que pinta Hoy.
-    static func palabraVeredicto(_ v: Preparedness.Verdict) -> String {
-        switch v {
-        case .full:      return String(localized: "hero.title.full", defaultValue: "In range")
-        case .caution:   return String(localized: "hero.title.caution", defaultValue: "Go light today")
-        case .easy:      return String(localized: "hero.title.easy", defaultValue: "Recover")
-        // Hoy nunca titula `lowSignal` (cae al respaldo de SUEÑO), así que no hay clave
-        // `hero.title.lowSignal` en el catálogo: esta frase es propia y se traduce sola.
-        case .lowSignal: return String(localized: "Not enough signal")
-        }
-    }
-
-    /// La línea quieta bajo la palabra: qué señales la sostienen.
-    static func clausulaVeredicto(_ v: Preparedness.Verdict) -> String {
-        switch v {
-        case .full:      return String(localized: "Your resting signals woke up in your range.")
-        case .caution:   return String(localized: "One of your signals woke up outside your range.")
-        case .easy:      return String(localized: "More than one signal is off: give yourself the day.")
-        case .lowSignal: return String(localized: "Not enough signal to read you this morning.")
-        }
-    }
-
-    static func tonoVeredicto(_ v: Preparedness.Verdict?, theme: InstrumentoTheme) -> Color {
-        switch v {
-        case .full:      return theme.verdict
-        case .caution:   return theme.warning
-        case .easy:      return theme.warning
-        default:         return theme.inkTertiary
-        }
-    }
-
-    /// The hero numeral — the screen's one dominant figure (SF Mono). Scored → tinted by band + «/100»;
-    /// calibrating → «N/seed» in ink; no reading → faint «—».
-    @ViewBuilder
-    private func recoveryHeroNumeral(score: Int?, calibrating: Int?, color: Color) -> some View {
-        if let score {
-            HStack(alignment: .firstTextBaseline, spacing: 3) {
-                Text("\(score)").instrumentoHero(56).foregroundStyle(color)
-                Text("/100").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
-            }
-        } else if let calibrating {
-            HStack(alignment: .firstTextBaseline, spacing: 3) {
-                Text("\(calibrating)").instrumentoHero(48).foregroundStyle(theme.ink)
-                Text("/\(Self.recoverySeed)").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
-            }
-        } else {
-            Text("—").instrumentoHero(56).foregroundStyle(theme.inkTertiary)
         }
     }
 
@@ -1341,8 +1294,8 @@ private struct CuerpoLanding: View {
         // se quedaba «calibrando» para siempre, aun con el veredicto ya en firme. Ahora cuelga del
         // veredicto real: `lowSignal` es «no hubo lectura», no una lectura, y sigue calibrando.
         let hasRecovery: Bool = {
-            guard let v = repo.todayPreparedness?.verdict else { return false }
-            return v != .lowSignal
+            guard let p = repo.todayPreparedness else { return false }
+            return p.verdict != .lowSignal && p.isNightAnchored
         }()
         let sleeps = repo.sleeps
         let appleSleeps = repo.appleSleeps   // FER-1026: real Apple sleep sessions feed regularity too (no strap)
@@ -1611,30 +1564,16 @@ private struct CuerpoLanding: View {
         return Int((v.reduce(0, +) / Double(v.count)).rounded())
     }
 
-    private func recoveryColor(_ score: Int) -> Color {
-        switch RecoveryScorer.band(Double(score)) {
-        case "green":  return theme.dataRecovery
-        case "yellow": return theme.warning
-        default:       return theme.critical
-        }
-    }
-
     /// Stress value color by band 0–3 (low → verdict, medium → warning, high → critical). Reuses
     /// `StressBand` (StressView), matching Today's stress tile semantics.
     private func stressDataColor(_ score: Double) -> Color {
         StressBand(score: score).dataColor(theme)
     }
 
-    private func recoverySubtitle(score: Int?, calibrating: Int?) -> LocalizedStringKey {
-        if let score {
-            switch RecoveryScorer.band(Double(score)) {
-            case "green":  return "Ready to train"
-            case "yellow": return "Recovering"
-            default:       return "Prioritize rest"
-            }
-        }
-        if calibrating != nil { return "Calibrating your baseline" }
-        return "No reading yet"
+    /// La línea bajo el héroe cuando todavía no hay veredicto que decir. FER-119 le quitó
+    /// el parámetro `score`: el puntaje 0-100 murió con la banda, y su rama era inalcanzable.
+    private func recoverySubtitle(calibrating: Int?) -> LocalizedStringKey {
+        calibrating != nil ? "Calibrating your baseline" : "No reading yet"
     }
 
     private func sleepText(_ mins: Double) -> String { "\(Int(mins) / 60)h \(Int(mins) % 60)m" }

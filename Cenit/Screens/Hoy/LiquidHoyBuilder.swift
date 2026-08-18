@@ -755,6 +755,31 @@ enum LiquidHoyBuilder {
     /// detalle» / «Vas bien, con un detalle a vigilar») y el usuario tenía que escanear los
     /// tres orbes para saber CUÁL está fuera. `prep.drivers` ya lo sabe: se nombra el eje y
     /// su dirección. `nil` = ninguno fuera → el caller usa la frase genérica.
+    /// La cláusula de apoyo del veredicto, COMPLETA, tal cual la compone el héroe: el eje que
+    /// se salió, si no el desfase, y si no la frase genérica de ese veredicto.
+    ///
+    /// FER-119 la extrae para que Cuerpo la LLAME en vez de tener su propia tabla. El verificador
+    /// cazó exactamente lo que `quienSeSalioHoy` advierte tres funciones más arriba: dos
+    /// superficies con su propia derivación terminan contradiciéndose sobre el mismo cuerpo —
+    /// Hoy nombraba el eje concreto y Cuerpo decía una frase genérica para el mismo día.
+    static func clausulaVeredicto(_ prep: Preparedness.Read?) -> String {
+        switch prep?.verdict {
+        case .caution:
+            return subtituloDetalle(prep) ?? subtituloDesfase(prep)
+                ?? String(localized: "You're doing well, with one thing to watch.")
+        case .easy:
+            return subtituloDetalle(prep) ?? subtituloDesfase(prep)
+                ?? String(localized: "Your body's asking you to ease off today.")
+        default:
+            // `.full` NO pasa por `subtituloDetalle`: con el día en rango no hay eje que
+            // nombrar, y los vigías (térmico, carga) que aparecen «fuera» por su propio
+            // corte no empujaron nada. Es la misma composición que el héroe, tal cual.
+            return subtituloDesfase(prep)
+                ?? String(localized: "hero.sub.full.nombrado",
+                          defaultValue: "Your sleep and your resting heart rate woke up in your range.")
+        }
+    }
+
     private static func subtituloDetalle(_ prep: Preparedness.Read?) -> String? {
         // El PAR manda sobre el eje suelto. Con el centinela corroborado, lo que empujó el día
         // son temperatura y respiración JUNTAS — pero el eje térmico también aparece «fuera»
@@ -826,17 +851,14 @@ enum LiquidHoyBuilder {
                 // rango» es falso. Aquí el orden es el inverso al de ámbar/rojo — el desfase
                 // primero, porque `subtituloDetalle` nombraría el eje sin explicar por qué el
                 // titular sigue verde, y la contradicción quedaría intacta (séptima vuelta).
-                subtitle: subtituloDesfase(prep) ??
-                    String(localized: "hero.sub.full.nombrado",
-                           defaultValue: "Your sleep and your resting heart rate woke up in your range."),
+                subtitle: clausulaVeredicto(prep),
                 confianza: confianza)
         case .caution:
             return .veredicto(
                 title: String(localized: "hero.title.caution", defaultValue: "Go light today"),
                 highlight: String(localized: "hero.highlight.caution", defaultValue: "light"),
                 highlightTone: LiquidColor.atencion,
-                subtitle: subtituloDetalle(prep) ?? subtituloDesfase(prep) ??
-                    String(localized: "You're doing well, with one thing to watch."),
+                subtitle: clausulaVeredicto(prep),
                 confianza: confianza)
         case .easy, .lowSignal:
             // lowSignal jamás llega aquí (el if-chain lo manda al estado sin datos).
@@ -846,8 +868,7 @@ enum LiquidHoyBuilder {
                 highlight: String(localized: "hero.highlight.easy", defaultValue: "Recover"),
                 highlightTone: LiquidColor.negativo,
                 // El rojo también nombra su causa (gate /cso M3): el ámbar ya lo hacía.
-                subtitle: subtituloDetalle(prep) ?? subtituloDesfase(prep) ??
-                    String(localized: "Your body's asking you to ease off today."),
+                subtitle: clausulaVeredicto(prep),
                 confianza: confianza)
         }
     }
