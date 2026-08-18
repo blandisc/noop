@@ -3,14 +3,20 @@ import StrandDesign
 import StrandTraining
 
 extension RoutineRegion {
-    /// Color de identidad de la rutina por región. Fuente única (FER-898).
-    func tint(_ theme: InstrumentoTheme) -> Color {
+    /// La familia de diseño que corresponde a esta región. El paquete de diseño no puede importar
+    /// StrandTraining, así que el puente vive aquí, del lado de la app.
+    var family: EntrenarFamily {
         switch self {
-        case .push:            return theme.dataStrain
-        case .pull:            return theme.dataHrv
-        case .legs, .fullBody: return theme.dataSleep
+        case .push:     return .push
+        case .pull:     return .pull
+        case .legs:     return .legs
+        case .fullBody: return .fullBody
         }
     }
+
+    /// Color de identidad de la rutina por región. DELEGA en `EntrenarFamily.tint` (FER-88): había
+    /// tres tablas del mismo color y una ya se había ido por su lado. Una identidad, una fuente.
+    func tint(_ theme: InstrumentoTheme) -> Color { family.tint(theme) }
 }
 
 extension Optional where Wrapped == RoutineRegion {
