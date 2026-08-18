@@ -124,8 +124,8 @@ public struct LiquidPlasta: View {
 }
 
 public extension LiquidAmbientBackground {
-    /// El fondo de «El Tablero» (FER-28): la plasta del veredicto. Hermano de `.hoy(_:)`
-    /// (orbes) para las pantallas que adoptan el rediseño.
+    /// El fondo de «El Tablero» (FER-28): la plasta del veredicto. (Su hermano `.hoy(_:)`, los
+    /// orbes drift, se retiró en FER-118: Hoy vive sobre `LiquidAtmosfera`.)
     static func tablero(_ ambiente: LiquidAmbiente = .bien) -> some View {
         LiquidPlasta(ambiente: ambiente)
     }

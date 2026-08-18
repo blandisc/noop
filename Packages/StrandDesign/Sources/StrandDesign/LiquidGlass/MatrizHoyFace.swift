@@ -41,9 +41,6 @@ public struct MatrizSeccion: Sendable, Identifiable, Equatable {
     public let unidad: String?
     /// Protagonista del veredicto (sueño / FC): numeral grande; el resto, medio (UX #3).
     public let destacada: Bool
-    /// ¿Esta señal VOTA el veredicto? Pinta el sello «vota» (P3 del estudio en frío:
-    /// «si etiquetas al abstenido, etiqueta a los votantes» — Sofía).
-    public let vota: Bool
     /// Bitácora/referencia (VFC, pasos): numeral un nivel abajo (P7).
     public let terciaria: Bool
     public let sublabel: String?
@@ -75,7 +72,7 @@ public struct MatrizSeccion: Sendable, Identifiable, Equatable {
     public init(id: String, hue: Color,
                 huesPar: (Color, Color)? = nil, titulo: String, valor: String,
                 unidad: String? = nil, destacada: Bool = false,
-                vota: Bool = false, terciaria: Bool = false,
+                terciaria: Bool = false,
                 sublabel: String? = nil, chartID: String, chart: MatrizChartPayload,
                 chip: MatrizHoyModel.ChipGuardian? = nil,
                 renglones: [MatrizRenglon]? = nil,
@@ -88,7 +85,7 @@ public struct MatrizSeccion: Sendable, Identifiable, Equatable {
         self.id = id; self.hue = hue; self.huesPar = huesPar
         self.titulo = titulo; self.valor = valor
         self.unidad = unidad; self.destacada = destacada
-        self.vota = vota; self.terciaria = terciaria
+        self.terciaria = terciaria
         self.sublabel = sublabel
         self.chartID = chartID; self.chart = chart; self.chip = chip
         self.renglones = renglones
@@ -118,7 +115,7 @@ public struct MatrizSeccion: Sendable, Identifiable, Equatable {
             && lhs.hue == rhs.hue
             && lhs.huesPar?.0 == rhs.huesPar?.0 && lhs.huesPar?.1 == rhs.huesPar?.1
             && lhs.unidad == rhs.unidad && lhs.destacada == rhs.destacada
-            && lhs.vota == rhs.vota && lhs.terciaria == rhs.terciaria
+            && lhs.terciaria == rhs.terciaria
             && lhs.formaSello == rhs.formaSello && lhs.scrubNoches == rhs.scrubNoches
             && lhs.glifoSello == rhs.glifoSello
             && lhs.sello == rhs.sello
@@ -443,7 +440,7 @@ public struct MatrizHoyFace: View {
 
     private func encabezado(_ s: MatrizSeccion) -> some View {
         // Dos renglones a lo ANCHO de la celda: [orbe · título · valor · ›] y debajo
-        // [sello vota · estado]. El sello/estado dentro del VStack del título competía
+        // [estado]. El sello/estado dentro del VStack del título competía
         // con el Spacer y se estrujaba a 1 carácter por línea (torre — cazada en arnés).
         VStack(alignment: .leading, spacing: LiquidSpace.s050) {
             HStack(alignment: .firstTextBaseline, spacing: MatrizTokens.selloTexto) {
@@ -524,7 +521,7 @@ public struct MatrizHoyFace: View {
             let leyendoOtraNoche = scrub?.id == s.id
             let chipEnSublinea: MatrizHoyModel.ChipGuardian? =
                 (s.valor.isEmpty || leyendoOtraNoche) ? nil : s.chip
-            if s.vota || sub != nil || chipEnSublinea != nil {
+            if sub != nil || chipEnSublinea != nil {
                 HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s150) {
                     if let chip = chipEnSublinea {
                         // El estado del guardián, en palabras y en su tono (FER-80).
@@ -532,17 +529,6 @@ public struct MatrizHoyFace: View {
                             .font(LiquidType.caption)
                             .foregroundStyle(Self.tonoChip(chip.tono))
                             .fixedSize(horizontal: false, vertical: true)
-                    }
-                    if s.vota {
-                        // P3: las votantes llevan su sello — el modelo se lee solo.
-                        Text(String(localized: "matriz.vota", defaultValue: "votes"))
-                            .font(LiquidType.micro)
-                            .foregroundStyle(LiquidColor.verdePrimario)
-                            .padding(.horizontal, LiquidSpace.s150)
-                            .padding(.vertical, LiquidSpace.s025)
-                            .overlay(Capsule().strokeBorder(
-                                LiquidColor.verdePrimario.opacity(0.45), lineWidth: 1)) // token-exempt: aro del sello «vota» al 45 %
-                            .fixedSize()
                     }
                     if let sub {
                         Text(sub)

@@ -30661,6 +30661,23 @@
         }
       }
     },
+    "matriz.guardian.scrub.par" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ · both moved out together"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ · las dos se salieron juntas"
+          }
+        }
+      }
+    },
     "matriz.guardian.sub" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -30674,23 +30691,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "tu temperatura y tu respiración mientras duermes"
-          }
-        }
-      }
-    },
-    "matriz.nivel.bitacora" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Logbook"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bitácora"
           }
         }
       }
@@ -31031,23 +31031,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "tu VFC del día"
-          }
-        }
-      }
-    },
-    "matriz.vota" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "votes"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "vota"
           }
         }
       }
