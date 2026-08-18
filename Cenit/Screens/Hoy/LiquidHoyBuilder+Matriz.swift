@@ -122,7 +122,7 @@ extension LiquidHoyBuilder {
             titulo: String(localized: "Sleep"),
             // FER-55: fuera el sello «vota» de las gemelas — la jerarquía la dan el nivel,
             // el orden y el manual «?». Carga NUNCA vota (loadAxis inRange/noData).
-            valor: valorSueno, destacada: true, vota: false,
+            valor: valorSueno, destacada: true,
             sublabel: sublabelSueno,
             chartID: "matriz-sleep",
             chart: .columnas(noches: noches, referencia: 7, referenciaTag: "7 h",
@@ -172,7 +172,7 @@ extension LiquidHoyBuilder {
             unidad: ptsFC.contains(where: { $0 != nil }) ? String(localized: "bpm") : nil,
             // FER-55: sin «vota» (simétrico con Sueño — la gemela no puede quedar sola
             // con el sello o el par se ve roto). El manual «?» explica quién vota.
-            destacada: true, vota: false,
+            destacada: true,
             sublabel: sublabelFC(ptsFC: ptsFC, prep: prep, alerta: alertaFC),
             chartID: "matriz-rhr",
             // La regla al margen (FER-55, diseño final): tu rango ±1σ como tramo; relleno muere a 0
@@ -210,7 +210,7 @@ extension LiquidHoyBuilder {
         let seccionVFC = MatrizSeccion(
             id: "hrv", hue: LiquidColor.cian,
             titulo: String(localized: "HRV"),
-            valor: valorVFC, unidad: String(localized: "ms"), terciaria: true,
+            valor: valorVFC, unidad: String(localized: "ms"),
             // Sublabel DESCRIPTIVO, simétrico con sus gemelas de contexto (Carga/Esfuerzo/
             // Estrés): el «no vota» ya no vive suelto aquí — lo lleva el rótulo de nivel
             // «Contexto» + la hoja «Tu contexto» (FER-61), así que las cuatro se ven parejas.
@@ -365,15 +365,22 @@ extension LiquidHoyBuilder {
         let nochesCosturaVivas = Array(nochesCostura[iniGuardian...])
         // El scrub de la costura lee LA NOCHE COMPLETA: las dos señales y su fecha.
         let scrubCostura: [MatrizSeccion.ScrubNoche] = keys20.indices.map { idx in
-            let fecha = weekdayLabel(offsetFromToday: keys20.count - 1 - idx, now: i.now,
-                                     calendar: i.calendar, formatter: diaFmt)
+            let fechaSola = weekdayLabel(offsetFromToday: keys20.count - 1 - idx, now: i.now,
+                                         calendar: i.calendar, formatter: diaFmt)
+            // FER-118: mientras el dedo lee una noche, el subtítulo dice si el PAR votó esa
+            // noche — y solo eso, y solo con el juicio del motor (`parFuera` de `nochesCostura`,
+            // el arreglo SIN recortar: mismo índice que `keys20`; el recorte viene después).
+            let fecha = nochesCostura[idx].parFuera
+                ? String(format: String(localized: "matriz.guardian.scrub.par",
+                                        defaultValue: "%@ · both moved out together"), fechaSola)
+                : fechaSola
             let t = ptsTemp[idx].map { HoyGramatica.formatoDeltaTemp($0) }
             let r = ptsResp[idx].map { HoyGramatica.formatoResp($0) }
             switch (t, r) {
             case (nil, nil):
                 return .init(valor: "—",
                              sublabel: String(format: String(localized: "matriz.scrub.sinlectura",
-                                                             defaultValue: "%@ · no reading"), fecha))
+                                                             defaultValue: "%@ · no reading"), fechaSola))
             default:
                 // La MISMA regla que el encabezado (adversarial C4, extendida al scrub en
                 // COS/A4): con una sola señal, el número solitario se pintaba con el hue de la
@@ -560,15 +567,28 @@ extension LiquidHoyBuilder {
         }
         let valorPasos = HoyGramatica.valorODash(ptsPasos.last.flatMap { $0 },
                                                  formato: HoyGramatica.formatoMiles)
+        // Scrub de Pasos (FER-118, «scrub en todas las gráficas» — era la única sin él): día +
+        // pasos del día. Es un conteo, no un juicio de rango → sublabel = solo la fecha.
+        let scrubPasos: [MatrizSeccion.ScrubNoche] = keysPasos.enumerated().map { idx, _ in
+            let fecha = weekdayLabel(offsetFromToday: keysPasos.count - 1 - idx, now: i.now,
+                                     calendar: i.calendar, formatter: diaFmt)
+            guard let v = ptsPasos[idx] else {
+                return .init(valor: "—",
+                             sublabel: String(format: String(localized: "matriz.scrub.sinlectura",
+                                                             defaultValue: "%@ · no reading"), fecha))
+            }
+            return .init(valor: HoyGramatica.formatoMiles(v), sublabel: fecha)
+        }
         let seccionPasos = MatrizSeccion(
             // Steps = TEAL (el color de Pasos en la hoja de resumen). Antes gris (tinta700);
             // probé ámbar pero ese es de Effort — teal es su identidad real.
             id: "steps", hue: LiquidColor.teal,
             titulo: String(localized: "Steps"),
-            valor: valorPasos, terciaria: true,
+            valor: valorPasos,
             chartID: "matriz-steps",
             chart: .barrasMini(valores: ptsPasos),
-            glifoSello: .pasos)
+            glifoSello: .pasos,
+            scrubNoches: scrubPasos)
 
         // sentByDay: reservado para los aros históricos del guardián — la API de línea serena
         // solo pinta alertaHoy hoy; la historia fuera se cubre en tests del modelo (deuda §7,
@@ -599,8 +619,8 @@ extension LiquidHoyBuilder {
                               defaultValue: "Context"), manualID: "manual.contexto"),
                 .split(izq: seccionCarga, der: seccionEsf),
                 .split(izq: seccionVFC, der: seccionStress),
-                .nivel(String(localized: "matriz.nivel.bitacora",
-                              defaultValue: "Logbook"), manualID: nil),
+                // FER-118: Pasos cierra el estante Contexto, ancho. El rótulo «Bitácora» se
+                // retiró (el prototipo aprobado tiene TRES estantes, con su «?» cada uno).
                 .full(seccionPasos),
             ])
     }

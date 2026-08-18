@@ -15,13 +15,20 @@ import SwiftUI
 public enum EntrenarFamily: String, Sendable, CaseIterable, Hashable {
     case push, pull, legs, fullBody
 
-    /// El tinte de identidad: ámbar empuje · teal tirón · índigo pierna y completo. Fuente ÚNICA
-    /// (antes vivía suelta en la app, FER-898). Hue saturado: solo para bolitas, barras, marcos y
-    /// numerales ≥ 24 pt, nunca para texto chico.
+    /// El tinte de identidad: ámbar empuje · cian tirón · índigo pierna y completo. LA fuente, en
+    /// singular: `RoutineRegion.tint` y `InstrumentoTheme.movementFamilyTint` delegan aquí.
+    ///
+    /// Hasta FER-88 había TRES definiciones de lo mismo y no coincidían: esta decía `dataSteps`
+    /// (#4C8998) mientras las otras dos decían `dataHrv` (#147C8C), así que un mismo tirón salía de
+    /// dos colores según quién lo dibujara. Gana el vivo — es lo que la gente ya tiene en pantalla,
+    /// y además cumple AA (4.33:1) donde el otro se queda en 3.48:1.
+    ///
+    /// Hue saturado: solo para bolitas, barras, marcos y numerales ≥ 24 pt, nunca para texto chico
+    /// (para eso está `reading`).
     public func tint(_ theme: InstrumentoTheme) -> Color {
         switch self {
         case .push:            return theme.dataStrain
-        case .pull:            return theme.dataSteps
+        case .pull:            return theme.dataHrv
         case .legs, .fullBody: return theme.dataSleep
         }
     }

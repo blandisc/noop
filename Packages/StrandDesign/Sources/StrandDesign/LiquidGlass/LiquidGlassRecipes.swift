@@ -32,6 +32,13 @@ public enum LiquidGlassRecipe: Sendable {
     /// Pastilla OPACA (papel, sin blur ni glassEffect). Mismo chrome que `.pastilla`.
     /// Misma razón que `.superficieSolida` — p. ej. «Ver más» dentro de la hoja de detalle.
     case pastillaSolida
+    /// Módulo de vidrio sobre la ATMÓSFERA de Hoy (FER-118): blanco al 30 % + blur real +
+    /// canto de tinta al 8 %, r/módulo (20), sombra e/módulo. Hermana de `.superficie` con dos
+    /// diferencias que existen por el fondo BLANCO PURO de esa pantalla: el relleno baja a .30
+    /// para que las partículas se vean a través, y el borde es de TINTA (sobre #FFFFFF un borde
+    /// blanco no existe) — y se dibuja también en el camino nativo de iOS 26, cuyo filo propio
+    /// es blanco.
+    case superficieAtmosfera
 }
 
 public extension View {
@@ -98,6 +105,18 @@ public extension View {
                 border: LiquidColor.vidrioBordePastilla,
                 highlightTop: 0.8, highlightBottom: 0.0,
                 shadow: LiquidElevation.e0))
+        case .superficieAtmosfera:
+            modifier(LiquidGlassLayer(
+                shape: RoundedRectangle(cornerRadius: LiquidRadius.modulo, style: .continuous),
+                material: .ultraThinMaterial,
+                fill: LiquidColor.vidrioAtmosfera,
+                border: LiquidColor.vidrioCanto,
+                highlightTop: 0.8, highlightBottom: 0.35,
+                streak: false,
+                shadow: LiquidElevation.modulo(index: 0),
+                // El canto de tinta también sobre el vidrio nativo: su filo propio es blanco y
+                // sobre el fondo blanco de la atmósfera desaparece.
+                bordeSobreNativo: true))
         }
     }
 }
@@ -113,6 +132,10 @@ private struct LiquidGlassLayer<S: InsettableShape>: ViewModifier {
     let highlightBottom: Double
     let streak: Bool
     let shadow: [LiquidShadowLayer]
+    /// Dibuja `border` TAMBIÉN encima del vidrio nativo (iOS 26). El vidrio del sistema trae su
+    /// propio filo blanco; sobre un fondo blanco (la atmósfera de Hoy) ese filo no existe y el
+    /// módulo se lava — el canto de tinta lo recorta. `false` = el camino nativo de siempre.
+    var bordeSobreNativo: Bool = false
 
     @Environment(\.liquidMotionDisabled) private var motionDisabled
 
@@ -135,6 +158,11 @@ private struct LiquidGlassLayer<S: InsettableShape>: ViewModifier {
                 // sintió aguado y la reactividad táctil del vidrio competía con nuestro
                 // press — la única gramática de toque es `.liquidPress`).
                 .glassEffect(.regular, in: shape)
+                .overlay {
+                    if bordeSobreNativo {
+                        shape.strokeBorder(border, lineWidth: 0.5).allowsHitTesting(false)
+                    }
+                }
                 .liquidShadow(shadow, silhouette: shape)
         } else {
             imitacion(content)
@@ -475,6 +503,51 @@ public struct LiquidSphere: View {
         .padding(28)
         VStack { LiquidVeil().frame(height: LiquidSpace.s1400); Spacer() }.ignoresSafeArea()
     }
+}
+
+#Preview("Liquid · superficieAtmosfera (30 % sobre blanco)") {
+    // El fondo de esta preview imita la atmósfera de Hoy (blanco puro + motas): el vidrio al
+    // 30 % tiene que dejarlas ver y el canto de tinta tiene que recortar el módulo. Con motion
+    // apagado se usa el stack de imitación (rasterizable), igual que en los renders.
+    ZStack {
+        LiquidColor.papelTarjeta
+        Canvas { ctx, size in
+            for i in 0..<420 {
+                let x = CGFloat((i * 7919) % 1000) / 1000 * size.width
+                let y = CGFloat((i * 104729) % 1000) / 1000 * size.height
+                let r = 0.6 + CGFloat(i % 5) * 0.4
+                let tono: Color = i % 10 == 0 ? LiquidColor.rosa
+                    : (i % 10 == 1 ? LiquidColor.indigo : LiquidColor.particulaVerde)
+                ctx.fill(Path(ellipseIn: CGRect(x: x, y: y, width: r * 2, height: r * 2)),
+                         with: .color(tono.opacity(0.10 + Double(i % 4) * 0.06)))
+            }
+        }
+        VStack(spacing: LiquidSpace.s300) {
+            HStack(spacing: LiquidSpace.s300) {
+                Text("Sueño")
+                    .font(LiquidType.tituloGemela).foregroundStyle(LiquidColor.tinta700)
+                    .padding(LiquidSpace.s400).frame(maxWidth: .infinity, minHeight: 120,
+                                                    alignment: .topLeading)
+                    .liquidGlass(.superficieAtmosfera)
+                Text("FC en reposo")
+                    .font(LiquidType.tituloGemela).foregroundStyle(LiquidColor.tinta700)
+                    .padding(LiquidSpace.s400).frame(maxWidth: .infinity, minHeight: 120,
+                                                    alignment: .topLeading)
+                    .liquidGlass(.superficieAtmosfera)
+            }
+            Text("Guardián")
+                .font(LiquidType.tituloGemela).foregroundStyle(LiquidColor.tinta700)
+                .padding(LiquidSpace.s400).frame(maxWidth: .infinity, minHeight: 160,
+                                                alignment: .topLeading)
+                .liquidGlass(.superficieAtmosfera)
+            Text("7:33").font(LiquidType.valorTileL).tracking(LiquidType.valorTileTracking)
+                .foregroundStyle(LiquidColor.indigo)
+            Text("48").font(LiquidType.valorTileM).tracking(LiquidType.valorTileTracking)
+                .foregroundStyle(LiquidColor.cian)
+        }
+        .padding(LiquidSpace.s400)
+    }
+    .environment(\.liquidMotionDisabled, true)
 }
 
 #Preview("Liquid · SheetFondo (cian + indigo + sin plasta)") {

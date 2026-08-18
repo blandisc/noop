@@ -4,24 +4,24 @@ import SwiftUI
 import AppKit
 @testable import StrandDesign
 
-/// FER-51 — arnés PNG de la cara Matriz (T1 bueno / T2 calibrando / T3 alerta).
-/// No es aserción de CI: escribe PNGs en /tmp/noop-fer51/.
+/// FER-51 — arnés PNG de la cara de Hoy (T1 bueno / T2 calibrando / T3 alerta), desde FER-118
+/// en su envase de vidrio sobre la atmósfera. No es aserción de CI: escribe PNGs en /tmp/noop-fer51/.
 /// Run: `swift test --filter MatrizHoyFaceSnapshotTests`
 final class MatrizHoyFaceSnapshotTests: XCTestCase {
 
     @MainActor func test_t1_bueno() throws {
-        try render(MatrizHoyFace(model: Self.t1Bueno, onTapSeccion: { _ in }),
-                   to: "matriz_hoy_t1_bueno", size: CGSize(width: 390, height: 820))
+        try render(MatrizHoyFace(model: Self.t1Bueno, onTapSeccion: { _ in }), ambiente: .bien,
+                   to: "matriz_hoy_t1_bueno", size: CGSize(width: 390, height: 1040))
     }
 
     @MainActor func test_t2_calibrando() throws {
-        try render(MatrizHoyFace(model: Self.t2Calibrando, onTapSeccion: { _ in }),
-                   to: "matriz_hoy_t2_calibrando", size: CGSize(width: 390, height: 820))
+        try render(MatrizHoyFace(model: Self.t2Calibrando, onTapSeccion: { _ in }), ambiente: .neutro,
+                   to: "matriz_hoy_t2_calibrando", size: CGSize(width: 390, height: 1040))
     }
 
     @MainActor func test_t3_alerta() throws {
-        try render(MatrizHoyFace(model: Self.t3Alerta, onTapSeccion: { _ in }),
-                   to: "matriz_hoy_t3_alerta", size: CGSize(width: 390, height: 820))
+        try render(MatrizHoyFace(model: Self.t3Alerta, onTapSeccion: { _ in }), ambiente: .alerta,
+                   to: "matriz_hoy_t3_alerta", size: CGSize(width: 390, height: 1040))
     }
 
     @MainActor func test_orden_a11y_visual_bandas_divididas() {
@@ -72,7 +72,7 @@ final class MatrizHoyFaceSnapshotTests: XCTestCase {
                         chart: .regla(puntos: fc, banda: 53...59, dominio: 45...75,
                                          alertaHoy: .ninguna),
                         formaSello: .corazon)),
-                .nivel("Watches over you", manualID: nil),
+                .nivel("Watches over you", manualID: "guardian"),
                 .full(MatrizSeccion(
                     id: "guardian", hue: LiquidColor.doradoTemp,
                     huesPar: (LiquidColor.doradoTemp, LiquidColor.azul),
@@ -93,7 +93,7 @@ final class MatrizHoyFaceSnapshotTests: XCTestCase {
                                       chart: .lineaSerena(puntos: resp, banda: 12...16,
                                                           dominio: 8...22, alertaHoy: .ninguna)),
                     ])),
-                .nivel("Context", manualID: nil),
+                .nivel("Context", manualID: "manual.contexto"),
                 .split(
                     izq: MatrizSeccion(
                         id: "carga", hue: LiquidColor.verdePrimario,
@@ -110,7 +110,7 @@ final class MatrizHoyFaceSnapshotTests: XCTestCase {
                     izq: MatrizSeccion(
                         id: "hrv", hue: LiquidColor.cian,
                         titulo: "HRV", valor: "68",
-                        unidad: "ms", terciaria: true,
+                        unidad: "ms",
                         sublabel: "reference · does not vote · why?",
                         chartID: "matriz-hrv",
                         chart: .lineaRellena(puntos: vfc, base: 45, dominio: 20...80,
@@ -121,7 +121,7 @@ final class MatrizHoyFaceSnapshotTests: XCTestCase {
                         sublabel: "vs your 7 days",
                         chartID: "matriz-stress",
                         chart: .escalerita(niveles: stress))),
-                .nivel("Logbook", manualID: nil),
+                // FER-118: Pasos cierra Contexto, ancho; el estante «Logbook» murió.
                 .full(MatrizSeccion(
                     id: "steps", hue: LiquidColor.tinta700,
                     titulo: "Steps", valor: "8 432",
@@ -255,11 +255,19 @@ final class MatrizHoyFaceSnapshotTests: XCTestCase {
             ])
     }
 
-    @MainActor private func render<V: View>(_ content: V, to name: String,
+    /// FER-118: la cara se rinde SOBRE la atmósfera real (blanco + polvo estático del Canvas) —
+    /// el vidrio al 30 % tiene que dejar ver las motas y el canto de tinta tiene que recortar
+    /// cada módulo. Motion apagado ⇒ vidrio de imitación (rasterizable) y polvo determinista.
+    /// `ambiente` es el del ESTADO que se rinde (verde / neutro / rojo): con uno fijo, dos de los
+    /// tres PNG mentirían sobre el color del polvo (revisión final).
+    @MainActor private func render<V: View>(_ content: V, ambiente: LiquidAmbiente, to name: String,
                                             size: CGSize) throws {
-        let view = content
+        let view = ZStack(alignment: .top) {
+            LiquidAtmosfera(ambiente: ambiente, estado: AtmosferaEstado())
+            content
+        }
             .frame(width: size.width, height: size.height)
-            .background(LiquidColor.papelMatriz)
+            .environment(\.liquidMotionDisabled, true)
         let renderer = ImageRenderer(content: view)
         renderer.scale = 2
         guard let image = renderer.nsImage,

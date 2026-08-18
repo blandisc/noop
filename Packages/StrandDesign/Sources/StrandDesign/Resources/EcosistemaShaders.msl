@@ -11,7 +11,7 @@ using namespace metal;
 // el Canvas (`Geometria` / `LiquidEcosistemaMotion`). Lo único intrínseco al shader es la
 // espiral de Fibonacci, que se deriva del índice para no subir tablas a la GPU.
 //
-// ⚠️ Las tres structs de abajo se reflejan campo a campo en `EcosistemaMetalRenderer.swift`.
+// ⚠️ Las structs de abajo (y `PolvoU`, FER-118) se reflejan campo a campo en `EcosistemaMetal.swift`.
 // Si tocas una, toca la otra: no hay header compartido (un target SwiftPM mixto no lo
 // permite limpio) y los tamaños se afirman en `EcosistemaPlanTests.testLayoutDeLosUniformes`.
 
@@ -63,6 +63,41 @@ struct Atomo {
 struct Marco {
     float2 lienzo;
     float2 _pad;
+};
+
+// El POLVO de «Hoy en atmósfera» (FER-118): espejo campo a campo de `EcosistemaPolvoU`.
+// Los colores ya vienen resueltos (la paleta del héroe) y CADA token de
+// `PolvoSimulacion.Fisica` viaja aquí — el shader no tiene números propios.
+struct PolvoU {
+    float4 colorClima;
+    float4 colorNeutra;
+    float4 colorReposo;
+    float4 colorSueno;
+    float4 colorVigiaTemp;
+    float4 colorVigiaResp;
+    float2 lienzo;
+    float  t;               // segundos desde que el fondo apareció (NO el reloj absoluto)
+    float  desplazamiento;  // contentOffset.y del scroll, ≥ 0
+    float  radioMin;
+    float  radioMax;
+    float  alfaBase;
+    float  alfaRango;
+    float  densidadPiso;
+    float  densidadDesde;
+    float  densidadHasta;
+    float  respiracionAmp;
+    float  respiracionWMin;
+    float  respiracionWRango;
+    float  derivaXMax;
+    float  derivaYMin;
+    float  derivaYRango;
+    float  parallax;
+    float  alfaNeutra;
+    float  umbralClima;
+    uint   neutra;          // 1 = sin veredicto: tinta neutra × alfaNeutra
+    uint   still;           // 1 = Reduce Motion / render: sin tiempo ni parallax
+    float  bordeFade;       // los cuatro bordes se desvanecen en estos pt
+    uint   _p1;
 };
 
 struct VOut {
@@ -198,6 +233,80 @@ vertex VOut vsNubeMorfo(uint vid [[vertex_id]],
     e.alfa = mix(ea.alfa, eb.alfa, m);
     e.color = m < 0.5 ? ea.color : eb.color;
     return quadNube(e, vid, a.lienzo);
+}
+
+// MARK: El polvo de la atmósfera (FER-118 · el puerto de `PolvoSimulacion.particula`)
+
+// Hash entero de Wang, con la MISMA aritmética uint32 (wrap) que `PolvoSimulacion.wang`.
+static inline uint wangPolvo(uint x) {
+    x = (x ^ 61u) ^ (x >> 16);
+    x = x * 9u;
+    x = x ^ (x >> 4);
+    x = x * 0x27d4eb2du;
+    x = x ^ (x >> 15);
+    return x;
+}
+
+// `PolvoSimulacion.hash(i, k)` → [0, 1).
+static inline float hashPolvo(uint i, uint k) {
+    return float(wangPolvo(i * 0x9E3779B1u + k * 0x85EBCA77u)) / 4294967296.0f;
+}
+
+// Módulo positivo (`PolvoSimulacion.wrap`): el campo es infinito.
+static inline float wrapPolvo(float v, float m) {
+    if (m <= 0.0) { return 0.0; }          // misma guarda que Swift: lienzo 0×0 → 0, no NaN
+    float r = fmod(v, m);
+    return r < 0.0 ? r + m : r;
+}
+
+// La partícula `iid` de la atmósfera — espejo exacto de `PolvoSimulacion.particula(...)`.
+vertex VOut vsPolvo(uint vid [[vertex_id]],
+                    uint iid [[instance_id]],
+                    constant PolvoU &u [[buffer(0)]]) {
+    float W = u.lienzo.x, H = u.lienzo.y;
+    float t = u.still != 0u ? 0.0 : u.t;
+    float desp = u.still != 0u ? 0.0 : max(0.0, u.desplazamiento);
+
+    float x0 = hashPolvo(iid, 0u) * W;
+    float y0 = hashPolvo(iid, 1u) * H;
+    float radio = u.radioMin + hashPolvo(iid, 2u) * (u.radioMax - u.radioMin);
+    float vx = (hashPolvo(iid, 6u) - 0.5) * 2.0 * u.derivaXMax;
+    float vy = -(u.derivaYMin + hashPolvo(iid, 7u) * u.derivaYRango);
+    float x = wrapPolvo(x0 + vx * t, W);
+    float y = wrapPolvo(y0 + vy * t - u.parallax * desp, H);
+
+    float rampa = H > 0.0 ? (y / H - u.densidadDesde) / (u.densidadHasta - u.densidadDesde) : 0.0;
+    float f = u.densidadPiso + (1.0 - u.densidadPiso) * clamp(rampa, 0.0, 1.0);
+    float w = u.respiracionWMin + hashPolvo(iid, 4u) * u.respiracionWRango;
+    float fase = 6.28318530718 * hashPolvo(iid, 5u);
+    float resp = u.still != 0u ? 1.0 : (1.0 - u.respiracionAmp) + u.respiracionAmp * sin(w * t + fase);
+    // Los cuatro bordes se desvanecen (`PolvoSimulacion.Fisica.bordeFade`), como en la spec.
+    float borde = smoothstep(0.0, u.bordeFade, x) * smoothstep(0.0, u.bordeFade, W - x)
+                * smoothstep(0.0, u.bordeFade, y) * smoothstep(0.0, u.bordeFade, H - y);
+    float alfa = (u.alfaBase + u.alfaRango * f) * (0.5 + 0.5 * hashPolvo(iid, 3u)) * resp
+               * (u.neutra != 0u ? u.alfaNeutra : 1.0) * borde;
+
+    float4 color = u.colorClima;
+    if (u.neutra != 0u) {
+        color = u.colorNeutra;
+    } else {
+        float k = hashPolvo(iid, 8u);
+        if (k >= u.umbralClima) {
+            float cuarto = (1.0 - u.umbralClima) / 4.0;
+            int idx = min(3, int((k - u.umbralClima) / cuarto));
+            color = idx == 0 ? u.colorReposo
+                  : idx == 1 ? u.colorSueno
+                  : idx == 2 ? u.colorVigiaTemp
+                  : u.colorVigiaResp;
+        }
+    }
+
+    NubeEval e;
+    e.centro = float2(x, y);
+    e.tam = radio;
+    e.alfa = alfa;
+    e.color = color;
+    return quadNube(e, vid, u.lienzo);
 }
 
 // MARK: Átomos sueltos (chispas, motas, espirales, el anillo y el especular)

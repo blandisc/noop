@@ -3,7 +3,7 @@
 > **Papel cálido + vidrio líquido + una sola voz verde.** Liquid Glass es la evolución del ADN
 > «Instrumento diurno» para las pantallas rediseñadas: conserva sus axiomas (papel cálido, un
 > dato dominante, **color solo en el dato**, jerarquía por espacio) y les suma una materialidad
-> de vidrio con 4 recetas cerradas, una escala tipográfica Space Grotesk propia y un contrato
+> de vidrio con recetas cerradas, una escala tipográfica Space Grotesk propia y un contrato
 > de motion nombrado. La fuente de verdad hifi es el bundle
 > `design_handoff_liquid_glass/` (viewport 402 pt); este doc mapea ese handoff a los tokens
 > Swift reales.
@@ -39,7 +39,7 @@ Una pantalla se arma como Lego: **tokens → átomos → componentes → pantall
 | Tonos de dato (1:1, no intercambiables) | `indigo`→sueño · `cian`→HRV · `rosa`→FC reposo · `ambar`→esfuerzo/temp. piel · `teal`→pasos · `azul`→respiración · `oro`→amanecer | **el tono tiñe SOLO la gota (10–12 % alfa) y el valor numérico — nunca el fondo de la tarjeta** |
 | Semánticos | `positivo` `#00774B` · `atencion` `#C4631F` · `negativo` `#B3402A` | deltas y estados (`LiquidDeltaTone`, `LiquidSignalState`) |
 | Partículas del Ecosistema (FER-10) | `particulaVerde` `#10694E` · `particulaRoja` `#963426` · `particulaNeutra` `#737670` · `rojoClaro` `#E06C56` | tinta de las esferas de partículas del héroe (verde=rango/atención, roja=desgaste, neutra=calibrando/guardián) y el rojo claro del clima de alerta |
-| Blancos de vidrio | `vidrioEspecular` .92 · `vidrioBorde*` .72–.9 · `vidrioStreak` .55 · `vidrioLente` .5 · `vidrioPastilla` .45 · `vidrioSuperficie` .30 | alfas fijos de `#FFFFFF`; solo los consumen las recetas |
+| Blancos de vidrio | `vidrioEspecular` .92 · `vidrioBorde*` .72–.9 · `vidrioStreak` .55 · `vidrioLente` .38 · `vidrioPastilla` .46 · `vidrioSuperficie` .46 · `vidrioAtmosfera` .30 | alfas fijos de `#FFFFFF`; solo los consumen las recetas |
 
 ## 2. Tipografía (`LiquidType`)
 
@@ -65,7 +65,7 @@ dock: `dockSide`=16, `dockBottom`=14. `ecosistemaAlto`=324 (la zona del héroe F
 Cinco radios, ninguno más: `control`=12 · `tarjeta`=18 · `hoja`=28 (reservado sheets) ·
 `pastilla`=999 (`Capsule`) · orbe=50 % (`Circle`). **Un radio nuevo es un cambio al sistema.**
 
-## 4. Vidrio (`liquidGlass(_:)` — 4 recetas cerradas, nunca blur suelto)
+## 4. Vidrio (`liquidGlass(_:)` — recetas cerradas, nunca blur suelto)
 
 Cada receta es el stack completo: material + relleno blanco + borde + inner-highlight
 (+ especular) + sombra. En nativo el backdrop-filter se calibra con materiales del sistema
@@ -74,13 +74,24 @@ Cada receta es el stack completo: material + relleno blanco + borde + inner-high
 | Receta | API | Composición | Sombra |
 |---|---|---|---|
 | velo | `LiquidVeil` (vista) | blur + degradado de papel, máscara de desvanecimiento 55 %→100 % | — |
-| superficie | `.liquidGlass(.superficie)` | blanco .30, borde .72, highlight .8→.35, r/tarjeta | e/0 |
-| pastilla | `.liquidGlass(.pastilla)` / `.pastillaElevada` | blanco .45, borde .8, highlight superior, r/pastilla | e/0 / e/1 |
+| superficie | `.liquidGlass(.superficie)` | blanco .46, borde .72, highlight .8→.35, r/tarjeta | e/0 |
+| pastilla | `.liquidGlass(.pastilla)` / `.pastillaElevada` | blanco .46, borde .8, highlight superior, r/pastilla | e/0 / e/1 |
 | lente | `.liquidGlass(.lente)` | papelDock, anillo interior 4 lados, **streak especular**, r/pastilla | e/3 |
 | esfera | `LiquidSphere(tone:)` | radial blanco→tono .22, borde .9, especular elíptico | e/2(tono) |
+| superficie·atmósfera (FER-118) | `.liquidGlass(.superficieAtmosfera)` | blanco **.30** (`vidrioAtmosfera`), **canto de tinta .08** (`vidrioCanto`, también sobre el vidrio nativo de iOS 26), highlight .8→.35, r/módulo (20) | e/módulo(0) |
 
 Elevación (`LiquidElevation`): `e0` reposo · `e1` tarjeta · `e2(tone:)` señal (glow del tono) ·
 `e3` flotante — vía `.liquidShadow(_:)`. Ninguna pantalla escribe `.shadow` a mano.
+
+**`superficieAtmosfera` (FER-118, Hoy en atmósfera).** Es la hermana de `superficie` para la
+única pantalla con fondo BLANCO PURO + partículas Metal detrás. Dos diferencias, y las dos
+existen por ese fondo: el relleno baja a .30 para que las partículas se vean a través del módulo
+(el dueño eligió 30 viendo 10 / 30 / 55), y el borde es de tinta (`vidrioCanto`, .08) porque sobre
+#FFFFFF un borde blanco no existe — por eso también se traza sobre el vidrio nativo, cuyo filo
+propio es blanco. Plan B si el vidrio real no sostiene 60 fps sobre Metal: sólido al .45
+(`vidrioAtmosferaSolida`), nunca .30 opaco. Los numerales de módulo llevan `valorTileL` (30) /
+`valorTileM` (26) con `valorTileTracking` (−1); su contraste sobre este vidrio lo fija
+`MatrizContrasteTests.testHuesDeModulosPasanSobreElVidrioDeLaAtmosfera`.
 
 ## 5. Motion (`LiquidMotion` — el contrato)
 
@@ -217,7 +228,7 @@ cerrada de tokens y componentes. Todos con `#Preview`.
 
 - **Color (`LiquidColor`)**
   - `fondoAlto/fondoBajo` → `#FEFEFD / #F3F4F2` (amend): suelo casi blanco para que plasta y aurora respiren.
-  - `vidrioCanto` = `tinta900 · 6 %`: canto exterior hairline de un módulo (lo que separa «caro» de «lavado»).
+  - `vidrioCanto` = `tinta900 · 8 %` (FER-118: subió de 6 % para que el canto se lea sobre blanco): canto exterior hairline de un módulo (lo que separa «caro» de «lavado»).
   - `vidrioRefraccion` = `1.28`: saturación del backdrop de un módulo («refracción honesta»).
   - `vidrioSuperficieDensidad(index:)`: relleno blanco por profundidad (.42 → .54, índice 0…3).
   - `plastaVerde/Ambar/Rojo/Neutra` (4 tonos c/u): las masas pálidas de la plasta por clima; `LiquidAmbiente.plasta` las mapea.
@@ -231,7 +242,7 @@ cerrada de tokens y componentes. Todos con `#Preview`.
 
 ### 10.2 Componentes nuevos
 
-- **`LiquidModulo`** — el contenedor de vidrio: densidad por índice + `vidrioCanto` + sombra `modulo(index:)` + refracción + radio 20 + la aurora del filo. Un componente, no un `.liquidGlass` suelto.
+- **El módulo de vidrio** — el contenedor de la Matriz: `vidrioCanto` + sombra `modulo(index:)` + radio 20. No existe un `LiquidModulo` como componente: la receta que cumple ese contrato es `.liquidGlass(.superficieAtmosfera)` (FER-118; antes, `vidrioSuperficieDensidad(index)` con la aurora del filo). La refracción y la aurora del filo salieron con la Matriz sobre blanco.
 - **`LiquidAuroraEdge(tones:period:reverse:)`** — el filo de 2 capas: los tonos de los DATOS del módulo girando lentísimo (44/52/38/58 s; pares invertidos) + un especular blanco FIJO arriba. La luz no gira; el color pasa por debajo.
 - **`LiquidCapilar`** — separador vertical de 1 pt, `tinta900 · 8 %`, con puntas desvanecidas. Es greedy vertical (`maxHeight: .infinity`): la fila que lo usa debe abrazarse con `.fixedSize(vertical:)` o iguala su alto a la columna, no al revés.
 - **`LiquidColumna` + `LiquidColumnaShell`** — el dato tocable (rótulo + valor teñido 1:1 + detalle), botón con `.liquidPress` + haptic + a11y. La `Shell` es el envoltorio reutilizable para columnas ricas (sueño con dos-puntos tenue, carga con bullet, «VIGILANDO» con par teñido).
