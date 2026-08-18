@@ -1,0 +1,191 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8">
+<title>Preparación · detalle</title>
+<style>
+:root{
+  --papel-alto:#FEFEFD; --papel-bajo:#F3F4F2;
+  --t900:#221D16; --t700:#5C5648; --t500:#6F6857;
+  --verde:#10694E; --ambar:#C4631F; --rojo:#96501A; --indigo:#5D5A9E;
+  --s050:2px;--s075:3px;--s100:4px;--s150:6px;--s225:9px;--s250:10px;--s300:12px;--s400:16px;--s550:22px;
+  --r-tarjeta:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#e8e6e0;font-family:"Inter",-apple-system,system-ui,sans-serif;padding:32px;color:var(--t900)}
+.mesa{display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start;justify-content:center}
+.tel{width:390px;background:linear-gradient(to bottom,var(--papel-alto),var(--papel-bajo));
+     border-radius:34px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.16)}
+.cap{font:600 11px/1 Inter;letter-spacing:.1em;text-transform:uppercase;color:#8a8578;
+     text-align:center;margin-bottom:10px}
+/* ── campo teñido a sangre ── */
+.campo{padding:var(--s550) var(--s550) var(--s400);color:#fff}
+.campo .rot{font:600 11.5px/1 Inter;letter-spacing:.12em;text-transform:uppercase;opacity:.85}
+.campo .dato{display:flex;align-items:baseline;gap:8px;margin-top:var(--s250)}
+.campo .palabra{font:700 30px/1 Inter;letter-spacing:-.01em}
+.campo .clausula{font:400 12.5px/1.35 Inter;opacity:.9;margin-top:var(--s150);max-width:31ch}
+.sello{display:inline-flex;align-items:center;gap:5px;margin-top:var(--s300);
+       background:rgba(255,255,255,.18);border-radius:999px;padding:4px 9px;
+       font:600 10.5px/1 Inter;letter-spacing:.04em}
+/* ── franja de sección ── */
+.franja{display:flex;justify-content:space-between;align-items:baseline;
+        padding:var(--s225) var(--s550);font:600 11.5px/1 Inter;letter-spacing:.12em;
+        text-transform:uppercase;color:var(--t700)}
+.franja .pista{font:400 11px/1 Inter;letter-spacing:0;text-transform:none;color:var(--t500)}
+.sec{padding:var(--s400) var(--s550) var(--s550)}
+/* ── mosaico ── */
+.rejilla{display:grid;grid-template-columns:repeat(7,1fr);gap:var(--s100)}
+.celda{aspect-ratio:1;border-radius:5px}
+.c-full{background:var(--verde)} .c-caut{background:var(--ambar)}
+.c-easy{background:var(--rojo)}  .c-none{background:rgba(34,29,22,.07)}
+.dow{display:grid;grid-template-columns:repeat(7,1fr);gap:var(--s100);margin-bottom:var(--s150)}
+.dow span{text-align:center;font:600 9.5px/1 Inter;color:var(--t500)}
+/* ── reparto: cuatro peldaños del MISMO peso ── */
+.reparto{margin-top:var(--s400);display:flex;flex-direction:column;gap:0}
+.peld{display:flex;align-items:center;gap:var(--s250);padding:var(--s225) 0;
+      border-bottom:1px solid rgba(34,29,22,.08)}
+.peld:last-child{border-bottom:0}
+.pip{width:10px;height:10px;border-radius:3px;flex:0 0 auto}
+.peld .et{flex:1;font:400 12.5px/1 Inter;color:var(--t900)}
+.peld .n{font:600 15px/1 Inter;color:var(--t900);font-variant-numeric:tabular-nums}
+.peld .u{font:400 11px/1 Inter;color:var(--t500);margin-left:3px}
+/* ── cajitas ── */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:var(--s250)}
+.cajita{background:rgba(255,255,255,.72);border:1px solid rgba(34,29,22,.06);
+        border-radius:var(--r-tarjeta);padding:var(--s300) var(--s400)}
+.cajita .r{font:600 11.5px/1 Inter;letter-spacing:.08em;text-transform:uppercase;color:var(--t500)}
+.cajita .v{font:600 22px/1 Inter;margin-top:var(--s075);font-variant-numeric:tabular-nums}
+.cajita .v small{font:400 11px/1 Inter;color:var(--t500);margin-left:3px}
+.cajita .p{font:400 10.5px/1.3 Inter;color:var(--t500);margin-top:var(--s075)}
+/* ── filas de driver ── */
+.fila{display:flex;align-items:center;gap:var(--s250);padding:var(--s250) 0;
+      border-bottom:1px solid rgba(34,29,22,.08)}
+.fila:last-child{border-bottom:0}
+.fila .nom{flex:1;font:400 12.5px/1 Inter}
+.fila .est{font:600 11.5px/1 Inter}
+.metodo{padding:var(--s300) var(--s550) var(--s550);font:400 11.5px/1.5 Inter;color:var(--t500)}
+.metodo b{display:block;font:600 12.5px/1 Inter;color:var(--t700);margin-bottom:var(--s150)}
+.vacio{padding:40px var(--s550);text-align:center}
+.vacio .t{font:600 17px/1.3 Inter;margin-bottom:var(--s150)}
+.vacio .d{font:400 12.5px/1.5 Inter;color:var(--t500);max-width:30ch;margin:0 auto}
+.btn{display:inline-block;margin-top:var(--s400);background:var(--t900);color:#fff;
+     border-radius:999px;padding:9px 18px;font:600 12.5px/1 Inter}
+</style></head><body>
+<div class="mesa">
+
+<!-- ═══ 1 · estado normal ═══ -->
+<div><div class="cap">1 · con historia</div><div class="tel">
+  <div class="campo" style="background:var(--verde)">
+    <div class="rot">Preparación</div>
+    <div class="dato"><span class="palabra">En rango</span></div>
+    <div class="clausula">Tus señales en reposo despertaron dentro de tu rango.</div>
+    <div class="sello">◆ 28 noches de base</div>
+  </div>
+
+  <div class="franja"><span>Tus 30 mañanas</span><span class="pista">24 con lectura</span></div>
+  <div class="sec">
+    <div class="dow"><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span></div>
+    <div class="rejilla">
+      <div class="celda c-none"></div><div class="celda c-none"></div><div class="celda c-full"></div>
+      <div class="celda c-full"></div><div class="celda c-caut"></div><div class="celda c-full"></div>
+      <div class="celda c-full"></div>
+      <div class="celda c-full"></div><div class="celda c-none"></div><div class="celda c-full"></div>
+      <div class="celda c-caut"></div><div class="celda c-easy"></div><div class="celda c-easy"></div>
+      <div class="celda c-caut"></div>
+      <div class="celda c-full"></div><div class="celda c-full"></div><div class="celda c-full"></div>
+      <div class="celda c-none"></div><div class="celda c-none"></div><div class="celda c-full"></div>
+      <div class="celda c-full"></div>
+      <div class="celda c-caut"></div><div class="celda c-full"></div><div class="celda c-full"></div>
+      <div class="celda c-full"></div><div class="celda c-none"></div><div class="celda c-caut"></div>
+      <div class="celda c-full"></div>
+      <div class="celda c-full"></div><div class="celda c-full"></div>
+    </div>
+
+    <div class="reparto">
+      <div class="peld"><span class="pip" style="background:var(--verde)"></span>
+        <span class="et">Todo en rango</span><span class="n">15</span><span class="u">días</span></div>
+      <div class="peld"><span class="pip" style="background:var(--ambar)"></span>
+        <span class="et">Una señal fuera</span><span class="n">5</span><span class="u">días</span></div>
+      <div class="peld"><span class="pip" style="background:var(--rojo)"></span>
+        <span class="et">Dos o más fuera</span><span class="n">4</span><span class="u">días</span></div>
+      <div class="peld"><span class="pip" style="background:rgba(34,29,22,.14)"></span>
+        <span class="et">Sin lectura</span><span class="n">6</span><span class="u">días</span></div>
+    </div>
+  </div>
+
+  <div class="franja"><span>Qué se salió, y cuántas veces</span></div>
+  <div class="sec"><div class="grid2">
+    <div class="cajita"><div class="r">Autonómico</div><div class="v">7<small>días</small></div>
+      <div class="p">FC en reposo o VFC fuera de tu rango</div></div>
+    <div class="cajita"><div class="r">Sueño</div><div class="v">4<small>días</small></div>
+      <div class="p">Dormiste menos de lo que te pide tu cuerpo</div></div>
+    <div class="cajita"><div class="r">Centinela</div><div class="v">2<small>días</small></div>
+      <div class="p">Temperatura y respiración altas a la vez</div></div>
+    <div class="cajita"><div class="r">Días leídos</div><div class="v">24<small>de 30</small></div>
+      <div class="p">El resto no tuvo lectura suficiente</div></div>
+  </div></div>
+
+  <div class="franja"><span>Por qué hoy</span></div>
+  <div class="sec">
+    <div class="fila"><span class="nom">Autonómico</span><span class="est" style="color:var(--verde)">En tu rango</span></div>
+    <div class="fila"><span class="nom">Sueño</span><span class="est" style="color:var(--verde)">En tu rango</span></div>
+    <div class="fila"><span class="nom">Centinela</span><span class="est" style="color:var(--verde)">En tu rango</span></div>
+  </div>
+
+  <div class="franja"><span>Ver el método</span></div>
+  <div class="metodo">
+    <b>Cómo se arma cada mañana</b>
+    Cada mañana comparo tres señales en reposo contra tu propia base: el autonómico
+    (FC en reposo y VFC), el sueño, y el centinela (temperatura y respiración, que solo
+    cuenta cuando las dos van altas juntas). Ninguna fuera es «todo en rango»; una,
+    «una señal fuera»; dos o más, «dos o más fuera». Un día necesita dos días seguidos
+    distintos para mover el veredicto, así que un mal día suelto no lo tumba.
+    <br><br>
+    <b>Lo que este mosaico no es</b>
+    Cada celda se vuelve a calcular con lo que sé de ti hoy, no es la foto de lo que
+    viste esa mañana: si tu base cambió desde entonces, un día viejo puede leerse
+    distinto. La carga de entrenamiento no vota aquí.
+  </div>
+</div></div>
+
+<!-- ═══ 2 · ventana entera sin veredicto ═══ -->
+<div><div class="cap">2 · 30 días sin lectura</div><div class="tel">
+  <div class="campo" style="background:#7d7a70">
+    <div class="rot">Preparación</div>
+    <div class="dato"><span class="palabra">Sin señal</span></div>
+    <div class="clausula">No hubo suficiente señal para leerte esta mañana.</div>
+    <div class="sello">◆ sin base todavía</div>
+  </div>
+  <div class="franja"><span>Tus 30 mañanas</span><span class="pista">0 con lectura</span></div>
+  <div class="sec">
+    <div class="dow"><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span></div>
+    <div class="rejilla" id="vacia"></div>
+    <div class="reparto">
+      <div class="peld"><span class="pip" style="background:rgba(34,29,22,.14)"></span>
+        <span class="et">Sin lectura</span><span class="n">30</span><span class="u">días</span></div>
+    </div>
+    <p class="p" style="margin-top:14px;font:400 12.5px/1.5 Inter;color:var(--t500)">
+      Ninguna de estas 30 mañanas tuvo señal suficiente. Para leerte necesito que
+      duermas con el reloj puesto.</p>
+  </div>
+</div></div>
+
+<!-- ═══ 3 · sin permiso / sin historia ═══ -->
+<div><div class="cap">3 · sin permiso de Salud</div><div class="tel">
+  <div class="campo" style="background:#7d7a70">
+    <div class="rot">Preparación</div>
+    <div class="dato"><span class="palabra">—</span></div>
+    <div class="clausula">Todavía no puedo leerte.</div>
+  </div>
+  <div class="vacio">
+    <div class="t">Necesito ver tu Salud</div>
+    <div class="d">Preparación se arma con lo que tu reloj ya guarda en Apple Salud:
+      FC en reposo, VFC, sueño, temperatura y respiración. Sin ese permiso no hay
+      nada que leer. Todo se queda en tu iPhone.</div>
+    <div class="btn">Dar permiso</div>
+  </div>
+</div></div>
+
+</div>
+<script>
+const g=document.getElementById('vacia');
+for(let i=0;i<30;i++){const d=document.createElement('div');d.className='celda c-none';g.appendChild(d)}
+</script>
+</body></html>
