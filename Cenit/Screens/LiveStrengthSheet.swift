@@ -3076,7 +3076,9 @@ struct LiveStrengthSheet: View {
                 .monospacedDigit()
                 .foregroundStyle(theme.dataRecovery)
                 .contentTransition(.numericText())
-            restHRTrack(bpm: bpm, target: target)
+            // El riel es la pieza compartida (FER-86): el mismo descanso aparece aquí, a pantalla
+            // completa y —E15— en el reloj. Y sin objetivo ya no finge estar listo.
+            RestPulseRail(bpm: bpm, target: target)
             if let target, !ready {
                 (Text(String(localized: "dropping toward "))
                  + Text("\(target) bpm").foregroundColor(theme.dataRecovery).bold()
@@ -3089,25 +3091,6 @@ struct LiveStrengthSheet: View {
 
     /// The FC track: a linear scale from a warm start toward the threshold; the ink tick is the threshold
     /// (position is the channel), the `dataHeart → dataRecovery` gradient reinforces hot → goal.
-    private func restHRTrack(bpm: Int, target: Int?) -> some View {
-        GeometryReader { geo in
-            let w = geo.size.width
-            // Progress toward ready: from a nominal peak (~target+40) down to the target.
-            let hi = Double((target ?? bpm) + 40)
-            let lo = Double(target ?? bpm)
-            let frac = hi > lo ? max(0, min(1, (hi - Double(bpm)) / (hi - lo))) : 1
-            ZStack(alignment: .leading) {
-                Capsule().fill(theme.hairline)
-                Capsule().fill(LinearGradient(colors: [theme.dataHeart, theme.dataRecovery],
-                                              startPoint: .leading, endPoint: .trailing))
-                    .frame(width: w * frac)
-                Rectangle().fill(theme.ink).frame(width: 2, height: 14)
-                    .offset(x: w - 1)   // threshold tick at the ready end
-            }
-        }
-        .frame(height: 6)
-    }
-
     /// By-time rest body (also the no-strap fallback for an HR rest, capped at 5 min with a notice).
     private func restCardTimeBody(end: Date?, now: Date, noStrapFallback: Bool) -> some View {
         let cappedEnd = noStrapFallback ? min(end ?? now, (session.restStartedAt ?? now).addingTimeInterval(300)) : end

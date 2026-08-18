@@ -20,6 +20,59 @@ public enum RestBandMode: Sendable, Hashable {
     case clock(elapsed: String, target: String)
 }
 
+/// El riel del descanso por pulso: la caída de tu corazón hacia el umbral, con la marca del
+/// objetivo al final. Vivía dibujado a mano dentro de la sesión (`LiveStrengthSheet.restHRTrack`),
+/// que es justo donde no puede estar: el mismo descanso aparece en la sesión en línea, en el
+/// descanso a pantalla completa y —E15— en el reloj.
+///
+/// La geometría es una función pura y aparte (`fraccion`) para que se pueda probar sin pintar nada:
+/// es la única parte que puede estar mal de una forma que el ojo no cacha.
+public struct RestPulseRail: View {
+
+    private let bpm: Int
+    private let target: Int?
+
+    @Environment(\.instrumentoTheme) private var theme
+
+    public init(bpm: Int, target: Int?) { self.bpm = bpm; self.target = target }
+
+    /// Cuánto se ha recorrido del pico nominal (objetivo + 40) hasta el objetivo. 0 = recién
+    /// terminada la serie; 1 = listo. Satura en los dos extremos: un pulso por debajo del objetivo
+    /// no llena de más, y uno por encima del pico no devuelve negativo.
+    ///
+    /// SIN OBJETIVO devuelve 0, no 1. La versión que vivía en la sesión hacía `(target ?? bpm)` en
+    /// las dos puntas, o sea 40/40, y pintaba el riel LLENO — que en este instrumento se lee como
+    /// «ya estás listo». Sin umbral no hay contra qué compararte, y un riel lleno sin evidencia es
+    /// justo la mentira que esta app persigue. Vacío dice lo que de verdad sabemos: nada todavía.
+    /// La prueba lo ancla.
+    public static func fraccion(bpm: Int, target: Int?) -> Double {
+        guard let target else { return 0 }
+        let hi = Double(target + 40), lo = Double(target)
+        guard hi > lo else { return 1 }
+        return max(0, min(1, (hi - Double(bpm)) / (hi - lo)))
+    }
+
+    public var body: some View {
+        GeometryReader { geo in
+            let w = geo.size.width
+            ZStack(alignment: .leading) {
+                Capsule().fill(theme.hairline)
+                Capsule()
+                    .fill(LinearGradient(colors: [theme.dataHeart, theme.dataRecovery],
+                                         startPoint: .leading, endPoint: .trailing))
+                    .frame(width: w * Self.fraccion(bpm: bpm, target: target))
+                // La marca del umbral: tinta, no hue — es geometría, no dato (§ADN: el marcador
+                // de referencia nunca compite con la señal).
+                Rectangle().fill(theme.ink)
+                    .frame(width: 2, height: EntrenarMetrics.loadRail + 8)
+                    .offset(x: w - 1)
+            }
+        }
+        .frame(height: EntrenarMetrics.loadRail)
+        .accessibilityHidden(true)   // el número y su texto ya lo dicen
+    }
+}
+
 public struct RestBand: View {
     private let kicker: LocalizedStringKey
     private let mode: RestBandMode
@@ -54,6 +107,12 @@ public struct RestBand: View {
             }
             headline
             rail
+            // El riel solo aparece con el descanso por pulso Y con lectura: sin pulso no hay caída
+            // que dibujar, y un riel vacío sería un instrumento que finge medir.
+            if case let .heartRate(_, objetivo, actual) = mode, let actual {
+                RestPulseRail(bpm: actual, target: objetivo)
+                    .padding(.top, 2)
+            }
             if let note {
                 Text(note)
                     .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
