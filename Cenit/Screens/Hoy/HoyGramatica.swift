@@ -191,7 +191,10 @@ enum HoyGramatica {
     /// «6.2» (es_MX y en_US usan punto; es_ES «6,2» — el separador es el del locale). Redondea a
     /// centenas: el número corto del prototipo (FER-125); el conteo exacto sigue en la hoja.
     static func formatoMilesK(_ v: Double, locale: Locale) -> String {
-        let miles = max(v, 0) / 1000
+        guard v.isFinite else { return "0.0" }
+        // Redondeo por entero (centenas) ANTES de dividir: 850/1000 en binario es 0.8499… y
+        // «%.1f» lo dejaba en 0.8 (revisión adversarial M12-01).
+        let miles = (max(v, 0) / 100).rounded() / 10
         let sep = locale.decimalSeparator ?? "."
         return String(format: "%.1f", miles).replacingOccurrences(of: ".", with: sep)
     }

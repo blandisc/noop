@@ -372,6 +372,8 @@ final class HoyMatrizBuilderTests: XCTestCase {
         // FER-59: Estrés RECEDE — era tinta900 (gritaba siendo referencia que no vota),
         // ahora tinta500 (peso de las demás de contexto). Manda esta decisión sobre el
         // ámbar que proponía el contrato de tokens: el sello lo dice sin subir el peso.
+        // FER-125: con estrés BAJO hoy (0.5) el hue sigue tinta500; medio/alto toman el calor de
+        // su nivel (misma rampa que las celdas) — cubierto en `test_125_estres_calor_por_nivel`.
         XCTAssertEqual(seccion(model, id: "stress")?.hue, LiquidColor.tinta500)
         XCTAssertEqual(seccion(model, id: "steps")?.hue, LiquidColor.teal)
 
@@ -636,6 +638,38 @@ final class HoyMatrizBuilderTests: XCTestCase {
             let dice = n.sublabel.lowercased().contains("together") || n.sublabel.lowercased().contains("juntas")
             XCTAssertEqual(dice, costura[i].parFuera, "índice \(i): el sublabel y la costura coinciden")
         }
+    }
+
+    /// FER-125: la palabra de estrés va en minúscula y con el calor de su nivel de HOY — la
+    /// misma rampa que las celdas de la cuadrícula (`MatrizEscalerita.colorNivel`).
+    func test_125_estres_calor_por_nivel_y_minuscula() {
+        let keys = (-19...0).map { dayKey($0) }
+        let dias = keys.map { metric(day: $0) }
+        func modelo(stressHoy: Double) -> MatrizHoyModel {
+            let stress = Array(keys.suffix(7)).enumerated().map { i, k in
+                (day: k, value: i == 6 ? stressHoy : 0.5)
+            }
+            return LiquidHoyBuilder.matriz(inputs(prep: nil, dias: dias, stress: stress))
+        }
+        let medio = seccion(modelo(stressHoy: 1.5), id: "stress")
+        XCTAssertEqual(medio?.hue, LiquidColor.estresMedio)
+        XCTAssertEqual(medio?.valor, "medium", "en minúscula (locale en_US del test)")
+        let alto = seccion(modelo(stressHoy: 2.5), id: "stress")
+        XCTAssertEqual(alto?.hue, LiquidColor.estresAlto)
+        XCTAssertEqual(alto?.valor, "high")
+        XCTAssertEqual(seccion(modelo(stressHoy: 0.3), id: "stress")?.hue, LiquidColor.tinta500)
+    }
+
+    /// FER-125: el promedio punteado de Pasos es de los días ANTERIORES — hoy va a medias y no entra.
+    func test_125_promedio_pasos_excluye_hoy() {
+        let keys = (-19...0).map { dayKey($0) }
+        let dias = keys.map { metric(day: $0) }
+        let steps = keys.enumerated().map { i, k in (day: k, value: i == keys.count - 1 ? 300.0 : 8000.0) }
+        let m = LiquidHoyBuilder.matriz(inputs(prep: nil, dias: dias, steps: steps))
+        guard case .barrasMini(_, let prom) = seccion(m, id: "steps")?.chart else { return XCTFail("steps") }
+        XCTAssertEqual(prom ?? -1, 8000, accuracy: 0.001, "los 300 de hoy no arrastran el promedio")
+        XCTAssertEqual(seccion(m, id: "steps")?.valor, "0.3")
+        XCTAssertEqual(seccion(m, id: "steps")?.a11yValor, "300 Steps", "VoiceOver lee el conteo, no «0.3»")
     }
 
     func test_30_estela_excluye_hoy() {

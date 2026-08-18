@@ -453,7 +453,7 @@ extension LiquidHoyBuilder {
         func lecturaCarga(_ v: Double, fecha: String) -> MatrizSeccion.ScrubNoche {
             let estado = HoyGramatica.estadoCarga(razon: v)
             return .init(valor: String(format: "%.2f", v),
-                         sublabel: "\(fecha) · \(sublabelCargaConZona(estado))")
+                         sublabel: "\(fecha) · \(sublabelCarga(estado, locale: i.locale))")
         }
         var scrubCarga: [MatrizSeccion.ScrubNoche] = estelaPairs.map { pair in
             lecturaCarga(pair.v, fecha: weekdayLabel(offsetFromToday: offsetHoyCarga(pair.day),
@@ -467,7 +467,9 @@ extension LiquidHoyBuilder {
             id: "carga", hue: LiquidColor.verdeCarga,
             titulo: String(localized: "Load"),
             valor: valorCarga,
-            sublabel: sublabelCargaConZona(estadoCargaKey),
+            // FER-125: la zona ideal ya la dibuja la campana con sus etiquetas (0.8 · 1.3); el
+            // sublabel dice solo el estado, en minúscula como sus vecinos («en equilibrio»).
+            sublabel: sublabelCarga(estadoCargaKey, locale: i.locale),
             chartID: "matriz-carga",
             chart: .colina(p: pCarga,
                              zona: ReadinessEngine.acwrSweetSpotLow...ReadinessEngine.acwrSweetSpotHigh,
@@ -510,15 +512,8 @@ extension LiquidHoyBuilder {
 
         // —— 5. Estrés | Pasos ——
         let keysEstres = Array(keys.suffix(matrizVentanaEstres))
-        let niveles: [Int?] = keysEstres.map { day in
-            guard let v = stressByDay[day] else { return nil }
-            // Cortes fijos 1.0/2.0 SOLO como geometría (StressBand) — sin color de juicio.
-            switch StressBand(score: v) {
-            case .low: return 0
-            case .medium: return 1
-            case .high: return 2
-            }
-        }
+        // Cortes fijos 1.0/2.0 SOLO como geometría (StressBand) — sin color de juicio.
+        let niveles: [Int?] = keysEstres.map { day in stressByDay[day].map(nivelStress) }
         let stressHoy = hoyKey.flatMap { stressByDay[$0] }
         // FER-125 (prototipo aprobado): la palabra va en MINÚSCULA («bajo · medio · alto») y
         // toma el color de calor de su nivel (la misma rampa que las celdas, FER-60).
@@ -532,14 +527,16 @@ extension LiquidHoyBuilder {
             return p.lowercased(with: i.locale)
         }
         let valorStress: String = stressHoy.map(palabraStress) ?? "—"
-        let hueStress: Color = {
-            guard let v = stressHoy else { return LiquidColor.tinta500 }
+        // Una sola rampa de calor para la palabra y las celdas: `MatrizEscalerita.colorNivel`
+        // (revisión adversarial M35-04: dos switches se desincronizan).
+        func nivelStress(_ v: Double) -> Int {
             switch StressBand(score: v) {
-            case .low: return LiquidColor.tinta500
-            case .medium: return LiquidColor.estresMedio
-            case .high: return LiquidColor.estresAlto
+            case .low: return 0
+            case .medium: return 1
+            case .high: return 2
             }
-        }()
+        }
+        let hueStress: Color = stressHoy.map { MatrizEscalerita.colorNivel(nivelStress($0)) } ?? LiquidColor.tinta500
         // Scrub de Estrés (FER-62): día + nivel (palabra). Los cortes son fijos, no un
         // juicio personal de rango → sublabel = solo la fecha.
         let scrubStress: [MatrizSeccion.ScrubNoche] = keysEstres.enumerated().map { idx, day in
@@ -578,9 +575,13 @@ extension LiquidHoyBuilder {
         // línea punteada de referencia de la gráfica.
         let formatoK: (Double) -> String = { HoyGramatica.formatoMilesK($0, locale: i.locale) }
         let valorPasos = HoyGramatica.valorODash(ptsPasos.last.flatMap { $0 }, formato: formatoK)
-        let pasosConDato = ptsPasos.compactMap { $0 }
-        let promedioPasos: Double? = pasosConDato.count >= 2
-            ? pasosConDato.reduce(0, +) / Double(pasosConDato.count) : nil
+        // El promedio es de los días ANTERIORES (hoy va a medias y lo arrastraría hacia abajo:
+        // a las 8 a.m. con 300 pasos, «tu promedio» caería ~7 % — revisión adversarial M35-01).
+        let pasosPrevios = ptsPasos.dropLast().compactMap { $0 }
+        let promedioPasos: Double? = pasosPrevios.count >= 2
+            ? pasosPrevios.reduce(0, +) / Double(pasosPrevios.count) : nil
+        // VoiceOver no ve la «k» (es un Text al lado del número): la voz lee el conteo entero.
+        let a11yPasos: (Double) -> String = { "\(HoyGramatica.formatoMiles($0)) \(String(localized: "Steps"))" }
         // Scrub de Pasos (FER-118, «scrub en todas las gráficas» — era la única sin él): día +
         // pasos del día. Es un conteo, no un juicio de rango → sublabel = solo la fecha.
         let scrubPasos: [MatrizSeccion.ScrubNoche] = keysPasos.enumerated().map { idx, _ in
@@ -591,7 +592,7 @@ extension LiquidHoyBuilder {
                              sublabel: String(format: String(localized: "matriz.scrub.sinlectura",
                                                              defaultValue: "%@ · no reading"), fecha))
             }
-            return .init(valor: formatoK(v), sublabel: fecha)
+            return .init(valor: formatoK(v), sublabel: fecha, a11yValor: a11yPasos(v))
         }
         let seccionPasos = MatrizSeccion(
             // Steps = TEAL (el color de Pasos en la hoja de resumen). Antes gris (tinta700);
@@ -605,7 +606,8 @@ extension LiquidHoyBuilder {
             chartID: "matriz-steps",
             chart: .barrasMini(valores: ptsPasos, promedio: promedioPasos),
             glifoSello: .pasos,
-            scrubNoches: scrubPasos)
+            scrubNoches: scrubPasos,
+            a11yValor: ptsPasos.last.flatMap { $0 }.map(a11yPasos))
 
         // sentByDay: reservado para los aros históricos del guardián — la API de línea serena
         // solo pinta alertaHoy hoy; la historia fuera se cubre en tests del modelo (deuda §7,
@@ -799,15 +801,16 @@ extension LiquidHoyBuilder {
     /// `ReadinessEngine.LoadBand.shortLabel`, el mismo que usa su hoja. La Matriz mantenía un
     /// set paralelo («Steady/Building/Unloading/Spike») y la hoja decía otra cosa para la misma
     /// banda («In balance/Ramping up/Easing off/Ramping fast»).
-    private static func sublabelCarga(_ key: String) -> String {
+    private static func sublabelCarga(_ key: String, locale: Locale) -> String {
+        let s: String
         switch key {
-        case "carga.estable":     return ReadinessEngine.LoadBand.sweetSpot.shortLabel
-        case "carga.subiendo":    return ReadinessEngine.LoadBand.buildingFast.shortLabel
-        case "carga.descargando": return ReadinessEngine.LoadBand.rampingDown.shortLabel
-        case "carga.pico":        return ReadinessEngine.LoadBand.spiking.shortLabel
-        case "carga.calibrando":  return String(localized: "Calibrating")
-        default:                  return String(localized: "Calibrating")
+        case "carga.estable":     s = ReadinessEngine.LoadBand.sweetSpot.shortLabel
+        case "carga.subiendo":    s = ReadinessEngine.LoadBand.buildingFast.shortLabel
+        case "carga.descargando": s = ReadinessEngine.LoadBand.rampingDown.shortLabel
+        case "carga.pico":        s = ReadinessEngine.LoadBand.spiking.shortLabel
+        default:                  s = String(localized: "Calibrating")
         }
+        return s.lowercased(with: locale)
     }
 
     /// Dominio de línea: min/max de puntos+base con padding, o fallback.
@@ -851,7 +854,9 @@ extension LiquidHoyBuilder {
             // el héroe de la misma pantalla ya dijo lo contrario: la celda callaba la verdad y
             // repetía la promesa (cuarta vuelta adversarial).
             guard prep?.autonomicPossible != false else {
-                return String(localized: "hero.title.sinfc", defaultValue: "I can't read your mornings yet")
+                // El módulo es angosto: la frase del héroe («Todavía no puedo leer tus mañanas»)
+                // no cabía en una línea (dueño, FER-125) — misma verdad, más corta.
+                return String(localized: "matriz.fc.sinmananas", defaultValue: "no morning reads yet")
             }
             // Y solo si la base SE ESTÁ formando. A quien tiene meses de historia y dejó el
             // reloj treinta días, la ventana de 20 días le sale vacía pero su rango ya existe:
@@ -883,13 +888,4 @@ extension LiquidHoyBuilder {
                                      defaultValue: "last night · %@"), estado)
     }
 
-    /// Sublabel de carga + la zona ideal del ACWR (escala honesta, P2).
-    private static func sublabelCargaConZona(_ key: String) -> String {
-        let zona = String(format: String(localized: "matriz.carga.zona",
-                                         defaultValue: "sweet spot %.1f–%.1f"),
-                          ReadinessEngine.acwrSweetSpotLow,
-                          ReadinessEngine.acwrSweetSpotHigh)
-        let estado = sublabelCarga(key)
-        return estado.isEmpty ? zona : "\(estado) · \(zona)"
-    }
 }

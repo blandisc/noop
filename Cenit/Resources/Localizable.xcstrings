@@ -31526,23 +31526,6 @@
         }
       }
     },
-    "matriz.carga.zona" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sweet spot %.1f–%.1f"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "zona ideal %.1f–%.1f"
-          }
-        }
-      }
-    },
     "matriz.esf.sub" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -31590,6 +31573,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "en tu rango"
+          }
+        }
+      }
+    },
+    "matriz.fc.sinmananas" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "no morning reads yet"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "aún no leo tus mañanas"
           }
         }
       }

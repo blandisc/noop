@@ -101,8 +101,11 @@ public struct MatrizSeccion: Sendable, Identifiable, Equatable {
     public struct ScrubNoche: Sendable, Equatable {
         public let valor: String
         public let sublabel: String
-        public init(valor: String, sublabel: String) {
-            self.valor = valor; self.sublabel = sublabel
+        /// Lo que VoiceOver lee en vez de `valor` cuando el número corto no basta (Pasos: «6.2»
+        /// con la «k» visual al lado — la voz necesita el conteo, FER-125). nil = lee `valor`.
+        public let a11yValor: String?
+        public init(valor: String, sublabel: String, a11yValor: String? = nil) {
+            self.valor = valor; self.sublabel = sublabel; self.a11yValor = a11yValor
         }
     }
 
@@ -351,10 +354,10 @@ public struct MatrizHoyFace: View {
     /// El texto de un rótulo de estante (compartido por el decorativo y el tocable).
     private func nivelTexto(_ rotulo: String) -> some View {
         Text(rotulo)
-            .font(LiquidType.micro)
-            .tracking(LiquidType.microTracking)
+            .font(LiquidType.cabeceraEstante)
+            .tracking(LiquidType.cabeceraEstanteTracking)
             .textCase(.uppercase)
-            .foregroundStyle(LiquidColor.tinta700)
+            .foregroundStyle(LiquidColor.tinta900)
     }
 
     /// La cabecera de un estante: rótulo en versalitas + el mismo «?» de siempre (FER-54: la
@@ -842,7 +845,7 @@ public struct MatrizHoyFace: View {
         guard let n = s.scrubNoches, !n.isEmpty else { return s.valor }
         let idx = (scrub?.id == s.id ? scrub?.idx : nil) ?? (n.count - 1)
         guard n.indices.contains(idx) else { return s.valor }
-        return "\(n[idx].valor), \(n[idx].sublabel)"
+        return "\(n[idx].a11yValor ?? n[idx].valor), \(n[idx].sublabel)"
     }
 
     private var scrubA11yHint: String {

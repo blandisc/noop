@@ -249,6 +249,12 @@ public enum LiquidType {
     public static let micro = InstrumentoType.grotesk(11.5, weight: .semibold,
                                                        relativeTo: .caption)
     public static let microTracking: CGFloat = 1.5
+    /// La cabecera de un estante de Hoy («DECIDEN TU DÍA · TE VIGILA · CONTEXTO»): versalitas
+    /// más presentes que `micro` (13/600, tracking 1.4) — el dueño las quiso más visibles
+    /// (FER-125); en `tinta900`.
+    public static let cabeceraEstante = InstrumentoType.grotesk(13, weight: .semibold,
+                                                                 relativeTo: .footnote)
+    public static let cabeceraEstanteTracking: CGFloat = 1.4
 
     /// `micro/estado` — 9/600. Chips de estado («EN TU RANGO»).
     public static let microEstado = InstrumentoType.grotesk(10.5, weight: .semibold,

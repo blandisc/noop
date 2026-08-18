@@ -286,6 +286,9 @@ final class HoyGramaticaTests: XCTestCase {
         XCTAssertEqual(HoyGramatica.formatoMilesK(6200, locale: Locale(identifier: "es_ES")), "6,2")
         XCTAssertEqual(HoyGramatica.formatoMilesK(6249, locale: Locale(identifier: "en_US")), "6.2")
         XCTAssertEqual(HoyGramatica.formatoMilesK(860, locale: Locale(identifier: "es_MX")), "0.9")
+        // El borde binario: 850/1000 = 0.8499… en double; se redondea por centenas antes de dividir.
+        XCTAssertEqual(HoyGramatica.formatoMilesK(850, locale: Locale(identifier: "es_MX")), "0.9")
+        XCTAssertEqual(HoyGramatica.formatoMilesK(1150, locale: Locale(identifier: "en_US")), "1.2")
         XCTAssertEqual(HoyGramatica.formatoMilesK(12345, locale: Locale(identifier: "es_ES")), "12,3")
         XCTAssertEqual(HoyGramatica.formatoMiles(0), "0")
     }

@@ -596,10 +596,6 @@ public struct MatrizColina: View {
     /// Índice leído por el scrub (dueño /inject): el punto CAMINA la campana al día leído.
     /// La serie completa es `estela + [p]` (viejo → HOY), así que resaltado ∈ 0…estela.count.
     private let resaltado: Int?
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.liquidAmbientPaused) private var ambientPaused
-    @Environment(\.liquidMotionDisabled) private var motionDisabled
-    private var quieto: Bool { reduceMotion || ambientPaused || motionDisabled }
 
     public init(chartID: String, p: Double?, zona: ClosedRange<Double>,
                 estela: [Double], hue: Color, alertaHoy: MedidorLunar.Alerta = .ninguna,
@@ -677,7 +673,9 @@ public struct MatrizColina: View {
                                       radio: MatrizTokens.colinaHoyRadio, hue: hue, alfa: MatrizChartDraw.hoyAlfa)
                 MatrizChartDraw.punto(ctx, en: CGPoint(x: x, y: y),
                                       radio: MatrizTokens.colinaHoyCentro, hue: LiquidColor.papelTarjeta, alfa: 1)
-                if iLeido == nil || iLeido == serie.count - 1 {
+                // El aro §8 es de HOY: solo si HOY existe (`p`) y es lo que se está mostrando —
+                // no sobre el último día de la estela cuando hoy no tiene dato.
+                if p != nil, iLeido == nil || iLeido == serie.count - 1 {
                     MatrizChartDraw.dibujarAlerta(ctx, en: CGPoint(x: x, y: y),
                                                   radioBase: MatrizTokens.colinaHoyRadio, alerta: alertaHoy)
                 }
@@ -891,7 +889,7 @@ public struct MatrizEscalerita: View {
     /// medio = ocre, alto = siena. Es una rampa de CALOR, no de juicio: nunca el verde del
     /// veredicto ni el ámbar/rojo de alerta del guardián (que sí votan). `static` para
     /// testear la distinción como contrato (MatrizContrasteTests). Clampa fuera de 0…2.
-    static func colorNivel(_ nivel: Int) -> Color {
+    public static func colorNivel(_ nivel: Int) -> Color {
         switch min(max(nivel, 0), 2) {
         case 0: return LiquidColor.tinta500
         case 1: return LiquidColor.estresMedio
