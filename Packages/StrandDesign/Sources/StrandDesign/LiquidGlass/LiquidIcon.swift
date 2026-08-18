@@ -49,11 +49,15 @@ public struct LiquidIcon: View {
         case .luna: "moon"
         case .onda: "waveform.path.ecg"
         case .corazon: "heart"
-        case .llama: "bolt"
+        // `llama` dibujaba un RAYO. El nombre decía una cosa y el símbolo otra desde siempre;
+        // al volver a los símbolos del sistema (decisión del dueño 2026-08-17) se corrige.
+        case .llama: "flame"
         case .pasos: "figure.walk"
         case .termo: "thermometer.medium"
         case .resp: "lungs"
-        case .estres: "waveform.path"
+        // El estrés se lee como un MEDIDOR, no como otra onda: tres señales de Hoy ya son
+        // ondas y a 20 pt no se distinguían entre sí.
+        case .estres: "gauge.with.needle"
         case .carga: "dumbbell"
         case .escudo: "shield"
         default: nil

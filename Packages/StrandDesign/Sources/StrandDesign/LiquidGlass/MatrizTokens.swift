@@ -125,7 +125,10 @@ public enum MatrizTokens {
     /// FER-80 · La COSTURA del par (temp + resp espejadas). Más alta que una línea suelta
     /// porque lleva DOS orillas y el espacio entre ellas — pero menos que las dos filas que
     /// sustituye (56 + 56 + su encabezado), así que la sección respira mejor.
-    public static let alturaCostura: CGFloat = 74
+    /// 58 y no 74: con varas —y no orillas— el alto sobrante se leía como una gráfica vacía.
+    /// Las noches serenas dibujan poco por definición, así que el marco tiene que apretarse a
+    /// ellas en vez de dejarlas nadando (revisión del dueño 2026-08-17).
+    public static let alturaCostura: CGFloat = 58
     /// El relleno de la boca de la costura: tinta neutra a susurro. No es color de juicio —
     /// el juicio lo pone el ámbar del tramo donde el par votó.
     public static let costuraFillAlfa: Double = 0.10
