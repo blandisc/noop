@@ -236,8 +236,10 @@ final class CenitScreenshotTests: XCTestCase {
         a.launch()
         XCTAssertTrue(a.wait(for: .runningForeground, timeout: 15))
 
-        // Seeding writes to the store asynchronously; give it extra time on non-empty states.
-        wait(state == "empty" ? 2 : 5)
+        // Seeding writes to the store asynchronously; and the empty state is not faster: its hero
+        // enters with the same ~2.8 s choreography (FER-41), so at 2 s the frame was still white
+        // (FER-118 · F). Same wait for every state.
+        wait(5)
 
         // Frame 1 = top (the frame `SHOT_SRC` maps onto the state wall; the rest are scroll context)
         let prefix = state == "empty" ? "today" : "today_\(state)"
