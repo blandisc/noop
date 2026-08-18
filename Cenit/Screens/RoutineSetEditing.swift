@@ -128,6 +128,28 @@ enum RoutineSetEditing {
         let remaining = res.indices.filter { res[$0].supersetGroup == g }
         if remaining.count == 1 { res[remaining[0]].supersetGroup = nil }
     }
+
+    // MARK: - «Series iguales» (FER-88) — el detector que decide si la receta se pliega
+    //
+    // `RoutineEditorScreen` pliega la receta de un ejercicio en una sola `RecetaLine` («3 series ·
+    // 80 kg × 8») cuando todas sus series de TRABAJO coinciden, y la abre en renglones automáticos
+    // (con el aviso «series distintas» + «Igualar todas») en cuanto una difiere. Pura, sin `View` ni
+    // `Repository`, para que el criterio de aceptación la pruebe sin montar una pantalla.
+
+    /// El calentamiento NUNCA cuenta — ni para plegar ni para abrir. Sin series de trabajo (caso
+    /// imposible en la práctica, pero no en el tipo) no hay nada que distinguir: colapsa.
+    ///
+    /// FER-88 (esta conformación): la comparación también debería cubrir `RoutineSet.repsRangeTop` —
+    /// dos series con el mismo peso/reps pero distinto techo de rango cuentan como DISTINTAS. Ese
+    /// campo todavía no existe en `Training.swift` (aterriza con E13/FER-94; `grep -rn repsRangeTop
+    /// Cenit/ Packages/` → 0 resultados hoy) y ese archivo no es de esta fase, así que la extensión
+    /// queda BLOQUEADA — no silenciada: en cuanto el campo aterrice, esta función gana una línea más
+    /// (`$0.repsRangeTop == first.repsRangeTop`) y su prueba gemela dejará de estar comentada.
+    static func workSetsAreEqual(_ sets: [RoutineSet]) -> Bool {
+        let work = sets.filter { $0.kind == .work }
+        guard let first = work.first else { return true }
+        return work.allSatisfy { $0.weightKg == first.weightKg && $0.reps == first.reps }
+    }
 }
 
 // MARK: - Per-set rest chip (→ 1e push)

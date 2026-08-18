@@ -279,8 +279,11 @@ struct WeeklyPlanEditorView: View {
                 VStack(alignment: .leading, spacing: 5) {
                     Button { openDay(wd) } label: {
                         HStack(spacing: 6) {
-                            RoundedRectangle(cornerRadius: 3, style: .continuous)  // token-exempt: geometría de dato
-                                .fill(tint).frame(width: 8, height: 8)
+                            // FER-88: el punto de identidad tokenizado (antes un `RoundedRectangle`
+                            // ad hoc, exento del linter) — el mismo `EntrenarFamilyDot` que el resto
+                            // de la sección usa para esta identidad; el tinte sigue resolviendo por
+                            // `RoutineRegion` (sin cambio de lógica, solo de dibujo).
+                            EntrenarFamilyDot(tint)
                             // Nombre largo: una línea, elipsis al final — el chip nunca empuja al ⇄.
                             Text(r.name).font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.ink)
                                 .lineLimit(1).truncationMode(.tail)
@@ -493,8 +496,7 @@ struct WeeklyPlanEditorView: View {
     /// Folders anchors the folder-management paper menu (new / rename / delete).
     private var toolsChipsRow: some View {
         HStack(spacing: CenitMetrics.space2) {
-            InstrumentoToolChip(systemImage: "square.stack.3d.up", label: Text("Templates")) { showTemplates = true }
-            InstrumentoToolChip(systemImage: "square.and.arrow.down", label: Text("Import")) { showImport = true }
+            CrearPlanChip(onTemplates: { showTemplates = true }, onImport: { showImport = true })
             // Decisión Fer (2026-07-16 v2): UNA sola acción — crear la división. Renombrar/borrar
             // viven en la banda de cada sección en Mis Rutinas (··· → undo de 4 s al borrar).
             InstrumentoToolChip(systemImage: "folder.badge.plus", label: Text("New section")) { startNewFolder(moving: nil) }

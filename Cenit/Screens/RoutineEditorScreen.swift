@@ -77,6 +77,17 @@ struct RoutineEditorScreen: View {
     @State private var groupTitle: String = ""
     @State private var saveError = false
 
+    // MARK: La receta que se pliega sola (FER-88)
+    //
+    // Tocar la receta colapsada la abre aunque las series sean iguales — un `@State` de «expandido»
+    // por ejercicio, independiente del resultado del detector (`RoutineSetEditing.workSetsAreEqual`).
+    /// Ids de `RoutineExercise` cuya receta el usuario expandió A MANO (aunque el detector diga que
+    /// sus series son iguales). El detector decide el colapso «automático»; esto solo lo anula.
+    @State private var expandedExercises: Set<String> = []
+    /// El ejercicio (índice en `items`) pendiente de confirmar «Igualar todas». `nil` = ningún aviso
+    /// abierto.
+    @State private var equalizeTarget: Int? = nil
+
     // MARK: Captura con el keypad de la sesión (2026-07-19)
     //
     // El editor usaba `TextField` + teclado nativo mientras la sesión activa usa `SessionKeypad`, y el
@@ -129,6 +140,21 @@ struct RoutineEditorScreen: View {
         // FER-969: el fallo de escritura es un banner honesto, no éxito silencioso. Componente
         // compartido desde 2026-07-19 (era la misma copia en tres pantallas).
         .saveErrorToast(isPresented: $saveError)
+        // «Igualar todas» (FER-88): solo se ofrece cuando hay algo que perder (el llamador ya filtra
+        // por `!setsAreEqual`), así que el mensaje puede ser concreto sin volverse una advertencia
+        // vaga. «Dejarlo como está» reusa la copia ya establecida en el resto del app.
+        .instrumentoConfirm(
+            isPresented: Binding(get: { equalizeTarget != nil }, set: { if !$0 { equalizeTarget = nil } }),
+            title: String(localized: "Equalize all sets?"),
+            context: String(localized: "ROUTINE"),
+            message: String(localized: "Every work set will match the first one's weight and reps."),
+            actions: [
+                .init(String(localized: "Keep as is"), role: .primary),
+                .init(String(localized: "Equalize"), role: .destructive) {
+                    if let idx = equalizeTarget { equalizeAll(idx) }
+                }
+            ]
+        )
         .toolbar(.hidden, for: .navigationBar)
         // FER-988: ocultar la barra mata el gesto de volver; esto lo devuelve. Con cambios sin
         // guardar vetamos el pop y corremos `back()` — el mismo autosave que corre el botón, en vez
@@ -359,11 +385,7 @@ struct RoutineEditorScreen: View {
             }
             .disabled(locked)
             .padding(.top, 9)  // token-exempt: ritmo interno del recibo (Serie activa)
-            columnHeader(item.exercise.type).padding(.top, CenitMetrics.gap)
-            ForEach(Array(items[idx].re.sets.enumerated()), id: \.element.id) { si, _ in
-                interactiveSetRow(idx: idx, si: si)
-            }
-            if !locked { addRowPills(idx).padding(.top, 10) }
+            recetaOrTable(idx)
         }
         .padding(.horizontal, CenitMetrics.receiptPadding).padding(.vertical, CenitMetrics.gap)
         .background(
@@ -402,6 +424,74 @@ struct RoutineEditorScreen: View {
             guard !locked else { return }
             withAnimation(.snappy) { reordering = true }
         }
+    }
+
+    // MARK: - La receta que se pliega sola (FER-88)
+    //
+    // `RoutineSetEditing.workSetsAreEqual` decide: series de trabajo iguales → una `RecetaLine`
+    // («3 series · 80 kg × 8») con chevron; distintas → los renglones de siempre, coronados por el
+    // aviso «series distintas» + «Igualar todas». Tocar la receta colapsada la abre aunque el
+    // detector diga que ya es una línea (`expandedExercises`, independiente del resultado).
+
+    private func setsAreEqual(_ idx: Int) -> Bool {
+        RoutineSetEditing.workSetsAreEqual(items[idx].re.sets)
+    }
+
+    private func isExpanded(_ idx: Int) -> Bool {
+        expandedExercises.contains(items[idx].re.id) || !setsAreEqual(idx)
+    }
+
+    @ViewBuilder
+    private func recetaOrTable(_ idx: Int) -> some View {
+        if isExpanded(idx) {
+            if !setsAreEqual(idx) {
+                EqualizeSetsPrompt(
+                    family: theme.movementFamily(primaryMuscles: items[idx].exercise.primaryMuscles),
+                    disabled: locked
+                ) { equalizeTarget = idx }
+                .padding(.top, CenitMetrics.gap)
+            }
+            columnHeader(items[idx].exercise.type).padding(.top, CenitMetrics.gap)
+            ForEach(Array(items[idx].re.sets.enumerated()), id: \.element.id) { si, _ in
+                interactiveSetRow(idx: idx, si: si)
+            }
+            if !locked { addRowPills(idx).padding(.top, 10) }
+        } else {
+            RecetaLine(recetaSummary(idx)) {
+                withAnimation(.snappy) { _ = expandedExercises.insert(items[idx].re.id) }
+            }
+            .padding(.top, CenitMetrics.gap)
+        }
+    }
+
+    /// «3 series · 80 kg × 8» — solo cuenta series de TRABAJO (el calentamiento no forma parte de la
+    /// receta plegada, igual que no cuenta para el detector). Formato de hoy (solo piso): compondrá
+    /// «piso-techo» con `RoutineSet.repsRangeLabel` en cuanto E13/FER-94 aterrice `repsRangeTop` en
+    /// `Training.swift` — bloqueado hoy (ver nota gemela en `RoutineSetEditing.workSetsAreEqual`).
+    private func recetaSummary(_ idx: Int) -> String {
+        let work = items[idx].re.sets.filter { $0.kind == .work }
+        let type = items[idx].exercise.type
+        var parts: [String] = []
+        if showsWeight(type), let w = work.first?.weightKg, w > 0 {
+            parts.append("\(StrengthDisplay.weightNumber(w, system: system)) \(StrengthDisplay.weightUnit(system).lowercased())")
+        }
+        if showsReps(type), let r = work.first?.reps {
+            parts.append("\(r)")
+        }
+        let count = String(localized: "\(work.count) sets")
+        guard !parts.isEmpty else { return count }
+        return count + " · " + parts.joined(separator: " × ")
+    }
+
+    /// «Igualar todas» (tras confirmar): cada serie de TRABAJO toma el peso y las reps de la
+    /// PRIMERA. El calentamiento no se toca — nunca formó parte de la comparación.
+    private func equalizeAll(_ idx: Int) {
+        guard let first = items[idx].re.sets.first(where: { $0.kind == .work }) else { return }
+        for si in items[idx].re.sets.indices where items[idx].re.sets[si].kind == .work {
+            items[idx].re.sets[si].weightKg = first.weightKg
+            items[idx].re.sets[si].reps = first.reps
+        }
+        dirty = true
     }
 
     /// «A1 / A2» — the superset member badge, the Serie activa's grammar for the pair.
@@ -833,6 +923,10 @@ struct RoutineEditorScreen: View {
                 onNext: { focusNextCell(after: cell) },
                 onCopyPrevious: {},
                 onStep: { keypadStep(cell) },
+                // «Copiar arriba» (FER-88): atajo del EDITOR, no lectura de historial — copia la
+                // MISMA columna de la serie anterior DENTRO de esta misma prescripción. Oculto en la
+                // primera serie de un ejercicio: no hay «arriba» de qué copiar.
+                onCopyAbove: cell.si > 0 ? { copyAbove(cell) } : nil,
                 onHide: { withAnimation(.snappy(duration: 0.22)) { activeCell = nil } }
             )
             .transition(.move(edge: .bottom))
@@ -877,6 +971,21 @@ struct RoutineEditorScreen: View {
     private func commitBuffer() {
         guard let cell = activeCell else { return }
         binding(for: cell).wrappedValue = buffer
+    }
+
+    /// «Copiar arriba» (FER-88): copia el valor YA FORMATEADO de la MISMA columna de la serie
+    /// anterior dentro del MISMO ejercicio — reusa `binding(for:)`, así que hereda su parseo/formato
+    /// (incluida la conversión imperial) sin duplicarlo. Un valor vacío arriba no copia nada.
+    private func copyAbove(_ cell: EditorCell) {
+        guard cell.si > 0, items.indices.contains(cell.idx),
+              items[cell.idx].re.sets.indices.contains(cell.si - 1) else { return }
+        let above = EditorCell(idx: cell.idx, si: cell.si - 1, isWeight: cell.isWeight)
+        let value = binding(for: above).wrappedValue
+        guard !value.isEmpty else { return }
+        withAnimation(.snappy(duration: 0.22)) { activeCell = cell }
+        buffer = value
+        bufferTyped = true
+        commitBuffer()
     }
 
     /// Peso → reps de la misma serie → peso de la siguiente. Al final del ejercicio, cierra el keypad.
@@ -1216,6 +1325,19 @@ struct RoutineEditorScreen: View {
 
     // MARK: - Load + save
 
+    /// El último paso de «la línea de la subida» (decisión #4 del épico): pasa la evaluación de
+    /// `ProgressionPlanner`/`sessionSeed` a `EditorItem.raise` SIN condicionarla por `advice` — la
+    /// aplicación (`waiting == false`) contra la retención (`waiting == true`) ya la decidió
+    /// `ProgressionPlanner`, y este punto no debe re-filtrarla una segunda vez. Extraída de `load()`
+    /// como función nombrada y `static` (pura, sin `Repository`) para que
+    /// `RoutineEditorScreenRaiseTests` truene si alguien envuelve esta línea en
+    /// `if TrainingRegulation.allowsRaise(advice) { … } else { nil }`/`explainsHeldRaise(advice)`.
+    static func raiseForEditorItem(
+        _ evaluation: (state: ProgressionState, raise: ProgressionPlanner.Raise?)?
+    ) -> ProgressionPlanner.Raise? {
+        evaluation?.raise
+    }
+
     private func load() async {
         guard let store = await repo.storeHandle() else {
             routine = nil; items = []; itemsSnapshot = []; dirty = false; return
@@ -1263,7 +1385,7 @@ struct RoutineEditorScreen: View {
             if willStart {
                 let seed = await repo.sessionSeed(re: re, exercise: ex, inventory: inventory, advice: advice)
                 built.append(EditorItem(re: re, exercise: ex, lastSets: seed.lastSets,
-                                        raise: seed.evaluation?.raise))
+                                        raise: Self.raiseForEditorItem(seed.evaluation)))
             } else {
                 built.append(EditorItem(re: re, exercise: ex))
             }

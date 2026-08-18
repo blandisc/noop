@@ -24,6 +24,12 @@ struct SessionKeypad: View {
     let onNext: () -> Void
     let onCopyPrevious: () -> Void
     let onStep: () -> Void
+    /// «Copiar arriba» (FER-88 · E7, co-edición quirúrgica): copia el valor de la MISMA columna de
+    /// la serie ANTERIOR dentro de la MISMA prescripción — un atajo del editor de rutina, no una
+    /// lectura de historial (eso es `onCopyPrevious`, que el editor mantiene apagado a propósito).
+    /// `nil` oculta el accesorio por completo (mismo patrón que `onRPE`): la sesión en vivo no lo
+    /// pasa, así que nunca dibuja una pastilla muerta.
+    var onCopyAbove: (() -> Void)? = nil
     /// Opens the RPE picker. nil until RPE capture lands (FER-815) → the «RPE ▾» accessory is hidden, not
     /// shown disabled (no dead buttons).
     var onRPE: (() -> Void)? = nil
@@ -76,6 +82,9 @@ struct SessionKeypad: View {
                     .accessibilityLabel(isPaused ? Text("Resume session") : Text("Pause session"))
                 }
                 pill(String(localized: "copy last"), enabled: canCopyPrevious, action: onCopyPrevious)
+                if let onCopyAbove {
+                    pill(String(localized: "copy above"), action: onCopyAbove)
+                }
                 pill(stepLabel, action: onStep)
                 // FER-815: each accessory appears only when its function exists — never a permanent
                 // disabled placeholder. RPE shows once a handler is wired; plates once the math is on.

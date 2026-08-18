@@ -10,6 +10,19 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 // and equipment filters narrow a long catalog; «Create exercise» adds a user-defined one. «Báscula de
 // papel»: ink on paper, no datum here so no color; selection is quiet ink chrome.
 
+// MARK: - Touch target (FER-121)
+// The same principle as `PaperStepper.hitTarget` (FER-947, StrandDesign): padding + contentShape +
+// negative padding cancel out in layout, so the visible control never changes size or pushes a
+// neighbor — only the area that answers a tap grows to 44pt (HIG).
+private extension View {
+    /// Grows the tap target ONLY vertically, so a chip sitting beside others in the same row doesn't
+    /// invade its neighbor's hit area.
+    func verticalHitTarget(visible: CGFloat) -> some View {
+        let pad = max(0, (EntrenarMetrics.row - visible) / 2)
+        return padding(.vertical, pad).contentShape(Rectangle()).padding(.vertical, -pad)
+    }
+}
+
 struct ExerciseLibraryScreen: View {
     /// M8 (decisión Fer): el flujo de CREACIÓN inyecta su contexto — el título dice «Nueva rutina»
     /// en vez del genérico «Agregar a rutina» (todavía no existe rutina a la cual agregar).
@@ -199,7 +212,11 @@ struct ExerciseLibraryScreen: View {
                         in: Capsule(style: .continuous))
             .overlay(Capsule(style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: active == nil ? 1 : 0))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(EntrenarPressStyle())
+        // FER-121: el chip visible mide ~28pt de alto; el toque real crece a 44 (HIG) SOLO en
+        // vertical (mismo truco que `PaperStepper.hitTarget`, FER-947 en StrandDesign) para no
+        // invadir al chip vecino del mismo renglón.
+        .verticalHitTarget(visible: 28)
         .paperMenu(isPresented: isPresented, items: rows)
     }
 
@@ -244,44 +261,81 @@ struct ExerciseLibraryScreen: View {
         customIds.contains(ex.id) && ex.primaryMuscles.isEmpty
     }
 
+    /// Two real actions live on this row in ADD mode — open the detail vs. toggle the pick — so it can't
+    /// be one `Button` whose label nests a second real `Button` inside it. That's exactly what shipped
+    /// before FER-121: a `Button`-inside-a-`Button`, and VoiceOver couldn't reach the trailing toggle.
+    /// In BROWSE there's only one action, so the whole row stays one real `Button`, as before.
     private func exerciseRow(_ ex: Exercise, showsHistory: Bool) -> some View {
-        Button {
-            if needsMuscle(ex) { editingExercise = ex } else { detail = ex }
-        } label: {
-            HStack(spacing: CenitMetrics.gap) {
-                // Handoff: the thumbnail carries a 2px frame in the exercise's movement-family hue.
-                ExerciseThumbView(exercise: ex, side: 52)   // handoff: 52px thumb · cached GIF still or paper placeholder (FER-790)
-                    .overlay(RoundedRectangle(cornerRadius: ExerciseThumbnail.tileCornerRadius(side: 52), style: .continuous)
-                        .strokeBorder(familyTint(ex), lineWidth: 2))
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(StrengthDisplay.name(ex)).font(StrandFont.body).foregroundStyle(theme.ink)
-                        .multilineTextAlignment(.leading)
-                    if needsMuscle(ex) {
-                        Text("No muscle · tap to complete")
-                            .font(StrandFont.caption).foregroundStyle(theme.dataStrain)
-                    } else {
-                        Text(StrengthDisplay.subtitle(ex)).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                    }
+        Group {
+            if addMode {
+                // The identity content becomes its own tappable element via `.onTapGesture` + an
+                // explicit `.isButton` trait — a sibling of the trailing toggle's real `Button`, not a
+                // container around it. VoiceOver now reaches "open detail" and "add/remove" one after
+                // the other, in visual order, instead of one swallowing the other.
+                HStack(spacing: CenitMetrics.gap) {
+                    rowIdentity(ex, showsHistory: showsHistory)
+                        .contentShape(Rectangle())
+                        .accessibilityElement(children: .combine)
+                        .accessibilityAddTraits(.isButton)
+                        .onTapGesture { openDetail(ex) }
+                    trailingAccessory(ex)
                 }
-                Spacer(minLength: 8)
-                // No sparkline here (FER-951): with long catalog names it starved the title into a
-                // 4-line wrap. The record datum carries the story; the full trend lives in the detail.
-                // Handoff: the best mark as the right-hand datum, in the family hue («82,5 kg / tu récord»).
-                if showsHistory, let kg = bestKg[ex.id] {
-                    VStack(alignment: .trailing, spacing: 1) {
-                        Text(StrengthDisplay.weight(kg, system: system))
-                            .font(InstrumentoType.grotesk(15, weight: .bold)).foregroundStyle(familyTint(ex))
-                        Text("your record")
-                            .font(InstrumentoType.groteskOverline).tracking(InstrumentoType.groteskOverlineTracking)
-                            .foregroundStyle(theme.inkTertiary)
+                .padding(.vertical, CenitMetrics.rowVPad)
+            } else {
+                Button {
+                    openDetail(ex)
+                } label: {
+                    HStack(spacing: CenitMetrics.gap) {
+                        rowIdentity(ex, showsHistory: showsHistory)
+                        trailingAccessory(ex)
                     }
-                    .accessibilityElement(children: .combine)
+                    .padding(.vertical, CenitMetrics.rowVPad).contentShape(Rectangle())
                 }
-                trailingAccessory(ex)
+                .buttonStyle(EntrenarPressStyle())
             }
-            .padding(.vertical, CenitMetrics.rowVPad).contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+    }
+
+    /// Opens the row's detail — or, for a custom exercise still missing its muscle, the completion form
+    /// instead (FER-995). Shared by both `exerciseRow` branches so BROWSE and ADD agree on what a tap does.
+    private func openDetail(_ ex: Exercise) {
+        if needsMuscle(ex) { editingExercise = ex } else { detail = ex }
+    }
+
+    /// The row's identity: thumbnail + name/subtitle + (in "With your history") the best-mark datum.
+    /// In BROWSE it's wrapped in the row's own `Button`; in ADD mode it's a tappable sibling of the
+    /// trailing toggle `Button` (see `exerciseRow`) — never a container around another real `Button`.
+    private func rowIdentity(_ ex: Exercise, showsHistory: Bool) -> some View {
+        HStack(spacing: CenitMetrics.gap) {
+            // Handoff: the thumbnail carries a 2px frame in the exercise's movement-family hue.
+            ExerciseThumbView(exercise: ex, side: 52)   // handoff: 52px thumb · cached GIF still or paper placeholder (FER-790)
+                .overlay(RoundedRectangle(cornerRadius: ExerciseThumbnail.tileCornerRadius(side: 52), style: .continuous)
+                    .strokeBorder(familyTint(ex), lineWidth: 2))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(StrengthDisplay.name(ex)).font(StrandFont.body).foregroundStyle(theme.ink)
+                    .multilineTextAlignment(.leading)
+                if needsMuscle(ex) {
+                    Text("No muscle · tap to complete")
+                        .font(StrandFont.caption).foregroundStyle(theme.dataStrain)
+                } else {
+                    Text(StrengthDisplay.subtitle(ex)).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                }
+            }
+            Spacer(minLength: 8)
+            // No sparkline here (FER-951): with long catalog names it starved the title into a
+            // 4-line wrap. The record datum carries the story; the full trend lives in the detail.
+            // Handoff: the best mark as the right-hand datum, in the family hue («82,5 kg / tu récord»).
+            if showsHistory, let kg = bestKg[ex.id] {
+                VStack(alignment: .trailing, spacing: 1) {
+                    Text(StrengthDisplay.weight(kg, system: system))
+                        .font(InstrumentoType.grotesk(15, weight: .bold)).foregroundStyle(familyTint(ex))
+                    Text("your record")
+                        .font(InstrumentoType.groteskOverline).tracking(InstrumentoType.groteskOverlineTracking)
+                        .foregroundStyle(theme.inkTertiary)
+                }
+                .accessibilityElement(children: .combine)
+            }
+        }
     }
 
     /// The movement-family hue for an exercise (push=ember · pull=teal · legs=indigo), from its
@@ -292,7 +346,8 @@ struct ExerciseLibraryScreen: View {
     }
 
     /// The trailing control: an «Add» affordance in ADD mode (a check when picked), a chevron in BROWSE.
-    /// In ADD mode this is its own button — the row itself only opens the detail sheet.
+    /// In ADD mode this is its own real `Button` — a sibling of the row's identity, never nested inside
+    /// another `Button` (FER-121; see `exerciseRow`).
     @ViewBuilder
     private func trailingAccessory(_ ex: Exercise) -> some View {
         if addMode {
@@ -315,11 +370,15 @@ struct ExerciseLibraryScreen: View {
                             .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
                     }
                 }
-                .frame(width: 78)   // token-exempt: carril del control, al ancho de la cápsula — centrado, así la palomita cae donde estaba la palabra
+                // FER-121: ancho fijo de 78 (sin cambio) + alto a `EntrenarMetrics.row` (44, HIG). La
+                // fila ya mide 52+ pt por la miniatura, así que crecer este alto no mueve nada — el
+                // carril visible queda centrado igual, solo agranda el toque real del glifo/cápsula.
+                .frame(width: 78, height: EntrenarMetrics.row)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(EntrenarPressStyle())
             .contentShape(Rectangle())
             .animation(nil, value: selected)   // sin interpolación de layout: el cambio es instantáneo
+            .accessibilityLabel(Text(selected.contains(ex.id) ? "Remove from selection" : "Add to selection"))
         } else {
             StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold))
                 .foregroundStyle(theme.inkTertiary)
@@ -335,7 +394,7 @@ struct ExerciseLibraryScreen: View {
             }
             .padding(.vertical, CenitMetrics.gap).contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(EntrenarPressStyle())
     }
 
     // MARK: - Add bar (ADD mode)
@@ -537,7 +596,7 @@ struct CreateExerciseSheet: View {
                         .background(theme.surface, in: Capsule(style: .continuous))
                         .overlay(Capsule(style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
                 }
-                .buttonStyle(.plain).disabled(!canCreate)
+                .buttonStyle(EntrenarPressStyle()).disabled(!canCreate)
             }
             .padding(.top, CenitMetrics.screenTop).padding(.horizontal, CenitMetrics.screenPadding).padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -557,14 +616,14 @@ struct CreateExerciseSheet: View {
                     StrandIcon.down.image.font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
                 }
             }
-            .buttonStyle(.plain)
+            .buttonStyle(EntrenarPressStyle())
             .paperMenu(isPresented: isPresented, items: options.map { opt in
                 PaperMenuItem(label(opt), systemImage: selection.wrappedValue == opt ? "checkmark" : nil) {
                     selection.wrappedValue = opt
                 }
             })
         }
-        .frame(minHeight: 44)   // HIG minimum touch target
+        .frame(minHeight: EntrenarMetrics.row)   // HIG minimum touch target (44)
     }
 
     private func typeOption(_ t: ExerciseType) -> some View {
@@ -584,7 +643,7 @@ struct CreateExerciseSheet: View {
             .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
                 .strokeBorder(type == t ? theme.ink : theme.hairline, lineWidth: type == t ? 1.5 : 1))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(EntrenarPressStyle())
     }
 
     /// The muscle is required alongside the name (FER-995): shipping an exercise with no primary muscle

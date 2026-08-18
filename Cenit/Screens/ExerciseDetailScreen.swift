@@ -194,7 +194,12 @@ struct ExerciseDetailScreen: View {
                         .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(.white)
                         .padding(8).background(.black.opacity(StrandOpacity.strokeSoft), in: Circle())
                 }
-                .buttonStyle(.plain).padding(10)
+                .buttonStyle(EntrenarPressStyle())
+                // FER-121: círculo visible ≈28pt; el toque real crece a 44 (HIG) sin mover el
+                // círculo — padding + contentShape + padding negativo se cancelan en layout (mismo
+                // principio que `PaperStepper.hitTarget`, FER-947, StrandDesign).
+                .padding(8).contentShape(Rectangle()).padding(-8)
+                .padding(10)
                 .accessibilityLabel(Text(isLoopPlaying ? "Pause preview" : "Play preview"))
             }
             // Handoff: the hero carries a 2px frame in the movement family's hue — the same frame
@@ -238,7 +243,7 @@ struct ExerciseDetailScreen: View {
             }
             .foregroundStyle(theme.inkTertiary)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(EntrenarPressStyle())
     }
 
     /// «Progreso» — the handoff's fixed composition: the estimated-1RM hero + delta chip, the axis
@@ -396,7 +401,7 @@ struct ExerciseDetailScreen: View {
                         StrandIcon.down.image.font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
                     }
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(EntrenarPressStyle())
                 .paperMenu(isPresented: $showTypeMenu, items: ExerciseType.allCases.map { t in
                     PaperMenuItem(StrengthDisplay.typeName(t),
                                   systemImage: t == effectiveType ? "checkmark" : nil) { setType(t) }
@@ -406,10 +411,10 @@ struct ExerciseDetailScreen: View {
                     Button { revertType() } label: {
                         Text("Revert to default").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(EntrenarPressStyle())
                 }
             }
-            .frame(minHeight: 36)
+            .frame(minHeight: EntrenarMetrics.secondaryButton)
         }
     }
 
@@ -513,7 +518,7 @@ struct ExerciseDetailScreen: View {
                 .overlay(RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
                     .strokeBorder(theme.hairlineStrong, lineWidth: 1))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(EntrenarPressStyle())
         .accessibilityLabel(Text(StrengthDisplay.name(ex)))
     }
 
@@ -589,7 +594,7 @@ struct ExerciseDetailScreen: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(EntrenarPressStyle())
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Watch \(exercise.name) on YouTube")
         .accessibilityHint("Opens YouTube outside the app")

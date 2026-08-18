@@ -10788,6 +10788,23 @@
         }
       }
     },
+    "Add to selection" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add to selection"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Agregar a la selección"
+          }
+        }
+      }
+    },
     "Add %@" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -17747,6 +17764,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Copiar dirección de %@"
+          }
+        }
+      }
+    },
+    "copy above" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "copy above"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "copiar arriba"
           }
         }
       }
@@ -26082,6 +26116,23 @@
         }
       }
     },
+    "Create plan" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create plan"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crear plan"
+          }
+        }
+      }
+    },
     "Import" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -27339,6 +27390,125 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dejarlo como está"
+          }
+        }
+      }
+    },
+    "Equalize" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Equalize"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Igualar"
+          }
+        }
+      }
+    },
+    "Equalize all" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Equalize all"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Igualar todas"
+          }
+        }
+      }
+    },
+    "Equalize all sets to the first set's values" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Equalize all sets to the first set's values"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Igualar todas las series al valor de la primera"
+          }
+        }
+      }
+    },
+    "Equalize all sets?" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Equalize all sets?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Igualar todas las series?"
+          }
+        }
+      }
+    },
+    "Every work set will match the first one's weight and reps." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Every work set will match the first one's weight and reps."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cada serie de trabajo tomará el peso y las repeticiones de la primera."
+          }
+        }
+      }
+    },
+    "ROUTINE" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ROUTINE"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "RUTINA"
+          }
+        }
+      }
+    },
+    "Sets differ" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sets differ"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Series distintas"
           }
         }
       }
@@ -41973,6 +42143,23 @@
         }
       }
     },
+    "Remove from selection" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove from selection"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quitar de la selección"
+          }
+        }
+      }
+    },
     "Remove from session" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -48785,6 +48972,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rutinas de plantilla"
+          }
+        }
+      }
+    },
+    "Template" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Template"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Plantilla"
           }
         }
       }

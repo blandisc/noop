@@ -709,8 +709,7 @@ private struct EntrenarLanding: View {
                 showCreateRoutine = true
             }
             HStack(spacing: CenitMetrics.space2) {
-                InstrumentoToolChip(systemImage: "square.stack.3d.up", label: Text("Templates")) { showTemplates = true }
-                InstrumentoToolChip(systemImage: "square.and.arrow.down", label: Text("Import")) { showHubImport = true }
+                CrearPlanChip(onTemplates: { showTemplates = true }, onImport: { showHubImport = true })
                 InstrumentoToolChip(systemImage: "questionmark.circle", label: Text("Tricks")) { showTricks = true }
             }
         }
