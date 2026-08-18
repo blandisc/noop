@@ -58,3 +58,43 @@ final class RoutineRegionTinteTests: XCTestCase {
         }
     }
 }
+
+/// FER-86 — el botón del héroe mentía sobre su propio destino: decía «Continuar» y se teñía con el
+/// color de la rutina de HOY aunque la sesión viva fuera de otra. La sesión sobrevive entre días a
+/// propósito, así que basta no cerrar el entrenamiento de ayer para caer en el caso.
+///
+/// Se prueba la regla pura de decisión, no la vista: dado el nombre de la sesión viva y el de hoy,
+/// ¿qué rutina debe nombrar y teñir el botón?
+final class BotonHeroeRutinaVivaTests: XCTestCase {
+
+    /// La misma regla que usa la vista: nil cuando no hay sesión viva o cuando es la de hoy.
+    private func otraRutina(viva: String?, hoy: String?) -> String? {
+        guard let viva, !viva.isEmpty else { return nil }
+        return viva == hoy ? nil : viva
+    }
+
+    func testSinSesionVivaNoNombraNada() {
+        XCTAssertNil(otraRutina(viva: nil, hoy: "Empuje"))
+    }
+
+    func testLaSesionVivaDeHoyNoSeNombra() {
+        XCTAssertNil(otraRutina(viva: "Empuje", hoy: "Empuje"),
+                     "si es la de hoy, «Continuar» a secas basta")
+    }
+
+    /// El caso que fallaba: ayer Tirón sin cerrar, hoy toca Empuje.
+    func testLaSesionVivaDeOTRARutinaSeNombra() {
+        XCTAssertEqual(otraRutina(viva: "Tirón", hoy: "Empuje"), "Tirón")
+    }
+
+    /// Día de descanso con una sesión viva: no hay rutina de hoy contra la cual comparar, y la
+    /// sesión sigue siendo de otra cosa — se nombra igual.
+    func testEnDiaDeDescansoTambienSeNombra() {
+        XCTAssertEqual(otraRutina(viva: "Tirón", hoy: nil), "Tirón")
+    }
+
+    /// Una sesión ad hoc sin nombre no puede nombrarse: cae a «Continuar» a secas.
+    func testLaSesionSinNombreNoSeNombra() {
+        XCTAssertNil(otraRutina(viva: "", hoy: "Empuje"))
+    }
+}

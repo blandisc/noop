@@ -385,10 +385,24 @@ private struct EntrenarLanding: View {
 
     /// The one solid button per screen (F8): a day with a routine fills it («Empezar {rutina}»); a rest
     /// day leaves it open but quiet (outline). Both route through `startToday`.
-    /// The CTA verb: a live session in progress makes this «Continuar» (tapping re-opens it — `startToday`
-    /// ends in `startStrengthSession`, whose guard re-presents the existing session, AppModel), otherwise
-    /// «Empezar». Spanish literals, matching the rest of this screen.
-    private var empezarLabel: LocalizedStringKey { model.strengthSession != nil ? "Continue" : "Empezar" }
+    /// El nombre de la rutina que la sesión viva está corriendo, cuando NO es la de hoy.
+    ///
+    /// FER-86: el botón decía «Continuar» y se teñía con el color de la rutina de HOY aunque la
+    /// sesión viva fuera de otra. Si ayer empezaste Tirón y no lo cerraste, hoy el héroe pintaba
+    /// «Empuje» con sus músculos y sus números, el botón decía «Continuar» en ámbar de empuje, y al
+    /// tocarlo aterrizabas en Tirón. Nada te avisaba. La sesión sobrevive entre días a propósito
+    /// (`restoreInProgressStrengthSessionIfNeeded`), así que el caso es cotidiano, no raro.
+    private var sesionVivaDeOtraRutina: String? {
+        guard let viva = model.strengthSession?.routineName, !viva.isEmpty else { return nil }
+        return viva == todayRoutine?.name ? nil : viva
+    }
+
+    /// El verbo del botón. «Continuar» a secas solo cuando la sesión viva ES la de hoy; si es otra,
+    /// la nombra, porque el resto del héroe está hablando de una rutina distinta.
+    private var empezarLabel: LocalizedStringKey {
+        if let otra = sesionVivaDeOtraRutina { return "Continue \(otra)" }
+        return model.strengthSession != nil ? "Continue" : "Empezar"
+    }
 
     /// Re-open the live session if one is running (any day, incl. rest days), otherwise start today's.
     private func startOrResume() {
@@ -406,7 +420,10 @@ private struct EntrenarLanding: View {
     /// Routine-day CTA: `StrandCTAButton` con el tinte de región de la rutina (auditoría FER-952:
     /// el chrome se copiaba a mano; ahora el componente acepta `tint`).
     private var tintedEmpezarButton: some View {
-        StrandCTAButton(empezarLabel, tint: routineTint(region(name: todayRoutine?.name ?? ""))) {
+        // El tinte sigue a la rutina que el botón VA A ABRIR, no a la de hoy: teñirlo de empuje
+        // para reanudar un tirón era color 1:1 mintiendo sobre su propio destino.
+        StrandCTAButton(empezarLabel,
+                        tint: routineTint(region(name: sesionVivaDeOtraRutina ?? todayRoutine?.name ?? ""))) {
             startOrResume()
         }
     }
