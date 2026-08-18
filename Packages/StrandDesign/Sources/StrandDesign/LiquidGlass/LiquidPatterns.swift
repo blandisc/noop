@@ -117,46 +117,6 @@ public struct LiquidAmbientBackground: View {
         self.orbs = orbs
     }
 
-    /// El fondo de Hoy (FER-10 «El Ecosistema»): UN SOLO COLOR — el del veredicto — en
-    /// tres manchas monocromas que derivan detrás del vidrio, con crossfade de 1.6 s al
-    /// cambiar de estado. La aurora multicolor y la mancha índigo se retiraron de Hoy
-    /// (violaban «un solo color, el del veredicto»); `auroraStops` sigue disponible para
-    /// otros presets.
-    public static func hoy(_ ambiente: LiquidAmbiente = .bien) -> some View {
-        LiquidHoyAmbient(ambiente: ambiente)
-    }
-
-    /// Las tres manchas monocromas de Hoy para un ambiente dado (alfas del prototipo v6).
-    static func hoyOrbs(_ ambiente: LiquidAmbiente) -> [LiquidOrbSpec] {
-        let (c1, c2, c3, a1, a2, a3): (Color, Color, Color, Double, Double, Double)
-        switch ambiente {
-        case .bien:
-            (c1, c2, c3) = (LiquidColor.verdeAurora, LiquidColor.verdePrimario, LiquidColor.verdeAurora)
-            (a1, a2, a3) = (0.22, 0.15, 0.13)
-        case .atencion:
-            (c1, c2, c3) = (LiquidColor.ambarClaro, LiquidColor.atencion, LiquidColor.ambarClaro)
-            (a1, a2, a3) = (0.24, 0.15, 0.13)
-        case .alerta:
-            (c1, c2, c3) = (LiquidColor.negativo, LiquidColor.negativo, LiquidColor.rojoClaro)
-            (a1, a2, a3) = (0.20, 0.13, 0.13)
-        case .neutro:
-            (c1, c2, c3) = (LiquidColor.tinta500, LiquidColor.tinta500, LiquidColor.tinta500)
-            (a1, a2, a3) = (0.15, 0.10, 0.08)
-        }
-        return [
-            .init(alignment: .topLeading, offset: CGSize(width: -80, height: 50),
-                  size: CGSize(width: 300, height: 300), tone: c1, opacity: a1,
-                  blur: 28, period: 21, orbit: CGSize(width: 64, height: 42)),
-            .init(alignment: .topTrailing, offset: CGSize(width: 80, height: 210),
-                  size: CGSize(width: 250, height: 250), tone: c2, opacity: a2,
-                  blur: 28, period: 26, reverse: true,
-                  orbit: CGSize(width: 48, height: 54)),
-            .init(alignment: .bottomLeading, offset: CGSize(width: 40, height: -100),
-                  size: CGSize(width: 210, height: 210), tone: c3, opacity: a3,
-                  blur: 28, period: 18, orbit: CGSize(width: 40, height: 46)),
-        ]
-    }
-
     public var body: some View {
         GeometryReader { geo in
             let w = geo.size.width
@@ -223,33 +183,6 @@ struct LiquidAmbientOrbs: View {
                 }
             }
         }
-    }
-}
-
-/// El fondo de Hoy (FER-10): fondo neutro + las tres manchas MONOCROMAS del veredicto,
-/// con crossfade `ambienteCrossfade` (1.6 s) entre climas. Bajo Reduce Motion el fade se
-/// conserva (un fade no es movimiento); lo que se congela es el drift.
-public struct LiquidHoyAmbient: View {
-    private let ambiente: LiquidAmbiente
-
-    public init(ambiente: LiquidAmbiente) {
-        self.ambiente = ambiente
-    }
-
-    private static let todos: [LiquidAmbiente] = [.bien, .atencion, .alerta, .neutro]
-
-    public var body: some View {
-        ZStack {
-            LiquidColor.fondoGradient
-            ForEach(Array(Self.todos.enumerated()), id: \.offset) { _, amb in
-                LiquidAmbientOrbs(orbs: LiquidAmbientBackground.hoyOrbs(amb))
-                    .opacity(amb == ambiente ? 1 : 0)
-            }
-        }
-        .animation(LiquidEcosistemaMotion.ambienteCrossfadeAnim,
-                   value: ambiente)
-        .ignoresSafeArea()
-        .allowsHitTesting(false)
     }
 }
 
@@ -414,9 +347,9 @@ private struct DialTicks: Shape {
 }
 
 #if DEBUG
-#Preview("Liquid · Patrones (ambiente monocromo)") {
+#Preview("Liquid · Patrones (sobre la atmósfera)") {
     ZStack {
-        LiquidAmbientBackground.hoy(.bien)
+        LiquidAtmosfera(ambiente: .bien, estado: AtmosferaEstado())
         VStack(spacing: LiquidSpace.s400) {
             LiquidScreenHeader(kicker: "MIÉ 22 DE JUL") { LiquidDialSeal() }
             Spacer()
@@ -425,12 +358,12 @@ private struct DialTicks: Shape {
     }
 }
 
-#Preview("Liquid · Ambiente por estado") {
+#Preview("Liquid · Atmósfera por estado") {
     VStack(spacing: 0) {
-        LiquidAmbientBackground.hoy(.bien)
-        LiquidAmbientBackground.hoy(.atencion)
-        LiquidAmbientBackground.hoy(.alerta)
-        LiquidAmbientBackground.hoy(.neutro)
+        LiquidAtmosfera(ambiente: .bien, estado: AtmosferaEstado())
+        LiquidAtmosfera(ambiente: .atencion, estado: AtmosferaEstado())
+        LiquidAtmosfera(ambiente: .alerta, estado: AtmosferaEstado())
+        LiquidAtmosfera(ambiente: .neutro, estado: AtmosferaEstado())
     }
     .environment(\.liquidMotionDisabled, true)
 }
