@@ -106,7 +106,7 @@ struct EcosistemaPolvoU {
     var umbralClima: Float
     var neutra: UInt32
     var still: UInt32
-    var _p0: UInt32 = 0
+    var bordeFade: Float
     var _p1: UInt32 = 0
 
     init(paleta: EcosistemaPaleta, lienzo: CGSize, t: TimeInterval, desplazamiento: CGFloat,
@@ -139,6 +139,7 @@ struct EcosistemaPolvoU {
         umbralClima = Float(F.umbralClima)
         self.neutra = neutra ? 1 : 0
         self.still = still ? 1 : 0
+        bordeFade = Float(F.bordeFade)
     }
 }
 

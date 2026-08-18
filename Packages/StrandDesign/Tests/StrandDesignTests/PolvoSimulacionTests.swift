@@ -68,7 +68,7 @@ final class PolvoSimulacionTests: XCTestCase {
                 XCTAssertLessThan(q.centro.y, lienzo.height, "i=\(i) t=\(t)")
                 XCTAssertGreaterThanOrEqual(q.radio, F.radioMin)
                 XCTAssertLessThanOrEqual(q.radio, F.radioMax)
-                XCTAssertGreaterThan(q.alfa, 0)
+                XCTAssertGreaterThanOrEqual(q.alfa, 0)
                 XCTAssertLessThan(q.alfa, 0.5)
             }
         }
@@ -128,10 +128,16 @@ final class PolvoSimulacionTests: XCTestCase {
     func test_laRespiracionMueveElAlfaEnSuBanda() {
         for i in [3, 11, 47, 130] {
             var minimo = Double.infinity, maximo = -Double.infinity
+            var muestras = 0
             for k in 0..<252 {
-                let a = p(i, t: Double(k) * 0.05).alfa
-                minimo = min(minimo, a); maximo = max(maximo, a)
+                let q = p(i, t: Double(k) * 0.05)
+                // Lejos de los bordes (ahí el fade del wrap manda, no la respiración).
+                let d = min(q.centro.x, lienzo.width - q.centro.x, q.centro.y, lienzo.height - q.centro.y)
+                guard d > F.bordeFade else { continue }
+                muestras += 1
+                minimo = min(minimo, q.alfa); maximo = max(maximo, q.alfa)
             }
+            guard muestras > 200 else { continue }   // esa mota cruzó un borde: no sirve de muestra
             let razon = maximo / minimo
             let esperada = 1 / (1 - 2 * F.respiracionAmp)
             XCTAssertGreaterThan(razon, esperada * 0.88, "i=\(i) razón \(razon)")
@@ -139,6 +145,21 @@ final class PolvoSimulacionTests: XCTestCase {
         }
         // Y con `still` no respira: alfa constante en el tiempo.
         XCTAssertEqual(p(11, t: 0, still: true).alfa, p(11, t: 5, still: true).alfa)
+    }
+
+    /// Los bordes se desvanecen: una mota pegada al borde tiene alfa ≈ 0 y a 40 pt ya vale su
+    /// alfa pleno — así el wrap no «parpadea» (arriba densidad 0.35, abajo 1: sin fade el salto
+    /// era 3× en un cuadro).
+    func test_losBordesSeDesvanecen() {
+        var pegadas = 0, plenas = 0
+        for i in 0..<2000 {
+            let q = p(i, still: true)
+            let d = min(q.centro.x, lienzo.width - q.centro.x, q.centro.y, lienzo.height - q.centro.y)
+            if d < 3 { pegadas += 1; XCTAssertLessThan(q.alfa, 0.01, "i=\(i) a \(d) pt del borde") }
+            if d > F.bordeFade { plenas += 1; XCTAssertGreaterThan(q.alfa, 0.02, "i=\(i)") }
+        }
+        XCTAssertGreaterThan(pegadas, 5, "la muestra tiene motas pegadas al borde")
+        XCTAssertGreaterThan(plenas, 1000)
     }
 
     // MARK: Tonos

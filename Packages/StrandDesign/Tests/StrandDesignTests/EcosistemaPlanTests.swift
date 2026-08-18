@@ -378,6 +378,7 @@ final class EcosistemaPlanTests: XCTestCase {
         XCTAssertEqual(MemoryLayout<EcosistemaPolvoU>.offset(of: \.umbralClima), 172)
         XCTAssertEqual(MemoryLayout<EcosistemaPolvoU>.offset(of: \.neutra), 176)
         XCTAssertEqual(MemoryLayout<EcosistemaPolvoU>.offset(of: \.still), 180)
+        XCTAssertEqual(MemoryLayout<EcosistemaPolvoU>.offset(of: \.bordeFade), 184)
     }
 
     /// Los tokens del polvo que viajan al shader salen de `PolvoSimulacion.Fisica`, no del
@@ -398,6 +399,7 @@ final class EcosistemaPlanTests: XCTestCase {
         XCTAssertEqual(u.derivaXMax, Float(F.derivaXMax)); XCTAssertEqual(u.derivaYMin, Float(F.derivaYMin))
         XCTAssertEqual(u.derivaYRango, Float(F.derivaYRango)); XCTAssertEqual(u.parallax, Float(F.parallax))
         XCTAssertEqual(u.alfaNeutra, Float(F.alfaNeutra)); XCTAssertEqual(u.umbralClima, Float(F.umbralClima))
+        XCTAssertEqual(u.bordeFade, Float(F.bordeFade))
         XCTAssertEqual(u.lienzo, SIMD2<Float>(402, 874)); XCTAssertEqual(u.t, 3)
         XCTAssertEqual(u.desplazamiento, 120); XCTAssertEqual(u.neutra, 0); XCTAssertEqual(u.still, 0)
         XCTAssertEqual(u.colorClima, paleta.clima); XCTAssertEqual(u.colorSueno, paleta.sueno)

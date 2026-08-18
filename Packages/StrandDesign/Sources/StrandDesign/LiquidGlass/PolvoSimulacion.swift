@@ -48,6 +48,10 @@ public enum PolvoSimulacion {
         public static let parallax: CGFloat = 0.22
         /// Sin veredicto (calibración, T3, T4, T5, base rancia): tinta neutra y alfa × 0.55.
         public static let alfaNeutra: Double = 0.55
+        /// Los bordes se desvanecen en estos puntos: sin esto una mota que sale por arriba (densidad
+        /// 0.35, tenue) reaparece abajo (densidad 1, brillante) con un salto de alfa de 3× en un
+        /// cuadro, y el campo «infinito» se ve como un cielo que parpadea en los dos bordes.
+        public static let bordeFade: Double = 40
         /// 80 % del polvo lleva el clima; el resto se reparte en cuartos iguales entre las cuatro
         /// identidades del héroe (reposo · sueño · vigía temp · vigía resp).
         public static let umbralClima: Double = 0.80
@@ -129,8 +133,14 @@ public enum PolvoSimulacion {
         let w = Fisica.respiracionWMin + h(4) * Fisica.respiracionWRango
         let fase = 2 * Double.pi * h(5)
         let resp = still ? 1 : (1 - Fisica.respiracionAmp) + Fisica.respiracionAmp * sin(w * tt + fase)
+        // Los cuatro bordes se desvanecen (`bordeFade`): la mota entra y sale del lienzo en 0.
+        func fade(_ d: Double) -> Double {
+            let k = min(1, max(0, d / Fisica.bordeFade))
+            return k * k * (3 - 2 * k)          // smoothstep(0, bordeFade, d)
+        }
+        let borde = fade(x) * fade(W - x) * fade(y) * fade(H - y)
         let alfa = (Fisica.alfaBase + Fisica.alfaRango * f) * (0.5 + 0.5 * h(3)) * resp
-            * (neutra ? Fisica.alfaNeutra : 1)
+            * (neutra ? Fisica.alfaNeutra : 1) * borde
 
         let tono: Tono
         if neutra {

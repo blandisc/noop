@@ -96,7 +96,7 @@ struct PolvoU {
     float  umbralClima;
     uint   neutra;          // 1 = sin veredicto: tinta neutra × alfaNeutra
     uint   still;           // 1 = Reduce Motion / render: sin tiempo ni parallax
-    uint   _p0;
+    float  bordeFade;       // los cuatro bordes se desvanecen en estos pt
     uint   _p1;
 };
 
@@ -280,8 +280,11 @@ vertex VOut vsPolvo(uint vid [[vertex_id]],
     float w = u.respiracionWMin + hashPolvo(iid, 4u) * u.respiracionWRango;
     float fase = 6.28318530718 * hashPolvo(iid, 5u);
     float resp = u.still != 0u ? 1.0 : (1.0 - u.respiracionAmp) + u.respiracionAmp * sin(w * t + fase);
+    // Los cuatro bordes se desvanecen (`PolvoSimulacion.Fisica.bordeFade`), como en la spec.
+    float borde = smoothstep(0.0, u.bordeFade, x) * smoothstep(0.0, u.bordeFade, W - x)
+                * smoothstep(0.0, u.bordeFade, y) * smoothstep(0.0, u.bordeFade, H - y);
     float alfa = (u.alfaBase + u.alfaRango * f) * (0.5 + 0.5 * hashPolvo(iid, 3u)) * resp
-               * (u.neutra != 0u ? u.alfaNeutra : 1.0);
+               * (u.neutra != 0u ? u.alfaNeutra : 1.0) * borde;
 
     float4 color = u.colorClima;
     if (u.neutra != 0u) {
