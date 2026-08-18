@@ -107,7 +107,7 @@ enum MetricCatalog {
         d("body_fat", String(localized: "Body Fat"), "Health", "%", "apple-health", "percent", 1, false),
         d("lean_mass", String(localized: "Lean Body Mass"), "Health", "kg", "apple-health", "figure.arms.open", 1, true),
         d("bmi", String(localized: "BMI"), "Health", "", "apple-health", "figure", 1, nil),
-        d("stress", String(localized: "Day Stress"), "Health", "/3", "strap", "gauge.with.dots.needle.50percent", 1, false),
+        d("stress", String(localized: "Day Stress"), "Health", "/3", "strap", "gauge.with.needle", 1, false),
     ]
 
     static func inCategory(_ c: String) -> [MetricDescriptor] { all.filter { $0.category == c } }

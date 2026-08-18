@@ -121,6 +121,7 @@ public struct MatrizSeccion: Sendable, Identifiable, Equatable {
             && lhs.glifoSello == rhs.glifoSello
             && lhs.sello == rhs.sello
             && lhs.selloGuardian == rhs.selloGuardian
+            && lhs.a11yValor == rhs.a11yValor   // Pasos: el conteo cambia dentro de la misma centena
     }
 }
 
@@ -353,11 +354,7 @@ public struct MatrizHoyFace: View {
 
     /// El texto de un rótulo de estante (compartido por el decorativo y el tocable).
     private func nivelTexto(_ rotulo: String) -> some View {
-        Text(rotulo)
-            .font(LiquidType.cabeceraEstante)
-            .tracking(LiquidType.cabeceraEstanteTracking)
-            .textCase(.uppercase)
-            .foregroundStyle(LiquidColor.tinta900)
+        LiquidOverline(rotulo)
     }
 
     /// La cabecera de un estante: rótulo en versalitas + el mismo «?» de siempre (FER-54: la

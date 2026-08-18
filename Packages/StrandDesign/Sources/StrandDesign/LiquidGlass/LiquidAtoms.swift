@@ -6,6 +6,21 @@ import SwiftUI
 /// borde blanco 0.5 e inner-highlight — el ÚNICO lugar (junto con el valor numérico)
 /// donde el tono tiñe una tarjeta. Tamaños del sistema: 22 (tiles, sugerencia) y
 /// 28 (ModeTile, que sube el alfa a 12 %).
+/// El sobretítulo en versalitas del sistema («DECIDEN TU DÍA», «QUÉ ES CADA UNA»): una sola
+/// voz para las cabeceras de estante de Hoy y las secciones de sus hojas-manual (FER-125:
+/// el mismo rol tipográfico cambiaba de tamaño y de tinta al cruzar la hoja).
+public struct LiquidOverline: View {
+    private let texto: String
+    public init(_ texto: String) { self.texto = texto }
+    public var body: some View {
+        Text(texto)
+            .font(LiquidType.cabeceraEstante)
+            .tracking(LiquidType.cabeceraEstanteTracking)
+            .textCase(.uppercase)
+            .foregroundStyle(LiquidColor.tinta900)
+    }
+}
+
 public struct LiquidIconDrop: View {
     private let glyph: LiquidIcon.Glyph
     private let tone: Color

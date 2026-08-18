@@ -249,13 +249,14 @@ struct TrainingLoadSheet: View {
         // que ya costó caro en FER-216/FER-1040.
         let hv = heroVentana
         return LiquidSheetHeader(
+            // La pesa del sistema, como en la Matriz (FER-125). Aquí `tono` es el VEREDICTO
+            // de la banda (verde/ámbar/rojo), no la identidad: la gota va en `verdeCarga`
+            // (la identidad de Carga, la misma del módulo) y el numeral sigue al veredicto.
             icono: .carga,
-            // El mismo sello que la fila de Carga en la Matriz. Ojo: aquí `tono` es el
-            // VEREDICTO de la banda (verde/ámbar/rojo), no la identidad — el símbolo de
-            // sistema se teñía con él y el sello no puede (es multicolor por diseño). La
-            // gota sigue al veredicto; el dibujo dice la identidad.
-            selloMetrica: .carga,
-            titulo: String(localized: "Training load"),
+            iconoTono: LiquidColor.verdeCarga,
+            // Una señal, un nombre: la Matriz dice «Carga» y la hoja también (revisión UX-03;
+            // el «de entrenamiento» ya lo dice el método del pie).
+            titulo: String(localized: "Load"),
             tono: tono,
             numeral: hv.numeral,
             numeralTono: tono,

@@ -268,26 +268,6 @@ struct LiquidMetricSheetView: View {
         }
     }
 
-    /// El sello dibujado de la métrica, cuando existe: encabeza la hoja igual que en la
-    /// Matriz, para que abrir una fila no cambie de vocabulario a medio camino. Las
-    /// sub-métricas de sueño heredan el sello del sueño; recovery/vo2max/spo2 no tienen
-    /// sello propio y caen al glifo de sistema, como hoy.
-    private var selloMetrica: SelloMetrica? {
-        switch datoInfo.id {
-        case "sleep", "sleep_performance", "sleep_efficiency", "sleep_restorative",
-             "sleep_awakenings", "sleep_latency":
-            return .sueno
-        case "hrv":               return .hrv
-        case "rhr", "heart_rate": return .reposo
-        case "strain":            return .esfuerzo
-        case "steps":             return .pasos
-        case "skin_temp":         return .piel
-        case "resp_rate":         return .respiracion
-        case "stress":            return .estres
-        default:                  return nil
-        }
-    }
-
     /// El tinte del numeral — paridad `tintColor` (:103-111) con las voces de TEXTO
     /// Liquid: banda verde → verde/profundo, ámbar → atención/texto (AA), rojo → negativo;
     /// neutral → tinta/500; métrica → su hue.
@@ -402,10 +382,9 @@ struct LiquidMetricSheetView: View {
         // acceso camina `levelsHost.window`, el gasto que ya costó caro en FER-216/FER-1040.
         let hv = heroVentana
         return LiquidSheetHeader(
+            // El símbolo de sistema de la Matriz encabeza también la hoja (FER-117/125): la
+            // fila que tocaste y la hoja que se abre dicen lo mismo con el mismo glifo.
             icono: glifo,
-            // El sello de la Matriz encabeza también la hoja: la fila que tocaste y la
-            // hoja que se abre dicen lo mismo con el mismo dibujo.
-            selloMetrica: selloMetrica,
             titulo: tituloHoja,
             tono: tono,
             // F4b · Héroe idéntico a las otras 8: el numeral de duración (reloj «7:12»
