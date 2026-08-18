@@ -123,6 +123,16 @@ public enum LiquidColor {
     // ámbar entra por el guardián).
 
     /// Partícula en rango/atención (verde tinta, más profundo que `verdePrimario`).
+    // MARK: Celda sin dato (mosaicos de calendario)
+
+    /// El cuadro de un día SIN lectura en un mosaico de calendario. Es tinta al 7 %: se ve como
+    /// un hueco en el papel, no como un cuarto estado con voz propia — un día sin dato no dice
+    /// nada del cuerpo y no debe competir con los que sí.
+    public static let celdaVacia = tinta900.opacity(0.07)
+
+    /// El mismo hueco cuando debe leerse a tamaño de pip en una leyenda, donde 7 % desaparece.
+    public static let celdaVaciaPip = tinta900.opacity(0.14)
+
     public static let particulaVerde = Color(hex: "#10694E")
     /// Partícula en desgaste (rojo tinta, más profundo que `negativo`).
     public static let particulaRoja = Color(hex: "#963426")

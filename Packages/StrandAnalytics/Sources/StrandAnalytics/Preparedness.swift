@@ -143,6 +143,12 @@ public enum Preparedness {
     /// FER-51: cap de noches que `Read.bodyHistory` acarrea (las últimas N terminando en asOf),
     /// para que el `Equatable` del publish no engorde con historiales multianuales.
     public static let bodyHistoryWindow = 20
+    /// FER-119: la ventana de `verdictHistory`. **Constante propia, no `bodyHistoryWindow`** —
+    /// `PreparednessBodyHistoryTests` fija el 20 de aquella literalmente, y son dos preguntas
+    /// distintas: 20 noches para leer el arrastre del cuerpo, 30 días para «¿esto es normal
+    /// para mí?». 30 y no 90 porque con `hysteresisDays = 2` treinta días son ~15 tramos
+    /// independientes, no 30 muestras: alargarla aparenta una resolución que no existe.
+    public static let verdictHistoryWindow = 30
 
     /// FER-51 · Lane 0: una noche del cuerpo, juzgada por el MISMO pase forward del veredicto con
     /// la base que existía ESE día (priors) — proyección pura, cero matemática nueva (el mismo
@@ -215,6 +221,46 @@ public enum Preparedness {
         }
     }
 
+    /// Una mañana de la ventana, con el veredicto que le tocó y qué ejes la sacaron de rango.
+    ///
+    /// **Por qué existe** (FER-119): el motor ya calculaba el veredicto de cada día en su pase
+    /// forward, pero solo publicaba el de HOY — `bodyHistory` traía las banderas por eje sin el
+    /// veredicto, y `sentinelHistory` las del centinela, con OTRA ventana. Unirlas en la capa de
+    /// app obligaba a casar dos arreglos de largos distintos; casarlos por índice desalinea.
+    /// Aquí van los tres ejes juntos, en una sola ventana, con el veredicto que ya se calculó.
+    ///
+    /// **`sentinelOut` es la conjunción**, no dos banderas sueltas: el centinela solo vota cuando
+    /// temperatura Y respiración salen juntas — `rawVerdictAt` ya lo calcula así y aquí se
+    /// transporta, en vez de dejar que cada consumidor la re-derive y alguno la equivoque.
+    public struct VerdictNight: Sendable, Equatable {
+        /// yyyy-MM-dd. La ventana es DISPERSA: un día sin fila **no aparece**, no viene en `nil`.
+        /// Quien dibuje una rejilla tiene que densificar por calendario — ver `Input.days`.
+        public let day: String
+        /// El veredicto de ese día: el estable con la histéresis aplicada hasta ahí, salvo que
+        /// esa noche no tuviera lectura — entonces es `.lowSignal`, sin heredar el de ayer.
+        ///
+        /// ⚠️ **Ojo al mezclar con los ejes de abajo:** este veredicto es POST-histéresis (mira
+        /// los días vecinos) y los tres ejes son los CRUDOS de esa noche. Una noche mala aislada
+        /// puede salir `verdict: .full` con `autonomicOut: true` — no es una contradicción, son
+        /// dos preguntas: «¿qué te dijo la app ese día?» y «¿qué pasó esa noche?». Una superficie
+        /// que pinte el veredicto y cuente los ejes en el mismo bloque tiene que decir cuál es
+        /// cuál, o se contradice sola.
+        public let verdict: Verdict
+        public let autonomicOut: Bool
+        public let sleepOut: Bool
+        /// Temperatura Y respiración fuera, juntas — el voto del centinela, ya combinado.
+        public let sentinelOut: Bool
+
+        public init(day: String, verdict: Verdict, autonomicOut: Bool,
+                    sleepOut: Bool, sentinelOut: Bool) {
+            self.day = day
+            self.verdict = verdict
+            self.autonomicOut = autonomicOut
+            self.sleepOut = sleepOut
+            self.sentinelOut = sentinelOut
+        }
+    }
+
     public struct Read: Sendable, Equatable {
         public let verdict: Verdict
         public let drivers: [Driver]
@@ -255,6 +301,24 @@ public enum Preparedness {
         /// `sentinelHistory`). Vacía en la ruta lowSignal donde no se computan raws (la misma
         /// condición bajo la cual `sentinel` es nil). SOLO UI, jamás el voto.
         public let bodyHistory: [BodyNight]
+        /// FER-119: las últimas `verdictHistoryWindow` mañanas con SU veredicto y sus tres ejes.
+        ///
+        /// Distinta de `bodyHistory` en lo que importa: aquella trae las banderas por eje **sin**
+        /// el veredicto, y `sentinelHistory` las del centinela con **otra** ventana. Esta las une.
+        ///
+        /// **El último elemento es el `verdict` que devuelve este mismo `Read`** — nunca el que
+        /// habría dado el pliegue genérico. Importa porque `Read.verdict` no siempre sale de
+        /// `hysteresed`: un empujón de tendencia lo modifica después, y dos rutas lo fuerzan a
+        /// `.lowSignal` sin plegar. Sin este amarre, una superficie que dibuje la serie podría
+        /// decir «En rango» el mismo día que el héroe dice «Baja señal».
+        ///
+        /// **Excepción, y es honesta:** en la ruta sin fila de hoy la serie NO llega a `asOf` —
+        /// termina en la última noche que existe, igual que `bodyHistory`. No se inventa un día
+        /// que no llegó.
+        ///
+        /// **Los días históricos NO llevan el empujón de tendencia**: `input.trend` es una lectura
+        /// puntual de hoy, sin serie, así que el motor no puede saber si aplicaba entonces.
+        public let verdictHistory: [VerdictNight]
         /// FER-51: dev térmica del día asOf DESPUÉS del descuento lúteo — el número exacto que
         /// juzgó `thermalDriver` (z_equiv = esto / `Config.thermalOutC`). nil sin lectura.
         public let thermalAdjustedDevC: Double?
@@ -267,13 +331,15 @@ public enum Preparedness {
                     signalsPresent: Int, signalsTotal: Int,
                     maturity: BaselineStatus, autonomicNights: Int, trend: AutonomicTrend.Direction?,
                     sentinel: SentinelRead? = nil, sentinelHistory: [SentinelNight] = [],
-                    bodyHistory: [BodyNight] = [], thermalAdjustedDevC: Double? = nil,
+                    bodyHistory: [BodyNight] = [], verdictHistory: [VerdictNight] = [],
+                    thermalAdjustedDevC: Double? = nil,
                     autonomicPossible: Bool = true, sleepScale: SleepScale? = nil) {
             self.verdict = verdict; self.drivers = drivers; self.signals = signals
             self.signalsPresent = signalsPresent; self.signalsTotal = signalsTotal
             self.maturity = maturity; self.autonomicNights = autonomicNights; self.trend = trend
             self.sentinel = sentinel; self.sentinelHistory = sentinelHistory
-            self.bodyHistory = bodyHistory; self.thermalAdjustedDevC = thermalAdjustedDevC
+            self.bodyHistory = bodyHistory; self.verdictHistory = verdictHistory
+            self.thermalAdjustedDevC = thermalAdjustedDevC
             self.autonomicPossible = autonomicPossible
             self.sleepScale = sleepScale
         }
@@ -478,8 +544,9 @@ public enum Preparedness {
     /// matemática nueva ni un segundo camino que pueda divergir del principal.
     private static func historiaSinDiaDeHoy(_ ordered: [DailyMetric], input: Input, config: Config)
         -> (maturity: BaselineStatus, nights: Int, autonomicPossible: Bool,
-            sentinelHistory: [SentinelNight], bodyHistory: [BodyNight]) {
-        guard !ordered.isEmpty else { return (.calibrating, 0, false, [], []) }
+            sentinelHistory: [SentinelNight], bodyHistory: [BodyNight],
+            verdictHistory: [VerdictNight]) {
+        guard !ordered.isEmpty else { return (.calibrating, 0, false, [], [], []) }
         // El resolutor de constructo del camino principal SIN su cláusula «la última noche tiene
         // que ser nocturna»: esa cláusula existe porque el DÍA QUE SE JUZGA no puede compararse
         // contra una base de otro constructo — y aquí no hay día que juzgar. Copiarla (primer
@@ -506,7 +573,16 @@ public enum Preparedness {
         }
         return (base?.status ?? .calibrating, base?.nValid ?? 0, posible,
                 sentinelNights(ordered: ordered, raws: raws, priorStates: priors),
-                bodyNights(ordered: ordered, raws: raws, priorStates: priors))
+                bodyNights(ordered: ordered, raws: raws, priorStates: priors),
+                // `verdictFinal: nil` A PROPÓSITO: aquí NO hay fila de hoy, así que no hay celda
+                // que amarrar al `.lowSignal` del Read. Forzarla exigiría fabricar un día que
+                // nunca llegó — lo que este mismo camino prohíbe y una prueba fija
+                // («termina en la última noche que SÍ existe, no en asOf»). La serie termina donde
+                // termina la historia, igual que `bodyHistory`.
+                verdictNights(ordered: ordered, raws: raws,
+                              serieEstable: hysteresedSeries(raws.map(\.verdict),
+                                                             hysteresisDays: config.hysteresisDays),
+                              verdictFinal: nil))
     }
 
     public static func evaluate(_ input: Input, config: Config = .default) -> Read {
@@ -525,6 +601,7 @@ public enum Preparedness {
                         trend: input.trend?.direction,
                         sentinelHistory: previo.sentinelHistory,
                         bodyHistory: previo.bodyHistory,
+                        verdictHistory: previo.verdictHistory,
                         autonomicPossible: previo.autonomicPossible)
         }
 
@@ -635,6 +712,14 @@ public enum Preparedness {
                         sentinel: sentinelHoy,
                         sentinelHistory: historiaCentinela,
                         bodyHistory: historiaCuerpo,
+                        // El Read se fuerza a `.lowSignal` sin plegar; la serie amarra su último
+                        // elemento a eso mismo. Con UNA noche sin lectura, el pliegue genérico se
+                        // quedaría pegado al veredicto de ayer y el mosaico contradiría al héroe.
+                        verdictHistory: verdictNights(ordered: ordered, raws: raws,
+                                                      serieEstable: hysteresedSeries(
+                                                          raws.map(\.verdict),
+                                                          hysteresisDays: config.hysteresisDays),
+                                                      verdictFinal: .lowSignal),
                         thermalAdjustedDevC: tempDevToday,
                         autonomicPossible: autonomicPosible, sleepScale: sleepScale)
         }
@@ -643,7 +728,12 @@ public enum Preparedness {
         // ONE forward pass yields the per-day RawDay (verdict + illness-sentinel signals): hysteresis
         // rides the verdicts, the sentinel STREAK (FER-8) rides the temp/resp flags — same pass, no
         // extra cost, and no drift between the vote and the sentinel.
-        let stable = hysteresed(raws.map(\.verdict), hysteresisDays: config.hysteresisDays)
+        // El pliegue corre UNA vez y su resultado se reparte: `stable` es su último elemento y
+        // `verdictNights` recibe la serie ya hecha. Antes `hysteresed` plegaba aquí y
+        // `verdictNights` volvía a plegar adentro sobre los MISMOS datos — dos pases O(n) y dos
+        // arreglos de hasta ~4000 elementos por refresh completo, para tirar uno de los dos.
+        let serieEstable = hysteresedSeries(raws.map(\.verdict), hysteresisDays: config.hysteresisDays)
+        let stable = serieEstable.last ?? .lowSignal
         // Trend nudge (post-hysteresis): a sustained falling RMSSD trend pushes a borderline day
         // (`caution`) to `easy`. It never overrides a clean `full`. `/cso` may widen this.
         let final: Verdict = (stable == .caution && input.trend?.direction == .below) ? .easy : stable
@@ -654,6 +744,9 @@ public enum Preparedness {
                     sentinel: sentinelHoy,
                     sentinelHistory: historiaCentinela,
                     bodyHistory: historiaCuerpo,
+                    verdictHistory: verdictNights(ordered: ordered, raws: raws,
+                                                  serieEstable: serieEstable,
+                                                  verdictFinal: final),
                     thermalAdjustedDevC: tempDevToday,
                     autonomicPossible: autonomicPosible, sleepScale: sleepScale)
     }
@@ -685,6 +778,49 @@ public enum Preparedness {
                       rhrBand: band(priorStates.rhr?[i]))
         }
         return Array(all.suffix(bodyHistoryWindow))
+    }
+
+    /// FER-119: las mañanas con su veredicto y sus tres ejes — proyección pura del mismo pase
+    /// forward, como `bodyNights` y `sentinelNights`.
+    ///
+    /// **El cap va DESPUÉS del pliegue, no antes**, y no es un detalle: `hysteresedSeries` toma
+    /// su primer elemento como estable de arranque sin verificar histéresis. Plegar sobre la
+    /// ventana podada haría que el primer día visible se volviera «estable» de golpe, ignorando
+    /// el momentum que traía desde fuera — un resultado distinto en los primeros días, y
+    /// silencioso.
+    ///
+    /// `verdictFinal` amarra el último elemento al veredicto que el `Read` devuelve de verdad
+    /// (con empujón de tendencia, o forzado a `.lowSignal`). Sin él, el pliegue genérico puede
+    /// discrepar del héroe el mismo día — basta una noche sin lectura, porque la histéresis pide
+    /// dos días para moverse y se queda pegada al veredicto de ayer.
+    private static func verdictNights(ordered: [DailyMetric], raws: [RawDay],
+                                      serieEstable: [Verdict],
+                                      verdictFinal: Verdict?) -> [VerdictNight] {
+        guard !ordered.isEmpty, ordered.count == raws.count,
+              serieEstable.count == raws.count else { return [] }
+        var serie = serieEstable
+        // 🔴 Una noche SIN lectura no puede heredar el veredicto de ayer. El estable la
+        // enmascaraba: la histéresis pide 2 días para moverse, así que una noche suelta sin
+        // reloj salía pintada con el veredicto anterior. Medido en una sonda de 30 días con
+        // reloj un día sí y otro no: 11 de 12 noches sin señal salían «En rango».
+        //
+        // Eso es exactamente lo que el requerimiento prohíbe («no se rellena, no se interpola»),
+        // y es el MISMO defecto que `verdictFinal` arregla para la celda de hoy — sin arreglar
+        // para las otras 29. El raw ya lo sabe: `rawVerdictAt` devuelve `.lowSignal` cuando el
+        // eje autonómico no tiene lectura, así que la máscara es leerlo, no inventar nada.
+        for i in serie.indices where raws[i].verdict == .lowSignal {
+            serie[i] = .lowSignal
+        }
+        if let verdictFinal, !serie.isEmpty { serie[serie.count - 1] = verdictFinal }
+        let all = ordered.indices.map { i in
+            VerdictNight(day: ordered[i].day,
+                         verdict: serie[i],
+                         autonomicOut: raws[i].autonomicOut,
+                         sleepOut: raws[i].sleepOut,
+                         // El voto del centinela ya combinado: nunca dos banderas sueltas.
+                         sentinelOut: raws[i].tempOut && raws[i].respOut)
+        }
+        return Array(all.suffix(verdictHistoryWindow))
     }
 
     /// The per-night sentinel signals for the whole window (FER-33). Pure projection of the
@@ -940,15 +1076,30 @@ public enum Preparedness {
     /// Run-length hysteresis over the RAW verdicts (computed once by the caller — the same pass the
     /// sentinel streak rides). A new raw verdict must persist `hysteresisDays` CONSECUTIVE days before
     /// it replaces the stable one, so an isolated borderline day never flips the hero. O(n).
-    private static func hysteresed(_ raws: [Verdict], hysteresisDays: Int) -> Verdict {
-        guard var stable = raws.first else { return .lowSignal }
+    /// La MISMA histéresis, emitiendo el estable en cada paso. Es el pliegue de `hysteresed`
+    /// desenrollado: `stable` solo depende del estado acumulado y del elemento actual, nunca del
+    /// futuro, así que el elemento `i` de esta serie **es idéntico** a `hysteresed(raws[0...i])`.
+    /// Una sola pasada O(n); no hay algoritmo nuevo.
+    static func hysteresedSeries(_ raws: [Verdict], hysteresisDays: Int) -> [Verdict] {
+        guard var stable = raws.first else { return [] }
         var runVal = stable
         var runLen = 1
+        var salida: [Verdict] = [stable]
+        salida.reserveCapacity(raws.count)
         for r in raws.dropFirst() {
             if r == runVal { runLen += 1 } else { runVal = r; runLen = 1 }
             if runVal != stable && runLen >= max(1, hysteresisDays) { stable = runVal }
+            salida.append(stable)
         }
-        return stable
+        return salida
+    }
+
+    /// El estable al final de la serie. **Delega en `hysteresedSeries`** en vez de repetir el
+    /// pliegue: con dos copias vivas del mismo fold corriendo sobre los mismos datos, una
+    /// divergencia entre ellas sería invisible (el amarre del último elemento la enmascara).
+    /// Así la equivalencia se cumple por construcción, no por una prueba que hay que recordar.
+    static func hysteresed(_ raws: [Verdict], hysteresisDays: Int) -> Verdict {
+        hysteresedSeries(raws, hysteresisDays: hysteresisDays).last ?? .lowSignal
     }
 
     /// The illness-sentinel read for the asOf night, with streak memory (FER-8). `nil` when the asOf

@@ -7,7 +7,7 @@ import Foundation
 
 // MARK: - StressDetailScreen — el «Detalle de Estrés» en «Instrumento» (FER-241 · FER-860)
 //
-// Hermana de `StrainDetailScreen` (FER-859) y `RecoveryDetailScreen` (FER-857): reutiliza el esqueleto
+// Hermana de `StrainDetailScreen` (FER-859) y del detalle de Recuperación retirado en FER-119: reutiliza el esqueleto
 // del handoff «Detalle de Tendencias Final» — héroe invertido (semáforo evaluativo) → mini-escala →
 // mapa del día (instrumento firma, FER-433) → qué lo mueve → patrones → historial siempre abierto
 // (`GraficaRangos`, serie diaria cruda) → calendario 90 días → método + sello. NO extiende
