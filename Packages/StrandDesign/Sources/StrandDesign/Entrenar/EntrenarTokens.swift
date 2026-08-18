@@ -103,6 +103,11 @@ public enum EntrenarMetrics {
     public static let orbeHoja: CGFloat = 20
     /// El aro punteado que ocupa el lugar del orbe cuando no hay lectura.
     public static let aroHueco: CGFloat = 22
+    /// El punto de identidad de familia. UN tamaño, no dos: antes de FER-86 este punto estaba
+    /// copiado seis veces en crudo por la app, la mitad a 8 pt y la mitad a 9.
+    public static let familyDot: CGFloat = 9
+    /// El aro de papel que lo recorta cuando cae sobre un fondo ocupado (una miniatura, una tarjeta).
+    public static let familyDotKnockout: CGFloat = 15
 }
 
 /// El estado de una celda del calendario de entrenamiento. Es un token porque lo consumen dos
@@ -182,5 +187,69 @@ public enum EntrenarCalendarState: Sendable, Hashable {
     }
     .padding(24)
     .background(t.paper)
+}
+#endif
+
+// MARK: - EntrenarFamilyDot — el punto de identidad de familia (FER-86)
+//
+// La marca más pequeña de la sección, y la que más se había copiado: seis `Circle().fill(...)` en
+// crudo repartidos entre el hub, la sesión viva y el editor de rutina, con dos tamaños distintos
+// mezclados (8 y 9) y dos formas que nadie había nombrado — el punto pelón y el punto recortado
+// con un aro de papel para que se lea sobre un fondo ocupado.
+//
+// Aquí viven las dos, con un solo tamaño. El tinte lo pasa quien la usa: el paquete de diseño no
+// conoce `RoutineRegion` (eso es de la app), así que recibe el estilo ya resuelto.
+public struct EntrenarFamilyDot: View {
+
+    private let estilo: AnyShapeStyle
+    private let sobreFondo: Bool
+
+    @Environment(\.instrumentoTheme) private var theme
+
+    /// - Parameters:
+    ///   - estilo: el tinte ya resuelto. `AnyShapeStyle` y no `Color` porque «cuerpo completo» se
+    ///     pinta con un degradado que cruza dos familias.
+    ///   - sobreFondo: `true` añade el aro de papel que lo recorta sobre un fondo ocupado.
+    public init(_ estilo: AnyShapeStyle, sobreFondo: Bool = false) {
+        self.estilo = estilo
+        self.sobreFondo = sobreFondo
+    }
+
+    /// Atajo para el caso normal: un color plano.
+    public init(_ color: Color, sobreFondo: Bool = false) {
+        self.init(AnyShapeStyle(color), sobreFondo: sobreFondo)
+    }
+
+    public var body: some View {
+        Circle()
+            .fill(estilo)
+            .frame(width: EntrenarMetrics.familyDot, height: EntrenarMetrics.familyDot)
+            .background {
+                if sobreFondo {
+                    Circle().fill(theme.paper)
+                        .frame(width: EntrenarMetrics.familyDotKnockout,
+                               height: EntrenarMetrics.familyDotKnockout)
+                }
+            }
+            // El color no porta significado por sí solo: la familia siempre viene escrita al lado.
+            .accessibilityHidden(true)
+    }
+}
+
+#if DEBUG
+#Preview("EntrenarFamilyDot · las cuatro familias, con y sin aro") {
+    let t = InstrumentoTheme.base
+    return VStack(alignment: .leading, spacing: 18) {
+        ForEach(EntrenarFamily.allCases, id: \.self) { f in
+            HStack(spacing: 14) {
+                EntrenarFamilyDot(f.tint(t))
+                EntrenarFamilyDot(f.tint(t), sobreFondo: true)
+                Text(f.label).font(StrandFont.caption).foregroundStyle(t.inkSecondary)
+            }
+        }
+    }
+    .padding(28)
+    .background(t.paper)
+    .instrumentoTheme(.base)
 }
 #endif

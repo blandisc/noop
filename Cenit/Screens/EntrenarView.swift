@@ -1081,7 +1081,7 @@ private struct EntrenarLanding: View {
             if inMonth {
                 Circle().fill(theme.hairlineStrong).frame(width: 4, height: 4)
                 if let name = trainedName {
-                    Circle().fill(routineFill(region(name: name))).frame(width: 9, height: 9)
+                    EntrenarFamilyDot(routineFill(region(name: name)))
                 }
                 if m.isCurrent && day == todayDayOfMonth {
                     Circle().fill(theme.surface)

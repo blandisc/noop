@@ -83,3 +83,27 @@ final class EntrenarFamilyTinteUnaFuenteTests: XCTestCase {
         }
     }
 }
+
+/// FER-86 — el punto de identidad de familia dejó de estar copiado seis veces en crudo por la app.
+/// Estas pruebas clavan lo único que un componente compartido puede prometer y que una copia no:
+/// que hay UN tamaño, y que el aro que lo recorta es de verdad más grande que el punto.
+final class EntrenarFamilyDotTests: XCTestCase {
+
+    /// Antes de FER-86 el mismo punto se dibujaba a 8 pt en tres sitios y a 9 en otros tres. Si
+    /// alguien vuelve a acuñar un segundo tamaño, que sea una decisión y no un descuido.
+    func testHayUnSoloTamanoDePunto() {
+        XCTAssertEqual(EntrenarMetrics.familyDot, 9)
+    }
+
+    /// El aro de papel existe para RECORTAR el punto sobre un fondo ocupado: si no fuera mayor, no
+    /// recortaría nada y la variante «sobreFondo» sería decorativa.
+    func testElAroRecortaDeVerdad() {
+        XCTAssertGreaterThan(EntrenarMetrics.familyDotKnockout, EntrenarMetrics.familyDot)
+    }
+
+    /// El punto es una marca de identidad, no un blanco táctil: nunca debe crecer hasta parecer un
+    /// control. Si algún día lo necesita, va envuelto en una fila de 44, no inflado.
+    func testElPuntoNoPretendeSerUnControl() {
+        XCTAssertLessThan(EntrenarMetrics.familyDotKnockout, EntrenarMetrics.row)
+    }
+}

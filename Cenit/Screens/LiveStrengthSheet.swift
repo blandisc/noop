@@ -669,8 +669,7 @@ struct LiveStrengthSheet: View {
                         }
                 } else {
                     ZStack {
-                        Circle().fill(theme.paper).frame(width: 15, height: 15)
-                        Circle().fill(tint).frame(width: 9, height: 9)
+                        EntrenarFamilyDot(tint, sobreFondo: true)
                     }
                 }
             }
@@ -1236,7 +1235,7 @@ struct LiveStrengthSheet: View {
             if !isEmptyAdHoc {
                 HStack(spacing: 8) {
                     HStack(spacing: 5) {
-                        Circle().fill(sessionRegion.tint(theme)).frame(width: 8, height: 8)
+                        EntrenarFamilyDot(sessionRegion.tint(theme))
                         if let word = sessionRegionWord { Text(word) }
                     }
                     Text("\(session.activeExercises.count) exercises · \(sessionSetsTotal) sets · \(session.doneCount) done")
@@ -2311,8 +2310,7 @@ struct LiveStrengthSheet: View {
                     .overlay(alignment: .leading) {
                         if showRail {
                             ZStack {
-                                Circle().fill(theme.paper).frame(width: 15, height: 15)
-                                Circle().fill(categoryTint(run)).frame(width: 9, height: 9)
+                                EntrenarFamilyDot(categoryTint(run), sobreFondo: true)
                             }
                             .offset(x: -33 - 8.5)
                             .allowsHitTesting(false)

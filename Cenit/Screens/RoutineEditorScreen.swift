@@ -389,9 +389,8 @@ struct RoutineEditorScreen: View {
                 if !grouped {
                     // Anillo de papel bajo el punto (Serie activa r18): separa el dot del hilo.
                     ZStack {
-                        Circle().fill(theme.paper).frame(width: 15, height: 15)
-                        Circle().fill(theme.movementFamilyTint(primaryMuscles: item.exercise.primaryMuscles))
-                            .frame(width: 9, height: 9)
+                        EntrenarFamilyDot(theme.movementFamilyTint(primaryMuscles: item.exercise.primaryMuscles),
+                                          sobreFondo: true)
                     }
                     .offset(x: -26.5, y: topGap + 32 - 7.5)
                 }
@@ -608,7 +607,7 @@ struct RoutineEditorScreen: View {
     private var metaLine: some View {
         HStack(spacing: 10) {
             HStack(spacing: 6) {
-                Circle().fill(routineTint).frame(width: 8, height: 8)
+                EntrenarFamilyDot(routineTint)
                 Text(groupTitle).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
             }
             Text(String(localized: "\(items.count) exercises")).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
