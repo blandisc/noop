@@ -1049,8 +1049,8 @@ struct TodayView: View {
             Group {
                 HealthAlertBanner()
             }
-            // Mismo margen que la Matriz (auditoría de simetría: s550 dejaba la
-            // columna vecina 2 pt fuera de eje).
+            // El margen del héroe/kicker (24): el banner se alinea con ellos, no con la columna
+            // de módulos de vidrio (16, = dock) que va debajo (FER-118).
             .padding(.horizontal, LiquidSpace.s600)
             LiquidHoyContent(
                 model: output.model,

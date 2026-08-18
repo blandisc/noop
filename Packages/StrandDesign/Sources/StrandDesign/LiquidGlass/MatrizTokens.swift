@@ -11,17 +11,15 @@ public enum MatrizTokens {
 
     // MARK: Ritmo (escala LiquidSpace)
 
-    /// Aire vertical de cada banda (arriba y abajo del contenido).
-    public static let bandaV: CGFloat = LiquidSpace.s300        // 12
-    /// Margen horizontal del instrumento completo — UN solo dueño (el host);
-    /// la cara no vuelve a sangrar (hallazgo DeepSeek #14: doble margen 24+16).
+    /// Margen horizontal de la FRANJA de estado / aviso (24, alineada con el héroe): lo aplica el
+    /// host solo a esa franja. Los módulos de vidrio llevan su propio `margenModulos` (16, = dock)
+    /// y lo aplica la cara — cada elemento con UN solo dueño de su margen (hallazgo DeepSeek #14:
+    /// el doble margen 24+16 desalineaba; ahora son dos márgenes distintos a propósito, FER-118).
     public static let margenH: CGFloat = LiquidSpace.s600       // 24
     /// Aire entre renglones nombrados (guardián: Temp / Resp).
     public static let renglonV: CGFloat = LiquidSpace.s200      // 8
     /// Aire sello → bloque de título.
     public static let selloTexto: CGFloat = LiquidSpace.s200    // 8
-    /// Canal entre columnas de una banda dividida (a cada lado del filo).
-    public static let colGap: CGFloat = LiquidSpace.s300        // 12
 
     // MARK: El sello (orbe vivo junto al título)
 
@@ -29,8 +27,6 @@ public enum MatrizTokens {
 
     // MARK: Filos y referencias (tinta estructural)
 
-    /// Filo separador de bandas (1 px).
-    public static let filoAlfa: Double = 0.08
     /// Punteada de referencia («tu base», «7 h»).
     public static let refAlfa: Double = 0.28
     /// Bordes punteados de banda ± (guardián).
@@ -92,8 +88,6 @@ public enum MatrizTokens {
     public static let chartPadV: CGFloat = 4
     /// Canal superior de columnas: territorio del tag de referencia («7 h»).
     public static let tagCanal: CGFloat = 16
-    /// Altura mínima del encabezado de sección (título + línea de sublabel reservada).
-    public static let encabezadoMinH: CGFloat = 34
     /// Inset del riel de carga (deja aire al punto HOY + su aro).
     public static let rielInset: CGFloat = 8
     /// Canal entre barras (columnas de sueño Y barras mini — un solo ritmo).
@@ -122,6 +116,32 @@ public enum MatrizTokens {
     // MARK: Alturas de gráfica por forma
 
     public static let alturaLinea: CGFloat = 56
+
+    // MARK: Los módulos de vidrio y los estantes (FER-118 · Hoy en atmósfera)
+    //
+    // La cara dejó de ser tinta con filos: son módulos de vidrio (`.superficieAtmosfera`) en
+    // cuadrícula de dos columnas dentro de tres estantes con «?». Medidas del prototipo aprobado,
+    // llevadas a los tokens de espacio del sistema.
+
+    /// El margen de los estantes al bisel: el mismo del dock (`LiquidSpace.dockSide`, 16), para
+    /// que la columna de vidrio y el dock compartan filo. El héroe y la franja siguen en 24.
+    public static let margenModulos: CGFloat = LiquidSpace.s400
+    /// Padding interior del módulo (prototipo 18/18/14 → tokens 16/16/12).
+    public static let moduloPadH: CGFloat = LiquidSpace.s400
+    public static let moduloPadTop: CGFloat = LiquidSpace.s400
+    public static let moduloPadBottom: CGFloat = LiquidSpace.s300
+    /// El aire entre módulos (columnas y filas) y entre estantes.
+    public static let moduloGap: CGFloat = LiquidSpace.s300
+    public static let estanteGap: CGFloat = LiquidSpace.s550
+    /// La cabecera de un estante (rótulo + «?») deja este aire antes de sus módulos.
+    public static let estanteCabeceraPad: CGFloat = LiquidSpace.s250
+    /// Pasos (ancho, horizontal): el ancho mínimo de la columna número + subtítulo.
+    public static let moduloTextoMinAncho: CGFloat = 88
+    /// El hint de barrido del guardián: una luz de `hintAncho` cruza la gráfica una vez, en
+    /// `hintDuracion` s, `hintEspera` s después de aparecer.
+    public static let hintAncho: CGFloat = 60
+    public static let hintDuracion: Double = 1.4
+    public static let hintEspera: Double = 0.9
 
     // MARK: Los dos hilos de puntos del guardián (FER-118)
     //

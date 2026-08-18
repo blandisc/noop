@@ -39,7 +39,7 @@ Una pantalla se arma como Lego: **tokens → átomos → componentes → pantall
 | Tonos de dato (1:1, no intercambiables) | `indigo`→sueño · `cian`→HRV · `rosa`→FC reposo · `ambar`→esfuerzo/temp. piel · `teal`→pasos · `azul`→respiración · `oro`→amanecer | **el tono tiñe SOLO la gota (10–12 % alfa) y el valor numérico — nunca el fondo de la tarjeta** |
 | Semánticos | `positivo` `#00774B` · `atencion` `#C4631F` · `negativo` `#B3402A` | deltas y estados (`LiquidDeltaTone`, `LiquidSignalState`) |
 | Partículas del Ecosistema (FER-10) | `particulaVerde` `#10694E` · `particulaRoja` `#963426` · `particulaNeutra` `#737670` · `rojoClaro` `#E06C56` | tinta de las esferas de partículas del héroe (verde=rango/atención, roja=desgaste, neutra=calibrando/guardián) y el rojo claro del clima de alerta |
-| Blancos de vidrio | `vidrioEspecular` .92 · `vidrioBorde*` .72–.9 · `vidrioStreak` .55 · `vidrioLente` .5 · `vidrioPastilla` .45 · `vidrioSuperficie` .30 | alfas fijos de `#FFFFFF`; solo los consumen las recetas |
+| Blancos de vidrio | `vidrioEspecular` .92 · `vidrioBorde*` .72–.9 · `vidrioStreak` .55 · `vidrioLente` .38 · `vidrioPastilla` .46 · `vidrioSuperficie` .46 · `vidrioAtmosfera` .30 | alfas fijos de `#FFFFFF`; solo los consumen las recetas |
 
 ## 2. Tipografía (`LiquidType`)
 
@@ -74,7 +74,7 @@ Cada receta es el stack completo: material + relleno blanco + borde + inner-high
 | Receta | API | Composición | Sombra |
 |---|---|---|---|
 | velo | `LiquidVeil` (vista) | blur + degradado de papel, máscara de desvanecimiento 55 %→100 % | — |
-| superficie | `.liquidGlass(.superficie)` | blanco .30, borde .72, highlight .8→.35, r/tarjeta | e/0 |
+| superficie | `.liquidGlass(.superficie)` | blanco .46, borde .72, highlight .8→.35, r/tarjeta | e/0 |
 | pastilla | `.liquidGlass(.pastilla)` / `.pastillaElevada` | blanco .45, borde .8, highlight superior, r/pastilla | e/0 / e/1 |
 | lente | `.liquidGlass(.lente)` | papelDock, anillo interior 4 lados, **streak especular**, r/pastilla | e/3 |
 | esfera | `LiquidSphere(tone:)` | radial blanco→tono .22, borde .9, especular elíptico | e/2(tono) |
@@ -242,7 +242,7 @@ cerrada de tokens y componentes. Todos con `#Preview`.
 
 ### 10.2 Componentes nuevos
 
-- **`LiquidModulo`** — el contenedor de vidrio: densidad por índice + `vidrioCanto` + sombra `modulo(index:)` + refracción + radio 20 + la aurora del filo. Un componente, no un `.liquidGlass` suelto.
+- **El módulo de vidrio** — el contenedor de la Matriz: `vidrioCanto` + sombra `modulo(index:)` + radio 20. No existe un `LiquidModulo` como componente: la receta que cumple ese contrato es `.liquidGlass(.superficieAtmosfera)` (FER-118; antes, `vidrioSuperficieDensidad(index)` con la aurora del filo). La refracción y la aurora del filo salieron con la Matriz sobre blanco.
 - **`LiquidAuroraEdge(tones:period:reverse:)`** — el filo de 2 capas: los tonos de los DATOS del módulo girando lentísimo (44/52/38/58 s; pares invertidos) + un especular blanco FIJO arriba. La luz no gira; el color pasa por debajo.
 - **`LiquidCapilar`** — separador vertical de 1 pt, `tinta900 · 8 %`, con puntas desvanecidas. Es greedy vertical (`maxHeight: .infinity`): la fila que lo usa debe abrazarse con `.fixedSize(vertical:)` o iguala su alto a la columna, no al revés.
 - **`LiquidColumna` + `LiquidColumnaShell`** — el dato tocable (rótulo + valor teñido 1:1 + detalle), botón con `.liquidPress` + haptic + a11y. La `Shell` es el envoltorio reutilizable para columnas ricas (sueño con dos-puntos tenue, carga con bullet, «VIGILANDO» con par teñido).

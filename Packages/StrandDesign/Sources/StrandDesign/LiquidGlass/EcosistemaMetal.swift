@@ -651,9 +651,9 @@ struct AtmosferaMetalLienzo: UIViewRepresentable {
         vista.enableSetNeedsDisplay = true
         vista.isOpaque = false
         vista.layer.isOpaque = false
-        // El vidrio del sistema tiene que poder MUESTREAR esta capa detrás de los módulos:
-        // sin `framebufferOnly = false` el drawable es solo destino de render.
-        vista.framebufferOnly = false
+        // (`framebufferOnly` se queda en su default: el vidrio del sistema muestrea la capa en el
+        // compositor, no leyendo la textura del drawable; bajarlo costaría perf a pantalla
+        // completa. Si en device el vidrio saliera gris plano, es el plan B, no la base.)
         vista.backgroundColor = .clear
         vista.clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 0)
         vista.isUserInteractionEnabled = false
