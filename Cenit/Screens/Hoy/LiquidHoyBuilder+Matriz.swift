@@ -567,6 +567,18 @@ extension LiquidHoyBuilder {
         }
         let valorPasos = HoyGramatica.valorODash(ptsPasos.last.flatMap { $0 },
                                                  formato: HoyGramatica.formatoMiles)
+        // Scrub de Pasos (FER-118, «scrub en todas las gráficas» — era la única sin él): día +
+        // pasos del día. Es un conteo, no un juicio de rango → sublabel = solo la fecha.
+        let scrubPasos: [MatrizSeccion.ScrubNoche] = keysPasos.enumerated().map { idx, _ in
+            let fecha = weekdayLabel(offsetFromToday: keysPasos.count - 1 - idx, now: i.now,
+                                     calendar: i.calendar, formatter: diaFmt)
+            guard let v = ptsPasos[idx] else {
+                return .init(valor: "—",
+                             sublabel: String(format: String(localized: "matriz.scrub.sinlectura",
+                                                             defaultValue: "%@ · no reading"), fecha))
+            }
+            return .init(valor: HoyGramatica.formatoMiles(v), sublabel: fecha)
+        }
         let seccionPasos = MatrizSeccion(
             // Steps = TEAL (el color de Pasos en la hoja de resumen). Antes gris (tinta700);
             // probé ámbar pero ese es de Effort — teal es su identidad real.
@@ -575,7 +587,8 @@ extension LiquidHoyBuilder {
             valor: valorPasos,
             chartID: "matriz-steps",
             chart: .barrasMini(valores: ptsPasos),
-            glifoSello: .pasos)
+            glifoSello: .pasos,
+            scrubNoches: scrubPasos)
 
         // sentByDay: reservado para los aros históricos del guardián — la API de línea serena
         // solo pinta alertaHoy hoy; la historia fuera se cubre en tests del modelo (deuda §7,

@@ -410,48 +410,36 @@ public struct MatrizHoyFace: View {
                     renglónView(r)
                 }
             }
-        } else if let noches = s.scrubNoches, horizontal {
+        } else if horizontal {
             // Pasos (ancho): fila de título + [número · subtítulo] a la izquierda y la gráfica
             // ocupando el resto, al pie. El encabezado (texto) es el botón; la gráfica, el gesto.
+            // Con o sin scrub la anatomía es la MISMA (sin scrub el pan va apagado y el toque en
+            // la gráfica abre la hoja igual).
             HStack(alignment: .bottom, spacing: LiquidSpace.s400) {
-                botonEncabezado(s) { textos(s) }
+                botonEncabezado(s, expandir: false) { textos(s) }
                     .frame(minWidth: MatrizTokens.moduloTextoMinAncho, alignment: .leading)
-                grafica(s, noches: noches)
+                    .fixedSize(horizontal: true, vertical: false)
+                grafica(s, noches: s.scrubNoches ?? [])
             }
-        } else if let noches = s.scrubNoches {
+        } else {
             // La anatomía vertical: título · número · subtítulo · (aire) · gráfica al pie. El
             // encabezado es su propio botón (abre la hoja) y la gráfica lleva el arrastre —
             // separados, para que un toque abra y un arrastre lea sin pelear (patrón #118).
             VStack(alignment: .leading, spacing: 0) {
                 botonEncabezado(s) { textos(s) }
                 Spacer(minLength: LiquidSpace.s300)
-                grafica(s, noches: noches)
+                grafica(s, noches: s.scrubNoches ?? [])
             }
-        } else {
-            // Sin scrub: el módulo entero es el botón.
-            Button { tocar(s.id) } label: {
-                VStack(alignment: .leading, spacing: 0) {
-                    textos(s)
-                    Spacer(minLength: LiquidSpace.s300)
-                    chartView(s.chart, hue: s.hue, chartID: s.chartID)
-                        .frame(height: Self.chartAltura(s.chart))
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(PresionaModulo(id: s.id, presionado: $presionado))
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel(Text(verbatim: a11yLabel(s)))
-            .accessibilityAddTraits(.isButton)
-            .accessibilityIdentifier("matriz-seccion-\(s.id)")
         }
     }
 
-    /// El botón del encabezado de un módulo (abre la hoja): su label son los textos.
-    private func botonEncabezado<L: View>(_ s: MatrizSeccion, @ViewBuilder label: () -> L) -> some View {
+    /// El botón del encabezado de un módulo (abre la hoja): su label son los textos. `expandir`
+    /// = ocupa todo el ancho del módulo (vertical); en Pasos horizontal el texto hugs.
+    private func botonEncabezado<L: View>(_ s: MatrizSeccion, expandir: Bool = true,
+                                          @ViewBuilder label: () -> L) -> some View {
         Button { tocar(s.id) } label: {
             label()
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(maxWidth: expandir ? .infinity : nil, alignment: .leading)
                 // Hit ≥ 44 pt (HIG) hacia afuera, sin engordar el vidrio ni mover la gráfica.
                 .contentShape(Rectangle().inset(by: -LiquidSpace.s125))
         }
@@ -477,10 +465,12 @@ public struct MatrizHoyFace: View {
                     HintBarrido(onMostrado: onHintMostrado)
                 }
             }
-            // VoiceOver no arrastra: la gráfica es su propio control ajustable.
+            // VoiceOver no arrastra: la gráfica es su propio control ajustable (solo si hay
+            // lecturas que recorrer; sin scrub queda oculta y el botón del encabezado la representa).
             .accessibilityElement()
             .accessibilityLabel(Text(verbatim: scrubA11yLabel(s)))
-            .modifier(ScrubA11y(aplica: true, valor: scrubA11yValue(s),
+            .accessibilityHidden(noches.count <= 1)
+            .modifier(ScrubA11y(aplica: noches.count > 1, valor: scrubA11yValue(s),
                                 hint: scrubA11yHint,
                                 ajustar: { scrubAjustar(s, $0) }))
     }
