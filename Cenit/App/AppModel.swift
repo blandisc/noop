@@ -179,6 +179,24 @@ import UIKit
             .sink { [weak self] (days: [DailyMetric]) in self?.evaluateIllness(days) }
             .store(in: &hrCancellables)
 
+        // FER-114 · el aviso matutino se re-arma con cada lectura nueva del motor. El texto no
+        // cambia nunca (es un recordatorio, no la entrega de la lectura: el texto de una
+        // notificación se congela al programarla y Cénit solo calcula con la app abierta), pero
+        // sí cambia si HAY algo que recordar: `MorningReadingScheduler` decide si se programa.
+        //
+        // OJO con las dos trampas de este `.sink`, que el scheduler ya absorbe (ver `reschedule`):
+        //   · `$dashboard` es `@Published`, así que esto dispara DE INMEDIATO con el valor de
+        //     `init` (`preparedness == nil`). Eso no es «no hay aviso que dar», es «todavía no sé»,
+        //     y por eso una publicación sin lectura ya no cancela lo pendiente.
+        //   · dos publicaciones seguidas lanzan dos tasks: el scheduler las pone EN COLA para que
+        //     el `cancelAll()` de la vieja no aterrice después de los `add` de la nueva.
+        repo.$dashboard.map(\.preparedness)
+            .removeDuplicates()
+            .sink { (prep: Preparedness.Read?) in
+                Task { await MorningReadingScheduler.reschedule(prep: prep) }
+            }
+            .store(in: &hrCancellables)
+
         moments = (UserDefaults.standard.array(forKey: "moments") as? [Double] ?? [])
             .map { Date(timeIntervalSince1970: $0) }
 

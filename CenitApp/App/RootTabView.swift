@@ -226,9 +226,11 @@ struct RootTabView: View {
         .overlay(alignment: .bottom) {
             // /inject 2026-07-22 (decisión del dueño): el dock global pasa al lente Liquid
             // Glass — vidrio flotante con los 4 glifos del sistema y el punto verde activo.
-            // TODO(/inject cierre): los títulos del dock viven hardcodeados es-MX en
-            // LiquidTab.titulo — pasarlos por catálogo al cerrar.
-            LiquidTabBar(active: liquidTab(for: selection)) { selection = appTab(for: $0) }
+            // Los rótulos salen del catálogo del APP (FER-112): vivían hardcodeados en español
+            // dentro de StrandDesign, que no tiene catálogo, así que la barra de TODAS las
+            // pantallas se veía en español con el teléfono en inglés.
+            LiquidTabBar(active: liquidTab(for: selection),
+                         rotulos: .cenit) { selection = appTab(for: $0) }
                 .padding(.horizontal, LiquidSpace.dockSide)
                 .padding(.bottom, LiquidSpace.dockBottom)
                 .background(

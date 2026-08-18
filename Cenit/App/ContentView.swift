@@ -42,11 +42,14 @@ struct ContentView: View {
     @ObserveInjection private var inject
 
     #if os(iOS)
-    // One-time restore nudge: if NOOP launches with no data (a fresh install or a reinstall after a
-    // delete), point the user at the iCloud Drive backup so the strap history comes back in a tap.
-    // Reuses the manual import path. The flag lives in UserDefaults (wiped on delete), so it re-arms
-    // for exactly the reinstall case it's meant to catch. See [AutoBackup].
+    // One-time restore nudge: if Cénit launches with no data AND the user did connect Apple Health
+    // (FER-116), point them at the backup FILE they exported themselves, so a reinstall gets its
+    // history back in a tap. Reuses the manual import path. The flag lives in UserDefaults (wiped on
+    // delete), so it re-arms for exactly the reinstall case it's meant to catch. See [AutoBackup].
     @EnvironmentObject private var repo: Repository
+    /// FER-116: la conexión con Apple Salud es la señal que decide si la oferta de restaurar tiene
+    /// sentido siquiera (ver `maybeOfferRestore`).
+    @EnvironmentObject private var health: HealthKitBridge
     @AppStorage("noop.didOfferRestore") private var didOfferRestore = false
     @State private var showRestoreOffer = false
     @State private var restoreMessage = ""
@@ -155,11 +158,13 @@ struct ContentView: View {
                 InstrumentoTheme.base.paper.opacity(0.85).ignoresSafeArea()
             }
         }
-        .alert("Restore your data?", isPresented: $showRestoreOffer) {
-            Button("Restore from backup…") { Task { await runRestore() } }
+        // FER-116: el copy nombra lo que el respaldo ES: un archivo que el usuario exportó y guardó
+        // él mismo. Cénit no tiene nube, así que hablar de «restaurar de iCloud» sonaba a que sí.
+        .alert("Restore from a backup file?", isPresented: $showRestoreOffer) {
+            Button("Choose a backup file…") { Task { await runRestore() } }
             Button("Not now", role: .cancel) { }
         } message: {
-            Text("It looks like there's no data on this device. If you've used Cénit before, on this phone or another, restore your history and settings from an iCloud Drive backup.")
+            Text("There's no data on this iPhone yet. Cénit has no cloud of its own: the only thing I can restore is a backup file that you exported from Cénit and saved yourself, in iCloud Drive or wherever you keep your files. If you don't have one, there's nothing to bring back.")
         }
         // FER-837: the restore RESULT is an inline banner (the offer above stays a native alert — the
         // honest exception: it fires before the app visually exists).
@@ -227,7 +232,18 @@ struct ContentView: View {
         try? await Task.sleep(nanoseconds: 2_500_000_000)   // let the launch refresh populate first
         // `fullyLoaded` too (two-pass launch): a user whose stored data is all older than the
         // first-paint window would look empty after pass ① — and `didOfferRestore` is sticky.
-        guard !didOfferRestore, repo.fullyLoaded, repo.days.isEmpty else { return }   // re-check after the await
+        //
+        // FER-116: y NUNCA a quien terminó el onboarding sin conectar Apple Salud. Esa persona acaba
+        // de leer «sin cuenta, sin nube, ponlo en modo avión y compruébalo» y recibir, 2.5 s después,
+        // una oferta de restaurar de iCloud contradice la promesa de marca en el peor momento posible.
+        // `health.auth` es la señal honesta: solo llega a `.authorized` pasando por
+        // `requestAuthorization()` (el acto «permiso» del onboarding), y sobrevive al relanzamiento en
+        // `appleHealthConnected`. Se re-lee DESPUÉS del await, así que quien conecte durante esos
+        // 2.5 s también la recibe. El caso que justifica la oferta (reinstalar teniendo un respaldo
+        // propio, conectando Salud otra vez) queda intacto; para el resto, restaurar sigue a un tap en
+        // Ajustes · Datos y fuentes.
+        guard !didOfferRestore, health.auth == .authorized,
+              repo.fullyLoaded, repo.days.isEmpty else { return }   // re-check after the await
         didOfferRestore = true
         showRestoreOffer = true
     }

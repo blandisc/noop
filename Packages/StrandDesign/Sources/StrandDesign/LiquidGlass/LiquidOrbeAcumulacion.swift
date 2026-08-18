@@ -12,7 +12,7 @@ import SwiftUI
 //     MÁS caro de la vida de la app: primer arranque, HealthKit machacando SQLite, el árbol de la
 //     app armándose. Si algo va a tironear, va a ser aquí.
 //
-//   · **Baja a 20 fps cuando el orbe ya está completo.** Respirar y derivar no necesitan 60, y el
+//   · **Baja a 20 fps en cuanto no hay motas viajando.** Respirar y derivar no necesitan 60, y el
 //     tramo largo (esperar a que termine una sincronización de 180 días) es justo el que más dura.
 //
 // El tinte llega como REVELACIÓN, nunca de entrada: `tinte == nil` pinta en tinta neutra. Es la
@@ -75,10 +75,15 @@ public struct LiquidOrbeAcumulacion: View {
         .allowsHitTesting(false)
     }
 
-    /// 60 fps mientras se está formando; 20 en cuanto cuajó. Es el ahorro que hace barato el tramo
-    /// largo (la espera de la sincronización), que es justo el que más dura.
+    /// 60 fps solo mientras hay motas viajando; 20 en cuanto el campo nada más respira. Lo decide el
+    /// MODO, que es quien sabe si algo está en vuelo — no la densidad: durante el acto 3 la densidad
+    /// se queda clavada en su promesa (0.5), así que preguntarle a ella dejaba a 60 fps el tramo MÁS
+    /// LARGO del flujo (la espera de la sincronización), justo el que este archivo promete abaratar.
     private var intervalo: Double {
-        densidad >= 1 ? LiquidMotion.intervaloAmbiente : LiquidMotion.intervaloPleno
+        switch modo {
+        case .quieto, .dentro, .descomposicion: LiquidMotion.intervaloAmbiente    // 1/20
+        case .disperso, .convergencia, .circulacion: LiquidMotion.intervaloPleno  // 1/60
+        }
     }
 
     private var pausado: Bool { scenePhase != .active }

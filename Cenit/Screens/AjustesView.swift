@@ -255,6 +255,12 @@ private struct AjustesLanding: View {
                     .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                     .fixedSize(horizontal: false, vertical: true)
             }
+            // FER-114: el aviso matutino trae su propia sección entera (switch + hora + estado real
+            // del permiso); vive en `AjustesAvisoMatutino.swift`.
+            AvisoMatutinoSection()
+            // FER-115: la puerta informada del «Historial de FA». Trae su propio overline y se
+            // calla sola cuando las series de latidos ya llegan (ver `HistorialFAPuerta`).
+            HistorialFASection()
             section("During a session") {
                 Toggle(isOn: $keepScreenAwake) {
                     Text("Keep the screen on").font(StrandFont.body).foregroundStyle(theme.ink)

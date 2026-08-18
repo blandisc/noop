@@ -11,11 +11,15 @@ import StrandAnalytics
 //
 // El guion, en orden (`OnbGuion`):
 //   1. densificación final 1.2 s   ← el contenido del acto 3 se va en el mismo tramo
-//   2. teñido 450 ms               ← el color llega como REVELACIÓN, nunca de entrada
-//   3. SILENCIO 300 ms             ← pantalla vacía, solo el orbe. Es lo que hace aterrizar la palabra
+//   2. teñido 450 ms               ← el color llega como REVELACIÓN, nunca de entrada. SOLO donde
+//                                     hay color (`landing.revelaColor`); en las otras tres ramas
+//                                     el beat no existe en vez de esperar por nada
+//   3. SILENCIO 300 ms             ← pantalla vacía, solo el orbe. Es lo que hace aterrizar la
+//                                     palabra, y se queda en las CUATRO ramas
 //   4. la palabra, fade puro 700 ms, CERO desplazamiento
-//   5. la ⓘ, 400 ms después
-//   6. el resto, con el stagger de 60 ms del sistema
+//   5. la ⓘ, 400 ms después, SOLA
+//   6. 350 ms más (`esperaResto`) y entra el resto, con el stagger de 60 ms del sistema. Sin esa
+//      espera los beats 5 y 6 caían en el mismo cuadro y la ⓘ nunca estaba sola
 //
 // El reloj del acto 3 tiene **piso** (2.5 s: leer 180 días no puede parecer un parpadeo aunque
 // HealthKit conteste en 400 ms) y **techo** (20 s: a partir de ahí la espera dejó de ser una
@@ -38,9 +42,14 @@ struct OnbActoEncendido: View {
 
     @EnvironmentObject private var health: HealthKitBridge
     @EnvironmentObject private var repo: Repository
-    @EnvironmentObject private var profile: ProfileStore
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.openURL) private var openURL
+    @Environment(\.scenePhase) private var scenePhase
+
+    /// Se salió a la app Salud desde una de las dos ramas que mandan allá. Al volver al primer
+    /// plano se relee SOLO: antes había que salir, encender el permiso, volver… y además
+    /// encontrar el botón de «Reintentar» para que la app se enterara.
+    @State private var fueASalud = false
 
     // El reloj
     /// Cuándo empezó la lectura. Se fija UNA vez y sobrevive a irse al segundo plano.
@@ -63,7 +72,6 @@ struct OnbActoEncendido: View {
     @State private var mostrarInfo = false
     @State private var mostrarResto = false
     @State private var mostrarRotulo = false
-    @State private var editandoPerfil = false
     @AccessibilityFocusState private var focoRevelado: Bool
 
     var body: some View {
@@ -80,7 +88,14 @@ struct OnbActoEncendido: View {
         // directos de su `VStack` para que los `Spacer` empujen el CTA al pie.
         .opacity(revelado ? 1 : opacidadLectura)
         .task { await correr() }
-        .sheet(isPresented: $editandoPerfil) { OnbPerfilEditor() }
+        // Volver de la app Salud relee sola: encender el permiso allá y regresar es exactamente
+        // el momento en que la lectura puede cambiar de desenlace. Solo aplica a quien SALIÓ por
+        // el botón de Salud (`fueASalud`): irse a otra app y volver no reinicia el encendido.
+        .onChange(of: scenePhase) { _, fase in
+            guard fase == .active, fueASalud else { return }
+            fueASalud = false
+            Task { await reintentar() }
+        }
     }
 
     // MARK: - Acto 3 · la lectura
@@ -198,7 +213,11 @@ struct OnbActoEncendido: View {
                 .liquidEntrada(index: 1)
         }
 
-        // El bloque del reveal: UN solo elemento para VoiceOver, con el foco movido hacia él.
+        // El bloque del reveal. La ⓘ es HERMANA del texto, nunca hija: dentro de un
+        // `.accessibilityElement(children: .combine)` el botón deja de ser alcanzable (el
+        // combinado se traga su acción), y es el ÚNICO gesto de curiosidad del acto. Así quedan
+        // tres elementos para VoiceOver —la palabra (con el foco), la ⓘ, y el párrafo— en vez de
+        // un bloque enorme con un botón muerto adentro.
         VStack(alignment: .leading, spacing: LiquidSpace.s300) {
             HStack(alignment: .lastTextBaseline, spacing: LiquidSpace.s200) {
                 v.palabraText
@@ -206,6 +225,11 @@ struct OnbActoEncendido: View {
                     .tracking(LiquidType.displayLTracking)
                     .fixedSize(horizontal: false, vertical: true)
                     .opacity(mostrarPalabra ? 1 : 0)
+                    // `opacity(0)` NO saca del árbol de accesibilidad: barriendo con VoiceOver, la
+                    // palabra se podía leer antes de revelarse, que es justo lo que el silencio
+                    // del guion compra.
+                    .accessibilityHidden(!mostrarPalabra)
+                    .accessibilityFocused($focoRevelado)
                 if mostrarInfo {
                     Button(action: onContinuar) {
                         Image(systemName: "info.circle")
@@ -221,15 +245,22 @@ struct OnbActoEncendido: View {
                 }
             }
             if mostrarResto {
-                OnbCuerpo(v.subtitulo).liquidEntrada(index: 2)
-                OnbCuerpo(OnbCopy.lecturaHistoria(dias: dias, noches: noches),
-                          tono: LiquidColor.tinta500)
-                    .liquidEntrada(index: 3)
+                VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+                    OnbCuerpo(v.subtitulo)
+                    // La confianza («Confianza: 8 de 14 noches») es la MISMA línea que Hoy enseña
+                    // al día siguiente, del mismo constructor. Sin ella, a quien lleva 8 noches se
+                    // le presentaba la palabra con el mismo aplomo que a quien lleva 46.
+                    if let confianza = v.confianza {
+                        OnbCuerpo(confianza, tono: LiquidColor.tinta500)
+                    }
+                    OnbCuerpo(OnbCopy.lecturaHistoria(dias: dias, noches: noches),
+                              tono: LiquidColor.tinta500)
+                }
+                .accessibilityElement(children: .combine)
+                .liquidEntrada(index: 2)
             }
         }
         .padding(.top, LiquidSpace.s400)
-        .accessibilityElement(children: .combine)
-        .accessibilityFocused($focoRevelado)
 
         // El rótulo que enseña dónde vive el «por qué». Se va solo a los ~4 s o al primer toque:
         // es un puntero, no una tarjeta, y quedarse sería ruido en todas las visitas siguientes.
@@ -242,13 +273,16 @@ struct OnbActoEncendido: View {
 
         Spacer(minLength: LiquidSpace.s600)
 
+        // El perfil dejó de pedirse aquí: era una línea confirmable que solo existía en tres de
+        // las cinco ramas, y faltaba justo donde no hay autollenado posible. Ahora se cobra al
+        // salir del acta, igual para todas (FER-113).
+        //
+        // El CTA lleva al MISMO lugar que la ⓘ —el acta— y eso es correcto: lo que sigue a la
+        // palabra es su explicación, se llegue por curiosidad o por seguir el flujo.
         if mostrarResto {
-            OnbPerfilLinea(onEditar: { editandoPerfil = true })
-                .liquidEntrada(index: 4)
-                .padding(.bottom, LiquidSpace.s400)
             LiquidGlassButton(OnbCopy.continuar, variant: .primary, expands: true,
                               action: onContinuar)
-                .liquidEntrada(index: 5)
+                .liquidEntrada(index: 3)
         }
     }
 
@@ -273,43 +307,54 @@ struct OnbActoEncendido: View {
 
         Spacer(minLength: LiquidSpace.s600)
 
-        OnbPerfilLinea(onEditar: { editandoPerfil = true })
-            .liquidEntrada(index: 4)
-            .padding(.bottom, LiquidSpace.s400)
         LiquidGlassButton(OnbCopy.continuar, variant: .primary, expands: true, action: onContinuar)
-            .liquidEntrada(index: 5)
+            .liquidEntrada(index: 4)
     }
 
     // (c) El tope: llegaron señales, pero cero FC en reposo. Esperar no lo arregla, así que el
     // onboarding no lo promete — ofrece lo que SÍ funciona sin reloj.
+    //
+    // Pero la causa MÁS probable de esta rama es el permiso parcial (lo que el acto 2 advirtió:
+    // «si me das solo una parte, me quedo mudo»), y con un solo CTA a Entrenar se mandaba a la
+    // mitad de la app que no vino a buscar a alguien a quien un toque en Salud le arreglaría
+    // todo. Por eso aquí hay puerta de vuelta: se nombra la sospecha y se ofrece Salud.
     @ViewBuilder
     private var vistaSinRitmo: some View {
-        Spacer(minLength: LiquidSpace.s800)
+        Group {
+            Spacer(minLength: LiquidSpace.s800)
 
-        OnbOverline(OnbCopy.encontreOverline).liquidEntrada(index: 0)
-        OnbTitular(OnbCopy.sinFcTitular)
-            .padding(.top, LiquidSpace.s250)
-            .liquidEntrada(index: 1)
-            .accessibilityFocused($focoRevelado)
-        OnbCuerpo(OnbCopy.sinFcCuerpo1)
-            .padding(.top, LiquidSpace.s400)
-            .liquidEntrada(index: 2)
-        OnbCuerpo(OnbCopy.sinFcCuerpo2)
-            .padding(.top, LiquidSpace.s300)
-            .liquidEntrada(index: 3)
-        OnbCuerpo(OnbCopy.sinFcCuerpo3, tono: LiquidColor.tinta500)
-            .padding(.top, LiquidSpace.s300)
-            .liquidEntrada(index: 4)
+            OnbOverline(OnbCopy.encontreOverline).liquidEntrada(index: 0)
+            OnbTitular(OnbCopy.sinFcTitular)
+                .padding(.top, LiquidSpace.s250)
+                .liquidEntrada(index: 1)
+                .accessibilityFocused($focoRevelado)
+            OnbCuerpo(OnbCopy.sinFcCuerpo1)
+                .padding(.top, LiquidSpace.s400)
+                .liquidEntrada(index: 2)
+            OnbCuerpo(OnbCopy.sinFcCausa)
+                .padding(.top, LiquidSpace.s300)
+                .liquidEntrada(index: 3)
+            OnbCuerpo(OnbCopy.sinFcCuerpo2)
+                .padding(.top, LiquidSpace.s300)
+                .liquidEntrada(index: 4)
+            OnbCuerpo(OnbCopy.sinFcCuerpo3, tono: LiquidColor.tinta500)
+                .padding(.top, LiquidSpace.s300)
+                .liquidEntrada(index: 5)
+        }
 
-        Spacer(minLength: LiquidSpace.s600)
+        Group {
+            Spacer(minLength: LiquidSpace.s600)
 
-        OnbPerfilLinea(onEditar: { editandoPerfil = true })
-            .liquidEntrada(index: 5)
-            .padding(.bottom, LiquidSpace.s400)
-        LiquidGlassButton(OnbCopy.sinFcCta, variant: .primary, expands: true, action: onEntrenar)
-            .liquidEntrada(index: 6)
-        OnbSalidaTexto(titulo: OnbCopy.sinFcCtaSecundaria, accion: onEntrar)
-            .liquidEntrada(index: 7)
+            LiquidGlassButton(OnbCopy.sinFcCta, variant: .primary, expands: true, action: onEntrenar)
+                .liquidEntrada(index: 6)
+            // Segunda puerta, no segunda promesa: Entrenar sigue siendo lo que se ofrece de
+            // primero, porque es lo único que funciona sin reloj pase lo que pase.
+            LiquidGlassButton(OnbCopy.abrirSalud, variant: .glass, expands: true) { abrirSalud() }
+                .padding(.top, LiquidSpace.s250)
+                .liquidEntrada(index: 7)
+            OnbSalidaTexto(titulo: OnbCopy.sinFcCtaSecundaria, accion: onEntrar)
+                .liquidEntrada(index: 8)
+        }
     }
 
     // (d) No llegó ni una fila. Negar la lectura y tener Salud vacío se ven idénticos desde aquí,
@@ -332,10 +377,8 @@ struct OnbActoEncendido: View {
 
         Spacer(minLength: LiquidSpace.s600)
 
-        LiquidGlassButton(OnbCopy.abrirSalud, variant: .primary, expands: true) {
-            if let url = URL(string: "x-apple-health://") { openURL(url) }
-        }
-        .liquidEntrada(index: 4)
+        LiquidGlassButton(OnbCopy.abrirSalud, variant: .primary, expands: true) { abrirSalud() }
+            .liquidEntrada(index: 4)
         OnbSalidaTexto(titulo: OnbCopy.reintentar) { Task { await reintentar() } }
             .liquidEntrada(index: 5)
         // Sin esta salida el onboarding es un encierro: quien negó el permiso se quedaba con dos
@@ -345,6 +388,17 @@ struct OnbActoEncendido: View {
             .liquidEntrada(index: 6)
     }
 
+    // MARK: - La puerta a Salud
+
+    /// Manda a la app Salud y deja anotado que hay que releer al volver (`fueASalud`). Es la
+    /// mitad que faltaba del gesto: encender el permiso allá no sirve de nada si al regresar la
+    /// app sigue enseñando el desenlace del intento anterior hasta que alguien toque un botón.
+    @MainActor
+    private func abrirSalud() {
+        fueASalud = true
+        if let url = URL(string: "x-apple-health://") { openURL(url) }
+    }
+
     // MARK: - El reloj y el guion
 
     @MainActor
@@ -352,9 +406,9 @@ struct OnbActoEncendido: View {
         guard !corriendo else { return }
         corriendo = true
 
-        // Volver del acta (acto 5 lleva «Atrás») reconstruye esta vista con su estado en blanco,
-        // pero el desenlace ya se conoce: se restaura la escena revelada en vez de volver a
-        // sincronizar y volver a encender. El encendido pasa UNA vez por instalación.
+        // Volver del acta (que lleva «Atrás» a esta pantalla) reconstruye esta vista con su estado
+        // en blanco, pero el desenlace ya se conoce: se restaura la escena revelada en vez de
+        // volver a sincronizar y volver a encender. El encendido pasa UNA vez por instalación.
         if landing != nil {
             opacidadLectura = 0
             revelado = true
@@ -394,9 +448,6 @@ struct OnbActoEncendido: View {
             return
         }
 
-        // El perfil se rellena desde Salud ANTES del reveal, para que su línea no aparezca vacía
-        // y se corrija a la vista del usuario.
-        await rellenarPerfil()
         await encender(desenlace())
     }
 
@@ -510,9 +561,14 @@ struct OnbActoEncendido: View {
 
         revelado = true   // el lienzo pasa a `.dentro`; la pantalla queda vacía sobre el orbe
 
-        // 2 · Teñido.
-        withAnimation(.easeInOut(duration: dur(OnbGuion.tenido))) { tenido = 1 }
-        await esperar(dur(OnbGuion.tenido))
+        // 2 · Teñido. Solo existe donde hay color que revelar: en las otras tres ramas
+        //     (`destinoTinte == nil`) eran 450 ms de espera con la pantalla vacía y nada
+        //     cambiando. El SILENCIO de abajo, en cambio, se queda en las cuatro: sin palabra que
+        //     revelar sigue siendo el aire correcto antes de una mala noticia.
+        if l.revelaColor {
+            withAnimation(.easeInOut(duration: dur(OnbGuion.tenido))) { tenido = 1 }
+            await esperar(dur(OnbGuion.tenido))
+        }
 
         // 3 · Silencio. Sin él la palabra llega pisando el color y no se lee como revelación.
         await esperar(corto ? 0 : OnbGuion.silencio)
@@ -522,10 +578,13 @@ struct OnbActoEncendido: View {
         await esperar(dur(OnbGuion.palabra))
         await esperar(corto ? 0 : OnbGuion.esperaInfo)
 
-        // 5 · La ⓘ.
+        // 5 · La ⓘ, SOLA. Fijar el resto en este mismo runloop gastaba en nada los 400 ms de
+        //     `esperaInfo`: la ⓘ nunca llegaba sola y el rótulo que la señala entraba con ella.
         withAnimation(LiquidMotion.glassOut(LiquidMotion.quick)) { mostrarInfo = true }
+        await esperar(corto ? 0 : OnbGuion.esperaResto)
 
-        // 6 · El resto, con el stagger de 60 ms del sistema (`liquidEntrada`).
+        // 6 · El resto, con el stagger de 60 ms del sistema (`liquidEntrada`). El foco de
+        //     VoiceOver va DESPUÉS: moverlo antes de que el bloque exista lo deja sin destino.
         mostrarResto = true
         focoRevelado = true
 
@@ -542,17 +601,6 @@ struct OnbActoEncendido: View {
         withAnimation(LiquidMotion.glassOut(LiquidMotion.quick)) { mostrarRotulo = false }
     }
 
-    /// Prellena el Perfil desde Apple Salud, campo por campo (parcial: solo lo que Salud tiene).
-    /// Las ediciones del usuario son posteriores, así que ganan.
-    @MainActor
-    private func rellenarPerfil() async {
-        guard health.auth == .authorized else { return }
-        let c = await health.readProfileCharacteristics()
-        if let s = c.sex { profile.sex = s }
-        if let a = c.age, (13...100).contains(a) { profile.age = a }
-        if let w = c.weightKg, (30...250).contains(w) { profile.weightKg = w }
-        if let h = c.heightCm, (120...230).contains(h) { profile.heightCm = h }
-    }
 }
 
 // MARK: - La palabra, PRESTADA de Hoy
@@ -564,15 +612,20 @@ struct OnbVeredicto {
     let destacada: String
     let tono: Color
     let subtitulo: String
+    /// «Confianza: 8 de 14 noches», mientras la base es joven; `nil` con la base firme. Se
+    /// destructuraba y se TIRABA: al de 8 noches se le presentaba la palabra con el mismo aplomo
+    /// que al de 46, y Hoy sí se la enseña al día siguiente. Cero copy nuevo — es la misma cadena.
+    let confianza: String?
 
     init(_ verdict: Preparedness.Verdict, noches: Int, prep: Preparedness.Read?) {
         let hero = LiquidHoyBuilder.veredicto(verdict, nights: noches, prep: prep)
         switch hero {
-        case let .veredicto(title, highlight, tone, subtitle, _):
+        case let .veredicto(title, highlight, tone, subtitle, confidence):
             palabra = title
             destacada = highlight
             tono = tone
             subtitulo = subtitle
+            confianza = confidence
         case let .demotado(_, title, subtitle):
             // Inalcanzable: `veredicto(_:)` siempre devuelve el caso con palabra. La rama existe
             // para no tener un `fatalError` en el camino que le muestra la app al usuario.
@@ -580,6 +633,7 @@ struct OnbVeredicto {
             destacada = title
             tono = LiquidColor.tinta900
             subtitulo = subtitle
+            confianza = nil
         }
     }
 
@@ -645,121 +699,5 @@ extension AttributedString {
         var copia = self
         if let r = copia.range(of: fragmento) { copia[r].foregroundColor = tono }
         return copia
-    }
-}
-
-// MARK: - El perfil, una línea
-
-/// Perfil, no formulario: una línea con lo que Apple Salud ya sabe y una acción de texto para
-/// corregirla. Un formulario de cuatro campos en medio del reveal apaga el momento.
-struct OnbPerfilLinea: View {
-    let onEditar: () -> Void
-
-    @EnvironmentObject private var profile: ProfileStore
-    @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
-    private var unitSystem: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: LiquidSpace.s150) {
-            OnbOverline(OnbCopy.perfilOverline)
-            HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s300) {
-                Text(OnbCopy.perfilValor(edad: profile.age,
-                                         sexo: OnbPerfilEditor.etiquetaSexo(profile.sex),
-                                         peso: UnitFormatter.massFromKilograms(profile.weightKg,
-                                                                               system: unitSystem)))
-                    .font(LiquidType.valorL)
-                    .foregroundStyle(LiquidColor.tinta900)
-                    .fixedSize(horizontal: false, vertical: true)
-                Spacer(minLength: 0)
-                Button(action: onEditar) {
-                    Text(OnbCopy.editar)
-                        .font(LiquidType.captionLectura)
-                        .foregroundStyle(LiquidColor.verdeProfundo)
-                        .frame(minWidth: LiquidControl.hitTarget, minHeight: LiquidControl.hitTarget,
-                               alignment: .trailing)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.liquidPress)
-            }
-            OnbCuerpo(OnbCopy.perfilPie, tono: LiquidColor.tinta500)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-}
-
-/// La corrección del perfil, en una hoja: los cuatro campos, y de vuelta al reveal.
-struct OnbPerfilEditor: View {
-    @EnvironmentObject private var profile: ProfileStore
-    @Environment(\.dismiss) private var dismiss
-    @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
-    private var unitSystem: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
-
-    static func etiquetaSexo(_ raw: String) -> String {
-        switch raw {
-        case "male":   return String(localized: "Male")
-        case "female": return String(localized: "Female")
-        default:       return String(localized: "Other")
-        }
-    }
-
-    private static let sexos = ["male", "female", "nonbinary"]
-
-    var body: some View {
-        ZStack {
-            LiquidColor.fondoGradient.ignoresSafeArea()
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(alignment: .leading, spacing: LiquidSpace.s400) {
-                    OnbOverline(OnbCopy.perfilOverline)
-
-                    Stepper(value: $profile.age, in: 13...100) {
-                        campo(String(localized: "Age"), "\(profile.age)")
-                    }
-                    .tint(LiquidColor.tinta700)
-
-                    VStack(alignment: .leading, spacing: LiquidSpace.s150) {
-                        OnbOverline(String(localized: "Sex"))
-                        Picker(String(localized: "Sex"), selection: $profile.sex) {
-                            ForEach(Self.sexos, id: \.self) { key in
-                                Text(Self.etiquetaSexo(key)).tag(key)
-                            }
-                        }
-                        .pickerStyle(.segmented)
-                        .labelsHidden()
-                    }
-
-                    Stepper(value: $profile.weightKg, in: 30...250, step: 0.5) {
-                        campo(String(localized: "Weight"),
-                              UnitFormatter.massFromKilograms(profile.weightKg, system: unitSystem))
-                    }
-                    .tint(LiquidColor.tinta700)
-
-                    Stepper(value: $profile.heightCm, in: 120...230, step: 1) {
-                        campo(String(localized: "Height"),
-                              UnitFormatter.heightFromCentimeters(profile.heightCm, system: unitSystem))
-                    }
-                    .tint(LiquidColor.tinta700)
-
-                    OnbCuerpo(OnbCopy.perfilPie, tono: LiquidColor.tinta500)
-
-                    LiquidGlassButton(OnbCopy.listo, variant: .primary, expands: true) { dismiss() }
-                        .padding(.top, LiquidSpace.s400)
-                }
-                .padding(.horizontal, LiquidSpace.s600)
-                .padding(.vertical, LiquidSpace.s800)
-            }
-        }
-        .preferredColorScheme(.light)
-    }
-
-    private func campo(_ label: String, _ valor: String) -> some View {
-        HStack {
-            Text(label)
-                .font(LiquidType.captionLectura)
-                .foregroundStyle(LiquidColor.tinta700)
-            Spacer()
-            Text(valor)
-                .font(LiquidType.valorL)
-                .foregroundStyle(LiquidColor.tinta900)
-        }
     }
 }
