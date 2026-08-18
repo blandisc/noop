@@ -3,7 +3,7 @@
 > **Papel cálido + vidrio líquido + una sola voz verde.** Liquid Glass es la evolución del ADN
 > «Instrumento diurno» para las pantallas rediseñadas: conserva sus axiomas (papel cálido, un
 > dato dominante, **color solo en el dato**, jerarquía por espacio) y les suma una materialidad
-> de vidrio con 4 recetas cerradas, una escala tipográfica Space Grotesk propia y un contrato
+> de vidrio con recetas cerradas, una escala tipográfica Space Grotesk propia y un contrato
 > de motion nombrado. La fuente de verdad hifi es el bundle
 > `design_handoff_liquid_glass/` (viewport 402 pt); este doc mapea ese handoff a los tokens
 > Swift reales.
@@ -228,7 +228,7 @@ cerrada de tokens y componentes. Todos con `#Preview`.
 
 - **Color (`LiquidColor`)**
   - `fondoAlto/fondoBajo` → `#FEFEFD / #F3F4F2` (amend): suelo casi blanco para que plasta y aurora respiren.
-  - `vidrioCanto` = `tinta900 · 6 %`: canto exterior hairline de un módulo (lo que separa «caro» de «lavado»).
+  - `vidrioCanto` = `tinta900 · 8 %` (FER-118: subió de 6 % para que el canto se lea sobre blanco): canto exterior hairline de un módulo (lo que separa «caro» de «lavado»).
   - `vidrioRefraccion` = `1.28`: saturación del backdrop de un módulo («refracción honesta»).
   - `vidrioSuperficieDensidad(index:)`: relleno blanco por profundidad (.42 → .54, índice 0…3).
   - `plastaVerde/Ambar/Rojo/Neutra` (4 tonos c/u): las masas pálidas de la plasta por clima; `LiquidAmbiente.plasta` las mapea.

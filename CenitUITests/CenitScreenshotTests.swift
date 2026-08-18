@@ -63,7 +63,9 @@ final class CenitScreenshotTests: XCTestCase {
         "-AppleLanguages",               "(es)",
         "-AppleLocale",                  "es_MX",
         "-noop.onboarded",               "YES",
-        "-noop.acceptedTermsVersion",    "1.0",
+        // Debe igualar `Terms.currentVersion` (Cenit/App/Terms.swift): con "1.0" desde FER-1003 el
+        // arnés capturaba la puerta de Términos en vez de la pantalla (FER-118 · F lo cazó).
+        "-noop.acceptedTermsVersion",    "2.0",
         "-noop.lastSeenChangelogVersion","1.80",
         "-noop.didOfferRestore",         "YES",
     ]
