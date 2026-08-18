@@ -216,13 +216,63 @@ public enum LiquidColor {
     // «refracción honesta» (la plasta se ve más viva a través del vidrio que fuera).
 
     /// Canto exterior hairline de un módulo — tinta/900 al 6 %, 0.5 pt. Es lo que separa
-    /// «caro» de «lavado» sobre fondo claro: un filo de tinta bajo el borde blanco.
+
+    // MARK: - Pantalla de detalle (FER-102)
+
     /// El velo del tono para la franja de sección de una pantalla de detalle: **4 %**, el
     /// mismo alfa que `LiquidVeil`. Plano, no degradado — un gradiente vuelve la franja una
-    /// barra de cabecera teñida, y la franja es una costura, no un encabezado (FER-102).
+    /// barra de cabecera teñida, y la franja es una costura, no un encabezado.
     /// El gris neutro de formulario era lo más «papel» que quedaba en la pantalla.
     public static func franjaVelo(_ tone: Color) -> Color { tone.opacity(0.04) }
 
+    /// El tono **oscurecido lo justo** para que sirva de campo teñido con tinta calada.
+    ///
+    /// POR QUÉ EXISTE: el campo de `LiquidCampoMetrica` cala papel (`papelAlto`) sobre el tono
+    /// de la métrica. Medido contra WCAG AA, **solo el índigo de Sueño pasa**: el rótulo al 85 %
+    /// da 4.62:1 sobre índigo pero 3.16:1 sobre el ámbar de Esfuerzo, y sobre rosa, verde y
+    /// ámbar **no pasa ni a opacidad plena** — o sea, subir el alfa no puede arreglarlo. La
+    /// única salida es bajar la luminancia del tono. (El mismo defecto vive hoy en el papel,
+    /// con `OnFieldOpacity.secondary` = .75 en los 15 call sites de `HeroInvertido`.)
+    ///
+    /// Mezcla negro en pasos de 1 % hasta que el rótulo pase 4.5:1, y se detiene ahí — no
+    /// aplica un factor fijo. Así **el índigo de Sueño sale intacto** (necesita 0 %) y cada
+    /// tono paga solo lo suyo: azul 8 %, cian 13 %, rosa 14 %, verde 21 %, ámbar 22 %. Un tono
+    /// nuevo en la familia no puede romper el contraste sin que nadie se entere.
+    ///
+    /// Es una función pura sobre sRGB: `LiquidCampoContrasteTests` la comprueba en frío.
+    public static func tonoCampo(_ tone: Color) -> Color {
+        let c = tone.rgbaComponents
+        var k = 0.0
+        while k <= 0.60 {
+            let oscuro = (r: c.r * (1 - k), g: c.g * (1 - k), b: c.b * (1 - k))
+            if contraste(calado: papelAltoRGB, alfa: LiquidCampo.alfaRotulo, sobre: oscuro) >= 4.5 {
+                break
+            }
+            k += 0.01
+        }
+        return Color(red: c.r * (1 - k), green: c.g * (1 - k), blue: c.b * (1 - k))
+    }
+
+    /// `#F8F6EF` en componentes — el calado del campo, para la matemática de contraste.
+    static let papelAltoRGB = (r: 248.0 / 255, g: 246.0 / 255, b: 239.0 / 255)
+
+    /// Razón de contraste WCAG 2.1 de `calado` compuesto al alfa dado sobre un fondo opaco.
+    static func contraste(calado: (r: Double, g: Double, b: Double), alfa: Double,
+                          sobre fondo: (r: Double, g: Double, b: Double)) -> Double {
+        func canal(_ v: Double) -> Double {
+            v <= 0.03928 ? v / 12.92 : pow((v + 0.055) / 1.055, 2.4)
+        }
+        func luminancia(_ c: (r: Double, g: Double, b: Double)) -> Double {
+            0.2126 * canal(c.r) + 0.7152 * canal(c.g) + 0.0722 * canal(c.b)
+        }
+        let compuesto = (r: calado.r * alfa + fondo.r * (1 - alfa),
+                         g: calado.g * alfa + fondo.g * (1 - alfa),
+                         b: calado.b * alfa + fondo.b * (1 - alfa))
+        let a = luminancia(compuesto), b = luminancia(fondo)
+        return (max(a, b) + 0.05) / (min(a, b) + 0.05)
+    }
+
+    /// «caro» de «lavado» sobre fondo claro: un filo de tinta bajo el borde blanco.
     public static let vidrioCanto = tinta900.opacity(0.06)
 
     /// Factor de saturación del backdrop de un módulo («refracción honesta»): lo que pasa

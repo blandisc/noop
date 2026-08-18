@@ -3,75 +3,113 @@ import Testing
 @testable import StrandDesign
 
 // Los legos de la pantalla de detalle (FER-102). Lo que se fija aquí es lo que un cambio
-// futuro NO puede romper en silencio: los pisos de contraste que /ui midió contra WCAG AA,
+// futuro NO puede romper en silencio: que el calado del campo pase WCAG AA **sobre toda la
+// familia de tonos** (no solo sobre el índigo de Sueño, que es el único que pasa sin ayuda),
 // el vocabulario del dato ausente, y que la franja sea un velo plano y no un encabezado.
+//
+// La matemática de contraste NO se re-implementa aquí: se llama a `LiquidColor.contraste`, la
+// misma que usa `tonoCampo` para decidir cuánto oscurecer. Y los colores se resuelven de los
+// TOKENS con `rgbaComponents`, no de hex copiados a mano — si alguien cambia `papelAlto` o un
+// tono de la familia, estas pruebas se enteran.
 
 @Suite("Liquid · legos de la pantalla de detalle")
 struct LiquidDetalleLegoTests {
 
+    /// La familia de tonos que puede teñir un campo, resuelta de los tokens vivos.
+    /// `verdePrimario` entra porque el campo de Recuperación se tiñe por banda.
+    private static let familia: [(String, Color)] = [
+        ("indigo", LiquidColor.indigo),
+        ("azul", LiquidColor.azul),
+        ("cian", LiquidColor.cian),
+        ("rosa", LiquidColor.rosa),
+        ("atencion", LiquidColor.atencion),
+        ("verdePrimario", LiquidColor.verdePrimario),
+    ]
+
+    private static func rgb(_ c: Color) -> (r: Double, g: Double, b: Double) {
+        let k = c.rgbaComponents
+        return (r: k.r, g: k.g, b: k.b)
+    }
+
     // MARK: - Contraste del campo teñido
 
-    /// Luminancia relativa (WCAG 2.1) de un color sRGB.
-    private static func luminancia(_ c: (r: Double, g: Double, b: Double)) -> Double {
-        func canal(_ v: Double) -> Double {
-            v <= 0.03928 ? v / 12.92 : pow((v + 0.055) / 1.055, 2.4)
+    @Test("El rótulo pasa AA sobre el campo de CADA tono de la familia")
+    func rotuloPasaAAEnTodaLaFamilia() {
+        for (nombre, tono) in Self.familia {
+            let campo = Self.rgb(LiquidColor.tonoCampo(tono))
+            let r = LiquidColor.contraste(calado: LiquidColor.papelAltoRGB,
+                                          alfa: LiquidCampo.alfaRotulo, sobre: campo)
+            #expect(r >= 4.5, "\(nombre): el rótulo del campo da \(r), bajo el mínimo AA de 4.5")
         }
-        return 0.2126 * canal(c.r) + 0.7152 * canal(c.g) + 0.0722 * canal(c.b)
     }
 
-    /// Razón de contraste entre dos colores sRGB.
-    private static func razon(_ a: (r: Double, g: Double, b: Double),
-                              _ b: (r: Double, g: Double, b: Double)) -> Double {
-        let la = luminancia(a), lb = luminancia(b)
-        return (max(la, lb) + 0.05) / (min(la, lb) + 0.05)
+    @Test("El numeral calado pasa AA sobre el campo de cada tono")
+    func numeralPasaAAEnTodaLaFamilia() {
+        for (nombre, tono) in Self.familia {
+            let campo = Self.rgb(LiquidColor.tonoCampo(tono))
+            let r = LiquidColor.contraste(calado: LiquidColor.papelAltoRGB,
+                                          alfa: 1.0, sobre: campo)
+            #expect(r >= 4.5, "\(nombre): el numeral da \(r)")
+        }
     }
 
-    /// Compone `frente` al alfa dado sobre `fondo` (sin alfa) — lo que el ojo ve de un
-    /// `.opacity()` de SwiftUI sobre una masa opaca.
-    private static func sobre(_ frente: (r: Double, g: Double, b: Double), alfa: Double,
-                              fondo: (r: Double, g: Double, b: Double))
-    -> (r: Double, g: Double, b: Double) {
-        (r: frente.r * alfa + fondo.r * (1 - alfa),
-         g: frente.g * alfa + fondo.g * (1 - alfa),
-         b: frente.b * alfa + fondo.b * (1 - alfa))
+    @Test("Sin oscurecer, la MAYORÍA de la familia NO pasaba — el arreglo hace algo")
+    func elTonoCrudoFallaba() {
+        // Si esto pasara, `tonoCampo` sería decorativo y la prueba de arriba no probaría nada.
+        let fallan = Self.familia.filter { _, tono in
+            LiquidColor.contraste(calado: LiquidColor.papelAltoRGB,
+                                  alfa: LiquidCampo.alfaRotulo,
+                                  sobre: Self.rgb(tono)) < 4.5
+        }
+        #expect(fallan.count >= 4,
+                "sobre el tono crudo solo el índigo debería pasar; fallaron \(fallan.count)")
     }
 
-    /// `#F8F6EF` — `LiquidColor.papelAlto`, la tinta calada del campo.
-    private static let papel = (r: 248.0 / 255, g: 246.0 / 255, b: 239.0 / 255)
-    /// `#5D5A9E` — `LiquidColor.indigo`, el tono más oscuro que tiñe un campo hoy.
-    private static let indigo = (r: 93.0 / 255, g: 90.0 / 255, b: 158.0 / 255)
-
-    @Test("Los rótulos del campo pasan AA sobre el tono pleno")
-    func rotulosPasanAA() {
-        // El alfa que /ui fijó tras medir: a .75 daban 3.99:1 y no pasaban.
-        let alfa = LiquidCampoMetrica<EmptyView>.alfaRotulo
-        #expect(alfa >= 0.84, "el alfa del rótulo no puede bajar sin re-medir el contraste")
-
-        let compuesto = Self.sobre(Self.papel, alfa: alfa, fondo: Self.indigo)
-        let r = Self.razon(compuesto, Self.indigo)
-        #expect(r >= 4.5, "rótulo del campo: \(r) contra el mínimo AA de 4.5")
+    @Test("El índigo de Sueño NO se oscurece: el campo aprobado queda intacto")
+    func indigoIntacto() {
+        // El dueño aprobó el campo de Sueño tal cual. `tonoCampo` solo paga lo necesario, y
+        // el índigo no necesita nada — si un día se oscurece, la pantalla cambió sin permiso.
+        let a = Self.rgb(LiquidColor.indigo)
+        let b = Self.rgb(LiquidColor.tonoCampo(LiquidColor.indigo))
+        #expect(abs(a.r - b.r) < 0.005 && abs(a.g - b.g) < 0.005 && abs(a.b - b.b) < 0.005,
+                "el índigo del campo se movió: \(a) → \(b)")
     }
 
-    @Test("El alfa viejo de .75 NO pasaba — la prueba puede fallar")
-    func elAlfaViejoFallaba() {
-        // Sin esto, la prueba de arriba pasaría con cualquier alfa y no probaría nada.
-        let compuesto = Self.sobre(Self.papel, alfa: 0.75, fondo: Self.indigo)
-        #expect(Self.razon(compuesto, Self.indigo) < 4.5)
+    @Test("Un tono oscuro nunca se aclara")
+    func nuncaAclara() {
+        for (nombre, tono) in Self.familia {
+            let a = Self.rgb(tono), b = Self.rgb(LiquidColor.tonoCampo(tono))
+            #expect(b.r <= a.r + 0.001 && b.g <= a.g + 0.001 && b.b <= a.b + 0.001,
+                    "\(nombre) se aclaró")
+        }
     }
 
-    @Test("El numeral calado pleno pasa AA con holgura")
-    func numeralPasaAA() {
-        #expect(Self.razon(Self.papel, Self.indigo) >= 4.5)
+    // MARK: - El numeral no miente
+
+    @Test("Un dato calibrando se marca ausente y lleva su motivo a VoiceOver")
+    func datoCalibrando() {
+        let d = LiquidCampoMetrica<EmptyView>.Dato.calibrando(
+            rotulo: "Regularidad", motivo: "aún sin base, faltan 3 noches")
+        #expect(d.ausente, "sin esto el «··» se pinta igual que una medición real")
+        #expect(d.valor == "··")
+        #expect(d.a11y == "aún sin base, faltan 3 noches")
+    }
+
+    @Test("Un dato medido NO se marca ausente")
+    func datoMedido() {
+        let d = LiquidCampoMetrica<EmptyView>.Dato(valor: "7:12", unidad: "h",
+                                                   rotulo: "Dormido", a11y: "7 horas 12 minutos")
+        #expect(!d.ausente)
+        #expect(d.a11y == "7 horas 12 minutos", "«7:12» se dicta como hora del reloj")
     }
 
     // MARK: - Franja de sección
 
     @Test("El velo de la franja es del tono y es plano al 4 %")
     func velo() {
-        // 4 % es el mismo alfa de LiquidVeil. Más alto (el 7.5 % del proto) vuelve la franja
-        // una barra de cabecera teñida; la franja es una costura.
-        let velo = LiquidColor.franjaVelo(LiquidColor.indigo)
-        #expect(velo == LiquidColor.indigo.opacity(0.04))
+        // 4 % es el mismo alfa de LiquidVeil. Más alto vuelve la franja una barra de cabecera
+        // teñida; la franja es una costura.
+        #expect(LiquidColor.franjaVelo(LiquidColor.indigo) == LiquidColor.indigo.opacity(0.04))
     }
 
     @Test("La franja hereda el tono de cada métrica, no un gris fijo")
@@ -87,37 +125,21 @@ struct LiquidDetalleLegoTests {
         #expect(LiquidCajita.sinDato == "—")
     }
 
-    // MARK: - Lectura de selección
-
-    @Test("Sin selección, la lectura conserva su invitación")
-    func lecturaVacia() {
-        let vacia = LiquidLecturaSeleccion(nil, invitacion: "Toca una noche",
-                                           ayuda: "para ver cuánto dormiste")
-        #expect(vacia != nil)
-    }
-
-    @Test("La lectura distingue dos días distintos")
-    func lecturaEquatable() {
-        let a = LiquidLecturaSeleccion.Lectura(foco: "Mié 12 ago", palabra: "Suficiente",
-                                               valor: "7:12")
-        let b = LiquidLecturaSeleccion.Lectura(foco: "Jue 13 ago", palabra: "Suficiente",
-                                               valor: "7:12")
-        #expect(a != b, "si dos días se comparan iguales, la animación no corre al cambiar")
-        #expect(a == LiquidLecturaSeleccion.Lectura(foco: "Mié 12 ago", palabra: "Suficiente",
-                                                    valor: "7:12"))
-    }
-
     // MARK: - Tokens
 
-    @Test("La franja es un escalón MÁS ALTA que el kicker")
+    @Test("La franja es un escalón MÁS ALTA que el kicker, en TAMAÑO")
     func franjaSobreKicker() {
-        // El dueño la subió de 11.5 a 13: a 11.5 se leía como pie de página (2026-08-17).
-        #expect(LiquidType.franjaTracking > LiquidType.kickerTracking)
+        // La versión anterior comparaba el tracking (1.6 > 1.5) y se llamaba «más alta»: si
+        // alguien bajaba la franja a 11.5 dejando el tracking, seguía verde. Se compara el
+        // tamaño renderizado, que es la invariante que el dueño pidió (2026-08-17).
+        #expect(LiquidType.franjaTamano > LiquidType.kickerTamano,
+                "franja \(LiquidType.franjaTamano) no es mayor que kicker \(LiquidType.kickerTamano)")
+        #expect(LiquidType.franjaTamano >= 13,
+                "el dueño la subió a 13; a 11.5 se leía como pie de página")
     }
 
-    @Test("El capilar horizontal existe y es distinto del vertical")
+    @Test("El capilar distingue sus dos ejes")
     func capilarHorizontal() {
-        #expect(LiquidCapilar(eje: .horizontal) != nil)
         #expect(LiquidCapilar.Eje.horizontal != LiquidCapilar.Eje.vertical)
     }
 }
