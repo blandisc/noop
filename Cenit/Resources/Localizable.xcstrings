@@ -60513,6 +60513,39 @@
           }
         }
       }
+    },
+    "10% hard" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "10% exigente"
+          }
+        }
+      }
+    },
+    "50% easy" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "50% suave"
+          }
+        }
+      }
+    },
+    "warm-up set" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "serie de calentamiento"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"
