@@ -53,9 +53,12 @@ final class PreparednessVerdictHistoryTests: XCTestCase {
         let raws: [Preparedness.Verdict] = [.full, .full, .caution, .caution, .full, .easy, .easy]
         let serie = Preparedness.hysteresedSeries(raws, hysteresisDays: 2)
         XCTAssertEqual(serie.count, raws.count)
+        // Contra `hysteresed`, NO contra sí misma: comparar la serie con sus propios prefijos es
+        // una propiedad que satisface CUALQUIER pliegue causal — un pliegue mutante con umbral
+        // h+1 la cumple al 100 % dando el resultado equivocado. (Lo demostró la revisión.)
         for i in raws.indices {
-            let prefijo = Preparedness.hysteresedSeries(Array(raws[0...i]), hysteresisDays: 2)
-            XCTAssertEqual(serie[i], prefijo.last,
+            XCTAssertEqual(serie[i],
+                           Preparedness.hysteresed(Array(raws[0...i]), hysteresisDays: 2),
                            "el paso \(i) no equivale a plegar su propio prefijo")
         }
     }
@@ -97,13 +100,24 @@ final class PreparednessVerdictHistoryTests: XCTestCase {
     /// `Read.verdict` no siempre sale del pliegue: un empujón de tendencia lo modifica después.
     /// Comparar la serie contra `stable` habría fallado aquí — fue un criterio tumbado en la v2.
     func testElEmpujonDeTendenciaViajaAlUltimoElemento() {
-        // Con la tendencia cayendo, un `caution` estable se degrada a `easy` DESPUÉS de plegar.
+        // DOS días malos, no uno: con hysteresisDays = 2 un solo día no mueve el estable, y el
+        // empujón nunca dispara — la primera versión de esta prueba comparaba `.full == .full`
+        // y pasaba trivialmente.
         var dias = baseline()
-        // Un día que por sí solo da `caution`, que es donde el empujón actúa.
-        dias.append(dm("2026-06-21", hrv: 30, rhr: 75, resp: 20))
-        let conTendencia = read(dias, asOf: "2026-06-21", trend: cayendo)
-        XCTAssertEqual(conTendencia.verdictHistory.last?.verdict, conTendencia.verdict,
-                       "si el empujón mueve el veredicto, la serie tiene que moverse con él")
+        dias.append(dm("2026-06-21", hrv: 30, rhr: 75, resp: 20, sleep: 450))
+        dias.append(dm("2026-06-22", hrv: 30, rhr: 75, resp: 20, sleep: 450))
+
+        let sinTendencia = read(dias, asOf: "2026-06-22")
+        XCTAssertEqual(sinTendencia.verdict, .caution,
+                       "el fixture tiene que producir un `caution` — si no, no hay qué empujar")
+
+        let conTendencia = read(dias, asOf: "2026-06-22", trend: cayendo)
+        XCTAssertEqual(conTendencia.verdict, .easy, "el empujón degrada caution → easy")
+        XCTAssertEqual(conTendencia.verdictHistory.last?.verdict, .easy,
+                       "y la serie tiene que moverse con él, no quedarse en `stable`")
+        XCTAssertNotEqual(conTendencia.verdictHistory.last?.verdict,
+                          sinTendencia.verdictHistory.last?.verdict,
+                          "si las dos lecturas dieran lo mismo, la prueba no probaría nada")
     }
 
     /// El contrato que la ronda 3 rescató: sin fila de hoy NO se fabrica una celda de hoy.
@@ -187,10 +201,19 @@ final class PreparednessVerdictHistoryTests: XCTestCase {
     /// este issue NO lo corrige; queda escrito porque el mosaico es la primera superficie que lo
     /// hace visible: dos celdas separadas por un hueco real cuentan como consecutivas.
     func testLaHisteresisEsCiegaAlCalendario_documentado() {
-        let raws: [Preparedness.Verdict] = [.full, .full, .caution, .caution]
-        let serie = Preparedness.hysteresedSeries(raws, hysteresisDays: 2)
-        XCTAssertEqual(serie.last, .caution,
-                       "dos `caution` mueven el estable aunque entre ellos hubiera un hueco de días")
+        // Con FECHAS de verdad: la primera versión de esta prueba no tenía ninguna y era un
+        // duplicado del umbral. Doce días buenos, y luego dos malos separados por OCHO días.
+        var dias = (1...12).map { i in
+            dm(String(format: "2026-06-%02d", i), hrv: 55, rhr: 55, resp: 14)
+        }
+        dias.append(dm("2026-06-20", hrv: 30, rhr: 75, resp: 20, sleep: 450))
+        dias.append(dm("2026-06-28", hrv: 30, rhr: 75, resp: 20, sleep: 450))
+
+        let r = read(dias, asOf: "2026-06-28")
+        XCTAssertEqual(r.verdict, .caution,
+                       "ocho días de hueco se cuentan como consecutivos: `hysteresed` no mira fechas")
+        // Queda ESCRITO, no corregido: `sentinelStreak` sí rompe la racha por fecha, y el
+        // mosaico será la primera superficie que exponga la asimetría.
     }
 
     // MARK: - Los tres ejes
@@ -203,5 +226,76 @@ final class PreparednessVerdictHistoryTests: XCTestCase {
         let r = read(dias, asOf: dias.last!.day)
         XCTAssertEqual(r.verdictHistory.last?.sentinelOut, false,
                        "una sola señal fuera no es el voto del centinela")
+    }
+
+    // MARK: - Una noche sin lectura no hereda el veredicto de ayer
+
+    /// El defecto que la revisión adversarial del paso A destapó: la histéresis pide 2 días para
+    /// moverse, así que una noche suelta sin reloj se quedaba PEGADA al veredicto anterior. En una
+    /// sonda de 30 días con reloj un día sí y otro no, **11 de 12 noches sin señal salían «En
+    /// rango»** — exactamente lo que el requerimiento prohíbe («no se rellena, no se interpola»).
+    func testUnaNocheSinLecturaNoHeredaElVeredictoDeAyer() {
+        var dias = baseline(12)                       // doce noches buenas y maduras
+        dias.append(dm("2026-06-13", hrv: nil, rhr: nil, resp: nil))   // sin reloj
+        dias.append(dm("2026-06-14", hrv: 55, rhr: 55, resp: 14))      // vuelve el reloj
+
+        let r = read(dias, asOf: "2026-06-14")
+        let sinReloj = r.verdictHistory.first { $0.day == "2026-06-13" }
+        XCTAssertNotNil(sinReloj)
+        XCTAssertEqual(sinReloj?.verdict, .lowSignal,
+                       "una noche sin señal no puede salir pintada con el veredicto de ayer")
+    }
+
+    /// Con cobertura intermitente, la proporción de celdas con veredicto real no puede inflarse.
+    func testCoberturaIntermitenteNoInflaLosDiasBuenos() {
+        var dias: [DailyMetric] = []
+        for i in 1...24 {
+            let day = String(format: "2026-06-%02d", i)
+            dias.append(i % 2 == 0 ? dm(day, hrv: nil, rhr: nil, resp: nil)
+                                   : dm(day, hrv: 55, rhr: 55, resp: 14))
+        }
+        let r = read(dias, asOf: dias.last!.day)
+        let sinLectura = r.verdictHistory.filter { $0.verdict == .lowSignal }.count
+        XCTAssertGreaterThanOrEqual(sinLectura, 12,
+                                    "las 12 noches sin reloj tienen que contarse como sin lectura")
+    }
+
+    // MARK: - Los huecos que la revisión encontró sin red
+
+    /// El camino `autonomic.state == .noData`: el Read se fuerza a `.lowSignal` sin plegar, y la
+    /// serie tiene que decir lo mismo en su última celda — no quedarse pegada al veredicto de ayer.
+    func testCaminoEjeSinDato_laUltimaCeldaNoSeQuedaPegada() {
+        var dias = baseline(12)
+        dias.append(dm("2026-06-13", hrv: nil, rhr: nil, resp: nil))   // hoy sin señal
+        let r = read(dias, asOf: "2026-06-13")
+        XCTAssertEqual(r.verdict, .lowSignal)
+        XCTAssertEqual(r.verdictHistory.last?.verdict, .lowSignal,
+                       "el héroe dice «baja señal»: el mosaico no puede decir otra cosa ese día")
+        XCTAssertEqual(r.verdictHistory.last?.day, "2026-06-13")
+    }
+
+    /// El cap va DESPUÉS del pliegue, comprobado a través de `evaluate()` y no solo del pliegue
+    /// suelto: si alguien invirtiera el orden, ninguna prueba anterior fallaba.
+    func testElCapSeAplicaDespuesDelPliegue_viaEvaluate() {
+        // 40 días: los primeros malos, el resto buenos. La ventana visible son los últimos 30,
+        // y su primer día conserva el momentum de los 10 que quedaron fuera.
+        var dias: [DailyMetric] = []
+        for i in 1...40 {
+            let d = Date(timeIntervalSince1970: 1_750_000_000 + Double(i) * 86_400)
+            let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"
+            f.timeZone = TimeZone(identifier: "UTC")
+            dias.append(i <= 12 ? dm(f.string(from: d), hrv: 30, rhr: 75, resp: 20)
+                                : dm(f.string(from: d), hrv: 55, rhr: 55, resp: 14))
+        }
+        let r = read(dias, asOf: dias.last!.day)
+        XCTAssertEqual(r.verdictHistory.count, Preparedness.verdictHistoryWindow,
+                       "la ventana es EXACTAMENTE 30, no «hasta 30»")
+        XCTAssertEqual(r.verdictHistory.first?.day, dias[dias.count - 30].day,
+                       "la ventana empieza donde debe: se capa después de plegar todo")
+    }
+
+    func testVentanaVaciaNoCrashea() {
+        let r = read([], asOf: "2026-06-20")
+        XCTAssertTrue(r.verdictHistory.isEmpty, "sin días, la serie es vacía — sin celda fantasma")
     }
 }

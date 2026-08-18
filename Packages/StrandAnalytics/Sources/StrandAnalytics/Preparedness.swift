@@ -236,7 +236,15 @@ public enum Preparedness {
         /// yyyy-MM-dd. La ventana es DISPERSA: un día sin fila **no aparece**, no viene en `nil`.
         /// Quien dibuje una rejilla tiene que densificar por calendario — ver `Input.days`.
         public let day: String
-        /// El veredicto estable de ese día, con la histéresis aplicada hasta ahí.
+        /// El veredicto de ese día: el estable con la histéresis aplicada hasta ahí, salvo que
+        /// esa noche no tuviera lectura — entonces es `.lowSignal`, sin heredar el de ayer.
+        ///
+        /// ⚠️ **Ojo al mezclar con los ejes de abajo:** este veredicto es POST-histéresis (mira
+        /// los días vecinos) y los tres ejes son los CRUDOS de esa noche. Una noche mala aislada
+        /// puede salir `verdict: .full` con `autonomicOut: true` — no es una contradicción, son
+        /// dos preguntas: «¿qué te dijo la app ese día?» y «¿qué pasó esa noche?». Una superficie
+        /// que pinte el veredicto y cuente los ejes en el mismo bloque tiene que decir cuál es
+        /// cuál, o se contradice sola.
         public let verdict: Verdict
         public let autonomicOut: Bool
         public let sleepOut: Bool
@@ -781,6 +789,18 @@ public enum Preparedness {
                                       verdictFinal: Verdict?) -> [VerdictNight] {
         guard !ordered.isEmpty, ordered.count == raws.count else { return [] }
         var serie = hysteresedSeries(raws.map(\.verdict), hysteresisDays: hysteresisDays)
+        // 🔴 Una noche SIN lectura no puede heredar el veredicto de ayer. El estable la
+        // enmascaraba: la histéresis pide 2 días para moverse, así que una noche suelta sin
+        // reloj salía pintada con el veredicto anterior. Medido en una sonda de 30 días con
+        // reloj un día sí y otro no: 11 de 12 noches sin señal salían «En rango».
+        //
+        // Eso es exactamente lo que el requerimiento prohíbe («no se rellena, no se interpola»),
+        // y es el MISMO defecto que `verdictFinal` arregla para la celda de hoy — sin arreglar
+        // para las otras 29. El raw ya lo sabe: `rawVerdictAt` devuelve `.lowSignal` cuando el
+        // eje autonómico no tiene lectura, así que la máscara es leerlo, no inventar nada.
+        for i in serie.indices where raws[i].verdict == .lowSignal {
+            serie[i] = .lowSignal
+        }
         if let verdictFinal, !serie.isEmpty { serie[serie.count - 1] = verdictFinal }
         let all = ordered.indices.map { i in
             VerdictNight(day: ordered[i].day,
@@ -1064,15 +1084,12 @@ public enum Preparedness {
         return salida
     }
 
-    private static func hysteresed(_ raws: [Verdict], hysteresisDays: Int) -> Verdict {
-        guard var stable = raws.first else { return .lowSignal }
-        var runVal = stable
-        var runLen = 1
-        for r in raws.dropFirst() {
-            if r == runVal { runLen += 1 } else { runVal = r; runLen = 1 }
-            if runVal != stable && runLen >= max(1, hysteresisDays) { stable = runVal }
-        }
-        return stable
+    /// El estable al final de la serie. **Delega en `hysteresedSeries`** en vez de repetir el
+    /// pliegue: con dos copias vivas del mismo fold corriendo sobre los mismos datos, una
+    /// divergencia entre ellas sería invisible (el amarre del último elemento la enmascara).
+    /// Así la equivalencia se cumple por construcción, no por una prueba que hay que recordar.
+    static func hysteresed(_ raws: [Verdict], hysteresisDays: Int) -> Verdict {
+        hysteresedSeries(raws, hysteresisDays: hysteresisDays).last ?? .lowSignal
     }
 
     /// The illness-sentinel read for the asOf night, with streak memory (FER-8). `nil` when the asOf
