@@ -120,18 +120,25 @@ final class PolvoSimulacionTests: XCTestCase {
         XCTAssertGreaterThan(mAbajo, mArriba * 1.8, "abajo \(mAbajo) vs arriba \(mArriba)")
     }
 
-    func test_laRespiracionMueveElAlfaDentroDeSuBanda() {
-        let i = 11
-        let base = p(i, still: true).alfa
-        var minimo = Double.infinity, maximo = -Double.infinity
-        for k in 0..<400 {
-            let a = p(i, t: Double(k) * 0.05).alfa
-            minimo = min(minimo, a); maximo = max(maximo, a)
+    /// La respiración multiplica el alfa por `(1 − amp) + amp·sin(…)`, o sea entre 1 − 2·amp
+    /// (0.44) y 1: en un periodo completo la razón máximo/mínimo es ≈ 1/(1 − 2·0.28) = 2.27 (la
+    /// del prototipo aprobado). Se muestrea sobre 12.6 s (el periodo más largo, w = 0.5 rad/s); en
+    /// ese lapso la mota deriva ≤ 50 pt y la densidad por altura mueve el alfa < 7 %, así que la
+    /// razón cae en ±12 % de 2.27 — y NO en 1 (quieta) ni en 5 (otra cosa).
+    func test_laRespiracionMueveElAlfaEnSuBanda() {
+        for i in [3, 11, 47, 130] {
+            var minimo = Double.infinity, maximo = -Double.infinity
+            for k in 0..<252 {
+                let a = p(i, t: Double(k) * 0.05).alfa
+                minimo = min(minimo, a); maximo = max(maximo, a)
+            }
+            let razon = maximo / minimo
+            let esperada = 1 / (1 - 2 * F.respiracionAmp)
+            XCTAssertGreaterThan(razon, esperada * 0.88, "i=\(i) razón \(razon)")
+            XCTAssertLessThan(razon, esperada * 1.12, "i=\(i) razón \(razon)")
         }
-        // La mota puede envolver y cambiar de densidad, así que la banda se compara con holgura.
-        XCTAssertGreaterThan(maximo, minimo, "respira")
-        XCTAssertGreaterThanOrEqual(minimo, base * (1 - F.respiracionAmp) * 0.9 * (F.densidadPiso))
-        XCTAssertLessThanOrEqual(maximo, base * 1.0 / F.densidadPiso * 1.05)
+        // Y con `still` no respira: alfa constante en el tiempo.
+        XCTAssertEqual(p(11, t: 0, still: true).alfa, p(11, t: 5, still: true).alfa)
     }
 
     // MARK: Tonos

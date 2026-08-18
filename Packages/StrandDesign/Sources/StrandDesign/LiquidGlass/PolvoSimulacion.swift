@@ -34,7 +34,8 @@ public enum PolvoSimulacion {
         public static let densidadPiso: Double = 0.35
         public static let densidadDesde: Double = 0.23
         public static let densidadHasta: Double = 0.80
-        /// respiración = (1 − amp) + amp·sin(w·t + φ), w ∈ [wMin, wMin + wRango] rad/s.
+        /// respiración = (1 − amp) + amp·sin(w·t + φ) — o sea el alfa oscila entre 1 − 2·amp (0.44) y 1,
+        /// como en el prototipo aprobado; w ∈ [wMin, wMin + wRango] rad/s.
         public static let respiracionAmp: Double = 0.28
         public static let respiracionWMin: Double = 0.5
         public static let respiracionWRango: Double = 0.9

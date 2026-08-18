@@ -367,6 +367,17 @@ final class EcosistemaPlanTests: XCTestCase {
         // 16 tokens de física (64) + 4 uint (16) = 192, múltiplo de 16 como exige `constant`.
         XCTAssertEqual(MemoryLayout<EcosistemaPolvoU>.stride, 192)
         XCTAssertEqual(MemoryLayout<EcosistemaPolvoU>.stride % 16, 0)
+        // Y no solo el total: los offsets clave (una transposición de dos campos del mismo tamaño
+        // conservaría el stride y desalinearía el shader en silencio).
+        XCTAssertEqual(MemoryLayout<EcosistemaPolvoU>.offset(of: \.colorVigiaResp), 80)
+        XCTAssertEqual(MemoryLayout<EcosistemaPolvoU>.offset(of: \.lienzo), 96)
+        XCTAssertEqual(MemoryLayout<EcosistemaPolvoU>.offset(of: \.t), 104)
+        XCTAssertEqual(MemoryLayout<EcosistemaPolvoU>.offset(of: \.desplazamiento), 108)
+        XCTAssertEqual(MemoryLayout<EcosistemaPolvoU>.offset(of: \.radioMin), 112)
+        XCTAssertEqual(MemoryLayout<EcosistemaPolvoU>.offset(of: \.derivaYRango), 160)
+        XCTAssertEqual(MemoryLayout<EcosistemaPolvoU>.offset(of: \.umbralClima), 172)
+        XCTAssertEqual(MemoryLayout<EcosistemaPolvoU>.offset(of: \.neutra), 176)
+        XCTAssertEqual(MemoryLayout<EcosistemaPolvoU>.offset(of: \.still), 180)
     }
 
     /// Los tokens del polvo que viajan al shader salen de `PolvoSimulacion.Fisica`, no del

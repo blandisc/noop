@@ -254,6 +254,7 @@ static inline float hashPolvo(uint i, uint k) {
 
 // Módulo positivo (`PolvoSimulacion.wrap`): el campo es infinito.
 static inline float wrapPolvo(float v, float m) {
+    if (m <= 0.0) { return 0.0; }          // misma guarda que Swift: lienzo 0×0 → 0, no NaN
     float r = fmod(v, m);
     return r < 0.0 ? r + m : r;
 }

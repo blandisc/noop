@@ -64,19 +64,15 @@ public struct LiquidAtmosfera: View {
     private var paused: Bool { still || ambientPaused || !estado.visible }
     private var neutra: Bool { ambiente == .neutro }
     private var paleta: EcosistemaPaleta { .desde(clima: ambiente.particulaColor) }
-    /// El crossfade del clima: 1.6 s como el héroe; con Reduce Motion, el corte corto del héroe.
-    private var crossfade: TimeInterval {
-        reduceMotion ? LiquidEcosistemaMotion.reduceMotionCrossfade
-                     : LiquidEcosistemaMotion.ambienteCrossfade
-    }
+    /// El crossfade del clima: 1.6 s como el héroe. Con `still` (Reduce Motion / renders) el reloj
+    /// del polvo está PAUSADO, así que un crossfade no podría avanzar nunca: el cambio es
+    /// instantáneo (y honesto: el color del veredicto se ve al momento).
+    private var crossfade: TimeInterval { still ? 0 : LiquidEcosistemaMotion.ambienteCrossfade }
 
     public var body: some View {
         ZStack {
             LiquidColor.papelTarjeta
-            TimelineView(.animation(minimumInterval: LiquidMotion.intervaloAmbiente, paused: paused)) { ctx in
-                let t = still ? 0 : ctx.date.timeIntervalSince(inicio)
-                capa(t: t, desplazamiento: still ? 0 : estado.desplazamiento)
-            }
+            capa
         }
         .ignoresSafeArea()
         .allowsHitTesting(false)
@@ -86,37 +82,48 @@ public struct LiquidAtmosfera: View {
         #endif
     }
 
+    /// Cada backend con SU reloj: Metal a 20 Hz (`intervaloAmbiente`), Canvas a 12 Hz
+    /// (`intervaloSello`, rasteriza en CPU). El `t` que viaja es SIEMPRE el real de sesión —
+    /// `still` congela posición y respiración por su cuenta (en la spec y en el shader), pero el
+    /// renderer necesita un tiempo que avance para el crossfade y para redibujar bajo demanda.
     @ViewBuilder
-    private func capa(t: TimeInterval, desplazamiento: CGFloat) -> some View {
+    private var capa: some View {
         #if os(iOS) && canImport(MetalKit)
         if let recursos = metal.recursos, recursos.polvo != nil, !motionDisabled {
-            AtmosferaMetalLienzo(recursos: recursos, paleta: paleta, t: t,
-                                 desplazamiento: desplazamiento, neutra: neutra, still: still,
-                                 crossfade: crossfade)
+            TimelineView(.animation(minimumInterval: LiquidMotion.intervaloAmbiente, paused: paused)) { ctx in
+                AtmosferaMetalLienzo(recursos: recursos, paleta: paleta,
+                                     t: ctx.date.timeIntervalSince(inicio),
+                                     desplazamiento: still ? 0 : estado.desplazamiento,
+                                     neutra: neutra, still: still, crossfade: crossfade)
+            }
         } else {
-            lienzoCanvas(t: t, desplazamiento: desplazamiento)
+            lienzoCanvas
         }
         #else
-        lienzoCanvas(t: t, desplazamiento: desplazamiento)
+        lienzoCanvas
         #endif
     }
 
-    /// El respaldo: la misma spec, la mitad de partículas (el `Canvas` rasteriza en CPU). El
-    /// cambio de clima aquí es inmediato (el crossfade vive en el renderer de Metal).
-    private func lienzoCanvas(t: TimeInterval, desplazamiento: CGFloat) -> some View {
+    /// El respaldo: la misma spec, la mitad de partículas, a 12 Hz (el `Canvas` rasteriza en
+    /// CPU). El cambio de clima aquí es inmediato (el crossfade vive en el renderer de Metal).
+    private var lienzoCanvas: some View {
         let paleta = self.paleta
         let neutra = self.neutra
         let still = self.still
-        return Canvas(rendersAsynchronously: false) { ctx, size in
-            let n = PolvoSimulacion.cuenta(lienzo: size) / 2
-            for i in 0..<n {
-                let p = PolvoSimulacion.particula(indice: i, t: t, lienzo: size,
-                                                  desplazamiento: desplazamiento,
-                                                  neutra: neutra, still: still)
-                let c = Self.color(paleta, p.tono)
-                let rect = CGRect(x: p.centro.x - p.radio, y: p.centro.y - p.radio,
-                                  width: p.radio * 2, height: p.radio * 2)
-                ctx.fill(Path(ellipseIn: rect), with: .color(c.opacity(p.alfa)))
+        return TimelineView(.animation(minimumInterval: LiquidMotion.intervaloSello, paused: paused)) { ctx in
+            let t = ctx.date.timeIntervalSince(inicio)
+            let desplazamiento = still ? 0 : estado.desplazamiento
+            Canvas(rendersAsynchronously: false) { gc, size in
+                let n = PolvoSimulacion.cuenta(lienzo: size) / 2
+                for i in 0..<n {
+                    let p = PolvoSimulacion.particula(indice: i, t: t, lienzo: size,
+                                                      desplazamiento: desplazamiento,
+                                                      neutra: neutra, still: still)
+                    let c = Self.color(paleta, p.tono)
+                    let rect = CGRect(x: p.centro.x - p.radio, y: p.centro.y - p.radio,
+                                      width: p.radio * 2, height: p.radio * 2)
+                    gc.fill(Path(ellipseIn: rect), with: .color(c.opacity(p.alfa)))
+                }
             }
         }
     }

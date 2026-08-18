@@ -142,25 +142,9 @@ struct EcosistemaPolvoU {
     }
 }
 
-#if canImport(Metal)
-import Metal
-
-// MARK: - «El Ecosistema» · Fase B (FER-13) — el héroe de Hoy en Metal
-//
-// El Canvas de Fase A recorría el plan en CPU y pedía ~40 `fill` por cuadro con ~850
-// elipses adentro. Aquí el MISMO plan (`EcosistemaSimulacion.plan`) se encodea como draws
-// INSTANCIADOS: una nube = un draw, y la posición de cada partícula la deriva el vertex
-// shader de su índice — la GPU nunca recibe una lista de partículas.
-//
-// Qué NO se movió a la GPU, a propósito:
-//   · Los rótulos orbitales: el texto sigue siendo texto real del sistema de diseño,
-//     dibujado por un `EcosistemaCanvas(soloEtiquetas: true)` encima (≤3 rótulos/cuadro,
-//     ya resueltos una sola vez por FER-14 #1).
-//   · El plan mismo: son ~20 structs por cuadro en CPU, ruido frente a lo que ahorra.
-//
-// El Canvas completo sigue siendo el camino de macOS/watchOS, de las previews y de los
-// renders deterministas de QA — y el fallback si este dispositivo no da Metal.
-
+// La paleta vive FUERA de `#if canImport(Metal)` a propósito (FER-118): es SIMD puro (sin tipos
+// de Metal) y la comparte el `Canvas` de respaldo de la atmósfera, que también compila en watchOS,
+// donde Metal no existe.
 /// Los tokens de partícula ya resueltos a RGBA lineal-de-textura para el shader.
 struct EcosistemaPaleta: Equatable {
     var clima: SIMD4<Float>
@@ -216,6 +200,26 @@ struct EcosistemaPaleta: Equatable {
         }
     }
 }
+
+
+#if canImport(Metal)
+import Metal
+
+// MARK: - «El Ecosistema» · Fase B (FER-13) — el héroe de Hoy en Metal
+//
+// El Canvas de Fase A recorría el plan en CPU y pedía ~40 `fill` por cuadro con ~850
+// elipses adentro. Aquí el MISMO plan (`EcosistemaSimulacion.plan`) se encodea como draws
+// INSTANCIADOS: una nube = un draw, y la posición de cada partícula la deriva el vertex
+// shader de su índice — la GPU nunca recibe una lista de partículas.
+//
+// Qué NO se movió a la GPU, a propósito:
+//   · Los rótulos orbitales: el texto sigue siendo texto real del sistema de diseño,
+//     dibujado por un `EcosistemaCanvas(soloEtiquetas: true)` encima (≤3 rótulos/cuadro,
+//     ya resueltos una sola vez por FER-14 #1).
+//   · El plan mismo: son ~20 structs por cuadro en CPU, ruido frente a lo que ahorra.
+//
+// El Canvas completo sigue siendo el camino de macOS/watchOS, de las previews y de los
+// renders deterministas de QA — y el fallback si este dispositivo no da Metal.
 
 // MARK: - Recursos de Metal (compilados una vez por proceso, fuera del hilo principal)
 
@@ -646,6 +650,9 @@ struct AtmosferaMetalLienzo: UIViewRepresentable {
         vista.enableSetNeedsDisplay = true
         vista.isOpaque = false
         vista.layer.isOpaque = false
+        // El vidrio del sistema tiene que poder MUESTREAR esta capa detrás de los módulos:
+        // sin `framebufferOnly = false` el drawable es solo destino de render.
+        vista.framebufferOnly = false
         vista.backgroundColor = .clear
         vista.clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 0)
         vista.isUserInteractionEnabled = false
