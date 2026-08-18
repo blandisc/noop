@@ -48,6 +48,35 @@ final class MatrizContrasteTests: XCTestCase {
         }
     }
 
+    /// FER-118 · Hoy en atmósfera: los módulos son vidrio blanco al 30 % sobre BLANCO PURO, así
+    /// que el fondo efectivo de cada número es `papelTarjeta` (#FFFFFF). Todo hue que pinta un
+    /// numeral (30/26 pt → AA-large 3:1) y los dos grises de texto normal (título/sublabel,
+    /// 4.5:1) tienen que leer ahí. Es la misma garantía que sobre `papelMatriz`, fijada para el
+    /// fondo nuevo: si alguien oscurece el vidrio o aclara un hue, este gate lo dice.
+    func testHuesDeModulosPasanSobreElVidrioDeLaAtmosfera() {
+        let fondo = LiquidColor.papelTarjeta
+        for (nombre, hue) in [("indigo · sueño", LiquidColor.indigo),
+                              ("rosa · FC", LiquidColor.rosa),
+                              ("doradoTemp · guardián", LiquidColor.doradoTemp),
+                              ("azul · resp", LiquidColor.azul),
+                              ("verdeCarga · carga", LiquidColor.verdeCarga),
+                              ("ambar · esfuerzo", LiquidColor.ambar),
+                              ("cian · VFC", LiquidColor.cian),
+                              ("teal · pasos", LiquidColor.teal),
+                              ("verdePrimario · veredicto", LiquidColor.verdePrimario)] {
+            XCTAssertGreaterThanOrEqual(contrast(hue, fondo), 3.0,
+                                        "\(nombre) no pasa AA-large sobre el vidrio de la atmósfera")
+        }
+        for (nombre, tinta) in [("tinta700 · título", LiquidColor.tinta700),
+                                ("tinta500 · sublabel", LiquidColor.tinta500)] {
+            XCTAssertGreaterThanOrEqual(contrast(tinta, fondo), 4.5,
+                                        "\(nombre) no pasa AA texto normal sobre el vidrio de la atmósfera")
+        }
+        // Y el vidrio de veras es blanco al 30 %: compuesto sobre blanco sigue siendo blanco.
+        XCTAssertEqual(LiquidColor.vidrioAtmosfera.rgbaComponents.a, 0.30, accuracy: 0.001)
+        XCTAssertEqual(LiquidColor.vidrioCanto.rgbaComponents.a, 0.08, accuracy: 0.001)
+    }
+
     /// La identidad de CARGA no puede ser la voz de marca: `verdePrimario` es el CTA y el
     /// veredicto, y además es la zona «bajo» del medidor de estrés — el mismo hex diciendo
     /// dos cosas a tres sellos de distancia.

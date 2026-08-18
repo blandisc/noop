@@ -65,7 +65,7 @@ dock: `dockSide`=16, `dockBottom`=14. `ecosistemaAlto`=324 (la zona del héroe F
 Cinco radios, ninguno más: `control`=12 · `tarjeta`=18 · `hoja`=28 (reservado sheets) ·
 `pastilla`=999 (`Capsule`) · orbe=50 % (`Circle`). **Un radio nuevo es un cambio al sistema.**
 
-## 4. Vidrio (`liquidGlass(_:)` — 4 recetas cerradas, nunca blur suelto)
+## 4. Vidrio (`liquidGlass(_:)` — recetas cerradas, nunca blur suelto)
 
 Cada receta es el stack completo: material + relleno blanco + borde + inner-highlight
 (+ especular) + sombra. En nativo el backdrop-filter se calibra con materiales del sistema
@@ -78,9 +78,20 @@ Cada receta es el stack completo: material + relleno blanco + borde + inner-high
 | pastilla | `.liquidGlass(.pastilla)` / `.pastillaElevada` | blanco .45, borde .8, highlight superior, r/pastilla | e/0 / e/1 |
 | lente | `.liquidGlass(.lente)` | papelDock, anillo interior 4 lados, **streak especular**, r/pastilla | e/3 |
 | esfera | `LiquidSphere(tone:)` | radial blanco→tono .22, borde .9, especular elíptico | e/2(tono) |
+| superficie·atmósfera (FER-118) | `.liquidGlass(.superficieAtmosfera)` | blanco **.30** (`vidrioAtmosfera`), **canto de tinta .08** (`vidrioCanto`, también sobre el vidrio nativo de iOS 26), highlight .8→.35, r/módulo (20) | e/módulo(0) |
 
 Elevación (`LiquidElevation`): `e0` reposo · `e1` tarjeta · `e2(tone:)` señal (glow del tono) ·
 `e3` flotante — vía `.liquidShadow(_:)`. Ninguna pantalla escribe `.shadow` a mano.
+
+**`superficieAtmosfera` (FER-118, Hoy en atmósfera).** Es la hermana de `superficie` para la
+única pantalla con fondo BLANCO PURO + partículas Metal detrás. Dos diferencias, y las dos
+existen por ese fondo: el relleno baja a .30 para que las partículas se vean a través del módulo
+(el dueño eligió 30 viendo 10 / 30 / 55), y el borde es de tinta (`vidrioCanto`, .08) porque sobre
+#FFFFFF un borde blanco no existe — por eso también se traza sobre el vidrio nativo, cuyo filo
+propio es blanco. Plan B si el vidrio real no sostiene 60 fps sobre Metal: sólido al .45
+(`vidrioAtmosferaSolida`), nunca .30 opaco. Los numerales de módulo llevan `valorTileL` (30) /
+`valorTileM` (26) con `valorTileTracking` (−1); su contraste sobre este vidrio lo fija
+`MatrizContrasteTests.testHuesDeModulosPasanSobreElVidrioDeLaAtmosfera`.
 
 ## 5. Motion (`LiquidMotion` — el contrato)
 
