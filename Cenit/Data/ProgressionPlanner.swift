@@ -56,7 +56,11 @@ enum ProgressionPlanner {
                          advice: TrainingRegulation.Advice)
         -> (state: ProgressionState, raise: Raise?)? {
         guard re.progressionEnabled else { return nil }
-        let targetReps = re.plannedSets.first { $0.kind == .work }?.reps ?? re.targetReps ?? 8
+        // E13/FER-94: with a rep range (e.g. 8-12) the raise fires once every work set touches the
+        // TOP, not the floor — `repsRangeTop` outranks the fixed `reps` it replaces. `nil` (no range,
+        // today's behavior) falls through to `reps` exactly as before.
+        let targetReps = re.plannedSets.first { $0.kind == .work }
+            .flatMap { $0.repsRangeTop ?? $0.reps } ?? re.targetReps ?? 8
         let targetSets = max(1, re.plannedSets.filter { $0.kind == .work }.count)
         let increment = re.progressionIncrementKg
             ?? PlateMath.minimumIncrement(for: .from(equipment: equipment), inventory: inventory)

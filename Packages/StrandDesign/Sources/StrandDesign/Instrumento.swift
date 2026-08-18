@@ -114,6 +114,39 @@ public struct InstrumentoTheme: Equatable, Sendable {
         warning:        Color(hex: "#9C5E10"),
         critical:       Color(hex: "#BC3A34")
     )
+
+    /// FER-96 — the wrist's own floor. `.base`'s warm paper is the iPhone's daytime anchor; on the
+    /// wrist, over OLED, that same paper read as a bug (the watch was painting a light-mode surface on a
+    /// screen built to go dark). «El reloj hereda la voz, no el suelo»: every data/verdict identity below
+    /// is the SAME hue as `.base` — same `dataHeart`, same `dataStrain`, same `verdict` — only relit
+    /// against true black. `ink` reuses `.base.paper`'s exact hex: the paper becomes the ink once the
+    /// floor goes dark, so the wrist still reads as the same instrument, never a second palette.
+    ///
+    /// Every text/data role below is verified ≥4.5:1 against `paper` by `InstrumentoWatchContrastTests`
+    /// (`OKLab.contrastRatio`, not eyeballed) — most data hues needed relighting (a deep hue tuned to
+    /// read on light paper is often too dark to clear AA on true black; `dataRecovery`/`dataStrain`/
+    /// `dataSteps` already cleared it unchanged). `surface`/`hairline`/`hairlineStrong` are chrome, not
+    /// text, so — like `.base` — they carry no contrast requirement.
+    public static let watch = InstrumentoTheme(
+        paper:          Color(hex: "#000000"),   // true OLED black — the wrist's own floor, not the phone's paper
+        surface:        Color(hex: "#171512"),
+        hairline:       Color(hex: "#2B2721"),
+        hairlineStrong: Color(hex: "#3D372C"),
+        ink:            Color(hex: "#F4F1E8"),   // = .base.paper — the voice the wrist inherits
+        inkSecondary:   Color(hex: "#A79E89"),
+        inkTertiary:    Color(hex: "#8B8370"),
+        dataRecovery:   Color(hex: "#0C8F62"),   // unchanged — already ≥4.5:1 on black
+        dataStrain:     Color(hex: "#C4631F"),   // unchanged — already ≥4.5:1 on black
+        dataSleep:      Color(hex: "#716FB5"),
+        dataHrv:        Color(hex: "#1E8292"),
+        dataHeart:      Color(hex: "#BD546C"),
+        dataSpO2:       Color(hex: "#467AAC"),
+        dataOxygen:     Color(hex: "#478266"),
+        dataSteps:      Color(hex: "#4C8998"),   // unchanged — already ≥4.5:1 on black
+        verdict:        Color(hex: "#0C8F62"),
+        warning:        Color(hex: "#A76820"),
+        critical:       Color(hex: "#CD4A42")
+    )
 }
 
 public extension InstrumentoTheme {
@@ -502,6 +535,29 @@ public extension InstrumentoTheme {
             swatches("Entrenar", [("effort (RPE)", t.dataEffort)], t)
         }
         .padding(28)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+    .background(t.paper)
+}
+
+/// FER-96 — the wrist's dark floor: the same 8 data/verdict tints as `.base`, relit against true black.
+/// Numerically verified by `InstrumentoWatchContrastTests`; this preview is the eyeball companion, never
+/// the gate.
+#Preview("Instrumento · watch (suelo oscuro)") {
+    let t = InstrumentoTheme.watch
+    return ScrollView {
+        VStack(alignment: .leading, spacing: 28) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("PULSO").instrumentoOverline().foregroundStyle(t.inkTertiary)
+                Text("128").instrumentoHero(52).foregroundStyle(t.dataHeart)
+            }
+            Divider().overlay(t.hairline)
+            swatches("Papel", [("paper", t.paper), ("surface", t.surface), ("hairline", t.hairline), ("strong", t.hairlineStrong)], t)
+            swatches("Tinta", [("ink", t.ink), ("secondary", t.inkSecondary), ("tertiary", t.inkTertiary)], t)
+            swatches("Dato / estado", [("recovery", t.dataRecovery), ("strain", t.dataStrain), ("warning", t.warning), ("critical", t.critical)], t)
+            swatches("Métricas", [("sleep", t.dataSleep), ("hrv", t.dataHrv), ("heart", t.dataHeart), ("spo2", t.dataSpO2), ("oxygen", t.dataOxygen), ("steps", t.dataSteps)], t)
+        }
+        .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
     .background(t.paper)

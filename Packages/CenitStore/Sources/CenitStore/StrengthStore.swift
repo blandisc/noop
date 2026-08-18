@@ -182,16 +182,18 @@ extension CenitStore {
                 for (idx, s) in planned.enumerated() {
                     // The four rest columns are written together (FER-715): a non-nil override writes
                     // all four, a nil `rest` writes four NULLs = "inherit the exercise" on read-back.
+                    // `repsRangeTop` (E13/FER-94) is a single nullable column: nil = no range, today's
+                    // behavior.
                     let sArgs: [DatabaseValueConvertible?] = [
                         s.id, re.id, idx, s.kind.rawValue, s.reps, s.weightKg,
                         s.rest?.mode.rawValue, s.rest?.seconds,
-                        s.rest?.hrReference.rawValue, s.rest?.hrValue
+                        s.rest?.hrReference.rawValue, s.rest?.hrValue, s.repsRangeTop
                     ]
                     try db.execute(sql: """
                         INSERT INTO routineSet
                             (id, routineExerciseId, position, kind, reps, weightKg,
-                             restMode, restSeconds, hrRestReference, hrRestValue)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                             restMode, restSeconds, hrRestReference, hrRestValue, repsRangeTop)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """, arguments: StatementArguments(sArgs))
                 }
             }
@@ -410,7 +412,8 @@ extension CenitStore {
         }
         return RoutineSet(id: r["id"], position: r["position"],
                           kind: SetKind(rawValue: r["kind"]) ?? .work,
-                          reps: r["reps"], weightKg: r["weightKg"], rest: rest)
+                          reps: r["reps"], weightKg: r["weightKg"], repsRangeTop: r["repsRangeTop"],
+                          rest: rest)
     }
 
     // MARK: - Sessions + sets (+ PR derivation, transactional)

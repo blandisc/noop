@@ -79,7 +79,16 @@ import UIKit
     /// The guided strength session in progress (FER-347), or nil. Lives here (global) so closing its sheet
     /// or switching tabs never loses it — the Train hub re-presents it. Saved as a `StrengthSession` + its
     /// `SetEntry` rows on Finish.
-    var strengthSession: StrengthSessionModel? { didSet { bindRestActivity() } }
+    var strengthSession: StrengthSessionModel? {
+        didSet {
+            bindRestActivity()
+            // FER-96: a session ending is when the watch's resting face becomes relevant again — refresh
+            // its verdict so it doesn't keep showing whatever was current when the session STARTED.
+            if strengthSession == nil, oldValue != nil {
+                Task { [weak self] in await self?.pushWatchIdleContext() }
+            }
+        }
+    }
     /// Subscription to the active session's changes — drives the rest Live Activity's reconcile loop.
     // AppModel-internal (split D1)
     var restActivityCancellable: AnyCancellable?
@@ -194,6 +203,19 @@ import UIKit
             .removeDuplicates()
             .sink { (prep: Preparedness.Read?) in
                 Task { await MorningReadingScheduler.reschedule(prep: prep) }
+            }
+            .store(in: &hrCancellables)
+
+        // FER-95 · E14 — «fuera de la app»: los dos widgets de pantalla de inicio + el recordatorio del
+        // día que toca entrenar se re-arman en cada publicación del dashboard, igual que el aviso
+        // matutino arriba. No hay `removeDuplicates` aquí a propósito: a diferencia del aviso (donde el
+        // único insumo que le importa es `preparedness`), el snapshot también depende del split/rutinas
+        // (que `$dashboard` no versiona) y de si hay sesión viva — una publicación repetida es un
+        // re-cálculo barato (una lectura de store), no un efecto duplicado.
+        repo.$dashboard
+            .sink { [weak self] _ in
+                guard let self else { return }
+                Task { await self.publishTrainOutsideApp() }
             }
             .store(in: &hrCancellables)
 

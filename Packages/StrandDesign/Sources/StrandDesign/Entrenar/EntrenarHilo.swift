@@ -32,7 +32,13 @@ public struct EntrenarHilo: View {
         case hollow
 
         /// El hue de la señal: el que gira en el orbe. Nunca toca texto.
-        func hue(_ theme: InstrumentoTheme) -> Color {
+        ///
+        /// `public` desde FER-95: `CenitWidgets/HomeWidgets` (otro módulo, la extensión de widgets)
+        /// necesita pintar el mismo tono de lectura que la landing sin re-derivar el veredicto — el
+        /// widget nunca calcula el suyo, solo reproduce el que `AppModel` ya resolvió (el snapshot del
+        /// App Group trae el `Tone` crudo). Antes era `internal`; el único llamador fuera de este
+        /// archivo era una prueba con `@testable import StrandDesign`.
+        public func hue(_ theme: InstrumentoTheme) -> Color {
             switch self {
             case .clear:   return theme.verdict
             case .caution: return theme.warning
@@ -44,7 +50,9 @@ public struct EntrenarHilo: View {
         /// El tono de LECTURA de la palabra: el mismo hue oscurecido hasta AA sobre el papel.
         /// Es el par obligatorio de `hue` — hue de dato, tono de lectura — y sin la pastilla el
         /// fondo real bajo la palabra es el papel, sin velo de por medio.
-        func word(_ theme: InstrumentoTheme) -> Color {
+        ///
+        /// `public` por la misma razón que `hue` arriba (FER-95).
+        public func word(_ theme: InstrumentoTheme) -> Color {
             self == .hollow ? theme.inkSecondary
                             : OKLab.darkened(hue(theme), toContrast: 4.5, against: theme.paper)
         }

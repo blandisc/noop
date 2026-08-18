@@ -87,6 +87,26 @@ public enum WidgetMetrics {
     public static let disabledOpacity: CGFloat = 0.4
 }
 
+// MARK: - Home-screen widget metrics (FER-95 · E14)
+//
+// `TrainTodayWidget` (`.systemSmall`) and `WeekWidget` (`.systemMedium`) — WidgetKit's own fixed
+// canvases, not a screen that reflows with Dynamic Type (see the epic's «Dynamic Type» note: these
+// sizes are deliberately fixed, not a promise of xxxLarge/AX5 scaling). Sits beside `WidgetMetrics`
+// for the same reason that one does: it's Live-Activity/widget-extension infrastructure, not a token
+// of any one screen, so it lives outside `Entrenar/`.
+public enum HomeWidgetMetrics {
+    public static let padding: CGFloat = 16
+    public static let overline: CGFloat = 11
+    public static let overlineTracking: CGFloat = 1.2
+    public static let title: CGFloat = 20           // el nombre de la rutina / «Hoy descansas» / «Abre Cénit»
+    public static let cta: CGFloat = 13
+    public static let verdict: CGFloat = 13
+    public static let dayToken: CGFloat = 20
+    public static let dayLabel: CGFloat = 10
+    public static let rowGap: CGFloat = 6
+    public static let weekGap: CGFloat = 10
+}
+
 // MARK: - Range control (the ONE segmented pill control, used everywhere)
 
 public struct SegmentedPillControl<T: Hashable>: View {

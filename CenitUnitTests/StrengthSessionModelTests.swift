@@ -56,6 +56,44 @@ final class StrengthSessionModelTests: XCTestCase {
         XCTAssertEqual(s2.currentSet?.weightKg, 0)
     }
 
+    /// A `RoutineExercise` with an explicit per-set plan (unlike `re`, which synthesizes rows from
+    /// target*), needed to exercise `repsRangeTop` seeding (E13/FER-94).
+    private func reWithSets(_ id: String, exerciseId: String, sets: [RoutineSet]) -> RoutineExercise {
+        RoutineExercise(id: id, routineId: "rt", exerciseId: exerciseId, position: 0,
+                        targetSets: sets.count, restMode: .fixed, restSeconds: 90, sets: sets)
+    }
+
+    // MARK: Reps range seeding (E13/FER-94)
+
+    /// No «última vez»: the cell seeds at the range's TOP, not the floor.
+    func testPrefillSeedsAtRepsRangeTopWhenNoLastTime() {
+        let plan = [RoutineSet(position: 0, kind: .work, reps: 8, weightKg: 80, repsRangeTop: 12)]
+        let slot = StrengthSessionModel.PlanSlot(re: reWithSets("a", exerciseId: "bench", sets: plan),
+                                                 exercise: ex("bench", "Bench"), lastSets: [])
+        let s = make([slot])
+        XCTAssertEqual(s.currentSet?.reps, 12, "seeds at the range top, not the floor")
+    }
+
+    /// Regla fantasma (FER-952) con techo: «la última vez» sigue ganando siempre, incluso cuando el
+    /// plan trae un rango — el techo solo entra como fallback del plan, nunca por encima de lo hecho.
+    func testGhostRuleBeatsRepsRangeTopWhenLastTimeExists() {
+        let plan = [RoutineSet(position: 0, kind: .work, reps: 8, weightKg: 80, repsRangeTop: 12)]
+        let slot = StrengthSessionModel.PlanSlot(re: reWithSets("a", exerciseId: "bench", sets: plan),
+                                                 exercise: ex("bench", "Bench"),
+                                                 lastSets: [lastSet("bench", weight: 80, reps: 9)])
+        let s = make([slot])
+        XCTAssertEqual(s.currentSet?.reps, 9, "«la última vez» wins over the range top")
+    }
+
+    /// Sin rango (`repsRangeTop == nil`, comportamiento de hoy): idéntico a antes de E13 — regresión.
+    func testPrefillWithoutRepsRangeTopUsesFloorAsBefore() {
+        let plan = [RoutineSet(position: 0, kind: .work, reps: 8, weightKg: 80)]
+        let slot = StrengthSessionModel.PlanSlot(re: reWithSets("a", exerciseId: "bench", sets: plan),
+                                                 exercise: ex("bench", "Bench"), lastSets: [])
+        let s = make([slot])
+        XCTAssertEqual(s.currentSet?.reps, 8, "no range = seeds at the floor, regression")
+    }
+
     // MARK: Register + advance + rest
 
     func testRegisterAdvancesAndStartsRest() {

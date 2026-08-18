@@ -59657,6 +59657,134 @@
           }
         }
       }
+    },
+    "Today's training" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today's training"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoy toca entrenar"
+          }
+        }
+      }
+    },
+    "%@ is on today's plan." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is on today's plan."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ está en tu plan de hoy."
+          }
+        }
+      }
+    },
+    "Training reminder" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Training reminder"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recordatorio de entreno"
+          }
+        }
+      }
+    },
+    "Remind me on training days" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remind me on training days"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avísame los días que toca entrenar"
+          }
+        }
+      }
+    },
+    "At what time" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "At what time"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A qué hora"
+          }
+        }
+      }
+    },
+    "One reminder on each day your plan assigns a routine, at the time you pick. It's frozen when scheduled: it names the routine, never how you'll be feeling that day." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One reminder on each day your plan assigns a routine, at the time you pick. It's frozen when scheduled: it names the routine, never how you'll be feeling that day."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un aviso cada día que tu plan te asigna una rutina, a la hora que elijas. Se congela al programarse: nombra la rutina, nunca cómo te vas a sentir ese día."
+          }
+        }
+      }
+    },
+    "You have no training days assigned yet, so there's nothing to remind you of." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You have no training days assigned yet, so there's nothing to remind you of."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todavía no tienes días de entreno asignados, así que no hay nada que recordarte."
+          }
+        }
+      }
+    },
+    "Notifications are off in iOS Settings, so this can't reach you." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notifications are off in iOS Settings, so this can't reach you."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las notificaciones están apagadas en Ajustes de iOS, así que esto no te puede alcanzar."
+          }
+        }
+      }
     }
   },
   "version" : "1.1"

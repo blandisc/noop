@@ -8,7 +8,7 @@ import StrandDesign
 struct WatchSummaryView: View {
     let summary: WatchSessionSummary
     @EnvironmentObject var manager: WatchWorkoutManager
-    private let t = InstrumentoTheme.base
+    private let t = InstrumentoTheme.watch
 
     var body: some View {
         ScrollView {

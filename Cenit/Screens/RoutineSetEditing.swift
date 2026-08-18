@@ -139,16 +139,17 @@ enum RoutineSetEditing {
     /// El calentamiento NUNCA cuenta — ni para plegar ni para abrir. Sin series de trabajo (caso
     /// imposible en la práctica, pero no en el tipo) no hay nada que distinguir: colapsa.
     ///
-    /// FER-88 (esta conformación): la comparación también debería cubrir `RoutineSet.repsRangeTop` —
-    /// dos series con el mismo peso/reps pero distinto techo de rango cuentan como DISTINTAS. Ese
-    /// campo todavía no existe en `Training.swift` (aterriza con E13/FER-94; `grep -rn repsRangeTop
-    /// Cenit/ Packages/` → 0 resultados hoy) y ese archivo no es de esta fase, así que la extensión
-    /// queda BLOQUEADA — no silenciada: en cuanto el campo aterrice, esta función gana una línea más
-    /// (`$0.repsRangeTop == first.repsRangeTop`) y su prueba gemela dejará de estar comentada.
+    /// FER-88 + E13/FER-94: la comparación también cubre `RoutineSet.repsRangeTop` — dos series con el
+    /// mismo peso/reps pero distinto techo de rango cuentan como DISTINTAS. El campo aterrizó en
+    /// `Training.swift` con E13/FER-94; esta extensión estaba bloqueada hasta entonces (ver
+    /// `RoutineSetEditingTests`).
     static func workSetsAreEqual(_ sets: [RoutineSet]) -> Bool {
         let work = sets.filter { $0.kind == .work }
         guard let first = work.first else { return true }
-        return work.allSatisfy { $0.weightKg == first.weightKg && $0.reps == first.reps }
+        return work.allSatisfy {
+            $0.weightKg == first.weightKg && $0.reps == first.reps
+                && $0.repsRangeTop == first.repsRangeTop
+        }
     }
 }
 

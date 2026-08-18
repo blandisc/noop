@@ -6,9 +6,9 @@ import BiometricStreams
 
 final class MigrationTests: XCTestCase {
     func testMigratorRegistersContiguousVersions() {
-        XCTAssertEqual(CenitStore.makeMigrator().migrations, (1...37).map { "v\($0)" })
-        XCTAssertEqual(CenitStoreInfo.schemaVersion, 37)
-        XCTAssertEqual(CenitStoreInfo.latestMigration, "v37")
+        XCTAssertEqual(CenitStore.makeMigrator().migrations, (1...38).map { "v\($0)" })
+        XCTAssertEqual(CenitStoreInfo.schemaVersion, 38)
+        XCTAssertEqual(CenitStoreInfo.latestMigration, "v38")
     }
 
     func testInMemoryRunsMigrations() async throws {
@@ -1275,6 +1275,55 @@ final class MigrationTests: XCTestCase {
         try await dbQueue.read { db in
             XCTAssertTrue(try migrator.appliedIdentifiers(db).contains("v35"),
                           "v35 must be recorded so it never re-runs and wedges startup")
+        }
+    }
+
+    /// v38 (E13/FER-94): routineSet.repsRangeTop added append-only, nullable with no default — an
+    /// existing row must survive the migration untouched and the new column must read back as NULL,
+    /// never 0 (NULL = "no range", exactly today's behavior).
+    func testV38AddsRepsRangeTopToRoutineSetAppendOnly() async throws {
+        let dbQueue = try DatabaseQueue()
+        let migrator = CenitStore.makeMigrator()
+        try migrator.migrate(dbQueue, upTo: "v37")
+
+        try await dbQueue.write { db in
+            try db.execute(sql: """
+                INSERT INTO routineSet (id, routineExerciseId, position, kind, reps, weightKg)
+                VALUES ('rs1', 're1', 0, 'work', 8, 60)
+                """)
+        }
+
+        try migrator.migrate(dbQueue)   // → v38
+
+        try await dbQueue.read { db in
+            let cols = try db.columns(in: "routineSet").map(\.name)
+            XCTAssertTrue(cols.contains("repsRangeTop"), "v38 must add routineSet.repsRangeTop")
+            let row = try Row.fetchOne(db, sql: "SELECT * FROM routineSet WHERE id='rs1'")
+            XCTAssertNotNil(row, "the pre-v38 row must survive")
+            XCTAssertNil(row?["repsRangeTop"] as Int?, "new column defaults to NULL, never 0")
+            XCTAssertEqual(row?["reps"] as Int?, 8, "existing columns untouched")
+            XCTAssertEqual(row?["weightKg"] as Double?, 60, "existing columns untouched")
+        }
+    }
+
+    /// v38 must be idempotent (FER-791/792 discipline): column already present but v38 unrecorded →
+    /// re-running records it without a "duplicate column" crash.
+    func testV38IsIdempotentWhenColumnsAlreadyExist() async throws {
+        let dbQueue = try DatabaseQueue()
+        let migrator = CenitStore.makeMigrator()
+        try migrator.migrate(dbQueue, upTo: "v37")
+
+        try await dbQueue.write { db in
+            try db.alter(table: "routineSet") { t in
+                t.add(column: "repsRangeTop", .integer)
+            }
+        }
+
+        try migrator.migrate(dbQueue)   // → v38; must not throw
+
+        try await dbQueue.read { db in
+            XCTAssertTrue(try migrator.appliedIdentifiers(db).contains("v38"),
+                          "v38 must be recorded so it never re-runs and wedges startup")
         }
     }
 }

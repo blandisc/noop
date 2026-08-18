@@ -122,6 +122,12 @@ public struct RoutineSet: Codable, Sendable, Identifiable, Equatable {
     public var position: Int
     public var kind: SetKind
     public var reps: Int?
+    /// The top of this set's rep range (E13/FER-94): `nil` = a single fixed target, today's behavior
+    /// bit-for-bit. Non-nil prescribes "reps-repsRangeTop" (e.g. 8-12) — `reps` stays the floor,
+    /// unchanged. `ProgressionPlanner.evaluate` advances the weight only once every work set touches
+    /// the TOP, not the floor. Only meaningful for `kind == .work`: nothing writes it on a warm-up
+    /// because the one write path (E7/FER-88, `RoutineEditorScreen`) only offers it there.
+    public var repsRangeTop: Int?
     public var weightKg: Double?
     /// This set's own rest override (FER-715); `nil` = inherit the exercise's rest. The v26 migration
     /// materializes existing sets by copying the exercise's rest, so old data reads back identically;
@@ -129,9 +135,20 @@ public struct RoutineSet: Codable, Sendable, Identifiable, Equatable {
     public var rest: RestConfig?
 
     public init(id: String = UUID().uuidString, position: Int, kind: SetKind = .work,
-                reps: Int? = nil, weightKg: Double? = nil, rest: RestConfig? = nil) {
+                reps: Int? = nil, weightKg: Double? = nil, repsRangeTop: Int? = nil,
+                rest: RestConfig? = nil) {
         self.id = id; self.position = position; self.kind = kind
-        self.reps = reps; self.weightKg = weightKg; self.rest = rest
+        self.reps = reps; self.weightKg = weightKg; self.repsRangeTop = repsRangeTop; self.rest = rest
+    }
+
+    /// Texto de reps para la receta: "piso" cuando no hay techo, "piso-techo" cuando sí — nil cuando la
+    /// serie no tiene piso (tipos sin reps, p.ej. tiempo/distancia). Un techo igual o menor al piso se
+    /// trata como dato inválido y cae a solo el piso (defensivo: la UI que captura el techo vive fuera
+    /// de esta fase, en E7/FER-88).
+    public var repsRangeLabel: String? {
+        guard let reps else { return nil }
+        guard let top = repsRangeTop, top > reps else { return "\(reps)" }
+        return "\(reps)-\(top)"
     }
 }
 

@@ -841,6 +841,17 @@ extension CenitStore {
                 try db.execute(sql: "DROP TABLE IF EXISTS \"\(table)\"")
             }
         }
+        // v38 (E13/FER-94): the top of a planned set's rep range. Append-only, one nullable column via
+        // `addColumnIfMissing` (FER-791/792 discipline — a re-run against a DB that already grew the
+        // column is a no-op, not a "duplicate column" crash). NULL = a single fixed target, exactly
+        // today's behavior; nobody backfills a value because the only write path (E7/FER-88, the
+        // `RoutineEditorScreen` capture cell) didn't exist before this migration landed, so every
+        // existing row reads back as NULL, byte-for-byte identical to pre-v38.
+        migrator.registerMigration("v38") { db in
+            try addColumnIfMissing(db, "repsRangeTop", on: "routineSet") {
+                $0.add(column: "repsRangeTop", .integer)
+            }
+        }
         return migrator
     }
 

@@ -30,6 +30,12 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
         case running
         /// The session ended — the minimal summary card.
         case summary
+        /// FER-96: `HKWorkoutSession(healthStore:configuration:)` (or the mirror/collection start that
+        /// follows it) threw. Distinct from `idle(couldNotConnect: true)` on purpose — that one is the
+        /// generic 15s watchdog for a wake that never produced ANY session (could be a dropped message,
+        /// could be anything); this one fires immediately and says the actual reason: a Health problem,
+        /// not a connectivity one. Both used to be a silent `log.error` with no observable state.
+        case healthKitFailure
     }
 
     // MARK: Live values the UI observes
@@ -54,6 +60,13 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
     /// True when Health sharing is denied on the wrist → the face warns and drops to «--», but the
     /// session (timer + rests + haptics) keeps serving. Never blocks.
     @Published var healthAccessDenied = false
+    /// FER-96: `requestAuthorization()` itself threw at launch (not a plain denial — an actual system
+    /// error, e.g. Health data unavailable on this device). Surfaced on the idle face; used to be a
+    /// silent `log.error` that left the person with no reading and no explanation.
+    @Published var authorizationRequestFailed = false
+    /// FER-96: today's routine + the already-resolved daily verdict, for the idle face — pushed by the
+    /// iPhone over `updateApplicationContext`, adopted outside any active session.
+    @Published var idleContext = WatchIdleContext()
     /// True for the ~3s «Descanso terminado» transition after a rest naturally expires.
     @Published var restEndedBanner = false
     /// The end-of-session summary, set when the session ends with something saved.
@@ -91,8 +104,15 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
     /// Request HealthKit share/read up front (the watch has no in-app rationale screen).
     func requestAuthorization() {
         Task {
-            do { try await healthStore.requestAuthorization(toShare: typesToShare, read: typesToRead) }
-            catch { log.error("Auth failed: \(error.localizedDescription, privacy: .public)") }
+            do {
+                try await healthStore.requestAuthorization(toShare: typesToShare, read: typesToRead)
+                authorizationRequestFailed = false
+            } catch {
+                // FER-96: this used to be a silent `log.error` — the person saw no reading, no saved
+                // workout, and nothing telling them why. Surfaced on the idle face instead.
+                log.error("Auth failed: \(error.localizedDescription, privacy: .public)")
+                authorizationRequestFailed = true
+            }
             self.refreshHealthAccess()
         }
     }
@@ -108,26 +128,47 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
 
     /// Called from the `WKApplicationDelegate` when the iPhone wakes the app with a workout config. Marks
     /// the brief «Conectando» window and arms the 15s watchdog before starting the real session.
+    ///
+    /// FER-96: every throwing step below used to propagate to a `catch { log.error(...) }` in the
+    /// caller that touched no `@Published` state — a failed `HKWorkoutSession` init left the face stuck
+    /// on «Conectando» for the full 15s watchdog, indistinguishable from a simply-dropped wake. Now any
+    /// failure here flips `phase` immediately, with its own text.
     func start(configuration: HKWorkoutConfiguration) async throws {
         beginConnecting()
-        let session = try HKWorkoutSession(healthStore: healthStore, configuration: configuration)
-        let builder = session.associatedWorkoutBuilder()
-        session.delegate = self
-        builder.delegate = self
-        builder.dataSource = HKLiveWorkoutDataSource(healthStore: healthStore,
-                                                     workoutConfiguration: configuration)
-        self.session = session
-        self.builder = builder
-        try await session.startMirroringToCompanionDevice()
-        let start = Date()
-        session.startActivity(with: start)
-        try await builder.beginCollection(at: start)
-        startDate = start
-        sessionActive = true
-        enterRunning()
-        refreshHealthAccess()
-        WatchHaptic.sessionStart.play()
-        log.log("Watch workout started")
+        do {
+            let session = try HKWorkoutSession(healthStore: healthStore, configuration: configuration)
+            let builder = session.associatedWorkoutBuilder()
+            session.delegate = self
+            builder.delegate = self
+            builder.dataSource = HKLiveWorkoutDataSource(healthStore: healthStore,
+                                                         workoutConfiguration: configuration)
+            self.session = session
+            self.builder = builder
+            try await session.startMirroringToCompanionDevice()
+            let start = Date()
+            session.startActivity(with: start)
+            try await builder.beginCollection(at: start)
+            startDate = start
+            sessionActive = true
+            enterRunning()
+            refreshHealthAccess()
+            WatchHaptic.sessionStart.play()
+            log.log("Watch workout started")
+        } catch {
+            log.error("Failed to start mirrored workout: \(error.localizedDescription, privacy: .public)")
+            failToStart()
+            throw error
+        }
+    }
+
+    /// FER-96: HealthKit refused to start the mirrored session — an immediate, distinguishable failure,
+    /// never the generic 15s «couldn't connect» watchdog (`beginConnecting`'s fallback, for a wake that
+    /// produced no session at all — could be anything). This one fires now and says why.
+    private func failToStart() {
+        connectWatchdog?.cancel(); connectWatchdog = nil
+        session = nil
+        builder = nil
+        phase = .healthKitFailure
     }
 
     /// Enter the brief «Conectando» state and arm the watchdog. If no session materializes in 15s (the
@@ -327,6 +368,15 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
         send(.openReceipt(sessionId: sid))
     }
 
+    /// FER-96: «Empezar» from the wrist's idle face, OUTSIDE any session. The one-oracle invariant — no
+    /// routine/slots travel with this: the watch only asks, the iPhone resolves «today» and starts,
+    /// through the exact same path its own «Empezar» button uses. Same guaranteed-channel `send` as
+    /// every other wrist action.
+    func startTodayFromWrist() {
+        guard sessionId == nil, !sessionActive else { return }   // already running → nothing to ask
+        send(.startFromWrist(sessionId: nil))
+    }
+
     // MARK: - Message handling
 
     private func handle(_ message: WorkoutMirrorMessage) {
@@ -364,10 +414,24 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
             sessionId = sid
             externalUUID = ext
             Task { await endSession(endedAt: endedAt, save: save) }
+        case let .idleContext(word, toneRaw, advice, routineName):
+            // FER-96: the resting-face verdict, resolved by the iPhone — adopted as-is, never recomputed.
+            idleContext = WatchIdleContext(word: word, advice: advice, routineName: routineName,
+                                           toneRaw: toneRaw)
         case .watchDidSaveWorkout, .watchWillNotSave,
-             .completeSet, .skipRest, .adjustRest, .openReceipt, .watchPulse:
-            break   // watch → iPhone only (FER-808/810/1003)
+             .completeSet, .skipRest, .adjustRest, .openReceipt, .watchPulse, .startFromWrist:
+            break   // watch → iPhone only (FER-808/810/1003/96)
         }
+    }
+
+    /// Adopt a `WorkoutMirrorMessage` delivered over `updateApplicationContext` (FER-96) — the resting
+    /// face's context, which must reach the watch even with no active session and no live reachability.
+    /// Called both from the delegate callback (a NEW context arrived) and once at activation (the
+    /// context the iPhone already pushed before this app process existed).
+    private func adoptApplicationContext(_ context: [String: Any]) {
+        guard let data = context[WorkoutMirrorKey.payloadKey] as? Data,
+              let message = WorkoutMirrorMessage.decode(data) else { return }
+        handle(message)
     }
 
     private func adoptIdentity(_ sid: String) {
@@ -445,7 +509,13 @@ extension WatchWorkoutManager: WCSessionDelegate {
     nonisolated func session(_ session: WCSession, activationDidCompleteWith state: WCSessionActivationState,
                              error: Error?) {
         let reachable = session.isReachable
-        Task { @MainActor in self.iPhoneReachable = reachable }
+        // FER-96: `updateApplicationContext` delivers as «last known state» — read what's already there
+        // at activation (pushed before this app process existed), not only future changes.
+        let context = session.receivedApplicationContext
+        Task { @MainActor in
+            self.iPhoneReachable = reachable
+            self.adoptApplicationContext(context)
+        }
     }
 
     nonisolated func sessionReachabilityDidChange(_ session: WCSession) {
@@ -460,6 +530,12 @@ extension WatchWorkoutManager: WCSessionDelegate {
     nonisolated func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any] = [:]) {
         guard let data = userInfo[WorkoutMirrorKey.payloadKey] as? Data else { return }
         Task { @MainActor in if let m = WorkoutMirrorMessage.decode(data) { self.handle(m) } }
+    }
+
+    /// FER-96: the resting-face context — the ONE channel WatchConnectivity delivers even with no
+    /// active session and no live reachability.
+    nonisolated func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
+        Task { @MainActor in self.adoptApplicationContext(applicationContext) }
     }
 }
 

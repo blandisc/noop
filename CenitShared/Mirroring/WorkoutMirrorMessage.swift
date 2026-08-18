@@ -69,6 +69,30 @@ public enum WorkoutMirrorMessage: Codable, Equatable {
     /// there's no band anymore, so the wrist's own HKWorkoutSession becomes the strength sheet's only
     /// live-HR source). Best-effort, same HealthKit mirror channel as `.rest`/`.capture`.
     case watchPulse(bpm: Int)
+
+    /// iPhone → watch: the resting-face context (FER-96), OUTSIDE any active session — today's routine
+    /// name and the SAME daily verdict word/tone/advice `EntrenarView.hiloDelVeredicto` shows on the
+    /// iPhone, already resolved. Rides `WCSession.updateApplicationContext(_:)` (last-known-state,
+    /// delivered even with no active mirror), not the session channels above.
+    ///
+    /// All four fields are optional so a reloj with none of this yet — or a phone that hasn't resolved a
+    /// verdict — falls to the existing «sin lectura» face, never a decode failure.
+    ///
+    /// `toneRaw` is a plain `String` (one of `"clear"/"caution"/"ease"/"hollow"`), NOT
+    /// `EntrenarHilo.Tone` embedded: that type is `Sendable, Hashable` but not `Codable`, and giving it
+    /// `Codable` would force `CenitShared` to import `StrandDesign`, which it deliberately does not
+    /// (`RestActivitySnapshot`'s `phaseRaw`/`sessionPhaseRaw` set this exact precedent — a raw String for
+    /// an enum owned by another layer). `CenitWatch` — which already imports `StrandDesign` to paint —
+    /// is the one that translates `toneRaw` back to `EntrenarHilo.Tone` on receipt, falling back to
+    /// `.hollow` on anything unrecognized (never a crash).
+    case idleContext(word: String?, toneRaw: String?, advice: String?, routineName: String?)
+
+    /// watch → iPhone: «Empezar» from the wrist's idle face (FER-96), OUTSIDE any active session. Carries
+    /// no routine/slots — the ONE-oracle invariant: the watch never resolves what «today» means: it only
+    /// asks, and the iPhone resolves + starts through the exact same path `EntrenarView`'s «Empezar»
+    /// button uses. `sessionId` is reserved (always nil today) for a future idempotency guard against a
+    /// duplicate tap; not read yet.
+    case startFromWrist(sessionId: String?)
 }
 
 /// The capture-phase context the iPhone mirrors to the wrist between rests (FER-809), so the watch's live

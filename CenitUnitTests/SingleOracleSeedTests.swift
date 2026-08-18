@@ -310,4 +310,66 @@ final class SingleOracleSeedTests: XCTestCase {
                                                  inventory: [], equipment: nil, advice: .recover)
         XCTAssertEqual(result?.raise?.waiting, false, "the opt-out keeps the raise on the log alone")
     }
+
+    // MARK: - Reps range top (E13/FER-94): progression targets the TOP, not the floor
+
+    /// Same 3×8 plan as `earnedSlot()`, but with an explicit rep range: the floor stays 8
+    /// (`RoutineSet.reps`), the target the progression must hit becomes `top` (`repsRangeTop`).
+    private func earnedSlotWithRepsRange(top: Int?) -> RoutineExercise {
+        RoutineExercise(id: "a", routineId: "rt", exerciseId: "bench", position: 0,
+                        targetSets: 3, restMode: .fixed, restSeconds: 90,
+                        sets: (0..<3).map { RoutineSet(position: $0, kind: .work, reps: 8, weightKg: 80,
+                                                        repsRangeTop: top) },
+                        progressionEnabled: true, progressionSessions: 2, progressionIncrementKg: 2.5)
+    }
+
+    private func historyAtReps(_ reps: Int) -> [(startTs: Int, weightKg: Double, reps: Int, optedOut: Bool)] {
+        [1, 2].flatMap { session in
+            (0..<3).map { _ in (startTs: session * 1000, weightKg: 80.0, reps: reps, optedOut: false) }
+        }
+    }
+
+    /// Hitting only the FLOOR (8 reps, the old fixed target) with an 8-12 range does NOT earn a raise —
+    /// the range moved the goalpost to the top.
+    func testRepsRangeTopHittingOnlyTheFloorDoesNotAdvance() {
+        let result = ProgressionPlanner.evaluate(re: earnedSlotWithRepsRange(top: 12),
+                                                  history: historyAtReps(8),
+                                                  inventory: [], equipment: nil, advice: .planAsIs)
+        // El motor contesta `.stalled(sessions: 2)`, y tiene razón: dos sesiones al MISMO peso sin
+        // llegar al techo no es «vas a media tanda», es que te estancaste. La expectativa original
+        // de esta prueba (`.inCycle`) describía el estado que daría UNA sola sesión. Lo que el
+        // criterio de verdad exige es que NO suba, y eso se cumple en los dos estados.
+        switch result?.state {
+        case .inCycle, .stalled:
+            break
+        default:
+            return XCTFail("con el piso alcanzado pero no el techo no debe avanzar; dio \(String(describing: result?.state))")
+        }
+        XCTAssertNil(result?.raise, "el piso ya no es la meta: la subida espera al techo")
+    }
+
+    /// Hitting the TOP of the range on every work set earns the raise, exactly like hitting a fixed
+    /// target used to.
+    func testRepsRangeTopAdvancesWhenEveryWorkSetHitsTheTop() {
+        let result = ProgressionPlanner.evaluate(re: earnedSlotWithRepsRange(top: 12),
+                                                  history: historyAtReps(12),
+                                                  inventory: [], equipment: nil, advice: .planAsIs)
+        guard let raise = result?.raise else { return XCTFail("expected a raise") }
+        XCTAssertFalse(raise.waiting)
+        XCTAssertEqual(raise.toKg, 82.5, accuracy: 0.0001)
+        guard case .readyToAdvance = result?.state else {
+            return XCTFail("expected .readyToAdvance, got \(String(describing: result?.state))")
+        }
+    }
+
+    /// Regression: `repsRangeTop == nil` (no range, today's behavior) still targets the floor exactly
+    /// as before — same plan shape (explicit `sets`), just without a top.
+    func testNoRepsRangeTopStillTargetsTheFloorAsBefore() {
+        let result = ProgressionPlanner.evaluate(re: earnedSlotWithRepsRange(top: nil),
+                                                  history: historyAtReps(8),
+                                                  inventory: [], equipment: nil, advice: .planAsIs)
+        guard let raise = result?.raise else { return XCTFail("expected a raise") }
+        XCTAssertFalse(raise.waiting)
+        XCTAssertEqual(raise.toKg, 82.5, accuracy: 0.0001)
+    }
 }

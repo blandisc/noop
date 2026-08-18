@@ -76,24 +76,20 @@ final class RoutineSetEditingTests: XCTestCase {
         XCTAssertTrue(RoutineSetEditing.workSetsAreEqual(sets))
     }
 
-    // MARK: - Bloqueado hasta E13/FER-94 (RoutineSet.repsRangeTop en Training.swift)
-    //
-    // Esta fase (FER-88) extiende el detector para tratar dos series con distinto TECHO de rango de
-    // reps como distintas — el criterio de aceptación lo pide explícitamente («dos series con mismo
-    // peso/reps pero repsRangeTop distinto → renglones»; «nil == nil → colapsa, regresión explícita»).
-    // `RoutineSet.repsRangeTop` no existe todavía (verificado: `grep -rn repsRangeTop Cenit/ Packages/`
-    // → 0 resultados) y `Training.swift` es de E13/FER-94, no de esta fase (ver «Fuera de alcance» del
-    // issue) — así que estas dos pruebas quedan documentadas y comentadas, NO borradas, listas para
-    // descomentarse en cuanto el campo aterrice:
-    //
-    // func testDifferentRepsRangeTopExpandsEvenWithSameWeightAndReps() {
-    //     var a = workSet(80, 8); a.repsRangeTop = 10
-    //     let b = workSet(80, 8)   // repsRangeTop == nil
-    //     XCTAssertFalse(RoutineSetEditing.workSetsAreEqual([a, b]))
-    // }
-    //
-    // func testEqualNilRepsRangeTopStillCollapses() {
-    //     let sets = [workSet(80, 8), workSet(80, 8)]   // repsRangeTop nil en ambas
-    //     XCTAssertTrue(RoutineSetEditing.workSetsAreEqual(sets))
-    // }
+    // MARK: - E13/FER-94: el detector también cubre `repsRangeTop`
+
+    /// Dos series con mismo peso/reps pero distinto techo de rango → renglones. Truena si la
+    /// comparación olvida `repsRangeTop` al decidir igualdad.
+    func testDifferentRepsRangeTopExpandsEvenWithSameWeightAndReps() {
+        var a = workSet(80, 8); a.repsRangeTop = 10
+        let b = workSet(80, 8)   // repsRangeTop == nil
+        XCTAssertFalse(RoutineSetEditing.workSetsAreEqual([a, b]))
+    }
+
+    /// `repsRangeTop` nil en ambas (sin rango, comportamiento de hoy) → colapsa igual — regresión
+    /// explícita: la extensión no debe romper el caso sin rango.
+    func testEqualNilRepsRangeTopStillCollapses() {
+        let sets = [workSet(80, 8), workSet(80, 8)]   // repsRangeTop nil en ambas
+        XCTAssertTrue(RoutineSetEditing.workSetsAreEqual(sets))
+    }
 }

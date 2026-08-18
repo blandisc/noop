@@ -76,10 +76,18 @@ struct CenitApp: App {
         mirroring.onOpenReceipt = { [weak model] sid in
             Task { @MainActor in await model?.openWorkoutReceipt(sessionId: sid) }
         }
+        // FER-96: «Empezar» from the wrist's idle face → resolve + start today's session through the
+        // same path the iPhone's own «Empezar» button uses (the one-oracle invariant).
+        mirroring.onStartFromWrist = { [weak model] in
+            Task { @MainActor in await model?.startTodayFromWrist() }
+        }
         // FER-742: surface the bridge's watch state on AppModel, which the Settings row + strength sheet observe.
         mirroring.onPairingChanged = { [weak model] paired, installed in
             model?.watchPaired = paired
             model?.watchAppInstalled = installed
+            // FER-96: a watch newly paired + installed is the moment it's worth refreshing the idle-face
+            // context — it may be seeing this iPhone (or a fresh install) for the first time.
+            if paired, installed { Task { @MainActor in await model?.pushWatchIdleContext() } }
         }
         mirroring.onSessionStatusChanged = { [weak model] status in model?.watchSessionStatus = status }
         mirroring.onWatchPulseChanged = { [weak model] bpm in model?.watchBpm = bpm }
@@ -107,6 +115,15 @@ struct CenitApp: App {
                 // ON y quedó a medias (background/kill/red), la retoma sola. Guarda internamente en
                 // `isEnabled` → con el toggle OFF (default) es un no-op sin tocar red ni disco.
                 .task { await mediaCoordinator.bulkDownloadThumbsIfNeeded() }
+                // FER-95 · E14 — «Empezar» tocado en el widget con la app CERRADA: `.onChange(of:
+                // scenePhase)` abajo no ve una transición de fase en un arranque en frío (llega
+                // directo en `.active`), así que ese drain solo cubre reanudar desde segundo plano.
+                // Este `.task` cubre el arranque en frío; `drain()` es idempotente (limpia la bandera
+                // al leerla), así que si el segundo camino también corre, el segundo no hace nada.
+                .task { if StartRoutineBridge.drain() { tabRouter.startTodayTraining() } }
+                // FER-96: push the watch's idle-face context once at launch (today's routine + the daily
+                // verdict, once resolved) — best-effort, a no-op without a paired watch.
+                .task { await model.pushWatchIdleContext() }
                 // El color scheme ya NO se fuerza global aquí: lo decide ContentView según la pestaña
                 // activa (Hoy = papel claro → barra de estado en tinta oscura; resto = oscuro), con el
                 // gate de onboarding/terms en oscuro. Ponerlo aquí (lo más cercano a la raíz) ganaba
@@ -126,6 +143,12 @@ struct CenitApp: App {
             switch phase {
             case .active:
                 model.drainPendingIntents()
+                // FER-95 · E14 — «Empezar» tapped on the home-screen widget while the app was closed:
+                // reuse the SAME cross-tab path the Daily Brief's own «Empezar» already uses
+                // (`TabRouter.startTodayTraining()`), so the app lands directly in today's guided
+                // session, no second tap. `tabRouter` lives here (not on `AppModel`), so the drain
+                // happens at this call site rather than alongside `drainPendingIntents()`.
+                if StartRoutineBridge.drain() { tabRouter.startTodayTraining() }
                 Task {
                     // FER-1024: one refresh per foreground, never two concurrent. `resumeForegroundAnalysis`
                     // forces a rebuild ONLY when the day rolled over (so «Hoy» re-buckets past midnight even

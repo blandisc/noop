@@ -47,6 +47,11 @@ final class WorkoutMirrorContractTests: XCTestCase {
             .plan(WorkoutPlanSnapshot(sessionId: "s1", routineName: "Empuje", exercises: [])),
             // FER-810 — «Ver recibo en iPhone» (watch → iPhone).
             .openReceipt(sessionId: "s1"),
+            // FER-96 — the resting-face verdict (iPhone → watch, over updateApplicationContext) and the
+            // wrist-initiated start ask (watch → iPhone), all four idleContext fields populated.
+            .idleContext(word: "En rango", toneRaw: "clear", advice: "tu plan de hoy, tal cual",
+                        routineName: "Empuje"),
+            .startFromWrist(sessionId: nil),
         ]
 
         for message in messages {
@@ -94,5 +99,59 @@ final class WorkoutMirrorContractTests: XCTestCase {
         XCTAssertFalse(WorkoutSaveGate.iPhoneShouldSaveWorkout(watchDidSaveWorkout: true))
         // B/C/D. mirror failed / no permission / out of range (no ack) → iPhone saves.
         XCTAssertTrue(WorkoutSaveGate.iPhoneShouldSaveWorkout(watchDidSaveWorkout: false))
+    }
+
+    // MARK: FER-96 — the injected `.start` carries the real routine name
+
+    /// Regression for `WorkoutMirroringBridge.swift:98` (pre-fix): the mirroring-start handler used to
+    /// hardcode `routineName: ""` even though `pendingStart.routineName` already held the real name.
+    /// The OLD code — `.start(sessionId: sid, routineName: "", startedAt: Date())` — would fail this:
+    /// `routineName` would read `""`, not `"Empuje"`.
+    func testInjectedStartMessageCarriesThePendingRoutineName() {
+        let message = WorkoutMirroringBridge.injectedStartMessage(
+            sessionId: "s1", pendingRoutineName: "Empuje", startedAt: Date(timeIntervalSince1970: 0))
+        guard case let .start(sessionId, routineName, _) = message else {
+            return XCTFail("expected .start, got \(message)")
+        }
+        XCTAssertEqual(sessionId, "s1")
+        XCTAssertEqual(routineName, "Empuje")
+    }
+
+    /// With no pending start (shouldn't happen in practice — `attemptMirror` always sets it first), the
+    /// fallback is the same empty string the old code always sent, never a crash.
+    func testInjectedStartMessageFallsBackToEmptyRoutineNameWithNoPendingStart() {
+        let message = WorkoutMirroringBridge.injectedStartMessage(
+            sessionId: "s1", pendingRoutineName: nil, startedAt: Date(timeIntervalSince1970: 0))
+        guard case let .start(_, routineName, _) = message else {
+            return XCTFail("expected .start, got \(message)")
+        }
+        XCTAssertEqual(routineName, "")
+    }
+
+    // MARK: FER-96 — idleContext / startFromWrist are additive: every field optional, old↔new decode safely
+
+    /// An `idleContext` with every field absent (the shape an OLDER phone build would send, before this
+    /// phase added the fourth field, or simply a phone that hasn't resolved a verdict yet) still decodes
+    /// — the watch falls to its existing «sin lectura» look, never a crash.
+    func testIdleContextWithAllFieldsAbsentDecodes() throws {
+        let data = Data("{\"idleContext\":{}}".utf8)
+        let decoded = try XCTUnwrap(WorkoutMirrorMessage.decode(data))
+        XCTAssertEqual(decoded, .idleContext(word: nil, toneRaw: nil, advice: nil, routineName: nil))
+    }
+
+    /// A `startFromWrist` with no `sessionId` key at all (today's only sender shape) decodes to nil,
+    /// matching `.startFromWrist(sessionId: nil)` — the reserved field degrades gracefully.
+    func testStartFromWristWithNoSessionIdKeyDecodes() throws {
+        let data = Data("{\"startFromWrist\":{}}".utf8)
+        let decoded = try XCTUnwrap(WorkoutMirrorMessage.decode(data))
+        XCTAssertEqual(decoded, .startFromWrist(sessionId: nil))
+    }
+
+    /// A message from a hypothetical NEWER peer — an unrecognized case name alongside the ones this
+    /// build knows — drops cleanly (`decode` is `try?`), never crashes the receiver. Same contract
+    /// `testUnknownPayloadDecodesToNilNotCrash` pins for garbage payloads, here for a well-formed-JSON,
+    /// unknown-CASE payload specifically (the shape a future case addition would produce for an older peer).
+    func testUnknownCaseNameDecodesToNilNotCrash() {
+        XCTAssertNil(WorkoutMirrorMessage.decode(Data("{\"someFutureCase\":{}}".utf8)))
     }
 }

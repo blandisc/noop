@@ -20,6 +20,66 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **La muñeca gana su propia voz y el descanso por pulso / The wrist gets its own voice and pulse-based
+  rest** (FER-96).
+  **ES** — El reloj deja de pintar el papel claro del iPhone: ahora tiene su propio suelo oscuro, con
+  las mismas identidades de color (pulso, descanso, veredicto) reescaladas a contraste AA contra
+  negro. La cara de reposo ya no dice solo «Sin sesión» — muestra la rutina de hoy y el mismo hilo del
+  veredicto que ves en el iPhone, y ofrece «Empezar» directo desde la muñeca (el reloj nunca decide
+  qué rutina ni qué series arrancan; solo lo pide, y el iPhone resuelve). El descanso guiado por pulso
+  ahora se ve en el reloj: «te faltan N lpm» en vez de un reloj fijo cuando el descanso lo pide, y
+  «Sigue: {ejercicio}» en la última serie de un ejercicio. Dos arreglos: el nombre de la rutina llega
+  desde el primer mensaje al reloj (antes tardaba unos segundos en aparecer), y un fallo real de Salud
+  al conectar ahora se distingue de un simple «no se pudo conectar», con su propio aviso. Catálogo de
+  texto del reloj completo en español.
+  **EN** — The watch no longer paints the iPhone's light paper — it now has its own dark floor, the
+  same color identities (pulse, rest, verdict) relit to AA contrast against black. The resting face no
+  longer just says «No session» — it shows today's routine and the same verdict thread the iPhone
+  shows, with a direct «Start» from the wrist (the watch never decides which routine or sets start; it
+  only asks, and the iPhone resolves). Pulse-guided rest now shows on the watch: «you need N bpm»
+  instead of a fixed clock when the rest calls for it, and «Next: {exercise}» on an exercise's last
+  set. Two fixes: the routine name now arrives with the very first message to the watch (it used to
+  take a few seconds to appear), and a real Health failure while connecting is now distinguished from
+  a plain «couldn't connect», with its own message. The watch's text catalog is now fully translated.
+
+- **Fuera de la app: widgets y recordatorio del día que toca entrenar / Outside the app: widgets and a
+  training-day reminder** (FER-95).
+  **ES** — Los dos primeros widgets de pantalla de inicio de Cénit: «Rutina de hoy» muestra la rutina
+  del día y arranca la sesión guiada en un toque, y «Esta semana» agrega la tira de 7 días. Los dos
+  leen un dato que la app ya calculó (nunca vuelven a evaluar tu recuperación): sin snapshot, el
+  placeholder de siempre; con uno viejo (varios días sin abrir Cénit), «Abre Cénit» en vez de una
+  rutina que ya pudo cambiar. Se suma «Avísame los días que toca entrenar» en Ajustes — un aviso local
+  por cada día que tu plan asigna una rutina, con el nombre congelado y sin veredicto (la app no
+  calcula con la pantalla apagada). El aviso de fin de descanso con el teléfono guardado y la tarjeta
+  de pantalla bloqueada, entregados antes, se auditaron sin cambios. Cero red en todo el épico: los
+  widgets solo leen el grupo de apps compartido en el propio iPhone.
+  **EN** — Cénit's first two home-screen widgets: «Today's routine» shows the day's routine and starts
+  the guided session in one tap, and «This week» adds the 7-day strip. Both read a value the app
+  already computed (never re-evaluating your recovery on their own): no snapshot yet, the usual
+  placeholder; a stale one (several days without opening Cénit), «Open Cénit» instead of a routine
+  that may no longer be current. Adds «Remind me on training days» to Settings — a local notice for
+  each day your plan assigns a routine, with the name frozen and no verdict (the app doesn't compute
+  with the screen off). The end-of-rest notice with the phone put away and the lock-screen card,
+  shipped earlier, were audited with no changes. Zero network across the whole epic: the widgets only
+  read the shared app group on the phone itself.
+
+- **El motor aprende a leer un rango de reps / The engine learns to read a rep range** (FER-94).
+  **ES** — La receta de una serie ya puede guardar un techo de repeticiones, no solo un número fijo
+  («8-12» en vez de solo «8»): el piso sigue viviendo donde siempre, así que cualquier rutina de hoy
+  se lee exactamente igual, sin rango. Cuando una rutina sí lo trae, la sesión abre la celda en el
+  techo (salvo que ya exista «la última vez», que sigue ganando siempre) y la progresión solo propone
+  subir el peso cuando TODAS las series tocan el techo, no el piso. El detector que decide si la
+  receta de un ejercicio se pliega en una sola línea también distingue ahora dos series por su techo,
+  no solo por peso y reps. Fase de motor y persistencia — todavía no hay dónde teclear el rango desde
+  ninguna pantalla.
+  **EN** — A planned set can now carry a rep-range top, not just a fixed number («8-12» instead of
+  just «8»): the floor stays exactly where it always lived, so every routine that exists today reads
+  identically, with no range. When a routine does carry one, the session opens the cell at the top
+  (unless «last time» already exists, which still always wins) and progression only proposes a raise
+  once EVERY work set touches the top, not the floor. The detector that decides whether an exercise's
+  recipe collapses into one line now also tells two sets apart by their top, not just weight and reps.
+  Engine + persistence phase — there's no screen to type the range into yet.
+
 - **Historial, calendario y tickets / History, calendar and tickets** (FER-90).
   **ES** — «Mis entrenamientos» ya no trunca a 3 sesiones con un «Ver todas» que empujaba a una segunda
   pantalla: ahora es una sola lista siempre completa, con un calendario tipo GitHub de 91 días arriba —

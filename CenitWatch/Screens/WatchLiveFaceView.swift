@@ -19,7 +19,7 @@ struct WatchLiveFaceView: View {
 
 private struct WatchFaceMetrics: View {
     @EnvironmentObject var manager: WatchWorkoutManager
-    private let t = InstrumentoTheme.base
+    private let t = InstrumentoTheme.watch
     /// FER-808: brief check shown on the «Registrar serie» CTA right after a wrist log.
     @State private var loggedCheck = false
 
@@ -105,18 +105,22 @@ private struct WatchFaceMetrics: View {
         }
     }
 
-    // State 4 — the focus migrates to the countdown; heart rate drops to secondary; the return detail
-    // (set + exercise) stays visible.
+    // State 4 — the focus migrates to the countdown (or, FER-96, the pulse-to-go when `isHRMode`); heart
+    // rate drops to secondary; the return detail (set + exercise) stays visible.
     private func resting(_ rest: RestActivitySnapshot) -> some View {
         VStack(alignment: .leading, spacing: CenitMetrics.space1) {
             Text("Rest").instrumentoOverline().foregroundStyle(t.inkTertiary).accessibilityHidden(true)
-            Text(timerInterval: rest.restStartedAt...rest.restEndsAt, countsDown: true)
-                .instrumentoHero(44)
-                .foregroundStyle(t.dataStrain)
-                .minimumScaleFactor(0.5)
-                .lineLimit(1)
-                .accessibilityLabel(Text("Rest, \(secondsLeft(rest)) seconds left"))
+            if rest.isHRMode { hrRestHeadline(rest) }
+            else {
+                Text(timerInterval: rest.restStartedAt...rest.restEndsAt, countsDown: true)
+                    .instrumentoHero(44)
+                    .foregroundStyle(t.dataStrain)
+                    .minimumScaleFactor(0.5)
+                    .lineLimit(1)
+                    .accessibilityLabel(Text("Rest, \(secondsLeft(rest)) seconds left"))
+            }
             // FER-808 — rest progress bar, coherent with the iPhone Live Activity. The datum's amber hue.
+            // Elapsed-time framing stays meaningful even in HR mode (the ceiling is still a clock).
             ProgressView(timerInterval: rest.restStartedAt...rest.restEndsAt, countsDown: false) {
                 EmptyView()
             } currentValueLabel: { EmptyView() }
@@ -127,9 +131,62 @@ private struct WatchFaceMetrics: View {
             heartSecondary
             Text("Next: set \(rest.setNumber) · \(rest.returnDetail)")
                 .font(StrandFont.footnote).foregroundStyle(t.inkSecondary).lineLimit(2)
+            // FER-96 — the exercise handoff, additive to the line above: same condition the widget's
+            // card already uses (`RestLiveActivity.swift:297-309`, `phaseRaw == "lastSetOfExercise"` AND
+            // a known `nextExerciseName`), never a second lexicon for the same datum.
+            if rest.phaseRaw == "lastSetOfExercise", let next = rest.nextExerciseName {
+                (Text("Next").font(StrandFont.footnote).foregroundStyle(t.inkTertiary)
+                 + Text(verbatim: ": ").font(StrandFont.footnote).foregroundStyle(t.inkTertiary)
+                 + Text(verbatim: next).font(StrandFont.footnote).foregroundStyle(t.ink))
+                    .lineLimit(2)
+            }
             if manager.healthAccessDenied { permissionWarning }
         }
     }
+
+    /// FER-96 — HR-mode rest headline: «te faltan N lpm» computed from the watch's OWN live pulse
+    /// (`manager.heartRate`, from its own `HKWorkoutSession`) against `rest.hrTarget` — no new data from
+    /// the iPhone. Same 4-word vocabulary `RestBand` already defines for the iPhone (Ready / Almost /
+    /// «you need N bpm» / waiting for your pulse), reused as WORDS — never re-derived from
+    /// `RestReadinessRule` (`CenitWatch` carries zero `StrandAnalytics` imports, by design).
+    @ViewBuilder
+    private func hrRestHeadline(_ rest: RestActivitySnapshot) -> some View {
+        if let target = rest.hrTarget, manager.heartRate > 0 {
+            let gap = max(0, manager.heartRate - target)
+            if gap == 0 {
+                Text("Ready")
+                    .instrumentoHero(36)
+                    .foregroundStyle(t.positiveText)
+                    .minimumScaleFactor(0.5)
+                    .lineLimit(1)
+            } else if gap <= Self.restHonestyBandBPM {
+                // The engine's honesty band (`RestReadinessRule.defaultBandBPM` = 5): close enough that
+                // beat-level precision would be fake.
+                Text("Almost")
+                    .instrumentoHero(36)
+                    .foregroundStyle(t.dataHeart)
+                    .minimumScaleFactor(0.5)
+                    .lineLimit(1)
+            } else {
+                (Text("you need").font(StrandFont.subhead).foregroundStyle(t.inkSecondary)
+                 + Text(verbatim: " ")
+                 + Text(verbatim: "\(gap)").instrumentoHero(36).foregroundStyle(t.dataHeart)
+                 + Text(verbatim: " ")
+                 + Text("bpm").font(StrandFont.subhead).foregroundStyle(t.inkSecondary))
+                    .minimumScaleFactor(0.5)
+                    .lineLimit(1)
+            }
+        } else {
+            // No pulse reading yet — never a guessed/zero number.
+            Text("Waiting for your pulse")
+                .font(StrandFont.subhead)
+                .foregroundStyle(t.inkSecondary)
+        }
+    }
+
+    /// Mirrors `RestReadinessRule.defaultBandBPM` (`Packages/StrandAnalytics`) as a plain constant — the
+    /// watch never imports that package, so this is the number, not the rule.
+    private static let restHonestyBandBPM = 5
 
     // FER-808 — the rest controls the iPhone Live Activity already has: ±30 s and Skip, now on the wrist.
     // «−30» is hidden once the rest has run out (nothing left to trim; `extendRest` also floors at «now»).
@@ -251,7 +308,7 @@ private struct WatchFaceMetrics: View {
 private struct WatchControlPage: View {
     @EnvironmentObject var manager: WatchWorkoutManager
     @State private var confirming = false
-    private let t = InstrumentoTheme.base
+    private let t = InstrumentoTheme.watch
 
     var body: some View {
         VStack(spacing: CenitMetrics.space2) {
@@ -289,7 +346,7 @@ private struct WatchControlPage: View {
 // as on the rest-over screen; the current marker is chrome ink.
 private struct WatchPlanRotor: View {
     @EnvironmentObject var manager: WatchWorkoutManager
-    private let t = InstrumentoTheme.base
+    private let t = InstrumentoTheme.watch
 
     var body: some View {
         ScrollView {
@@ -329,3 +386,61 @@ private struct WatchPlanRotor: View {
         else { Image(systemName: "circle").font(StrandFont.footnote).foregroundStyle(t.inkTertiary) }
     }
 }
+
+#if DEBUG
+/// FER-96 — the four HR-mode rest states: waiting for a reading, «te faltan N lpm», the honesty band
+/// («Almost»), and the recovered instant («Ready») — never a clock in HR mode, never a guessed number.
+private func hrRestSnapshot(hrTarget: Int, nextExercise: (name: String, lastSet: Bool)? = nil) -> RestActivitySnapshot {
+    RestActivitySnapshot(
+        sessionId: "preview", routineName: "Empuje", setNumber: 2, setTotal: 4,
+        exerciseName: "Press banca", returnDetail: "60 kg × 8",
+        restStartedAt: Date(), restEndsAt: Date().addingTimeInterval(120),
+        isHRMode: true, hrTarget: hrTarget, bpm: nil,
+        phaseRaw: nextExercise?.lastSet == true ? "lastSetOfExercise" : nil,
+        nextExerciseName: nextExercise?.name)
+}
+
+/// A configured `WatchWorkoutManager` for previews — a plain function (not a `@ViewBuilder` closure),
+/// so setting its `@Published` properties is an ordinary statement, not a View-producing expression.
+@MainActor private func previewRestingManager(hrTarget: Int, heartRate: Int = 0,
+                                   nextExercise: (name: String, lastSet: Bool)? = nil) -> WatchWorkoutManager {
+    let manager = WatchWorkoutManager()
+    manager.rest = hrRestSnapshot(hrTarget: hrTarget, nextExercise: nextExercise)
+    manager.heartRate = heartRate
+    return manager
+}
+
+#Preview("Descanso por pulso · esperando lectura") {
+    WatchFaceMetrics().environmentObject(previewRestingManager(hrTarget: 110))
+        .background(InstrumentoTheme.watch.paper)
+}
+
+#Preview("Descanso por pulso · te faltan N lpm") {
+    WatchFaceMetrics().environmentObject(previewRestingManager(hrTarget: 110, heartRate: 132))
+        .background(InstrumentoTheme.watch.paper)
+}
+
+#Preview("Descanso por pulso · Almost") {
+    // gap 3, dentro de la banda de honestidad (5)
+    WatchFaceMetrics().environmentObject(previewRestingManager(hrTarget: 110, heartRate: 113))
+        .background(InstrumentoTheme.watch.paper)
+}
+
+#Preview("Descanso por pulso · Ready") {
+    WatchFaceMetrics().environmentObject(previewRestingManager(hrTarget: 110, heartRate: 108))
+        .background(InstrumentoTheme.watch.paper)
+}
+
+/// «SIGUE: {next}» — última serie del ejercicio, próximo ejercicio conocido (Alcance §3).
+#Preview("Descanso · SIGUE con el próximo ejercicio") {
+    WatchFaceMetrics().environmentObject(previewRestingManager(
+        hrTarget: 110, heartRate: 132, nextExercise: (name: "Fondos", lastSet: true)))
+        .background(InstrumentoTheme.watch.paper)
+}
+
+#Preview("Descanso por pulso · AX5") {
+    WatchFaceMetrics().environmentObject(previewRestingManager(hrTarget: 110, heartRate: 132))
+        .background(InstrumentoTheme.watch.paper)
+        .dynamicTypeSize(.accessibility5)
+}
+#endif

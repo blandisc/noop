@@ -104,6 +104,41 @@ final class StrengthStoreTests: XCTestCase {
         XCTAssertEqual(routine?.updatedTs, 999)
     }
 
+    // MARK: - Reps range top (E13/FER-94)
+
+    /// A set's `repsRangeTop` round-trips through GRDB with a value, and a sibling written with `nil`
+    /// reads back `nil` — a plain routine (no range) behaves identically to before this field existed.
+    func testRepsRangeTopRoundTrip() async throws {
+        let store = try await CenitStore.inMemory()
+        let r = Routine(id: "rt1", name: "Pierna", createdTs: 0, updatedTs: 0)
+        let exs = [
+            RoutineExercise(id: "a", routineId: "rt1", exerciseId: "ex1", position: 0, targetSets: 2,
+                            sets: [RoutineSet(position: 0, kind: .work, reps: 8, weightKg: 60, repsRangeTop: 12),
+                                   RoutineSet(position: 1, kind: .work, reps: 6, weightKg: 70)]),
+        ]
+        try await store.saveRoutine(r, exercises: exs)
+
+        let back = try await store.routineExercises(routineId: "rt1")
+        let a = back.first { $0.id == "a" }!
+        XCTAssertEqual(a.sets[0].repsRangeTop, 12, "the first set keeps its range top")
+        XCTAssertNil(a.sets[1].repsRangeTop, "a set with no range reads back nil")
+    }
+
+    /// An «old» routine saved before v38 (no `repsRangeTop` value ever written) reads back `nil` for
+    /// every set — regression: identical to today's behavior.
+    func testOldRoutineWithoutRepsRangeTopReadsAsNil() async throws {
+        let store = try await CenitStore.inMemory()
+        let r = Routine(id: "rt1", name: "Pierna", createdTs: 0, updatedTs: 0)
+        let exs = [
+            RoutineExercise(id: "a", routineId: "rt1", exerciseId: "ex1", position: 0, targetSets: 3,
+                            sets: [RoutineSet(position: 0, kind: .work, reps: 8, weightKg: 60)]),
+        ]
+        try await store.saveRoutine(r, exercises: exs)
+
+        let back = try await store.routineExercises(routineId: "rt1")
+        XCTAssertTrue(back.first { $0.id == "a" }!.sets.allSatisfy { $0.repsRangeTop == nil })
+    }
+
     // MARK: - Per-set rest (FER-715)
 
     /// A set can carry a rest override distinct from its siblings, and it survives a round-trip through

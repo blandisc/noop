@@ -50,6 +50,10 @@ final class WorkoutMirroringBridge: NSObject, ObservableObject {
     var onWatchAction: ((_ sessionId: String, _ action: WatchWorkoutAction) -> Void)?
     /// FER-810: «Ver recibo en iPhone» from the wrist summary → open the saved workout's history detail.
     var onOpenReceipt: ((_ sessionId: String) -> Void)?
+    /// FER-96: «Empezar» tapped on the wrist's idle face, OUTSIDE any session → resolve + start today's
+    /// session exactly as the iPhone's «Empezar» button does. The one-oracle invariant: the watch never
+    /// resolves routine/slots itself, so this callback carries no payload beyond the ask.
+    var onStartFromWrist: (() -> Void)?
 
     // FER-742: state the iPhone UI paints, pushed to `AppModel` (which the Settings row + the strength
     // sheet already observe) via these closures — same fire-on-main-actor pattern as the ones above.
@@ -95,7 +99,8 @@ final class WorkoutMirroringBridge: NSObject, ObservableObject {
                 self.sessionStatus = .recording
                 // Inject the shared sessionId so the watch derives the same idempotency key.
                 if let sid = self.activeSessionId {
-                    self.sendOverHealthKit(.start(sessionId: sid, routineName: "", startedAt: Date()))
+                    self.sendOverHealthKit(Self.injectedStartMessage(
+                        sessionId: sid, pendingRoutineName: self.pendingStart?.routineName, startedAt: Date()))
                 }
             }
         }
@@ -103,6 +108,18 @@ final class WorkoutMirroringBridge: NSObject, ObservableObject {
             WCSession.default.delegate = self
             WCSession.default.activate()
         }
+    }
+
+    /// The `.start` message injected once the watch confirms mirroring — a pure static function so the
+    /// FER-96 fix is unit-testable without a real HealthKit mirroring callback.
+    ///
+    /// This used to hardcode `routineName: ""` on purpose, even though `pendingStart.routineName`
+    /// already held the real name — the watch only learned it later, off the first
+    /// `.rest`/`.capture`/`.plan` (`WatchWorkoutManager.swift`'s `if !snapshot.routineName.isEmpty`
+    /// pattern in each case), a real blank window on the idle/live face, not cosmetic.
+    nonisolated static func injectedStartMessage(sessionId: String, pendingRoutineName: String?,
+                                                 startedAt: Date) -> WorkoutMirrorMessage {
+        .start(sessionId: sessionId, routineName: pendingRoutineName ?? "", startedAt: startedAt)
     }
 
     /// Recompute + publish whether a watch is paired and whether our app is installed on it (FER-742) —
@@ -222,6 +239,22 @@ final class WorkoutMirroringBridge: NSObject, ObservableObject {
         sessionStatus = .inactive
     }
 
+    /// Push the resting-face context (FER-96) — today's routine name + the already-resolved daily
+    /// verdict word/tone/advice — OUTSIDE any active session, over `updateApplicationContext`: the one
+    /// channel WatchConnectivity delivers as «last known state», reachable or not, session or not. A
+    /// no-op without WatchConnectivity; best-effort like every other push in this bridge (`AppModel`
+    /// never awaits or blocks on it).
+    func pushIdleContext(word: String?, toneRaw: String?, advice: String?, routineName: String?) {
+        guard WCSession.isSupported() else { return }
+        let session = WCSession.default
+        guard session.activationState == .activated else { return }
+        guard let data = WorkoutMirrorMessage
+            .idleContext(word: word, toneRaw: toneRaw, advice: advice, routineName: routineName)
+            .encoded() else { return }
+        do { try session.updateApplicationContext([WorkoutMirrorKey.payloadKey: data]) }
+        catch { log.error("updateApplicationContext failed: \(error.localizedDescription, privacy: .public)") }
+    }
+
     // MARK: - Send
 
     private func sendOverHealthKit(_ message: WorkoutMirrorMessage) {
@@ -276,7 +309,11 @@ final class WorkoutMirroringBridge: NSObject, ObservableObject {
             onOpenReceipt?(sessionId)
         case let .watchPulse(bpm):
             onWatchPulseChanged?(bpm)
-        case .start, .rest, .restEnded, .capture, .plan:
+        case .startFromWrist:
+            // FER-96: «Empezar» from the wrist's idle face. The one-oracle invariant — no routine/slots
+            // to read here, `AppModel` resolves + starts through the SAME path the iPhone button uses.
+            onStartFromWrist?()
+        case .start, .rest, .restEnded, .capture, .plan, .idleContext:
             break   // iPhone → watch only
         }
     }

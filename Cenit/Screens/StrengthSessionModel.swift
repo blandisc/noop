@@ -1003,7 +1003,10 @@ final class StrengthSessionModel: ObservableObject {
                 let held = (type == .weightReps && slot.raise?.waiting == true) ? slot.raise?.fromKg : nil
                 let earned = (type == .weightReps && slot.raise?.waiting == false) ? slot.raise?.toKg : nil
                 let weight = earned ?? held ?? lastWeight ?? p.weightKg ?? 0
-                let reps = usesReps ? (lastReps ?? p.reps ?? 8) : 0
+                // E13/FER-94: with a rep range (e.g. 8-12), the cell opens at the TOP — «la última
+                // vez» still wins whenever it exists, exactly the fantasma rule above; the range top
+                // only enters as the plan's fallback, same tier as the fixed `p.reps` it replaces.
+                let reps = usesReps ? (lastReps ?? p.repsRangeTop ?? p.reps ?? 8) : 0
                 // FER-715: keep the planned `RoutineSet` id (so a per-set rest edit can persist back to the
                 // routine) and carry the set's own rest override (nil = inherit the exercise at rest time).
                 return WorkingSet(id: p.id, weightKg: weight, reps: reps, done: false, rest: p.rest)

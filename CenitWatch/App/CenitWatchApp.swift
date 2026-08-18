@@ -30,8 +30,10 @@ final class WatchAppDelegate: NSObject, WKApplicationDelegate {
 
     func handle(_ workoutConfiguration: HKWorkoutConfiguration) {
         Task { @MainActor in
-            do { try await WatchWorkoutManager.shared.start(configuration: workoutConfiguration) }
-            catch { log.error("Failed to start mirrored workout: \(error.localizedDescription, privacy: .public)") }
+            // FER-96: `start(configuration:)` now flips `phase` to `.healthKitFailure` (and logs) BEFORE
+            // rethrowing on any failure, so this catch only needs to swallow the error, not surface it —
+            // there's no second place left where a thrown error goes unseen by the UI.
+            try? await WatchWorkoutManager.shared.start(configuration: workoutConfiguration)
         }
     }
 }

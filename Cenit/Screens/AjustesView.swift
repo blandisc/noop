@@ -258,6 +258,9 @@ private struct AjustesLanding: View {
             // FER-114: el aviso matutino trae su propia sección entera (switch + hora + estado real
             // del permiso); vive en `AjustesAvisoMatutino.swift`.
             AvisoMatutinoSection()
+            // FER-95 · E14: el recordatorio del día que toca entrenar, mismo patrón; vive en
+            // `AjustesRecordatorioEntreno.swift`.
+            RecordatorioEntrenoSection()
             // FER-115: la puerta informada del «Historial de FA». Trae su propio overline y se
             // calla sola cuando las series de latidos ya llegan (ver `HistorialFAPuerta`).
             HistorialFASection()
