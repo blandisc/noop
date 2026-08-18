@@ -370,15 +370,17 @@ final class HoyMatrizBuilderTests: XCTestCase {
         XCTAssertEqual(seccion(model, id: "stress")?.hue, LiquidColor.tinta500)
         XCTAssertEqual(seccion(model, id: "steps")?.hue, LiquidColor.teal)
 
-        // Cada señal lleva SU sello; el guardián no (su sello VIVE: SelloGuardianVivo).
-        XCTAssertEqual(seccion(model, id: "sleep")?.sello, .sueno)
-        XCTAssertEqual(seccion(model, id: "rhr")?.sello, .reposo)
-        XCTAssertEqual(seccion(model, id: "hrv")?.sello, .hrv)
-        XCTAssertEqual(seccion(model, id: "carga")?.sello, .carga)
-        XCTAssertEqual(seccion(model, id: "strain")?.sello, .esfuerzo)
-        XCTAssertEqual(seccion(model, id: "stress")?.sello, .estres)
-        XCTAssertEqual(seccion(model, id: "steps")?.sello, .pasos)
-        XCTAssertNil(seccion(model, id: "guardian")?.sello)
+        // Cada señal lleva SU glifo (FER-117: los sellos dibujados dieron paso a los símbolos
+        // del sistema, mismo vocabulario que las hojas); el guardián no (su sello VIVE:
+        // SelloGuardianVivo).
+        XCTAssertEqual(seccion(model, id: "sleep")?.glifoSello, .luna)
+        XCTAssertEqual(seccion(model, id: "rhr")?.glifoSello, .corazon)
+        XCTAssertEqual(seccion(model, id: "hrv")?.glifoSello, .onda)
+        XCTAssertEqual(seccion(model, id: "carga")?.glifoSello, .carga)
+        XCTAssertEqual(seccion(model, id: "strain")?.glifoSello, .llama)
+        XCTAssertEqual(seccion(model, id: "stress")?.glifoSello, .estres)
+        XCTAssertEqual(seccion(model, id: "steps")?.glifoSello, .pasos)
+        XCTAssertNil(seccion(model, id: "guardian")?.glifoSello)
         XCTAssertNotNil(seccion(model, id: "guardian")?.selloGuardian)
 
         // Los sellos de piel y respiración NO viven ya en Hoy: FER-80 fundió las dos filas
