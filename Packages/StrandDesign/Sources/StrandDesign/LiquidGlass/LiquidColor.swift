@@ -217,6 +217,12 @@ public enum LiquidColor {
 
     /// Canto exterior hairline de un módulo — tinta/900 al 6 %, 0.5 pt. Es lo que separa
     /// «caro» de «lavado» sobre fondo claro: un filo de tinta bajo el borde blanco.
+    /// El velo del tono para la franja de sección de una pantalla de detalle: **4 %**, el
+    /// mismo alfa que `LiquidVeil`. Plano, no degradado — un gradiente vuelve la franja una
+    /// barra de cabecera teñida, y la franja es una costura, no un encabezado (FER-102).
+    /// El gris neutro de formulario era lo más «papel» que quedaba en la pantalla.
+    public static func franjaVelo(_ tone: Color) -> Color { tone.opacity(0.04) }
+
     public static let vidrioCanto = tinta900.opacity(0.06)
 
     /// Factor de saturación del backdrop de un módulo («refracción honesta»): lo que pasa

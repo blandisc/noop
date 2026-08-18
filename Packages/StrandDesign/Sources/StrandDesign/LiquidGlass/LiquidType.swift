@@ -173,6 +173,24 @@ public enum LiquidType {
 
     // MARK: Chrome chico (Space Grotesk)
 
+    // MARK: - Pantalla de detalle (FER-102)
+
+    /// `franja` — 13/600, tracking +1.6, MAYÚSCULAS. El rótulo de la franja de sección a
+    /// sangre de las pantallas de detalle («ANOCHE», «HISTORIAL»). Un escalón MÁS ALTO que
+    /// `kicker` por pedido del dueño: a 11.5 la franja se leía como pie de página y no como
+    /// la costura que parte la pantalla en secciones. Escala con Dynamic Type (`.footnote`).
+    public static let franja = InstrumentoType.grotesk(13, weight: .semibold,
+                                                        relativeTo: .footnote)
+    public static let franjaTracking: CGFloat = 1.6
+
+    /// `numeralCampo` — 56/700 tabular. El numeral del campo teñido de la pantalla de
+    /// detalle. Gemelo de `numeralHoja` (52): el campo es más ancho que la hoja y el dueño
+    /// lo subió un escalón (2026-08-17). Escala con Dynamic Type (`.largeTitle`).
+    public static let numeralCampo = InstrumentoType.groteskNumber(56, relativeTo: .largeTitle)
+    /// Interlínea del numeral del campo: 56 pt con line-height 1 deja un hueco muerto
+    /// arriba; −3 lo cierra sin recortar descendentes.
+    public static let numeralCampoLineSpacing: CGFloat = -3
+
     /// `kicker` — 11.5/600, tracking +1.5, MAYÚSCULAS. Fecha, cabeceras («MIÉ 22 DE JUL»).
     /// (kicker/label/micro son alias del escalón «rótulo» de la escala chica unificada.)
     public static let kicker = InstrumentoType.grotesk(11.5, weight: .semibold)
