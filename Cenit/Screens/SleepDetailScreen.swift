@@ -345,7 +345,11 @@ struct SleepDetailScreen: View {
                     Spacer(minLength: 0)
                     LiquidNotaLine(awakeText(night))
                 }
-                LiquidStageBar(etapas: sleepEtapas(night), overline: "", ventana: nil)
+                // `overline` es también el label de VoiceOver del componente: con "" la barra
+                // quedaba como un elemento anónimo que dictaba las duraciones sin decir de qué.
+                // El título va arriba en la fila, así que aquí se pasa oculto a la vista.
+                LiquidStageBar(etapas: sleepEtapas(night), overline: nightTitle, ventana: nil,
+                               mostrarOverline: false)
                 if model.isAppleHealth {
                     LiquidOrigenChip(glyph: .luna, badgeTono: Self.tono,
                                      etiqueta: String(localized: "Apple Health"))
@@ -907,7 +911,7 @@ struct SleepDetailScreen: View {
                                  a11yValor: lastNightHrs.map { horasHabladas($0 * 60) })
                 }
                 LiquidLevelsList(filas: carrilesHistorial(window), tono: Self.tono)
-                LiquidNotaLine(String(localized: "Hours asleep per night. The wash is the optimal 7–9 h band."))
+                LiquidNotaLine(String(localized: "Hours asleep per night, with your three bands behind."))
                 LiquidNotaLine(String(localized: "How many nights of the period fell in each band. Tap one to see its nights on the chart."))
             } else {
                 LiquidGraficaNiveles(
@@ -1030,13 +1034,17 @@ struct SleepDetailScreen: View {
             let mes = Self.mesFmt.string(from: dia.date)
             let rotuloMes: String? = mes == mesVisto ? nil : mes
             mesVisto = mes
-            let horas = dia.score.map { $0 / 60 }
+            // `score` ya viene en HORAS (`durationSeries` está documentada «in hours» y es
+            // quien llena el heat). Dividirlo entre 60 dejaba 7.5 h en 0.125: las 90 celdas
+            // caían al peldaño más pálido y la lectura decía «0:07 · Sueño corto» sobre una
+            // noche de siete horas y media. Se veía en pantalla y se leyó como «faltan datos».
+            let horas = dia.score
             return LiquidCalendario90.Dia(
                 id: key,
                 fecha: dia.date,
                 intensidad: horas.map(Self.intensidadSueno),
                 etiqueta: Self.ejeFechaFmt.string(from: dia.date),
-                valor: dia.score.map { String(format: "%d:%02d", Int($0) / 60, Int($0) % 60) },
+                valor: horas.map(Self.horasReloj),
                 palabra: horas.map { Self.sleepWord($0) },
                 mes: rotuloMes)
         }
@@ -1057,8 +1065,16 @@ struct SleepDetailScreen: View {
         ]
     }
 
+    /// Horas decimales → reloj «7:30». Nombrada (y no un `String(format:)` suelto en el
+    /// call site) para que la prueba pueda fijar la unidad: el defecto que la motiva confundía
+    /// horas con minutos y nadie podía verlo sin correr la app.
+    static func horasReloj(_ horas: Double) -> String {
+        let total = Int((horas * 60).rounded())
+        return String(format: "%d:%02d", total / 60, total % 60)
+    }
+
     /// Los tres peldaños de la retícula, con los cortes ALINEADOS al historial (7 · 6.3).
-    private static func intensidadSueno(_ hours: Double) -> Double {
+    static func intensidadSueno(_ hours: Double) -> Double {
         if hours >= 7 { return 1 }
         if hours >= 6.3 { return 0.5 }
         return 0
@@ -1067,7 +1083,7 @@ struct SleepDetailScreen: View {
     /// La palabra de estado de la lectura. Son las MISMAS tres palabras de la escalera del
     /// historial («Suficiente · Algo corta · Corta»), no un vocabulario paralelo: la misma
     /// noche decía «ok» aquí y «Algo corta» un scroll más arriba.
-    private static func sleepWord(_ hours: Double) -> String {
+    static func sleepWord(_ hours: Double) -> String {
         if hours >= 7 { return String(localized: "Enough sleep") }
         if hours >= 6.3 { return String(localized: "A bit short") }
         return String(localized: "Short sleep")
@@ -1085,8 +1101,9 @@ struct SleepDetailScreen: View {
     /// Arma la retícula de 90 noches desde una foto de la serie de duración (FER-953: pura).
     private nonisolated static func buildSleepHeat(durationSeries: [(day: String, value: Double)],
                                                    todayKey: String) -> [RecoveryDay] {
-        var mins: [String: Double] = [:]
-        for r in durationSeries { mins[r.day] = r.value }
+        // HORAS, no minutos: el nombre viejo («mins») fue la mitad del defecto.
+        var horasPorDia: [String: Double] = [:]
+        for r in durationSeries { horasPorDia[r.day] = r.value }
         var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "UTC")!
         // Ancla la ventana de 90 dias al dia LOCAL, igual que Recovery.buildHeat. Anclar al dia UTC
         // hace que en husos negativos, por la tarde, la ventana empiece en otro dia de la semana que
@@ -1095,7 +1112,7 @@ struct SleepDetailScreen: View {
         return stride(from: 89, through: 0, by: -1).compactMap { off -> RecoveryDay? in
             guard let date = cal.date(byAdding: .day, value: -off, to: today) else { return nil }
             let key = Self.calDayFmt.string(from: date)
-            return RecoveryDay(date: date.addingTimeInterval(12 * 3600), score: mins[key])
+            return RecoveryDay(date: date.addingTimeInterval(12 * 3600), score: horasPorDia[key])
         }
     }
 
@@ -1128,7 +1145,11 @@ struct SleepDetailScreen: View {
                 FusionAgreementRow(point: agreement, theme: theme, format: Self.sleepTotalHM)
             }
         }
-        .liquidSeccion(top: LiquidSpace.s550, bottom: LiquidSpace.s800)
+        // El pie NO lleva franja (es pie, no sección), así que su padding superior se sumaba
+        // al inferior de la sección de arriba: 22 + 22 + el capilar = un hueco muerto de casi
+        // 60 pt donde no había nada que separar. El capilar YA hace la separación; el aire
+        // solo tiene que dejarlo respirar. (Reportado por el dueño en el simulador.)
+        .liquidSeccion(top: LiquidSpace.s200, bottom: LiquidSpace.s800)
     }
 
     private static func sleepTotalHM(_ minutes: Double) -> String {

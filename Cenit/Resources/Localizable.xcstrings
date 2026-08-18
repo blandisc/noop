@@ -24681,19 +24681,19 @@
         }
       }
     },
-    "Hours asleep per night. The wash is the optimal 7–9 h band." : {
+    "Hours asleep per night, with your three bands behind." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hours asleep per night. The wash is the optimal 7–9 h band."
+            "value" : "Hours asleep per night, with your three bands behind."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Horas dormidas por noche. La banda sombreada es el rango óptimo de 7–9 h."
+            "value" : "Horas dormidas por noche, con tus tres bandas de fondo."
           }
         }
       }

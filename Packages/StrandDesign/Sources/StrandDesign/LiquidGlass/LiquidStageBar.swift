@@ -34,6 +34,7 @@ public struct LiquidStageBar: View {
 
     private let etapas: [Etapa]
     private let overline: String
+    private let mostrarOverline: Bool
     private let ventana: String?
 
     /// La leyenda de 4 etapas no cabe en una fila cuando el texto crece: en tamaños de
@@ -47,7 +48,13 @@ public struct LiquidStageBar: View {
     /// B7 · `ventana` es OPCIONAL: el fallback diario de Apple fabrica noches con
     /// `startTs == endTs`, y el caller que no puede afirmar un horario real pasa `nil` en vez
     /// de imprimir «6:00 → 6:00». Sin ventana no se pinta el reloj ni entra a VoiceOver.
-    public init(etapas: [Etapa], overline: String, ventana: String? = nil) {
+    /// - Parameter mostrarOverline: `false` dibuja la barra sin su rótulo pero **conserva**
+    ///   `overline` como nombre de VoiceOver. Sin esto, un caller que ya pinta el título
+    ///   arriba pasaba `""` y dejaba la barra como un elemento anónimo que dictaba duraciones
+    ///   sin decir de qué eran. (FER-102)
+    public init(etapas: [Etapa], overline: String, ventana: String? = nil,
+                mostrarOverline: Bool = true) {
+        self.mostrarOverline = mostrarOverline
         self.etapas = etapas
         self.overline = overline
         self.ventana = ventana
@@ -88,17 +95,24 @@ public struct LiquidStageBar: View {
 
     public var body: some View {
         VStack(alignment: .leading, spacing: LiquidSpace.s200) {
+            // La fila del rótulo desaparece entera cuando no hay nada que poner en ella: con
+            // el overline oculto y sin ventana, un `Text("")` dejaba una fila vacía sobre la
+            // barra. El nombre de VoiceOver sigue viniendo de `overline` (ver el label abajo).
+            if mostrarOverline || ventana != nil {
             HStack(alignment: .firstTextBaseline) {
-                Text(verbatim: overline)
-                    .font(LiquidType.microEstado)
-                    .textCase(.uppercase)
-                    .foregroundStyle(LiquidColor.tinta500)
+                if mostrarOverline {
+                    Text(verbatim: overline)
+                        .font(LiquidType.microEstado)
+                        .textCase(.uppercase)
+                        .foregroundStyle(LiquidColor.tinta500)
+                }
                 if let ventana {
                     Spacer(minLength: LiquidSpace.s200)
                     Text(verbatim: ventana)
                         .font(LiquidType.microEstado)
                         .foregroundStyle(LiquidColor.tinta700)
                 }
+            }
             }
             GeometryReader { geo in
                 let w = anchos(en: geo.size.width)
