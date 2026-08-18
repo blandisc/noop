@@ -210,7 +210,7 @@ extension LiquidHoyBuilder {
         let seccionVFC = MatrizSeccion(
             id: "hrv", hue: LiquidColor.cian,
             titulo: String(localized: "HRV"),
-            valor: valorVFC, unidad: String(localized: "ms"), terciaria: true,
+            valor: valorVFC, unidad: String(localized: "ms"),
             // Sublabel DESCRIPTIVO, simétrico con sus gemelas de contexto (Carga/Esfuerzo/
             // Estrés): el «no vota» ya no vive suelto aquí — lo lleva el rótulo de nivel
             // «Contexto» + la hoja «Tu contexto» (FER-61), así que las cuatro se ven parejas.
@@ -572,7 +572,7 @@ extension LiquidHoyBuilder {
             // probé ámbar pero ese es de Effort — teal es su identidad real.
             id: "steps", hue: LiquidColor.teal,
             titulo: String(localized: "Steps"),
-            valor: valorPasos, terciaria: true,
+            valor: valorPasos,
             chartID: "matriz-steps",
             chart: .barrasMini(valores: ptsPasos),
             glifoSello: .pasos)

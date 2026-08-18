@@ -21,29 +21,40 @@ struct HoyMatrizHost: View {
     /// Tap del aviso de desconexión → el MISMO flujo de conexión que la puerta «Connect
     /// Health» (C6 de la revisión conceptual: una sola causa, una sola ruta).
     var onTapAvisoSalud: () -> Void = {}
+    /// FER-118 · El hint de barrido del guardián: se muestra hasta 3 veces o hasta el primer
+    /// scrub (espejo de `maxSeparacionHints`); el contador vive aquí (la cara es del DS y no lee
+    /// `AppStorage`).
+    @AppStorage("today.scrubHints") private var scrubHints = 0
+    private static let maxScrubHints = 3
 
     var body: some View {
         VStack(spacing: esAvisoDesconexion ? LiquidSpace.s150 : LiquidSpace.s300) {
             if let copy = estadoCopy {
-                if esAvisoDesconexion {
-                    Button(action: onTapAvisoSalud) {
-                        AvisoDesconexion(texto: copy)
+                Group {
+                    if esAvisoDesconexion {
+                        Button(action: onTapAvisoSalud) {
+                            AvisoDesconexion(texto: copy)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(Text(verbatim: copy))
+                        .accessibilityHint(Text(String(localized: "hoy.desconectado.hint",
+                                                       defaultValue: "Opens Data Sources to reconnect")))
+                        .accessibilityIdentifier("hoy-estado-copy")
+                    } else {
+                        estadoGrupo(copy)
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(Text(verbatim: copy))
-                    .accessibilityHint(Text(String(localized: "hoy.desconectado.hint",
-                                                   defaultValue: "Opens Data Sources to reconnect")))
-                    .accessibilityIdentifier("hoy-estado-copy")
-                } else {
-                    estadoGrupo(copy)
                 }
+                // El margen de la FRANJA (24, alineada con el héroe). Los módulos de vidrio llevan
+                // el suyo (16, = dock) y lo aplica la cara: dos dueños distintos a propósito
+                // (FER-118), nunca sumados (hallazgo DeepSeek #14: 24 + 16 = 40 desalineados).
+                .padding(.horizontal, MatrizTokens.margenH)
             }
-            MatrizHoyFace(model: matriz, onTapSeccion: onTapSeccion)
+            MatrizHoyFace(model: matriz, onTapSeccion: onTapSeccion,
+                          mostrarHintScrub: scrubHints < Self.maxScrubHints,
+                          onHintMostrado: { scrubHints = min(Self.maxScrubHints, scrubHints + 1) },
+                          onScrubCompletado: { scrubHints = Self.maxScrubHints })
                 .frame(maxWidth: .infinity)
         }
-        // UN solo dueño del margen horizontal (hallazgo DeepSeek #14: antes 24 del
-        // TodayView + 16 de la cara = 40 desalineados del copy de estado).
-        .padding(.horizontal, MatrizTokens.margenH)
         .enableInjection()   // Inject: recarga en caliente (no-op en Release)
     }
 
