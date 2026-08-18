@@ -1263,16 +1263,8 @@ struct LiveStrengthSheet: View {
                         // cada tick — el usuario lo consulta, el reloj no lo interrumpe.
                         .accessibilityAddTraits(.updatesFrequently)
                 }
-                // BPM fused to the clock — the app's one always-on pulse. Hidden (not dashed) with no strap.
-                if let bpm = model.watchBpm {
-                    HStack(spacing: 6) {
-                        BpmPulseDot(color: theme.dataHeart, animated: !reduceMotion)
-                        // r26 (owner): valor VIVO → Grotesk tabular, como todo dato medido.
-                        Text("\(bpm)").font(InstrumentoType.groteskNumber(12, weight: .medium)).foregroundStyle(theme.dataHeart)
-                    }
-                    .accessibilityElement(children: .combine)
-                    .accessibilityLabel(Text("Heart rate \(bpm)"))
-                }
+                // FER-86: el pulso bajó a la barra de estado con la pausa (decisión #6, variante A).
+                // Estaba aquí Y allá abajo sería decirlo dos veces en la misma pantalla.
                 // r20 (auditoría UX #6a): el progreso estaba por TRIPLICADO (texto + filete + barra
                 // inferior) — fuera el textual; el filete de abajo y los contadores ya lo cuentan.
                 Spacer(minLength: 8)
@@ -1339,79 +1331,67 @@ struct LiveStrengthSheet: View {
         .buttonStyle(.plain)
     }
 
-    /// The header's right-side action(s), FER-823: paused → «Resume» is the primary action (finish after
-    /// resuming); running with sets → a pause toggle sits left of Finish; an empty ad-hoc session only
-    /// offers Discard. Unchanged behavior from the pre-FER-929 `sessionHeader` — only its container moved.
+    /// La acción de la cabecera. UNA, no tres: «Terminar» siempre, o «Descartar» mientras la sesión
+    /// ad hoc sigue vacía.
+    ///
+    /// Antes (FER-823) la cabecera se reconfiguraba entera según `session.paused`: pausada mostraba
+    /// «Reanudar», corriendo mostraba «❚❚ + Terminar», vacía mostraba «Descartar». Eso hacía bailar
+    /// el botón de Terminar bajo el dedo justo cuando más lo quieres quieto. El control de pausa se
+    /// mudó a la barra de estado (decisión #6 del épico, variante A) y la cabecera se calló.
     @ViewBuilder private var headActionButtons: some View {
-        if session.paused {
-            headerCapsule(action: { model.resumeStrengthSessionFromPause() }) {
-                Label("Resume", systemImage: "play.fill").labelStyle(.titleAndIcon)
-                    .font(InstrumentoType.grotesk(15, weight: .semibold)).foregroundStyle(theme.ink)
+        if isEmptyAdHoc {
+            headerCapsule(action: { discardEmptySession() }) {
+                Text("Discard").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
             }
-            .accessibilityLabel(Text("Resume session"))
-        } else if !isEmptyAdHoc {
-            // Canvas pass 2026-07-15: Pausa dresses like Terminar's sibling — same capsule grammar.
-            headerCapsule(action: { model.pauseStrengthSession() }) {
-                // r27 (owner): solo las dos barritas — el símbolo universal basta; la palabra la
-                // lleva VoiceOver.
-                Image(systemName: "pause.fill")
-                    .font(StrandFont.glyph(.inline, weight: .semibold)).foregroundStyle(theme.ink)
-            }
-            .accessibilityLabel(Text("Pause session"))
+            .accessibilityLabel(Text("Discard workout"))
+        } else {
             // r20 (auditoría UX #6d + owner): Terminar-y-guardar es el acto constructivo esperado —
             // vestirlo de alarma desensibilizaba el rojo del Descartar real. Tinta, voz Grotesk.
             headerCapsule(action: { finishTapped() }) {
                 Text("Finish").font(InstrumentoType.grotesk(15, weight: .semibold)).foregroundStyle(theme.ink)
             }
             .accessibilityLabel(Text("Finish workout"))
-        } else {
-            headerCapsule(action: { discardEmptySession() }) {
-                Text("Discard").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-            }
-            .accessibilityLabel(Text("Discard workout"))
         }
     }
 
-    // MARK: _StatsBar (FER-929 — fixed bottom bar; the keypad takes this slot instead while a cell is active)
+    // MARK: - La barra de estado (FER-86 · E5 — ahora es `SessionStatsBar`, la pieza de E2)
+    //
+    // La barra dejó de dibujarse a mano: monta `SessionStatsBar` del paquete, que se construyó en
+    // E2 con este mismo contrato (volumen · series · pulso · pausa · foco) y llevaba desde entonces
+    // sin un solo call site en la app.
+    //
+    // Y con ella baja EL CONTROL DE PAUSA, que vivía en la cabecera. Es la decisión #6 del épico,
+    // variante A: «cabecera de una línea, solo reloj y Terminar; el pulso y la pausa bajan a la
+    // barra de estado». La cabecera deja de reconfigurarse entera según `session.paused` — un
+    // intercambio que hacía bailar el botón de Terminar bajo el dedo justo cuando más lo quieres
+    // quieto. `model.pauseStrengthSession()` y `model.resumeStrengthSessionFromPause()` son las
+    // mismas llamadas: solo cambia quién las dispara.
 
     private var statsBar: some View {
-        // r20 (owner): de regreso a la pila original — «Modo foco» arriba, contadores centrados
-        // abajo (la línea-de-recibo de r18 no gustó). Lo que sí se queda de r18/r19: el icono
-        // correcto (expandir a pantalla completa, validado vs HIG) — ahora en un mini-troquel de
-        // papel que le da cuerpo sin volverlo cápsula gritona — y el target de 44pt.
-        VStack(spacing: 14) {
-            if !isEmptyAdHoc && session.summary == nil {
-                // r21 (owner): la cápsula del handoff — icono + «Modo foco» juntos dentro de UNA
-                // cápsula surface con hairline, texto semibold en tinta.
-                Button { focusMode = true } label: {
-                    HStack(spacing: 7) {
-                        Image(systemName: "square.inset.filled")
-                            .font(StrandFont.glyph(.chevron, weight: .semibold))
-                        Text("Focus mode").font(StrandFont.subhead.weight(.semibold))
-                    }
-                    .foregroundStyle(theme.ink)
-                    .padding(.horizontal, 16).padding(.vertical, 9)
-                    .background(theme.surface, in: Capsule())
-                    .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
-                    .frame(minHeight: 44)
-                    .contentShape(Capsule())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(Text("Focus mode"))
-                .accessibilityHint(Text("Opens a full-screen set logger"))
-            }
-            // kg · series · (kcal only with a streaming strap, never dashes) — same sources as before,
-            // now with the handoff's typographic contrast: Grotesk-bold values, light labels.
-            counterLineStyled
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel(Text(counterLine))
-        }
-        .frame(maxWidth: .infinity)
-        // r22 (simetría): 8/10 a ojo → rowVPad parejo arriba y abajo.
-        .padding(.vertical, CenitMetrics.rowVPad)
-        .background(theme.paper)
-        .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 1) }
+        SessionStatsBar(
+            // kcal NO viaja aquí: la barra del handoff es volumen · series · pulso, y el dato
+            // sobrevive donde de verdad se lee, en el acta (`receiptDietBlock`, línea ~3973). Bajar
+            // de cuatro cifras a tres en una barra que se mira de reojo a media serie es la
+            // jerarquía que pidió el handoff, no una pérdida silenciosa.
+            volume: massText(sessionVolumeKg),
+            sets: "\(session.doneCount)/\(sessionSetsTotal)",
+            pulse: model.watchBpm.map { "\($0)" },
+            isPaused: session.paused,
+            onPause: puedeControlarPausa ? {
+                if session.paused { model.resumeStrengthSessionFromPause() }
+                else { model.pauseStrengthSession() }
+            } : nil,
+            onFocus: puedeEnfocar ? { focusMode = true } : nil
+        )
+        .accessibilityElement(children: .contain)
     }
+
+    /// La pausa solo existe mientras hay sesión que pausar: una sesión ad hoc vacía no se pausa, se
+    /// descarta, y una que ya rindió su acta no vuelve atrás.
+    private var puedeControlarPausa: Bool { !isEmptyAdHoc && session.summary == nil }
+
+    /// El modo foco pide lo mismo: algo que registrar.
+    private var puedeEnfocar: Bool { !isEmptyAdHoc && session.summary == nil }
 
     // MARK: - Focus mode (full-screen cover · additive entry from the inline list)
 
@@ -2154,61 +2134,6 @@ struct LiveStrengthSheet: View {
         session.runs.filter { !$0.skipped }.reduce(0) { $0 + $1.sets.count }
     }
 
-    /// «2.480 kg · 8/17 series · ~312 kcal» — the kcal clause is dropped entirely when there's no strap
-    /// HR (no dashes, no zero): the receipt is where the estimate lands.
-    private var counterLine: String {
-        var parts = ["\(massText(sessionVolumeKg))",
-                     "\(session.doneCount)/\(sessionSetsTotal) " + String(localized: "series")]
-        if let kcal = liveKcal { parts.append("~\(kcal) kcal") }
-        return parts.joined(separator: " · ")
-    }
-
-    /// The counter line with the handoff's typographic contrast (canvas pass 2026-07-15): values in
-    /// Grotesk bold, labels/separators in light secondary ink. An HStack of small Texts (not one
-    /// concatenated Text) so the type-checker stays fast. Same data as `counterLine` (the a11y read).
-    private var counterLineStyled: some View {
-        let done = "\(session.doneCount)/\(sessionSetsTotal)"
-        let kcal = liveKcal
-        return HStack(alignment: .firstTextBaseline, spacing: 5) {
-            counterValue(massText(sessionVolumeKg))
-            counterDot
-            counterValue(done)
-            counterLabel(String(localized: "series"))
-            if let kcal {
-                counterDot
-                counterValue("~\(kcal)")
-                counterLabel("kcal")
-            }
-        }
-    }
-
-    private func counterValue(_ s: String) -> some View {
-        // r20 (auditoría UX #6f): también los contadores escalan con Dynamic Type intermedio.
-        // r22: y ruedan al cambiar (numericText) — el recibo respira al palomear.
-        Text(s).font(InstrumentoType.groteskNumber(15, relativeTo: .subheadline)).monospacedDigit().foregroundStyle(theme.ink)
-            .contentTransition(.numericText())
-            .animation(StrandMotion.gentle, value: s)
-    }
-    private func counterLabel(_ s: String) -> some View {
-        Text(s).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-    }
-    private var counterDot: some View {
-        Text(verbatim: "·").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-    }
-
-    /// Live energy estimate (kcal) from the strap samples captured so far — nil (so the clause is hidden)
-    /// until the strap has streamed HR. Same Keytel entry point as the receipt/persist path (FER-715).
-    private var liveKcal: Int? {
-        let samples = session.hrSamples
-        guard samples.count >= Calories.strengthEnergyMinSamples else { return nil }
-        let now = Int(Date().timeIntervalSince1970)
-        let profile = UserProfile(weightKg: model.profile.weightKg, heightCm: model.profile.heightCm,
-                                  age: Double(model.profile.age), sex: model.profile.sex)
-        let kcal = Calories.estimateStrengthEnergy(
-            hrSamples: samples, durationSeconds: Double(max(0, now - session.startTs)),
-            profile: profile, hrMax: Double(model.profile.hrMax))
-        return Int(kcal.rounded())
-    }
 
     /// Done weight×reps volume across non-skipped exercises (bodyweight adds lastre×reps; time/distance 0).
     private var sessionVolumeKg: Double {
@@ -4566,19 +4491,5 @@ private struct ChipFlow: Layout {
 
 // MARK: - Live BPM dot (FER-716)
 
-/// The one always-on pulse of the app: the session header's live-BPM dot, breathing at 1.1 s. Falls
-/// back to a static dot under Reduce Motion (the preset does not self-disable).
-private struct BpmPulseDot: View {
-    let color: Color
-    var animated: Bool = true
-    @State private var pulsing = false
-    var body: some View {
-        Circle().fill(color).frame(width: 7, height: 7)
-            .scaleEffect(animated && pulsing ? 1.35 : 1.0)
-            .opacity(animated && pulsing ? 0.65 : 1.0)
-            .onAppear { if animated { withAnimation(StrandMotion.livePulse) { pulsing = true } } }
-            .accessibilityHidden(true)
-    }
-}
 
 #endif
