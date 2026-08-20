@@ -298,7 +298,12 @@ final class PreparacionDetalleModeloTests: XCTestCase {
         XCTAssertFalse(limpio.hasSuffix(" · "), "sin ejes fuera no se cuelga un separador: «\(limpio)»")
     }
 
-    /// El centinela se nombra como par, nunca como una señal suelta: una sola alta jamás vota.
+    /// El centinela se nombra como PAR, nunca como una señal suelta: una sola alta jamás vota.
+    ///
+    /// Vigila la AFIRMACIÓN, no la redacción. Atada a la palabra «temperatura» completa, esta
+    /// prueba cayó cuando el rótulo se acortó a «Temp y respiración» para que la rejilla
+    /// cerrara pareja — un copy que dice exactamente lo mismo. Es la SEGUNDA guarda de esta
+    /// suite que se rompe por congelar una palabra en vez del hecho.
     func testElCentinelaSeNombraComoPar() throws {
         let claves = PreparacionDetalleModelo.dayKeys(endingAt: Date(), calendar: cal, count: 30)
         let historia = claves.enumerated().map { i, k -> Preparedness.VerdictNight in
@@ -307,9 +312,14 @@ final class PreparacionDetalleModeloTests: XCTestCase {
         let m = PreparacionDetalleModelo.build(prep: read(historia), healthConnected: true,
                                                asOf: Date(), calendario: cal)
         let etiqueta = try XCTUnwrap(m.rejilla[3]).etiqueta
-        XCTAssertTrue(etiqueta.localizedCaseInsensitiveContains("emperature")
-                      || etiqueta.localizedCaseInsensitiveContains("emperatura"),
-                      "el par se nombra junto: «\(etiqueta)»")
+        // Las DOS mitades del par, en cualquier redacción: «temperatura» o «temp», y
+        // «respiración» o «breathing». Nombrar una sola sería decir que vota sola.
+        let calor = ["temp"]
+        let aire = ["respir", "breath"]
+        XCTAssertTrue(calor.contains { etiqueta.localizedCaseInsensitiveContains($0) },
+                      "falta la temperatura: «\(etiqueta)»")
+        XCTAssertTrue(aire.contains { etiqueta.localizedCaseInsensitiveContains($0) },
+                      "falta la respiración, y sin ella el par se lee como una señal sola: «\(etiqueta)»")
     }
 
     // MARK: - Lo que cazó la revisión de UX / UI / quisquilloso (FER-126)

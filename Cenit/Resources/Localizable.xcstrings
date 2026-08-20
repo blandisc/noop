@@ -70,13 +70,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Temperature and breathing"
+            "value" : "Temp & breathing"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Temperatura y respiración"
+            "value" : "Temp y respiración"
           }
         }
       }
@@ -173,6 +173,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Leyendo tus mañanas…"
+          }
+        }
+      }
+    },
+    "prep.campo.rotulo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verdict"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Veredicto"
           }
         }
       }
@@ -317,22 +333,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cada cuadro se juzga con la base que tenías hasta ese día, así que no cambia si regresas a verlo después. Lo que no puede cargar es el ajuste de tendencia que solo aplica a la mañana que estás viviendo: por eso un cuadro viejo puede diferir de lo que Hoy dijo en voz alta ese día. La carga de entrenamiento no vota aquí."
-          }
-        }
-      }
-    },
-    "prep.metodo.titulo" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "See the method"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ver el método"
           }
         }
       }
@@ -621,38 +621,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "tendencia a la baja"
-          }
-        }
-      }
-    },
-    "prep.metodo.mostrar" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Show the method"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ver el método"
-          }
-        }
-      }
-    },
-    "prep.metodo.ocultar" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hide the method"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ocultar el método"
           }
         }
       }

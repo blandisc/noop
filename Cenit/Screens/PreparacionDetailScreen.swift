@@ -56,9 +56,18 @@ struct PreparacionDetailScreen: View {
         LiquidCampoMetrica(
             tono: tono,
             titulo: String(localized: "prep.titulo", defaultValue: "Preparation"),
-            glifo: .escudo,
+            // NO `.escudo`: el catálogo lo declara de Guardián («cabecera de la hoja»), y
+            // Guardián es otro concepto (el centinela de temperatura y respiración).
+            // Compartirlo mezclaba las dos identidades. `.corazon` es el eje que de verdad
+            // vota aquí (`wRHR = 1.0`, `wHRV = 0`) y ya es su glifo en la boleta de Hoy.
+            glifo: .corazon,
+            // El rótulo del numeral NUNCA repite el título de la franja: quedaba
+            // «PREPARACIÓN» arriba, «—», y «PREPARACIÓN» otra vez tres líneas después, que se
+            // lee como un placeholder sin terminar. Sueño usa «Sueño» arriba y «horas» abajo:
+            // la métrica y la unidad del numeral vacío, dos cosas distintas.
             datos: modelo.palabraHoy == nil
-                ? [.calibrando(rotulo: String(localized: "prep.titulo", defaultValue: "Preparation"),
+                ? [.calibrando(rotulo: String(localized: "prep.campo.rotulo",
+                                              defaultValue: "Verdict"),
                                motivo: modelo.clausulaSinVeredicto, marca: "—")]
                 : [],
             veredicto: modelo.palabraHoy,
@@ -176,30 +185,36 @@ struct PreparacionDetailScreen: View {
     }
 
     private var metodo: some View {
-        // El componente compartido de la familia (`LiquidMetodo` + `LiquidNotaLine`), no un
-        // bloque a mano: plegable, cerrado por omisión, y CON su cita en pantalla. Sueño ya lo
-        // hacía así; aquí las fuentes vivían solo en comentarios del motor, que el usuario
-        // nunca ve. CLAUDE.md pide citar el método, y citarlo donde se lee.
-        // Las claves que YA usa toda la familia (Sueño, Carga, la hoja de métrica, Hoy y las
-        // pantallas de papel). Preparación había acuñado «Ver el método», y era la única voz
-        // distinta del app para el mismo control.
-        LiquidMetodo(title: String(localized: "How it's calculated"),
-                     mostrar: String(localized: "Show explanation"),
-                     ocultar: String(localized: "Hide explanation")) {
-            VStack(alignment: .leading, spacing: LiquidSpace.s300) {
-                Text(String(localized: "prep.metodo.como",
-                            defaultValue: "Every morning I look at three things. Your resting heart rate, against your own base: that's the axis that votes, and your HRV measured while you sleep rides along with it only on nights that have enough of it, never on its own (the all-day HRV you see elsewhere in the app never votes). Your sleep, against the floor sleep science recommends, not against your own history. And the sentinel, skin temperature and breathing, which only counts when both run high together. None out is «all in range»; one is «one signal out»; two or more is «two or more out». A sustained downward trend can also bring that change forward."))
-                Text(String(localized: "prep.metodo.limite",
-                            defaultValue: "Each square is judged with the base you had up to that day, so it doesn't change if you come back to look later. What it can't carry is the trend nudge that only applies to the morning you're living: that's why an older square can differ from what Today said out loud that day. Training load doesn't vote here."))
-                    .font(LiquidType.cuerpo)
-                    .foregroundStyle(LiquidColor.tinta700)
-                LiquidNotaLine("Hirshkowitz et al., 2015 (sleep need); Task Force of the European Society of Cardiology, 1996 (HRV); Mishra et al., 2020 (illness sentinel).")
+        // El capilar y los paddings reducidos son el patrón que Sueño ya fijó para un pie sin
+        // franja propia (`pieMetodo`): sin ellos quedan 38 pt de aire sin ninguna costura que
+        // los explique, que es el hueco muerto que aquel comentario describe.
+        VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+            LiquidCapilar(eje: .horizontal)
+            // El componente compartido de la familia (`LiquidMetodo` + `LiquidNotaLine`), no un
+            // bloque a mano: plegable, cerrado por omisión, y CON su cita en pantalla. Sueño ya lo
+            // hacía así; aquí las fuentes vivían solo en comentarios del motor, que el usuario
+            // nunca ve. CLAUDE.md pide citar el método, y citarlo donde se lee.
+            // Las claves que YA usa toda la familia (Sueño, Carga, la hoja de métrica, Hoy y las
+            // pantallas de papel). Preparación había acuñado «Ver el método», y era la única voz
+            // distinta del app para el mismo control.
+            LiquidMetodo(title: String(localized: "How it's calculated"),
+                         mostrar: String(localized: "Show explanation"),
+                         ocultar: String(localized: "Hide explanation")) {
+                VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+                    Text(String(localized: "prep.metodo.como",
+                                defaultValue: "Every morning I look at three things. Your resting heart rate, against your own base: that's the axis that votes, and your HRV measured while you sleep rides along with it only on nights that have enough of it, never on its own (the all-day HRV you see elsewhere in the app never votes). Your sleep, against the floor sleep science recommends, not against your own history. And the sentinel, skin temperature and breathing, which only counts when both run high together. None out is «all in range»; one is «one signal out»; two or more is «two or more out». A sustained downward trend can also bring that change forward."))
+                    Text(String(localized: "prep.metodo.limite",
+                                defaultValue: "Each square is judged with the base you had up to that day, so it doesn't change if you come back to look later. What it can't carry is the trend nudge that only applies to the morning you're living: that's why an older square can differ from what Today said out loud that day. Training load doesn't vote here."))
+                        .font(LiquidType.cuerpo)
+                        .foregroundStyle(LiquidColor.tinta700)
+                    LiquidNotaLine("Hirshkowitz et al., 2015 (sleep need); Task Force of the European Society of Cardiology, 1996 (HRV); Mishra et al., 2020 (illness sentinel).")
+                }
+                .font(LiquidType.cuerpo)
+                .foregroundStyle(LiquidColor.tinta700)
+                .fixedSize(horizontal: false, vertical: true)
             }
-            .font(LiquidType.cuerpo)
-            .foregroundStyle(LiquidColor.tinta700)
-            .fixedSize(horizontal: false, vertical: true)
         }
-        .liquidSeccion()
+        .liquidSeccion(top: LiquidSpace.s200, bottom: LiquidSpace.s800)
     }
 
     // MARK: - Estados de pantalla
@@ -493,8 +508,11 @@ struct PreparacionDetalleModelo {
                   // deja fuera la noche fragmentada de duración normal, que vota igual.
                   pie: String(localized: "prep.atr.sueno",
                               defaultValue: "short or broken up")),
-            .init(id: "sentinel", nombre: String(localized: "prep.atr.centinela.nombre",
-                                                 defaultValue: "Temperature and breathing"),
+            .init(id: "sentinel", // Corto A PROPÓSITO: con `lineLimit(2)` el nombre largo ocupaba dos líneas y su
+                  // vecino de fila una, así que la rejilla no cerraba pareja. De los cuatro
+                  // rótulos solo este era largo, y siempre cae junto a uno corto.
+                  nombre: String(localized: "prep.atr.centinela.nombre",
+                                 defaultValue: "Temp & breathing"),
                   dias: leidas.filter(\.sentinelOut).count,
                   pie: String(localized: "prep.atr.centinela",
                               defaultValue: "both, never one alone")),
