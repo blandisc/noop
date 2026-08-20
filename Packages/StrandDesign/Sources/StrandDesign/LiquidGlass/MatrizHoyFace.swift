@@ -23,7 +23,9 @@ public enum MatrizChartPayload: Sendable, Equatable {
                      dominio: ClosedRange<Double>, alertaHoy: MedidorLunar.Alerta)
     case colina(p: Double?, zona: ClosedRange<Double>, estela: [Double],
                   alertaHoy: MedidorLunar.Alerta = .ninguna)
-    case barrasMini(valores: [Double?])
+    /// `promedio`: si viene, se dibuja como línea punteada de referencia (Pasos: el promedio
+    /// de la ventana — FER-125, el prototipo aprobado). Esfuerzo no lo pasa.
+    case barrasMini(valores: [Double?], promedio: Double? = nil)
     case escalerita(niveles: [Int?])
     /// FER-80 · La costura del par del guardián: temp y resp espejadas, ya normalizadas.
     case costura(noches: [MatrizCostura.Noche])
@@ -99,8 +101,11 @@ public struct MatrizSeccion: Sendable, Identifiable, Equatable {
     public struct ScrubNoche: Sendable, Equatable {
         public let valor: String
         public let sublabel: String
-        public init(valor: String, sublabel: String) {
-            self.valor = valor; self.sublabel = sublabel
+        /// Lo que VoiceOver lee en vez de `valor` cuando el número corto no basta (Pasos: «6.2»
+        /// con la «k» visual al lado — la voz necesita el conteo, FER-125). nil = lee `valor`.
+        public let a11yValor: String?
+        public init(valor: String, sublabel: String, a11yValor: String? = nil) {
+            self.valor = valor; self.sublabel = sublabel; self.a11yValor = a11yValor
         }
     }
 
@@ -116,6 +121,7 @@ public struct MatrizSeccion: Sendable, Identifiable, Equatable {
             && lhs.glifoSello == rhs.glifoSello
             && lhs.sello == rhs.sello
             && lhs.selloGuardian == rhs.selloGuardian
+            && lhs.a11yValor == rhs.a11yValor   // Pasos: el conteo cambia dentro de la misma centena
     }
 }
 
@@ -348,11 +354,7 @@ public struct MatrizHoyFace: View {
 
     /// El texto de un rótulo de estante (compartido por el decorativo y el tocable).
     private func nivelTexto(_ rotulo: String) -> some View {
-        Text(rotulo)
-            .font(LiquidType.micro)
-            .tracking(LiquidType.microTracking)
-            .textCase(.uppercase)
-            .foregroundStyle(LiquidColor.tinta700)
+        LiquidOverline(rotulo)
     }
 
     /// La cabecera de un estante: rótulo en versalitas + el mismo «?» de siempre (FER-54: la
@@ -772,8 +774,8 @@ public struct MatrizHoyFace: View {
         case .colina(let p, let zona, let estela, let alertaHoy):
             MatrizColina(chartID: chartID, p: p, zona: zona, estela: estela, hue: hue,
                            alertaHoy: alertaHoy, resaltado: resaltado)
-        case .barrasMini(let valores):
-            MatrizBarrasMini(chartID: chartID, valores: valores, hue: hue, resaltado: resaltado)
+        case .barrasMini(let valores, let promedio):
+            MatrizBarrasMini(chartID: chartID, valores: valores, hue: hue, promedio: promedio, resaltado: resaltado)
         case .escalerita(let niveles):
             MatrizEscalerita(chartID: chartID, niveles: niveles, hue: hue, resaltado: resaltado)
         case .costura(let noches):
@@ -840,7 +842,7 @@ public struct MatrizHoyFace: View {
         guard let n = s.scrubNoches, !n.isEmpty else { return s.valor }
         let idx = (scrub?.id == s.id ? scrub?.idx : nil) ?? (n.count - 1)
         guard n.indices.contains(idx) else { return s.valor }
-        return "\(n[idx].valor), \(n[idx].sublabel)"
+        return "\(n[idx].a11yValor ?? n[idx].valor), \(n[idx].sublabel)"
     }
 
     private var scrubA11yHint: String {

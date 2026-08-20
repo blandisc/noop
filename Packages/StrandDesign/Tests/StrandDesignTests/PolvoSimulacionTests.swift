@@ -81,15 +81,18 @@ final class PolvoSimulacionTests: XCTestCase {
         XCTAssertEqual(P.wrap(5, 0), 0)
     }
 
-    /// Entre dos cuadros consecutivos a 20 Hz una mota se mueve menos de 0.3 pt (salvo cuando
-    /// cruza el borde y reaparece por el otro lado): a esa velocidad el reloj lento no se ve.
+    /// Entre dos cuadros consecutivos a 20 Hz una mota se mueve menos de 0.35 pt (≈ 1 px a 3×;
+    /// salvo cuando cruza el borde y reaparece por el otro lado): a esa velocidad el reloj lento
+    /// sigue leyéndose como deriva. Cota = la deriva máxima (√(3.2² + 5.9²) ≈ 6.7 pt/s) / 20.
     func test_continuidadEntreCuadros() {
+        let cota = (F.derivaXMax * F.derivaXMax + pow(F.derivaYMin + F.derivaYRango, 2)).squareRoot() / 20 + 0.01
+        XCTAssertLessThan(cota, 0.36, "la deriva máxima tiene que seguir siendo sub-píxel-y-medio a 20 Hz")
         for i in 0..<300 {
             let a = p(i, t: 10), b = p(i, t: 10 + 1.0 / 20)
             let dx = abs(a.centro.x - b.centro.x), dy = abs(a.centro.y - b.centro.y)
             let cruzaX = dx > lienzo.width / 2, cruzaY = dy > lienzo.height / 2
-            if !cruzaX { XCTAssertLessThan(dx, 0.3, "i=\(i)") }
-            if !cruzaY { XCTAssertLessThan(dy, 0.3, "i=\(i)") }
+            if !cruzaX { XCTAssertLessThan(dx, cota, "i=\(i)") }
+            if !cruzaY { XCTAssertLessThan(dy, cota, "i=\(i)") }
         }
     }
 

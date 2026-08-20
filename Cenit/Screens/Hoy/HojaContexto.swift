@@ -19,30 +19,39 @@ struct HojaContexto: View {
                 .font(LiquidType.tituloHoja)
                 .foregroundStyle(LiquidColor.tinta900)
             Text(String(localized: "manual.contexto.intro",
-                        defaultValue: "These four don't decide your day: only your sleep and resting heart rate vote. They're here to give you context around that verdict, never to judge it."))
+                        defaultValue: "These don't decide your day: only your sleep and resting heart rate vote. They're here to give you context around that verdict, never to judge it."))
                 .font(LiquidType.cuerpo)
                 .lineSpacing(LiquidType.cuerpoLineSpacing)
                 .foregroundStyle(LiquidColor.tinta700)
                 .padding(.top, LiquidSpace.s100)
 
             seccion(String(localized: "manual.contexto.sec.que", defaultValue: "What each one is"))
-            fila(color: LiquidColor.verdePrimario,
+            // El manual identifica cada señal con SU glifo de sistema y SU hue, los mismos del
+            // módulo que abre esta hoja (revisión UX FER-125): antes puntos de color, y Carga
+            // vestía el verde del veredicto.
+            fila(.carga, color: LiquidColor.verdeCarga,
                  titulo: String(localized: "manual.contexto.carga", defaultValue: "Load"),
                  detalle: String(localized: "manual.contexto.carga.sub",
                                  defaultValue: "How much training you've been piling up lately, against what's usual for you."))
             // FER-73 · HJ-21: Effort es ÁMBAR desde el cambio de identidad (el teal es Pasos).
-            fila(color: LiquidColor.ambar,
+            fila(.llama, color: LiquidColor.ambar,
                  titulo: String(localized: "manual.contexto.esfuerzo", defaultValue: "Effort"),
                  detalle: String(localized: "manual.contexto.esfuerzo.sub",
                                  defaultValue: "What you've built up so far today."))
-            fila(color: LiquidColor.cian,
+            fila(.onda, color: LiquidColor.cian,
                  titulo: String(localized: "manual.contexto.vfc", defaultValue: "HRV"),
                  detalle: String(localized: "manual.contexto.vfc.sub",
                                  defaultValue: "Your heart-rate variability, estimated by your watch through the day. The dotted line is where you usually sit."))
-            fila(color: LiquidColor.tinta500,
+            fila(.estres, color: LiquidColor.estresMedio,
                  titulo: String(localized: "manual.contexto.estres", defaultValue: "Stress"),
                  detalle: String(localized: "manual.contexto.estres.sub",
                                  defaultValue: "Your estimated stress level for the day, on a low-to-high scale."))
+            // Pasos vive en Contexto desde FER-118 (ocupó el sitio de la Bitácora): el manual
+            // que explica el estante tiene que nombrarlo.
+            fila(.pasos, color: LiquidColor.teal,
+                 titulo: String(localized: "manual.contexto.pasos", defaultValue: "Steps"),
+                 detalle: String(localized: "manual.contexto.pasos.sub",
+                                 defaultValue: "How much you've moved today, next to your last two weeks. A count, not a judgment."))
 
             seccion(String(localized: "manual.contexto.sec.porque", defaultValue: "Why they don't vote"))
             Text(String(localized: "manual.contexto.porque",
@@ -64,18 +73,15 @@ struct HojaContexto: View {
     // MARK: Piezas
 
     private func seccion(_ titulo: String) -> some View {
-        Text(titulo)
-            .font(LiquidType.micro)
-            .tracking(LiquidType.microTracking)
-            .textCase(.uppercase)
-            .foregroundStyle(LiquidColor.tinta500)
+        // La misma voz que la cabecera de estante que abre esta hoja (FER-125).
+        LiquidOverline(titulo)
             .padding(.top, LiquidSpace.s550)
             .padding(.bottom, LiquidSpace.s200)
     }
 
-    private func fila(color: Color, titulo: String, detalle: String) -> some View {
+    private func fila(_ glifo: LiquidIcon.Glyph, color: Color, titulo: String, detalle: String) -> some View {
         HStack(alignment: .top, spacing: LiquidSpace.s200) {
-            Circle().fill(color).frame(width: 12, height: 12).padding(.top, 2)
+            LiquidIconDrop(glifo, tone: color)
             VStack(alignment: .leading, spacing: LiquidSpace.s050) {
                 Text(titulo)
                     .font(LiquidType.tituloFila)

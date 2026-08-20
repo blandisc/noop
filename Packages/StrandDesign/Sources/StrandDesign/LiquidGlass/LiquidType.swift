@@ -232,6 +232,9 @@ public enum LiquidType {
     /// `caption` — 10.5/500. Sin consumidor en componentes (los deltas usan
     /// `captionLectura`); se conserva para previews/debug.
     public static let caption = InstrumentoType.grotesk(10.5, weight: .medium)
+    /// La etiqueta de eje dentro de una gráfica de la Matriz (los «0.8 · 1.3» de la campana de
+    /// Carga): 8/500 tabular, la voz más chica del sistema — solo dentro de un `Canvas`.
+    public static let etiquetaEje = InstrumentoType.grotesk(8, weight: .medium)
     /// La variante de LECTURA del caption: escala con Dynamic Type (relativo a .caption2)
     /// — los deltas se leen, no son chrome (FER-1045).
     public static let captionLectura = InstrumentoType.grotesk(10.5, weight: .medium,
@@ -246,6 +249,12 @@ public enum LiquidType {
     public static let micro = InstrumentoType.grotesk(11.5, weight: .semibold,
                                                        relativeTo: .caption)
     public static let microTracking: CGFloat = 1.5
+    /// La cabecera de un estante de Hoy («DECIDEN TU DÍA · TE VIGILA · CONTEXTO»): versalitas
+    /// más presentes que `micro` (13/600, tracking 1.4) — el dueño las quiso más visibles
+    /// (FER-125); en `tinta900`.
+    public static let cabeceraEstante = InstrumentoType.grotesk(13, weight: .semibold,
+                                                                 relativeTo: .footnote)
+    public static let cabeceraEstanteTracking: CGFloat = 1.4
 
     /// `micro/estado` — 9/600. Chips de estado («EN TU RANGO»).
     public static let microEstado = InstrumentoType.grotesk(10.5, weight: .semibold,

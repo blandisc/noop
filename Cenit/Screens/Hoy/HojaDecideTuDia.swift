@@ -96,11 +96,8 @@ struct HojaDecideTuDia: View {
     private enum Sello { case vota, centinela, referencia }
 
     private func seccion(_ titulo: String) -> some View {
-        Text(titulo)
-            .font(LiquidType.micro)
-            .tracking(LiquidType.microTracking)
-            .textCase(.uppercase)
-            .foregroundStyle(LiquidColor.tinta500)
+        // La misma voz que la cabecera de estante que abre esta hoja (FER-125).
+        LiquidOverline(titulo)
             .padding(.top, LiquidSpace.s550)
             .padding(.bottom, LiquidSpace.s200)
     }

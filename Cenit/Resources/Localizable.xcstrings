@@ -30721,13 +30721,47 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "These four don't decide your day: only your sleep and resting heart rate vote. They're here to give you context around that verdict, never to judge it."
+            "value" : "These don't decide your day: only your sleep and resting heart rate vote. They're here to give you context around that verdict, never to judge it."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Estas cuatro no deciden tu día: solo tu sueño y tu FC en reposo votan. Están aquí para darte contexto alrededor de ese veredicto, nunca para juzgarlo."
+            "value" : "Estas señales no deciden tu día: solo tu sueño y tu FC en reposo votan. Están aquí para darte contexto alrededor de ese veredicto, nunca para juzgarlo."
+          }
+        }
+      }
+    },
+    "manual.contexto.pasos" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steps"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pasos"
+          }
+        }
+      }
+    },
+    "manual.contexto.pasos.sub" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How much you've moved today, next to your last two weeks. A count, not a judgment."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cuánto te has movido hoy, junto a tus últimas dos semanas. Un conteo, no un juicio."
           }
         }
       }
@@ -31526,23 +31560,6 @@
         }
       }
     },
-    "matriz.carga.zona" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sweet spot %.1f–%.1f"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "zona ideal %.1f–%.1f"
-          }
-        }
-      }
-    },
     "matriz.esf.sub" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -31590,6 +31607,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "en tu rango"
+          }
+        }
+      }
+    },
+    "matriz.fc.sinmananas" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "no morning reads yet"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "aún no leo tus mañanas"
           }
         }
       }
@@ -31692,6 +31726,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Te vigila"
+          }
+        }
+      }
+    },
+    "matriz.pasos.k" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "k"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "k"
+          }
+        }
+      }
+    },
+    "matriz.pasos.sub" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "today · 14 days"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "hoy · 14 días"
           }
         }
       }

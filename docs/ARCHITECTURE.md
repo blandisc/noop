@@ -794,7 +794,7 @@ scroll (parallax). The hero is **not** part of the background: it scrolls with t
   for macOS/watchOS, previews, deterministic renders (`liquidMotionDisabled`) and any device
   without Metal.
 - **Clock and pause.** A single `TimelineView` at 20 Hz (`LiquidMotion.intervaloAmbiente` — the
-  drifts are ≤ 4 pt/s, i.e. ≤ 0.2 pt per frame), paused under `liquidAmbientPaused` (sheet open,
+  drifts are ≤ ~7 pt/s, i.e. ≤ 0.35 pt per frame), paused under `liquidAmbientPaused` (sheet open,
   background, onboarding), when the tab is hidden (`AtmosferaEstado.visible`) and under Reduce
   Motion (`still`: no time, no breathing, no parallax — but every particle drawn). Its `t` is
   **session time** (`Date().timeIntervalSince(inicio)`), never the reference-date clock, so a
