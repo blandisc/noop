@@ -127,7 +127,19 @@ struct PreparacionDetailScreen: View {
                                            defaultValue: "What went out, and how often"),
                                     tono: tono)
                 VStack(alignment: .leading, spacing: LiquidSpace.s300) {
-                    LiquidCajitaGrid {
+                    // UNA columna, no la rejilla 2×2 por omisión. La cajita se dimensiona
+                    // a su contenido y `LazyVGrid` no estira las más cortas, así que en la
+                    // fila 2 «Temp y respiración» pedía dos líneas de rótulo y «Mañanas
+                    // leídas» una: las dos tarjetas quedaban con el canto inferior a distinta
+                    // altura. No es texto desigual, es una tarjeta física más corta que su
+                    // vecina, y era el único lugar de la pantalla donde eso pasaba.
+                    //
+                    // Acortar el rótulo era la otra salida y se descartó: «resp.» no existe
+                    // como abreviatura en español, y ese rótulo nombra la única regla del
+                    // centinela. Apilar además alinea esta sección con «Por qué hoy», que ya
+                    // es una lista de una columna: las dos secciones de EJES de la pantalla
+                    // pasan a leerse con la misma anatomía.
+                    LiquidCajitaGrid(columnas: 1) {
                         ForEach(modelo.atribucion) { eje in
                             LiquidCajita(rotulo: eje.nombre,
                                          valor: "\(eje.dias)",
