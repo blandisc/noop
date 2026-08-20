@@ -56,21 +56,24 @@ struct PreparacionDetailScreen: View {
         LiquidCampoMetrica(
             tono: tono,
             titulo: String(localized: "prep.titulo", defaultValue: "Preparation"),
-            // NO `.escudo`: el catálogo lo declara de Guardián («cabecera de la hoja»), y
-            // Guardián es otro concepto (el centinela de temperatura y respiración).
-            // Compartirlo mezclaba las dos identidades. `.corazon` es el eje que de verdad
-            // vota aquí (`wRHR = 1.0`, `wHRV = 0`) y ya es su glifo en la boleta de Hoy.
-            glifo: .corazon,
-            // El rótulo del numeral NUNCA repite el título de la franja: quedaba
-            // «PREPARACIÓN» arriba, «—», y «PREPARACIÓN» otra vez tres líneas después, que se
-            // lee como un placeholder sin terminar. Sueño usa «Sueño» arriba y «horas» abajo:
-            // la métrica y la unidad del numeral vacío, dos cosas distintas.
-            datos: modelo.palabraHoy == nil
-                ? [.calibrando(rotulo: String(localized: "prep.campo.rotulo",
-                                              defaultValue: "Verdict"),
-                               motivo: modelo.clausulaSinVeredicto, marca: "—")]
-                : [],
-            veredicto: modelo.palabraHoy,
+            // SIN GLIFO, a propósito. Los del catálogo son de MÉTRICA y van 1:1 con la suya
+            // (luna=Sueño, corazon=FC en reposo, termo=temperatura). Preparación no es una
+            // métrica: es un veredicto sobre tres señales, y no tiene glifo propio.
+            //
+            // Probé dos prestados y los dos estaban mal: `.escudo` es de Guardián, y `.corazon`
+            // es de FC en reposo — el usuario lo ve en la Matriz de Hoy
+            // (`LiquidHoyBuilder+Matriz.swift:185`) y volvería a verlo aquí significando otra
+            // cosa. Cambiar un glifo prestado por otro no arregla nada. Hasta que exista uno
+            // acuñado para el veredicto, la cabecera va sin él.
+            // El guion viaja por el MISMO canal que la palabra, no por `datos:`. Al darle
+            // voz al campo mudo lo metí como numeral, y el numeral del campo se pinta a 56 pt
+            // mientras el veredicto real se pinta a 17: la mañana SIN lectura gritaba más que
+            // la mañana con ella. Es una costura que se rompió al mover solo la mitad de la
+            // pieza: el estado con dato ya había migrado a `veredicto:` y el vacío se quedó en
+            // el canal viejo. De paso, el `motivo` del numeral repetía palabra por palabra la
+            // cláusula de abajo, y VoiceOver decía la misma frase dos paradas seguidas.
+            datos: [],
+            veredicto: modelo.palabraHoy ?? "—",
             // Sin `onVolver`: esta pantalla siempre vive dentro de `DetailChrome`, que ya pone
             // su propio «‹ Tendencias». El botón del campo nunca llegaba a pintarse.
             // Sin veredicto la franja quedaba MUDA: solo el rótulo en caja alta sobre color,
@@ -200,18 +203,20 @@ struct PreparacionDetailScreen: View {
             LiquidMetodo(title: String(localized: "How it's calculated"),
                          mostrar: String(localized: "Show explanation"),
                          ocultar: String(localized: "Hide explanation")) {
+                // Las TRES líneas con `LiquidNotaLine`, como Sueño. `LiquidType.cuerpo` es la
+                // fuente del SISTEMA a 12.5, y la cita de abajo ya era Grotesk a 10.5: la
+                // explicación y su fuente salían en dos tipografías y dos tamaños distintos
+                // dentro del mismo bloque. El tono (700 contra el 500 por omisión) es lo único
+                // que separa la explicación de la referencia.
                 VStack(alignment: .leading, spacing: LiquidSpace.s300) {
-                    Text(String(localized: "prep.metodo.como",
-                                defaultValue: "Every morning I look at three things. Your resting heart rate, against your own base: that's the axis that votes, and your HRV measured while you sleep rides along with it only on nights that have enough of it, never on its own (the all-day HRV you see elsewhere in the app never votes). Your sleep, against the floor sleep science recommends, not against your own history. And the sentinel, skin temperature and breathing, which only counts when both run high together. None out is «all in range»; one is «one signal out»; two or more is «two or more out». A sustained downward trend can also bring that change forward."))
-                    Text(String(localized: "prep.metodo.limite",
-                                defaultValue: "Each square is judged with the base you had up to that day, so it doesn't change if you come back to look later. What it can't carry is the trend nudge that only applies to the morning you're living: that's why an older square can differ from what Today said out loud that day. Training load doesn't vote here."))
-                        .font(LiquidType.cuerpo)
-                        .foregroundStyle(LiquidColor.tinta700)
+                    LiquidNotaLine(String(localized: "prep.metodo.como",
+                                          defaultValue: "Every morning I look at three things. Your resting heart rate, against your own base: that's the axis that votes, and your HRV measured while you sleep rides along with it only on nights that have enough of it, never on its own (the all-day HRV you see elsewhere in the app never votes). Your sleep, against the floor sleep science recommends, not against your own history. And the sentinel, skin temperature and breathing, which only counts when both run high together. None out is «all in range»; one is «one signal out»; two or more is «two or more out». A sustained downward trend can also bring that change forward."),
+                                   tono: LiquidColor.tinta700)
+                    LiquidNotaLine(String(localized: "prep.metodo.limite",
+                                          defaultValue: "Each square is judged with the base you had up to that day, so it doesn't change if you come back to look later. What it can't carry is the trend nudge that only applies to the morning you're living: that's why an older square can differ from what Today said out loud that day. Training load doesn't vote here."),
+                                   tono: LiquidColor.tinta700)
                     LiquidNotaLine("Hirshkowitz et al., 2015 (sleep need); Task Force of the European Society of Cardiology, 1996 (HRV); Mishra et al., 2020 (illness sentinel).")
                 }
-                .font(LiquidType.cuerpo)
-                .foregroundStyle(LiquidColor.tinta700)
-                .fixedSize(horizontal: false, vertical: true)
             }
         }
         .liquidSeccion(top: LiquidSpace.s200, bottom: LiquidSpace.s800)
@@ -512,7 +517,7 @@ struct PreparacionDetalleModelo {
                   // vecino de fila una, así que la rejilla no cerraba pareja. De los cuatro
                   // rótulos solo este era largo, y siempre cae junto a uno corto.
                   nombre: String(localized: "prep.atr.centinela.nombre",
-                                 defaultValue: "Temp & breathing"),
+                                 defaultValue: "Temp and breathing"),
                   dias: leidas.filter(\.sentinelOut).count,
                   pie: String(localized: "prep.atr.centinela",
                               defaultValue: "both, never one alone")),

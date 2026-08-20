@@ -315,7 +315,7 @@ final class PreparacionDetalleModeloTests: XCTestCase {
         // Las DOS mitades del par, en cualquier redacción: «temperatura» o «temp», y
         // «respiración» o «breathing». Nombrar una sola sería decir que vota sola.
         let calor = ["temp"]
-        let aire = ["respir", "breath"]
+        let aire = ["respir", "breath", "resp."]
         XCTAssertTrue(calor.contains { etiqueta.localizedCaseInsensitiveContains($0) },
                       "falta la temperatura: «\(etiqueta)»")
         XCTAssertTrue(aire.contains { etiqueta.localizedCaseInsensitiveContains($0) },

@@ -70,7 +70,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Temp & breathing"
+            "value" : "Temp and breathing"
           }
         },
         "es" : {
@@ -173,22 +173,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Leyendo tus mañanas…"
-          }
-        }
-      }
-    },
-    "prep.campo.rotulo" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Verdict"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Veredicto"
           }
         }
       }
