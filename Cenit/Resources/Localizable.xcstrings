@@ -38,13 +38,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your resting heart rate came in outside your base"
+            "value" : "outside your base"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tu FC en reposo vino fuera de tu base"
+            "value" : "fuera de tu base"
           }
         }
       }
@@ -54,13 +54,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Both ran high together; one alone never counts"
+            "value" : "both, never one alone"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Las dos altas juntas; una sola nunca cuenta"
+            "value" : "las dos, nunca una sola"
           }
         }
       }
@@ -86,13 +86,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The rest didn't have enough signal"
+            "value" : "the rest had no signal"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "El resto no tuvo señal suficiente"
+            "value" : "el resto sin señal"
           }
         }
       }
@@ -118,13 +118,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You slept less than recommended, or your sleep came broken up"
+            "value" : "short or broken up"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dormiste menos de lo recomendado, o dormiste de forma poco continua"
+            "value" : "corto o entrecortado"
           }
         }
       }
@@ -161,6 +161,54 @@
         }
       }
     },
+    "prep.campo.cargando" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reading your mornings…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leyendo tus mañanas…"
+          }
+        }
+      }
+    },
+    "prep.campo.sinPermiso" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I can't read you yet."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todavía no puedo leerte."
+          }
+        }
+      }
+    },
+    "prep.campo.sinVeredicto" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No verdict this morning."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin veredicto esta mañana."
+          }
+        }
+      }
+    },
     "prep.cargando" : {
       "localizations" : {
         "en" : {
@@ -182,13 +230,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%d with a reading"
+            "value" : "%1$d of %2$d with a reading"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%d con lectura"
+            "value" : "%1$d de %2$d con lectura"
           }
         }
       }

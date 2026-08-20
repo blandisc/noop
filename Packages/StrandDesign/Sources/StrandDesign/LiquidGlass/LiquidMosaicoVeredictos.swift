@@ -125,6 +125,18 @@ public struct LiquidMosaicoVeredictos: View {
     private static let radioCelda: CGFloat = 5
     /// Radio del pip del reparto — 3: es un cuadro pequeño, no una pastilla.
     private static let radioPip: CGFloat = 3
+    /// Holgura y grosor del anillo de selección — los mismos que `LiquidCalendario90`.
+    private static let anilloHolgura: CGFloat = LiquidSpace.s100
+    private static let anilloBorde: CGFloat = 2
+    /// Radio del anillo — `radioCelda` + la mitad de la holgura, que es la curva concéntrica:
+    /// el anillo corre a 2 pt por fuera de la celda, así que su radio es 2 mayor.
+    ///
+    /// DIVERGE A PROPÓSITO de `LiquidCalendario90.radioAnillo` (3, MENOR que su celda) y aquí
+    /// va escrito por qué, como pide el sistema para toda divergencia deliberada: aquel 3 se
+    /// afinó para una celda de ~20 pt, donde el radio es la cuarta parte del lado. La celda de
+    /// este mosaico mide ~46 pt (7 columnas, no 14), y un anillo de radio 3 alrededor de 50 pt
+    /// se ve cuadrado. Se hereda el PATRÓN, no el número.
+    private static let radioAnillo: CGFloat = radioCelda + LiquidSpace.s100 / 2
 
     /// Sin viaje con Reduce Motion; si no, la misma curva de salida que la pieza hermana.
     private var animacion: Animation? {
@@ -173,6 +185,11 @@ public struct LiquidMosaicoVeredictos: View {
         return legibles[j].id
     }
 
+    /// El hueco de la retícula va a `celdaVacia` (7 %) y su pip en el reparto a `celdaVaciaPip`
+    /// (14 %), que es el DOBLE. No es descuido: son el mismo estado semántico a dos escalas muy
+    /// distintas —una celda de ~46 pt contra un cuadro de 10— y al 7 % el pip desaparece contra
+    /// el papel, así que el renglón «sin lectura» se quedaría sin su marca. La hermana comparte
+    /// un solo token porque su celda y su swatch de leyenda miden casi lo mismo.
     private func color(_ peldanoID: String?) -> Color {
         guard let peldanoID, let p = peldanos.first(where: { $0.id == peldanoID }) else {
             return LiquidColor.celdaVacia
@@ -261,9 +278,15 @@ public struct LiquidMosaicoVeredictos: View {
             .fill(color(dia?.peldano))
             .frame(width: celda, height: celda)
             .overlay {
+                // El día tocado se marca con un ANILLO POR FUERA, nunca comiéndose su propio
+                // relleno: el relleno ES el dato. `strokeBorder` dibuja hacia adentro, así que
+                // tapaba 2 pt de tinte en todo el perímetro justo del día que el usuario quiso
+                // mirar. Es la misma regla que `LiquidCalendario90` documenta (`:438-444`).
                 if tocado {
-                    RoundedRectangle(cornerRadius: Self.radioCelda)
-                        .strokeBorder(LiquidColor.tinta900, lineWidth: 2)
+                    RoundedRectangle(cornerRadius: Self.radioAnillo, style: .continuous)
+                        .stroke(LiquidColor.tinta900, lineWidth: Self.anilloBorde)
+                        .frame(width: celda + Self.anilloHolgura,
+                               height: celda + Self.anilloHolgura)
                 }
             }
             .contentShape(Rectangle())

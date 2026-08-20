@@ -56,11 +56,18 @@ struct PreparacionDetailScreen: View {
         LiquidCampoMetrica(
             tono: tono,
             titulo: String(localized: "prep.titulo", defaultValue: "Preparation"),
-            datos: [],
+            glifo: .escudo,
+            datos: modelo.palabraHoy == nil
+                ? [.calibrando(rotulo: String(localized: "prep.titulo", defaultValue: "Preparation"),
+                               motivo: modelo.clausulaSinVeredicto, marca: "—")]
+                : [],
             veredicto: modelo.palabraHoy,
             // Sin `onVolver`: esta pantalla siempre vive dentro de `DetailChrome`, que ya pone
             // su propio «‹ Tendencias». El botón del campo nunca llegaba a pintarse.
-            clausula: modelo.clausulaHoy
+            // Sin veredicto la franja quedaba MUDA: solo el rótulo en caja alta sobre color,
+            // encima de una bienvenida que sí traía texto. Sueño resuelve el mismo momento con
+            // su `campoApagado`, que nunca deja el campo sin numeral ni sin cláusula.
+            clausula: modelo.clausulaHoy ?? modelo.clausulaSinVeredicto
         ) {
             if let sello = modelo.selloConfianza {
                 LiquidCampoSello(sello)
@@ -100,10 +107,7 @@ struct PreparacionDetailScreen: View {
                 .liquidSeccion()
 
             if let aviso = modelo.avisoVentanaSinVeredicto {
-                Text(aviso)
-                    .font(LiquidType.cuerpo)
-                    .foregroundStyle(LiquidColor.tinta700)
-                    .liquidSeccion(top: 0)
+                LiquidNotaLine(aviso).liquidSeccion(top: 0)
             }
 
             if !modelo.atribucion.isEmpty {
@@ -124,11 +128,8 @@ struct PreparacionDetailScreen: View {
                     // esa noche: una noche mala aislada puede salir «todo en rango» con un eje
                     // fuera. El motor lo advierte por escrito; si la pantalla no lo dijera, los
                     // dos bloques se contradirían solos a la vista del usuario.
-                    Text(String(localized: "prep.atribucion.nota",
-                                defaultValue: "These are the nights each signal came in outside your range. A single night out doesn't move your verdict on its own, so these numbers won't add up to the mosaic above."))
-                        .font(LiquidType.captionLectura)
-                        .foregroundStyle(LiquidColor.tinta500)
-                        .fixedSize(horizontal: false, vertical: true)
+                    LiquidNotaLine(String(localized: "prep.atribucion.nota",
+                                          defaultValue: "These are the nights each signal came in outside your range. A single night out doesn't move your verdict on its own, so these numbers won't add up to the mosaic above."))
                 }
                 .liquidSeccion()
             }
@@ -149,7 +150,7 @@ struct PreparacionDetailScreen: View {
                                 VStack(alignment: .leading, spacing: LiquidSpace.s075) {
                                     Text(eje.nombre).font(LiquidType.cuerpo)
                                         .foregroundStyle(LiquidColor.tinta900)
-                                    Text(eje.estado).font(LiquidType.label)
+                                    Text(eje.estado).liquidLabel()
                                         .foregroundStyle(eje.fuera ? tono : LiquidColor.tinta500)
                                 }
                             } else {
@@ -157,7 +158,7 @@ struct PreparacionDetailScreen: View {
                                     Text(eje.nombre).font(LiquidType.cuerpo)
                                         .foregroundStyle(LiquidColor.tinta900)
                                     Spacer(minLength: LiquidSpace.s250)
-                                    Text(eje.estado).font(LiquidType.label)
+                                    Text(eje.estado).liquidLabel()
                                         .foregroundStyle(eje.fuera ? tono : LiquidColor.tinta500)
                                 }
                             }
@@ -179,10 +180,12 @@ struct PreparacionDetailScreen: View {
         // bloque a mano: plegable, cerrado por omisión, y CON su cita en pantalla. Sueño ya lo
         // hacía así; aquí las fuentes vivían solo en comentarios del motor, que el usuario
         // nunca ve. CLAUDE.md pide citar el método, y citarlo donde se lee.
-        LiquidMetodo(title: String(localized: "prep.metodo.titulo",
-                                   defaultValue: "See the method"),
-                     mostrar: String(localized: "prep.metodo.mostrar", defaultValue: "Show the method"),
-                     ocultar: String(localized: "prep.metodo.ocultar", defaultValue: "Hide the method")) {
+        // Las claves que YA usa toda la familia (Sueño, Carga, la hoja de métrica, Hoy y las
+        // pantallas de papel). Preparación había acuñado «Ver el método», y era la única voz
+        // distinta del app para el mismo control.
+        LiquidMetodo(title: String(localized: "How it's calculated"),
+                     mostrar: String(localized: "Show explanation"),
+                     ocultar: String(localized: "Hide explanation")) {
             VStack(alignment: .leading, spacing: LiquidSpace.s300) {
                 Text(String(localized: "prep.metodo.como",
                             defaultValue: "Every morning I look at three things. Your resting heart rate, against your own base: that's the axis that votes, and your HRV measured while you sleep rides along with it only on nights that have enough of it, never on its own (the all-day HRV you see elsewhere in the app never votes). Your sleep, against the floor sleep science recommends, not against your own history. And the sentinel, skin temperature and breathing, which only counts when both run high together. None out is «all in range»; one is «one signal out»; two or more is «two or more out». A sustained downward trend can also bring that change forward."))
@@ -201,14 +204,12 @@ struct PreparacionDetailScreen: View {
 
     // MARK: - Estados de pantalla
 
+    /// El esqueleto compartido de la familia, no un spinner desnudo: insinúa la forma de lo
+    /// que viene. Es lo que usan Sueño y la hoja de métrica para este mismo momento.
     private var cargando: some View {
-        VStack(alignment: .leading, spacing: LiquidSpace.s300) {
-            ProgressView().tint(LiquidColor.tinta500)
-            Text(String(localized: "prep.cargando", defaultValue: "Reading your mornings…"))
-                .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta500)
-        }
-        .liquidSeccion(top: LiquidSpace.s550)
-        .accessibilityElement(children: .combine)
+        LiquidSheetSkeleton(a11yCargando: String(localized: "prep.cargando",
+                                                 defaultValue: "Reading your mornings…"))
+            .liquidSeccion()
     }
 
     private func bienvenida(_ copy: PreparacionDetalleModelo.Bienvenida) -> some View {
@@ -277,6 +278,18 @@ struct PreparacionDetalleModelo {
     let ejesHoy: [EjeHoy]
     let copySinPermiso: Bienvenida
     let copySinHistoria: Bienvenida
+    /// Lo que dice el campo cuando NO hay veredicto. Tres estados, tres frases: una franja
+    /// teñida con solo su rótulo no le dice nada a nadie.
+    var clausulaSinVeredicto: String {
+        switch estado {
+        case .cargando:    return String(localized: "prep.campo.cargando",
+                                         defaultValue: "Reading your mornings…")
+        case .sinPermiso:  return String(localized: "prep.campo.sinPermiso",
+                                         defaultValue: "I can't read you yet.")
+        default:           return String(localized: "prep.campo.sinVeredicto",
+                                         defaultValue: "No verdict this morning.")
+        }
+    }
     /// Las 7 iniciales de la canaleta, YA rotadas al día en que arranca esta ventana.
     let inicialesDia: [String]
 
@@ -473,23 +486,23 @@ struct PreparacionDetalleModelo {
                   // La VFC de Apple no vota (`wHRV = 0`) y la RMSSD nocturna «nunca sola, nunca
                   // históricamente»: sobre 30 días este eje es SOLO la FC en reposo.
                   pie: String(localized: "prep.atr.auto",
-                              defaultValue: "Your resting heart rate came in outside your base")),
+                              defaultValue: "outside your base")),
             .init(id: "sleep", nombre: String(localized: "Sleep"),
                   dias: leidas.filter(\.sleepOut).count,
                   // El eje vota con `shortVsNeed || poorEfficiency`: decir solo «dormiste menos»
                   // deja fuera la noche fragmentada de duración normal, que vota igual.
                   pie: String(localized: "prep.atr.sueno",
-                              defaultValue: "You slept less than recommended, or your sleep came broken up")),
+                              defaultValue: "short or broken up")),
             .init(id: "sentinel", nombre: String(localized: "prep.atr.centinela.nombre",
                                                  defaultValue: "Temperature and breathing"),
                   dias: leidas.filter(\.sentinelOut).count,
                   pie: String(localized: "prep.atr.centinela",
-                              defaultValue: "Both ran high together; one alone never counts")),
+                              defaultValue: "both, never one alone")),
             .init(id: "leidas", nombre: String(localized: "prep.atr.leidas.nombre",
                                                defaultValue: "Mornings read"),
                   dias: conLectura,
                   pie: String(localized: "prep.atr.leidas",
-                              defaultValue: "The rest didn't have enough signal")),
+                              defaultValue: "the rest had no signal")),
         ]
 
         let hayVeredicto = prep != nil && prep?.verdict != .lowSignal && prep?.isNightAnchored == true
@@ -530,8 +543,11 @@ struct PreparacionDetalleModelo {
             rejilla: rejilla,
             peldanos: peldanosBase,
             conteos: conteos,
+            // La pista se basta sola: «22 de 30», no «22» a secas. Es el patrón que el propio
+            // `LiquidFranjaSeccion` documenta en su preview («24 de 30 noches suficientes»).
             pistaCobertura: String(format: String(localized: "prep.cobertura.fmt",
-                                                  defaultValue: "%d with a reading"), conLectura),
+                                                  defaultValue: "%1$d of %2$d with a reading"),
+                                   conLectura, ventana),
             avisoVentanaSinVeredicto: ventanaVacia ? avisoVacio(prep) : nil,
             atribucion: atribucion,
             ejesHoy: ejesHoy,

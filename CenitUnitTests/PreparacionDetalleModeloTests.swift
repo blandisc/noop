@@ -254,10 +254,18 @@ final class PreparacionDetalleModeloTests: XCTestCase {
     /// La atribución del sueño no puede decir solo «dormiste menos»: el eje vota con
     /// `shortVsNeed || poorEfficiency`, así que una noche fragmentada de duración normal
     /// vota igual y quedaría sin explicación.
+    /// Vigila la AFIRMACIÓN, no una palabra concreta: el pie tiene que nombrar las dos formas
+    /// de votar. Atarla a un término exacto («continua») hizo que la prueba cayera cuando el
+    /// copy se acortó a «corto o entrecortado», que dice lo mismo mejor. Una guarda de ciencia
+    /// no debe congelar la redacción, solo impedir que se pierda la mitad del hecho.
     func testLaAtribucionDeSuenoNombraLasDosFormasDeVotar() throws {
         let pie = try es("prep.atr.sueno")
-        XCTAssertTrue(pie.localizedCaseInsensitiveContains("continua"),
-                      "falta la noche fragmentada, que vota igual que la corta")
+        let duracion = ["corto", "menos", "poco"]
+        let continuidad = ["entrecortado", "continua", "fragmentad", "interrump"]
+        XCTAssertTrue(duracion.contains { pie.localizedCaseInsensitiveContains($0) },
+                      "falta la noche corta: «\(pie)»")
+        XCTAssertTrue(continuidad.contains { pie.localizedCaseInsensitiveContains($0) },
+                      "falta la noche fragmentada, que vota igual que la corta: «\(pie)»")
     }
 
     /// El héroe más visto de la app prometía un «rango» de sueño personal que el motor no
