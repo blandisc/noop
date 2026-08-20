@@ -96,7 +96,7 @@ struct PreparacionDetailScreen: View {
                 pistaVacia: String(localized: "prep.mosaico.pista",
                                    defaultValue: "Tap a morning to read it."),
                 a11yPista: String(localized: "prep.mosaico.a11yPista",
-                                  defaultValue: "Swipe up or down to move between the mornings that have a reading."))
+                                  defaultValue: "Swipe up or down to move between mornings with a reading"))
                 .liquidSeccion()
 
             if let aviso = modelo.avisoVentanaSinVeredicto {
@@ -442,7 +442,10 @@ struct PreparacionDetalleModelo {
             if noche.verdict == .easy && ejesFuera(noche) < 2 {
                 let empujon = String(localized: "prep.dia.tendencia",
                                      defaultValue: "downward trend")
-                quienes = quienes.isEmpty ? empujon : quienes + ", " + empujon
+                // Con «·» y no con coma: la etiqueta separa todas sus cláusulas así, y
+                // `quienSeSalio` une SEÑALES con «y». Una coma metía «tendencia a la baja» en
+                // la lista de señales, como si fuera una tercera constante vital.
+                quienes = quienes.isEmpty ? empujon : quienes + " · " + empujon
             }
             let cola = quienes.isEmpty ? "" : " · " + quienes
             return .init(id: clave, fecha: fecha, peldano: idPeldano(noche.verdict),

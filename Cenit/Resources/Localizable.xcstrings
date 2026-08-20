@@ -614,13 +614,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Swipe up or down to move between the mornings that have a reading."
+            "value" : "Swipe up or down to move between mornings with a reading"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Desliza hacia arriba o abajo para moverte entre las mañanas que sí tienen lectura."
+            "value" : "Desliza arriba o abajo para moverte entre mañanas con lectura"
           }
         }
       }
