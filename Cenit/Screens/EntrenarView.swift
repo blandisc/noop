@@ -1418,28 +1418,23 @@ private struct EntrenarLanding: View {
         // The verdict this whole pass was built with, published together with the slots it seeded.
         var passAdvice = repo.trainingAdvice
         if let tid = WeeklySplit.todayRoutineId(split: splitMap, todayWeekday: todayWeekday) {
-            let exs = (try? await store.routineExercises(routineId: tid)) ?? []
-            let custom = (try? await store.customExercises()) ?? []
-            let customByID = Dictionary(custom.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
-            let overrides = (try? await store.exerciseTypeOverrides()) ?? [:]
-            // FER-E/G: «la última vez» + progression per slot, via the ONE `sessionSeed` implementation
-            // the «Rutina» editor also calls — the raise the hero names is exactly the raise it seeds.
-            let inventory = await MainActor.run { PlatesStore().inventory }
-            // One verdict for the whole table (FER-82): read before the loop, never inside it.
+            // FER-124: los slots los siembra `repo.seedTodaySlots` — EL MISMO método que usa el
+            // arranque desde la muñeca, así que el teléfono y el reloj no pueden ofrecer rutinas
+            // distintas. El héroe deriva la subida/retención de los slots ya sembrados, no de un
+            // segundo bucle. Un veredicto para toda la tabla (FER-82), leído antes de sembrar.
             let advice = repo.trainingAdvice
             passAdvice = advice
+            let inventory = await MainActor.run { PlatesStore().inventory }
+            let seeded = await repo.seedTodaySlots(routineId: tid, advice: advice, inventory: inventory)
+            slots.append(contentsOf: seeded)
             var raising: [(name: String, kg: Double)] = []
             var held: [(name: String, kg: Double)] = []
-            for re in exs {
-                let ex = (ExerciseCatalog.byID(re.exerciseId) ?? customByID[re.exerciseId])?.applying(overrides)
-                let seed = await repo.sessionSeed(re: re, exercise: ex, inventory: inventory, advice: advice)
-                if let raise = seed.evaluation?.raise {
-                    let name = ex.map(StrengthDisplay.name) ?? re.exerciseId
-                    // One evaluation, two readings: applied to the seed, or held by today's verdict.
-                    if raise.waiting { held.append((name: name, kg: raise.toKg)) }
-                    else { raising.append((name: name, kg: raise.toKg)) }
-                }
-                slots.append(.init(re: re, exercise: ex, lastSets: seed.lastSets, raise: seed.evaluation?.raise))
+            for slot in seeded {
+                guard let raise = slot.raise else { continue }
+                let name = slot.exercise.map(StrengthDisplay.name) ?? slot.re.exerciseId
+                // Una evaluación, dos lecturas: aplicada al seed, o retenida por el veredicto de hoy.
+                if raise.waiting { held.append((name: name, kg: raise.toKg)) }
+                else { raising.append((name: name, kg: raise.toKg)) }
             }
             raisingToday = raising
             heldToday = held

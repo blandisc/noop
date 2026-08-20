@@ -52,6 +52,28 @@ extension Repository {
         return (try? await store.routineExercises(routineId: routineId)) ?? []
     }
 
+    /// La ÚNICA siembra de los slots de la sesión de hoy. El héroe del teléfono y el arranque desde
+    /// la muñeca construyen slots IDÉNTICOS para la misma rutina porque llaman AQUÍ — no dos bucles
+    /// que hoy coinciden y mañana podrían no hacerlo (FER-124). La garantía no es un test: es que hay
+    /// un solo bucle.
+    ///
+    /// `inventory` lo pasa quien llama (el teléfono lo lee de `PlatesStore`, el reloj de `plates`):
+    /// es la única entrada que legítimamente difiere por superficie, y no cambia qué rutina ni qué
+    /// progresión se siembra. `advice` es el veredicto ya resuelto, leído UNA vez por el llamador.
+    func seedTodaySlots(routineId: String, advice: TrainingRegulation.Advice,
+                        inventory: [PlateMath.PlateStock]) async -> [StrengthSessionModel.PlanSlot] {
+        guard let store = await storeHandle() else { return [] }
+        let exs = (try? await store.routineExercises(routineId: routineId)) ?? []
+        let memo = await StrengthExerciseMemo.load(for: self, store: store)
+        var slots: [StrengthSessionModel.PlanSlot] = []
+        for re in exs {
+            let ex = (ExerciseCatalog.byID(re.exerciseId) ?? memo.customById[re.exerciseId])?.applying(memo.overrides)
+            let seed = await sessionSeed(re: re, exercise: ex, inventory: inventory, advice: advice)
+            slots.append(.init(re: re, exercise: ex, lastSets: seed.lastSets, raise: seed.evaluation?.raise))
+        }
+        return slots
+    }
+
     func saveRoutine(_ routine: Routine, exercises: [RoutineExercise]) async throws {
         guard let store = await storeHandle() else { return }
         try await store.saveRoutine(routine, exercises: exercises)

@@ -73,28 +73,13 @@ extension AppModel {
         return (try? await store.routines())?.first { $0.id == tid }
     }
 
-    /// Today's guided-session slots for `routineId` — the same per-exercise seed («la última vez» +
-    /// progression) `EntrenarView.load()` prefetches, via the ONE `repo.sessionSeed` implementation the
-    /// «Rutina» editor also calls (FER-E/G), so a wrist start seeds identically to an iPhone start.
-    ///
-    /// Unlike `EntrenarView.todaySlots` (a cached `@State` that can go stale between the prefetch and the
-    /// tap, needing `startToday()`'s one-retry-against-the-live-verdict dance), this is built fresh on
-    /// every call — `repo.trainingAdvice` is read once, right here, always the CURRENT verdict — so there
-    /// is no cache to go stale and nothing to retry.
+    /// Los slots de hoy para `routineId`, construidos fresco en cada llamada — sin la `@State`
+    /// cacheada que el teléfono tiene que reconstruir contra el veredicto vivo. El bucle NO vive
+    /// aquí: es `repo.seedTodaySlots`, el MISMO que siembra el héroe del teléfono (FER-124). Antes
+    /// era una copia del bucle que coincidía con la del teléfono por buena voluntad; ahora es la
+    /// misma, y no pueden divergir.
     private func resolveTodaySlotsForWatch(routineId: String) async -> [StrengthSessionModel.PlanSlot] {
-        guard let store = await repo.storeHandle() else { return [] }
-        let exs = (try? await store.routineExercises(routineId: routineId)) ?? []
-        let custom = (try? await store.customExercises()) ?? []
-        let customByID = Dictionary(custom.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
-        let overrides = (try? await store.exerciseTypeOverrides()) ?? [:]
-        let inventory = plates.inventory
-        let advice = repo.trainingAdvice
-        var slots: [StrengthSessionModel.PlanSlot] = []
-        for re in exs {
-            let ex = (ExerciseCatalog.byID(re.exerciseId) ?? customByID[re.exerciseId])?.applying(overrides)
-            let seed = await repo.sessionSeed(re: re, exercise: ex, inventory: inventory, advice: advice)
-            slots.append(.init(re: re, exercise: ex, lastSets: seed.lastSets, raise: seed.evaluation?.raise))
-        }
-        return slots
+        await repo.seedTodaySlots(routineId: routineId, advice: repo.trainingAdvice,
+                                  inventory: plates.inventory)
     }
 }
