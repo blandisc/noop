@@ -210,8 +210,9 @@ struct RoutineEditorScreen: View {
                     items[t.ei].re.progressionDeload = deload
                     items[t.ei].re.progressionIgnoreRecovery = ignoreRecovery
                     dirty = true
-                    // The rep goal IS RoutineSet.reps (no ranges): with the plan on, write it onto
-                    // every work set. Off, the prescription stays whatever the user typed.
+                    // El objetivo escribe el PISO (`RoutineSet.reps`) de cada serie de trabajo con
+                    // el plan encendido; apagado, la prescripción se queda como el usuario la tecleó.
+                    // El TECHO del rango (`repsRangeTop`, FER-94) es opcional y no se toca aquí.
                     guard enabled else { return }
                     for si in items[t.ei].re.sets.indices where items[t.ei].re.sets[si].kind == .work {
                         items[t.ei].re.sets[si].reps = targetReps

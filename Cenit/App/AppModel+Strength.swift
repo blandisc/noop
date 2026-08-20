@@ -381,13 +381,13 @@ extension AppModel {
                 }
             }
 
-        // Worked muscles, in set order, deduped, title-cased, capped.
-        var seen = Set<String>(); var muscles: [String] = []
-        for s in work {
-            for m in exercise(s.exerciseId)?.primaryMuscles ?? [] where !seen.contains(m) {
-                seen.insert(m); muscles.append(StrengthDisplay.titleCase(m))
-            }
-        }
+        // Músculos trabajados (FER-124): principales Y de apoyo, en orden de serie, sin repetir.
+        // El principal gana: si un músculo es protagonista en un ejercicio y de apoyo en otro, se
+        // marca principal (negrita en el acta). El catálogo ya distinguía los dos — el acta no.
+        let muscles = StrengthSummary.worked(
+            primaryPerSet: work.map { exercise($0.exerciseId)?.primaryMuscles ?? [] },
+            secondaryPerSet: work.map { exercise($0.exerciseId)?.secondaryMuscles ?? [] },
+            titleCase: StrengthDisplay.titleCase)
 
         // Tomorrow's projection given today's session cost (FER-442): recovery base = repo.days
         // (already oldest→newest from Repository; nils kept so the engine respects missing-day
@@ -407,7 +407,7 @@ extension AppModel {
                                costBand: SessionRecoveryCost.cost(sessionStrain: record.strain)?.band,
                                costTomorrowPct: costTomorrowPct,
                                energyKcal: record.energyKcal, energySource: record.energySource,
-                               prs: prs, muscles: Array(muscles.prefix(6)),
+                               prs: prs, muscles: Array(muscles.prefix(8)),
                                isFirstTime: prior.allSatisfy { $0.value.isEmpty },
                                comparison: comparison, exercises: exerciseLines)
     }

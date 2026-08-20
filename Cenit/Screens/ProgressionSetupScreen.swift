@@ -11,9 +11,12 @@ import StrandAnalytics
 // RestEditorScreen's pattern), and the toggle is the house ink `InstrumentoToggleStyle`, not green
 // («color solo en el dato»: the switch is chrome; green stays on the increment and the consequence).
 //
-// Model honesty (vinculante): there are NO rep ranges — the rep goal IS `RoutineSet.reps`. Picking an
-// «Objetivo de reps» here rewrites every work set's reps (the caller owns that write). The increment
-// derives from the plate inventory (`PlateMath.minimumIncrement`, FER-C) unless overridden by hand.
+// Model honesty (vinculante): el «Objetivo de reps» de aquí escribe el PISO (`RoutineSet.reps`) de
+// cada serie de trabajo (el llamador es dueño de esa escritura). Desde FER-94 existe además un TECHO
+// opcional (`RoutineSet.repsRangeTop`) para prescribir un rango «8-12»; esta pantalla no lo edita
+// —su celda de captura es trabajo aparte de FER-124— y la progresión ya lo respeta: sube al tocar el
+// techo cuando existe, o el piso cuando no. El incremento sale del inventario de discos
+// (`PlateMath.minimumIncrement`, FER-C) salvo override a mano.
 
 struct ProgressionSetupScreen: View {
     let theme: InstrumentoTheme

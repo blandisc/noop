@@ -4317,7 +4317,7 @@ struct LiveStrengthSheet: View {
     /// muscle-map door — toque 44, HIG §8.7-4), which still opens the same fatigue map via
     /// `openFatigueMap()`. The old per-chip hint («Tap a muscle to see when to train it again.») is
     /// retired with it — it described a per-muscle tap that no longer exists.
-    private func summaryMuscles(_ muscles: [String]) -> some View {
+    private func summaryMuscles(_ muscles: [StrengthSummary.WorkedMuscle]) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text("Today's muscles").instrumentoOverline().foregroundStyle(theme.inkTertiary)
@@ -4330,10 +4330,36 @@ struct LiveStrengthSheet: View {
                 .buttonStyle(.plain)
                 .accessibilityHint(Text("Opens the fatigue map"))
             }
-            Text(muscles.joined(separator: " · "))
+            // FER-124: los PRINCIPALES en semibold, los de APOYO en normal — «como el handoff».
+            // Una sola línea de tinta corrida; el papel lo dice el peso, no un color (el hue no
+            // entra aquí: sería un tercer significado en una fila que ya distingue por peso).
+            musclesText(muscles)
                 .font(StrandFont.subhead).foregroundStyle(theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
+                // VoiceOver no oye la negrita: nombra el papel en palabras.
+                .accessibilityLabel(musclesAccessibilityLabel(muscles))
         }
+    }
+
+    /// La línea de músculos con su peso tipográfico: principal semibold, apoyo regular, unidos por «·».
+    private func musclesText(_ muscles: [StrengthSummary.WorkedMuscle]) -> Text {
+        muscles.enumerated().reduce(Text(verbatim: "")) { acc, pair in
+            let (i, m) = pair
+            let sep = i == 0 ? Text(verbatim: "") : Text(verbatim: " · ").foregroundStyle(theme.inkTertiary)
+            let name = Text(verbatim: m.name).fontWeight(m.isPrimary ? .semibold : .regular)
+            return acc + sep + name
+        }
+    }
+
+    /// Lo que VoiceOver dice: la negrita no se oye, así que el papel va en palabras.
+    private func musclesAccessibilityLabel(_ muscles: [StrengthSummary.WorkedMuscle]) -> Text {
+        let primary = muscles.filter(\.isPrimary).map(\.name)
+        let support = muscles.filter { !$0.isPrimary }.map(\.name)
+        var t = Text("Worked: ") + Text(verbatim: primary.joined(separator: ", "))
+        if !support.isEmpty {
+            t = t + Text(". Support: ") + Text(verbatim: support.joined(separator: ", "))
+        }
+        return t
     }
 
     /// Close the summary and hand off to «Cuerpo» → fatigue map (no third sheet stacked on the session).

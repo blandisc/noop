@@ -60546,6 +60546,28 @@
           }
         }
       }
+    },
+    "Worked: " : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trabajaste: "
+          }
+        }
+      }
+    },
+    ". Support: " : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ". De apoyo: "
+          }
+        }
+      }
     }
   },
   "version" : "1.1"

@@ -32,7 +32,12 @@ struct StrengthSummary: Equatable {
     var energyKcal: Double?
     var energySource: EnergySource?
     var prs: [PR]
-    var muscles: [String]
+    /// Los músculos trabajados hoy, con su papel: los PRINCIPALES (protagonistas del ejercicio) y
+    /// los de APOYO (FER-124). Antes era una lista plana de solo principales — el catálogo ya sabía
+    /// cuáles eran de apoyo (`Exercise.secondaryMuscles`), pero el acta nunca los mostraba. No es un
+    /// dato nuevo que guardar: se le vuelve a preguntar al catálogo. `StrengthSummary` es transitorio
+    /// (Equatable, no Codable), así que esto no toca la base.
+    var muscles: [WorkedMuscle]
     var isFirstTime: Bool
     /// The previous completed session of the SAME routine (FER-716), for the «Contra tu última {rutina}»
     /// bars. `nil` when this routine has no earlier session (or the session was routine-less).
@@ -42,6 +47,32 @@ struct StrengthSummary: Equatable {
     /// FER-742: the Apple Watch recorded the real FC/kcal and saved the workout to Health (the one-workout
     /// invariant then omitted the iPhone's estimate). Drives the receipt's watch-origin line; false = as today.
     var watchRecorded: Bool = false
+
+    /// Un músculo trabajado hoy y su papel. `isPrimary` = protagonista de al menos un ejercicio de
+    /// la sesión; si un músculo fue principal en un ejercicio y de apoyo en otro, gana principal.
+    struct WorkedMuscle: Equatable, Identifiable {
+        var name: String
+        var isPrimary: Bool
+        var id: String { name }
+    }
+
+        /// Arma la lista de músculos con su papel a partir de los principales y de apoyo de cada
+        /// serie de trabajo, en orden. Regla: el principal gana — si un músculo es protagonista en un
+        /// ejercicio y de apoyo en otro, se marca principal. Pura y estática para que el acta y su
+        /// prueba llamen EL MISMO código, no dos copias de la regla (FER-124).
+        static func worked(primaryPerSet: [[String]], secondaryPerSet: [[String]],
+                           titleCase: (String) -> String) -> [WorkedMuscle] {
+            var order: [String] = []
+            var isPrimary: [String: Bool] = [:]
+            func note(_ raw: String, primary: Bool) {
+                let m = titleCase(raw)
+                if isPrimary[m] == nil { order.append(m); isPrimary[m] = primary }
+                else if primary { isPrimary[m] = true }
+            }
+            for ex in primaryPerSet { for m in ex { note(m, primary: true) } }
+            for ex in secondaryPerSet { for m in ex { note(m, primary: false) } }
+            return order.map { WorkedMuscle(name: $0, isPrimary: isPrimary[$0] ?? true) }
+        }
 
     /// One new record set this session (already filtered to those that strictly beat a prior PR).
     /// `priorValueKg`/`priorReps` carry the beaten record, for the «100 → 102,5 kg» framing.
