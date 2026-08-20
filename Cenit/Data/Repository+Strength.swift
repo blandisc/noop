@@ -60,6 +60,16 @@ extension Repository {
     /// `inventory` lo pasa quien llama (el teléfono lo lee de `PlatesStore`, el reloj de `plates`):
     /// es la única entrada que legítimamente difiere por superficie, y no cambia qué rutina ni qué
     /// progresión se siembra. `advice` es el veredicto ya resuelto, leído UNA vez por el llamador.
+    /// Qué rutina toca hoy, o nil en día de descanso / sin plan. El teléfono y el reloj preguntan
+    /// AQUÍ (FER-124): antes cada uno tenía su copia byte-idéntica del mismo `routineSchedule()` +
+    /// `WeeklySplit.todayRoutineId`, el mismo riesgo de divergencia que la siembra, un nivel arriba.
+    func todayRoutineId(weekday: Int = Calendar.current.component(.weekday, from: Date())) async -> String? {
+        guard let store = await storeHandle() else { return nil }
+        let sched = (try? await store.routineSchedule()) ?? []
+        let split = Dictionary(sched.map { ($0.weekday, $0.routineId) }, uniquingKeysWith: { a, _ in a })
+        return WeeklySplit.todayRoutineId(split: split, todayWeekday: weekday)
+    }
+
     func seedTodaySlots(routineId: String, advice: TrainingRegulation.Advice,
                         inventory: [PlateMath.PlateStock]) async -> [StrengthSessionModel.PlanSlot] {
         guard let store = await storeHandle() else { return [] }

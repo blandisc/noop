@@ -65,11 +65,8 @@ extension AppModel {
     /// Today's scheduled routine, or nil on a rest day / with no plan — the same resolution
     /// `EntrenarView.todayRoutine` uses (`WeeklySplit.todayRoutineId` over the stored weekly split).
     private func todayRoutineForWatch() async -> Routine? {
+        guard let tid = await repo.todayRoutineId() else { return nil }
         guard let store = await repo.storeHandle() else { return nil }
-        let sched = (try? await store.routineSchedule()) ?? []
-        let splitMap = Dictionary(sched.map { ($0.weekday, $0.routineId) }, uniquingKeysWith: { a, _ in a })
-        let weekday = Calendar.current.component(.weekday, from: Date())
-        guard let tid = WeeklySplit.todayRoutineId(split: splitMap, todayWeekday: weekday) else { return nil }
         return (try? await store.routines())?.first { $0.id == tid }
     }
 
