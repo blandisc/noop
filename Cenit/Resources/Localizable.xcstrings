@@ -31407,6 +31407,57 @@
         }
       }
     },
+    "matriz.guardian.scrub.calma" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ · at ease"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ · en calma"
+          }
+        }
+      }
+    },
+    "matriz.guardian.scrub.resp" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ · breathing out"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ · respiración fuera"
+          }
+        }
+      }
+    },
+    "matriz.guardian.scrub.temp" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ · temperature out"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ · temperatura fuera"
+          }
+        }
+      }
+    },
     "matriz.guardian.scrub.par" : {
       "extractionState" : "manual",
       "localizations" : {

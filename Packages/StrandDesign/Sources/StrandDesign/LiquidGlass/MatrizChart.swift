@@ -348,10 +348,13 @@ public struct MatrizColumnas: View {
                 .font(LiquidType.caption)
                 .foregroundColor(LiquidColor.tinta500)
                 .monospacedDigit()
+            // Cuando el dedo lee una de las dos últimas columnas, el cursor cruzaba el rótulo: el
+            // tag se pasa a la izquierda mientras tanto (FER-128, explorador r3).
+            let cursorALaDerecha = resaltado.map { $0 >= n - 2 } ?? false
             ctx.draw(ctx.resolve(tag),
-                     at: CGPoint(x: size.width - MatrizTokens.rielInset,
+                     at: CGPoint(x: cursorALaDerecha ? MatrizTokens.rielInset : size.width - MatrizTokens.rielInset,
                                  y: MatrizTokens.chartPadV),
-                     anchor: .topTrailing)
+                     anchor: cursorALaDerecha ? .topLeading : .topTrailing)
         }
         .frame(maxWidth: .infinity, minHeight: MatrizChartDraw.defaultHeight,
                idealHeight: MatrizChartDraw.defaultHeight)

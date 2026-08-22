@@ -159,7 +159,7 @@ extension LiquidHoyBuilder {
             let offsetDesdeFin = keys20.count - 1 - idx
             let fecha = weekdayLabel(offsetFromToday: offsetDesdeFin, now: i.now,
                                      calendar: i.calendar, formatter: diaFmt,
-                                     nocturna: prep?.isNightAnchored == true)
+                                     nocturna: prep?.isNightAnchored != false)
             guard let v = ptsFC[idx] else {
                 return .init(valor: "—",
                              sublabel: String(format: String(localized: "matriz.scrub.sinlectura",
@@ -386,10 +386,32 @@ extension LiquidHoyBuilder {
             // FER-118: mientras el dedo lee una noche, el subtítulo dice si el PAR votó esa
             // noche — y solo eso, y solo con el juicio del motor (`parFuera` de `nochesCostura`,
             // el arreglo SIN recortar: mismo índice que `keys20`; el recorte viene después).
-            let fecha = nochesCostura[idx].parFuera
-                ? String(format: String(localized: "matriz.guardian.scrub.par",
-                                        defaultValue: "%@ · both moved out together"), fechaSola)
-                : fechaSola
+            // …y si no votó el par, el estado de esa noche con la MISMA estructura que las gemelas
+            // («día · estado», FER-128 explorador r3): temperatura fuera / respiración fuera / en
+            // calma — solo sobre lo JUZGADO (|v| ≥ 1 tras el ancla del builder; `resp` nil = no
+            // juzgada, y sin ninguna juzgada solo la fecha).
+            let costuraNoche = nochesCostura[idx]
+            let tempFuera = (costuraNoche.temp.map { abs($0) >= 1 }) ?? false
+            let respFuera = (costuraNoche.resp.map { abs($0) >= 1 }) ?? false
+            let fecha: String = {
+                if costuraNoche.parFuera {
+                    return String(format: String(localized: "matriz.guardian.scrub.par",
+                                                 defaultValue: "%@ · both moved out together"), fechaSola)
+                }
+                if tempFuera {
+                    return String(format: String(localized: "matriz.guardian.scrub.temp",
+                                                 defaultValue: "%@ · temperature out"), fechaSola)
+                }
+                if respFuera {
+                    return String(format: String(localized: "matriz.guardian.scrub.resp",
+                                                 defaultValue: "%@ · breathing out"), fechaSola)
+                }
+                if costuraNoche.temp != nil || costuraNoche.resp != nil {
+                    return String(format: String(localized: "matriz.guardian.scrub.calma",
+                                                 defaultValue: "%@ · at ease"), fechaSola)
+                }
+                return fechaSola
+            }()
             let t = ptsTemp[idx].map { HoyGramatica.formatoDeltaTemp($0) }
             let r = ptsResp[idx].map { HoyGramatica.formatoResp($0) }
             switch (t, r) {
@@ -702,6 +724,17 @@ extension LiquidHoyBuilder {
         f.setLocalizedDateFormatFromTemplate("EEE")
         return f
     }
+    /// A partir de la segunda semana hacia atrás el día de la semana se repite («dom» dos o tres
+    /// veces en 14/20 noches): el rótulo lleva también el día del mes («dom 10»), como el eje de
+    /// Tendencias (FER-128, explorador r3).
+    static func weekdayDiaFormatter(locale: Locale, calendar: Calendar) -> DateFormatter {
+        let f = DateFormatter()
+        f.calendar = calendar
+        f.locale = locale
+        f.timeZone = calendar.timeZone
+        f.setLocalizedDateFormatFromTemplate("EEE d")
+        return f
+    }
 
     /// Rótulo del día para la noche a `offsetFromToday` días atrás. Hoy → «Today».
     /// `nocturna`: la serie es de NOCHES (Sueño, FC, guardián) y su último índice se llama «anoche»
@@ -717,6 +750,9 @@ extension LiquidHoyBuilder {
         }
         let start = calendar.startOfDay(for: now)
         let d = calendar.date(byAdding: .day, value: -offsetFromToday, to: start) ?? start
+        if offsetFromToday >= 7 {
+            return weekdayDiaFormatter(locale: formatter.locale, calendar: calendar).string(from: d)
+        }
         return formatter.string(from: d)
     }
 
@@ -916,14 +952,16 @@ extension LiquidHoyBuilder {
         // (espejo del gate fantasma del Cosmos — Grok #3).
         guard ptsFC.last.flatMap({ $0 }) != nil else {
             // Sin la noche pero con historia: «anoche · sin lectura», como su scrub (Q2-13).
-            guard ptsFC.contains(where: { $0 != nil }), prep?.isNightAnchored == true else { return nil }
+            guard ptsFC.contains(where: { $0 != nil }), prep?.isNightAnchored != false else { return nil }
             return String(format: String(localized: "matriz.scrub.sinlectura", defaultValue: "%@ · no reading"),
                           String(localized: "matriz.sueno.anoche", defaultValue: "last night"))
         }
         // Con lectura pero SIN veredicto real (nil/lowSignal) no se afirma rango — pero la gemela
         // Sueño sí dice «anoche» en ese caso: FC también (quisquilloso Q-15b), si es nocturna.
         guard let v = prep?.verdict, v != .lowSignal else {
-            return prep?.isNightAnchored == true
+            // `!= false`: como Sueño, que dice «anoche» salvo que el motor diga que la lectura es
+            // de DÍA (`insufficient`/`calibrating` dejaban a FC muda junto a su gemela — XC3-04).
+            return prep?.isNightAnchored != false
                 ? String(localized: "matriz.sueno.anoche", defaultValue: "last night") : nil
         }
         // FER-128 (dueño, captura a xxxLarge): con el aro puesto el sublabel quedaba VACÍO
