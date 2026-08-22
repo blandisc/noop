@@ -1524,8 +1524,11 @@ private struct EcosistemaListado: View {
 
     @ViewBuilder private func filaSenal(_ senal: LiquidHoyModel.Senal,
                                         etiqueta: String) -> some View {
+        // «62 lpm · fuera de tu rango», no «62 · lpm · fuera de tu rango»: la unidad va pegada
+        // al número (como la a11y de la misma señal y como el módulo de abajo) — el punto medio
+        // separa IDEAS, no número de unidad (dueño, captura a xxxLarge, FER-128).
         let contenido = fila(etiqueta,
-                             valor: senal.badge.map { "\($0.valor) · \($0.contexto)" }
+                             valor: senal.badge.map { "\($0.valor) \($0.contexto)" }
                                 ?? senal.valor ?? senal.caption,
                              fuera: senal.state == .atencion)
         if let onTapSenal {

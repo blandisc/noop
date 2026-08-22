@@ -872,7 +872,10 @@ extension LiquidHoyBuilder {
         // (espejo del gate fantasma del Cosmos — Grok #3).
         guard ptsFC.last.flatMap({ $0 }) != nil,
               let v = prep?.verdict, v != .lowSignal else { return nil }
-        if alerta != .ninguna { return nil }  // el aro ya habla; no duplicar.
+        // FER-128 (dueño, captura a xxxLarge): con el aro puesto el sublabel quedaba VACÍO
+        // mientras Sueño, su gemela, decía «anoche · fuera del rango recomendado» con el suyo, y
+        // el héroe listado decía «fuera de tu rango» para FC. El aro y las palabras dicen lo mismo
+        // a la vez — como en Sueño (antes: «el aro ya habla; no duplicar», FER-55).
         // El MISMO juicio por-día que usa el scrub (autonomicOut de hoy).
         guard let hoyOut = prep?.bodyHistory.last?.autonomicOut else { return nil }
         let estado = hoyOut
