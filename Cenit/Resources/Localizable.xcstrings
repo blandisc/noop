@@ -15995,23 +15995,6 @@
         }
       }
     },
-    "Build my week" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Build my week"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Armar mi semana"
-          }
-        }
-      }
-    },
     "Build your HIIT" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -16042,22 +16025,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Arma tu plan"
-          }
-        }
-      }
-    },
-    "Build your week to see today and your progress." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Build your week to see today and your progress."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Arma tu semana para ver tu día y tu progreso."
           }
         }
       }
@@ -23278,6 +23245,23 @@
         }
       }
     },
+    "Your plan is ready · first time with this routine" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your plan is ready · first time with this routine"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tu plan está listo · primera vez con esta rutina"
+          }
+        }
+      }
+    },
     "Fit from %lld days your iPhone also counted steps. Confidence: high." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -26940,23 +26924,6 @@
         }
       }
     },
-    "If you still want to train" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "If you still want to train"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Si aun así quieres entrenar"
-          }
-        }
-      }
-    },
     "If you turn it on there, your Apple Watch measures your heartbeat beat by beat far more often while you sleep. That density is what my nightly HRV reading needs. The morning verdict rides on your resting heart rate, with it or without it." : {
       "localizations" : {
         "en" : {
@@ -27131,7 +27098,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Importa el plan de tu IA"
+            "value" : "Importar tu plan de tu IA"
           }
         }
       }
@@ -27794,23 +27761,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "INTERVALOS"
-          }
-        }
-      }
-    },
-    "Intervals · 12 min" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Intervals · 12 min"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Intervalos · 12 min"
           }
         }
       }
@@ -35166,22 +35116,6 @@
         }
       }
     },
-    "No plan yet" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No plan yet"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aún no tienes un plan"
-          }
-        }
-      }
-    },
     "no prior %@" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -38526,23 +38460,6 @@
         }
       }
     },
-    "Or start without a plan" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Or start without a plan"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "O empieza sin plan"
-          }
-        }
-      }
-    },
     "Other" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -39482,23 +39399,6 @@
         }
       }
     },
-    "Pick a routine" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pick a routine"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Elegir una rutina"
-          }
-        }
-      }
-    },
     "Pick at least one exercise" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -40309,23 +40209,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "EMPUJE"
-          }
-        }
-      }
-    },
-    "push · pull · legs · full body, ready to edit" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "push · pull · legs · full body, ready to edit"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "empuje · tirón · pierna · cuerpo completo, listas para editar"
           }
         }
       }
@@ -42220,28 +42103,6 @@
         }
       }
     },
-    "The raises wait:" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Te esperan las subidas:"
-          }
-        }
-      }
-    },
-    "You can take them in the session." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Puedes tomarlas en la sesión."
-          }
-        }
-      }
-    },
     "and %lld more" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -42726,24 +42587,24 @@
         }
       }
     },
-    "The raise waits:" : {
+    "the raise waits" : {
       "extractionState" : "manual",
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Te espera la subida:"
+            "value" : "la subida espera"
           }
         }
       }
     },
-    "You can take it in the session." : {
+    "the raises wait" : {
       "extractionState" : "manual",
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Puedes tomarla en la sesión."
+            "value" : "las subidas esperan"
           }
         }
       }
@@ -43850,23 +43711,6 @@
         }
       }
     },
-    "Rest day today" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rest day today"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hoy descansas"
-          }
-        }
-      }
-    },
     "Rest day: your plan has no meals today. Come back tomorrow or use ‹ ›." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -44080,23 +43924,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Descansar también cuenta. Aquí no hay racha que perder."
-          }
-        }
-      }
-    },
-    "Resting doesn't break your streak. A planned rest day keeps it going." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Resting doesn't break your streak. A planned rest day keeps it going."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Descansar no rompe tu racha. Un día de descanso planeado la mantiene."
           }
         }
       }
@@ -48058,23 +47885,6 @@
         }
       }
     },
-    "Something went wrong opening your data." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Something went wrong opening your data."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Algo falló al abrir tus datos."
-          }
-        }
-      }
-    },
     "Source" : {
       "localizations" : {
         "en" : {
@@ -50004,23 +49814,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Unidad de temperatura"
-          }
-        }
-      }
-    },
-    "Template routines" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Template routines"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rutinas de plantilla"
           }
         }
       }
@@ -52152,6 +51945,17 @@
         }
       }
     },
+    "Today you keep:" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoy mantienes:"
+          }
+        }
+      }
+    },
     "Today you raise" : {
       "localizations" : {
         "es" : {
@@ -52174,39 +51978,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hoy subes a %@"
-          }
-        }
-      }
-    },
-    "Today you rest" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Today you rest"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hoy descansas"
-          }
-        }
-      }
-    },
-    "Today you rest. It counts too." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Today you rest. It counts too."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hoy descansas. También cuenta."
           }
         }
       }
@@ -55070,23 +54841,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No pudimos leer eso como un archivo de plan. Pega el resultado completo que te dio tu IA, o sube el .json."
-          }
-        }
-      }
-    },
-    "We couldn't read your routines" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "We couldn't read your routines"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No pudimos leer tus rutinas"
           }
         }
       }
@@ -60552,17 +60306,6 @@
         }
       }
     },
-    "Resumes the session you have open" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Retoma la sesión que tienes abierta"
-          }
-        }
-      }
-    },
     "Your routine for today stays put: this is separate, no guilt." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -60570,17 +60313,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tu rutina del día no se toca: esto es aparte, sin culpa."
-          }
-        }
-      }
-    },
-    "Continue %@" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Continuar %@"
           }
         }
       }
@@ -60786,6 +60518,279 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : ". De apoyo: "
+          }
+        }
+      }
+    },
+    "Today · your week marks" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today · your week marks"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoy · tu semana marca"
+          }
+        }
+      }
+    },
+    "Your week marks rest" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your week marks rest"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tu semana marca descanso"
+          }
+        }
+      }
+    },
+    "Your week marks rest · you woke up with a signal off" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your week marks rest · you woke up with a signal off"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tu semana marca descanso · amaneciste con una señal fuera"
+          }
+        }
+      }
+    },
+    "In progress · %lld min" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In progress · %lld min"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En curso · %lld min"
+          }
+        }
+      }
+    },
+    "exercise %lld of %lld · %lld sets done" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "exercise %lld of %lld · %lld sets done"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ejercicio %lld de %lld · %lld series hechas"
+          }
+        }
+      }
+    },
+    "last: %@ %@ × %lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "last: %@ %@ × %lld"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "última: %@ %@ × %lld"
+          }
+        }
+      }
+    },
+    "%lld sets done" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld sets done"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld series hechas"
+          }
+        }
+      }
+    },
+    "I couldn't read your plan" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I couldn't read your plan"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No pude leer tu plan"
+          }
+        }
+      }
+    },
+    "Something failed opening your routines · your data is intact" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Something failed opening your routines · your data is intact"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "algo falló al abrir tus rutinas · tus datos están intactos"
+          }
+        }
+      }
+    },
+    "Sets · 7d" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sets · 7d"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Series · 7 d"
+          }
+        }
+      }
+    },
+    "Tap a day" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap a day"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "toca un día"
+          }
+        }
+      }
+    },
+    "Build your week" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Build your week"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arma tu semana"
+          }
+        }
+      }
+    },
+    "Let's start" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Let's start"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Empecemos"
+          }
+        }
+      }
+    },
+    "Choose a template or build your own routine · Entrenar serves it to you every day after that" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a template or build your own routine · Entrenar serves it to you every day after that"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "elige una plantilla o crea tu rutina · después Entrenar te la sirve cada día"
+          }
+        }
+      }
+    },
+    "Build my plan" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Build my plan"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crear mi plan"
+          }
+        }
+      }
+    },
+    "Ready to edit" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ready to edit"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lista para editar"
+          }
+        }
+      }
+    },
+    "End session" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "End session"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Terminar sesión"
           }
         }
       }
