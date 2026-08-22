@@ -410,14 +410,16 @@ final class PreparacionDetalleModeloTests: XCTestCase {
                                                 to: Date(timeIntervalSince1970: 1_755_000_000)))
             let iniciales = PreparacionDetalleModelo.inicialesDesde(inicio, calendario: cal)
             XCTAssertEqual(iniciales.count, 7)
-            // Las columnas pares llevan etiqueta; las impares van en blanco (ritmo de la hermana).
-            for col in stride(from: 0, to: 7, by: 2) {
+            // Las SIETE columnas dicen su día real. Esta prueba fijaba antes el ritmo disperso
+            // de la hermana (impares en blanco); al pasar a siete iniciales cambié el código y
+            // olvidé la guarda, y CI la cazó. Es la afirmación más fuerte, no la más débil:
+            // ninguna columna puede quedar muda ni decir otro día.
+            for col in 0..<7 {
                 let dia = try XCTUnwrap(cal.date(byAdding: .day, value: col, to: inicio))
                 let esperado = simbolos[cal.component(.weekday, from: dia) - 1]
                 XCTAssertEqual(iniciales[col], esperado,
                                "columna \(col) con arranque \(corrimiento): dice «\(iniciales[col])» y ese día es \(esperado)")
             }
-            for col in stride(from: 1, to: 7, by: 2) { XCTAssertEqual(iniciales[col], "") }
         }
     }
 
