@@ -318,16 +318,18 @@ extension Repository {
 
     /// Work sets since `sinceTs`, already expanded to per-muscle `MuscleSetEvent`s (one per muscle each
     /// set hits, weighted by involvement, aged in whole local-calendar days from today). The shared
-    /// fetch-and-expand «Volume per muscle» (FER-719) feeds on; the muscle map (FER-350) keeps its own
-    /// loop because it also layers a recovery-reset filter and per-muscle exercise hits. Unknown
-    /// exercise ids are skipped.
-    func muscleSetEvents(sinceTs: Int) async -> [MuscleFatigueMap.MuscleSetEvent] {
+    /// fetch-and-expand «Volume per muscle» (FER-719) feeds on with `resetTs` left at its default (0,
+    /// no filter) — that reading intentionally ignores the manual recovery reset. `resetTs` is the
+    /// «mark all recovered» filter (FER-525, `MuscleFatigueMap`'s own doc): work sets before it never
+    /// become events. FER-131's «Músculos cargados» line passes it so the landing can't contradict
+    /// «Tu cuerpo» — the same reset the athlete just tapped there. Unknown exercise ids are skipped.
+    func muscleSetEvents(sinceTs: Int, resetTs: Int = 0) async -> [MuscleFatigueMap.MuscleSetEvent] {
         let rawSets = await recentWorkSets(sinceTs: sinceTs)
         let byId = Dictionary(await allExercises().map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
         let cal = Calendar.current
         let startToday = cal.startOfDay(for: Date())
         var events: [MuscleFatigueMap.MuscleSetEvent] = []
-        for set in rawSets {
+        for set in rawSets where set.startTs >= resetTs {
             guard let ex = byId[set.exerciseId] else { continue }
             let setDay = cal.startOfDay(for: Date(timeIntervalSince1970: TimeInterval(set.startTs)))
             let daysAgo = cal.dateComponents([.day], from: setDay, to: startToday).day ?? 0

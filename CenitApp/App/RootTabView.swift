@@ -117,7 +117,8 @@ struct RootTabView: View {
                 openWeeklyPlan: { trainStack.append(SecondaryScreen.weeklyPlan) },
                 openRoutines: { trainStack.append(SecondaryScreen.weeklyPlan) },
                 openRestDay: { trainStack.append(SecondaryScreen.restDay) },
-                openWorkoutSession: { trainStack.append($0) }
+                openWorkoutSession: { trainStack.append($0) },
+                openMuscleMap: { trainStack.append(MuscleVolumeRoute()) }
             )
             .barReservation(barHeight)
             .navigationDestination(for: SecondaryScreen.self) { screen in

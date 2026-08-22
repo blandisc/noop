@@ -369,7 +369,8 @@ struct TrainingBodyScreen: View {
         return MuscleLoadRow(
             name: MuscleAtlas.name(muscle),
             load: load?.relative ?? 0,
-            recency: state == .fresh ? "fresh" : (daysSinceLast == 0 ? "today" : "\(daysSinceLast) d ago"),
+            recency: state == .fresh ? "fresh"
+                : daysSinceLast == 0 ? "today" : daysSinceLast == 1 ? "yesterday" : "\(daysSinceLast) d ago",
             sets: load?.weeklySets ?? 0,
             isFresh: state == .fresh,
             action: { selected = MuscleSelection(muscle: muscle) }
@@ -920,7 +921,7 @@ private struct MuscleDetailView: View {
 
     private var lastText: LocalizedStringKey {
         guard let d = load?.daysSinceLast else { return "—" }
-        return d == 0 ? "today" : "\(d) d ago"
+        return d == 0 ? "today" : d == 1 ? "yesterday" : "\(d) d ago"
     }
 
     private var stateText: LocalizedStringKey {
