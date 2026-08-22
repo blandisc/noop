@@ -1026,6 +1026,8 @@ struct TodayView: View {
                                      }(),
                                      lecturasHoy: (rhr: resolveMeasured(todayOnly: true) { $0.restingHr.map(Double.init) } != nil,
                                                    sueno: resolveMeasured(todayOnly: true) { $0.totalSleepMin } != nil))
+        // (Entrenar usa `LiquidHoyBuilder.lecturasHoy(repo.today)`: Hoy además mira los días Apple
+        // vía `resolveMeasured`; sin banda son la misma fila.)
     }
 
     private var liquidActaTono: Color {

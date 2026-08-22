@@ -1079,6 +1079,23 @@
         }
       }
     },
+    "acta.sub.fc.sinbase" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "overnight · no base yet"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "de la noche · aún sin base"
+          }
+        }
+      }
+    },
     "acta.voto.sinjuicio" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -8727,7 +8744,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld %% despierto"
+            "value" : "%lld%% despierto"
           }
         }
       }
@@ -8744,7 +8761,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld%% de lo que necesitas"
+            "value" : "%lld%% de tu necesidad"
           }
         }
       }
@@ -8761,7 +8778,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld %% de tu necesidad, ritmo %@"
+            "value" : "%lld%% de tu necesidad, ritmo %@"
           }
         }
       }

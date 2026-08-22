@@ -140,6 +140,25 @@ final class ActaVotoDelParTests: XCTestCase {
                       "y dice quién votó de verdad: \(acta.conteo)")
     }
 
+    /// Con lectura cruda en pantalla y sin base para juzgarla, la fila dice «sin comparar»
+    /// (joya de calibrando), no «sin dato» — la gemela del `.sinJuicio` del dominó (FER-128 r11/r12).
+    func test_acta_lecturaSinBase_diceSinComparar_noSinDato() {
+        let prep = read(verdict: .lowSignal, autonomicOut: false, sleepOut: false, par: false,
+                        maturity: .calibrating, autonomicPossible: false)
+        // (El helper siempre da un driver de sueño; aquí solo el eje autonómico es `.noData`.)
+        let con = LiquidHoyBuilder.acta(prep: prep, lecturasHoy: (rhr: true, sueno: true))
+        XCTAssertEqual(con.filas[0].estado, .sinJuicio)
+        XCTAssertEqual(con.filas[0].palabra, String(localized: "acta.voto.sinjuicio", defaultValue: "not compared"))
+        XCTAssertEqual(con.filas[0].sub, String(localized: "acta.sub.fc.sinbase", defaultValue: "overnight · no base yet"),
+                       "el sub no puede decir «contra tu base» bajo «sin comparar»")
+        let sin = LiquidHoyBuilder.acta(prep: prep, lecturasHoy: (rhr: false, sueno: false))
+        XCTAssertEqual(sin.filas[0].estado, .sinLectura, "sin lectura cruda sigue siendo «sin dato»")
+        // Sin prep (nada llegó): con lectura cruda de sueño la fila de sueño también es «sin comparar».
+        let sinPrep = LiquidHoyBuilder.acta(prep: nil, lecturasHoy: (rhr: false, sueno: true))
+        XCTAssertEqual(sinPrep.filas[1].estado, .sinJuicio)
+        XCTAssertEqual(sinPrep.filas[0].estado, .sinLectura)
+    }
+
     /// Sin FC nocturna posible, la hoja entera tiene que contar la MISMA historia que el héroe:
     /// ni «Conociéndote», ni «tu base se está formando», ni «mañana la boleta se llena sola».
     func test_sinFCNocturnaPosible_todaLaHojaCuentaLaMismaHistoria() {

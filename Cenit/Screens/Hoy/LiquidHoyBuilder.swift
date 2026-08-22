@@ -1449,9 +1449,12 @@ enum LiquidHoyBuilder {
             // El sub ESPECIFICA el tipo de FC (revisión del dueño): «de la noche» deja claro
             // que es la FC en reposo derivada de la noche, no un promedio. El detalle completo
             // (Apple Watch / fallback) vive en «Cómo se calcula».
-            sub = votoEstado == .calibrando
-                ? String(localized: "learning your base")
-                : String(localized: "acta.sub.fc", defaultValue: "overnight · against your base")
+            switch votoEstado {
+            case .calibrando: sub = String(localized: "learning your base")
+            // «contra tu base» + «sin comparar» en la misma fila se contradecían (r12).
+            case .sinJuicio:  sub = String(localized: "acta.sub.fc.sinbase", defaultValue: "overnight · no base yet")
+            default:          sub = String(localized: "acta.sub.fc", defaultValue: "overnight · against your base")
+            }
         } else {
             // FER-44 (gate /cso): el sueño se juzga contra el rango RECOMENDADO de salud
             // (piso poblacional ~7h, Hirshkowitz 2015), NO contra base personal — usar base

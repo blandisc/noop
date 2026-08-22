@@ -214,7 +214,9 @@ private struct EntrenarLanding: View {
                 LiquidActaVeredicto(
                     LiquidHoyBuilder.acta(prep: repo.todayPreparedness,
                                           healthConnected: healthConnected,
-                                          verdictPending: repo.todayPreparedness == nil && !repo.fullyLoaded),
+                                          verdictPending: repo.todayPreparedness == nil && !repo.fullyLoaded,
+                                          // La misma lectura cruda que Hoy: «sin comparar», no «sin dato» (r12).
+                                          lecturasHoy: LiquidHoyBuilder.lecturasHoy(repo.today)),
                     // Sin «Ver más»: ese botón lleva a Tendencias, y la decisión del handoff es que
                     // esta hoja no cambia de pestaña. Un CTA de ancho completo que solo cierra la hoja
                     // promete un viaje que no ocurre (y su hint de VoiceOver lo dice en voz alta).

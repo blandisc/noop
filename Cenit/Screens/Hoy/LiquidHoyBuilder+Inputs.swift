@@ -8,6 +8,12 @@ import StrandModels
 // del builder recortan.
 
 extension LiquidHoyBuilder {
+    /// Las lecturas crudas de HOY para el acta, desde la fila del día: lo que Hoy y Entrenar
+    /// pasan a `acta(lecturasHoy:)` para que las dos hojas digan lo mismo (FER-128 r12).
+    static func lecturasHoy(_ today: DailyMetric?) -> (rhr: Bool, sueno: Bool) {
+        (rhr: today?.restingHr != nil, sueno: today?.totalSleepMin != nil)
+    }
+
 
     /// Entradas día-alineadas de la Matriz. Las ventanas §7 se recortan en el builder; aquí
     /// solo viaja el material crudo ya resuelto por Hoy.

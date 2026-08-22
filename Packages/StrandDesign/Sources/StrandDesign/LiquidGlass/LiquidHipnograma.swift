@@ -145,7 +145,6 @@ public struct LiquidHipnograma: View {
     /// En tallas de accesibilidad el eje de etapas CEDE: 60 pt no sostienen un nombre en
     /// AX5 sin recortarlo, y el contrato prohíbe texto cortado. Los nombres siguen vivos en
     /// la leyenda del caller y en `a11yValue` — que escala sin tope.
-    @Environment(\.dynamicTypeSize) private var tamanoTexto
     /// El vacío escala con Dynamic Type (FER-128 r11).
     @ScaledMetric(relativeTo: .footnote) private var cuerpoPt: CGFloat = LiquidType.cuerpoLecturaBase
 

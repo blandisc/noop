@@ -559,6 +559,11 @@ public struct LiquidVigilanteChip: View {
                   estado: .sinLectura, umbral: .minimo, fuera: false,
                   tonoVoto: LiquidColor.tinta500, palabra: "sin dato",
                   a11y: "Sueño, sin dato, según lo recomendado."),
+            // Leída pero sin base para compararla (r11): dibujo de calibrando, palabra propia.
+            .init(id: "auto2", glifo: .corazon, nombre: "FC en reposo", sub: "de la noche · aún sin base",
+                  estado: .sinJuicio, umbral: .rango, fuera: false,
+                  tonoVoto: LiquidColor.tinta500, palabra: "sin comparar",
+                  a11y: "FC en reposo, leída, todavía sin comparar, de la noche · aún sin base."),
         ])
     }
     .padding(LiquidSpace.s550)
