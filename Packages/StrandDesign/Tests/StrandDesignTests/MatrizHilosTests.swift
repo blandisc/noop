@@ -142,4 +142,11 @@ final class MatrizHilosTests: XCTestCase {
         XCTAssertEqual(tramos.count, 3, "50 · [60, 61] · 70")
         XCTAssertEqual(tramos.map(\.count), [1, 2, 1])
     }
+
+    /// FER-128 (explorador r2): con UNA lectura `xAt` la pone al FINAL del ancho útil — como la regla
+    /// y las columnas ponen a HOY — no al centro (el guardián y la regla se contradecían).
+    func test_xAt_unaSolaLectura_vaAlFinal() {
+        XCTAssertEqual(MatrizChartDraw.xAt(index: 0, count: 1, width: 300, inset: 8), 292, accuracy: 0.001)
+        XCTAssertEqual(MatrizChartDraw.xAt(index: 0, count: 1, width: 300), 300 - MatrizTokens.chartInset, accuracy: 0.001)
+    }
 }

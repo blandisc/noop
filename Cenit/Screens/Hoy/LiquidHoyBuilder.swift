@@ -265,8 +265,12 @@ enum LiquidHoyBuilder {
             pieTarjeta: pieVentana(prep: i.prep),
             nota: nota, notaAvisa: notaAvisa,
             reglaKicker: String(localized: "THE RULE"),
-            reglaTexto: String(localized: "A single signal out never pushes your day. Only the pair, two nights in a row."),
-            reglaClave: String(localized: "Only the pair, two nights in a row."),
+            // El motor vota la conjunción de UNA noche (`sentinelOut = tempOut && respOut`); la racha
+            // solo mueve el copy del chip. «Dos noches seguidas» era una regla que no existe
+            // (FER-128, explorador; coherente con el manual «Deciden» y el onboarding).
+            reglaTexto: String(localized: "guardian.regla.texto",
+                               defaultValue: "A single signal out never pushes your day. Only the pair, on the same night."),
+            reglaClave: String(localized: "guardian.regla.clave", defaultValue: "Only the pair, on the same night."),
             domino: dominoGuardian(prep: i.prep, estado: estado),
             metodo: .init(
                 titulo: String(localized: "How it's calculated"),   // #inject r5 · unifica el pie con la familia (era «How it was obtained»)
@@ -949,7 +953,12 @@ enum LiquidHoyBuilder {
         return .demotado(
             kicker: String(localized: "READINESS"),
             title: String(localized: "hero.title.calibrando", defaultValue: "Getting to know you"),
-            subtitle: String(localized: "Night \(noche) of \(total) · your range is taking shape"))
+            // «Noche 0 de 4» encima de «Noche registrada» se contradecía (FER-128, explorador):
+            // sin noches ÚTILES todavía, se dice eso.
+            subtitle: noche == 0
+                ? String(localized: "hero.sub.calibrando.cero",
+                         defaultValue: "No usable nights yet · your range takes shape with the next ones")
+                : String(localized: "Night \(noche) of \(total) · your range is taking shape"))
     }
 
     /// El conteo honesto de la calibración: noche actual (acotada) de las que el motor
@@ -1015,7 +1024,7 @@ enum LiquidHoyBuilder {
                       ? "h · " + String(localized: "matriz.sueno.rango.fuera.v2",
                                         defaultValue: "outside the recommended range")
                       : "h · " + String(localized: "matriz.sueno.rango.dentro",
-                                        defaultValue: "recommended range"))
+                                        defaultValue: "within the recommended range"))
             } : nil))
 
         // El TÉRMICO ya NO es un orbe: temperatura y respiración viven en la franja del guardián
@@ -1185,7 +1194,9 @@ enum LiquidHoyBuilder {
                 ? String(localized: "Above your base")
                 : String(localized: "Below your base")
         case .high: return String(localized: "Above your base")
-        case .noData, nil: return String(localized: "No data")
+        // `.noData` = el EJE no tiene veredicto, no «no hay lectura»: el módulo de abajo puede
+        // estar enseñando el número (FER-128, explorador: «Sin datos» sobre «50 lpm»).
+        case .noData, nil: return String(localized: "hero.caption.sinveredicto", defaultValue: "No verdict yet")
         }
     }
 

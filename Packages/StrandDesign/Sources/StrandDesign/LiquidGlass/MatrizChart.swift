@@ -172,7 +172,8 @@ enum MatrizChartDraw {
 
     static func xAt(index: Int, count: Int, width: CGFloat,
                     inset: CGFloat = MatrizTokens.chartInset) -> CGFloat {
-        guard count > 1 else { return width / 2 }
+        // Una sola lectura = HOY: al final del ancho útil, como la regla y las columnas (FER-128).
+        guard count > 1 else { return width - inset }
         let usable = max(width - inset * 2, 1)
         return inset + CGFloat(index) / CGFloat(count - 1) * usable
     }
@@ -313,7 +314,10 @@ public struct MatrizColumnas: View {
                     }
                     if noche.alerta != .ninguna {
                         let centro = CGPoint(x: x + colW / 2, y: size.height - h)
-                        MatrizChartDraw.dibujarAlerta(ctx, en: centro, radioBase: colW * 0.35,
+                        // El aro no puede ser más ancho que el paso entre columnas: dos noches
+                        // marcadas seguidas se cruzaban como un ocho (FER-128, explorador).
+                        let radioAro = min(colW * 0.35, (colW + gap) / 2 - MatrizTokens.aroGap - 0.5)
+                        MatrizChartDraw.dibujarAlerta(ctx, en: centro, radioBase: max(radioAro, 1),
                                                       alerta: noche.alerta)
                     }
                 }

@@ -977,6 +977,40 @@
         }
       }
     },
+    "guardian.regla.clave" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only the pair, on the same night."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Solo la pareja, la misma noche."
+          }
+        }
+      }
+    },
+    "guardian.regla.texto" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A single signal out never pushes your day. Only the pair, on the same night."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Una sola señal fuera nunca empuja tu día. Solo la pareja, la misma noche."
+          }
+        }
+      }
+    },
     "h" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3828,13 +3862,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "recommended range"
+            "value" : "within the recommended range"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "rango recomendado"
+            "value" : "dentro del rango recomendado"
           }
         }
       }
@@ -3883,6 +3917,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Llegaron las dos señales, pero el guardián todavía no las compara contra tu patrón."
+          }
+        }
+      }
+    },
+    "hero.caption.sinveredicto" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No verdict yet"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aún sin veredicto"
+          }
+        }
+      }
+    },
+    "hero.sub.calibrando.cero" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No usable nights yet · your range takes shape with the next ones"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aún sin noches útiles · tu rango se forma con las próximas"
           }
         }
       }
@@ -10441,23 +10509,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Una sola puede ser el cuarto, la cobija o la noche. El guardián espera."
-          }
-        }
-      }
-    },
-    "A single signal out never pushes your day. Only the pair, two nights in a row." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "A single signal out never pushes your day. Only the pair, two nights in a row."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Una sola señal fuera nunca empuja tu día. Solo la pareja, dos noches seguidas."
           }
         }
       }
@@ -30737,13 +30788,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "One signal out of your range, and I tell you which."
+            "value" : "One signal out, and I tell you which."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Una señal fuera de tu rango: te digo cuál."
+            "value" : "Una señal fuera: te digo cuál."
           }
         }
       }
@@ -31589,6 +31640,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%1$@, %2$d lecturas"
+          }
+        }
+      }
+    },
+    "matriz.scrub.anoche" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last night"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "anoche"
           }
         }
       }
@@ -37375,23 +37443,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Solo sube"
-          }
-        }
-      }
-    },
-    "Only the pair, two nights in a row." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Only the pair, two nights in a row."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Solo la pareja, dos noches seguidas."
           }
         }
       }

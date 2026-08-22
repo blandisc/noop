@@ -79,7 +79,7 @@ extension LiquidHoyBuilder {
         // /cso), no contra tu base — así lo dice el acta y su hoja. La Matriz decía «in your
         // range» / «out of your range» (rango personal) para la misma noche.
         let enRangoSueno = String(localized: "matriz.sueno.rango.dentro",
-                                  defaultValue: "recommended range")
+                                  defaultValue: "within the recommended range")
         // SIN DIRECCIÓN (adversarial, segunda vuelta): el eje de sueño sale por `isOut`, que es
         // `.low || .high`. Sobre una noche de 9 h el rótulo «abajo del recomendado» afirmaba lo
         // contrario de lo que pasó, y `bodyHistory` no expone el lado — así que el rótulo dice
@@ -708,7 +708,9 @@ extension LiquidHoyBuilder {
     static func weekdayLabel(offsetFromToday: Int, now: Date, calendar: Calendar,
                              formatter: DateFormatter, nocturna: Bool = false) -> String {
         if offsetFromToday == 0 {
-            return nocturna ? String(localized: "matriz.sueno.anoche", defaultValue: "last night")
+            // Clave propia del scrub («Last night», como «Wed»): la prosa del módulo sigue en
+            // `matriz.sueno.anoche` («last night»). En es las dos van en minúscula, como «mié».
+            return nocturna ? String(localized: "matriz.scrub.anoche", defaultValue: "Last night")
                             : String(localized: "matriz.scrub.hoy", defaultValue: "Today")
         }
         let start = calendar.startOfDay(for: now)

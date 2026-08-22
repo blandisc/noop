@@ -89,6 +89,13 @@ private struct ScrubPanRepresentable: UIGestureRecognizerRepresentable {
         func gestureRecognizerShouldBegin(_ recognizer: UIGestureRecognizer) -> Bool {
             guard habilitado, let pan = recognizer as? UIPanGestureRecognizer else { return false }
             let v = pan.velocity(in: pan.view)
+            // Con velocidad muestreada (0, 0) —un arrastre deliberadamente lento o un toque
+            // inyectado— decide la TRASLACIÓN; `0 > 0` era falso y el scrub nunca arrancaba
+            // (FER-128, explorador). Sin ninguna de las dos, no arranca (el scroll manda).
+            guard v != .zero else {
+                let t = pan.translation(in: pan.view)
+                return t != .zero && abs(t.x) > abs(t.y)
+            }
             return abs(v.x) > abs(v.y)
         }
 
