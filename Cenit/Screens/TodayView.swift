@@ -340,6 +340,7 @@ struct TodayView: View {
             // A plain swipe-to-close leaves `pendingSeeMore` nil, so nothing extra happens.
             .sheet(item: $metricDetail, onDismiss: { pendingSeeMore?(); pendingSeeMore = nil }) { info in
                 metricSheet(for: info)
+                    .topeTextoHoja()
             }
             // FER-953: precompute the sleep summary model off-main when the sleep info sheet opens.
             .task(id: metricDetail?.id) {
@@ -371,15 +372,18 @@ struct TodayView: View {
                 SleepDetailScreen(theme: theme, model: item.model,
                                   sinPermiso: health.auth != .authorized && health.auth != .unavailable)
                     .recEntranceGate()
+                    .topeTextoHoja()
             }
             .sheet(item: $strainDetail) { item in
                 StrainDetailScreen(theme: theme, model: item.model, estimated: item.estimated)
                     .recEntranceGate()
+                    .topeTextoHoja()
             }
             .sheet(item: $skinTempDetail) { item in
                 SkinTempDetailScreen(theme: theme, model: item.model,
                                      loadWarmingMagnitudes: { await repo.nocturnalWarmingMagnitudes() })
                     .recEntranceGate()
+                    .topeTextoHoja()
             }
             .sheet(item: $stressDetail) { item in
                 // SAME rich detail Cuerpo presents — the «mapa del día» (chart + moments) + patterns,
@@ -393,6 +397,7 @@ struct TodayView: View {
                                    eventPatternsLoader: { await StressDayMapPresenter.eventPatterns(
                                        repo: repo, map: stressDayMap) })
                     .recEntranceGate()
+                    .topeTextoHoja()
             }
             .sheet(item: $metricSpec) { spec in
                 MetricDetailScreen(
@@ -415,6 +420,7 @@ struct TodayView: View {
                     todayKey: Repository.localDayKey(Date())
                 )
                 .recEntranceGate()
+                .topeTextoHoja()
             }
             .sheet(item: $trainingLoadItem) { item in
                 // Hoja «Carga de entrenamiento» (FER-705 · handoff «Carga» · FER-33 F2) —
@@ -423,6 +429,7 @@ struct TodayView: View {
                 TrainingLoadSheet(model: item.model, theme: theme,
                                   onSeeTrends: item.onSeeTrends)
                     .recEntranceGate()
+                    .topeTextoHoja()
             }
             .enableInjection()   // Inject: ver la nota en `inject` arriba (no-op en Release)
     }
@@ -672,6 +679,7 @@ struct TodayView: View {
             .environmentObject(repo)
             .environmentObject(health)
             .preferredColorScheme(.light)
+            .topeTextoHoja()
         }
         // El acta del veredicto: la hoja que contesta la pregunta que el héroe provoca.
         .sheet(isPresented: $showVeredictoActa) {
@@ -685,6 +693,7 @@ struct TodayView: View {
                 })
             }
             .preferredColorScheme(.light)
+            .topeTextoHoja()
         }
         // La hoja del guardián: qué vigila (temp + respiración) y por qué no vota (FER-33 · F3).
         .sheet(isPresented: $showGuardianHoja) {
@@ -697,6 +706,7 @@ struct TodayView: View {
                     respLoader: trendLoader(for: "resp_rate"))
             }
             .preferredColorScheme(.light)
+            .topeTextoHoja()
         }
         // FER-54 · El manual del modelo: «¿Qué decide tu día?» — estático y pedagógico,
         // en tinta neutra (no toma el tono del veredicto: no habla de hoy).
@@ -705,6 +715,7 @@ struct TodayView: View {
                 HojaDecideTuDia()
             }
             .preferredColorScheme(.light)
+            .topeTextoHoja()
         }
         // FER-61 · El manual «Tu contexto»: el hogar único del «no deciden tu día».
         .sheet(isPresented: $showContextoManual) {
@@ -712,6 +723,7 @@ struct TodayView: View {
                 HojaContexto()
             }
             .preferredColorScheme(.light)
+            .topeTextoHoja()
         }
         // La hoja del eje autonómico: el desglose de sus tres señales.
         .sheet(isPresented: $showAutonomicoHoja) {
@@ -719,6 +731,7 @@ struct TodayView: View {
                 LiquidAutonomicoScreen(liquidAutonomico)
             }
             .preferredColorScheme(.light)
+            .topeTextoHoja()
         }
     }
 
@@ -1844,3 +1857,13 @@ private struct LiquidGuardianHojaHost: View {
 }
 #endif
 
+// MARK: - Tope de Dynamic Type en las hojas (FER-394 · FER-128 r8)
+
+private extension View {
+    /// FER-394 capó Dynamic Type en xxxLarge para TODA la app («no prometemos los 5 tamaños
+    /// gigantes de Accesibilidad»). Un `.sheet` abre una rama de entorno nueva y NO hereda ese
+    /// tope: las hojas de Hoy salían a AX3 mientras Hoy se quedaba en xxxLarge —dos políticas
+    /// en la misma pantalla, y leyendas/selectores/chips partiendo palabras (FER-128 r8,
+    /// explorador XC8-02…06/10). Mismo tope, re-aplicado al contenido de cada hoja.
+    func topeTextoHoja() -> some View { dynamicTypeSize(...DynamicTypeSize.xxxLarge) }
+}

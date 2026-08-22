@@ -994,6 +994,40 @@
         }
       }
     },
+    "guardian.hoja.nunca.conteo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "With no night recorded yet, the guardian has nothing to compare against."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todavía sin ninguna noche registrada, el guardián no tiene con qué comparar."
+          }
+        }
+      }
+    },
+    "guardian.hoja.nunca.nota" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sleep with your Apple Watch and tomorrow it starts watching."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Duerme con tu Apple Watch y mañana empieza a vigilar."
+          }
+        }
+      }
+    },
     "guardian.hoja.racha.noche" : {
       "extractionState" : "manual",
       "localizations" : {

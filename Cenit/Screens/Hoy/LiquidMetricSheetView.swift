@@ -648,17 +648,13 @@ struct LiquidMetricSheetView: View {
         return String(localized: String.LocalizationValue(clave))
     }
 
-    /// B6 · ¿La noche que la hoja PINTA es la de anoche? Se ancla en el día en que la noche
-    /// EMPEZÓ: dormirse a las 23:38 de ayer o a la 1:00 de hoy son las dos formas normales
-    /// de «anoche» (0 o 1 día de distancia); a partir de dos, la noche es vieja.
+    /// B6 · ¿La noche que la hoja PINTA es la de anoche? La noche se llama por su día de
+    /// DESPERTAR en toda la app (`displayDays`, el scrub, `selloAnoche`, `weekdayLabel(nocturna:)`):
+    /// «anoche» es la noche que TERMINÓ hoy. Anclarla al inicio (≤ 1 día) llamaba «anoche» a una
+    /// noche que empezó y terminó AYER (00:30→07:30) y la sellaba con la fecha de hoy (FER-128 r8).
     private var nocheEsDeAnoche: Bool {
         guard let night = nocheSueno else { return false }
-        let cal: Calendar = Calendar.current
-        let inicio: Date = Self.fecha(night.startTs)
-        let dias: Int? = cal.dateComponents([.day],
-                                            from: cal.startOfDay(for: inicio),
-                                            to: cal.startOfDay(for: Date())).day
-        return (dias ?? 0) <= 1
+        return Calendar.current.isDateInToday(Self.fecha(night.endTs))
     }
 
     /// «7:12» desde minutos (paridad `sleepHM` :510-512).

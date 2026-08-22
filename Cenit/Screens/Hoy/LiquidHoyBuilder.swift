@@ -159,7 +159,8 @@ enum LiquidHoyBuilder {
     static func guardianHoja(_ i: GuardianHojaInputs) -> LiquidGuardianHoja {
         let estado = i.guardian?.estado ?? .sinLectura
         let (nivel, sinLectura, conteo, nota, notaAvisa, enPatron) =
-            copyGuardian(estado: estado, guardian: i.guardian, locale: i.locale, prep: i.prep)
+            copyGuardian(estado: estado, guardian: i.guardian, locale: i.locale, prep: i.prep,
+                         hayHistoria: !i.tempTrend.isEmpty || !i.respTrend.isEmpty)
         // Sin lectura no se afirma la noche (el mismo contrato de procedencia que `origenSufijo`).
         let sello: String? = estado == .sinLectura ? nil : selloAnoche(now: i.now, calendar: i.calendar, locale: i.locale)
         let tempFuera = estado == .tempFuera || estado == .juntas
@@ -299,7 +300,8 @@ enum LiquidHoyBuilder {
         estado: LiquidHoyModel.Guardian.Estado,
         guardian: LiquidHoyModel.Guardian?,
         locale: Locale = .current,
-        prep: Preparedness.Read?
+        prep: Preparedness.Read?,
+        hayHistoria: Bool = true
     ) -> (nivel: String?, sinLectura: String?, conteo: String,
           nota: String?, notaAvisa: Bool, enPatron: Bool) {
         switch estado {
@@ -335,6 +337,17 @@ enum LiquidHoyBuilder {
                     String(localized: "The guardian doesn't diagnose: it only eases your pace."),
                     true, false)
         case .sinLectura:
+            // Sin NINGUNA noche en la historia el chip dice «Aún no hay lecturas»; la hoja no puede
+            // decir «anoche» ni «vuelve a vigilar» sobre un guardián que nunca vigiló (FER-128 r8).
+            guard hayHistoria else {
+                return (nil,
+                        String(localized: "No readings yet"),
+                        String(localized: "guardian.hoja.nunca.conteo",
+                               defaultValue: "With no night recorded yet, the guardian has nothing to compare against."),
+                        String(localized: "guardian.hoja.nunca.nota",
+                               defaultValue: "Sleep with your Apple Watch and tomorrow it starts watching."),
+                        false, false)
+            }
             return (nil,
                     String(localized: "No reading last night"),
                     String(localized: "With no night recorded, the guardian has nothing to compare against."),
@@ -342,7 +355,10 @@ enum LiquidHoyBuilder {
                     false, false)
         case .incompleto:
             // Dos razones distintas, una sola cosa que decir: todavía no hay juicio completo.
-            if prep == nil {
+            // «Leyendo tu noche» solo mientras de verdad se carga (sin guardián aún): con las dos
+            // lecturas presentes y sin juicio, el chip ya dice «Todavía sin comparar» y la hoja no
+            // puede prometer «un momento» que nunca termina (FER-128 r8, `insufficient`).
+            if prep == nil, guardian == nil {
                 return (nil,
                         String(localized: "Reading your night"),
                         String(localized: "One moment: the guardian is still reading your signals."),

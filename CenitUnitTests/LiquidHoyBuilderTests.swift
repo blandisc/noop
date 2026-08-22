@@ -293,10 +293,18 @@ final class LiquidHoyBuilderTests: XCTestCase {
 
     func test_guardianHoja_sinLecturas_noAfirmaEnPatron() {
         let g = LiquidHoyBuilder.guardian(prep: nil, thermalDeviation: nil, resp: nil, nightKey: nil)
+        // Sin historia (ninguna noche jamás) la hoja dice lo mismo que el chip: «Aún no hay
+        // lecturas» — no «anoche» ni «vuelve a vigilar» (FER-128 r8, XC8-11).
         let hoja = LiquidHoyBuilder.guardianHoja(g)
         XCTAssertNil(hoja.nivel, "sin lecturas no hay palabra de patrón")
-        XCTAssertEqual(hoja.sinLectura, String(localized: "No reading last night"))
+        XCTAssertEqual(hoja.sinLectura, String(localized: "No readings yet"))
         XCTAssertFalse(hoja.enPatron)
+        // Con historia, la noche que faltó es ANOCHE.
+        var i = LiquidHoyBuilder.GuardianHojaInputs(guardian: g, prep: nil)
+        i.tempTrend = [(fecha: Date(timeIntervalSince1970: 1_700_000_000), valor: 0.2)]
+        let conHistoria = LiquidHoyBuilder.guardianHoja(i)
+        XCTAssertEqual(conHistoria.sinLectura, String(localized: "No reading last night"))
+        XCTAssertNil(conHistoria.sello, "sin lectura no se sella la noche")
     }
 
     // MARK: El guardián no puede afirmar más de lo que el motor sabe (FER-33 · gate /qa)
@@ -421,12 +429,12 @@ final class LiquidHoyBuilderTests: XCTestCase {
         XCTAssertFalse(hoja([], guardian: g).enPatron)
     }
 
-    /// Sin NINGUNA lectura sí es «sin lectura anoche»: ese caso no se tocó.
+    /// Sin NINGUNA lectura sí es «sin lectura»: ese caso no se tocó (sin historia → «aún no»).
     func test_guardian_ningunaLectura_sigueSiendoSinLectura() {
         let g = LiquidHoyBuilder.guardian(prep: prep([]), thermalDeviation: nil, resp: nil, nightKey: nil)
         XCTAssertEqual(g?.estado, .sinLectura, "sin ninguna de las dos, ese y no otro")
         let h = hoja([], guardian: g)
-        XCTAssertEqual(h.sinLectura, String(localized: "No reading last night"))
+        XCTAssertEqual(h.sinLectura, String(localized: "No readings yet"))
         XCTAssertNil(h.nivel, "y sin palabra de patrón")
     }
 
