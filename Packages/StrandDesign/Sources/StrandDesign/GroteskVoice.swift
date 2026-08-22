@@ -167,6 +167,12 @@ public extension InstrumentoType {
     /// header (Sesión v21), one size down from the dominant clock — 22/700 tabular, shares the −1 tracking.
     static let groteskSessionClockInline = groteskNumber(22)
 
+    /// La cabecera COMPACTA de la sesión en vivo (FER-133, handoff «Sesión en vivo» v4): el reloj
+    /// comparte una sola fila de 36 pt con el disco de minimizar, el ♥ y «Terminar» — un escalón más
+    /// chico que el reloj en línea del header v21 (22 pt). 15/700 tabular, tracking −0.2.
+    static let groteskSessionClockCompact = groteskNumber(15)
+    static let groteskSessionClockCompactTracking: CGFloat = -0.2
+
     /// The rest card's live datum — the pulse dropping toward the threshold, or the time countdown
     /// («116» / «1:12») — 38/600 tabular, tracking −0.8. FIXED.
     static let groteskRestPulse = groteskNumber(38, weight: .semibold)

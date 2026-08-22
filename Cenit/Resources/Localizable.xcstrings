@@ -60602,6 +60602,38 @@
         }
       }
     },
+    "exercise %lld of %lld · in progress" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "exercise %lld of %lld · in progress"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ejercicio %lld de %lld · en curso"
+          }
+        }
+      }
+    },
+    "paused" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "paused"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "pausada"
+          }
+        }
+      }
+    },
     "last: %@ %@ × %lld" : {
       "extractionState" : "manual",
       "localizations" : {
