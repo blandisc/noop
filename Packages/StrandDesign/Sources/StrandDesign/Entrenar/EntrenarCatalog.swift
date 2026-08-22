@@ -108,10 +108,10 @@ public struct EntrenarCatalogView: View {
                 }
 
                 section("BARRA DE SESIÓN") {
-                    SessionStatsBar(volume: "4,880", sets: "12", pulse: "128", onPause: {}, onFocus: {})
-                    SessionStatsBar(volume: "4,880", sets: "12", onPause: {}, onFocus: {})
+                    SessionStatsBar(volume: "4,880", sets: "12", pulse: "128", onFocus: {})
+                    SessionStatsBar(volume: "4,880", sets: "12", onFocus: {})
                     SessionStatsBar(volume: "12,480", sets: "24", pulse: "96", isPaused: true,
-                                    onPause: {}, onFocus: {})
+                                    onFocus: {})
                 }
 
                 section("SEMANA") {

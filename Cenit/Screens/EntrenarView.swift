@@ -19,6 +19,26 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 // line); everything else is ink on paper. Navigation is owned by the tab's `NavigationStack` in
 // RootTabView; the landing pushes via the injected closures and hosts the guided session + sheets here.
 
+/// La boleta del veredicto de Hoy, compartida por la landing de Entrenar (FER-85) y la cabecera de la
+/// sesión en vivo (FER-133): el MISMO `LiquidActaVeredicto` con el MISMO contexto, para que ninguna
+/// de las dos pantallas pueda contar el día distinto. Sin «Ver más»: ninguna de las dos cambia de
+/// pestaña desde aquí, solo cierran la hoja.
+struct VeredictoActaSheet: View {
+    let prep: Preparedness.Read?
+    let healthConnected: Bool
+    let fullyLoaded: Bool
+
+    var body: some View {
+        LiquidMetricSheet(tono: LiquidHoyBuilder.actaTono(prep), detent: .porContenido) {
+            LiquidActaVeredicto(
+                LiquidHoyBuilder.acta(prep: prep, healthConnected: healthConnected,
+                                      verdictPending: prep == nil && !fullyLoaded),
+                onVerMas: nil)
+        }
+        .preferredColorScheme(.light)
+    }
+}
+
 struct EntrenarView: View {
     /// Inject: los hooks de recarga en caliente van AQUÍ y no en `EntrenarLanding`. Swift emite los
     /// miembros de un tipo `private` como símbolos locales, y `-interposable` solo puede interponer
@@ -267,21 +287,13 @@ private struct EntrenarLanding: View {
         // que sirve Hoy, así que las dos pantallas no pueden divergir ni en la tabla ni en la
         // gráfica de cajas. «Ver más» cierra la hoja sin cambiar de pestaña.
         .sheet(isPresented: $showVeredictoActa) {
-            LiquidMetricSheet(tono: LiquidHoyBuilder.actaTono(repo.todayPreparedness),
-                              detent: .porContenido) {
-                // El MISMO contexto que Hoy le pasa a su acta: sin `healthConnected` la hoja afirmaba
-                // «anoche no llegó nada» a quien simplemente no ha conectado Salud, y sin él las dos
-                // pantallas contaban historias distintas del mismo día — justo lo que este épico mata.
-                LiquidActaVeredicto(
-                    LiquidHoyBuilder.acta(prep: repo.todayPreparedness,
-                                          healthConnected: healthConnected,
-                                          verdictPending: repo.todayPreparedness == nil && !repo.fullyLoaded),
-                    // Sin «Ver más»: ese botón lleva a Tendencias, y la decisión del handoff es que
-                    // esta hoja no cambia de pestaña. Un CTA de ancho completo que solo cierra la hoja
-                    // promete un viaje que no ocurre (y su hint de VoiceOver lo dice en voz alta).
-                    onVerMas: nil)
-            }
-            .preferredColorScheme(.light)
+            // El MISMO contexto que Hoy le pasa a su acta: sin `healthConnected` la hoja afirmaba
+            // «anoche no llegó nada» a quien simplemente no ha conectado Salud, y sin él las dos
+            // pantallas contaban historias distintas del mismo día — justo lo que este épico mata.
+            // `VeredictoActaSheet` (compartida con `LiveStrengthSheet`, FER-133) es el único sitio que
+            // arma este contenido, para que las dos pantallas no puedan divergir.
+            VeredictoActaSheet(prep: repo.todayPreparedness, healthConnected: healthConnected,
+                               fullyLoaded: repo.fullyLoaded)
         }
         // First-use «Rutinas de plantilla» (mock 5a): the grouped templates list. «Add to my routines»
         // is the only action here (no `onStart`), so a copy lands in «My routines» and the landing
@@ -1721,21 +1733,12 @@ private struct EntrenarLanding: View {
             healthConnected: healthConnected,
             verdictPending: repo.todayPreparedness == nil && !repo.fullyLoaded,
             hasPlan: todayRoutine != nil) {
-            EntrenarHilo(tone: hiloTono(hilo.tono),
+            EntrenarHilo(tone: hilo.tono.entrenarTone,
                          word: LocalizedStringKey(hilo.palabra),
                          advice: hilo.consejo.map { LocalizedStringKey($0) },
                          hint: "Opens today's ballot") {
                 showVeredictoActa = true
             }
-        }
-    }
-
-    private func hiloTono(_ t: LiquidHoyBuilder.HiloEntrenar.Tono) -> EntrenarHilo.Tone {
-        switch t {
-        case .claro:    return .clear
-        case .atencion: return .caution
-        case .alerta:   return .ease
-        case .hueco:    return .hollow
         }
     }
 
@@ -1887,3 +1890,19 @@ private struct EntrenarLanding: View {
 }
 
 #endif
+
+// MARK: - El tono del hilo, una sola vez
+
+extension LiquidHoyBuilder.HiloEntrenar.Tono {
+    /// El mapeo `Tono` → `EntrenarHilo.Tone` que comparten la landing (`hiloDelVeredicto`) y la
+    /// cabecera de la sesión en vivo (`LiveStrengthSheet`, FER-133). Una sola definición: antes
+    /// vivía copiada en los dos archivos.
+    var entrenarTone: EntrenarHilo.Tone {
+        switch self {
+        case .claro:    return .clear
+        case .atencion: return .caution
+        case .alerta:   return .ease
+        case .hueco:    return .hollow
+        }
+    }
+}

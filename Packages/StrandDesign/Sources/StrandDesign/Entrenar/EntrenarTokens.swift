@@ -87,6 +87,20 @@ public enum EntrenarMetrics {
     public static let currentEdge: CGFloat = 2
     /// Alto de la barra de progreso de la sesión.
     public static let progressBar: CGFloat = 3
+    /// Radio de esquina de la barra de progreso de la sesión (FER-133, handoff «Sesión en vivo» v4).
+    public static let progressBarRadius: CGFloat = 2
+    /// Margen horizontal de la cabecera compacta, la barra de progreso y el hilo de la sesión en vivo
+    /// (FER-133, handoff «Sesión en vivo» v4: «padding 30 20 0» / «margen 12 20 0»). Distinto de
+    /// `CenitMetrics.screenPadding` (24) que usa el resto de esta misma pantalla (resumen, listas) —
+    /// esta cabecera compacta es una franja angosta de 36 pt, no el cuerpo de la hoja.
+    public static let sessionHeaderMarginH: CGFloat = 20
+    /// Aire sobre la cabecera compacta de la sesión en vivo, antes de la fila «‹»/título/reloj
+    /// (FER-133, handoff «Sesión en vivo» v4: «padding 30 20 0»).
+    public static let sessionHeaderPaddingTop: CGFloat = 30
+    /// Aire bajo la cabecera compacta (FER-133, handoff «Sesión en vivo» v4: «padding 30 20 0» — el
+    /// último número es el margen inferior). Cero: el bloque de abajo (barra, hilo o la primera fila
+    /// de la lista) ya trae su propio aire superior, así que un segundo colchón aquí lo duplicaría.
+    public static let sessionHeaderPaddingBottom: CGFloat = 0
     /// Ancho del subrayado de tinta bajo el numeral en curso (`SetTable.badge`).
     public static let badgeUnderline: CGFloat = 16
     /// Cuánto baja el subrayado de tinta respecto al numeral (`SetTable.badge`).
@@ -131,11 +145,22 @@ public enum EntrenarMetrics {
     public static let orbeLanding: CGFloat = 15.5
     public static let orbeSesion: CGFloat = 11
     public static let orbeHoja: CGFloat = 20
+    /// El radio del orbe del hilo compacto en la cabecera de la SESIÓN EN VIVO del iPhone (FER-133,
+    /// handoff «Sesión en vivo» v4: «EntrenarHilo(radio: EntrenarMetrics.orbeSesion = 32)»). Distinto
+    /// de `orbeSesion` (11): ese token es el radio del hilo en la cara del Apple Watch
+    /// (`WatchSessionRootView`, ~40 mm), una superficie mucho más chica que esta cabecera de iPhone —
+    /// reusarlo aquí dejaba el orbe visiblemente chico junto al título de 16 pt y el resto de la
+    /// cabecera de 36 pt.
+    public static let orbeSesionCabecera: CGFloat = 32
     /// El aro punteado que ocupa el lugar del orbe cuando no hay lectura.
     public static let aroHueco: CGFloat = 22
     /// El punto de identidad de familia. UN tamaño, no dos: antes de FER-86 este punto estaba
     /// copiado seis veces en crudo por la app, la mitad a 8 pt y la mitad a 9.
     public static let familyDot: CGFloat = 9
+    /// El punto de familia en la cabecera COMPACTA de la sesión en vivo (FER-133, handoff «Sesión
+    /// en vivo» v4): más chico que el punto de fila (9) porque acompaña un título de 16 pt en una
+    /// sola línea de 36 pt de alto, no una fila de lista.
+    public static let familyDotCompact: CGFloat = 6
     /// El aro de papel que lo recorta cuando cae sobre un fondo ocupado (una miniatura, una tarjeta).
     public static let familyDotKnockout: CGFloat = 15
     /// Cuánto se indenta el subtítulo de una fila bajo un `EntrenarFamilyDot`, para que quede
@@ -283,6 +308,26 @@ public extension View {
     }
 }
 
+/// El título de la cabecera COMPACTA de la sesión en vivo (FER-133, handoff «Sesión en vivo» v4):
+/// 16 pt / 700, tracking −0.3 — un escalón bajo `groteskScreenTitle` (25 pt), porque esta cabecera
+/// ahora comparte fila con el disco de minimizar, el reloj y «Terminar» en vez de ocupar su propia
+/// línea.
+public extension View {
+    func entrenarSessionHeaderTitle() -> some View {
+        self.font(InstrumentoType.grotesk(16, weight: .bold, relativeTo: .callout))
+            .tracking(-0.3)
+    }
+}
+
+/// La etiqueta de «Terminar» en la cabecera compacta de la sesión en vivo (FER-133): 12 pt / 600,
+/// sin tracking — es una palabra LEÍDA («Terminar»), no un rótulo en mayúsculas, así que no lleva
+/// el tracking abierto de `entrenarCabeceraKicker`.
+public extension View {
+    func entrenarSessionEndLabel() -> some View {
+        self.font(InstrumentoType.grotesk(12, weight: .semibold, relativeTo: .caption))
+    }
+}
+
 #if DEBUG
 #Preview("Entrenar · cabecera kicker") {
     Text(verbatim: "Entrenar · Sáb 15 ago")
@@ -346,6 +391,7 @@ public struct EntrenarFamilyDot: View {
 
     private let estilo: AnyShapeStyle
     private let sobreFondo: Bool
+    private let size: CGFloat
 
     @Environment(\.instrumentoTheme) private var theme
 
@@ -353,20 +399,23 @@ public struct EntrenarFamilyDot: View {
     ///   - estilo: el tinte ya resuelto. `AnyShapeStyle` y no `Color` porque «cuerpo completo» se
     ///     pinta con un degradado que cruza dos familias.
     ///   - sobreFondo: `true` añade el aro de papel que lo recorta sobre un fondo ocupado.
-    public init(_ estilo: AnyShapeStyle, sobreFondo: Bool = false) {
+    ///   - size: el diámetro del punto. Por omisión `EntrenarMetrics.familyDot` (9) — el tamaño de
+    ///     fila; la cabecera compacta de la sesión en vivo pasa `EntrenarMetrics.familyDotCompact`.
+    public init(_ estilo: AnyShapeStyle, sobreFondo: Bool = false, size: CGFloat = EntrenarMetrics.familyDot) {
         self.estilo = estilo
         self.sobreFondo = sobreFondo
+        self.size = size
     }
 
     /// Atajo para el caso normal: un color plano.
-    public init(_ color: Color, sobreFondo: Bool = false) {
-        self.init(AnyShapeStyle(color), sobreFondo: sobreFondo)
+    public init(_ color: Color, sobreFondo: Bool = false, size: CGFloat = EntrenarMetrics.familyDot) {
+        self.init(AnyShapeStyle(color), sobreFondo: sobreFondo, size: size)
     }
 
     public var body: some View {
         Circle()
             .fill(estilo)
-            .frame(width: EntrenarMetrics.familyDot, height: EntrenarMetrics.familyDot)
+            .frame(width: size, height: size)
             .background {
                 if sobreFondo {
                     Circle().fill(theme.paper)

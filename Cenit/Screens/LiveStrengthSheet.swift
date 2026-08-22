@@ -143,6 +143,9 @@ struct LiveStrengthSheet: View {
     /// The terminal «Nothing to save» result card for discarding an empty session (FER-894 · Estados 2).
     @State private var nothingToSave = false
     @State private var saveError = false
+    /// El hilo compacto de la cabecera (FER-133): la MISMA hoja del acta de Hoy que abre el hilo de
+    /// la landing (`EntrenarView.showVeredictoActa`) — dos puertas, un solo destino.
+    @State private var showVeredictoActa = false
     /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
     @ObserveInjection private var inject
 
@@ -318,6 +321,12 @@ struct LiveStrengthSheet: View {
             .sheet(item: $changeExercise) { target in
                 bodyChangeSheet(target)
             }
+            // El hilo compacto de la cabecera (FER-133) abre la MISMA hoja del acta de Hoy que
+            // `EntrenarView.hiloDelVeredicto` — mismo modelo y misma vista, para que la sesión y la
+            // landing nunca puedan contar el día distinto.
+            .sheet(isPresented: $showVeredictoActa) {
+                bodyVeredictoActaSheet
+            }
             // r15: durante el modo foco estos cuatro presentadores externos se SILENCIAN (binding
             // constante nil) — el cover cuelga sus propias copias adentro; dos presentadores vivos
             // sobre el mismo estado peleaban la presentación y tumbaban el foco a la pantalla base.
@@ -409,6 +418,14 @@ struct LiveStrengthSheet: View {
         )
         .instrumentoTheme(theme).preferredColorScheme(.light)
         .presentationBackground(theme.paper)
+    }
+
+    /// La boleta del veredicto (FER-133): `VeredictoActaSheet`, la MISMA vista que
+    /// `EntrenarView.showVeredictoActa` — dos call sites, un solo oráculo.
+    private var bodyVeredictoActaSheet: some View {
+        VeredictoActaSheet(prep: model.repo.todayPreparedness,
+                           healthConnected: model.healthBridge?.auth == .authorized,
+                           fullyLoaded: model.repo.fullyLoaded)
     }
 
     @ViewBuilder
@@ -1199,10 +1216,10 @@ struct LiveStrengthSheet: View {
             onStep: { keypadStep(cell) },
             onPlates: { openPlates(ei: ei, si: si) },
             onHide: { withAnimation(.snappy(duration: 0.22)) { activeCell = nil } },
-            // La MISMA pausa que la barra de estado, no una segunda: el teclado ocupa el sitio de
-            // esa barra, así que sin esto el control desaparece justo mientras registras una serie
-            // — que es exactamente cuando te interrumpen. Una decisión, dos superficies del mismo
-            // borde inferior.
+            // La MISMA pausa que la cabecera (FER-133), no una segunda: cuando el teclado está
+            // abierto la cabecera queda lejos del pulgar, y sin esto el control se aleja justo
+            // mientras registras una serie — que es exactamente cuando te interrumpen. Una
+            // decisión (`alternarPausa`), dos superficies.
             onPause: alternarPausa,
             isPaused: session.paused
         )
@@ -1323,175 +1340,248 @@ struct LiveStrengthSheet: View {
         switch ref { case let .weight(e, s): return (e, s); case let .reps(e, s): return (e, s) }
     }
 
-    // MARK: _LiveHead (FER-929 — replaces the old `sessionHeader`: nav + title + live counters)
+    // MARK: _LiveHead (FER-929 — cabecera COMPACTA desde FER-133, handoff «Sesión en vivo» v4)
 
     private var liveHead: some View {
-        VStack(alignment: .leading, spacing: CenitMetrics.gap) {
-            // Nav row: minimize «‹» (session stays alive, the pill re-opens it) · live/paused pulse.
-            HStack(spacing: 10) {
-                // FER-998: el mismo disco que el resto de la app. El rol es `.back` (chevron) pero
-                // NO vuelve: minimiza — la sesión sigue viva y la píldora la reabre. Por eso el
-                // label de VoiceOver es suyo y no el «Atrás» del componente.
-                BackButton(role: .back, theme: theme) { model.strengthSheetPresented = false }
-                    .accessibilityLabel(Text("Minimize session"))
-                Spacer(minLength: 8)
-                HStack(spacing: 6) {
-                    // Canvas pass 2026-07-15: recording-red and STILL — a state lamp, not a heartbeat
-                    // (the pulsing ember dot read as «loading»; owner call).
-                    Circle().fill(session.paused ? theme.inkDim : theme.critical)
-                        .frame(width: 8, height: 8)
-                    Text(session.paused ? "Paused" : "In progress")
-                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                }
-                .accessibilityElement(children: .combine)
-            }
-            .padding(.leading, -2)   // el disco de 40 vive en un marco de 44: solo 2pt de aire que recuperar
-
-            // Title, underlined solid `ink` (not the dotted neutral rule reserved for table values).
-            // Canvas pass 2026-07-15: sin subrayado — el peso de la tipografía basta (owner call).
-            // FER-952 (A2): the overline ABOVE the title retired — the title gets the full width and
-            // its meta rides BELOW as its own line (family dot · exercises · sets · done).
-            // FER-952: same title voice as the editor (Grotesk screen title) — the two screens are
-            // one instrument in two moments.
-            Text(isEmptyAdHoc ? String(localized: "Quick strength") : session.routineName)
-                .font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking)
-                .foregroundStyle(theme.ink)
-                .lineLimit(1).minimumScaleFactor(0.7)
-
+        VStack(alignment: .leading, spacing: 0) {
+            sessionHeaderRow
+            // Barra 3pt en el tinte de la rutina (FER-133 · V4) — reemplaza el desglose por ejercicio
+            // de FER-929: el handoff la simplifica a «% ejercicios hechos», y el desglose ya se lee en
+            // el riel de la lista de abajo (doble contabilidad). No hay plan en ad-hoc.
             if !isEmptyAdHoc {
-                HStack(spacing: 8) {
-                    HStack(spacing: 5) {
-                        EntrenarFamilyDot(sessionRegion.tint(theme))
-                        if let word = sessionRegionWord { Text(word) }
-                    }
-                    Text("\(session.activeExercises.count) exercises · \(sessionSetsTotal) sets · \(session.doneCount) done")
-                        .monospacedDigit()
-                }
-                .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                .accessibilityHidden(true)   // the progress bar's a11y value already tells this story
+                sessionProgressStrip.padding(.top, CenitMetrics.gap)
             }
-
-            // Metrics: clock (dims + freezes while paused, FER-823) · BPM (strap-only, never «♥ --») ·
-            // done/total · Spacer · Pausa/Reanuda + Terminar (or Discard for an empty ad-hoc session).
-            HStack(alignment: .firstTextBaseline, spacing: 10) {
-                TimelineView(.periodic(from: Date(), by: 1)) { ctx in
-                    let elapsed = session.elapsedSeconds(now: ctx.date)
-                    Text(Self.clock(elapsed))
-                        .font(InstrumentoType.groteskSessionClockInline)
-                        .tracking(InstrumentoType.groteskSessionClockTracking)
-                        .foregroundStyle(session.paused ? theme.inkTertiary : theme.ink)
-                        // r22: los dígitos RUEDAN en vez de parpadear — misma voz que el descanso.
-                        .contentTransition(.numericText())
-                        .animation(.default, value: elapsed)
-                        .accessibilityLabel(Text(session.paused ? "Paused at \(Self.clock(elapsed))"
-                                                                 : "Elapsed \(Self.clock(elapsed))"))
-                        // r20 (auditoría UX #3): el trait le dice a VoiceOver que NO re-anuncie
-                        // cada tick — el usuario lo consulta, el reloj no lo interrumpe.
-                        .accessibilityAddTraits(.updatesFrequently)
-                }
-                // FER-86: el pulso bajó a la barra de estado con la pausa (decisión #6, variante A).
-                // Estaba aquí Y allá abajo sería decirlo dos veces en la misma pantalla.
-                // r20 (auditoría UX #6a): el progreso estaba por TRIPLICADO (texto + filete + barra
-                // inferior) — fuera el textual; el filete de abajo y los contadores ya lo cuentan.
-                Spacer(minLength: 8)
-                headActionButtons
-            }
-
-            // Per-exercise progress, a 3px filete (FER-823: no hue while paused). No plan in ad-hoc.
-            if !isEmptyAdHoc {
-                SessionProgressBar(segments: progressSegments,
-                                   hue: session.paused ? theme.inkDim : theme.dataStrain,
-                                   track: theme.hairline, height: 3)
-                    // anim r7: el llenado del segmento se anima al palomear (antes saltaba).
-                    .animation(StrandMotion.gentle, value: session.doneCount)
-                    .accessibilityLabel(Text("Session progress"))
-                    .accessibilityValue(Text("\(session.doneCount) of \(sessionSetsTotal) sets"))
-            }
-
+            // El hilo compacto del veredicto (FER-133): SOLO con lighter/recover, silencio en lo demás.
+            hiloCompacto
             // The Apple Watch mirror status (FER-742) — drawn ONLY when the watch fails.
             watchStatusLine
         }
-        .padding(.horizontal, CenitMetrics.screenPadding)
-        .padding(.top, 14)
-        .padding(.bottom, 12)
+        .padding(.horizontal, EntrenarMetrics.sessionHeaderMarginH)
+        .padding(.top, EntrenarMetrics.sessionHeaderPaddingTop)
+        .padding(.bottom, EntrenarMetrics.sessionHeaderPaddingBottom)
         .background(theme.paper)
         // Canvas pass 2026-07-15: the bottom hairline under the progress bar is gone — the whitespace
         // and the rail thread separate head from list on their own (owner call, punto 6).
     }
 
-    /// The session's movement region (push/pull/legs), classified from its runs' exercises — the same
-    /// single-source rule every routine surface uses (FER-898). Feeds the header's meta dot (A2).
-    private var sessionRegion: RoutineRegion? {
-        let per = session.runs.map { run in
-            ExerciseCatalog.all.first(where: { $0.id == run.exerciseId })?.primaryMuscles ?? []
+    /// La fila de la cabecera compacta: «‹» minimiza · punto de familia + título · sub «ejercicio N de
+    /// M · en curso» / «pausada» a la izquierda; ♥ (solo con FC viva) · reloj · pausa · «Terminar» a
+    /// la derecha — todo en una sola fila de 36 pt de alto (handoff «Sesión en vivo» v4).
+    private var sessionHeaderRow: some View {
+        HStack(spacing: CenitMetrics.space2) {
+            // FER-998: el mismo gesto de siempre. El rol es minimizar (chevron) pero NO vuelve:
+            // la sesión sigue viva y la píldora la reabre. Por eso el label de VoiceOver es suyo.
+            sessionHeaderDisc("chevron.left", label: Text("Minimize session")) {
+                model.strengthSheetPresented = false
+            }
+            VStack(alignment: .leading, spacing: CenitMetrics.space1) {
+                HStack(spacing: CenitMetrics.space2) {
+                    // Sin rutina (sesión rápida) no hay familia que señalar: el punto se calla,
+                    // igual que el subtítulo de abajo.
+                    if !isEmptyAdHoc {
+                        EntrenarFamilyDot(railTint, size: EntrenarMetrics.familyDotCompact)
+                    }
+                    Text(isEmptyAdHoc ? String(localized: "Quick strength") : session.routineName)
+                        .entrenarSessionHeaderTitle()
+                        .foregroundStyle(theme.ink)
+                        .lineLimit(1).minimumScaleFactor(0.8)
+                }
+                if !isEmptyAdHoc {
+                    sessionHeaderSubtitle
+                        .font(StrandFont.footnote)
+                        .foregroundStyle(theme.inkTertiary)
+                        .lineLimit(1).minimumScaleFactor(0.8)   // mismo criterio que el título
+                }
+            }
+            Spacer(minLength: CenitMetrics.space2)
+            sessionHeaderHeartRate
+            sessionHeaderClock
+            if let alternarPausa {
+                sessionHeaderDisc(session.paused ? "play.fill" : "pause.fill",
+                                   label: Text(session.paused ? "Resume session" : "Pause session"),
+                                   glyph: .inline, action: alternarPausa)
+            }
+            sessionHeaderEndButton
         }
-        return RoutineClassifier.classify(primaryMusclesPerExercise: per)
     }
 
-    /// The region as a quiet word next to the dot («push» / «pull» / «legs» / «full body»).
-    /// Claves con prefijo `muscleGroup.` — las mismas del planificador semanal. La clave DESNUDA «Push»
-    /// choca con el botón «Push» del catálogo, que localiza a «Sube», así que la píldora de la sesión
-    /// activa acababa diciendo «● Sube» en vez de «● Empuje» (bug Fer 2026-07-18).
-    private var sessionRegionWord: LocalizedStringKey? {
-        switch sessionRegion {
-        case .push: return "muscleGroup.push"
-        case .pull: return "muscleGroup.pull"
-        case .legs: return "muscleGroup.legs"
-        case .fullBody: return "muscleGroup.fullBody"
-        case nil: return nil
+    /// «ejercicio 2 de 6 · en curso» / «pausada» (copy.md «Sesión en vivo»). Solo con ejercicios reales.
+    private var sessionHeaderSubtitle: Text {
+        session.paused
+            ? Text("paused")
+            : Text("exercise \(activeExercisePosition) of \(session.activeExercises.count) · in progress")
+    }
+
+    /// La posición (base 1) del ejercicio activo entre los NO saltados — mismo criterio que
+    /// `session.activeExercises`, la fuente que ya usa el navegador de plan.
+    private var activeExercisePosition: Int {
+        (session.activeExercises.firstIndex { $0.index == accordionIndex } ?? 0) + 1
+    }
+
+    /// ♥ 118 — SOLO con FC viva (Apple Watch conectado). SIN punto animado a propósito (decisión del
+    /// dueño): el numeral ya es la señal de vida, un segundo indicador parpadeando al lado no añade
+    /// nada y compite con el reloj.
+    @ViewBuilder private var sessionHeaderHeartRate: some View {
+        if let bpm = model.watchBpm {
+            // El numeral es 13 pt, por debajo del piso de 24 en que el ADN permite el hue saturado en
+            // texto — el mismo tono de lectura que `SessionStatsBar` ya usa para este mismo hue.
+            let tone = OKLab.darkened(theme.dataHeart, toContrast: 4.5, against: theme.paper)
+            HStack(spacing: CenitMetrics.space1) {
+                Image(systemName: "heart.fill").font(StrandFont.glyph(.chevron))
+                Text("\(bpm)").font(StrandFont.subhead.weight(.semibold))
+            }
+            .foregroundStyle(tone)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text("Heart rate \(bpm) beats per minute"))
         }
     }
 
-    /// r21 (deuda front): los botones-cápsula del header salen de UNA fábrica — misma gramática
-    /// (surface + hairlineStrong), solo cambia el contenido. r24 (owner): altura FIJA en vez de
-    /// padding vertical — Pausar (SF subhead) y Terminar (Grotesk) tienen métricas de fuente
-    /// distintas y sus cápsulas salían de tamaños diferentes.
-    ///
-    /// El cromo ya no vive aquí: es `headerCapsule(_:)` de StrandDesign, el mismo que viste a la
-    /// acción con nombre de las barras (Guardar). Esto queda solo como el envoltorio de botón.
-    private func headerCapsule<Content: View>(action: @escaping () -> Void,
-                                              @ViewBuilder content: () -> Content) -> some View {
+    private var sessionHeaderClock: some View {
+        TimelineView(.periodic(from: Date(), by: 1)) { ctx in
+            let elapsed = session.elapsedSeconds(now: ctx.date)
+            Text(Self.clock(elapsed))
+                .font(InstrumentoType.groteskSessionClockCompact)
+                .tracking(InstrumentoType.groteskSessionClockCompactTracking)
+                .foregroundStyle(session.paused ? theme.inkTertiary : theme.ink)
+                // r22: los dígitos RUEDAN en vez de parpadear — misma voz que el descanso.
+                .contentTransition(.numericText())
+                .animation(.default, value: elapsed)
+                .accessibilityLabel(Text(session.paused ? "Paused at \(Self.clock(elapsed))"
+                                                         : "Elapsed \(Self.clock(elapsed))"))
+                // r20 (auditoría UX #3): el trait le dice a VoiceOver que NO re-anuncie cada tick —
+                // el usuario lo consulta, el reloj no lo interrumpe.
+                .accessibilityAddTraits(.updatesFrequently)
+        }
+    }
+
+    /// Un disco de 36 «papel + canto» (handoff «Sesión en vivo» v4): mismo lenguaje que `BackButton`
+    /// (papel + filo `hairlineStrong`), al tamaño compacto de esta cabecera — comparte fila con el
+    /// reloj y «Terminar», y el disco de 40 de `BackButton` la desbordaba.
+    /// `glyph`: `.chevron` (12) para el «‹» de minimizar, que SÍ es un chevron; `.inline` (15) para
+    /// ❚❚/▶, el mismo tamaño con que el teclado dibuja la otra cara de `alternarPausa`.
+    private func sessionHeaderDisc(_ symbol: String, label: Text, glyph: StrandFont.GlyphSize = .chevron,
+                                   action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            content().headerCapsule(theme)
+            Image(systemName: symbol)
+                .font(StrandFont.glyph(glyph, weight: .semibold))
+                .foregroundStyle(theme.ink)
+                .frame(width: EntrenarMetrics.secondaryButton, height: EntrenarMetrics.secondaryButton)
+                .background(Circle().fill(theme.paper))
+                .overlay(Circle().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                .frame(width: EntrenarMetrics.row, height: EntrenarMetrics.row)   // 44 pt de toque
+                .contentShape(Circle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(EntrenarPressStyle())
+        .accessibilityLabel(label)
     }
 
-    /// La acción de la cabecera. UNA, no tres: «Terminar» siempre, o «Descartar» mientras la sesión
-    /// ad hoc sigue vacía.
-    ///
-    /// Antes (FER-823) la cabecera se reconfiguraba entera según `session.paused`: pausada mostraba
-    /// «Reanudar», corriendo mostraba «❚❚ + Terminar», vacía mostraba «Descartar». Eso hacía bailar
-    /// el botón de Terminar bajo el dedo justo cuando más lo quieres quieto. El control de pausa se
-    /// mudó a la barra de estado (decisión #6 del épico, variante A) y la cabecera se calló.
-    @ViewBuilder private var headActionButtons: some View {
+    /// «Terminar» siempre, o «Descartar» mientras la sesión ad hoc sigue vacía — la misma regla que
+    /// el header a pantalla completa tenía antes de FER-133, ahora en la píldora compacta.
+    @ViewBuilder private var sessionHeaderEndButton: some View {
         if isEmptyAdHoc {
-            headerCapsule(action: { discardEmptySession() }) {
-                Text("Discard").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+            sessionHeaderPill(Text("Discard"), accessibilityLabel: Text("Discard workout")) {
+                discardEmptySession()
             }
-            .accessibilityLabel(Text("Discard workout"))
         } else {
-            // r20 (auditoría UX #6d + owner): Terminar-y-guardar es el acto constructivo esperado —
-            // vestirlo de alarma desensibilizaba el rojo del Descartar real. Tinta, voz Grotesk.
-            headerCapsule(action: { finishTapped() }) {
-                Text("Finish").font(InstrumentoType.grotesk(15, weight: .semibold)).foregroundStyle(theme.ink)
+            sessionHeaderPill(Text("Finish"), accessibilityLabel: Text("Finish workout")) {
+                finishTapped()
             }
-            .accessibilityLabel(Text("Finish workout"))
         }
     }
+
+    /// La píldora «papel + canto» de 36 pt de alto de la cabecera — mismo lenguaje que
+    /// `sessionHeaderDisc`, en cápsula en vez de círculo.
+    private func sessionHeaderPill(_ label: Text, accessibilityLabel: Text, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            label
+                .entrenarSessionEndLabel()
+                .foregroundStyle(theme.ink)
+                .padding(.horizontal, CenitMetrics.receiptPadding)
+                .frame(height: EntrenarMetrics.secondaryButton)
+                .background(Capsule().fill(theme.paper))
+                .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+        }
+        .buttonStyle(EntrenarPressStyle())
+        .frame(minHeight: CenitMetrics.touchTarget)   // 44 pt de toque sobre el dibujo de 36
+        .contentShape(Capsule())
+        .accessibilityLabel(accessibilityLabel)
+    }
+
+    // MARK: - Barra de progreso (FER-133 · V4)
+
+    private var sessionProgressStrip: some View {
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                RoundedRectangle(cornerRadius: EntrenarMetrics.progressBarRadius, style: .continuous)
+                    .fill(theme.hairline)
+                RoundedRectangle(cornerRadius: EntrenarMetrics.progressBarRadius, style: .continuous)
+                    .fill(session.paused ? theme.inkDim : railTint)
+                    .frame(width: geo.size.width * sessionProgressFraction)
+            }
+        }
+        .frame(height: EntrenarMetrics.progressBar)
+        .animation(StrandMotion.gentle, value: sessionProgressFraction)
+        .accessibilityElement()
+        .accessibilityLabel(Text("Session progress"))
+        .accessibilityValue(Text("\(Int((sessionProgressFraction * 100).rounded())) percent complete"))
+    }
+
+    /// Ejercicios NO saltados ya completados: el índice ya quedó atrás, o todas sus series están
+    /// hechas. A diferencia de `railState`, NO antepone «es el activo»: para un % de barra, el
+    /// ejercicio abierto con todas sus series palomeadas ya cuenta como hecho (el borde se adelanta
+    /// una fracción, que es lo honesto para el progreso).
+    private var doneExerciseCount: Int {
+        session.activeExercises.filter { entry in
+            entry.index < session.currentIndex || entry.run.sets.allSatisfy(\.done)
+        }.count
+    }
+
+    /// % de ejercicios hechos (hechos/total) — 0 al inicio de la sesión, 1 cuando todos cierran.
+    private var sessionProgressFraction: CGFloat {
+        let total = session.activeExercises.count
+        guard total > 0 else { return 0 }
+        return CGFloat(doneExerciseCount) / CGFloat(total)
+    }
+
+    // MARK: - Hilo compacto del veredicto (FER-133 · V4)
+
+    /// SOLO cuando el día tiene algo que decir Y lo dice conteniendo la subida (`lighter`/`recover`):
+    /// `TrainingRegulation.explainsHeldRaise` es exactamente ese criterio (`speaks && !allowsRaise`).
+    /// Con `planAsIs`/`silent`/`pending` el hilo calla — el handoff dice «en verde, silencio», y el
+    /// veredicto ya se dijo una vez en la landing (`EntrenarView.hiloDelVeredicto`).
+    @ViewBuilder private var hiloCompacto: some View {
+        if TrainingRegulation.explainsHeldRaise(model.repo.trainingAdvice),
+           let hilo = LiquidHoyBuilder.hiloEntrenar(
+               prep: model.repo.todayPreparedness,
+               nights: model.repo.todayPreparedness?.autonomicNights ?? 0,
+               healthConnected: model.healthBridge?.auth == .authorized,
+               verdictPending: model.repo.todayPreparedness == nil && !model.repo.fullyLoaded,
+               hasPlan: !isEmptyAdHoc) {
+            EntrenarHilo(tone: hilo.tono.entrenarTone,
+                         word: LocalizedStringKey(hilo.palabra),
+                         advice: hilo.consejo.map { LocalizedStringKey($0) },
+                         radio: EntrenarMetrics.orbeSesionCabecera,
+                         hint: "Opens today's ballot") {
+                showVeredictoActa = true
+            }
+            // `CenitMetrics.gap` (12), no `space2` (8) como en `EntrenarView.hiloDelVeredicto`: ahí el
+            // hilo abre la landing y separa del héroe de la sesión; aquí separa de la barra de
+            // progreso de 3 pt — un elemento más delgado pide más aire para no leerse pegado.
+            .padding(.top, CenitMetrics.gap)
+        }
+    }
+
 
     // MARK: - La barra de estado (FER-86 · E5 — ahora es `SessionStatsBar`, la pieza de E2)
     //
     // La barra dejó de dibujarse a mano: monta `SessionStatsBar` del paquete, que se construyó en
-    // E2 con este mismo contrato (volumen · series · pulso · pausa · foco) y llevaba desde entonces
+    // E2 con este mismo contrato (volumen · series · pulso · foco) y llevaba desde entonces
     // sin un solo call site en la app.
     //
-    // Y con ella baja EL CONTROL DE PAUSA, que vivía en la cabecera. Es la decisión #6 del épico,
-    // variante A: «cabecera de una línea, solo reloj y Terminar; el pulso y la pausa bajan a la
-    // barra de estado». La cabecera deja de reconfigurarse entera según `session.paused` — un
-    // intercambio que hacía bailar el botón de Terminar bajo el dedo justo cuando más lo quieres
-    // quieto. `model.pauseStrengthSession()` y `model.resumeStrengthSessionFromPause()` son las
-    // mismas llamadas: solo cambia quién las dispara.
+    // FER-133: el control de pausa VUELVE a la cabecera (arriba) — el teclado conserva el suyo
+    // (`keypad(for:)`, sin cambios), y esta barra se queda solo con volumen · series · pulso · foco.
+    // `model.pauseStrengthSession()` y `model.resumeStrengthSessionFromPause()` son las mismas
+    // llamadas de siempre: solo cambia quién las dispara.
 
     private var statsBar: some View {
         SessionStatsBar(
@@ -1503,15 +1593,14 @@ struct LiveStrengthSheet: View {
             sets: "\(session.doneCount)/\(sessionSetsTotal)",
             pulse: model.watchBpm.map { "\($0)" },
             isPaused: session.paused,
-            onPause: alternarPausa,
             onFocus: puedeEnfocar ? { focusMode = true } : nil
         )
         .accessibilityElement(children: .contain)
     }
 
-    /// Pausar o reanudar, según toque. Una sola definición para las DOS superficies del borde
-    /// inferior (la barra de estado y el teclado, que se turnan el mismo sitio): así no pueden
-    /// divergir ni quedar una sin la otra. `nil` cuando no hay sesión que pausar.
+    /// Pausar o reanudar, según toque. Una sola definición para las DOS superficies que la disparan
+    /// (la cabecera y el teclado, que se turnan el borde inferior): así no pueden divergir ni quedar
+    /// una sin la otra. `nil` cuando no hay sesión que pausar.
     private var alternarPausa: (() -> Void)? {
         guard puedeControlarPausa else { return nil }
         return {
@@ -2249,17 +2338,6 @@ struct LiveStrengthSheet: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 14).padding(.vertical, 12)
             .background(theme.paper.opacity(StrandOpacity.tintFillStrong), in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
-        }
-    }
-
-    /// One progress segment per non-skipped exercise: width ∝ its set count, fill = fraction of its sets done.
-    private var progressSegments: [SessionProgressBar.Segment] {
-        session.runs.filter { !$0.skipped }.map { run in
-            let total = max(run.sets.count, 1)
-            let done = run.sets.filter(\.done).count
-            // r7 (owner): cada segmento en el hue de SU ejercicio (familia push/pull/legs).
-            return .init(sets: total, done: Double(done) / Double(total),
-                         tint: session.paused ? nil : categoryTint(run))
         }
     }
 
