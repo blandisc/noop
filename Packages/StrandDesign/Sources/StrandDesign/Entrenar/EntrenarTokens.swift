@@ -211,6 +211,31 @@ public enum EntrenarMetrics {
     /// fila del héroe (handoff «Ritmo 1b»/FER-132 ronda 2): antes un `16` suelto se repetía en los
     /// tres héroes (rutina, descanso, sesión viva) sin nombre.
     public static let ctaRowGap: CGFloat = 16
+
+    // MARK: - «QUEDABAN» (RIR) del teclado propio (FER-134, handoff «Sesión en vivo»)
+
+    /// El botón del segmento 0 · 1 · 2 · 3 · 4+ (`SessionKeypad.rirRow`): más chico que
+    /// `CenitMetrics.touchTarget` (44) a propósito — son cinco botones apretados en una sola
+    /// píldora dentro de la fila del teclado, no un blanco táctil aislado; la fila entera (padding +
+    /// alto) supera el mínimo de toque.
+    public static let rirButton: CGFloat = 30
+    /// El separador vertical entre botones del segmento RIR.
+    public static let rirDivider: CGFloat = 18
+    /// El grosor del divisor entre botones y del borde de la píldora del segmento RIR (revisión ronda
+    /// 4, hallazgo menor): antes tomaba prestado `cellUnderline`, cuyo contrato documentado es el
+    /// subrayado de una celda de la tabla, no un hairline genérico de borde/divisor.
+    public static let rirHairline: CGFloat = 1
+
+    /// El aire vertical del contenedor exterior de la banda de descanso (`RestBand`), FER-134 ronda 2:
+    /// antes un `10` suelto (heredado de la banda vieja) se reemplazó por `4` sin nombre — la banda
+    /// nueva es más compacta, así que el respiro exterior también se achica.
+    public static let restBandOuterInset: CGFloat = 4
+
+    /// El thumb del ejercicio HECHO, colapsado en el acordeón (handoff «Sesión en vivo» §1): más
+    /// chico que el thumb activo porque la fila entera ya está atenuada (`StrandOpacity.dim`).
+    public static let doneRowThumb: CGFloat = 28
+    /// El thumb de un ejercicio PRÓXIMO en el acordeón (handoff «Sesión en vivo» §7).
+    public static let comingRowThumb: CGFloat = 34
 }
 
 /// El estado de una celda del calendario de entrenamiento. Es un token porque lo consumen dos
@@ -305,6 +330,19 @@ public extension View {
     func entrenarWeekDayLabel() -> some View {
         self.font(InstrumentoType.grotesk(10.5, weight: .semibold, relativeTo: .caption2))
             .tracking(1.4)
+    }
+}
+
+/// El kicker «QUEDABAN» de la fila RIR del teclado propio (FER-134, handoff «Sesión en vivo» §8,
+/// prototipo `sesion.txt`): 10.5 pt / 600 / tracking 1.2 — mismo escalón de tamaño que
+/// `entrenarWeekDayLabel` pero con SU PROPIO tracking, porque el prototipo lo pide distinto (1.2,
+/// no 1.4) y ese modifier ya tiene nombre y doc propios de la inicial del día en `WeekTokens`
+/// (revisión ronda 3, hallazgo menor: no pedir prestado un token con nombre y contrato de otra
+/// sección).
+public extension View {
+    func entrenarKeypadKicker() -> some View {
+        self.font(InstrumentoType.grotesk(10.5, weight: .semibold, relativeTo: .caption2))
+            .tracking(1.2)
     }
 }
 

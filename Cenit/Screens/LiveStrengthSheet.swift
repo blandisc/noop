@@ -76,6 +76,30 @@ struct LiveStrengthSheet: View {
     /// This session's prior notes for `noteTarget.exerciseId` (across other sessions), loaded when the
     /// sheet opens — «NOTAS ANTERIORES». nil = still loading / not opened; [] = loaded, honestly empty.
     @State private var noteHistory: [ExerciseNote]?
+    /// «QUEDABAN» — RIR (reps in reserve) del teclado propio (FER-134): índice en
+    /// `SessionKeypad.rirLabels` (0…4 = «4+»). Se aplica al REGISTRAR una serie (`registerActiveSet`)
+    /// como RPE = 10 − RIR — mismo campo `WorkingSet.rpe` que la hoja de RPE ya escribe, así que un
+    /// RPE puesto a mano por esa hoja ANTES de palomear no se pisa (ver `registerActiveSet`). Vive en
+    /// la vista, no en el modelo: es la cara de captura, no un dato nuevo de la sesión. `nil` = el
+    /// usuario NUNCA tocó el segmento esta serie — `registerActiveSet` entonces NO inventa un RPE
+    /// (revisión ronda 1): un dato jamás capturado se queda sin capturar, nunca se rellena con un
+    /// valor por defecto. Se limpia a `nil` en cada registro, así que cada serie parte honesta.
+    @State private var selectedRIR: Int?
+    /// La serie para la que se eligió `selectedRIR` (revisión ronda 2, hallazgo grave): sin esto, elegir
+    /// QUEDABAN mientras el teclado está abierto en la serie A y luego palomear la serie B directo desde
+    /// su ✓ de tabla (capacidad existente — «palomear CUALQUIER pendiente») escribía el RPE de A en B.
+    /// `registerActiveSet` solo aplica `selectedRIR` si esta serie coincide con la que se está
+    /// registrando; en cualquier otro caso, o al no coincidir, se limpia igual — nunca sobrevive a un
+    /// registro ajeno.
+    struct RIRTarget: Equatable { let ei: Int; let si: Int }
+    @State private var selectedRIRTarget: RIRTarget?
+
+    /// La decisión pura detrás del candado de `selectedRIRTarget` (revisión ronda 2, hallazgo grave):
+    /// el RIR elegido solo sobrevive para la MISMA serie en la que se tocó el segmento. Probada en
+    /// `LiveStrengthSheetRIRTests`.
+    static func rirScoped(selectedRIR: Int?, selectedRIRTarget: RIRTarget?, registering: RIRTarget) -> Int? {
+        selectedRIRTarget == registering ? selectedRIR : nil
+    }
 
     /// The empty «Rápido de fuerza» state (FER-762): no routine, no exercises added yet. Its search field
     /// opens `ExerciseLibraryScreen` in ADD mode; the freshness suggestions load once when this state
@@ -294,6 +318,10 @@ struct LiveStrengthSheet: View {
             }
             .onChange(of: session.phase) { _, phase in
                 if phase != .resting { restAnchorEi = nil }
+                // El pulso con el que ARRANCA el descanso (revisión ronda 2, hallazgo menor): sin esto
+                // `RestBand` nunca dibuja el punto del riel mientras el pulso todavía va cayendo — solo
+                // al llegar. Se captura una sola vez al entrar a descanso, se limpia al salir.
+                if phase == .resting { restStartBpm = model.watchBpm } else { restStartBpm = nil }
             }
     }
 
@@ -755,6 +783,7 @@ struct LiveStrengthSheet: View {
                 // full strength so the hilo reads continuous while the finished exercise recedes. The
                 // row's breathing lives HERE (vertical padding), not in list insets, so cells butt up.
                 HStack(spacing: 12) {
+                    SessionRunThumb(exerciseId: run.exerciseId, side: EntrenarMetrics.doneRowThumb)
                     VStack(alignment: .leading, spacing: 1) {
                         supersetTag(ei)
                         Text(run.name).font(StrandFont.body).foregroundStyle(theme.inkTertiary).lineLimit(1)
@@ -793,6 +822,7 @@ struct LiveStrengthSheet: View {
                 // Canvas pass: upcoming rows now dim exactly like done rows (the row that «se escapaba»)
                 // — content only, so the rail thread stays alive. Breathing inside the content.
                 HStack(spacing: 12) {
+                    SessionRunThumb(exerciseId: run.exerciseId, side: EntrenarMetrics.comingRowThumb)
                     VStack(alignment: .leading, spacing: 1) {
                         supersetTag(ei)
                         Text(run.name).font(StrandFont.body).foregroundStyle(theme.ink).lineLimit(1)
@@ -954,7 +984,8 @@ struct LiveStrengthSheet: View {
     private func segmentView(_ segment: SetSegment, run: StrengthSessionModel.ExerciseRun, ei: Int) -> some View {
         switch segment {
         case let .table(rows, showHeader):
-            SetTable(kind: entrenarKind(run.type), rows: rows, showRPE: true, showHeader: showHeader,
+            SetTable(kind: entrenarKind(run.type), rows: rows, showRPE: true,
+                     rpeColumnLabel: "Reps left kicker", showHeader: showHeader,
                      onToggle: { rowId in toggleEntrenarSet(ei: ei, run: run, rowId: rowId) },
                      onTapCell: { rowId, cellKind in tapEntrenarCell(ei: ei, run: run, rowId: rowId, cellKind: cellKind) },
                      onDelete: { rowId in deleteEntrenarSet(ei: ei, run: run, rowId: rowId) })
@@ -1006,7 +1037,11 @@ struct LiveStrengthSheet: View {
                 primaryState: weightEditing ? .editing : (ghost ? .ghost : .touched),
                 reps: repsEditing ? buffer : formatCell(Double(set.reps), isInt: true),
                 repsState: repsEditing ? .editing : (ghost ? .ghost : .touched),
-                rpe: set.rpe.map(Self.formatDecimalComma),
+                // «Q n» (QUEDABAN) en filas hechas, no el RPE crudo (handoff «Sesión en vivo» §4):
+                // el campo sigue siendo `set.rpe` — RIR y RPE son la misma medida, dos caras — solo
+                // cambia cómo se LEE en esta tabla. Filas sin registrar aún no tienen esta lectura
+                // (`SetTable` cae al rótulo «RPE» tenue por defecto cuando `rpe` es `nil`).
+                rpe: set.done ? set.rpe.map(Self.qLabel(fromRPE:)) : set.rpe.map(Self.formatDecimalComma),
                 done: set.done, isWarmup: isWarmup, isCurrent: isCurrent)
         case .time:
             let time = (set.timeS ?? 0) > 0 ? Self.clock(set.timeS ?? 0) : nil
@@ -1086,11 +1121,64 @@ struct LiveStrengthSheet: View {
                restSlotIndex(run, ei: ei) == nil {
                 restInlineSlice(run)
             }
+            // «Hecho · Siguiente: Prensa ›» (handoff «Sesión en vivo» §5, revisión ronda 4 — grave: no
+            // existía). Convive con «+ Serie», no la reemplaza: agregar una serie de más tras cerrar el
+            // ejercicio sigue siendo posible (capacidad #10 del inventario).
+            if exerciseWorkSetsAllDone(run) {
+                exerciseDoneNextPill(ei)
+                    .padding(.top, 8)
+            }
             addSetButton(ei)
         }
         // r22 (simetría): la tarjeta cerraba con 8 abajo vs 12 arriba — parejo con el tope.
         .padding(.horizontal, CenitMetrics.receiptPadding)
         .padding(.top, 8).padding(.bottom, 12)
+    }
+
+    /// Todas las series de TRABAJO del ejercicio ya cerradas (un calentamiento nunca cuenta, mismo
+    /// criterio que el resto de la tabla) — y hay al menos una.
+    private func exerciseWorkSetsAllDone(_ run: StrengthSessionModel.ExerciseRun) -> Bool {
+        let workSets = run.sets.filter { $0.kind == .work }
+        return !workSets.isEmpty && workSets.allSatisfy(\.done)
+    }
+
+    /// La pastilla papel del pie cuando el ejercicio ya cerró: «Hecho» solo, o «Hecho · Siguiente:
+    /// {nombre} ›» cuando hay otro ejercicio activo después — nunca se inventa un «siguiente» si este
+    /// era el último (QA ronda 4: «última serie del último ejercicio → sin Siguiente»). El toque salta
+    /// al primer set pendiente del siguiente ejercicio, el mismo camino que usa «Próximos».
+    private func exerciseDoneNextPill(_ ei: Int) -> some View {
+        let next = session.activeExercises.first { $0.index > ei }
+        return Button {
+            guard let next else { return }
+            withAnimation(StrandMotion.gentle) {
+                session.select(exerciseIndex: next.index, setIndex: next.run.sets.firstIndex { !$0.done } ?? 0)
+            }
+        } label: {
+            HStack(spacing: 6) {
+                StrandIcon.confirm.image.font(StrandFont.glyph(.inline, weight: .semibold))
+                    .foregroundStyle(theme.positiveText)
+                if let next {
+                    Text("Done · Next: \(next.run.name)")
+                } else {
+                    Text("Done")
+                }
+                Spacer(minLength: 0)
+                if next != nil {
+                    StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold))
+                        .foregroundStyle(theme.inkTertiary)
+                }
+            }
+            .font(InstrumentoType.grotesk(15, weight: .medium)).foregroundStyle(theme.ink)
+            .padding(.horizontal, CenitMetrics.gap)
+            .frame(maxWidth: .infinity, minHeight: EntrenarMetrics.row)
+            .background(theme.paper, in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
+                .strokeBorder(theme.hairlineStrong, lineWidth: 1))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(next == nil)
+        .accessibilityLabel(next.map { Text("Done. Next: \($0.run.name)") } ?? Text("Done"))
     }
 
     /// «Recibo» (owner r6): superficie PLANA — borde hairline, cero sombra. One simple
@@ -1116,6 +1204,14 @@ struct LiveStrengthSheet: View {
     /// LAST set advances `currentIndex` to the next exercise, but the rest card must stay GLUED under
     /// the exercise you just finished — so every register path stamps the anchor before advancing.
     @State private var restAnchorEi: Int?
+    /// El pulso en el instante en que arrancó el descanso (revisión ronda 2, hallazgo menor; comentario
+    /// corregido en ronda 3 — es una lectura puntual, no un máximo corrido): `RestBand` necesita este
+    /// dato para dibujar el punto del riel MIENTRAS el pulso cae, no solo al llegar (`RestBand.railProgress`
+    /// es `1` — listo — sin `startBpm`). Se captura una vez al entrar a descanso (`bodyChrome`'s
+    /// `.onChange(of: session.phase)`) y se limpia al salir; si el pulso sigue subiendo unos segundos
+    /// más tras entrar a descanso, el riel arranca desde esa lectura y no desde el pico real — aceptado
+    /// porque el riel solo ilustra la caída, no reporta el pico.
+    @State private var restStartBpm: Int?
 
     /// The exercise whose accordion is OPEN: while resting, the anchor (the exercise you just worked)
     /// holds the accordion open — the jump to `currentIndex` happens when the rest ends (owner r6).
@@ -1127,7 +1223,58 @@ struct LiveStrengthSheet: View {
     /// advance. The anchor clears when the rest ends (`onChange` of `session.phase`).
     private func registerActiveSet() {
         restAnchorEi = session.currentIndex
+        let ei = session.currentIndex
+        let si = session.runs.indices.contains(ei) ? session.runs[ei].currentSet : -1
         session.registerCurrentSet(restingHR: restingBaseline, maxHR: profileMaxHR)
+        // FER-134 «QUEDABAN»: la serie que se ACABA de registrar hereda el RIR elegido en el teclado,
+        // como RPE = 10 − RIR — salvo que ya tuviera un RPE puesto a mano por la hoja de RPE, que
+        // nunca se pisa (ver nota de `selectedRIR`). `registerCurrentSet` solo cambia banderas de la
+        // serie ya existente (nunca reordena el arreglo), así que `ei`/`si` capturados ANTES siguen
+        // apuntando a la misma serie después. `rpeToWrite` decide SI se escribe algo — revisión
+        // ronda 1, hallazgo grave: sin tocar el segmento, no se inventa un dato.
+        // El RIR elegido solo se aplica si se eligió PARA esta misma serie (`selectedRIRTarget`) —
+        // si el usuario lo eligió en otra celda y palomeó ésta directo desde el ✓ de tabla sin volver
+        // a tocar el segmento, no se le fabrica un RPE ajeno (revisión ronda 2, hallazgo grave).
+        let rirForThisSet = Self.rirScoped(selectedRIR: selectedRIR, selectedRIRTarget: selectedRIRTarget,
+                                           registering: RIRTarget(ei: ei, si: si))
+        if session.runs.indices.contains(ei), session.runs[ei].sets.indices.contains(si),
+           let rpe = Self.rpeToWrite(selectedRIR: rirForThisSet, existingRPE: session.runs[ei].sets[si].rpe) {
+            session.setRPE(exercise: session.runs[ei].id, set: session.runs[ei].sets[si].id, rpe: rpe)
+        }
+        selectedRIR = nil
+        selectedRIRTarget = nil
+    }
+
+    /// La decisión pura detrás de `registerActiveSet` (revisión ronda 1, hallazgo grave): qué RPE
+    /// escribir al registrar una serie, o `nil` para no tocar el campo. Dos guardas, cada una
+    /// honesta a su manera: un RPE ya puesto a mano (`existingRPE != nil`, por la hoja de RPE) nunca
+    /// se pisa, y si el usuario NUNCA tocó el segmento «QUEDABAN» esta serie (`selectedRIR == nil`,
+    /// p.ej. palomeó directo desde el ✓ de la tabla sin abrir el teclado) no se fabrica un RPE por
+    /// defecto — el dato se queda sin capturar, como de verdad está. Probada en
+    /// `LiveStrengthSheetRIRTests`.
+    static func rpeToWrite(selectedRIR: Int?, existingRPE: Double?) -> Double? {
+        guard existingRPE == nil, let rir = selectedRIR else { return nil }
+        return rpe(fromRIR: rir)
+    }
+
+    /// RIR → RPE (FER-134): el motor guarda esfuerzo percibido en RPE (0–10); «QUEDABAN» es la MISMA
+    /// captura leída como reps en reserva. RPE = 10 − RIR; «4+» se guarda como RIR 4 (RPE 6) — el
+    /// motor no distingue «4» de «más de 4», las dos leen «con margen». Probada en
+    /// `LiveStrengthSheetRIRTests`.
+    static func rpe(fromRIR rir: Int) -> Double { Double(10 - min(4, max(0, rir))) }
+
+    /// La lectura inversa para la tabla (handoff «Sesión en vivo» §4, ítem 4: «"Q n" ... en filas
+    /// hechas (QUEDABAN = RIR)»): el motor solo guarda RPE (`WorkingSet.rpe`), así que la columna
+    /// de `SetTable` recibe la lectura QUEDABAN ya formateada en vez del RPE crudo — el campo no
+    /// cambia, solo cómo se lee en ESTA tabla (RIR = 10 − RPE, saturado a 0…4, «4+» en el tope).
+    /// `RoutineEditorScreen` sigue leyendo `set.rpe` sin pasar por aquí — su columna RPE es RPE de
+    /// verdad, no QUEDABAN (revisión ronda 3, hallazgo grave/menor duplicado).
+    static func qLabel(fromRPE rpe: Double) -> String {
+        let rir = 10 - Int(rpe.rounded())
+        let clamped = min(max(rir, 0), 4)
+        // «Q» es la abreviatura del prototipo (copy.md «Sesión en vivo»), no una palabra a traducir —
+        // igual que el badge «C» de calentamiento en la misma tabla (`badgeText` arriba).
+        return clamped >= 4 ? "Q 4+" : "Q \(clamped)"
     }
 
     /// The set index the inline rest card slots BEFORE — nil when the rest follows the exercise's
@@ -1221,7 +1368,12 @@ struct LiveStrengthSheet: View {
             // mientras registras una serie — que es exactamente cuando te interrumpen. Una
             // decisión (`alternarPausa`), dos superficies.
             onPause: alternarPausa,
-            isPaused: session.paused
+            isPaused: session.paused,
+            // Solo se muestra elegido si el segmento se tocó para ESTA MISMA celda — cambiar a otra
+            // serie sin registrar ya no arrastra visualmente la elección anterior (ver `selectedRIRTarget`).
+            selectedRIR: Self.rirScoped(selectedRIR: selectedRIR, selectedRIRTarget: selectedRIRTarget,
+                                        registering: RIRTarget(ei: ei, si: si)),
+            onSelectRIR: { selectedRIR = $0; selectedRIRTarget = RIRTarget(ei: ei, si: si) }
         )
         .transition(.move(edge: .bottom))
     }
@@ -3122,15 +3274,24 @@ struct LiveStrengthSheet: View {
         .padding(.leading, 44)
     }
 
-    // MARK: - Inline rest card (1k, FER-716)
+    // MARK: - Inline rest band (FER-134 · E2 «Sesión en vivo»: adopta `RestBand` de StrandDesign)
+    //
+    // El descanso deja de ser una tarjeta elevada y pasa a ser la BANDA de la Matriz (`RestBand`,
+    // `StrandDesign/Entrenar/RestBand.swift`): filo arriba y filo abajo, sin sombra ni fondo propio —
+    // la única elevación del flujo (`floatShadow`) se retira con ella. La REGLA no cambia una coma
+    // (`RestReadinessRule.evaluate`, «casi» a 5 lpm, piso 20 s, tope 3:00 (`defaultMaxRestS`), en
+    // `RestReadinessRule.swift`
+    // de StrandAnalytics): esto es la piel, no el motor.
 
-    /// The rest card — the ONE surface in the flow that lifts off the paper (`floatShadow`), because it's
-    /// literally above the session's time. Slots between the marked set and the next; the table never
-    /// disappears. By-HR: the live pulse drops toward the threshold; by-time: a countdown. No strap on an
-    /// HR rest → it degrades to a capped timer with an honest notice (no dashes, no red).
+    /// El ejercicio del descanso activo — el mismo que sostiene el acordeón abierto mientras se
+    /// descansa (`accordionIndex`). `RestBand` necesita su cabecera «DESCANSO · SERIE N → M».
+    private var accordionRestRun: StrengthSessionModel.ExerciseRun? {
+        session.runs.indices.contains(accordionIndex) ? session.runs[accordionIndex] : nil
+    }
+
     @ViewBuilder private var restInlineCard: some View {
         let hrMode = session.currentRestMode == .heartRate
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: CenitMetrics.space2) {
             if hrMode, let started = session.restStartedAt {
                 // FER-1003: watch live HR (model.watchBpm) replaces band pulse reader.
                 TimelineView(.periodic(from: started, by: 1)) { ctx in
@@ -3143,99 +3304,132 @@ struct LiveStrengthSheet: View {
                         currentHR: model.watchBpm, worn: model.watchBpm != nil, restingHR: restingBaseline,
                         elapsedS: elapsed, targetHR: session.currentRestTarget)
                     if v.state == .noSignal {
-                        restCardTimeBody(end: session.restEndsAt, now: tick, noStrapFallback: true)
+                        restBandTimeBody(end: session.restEndsAt, now: tick, noStrapFallback: true)
                     } else {
-                        restCardHRBody(elapsed: elapsed, readiness: v)
+                        restBandHRBody(elapsed: elapsed, readiness: v)
                     }
                 }
                 .sensoryFeedback(.success, trigger: model.watchBpm != nil && session.currentRestTarget != nil)
             } else if let end = session.restEndsAt, let started = session.restStartedAt {
                 TimelineView(.periodic(from: started, by: 1)) { ctx in
-                    restCardTimeBody(end: end,
+                    restBandTimeBody(end: end,
                                      now: session.paused ? (session.pausedAt ?? ctx.date) : ctx.date,
                                      noStrapFallback: false)
                 }
             }
-            restCardPills
-            // (El «SIGUE» vive solo en el descanso a pantalla completa — owner call 2026-07-15: dentro
-            // del mismo ejercicio ya sabes qué sigue, la tarjeta en línea no lo repite.)
+            // «Cambiar descanso» (editor de umbral, capacidad #4 del inventario) sigue vivo — `RestBand`
+            // solo trae el «Saltar» (su `onSkip`), así que el cambio de umbral se queda como pastilla
+            // propia bajo la banda.
+            restEditorPill
         }
-        // r21 (auditoría UI V6): 17/15 a ojo → el padding del recibo, como sus rebanadas hermanas.
-        .padding(.horizontal, CenitMetrics.receiptPadding).padding(.vertical, CenitMetrics.receiptPadding)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
-            .strokeBorder(theme.hairlineStrong, lineWidth: 1))
-        .floatShadow(theme)
-        .padding(.horizontal, -4).padding(.vertical, 10)
-        .accessibilityElement(children: .combine)
+        .padding(.horizontal, -4).padding(.vertical, EntrenarMetrics.restBandOuterInset)
     }
 
-    /// By-HR rest body: the live pulse dropping toward the threshold, with a gradient track + ink tick.
-    private func restCardHRBody(elapsed: Int, readiness v: RestReadiness) -> some View {
-        let bpm = model.watchBpm ?? 0
-        let target = session.currentRestTarget
-        let ready = v.ready
-        return VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                // r19 (auditoría UI): overline de token en tinta terciaria — el estado ya lo cuenta
-                // el numeral; el hue jamás anuncia (§8.4).
-                Text("Resting · by HR").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                Spacer()
-                Text("\(Self.clock(elapsed)) elapsed").font(StrandFont.caption).monospacedDigit()
-                    .foregroundStyle(theme.inkTertiary)
-            }
-            Text(ready ? String(localized: "Ready") : "\(bpm)")
-                .font(InstrumentoType.groteskRestPulse).tracking(InstrumentoType.groteskRestPulseTracking)
-                .monospacedDigit()
-                .foregroundStyle(theme.dataRecovery)
-                .contentTransition(.numericText())
-            // El riel es la pieza compartida (FER-86): el mismo descanso aparece aquí, a pantalla
-            // completa y —E15— en el reloj. Y sin objetivo ya no finge estar listo.
-            RestPulseRail(bpm: bpm, target: target)
-            if let target, !ready {
-                (Text(String(localized: "dropping toward "))
-                 + Text("\(target) bpm").foregroundColor(theme.dataRecovery).bold()
-                 + Text(" · " + String(localized: "the phone will buzz")))
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
+    /// Descanso por FC: el numeral es cuánto FALTA en latidos; el riel de pulso (`RestPulseRail`, ya
+    /// embebido en `RestBand`) dibuja la caída hacia el umbral. La regla del motor no cambia: «casi» a
+    /// 5 lpm (`RestReadinessState.almostReady`), listo al llegar o al soltar por tope (`v.ready`).
+    private func restBandHRBody(elapsed: Int, readiness v: RestReadiness) -> some View {
+        RestBand(
+            kicker: restBandKicker,
+            mode: .heartRate(remainingBpm: v.bpmToReady, targetBpm: v.targetReadyHR ?? 0,
+                             currentBpm: model.watchBpm),
+            trailing: Self.clock(elapsed),
+            note: "at 5 bpm I say «almost» · at 3:00 I let you go even if it hasn't dropped",
+            isAlmost: v.state == .almostReady,
+            isReady: v.ready,
+            startBpm: restStartBpm,
+            onSkip: { withAnimation(StrandMotion.gentle) { session.skipRest() } },
+            next: { restBandNextRow }
+        )
+        // r20 (auditoría UX #3), FER-134: VoiceOver oye hitos, no cada tick — «faltan más de 20» ·
+        // «faltan 10» · «casi» · «listo» (copy.md «Sesión en vivo»), no la cuenta fina en latidos.
+        .accessibilityLabel(Text(session.paused ? String(localized: "Paused")
+                                                : restHRA11yPhrase(v)))
+        .accessibilityAddTraits(.updatesFrequently)
     }
 
-    /// The FC track: a linear scale from a warm start toward the threshold; the ink tick is the threshold
-    /// (position is the channel), the `dataHeart → dataRecovery` gradient reinforces hot → goal.
-    /// By-time rest body (also the no-strap fallback for an HR rest, capped at 5 min with a notice).
-    private func restCardTimeBody(end: Date?, now: Date, noStrapFallback: Bool) -> some View {
-        let cappedEnd = noStrapFallback ? min(end ?? now, (session.restStartedAt ?? now).addingTimeInterval(300)) : end
-        let remaining = cappedEnd.map { max(0, Int($0.timeIntervalSince(now).rounded(.up))) } ?? 0
-        return VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                // r20 (auditoría UX #1): en pausa el overline lo DICE — el reloj congelado sin
-                // etiqueta parecería colgado.
-                Text(session.paused ? "Paused" : (noStrapFallback ? "Resting · by time" : "Resting"))
-                    .instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                Spacer()
-            }
-            Text(Self.clock(remaining))
-                .font(InstrumentoType.groteskRestPulse).tracking(InstrumentoType.groteskRestPulseTracking)
-                .monospacedDigit()
-                .foregroundStyle(remaining == 0 ? theme.dataRecovery : theme.ink)
-                .contentTransition(.numericText())
-            if noStrapFallback {
-                Text("No heart-rate signal: resting by time, 5 min cap")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        // r20 (auditoría UX #3): VoiceOver oye hitos, no cada tick — label cuantizado + trait.
-        .accessibilityElement(children: .ignore)
+    /// Reloj fijo: sin pulso no se inventa un número de latidos — el numeral es el tiempo, «elapsed de
+    /// target» (también el respaldo honesto de un descanso por FC sin señal, tope 5 min).
+    private func restBandTimeBody(end: Date?, now: Date, noStrapFallback: Bool) -> some View {
+        let started = session.restStartedAt ?? now
+        let cappedEnd = noStrapFallback ? min(end ?? now, started.addingTimeInterval(300)) : end
+        let totalS = cappedEnd.map { max(0, Int($0.timeIntervalSince(started))) } ?? 0
+        let elapsed = max(0, min(totalS, Int(now.timeIntervalSince(started))))
+        let remaining = totalS - elapsed
+        return RestBand(
+            kicker: restBandKicker,
+            mode: .clock(elapsed: Self.clock(elapsed), target: Self.clock(totalS)),
+            // Con reloj de Apple Watch presente el kicker muestra el transcurrido, como el prototipo
+            // (`datos-estado.txt`); sin reloj, el aviso honesto de que no hay señal (revisión ronda 2).
+            trailing: model.watchBpm == nil ? String(localized: "no watch on your wrist") : Self.clock(elapsed),
+            note: noStrapFallback ? "resting by clock: connect your Apple Watch for rest by heart rate" : nil,
+            onSkip: { withAnimation(StrandMotion.gentle) { session.skipRest() } },
+            next: { restBandNextRow }
+        )
         .accessibilityLabel(Text(session.paused ? String(localized: "Paused")
                                                 : restA11yPhrase(remaining: remaining)))
         .accessibilityAddTraits(.updatesFrequently)
     }
 
-    /// r20 (auditoría UX #3): el restante del descanso para VoiceOver, en cubetas (60/30/15 s) —
-    /// el cursor encima del reloj deja de parlotear cada segundo.
+    /// «DESCANSO · SERIE 1 → 2»: la serie de trabajo que se acaba de cerrar y la que sigue, contadas
+    /// solo entre series de trabajo (un calentamiento nunca aparece en este número — mismo criterio
+    /// que el badge de `SetTable`/`entrenarRow`).
+    private var restBandKicker: LocalizedStringKey {
+        guard let run = accordionRestRun, let lastDone = run.sets.lastIndex(where: { $0.done }) else {
+            return "REST"
+        }
+        let from = run.sets.prefix(lastDone + 1).reduce(0) { $0 + ($1.kind == .work ? 1 : 0) }
+        // Si lo único cerrado hasta ahora es un calentamiento, `from` da 0 — no hay una «serie 0» en
+        // ningún otro lugar de la tabla (los badges arrancan en 1), así que el kicker se queda sin
+        // numerar en vez de imprimir «SET 0 → 1» (revisión ronda 3, hallazgo menor).
+        guard from > 0 else { return "REST" }
+        let nextIdx = run.sets.index(after: lastDone)
+        let to = run.sets.indices.contains(nextIdx)
+            ? run.sets.prefix(nextIdx + 1).reduce(0) { $0 + ($1.kind == .work ? 1 : 0) }
+            : from + 1
+        return "REST · SET \(String(from)) → \(String(to))"
+    }
+
+    /// «SIGUE» dentro de la banda de descanso en línea (handoff «Sesión en vivo» §6): thumb 24 +
+    /// «N · nombre · sets × reps». Misma fuente que `focusRestNextCard` (`session.current`, ya
+    /// avanzado por `registerCurrentSet` antes de arrancar el descanso) — el próximo paso real, sea
+    /// la siguiente serie del mismo ejercicio o el siguiente ejercicio. `EmptyView` cuando no hay
+    /// paso siguiente (última serie de la sesión).
+    @ViewBuilder private var restBandNextRow: some View {
+        if let run = session.current {
+            let position = (session.activeExercises.firstIndex { $0.index == session.currentIndex } ?? 0) + 1
+            HStack(spacing: 8) {
+                SessionRunThumb(exerciseId: run.exerciseId, side: 24)
+                Text(verbatim: "\(position) · \(run.name) · \(prescriptionCountText(run))")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(Text("Next: \(run.name)"))
+        }
+    }
+
+    /// «4 × 10» — número de series de trabajo × reps del primer set, para el renglón SIGUE. Reusa el
+    /// mismo criterio que el resto de la tabla (calentamientos no cuentan como serie de trabajo).
+    private func prescriptionCountText(_ run: StrengthSessionModel.ExerciseRun) -> String {
+        let workSets = run.sets.filter { $0.kind == .work }
+        guard run.type == .weightReps || run.type == .bodyweight else {
+            return String(localized: "\(workSets.count) sets")
+        }
+        let reps = workSets.first?.reps ?? run.sets.first?.reps ?? 0
+        return "\(workSets.count) × \(reps)"
+    }
+
+    /// Milestones del descanso por FC para VoiceOver (copy.md «Sesión en vivo»): «faltan más de 20» ·
+    /// «faltan 10» · «casi» · «listo» — cuatro palabras, no el conteo fino en latidos.
+    private func restHRA11yPhrase(_ v: RestReadiness) -> String {
+        if v.ready { return String(localized: "Ready") }
+        if v.state == .almostReady { return String(localized: "Almost") }
+        let remaining = v.bpmToReady ?? 0
+        return remaining > 20 ? String(localized: "more than 20 bpm left") : String(localized: "10 bpm left")
+    }
+
+    /// r20 (auditoría UX #3): el restante del descanso por tiempo para VoiceOver, en cubetas (60/30/15 s)
+    /// — el cursor encima del reloj deja de parlotear cada segundo.
     private func restA11yPhrase(remaining: Int) -> String {
         guard remaining > 0 else { return String(localized: "Rest done") }
         if remaining <= 10 { return String(localized: "Resting, almost done") }
@@ -3243,17 +3437,13 @@ struct LiveStrengthSheet: View {
         return String(localized: "Resting, \(bucket) seconds left")
     }
 
-    private var restCardPills: some View {
-        HStack(spacing: 10) {
+    /// «Cambiar descanso» — el editor de umbral (capacidad #4 del inventario), intacto: `RestBand` no
+    /// trae este control, así que se queda como su propia pastilla de papel bajo la banda.
+    private var restEditorPill: some View {
+        HStack {
             Button { openRestEditor(ei: session.currentIndex,
                                     setIndex: session.runs.indices.contains(session.currentIndex) ? session.runs[session.currentIndex].currentSet : nil) } label: {
                 Label("Change rest", systemImage: "pencil").font(StrandFont.caption).foregroundStyle(theme.ink)
-                    .padding(.horizontal, 13).padding(.vertical, 6)
-                    .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
-            }
-            .buttonStyle(.plain)
-            Button { withAnimation(StrandMotion.gentle) { session.skipRest() } } label: {
-                Text("Skip").font(StrandFont.caption).foregroundStyle(theme.ink)
                     .padding(.horizontal, 13).padding(.vertical, 6)
                     .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
             }

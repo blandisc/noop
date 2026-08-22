@@ -20573,6 +20573,42 @@
         }
       }
     },
+    "Done · Next: %@" : {
+      "extractionState" : "manual",
+      "comment" : "Pastilla del pie de un ejercicio ya cerrado (FER-134, handoff «Sesión en vivo» §5): «Hecho · Siguiente: Prensa ›». %@ es el nombre del siguiente ejercicio.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Done · Next: %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hecho · Siguiente: %@"
+          }
+        }
+      }
+    },
+    "Done. Next: %@" : {
+      "extractionState" : "manual",
+      "comment" : "VoiceOver de la pastilla «Hecho · Siguiente: %@» (FER-134).",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Done. Next: %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hecho. Siguiente: %@"
+          }
+        }
+      }
+    },
     "DONE" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -43496,7 +43532,6 @@
       }
     },
     "REST" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -43508,6 +43543,160 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "DESCANSO"
+          }
+        }
+      }
+    },
+    "REST · SET %@ → %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "REST · SET %@ → %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DESCANSO · SERIE %@ → %@"
+          }
+        }
+      }
+    },
+    "at 5 bpm I say «almost» · at 3:00 I let you go even if it hasn't dropped" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "at 5 bpm I say «almost» · at 3:00 I let you go even if it hasn't dropped"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "a 5 lpm te digo «casi» · a 3:00 te suelto aunque no baje"
+          }
+        }
+      }
+    },
+    "no watch on your wrist" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "no watch on your wrist"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sin reloj en la muñeca"
+          }
+        }
+      }
+    },
+    "resting by clock: connect your Apple Watch for rest by heart rate" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "resting by clock: connect your Apple Watch for rest by heart rate"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "descanso por tiempo, tope 5 min · conecta el Watch para descanso por FC"
+          }
+        }
+      }
+    },
+    "more than 20 bpm left" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "more than 20 bpm left"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "faltan más de 20"
+          }
+        }
+      }
+    },
+    "10 bpm left" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "10 bpm left"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "faltan 10"
+          }
+        }
+      }
+    },
+    "Reps left kicker" : {
+      "extractionState" : "manual",
+      "comment" : "Kicker QUEDABAN de la fila RIR del teclado de sesión (FER-134). Clave propia, distinta de «Remaining» (usada por IntervalTimerView para el tiempo restante del temporizador) para no pisar esa traducción.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remaining"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "quedaban"
+          }
+        }
+      }
+    },
+    "at check-off" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "at check-off"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "al palomear"
+          }
+        }
+      }
+    },
+    "Reps in reserve: %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reps in reserve: %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Repeticiones en reserva: %@"
           }
         }
       }
@@ -43836,57 +44025,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Reinicia tu calibración desde hoy si tu base quedó mal (cambio de banda, periodo anómalo)."
-          }
-        }
-      }
-    },
-    "Resting" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Resting"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "En descanso"
-          }
-        }
-      }
-    },
-    "Resting · by HR" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Resting · by HR"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "En descanso · por FC"
-          }
-        }
-      }
-    },
-    "Resting · by time" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Resting · by time"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "En descanso · por tiempo"
           }
         }
       }

@@ -47,7 +47,7 @@ struct SessionRunThumb: View {
     let exerciseId: String
     var side: CGFloat = 44
 
-    /// Los cinco sitios que presentan la sesión inyectan este coordinador (el árbol real desde
+    /// Los varios sitios que presentan la sesión inyectan este coordinador (el árbol real desde
     /// `CenitApp`, y los harness de `AppMap*` a mano), así que aquí siempre existe.
     @EnvironmentObject private var mediaCoordinator: MediaDownloadCoordinator
     @State private var image: Image?

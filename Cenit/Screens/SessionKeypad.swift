@@ -43,15 +43,93 @@ struct SessionKeypad: View {
     var onPause: (() -> Void)? = nil
     /// Qué cara pone el accesorio: ❚❚ para pausar, ▶ para reanudar.
     var isPaused: Bool = false
+    /// «QUEDABAN» — RIR (reps in reserve) capturado junto con la serie (FER-134, prototipo «Sesión en
+    /// vivo»): 0 · 1 · 2 · 3 · 4+, índice en `Self.rirLabels`. Se guarda como RPE = 10 − RIR al
+    /// palomear (mismo campo `WorkingSet.rpe` que ya usa `onRPE` — no es un dato nuevo, es otra cara
+    /// del mismo). `nil` oculta la fila entera (mismo patrón que `onRPE`/`onCopyAbove`): sin un
+    /// destino que la lea, la fila sería un control muerto.
+    var selectedRIR: Int? = nil
+    var onSelectRIR: ((Int) -> Void)? = nil
+
+    static let rirLabels = ["0", "1", "2", "3", "4+"]
 
     var body: some View {
         VStack(spacing: 0) {
+            if let onSelectRIR {
+                rirRow(onSelectRIR)
+                Rectangle().fill(theme.hairline).frame(height: 1)
+            }
             accessoryBar
             Rectangle().fill(theme.hairline).frame(height: 1)
             keys
         }
         .background(theme.surface)
         .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 1) }
+    }
+
+    // MARK: QUEDABAN (RIR)
+
+    private func rirRow(_ onSelectRIR: @escaping (Int) -> Void) -> some View {
+        HStack(spacing: CenitMetrics.space2) {
+            // Clave propia, distinta de «Remaining» (que IntervalTimerView ya usa para el tiempo
+            // restante del temporizador de intervalos): compartir esa clave habría pisado su copy
+            // es-MX con «quedaban» (revisión ronda 3, hallazgo grave).
+            Text("Reps left kicker").entrenarKeypadKicker().textCase(.uppercase).foregroundStyle(theme.inkTertiary)
+            // `footnote` (11pt/`.caption2`) es el token existente más cercano al 11.5 SF del handoff —
+            // `.caption` (12pt) quedaba un escalón grande de más (revisión ronda 2, hallazgo menor).
+            Text("at check-off").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+            Spacer(minLength: CenitMetrics.space2)
+            // Un solo gesto sobre TODA la píldora, no cinco `Button`s vecinos con `contentShape`
+            // agrandado: cinco blancos de 44pt apretados en 30pt de dibujo se traslapan entre sí
+            // (revisión ronda 3, hallazgo menor — un toque cerca del filo visual podía registrar el
+            // RIR del vecino). Un solo reconocedor que reparte la posición del toque en cinco tercios
+            // iguales no tiene esa ambigüedad: cada toque cae en exactamente una franja.
+            GeometryReader { geo in
+                let slice = geo.size.width / CGFloat(Self.rirLabels.count)
+                HStack(spacing: 0) {
+                    ForEach(Array(Self.rirLabels.enumerated()), id: \.offset) { idx, label in
+                        let selected = selectedRIR == idx
+                        Text(label).font(StrandFont.caption.weight(.semibold))
+                            .foregroundStyle(selected ? theme.paper : theme.inkSecondary)
+                            .frame(width: EntrenarMetrics.rirButton, height: EntrenarMetrics.rirButton)
+                            .background(selected ? theme.ink : Color.clear)
+                            .frame(maxWidth: .infinity)
+                            // Elemento propio para VoiceOver (revisión ronda 3): el gesto de posición
+                            // que reparte el toque en tercios es para dedos que VEN el filo; VoiceOver
+                            // navega elemento por elemento y activa por acción, nunca por coordenada,
+                            // así que cada franja lleva su propio elemento + acción `onSelectRIR(idx)`
+                            // directa, sin pasar por la matemática de posición.
+                            .accessibilityElement(children: .ignore)
+                            .accessibilityLabel(Text("Reps in reserve: \(label)"))
+                            .accessibilityAddTraits(selected ? .isSelected : [])
+                            .accessibilityAction { onSelectRIR(idx) }
+                        if idx < Self.rirLabels.count - 1 {
+                            Rectangle().fill(theme.hairlineStrong)
+                                .frame(width: EntrenarMetrics.rirHairline, height: EntrenarMetrics.rirDivider)
+                        }
+                    }
+                }
+                // El contenido visible (30pt) se centra dentro del `GeometryReader`, que ahora mide el
+                // mínimo de toque completo (44pt) — así el `contentShape`/`gesture` de abajo cubre el
+                // área táctil REAL, no solo el dibujo (revisión ronda 4, hallazgo grave: el padding
+                // exterior agrandaba la píldora visualmente pero nunca movía al gesto, que seguía
+                // midiendo 30pt).
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .contentShape(Rectangle())
+                .gesture(
+                    // `DragGesture(minimumDistance: 0)` en vez de `onTapGesture`: es la única forma en
+                    // SwiftUI de leer la posición X del toque para repartirla en tercios iguales.
+                    DragGesture(minimumDistance: 0).onEnded { value in
+                        let idx = slice > 0 ? Int((value.location.x / slice).rounded(.down)) : 0
+                        onSelectRIR(min(max(idx, 0), Self.rirLabels.count - 1))
+                    }
+                )
+            }
+            .frame(height: CenitMetrics.touchTarget)
+            .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: EntrenarMetrics.rirHairline))
+            .clipShape(Capsule())
+        }
+        .padding(.horizontal, CenitMetrics.cardPadding).padding(.vertical, CenitMetrics.space2)
     }
 
     // MARK: Accessory bar
