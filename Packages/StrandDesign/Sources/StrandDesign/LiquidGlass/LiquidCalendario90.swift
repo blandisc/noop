@@ -527,7 +527,8 @@ public struct LiquidCalendario90: View {
     /// `LiquidStageBar`). El gap del papel es 14 pt, un paso que la escala Liquid no tiene: se
     /// usa `s400` (16), el token más cercano hacia arriba.
     @ViewBuilder private var leyendaVista: some View {
-        if tamanoTexto.isAccessibilitySize {
+        // Desde `.xxLarge`: la app capa en xxxLarge (FER-394) y ahí «Suficient/e» partía (FER-128 r10).
+        if tamanoTexto >= .xxLarge {
             LazyVGrid(columns: [GridItem(.flexible(), alignment: .topLeading),
                                 GridItem(.flexible(), alignment: .topLeading)],
                       alignment: .leading, spacing: LiquidSpace.s200) {

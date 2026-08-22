@@ -203,7 +203,9 @@ public struct LiquidHipnograma: View {
     private var visibles: [Intervalo] { Self.visibles(intervalos) }
 
     private var muestraEjeEtapas: Bool {
-        !etiquetas.isEmpty && !tamanoTexto.isAccessibilitySize
+        // A xxxLarge (el tope real de la app, FER-394) los rótulos salían «Despi…/Profu…»:
+        // el eje se retira desde `.xxLarge`; la leyenda y VoiceOver siguen nombrando las etapas (r10).
+        !etiquetas.isEmpty && tamanoTexto < .xxLarge
     }
 
     private var lienzo: some View {

@@ -1011,6 +1011,74 @@
         }
       }
     },
+    "domino.sinjuicio" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "not compared yet"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "aún sin comparar"
+          }
+        }
+      }
+    },
+    "sueno.vacio.conpermiso" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No nights yet. Sleep with your Apple Watch and your nights will appear here."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aún no hay noches. Duerme con tu Apple Watch y aquí aparecerán."
+          }
+        }
+      }
+    },
+    "sueno.cal.completa" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Full night"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Completa"
+          }
+        }
+      }
+    },
+    "sueno.cal.corta" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Short"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Corta"
+          }
+        }
+      }
+    },
     "guardian.hoja.nunca.conteo" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -22020,23 +22088,6 @@
         }
       }
     },
-    "Enough sleep" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enough sleep"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Suficiente"
-          }
-        }
-      }
-    },
     "Enough, close to your target." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -34892,23 +34943,6 @@
         }
       }
     },
-    "No nights yet. Connect Apple Health in Data Sources to see your sleep stages and trends." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No nights yet. Connect Apple Health in Data Sources to see your sleep stages and trends."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aún no hay noches. Conecta Apple Salud en Fuentes de datos para ver tus fases de sueño y tendencias."
-          }
-        }
-      }
-    },
     "No on-device store yet." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -46736,23 +46770,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sueño corto"
-          }
-        }
-      }
-    },
-    "Short sleep" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Short sleep"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Corta"
           }
         }
       }

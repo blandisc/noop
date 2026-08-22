@@ -242,7 +242,10 @@ struct SleepDetailScreen: View {
         guard model.loaded else { return String(localized: "Loading your sleep history…") }
         return sinPermiso
             ? String(localized: "Cénit can't read your sleep: Apple Health hasn't granted permission. Turn it on and the nights you already have will appear here.")
-            : String(localized: "No nights yet. Connect Apple Health in Data Sources to see your sleep stages and trends.")
+            // Con permiso concedido lo que falta es el reloj, no la conexión — la misma voz que Hoy
+            // y el guardián (FER-128 r10).
+            : String(localized: "sueno.vacio.conpermiso",
+                     defaultValue: "No nights yet. Sleep with your Apple Watch and your nights will appear here.")
     }
 
     /// Abre Ajustes de iOS en la ficha de la app, que es donde vive el permiso de Salud.
@@ -1004,11 +1007,13 @@ struct SleepDetailScreen: View {
     private static var leyendaCalendario: [LiquidCalendario90.NivelLeyenda] {
         [
             .init(id: "enough", color: tono.opacity(LiquidCalendario90.alfa(intensidad: 1)),
-                  etiqueta: String(localized: "Enough sleep")),
+                  // Nombres que NO colisionan con la tabla de bandas de arriba (Corto/Suficiente/
+                  // Óptimo/Extenso): aquí son 3 intensidades, no 4 bandas (FER-128 r10).
+                  etiqueta: String(localized: "sueno.cal.completa", defaultValue: "Full night")),
             .init(id: "ok", color: tono.opacity(LiquidCalendario90.alfa(intensidad: 0.5)),
                   etiqueta: String(localized: "A bit short")),
             .init(id: "short", color: tono.opacity(LiquidCalendario90.alfa(intensidad: 0)),
-                  etiqueta: String(localized: "Short sleep")),
+                  etiqueta: String(localized: "sueno.cal.corta", defaultValue: "Short")),
             .init(id: "nodata", color: LiquidColor.tinta7,
                   etiqueta: String(localized: "no data")),
         ]

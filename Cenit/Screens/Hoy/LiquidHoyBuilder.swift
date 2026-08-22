@@ -518,7 +518,8 @@ enum LiquidHoyBuilder {
     private static func puntoResp(_ n: Preparedness.SentinelNight) -> LiquidDominoRegla.Punto {
         // respOut == false con respJudged == false es «el motor no la pudo juzgar»,
         // NO «está en rango». Pintarla tranquila dibujaría calma donde el motor dijo «no sé».
-        if n.respMissing || !n.respJudged { return .sinDato }
+        if n.respMissing { return .sinDato }
+        if !n.respJudged { return .sinJuicio }
         return n.respOut ? .fuera : .dentro
     }
 
@@ -535,6 +536,7 @@ enum LiquidHoyBuilder {
                 case .fuera: bits.append("\(String(localized: "out")) \(lab)")
                 case .dentro: bits.append("\(String(localized: "in pattern")) \(lab)")
                 case .sinDato: bits.append("\(String(localized: "no data")) \(lab)")
+                case .sinJuicio: bits.append("\(String(localized: "domino.sinjuicio", defaultValue: "not compared yet")) \(lab)")
                 }
             }
             return "\(nombre): \(bits.joined(separator: ", "))."

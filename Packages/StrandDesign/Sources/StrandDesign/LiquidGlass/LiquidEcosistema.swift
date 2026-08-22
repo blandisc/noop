@@ -145,6 +145,9 @@ public struct LiquidEcosistema: View {
     @Environment(\.liquidAmbientPaused) private var ambientPaused
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    /// El subtítulo del héroe ESCALA con Dynamic Type (`cuerpoLecturaBase` + `@ScaledMetric`):
+    /// era la única frase de Hoy clavada en 12.5 mientras filas y celdas crecían (FER-128 r10).
+    @ScaledMetric(relativeTo: .footnote) private var subtituloPt: CGFloat = LiquidType.cuerpoLecturaBase
 
     public init(senales: [LiquidHoyModel.Senal], hero: LiquidHoyModel.Hero,
                 guardian: LiquidHoyModel.Guardian?, ambiente: LiquidAmbiente,
@@ -784,7 +787,7 @@ public struct LiquidEcosistema: View {
                                tono: tone, fuente: LiquidType.infoGlifoTitular,
                                levante: 0)
                 Text(subtitle)
-                    .font(LiquidType.cuerpo).lineSpacing(LiquidType.cuerpoLineSpacing)
+                    .font(.system(size: subtituloPt)).lineSpacing(LiquidType.cuerpoLineSpacing)
                     .foregroundStyle(LiquidColor.tinta700)
                     .multilineTextAlignment(.center)
                     .allowsHitTesting(false)
@@ -1442,6 +1445,8 @@ private struct EcosistemaCanvas: View {
 // MARK: - Variante lista (AX1+ — sin canvas, todos los datos navegables)
 
 private struct EcosistemaListado: View {
+    /// Misma regla que el orbe: el subtítulo escala (FER-128 r10).
+    @ScaledMetric(relativeTo: .footnote) private var subtituloPt: CGFloat = LiquidType.cuerpoLecturaBase
     let senales: [LiquidHoyModel.Senal]
     let hero: LiquidHoyModel.Hero
     let guardian: LiquidHoyModel.Guardian?
@@ -1494,7 +1499,7 @@ private struct EcosistemaListado: View {
                 }
             }
             .font(LiquidType.displayL).tracking(LiquidType.displayLTracking)
-            Text(subtitle).font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta700)
+            Text(subtitle).font(.system(size: subtituloPt)).foregroundStyle(LiquidColor.tinta700)
             puerta
         case .demotado(let kicker, let title, let subtitle):
             if let kicker {
@@ -1503,7 +1508,7 @@ private struct EcosistemaListado: View {
             Text(title)
                 .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
                 .foregroundStyle(LiquidColor.tinta900)
-            Text(subtitle).font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta700)
+            Text(subtitle).font(.system(size: subtituloPt)).foregroundStyle(LiquidColor.tinta700)
             puerta
         }
     }

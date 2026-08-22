@@ -18,6 +18,9 @@ public struct LiquidDominoRegla: View {
         case fuera
         /// Esa noche no hubo lectura de esta señal.
         case sinDato
+        /// Hubo lectura pero el motor aún no la pudo comparar (base inmadura): anillo hueco
+        /// SÓLIDO, distinto del punteado de «sin lectura» (FER-128 r10).
+        case sinJuicio
     }
 
     public struct Carril: Sendable, Identifiable {
@@ -225,6 +228,10 @@ public struct LiquidDominoRegla: View {
                 .strokeBorder(
                     LiquidColor.tinta500,
                     style: StrokeStyle(lineWidth: Self.sinDatoBorde, dash: Self.sinDatoDash))
+                .frame(width: Self.puntoDiametro, height: Self.puntoDiametro)
+        case .sinJuicio:
+            Circle()
+                .strokeBorder(LiquidColor.tinta500, lineWidth: Self.sinDatoBorde)
                 .frame(width: Self.puntoDiametro, height: Self.puntoDiametro)
         }
     }
