@@ -1,4 +1,5 @@
 import XCTest
+import StrandDesign
 import StrandAnalytics
 @testable import Cenit
 
@@ -10,7 +11,8 @@ final class HiloEntrenarTests: XCTestCase {
 
     private func read(_ verdict: Preparedness.Verdict,
                       nightAnchored: Bool,
-                      autonomicPossible: Bool = true) -> Preparedness.Read {
+                      autonomicPossible: Bool = true,
+                      maturity: BaselineStatus = .trusted) -> Preparedness.Read {
         // `isNightAnchored` se deriva de los drivers: con dato en los dos ejes, la noche está
         // anclada; sin dato de sueño, no.
         let sleepState: Preparedness.AxisState = nightAnchored ? .inRange : .noData
@@ -19,7 +21,7 @@ final class HiloEntrenarTests: XCTestCase {
             drivers: [.init(axis: .autonomic, state: .inRange, orientedZ: 0.2),
                       .init(axis: .sleep, state: sleepState, orientedZ: nil)],
             signals: [], signalsPresent: nightAnchored ? 2 : 1, signalsTotal: 2,
-            maturity: .trusted, autonomicNights: 30, trend: nil,
+            maturity: maturity, autonomicNights: 30, trend: nil,
             autonomicPossible: autonomicPossible)
     }
 
@@ -28,6 +30,27 @@ final class HiloEntrenarTests: XCTestCase {
                       hasPlan: Bool = true) -> LiquidHoyBuilder.HiloEntrenar? {
         LiquidHoyBuilder.hiloEntrenar(prep: prep, nights: nights, healthConnected: health,
                                       verdictPending: pending, hasPlan: hasPlan)
+    }
+
+    /// El hilo dice la MISMA palabra grande que el héroe en cada causa sin veredicto (FER-128 r13):
+    /// 0…3 noches «Conociéndote», 4…∞ «Sin lectura de hoy», sin FC posible «Todavía no puedo leer
+    /// tus mañanas», base rancia «Tu rango necesita noches frescas».
+    func testSinVeredicto_elHiloEspejaAlHeroe() {
+        func titulo(_ h: LiquidHoyModel.Hero) -> String {
+            if case .demotado(_, let t, _) = h { return t }
+            return "?"
+        }
+        for nights in [0, 3, 4, 13, 14, 30] {
+            let prep = read(.lowSignal, nightAnchored: true)
+            let hero = LiquidHoyBuilder.hero(prep: prep, nights: nights).0
+            XCTAssertEqual(hilo(prep, nights: nights)?.palabra, titulo(hero), "noches = \(nights)")
+        }
+        let sinFC = read(.lowSignal, nightAnchored: true, autonomicPossible: false)
+        XCTAssertEqual(hilo(sinFC, nights: 2)?.palabra,
+                       titulo(LiquidHoyBuilder.hero(prep: sinFC, nights: 2).0))
+        let rancia = read(.lowSignal, nightAnchored: true, maturity: .stale)
+        XCTAssertEqual(hilo(rancia, nights: 30)?.palabra,
+                       titulo(LiquidHoyBuilder.hero(prep: rancia, nights: 30).0))
     }
 
     /// La regla que el gate encontró rota: sin noche anclada, Hoy NO dice la palabra. El hilo

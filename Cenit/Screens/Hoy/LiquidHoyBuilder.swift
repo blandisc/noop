@@ -673,17 +673,29 @@ enum LiquidHoyBuilder {
         if !healthConnected {
             return .init(tono: .hueco, palabra: String(localized: "Connect Apple Health"), consejo: nil)
         }
+        // Espejo de la tabla del héroe (`suenoFallback`): la misma palabra grande en Hoy, en el hilo
+        // de Entrenar, en el reloj y en el widget (FER-128 r13 — el hilo tenía su propio if-chain y
+        // decía «Conociéndote» con 4…13 noches mientras Hoy decía «Sin lectura de hoy»).
         if prep?.autonomicPossible == false {
-            return .init(tono: .hueco, palabra: String(localized: "No reading today"),
+            return .init(tono: .hueco,
+                         palabra: String(localized: "hero.title.sinfc", defaultValue: "I can't read your mornings yet"),
                          consejo: String(localized: "your resting heart rate needs a watch at night"))
         }
-        if nights < Baselines.minNightsTrust {
+        if prep?.maturity == .stale {
+            return .init(tono: .hueco,
+                         palabra: String(localized: "hero.title.rancia", defaultValue: "Your range needs fresh nights"),
+                         consejo: String(localized: "no advice yet"))
+        }
+        let (noche, total) = calibracionConteo(nights: nights)
+        if noche < total {
             return .init(tono: .hueco,
                          palabra: String(localized: "hero.title.calibrando", defaultValue: "Getting to know you"),
                          consejo: String(localized: "no advice yet"))
         }
+        // Rango formado, lectura de hoy ausente: el consejo «sincroniza en Hoy» solo cabe si la causa
+        // es el sync; el hilo no la conoce, así que no la afirma.
         return .init(tono: .hueco, palabra: String(localized: "No reading today"),
-                     consejo: String(localized: "sync in Today"))
+                     consejo: String(localized: "no advice yet"))
     }
 
     // MARK: Héroe (tabla canónica — port literal de `TodayView.heroBlock`)
