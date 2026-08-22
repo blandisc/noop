@@ -468,6 +468,25 @@ final class HoyMatrizBuilderTests: XCTestCase {
         XCTAssertEqual(LiquidHoyBuilder.dominioCarriles([.nan], banda: nil, fallback: 40...70), 40...70)
     }
 
+    /// FER-128 r4 (quisquilloso): el scrub del guardián dice su estado con el JUICIO del motor — con
+    /// una sola señal juzgada no dice «en calma» (como el chip «Conociéndote»), y el lado frío de la
+    /// temperatura no es «fuera» aunque el dibujo lo ponga lejos de la base.
+    func test_128_scrub_guardian_habla_con_el_motor_no_con_el_dibujo() {
+        let keys = (-19...0).map { dayKey($0) }
+        let dias = keys.enumerated().map { i, k in metric(day: k, temp: i == 10 ? -1.2 : 0.1, resp: 14.0) }
+        let historia: [Preparedness.SentinelNight] = keys.enumerated().map { i, k in
+            .init(day: k, tempOut: false, respOut: false, tempMissing: false,
+                  respMissing: false, respJudged: i >= 10, gapBefore: false)
+        }
+        let m = LiquidHoyBuilder.matriz(inputs(
+            prep: prep(sentinel: sentinel(.quiet), sentinelHistory: historia), dias: dias))
+        guard let g = seccion(m, id: "guardian"), let noches = g.scrubNoches else { return XCTFail("guardián") }
+        let fria = noches[10].sublabel.lowercased(), unaSola = noches[3].sublabel.lowercased(), ambas = noches[15].sublabel.lowercased()
+        XCTAssertFalse(fria.contains("out") || fria.contains("fuera"), "el lado frío no es «fuera»: \(fria)")
+        XCTAssertFalse(unaSola.contains("ease") || unaSola.contains("calma"), "con una sola juzgada no hay «en calma»: \(unaSola)")
+        XCTAssertTrue(ambas.contains("ease") || ambas.contains("calma"), "con las dos juzgadas y ninguna fuera: «en calma»: \(ambas)")
+    }
+
     // MARK: 17 — Historia juzgada con SU día (no se repinta)
 
     func test_17_historia_no_se_repinta_al_cambiar_hoy() {

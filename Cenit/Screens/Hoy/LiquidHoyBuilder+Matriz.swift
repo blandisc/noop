@@ -390,9 +390,14 @@ extension LiquidHoyBuilder {
             // («día · estado», FER-128 explorador r3): temperatura fuera / respiración fuera / en
             // calma — solo sobre lo JUZGADO (|v| ≥ 1 tras el ancla del builder; `resp` nil = no
             // juzgada, y sin ninguna juzgada solo la fecha).
+            // Las palabras salen del JUICIO del motor (`sentByDay`), nunca del dibujo: el lado frío
+            // no se marca, y «en calma» exige las DOS señales juzgadas — como el chip (H3); con una
+            // sola juzgada, solo la fecha (quisquilloso Q4-06/07).
             let costuraNoche = nochesCostura[idx]
-            let tempFuera = (costuraNoche.temp.map { abs($0) >= 1 }) ?? false
-            let respFuera = (costuraNoche.resp.map { abs($0) >= 1 }) ?? false
+            let juicio = sentByDay[keys20[idx]]
+            let tempFuera = juicio?.tempOut == true
+            let respFuera = juicio?.respJudged == true && juicio?.respOut == true
+            let ambasJuzgadas = juicio.map { !$0.tempMissing && $0.respJudged } ?? false
             let fecha: String = {
                 if costuraNoche.parFuera {
                     return String(format: String(localized: "matriz.guardian.scrub.par",
@@ -400,13 +405,13 @@ extension LiquidHoyBuilder {
                 }
                 if tempFuera {
                     return String(format: String(localized: "matriz.guardian.scrub.temp",
-                                                 defaultValue: "%@ · temperature out"), fechaSola)
+                                                 defaultValue: "%@ · temperature moved out"), fechaSola)
                 }
                 if respFuera {
                     return String(format: String(localized: "matriz.guardian.scrub.resp",
-                                                 defaultValue: "%@ · breathing out"), fechaSola)
+                                                 defaultValue: "%@ · breathing moved out"), fechaSola)
                 }
-                if costuraNoche.temp != nil || costuraNoche.resp != nil {
+                if ambasJuzgadas {
                     return String(format: String(localized: "matriz.guardian.scrub.calma",
                                                  defaultValue: "%@ · at ease"), fechaSola)
                 }
@@ -579,7 +584,7 @@ extension LiquidHoyBuilder {
         let scrubStress: [MatrizSeccion.ScrubNoche] = keysEstres.enumerated().map { idx, day in
             let fecha = weekdayLabel(offsetFromToday: keysEstres.count - 1 - idx, now: i.now,
                                      calendar: i.calendar, formatter: diaFmt)
-            guard let v = stressByDay[day] else {
+            guard let v = finito(stressByDay[day]) else {
                 return .init(valor: "—",
                              sublabel: String(format: String(localized: "matriz.scrub.sinlectura",
                                                              defaultValue: "%@ · no reading"), fecha))
@@ -725,7 +730,7 @@ extension LiquidHoyBuilder {
         return f
     }
     /// A partir de la segunda semana hacia atrás el día de la semana se repite («dom» dos o tres
-    /// veces en 14/20 noches): el rótulo lleva también el día del mes («dom 10»), como el eje de
+    /// veces en 14/20 noches): el rótulo lleva también el día del mes («dom 10»): formato propio del scrub — corto para la celda; las hojas usan `EEEdMMM` («dom 9 ago») — no el de
     /// Tendencias (FER-128, explorador r3).
     static func weekdayDiaFormatter(locale: Locale, calendar: Calendar) -> DateFormatter {
         let f = DateFormatter()

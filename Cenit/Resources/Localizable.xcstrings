@@ -27418,7 +27418,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "en tu patrón"
+            "value" : "dentro de tu patrón"
           }
         }
       }
@@ -31430,7 +31430,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ · breathing out"
+            "value" : "%@ · breathing moved out"
           }
         },
         "es" : {
@@ -31447,7 +31447,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ · temperature out"
+            "value" : "%@ · temperature moved out"
           }
         },
         "es" : {

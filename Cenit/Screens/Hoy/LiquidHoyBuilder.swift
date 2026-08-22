@@ -785,7 +785,7 @@ enum LiquidHoyBuilder {
                 // (`subtituloDetalle`, caso `.sleep`) y que aquí había sobrevivido, en la línea
                 // más vista de la app. Cazada por el gate de ciencia de FER-119.
                 ?? String(localized: "hero.sub.full.nombrado",
-                          defaultValue: "Your resting heart rate woke up in your base, and your sleep reached the recommended range.")
+                          defaultValue: "Your resting heart rate came in at your base, and your sleep reached the recommended range.")
         }
     }
 
@@ -957,7 +957,7 @@ enum LiquidHoyBuilder {
             // sin noches ÚTILES todavía, se dice eso.
             subtitle: noche == 0
                 ? String(localized: "hero.sub.calibrando.cero",
-                         defaultValue: "No usable nights yet · your range takes shape with the next ones")
+                         defaultValue: "No usable nights yet · your range is taking shape")
                 : String(localized: "Night \(noche) of \(total) · your range is taking shape"))
     }
 
