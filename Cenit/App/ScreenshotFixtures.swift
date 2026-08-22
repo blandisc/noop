@@ -310,10 +310,11 @@ enum ScreenshotFixtures {
             partes[partes.count - 1] += total - partes.reduce(0, +)
             return partes
         }
-        let ligeroMitad = reparto(light, pesosLigero.map { $0 * 0.5 })
-        let ligeroResto = reparto(light - ligeroMitad.reduce(0, +), pesosLigero)
+        let ligero = reparto(light, pesosLigero)
+        let ligeroMitad = ligero.map { $0 / 2 }
+        let ligeroResto = zip(ligero, ligeroMitad).map { $0 - $1 }
         let profundo = reparto(deep, pesosProfundo), remP = reparto(rem, pesosRem)
-        let despierto = reparto(awake, [1.0 / 3, 1.0 / 3, 1.0 / 3])
+        let despierto = reparto(awake, [0.25, 0.25, 0.25, 0.25])   // 3 microdespertares + el final
         var t = onset
         var segs: [String] = []
         func tramo(_ nombre: String, _ minutos: Int) {
@@ -329,7 +330,7 @@ enum ScreenshotFixtures {
             tramo("rem",   remP[i])
             if i < 3 { tramo("wake", despierto[i]) }   // el microdespertar entre ciclos
         }
-        tramo("wake", awake - (awake / 4) * 3)      // el resto del despierto, al final
+        tramo("wake", despierto[3])                  // el resto del despierto, al final
         return "[" + segs.joined(separator: ",") + "]"
     }
 

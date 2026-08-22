@@ -52,6 +52,9 @@ public struct LiquidFraseNivel: View {
     /// XC7-06 / Q8-12 (FER-128) · la misma regla que `LiquidSheetHeader`: a tamaños de
     /// accesibilidad el sello baja a su propia línea en vez de estrangular el nivel.
     @Environment(\.dynamicTypeSize) private var tamanoTexto
+    /// El conteo ESCALA con su título: clavado a 12.5 quedaba más chico que el pie que sí
+    /// escala — la inversión de jerarquía que los manuales ya mataron (FER-128 r10).
+    @ScaledMetric(relativeTo: .footnote) private var conteoPt: CGFloat = LiquidType.cuerpoLecturaBase
 
     public var body: some View {
         let apilado = tamanoTexto >= .accessibility1
@@ -81,7 +84,7 @@ public struct LiquidFraseNivel: View {
                 }
             }
             Text(verbatim: conteo)
-                .font(LiquidType.cuerpo)
+                .font(.system(size: conteoPt))
                 .lineSpacing(LiquidType.cuerpoLineSpacing)
                 .foregroundStyle(LiquidColor.tinta700)
                 .fixedSize(horizontal: false, vertical: true)

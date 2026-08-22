@@ -1000,13 +1000,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld of %lld nights with breathing"
+            "value" : "%lld of %lld nights with a breathing reading"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld de %lld noches con respiración"
+            "value" : "%lld de %lld noches con lectura de respiración"
           }
         }
       }
@@ -35229,7 +35229,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sin lecturas todavía."
+            "value" : "Aún no hay lecturas."
           }
         }
       }

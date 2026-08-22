@@ -253,7 +253,7 @@ enum LiquidHoyBuilder {
             // La barra dice QUÉ cuenta: el héroe lleva su propio «Noche 2 de 4» (noches del eje
             // autonómico) y dos «de 4» sin apellido en la misma pantalla se contradecían (r9).
             let leyenda = String(format: String(localized: "guardian.base.leyenda",
-                                                defaultValue: "%lld of %lld nights with breathing"),
+                                                defaultValue: "%lld of %lld nights with a breathing reading"),
                                  hechas, necesarias)
             return .init(
                 titulo: String(localized: "Learning your pattern"),

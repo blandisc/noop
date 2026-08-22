@@ -1375,7 +1375,9 @@ struct SleepDetailModel {
     let respNightly: [Double?]
     /// La misma serie de respiración por día que Hoy pasa a `levelsSeriesLoader`: sin ella la
     /// hoja de Respiración abierta DESDE el Detalle mostraba «No hay lecturas en este rango» bajo
-    /// un héroe con número (FER-128 r9, residual de #1127).
+    /// un héroe con número (FER-128 r9, residual de #1127). Sale de `repo.days`, como TODO el
+    /// Detalle (`buildDetached`); Hoy la lee de `displayDays` — sin banda son la misma serie;
+    /// unificar el Detalle entero a `displayDays` es deuda aparte (FER-127).
     var respDaily: [(day: String, value: Double)] = []
 
     // MARK: - Build

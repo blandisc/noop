@@ -320,7 +320,7 @@ public struct LiquidCurvaFC: View {          // curva 24h de heart_rate
 
 public struct LiquidCalibracionCard: View {
     public let titulo: String                // «Calibrando tu base»
-    public let leyenda: String               // «2 de 4 noches» ya localizado
+    public let leyenda: String               // «2 de 4 noches con lectura de respiración» ya localizado
     public let hechas: Int
     public let necesarias: Int
     public let tono: Color
