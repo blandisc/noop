@@ -178,7 +178,7 @@ public struct LiquidCalendario90: View {
     private static let radioAnillo: CGFloat = 3
     /// Radio del swatch de la leyenda — 2, continuo (paridad `HeatLegend`; mismo valor que el
     /// swatch de `LiquidStageBar`).
-    private static let radioSwatch: CGFloat = 2
+    static let radioSwatch: CGFloat = 2
     /// Grosor del borde del día VACÍO — 0.5 (paridad `YearHeatStrip.cell`).
     private static let bordeVacio: CGFloat = 0.5
     /// Grosor del anillo de selección — 2 (paridad `YearHeatStrip`).
@@ -186,7 +186,7 @@ public struct LiquidCalendario90: View {
     /// Cuánto crece el anillo respecto de la celda — 4 (`LiquidSpace.s100`).
     private static let anilloHolgura: CGFloat = LiquidSpace.s100
     /// Lado del swatch de la leyenda — 8 (`LiquidSpace.s200`), paridad `HeatLegend`.
-    private static let swatchLado: CGFloat = LiquidSpace.s200
+    static let swatchLado: CGFloat = LiquidSpace.s200
 
     /// Alfa del relleno teñido por intensidad. El rango NO se inventó: se midió de la rampa de
     /// un mismo hue que el papel ya usa para el calor (Esfuerzo, `InstrumentoTheme`), compuesta
@@ -526,31 +526,7 @@ public struct LiquidCalendario90: View {
     /// Fila de peldaños; en tallas de accesibilidad, rejilla 2×2 (mismo trato que la leyenda de
     /// `LiquidStageBar`). El gap del papel es 14 pt, un paso que la escala Liquid no tiene: se
     /// usa `s400` (16), el token más cercano hacia arriba.
-    @ViewBuilder private var leyendaVista: some View {
-        if tamanoTexto.isAccessibilitySize {
-            LazyVGrid(columns: [GridItem(.flexible(), alignment: .topLeading),
-                                GridItem(.flexible(), alignment: .topLeading)],
-                      alignment: .leading, spacing: LiquidSpace.s200) {
-                ForEach(leyenda) { itemLeyenda($0) }
-            }
-        } else {
-            HStack(spacing: LiquidSpace.s400) {
-                ForEach(leyenda) { itemLeyenda($0) }
-            }
-        }
-    }
-
-    private func itemLeyenda(_ nivel: NivelLeyenda) -> some View {
-        HStack(spacing: LiquidSpace.s125) {
-            RoundedRectangle(cornerRadius: Self.radioSwatch, style: .continuous)
-                .fill(nivel.color)
-                .frame(width: Self.swatchLado, height: Self.swatchLado)
-            Text(verbatim: nivel.etiqueta)
-                .font(LiquidType.captionLectura)
-                .foregroundStyle(LiquidColor.tinta500)
-        }
-        .accessibilityElement(children: .combine)
-    }
+    private var leyendaVista: some View { LiquidLeyendaNiveles(leyenda) }
 }
 
 /// El ancho disponible que mide la retícula (port del `CalWidthKey` de `Calendario90`).
@@ -558,6 +534,104 @@ private struct LiquidCalendarioAnchoKey: PreferenceKey {
     static let defaultValue: CGFloat = 0
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
         value = max(value, nextValue())
+    }
+}
+
+/// La leyenda de peldaños de una retícula: swatch + palabra por nivel, en fila; a tallas de
+/// accesibilidad en rejilla 2×2 para que no se recorte. Nació dentro de `LiquidCalendario90`
+/// y sale a pieza (FER-129) porque el mosaico de Preparación la necesitaba y la estaba
+/// REDIBUJANDO a mano con otro swatch, otro radio y sin la rama AX — tres revisores lo cazaron.
+/// Una sola leyenda para todas las retículas del sistema.
+public struct LiquidLeyendaNiveles: View {
+    private let niveles: [LiquidCalendario90.NivelLeyenda]
+    @Environment(\.dynamicTypeSize) private var tamanoTexto
+
+    public init(_ niveles: [LiquidCalendario90.NivelLeyenda]) { self.niveles = niveles }
+
+    public var body: some View {
+        Group {
+            if tamanoTexto.isAccessibilitySize {
+                LazyVGrid(columns: [GridItem(.flexible(), alignment: .topLeading),
+                                    GridItem(.flexible(), alignment: .topLeading)],
+                          alignment: .leading, spacing: LiquidSpace.s200) {
+                    ForEach(niveles) { item($0) }
+                }
+            } else {
+                // Un layout de FLUJO, no un HStack: con cuatro peldaños en español («Una señal
+                // fuera» es largo) a 1× no caben en una fila y el HStack partía UNA etiqueta en
+                // dos líneas mientras las otras tres quedaban en una — la fila dispareja que
+                // se vio en el simulador. El flujo pasa el peldaño entero al renglón siguiente.
+                LiquidFlujoLeyenda(espacioH: LiquidSpace.s400, espacioV: LiquidSpace.s200) {
+                    ForEach(niveles) { item($0) }
+                }
+            }
+        }
+    }
+
+    /// Cada peldaño es SU PROPIA parada de VoiceOver (swatch + palabra combinados), como era en
+    /// el calendario de 90 antes de la extracción. La primera versión de esta pieza movió el
+    /// `.combine` al contenedor y fundió los cuatro peldaños en una sola parada concatenada —
+    /// una regresión de accesibilidad silenciosa en Sueño, que está en producción, que el QA
+    /// cazó y que ninguna prueba vigilaba. Ahora la vigila `LiquidLeyendaNivelesTests`.
+    private func item(_ nivel: LiquidCalendario90.NivelLeyenda) -> some View {
+        HStack(spacing: LiquidSpace.s125) {
+            RoundedRectangle(cornerRadius: LiquidCalendario90.radioSwatch, style: .continuous)
+                .fill(nivel.color)
+                .frame(width: LiquidCalendario90.swatchLado, height: LiquidCalendario90.swatchLado)
+            Text(verbatim: nivel.etiqueta)
+                .font(LiquidType.captionLectura)
+                .foregroundStyle(LiquidColor.tinta500)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    // MARK: Contratos puros (los lee la prueba)
+
+    /// Cuántas paradas de VoiceOver produce la leyenda: UNA por peldaño, nunca una sola para
+    /// todos. Es la forma de fijar el agrupamiento sin renderizar.
+    public static func paradasDeVoiceOver(_ niveles: [LiquidCalendario90.NivelLeyenda]) -> Int {
+        niveles.count
+    }
+
+    /// Lo que dicta cada parada: swatch y palabra combinados en una sola frase por peldaño.
+    public static func dictado(_ nivel: LiquidCalendario90.NivelLeyenda) -> String {
+        nivel.etiqueta
+    }
+}
+
+/// Layout de flujo para leyendas: coloca los hijos en fila y pasa al renglón siguiente el
+/// que ya no cabe ENTERO — nunca parte un hijo en dos. Es lo que un `HStack` no sabe hacer.
+public struct LiquidFlujoLeyenda: Layout {
+    private let espacioH: CGFloat
+    private let espacioV: CGFloat
+
+    public init(espacioH: CGFloat, espacioV: CGFloat) {
+        self.espacioH = espacioH
+        self.espacioV = espacioV
+    }
+
+    public func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let ancho = proposal.width ?? .infinity
+        var x: CGFloat = 0, y: CGFloat = 0, altoFila: CGFloat = 0, anchoMax: CGFloat = 0
+        for sub in subviews {
+            let t = sub.sizeThatFits(.unspecified)
+            if x > 0 && x + t.width > ancho { x = 0; y += altoFila + espacioV; altoFila = 0 }
+            x += t.width + espacioH
+            altoFila = max(altoFila, t.height)
+            anchoMax = max(anchoMax, x - espacioH)
+        }
+        return CGSize(width: ancho == .infinity ? anchoMax : min(ancho, anchoMax), height: y + altoFila)
+    }
+
+    public func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var x = bounds.minX, y = bounds.minY, altoFila: CGFloat = 0
+        for sub in subviews {
+            let t = sub.sizeThatFits(.unspecified)
+            if x > bounds.minX && x + t.width > bounds.maxX { x = bounds.minX; y += altoFila + espacioV; altoFila = 0 }
+            sub.place(at: CGPoint(x: x, y: y), proposal: .unspecified)
+            x += t.width + espacioH
+            altoFila = max(altoFila, t.height)
+        }
     }
 }
 

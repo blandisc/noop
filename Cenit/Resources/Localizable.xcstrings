@@ -186,38 +186,6 @@
         }
       }
     },
-    "prep.atr.auto" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "outside your base"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "fuera de tu base"
-          }
-        }
-      }
-    },
-    "prep.atr.centinela" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "both, never one alone"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "las dos, nunca una sola"
-          }
-        }
-      }
-    },
     "prep.atr.centinela.nombre" : {
       "localizations" : {
         "en" : {
@@ -230,86 +198,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Temp y respiración"
-          }
-        }
-      }
-    },
-    "prep.atr.leidas" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "the rest had no signal"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "el resto sin señal"
-          }
-        }
-      }
-    },
-    "prep.atr.leidas.nombre" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mornings read"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mañanas leídas"
-          }
-        }
-      }
-    },
-    "prep.atr.sueno" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "short or broken up"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "corto o entrecortado"
-          }
-        }
-      }
-    },
-    "prep.atribucion.nota" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "These are the nights each signal came in outside your range. A single night out doesn't move your verdict on its own, so these numbers won't add up to the mosaic above."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Son las noches en que cada señal vino fuera de tu rango. Una noche fuera no mueve tu veredicto por sí sola, así que estos números no cuadran con el mosaico de arriba."
-          }
-        }
-      }
-    },
-    "prep.atribucion.titulo" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "What went out, and how often"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Qué se salió, y cuántas veces"
           }
         }
       }
@@ -394,50 +282,50 @@
         }
       }
     },
-    "prep.eje.dentro" : {
+    "prep.conteo.a11y.fmt" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "In your range"
+            "value" : "%1$d of %2$d nights out"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "En tu rango"
+            "value" : "%1$d de %2$d noches fuera"
           }
         }
       }
     },
-    "prep.eje.fuera" : {
+    "prep.conteos.nota.fmt" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Outside your range"
+            "value" : "Out of %d mornings with a reading. A single night out doesn't move your verdict on its own, which is why these counts won't add up to the squares above."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fuera de tu rango"
+            "value" : "De %d mañanas con lectura. Una noche fuera no mueve tu veredicto por sí sola: por eso estas cuentas no cuadran con los cuadros de arriba."
           }
         }
       }
     },
-    "prep.hoy.titulo" : {
+    "prep.dias.corto.fmt" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Why today"
+            "value" : "%d d"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Por qué hoy"
+            "value" : "%d d"
           }
         }
       }
@@ -447,13 +335,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Every morning I look at three things. Your resting heart rate, against your own base: that's the axis that votes, and your HRV measured while you sleep rides along with it only on nights that have enough of it, never on its own (the all-day HRV you see elsewhere in the app never votes). Your sleep, against the floor sleep science recommends, not against your own history. And the sentinel, skin temperature and breathing, which only counts when both run high together. None out is «all in range»; one is «one signal out»; two or more is «two or more out». A sustained downward trend can also bring that change forward."
+            "value" : "Every morning I look at three things. Your resting heart rate, against your own base: that's the axis that votes, and your HRV measured while you sleep rides along with it only on nights that have enough of it, never on its own (the all-day HRV you see elsewhere in the app never votes). Your sleep, against the floor sleep science recommends, not against your own history, and it votes out if it came short or broken up. And the sentinel, skin temperature and breathing, which only counts when both run high together. None out is «all in range»; one is «one signal out»; two or more is «two or more out». A sustained downward trend can also bring that change forward."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cada mañana miro tres cosas. Tu FC en reposo, contra tu propia base: ese es el eje que vota, y tu VFC medida mientras duermes lo acompaña solo en las noches que traen suficiente, nunca sola (la VFC de todo el día que ves en otras partes del app nunca vota). Tu sueño, contra el piso que recomienda la ciencia del sueño, no contra tu propio historial. Y el centinela, temperatura de piel y respiración, que solo cuenta cuando las dos van altas juntas. Ninguna fuera es «todo en rango»; una es «una señal fuera»; dos o más es «dos o más fuera». Una tendencia sostenida a la baja también puede adelantar ese cambio."
+            "value" : "Cada mañana miro tres cosas. Tu FC en reposo, contra tu propia base: ese es el eje que vota, y tu VFC medida mientras duermes lo acompaña solo en las noches que traen suficiente, nunca sola (la VFC de todo el día que ves en otras partes del app nunca vota). Tu sueño, contra el piso que recomienda la ciencia del sueño, no contra tu propio historial, y vota fuera si vino corto o entrecortado. Y el centinela, temperatura de piel y respiración, que solo cuenta cuando las dos van altas juntas. Ninguna fuera es «todo en rango»; una es «una señal fuera»; dos o más es «dos o más fuera». Una tendencia sostenida a la baja también puede adelantar ese cambio."
           }
         }
       }
@@ -470,6 +358,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cada cuadro se juzga con la base que tenías hasta ese día, así que no cambia si regresas a verlo después. Lo que no puede cargar es el ajuste de tendencia que solo aplica a la mañana que estás viviendo: por eso un cuadro viejo puede diferir de lo que Hoy dijo en voz alta ese día. La carga de entrenamiento no vota aquí."
+          }
+        }
+      }
+    },
+    "prep.metodo.regla" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Two days in a row move the verdict."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dos días seguidos mueven el veredicto."
           }
         }
       }
@@ -650,6 +554,38 @@
         }
       }
     },
+    "prep.senales.hoy" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoy"
+          }
+        }
+      }
+    },
+    "prep.senales.mes" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nights out, over 30 days"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las noches fuera, en 30 días"
+          }
+        }
+      }
+    },
     "prep.sinHistoria.cuerpo" : {
       "localizations" : {
         "en" : {
@@ -694,6 +630,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Preparación"
+          }
+        }
+      }
+    },
+    "prep.votos.titulo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The votes"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los votos"
           }
         }
       }
