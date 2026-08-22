@@ -175,6 +175,17 @@ public enum EntrenarMetrics {
     public static let levelTop: CGFloat = 10
     /// El aire entre el filo superior de un nivel y su fila de encabezado. (= `CenitMetrics.space1`.)
     public static let levelPadTop: CGFloat = CenitMetrics.space1
+
+    /// El título del héroe de Descanso («Descanso»), FER-132: el prototipo lo dibuja a 40 pt / 700 /
+    /// tracking -1 — un escalón MÁS GRANDE que el título de un día con rutina (Grotesk 32), porque
+    /// «Descanso» es una sola palabra corta y el handoff le da más peso para llenar el mismo espacio
+    /// vertical. No existía un token para 40 antes de este estado.
+    public static let restHeroTitle: CGFloat = 40
+
+    /// El canal entre «Empezar»/«Movilidad»/«Continuar» y el enlace quiet que lo acompaña en la MISMA
+    /// fila del héroe (handoff «Ritmo 1b»/FER-132 ronda 2): antes un `16` suelto se repetía en los
+    /// tres héroes (rutina, descanso, sesión viva) sin nombre.
+    public static let ctaRowGap: CGFloat = 16
 }
 
 /// El estado de una celda del calendario de entrenamiento. Es un token porque lo consumen dos

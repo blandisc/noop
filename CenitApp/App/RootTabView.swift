@@ -28,7 +28,6 @@ struct RootTabView: View {
         case breathe, intervals                   // Entrenar hub
         case weeklyPlan = "weeklyplan"            // Entrenar hub — weekly plan editor (FER-533)
         case misRutinas = "misrutinas"           // Entrenar hub — routine + folder management (FER-534)
-        case restDay = "restday"                  // Entrenar hub — «Hoy descansas» (v3 · 2B, now a push, FER-718)
         case routineToday                         // Entrenar hub — «Rutina de hoy» (DEBUG screenshot-nav)
         // Reachable via DEBUG screenshot-nav (pushed onto the Ajustes stack). Explore/Compare/Workouts
         // also still open from Cuerpo's footer; the rest open as sheets from the Ajustes root (FER-337).
@@ -116,7 +115,6 @@ struct RootTabView: View {
                 openHistory: { trainStack.append(SecondaryScreen.workoutHistory) },
                 openWeeklyPlan: { trainStack.append(SecondaryScreen.weeklyPlan) },
                 openRoutines: { trainStack.append(SecondaryScreen.weeklyPlan) },
-                openRestDay: { trainStack.append(SecondaryScreen.restDay) },
                 openWorkoutSession: { trainStack.append($0) },
                 openMuscleMap: { trainStack.append(MuscleVolumeRoute()) }
             )
@@ -237,10 +235,14 @@ struct RootTabView: View {
                     }
                 )
         }
-        // The active-session pill (FER-716): floats over the dock on ALL five tabs while a session is
-        // running and the full-screen cover is minimized. Tapping it re-opens the session.
+        // The active-session pill (FER-716): floats over the dock on the OTHER four tabs while a
+        // session is running and the full-screen cover is minimized. Tapping it re-opens the session.
+        //
+        // FER-132: hidden on Entrenar itself — its landing already tells the live-session story in
+        // full (kicker «EN CURSO · N MIN», the routine, the progress numerals, «Continuar»), so the
+        // same fact repeated as a floating pill over that same screen was noise, not a second signal.
         .overlay(alignment: .bottom) {
-            if appModel.strengthSession != nil && !appModel.strengthSheetPresented {
+            if appModel.strengthSession != nil && !appModel.strengthSheetPresented && selection != .train {
                 ActiveSessionPillHost(model: appModel, confirmDiscard: $confirmDiscardSession)
                     .padding(.horizontal, CenitMetrics.screenPadding)
                     .padding(.bottom, barHeight + CenitMetrics.space2)
@@ -379,7 +381,7 @@ struct RootTabView: View {
     private func hub(for screen: SecondaryScreen) -> Tab {
         switch screen {
         case .library, .workoutHistory, .breathe, .intervals, .weeklyPlan, .misRutinas,
-             .restDay, .routineToday:
+             .routineToday:
             return .train
         case .explore, .compare, .workouts, .applehealth, .datasources, .support:
             return .settings
@@ -477,10 +479,6 @@ struct RootTabView: View {
                 openRoutine: { id in trainStack.append(RoutineEditorRoute.routine(routineId: id)) },
                 openLibrary: { trainStack.append(SecondaryScreen.library) },
                 openDay: { wd in trainStack.append(RoutineEditorRoute.planDay(weekday: wd)) })
-        case .restDay:      RestDayScreen(
-                                openIntervals: { trainStack.append(SecondaryScreen.intervals) },
-                                openBreathe: { trainStack.append(SecondaryScreen.breathe) },
-                                openRoutines: { trainStack.append(SecondaryScreen.misRutinas) })
         case .routineToday: RoutineEditorScreen(origin: .today(routineId: nil))
         case .explore:      MetricExplorerView()
         case .compare:      CompareView()
