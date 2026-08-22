@@ -38,13 +38,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your resting heart rate came in outside your base"
+            "value" : "outside your base"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tu FC en reposo vino fuera de tu base"
+            "value" : "fuera de tu base"
           }
         }
       }
@@ -54,13 +54,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Both ran high together; one alone never counts"
+            "value" : "both, never one alone"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Las dos altas juntas; una sola nunca cuenta"
+            "value" : "las dos, nunca una sola"
           }
         }
       }
@@ -70,13 +70,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Temperature and breathing"
+            "value" : "Temp and breathing"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Temperatura y respiración"
+            "value" : "Temp y respiración"
           }
         }
       }
@@ -86,13 +86,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The rest didn't have enough signal"
+            "value" : "the rest had no signal"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "El resto no tuvo señal suficiente"
+            "value" : "el resto sin señal"
           }
         }
       }
@@ -118,13 +118,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You slept less than recommended, or your sleep came broken up"
+            "value" : "short or broken up"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dormiste menos de lo recomendado, o dormiste de forma poco continua"
+            "value" : "corto o entrecortado"
           }
         }
       }
@@ -161,6 +161,54 @@
         }
       }
     },
+    "prep.campo.cargando" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reading your mornings…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leyendo tus mañanas…"
+          }
+        }
+      }
+    },
+    "prep.campo.sinPermiso" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I can't read you yet."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todavía no puedo leerte."
+          }
+        }
+      }
+    },
+    "prep.campo.sinVeredicto" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No verdict this morning."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin veredicto esta mañana."
+          }
+        }
+      }
+    },
     "prep.cargando" : {
       "localizations" : {
         "en" : {
@@ -182,45 +230,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%d with a reading"
+            "value" : "%1$d of %2$d with a reading"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%d con lectura"
-          }
-        }
-      }
-    },
-    "prep.dias.corta" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "days"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "días"
-          }
-        }
-      }
-    },
-    "prep.dias.fmt" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%d days"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%d días"
+            "value" : "%1$d de %2$d con lectura"
           }
         }
       }
@@ -301,22 +317,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cada cuadro se juzga con la base que tenías hasta ese día, así que no cambia si regresas a verlo después. Lo que no puede cargar es el ajuste de tendencia que solo aplica a la mañana que estás viviendo: por eso un cuadro viejo puede diferir de lo que Hoy dijo en voz alta ese día. La carga de entrenamiento no vota aquí."
-          }
-        }
-      }
-    },
-    "prep.metodo.titulo" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "See the method"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ver el método"
           }
         }
       }
@@ -486,13 +486,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%d nights of your baseline"
+            "value" : "%1$@ of your baseline"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%d noches de tu base"
+            "value" : "%1$@ de tu base"
           }
         }
       }
@@ -593,18 +593,34 @@
         }
       }
     },
-    "prep.volver" : {
+    "prep.dia.tendencia" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Back"
+            "value" : "downward trend"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Atrás"
+            "value" : "tendencia a la baja"
+          }
+        }
+      }
+    },
+    "prep.mosaico.a11yPista" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Swipe up or down to move between mornings with a reading"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desliza arriba o abajo para moverte entre mañanas con lectura"
           }
         }
       }

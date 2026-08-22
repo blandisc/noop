@@ -71,6 +71,7 @@ public struct LiquidMosaicoVeredictos: View {
     private let a11yLabel: String
     private let a11yConteo: (Int, Int) -> String
     private let pistaVacia: String?
+    private let a11yPista: String
     @Binding private var seleccion: String?
 
     /// La lectura y la leyenda se APILAN en tallas de accesibilidad en vez de recortarse
@@ -93,7 +94,8 @@ public struct LiquidMosaicoVeredictos: View {
                 a11yLabel: String,
                 a11yConteo: @escaping (Int, Int) -> String,
                 inicialesDia: [String] = LiquidCalendario90.inicialesPorLocale(),
-                pistaVacia: String? = nil) {
+                pistaVacia: String? = nil,
+                a11yPista: String = "") {
         self.dias = dias
         self.peldanos = peldanos
         self.conteos = conteos
@@ -103,6 +105,7 @@ public struct LiquidMosaicoVeredictos: View {
         self.a11yConteo = a11yConteo
         self.inicialesDia = inicialesDia
         self.pistaVacia = pistaVacia
+        self.a11yPista = a11yPista
     }
 
     // MARK: - Geometría
@@ -114,9 +117,26 @@ public struct LiquidMosaicoVeredictos: View {
     private static let celdaSemilla: CGFloat = 28
     /// Radio de la celda — 5, el mismo que `LiquidCalendario90.radioCelda` y por la misma razón:
     /// no es `LiquidRadius.control` (12), que a este tamaño convertiría la celda en un círculo.
+    /// Piso y techo de la celda. La pieza hermana los tiene (`celdaMin`/`celdaMax`) y esta
+    /// nació sin techo: con 7 columnas nunca se dispara en un iPhone, pero en un lienzo ancho
+    /// la celda crecería sin límite y la retícula dejaría de leerse como un calendario.
+    private static let celdaMin: CGFloat = 12
+    private static let celdaMax: CGFloat = 56
     private static let radioCelda: CGFloat = 5
     /// Radio del pip del reparto — 3: es un cuadro pequeño, no una pastilla.
     private static let radioPip: CGFloat = 3
+    /// Holgura y grosor del anillo de selección — los mismos que `LiquidCalendario90`.
+    private static let anilloHolgura: CGFloat = LiquidSpace.s100
+    private static let anilloBorde: CGFloat = 2
+    /// Radio del anillo — `radioCelda` + la mitad de la holgura, que es la curva concéntrica:
+    /// el anillo corre a 2 pt por fuera de la celda, así que su radio es 2 mayor.
+    ///
+    /// DIVERGE A PROPÓSITO de `LiquidCalendario90.radioAnillo` (3, MENOR que su celda) y aquí
+    /// va escrito por qué, como pide el sistema para toda divergencia deliberada: aquel 3 se
+    /// afinó para una celda de ~20 pt, donde el radio es la cuarta parte del lado. La celda de
+    /// este mosaico mide ~46 pt (7 columnas, no 14), y un anillo de radio 3 alrededor de 50 pt
+    /// se ve cuadrado. Se hereda el PATRÓN, no el número.
+    private static let radioAnillo: CGFloat = radioCelda + LiquidSpace.s100 / 2
 
     /// Sin viaje con Reduce Motion; si no, la misma curva de salida que la pieza hermana.
     private var animacion: Animation? {
@@ -127,7 +147,8 @@ public struct LiquidMosaicoVeredictos: View {
     private var celda: CGFloat {
         guard anchoMedido > 0 else { return Self.celdaSemilla }
         let cols = CGFloat(Self.columnas)
-        return max(12, (anchoMedido - Self.gap * (cols - 1)) / cols)
+        return max(Self.celdaMin,
+                   min(Self.celdaMax, (anchoMedido - Self.gap * (cols - 1)) / cols))
     }
 
     // MARK: - Contratos puros (los mismos que leen la vista, VoiceOver y las pruebas)
@@ -164,6 +185,11 @@ public struct LiquidMosaicoVeredictos: View {
         return legibles[j].id
     }
 
+    /// El hueco de la retícula va a `celdaVacia` (7 %) y su pip en el reparto a `celdaVaciaPip`
+    /// (14 %), que es el DOBLE. No es descuido: son el mismo estado semántico a dos escalas muy
+    /// distintas —una celda de ~46 pt contra un cuadro de 10— y al 7 % el pip desaparece contra
+    /// el papel, así que el renglón «sin lectura» se quedaría sin su marca. La hermana comparte
+    /// un solo token porque su celda y su swatch de leyenda miden casi lo mismo.
     private func color(_ peldanoID: String?) -> Color {
         guard let peldanoID, let p = peldanos.first(where: { $0.id == peldanoID }) else {
             return LiquidColor.celdaVacia
@@ -193,14 +219,27 @@ public struct LiquidMosaicoVeredictos: View {
             }
             .accessibilityHidden(true)
 
-            let filas = stride(from: 0, to: dias.count, by: Self.columnas).map { inicio in
-                Array(dias[inicio..<min(inicio + Self.columnas, dias.count)])
+            // La última fila se completa a 7 con huecos INVISIBLES: 30 % 7 = 2, y sin
+            // completarla la rejilla terminaba con dos celdas sueltas y dos tercios de fila en
+            // blanco, que se lee como una retícula a medias.
+            //
+            // ⚠️ El relleno NO puede ser una celda `nil`: `nil` es «ese día no tuvo lectura» y
+            // se pinta del gris de hueco, así que rellenar con `nil` le mostraría al usuario
+            // cinco días vacíos que no existen — mentir sobre su cobertura para cerrar una
+            // fila. Por eso el relleno es espacio transparente y `dias` no se toca: el
+            // denominador sigue siendo la ventana.
+            let filas: [[Int]] = stride(from: 0, to: dias.count, by: Self.columnas).map { inicio in
+                Array(inicio..<min(inicio + Self.columnas, dias.count))
             }
             VStack(alignment: .leading, spacing: Self.gap) {
                 ForEach(Array(filas.enumerated()), id: \.offset) { _, fila in
                     HStack(spacing: Self.gap) {
-                        ForEach(Array(fila.enumerated()), id: \.offset) { _, dia in
-                            celdaVista(dia)
+                        ForEach(0..<Self.columnas, id: \.self) { col in
+                            if col < fila.count {
+                                celdaVista(dias[fila[col]])
+                            } else {
+                                Color.clear.frame(width: celda, height: celda)
+                            }
                         }
                     }
                 }
@@ -219,6 +258,10 @@ public struct LiquidMosaicoVeredictos: View {
         .accessibilityLabel(Text(verbatim: a11yLabel))
         .accessibilityValue(Text(verbatim: Self.a11yValor(dias: dias, seleccion: seleccion,
                                                           conteo: a11yConteo)))
+        // VoiceOver anuncia «ajustable» pero no QUÉ ajusta: sin esto, el gesto existe y nadie
+        // sabe que existe (la pista visual está oculta a VoiceOver a propósito, porque una
+        // celda suelta no es alcanzable con `children: .ignore`).
+        .accessibilityHint(Text(verbatim: a11yPista))
         .accessibilityAdjustableAction { direccion in
             switch direccion {
             case .increment: seleccion = Self.vecino(dias: dias, desde: seleccion, paso: 1)
@@ -235,9 +278,15 @@ public struct LiquidMosaicoVeredictos: View {
             .fill(color(dia?.peldano))
             .frame(width: celda, height: celda)
             .overlay {
+                // El día tocado se marca con un ANILLO POR FUERA, nunca comiéndose su propio
+                // relleno: el relleno ES el dato. `strokeBorder` dibuja hacia adentro, así que
+                // tapaba 2 pt de tinte en todo el perímetro justo del día que el usuario quiso
+                // mirar. Es la misma regla que `LiquidCalendario90` documenta (`:438-444`).
                 if tocado {
-                    RoundedRectangle(cornerRadius: Self.radioCelda)
-                        .strokeBorder(LiquidColor.tinta900, lineWidth: 2)
+                    RoundedRectangle(cornerRadius: Self.radioAnillo, style: .continuous)
+                        .stroke(LiquidColor.tinta900, lineWidth: Self.anilloBorde)
+                        .frame(width: celda + Self.anilloHolgura,
+                               height: celda + Self.anilloHolgura)
                 }
             }
             .contentShape(Rectangle())

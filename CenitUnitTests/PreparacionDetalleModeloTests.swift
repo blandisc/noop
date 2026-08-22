@@ -254,10 +254,18 @@ final class PreparacionDetalleModeloTests: XCTestCase {
     /// La atribución del sueño no puede decir solo «dormiste menos»: el eje vota con
     /// `shortVsNeed || poorEfficiency`, así que una noche fragmentada de duración normal
     /// vota igual y quedaría sin explicación.
+    /// Vigila la AFIRMACIÓN, no una palabra concreta: el pie tiene que nombrar las dos formas
+    /// de votar. Atarla a un término exacto («continua») hizo que la prueba cayera cuando el
+    /// copy se acortó a «corto o entrecortado», que dice lo mismo mejor. Una guarda de ciencia
+    /// no debe congelar la redacción, solo impedir que se pierda la mitad del hecho.
     func testLaAtribucionDeSuenoNombraLasDosFormasDeVotar() throws {
         let pie = try es("prep.atr.sueno")
-        XCTAssertTrue(pie.localizedCaseInsensitiveContains("continua"),
-                      "falta la noche fragmentada, que vota igual que la corta")
+        let duracion = ["corto", "menos", "poco"]
+        let continuidad = ["entrecortado", "continua", "fragmentad", "interrump"]
+        XCTAssertTrue(duracion.contains { pie.localizedCaseInsensitiveContains($0) },
+                      "falta la noche corta: «\(pie)»")
+        XCTAssertTrue(continuidad.contains { pie.localizedCaseInsensitiveContains($0) },
+                      "falta la noche fragmentada, que vota igual que la corta: «\(pie)»")
     }
 
     /// El héroe más visto de la app prometía un «rango» de sueño personal que el motor no
@@ -290,7 +298,12 @@ final class PreparacionDetalleModeloTests: XCTestCase {
         XCTAssertFalse(limpio.hasSuffix(" · "), "sin ejes fuera no se cuelga un separador: «\(limpio)»")
     }
 
-    /// El centinela se nombra como par, nunca como una señal suelta: una sola alta jamás vota.
+    /// El centinela se nombra como PAR, nunca como una señal suelta: una sola alta jamás vota.
+    ///
+    /// Vigila la AFIRMACIÓN, no la redacción. Atada a la palabra «temperatura» completa, esta
+    /// prueba cayó cuando el rótulo se acortó a «Temp y respiración» para que la rejilla
+    /// cerrara pareja — un copy que dice exactamente lo mismo. Es la SEGUNDA guarda de esta
+    /// suite que se rompe por congelar una palabra en vez del hecho.
     func testElCentinelaSeNombraComoPar() throws {
         let claves = PreparacionDetalleModelo.dayKeys(endingAt: Date(), calendar: cal, count: 30)
         let historia = claves.enumerated().map { i, k -> Preparedness.VerdictNight in
@@ -299,8 +312,85 @@ final class PreparacionDetalleModeloTests: XCTestCase {
         let m = PreparacionDetalleModelo.build(prep: read(historia), healthConnected: true,
                                                asOf: Date(), calendario: cal)
         let etiqueta = try XCTUnwrap(m.rejilla[3]).etiqueta
-        XCTAssertTrue(etiqueta.localizedCaseInsensitiveContains("emperature")
-                      || etiqueta.localizedCaseInsensitiveContains("emperatura"),
-                      "el par se nombra junto: «\(etiqueta)»")
+        // Las DOS mitades del par, en cualquier redacción: «temperatura» o «temp», y
+        // «respiración» o «breathing». Nombrar una sola sería decir que vota sola.
+        let calor = ["temp"]
+        let aire = ["respir", "breath", "resp."]
+        XCTAssertTrue(calor.contains { etiqueta.localizedCaseInsensitiveContains($0) },
+                      "falta la temperatura: «\(etiqueta)»")
+        XCTAssertTrue(aire.contains { etiqueta.localizedCaseInsensitiveContains($0) },
+                      "falta la respiración, y sin ella el par se lee como una señal sola: «\(etiqueta)»")
+    }
+
+    // MARK: - Lo que cazó la revisión de UX / UI / quisquilloso (FER-126)
+
+    /// 🔴 La canaleta decía «L M M J V S D» fijo, pero la ventana son 30 días consecutivos
+    /// terminando HOY, así que la primera columna rota un día cada día. La fila fija acertaba
+    /// 1 de cada 7 días del año. La prueba barre los 7 arranques posibles: si alguien vuelve a
+    /// clavar la fila, seis de siete fallan.
+    func testLaCanaletaDiceElDiaRealDeCadaColumna() throws {
+        let simbolos = cal.shortWeekdaySymbols
+        for corrimiento in 0..<7 {
+            let inicio = try XCTUnwrap(cal.date(byAdding: .day, value: corrimiento,
+                                                to: Date(timeIntervalSince1970: 1_755_000_000)))
+            let iniciales = PreparacionDetalleModelo.inicialesDesde(inicio, calendario: cal)
+            XCTAssertEqual(iniciales.count, 7)
+            // Las columnas pares llevan etiqueta; las impares van en blanco (ritmo de la hermana).
+            for col in stride(from: 0, to: 7, by: 2) {
+                let dia = try XCTUnwrap(cal.date(byAdding: .day, value: col, to: inicio))
+                let esperado = simbolos[cal.component(.weekday, from: dia) - 1]
+                XCTAssertEqual(iniciales[col], esperado,
+                               "columna \(col) con arranque \(corrimiento): dice «\(iniciales[col])» y ese día es \(esperado)")
+            }
+            for col in stride(from: 1, to: 7, by: 2) { XCTAssertEqual(iniciales[col], "") }
+        }
+    }
+
+    /// La canaleta del modelo sale del PRIMER día de la ventana, no de hoy.
+    func testLaCanaletaDelModeloArrancaEnElPrimerDiaDeLaVentana() throws {
+        let hoy = Date(timeIntervalSince1970: 1_755_000_000)
+        let claves = PreparacionDetalleModelo.dayKeys(endingAt: hoy, calendar: cal, count: 30)
+        let m = PreparacionDetalleModelo.build(prep: read(claves.map { noche($0, .full) }),
+                                               healthConnected: true, asOf: hoy, calendario: cal)
+        let primerDia = try XCTUnwrap(cal.date(byAdding: .day, value: -29,
+                                               to: cal.startOfDay(for: hoy)))
+        XCTAssertEqual(m.inicialesDia,
+                       PreparacionDetalleModelo.inicialesDesde(primerDia, calendario: cal))
+    }
+
+    /// 🔴 El veredicto de un día es POST-histéresis y sus ejes son los CRUDOS: con el empujón
+    /// de tendencia, un día podía decir «Dos o más fuera» nombrando UNA sola señal.
+    func testUnDiaEmpujadoPorLaTendenciaDiceQuienLoEmpujo() throws {
+        let claves = PreparacionDetalleModelo.dayKeys(endingAt: Date(), calendar: cal, count: 30)
+        // Veredicto `.easy` (dos o más) pero un SOLO eje crudo fuera: eso solo pasa con empujón.
+        let historia = claves.enumerated().map { i, k -> Preparedness.VerdictNight in
+            i == 4 ? noche(k, .easy, auto: true) : noche(k, .full)
+        }
+        let m = PreparacionDetalleModelo.build(prep: read(historia), healthConnected: true,
+                                               asOf: Date(), calendario: cal)
+        let etiqueta = try XCTUnwrap(m.rejilla[4]).etiqueta
+        XCTAssertTrue(etiqueta.contains(String(localized: "prep.dia.tendencia",
+                                               defaultValue: "downward trend")),
+                      "un peldaño que promete más ejes de los que hay tiene que decir quién lo empujó: «\(etiqueta)»")
+
+        // Y un día `.easy` con DOS ejes de verdad no arrastra la coletilla.
+        let dos = claves.enumerated().map { i, k -> Preparedness.VerdictNight in
+            i == 4 ? noche(k, .easy, auto: true, sleep: true) : noche(k, .full)
+        }
+        let m2 = PreparacionDetalleModelo.build(prep: read(dos), healthConnected: true,
+                                                asOf: Date(), calendario: cal)
+        XCTAssertFalse(try XCTUnwrap(m2.rejilla[4]).etiqueta
+            .contains(String(localized: "prep.dia.tendencia", defaultValue: "downward trend")),
+                       "con dos ejes de verdad no hay nada que explicar")
+    }
+
+    /// «1 días» era el resultado de una clave PLANA que yo acuñé teniendo el catálogo una que
+    /// sí pluraliza. Se comprueba contra el ESPAÑOL real, no contra el inglés de la suite.
+    func testElConteoDeDiasConcuerdaEnSingular() throws {
+        XCTAssertEqual(PreparacionDetalleModelo.unidadDias(1),
+                       String(format: String(localized: "%lld days"), 1))
+        let uno = PreparacionDetalleModelo.unidadDias(1)
+        XCTAssertFalse(uno.contains("1 días"), "«1 días» otra vez: \(uno)")
+        XCTAssertFalse(uno.contains("1 days"), "«1 days» otra vez: \(uno)")
     }
 }
