@@ -70,6 +70,14 @@ public struct MatrizHilos: View {
 
         /// ¿Ese hilo tiene base? Sí en cuanto una noche trae valor (nil = no se leyó o no se pudo
         /// juzgar). Sin base no hay banda ni hilo central: no se inventa rango.
+        /// La base de cada hilo: la suya (28 / 68) cuando hay dos; el CENTRO del lienzo cuando el
+        /// otro hilo no tiene base (una sola señal legible) — quisquilloso Q-19.
+        public static func baseTemp(hayResp: Bool) -> CGFloat {
+            hayResp ? MatrizTokens.hilosBaseTemp : MatrizTokens.alturaHilos / 2
+        }
+        public static func baseResp(hayTemp: Bool) -> CGFloat {
+            hayTemp ? MatrizTokens.hilosBaseResp : MatrizTokens.alturaHilos / 2
+        }
         public static func hayBase(_ valores: [Double?]) -> Bool {
             valores.contains { $0 != nil }
         }
@@ -153,8 +161,12 @@ public struct MatrizHilos: View {
                 linea.addLine(to: CGPoint(x: size.width - inset, y: base))
                 ctx.stroke(linea, with: .color(hue.opacity(MatrizTokens.hilosBaseAlfa)), lineWidth: 1)
             }
-            hilo(temps, base: MatrizTokens.hilosBaseTemp, hue: hueTemp)
-            hilo(resps, base: MatrizTokens.hilosBaseResp, hue: hueResp)
+            // Con un solo hilo (la otra señal sin base: calibrando, insuficiente, descargando) ese
+            // hilo se CENTRA en el lienzo en vez de dejar dos tercios en blanco (quisquilloso Q-19).
+            let baseTemp = Geometria.baseTemp(hayResp: Geometria.hayBase(resps))
+            let baseResp = Geometria.baseResp(hayTemp: Geometria.hayBase(temps))
+            hilo(temps, base: baseTemp, hue: hueTemp)
+            hilo(resps, base: baseResp, hue: hueResp)
 
             // La noche en que el par votó: columna ámbar y nudo entre los dos puntos. Es el
             // juicio del motor (`parFuera`), nunca re-derivado del dibujo (COS-1).
@@ -172,8 +184,8 @@ public struct MatrizHilos: View {
                          with: .color(LiquidColor.atencion.opacity(MatrizTokens.hilosAlertaAlfa * 0.5)))
                 if let t = noche.temp, let r = noche.resp {
                     var nudo = Path()
-                    nudo.move(to: CGPoint(x: x(i), y: Geometria.y(t, base: MatrizTokens.hilosBaseTemp)))
-                    nudo.addLine(to: CGPoint(x: x(i), y: Geometria.y(r, base: MatrizTokens.hilosBaseResp)))
+                    nudo.move(to: CGPoint(x: x(i), y: Geometria.y(t, base: baseTemp)))
+                    nudo.addLine(to: CGPoint(x: x(i), y: Geometria.y(r, base: baseResp)))
                     ctx.stroke(nudo, with: .color(LiquidColor.atencion),
                                style: StrokeStyle(lineWidth: MatrizTokens.hilosNudoTrazo,
                                                   dash: MatrizTokens.hilosNudoDash))
@@ -213,8 +225,8 @@ public struct MatrizHilos: View {
                     }
                 }
             }
-            puntos(temps, base: MatrizTokens.hilosBaseTemp, hue: hueTemp)
-            puntos(resps, base: MatrizTokens.hilosBaseResp, hue: hueResp)
+            puntos(temps, base: baseTemp, hue: hueTemp)
+            puntos(resps, base: baseResp, hue: hueResp)
         }
     }
 }

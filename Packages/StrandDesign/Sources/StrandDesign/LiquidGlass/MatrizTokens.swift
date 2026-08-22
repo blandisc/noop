@@ -209,6 +209,8 @@ public enum MatrizTokens {
     public static let hilosHuecoRadio: CGFloat = 1.4
     public static let hilosHuecoAlfa: Double = 0.35
     /// La referencia punteada de las barras (el promedio de Pasos, FER-125): tinta tenue, guía.
+    /// El piso de una barra con dato cero (2 pt): el cero se VE, un hueco no (FER-128).
+    public static let barrasPiso: CGFloat = 2
     public static let barrasPromedioAlfa: Double = 0.40
     public static let barrasPromedioDash: [CGFloat] = [3, 3]
     public static let alturaRenglon: CGFloat = 32

@@ -3870,6 +3870,23 @@
         }
       }
     },
+    "hero.sub.ambos.fuera" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your resting heart rate came in above your base and your sleep below the recommended range."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu FC en reposo amaneció por encima de tu base y tu sueño por debajo del rango recomendado."
+          }
+        }
+      }
+    },
     "hero.sub.fc.arriba" : {
       "localizations" : {
         "en" : {
@@ -24181,74 +24198,6 @@
         }
       }
     },
-    "guardian.ambas" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "temperature and breathing out"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "temperatura y respiración fuera"
-          }
-        }
-      }
-    },
-    "guardian.calma" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "at ease"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "en calma"
-          }
-        }
-      }
-    },
-    "guardian.resp" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "watching your breathing"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "vigilando tu respiración"
-          }
-        }
-      }
-    },
-    "guardian.temp" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "watching your temperature"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "vigilando tu temperatura"
-          }
-        }
-      }
-    },
     "Guide" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -24279,23 +24228,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "h · en tu rango"
-          }
-        }
-      }
-    },
-    "h · out of your range" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "h · out of your range"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "h · fuera de tu rango"
           }
         }
       }
@@ -25961,40 +25893,6 @@
         }
       }
     },
-    "hoy.hint.abrir" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tap the sky to open it"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Toca el cielo para abrirlo"
-          }
-        }
-      }
-    },
-    "hoy.hint.reunir" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tap the sky to gather it"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Toca el cielo para reunirlo"
-          }
-        }
-      }
-    },
     "hoy.leyendo" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -26008,40 +25906,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Leyendo tu noche…"
-          }
-        }
-      }
-    },
-    "hoy.modo.cosmos" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cosmos"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cosmos"
-          }
-        }
-      }
-    },
-    "hoy.modo.matriz" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Matrix"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Matriz"
           }
         }
       }
@@ -26080,40 +25944,6 @@
         }
       }
     },
-    "hoy.sinlectura.noche" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No reading today · the night wasn't recorded"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sin lectura de hoy · la noche no se registró"
-          }
-        }
-      }
-    },
-    "hoy.sinlectura.sync" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No reading today · pending sync"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sin lectura de hoy · falta sincronizar"
-          }
-        }
-      }
-    },
     "hoy.sync.pendiente" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -26126,7 +25956,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sync pendiente · jala hacia abajo para sincronizar"
+            "value" : "Falta sincronizar · jala hacia abajo"
           }
         }
       }
@@ -30884,23 +30714,6 @@
         }
       }
     },
-    "manual.deciden.c1" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "All in your range"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Todo en tu rango"
-          }
-        }
-      }
-    },
     "manual.deciden.c1.sub" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -30914,23 +30727,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ninguna señal fuera. Tu cuerpo amaneció donde suele."
-          }
-        }
-      }
-    },
-    "manual.deciden.c2" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Good, with one detail"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bien, con un detalle"
           }
         }
       }
@@ -30952,23 +30748,6 @@
         }
       }
     },
-    "manual.deciden.c3" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Take it easy"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ándate leve"
-          }
-        }
-      }
-    },
     "manual.deciden.c3.sub" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -30982,23 +30761,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dos votos o más fuera."
-          }
-        }
-      }
-    },
-    "manual.deciden.c4" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Low signal"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Baja señal"
           }
         }
       }
@@ -31145,13 +30907,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "HRV, load, effort"
+            "value" : "HRV, load, effort, stress, steps"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "VFC, carga, esfuerzo"
+            "value" : "VFC, carga, esfuerzo, estrés, pasos"
           }
         }
       }
@@ -31196,7 +30958,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "How it's read"
+            "value" : "How it's calculated"
           }
         },
         "es" : {
@@ -31593,40 +31355,6 @@
         }
       }
     },
-    "matriz.fc.baja" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "low · good side"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "baja · del lado bueno"
-          }
-        }
-      }
-    },
-    "matriz.fc.enrango" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "in your range"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "en tu rango"
-          }
-        }
-      }
-    },
     "matriz.fc.sinmananas" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -31657,6 +31385,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ · las dos se salieron juntas"
+          }
+        }
+      }
+    },
+    "matriz.guardian.sinlecturahoy" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No reading today"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin lectura de hoy"
           }
         }
       }
@@ -31814,40 +31559,6 @@
         }
       }
     },
-    "matriz.resp.fuera" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "above your usual"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "arriba de lo usual"
-          }
-        }
-      }
-    },
-    "matriz.resp.tipica" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "typical for you"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "tu ritmo usual"
-          }
-        }
-      }
-    },
     "matriz.rhr.titulo.corto" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -31860,7 +31571,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "FC Reposo"
+            "value" : "FC reposo"
           }
         }
       }
@@ -31980,57 +31691,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "anoche · %@"
-          }
-        }
-      }
-    },
-    "matriz.temp.enbanda" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "within your band"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "dentro de tu banda"
-          }
-        }
-      }
-    },
-    "matriz.temp.fuera" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "outside your band"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "fuera de tu banda"
-          }
-        }
-      }
-    },
-    "matriz.vfc.referencia" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "reference · does not vote · why?"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "referencia · no vota · ¿por qué?"
           }
         }
       }

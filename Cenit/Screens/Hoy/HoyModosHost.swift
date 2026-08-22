@@ -28,7 +28,9 @@ struct HoyMatrizHost: View {
     private static let maxScrubHints = 3
 
     var body: some View {
-        VStack(spacing: esAvisoDesconexion ? LiquidSpace.s150 : LiquidSpace.s300) {
+        // La franja de estado es un bloque de OTRO nivel que el primer estante: aire de estante (22),
+        // no de módulo (12) — quisquilloso Q-17. El aviso de desconexión sí va pegado a su causa.
+        VStack(spacing: esAvisoDesconexion ? LiquidSpace.s150 : MatrizTokens.estanteGap) {
             if let copy = estadoCopy {
                 Group {
                     if esAvisoDesconexion {
@@ -109,7 +111,7 @@ struct HoyMatrizHost: View {
 
     private func estadoGrupo(_ texto: String) -> some View {
         Text(texto)
-            .font(InstrumentoType.grotesk(13, weight: .medium))
+            .font(LiquidType.clausulaCampo.weight(.medium))
             .foregroundStyle(LiquidColor.tinta500)
             .frame(maxWidth: .infinity, alignment: .leading)
             .accessibilityIdentifier("hoy-estado-copy")
@@ -147,11 +149,11 @@ private struct AvisoDesconexion: View {
             latido
             VStack(alignment: .leading, spacing: LiquidSpace.s050) {
                 Text(partes.estado)
-                    .font(InstrumentoType.grotesk(13, weight: .semibold))
+                    .font(LiquidType.clausulaCampo.weight(.semibold))
                     .foregroundStyle(LiquidColor.rojoClaro)
                 if let detalle = partes.detalle {
                     Text(detalle)
-                        .font(InstrumentoType.grotesk(12, weight: .regular))
+                        .font(LiquidType.captionLectura)
                         .foregroundStyle(LiquidColor.rojoClaro.opacity(0.72))   // token-exempt: detalle a susurro
                 }
             }

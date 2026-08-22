@@ -447,6 +447,16 @@ final class HoyMatrizBuilderTests: XCTestCase {
         XCTAssertTrue(sub.contains("out of your range"), "el módulo calla con el aro puesto: «\(sub)»")
     }
 
+    /// FER-128 (exploradores): el dominio de sueño cubre las noches extremas (2 h, 12 h) en vez de
+    /// aplastarlas contra el piso 4 o el techo 10; con noches normales sigue siendo 4…10.
+    func test_128_dominio_sueno_cubre_extremos() {
+        func noche(_ h: Double?) -> MatrizColumnas.Noche { .init(valor: h) }
+        XCTAssertEqual(LiquidHoyBuilder.dominioSueno([7, 8, 6.5].map(noche)), 4...10)
+        XCTAssertEqual(LiquidHoyBuilder.dominioSueno([7, 2.0, 8].map(noche)), 2...10)
+        XCTAssertEqual(LiquidHoyBuilder.dominioSueno([7, 12.2, 8].map(noche)), 4...13)
+        XCTAssertEqual(LiquidHoyBuilder.dominioSueno([nil, nil].map(noche)), 4...10)
+    }
+
     // MARK: 17 — Historia juzgada con SU día (no se repinta)
 
     func test_17_historia_no_se_repinta_al_cambiar_hoy() {

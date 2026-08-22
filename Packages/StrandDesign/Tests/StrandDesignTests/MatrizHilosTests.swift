@@ -119,4 +119,27 @@ final class MatrizHilosTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(MatrizTokens.hilosBaseTemp - A, 0)
         XCTAssertLessThanOrEqual(MatrizTokens.hilosBaseResp + A, MatrizTokens.alturaHilos)
     }
+
+    /// Q-19 (quisquilloso): con una sola señal legible el hilo se centra en el lienzo; con las
+    /// dos, cada una en su base — y la costura/el dedo no cambian (solo mapean en x).
+    func test_unSoloHiloSeCentraEnElLienzo() {
+        typealias G = MatrizHilos.Geometria
+        XCTAssertEqual(G.baseTemp(hayResp: true), MatrizTokens.hilosBaseTemp)
+        XCTAssertEqual(G.baseResp(hayTemp: true), MatrizTokens.hilosBaseResp)
+        XCTAssertEqual(G.baseTemp(hayResp: false), MatrizTokens.alturaHilos / 2)
+        XCTAssertEqual(G.baseResp(hayTemp: false), MatrizTokens.alturaHilos / 2)
+        // Centrado, la banda entera sigue dentro del lienzo.
+        let banda = G.banda(base: MatrizTokens.alturaHilos / 2)
+        XCTAssertGreaterThanOrEqual(banda.lowerBound, 0)
+        XCTAssertLessThanOrEqual(banda.upperBound, MatrizTokens.alturaHilos)
+    }
+
+    /// FER-128 (explorador Grok): una lectura aislada entre huecos NO desaparece — `tramos` la
+    /// devuelve como tramo de un punto (el consumidor la pinta como punto suelto).
+    func test_tramos_conservaPuntosAislados() {
+        let serie: [Double?] = [nil, 50, nil, 60, 61, nil, 70]
+        let tramos = MatrizChartDraw.tramos(serie, count: serie.count, width: 300, dominio: 40...80, height: 40)
+        XCTAssertEqual(tramos.count, 3, "50 · [60, 61] · 70")
+        XCTAssertEqual(tramos.map(\.count), [1, 2, 1])
+    }
 }

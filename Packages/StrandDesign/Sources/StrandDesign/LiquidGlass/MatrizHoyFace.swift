@@ -367,7 +367,7 @@ public struct MatrizHoyFace: View {
                 HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s150) {
                     nivelTexto(rotulo)
                     Image(systemName: "questionmark.circle")
-                        .font(LiquidType.infoGlifoCompacto.weight(.medium))
+                        .font(LiquidType.infoGlifoEstante)
                         .foregroundStyle(LiquidColor.tinta500)
                     Spacer(minLength: 0)
                 }
@@ -557,7 +557,7 @@ public struct MatrizHoyFace: View {
     private func subtitulo(_ s: MatrizSeccion) -> some View {
         let sub = sublabelEfectivo(s)
         return Text(sub ?? " ")
-            .font(LiquidType.caption)
+            .font(LiquidType.captionLectura)
             .foregroundStyle(LiquidColor.tinta500)
             .fixedSize(horizontal: false, vertical: true)
             .opacity(sub == nil ? 0 : 1)
@@ -633,7 +633,7 @@ public struct MatrizHoyFace: View {
             }
             if let u = s.unidad, valor != "—" {
                 Text(u)
-                    .font(LiquidType.caption)
+                    .font(LiquidType.captionLectura)
                     .foregroundStyle(s.hue)
             }
         }
@@ -711,7 +711,7 @@ public struct MatrizHoyFace: View {
                     .animation(reduceMotion ? nil : .snappy, value: valor)
                 if let u = r.unidad {
                     Text(u)
-                        .font(LiquidType.caption)
+                        .font(LiquidType.captionLectura)
                         .foregroundStyle(r.hue)
                 }
             }
@@ -727,7 +727,7 @@ public struct MatrizHoyFace: View {
             // P2: el estado en palabras — el número deja de asustar. Con el scrub, la
             // fecha cruza suave (es texto, no dígitos); bajo Reduce Motion salta.
             Text(sub)
-                .font(LiquidType.caption)
+                .font(LiquidType.captionLectura)
                 .foregroundStyle(LiquidColor.tinta500)
                 .fixedSize(horizontal: false, vertical: true)
                 .animation(reduceMotion ? nil : .easeInOut(duration: 0.15), value: sub)
@@ -740,7 +740,9 @@ public struct MatrizHoyFace: View {
         switch tono {
         case .calma: return LiquidColor.verdePrimario
         case .terciario: return LiquidColor.tinta500
-        case .atencion: return LiquidColor.atencion
+        // Texto chico (caption): el ámbar de TEXTO (6.1:1), como `LiquidSheetHeader.tonoTexto` —
+        // `atencion` (4.08:1) es para marcas, no para 10.5 pt (quisquilloso Q-05).
+        case .atencion: return LiquidColor.atencionTexto
         case .alarma: return LiquidColor.negativo
         }
     }
@@ -748,7 +750,8 @@ public struct MatrizHoyFace: View {
     private func chipView(_ chip: MatrizHoyModel.ChipGuardian) -> some View {
         let color: Color = Self.tonoChip(chip.tono)
         return Text(chip.texto)
-            .font(LiquidType.caption)
+            // Un ESTADO, no un pie: 10.5/600 como el prototipo (12.5/600) — escala (quisquilloso Q-14).
+            .font(LiquidType.microEstado)
             .foregroundStyle(color)
             .multilineTextAlignment(.trailing)
             .lineLimit(3)
@@ -819,7 +822,10 @@ public struct MatrizHoyFace: View {
     private func a11yLabel(_ s: MatrizSeccion) -> String {
         // Revisión adversarial P-4: con la costura, `valor` es un PAR («+0.1° · 14.9») y leído
         // así no dice qué número es de qué señal. `a11yValor` lo desambigua cuando existe.
-        var parts = [s.titulo, s.a11yValor ?? s.valor]
+        // Y la UNIDAD viaja con el número («52 lpm», «56 ms»): visualmente es un Text aparte que
+        // VoiceOver no pegaba al valor (FER-128, explorador).
+        let valorLeido = s.a11yValor ?? [s.valor, s.unidad].compactMap { $0 }.joined(separator: " ")
+        var parts = [s.titulo, valorLeido]
         if let sub = s.sublabel { parts.append(sub) }
         if let chip = s.chip { parts.append(chip.texto) }
         return parts.filter { !$0.isEmpty }.joined(separator: ", ")

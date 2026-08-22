@@ -224,9 +224,12 @@ public struct MatrizRegla: View {
     /// x del índice `i` — LA fórmula única (curva, gemelos, hilo fantasma y el gesto
     /// deben coincidir; testeable como estática).
     static func xIndice(_ i: Int, count: Int, width: CGFloat) -> CGFloat {
-        let n = max(count - 1, 1)
         let usable = width - MatrizTokens.chartInset - MatrizTokens.reglaZona
-        return MatrizTokens.chartInset + CGFloat(i) / CGFloat(n) * usable
+        // Una sola lectura = HOY: va al final del ancho útil, donde vive HOY en todas las
+        // gráficas (y donde Sueño, su gemela, pone esa misma noche) — no en la ranura más
+        // vieja (FER-128, explorador: `insufficient`).
+        guard count > 1 else { return MatrizTokens.chartInset + usable }
+        return MatrizTokens.chartInset + CGFloat(i) / CGFloat(count - 1) * usable
     }
 
     private func xEn(_ i: Int, size: CGSize) -> CGFloat {

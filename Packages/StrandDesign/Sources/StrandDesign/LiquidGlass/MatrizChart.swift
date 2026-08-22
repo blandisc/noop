@@ -185,14 +185,16 @@ enum MatrizChartDraw {
         var actual: [CGPoint] = []
         for (i, val) in puntos.enumerated() {
             guard let v = val else {
-                if actual.count > 1 { out.append(actual) }
+                if !actual.isEmpty { out.append(actual) }
                 actual.removeAll()
                 continue
             }
             actual.append(CGPoint(x: xAt(index: i, count: count, width: width, inset: inset),
                                   y: yTop(v, domain: dominio, height: height)))
         }
-        if actual.count > 1 { out.append(actual) }
+        if !actual.isEmpty { out.append(actual) }
+        // Los tramos de UN punto también salen (FER-128, explorador Grok: una lectura aislada
+        // entre dos huecos desaparecía de la línea): el consumidor los pinta como punto suelto.
         return out
     }
 }
@@ -342,7 +344,7 @@ public struct MatrizColumnas: View {
             // y se encimaba con la barra de hoy (revisión del dueño, FER-55). Las barras
             // nunca entran a este canal (tope `tagCanal`), así que aquí está siempre libre.
             let tag = Text(referenciaTag)
-                .font(LiquidType.caption)
+                .font(LiquidType.captionLectura)
                 .foregroundColor(LiquidColor.tinta500)
                 .monospacedDigit()
             ctx.draw(ctx.resolve(tag),
@@ -397,6 +399,12 @@ public struct MatrizLineaRellena: View {
                 } else {
                     for tramo in MatrizChartDraw.tramos(puntos, count: count, width: size.width,
                                                         dominio: dominio, height: size.height) {
+                        if tramo.count == 1, let p = tramo.first {
+                            // Lectura aislada entre huecos: un punto, no una curva de cero largo.
+                            MatrizChartDraw.punto(ctx, en: p, radio: MatrizTokens.histRadio, hue: hue,
+                                                  alfa: MatrizTokens.lineaAlfa * alfa)
+                            continue
+                        }
                         MatrizChartDraw.curvaRellena(ctx, pts: tramo, size: size, hue: hue,
                                                      alfaLinea: MatrizTokens.lineaAlfa * alfa,
                                                      alfaRelleno: MatrizTokens.rellenoAlfa * alfa)
@@ -532,7 +540,8 @@ public struct MatrizLineaSerena: View {
             // borde del tono). Dueño 2026-08-15: «que se vean como esas, que tienen cada punto».
             let idxHoy = puntos.lastIndex(where: { $0 != nil })
             for tramo in MatrizChartDraw.tramos(puntos, count: count, width: size.width,
-                                                dominio: dom, height: size.height, inset: insetX) {
+                                                dominio: dom, height: size.height, inset: insetX)
+                where tramo.count > 1 {   // los puntos por noche ya se pintan aparte abajo
                 var linea = Path()
                 for (k, pt) in tramo.enumerated() { k == 0 ? linea.move(to: pt) : linea.addLine(to: pt) }
                 ctx.stroke(linea, with: .color(hue),
@@ -795,7 +804,7 @@ public struct MatrizBarrasMini: View {
                 let x = inset + CGFloat(i) * (barW + gap)
                 let cx = x + barW / 2
                 let seleccionada = resaltado == i
-                guard let v = val, maxV > 0 else {
+                guard let v = val else {
                     // Día leído sin lectura: cursor fantasma en su cajón (paridad columnas).
                     if seleccionada {
                         MatrizChartDraw.cursorScrub(ctx, x: cx, height: size.height, hue: hue, fantasma: true)
@@ -803,7 +812,10 @@ public struct MatrizBarrasMini: View {
                     continue
                 }
                 let esHoy = i == last
-                let h = max(CGFloat(v / maxV) * (size.height - MatrizTokens.chartPadV), 1)
+                // El cero es un DATO, no un hueco: piso visible (`barraPiso`) — y una serie
+                // toda en cero pinta sus pisos en vez de un lienzo vacío (FER-128, Grok).
+                let fraccion = maxV > 0 ? CGFloat(v / maxV) : 0
+                let h = max(fraccion * (size.height - MatrizTokens.chartPadV), MatrizTokens.barrasPiso)
                 let rect = CGRect(x: x, y: size.height - h, width: barW, height: h)
                 // La barra leída toma el alfa pleno de HOY; el cursor la distingue de HOY.
                 MatrizChartDraw.barra(ctx, rect: rect, hue: hue,

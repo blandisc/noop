@@ -90,7 +90,7 @@ extension LiquidHoyBuilder {
             let mins = byDay[day]?.totalSleepMin
             let offsetDesdeFin = keysSueno.count - 1 - idx
             let fecha = weekdayLabel(offsetFromToday: offsetDesdeFin, now: i.now,
-                                     calendar: i.calendar, formatter: diaFmt)
+                                     calendar: i.calendar, formatter: diaFmt, nocturna: true)
             guard let mins else {
                 return .init(valor: "—",
                              sublabel: String(format: String(localized: "matriz.scrub.sinlectura",
@@ -124,10 +124,12 @@ extension LiquidHoyBuilder {
             // FER-55: fuera el sello «vota» de las gemelas — la jerarquía la dan el nivel,
             // el orden y el manual «?». Carga NUNCA vota (loadAxis inRange/noData).
             valor: valorSueno, destacada: true,
+            // «h» como su gemela dice «lpm», su hoja y el prototipo (quisquilloso Q-06).
+            unidad: valorSueno == "—" ? nil : String(localized: "h"),
             sublabel: sublabelSueno,
             chartID: "matriz-sleep",
             chart: .columnas(noches: noches, referencia: 7, referenciaTag: "7 h",
-                             dominio: 4...10),
+                             dominio: dominioSueno(noches)),
             formaSello: .luna, glifoSello: .luna, scrubNoches: scrubSueno)
 
         // —— 2. FC | VFC (20) ——
@@ -146,7 +148,7 @@ extension LiquidHoyBuilder {
         let scrubFC: [MatrizSeccion.ScrubNoche] = keys20.enumerated().map { idx, day in
             let offsetDesdeFin = keys20.count - 1 - idx
             let fecha = weekdayLabel(offsetFromToday: offsetDesdeFin, now: i.now,
-                                     calendar: i.calendar, formatter: diaFmt)
+                                     calendar: i.calendar, formatter: diaFmt, nocturna: true)
             guard let v = ptsFC[idx] else {
                 return .init(valor: "—",
                              sublabel: String(format: String(localized: "matriz.scrub.sinlectura",
@@ -256,8 +258,10 @@ extension LiquidHoyBuilder {
         // ejes sigan alineados entre sí (leer una contra la otra es parte de la regla del par).
         let iniGuardian = inicioVivo([ptsTemp, ptsResp])
         let hayLecturaGuardianHoy = ptsTemp.last.flatMap { $0 } != nil || ptsResp.last.flatMap { $0 } != nil
+        let hayHistoriaGuardian = ptsTemp.contains { $0 != nil } || ptsResp.contains { $0 != nil }
         let chip = chipGuardianModelo(chipJuzgado, noche: nocheJuzgada,
                                       hayLecturaHoy: hayLecturaGuardianHoy,
+                                      hayHistoria: hayHistoriaGuardian,
                                       calibrando: prep?.maturity == .calibrating)
         // Scrub de temp/resp (dueño 2026-08-15): día + lectura de esa noche, alineado 1:1 con la
         // serie que dibuja la línea serena. Serie de tiempo → el scrub se lee natural (a diferencia
@@ -367,7 +371,7 @@ extension LiquidHoyBuilder {
         // El scrub de la costura lee LA NOCHE COMPLETA: las dos señales y su fecha.
         let scrubCostura: [MatrizSeccion.ScrubNoche] = keys20.indices.map { idx in
             let fechaSola = weekdayLabel(offsetFromToday: keys20.count - 1 - idx, now: i.now,
-                                         calendar: i.calendar, formatter: diaFmt)
+                                         calendar: i.calendar, formatter: diaFmt, nocturna: true)
             // FER-118: mientras el dedo lee una noche, el subtítulo dice si el PAR votó esa
             // noche — y solo eso, y solo con el juicio del motor (`parFuera` de `nochesCostura`,
             // el arreglo SIN recortar: mismo índice que `keys20`; el recorte viene después).
@@ -689,14 +693,28 @@ extension LiquidHoyBuilder {
     }
 
     /// Rótulo del día para la noche a `offsetFromToday` días atrás. Hoy → «Today».
+    /// `nocturna`: la serie es de NOCHES (Sueño, FC, guardián) y su último índice se llama «anoche»
+    /// —como lo llama el módulo al soltar—, no «Hoy» (quisquilloso Q-16; prototipo: sueño/fc/guard
+    /// «anoche», esf/estrés/pasos/carga/VFC «hoy»).
     static func weekdayLabel(offsetFromToday: Int, now: Date, calendar: Calendar,
-                             formatter: DateFormatter) -> String {
+                             formatter: DateFormatter, nocturna: Bool = false) -> String {
         if offsetFromToday == 0 {
-            return String(localized: "matriz.scrub.hoy", defaultValue: "Today")
+            return nocturna ? String(localized: "matriz.sueno.anoche", defaultValue: "last night")
+                            : String(localized: "matriz.scrub.hoy", defaultValue: "Today")
         }
         let start = calendar.startOfDay(for: now)
         let d = calendar.date(byAdding: .day, value: -offsetFromToday, to: start) ?? start
         return formatter.string(from: d)
+    }
+
+    /// Dominio de las columnas de sueño: 4…10 h como base, AMPLIADO hasta la noche más corta/larga
+    /// de la ventana (FER-128, exploradores: una noche de 2 h o de 12 h se pintaba idéntica al piso
+    /// o al techo, con el aro encima del rótulo «7 h»). La referencia sigue en 7 h.
+    static func dominioSueno(_ noches: [MatrizColumnas.Noche]) -> ClosedRange<Double> {
+        let horas = noches.compactMap { $0.valor }
+        let lo = min(4, (horas.min() ?? 4).rounded(.down))
+        let hi = max(10, (horas.max() ?? 10).rounded(.up))
+        return lo...max(hi, lo + 1)
     }
 
     static func mapaAlerta(_ a: HoyGramatica.Alerta) -> MedidorLunar.Alerta {
@@ -727,13 +745,19 @@ extension LiquidHoyBuilder {
     static func chipGuardianModelo(_ chip: HoyGramatica.ChipGuardian?,
                                    noche: Preparedness.SentinelNight? = nil,
                                    hayLecturaHoy: Bool = false,
+                                   hayHistoria: Bool = false,
                                    calibrando: Bool = false)
         -> MatrizHoyModel.ChipGuardian? {
         guard let chip else {
             // Orden: primero «no hubo NADA» (adversarial C5 — con las dos ausentes, `tempMissing`
             // era true y el chip decía «solo una señal», que es falso), y solo después «falta una».
+            // FER-128 (explorador): «Aún no hay lecturas» sobre una gráfica llena de noches era
+            // falso (cada mañana antes de sincronizar el reloj): con historia, «Sin lectura de hoy».
             if !hayLecturaHoy {
-                return .init(texto: String(localized: "No readings yet"), tono: .terciario)
+                return hayHistoria
+                    ? .init(texto: String(localized: "matriz.guardian.sinlecturahoy",
+                                          defaultValue: "No reading today"), tono: .terciario)
+                    : .init(texto: String(localized: "No readings yet"), tono: .terciario)
             }
             if let noche, noche.tempMissing != noche.respMissing {
                 return .init(texto: String(localized: "Only one signal"), tono: .terciario)
@@ -870,8 +894,13 @@ extension LiquidHoyBuilder {
         }
         // Sin lectura de HOY o sin veredicto real (nil/lowSignal): no se afirma rango
         // (espejo del gate fantasma del Cosmos — Grok #3).
-        guard ptsFC.last.flatMap({ $0 }) != nil,
-              let v = prep?.verdict, v != .lowSignal else { return nil }
+        guard ptsFC.last.flatMap({ $0 }) != nil else { return nil }
+        // Con lectura pero SIN veredicto real (nil/lowSignal) no se afirma rango — pero la gemela
+        // Sueño sí dice «anoche» en ese caso: FC también (quisquilloso Q-15b), si es nocturna.
+        guard let v = prep?.verdict, v != .lowSignal else {
+            return prep?.isNightAnchored == true
+                ? String(localized: "matriz.sueno.anoche", defaultValue: "last night") : nil
+        }
         // FER-128 (dueño, captura a xxxLarge): con el aro puesto el sublabel quedaba VACÍO
         // mientras Sueño, su gemela, decía «anoche · fuera del rango recomendado» con el suyo, y
         // el héroe listado decía «fuera de tu rango» para FC. El aro y las palabras dicen lo mismo

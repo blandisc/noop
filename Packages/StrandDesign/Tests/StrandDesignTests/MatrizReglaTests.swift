@@ -70,4 +70,12 @@ final class MatrizReglaTests: XCTestCase {
     func test_xIndice_serie_de_uno_no_divide_por_cero() {
         _ = MatrizRegla.xIndice(0, count: 1, width: 300)   // no crash
     }
+
+    /// FER-128 (explorador): con UNA sola lectura el punto es HOY y va al final del ancho útil,
+    /// donde vive HOY en todas las gráficas — no en la ranura más vieja.
+    func test_xIndice_unaSolaLectura_vaAlFinal() {
+        let width: CGFloat = 300
+        XCTAssertEqual(MatrizRegla.xIndice(0, count: 1, width: width),
+                       width - MatrizTokens.reglaZona, accuracy: 0.001)
+    }
 }

@@ -1047,13 +1047,14 @@ struct TodayView: View {
         let output = liquidOutput
         // FER-51: el host Cosmos·Matriz vive debajo del Ecosistema (héroe).
         let mInputs = liquidMatrizInputs()
-        VStack(alignment: .leading, spacing: CenitMetrics.space1) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s100) {
             Group {
                 HealthAlertBanner()
             }
             // El margen del héroe/kicker (24): el banner se alinea con ellos, no con la columna
-            // de módulos de vidrio (16, = dock) que va debajo (FER-118).
-            .padding(.horizontal, LiquidSpace.s600)
+            // de módulos de vidrio (16, = dock) que va debajo (FER-118). Mismo dueño del 24 que
+            // la franja de estado (`margenH`), no otro nombre para el mismo número.
+            .padding(.horizontal, MatrizTokens.margenH)
             LiquidHoyContent(
                 model: output.model,
                 onTapMetric: { openLiquidMetric($0) },

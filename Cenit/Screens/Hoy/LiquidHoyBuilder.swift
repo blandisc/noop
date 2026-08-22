@@ -798,9 +798,18 @@ enum LiquidHoyBuilder {
         // FER-73 · H8: solo los ejes que VOTAN pueden explicar el veredicto. Los vigías
         // (térmico, carga) aparecen «fuera» por su propio corte sin haber empujado nada —
         // el barrido culpaba a la temperatura sola, justo lo que la regla del guardián niega.
-        guard let fuera = prep?.drivers.first(where: {
+        let votantesFuera = (prep?.drivers ?? []).filter {
             ($0.axis == .autonomic || $0.axis == .sleep) && $0.state.isOut
-        }) else { return nil }
+        }
+        // FER-128 (explorador): con los DOS ejes fuera el héroe nombraba solo uno («Tu FC en
+        // reposo amaneció por encima de tu base») mientras el estado bueno sí enumera las dos
+        // señales. Si las dos votaron, las dos se dicen.
+        if votantesFuera.contains(where: { $0.axis == .autonomic }),
+           votantesFuera.contains(where: { $0.axis == .sleep }) {
+            return String(localized: "hero.sub.ambos.fuera",
+                          defaultValue: "Your resting heart rate came in above your base and your sleep below the recommended range.")
+        }
+        guard let fuera = votantesFuera.first else { return nil }
         switch (fuera.axis, fuera.state) {
         // El sueño NO se juzga contra tu historial: `sleepDriver` usa un piso poblacional fijo
         // (420 − 45 min, Hirshkowitz 2015) más un mínimo de eficiencia. «Tu rango» era la misma
@@ -1000,8 +1009,11 @@ enum LiquidHoyBuilder {
             // «7:20» junto a «Sin lectura anoche» sería una contradicción de salud.
             valor: sleepHasData ? valores.sueno : nil,
             badge: sleepHasData ? valores.sueno.map {
+                // El sueño se juzga contra un piso RECOMENDADO (Hirshkowitz), no contra «tu
+                // rango»: el badge dice lo mismo que el módulo de abajo (FER-128, explorador).
                 .init(valor: $0, contexto: sleepFuera
-                      ? String(localized: "h · out of your range")
+                      ? "h · " + String(localized: "matriz.sueno.rango.fuera.v2",
+                                        defaultValue: "outside the recommended range")
                       : String(localized: "h · in your range"))
             } : nil))
 

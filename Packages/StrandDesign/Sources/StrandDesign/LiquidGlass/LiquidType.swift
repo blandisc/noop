@@ -114,7 +114,9 @@ public enum LiquidType {
     /// (Sueño · Reposo): mismo peso callado que `tituloFila`, un punto más grande para que
     /// el par pese igual y se lea como gemelo (FER-56). Sube el tamaño, no la voz — el
     /// número sigue mandando (jerarquía «Instrumento»).
-    public static let tituloGemela = InstrumentoType.grotesk(15, weight: .semibold)
+    /// Escala con Dynamic Type (FER-128, quisquilloso Q-12): su número (`valorTileL`) ya escalaba y el
+    /// título se quedaba en 15 fijos. 15 pt en `.large`, relativo a `.subheadline`.
+    public static let tituloGemela = InstrumentoType.grotesk(15, weight: .semibold, relativeTo: .subheadline)
 
     // MARK: Cuerpo (SF)
 
@@ -133,6 +135,9 @@ public enum LiquidType {
     /// (Regularidad); a 15 pesaba lo mismo que las letras del título y se leía como una
     /// letra más (#inject r2, pedido del dueño).
     public static let infoGlifoCompacto = Font.system(size: 12)
+    /// El «?» de la cabecera de estante de Hoy: 12 pt en `.large`, y ESCALA con el rótulo que
+    /// acompaña (`cabeceraEstante`, relativo a `.footnote`) — quisquilloso Q-13.
+    public static let infoGlifoEstante = Font.system(.caption, weight: .medium)
 
     /// Glifo ⓘ DEL TITULAR del héroe — 22 SF medium (dueño 2026-08-15, gate UX+UI): la puerta
     /// al acta deja de ser pastilla y pasa a ser un ⓘ pegado a la palabra del veredicto, en su
