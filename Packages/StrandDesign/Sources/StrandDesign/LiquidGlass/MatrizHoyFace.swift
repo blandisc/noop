@@ -797,7 +797,7 @@ public struct MatrizHoyFace: View {
             return max(MatrizTokens.chartInset,
                        LiquidChart.puntoDatoRadio + LiquidChart.endpointBorde * 0.5 + MatrizTokens.aroGap2)
         case .costura:
-            // FER-118: el anillo de HOY latiendo llega a 8 pt del centro (era 5, y se cortaba).
+            // FER-118: el anillo de HOY latiendo llega a 8 pt del centro (era 4, y se cortaba).
             return max(MatrizTokens.chartInset, MatrizTokens.hilosInset)
         default:
             return MatrizTokens.chartInset
@@ -836,7 +836,7 @@ public struct MatrizHoyFace: View {
     // expone la gráfica como un control «ajustable»: deslizar ↑/↓ mueve el índice y el
     // valor a11y anuncia esa lectura — el equivalente accesible del scrub táctil.
 
-    /// «FC Reposo, 20 lecturas» — nombre del control ajustable.
+    /// «FC reposo, 20 lecturas» — nombre del control ajustable.
     private func scrubA11yLabel(_ s: MatrizSeccion) -> String {
         let n = s.scrubNoches?.count ?? 0
         return String(format: String(localized: "matriz.scrub.a11y.label",
@@ -848,7 +848,10 @@ public struct MatrizHoyFace: View {
         guard let n = s.scrubNoches, !n.isEmpty else { return s.valor }
         let idx = (scrub?.id == s.id ? scrub?.idx : nil) ?? (n.count - 1)
         guard n.indices.contains(idx) else { return s.valor }
-        return "\(n[idx].a11yValor ?? n[idx].valor), \(n[idx].sublabel)"
+        // La unidad también al recorrer (como el módulo, XC-08): «52 lpm, anoche · en tu rango».
+        let valor = n[idx].a11yValor
+            ?? (n[idx].valor == "—" ? n[idx].valor : [n[idx].valor, s.unidad].compactMap { $0 }.joined(separator: " "))
+        return "\(valor), \(n[idx].sublabel)"
     }
 
     private var scrubA11yHint: String {

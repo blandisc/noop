@@ -110,7 +110,14 @@ extension LiquidHoyBuilder {
             if hoy?.totalSleepMin == nil && noches.allSatisfy({ $0.valor == nil }) {
                 return String(localized: "hero.title.calibrando", defaultValue: "Getting to know you")
             }
-            guard hoy?.totalSleepMin != nil else { return nil }
+            guard hoy?.totalSleepMin != nil else {
+                // Sin la noche pero con historia: lo mismo que dice su scrub y el chip del guardián
+                // («anoche · sin lectura»), no un silencio (quisquilloso Q2-13).
+                return noches.contains(where: { $0.valor != nil })
+                    ? String(format: String(localized: "matriz.scrub.sinlectura", defaultValue: "%@ · no reading"),
+                             String(localized: "matriz.sueno.anoche", defaultValue: "last night"))
+                    : nil
+            }
             guard let out = bodyByDay[hoyKey ?? ""]?.sleepOut else {
                 return String(localized: "matriz.sueno.anoche", defaultValue: "last night")
             }
@@ -149,7 +156,8 @@ extension LiquidHoyBuilder {
         let scrubFC: [MatrizSeccion.ScrubNoche] = keys20.enumerated().map { idx, day in
             let offsetDesdeFin = keys20.count - 1 - idx
             let fecha = weekdayLabel(offsetFromToday: offsetDesdeFin, now: i.now,
-                                     calendar: i.calendar, formatter: diaFmt, nocturna: true)
+                                     calendar: i.calendar, formatter: diaFmt,
+                                     nocturna: prep?.isNightAnchored == true)
             guard let v = ptsFC[idx] else {
                 return .init(valor: "—",
                              sublabel: String(format: String(localized: "matriz.scrub.sinlectura",
@@ -218,7 +226,7 @@ extension LiquidHoyBuilder {
             // Sublabel DESCRIPTIVO, simétrico con sus gemelas de contexto (Carga/Esfuerzo/
             // Estrés): el «no vota» ya no vive suelto aquí — lo lleva el rótulo de nivel
             // «Contexto» + la hoja «Tu contexto» (FER-61), así que las cuatro se ven parejas.
-            sublabel: String(localized: "matriz.vfc.sub", defaultValue: "your daily HRV"),
+            sublabel: valorVFC == "—" ? nil : String(localized: "matriz.vfc.sub", defaultValue: "your daily HRV"),
             chartID: "matriz-hrv",
             chart: .lineaRellena(puntos: ptsVFCVivos, base: baseVFC,
                                  dominio: dominioLinea(ptsVFC, base: baseVFC, fallback: 20...80),
@@ -756,8 +764,7 @@ extension LiquidHoyBuilder {
             // falso (cada mañana antes de sincronizar el reloj): con historia, «Sin lectura de hoy».
             if !hayLecturaHoy {
                 return hayHistoria
-                    ? .init(texto: String(localized: "matriz.guardian.sinlecturahoy",
-                                          defaultValue: "No reading today"), tono: .terciario)
+                    ? .init(texto: String(localized: "No reading last night"), tono: .terciario)
                     : .init(texto: String(localized: "No readings yet"), tono: .terciario)
             }
             if let noche, noche.tempMissing != noche.respMissing {
@@ -895,7 +902,12 @@ extension LiquidHoyBuilder {
         }
         // Sin lectura de HOY o sin veredicto real (nil/lowSignal): no se afirma rango
         // (espejo del gate fantasma del Cosmos — Grok #3).
-        guard ptsFC.last.flatMap({ $0 }) != nil else { return nil }
+        guard ptsFC.last.flatMap({ $0 }) != nil else {
+            // Sin la noche pero con historia: «anoche · sin lectura», como su scrub (Q2-13).
+            guard ptsFC.contains(where: { $0 != nil }), prep?.isNightAnchored != false else { return nil }
+            return String(format: String(localized: "matriz.scrub.sinlectura", defaultValue: "%@ · no reading"),
+                          String(localized: "matriz.sueno.anoche", defaultValue: "last night"))
+        }
         // Con lectura pero SIN veredicto real (nil/lowSignal) no se afirma rango — pero la gemela
         // Sueño sí dice «anoche» en ese caso: FC también (quisquilloso Q-15b), si es nocturna.
         guard let v = prep?.verdict, v != .lowSignal else {

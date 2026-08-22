@@ -41,7 +41,7 @@ struct HojaDecideTuDia: View {
                                     defaultValue: "Temperature and breathing watch together. They only weigh in when both step out at once; one alone can be noise."),
                     sello: .centinela)
             votante(orbe: .simple(LiquidColor.cian),
-                    titulo: String(localized: "manual.deciden.resto", defaultValue: "HRV, load, effort"),
+                    titulo: String(localized: "manual.deciden.resto", defaultValue: "HRV, load, effort, stress, steps"),
                     detalle: String(localized: "manual.deciden.resto.sub",
                                     defaultValue: "They give you context, but don't vote: on a wrist watch they aren't stable enough to decide."),
                     sello: .referencia)
@@ -74,7 +74,7 @@ struct HojaDecideTuDia: View {
                 RoundedRectangle(cornerRadius: LiquidRadius.control)
                     .stroke(LiquidColor.tinta10, lineWidth: 1))
 
-            seccion(String(localized: "manual.deciden.sec.como", defaultValue: "How it's read"))
+            seccion(String(localized: "manual.deciden.sec.como", defaultValue: "How it's calculated"))
             Text(String(localized: "manual.deciden.como",
                         defaultValue: "From your recent weeks I learn your normal band for your resting heart rate and your breathing; your temperature is measured by how far it drifts from your own baseline, against a fixed cut that is the same for everyone, and your sleep against the recommended range for health. Each morning I compare the night: in or out. The verdict counts how many voting signals stepped out. It is never a 0-100 score, because your watch doesn't measure with that precision and I won't pretend it does."))
                 .font(LiquidType.cuerpo)

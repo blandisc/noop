@@ -977,6 +977,23 @@
         }
       }
     },
+    "h" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "h"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "h"
+          }
+        }
+      }
+    },
     "hero.title.rancia" : {
       "localizations" : {
         "en" : {
@@ -3882,7 +3899,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tu FC en reposo amaneció por encima de tu base y tu sueño por debajo del rango recomendado."
+            "value" : "Tu FC en reposo amaneció por encima de tu base y tu sueño quedó abajo del rango recomendado."
           }
         }
       }
@@ -24215,23 +24232,6 @@
         }
       }
     },
-    "h · in your range" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "h · in your range"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "h · en tu rango"
-          }
-        }
-      }
-    },
     "Habit effects" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -25950,7 +25950,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pending sync · pull down to sync"
+            "value" : "Sync pending · pull down"
           }
         },
         "es" : {
@@ -31385,23 +31385,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ · las dos se salieron juntas"
-          }
-        }
-      }
-    },
-    "matriz.guardian.sinlecturahoy" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No reading today"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sin lectura de hoy"
           }
         }
       }

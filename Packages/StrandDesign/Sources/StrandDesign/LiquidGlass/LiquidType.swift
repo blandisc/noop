@@ -234,8 +234,8 @@ public enum LiquidType {
     // labels de tiles/orbes/carga), lectura 10.5 (deltas, captions de estado, unidades) y
     // dato menor 15 tabular (ratio de carga). El estado de carga conserva su 700.
 
-    /// `caption` — 10.5/500. Sin consumidor en componentes (los deltas usan
-    /// `captionLectura`); se conserva para previews/debug.
+    /// `caption` — 10.5/500, FIJO: cromo de lienzo (el «7 h» de las columnas, rótulos dentro de un
+    /// `Canvas`, LiquidHill, LiquidFranjaAno…). Lo que se LEE va en `captionLectura`, que escala.
     public static let caption = InstrumentoType.grotesk(10.5, weight: .medium)
     /// La etiqueta de eje dentro de una gráfica de la Matriz (los «0.8 · 1.3» de la campana de
     /// Carga): 8/500 tabular, la voz más chica del sistema — solo dentro de un `Canvas`.
@@ -261,7 +261,7 @@ public enum LiquidType {
                                                                  relativeTo: .footnote)
     public static let cabeceraEstanteTracking: CGFloat = 1.4
 
-    /// `micro/estado` — 9/600. Chips de estado («EN TU RANGO»).
+    /// `micro/estado` — 10.5/600 (relativo a `.caption2`). Chips de estado («EN TU RANGO»; el chip del guardián en la Matriz).
     public static let microEstado = InstrumentoType.grotesk(10.5, weight: .semibold,
                                                             relativeTo: .caption2)
 

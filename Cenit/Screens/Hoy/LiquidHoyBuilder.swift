@@ -1014,7 +1014,8 @@ enum LiquidHoyBuilder {
                 .init(valor: $0, contexto: sleepFuera
                       ? "h · " + String(localized: "matriz.sueno.rango.fuera.v2",
                                         defaultValue: "outside the recommended range")
-                      : String(localized: "h · in your range"))
+                      : "h · " + String(localized: "matriz.sueno.rango.dentro",
+                                        defaultValue: "recommended range"))
             } : nil))
 
         // El TÉRMICO ya NO es un orbe: temperatura y respiración viven en la franja del guardián

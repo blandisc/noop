@@ -288,12 +288,7 @@ public struct MatrizColumnas: View {
                         // — un cursor tenue a lo alto en su columna (Grok #4: scrub fantasma).
                         if resaltado == i {
                             let cx = inset + CGFloat(i) * (colW + gap) + colW / 2
-                            var hueco = Path()
-                            hueco.move(to: CGPoint(x: cx, y: 0))
-                            hueco.addLine(to: CGPoint(x: cx, y: size.height))
-                            ctx.stroke(hueco, with: .color(hue.opacity(0.35)),
-                                       style: StrokeStyle(lineWidth: 1.5, lineCap: .round,
-                                                          dash: [2, 3]))
+                            MatrizChartDraw.cursorScrub(ctx, x: cx, height: size.height, hue: hue, fantasma: true)
                         }
                         continue
                     }
@@ -313,12 +308,8 @@ public struct MatrizColumnas: View {
                     // Cursor del scrub: hilo fino sobre la columna leída (como las
                     // gráficas de adentro). Sube desde la barra hasta el tope del canal.
                     if seleccionada {
-                        var hilo = Path()
-                        let cx = x + colW / 2
-                        hilo.move(to: CGPoint(x: cx, y: max(size.height - h - 3, 0)))
-                        hilo.addLine(to: CGPoint(x: cx, y: size.height))
-                        ctx.stroke(hilo, with: .color(hue.opacity(0.9)),
-                                   style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
+                        // El mismo cursor que barras, escalera e hilos (Q2-12): a todo lo alto.
+                        MatrizChartDraw.cursorScrub(ctx, x: x + colW / 2, height: size.height, hue: hue, fantasma: false)
                     }
                     if noche.alerta != .ninguna {
                         let centro = CGPoint(x: x + colW / 2, y: size.height - h)
@@ -343,8 +334,10 @@ public struct MatrizColumnas: View {
             // punteada: con referencia baja en el dominio, el tag caía a media gráfica
             // y se encimaba con la barra de hoy (revisión del dueño, FER-55). Las barras
             // nunca entran a este canal (tope `tagCanal`), así que aquí está siempre libre.
+            // Cromo de LIENZO, no texto de lectura: fijo como `etiquetaEje` — su canal (`tagCanal`)
+            // es fijo y a AX un rótulo que escala entraba al territorio de la columna de HOY (Q2-11).
             let tag = Text(referenciaTag)
-                .font(LiquidType.captionLectura)
+                .font(LiquidType.caption)
                 .foregroundColor(LiquidColor.tinta500)
                 .monospacedDigit()
             ctx.draw(ctx.resolve(tag),
@@ -812,7 +805,7 @@ public struct MatrizBarrasMini: View {
                     continue
                 }
                 let esHoy = i == last
-                // El cero es un DATO, no un hueco: piso visible (`barraPiso`) — y una serie
+                // El cero es un DATO, no un hueco: piso visible (`barrasPiso`) — y una serie
                 // toda en cero pinta sus pisos en vez de un lienzo vacío (FER-128, Grok).
                 let fraccion = maxV > 0 ? CGFloat(v / maxV) : 0
                 let h = max(fraccion * (size.height - MatrizTokens.chartPadV), MatrizTokens.barrasPiso)

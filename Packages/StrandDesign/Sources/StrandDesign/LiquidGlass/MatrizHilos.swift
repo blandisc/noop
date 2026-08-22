@@ -70,6 +70,9 @@ public struct MatrizHilos: View {
 
         /// ¿Ese hilo tiene base? Sí en cuanto una noche trae valor (nil = no se leyó o no se pudo
         /// juzgar). Sin base no hay banda ni hilo central: no se inventa rango.
+        public static func hayBase(_ valores: [Double?]) -> Bool {
+            valores.contains { $0 != nil }
+        }
         /// La base de cada hilo: la suya (28 / 68) cuando hay dos; el CENTRO del lienzo cuando el
         /// otro hilo no tiene base (una sola señal legible) — quisquilloso Q-19.
         public static func baseTemp(hayResp: Bool) -> CGFloat {
@@ -77,9 +80,6 @@ public struct MatrizHilos: View {
         }
         public static func baseResp(hayTemp: Bool) -> CGFloat {
             hayTemp ? MatrizTokens.hilosBaseResp : MatrizTokens.alturaHilos / 2
-        }
-        public static func hayBase(_ valores: [Double?]) -> Bool {
-            valores.contains { $0 != nil }
         }
 
         public enum Estilo: Equatable {
