@@ -283,7 +283,7 @@ enum LiquidHoyBuilder {
                 origenSufijo: estado == .sinLectura ? nil : String(localized: "last night")),
             calibracion: calibracion)
         // Con racha el chip y el sello del módulo van en rojo: la hoja también (FER-56, espejo).
-        hoja.racha = estado == .juntas && (prep?.sentinel?.streakNights ?? 0) >= 2
+        hoja.racha = estado == .juntas && (i.prep?.sentinel?.streakNights ?? 0) >= 2
         return hoja
     }
 
