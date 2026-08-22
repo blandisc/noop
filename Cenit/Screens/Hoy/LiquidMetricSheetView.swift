@@ -1086,7 +1086,9 @@ struct LiquidMetricSheetView: View {
             if datoInfo.id == "sleep", let v = datoInfo.levelsTodayValue {
                 return (levelsValueFormat(v), selloHoy)
             }
-            return (datoInfo.displayValue, selloHoy)
+            // Sin número no hay noche/día que sellar («—» + «ANOCHE · 22 ago» afirmaba una noche
+            // que la misma hoja declaraba inexistente — FER-128 r6).
+            return (datoInfo.displayValue, datoInfo.displayValue == "—" ? nil : selloHoy)
         }
         return (levelsValueFormat(ComparisonEngine.stat(w.values).mean), selloMedia(w.range))
     }
@@ -1263,9 +1265,12 @@ struct LiquidMetricSheetView: View {
     @ViewBuilder private func nivelesFrase(_ d: MetricLevels.Classification) -> some View {
         if let i = nivelDestacado(d) {
             let nombre: String = nombreNivel(d.levels[i].key)
+            // Singular con UNA noche/día (la tabla de abajo ya lo hacía; el conteo no — FER-128 r6).
             let conteo: String = nightly
-                ? String(localized: "\(d.counts[i]) of your last \(d.total) nights")
-                : String(localized: "\(d.counts[i]) of your last \(d.total) days")
+                ? (d.total == 1 ? String(localized: "\(d.counts[i]) of your last night")
+                                : String(localized: "\(d.counts[i]) of your last \(d.total) nights"))
+                : (d.total == 1 ? String(localized: "\(d.counts[i]) of your last day")
+                                : String(localized: "\(d.counts[i]) of your last \(d.total) days"))
             // B9 · Sin serie (la ruta del Detalle de Sueño, que presenta la hoja sin
             // `levelsSeriesLoader` y por eso no pasa por `levelsCargando`) el conteo
             // arrancaba en «0 de tus últimos 0 días». Se calla el conteo, NO el nivel: el

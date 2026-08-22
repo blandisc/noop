@@ -102,7 +102,8 @@ extension LiquidHoyBuilder {
             let juicio: Bool? = bodyByDay[day]?.sleepOut
             let estado = juicio.map { $0 ? fueraRangoSueno : enRangoSueno }
             let sub = estado.map { "\(fecha) · \($0)" } ?? fecha
-            return .init(valor: HoyGramatica.formatoDuracion(mins), sublabel: sub)
+            return .init(valor: HoyGramatica.formatoDuracion(mins), sublabel: sub,
+                         a11yValor: a11ySueno(mins))
         }
         // Sublabel de reposo (no-scrub): «anoche · <estado>» — la celda habla en palabras
         // (P2), y el dato del scrub la reemplaza al arrastrar. Mismo gate de honestidad.
@@ -143,6 +144,9 @@ extension LiquidHoyBuilder {
             unidad: noches.contains(where: { $0.valor != nil }) ? String(localized: "h") : nil,
             destacada: true,
             sublabel: sublabelSueno,
+            // VoiceOver leía «7:25» como una HORA; con «7 h 25 min» es una duración (FER-128 r6,
+            // la misma gemela que Pasos recibió en la r5).
+            a11yValor: finito(hoy?.totalSleepMin).map(a11ySueno),
             chartID: "matriz-sleep",
             chart: .columnas(noches: noches, referencia: 7, referenciaTag: "7 h",
                              dominio: dominioSueno(noches)),
@@ -902,6 +906,12 @@ extension LiquidHoyBuilder {
     /// Un valor no finito (NaN/±inf) es un HUECO, no un dato: un NaN en un dominio tumbaba la app
     /// («Range requires lowerBound <= upperBound») y en una gráfica daba geometría no finita
     /// (FER-128, explorador Grok). Se sanea en la entrada: toda serie pasa por aquí.
+    /// Lo que VoiceOver lee por un sueño: «7 h 25 min» (la clave plural ya existe), nunca «7:25».
+    static func a11ySueno(_ mins: Double) -> String {
+        let total = Int(mins.rounded()); let h = total / 60, m = total % 60
+        return String(localized: "\(h) h \(m) min")
+    }
+
     static func finito(_ v: Double?) -> Double? {
         guard let v, v.isFinite else { return nil }
         return v

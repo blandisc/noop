@@ -140,6 +140,14 @@ public struct MatrizRegla: View {
                 }
                 gota(radioHalo: 5.6, radioPunto: 3.6)
                     .position(x: reglaX(size: size), y: p.y)
+                // El gemelo sobre la regla —la pieza que dice dónde caíste respecto de tu rango—
+                // lleva el MISMO aro que su par en la curva (FER-128, explorador r6).
+                if i == hoyIdx, i == puntos.count - 1, alertaHoy != .ninguna {
+                    aros(alerta: alertaHoy)
+                        .opacity(asentado ? 1 : 0)
+                        .scaleEffect(asentado ? 1 : 0.4)
+                        .position(x: reglaX(size: size), y: p.y)
+                }
             }
             // Scrub sobre un día SIN dato: hilo fantasma vertical en ESE día (paridad
             // con las columnas de Sueño) — el texto dice «sin lectura» y la gráfica

@@ -892,7 +892,7 @@ public struct MatrizEscalerita: View {
                         // HOY pleno solo cuando hay CALOR (ocre/siena): en «bajo» (tinta) el alfa pleno
                         // lo volvía la celda más oscura de la rejilla — alfa-recencia contra
                         // color-calor (FER-128, explorador r5). La columna de hoy se marca por su rejilla.
-                        let pleno = (esHoy || seleccionada) && nivel > 0
+                        let pleno = seleccionada || (esHoy && nivel > 0)
                         ctx.fill(camino, with: .color(Self.colorNivel(nivel).opacity(
                             pleno ? MatrizChartDraw.hoyAlfa : MatrizTokens.heatHistAlfa)))
                     } else {

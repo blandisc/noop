@@ -33,12 +33,11 @@ final class LiquidCarrilEA11yTests: XCTestCase {
             a11yLabel: "VFC, últimos 30 días")
     }
 
-    /// El defecto: `body` pinta el pozo vacío con `puntos.count <= 1`, pero la voz sólo
-    /// callaba con `isEmpty` ⇒ con UNA lectura VoiceOver decía «56 ms» sobre una pantalla
-    /// que decía «Sin lecturas en este rango».
-    func test_e2_unSoloPunto_laVozDiceElPozoVacio() {
-        XCTAssertEqual(Self.grafica(Self.serie(1)).valorA11y, "Sin lecturas en este rango.",
-                       "con 1 punto la pantalla muestra el pozo: la voz debe decir lo mismo")
+    /// FER-128 r6: con UNA lectura la gráfica la PINTA (punto suelto, como la Matriz) y la voz la
+    /// dice — el héroe de la misma hoja ya enseñaba el número; «Sin lecturas» lo contradecía.
+    func test_e2_unSoloPunto_laVozDiceLaLectura() {
+        XCTAssertNotEqual(Self.grafica(Self.serie(1)).valorA11y, "Sin lecturas en este rango.",
+                          "con 1 punto la pantalla pinta el punto: la voz lo dice")
     }
 
     func test_e2_serieVacia_laVozDiceElPozoVacio() {

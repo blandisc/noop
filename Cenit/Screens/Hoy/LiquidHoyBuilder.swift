@@ -159,8 +159,9 @@ enum LiquidHoyBuilder {
     static func guardianHoja(_ i: GuardianHojaInputs) -> LiquidGuardianHoja {
         let estado = i.guardian?.estado ?? .sinLectura
         let (nivel, sinLectura, conteo, nota, notaAvisa, enPatron) =
-            copyGuardian(estado: estado, guardian: i.guardian, prep: i.prep, locale: i.locale)
-        let sello = selloAnoche(now: i.now, calendar: i.calendar, locale: i.locale)
+            copyGuardian(estado: estado, guardian: i.guardian, locale: i.locale, prep: i.prep)
+        // Sin lectura no se afirma la noche (el mismo contrato de procedencia que `origenSufijo`).
+        let sello: String? = estado == .sinLectura ? nil : selloAnoche(now: i.now, calendar: i.calendar, locale: i.locale)
         let tempFuera = estado == .tempFuera || estado == .juntas
         let respFuera = estado == .respFuera || estado == .juntas
         let sinDatoAnoche = estado == .sinLectura

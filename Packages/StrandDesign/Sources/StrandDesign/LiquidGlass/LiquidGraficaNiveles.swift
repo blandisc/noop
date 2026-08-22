@@ -92,7 +92,9 @@ public struct LiquidGraficaNiveles: View {
             case .vacio(let mensaje):
                 LiquidChartVacio(mensaje: mensaje, alto: LiquidChartAlto.explorador)
             case .datos:
-                if puntos.count > 1 {
+                // Una sola lectura se pinta (punto suelto), como en la Matriz (FER-128 r6):
+                // con «No hay lecturas en este rango» bajo un héroe con número, la hoja se contradecía.
+                if !puntos.isEmpty {
                     LiquidChartPlot(puntos: puntos, bandas: bandas, dominio: dominio,
                                 ticksY: ticksY, tono: tono,
                                 puntoHoy: puntoHoy, hoyAnillo: hoyAnillo,
@@ -136,11 +138,9 @@ public struct LiquidGraficaNiveles: View {
         // tiene catálogo, D3).
         if case .cargando = estado { return "" }
         if case .vacio(let mensaje) = estado { return mensaje }
-        // E2 · el MISMO umbral que decide el pozo en `body` (`puntos.count > 1`). Con
-        // `!puntos.isEmpty` la voz y la pantalla se contradecían: con UNA sola lectura
-        // VoiceOver anunciaba «56 ms» mientras la pantalla decía «No hay lecturas en este
-        // rango» — el caso del usuario nuevo, que es justo quien más depende de la voz.
-        guard puntos.count > 1 else { return estadoVacio }
+        // E2 · el MISMO umbral que decide el pozo en `body` (`!puntos.isEmpty`, FER-128 r6): con
+        // UNA lectura la pantalla la pinta y la voz la dice; sin ninguna, las dos dicen el pozo.
+        guard !puntos.isEmpty else { return estadoVacio }
         let i: Int = LiquidChartA11y.indice(iScrub, puntos.count)
         let p = puntos[i]
         if let f = formatoScrub { return f(p.valor, p.fecha) }

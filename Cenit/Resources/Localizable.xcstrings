@@ -7510,6 +7510,40 @@
         }
       }
     },
+    "%lld of your last night" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld of your last night"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld de tu última noche"
+          }
+        }
+      }
+    },
+    "%lld of your last day" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld of your last day"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld de tu último día"
+          }
+        }
+      }
+    },
     "%lld of your last %lld nights" : {
       "extractionState" : "stale",
       "localizations" : {
