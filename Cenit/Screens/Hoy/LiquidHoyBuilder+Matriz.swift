@@ -123,9 +123,10 @@ extension LiquidHoyBuilder {
             titulo: String(localized: "Sleep"),
             // FER-55: fuera el sello «vota» de las gemelas — la jerarquía la dan el nivel,
             // el orden y el manual «?». Carga NUNCA vota (loadAxis inRange/noData).
-            valor: valorSueno, destacada: true,
+            valor: valorSueno,
             // «h» como su gemela dice «lpm», su hoja y el prototipo (quisquilloso Q-06).
             unidad: valorSueno == "—" ? nil : String(localized: "h"),
+            destacada: true,
             sublabel: sublabelSueno,
             chartID: "matriz-sleep",
             chart: .columnas(noches: noches, referencia: 7, referenciaTag: "7 h",
