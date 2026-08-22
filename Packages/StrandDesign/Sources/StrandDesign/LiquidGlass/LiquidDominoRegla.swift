@@ -297,6 +297,7 @@ private enum LiquidDominoReglaPreviewData {
     static let juntasTemp: [LiquidDominoRegla.Punto] = [.dentro, .dentro, .dentro, .fuera, .fuera]
     static let juntasResp: [LiquidDominoRegla.Punto] = [.dentro, .dentro, .dentro, .fuera, .fuera]
     static let sinDato: [LiquidDominoRegla.Punto] = [.dentro, .dentro, .dentro, .dentro, .sinDato]
+    static let sinJuicio: [LiquidDominoRegla.Punto] = [.sinDato, .sinDato, .sinDato, .sinJuicio, .sinJuicio]
 
     static func carriles(temp: [LiquidDominoRegla.Punto],
                          resp: [LiquidDominoRegla.Punto]) -> [LiquidDominoRegla.Carril] {
@@ -359,6 +360,18 @@ private enum LiquidDominoReglaPreviewData {
                     consecuencia: "dia mas leve",
                     encendida: false,
                     a11yLabel: "La regla: sin lectura anoche")
+            }
+
+            // 5 · Leídas pero aún sin comparar (base inmadura): anillo SÓLIDO, no punteado.
+            previewBloque(titulo: "Aprendiendo tu patrón") {
+                LiquidDominoRegla(
+                    carriles: LiquidDominoReglaPreviewData.carriles(
+                        temp: LiquidDominoReglaPreviewData.sinJuicio,
+                        resp: LiquidDominoReglaPreviewData.sinJuicio),
+                    etiquetas: ["anteanoche", "anoche"],
+                    consecuencia: "dia mas leve",
+                    encendida: false,
+                    a11yLabel: "La regla: todavia sin comparar")
             }
         }
         .padding(LiquidSpace.s550)

@@ -523,9 +523,10 @@ public struct LiquidCalendario90: View {
 
     // MARK: Leyenda
 
-    /// Fila de peldaños; en tallas de accesibilidad, rejilla 2×2 (mismo trato que la leyenda de
-    /// `LiquidStageBar`). El gap del papel es 14 pt, un paso que la escala Liquid no tiene: se
-    /// usa `s400` (16), el token más cercano hacia arriba.
+    /// Fila de peldaños; desde `.xxLarge`, rejilla 2×2 (la leyenda de `LiquidStageBar` lo
+    /// resuelve con `ViewThatFits`; aquí el umbral explícito, bajo el tope xxxLarge de la app).
+    /// El gap del papel es 14 pt, un paso que la escala Liquid no tiene: se usa `s400` (16),
+    /// el token más cercano hacia arriba.
     @ViewBuilder private var leyendaVista: some View {
         // Desde `.xxLarge`: la app capa en xxxLarge (FER-394) y ahí «Suficient/e» partía (FER-128 r10).
         if tamanoTexto >= .xxLarge {

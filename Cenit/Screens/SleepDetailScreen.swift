@@ -44,6 +44,8 @@ struct SleepDetailScreen: View {
 
     /// La métrica cuya hoja de info está abierta (tocar una cajita de «Métricas de la noche»).
     @State private var metricInfo: MetricInfo?
+    /// El cuerpo del manual «Qué medimos» escala con Dynamic Type, como los manuales de Hoy (r11).
+    @ScaledMetric(relativeTo: .footnote) private var cuerpoPt: CGFloat = LiquidType.cuerpoLecturaBase
     /// Si la tarjeta combinada «Etapas del sueño» está abierta (desde «Cómo se calcula»).
     @State private var showStages = false
     /// El ⓘ del campo abre la tarjeta «Qué medimos» bajo él.
@@ -210,7 +212,7 @@ struct SleepDetailScreen: View {
                 .font(LiquidType.tituloFila)
                 .foregroundStyle(LiquidColor.tinta900)
             Text(heroExplanation)
-                .font(LiquidType.cuerpo)
+                .font(.system(size: cuerpoPt))
                 .lineSpacing(LiquidType.cuerpoLineSpacing)
                 .foregroundStyle(LiquidColor.tinta700)
                 .fixedSize(horizontal: false, vertical: true)
@@ -1009,13 +1011,13 @@ struct SleepDetailScreen: View {
             .init(id: "enough", color: tono.opacity(LiquidCalendario90.alfa(intensidad: 1)),
                   // Nombres que NO colisionan con la tabla de bandas de arriba (Corto/Suficiente/
                   // Óptimo/Extenso): aquí son 3 intensidades, no 4 bandas (FER-128 r10).
-                  etiqueta: String(localized: "sueno.cal.completa", defaultValue: "Full night")),
+                  etiqueta: String(localized: "sueno.cal.completa", defaultValue: "Full")),
             .init(id: "ok", color: tono.opacity(LiquidCalendario90.alfa(intensidad: 0.5)),
                   etiqueta: String(localized: "A bit short")),
             .init(id: "short", color: tono.opacity(LiquidCalendario90.alfa(intensidad: 0)),
                   etiqueta: String(localized: "sueno.cal.corta", defaultValue: "Short")),
             .init(id: "nodata", color: LiquidColor.tinta7,
-                  etiqueta: String(localized: "no data")),
+                  etiqueta: String(localized: "sueno.cal.sindato", defaultValue: "No data")),
         ]
     }
 

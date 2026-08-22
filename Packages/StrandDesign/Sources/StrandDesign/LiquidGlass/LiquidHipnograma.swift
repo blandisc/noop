@@ -146,6 +146,8 @@ public struct LiquidHipnograma: View {
     /// AX5 sin recortarlo, y el contrato prohíbe texto cortado. Los nombres siguen vivos en
     /// la leyenda del caller y en `a11yValue` — que escala sin tope.
     @Environment(\.dynamicTypeSize) private var tamanoTexto
+    /// El vacío escala con Dynamic Type (FER-128 r11).
+    @ScaledMetric(relativeTo: .footnote) private var cuerpoPt: CGFloat = LiquidType.cuerpoLecturaBase
 
     // MARK: - Geometría interna (del papel, verificada contra `Hypnogram.swift`)
 
@@ -228,7 +230,7 @@ public struct LiquidHipnograma: View {
                 }
                 if bandas.isEmpty, let vacio {
                     Text(verbatim: vacio)
-                        .font(LiquidType.cuerpo)
+                        .font(.system(size: cuerpoPt))
                         .foregroundStyle(LiquidColor.tinta500)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, LiquidSpace.s400)

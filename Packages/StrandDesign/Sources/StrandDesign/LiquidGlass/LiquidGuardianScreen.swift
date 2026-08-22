@@ -548,14 +548,14 @@ enum LiquidGuardianFixtures {
         nota: "Mientras tanto, las lecturas se muestran sin comparación.",
         reglaKicker: "LA REGLA", reglaTexto: reglaTexto, reglaClave: reglaClave,
         domino: domino(temp: [.sinDato, .sinDato, .sinDato, .dentro, .dentro],
-                       resp: [.sinDato, .sinDato, .sinDato, .sinDato, .sinDato],
+                       resp: [.sinDato, .sinDato, .sinDato, .sinJuicio, .sinJuicio],
                        encendida: false,
                        a11y: "Aprendiendo tu patrón: noches previas sin base todavía."),
         metodo: metodo,
         calibracion: .init(titulo: "Aprendiendo tu patrón",
                            // El guardián cuenta contra `Baselines.minNightsSeed` (4), no contra 14:
                            // las 14 son la madurez del veredicto, otro concepto.
-                           leyenda: "3 de 4 noches", hechas: 3, necesarias: 4))
+                           leyenda: "3 de 4 noches con lectura de respiración", hechas: 3, necesarias: 4))
 }
 
 private func guardianPreview(_ model: LiquidGuardianHoja) -> some View {

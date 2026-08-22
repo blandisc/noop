@@ -815,7 +815,7 @@ public struct LiquidEcosistema: View {
                     tono: LiquidColor.tinta500, fuente: LiquidType.infoGlifoTitularS,
                     levante: 0)
                 Text(subtitle)
-                    .font(LiquidType.cuerpo).lineSpacing(LiquidType.cuerpoLineSpacing)
+                    .font(.system(size: subtituloPt)).lineSpacing(LiquidType.cuerpoLineSpacing)
                     .foregroundStyle(LiquidColor.tinta700)
                     .multilineTextAlignment(.center)
                     .allowsHitTesting(false)

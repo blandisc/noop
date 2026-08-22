@@ -1023,7 +1023,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "aún sin comparar"
+            "value" : "todavía sin comparar"
           }
         }
       }
@@ -1051,13 +1051,30 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Full night"
+            "value" : "Full"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Completa"
+          }
+        }
+      }
+    },
+    "sueno.cal.sindato" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No data"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin dato"
           }
         }
       }

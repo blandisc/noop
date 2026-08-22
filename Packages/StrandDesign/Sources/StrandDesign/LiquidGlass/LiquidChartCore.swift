@@ -846,10 +846,12 @@ struct LiquidChartPlot: View {
 struct LiquidChartVacio: View {
     let mensaje: String
     let alto: CGFloat
+    /// El pozo ESCALA con Dynamic Type como la explicación de la cabecera (FER-128 r11).
+    @ScaledMetric(relativeTo: .footnote) private var cuerpoPt: CGFloat = LiquidType.cuerpoLecturaBase
 
     var body: some View {
         Text(verbatim: mensaje)
-            .font(LiquidType.cuerpo)
+            .font(.system(size: cuerpoPt))
             .foregroundStyle(LiquidColor.tinta500)
             .multilineTextAlignment(.center)
             .padding(.horizontal, LiquidSpace.s400)

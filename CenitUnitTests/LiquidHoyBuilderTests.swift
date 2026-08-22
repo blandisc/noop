@@ -383,6 +383,22 @@ final class LiquidHoyBuilderTests: XCTestCase {
         XCTAssertNil(h.resp.serie?.banda)
     }
 
+    /// El dominó distingue «sin lectura» (punteado) de «leída pero aún sin comparar» (anillo
+    /// sólido) y la voz lo dice (FER-128 r10/r11).
+    func test_guardian_domino_sinJuicio_vs_sinDato() {
+        let hist = [noche("2026-06-19", respMissing: true), noche("2026-06-20", respJudged: false)]
+        let g = LiquidHoyBuilder.guardian(prep: prep(hist), thermalDeviation: 0.1,
+                                          resp: .init(14), nightKey: "2026-06-20")
+        let h = hoja(hist, guardian: g)
+        let resp = h.domino.carriles[1].noches
+        XCTAssertEqual(resp.suffix(2).first, .sinDato, "sin lectura → punteado")
+        XCTAssertEqual(resp.last, .sinJuicio, "leída sin juzgar → anillo sólido, no «sin lectura»")
+        XCTAssertTrue(h.domino.a11yLabel.contains(String(localized: "domino.sinjuicio", defaultValue: "not compared yet")),
+                      "la voz dice «todavía sin comparar»: \(h.domino.a11yLabel)")
+        XCTAssertTrue(h.domino.a11yLabel.contains(String(localized: "no data")),
+                      "y «sin datos» para la noche sin lectura")
+    }
+
     /// Con UNA sola señal no puede decir «sin lectura anoche» —hay una lectura en pantalla—
     /// ni afirmar patrón: su regla necesita el par.
     func test_guardian_unaSolaSenal_niSinLecturaNiPatron() {
