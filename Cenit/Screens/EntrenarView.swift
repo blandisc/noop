@@ -215,6 +215,9 @@ private struct EntrenarLanding: View {
                     LiquidHoyBuilder.acta(prep: repo.todayPreparedness,
                                           healthConnected: healthConnected,
                                           verdictPending: repo.todayPreparedness == nil && !repo.fullyLoaded,
+                                          // Mientras Salud sincroniza, la misma causa que Hoy («sigue
+                                          // leyéndose»); la ventana nocturna/sync viejo quedan en Hoy (r13).
+                                          causaT3: health.syncing ? .leyendo : nil,
                                           // La misma lectura cruda que Hoy: «sin comparar», no «sin dato» (r12).
                                           lecturasHoy: LiquidHoyBuilder.lecturasHoy(repo.today)),
                     // Sin «Ver más»: ese botón lleva a Tendencias, y la decisión del handoff es que

@@ -1025,10 +1025,11 @@ enum LiquidHoyBuilder {
             progress: autHasData ? positionFromZ(aut?.orientedZ) : nil,
             icon: .ondaSenal,
             state: autFuera ? .atencion : .ok,
-            // El valor crudo SE MUESTRA aunque el eje no tenga veredicto: el caption dice «Aún sin
-            // veredicto» (no «sin lectura»), así que «50 lpm · aún sin veredicto» es coherente y la
-            // celda ya lo enseña (FER-128 r12). El badge (contexto de rango) sigue gateado.
-            valor: valores.rhr,
+            // Sin dato en el eje NO va valor: el DS pinta `badge ?? valor ?? caption` (una sola voz),
+            // así que con valor el listado perdería «Aún sin veredicto» y el orbe separado diría
+            // «58 lpm» sobre «Sin lectura de hoy» (FER-128 r12/r13 — XC12-04 queda para el DS:
+            // componer «valor · caption» en `filaSenal`/`a11yCompuesta`).
+            valor: autHasData ? valores.rhr : nil,
             // El badge del estado separado (FER-10): el número grande + su contexto.
             badge: autHasData ? valores.rhrNum.map {
                 .init(valor: $0, contexto: autFuera
@@ -1046,9 +1047,9 @@ enum LiquidHoyBuilder {
             progress: sleepHasData ? positionFromState(sleep!.state) : nil,
             icon: .lunaSenal,
             state: sleepFuera ? .atencion : .ok,
-            // Simétrico al reposo: el valor crudo se muestra (el caption dice «Aún sin
-            // veredicto», ya no «Sin lectura anoche» — r12); el badge sigue gateado por el driver.
-            valor: valores.sueno,
+            // Simétrico al reposo (Grok #5): sin driver de sueño con dato, NADA de valor — el DS
+            // mostraría «7:20» a secas y callaría «Aún sin veredicto» (r13).
+            valor: sleepHasData ? valores.sueno : nil,
             badge: sleepHasData ? valores.sueno.map {
                 // El sueño se juzga contra un piso RECOMENDADO (Hirshkowitz), no contra «tu
                 // rango»: el badge dice lo mismo que el módulo de abajo (FER-128, explorador).
@@ -1315,7 +1316,8 @@ enum LiquidHoyBuilder {
             filaBoleta(ax: ax, estado: estados[i], prep: prep,
                        hayVeredicto: hayVeredicto, esLecturaDeDia: esLecturaDeDia,
                        calibrando: calibrando, healthConnected: healthConnected,
-                       hayLectura: ax == .autonomic ? lecturasHoy.rhr : lecturasHoy.sueno)
+                       // Sin Salud conectada no hay lectura que comparar (r13).
+                       hayLectura: healthConnected && (ax == .autonomic ? lecturasHoy.rhr : lecturasHoy.sueno))
         }
 
         let resumen = resumenBoleta(prep: prep, estados: estados, fuera: fuera,
@@ -1355,8 +1357,7 @@ enum LiquidHoyBuilder {
                                  healthConnected: healthConnected,
                                  verdictPending: verdictPending,
                                  autonomicPosible: prep?.autonomicPossible ?? true,
-                                 causaT3: causaT3,
-                                 hayLecturaCruda: lecturasHoy.rhr || lecturasHoy.sueno),
+                                 causaT3: causaT3),
             conteo: resumen.texto, conteoClave: resumen.clave,
             filas: filas,
             // Vigilantes SOLO con veredicto (/ux D7): su drama vive en el guardián. Y el día
@@ -1394,18 +1395,14 @@ enum LiquidHoyBuilder {
                                       healthConnected: Bool,
                                       verdictPending: Bool = false,
                                       autonomicPosible: Bool = true,
-                                      causaT3: CausaT3? = nil,
-                                      hayLecturaCruda: Bool = false) -> String {
+                                      causaT3: CausaT3? = nil) -> String {
         if hayVeredicto { return palabraVeredicto(prep!.verdict) }
         if esLecturaDeDia { return String(localized: "Day reading") }
         if !healthConnected { return String(localized: "No reading") }
         // FER-73 · H19: mientras el motor lee, el acta dice lo mismo que el héroe.
         if prep == nil, verdictPending { return String(localized: "Reading your night…") }
-        // Sin motor pero CON lectura (señal insuficiente para juzgar): la palabra del héroe,
-        // «Conociéndote», no «Sin lectura» —la lectura sí está— (FER-128 r12).
-        if prep == nil, causaT3 == .senalInsuficiente || hayLecturaCruda {
-            return String(localized: "hero.title.calibrando", defaultValue: "Getting to know you")
-        }
+        // (En producción `prep == nil ⇔ verdictPending`: el motor publica siempre un `Read` en el
+        // pase completo — no hay rama «sin motor pero con lectura», r13.)
         if prep == nil { return String(localized: "No reading") }
         // Con la base rancia la palabra grande es la del héroe: ni «sin lectura» (sí la hay) ni
         // «conociéndote» (tu rango existe, solo caducó). Pero DESPUÉS de la falta de sync, con
@@ -1463,6 +1460,9 @@ enum LiquidHoyBuilder {
             switch votoEstado {
             case .calibrando: sub = String(localized: "learning your base")
             // «contra tu base» + «sin comparar» en la misma fila se contradecían (r12).
+            // Con la base RANCIA la base existe (solo caducó): «contra tu base» (r13).
+            case .sinJuicio where prep?.maturity == .stale:
+                sub = String(localized: "acta.sub.fc", defaultValue: "overnight · against your base")
             case .sinJuicio:  sub = String(localized: "acta.sub.fc.sinbase", defaultValue: "overnight · no base yet")
             // Sin FC nocturna posible no hay base contra la que leer (r12).
             case .sinLectura where prep?.autonomicPossible == false:

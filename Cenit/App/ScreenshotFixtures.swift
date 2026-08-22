@@ -95,7 +95,7 @@ enum ScreenshotFixtures {
             // lo mismo que dirían en producción con una sola noche (FER-128 r12).
             let prepIns = Preparedness.evaluate(.init(
                 days: dias, strainByDay: [:], trend: nil, asOf: dayKey))
-            model.repo.setDashboard(days: dias, preparedness: prepIns)
+            model.repo.setDashboard(days: dias, appleHealthDays: Set(dias.map(\.day)), preparedness: prepIns)
             return
         }
 
@@ -117,7 +117,7 @@ enum ScreenshotFixtures {
             // noches bancadas y dice «Sin lectura hoy» (FER-128 r11).
             let prepDl = Preparedness.evaluate(.init(
                 days: days, strainByDay: [:], trend: nil, asOf: Repository.localDayKey(today)))
-            model.repo.setDashboard(days: days, preparedness: prepDl)
+            model.repo.setDashboard(days: days, appleHealthDays: Set(days.map(\.day)), preparedness: prepDl)
             return
         }
 

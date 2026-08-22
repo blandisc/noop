@@ -397,7 +397,8 @@ struct SleepDetailScreen: View {
     /// «23:42 – 0:04 · 22 min» — el detalle del tramo bajo el dedo (el papel lo decía igual).
     private static func rangoTramo(_ tramo: LiquidHipnograma.Intervalo) -> String {
         let minutos = Int((tramo.duracion / 60).rounded())
-        return "\(clockFmt.string(from: tramo.inicio)) – \(clockFmt.string(from: tramo.fin)) · \(minutos) min"
+        // «→» como la ventana de la noche («23:38 → 7:04»), no «–» (r13).
+        return "\(clockFmt.string(from: tramo.inicio)) → \(clockFmt.string(from: tramo.fin)) · \(minutos) min"
     }
 
     /// Lo que VoiceOver dice de la noche: el reparto por etapa en porcentaje (clave existente).
@@ -837,7 +838,7 @@ struct SleepDetailScreen: View {
                 LiquidChartBanda(lo: b.lo, hi: b.hi, color: b.color, activa: i == bandaExplorada)
             },
             dominio: Self.dominioSueno,
-            ticksY: [(10, "10"), (9, "9"), (7, "7"), (5, "5")],
+            ticksY: [10.0, 9.0, 7.0, 5.0].map { ($0, Self.horasReloj($0)) },
             tono: Self.tono,
             // La joya de la última noche, igual que la hoja de resumen (:1334): sin ella la
             // misma gráfica marcaba «hoy» en el resumen y no lo marcaba en el detalle. Anillo

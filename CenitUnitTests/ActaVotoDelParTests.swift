@@ -140,6 +140,30 @@ final class ActaVotoDelParTests: XCTestCase {
                       "y dice quién votó de verdad: \(acta.conteo)")
     }
 
+    /// Hoy pasa `causaT3`; Entrenar no (solo «leyendo» al sincronizar). Con lectura cruda de hoy
+    /// las dos hojas dicen la MISMA noche: «tu noche quedó registrada…» (FER-128 r12/r13).
+    func test_acta_hoyYEntrenar_mismaNoche_conLecturaSinCausa() {
+        let prep = read(verdict: .lowSignal, autonomicOut: false, sleepOut: false, par: false,
+                        maturity: .trusted, autonomicPossible: true)
+        let hoy = LiquidHoyBuilder.acta(prep: prep, causaT3: .senalInsuficiente, lecturasHoy: (true, true))
+        let entrenar = LiquidHoyBuilder.acta(prep: prep, causaT3: nil, lecturasHoy: (true, true))
+        XCTAssertEqual(hoy.nivel, entrenar.nivel)
+        XCTAssertEqual(hoy.conteo, entrenar.conteo, "la misma sentencia aunque Entrenar no conozca la causa")
+        XCTAssertEqual(hoy.filas.map(\.estado), entrenar.filas.map(\.estado))
+        // «Leyendo» manda en las dos hojas por igual.
+        let hoyLey = LiquidHoyBuilder.acta(prep: prep, causaT3: .leyendo, lecturasHoy: (false, false))
+        let entLey = LiquidHoyBuilder.acta(prep: prep, causaT3: .leyendo, lecturasHoy: (false, false))
+        XCTAssertEqual(hoyLey.conteo, entLey.conteo)
+    }
+
+    /// Sin Salud conectada no hay «sin comparar» (la lectura en caché no se compara con nada) — r13.
+    func test_acta_sinSalud_noDiceSinComparar() {
+        let prep = read(verdict: .lowSignal, autonomicOut: false, sleepOut: false, par: false,
+                        maturity: .calibrating, autonomicPossible: false)
+        let a = LiquidHoyBuilder.acta(prep: prep, healthConnected: false, lecturasHoy: (true, true))
+        XCTAssertEqual(a.filas[0].estado, .sinLectura)
+    }
+
     /// Con lectura cruda en pantalla y sin base para juzgarla, la fila dice «sin comparar»
     /// (joya de calibrando), no «sin dato» — la gemela del `.sinJuicio` del dominó (FER-128 r11/r12).
     func test_acta_lecturaSinBase_diceSinComparar_noSinDato() {

@@ -1098,7 +1098,12 @@ struct LiquidMetricSheetView: View {
         }
         // El MISMO número que clasifica el nivel (`valorMostrado`, sin el día parcial de Pasos) —
         // el numeral y su carril no pueden separarse (FER-128 r7).
-        return (valorMostrado.map(levelsValueFormat) ?? datoInfo.displayValue, selloMedia(w.range),
+        // Esfuerzo: la MEDIA lleva la misma décima que el numeral de hoy («12.0» / «11.0»); los
+        // cortes de la escalera y el eje siguen enteros (`boundaryStyle`), r12/r13.
+        let numeralMedia: String? = valorMostrado.map {
+            datoInfo.id == "strain" ? MetricFormat.forMetric(.strain).numeral($0) : levelsValueFormat($0)
+        }
+        return (numeralMedia ?? datoInfo.displayValue, selloMedia(w.range),
                 datoInfo.id == "sleep" ? valorMostrado.map(LiquidHoyBuilder.a11ySueno) : nil)
     }
 
@@ -1555,11 +1560,8 @@ struct LiquidMetricSheetView: View {
             // entero a propósito: sus cortes son enteros y «< 20.0» sería precisión falsa.)
             // MetricFormat.numeral(.stress) es exactamente ese «%.1f».
             return MetricFormat.forMetric(.stress).numeral(v)
-        case "strain":
-            // La media con la MISMA décima que el numeral de hoy («12.0» hoy vs «11» media — r12).
-            return String(format: "%.1f", v)
         default:
-            // rhr / spo2 / resp_rate: cotas enteras vía MetricFormat (byte-idéntico
+            // rhr / spo2 / resp_rate / strain: cotas enteras vía MetricFormat (byte-idéntico
             // a `Int(v.rounded())`). hrv / heart_rate / submétricas: entero de siempre.
             if let fm = Self.fixedMetric(datoInfo.id) {
                 return MetricFormat.forMetric(fm).boundary(v)
