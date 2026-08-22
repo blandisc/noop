@@ -1274,8 +1274,11 @@ enum LiquidHoyBuilder {
     /// (`verdictPending`, la causa T3 y si Salud sigue conectada). Sin él afirmaba siempre
     /// «no llegó nada anoche» mientras la pantalla decía «Reading your night…» o «Night
     /// recorded · not enough signal», y callaba que el veredicto mostrado es de anoche.
+    /// `lecturasHoy`: si HOY hay lectura cruda de cada eje aunque el motor no la haya podido
+    /// juzgar (base insuficiente) — entonces la fila dice «sin comparar», no «sin dato» (r11).
     static func acta(prep: Preparedness.Read?, healthConnected: Bool = true,
-                     verdictPending: Bool = false, causaT3: CausaT3? = nil) -> LiquidActa {
+                     verdictPending: Bool = false, causaT3: CausaT3? = nil,
+                     lecturasHoy: (rhr: Bool, sueno: Bool) = (false, false)) -> LiquidActa {
         // La boleta se SINTETIZA con sus dos votantes fijos, no se itera sobre `drivers`:
         // en el `lowSignal` por falta de fila de hoy, `Preparedness` devuelve `drivers`
         // VACÍO (:163-166) y una tabla derivada de ahí no existiría.
@@ -1308,7 +1311,8 @@ enum LiquidHoyBuilder {
         let filas: [LiquidActa.Fila] = ejesActa.enumerated().map { i, ax in
             filaBoleta(ax: ax, estado: estados[i], prep: prep,
                        hayVeredicto: hayVeredicto, esLecturaDeDia: esLecturaDeDia,
-                       calibrando: calibrando, healthConnected: healthConnected)
+                       calibrando: calibrando, healthConnected: healthConnected,
+                       hayLectura: ax == .autonomic ? lecturasHoy.rhr : lecturasHoy.sueno)
         }
 
         let resumen = resumenBoleta(prep: prep, estados: estados, fuera: fuera,
@@ -1416,7 +1420,8 @@ enum LiquidHoyBuilder {
                                    estado: Preparedness.AxisState,
                                    prep: Preparedness.Read?,
                                    hayVeredicto: Bool, esLecturaDeDia: Bool,
-                                   calibrando: Bool, healthConnected: Bool) -> LiquidActa.Fila {
+                                   calibrando: Bool, healthConnected: Bool,
+                                   hayLectura: Bool = false) -> LiquidActa.Fila {
         let esAuto = ax == .autonomic
         let glifo: LiquidIcon.Glyph = esAuto ? .corazon : .luna
 
@@ -1429,8 +1434,14 @@ enum LiquidHoyBuilder {
         // dibujaba banda y joya centrada —sobre CERO mediciones— y decía «aprendiendo tu base»
         // a quien el héroe acaba de decirle que su base no se puede formar. Es el mismo gate que
         // FER-76 le puso al héroe, ahora también aquí (cuarta vuelta adversarial).
-        case .noData:  votoEstado = (esAuto && calibrando && prep?.autonomicPossible == true)
-                                    ? .calibrando : .sinLectura
+        case .noData:
+            if esAuto && calibrando && prep?.autonomicPossible == true {
+                votoEstado = .calibrando
+            } else {
+                // Con lectura cruda en pantalla (la celda dice «50 lpm») el acta no puede decir
+                // «sin dato»: es «leída, sin comparar» — la gemela del dominó (FER-128 r11).
+                votoEstado = hayLectura ? .sinJuicio : .sinLectura
+            }
         }
 
         let sub: String
@@ -1456,6 +1467,7 @@ enum LiquidHoyBuilder {
         case .dentro:                  palabra = String(localized: "acta.voto.in", defaultValue: "in")
         case .fueraAbajo, .fueraArriba: palabra = String(localized: "acta.voto.out", defaultValue: "out")
         case .calibrando:              palabra = "··"
+        case .sinJuicio:               palabra = String(localized: "acta.voto.sinjuicio", defaultValue: "not compared")
         case .sinLectura:              palabra = String(localized: "no data")
         }
 
@@ -1490,6 +1502,8 @@ enum LiquidHoyBuilder {
                 : String(localized: "\(nombre), read outside, \(sub), outside your range.")
         case .calibrando:
             a11y = String(localized: "\(nombre), no vote yet, \(sub).")
+        case .sinJuicio:
+            a11y = String(localized: "\(nombre), read, not compared yet, \(sub).")
         case .sinLectura:
             a11y = String(localized: "\(nombre), no data, \(sub).")
         }
@@ -1724,12 +1738,9 @@ enum LiquidHoyBuilder {
         // mañana la boleta se llena sola», que para este usuario es más falso todavía —aunque se
         // ponga un reloj esta noche faltan cuatro— y contradice a la confianza de la misma hoja
         // (tercera vuelta adversarial: el arreglo dejaba el resultado PEOR que el bug).
-        if calibrando, let prep, !prep.autonomicPossible {
-            out.append(.init(id: "sinfc",
-                             texto: String(localized: "acta.nota.sinfc",
-                                           defaultValue: "Sleeping with your Apple Watch is what unlocks your daily verdict.")))
-            return out
-        }
+        // …y el RESUMEN ya lo dice con las mismas palabras («Sleeping with your Apple Watch is
+        // what unlocks it», `resumenBoleta`): una voz por hueco, la nota calla (FER-128 r11).
+        if calibrando, let prep, !prep.autonomicPossible { return out }
         if calibrando, let prep, prep.autonomicPossible {
             let (noche, total) = calibracionConteo(nights: prep.autonomicNights)
             if noche < total {

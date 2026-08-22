@@ -42,6 +42,10 @@ public struct LiquidVotoRiel: View {
         case calibrando
         /// Sin lectura anoche: eje punteado, sin banda ni joya.
         case sinLectura
+        /// Hubo lectura pero el motor no pudo compararla (base insuficiente): se dibuja como
+        /// `calibrando` (joya punteada centrada), y la palabra dice «sin comparar», no «sin dato»
+        /// (FER-128 r11 — la gemela del `.sinJuicio` del dominó).
+        case sinJuicio
     }
 
     private let estado: Estado
@@ -173,11 +177,14 @@ public struct LiquidVotoRiel: View {
         umbral == .rango ? Self.rangoLo...Self.rangoHi : Self.minimoLo...Self.bigoteHi
     }
 
+    /// `calibrando` y `sinJuicio` comparten dibujo: sin base usable, joya punteada centrada.
+    private var sinBase: Bool { estado == .calibrando || estado == .sinJuicio }
+
     private var posJoya: CGFloat? {
         // Sin base usable no hay dónde colocarla: «calibrando» se queda centrada y punteada, y
         // «sin lectura» no dibuja joya. La desviación solo manda cuando hay un veredicto que leer.
         switch estado {
-        case .calibrando:  return 0.5
+        case .calibrando, .sinJuicio:  return 0.5
         case .sinLectura:  return nil
         case .dentro, .fueraAbajo, .fueraArriba:
             if let magnitud, let pos = Self.posicion(magnitud) { return pos }
@@ -210,7 +217,7 @@ public struct LiquidVotoRiel: View {
 
     private var tonoPalabra: Color {
         switch estado {
-        case .calibrando, .sinLectura: return LiquidColor.tinta500
+        case .calibrando, .sinJuicio, .sinLectura: return LiquidColor.tinta500
         default: return tonoTexto
         }
     }
@@ -245,7 +252,7 @@ public struct LiquidVotoRiel: View {
                 }
 
                 // Ticks de umbral: su NÚMERO dice contra qué se compara.
-                if estado != .sinLectura && estado != .calibrando {
+                if estado != .sinLectura && !sinBase {
                     tick(x: bandaRango.lowerBound * w, cy: cy)
                     if umbral == .rango {
                         tick(x: bandaRango.upperBound * w, cy: cy)
@@ -254,7 +261,7 @@ public struct LiquidVotoRiel: View {
 
                 // Bigotes: los topes del rango plausible. Enseñan que la banda no es el mundo
                 // entero — sin ellos, una joya pegada al borde parecía el extremo del instrumento.
-                if estado != .sinLectura && estado != .calibrando && magnitud != nil {
+                if estado != .sinLectura && !sinBase && magnitud != nil {
                     bigote(x: Self.bigoteLo * w, cy: cy)
                     bigote(x: Self.bigoteHi * w, cy: cy)
                 }
@@ -263,7 +270,7 @@ public struct LiquidVotoRiel: View {
                 if let pos = posJoya {
                     joya
                         .position(x: pos * w, y: cy - (1 - sellado) * 10)
-                        .opacity(estado == .calibrando ? 1 : (0.2 + 0.8 * sellado))
+                        .opacity(sinBase ? 1 : (0.2 + 0.8 * sellado))
                 }
             }
         }
@@ -272,15 +279,15 @@ public struct LiquidVotoRiel: View {
     private func banda(w: CGFloat, cy: CGFloat) -> some View {
         let lo = bandaRango.lowerBound * w
         let hi = bandaRango.upperBound * w
-        let tonoBanda = estado == .calibrando ? LiquidColor.tinta500 : tono
+        let tonoBanda = sinBase ? LiquidColor.tinta500 : tono
         return Capsule()
             .fill(LinearGradient(
                 stops: [
                     .init(color: tonoBanda.opacity(LiquidChart.rielBandaFiloAlfa), location: 0),
-                    .init(color: tonoBanda.opacity(estado == .calibrando
+                    .init(color: tonoBanda.opacity(sinBase
                                                    ? LiquidChart.rielBandaFiloAlfa
                                                    : LiquidChart.bandaActivaAlfa), location: 0.22),
-                    .init(color: tonoBanda.opacity(estado == .calibrando
+                    .init(color: tonoBanda.opacity(sinBase
                                                    ? LiquidChart.rielBandaFiloAlfa
                                                    : LiquidChart.bandaActivaAlfa), location: 0.78),
                     .init(color: tonoBanda.opacity(LiquidChart.rielBandaFiloAlfa), location: 1),
@@ -308,7 +315,7 @@ public struct LiquidVotoRiel: View {
     }
 
     @ViewBuilder private var joya: some View {
-        if estado == .calibrando {
+        if sinBase {
             Circle()
                 .stroke(LiquidColor.tinta500,
                         style: StrokeStyle(lineWidth: 1.4, dash: Self.dashJoya))

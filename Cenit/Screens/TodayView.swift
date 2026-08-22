@@ -852,6 +852,11 @@ struct TodayView: View {
         // sync» promete: un sync MANUAL real del bridge (trae noches nuevas de HealthKit, misma
         // ruta que «Sync now» de Data Sources; idempotente, y termina refrescando el dashboard).
         // Sin permiso, `sync` sale temprano → cae al recálculo local, que sigue siendo honesto.
+        // Arnés: con un fixture sembrado, refrescar publicaría el store vacío y Hoy caería al
+        // estado vacío a media captura (FER-128 r11). Solo DEBUG; en producción no hay fixture.
+        #if DEBUG
+        if ScreenshotFixtures.activeState() != nil { return }
+        #endif
         if health.auth == .authorized {
             await health.sync()
         } else {
@@ -1018,7 +1023,9 @@ struct TodayView: View {
                                      causaT3: {
                                          if case .t3SinVeredicto(let c) = plantillaActual { return c }
                                          return nil
-                                     }())
+                                     }(),
+                                     lecturasHoy: (rhr: resolveMeasured(todayOnly: true) { $0.restingHr.map(Double.init) } != nil,
+                                                   sueno: resolveMeasured(todayOnly: true) { $0.totalSleepMin } != nil))
     }
 
     private var liquidActaTono: Color {

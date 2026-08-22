@@ -1051,7 +1051,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Full"
+            "value" : "Full night"
           }
         },
         "es" : {
@@ -1079,13 +1079,47 @@
         }
       }
     },
+    "acta.voto.sinjuicio" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "not compared"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sin comparar"
+          }
+        }
+      }
+    },
+    "regularidad.bastante" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "fairly regular"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "bastante regular"
+          }
+        }
+      }
+    },
     "sueno.cal.corta" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Short"
+            "value" : "Short night"
           }
         },
         "es" : {
@@ -1386,22 +1420,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@. Un veredicto nuevo tiene que repetirse dos días seguidos para reemplazar al de ayer."
-          }
-        }
-      }
-    },
-    "acta.nota.sinfc" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sleeping with your Apple Watch is what unlocks your daily verdict."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dormir con tu Apple Watch es lo que destraba tu veredicto diario."
           }
         }
       }
@@ -7693,6 +7711,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "no fue tu día más reciente"
+          }
+        }
+      }
+    },
+    "%lld of %lld nights" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld of %lld nights"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld de %lld noches"
           }
         }
       }

@@ -107,7 +107,12 @@ enum ScreenshotFixtures {
                     exerciseCount: 0, spo2Pct: 97.5, skinTempDevC: 0.05,
                     respRateBpm: 14.5, steps: 7800, activeKcalEst: 450))
             }
-            model.repo.setDashboard(days: days)
+            // Como `calibrating`: SIN publicar Preparedness el héroe caía a «Conociéndote · Aún
+            // sin noches útiles» sobre 6 noches reales; `evaluate` sin fila de hoy conserva las
+            // noches bancadas y dice «Sin lectura hoy» (FER-128 r11).
+            let prepDl = Preparedness.evaluate(.init(
+                days: days, strainByDay: [:], trend: nil, asOf: Repository.localDayKey(today)))
+            model.repo.setDashboard(days: days, preparedness: prepDl)
             return
         }
 

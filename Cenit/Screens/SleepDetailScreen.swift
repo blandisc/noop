@@ -308,7 +308,9 @@ struct SleepDetailScreen: View {
     private func regularityWordText(_ score: Int) -> String {
         switch score {
         case 80...:   return String(localized: "very regular")
-        case 55..<80: return String(localized: "regular")
+        // La MISMA palabra que la hoja de Sueño («Bastante regular», `LiquidMetricSheetView`):
+        // «regular» a secas nombraba distinto la misma banda (FER-128 r11).
+        case 55..<80: return String(localized: "regularidad.bastante", defaultValue: "fairly regular")
         default:      return String(localized: "variable")
         }
     }
@@ -1011,11 +1013,12 @@ struct SleepDetailScreen: View {
             .init(id: "enough", color: tono.opacity(LiquidCalendario90.alfa(intensidad: 1)),
                   // Nombres que NO colisionan con la tabla de bandas de arriba (Corto/Suficiente/
                   // Óptimo/Extenso): aquí son 3 intensidades, no 4 bandas (FER-128 r10).
-                  etiqueta: String(localized: "sueno.cal.completa", defaultValue: "Full")),
+                  etiqueta: String(localized: "sueno.cal.completa", defaultValue: "Full night")),
             .init(id: "ok", color: tono.opacity(LiquidCalendario90.alfa(intensidad: 0.5)),
                   etiqueta: String(localized: "A bit short")),
             .init(id: "short", color: tono.opacity(LiquidCalendario90.alfa(intensidad: 0)),
-                  etiqueta: String(localized: "sueno.cal.corta", defaultValue: "Short")),
+                  // «Short night», no «Short»: la banda de la tabla de arriba se llama «Short» (r11).
+                  etiqueta: String(localized: "sueno.cal.corta", defaultValue: "Short night")),
             .init(id: "nodata", color: LiquidColor.tinta7,
                   etiqueta: String(localized: "sueno.cal.sindato", defaultValue: "No data")),
         ]

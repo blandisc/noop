@@ -154,7 +154,12 @@ final class ActaVotoDelParTests: XCTestCase {
                           String(localized: "The ballot is taking shape with your first nights."))
         XCTAssertFalse(acta.notas.contains { $0.id == "noche" },
                        "«duerme con tu Watch y MAÑANA se llena sola» es falso: faltan cuatro noches")
-        XCTAssertTrue(acta.notas.contains { $0.id == "sinfc" }, "y dice qué es lo que destraba")
+        // Una voz por hueco (FER-128 r11): lo que destraba lo dice el RESUMEN, y la nota calla.
+        XCTAssertEqual(acta.conteo,
+                       String(localized: "hero.sub.sinfc",
+                              defaultValue: "Your verdict stands on your resting heart rate at night, and it hasn't arrived. Sleeping with your Apple Watch is what unlocks it."),
+                       "y dice qué es lo que destraba")
+        XCTAssertFalse(acta.notas.contains { $0.id == "sinfc" }, "sin repetirlo en una nota")
     }
 
     /// Mientras la pantalla promete que sigue leyendo —jalón manual, o noche corta con la

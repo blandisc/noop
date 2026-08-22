@@ -161,7 +161,10 @@ public struct LiquidHipnograma: View {
     /// favor de que la medición se vea.
     private static let anchoMinimoBanda: CGFloat = 2
     /// Canaleta del eje de etapas.
-    private let anchoEjeEtapas: CGFloat = 60
+    /// La columna de nombres ESCALA con la letra (`microEstado` es relativa): a xxxLarge los 60 pt
+    /// fijos truncaban «Despi…/Profu…» y quitar el eje dejaba cuatro carriles sin nombre en el
+    /// Detalle, que no tiene leyenda (FER-128 r10/r11).
+    @ScaledMetric(relativeTo: .caption2) private var anchoEjeEtapas: CGFloat = 60
     /// Franja del eje de tiempo, BAJO el área de datos.
     private let altoEjeTiempo: CGFloat = 18
     /// Cinco marcas de reloj repartidas por el span (i/4).
@@ -205,9 +208,9 @@ public struct LiquidHipnograma: View {
     private var visibles: [Intervalo] { Self.visibles(intervalos) }
 
     private var muestraEjeEtapas: Bool {
-        // A xxxLarge (el tope real de la app, FER-394) los rótulos salían «Despi…/Profu…»:
-        // el eje se retira desde `.xxLarge`; la leyenda y VoiceOver siguen nombrando las etapas (r10).
-        !etiquetas.isEmpty && tamanoTexto < .xxLarge
+        // Siempre que haya nombres: la columna escala con la letra (`anchoEjeEtapas`), así que
+        // no hace falta retirarla en tamaños grandes (r11; r10 la retiraba y dejaba los carriles mudos).
+        !etiquetas.isEmpty
     }
 
     private var lienzo: some View {
@@ -328,7 +331,7 @@ public struct LiquidHipnograma: View {
                     // reloj (misma jerarquía de dos pasos del papel).
                     .foregroundStyle(LiquidColor.tinta700)
                     .lineLimit(1)
-                    .minimumScaleFactor(0.9)
+                    .minimumScaleFactor(0.8)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
             }
         }
