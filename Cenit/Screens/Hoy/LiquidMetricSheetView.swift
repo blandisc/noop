@@ -528,7 +528,9 @@ struct LiquidMetricSheetView: View {
             // type-checker con ternarios en builders).
             let overlineNoche: String = nocheEsDeAnoche
                 ? String(localized: "Last night")
-                : String(localized: "Last recorded night · \(Self.diaCorto(Self.fecha(night.startTs)))")
+                // La noche se nombra por su día de DESPERTAR (`endTs`), como `displayDays`, el scrub y el
+                // sello; por el inicio cambiaba según te durmieras antes o después de medianoche (r6).
+                : String(localized: "Last recorded night · \(Self.diaCorto(Self.fecha(night.endTs)))")
             // Héroe → frase → selector → gráfica → ETAPAS → REGULARIDAD → escalera → pie.
             // F0.1 (FER-33): las dos tarjetas propias de Sueño bajan al HUECO del bloque de
             // niveles. Antes colgaban después de la escalera porque no había dónde meterlas;
@@ -1065,7 +1067,11 @@ struct LiquidMetricSheetView: View {
         guard levelsHost.levels != nil, w.range != .week, !w.values.isEmpty else {
             return datoInfo.levelsTodayValue
         }
-        return ComparisonEngine.stat(w.values).mean
+        // Un total EN CURSO (pasos) no entra a la media del rango — como el módulo, que excluye hoy
+        // de su promedio a propósito (la serie sí lo conserva para la línea) (FER-128 r6).
+        let valores = MetricDetailSpec.accumulatesToday(datoInfo.id) && w.values.count > 1
+            ? Array(w.values.dropLast()) : w.values
+        return ComparisonEngine.stat(valores).mean
     }
 
     private var heroVentana: (numeral: String?, sello: String?) {

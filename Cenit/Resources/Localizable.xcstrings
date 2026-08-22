@@ -977,6 +977,23 @@
         }
       }
     },
+    "guardian.a11y.sinlecturas.anoche" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guardian: no readings last night"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guardián: sin lecturas anoche"
+          }
+        }
+      }
+    },
     "guardian.hoja.racha.noche" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3864,7 +3881,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "no nights recorded yet"
+            "value" : "no night reads yet"
           }
         },
         "es" : {
@@ -5430,7 +5447,7 @@
 
     },
     "%@ night" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -7200,7 +7217,7 @@
       }
     },
     "%lld of %lld nights" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -13411,7 +13428,7 @@
       }
     },
     "At ease" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -21546,7 +21563,7 @@
       }
     },
     "Effort" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -24263,23 +24280,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Guardián"
-          }
-        }
-      }
-    },
-    "Guardian: no readings today" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Guardian: no readings today"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Guardián: sin lecturas hoy"
           }
         }
       }
@@ -28670,7 +28670,7 @@
       }
     },
     "last night" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -30146,7 +30146,7 @@
       }
     },
     "Low" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -34981,7 +34981,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sin lectura anoche"
+            "value" : "Sin lectura de anoche"
           }
         }
       }
@@ -35004,7 +35004,7 @@
       }
     },
     "No reading today" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -47169,7 +47169,7 @@
       }
     },
     "Sleep" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -48412,7 +48412,7 @@
       }
     },
     "Steps" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -48957,7 +48957,7 @@
       }
     },
     "Stress" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -49629,7 +49629,7 @@
       }
     },
     "Temperature and breathing off" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -50317,7 +50317,7 @@
       }
     },
     "The guardian needs a few nights to learn your pattern." : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -54504,7 +54504,7 @@
       }
     },
     "Watching your breathing" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -54521,7 +54521,7 @@
       }
     },
     "Watching your temperature" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -59673,23 +59673,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tus dos señales amanecieron fuera de tu patrón juntas."
-          }
-        }
-      }
-    },
-    "Your two signals woke up outside your pattern, for a second night." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your two signals woke up outside your pattern, for a second night."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tus dos señales amanecieron fuera de tu patrón, por segunda noche."
           }
         }
       }

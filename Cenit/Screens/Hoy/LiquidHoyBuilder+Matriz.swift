@@ -112,7 +112,7 @@ extension LiquidHoyBuilder {
                 // lectura posible (sin Salud), el héroe ya dijo lo contrario — la misma verdad corta
                 // que su gemela FC (FER-128, explorador r4).
                 if prep?.autonomicPossible == false {
-                    return String(localized: "matriz.sueno.sinnoches", defaultValue: "no nights recorded yet")
+                    return String(localized: "matriz.sueno.sinnoches", defaultValue: "no night reads yet")
                 }
                 return String(localized: "hero.title.calibrando", defaultValue: "Getting to know you")
             }

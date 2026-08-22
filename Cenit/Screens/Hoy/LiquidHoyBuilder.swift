@@ -159,7 +159,7 @@ enum LiquidHoyBuilder {
     static func guardianHoja(_ i: GuardianHojaInputs) -> LiquidGuardianHoja {
         let estado = i.guardian?.estado ?? .sinLectura
         let (nivel, sinLectura, conteo, nota, notaAvisa, enPatron) =
-            copyGuardian(estado: estado, guardian: i.guardian, prep: i.prep)
+            copyGuardian(estado: estado, guardian: i.guardian, prep: i.prep, locale: i.locale)
         let sello = selloAnoche(now: i.now, calendar: i.calendar, locale: i.locale)
         let tempFuera = estado == .tempFuera || estado == .juntas
         let respFuera = estado == .respFuera || estado == .juntas
@@ -297,6 +297,7 @@ enum LiquidHoyBuilder {
     private static func copyGuardian(
         estado: LiquidHoyModel.Guardian.Estado,
         guardian: LiquidHoyModel.Guardian?,
+        locale: Locale = .current,
         prep: Preparedness.Read?
     ) -> (nivel: String?, sinLectura: String?, conteo: String,
           nota: String?, notaAvisa: Bool, enPatron: Bool) {
@@ -325,7 +326,7 @@ enum LiquidHoyBuilder {
             let conteo = streak >= 2
                 ? String(format: String(localized: "guardian.hoja.racha.noche",
                                         defaultValue: "Your two signals woke up outside your pattern, for the %@ night."),
-                         LiquidHoyBuilder.ordinalMarcador(streak))
+                         LiquidHoyBuilder.ordinalMarcador(streak, locale: locale))
                 : String(localized: "Your two signals woke up outside your pattern together.")
             return (String(localized: "Both out"),
                     nil,
@@ -401,8 +402,10 @@ enum LiquidHoyBuilder {
         formatter.calendar = calendar
         formatter.locale = locale
         formatter.setLocalizedDateFormatFromTemplate("dMMM")
-        // La noche que vigila es la de anoche (la que alimenta el veredicto de hoy).
-        let ref = calendar.date(byAdding: .day, value: -1, to: now) ?? now
+        // La noche que vigila es la de anoche — y se llama por su día de DESPERTAR, como la clave
+        // de `displayDays`, el último punto de la mini-gráfica de esta hoja y el sello de la hoja de
+        // métrica (FER-128 r6): «ANOCHE · 22 AGO» es la noche que terminó hoy.
+        let ref = now
         let fecha = formatter.string(from: ref).uppercased(with: locale)
         return "\(anoche) · \(fecha)"
     }
@@ -548,7 +551,7 @@ enum LiquidHoyBuilder {
             abrirGuardian: String(localized: "Open the guardian"),
             sinLecturaNoche: String(localized: "No reading last night"),
             sinLecturaHoy: String(localized: "No reading today"),
-            guardianSinLecturas: String(localized: "Guardian: no readings today"),
+            guardianSinLecturas: String(localized: "guardian.a11y.sinlecturas.anoche", defaultValue: "Guardian: no readings last night"),
             anuncioVeredicto: String(localized: "Your verdict is in: %@"),
             vigiaEnRango: String(localized: "In range"),
             vigiaFuera: String(localized: "Off your range"))
@@ -1076,7 +1079,7 @@ enum LiquidHoyBuilder {
         if thermalDeviation == nil && resp == nil {
             // Nada que leer: la única en la que «sin lectura anoche» es cierto.
             let label = String(localized: "Watching")
-            let a11y = String(localized: "Guardian: no readings today")
+            let a11y = String(localized: "guardian.a11y.sinlecturas.anoche", defaultValue: "Guardian: no readings last night")
             return .init(label: label, temp: tempStr, resp: respStr,
                          estado: .sinLectura, a11y: a11y)
         }
