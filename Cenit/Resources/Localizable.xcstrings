@@ -994,6 +994,23 @@
         }
       }
     },
+    "guardian.base.leyenda" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld of %lld nights with breathing"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld de %lld noches con respiración"
+          }
+        }
+      }
+    },
     "guardian.hoja.nunca.conteo" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7246,23 +7263,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld de %lld hechos"
-          }
-        }
-      }
-    },
-    "%lld of %lld nights" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld of %lld nights"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld de %lld noches"
           }
         }
       }

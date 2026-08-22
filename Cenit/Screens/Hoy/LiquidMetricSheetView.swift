@@ -1298,9 +1298,12 @@ struct LiquidMetricSheetView: View {
             let total: String = nightly
                 ? String(localized: "\(d.total) nights with data in this range")
                 : String(localized: "\(d.total) days with data in this range")
-            LiquidFraseNivel(nivel: nil, conteo: total, tono: tono,
-                             sinLectura: nightly ? String(localized: "No reading last night")
-                                                 : String(localized: "No reading today"))
+            // Sin NINGUNA fila en la historia no se nombra «anoche»/«hoy»: la celda dice «aún no leo
+            // tus noches» y el guardián «Aún no hay lecturas» — la hoja, lo mismo (FER-128 r9).
+            let sinLectura: String = levelsHost.parsed.isEmpty
+                ? String(localized: "No readings yet")
+                : (nightly ? String(localized: "No reading last night") : String(localized: "No reading today"))
+            LiquidFraseNivel(nivel: nil, conteo: total, tono: tono, sinLectura: sinLectura)
         }
     }
 

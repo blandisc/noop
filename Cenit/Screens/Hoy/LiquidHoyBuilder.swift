@@ -250,7 +250,10 @@ enum LiquidHoyBuilder {
             // 4/14 y nunca llegaba al final: una barra que promete un viaje más largo del que
             // hace. (Revisión Grok H3 · DeepSeek D1.)
             let necesarias = necesariasBase
-            let leyenda = String(format: String(localized: "%lld of %lld nights"),
+            // La barra dice QUÉ cuenta: el héroe lleva su propio «Noche 2 de 4» (noches del eje
+            // autonómico) y dos «de 4» sin apellido en la misma pantalla se contradecían (r9).
+            let leyenda = String(format: String(localized: "guardian.base.leyenda",
+                                                defaultValue: "%lld of %lld nights with breathing"),
                                  hechas, necesarias)
             return .init(
                 titulo: String(localized: "Learning your pattern"),

@@ -303,6 +303,17 @@ enum ScreenshotFixtures {
         let pesosProfundo = [0.40, 0.30, 0.20, 0.10]
         let pesosRem      = [0.10, 0.20, 0.30, 0.40]
         let pesosLigero   = [0.25, 0.25, 0.25, 0.25]
+        // Reparto entero con el residuo en el último ciclo: los tramos suman EXACTO lo que el
+        // titular dice (antes `Int(…)` por tramo perdía hasta 7 min — FER-128 r9).
+        func reparto(_ total: Int, _ pesos: [Double]) -> [Int] {
+            var partes = pesos.map { Int(Double(total) * $0) }
+            partes[partes.count - 1] += total - partes.reduce(0, +)
+            return partes
+        }
+        let ligeroMitad = reparto(light, pesosLigero.map { $0 * 0.5 })
+        let ligeroResto = reparto(light - ligeroMitad.reduce(0, +), pesosLigero)
+        let profundo = reparto(deep, pesosProfundo), remP = reparto(rem, pesosRem)
+        let despierto = reparto(awake, [1.0 / 3, 1.0 / 3, 1.0 / 3])
         var t = onset
         var segs: [String] = []
         func tramo(_ nombre: String, _ minutos: Int) {
@@ -312,11 +323,11 @@ enum ScreenshotFixtures {
             t = fin
         }
         for i in 0..<4 {
-            tramo("light", Int(Double(light) * pesosLigero[i] * 0.5))
-            tramo("deep",  Int(Double(deep) * pesosProfundo[i]))
-            tramo("light", Int(Double(light) * pesosLigero[i] * 0.5))
-            tramo("rem",   Int(Double(rem) * pesosRem[i]))
-            if i < 3 { tramo("wake", awake / 4) }   // el microdespertar entre ciclos
+            tramo("light", ligeroMitad[i])
+            tramo("deep",  profundo[i])
+            tramo("light", ligeroResto[i])
+            tramo("rem",   remP[i])
+            if i < 3 { tramo("wake", despierto[i]) }   // el microdespertar entre ciclos
         }
         tramo("wake", awake - (awake / 4) * 3)      // el resto del despierto, al final
         return "[" + segs.joined(separator: ",") + "]"

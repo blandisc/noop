@@ -12,6 +12,10 @@ import StrandDesign
 // como referencia (línea de centro), nunca como banda ni como juicio.
 
 struct HojaContexto: View {
+    /// El cuerpo ESCALA con Dynamic Type (`cuerpoLecturaBase` + `@ScaledMetric`, patrón de
+    /// `LiquidType`): con `LiquidType.cuerpo` fijo a 12.5 el texto de cierre crecía y el cuerpo
+    /// no (FER-128 r9).
+    @ScaledMetric(relativeTo: .footnote) private var cuerpoPt: CGFloat = LiquidType.cuerpoLecturaBase
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(String(localized: "manual.contexto.titulo",
@@ -20,7 +24,7 @@ struct HojaContexto: View {
                 .foregroundStyle(LiquidColor.tinta900)
             Text(String(localized: "manual.contexto.intro",
                         defaultValue: "These don't decide your day: only your sleep and resting heart rate vote. They're here to give you context around that verdict, never to judge it."))
-                .font(LiquidType.cuerpo)
+                .font(.system(size: cuerpoPt))
                 .lineSpacing(LiquidType.cuerpoLineSpacing)
                 .foregroundStyle(LiquidColor.tinta700)
                 .padding(.top, LiquidSpace.s100)
@@ -56,7 +60,7 @@ struct HojaContexto: View {
             seccion(String(localized: "manual.contexto.sec.porque", defaultValue: "Why they don't vote"))
             Text(String(localized: "manual.contexto.porque",
                         defaultValue: "On a wrist watch, HRV and stress aren't stable enough to decide with. Your watch's daytime HRV drifts about 29% from a chest-strap reference, so we show it as a quiet line where you usually sit, never as a range you crossed. Your resting heart rate and sleep carry the verdict; these ride along as context."))
-                .font(LiquidType.cuerpo)
+                .font(.system(size: cuerpoPt))
                 .lineSpacing(LiquidType.cuerpoLineSpacing)
                 .foregroundStyle(LiquidColor.tinta700)
 
@@ -87,7 +91,7 @@ struct HojaContexto: View {
                     .font(LiquidType.tituloFila)
                     .foregroundStyle(LiquidColor.tinta900)
                 Text(detalle)
-                    .font(LiquidType.cuerpo)
+                    .font(.system(size: cuerpoPt))
                     .lineSpacing(LiquidType.cuerpoLineSpacing)
                     .foregroundStyle(LiquidColor.tinta700)
             }

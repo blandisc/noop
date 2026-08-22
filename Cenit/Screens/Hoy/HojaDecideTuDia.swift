@@ -11,6 +11,10 @@ import StrandDesign
 // centinela (temp + resp solo pesan juntas); VFC/carga/esfuerzo son referencia.
 
 struct HojaDecideTuDia: View {
+    /// El cuerpo ESCALA con Dynamic Type (`cuerpoLecturaBase` + `@ScaledMetric`, patrón de
+    /// `LiquidType`): con `LiquidType.cuerpo` fijo a 12.5 el texto de cierre crecía y el cuerpo
+    /// no (FER-128 r9).
+    @ScaledMetric(relativeTo: .footnote) private var cuerpoPt: CGFloat = LiquidType.cuerpoLecturaBase
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(String(localized: "manual.deciden.titulo",
@@ -19,7 +23,7 @@ struct HojaDecideTuDia: View {
                 .foregroundStyle(LiquidColor.tinta900)
             Text(String(localized: "manual.deciden.promesa",
                         defaultValue: "Every morning I read your night and tell you one thing: whether you woke up inside your range. Your resting heart rate is compared against your own recent weeks; your sleep, against the recommended range for health."))
-                .font(LiquidType.cuerpo)
+                .font(.system(size: cuerpoPt))
                 .lineSpacing(LiquidType.cuerpoLineSpacing)
                 .foregroundStyle(LiquidColor.tinta700)
                 .padding(.top, LiquidSpace.s100)
@@ -77,7 +81,7 @@ struct HojaDecideTuDia: View {
             seccion(String(localized: "manual.deciden.sec.como", defaultValue: "How it's calculated"))
             Text(String(localized: "manual.deciden.como",
                         defaultValue: "From your recent weeks I learn your normal band for your resting heart rate and your breathing; your temperature is measured by how far it drifts from your own baseline, against a fixed cut that is the same for everyone, and your sleep against the recommended range for health. Each morning I compare the night: in or out. The verdict counts how many voting signals stepped out. It is never a 0-100 score, because your watch doesn't measure with that precision and I won't pretend it does."))
-                .font(LiquidType.cuerpo)
+                .font(.system(size: cuerpoPt))
                 .lineSpacing(LiquidType.cuerpoLineSpacing)
                 .foregroundStyle(LiquidColor.tinta700)
 
@@ -148,7 +152,7 @@ struct HojaDecideTuDia: View {
                     .font(LiquidType.tituloFila)
                     .foregroundStyle(LiquidColor.tinta900)
                 Text(detalle)
-                    .font(LiquidType.cuerpo)
+                    .font(.system(size: cuerpoPt))
                     .lineSpacing(LiquidType.cuerpoLineSpacing)
                     .foregroundStyle(LiquidColor.tinta700)
             }
@@ -167,7 +171,7 @@ struct HojaDecideTuDia: View {
                     .font(LiquidType.tituloFila)
                     .foregroundStyle(LiquidColor.tinta900)
                 Text(detalle)
-                    .font(LiquidType.cuerpo)
+                    .font(.system(size: cuerpoPt))
                     .lineSpacing(LiquidType.cuerpoLineSpacing)
                     .foregroundStyle(LiquidColor.tinta700)
             }

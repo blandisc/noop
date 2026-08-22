@@ -126,7 +126,8 @@ struct SleepDetailScreen: View {
         }
         .sheet(item: $metricInfo) { info in
             // Cutover F6 (decisión D1 del revote): las submétricas de sueño abren la hoja Liquid.
-            LiquidMetricSheetView(info: info, trendLoader: trendLoader(for: info.id))
+            LiquidMetricSheetView(info: info, trendLoader: trendLoader(for: info.id),
+                                  levelsSeriesLoader: info.id == "resp_rate" ? { model.respDaily } : nil)
                 .topeTextoHoja()
         }
         .sheet(isPresented: $showStages) {
@@ -1372,6 +1373,10 @@ struct SleepDetailModel {
     /// The full nightly respiratory-rate series (oldest → newest, `nil` = missing night) for the
     /// respiration-trend watch (FER-851). The engine derives its own baseline + deviation from it.
     let respNightly: [Double?]
+    /// La misma serie de respiración por día que Hoy pasa a `levelsSeriesLoader`: sin ella la
+    /// hoja de Respiración abierta DESDE el Detalle mostraba «No hay lecturas en este rango» bajo
+    /// un héroe con número (FER-128 r9, residual de #1127).
+    var respDaily: [(day: String, value: Double)] = []
 
     // MARK: - Build
 
@@ -1558,7 +1563,8 @@ struct SleepDetailModel {
             restorativeTrend: restorativeTrend,
             respirationTrend: respirationTrend,
             awakeningsTrend: awakeningsTrend,
-            respNightly: respNightly)
+            respNightly: respNightly,
+            respDaily: days.compactMap { d in d.respRateBpm.map { (day: d.day, value: $0) } })
     }
 
     /// Runs `build` off the MainActor (FER-953): snapshots the inputs from `repo` on the MainActor

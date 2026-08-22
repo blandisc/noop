@@ -279,7 +279,10 @@ public struct LiquidActaVeredicto: View {
     @ViewBuilder private var vigilantesFila: some View {
         if let label = model.vigilantesLabel, !model.vigilantes.isEmpty {
             Group {
-                if tamanoTexto >= .accessibility1 {
+                // FER-128 r9 · desde `.xxLarge`, no desde AX: la app capa en xxxLarge (FER-394) y a
+                // ese tamaño las fichas partían palabras («Respiració/n») mientras el apilado AX
+                // nunca se alcanzaba.
+                if tamanoTexto >= .xxLarge {
                     VStack(alignment: .leading, spacing: LiquidSpace.s150) {
                         Text(verbatim: label)
                             .font(LiquidType.captionLectura)
