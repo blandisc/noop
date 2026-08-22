@@ -16,6 +16,28 @@ final class PreparacionDetalleModeloTests: XCTestCase {
         .init(day: day, verdict: v, autonomicOut: auto, sleepOut: sleep, sentinelOut: sent)
     }
 
+    /// Un `Read` con los ejes de HOY fijados: `drivers` es lo que `acta()` lee para las filas,
+    /// y `sentinel` lo que lee para el par. Calcado de `ActaVotoDelParTests.read`.
+    private func readConEjes(_ historia: [Preparedness.VerdictNight],
+                             verdict: Preparedness.Verdict,
+                             autoOut: Bool, sleepOut: Bool, par: Bool) -> Preparedness.Read {
+        .init(verdict: verdict,
+              drivers: [.init(axis: .autonomic, state: autoOut ? .low : .inRange, orientedZ: nil),
+                        .init(axis: .sleep, state: sleepOut ? .low : .inRange, orientedZ: nil)],
+              signalsPresent: 3, signalsTotal: 3,
+              maturity: .trusted, autonomicNights: 30, trend: nil,
+              sentinel: par ? .init(state: .corroborated, streakNights: 2, watchingSignal: nil,
+                                    tempOut: true, respOut: true)
+                            : .init(state: .quiet, streakNights: 0, watchingSignal: nil,
+                                    tempOut: false, respOut: false),
+              sentinelHistory: [],
+              bodyHistory: [.init(day: Repository.localDayKey(Date()), rhrResolved: 55,
+                                  autonomicOrientedZ: 0.1, autonomicOut: autoOut, sleepOut: sleepOut,
+                                  rhrBaseCenter: 55, hrvBaseCenter: 45, rhrBand: 53...57)],
+              verdictHistory: historia,
+              autonomicPossible: true)
+    }
+
     private func read(_ historia: [Preparedness.VerdictNight],
                       verdict: Preparedness.Verdict = .full,
                       autonomicPossible: Bool = true,
@@ -252,22 +274,73 @@ final class PreparacionDetalleModeloTests: XCTestCase {
         let nota = try es("prep.conteos.nota.fmt")
         XCTAssertFalse(nota.localizedCaseInsensitiveContains("VFC"),
                        "la atribución de 30 días es SOLO FC en reposo: la VFC de Apple no vota")
+
+        // El marco «tus tres señales» está PROHIBIDO por nombre para esta pantalla en el
+        // allow-list (`docs/ANALYTICS.md`): cuenta como tres iguales lo que son dos votos y un
+        // par que solo vigila. Lo reintroduje YO como título de sección en la primera versión
+        // de FER-129 y lo cazó el verificador. Esta guarda vigila el título de la sección.
+        let titulo = try es("prep.votos.titulo")
+        XCTAssertFalse(titulo.localizedCaseInsensitiveContains("tres señales"),
+                       "el título de la sección no puede ser el marco prohibido: «\(titulo)»")
+        XCTAssertFalse(titulo.localizedCaseInsensitiveContains("3 señales"))
     }
 
-    /// El piso «hoy» es la MISMA boleta que Hoy: para el mismo `Read`, las filas son idénticas.
-    /// Es la regla de reuso de FUNCIÓN (no de dato): cada vez que cada superficie tuvo su
-    /// propia tabla terminaron contradiciéndose sobre el cuerpo del mismo usuario.
-    func testElPisoHoyEsLaMismaBoletaQueHoy() throws {
+    /// El sueño vota fuera por DURACIÓN corta O por continuidad pobre (`shortVsNeed ||
+    /// poorEfficiency`). Esa afirmación vivía en la cajita de atribución; al retirarla se fue
+    /// con ella y la guarda que la vigilaba se borró en vez de migrarse (lo cazó el QA).
+    /// Ahora vive en el método, y esta guarda la sigue ahí.
+    func testElMetodoNombraLasDosFormasEnQueVotaElSueno() throws {
+        let como = try es("prep.metodo.como")
+        XCTAssertTrue(["corto","menos"].contains { como.localizedCaseInsensitiveContains($0) },
+                      "falta la noche corta: «\(como.prefix(80))…»")
+        XCTAssertTrue(["entrecortado","continua","fragmentad"].contains { como.localizedCaseInsensitiveContains($0) },
+                      "falta la noche fragmentada, que vota igual que la corta")
+    }
+
+    /// El piso «hoy» es la MISMA boleta que Hoy: el modelo debe LLAMAR a `LiquidHoyBuilder.acta`,
+    /// no tener su propia tabla. Comparar una sola llamada contra sí misma sería tautología
+    /// (pasaría aunque el modelo armara su tabla a mano con los mismos valores de ese caso).
+    /// Lo que muerde es que, para VARIOS `Read` distintos que mueven filas distintas, la boleta
+    /// del modelo siga siendo idéntica a la de Hoy en todos: una tabla propia que olvide un caso
+    /// (el par corroborado, el sueño fuera, sin veredicto) diverge en alguno.
+    func testElPisoHoyEsLaMismaBoletaQueHoyEnTodosLosCasos() throws {
         let claves = PreparacionDetalleModelo.dayKeys(endingAt: Date(), calendar: cal, count: 30)
-        let prep = read(claves.map { noche($0, .caution) }, verdict: .caution)
-        let m = PreparacionDetalleModelo.build(prep: prep, healthConnected: true,
-                                               asOf: Date(), calendario: cal)
-        let mia = try XCTUnwrap(m.actaHoy)
-        let deHoy = LiquidHoyBuilder.acta(prep: prep, healthConnected: true)
-        XCTAssertEqual(mia.filas.map(\.id), deHoy.filas.map(\.id))
-        XCTAssertEqual(mia.filas.map(\.palabra), deHoy.filas.map(\.palabra))
-        XCTAssertEqual(mia.filas.map(\.estado), deHoy.filas.map(\.estado))
-        XCTAssertEqual(mia.vigilantes, deHoy.vigilantes)
+        let historia = claves.map { noche($0, .caution) }
+        let casos: [(String, Preparedness.Read)] = [
+            ("todo dentro",   read(historia, verdict: .full)),
+            ("FC fuera",      readConEjes(historia, verdict: .caution, autoOut: true, sleepOut: false, par: false)),
+            ("sueño fuera",   readConEjes(historia, verdict: .caution, autoOut: false, sleepOut: true, par: false)),
+            ("par corroborado", readConEjes(historia, verdict: .caution, autoOut: false, sleepOut: false, par: true)),
+            ("dos fuera",     readConEjes(historia, verdict: .easy, autoOut: true, sleepOut: true, par: false)),
+        ]
+        var firmas = Set<String>()
+        for (nombre, prep) in casos {
+            let m = PreparacionDetalleModelo.build(prep: prep, healthConnected: true,
+                                                   asOf: Date(), calendario: cal)
+            let mia = try XCTUnwrap(m.actaHoy, "\(nombre): con veredicto anclado hay boleta")
+            let deHoy = LiquidHoyBuilder.acta(prep: prep, healthConnected: true)
+            XCTAssertEqual(mia.filas.map(\.id), deHoy.filas.map(\.id), nombre)
+            XCTAssertEqual(mia.filas.map(\.palabra), deHoy.filas.map(\.palabra), nombre)
+            XCTAssertEqual(mia.filas.map(\.estado), deHoy.filas.map(\.estado), nombre)
+            XCTAssertEqual(mia.filas.map(\.fuera), deHoy.filas.map(\.fuera), nombre)
+            XCTAssertEqual(mia.vigilantes, deHoy.vigilantes, nombre)
+            XCTAssertEqual(mia.vigilantesLabel, deHoy.vigilantesLabel, nombre)
+            firmas.insert(mia.filas.map { "\($0.id):\($0.palabra):\($0.fuera)" }.joined(separator: "|"))
+        }
+        // Y los casos de verdad mueven la boleta: si los cinco dieran la misma firma, la prueba
+        // estaría comparando cinco veces lo mismo y no vigilaría nada.
+        XCTAssertGreaterThanOrEqual(firmas.count, 3, "los casos deben producir boletas distintas: \(firmas)")
+    }
+
+    /// Sin veredicto anclado NO hay boleta en Preparación: el campo ya dice «—» y Hoy pinta
+    /// sus propios estados de «sin veredicto»; duplicarlos aquí sería la tabla paralela que la
+    /// regla prohíbe.
+    func testSinVeredictoNoHayBoleta() {
+        let claves = PreparacionDetalleModelo.dayKeys(endingAt: Date(), calendar: cal, count: 30)
+        let m = PreparacionDetalleModelo.build(
+            prep: read(claves.map { noche($0, .lowSignal) }, verdict: .lowSignal),
+            healthConnected: true, asOf: Date(), calendario: cal)
+        XCTAssertNil(m.actaHoy)
     }
 
     /// El héroe más visto de la app prometía un «rango» de sueño personal que el motor no

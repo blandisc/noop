@@ -146,6 +146,10 @@ public struct LiquidCampoMetrica<Pie: View>: View {
         self.titulo = titulo
         self.glifo = glifo
         self.datos = datos
+        // Son dos formas de la MISMA cosa a dos escalas (30 para un veredicto categórico sin
+        // numeral, 17 para la frase bajo un numeral): pasarlas juntas apilaría dos titulares.
+        assert(palabra == nil || veredicto == nil,
+               "LiquidCampoMetrica: `palabra:` y `veredicto:` son excluyentes")
         self.palabra = palabra
         self.veredicto = veredicto
         self.clausula = clausula

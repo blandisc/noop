@@ -130,11 +130,20 @@ struct PreparacionDetailScreen: View {
             // una fila hacía que un cuadro verde con «FC · HOY FUERA» al lado se leyera como
             // bug aunque sea la histéresis funcionando (lo cazaron los dos revisores; el motor
             // lo advierte por escrito en `VerdictNight`). Cada piso con su subtítulo y su pieza.
-            if let acta = modelo.actaHoy {
-                LiquidFranjaSeccion(String(localized: "prep.senales.titulo",
-                                           defaultValue: "Your three signals"),
+            // La sección se pinta si hay CUALQUIERA de los dos pisos: son dos relojes
+            // independientes, y un usuario que no durmió con el reloj anoche (sin boleta de
+            // hoy) no pierde por eso la vista de sus 30 días.
+            //
+            // El título NO es «Tus tres señales»: ese marco está PROHIBIDO por nombre en el
+            // allow-list de ESTA pantalla (`docs/ANALYTICS.md`, «3 signals / tus 3 señales»),
+            // porque cuenta como tres cosas iguales lo que son dos votos más un par que solo
+            // vigila. La sección son los VOTOS, que es como la boleta de Hoy ya lo llama.
+            if modelo.actaHoy != nil || !modelo.conteosSenal.isEmpty {
+                LiquidFranjaSeccion(String(localized: "prep.votos.titulo",
+                                           defaultValue: "The votes"),
                                     tono: tono)
                 VStack(alignment: .leading, spacing: LiquidSpace.s400) {
+                  if let acta = modelo.actaHoy {
                     // Piso «Hoy»: la boleta tal cual la pinta el acta de Hoy. Misma función
                     // (`LiquidHoyBuilder.acta`), mismas filas, mismos vigilantes — cero tablas
                     // propias. Temp y respiración NO son fila hermana de FC/sueño: son fichas de
@@ -150,19 +159,35 @@ struct PreparacionDetailScreen: View {
                                   hueMetrica: $0.hueMetrica, a11y: $0.a11y,
                                   magnitud: $0.magnitud)
                         })
-                        if !acta.vigilantes.isEmpty {
-                            HStack(spacing: LiquidSpace.s150) {
-                                if let etiqueta = acta.vigilantesLabel {
-                                    Text(verbatim: etiqueta)
-                                        .font(LiquidType.captionLectura)
-                                        .foregroundStyle(LiquidColor.tinta500)
+                        if let etiqueta = acta.vigilantesLabel, !acta.vigilantes.isEmpty {
+                            // Calcado de `LiquidActaVeredicto.vigilantesFila`: a tallas de
+                            // accesibilidad el rótulo y las fichas se apilan; en una sola fila
+                            // el texto inflado empujaba los chips fuera del ancho.
+                            Group {
+                                if tipo >= .accessibility1 {
+                                    VStack(alignment: .leading, spacing: LiquidSpace.s150) {
+                                        Text(verbatim: etiqueta)
+                                            .font(LiquidType.captionLectura)
+                                            .foregroundStyle(LiquidColor.tinta500)
+                                        HStack(spacing: LiquidSpace.s150) {
+                                            ForEach(acta.vigilantes, id: \.self) { LiquidVigilanteChip(nombre: $0) }
+                                        }
+                                    }
+                                } else {
+                                    HStack(spacing: LiquidSpace.s150) {
+                                        Text(verbatim: etiqueta)
+                                            .font(LiquidType.captionLectura)
+                                            .foregroundStyle(LiquidColor.tinta500)
+                                        ForEach(acta.vigilantes, id: \.self) { LiquidVigilanteChip(nombre: $0) }
+                                    }
                                 }
-                                ForEach(acta.vigilantes, id: \.self) { LiquidVigilanteChip(nombre: $0) }
                             }
                             .accessibilityElement(children: .combine)
                             .accessibilityLabel(Text(verbatim: acta.vigilantesA11y ?? acta.vigilantes.joined(separator: ", ")))
                         }
                     }
+
+                  }
 
                     // Piso «el mes»: cuántas noches se salió cada señal, en barras con color de
                     // IDENTIDAD sobre la escala compartida de la ventana. «Cuál» lo dice la barra;
@@ -173,7 +198,7 @@ struct PreparacionDetailScreen: View {
                                         defaultValue: "Nights out, over 30 days"))
                                 .liquidLabel()
                                 .foregroundStyle(LiquidColor.tinta500)
-                            VStack(alignment: .leading, spacing: LiquidSpace.s200) {
+                            VStack(alignment: .leading, spacing: LiquidSpace.s250) {
                                 ForEach(Array(modelo.conteosSenal.enumerated()), id: \.element.id) { i, c in
                                     LiquidBarraConteo(glifo: c.glifo, rotulo: c.nombre,
                                                       conteo: c.dias, escala: PreparacionDetalleModelo.ventana,
@@ -195,41 +220,30 @@ struct PreparacionDetailScreen: View {
 
     private var metodo: some View {
         // El capilar y los paddings reducidos son el patrón que Sueño fijó para un pie sin
-        // franja propia (`pieMetodo`). El método va PLEGADO —la prosa a un toque— pero la
-        // LEYENDA de los cuadros queda siempre visible: es lo único del método que el ojo
-        // necesita sin leer, porque decodifica el mosaico de arriba. Reusa `NivelLeyenda`.
+        // franja propia (`pieMetodo`). El método va PLEGADO con TODO adentro —prosa, regla de
+        // dos días y cita, como el plegable del acta de Hoy— y afuera queda SOLO la leyenda
+        // de los cuadros: es lo único del método que el ojo necesita sin leer, porque
+        // decodifica el mosaico. La leyenda es la MISMA pieza que la del calendario de 90
+        // (`LiquidLeyendaNiveles`), con sus cuatro peldaños incluido «sin lectura».
         VStack(alignment: .leading, spacing: LiquidSpace.s300) {
             LiquidCapilar(eje: .horizontal)
+            LiquidLeyendaNiveles(modelo.leyenda)
             LiquidMetodo(title: String(localized: "How it's calculated"),
                          mostrar: String(localized: "Show explanation"),
                          ocultar: String(localized: "Hide explanation")) {
                 VStack(alignment: .leading, spacing: LiquidSpace.s300) {
                     LiquidNotaLine(String(localized: "prep.metodo.como",
-                                          defaultValue: "Every morning I look at three things. Your resting heart rate, against your own base: that's the axis that votes, and your HRV measured while you sleep rides along with it only on nights that have enough of it, never on its own (the all-day HRV you see elsewhere in the app never votes). Your sleep, against the floor sleep science recommends, not against your own history. And the sentinel, skin temperature and breathing, which only counts when both run high together. None out is «all in range»; one is «one signal out»; two or more is «two or more out». A sustained downward trend can also bring that change forward."),
+                                          defaultValue: "Every morning I look at three things. Your resting heart rate, against your own base: that's the axis that votes, and your HRV measured while you sleep rides along with it only on nights that have enough of it, never on its own (the all-day HRV you see elsewhere in the app never votes). Your sleep, against the floor sleep science recommends, not against your own history, and it votes out if it came short or broken up. And the sentinel, skin temperature and breathing, which only counts when both run high together. None out is «all in range»; one is «one signal out»; two or more is «two or more out». A sustained downward trend can also bring that change forward."),
                                    tono: LiquidColor.tinta700)
                     LiquidNotaLine(String(localized: "prep.metodo.limite",
                                           defaultValue: "Each square is judged with the base you had up to that day, so it doesn't change if you come back to look later. What it can't carry is the trend nudge that only applies to the morning you're living: that's why an older square can differ from what Today said out loud that day. Training load doesn't vote here."),
                                    tono: LiquidColor.tinta700)
+                    LiquidNotaLine(String(localized: "prep.metodo.regla",
+                                          defaultValue: "Two days in a row move the verdict."),
+                                   tono: LiquidColor.tinta700)
+                    LiquidNotaLine("Hirshkowitz et al., 2015 (sleep need); Task Force of the European Society of Cardiology, 1996 (HRV); Mishra et al., 2020 (illness sentinel).")
                 }
             }
-            // La leyenda: los mismos cuadros del mosaico con su palabra neutra, y la regla de
-            // dos días como una pista más de la misma fila.
-            HStack(spacing: LiquidSpace.s400) {
-                ForEach(modelo.leyenda) { nivel in
-                    HStack(spacing: LiquidSpace.s125) {
-                        RoundedRectangle(cornerRadius: LiquidRadius.hairline, style: .continuous)
-                            .fill(nivel.color)
-                            .frame(width: LiquidSpace.s300, height: LiquidSpace.s300)
-                        Text(verbatim: nivel.etiqueta)
-                            .font(LiquidType.captionLectura)
-                            .foregroundStyle(LiquidColor.tinta500)
-                    }
-                }
-            }
-            .accessibilityElement(children: .combine)
-            LiquidNotaLine(String(localized: "prep.metodo.regla",
-                                  defaultValue: "Two days in a row move the verdict."))
-            LiquidNotaLine("Hirshkowitz et al., 2015 (sleep need); Task Force of the European Society of Cardiology, 1996 (HRV); Mishra et al., 2020 (illness sentinel).")
         }
         .liquidSeccion(top: LiquidSpace.s200, bottom: LiquidSpace.s800)
     }
@@ -400,10 +414,6 @@ struct PreparacionDetalleModelo {
 
     /// La unidad suelta de una cajita, que ya lleva su número aparte: también tiene que
     /// concordar con él.
-    static func unidadDiasCorta(_ n: Int) -> String {
-        String(format: String(localized: "%lld days"), n)
-            .replacingOccurrences(of: "\(n)", with: "").trimmingCharacters(in: .whitespaces)
-    }
 
     private static func tono(_ v: Preparedness.Verdict) -> Color {
         switch v {
@@ -560,6 +570,7 @@ struct PreparacionDetalleModelo {
             .init(id: "full", color: tono(.full), etiqueta: peldano(.full)),
             .init(id: "caution", color: tono(.caution), etiqueta: peldano(.caution)),
             .init(id: "easy", color: tono(.easy), etiqueta: peldano(.easy)),
+            .init(id: "none", color: LiquidColor.celdaVaciaPip, etiqueta: peldano(.lowSignal)),
         ]
 
         let estado: Estado

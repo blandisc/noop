@@ -182,13 +182,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Every morning I look at three things. Your resting heart rate, against your own base: that's the axis that votes, and your HRV measured while you sleep rides along with it only on nights that have enough of it, never on its own (the all-day HRV you see elsewhere in the app never votes). Your sleep, against the floor sleep science recommends, not against your own history. And the sentinel, skin temperature and breathing, which only counts when both run high together. None out is «all in range»; one is «one signal out»; two or more is «two or more out». A sustained downward trend can also bring that change forward."
+            "value" : "Every morning I look at three things. Your resting heart rate, against your own base: that's the axis that votes, and your HRV measured while you sleep rides along with it only on nights that have enough of it, never on its own (the all-day HRV you see elsewhere in the app never votes). Your sleep, against the floor sleep science recommends, not against your own history, and it votes out if it came short or broken up. And the sentinel, skin temperature and breathing, which only counts when both run high together. None out is «all in range»; one is «one signal out»; two or more is «two or more out». A sustained downward trend can also bring that change forward."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cada mañana miro tres cosas. Tu FC en reposo, contra tu propia base: ese es el eje que vota, y tu VFC medida mientras duermes lo acompaña solo en las noches que traen suficiente, nunca sola (la VFC de todo el día que ves en otras partes del app nunca vota). Tu sueño, contra el piso que recomienda la ciencia del sueño, no contra tu propio historial. Y el centinela, temperatura de piel y respiración, que solo cuenta cuando las dos van altas juntas. Ninguna fuera es «todo en rango»; una es «una señal fuera»; dos o más es «dos o más fuera». Una tendencia sostenida a la baja también puede adelantar ese cambio."
+            "value" : "Cada mañana miro tres cosas. Tu FC en reposo, contra tu propia base: ese es el eje que vota, y tu VFC medida mientras duermes lo acompaña solo en las noches que traen suficiente, nunca sola (la VFC de todo el día que ves en otras partes del app nunca vota). Tu sueño, contra el piso que recomienda la ciencia del sueño, no contra tu propio historial, y vota fuera si vino corto o entrecortado. Y el centinela, temperatura de piel y respiración, que solo cuenta cuando las dos van altas juntas. Ninguna fuera es «todo en rango»; una es «una señal fuera»; dos o más es «dos o más fuera». Una tendencia sostenida a la baja también puede adelantar ese cambio."
           }
         }
       }
@@ -433,22 +433,6 @@
         }
       }
     },
-    "prep.senales.titulo" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your three signals"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tus tres señales"
-          }
-        }
-      }
-    },
     "prep.sinHistoria.cuerpo" : {
       "localizations" : {
         "en" : {
@@ -493,6 +477,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Preparación"
+          }
+        }
+      }
+    },
+    "prep.votos.titulo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The votes"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los votos"
           }
         }
       }
