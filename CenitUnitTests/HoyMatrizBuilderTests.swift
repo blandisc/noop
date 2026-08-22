@@ -640,7 +640,10 @@ final class HoyMatrizBuilderTests: XCTestCase {
                       "dice que las dos se salieron juntas: \(par)")
         XCTAssertFalse(vecina.lowercased().contains("together") || vecina.lowercased().contains("juntas"),
                        "la vecina en calma NO lo dice: \(vecina)")
-        XCTAssertFalse(vecina.contains(" · "), "la vecina lleva solo la fecha")
+        // FER-128 r3: la vecina dice su ESTADO con la estructura de las gemelas («día · en calma»),
+        // nunca la frase del par.
+        XCTAssertTrue(vecina.lowercased().contains("at ease") || vecina.lowercased().contains("en calma"),
+                      "la vecina en calma dice «en calma»: \(vecina)")
         // Y la afirmación viene del motor: sin `parFuera` en la costura, sin frase en el scrub.
         if case .costura(let costura)? = seccion(m, id: "guardian")?.chart {
             XCTAssertTrue(costura[16].parFuera)
