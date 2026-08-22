@@ -494,7 +494,7 @@ final class HoyMatrizBuilderTests: XCTestCase {
         let keys = LiquidHoyBuilder.dayKeys(endingAt: now, calendar: cal, count: 14)
         let dias = keys.map { metric(day: $0, sleepMin: nil, eff: nil) }
         let sin = LiquidHoyBuilder.matriz(inputs(prep: prep(verdict: .lowSignal, autonomicPossible: false), dias: dias))
-        XCTAssertEqual(seccion(sin, id: "sleep")?.sublabel, "no nights recorded yet")
+        XCTAssertEqual(seccion(sin, id: "sleep")?.sublabel, "no night reads yet")
         let conociendo = LiquidHoyBuilder.matriz(inputs(prep: prep(verdict: .lowSignal), dias: dias))
         XCTAssertEqual(seccion(conociendo, id: "sleep")?.sublabel, "Getting to know you")
     }

@@ -144,13 +144,13 @@ extension LiquidHoyBuilder {
             unidad: noches.contains(where: { $0.valor != nil }) ? String(localized: "h") : nil,
             destacada: true,
             sublabel: sublabelSueno,
-            // VoiceOver leía «7:25» como una HORA; con «7 h 25 min» es una duración (FER-128 r6,
-            // la misma gemela que Pasos recibió en la r5).
-            a11yValor: finito(hoy?.totalSleepMin).map(a11ySueno),
             chartID: "matriz-sleep",
             chart: .columnas(noches: noches, referencia: 7, referenciaTag: "7 h",
                              dominio: dominioSueno(noches)),
-            formaSello: .luna, glifoSello: .luna, scrubNoches: scrubSueno)
+            formaSello: .luna, glifoSello: .luna, scrubNoches: scrubSueno,
+            // VoiceOver leía «7:25» como una HORA; con «7 h 25 min» es una duración (FER-128 r6,
+            // la misma gemela que Pasos recibió en la r5).
+            a11yValor: finito(hoy?.totalSleepMin).map(a11ySueno))
 
         // —— 2. FC | VFC (20) ——
         let keys20 = keys  // ya son 20
