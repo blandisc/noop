@@ -143,6 +143,9 @@ public struct LiquidGraficaNiveles: View {
         guard !puntos.isEmpty else { return estadoVacio }
         let i: Int = LiquidChartA11y.indice(iScrub, puntos.count)
         let p = puntos[i]
+        // Un NaN/±inf es un hueco, no un dato: no se le pasa al formateador del caller
+        // (`Int(.nan)` truena — FER-128 r8, explorador Grok). Los callers ya filtran; esto es el seguro.
+        guard p.valor.isFinite else { return estadoVacio }
         if let f = formatoScrub { return f(p.valor, p.fecha) }
         if let f = formatoValorScrub { return f(p.valor) }
         return estadoVacio

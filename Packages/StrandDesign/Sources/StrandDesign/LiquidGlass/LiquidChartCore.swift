@@ -526,6 +526,9 @@ struct LiquidChartPlot: View {
     }
 
     private func y(_ v: Double, _ h: CGFloat) -> CGFloat {
+        // No finito = hueco: al piso, nunca al TECHO (`min(hi, .nan) == hi` lo pintaba como
+        // valor máximo — FER-128 r7/r8).
+        guard v.isFinite else { return pisoY(h) }
         let lo = dominio.lowerBound, hi = dominio.upperBound
         let clamped = Swift.max(lo, Swift.min(hi, v))
         let f = hi > lo ? (clamped - lo) / (hi - lo) : 0.5
