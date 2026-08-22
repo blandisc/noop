@@ -101,7 +101,9 @@ struct CenitApp: App {
                 // FER-394: cap Dynamic Type at xxxLarge — reading text scales with the user's
                 // text-size setting, but we don't promise the 5 giant Accessibility sizes (they'd
                 // break the dense glanceable layouts). A `.sheet` does NOT inherit this clamp
-                // (fresh environment branch): Hoy re-applies it per sheet (`topeTextoHoja`, FER-128).
+                // (fresh environment branch): Hoy re-applies it per sheet and per child sheet
+                // (`View.topeTextoHoja`, FER-128). Other tabs' sheets still escape the clamp —
+                // extending it app-wide is the owner's call (FER-394).
                 .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                 .environment(model)
                 .environmentObject(model.repo)

@@ -279,7 +279,7 @@ extension LiquidHoyBuilder {
         // ejes sigan alineados entre sí (leer una contra la otra es parte de la regla del par).
         let iniGuardian = inicioVivo([ptsTemp, ptsResp])
         let hayLecturaGuardianHoy = ptsTemp.last.flatMap { $0 } != nil || ptsResp.last.flatMap { $0 } != nil
-        let hayHistoriaGuardian = ptsTemp.contains { $0 != nil } || ptsResp.contains { $0 != nil }
+        let hayHistoriaGuardian = hayHistoriaGuardian(i)
         let chip = chipGuardianModelo(chipJuzgado, noche: nocheJuzgada,
                                       hayLecturaHoy: hayLecturaGuardianHoy,
                                       hayHistoria: hayHistoriaGuardian,
@@ -909,6 +909,15 @@ extension LiquidHoyBuilder {
     /// Un valor no finito (NaN/±inf) es un HUECO, no un dato: un NaN en un dominio tumbaba la app
     /// («Range requires lowerBound <= upperBound») y en una gráfica daba geometría no finita
     /// (FER-128, explorador Grok). Se sanea en la entrada: toda serie pasa por aquí.
+    /// ¿El guardián tiene ALGUNA noche (temp o respiración) en la ventana de la Matriz? La MISMA
+    /// pregunta para el chip y para la hoja (FER-128 r9): la hoja la infería de unas series que
+    /// el host carga tarde y abría siempre en «Aún no hay lecturas» para luego cambiar de opinión.
+    static func hayHistoriaGuardian(_ i: MatrizInputs) -> Bool {
+        let keys = dayKeys(endingAt: i.now, calendar: i.calendar, count: matrizVentanaFC)
+        let byDay = Dictionary(uniqueKeysWithValues: i.diasRecientes.map { ($0.day, $0) })
+        return keys.contains { finito(byDay[$0]?.skinTempDevC) != nil || finito(byDay[$0]?.respRateBpm) != nil }
+    }
+
     static func finito(_ v: Double?) -> Double? {
         guard let v, v.isFinite else { return nil }
         return v

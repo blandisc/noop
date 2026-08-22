@@ -1006,7 +1006,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Todavía sin ninguna noche registrada, el guardián no tiene con qué comparar."
+            "value" : "Sin ninguna noche grabada todavía, el guardián no tiene contra qué comparar."
           }
         }
       }
@@ -37143,23 +37143,6 @@
         }
       }
     },
-    "One moment: the guardian is still reading your signals." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "One moment: the guardian is still reading your signals."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Un momento: el guardián todavía está leyendo tus señales."
-          }
-        }
-      }
-    },
     "One moment." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -40643,23 +40626,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Leyendo tu historial…"
-          }
-        }
-      }
-    },
-    "Reading your night" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reading your night"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Leyendo tu noche"
           }
         }
       }

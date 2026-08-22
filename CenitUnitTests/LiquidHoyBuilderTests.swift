@@ -301,7 +301,7 @@ final class LiquidHoyBuilderTests: XCTestCase {
         XCTAssertFalse(hoja.enPatron)
         // Con historia, la noche que faltó es ANOCHE.
         var i = LiquidHoyBuilder.GuardianHojaInputs(guardian: g, prep: nil)
-        i.tempTrend = [(fecha: Date(timeIntervalSince1970: 1_700_000_000), valor: 0.2)]
+        i.hayHistoria = true
         let conHistoria = LiquidHoyBuilder.guardianHoja(i)
         XCTAssertEqual(conHistoria.sinLectura, String(localized: "No reading last night"))
         XCTAssertNil(conHistoria.sello, "sin lectura no se sella la noche")

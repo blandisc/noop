@@ -8,11 +8,10 @@ import SwiftUI
 // `MetricLevelsExplorer.phrase` (grotesk 28 en el tono + subhead secundaria), que el
 // primer pase Liquid había aplanado a una sola línea de `LiquidReadingLine`.
 //
-// TIPOGRAFÍA — decisión consciente (revote /inject, corrección de Grok): el nivel usa
-// `LiquidType.valorL`, que es el token de NUMERAL (22/700 con dígitos tabulares), aunque
-// aquí pinte una PALABRA. Es deliberado: en esta hoja el nivel se lee como DATO —es el
-// veredicto de la ventana— y por eso hereda la voz del numeral. No se acuña un token
-// nuevo para una sola pieza; los dígitos tabulares son inertes sobre texto sin cifras.
+// TIPOGRAFÍA — el nivel usa `LiquidType.nivelTitulo` (18/700, relativo a `.title3`; su
+// justificación vive junto al token en `LiquidType.swift`): en esta hoja el nivel se lee como
+// DATO —es el veredicto de la ventana— con una voz propia, más chica que el numeral `valorL`
+// que usaba el primer pase (revote /inject) para que no compita con el héroe.
 //
 // Contrato D3: los tres strings llegan YA localizados y formateados del caller (el DS no
 // conoce `MetricLevels` ni locales). `sinLectura` es el texto honesto de «hoy sin
@@ -116,6 +115,12 @@ public struct LiquidFraseNivel: View {
         LiquidFraseNivel(nivel: "Bastante sobre tu base",
                          conteo: "3 de tus últimas 90 noches con datos en este rango",
                          tono: LiquidColor.ambar)
+        // AX (preparación, la app capa en xxxLarge): nivel y sello apilados, el sello entero.
+        LiquidFraseNivel(nivel: "Dentro de tu patrón",
+                         conteo: "Tus dos señales amanecieron donde siempre.",
+                         tono: LiquidColor.verdeProfundo,
+                         sello: "ANOCHE · 3 AGO")
+            .environment(\.dynamicTypeSize, .accessibility3)
     }
     .padding(LiquidSpace.s550)
     .frame(maxWidth: .infinity, alignment: .leading)

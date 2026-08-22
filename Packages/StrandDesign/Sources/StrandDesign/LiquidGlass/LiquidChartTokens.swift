@@ -122,7 +122,10 @@ public enum LiquidChart {
     /// contaba 11 donde la fila de nivel afirmaba 12; medir el paso MÍNIMO prefiere no
     /// dibujar ninguno a dibujar una cuenta falsa.
     static func hayEspacioParaPuntos(centros: [CGFloat]) -> Bool {
-        guard !centros.isEmpty, centros.count <= puntoDatoUmbral else { return false }
+        // Un centro no finito no puede afirmar separación (`min(_, .nan)` la ignoraba y se
+        // dibujaban discos con geometría NaN — FER-128 r9).
+        guard !centros.isEmpty, centros.count <= puntoDatoUmbral,
+              centros.allSatisfy(\.isFinite) else { return false }
         // Una sola lectura SIEMPRE cabe: no hay paso que medir, y la Matriz la pinta
         // (FER-128 r8 — con `> 1` la rama n=1 del plot estaba muerta).
         if centros.count == 1 { return true }

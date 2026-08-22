@@ -21,6 +21,7 @@ struct StressDayMapBlock: View {
             .sheet(isPresented: $showPicker) {
                 CalendarPickerSheet(model: model, theme: theme, isPresented: $showPicker)
                     .instrumentoTheme(theme)
+                    .topeTextoHoja()
             }
     }
 

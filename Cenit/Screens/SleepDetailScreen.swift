@@ -127,9 +127,11 @@ struct SleepDetailScreen: View {
         .sheet(item: $metricInfo) { info in
             // Cutover F6 (decisión D1 del revote): las submétricas de sueño abren la hoja Liquid.
             LiquidMetricSheetView(info: info, trendLoader: trendLoader(for: info.id))
+                .topeTextoHoja()
         }
         .sheet(isPresented: $showStages) {
             SleepStagesInfoSheet(theme: theme)
+                .topeTextoHoja()
         }
     }
 

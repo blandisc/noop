@@ -1052,6 +1052,7 @@ struct TodayView: View {
             prep: repo.todayPreparedness,
             tempTrend: [],
             respTrend: [],
+            hayHistoria: LiquidHoyBuilder.hayHistoriaGuardian(liquidMatrizInputs()),
             now: Date(),
             calendar: .current,
             locale: .current)
@@ -1857,13 +1858,3 @@ private struct LiquidGuardianHojaHost: View {
 }
 #endif
 
-// MARK: - Tope de Dynamic Type en las hojas (FER-394 · FER-128 r8)
-
-private extension View {
-    /// FER-394 capó Dynamic Type en xxxLarge para TODA la app («no prometemos los 5 tamaños
-    /// gigantes de Accesibilidad»). Un `.sheet` abre una rama de entorno nueva y NO hereda ese
-    /// tope: las hojas de Hoy salían a AX3 mientras Hoy se quedaba en xxxLarge —dos políticas
-    /// en la misma pantalla, y leyendas/selectores/chips partiendo palabras (FER-128 r8,
-    /// explorador XC8-02…06/10). Mismo tope, re-aplicado al contenido de cada hoja.
-    func topeTextoHoja() -> some View { dynamicTypeSize(...DynamicTypeSize.xxxLarge) }
-}

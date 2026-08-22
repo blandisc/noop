@@ -148,6 +148,9 @@ enum LiquidHoyBuilder {
         var prep: Preparedness.Read?
         var tempTrend: [(fecha: Date, valor: Double)] = []
         var respTrend: [(fecha: Date, valor: Double)] = []
+        /// ¿Alguna noche vigilada en la historia? El MISMO flag que el chip de la Matriz
+        /// (`hayHistoriaGuardian`): sin él la hoja no dice «anoche» ni «vuelve a vigilar».
+        var hayHistoria: Bool = false
         var now: Date = Date()
         var calendar: Calendar = .current
         var locale: Locale = .current
@@ -160,7 +163,7 @@ enum LiquidHoyBuilder {
         let estado = i.guardian?.estado ?? .sinLectura
         let (nivel, sinLectura, conteo, nota, notaAvisa, enPatron) =
             copyGuardian(estado: estado, guardian: i.guardian, locale: i.locale, prep: i.prep,
-                         hayHistoria: !i.tempTrend.isEmpty || !i.respTrend.isEmpty)
+                         hayHistoria: i.hayHistoria)
         // Sin lectura no se afirma la noche (el mismo contrato de procedencia que `origenSufijo`).
         let sello: String? = estado == .sinLectura ? nil : selloAnoche(now: i.now, calendar: i.calendar, locale: i.locale)
         let tempFuera = estado == .tempFuera || estado == .juntas
@@ -301,7 +304,7 @@ enum LiquidHoyBuilder {
         guardian: LiquidHoyModel.Guardian?,
         locale: Locale = .current,
         prep: Preparedness.Read?,
-        hayHistoria: Bool = true
+        hayHistoria: Bool = false
     ) -> (nivel: String?, sinLectura: String?, conteo: String,
           nota: String?, notaAvisa: Bool, enPatron: Bool) {
         switch estado {
@@ -354,16 +357,9 @@ enum LiquidHoyBuilder {
                     String(localized: "Sleep with your Apple Watch and tomorrow it watches again."),
                     false, false)
         case .incompleto:
-            // Dos razones distintas, una sola cosa que decir: todavía no hay juicio completo.
-            // «Leyendo tu noche» solo mientras de verdad se carga (sin guardián aún): con las dos
-            // lecturas presentes y sin juicio, el chip ya dice «Todavía sin comparar» y la hoja no
-            // puede prometer «un momento» que nunca termina (FER-128 r8, `insufficient`).
-            if prep == nil, guardian == nil {
-                return (nil,
-                        String(localized: "Reading your night"),
-                        String(localized: "One moment: the guardian is still reading your signals."),
-                        nil, false, false)
-            }
+            // Sin juicio completo. (No hay rama «Leyendo tu noche»: `estado` nace del guardián,
+            // así que aquí SIEMPRE hay guardián con lecturas; la hoja no promete «un momento»
+            // que nunca termina — FER-128 r8/r9, `insufficient`.)
             // FER-73 · HJ-02: contar «una sola» solo cuando de verdad falta una. Con las dos
             // presentes el estado es «no comparé todavía», no «faltó una».
             let faltaUna = guardian.map { $0.temp == "—" || $0.resp == "—" } ?? true

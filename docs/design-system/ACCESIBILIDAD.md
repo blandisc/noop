@@ -54,7 +54,9 @@ pegados a geometría **no**. La decisión está codificada y comentada en `Typog
 
 - **Por qué fijo:** un numeral dentro del anillo de recuperación o del dial no puede moverse con
   Dynamic Type sin romper la geometría. El chrome de tabs debe conservar tamaño para alinear.
-- **Techo:** la app **cap­a el rango superior en xxxLarge** en la raíz.
+- **Techo:** la app **cap­a el rango superior en xxxLarge** en la raíz. Un `.sheet` abre una rama
+  de entorno nueva y **no hereda** ese tope: Hoy lo re-aplica por hoja (y por hoja hija) con
+  `View.topeTextoHoja()` (FER-128); las hojas de las otras pestañas aún lo escapan.
 
 > **Deuda conocida:** no hay snapshot ni preview que ejercite `.dynamicTypeSize` grande. El split
 > fijo/escala se garantiza por construcción (qué token mapea a qué text style), no por un render de
