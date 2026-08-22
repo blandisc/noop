@@ -10,7 +10,7 @@ import CenitStore
 // `i.calendar`). Cero re-derivación de umbrales del motor: severidad y chip salen de
 // `HoyGramatica`; historia juzgada de `prep.bodyHistory` / `sentinelHistory`.
 //
-// Ventanas fijas §7: sueño 14 · FC/VFC/guardián 20 · estela carga 5 · esfuerzo/pasos 14
+// Ventanas fijas §7: sueño 14 · FC/VFC/guardián 20 · estela carga 5 · esfuerzo 7 · pasos 14
 // · estrés 7. «—» vs ausente se distinguen vía `HoyGramatica.valorODash`.
 
 extension LiquidHoyBuilder {

@@ -1555,8 +1555,11 @@ struct LiquidMetricSheetView: View {
             // entero a propósito: sus cortes son enteros y «< 20.0» sería precisión falsa.)
             // MetricFormat.numeral(.stress) es exactamente ese «%.1f».
             return MetricFormat.forMetric(.stress).numeral(v)
+        case "strain":
+            // La media con la MISMA décima que el numeral de hoy («12.0» hoy vs «11» media — r12).
+            return String(format: "%.1f", v)
         default:
-            // rhr / spo2 / resp_rate / strain: cotas enteras vía MetricFormat (byte-idéntico
+            // rhr / spo2 / resp_rate: cotas enteras vía MetricFormat (byte-idéntico
             // a `Int(v.rounded())`). hrv / heart_rate / submétricas: entero de siempre.
             if let fm = Self.fixedMetric(datoInfo.id) {
                 return MetricFormat.forMetric(fm).boundary(v)

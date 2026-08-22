@@ -85,12 +85,17 @@ enum ScreenshotFixtures {
         // `synthesize` cae en `.insufficient`. Una sola fila (hoy).
         if state == "insufficient" {
             let dayKey = Repository.localDayKey(today)
-            model.repo.setDashboard(days: [DailyMetric(
+            let dias = [DailyMetric(
                 day: dayKey, totalSleepMin: 440, efficiency: 0.9,
                 deepMin: 95, remMin: 110, lightMin: 235, disturbances: 4,
                 restingHr: 50, avgHrv: 55, recovery: 58, strain: 9,
                 exerciseCount: 0, spo2Pct: 98, skinTempDevC: 0.05,
-                respRateBpm: 14.5, steps: 6000, activeKcalEst: 450)])
+                respRateBpm: 14.5, steps: 6000, activeKcalEst: 450)]
+            // Como `calibrating`/`downloading`: el motor se publica para que héroe y acta digan
+            // lo mismo que dirían en producción con una sola noche (FER-128 r12).
+            let prepIns = Preparedness.evaluate(.init(
+                days: dias, strainByDay: [:], trend: nil, asOf: dayKey))
+            model.repo.setDashboard(days: dias, preparedness: prepIns)
             return
         }
 

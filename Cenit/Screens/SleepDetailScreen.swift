@@ -793,10 +793,11 @@ struct SleepDetailScreen: View {
                     // de la tarjeta de la gráfica, que es como la declara §11.3. Tres tiles
                     // flotantes eran cuatro superficies donde el sistema pide una.
                     LiquidResumenVentana(celdas: [
+                        // Reloj h:mm como la hoja gemela y el resto del Detalle, no horas decimales (r12).
                         .init(rotulo: String(localized: "Average"),
-                              valor: String(format: "%.1f h", stat.mean)),
+                              valor: Self.horasReloj(stat.mean)),
                         .init(rotulo: String(localized: "Range"),
-                              valor: String(format: "%.1f–%.1f", stat.min, stat.max)),
+                              valor: "\(Self.horasReloj(stat.min))–\(Self.horasReloj(stat.max))"),
                         .init(rotulo: String(localized: "Last night"),
                               valor: lastNightHrs.map { hoursOnly($0 * 60) } ?? LiquidCajita.sinDato,
                               tono: lastNightHrs != nil ? Self.tono : nil),
@@ -829,7 +830,7 @@ struct SleepDetailScreen: View {
         let puntos = MetricWindowMath
             .decimatedPoints(rows: window.rows, values: window.values, maxPoints: 80)
             .map { (fecha: $0.date, valor: $0.value) }
-        let horas: (Double) -> String = { String(format: "%.1f h", $0) }
+        let horas: (Double) -> String = { Self.horasReloj($0) }
         return LiquidGraficaNiveles(
             puntos: puntos,
             bandas: Self.bandasSueno.enumerated().map { i, b in

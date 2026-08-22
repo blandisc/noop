@@ -1025,7 +1025,10 @@ enum LiquidHoyBuilder {
             progress: autHasData ? positionFromZ(aut?.orientedZ) : nil,
             icon: .ondaSenal,
             state: autFuera ? .atencion : .ok,
-            valor: autHasData ? valores.rhr : nil,
+            // El valor crudo SE MUESTRA aunque el eje no tenga veredicto: el caption dice «Aún sin
+            // veredicto» (no «sin lectura»), así que «50 lpm · aún sin veredicto» es coherente y la
+            // celda ya lo enseña (FER-128 r12). El badge (contexto de rango) sigue gateado.
+            valor: valores.rhr,
             // El badge del estado separado (FER-10): el número grande + su contexto.
             badge: autHasData ? valores.rhrNum.map {
                 .init(valor: $0, contexto: autFuera
@@ -1043,9 +1046,9 @@ enum LiquidHoyBuilder {
             progress: sleepHasData ? positionFromState(sleep!.state) : nil,
             icon: .lunaSenal,
             state: sleepFuera ? .atencion : .ok,
-            // Simétrico al reposo (Grok #5): sin driver de sueño con dato, NADA de valor —
-            // «7:20» junto a «Sin lectura anoche» sería una contradicción de salud.
-            valor: sleepHasData ? valores.sueno : nil,
+            // Simétrico al reposo: el valor crudo se muestra (el caption dice «Aún sin
+            // veredicto», ya no «Sin lectura anoche» — r12); el badge sigue gateado por el driver.
+            valor: valores.sueno,
             badge: sleepHasData ? valores.sueno.map {
                 // El sueño se juzga contra un piso RECOMENDADO (Hirshkowitz), no contra «tu
                 // rango»: el badge dice lo mismo que el módulo de abajo (FER-128, explorador).
@@ -1325,7 +1328,8 @@ enum LiquidHoyBuilder {
                                     verdictPending: verdictPending, causaT3: causaT3,
                                     hayNocheEnBoleta: estados.indices.contains(1)
                                         && estados[1].hasData,
-                                    autonomicPosible: prep?.autonomicPossible ?? true)
+                                    autonomicPosible: prep?.autonomicPossible ?? true,
+                                    hayLecturaCruda: lecturasHoy.rhr || lecturasHoy.sueno)
 
         return LiquidActa(
             // FER-73 · HJ-19: la puerta se anuncia «How I got here» (y así se llamó siempre esta
@@ -1351,7 +1355,8 @@ enum LiquidHoyBuilder {
                                  healthConnected: healthConnected,
                                  verdictPending: verdictPending,
                                  autonomicPosible: prep?.autonomicPossible ?? true,
-                                 causaT3: causaT3),
+                                 causaT3: causaT3,
+                                 hayLecturaCruda: lecturasHoy.rhr || lecturasHoy.sueno),
             conteo: resumen.texto, conteoClave: resumen.clave,
             filas: filas,
             // Vigilantes SOLO con veredicto (/ux D7): su drama vive en el guardián. Y el día
@@ -1389,12 +1394,18 @@ enum LiquidHoyBuilder {
                                       healthConnected: Bool,
                                       verdictPending: Bool = false,
                                       autonomicPosible: Bool = true,
-                                      causaT3: CausaT3? = nil) -> String {
+                                      causaT3: CausaT3? = nil,
+                                      hayLecturaCruda: Bool = false) -> String {
         if hayVeredicto { return palabraVeredicto(prep!.verdict) }
         if esLecturaDeDia { return String(localized: "Day reading") }
         if !healthConnected { return String(localized: "No reading") }
         // FER-73 · H19: mientras el motor lee, el acta dice lo mismo que el héroe.
         if prep == nil, verdictPending { return String(localized: "Reading your night…") }
+        // Sin motor pero CON lectura (señal insuficiente para juzgar): la palabra del héroe,
+        // «Conociéndote», no «Sin lectura» —la lectura sí está— (FER-128 r12).
+        if prep == nil, causaT3 == .senalInsuficiente || hayLecturaCruda {
+            return String(localized: "hero.title.calibrando", defaultValue: "Getting to know you")
+        }
         if prep == nil { return String(localized: "No reading") }
         // Con la base rancia la palabra grande es la del héroe: ni «sin lectura» (sí la hay) ni
         // «conociéndote» (tu rango existe, solo caducó). Pero DESPUÉS de la falta de sync, con
@@ -1453,6 +1464,9 @@ enum LiquidHoyBuilder {
             case .calibrando: sub = String(localized: "learning your base")
             // «contra tu base» + «sin comparar» en la misma fila se contradecían (r12).
             case .sinJuicio:  sub = String(localized: "acta.sub.fc.sinbase", defaultValue: "overnight · no base yet")
+            // Sin FC nocturna posible no hay base contra la que leer (r12).
+            case .sinLectura where prep?.autonomicPossible == false:
+                sub = String(localized: "acta.sub.fc.sinbase", defaultValue: "overnight · no base yet")
             default:          sub = String(localized: "acta.sub.fc", defaultValue: "overnight · against your base")
             }
         } else {
@@ -1570,7 +1584,8 @@ enum LiquidHoyBuilder {
                                       verdictPending: Bool = false,
                                       causaT3: CausaT3? = nil,
                                       hayNocheEnBoleta: Bool = false,
-                                      autonomicPosible: Bool = true) -> (texto: String, clave: String?) {
+                                      autonomicPosible: Bool = true,
+                                      hayLecturaCruda: Bool = false) -> (texto: String, clave: String?) {
         guard hayVeredicto else {
             if esLecturaDeDia {
                 return (String(localized: "No sleep recorded last night: without its vote there's no quorum for a verdict."), nil)
@@ -1632,7 +1647,9 @@ enum LiquidHoyBuilder {
             // las sesiones de anoche existen pero la fila del día todavía no. La frase de arriba
             // se ganó una hermana que dice ese estado sin prometer lo que la boleta no muestra
             // (cuarta vuelta: la rama que metí en la tercera afirmaba de más).
-            if causaT3 == .senalInsuficiente {
+            // …o sin causa conocida (Entrenar no la calcula) pero con lectura cruda de hoy: la misma
+            // frase que Hoy — «nada entró anoche» sobre una noche registrada era falso (FER-128 r12).
+            if causaT3 == .senalInsuficiente || (causaT3 == nil && hayLecturaCruda) {
                 return (String(localized: "acta.resumen.noche.sinentrar",
                                defaultValue: "Your night is recorded, but it hasn't reached the ballot yet, so there's no quorum."), nil)
             }
