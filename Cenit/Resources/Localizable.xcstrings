@@ -52736,6 +52736,22 @@
         }
       }
     },
+    "Train · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Train · %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entrenar · %@"
+          }
+        }
+      }
+    },
     "Train to fill your map" : {
       "localizations" : {
         "en" : {
