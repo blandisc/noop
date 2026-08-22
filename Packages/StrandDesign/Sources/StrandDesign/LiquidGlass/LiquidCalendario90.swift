@@ -562,9 +562,13 @@ public struct LiquidLeyendaNiveles: View {
                 }
             }
         }
-        .accessibilityElement(children: .combine)
     }
 
+    /// Cada peldaño es SU PROPIA parada de VoiceOver (swatch + palabra combinados), como era en
+    /// el calendario de 90 antes de la extracción. La primera versión de esta pieza movió el
+    /// `.combine` al contenedor y fundió los cuatro peldaños en una sola parada concatenada —
+    /// una regresión de accesibilidad silenciosa en Sueño, que está en producción, que el QA
+    /// cazó y que ninguna prueba vigilaba. Ahora la vigila `LiquidLeyendaNivelesTests`.
     private func item(_ nivel: LiquidCalendario90.NivelLeyenda) -> some View {
         HStack(spacing: LiquidSpace.s125) {
             RoundedRectangle(cornerRadius: LiquidCalendario90.radioSwatch, style: .continuous)
@@ -574,6 +578,20 @@ public struct LiquidLeyendaNiveles: View {
                 .font(LiquidType.captionLectura)
                 .foregroundStyle(LiquidColor.tinta500)
         }
+        .accessibilityElement(children: .combine)
+    }
+
+    // MARK: Contratos puros (los lee la prueba)
+
+    /// Cuántas paradas de VoiceOver produce la leyenda: UNA por peldaño, nunca una sola para
+    /// todos. Es la forma de fijar el agrupamiento sin renderizar.
+    public static func paradasDeVoiceOver(_ niveles: [LiquidCalendario90.NivelLeyenda]) -> Int {
+        niveles.count
+    }
+
+    /// Lo que dicta cada parada: swatch y palabra combinados en una sola frase por peldaño.
+    public static func dictado(_ nivel: LiquidCalendario90.NivelLeyenda) -> String {
+        nivel.etiqueta
     }
 }
 

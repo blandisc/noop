@@ -125,7 +125,7 @@ struct PreparacionDetailScreen: View {
                 LiquidNotaLine(aviso).liquidSeccion(top: 0)
             }
 
-            // ── «Tus tres señales»: DOS PISOS, dos relojes ─────────────────────────────
+            // ── «Los votos»: DOS PISOS, dos relojes ─────────────────────────────
             // El estado de HOY es crudo; el mosaico de arriba es post-histéresis. Mezclarlos en
             // una fila hacía que un cuadro verde con «FC · HOY FUERA» al lado se leyera como
             // bug aunque sea la histéresis funcionando (lo cazaron los dos revisores; el motor
@@ -174,7 +174,7 @@ struct PreparacionDetailScreen: View {
                                         }
                                     }
                                 } else {
-                                    HStack(spacing: LiquidSpace.s150) {
+                                    HStack(spacing: LiquidSpace.s200) {
                                         Text(verbatim: etiqueta)
                                             .font(LiquidType.captionLectura)
                                             .foregroundStyle(LiquidColor.tinta500)
@@ -182,8 +182,8 @@ struct PreparacionDetailScreen: View {
                                     }
                                 }
                             }
-                            .accessibilityElement(children: .combine)
-                            .accessibilityLabel(Text(verbatim: acta.vigilantesA11y ?? acta.vigilantes.joined(separator: ", ")))
+                            .accessibilityElement(children: .ignore)
+                            .accessibilityLabel(Text(verbatim: acta.vigilantesA11y ?? etiqueta))
                         }
                     }
 
@@ -194,9 +194,12 @@ struct PreparacionDetailScreen: View {
                     // el veredicto lo dice el mosaico. Solo días CON veredicto.
                     if !modelo.conteosSenal.isEmpty {
                         VStack(alignment: .leading, spacing: LiquidSpace.s250) {
+                            // No es un kicker: `.liquidLabel()` es para 1-3 palabras en caja alta
+                            // («HOY»), y esto es una oración de seis. Va en el registro de la
+                            // etiqueta de vigilantes de la misma sección.
                             Text(String(localized: "prep.senales.mes",
                                         defaultValue: "Nights out, over 30 days"))
-                                .liquidLabel()
+                                .font(LiquidType.captionLectura)
                                 .foregroundStyle(LiquidColor.tinta500)
                             VStack(alignment: .leading, spacing: LiquidSpace.s250) {
                                 ForEach(Array(modelo.conteosSenal.enumerated()), id: \.element.id) { i, c in
@@ -316,7 +319,7 @@ struct PreparacionDetalleModelo {
     let conteos: [String: Int]
     let pistaCobertura: String?
     let avisoVentanaSinVeredicto: String?
-    /// El piso «hoy» de «Tus tres señales»: la boleta TAL CUAL la arma Hoy
+    /// El piso «hoy» de «Los votos»: la boleta TAL CUAL la arma Hoy
     /// (`LiquidHoyBuilder.acta`) — misma función, mismas filas, mismos vigilantes. Cero tablas
     /// propias: cada vez que cada superficie tuvo la suya terminaron contradiciéndose.
     /// `nil` cuando no hay veredicto anclado a la noche (no se pinta el piso).
@@ -376,7 +379,7 @@ struct PreparacionDetalleModelo {
         if n.sleepOut { partes.append(String(localized: "Sleep")) }
         if n.sentinelOut {
             partes.append(String(localized: "prep.atr.centinela.nombre",
-                                 defaultValue: "Temperature and breathing"))
+                                 defaultValue: "Temp and breathing"))
         }
         return ListFormatter.localizedString(byJoining: partes)
     }
@@ -411,9 +414,6 @@ struct PreparacionDetalleModelo {
     static func unidadDias(_ n: Int) -> String {
         String(format: String(localized: "%lld days"), n)
     }
-
-    /// La unidad suelta de una cajita, que ya lleva su número aparte: también tiene que
-    /// concordar con él.
 
     private static func tono(_ v: Preparedness.Verdict) -> Color {
         switch v {
@@ -630,7 +630,7 @@ struct PreparacionDetalleModelo {
     static let bienvenidaSinPermiso = Bienvenida(
         titulo: String(localized: "prep.permiso.titulo", defaultValue: "I need to see your Health"),
         cuerpo: String(localized: "prep.permiso.cuerpo",
-                       defaultValue: "Preparation is built from what your watch already saves in Apple Health: resting heart rate, HRV, sleep, temperature and breathing. Without that permission there's nothing to read. Everything stays on your iPhone."))
+                       defaultValue: "I build Preparation from what your watch already saves in Apple Health: resting heart rate, HRV, sleep, temperature and breathing. Without that permission I have nothing to read. Everything stays on your iPhone."))
 
     static let bienvenidaSinHistoria = Bienvenida(
         titulo: String(localized: "prep.sinHistoria.titulo", defaultValue: "Your first mornings"),
