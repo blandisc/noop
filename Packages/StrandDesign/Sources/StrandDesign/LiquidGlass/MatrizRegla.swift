@@ -104,6 +104,11 @@ public struct MatrizRegla: View {
                 .stroke(hue.opacity(MatrizTokens.lineaAlfa),
                         style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
                 .opacity(rellenoVivo ? 1 : 0)
+            // 2b · Islas de UN punto (una lectura entre dos huecos): un punto, no nada — la curva
+            // no puede escribirlas (FER-128, explorador Grok; paridad con la línea de VFC).
+            IslasSueltas(puntos: pts)
+                .fill(hue.opacity(MatrizTokens.lineaAlfa))
+                .opacity(rellenoVivo ? 1 : 0)
             // 3 · La regla: capilar de dominio + tramo de tu rango.
             regla(size: size)
                 .opacity(asentado ? 1 : 0)
@@ -265,6 +270,19 @@ private struct TrazoCurva: Shape {
         guard let iPrincipal = MatrizRegla.indicePrincipal(tramos) else { return path }
         for (i, tramo) in tramos.enumerated() where (i == iPrincipal) == soloPrincipal {
             path.addPath(MatrizRegla.catmull(tramo))
+        }
+        return path
+    }
+}
+
+/// Las islas de un solo punto de la serie, como discos de `histRadio`.
+private struct IslasSueltas: Shape {
+    let puntos: [CGPoint?]
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        for tramo in MatrizRegla.tramos(puntos) where tramo.count == 1 {
+            let p = tramo[0], r = MatrizTokens.histRadio
+            path.addEllipse(in: CGRect(x: p.x - r, y: p.y - r, width: r * 2, height: r * 2))
         }
         return path
     }

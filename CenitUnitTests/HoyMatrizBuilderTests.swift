@@ -457,6 +457,17 @@ final class HoyMatrizBuilderTests: XCTestCase {
         XCTAssertEqual(LiquidHoyBuilder.dominioSueno([nil, nil].map(noche)), 4...10)
     }
 
+    /// FER-128 (explorador Grok): un NaN/inf en una serie es un HUECO, no un dato — antes un NaN en
+    /// `dominioCarriles`/`dominioLinea` tumbaba la app («Range requires lowerBound <= upperBound»).
+    func test_128_no_finito_es_hueco_y_no_tumba_el_dominio() {
+        XCTAssertNil(LiquidHoyBuilder.finito(.nan))
+        XCTAssertNil(LiquidHoyBuilder.finito(.infinity))
+        XCTAssertEqual(LiquidHoyBuilder.finito(52), 52)
+        let dom = LiquidHoyBuilder.dominioCarriles([50, .nan, 54, nil], banda: 48...56, fallback: 40...70)
+        XCTAssertTrue(dom.lowerBound.isFinite && dom.upperBound.isFinite && dom.lowerBound < dom.upperBound)
+        XCTAssertEqual(LiquidHoyBuilder.dominioCarriles([.nan], banda: nil, fallback: 40...70), 40...70)
+    }
+
     // MARK: 17 — Historia juzgada con SU día (no se repinta)
 
     func test_17_historia_no_se_repinta_al_cambiar_hoy() {

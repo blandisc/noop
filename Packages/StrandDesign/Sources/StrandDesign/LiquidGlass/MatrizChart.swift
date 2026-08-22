@@ -21,7 +21,8 @@ enum MatrizChartDraw {
 
     static func yNorm(_ v: Double, domain: ClosedRange<Double>) -> CGFloat {
         let span = domain.upperBound - domain.lowerBound
-        guard span > 0 else { return 0.5 }
+        // Un valor no finito no tiene «altura»: al centro, sin NaN en el path (FER-128, Grok).
+        guard span > 0, span.isFinite, v.isFinite else { return 0.5 }
         return CGFloat(min(max((v - domain.lowerBound) / span, 0), 1))
     }
 
@@ -175,7 +176,10 @@ enum MatrizChartDraw {
         // Una sola lectura = HOY: al final del ancho útil, como la regla y las columnas (FER-128).
         guard count > 1 else { return width - inset }
         let usable = max(width - inset * 2, 1)
-        return inset + CGFloat(index) / CGFloat(count - 1) * usable
+        // `index` acotado a [0, count − 1]: un `count` declarado menor que la serie real no
+        // proyecta puntos fuera del lienzo (FER-128, Grok).
+        let i = min(max(index, 0), count - 1)
+        return inset + CGFloat(i) / CGFloat(count - 1) * usable
     }
 
     /// Parte la serie en tramos contiguos (los huecos nil cortan el trazo).
@@ -185,7 +189,7 @@ enum MatrizChartDraw {
         var out: [[CGPoint]] = []
         var actual: [CGPoint] = []
         for (i, val) in puntos.enumerated() {
-            guard let v = val else {
+            guard let v = val, v.isFinite else {
                 if !actual.isEmpty { out.append(actual) }
                 actual.removeAll()
                 continue
@@ -709,6 +713,7 @@ public struct MatrizColina: View {
     /// Razón → x lineal en [inset, w-inset] sobre el dominio `colinaLo…colinaHi` (clampeada).
     static func xDe(_ v: Double, width w: CGFloat, inset: CGFloat) -> CGFloat {
         let usable = max(w - inset * 2, 1)
+        guard v.isFinite else { return inset }   // no finito: al pie, sin NaN en el path
         let frac = CGFloat(min(max((v - MatrizTokens.colinaLo) / (MatrizTokens.colinaHi - MatrizTokens.colinaLo), 0), 1))
         return inset + frac * usable
     }
@@ -781,7 +786,7 @@ public struct MatrizBarrasMini: View {
                 MatrizChartDraw.rejillaFantasma(ctx, size: size, chartID: chartID)
                 return
             }
-            let maxV = valores.compactMap { $0 }.max() ?? 1
+            let maxV = valores.compactMap { $0 }.filter(\.isFinite).max() ?? 1
             let gap = MatrizTokens.barraGap
             let inset = MatrizTokens.chartInset
             let usable: CGFloat = size.width - inset * 2 - gap * CGFloat(n - 1)
@@ -801,7 +806,7 @@ public struct MatrizBarrasMini: View {
                 let x = inset + CGFloat(i) * (barW + gap)
                 let cx = x + barW / 2
                 let seleccionada = resaltado == i
-                guard let v = val else {
+                guard let v = val, v.isFinite else {
                     // Día leído sin lectura: cursor fantasma en su cajón (paridad columnas).
                     if seleccionada {
                         MatrizChartDraw.cursorScrub(ctx, x: cx, height: size.height, hue: hue, fantasma: true)

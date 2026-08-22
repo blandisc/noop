@@ -149,4 +149,16 @@ final class MatrizHilosTests: XCTestCase {
         XCTAssertEqual(MatrizChartDraw.xAt(index: 0, count: 1, width: 300, inset: 8), 292, accuracy: 0.001)
         XCTAssertEqual(MatrizChartDraw.xAt(index: 0, count: 1, width: 300), 300 - MatrizTokens.chartInset, accuracy: 0.001)
     }
+
+    /// FER-128 (explorador Grok): NaN/inf nunca entran a la geometría — `yNorm` al centro, `tramos`
+    /// los trata como hueco, `xAt` acota el índice y `fraccionFilo` vuelve a la base.
+    func test_noFinitoNoEntraALaGeometria() {
+        XCTAssertEqual(MatrizChartDraw.yNorm(.nan, domain: 0...10), 0.5)
+        XCTAssertEqual(MatrizChartDraw.yNorm(.infinity, domain: 0...10), 0.5)
+        let tramos = MatrizChartDraw.tramos([1, .nan, 2, 3], count: 4, width: 100, dominio: 0...5, height: 40)
+        XCTAssertEqual(tramos.map(\.count), [1, 2])
+        XCTAssertTrue(tramos.flatMap { $0 }.allSatisfy { $0.x.isFinite && $0.y.isFinite })
+        XCTAssertEqual(MatrizChartDraw.xAt(index: 9, count: 4, width: 100, inset: 4), 96, accuracy: 0.001)
+        XCTAssertEqual(MatrizCostura.fraccionFilo(.nan), 0)
+    }
 }

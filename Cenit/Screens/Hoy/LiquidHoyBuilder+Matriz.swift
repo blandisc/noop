@@ -142,7 +142,7 @@ extension LiquidHoyBuilder {
 
         // —— 2. FC | VFC (20) ——
         let keys20 = keys  // ya son 20
-        let ptsFC: [Double?] = keys20.map { bodyByDay[$0]?.rhrResolved ?? byDay[$0].flatMap { $0.restingHr.map(Double.init) } }
+        let ptsFC: [Double?] = keys20.map { finito(bodyByDay[$0]?.rhrResolved ?? byDay[$0].flatMap { $0.restingHr.map(Double.init) }) }
         let baseFC = keys20.reversed().compactMap { bodyByDay[$0]?.rhrBaseCenter }.first
         // La banda «tu rango» (±1σ del motor, el MISMO σ del corte del veredicto) — los
         // carriles de la celda (FER-55). Sin base usable no hay carriles honestos.
@@ -198,7 +198,7 @@ extension LiquidHoyBuilder {
             glifoSello: .corazon,
             scrubNoches: scrubFCVivo)
 
-        let ptsVFC: [Double?] = keys20.map { byDay[$0]?.avgHrv }
+        let ptsVFC: [Double?] = keys20.map { finito(byDay[$0]?.avgHrv) }
         let baseVFC = keys20.reversed().compactMap { bodyByDay[$0]?.hrvBaseCenter }.first
         let valorVFC = HoyGramatica.valorODash(ptsVFC.last.flatMap { $0 }) {
             "\(Int($0.rounded()))"
@@ -245,7 +245,7 @@ extension LiquidHoyBuilder {
         }()
         let sentinelHoy: Preparedness.SentinelRead? = nocheJuzgada == nil ? nil : prep?.sentinel
         let chipJuzgado = chipGuardianJuzgado(sentinelHoy, noche: nocheJuzgada)
-        var ptsTemp: [Double?] = keys20.map { byDay[$0]?.skinTempDevC }
+        var ptsTemp: [Double?] = keys20.map { finito(byDay[$0]?.skinTempDevC) }
         // HOY usa el dev térmico AJUSTADO (descuento lúteo ya aplicado) — el MISMO número
         // que juzga el guardián y que muestra la cara Cosmos (+Cosmos.swift), para que las
         // dos caras jamás se contradigan sobre la temperatura (la deriva que FER-51 elimina).
@@ -259,7 +259,7 @@ extension LiquidHoyBuilder {
            prep?.sentinelHistory.last?.day == hk, keys20.last == hk, !ptsTemp.isEmpty {
             ptsTemp[ptsTemp.count - 1] = adj
         }
-        let ptsResp: [Double?] = keys20.map { byDay[$0]?.respRateBpm }
+        let ptsResp: [Double?] = keys20.map { finito(byDay[$0]?.respRateBpm) }
         let valorTemp = HoyGramatica.valorODash(ptsTemp.last.flatMap { $0 },
                                                 formato: HoyGramatica.formatoDeltaTemp)
         let valorResp = HoyGramatica.valorODash(ptsResp.last.flatMap { $0 }, formato: HoyGramatica.formatoResp)
@@ -491,7 +491,7 @@ extension LiquidHoyBuilder {
             scrubNoches: scrubCarga.count > 1 ? scrubCarga : nil)
 
         let keysEsf = Array(keys.suffix(matrizVentanaEsfuerzo))
-        let ptsEsf: [Double?] = keysEsf.map { byDay[$0]?.strain }
+        let ptsEsf: [Double?] = keysEsf.map { finito(byDay[$0]?.strain) }
         let valorEsf = HoyGramatica.valorODash(ptsEsf.last.flatMap { $0 }) {
             String(format: "%.1f", $0)
         }
@@ -579,8 +579,8 @@ extension LiquidHoyBuilder {
 
         let keysPasos = Array(keys.suffix(matrizVentanaPasos))
         let ptsPasos: [Double?] = keysPasos.map { day in
-            if let s = stepsByDay[day] { return s }
-            return byDay[day]?.steps.map(Double.init)
+            if let s = stepsByDay[day] { return finito(s) }
+            return finito(byDay[day]?.steps.map(Double.init))
         }
         // FER-125 (prototipo aprobado): los pasos se leen en MILES con un decimal y la unidad
         // «k» («6,2 k» en es · «6.2 k» en en) — el número corto del mockup; el conteo exacto
@@ -722,7 +722,7 @@ extension LiquidHoyBuilder {
     /// de la ventana (FER-128, exploradores: una noche de 2 h o de 12 h se pintaba idéntica al piso
     /// o al techo, con el aro encima del rótulo «7 h»). La referencia sigue en 7 h.
     static func dominioSueno(_ noches: [MatrizColumnas.Noche]) -> ClosedRange<Double> {
-        let horas = noches.compactMap { $0.valor }
+        let horas = noches.compactMap { $0.valor }.filter(\.isFinite)
         let lo = min(4, (horas.min() ?? 4).rounded(.down))
         let hi = max(10, (horas.max() ?? 10).rounded(.up))
         return lo...max(hi, lo + 1)
@@ -850,9 +850,17 @@ extension LiquidHoyBuilder {
     /// Dominio de línea: min/max de puntos+base con padding, o fallback.
     /// Dominio de los carriles de FC: la serie + la banda completa, con aire — la banda
     /// nunca se corta en el borde del lienzo (los carriles de fuera necesitan existir).
+    /// Un valor no finito (NaN/±inf) es un HUECO, no un dato: un NaN en un dominio tumbaba la app
+    /// («Range requires lowerBound <= upperBound») y en una gráfica daba geometría no finita
+    /// (FER-128, explorador Grok). Se sanea en la entrada: toda serie pasa por aquí.
+    static func finito(_ v: Double?) -> Double? {
+        guard let v, v.isFinite else { return nil }
+        return v
+    }
+
     static func dominioCarriles(_ pts: [Double?], banda: ClosedRange<Double>?,
                                 fallback: ClosedRange<Double>) -> ClosedRange<Double> {
-        var vals = pts.compactMap { $0 }
+        var vals = pts.compactMap { $0 }.filter(\.isFinite)
         if let banda {
             vals.append(banda.lowerBound)
             vals.append(banda.upperBound)
@@ -865,7 +873,7 @@ extension LiquidHoyBuilder {
 
     private static func dominioLinea(_ pts: [Double?], base: Double?,
                                      fallback: ClosedRange<Double>) -> ClosedRange<Double> {
-        var vals = pts.compactMap { $0 }
+        var vals = pts.compactMap { $0 }.filter(\.isFinite)
         if let base { vals.append(base) }
         guard let lo = vals.min(), let hi = vals.max() else { return fallback }
         if lo == hi {

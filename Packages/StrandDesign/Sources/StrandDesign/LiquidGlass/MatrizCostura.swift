@@ -89,6 +89,7 @@ public enum MatrizCostura {
         // aplanaba a partir de una banda —−0.9 °C y −1.1 °C caían en el mismo pixel—, que es
         // justo lo que este mapeo existe para no hacer. La curva ya está acotada sola (tiende a
         // 1.044·0.22 ≈ 0.23, muy por debajo del filo), así que el recorte nunca hizo falta.
+        guard v.isFinite else { return 0 }   // NaN/inf: en la base, nunca aritmética NaN (FER-128)
         if v < 0 { return dentro(-v) * ladoBajoFrac }
         if v < 1 { return dentro(v) }
         let u = v - 1
