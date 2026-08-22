@@ -327,6 +327,9 @@ public struct MatrizColumnas: View {
                 }
             }
 
+            // Sin una sola columna no hay referencia que marcar: la rejilla fantasma basta
+            // (FER-128, explorador r4: «7 h» y la punteada sobre un lienzo vacío).
+            guard hay else { return }
             // Referencia punteada horizontal + tag — en la MISMA escala del canal de
             // barras (auditoría de simetría Grok R1: antes yTop usaba otro pad y la
             // punteada quedaba 8 pt arriba del valor que decía marcar).

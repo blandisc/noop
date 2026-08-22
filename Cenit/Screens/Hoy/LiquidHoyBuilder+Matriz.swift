@@ -108,6 +108,12 @@ extension LiquidHoyBuilder {
         // (P2), y el dato del scrub la reemplaza al arrastrar. Mismo gate de honestidad.
         let sublabelSueno: String? = {
             if hoy?.totalSleepMin == nil && noches.allSatisfy({ $0.valor == nil }) {
+                // «Conociéndote» promete un proceso en marcha; sin una sola noche registrada y sin
+                // lectura posible (sin Salud), el héroe ya dijo lo contrario — la misma verdad corta
+                // que su gemela FC (FER-128, explorador r4).
+                if prep == nil || prep?.autonomicPossible == false {
+                    return String(localized: "matriz.sueno.sinnoches", defaultValue: "no nights recorded yet")
+                }
                 return String(localized: "hero.title.calibrando", defaultValue: "Getting to know you")
             }
             guard hoy?.totalSleepMin != nil else {

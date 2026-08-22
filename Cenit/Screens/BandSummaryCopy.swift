@@ -6,11 +6,12 @@ import StrandDesign
 /// "noches"; the rest "días". (FER-459 / FER-469)
 enum BandSummaryCopy {
 
-    /// Metrics whose reading is a nightly measurement → the copy says "noches" instead of "días". Resting
-    /// HR is measured overnight too, but it's presented as a daily resting value (and the owner-approved
-    /// design reads "días" for it), so it's intentionally a day metric here.
+    /// Metrics whose reading is a nightly measurement → the copy says "noches" instead of "días".
+    /// Resting HR is the lowest pulse of the NIGHT and Hoy reads it as «anoche» since FER-55/118
+    /// (module, scrub, listed hero): the sheet dates it the same way — «LAST NIGHT · Aug 21», «nights»
+    /// (FER-128, explorer r4; the earlier «días» reading predates the nightly anchoring).
     static func isNightly(metricID: String) -> Bool {
-        metricID == "sleep" || metricID == "spo2" || metricID == "resp_rate" || metricID == "skin_temp"
+        metricID == "sleep" || metricID == "rhr" || metricID == "spo2" || metricID == "resp_rate" || metricID == "skin_temp"
     }
 
     /// "N days/nights" for a band-row count, with correct singular/plural.

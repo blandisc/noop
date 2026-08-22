@@ -3841,6 +3841,23 @@
         }
       }
     },
+    "matriz.sueno.sinnoches" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "no nights recorded yet"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "aún no hay noches registradas"
+          }
+        }
+      }
+    },
     "matriz.sueno.rango.dentro" : {
       "localizations" : {
         "en" : {

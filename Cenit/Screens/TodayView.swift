@@ -1297,12 +1297,15 @@ struct TodayView: View {
     /// Pasos para la superficie Liquid: Apple fresco primero; sin conteo real cae a la estimación
     /// on-device (FER-663), rotulada y con origen calculado.
     private func liquidSteps() -> (value: Double?, estimated: Bool, raw: Int?) {
-        let cutoff = Repository.localDayKey(Calendar.current.date(byAdding: .day, value: -13, to: Date()) ?? Date())
-        let fresh = appleDays.last(where: { $0.day >= cutoff })?.steps
-        let estFresh = fresh == nil
-            ? stepsEst.last(where: { $0.day >= cutoff }).map { Int($0.value.rounded()) }
-            : nil
-        return ((fresh ?? estFresh).map(Double.init), estFresh != nil, fresh ?? estFresh)
+        // HOY, con la MISMA cascada que el módulo de la Matriz (`LiquidHoyBuilder+Matriz`:
+        // estimación del día si existe, si no el conteo de Apple del día): la hoja decía «Sin
+        // lectura de hoy» bajo un módulo que decía «4.2 k · hoy» porque tomaba la fila más nueva
+        // de Apple (hoy, con pasos nil) y ya no caía a nada (FER-128, explorador r4).
+        let hoyKey = Repository.localDayKey(Date())
+        let estHoy = stepsEst.first(where: { $0.day == hoyKey }).map { Int($0.value.rounded()) }
+        let appleHoy = appleDays.first(where: { $0.day == hoyKey })?.steps
+        let valor = estHoy ?? appleHoy
+        return (valor.map(Double.init), estHoy != nil && appleHoy == nil, valor)
     }
 
     /// Tap de un tile Liquid → la MISMA hoja de métrica de siempre, por id estable.
