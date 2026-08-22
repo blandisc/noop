@@ -475,7 +475,7 @@ enum LiquidGuardianFixtures {
         infoMostrar: "Mostrar explicación", infoOcultar: "Ocultar explicación",
         nivel: "Una señal fuera",
         conteo: "Tu temperatura amaneció fuera de tu patrón; la respiración, donde siempre.",
-        sello: "ANOCHE · 3 AGO", enPatron: false,
+        sello: nil, enPatron: false,
         temp: temp("+0.9°", fuera: true, serie: tempSerieOut),
         resp: resp("14 rpm", fuera: false, serie: respSerieIn),
         pieTarjeta: pie,
@@ -512,7 +512,7 @@ enum LiquidGuardianFixtures {
         explicacion: enPatron.explicacion,
         infoMostrar: "Mostrar explicación", infoOcultar: "Ocultar explicación",
         nivel: nil,
-        sinLectura: "Sin lectura anoche",
+        sinLectura: "Sin lectura de anoche",
         conteo: "Sin noche grabada, el guardián no tiene contra qué comparar.",
         sello: "ANOCHE · 3 AGO", enPatron: false,
         temp: temp("—", fuera: false, serie: serie(
@@ -531,7 +531,7 @@ enum LiquidGuardianFixtures {
         domino: domino(temp: [.dentro, .dentro, .dentro, .dentro, .sinDato],
                        resp: [.dentro, .dentro, .dentro, .dentro, .sinDato],
                        encendida: false,
-                       a11y: "Sin lectura anoche en temperatura ni respiración."),
+                       a11y: "Sin lectura de anoche en temperatura ni respiración."),
         metodo: metodo)
 
     static let conociendote = LiquidGuardianHoja(

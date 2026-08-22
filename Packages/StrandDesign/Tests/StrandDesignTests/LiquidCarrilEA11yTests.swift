@@ -36,8 +36,8 @@ final class LiquidCarrilEA11yTests: XCTestCase {
     /// FER-128 r6: con UNA lectura la gráfica la PINTA (punto suelto, como la Matriz) y la voz la
     /// dice — el héroe de la misma hoja ya enseñaba el número; «Sin lecturas» lo contradecía.
     func test_e2_unSoloPunto_laVozDiceLaLectura() {
-        XCTAssertNotEqual(Self.grafica(Self.serie(1)).valorA11y, "Sin lecturas en este rango.",
-                          "con 1 punto la pantalla pinta el punto: la voz lo dice")
+        XCTAssertEqual(Self.grafica(Self.serie(1)).valorA11y, "56 ms",
+                       "con 1 punto la pantalla pinta el punto: la voz lo dice")
     }
 
     func test_e2_serieVacia_laVozDiceElPozoVacio() {

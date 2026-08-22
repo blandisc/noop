@@ -507,7 +507,9 @@ struct LiquidChartPlot: View {
 
     private func x(_ i: Int, _ w: CGFloat) -> CGFloat {
         let n = puntos.count
-        guard n > 1 else { return canaleta + plotW(w) / 2 }
+        // Una sola lectura = HOY: al FINAL del ancho útil, como su gemela de la Matriz
+        // (`MatrizChartDraw.xAt`) — no al centro (FER-128 r7).
+        guard n > 1 else { return canaleta + plotW(w) }
         if mapeoPorTiempo, let f = fraccionTiempo(i) {
             return canaleta + CGFloat(f) * plotW(w)
         }
@@ -733,7 +735,9 @@ struct LiquidChartPlot: View {
         // entre centros ya mapeados, que con `mapeoPorTiempo` no es el promedio). El `n <=
         // puntoDatoUmbral` de la condición corta ANTES de construir el arreglo de centros,
         // así que la serie larga no paga el barrido.
-        if n > 1, n <= LiquidChart.puntoDatoUmbral,
+        // n ≥ 1: una sola lectura se PINTA aunque no sea HOY (la voz y el héroe ya la decían;
+        // el plot la escondía — FER-128 r7).
+        if n >= 1, n <= LiquidChart.puntoDatoUmbral,
            LiquidChart.hayEspacioParaPuntos(centros: puntos.indices.map { x($0, w) }) {
             let hayActiva = atenuarFuera && bandas.contains { $0.activa }
             ForEach(Array(puntos.enumerated()), id: \.offset) { i, punto in

@@ -343,7 +343,7 @@ private enum LiquidDominoReglaPreviewData {
             }
 
             // 4 · Ultima noche sin dato en ambos carriles.
-            previewBloque(titulo: "Sin lectura anoche") {
+            previewBloque(titulo: "Sin lectura de anoche") {
                 LiquidDominoRegla(
                     carriles: LiquidDominoReglaPreviewData.carriles(
                         temp: LiquidDominoReglaPreviewData.sinDato,

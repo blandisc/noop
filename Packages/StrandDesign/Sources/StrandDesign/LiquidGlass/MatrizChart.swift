@@ -847,8 +847,9 @@ public struct MatrizBarrasMini: View {
 /// apiladas; cada día enciende tantas celdas como su nivel (bajo 1 · medio 2 · alto 3), del
 /// pie hacia arriba, y las apagadas quedan como rejilla tenue. El nivel se lee por la ALTURA
 /// de la pila; el color de la pila es la rampa de calor de FER-60 (`colorNivel`: bajo tinta,
-/// medio ocre, alto siena — nunca el hue de alerta ni el verde del veredicto). HOY va pleno,
-/// la historia serena; el día leído por el scrub se enciende como HOY + cursor. Sin lectura:
+/// medio ocre, alto siena — nunca el hue de alerta ni el verde del veredicto). HOY va pleno
+/// cuando hay calor (ocre/siena); en «bajo» lo marca su rejilla (`escaleraHoyApagadaAlfa`); la
+/// historia serena; el día leído por el scrub se enciende + cursor. Sin lectura:
 /// columna apagada (y cursor fantasma si se lee). Sin ningún dato: rejilla fantasma.
 public struct MatrizEscalerita: View {
     private let chartID: String

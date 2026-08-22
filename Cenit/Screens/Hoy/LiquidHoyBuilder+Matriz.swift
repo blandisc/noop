@@ -903,15 +903,15 @@ extension LiquidHoyBuilder {
     /// Dominio de línea: min/max de puntos+base con padding, o fallback.
     /// Dominio de los carriles de FC: la serie + la banda completa, con aire — la banda
     /// nunca se corta en el borde del lienzo (los carriles de fuera necesitan existir).
-    /// Un valor no finito (NaN/±inf) es un HUECO, no un dato: un NaN en un dominio tumbaba la app
-    /// («Range requires lowerBound <= upperBound») y en una gráfica daba geometría no finita
-    /// (FER-128, explorador Grok). Se sanea en la entrada: toda serie pasa por aquí.
     /// Lo que VoiceOver lee por un sueño: «7 h 25 min» (la clave plural ya existe), nunca «7:25».
     static func a11ySueno(_ mins: Double) -> String {
         let total = Int(mins.rounded()); let h = total / 60, m = total % 60
         return String(localized: "\(h) h \(m) min")
     }
 
+    /// Un valor no finito (NaN/±inf) es un HUECO, no un dato: un NaN en un dominio tumbaba la app
+    /// («Range requires lowerBound <= upperBound») y en una gráfica daba geometría no finita
+    /// (FER-128, explorador Grok). Se sanea en la entrada: toda serie pasa por aquí.
     static func finito(_ v: Double?) -> Double? {
         guard let v, v.isFinite else { return nil }
         return v

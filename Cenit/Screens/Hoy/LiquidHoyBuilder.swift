@@ -406,8 +406,7 @@ enum LiquidHoyBuilder {
         // La noche que vigila es la de anoche — y se llama por su día de DESPERTAR, como la clave
         // de `displayDays`, el último punto de la mini-gráfica de esta hoja y el sello de la hoja de
         // métrica (FER-128 r6): «ANOCHE · 22 AGO» es la noche que terminó hoy.
-        let ref = now
-        let fecha = formatter.string(from: ref).uppercased(with: locale)
+        let fecha = formatter.string(from: now).uppercased(with: locale)
         return "\(anoche) · \(fecha)"
     }
 

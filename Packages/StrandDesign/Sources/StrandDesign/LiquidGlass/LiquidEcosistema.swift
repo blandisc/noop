@@ -28,7 +28,7 @@ public struct EcosistemaRotulos: Sendable {
     public let abrirReposo: String        // «Abrir En reposo» (rotor)
     public let abrirSueno: String
     public let abrirGuardian: String
-    public let sinLecturaNoche: String    // «Sin lectura anoche» (badge sin dato)
+    public let sinLecturaNoche: String    // «Sin lectura de anoche» (badge sin dato)
     public let sinLecturaHoy: String
     public let guardianSinLecturas: String // «Guardián: sin lecturas hoy» (VoiceOver)
     public let anuncioVeredicto: String   // «Tu veredicto llegó: %@» (announcement)
@@ -41,7 +41,7 @@ public struct EcosistemaRotulos: Sendable {
                 abrirReposo: String = "Abrir En reposo",
                 abrirSueno: String = "Abrir Sueño",
                 abrirGuardian: String = "Abrir Guardián",
-                sinLecturaNoche: String = "Sin lectura anoche",
+                sinLecturaNoche: String = "Sin lectura de anoche",
                 sinLecturaHoy: String = "Sin lectura hoy",
                 guardianSinLecturas: String = "Guardián: sin lecturas hoy",
                 anuncioVeredicto: String = "Tu veredicto llegó: %@",

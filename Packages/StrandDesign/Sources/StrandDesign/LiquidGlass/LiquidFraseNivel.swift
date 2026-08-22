@@ -62,9 +62,10 @@ public struct LiquidFraseNivel: View {
                         .fixedSize(horizontal: false, vertical: true)
                     if let sello {
                         Spacer(minLength: LiquidSpace.s200)
+                        // El MISMO sello que las 9 hojas de métrica (`LiquidSheetHeader`): `filaRango`
+                        // (FER-128 r7 — cambiaba de familia y tamaño solo en el guardián).
                         Text(verbatim: sello)
-                            .font(LiquidType.captionLectura)
-                            .fontWeight(.semibold)
+                            .font(LiquidType.filaRango)
                             .foregroundStyle(nivel != nil ? tono : LiquidColor.tinta500)
                             .lineLimit(1)
                             .layoutPriority(1)

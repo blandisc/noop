@@ -1090,7 +1090,9 @@ struct LiquidMetricSheetView: View {
             // que la misma hoja declaraba inexistente — FER-128 r6).
             return (datoInfo.displayValue, datoInfo.displayValue == "—" ? nil : selloHoy)
         }
-        return (levelsValueFormat(ComparisonEngine.stat(w.values).mean), selloMedia(w.range))
+        // El MISMO número que clasifica el nivel (`valorMostrado`, sin el día parcial de Pasos) —
+        // el numeral y su carril no pueden separarse (FER-128 r7).
+        return (valorMostrado.map(levelsValueFormat) ?? datoInfo.displayValue, selloMedia(w.range))
     }
 
     /// «HOY · 3 AGO» de día; «ANOCHE · 2 AGO» en lo que se mide durmiendo. La fecha la compone
@@ -1267,9 +1269,11 @@ struct LiquidMetricSheetView: View {
             let nombre: String = nombreNivel(d.levels[i].key)
             // Singular con UNA noche/día (la tabla de abajo ya lo hacía; el conteo no — FER-128 r6).
             let conteo: String = nightly
-                ? (d.total == 1 ? String(localized: "\(d.counts[i]) of your last night")
+                ? (d.total == 1 ? (d.counts[i] == 1 ? String(localized: "conteo.ultima.noche", defaultValue: "your last night")
+                                                    : String(localized: "conteo.ultima.noche.no", defaultValue: "not your last night"))
                                 : String(localized: "\(d.counts[i]) of your last \(d.total) nights"))
-                : (d.total == 1 ? String(localized: "\(d.counts[i]) of your last day")
+                : (d.total == 1 ? (d.counts[i] == 1 ? String(localized: "conteo.ultimo.dia", defaultValue: "your last day")
+                                                    : String(localized: "conteo.ultimo.dia.no", defaultValue: "not your last day"))
                                 : String(localized: "\(d.counts[i]) of your last \(d.total) days"))
             // B9 · Sin serie (la ruta del Detalle de Sueño, que presenta la hoja sin
             // `levelsSeriesLoader` y por eso no pasa por `levelsCargando`) el conteo

@@ -258,7 +258,7 @@ public struct LiquidSheetHeader: View {
     ///
     /// C2 · Con `numeral == "—"` el CUERPO ya oculta unidad y sufijo; la voz los seguía
     /// concatenando y decía «VFC, — ms» sobre una pantalla que solo muestra «—». Mismo guard.
-    /// El sello SÍ se dice con «—»: «sin lectura» también pertenece a una ventana.
+    /// Con «—» el caller ya no manda sello (FER-128 r6: no se afirma una noche que no existe); si llega, se dice.
     ///
     /// F0.2 · `sello` (ventana del dato) va ENTRE el dato y el origen.
     static func a11yLabel(titulo: String, numeral: String?, unidad: String?,
