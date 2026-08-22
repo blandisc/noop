@@ -192,10 +192,14 @@ public struct LiquidGuardianHoja: Sendable {
         self.calibracion = calibracion
     }
 
-    /// El tono del eje: verde en patrón, ámbar de atención fuera, tinta500 sin base.
+    /// Racha (≥ 2 noches con las dos señales fuera): el chip y el sello del módulo van en rojo
+    /// (FER-56, «el sello vivo espeja el chip»); la hoja también. Lo pone el builder.
+    public var racha: Bool = false
+
+    /// El tono del eje: verde en patrón, ámbar de atención fuera (rojo con racha), tinta500 sin base.
     public var tono: Color {
         nivel == nil ? LiquidColor.tinta500
-                     : (enPatron ? LiquidColor.verdePrimario : LiquidColor.atencion)
+                     : (enPatron ? LiquidColor.verdePrimario : (racha ? LiquidColor.negativo : LiquidColor.atencion))
     }
 }
 

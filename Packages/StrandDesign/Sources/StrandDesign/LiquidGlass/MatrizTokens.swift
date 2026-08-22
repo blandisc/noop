@@ -124,6 +124,9 @@ public enum MatrizTokens {
     public static let escaleraCeldaGap: CGFloat = 4
     public static let escaleraCeldaRadio: CGFloat = 2.5
     public static let escaleraApagadaAlfa: Double = 0.08
+    /// Las celdas apagadas de la columna de HOY: un pelo más presentes, para marcar la columna sin
+    /// oscurecer el «bajo» (FER-128).
+    public static let escaleraHoyApagadaAlfa: Double = 0.16
 
     // MARK: Alturas de gráfica por forma
 

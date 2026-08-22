@@ -1303,7 +1303,9 @@ struct TodayView: View {
         // de Apple (hoy, con pasos nil) y ya no caía a nada (FER-128, explorador r4).
         let hoyKey = Repository.localDayKey(Date())
         let estHoy = stepsEst.first(where: { $0.day == hoyKey }).map { Int($0.value.rounded()) }
-        let appleHoy = appleDays.first(where: { $0.day == hoyKey })?.steps
+        // La MISMA fila diaria que lee el módulo (`displayDays`), no solo la de Apple.
+        let appleHoy = repo.displayDays.first(where: { $0.day == hoyKey })?.steps
+            ?? appleDays.first(where: { $0.day == hoyKey })?.steps
         let valor = estHoy ?? appleHoy
         return (valor.map(Double.init), estHoy != nil && appleHoy == nil, valor)
     }
@@ -1317,8 +1319,16 @@ struct TodayView: View {
         case "hrv":
             metricDetail = .hrv(resolveMeasured(todayOnly: true) { $0.avgHrv }?.value)
         case "rhr":
-            metricDetail = .restingHR(resolveMeasured(todayOnly: true) { $0.restingHr.map(Double.init) }
-                .map { Int($0.value.rounded()) })
+            // El MISMO número que el módulo y el héroe (FER-75/128): la FC nocturna del motor
+            // (`rhrResolved` de la noche de hoy) y solo si no la hay, la de Apple. La hoja decía
+            // «58 lpm · ANOCHE» bajo un módulo que decía «52 lpm · anoche».
+            let rhrMotor: Double? = {
+                guard let bn = repo.todayPreparedness?.bodyHistory.last,
+                      bn.day == Repository.localDayKey(Date()) else { return nil }
+                return bn.rhrResolved
+            }()
+            metricDetail = .restingHR((rhrMotor ?? resolveMeasured(todayOnly: true) { $0.restingHr.map(Double.init) }?.value)
+                .map { Int($0.rounded()) })
         case "strain":
             metricDetail = .strain(model.displayedDayStrain)
         case "steps":
@@ -1595,7 +1605,11 @@ struct TodayView: View {
         // policy the rich detail reads, from the single source so the two can't diverge (FER-630). Day
         // Strain KEEPS today: its sheet's hero shows the in-progress score, so a line ending yesterday
         // contradicted it. Nightly metrics (rhr/spo2/sleep/resp) are complete each morning anyway.
-        let dropsIncompleteToday = MetricDetailSpec.accumulatesToday(id)
+        // FER-128 (explorador r5): Pasos CONSERVA hoy, como Esfuerzo — su hoja y su módulo ya
+        // enseñan el conteo en curso («9.2 k · hoy»), y una línea que terminaba ayer con el numeral
+        // de hoy arriba se contradecía a sí misma. `accumulatesToday` sigue marcando el día como
+        // parcial donde se ROTULA (FER-264); aquí ya no recorta la serie.
+        let dropsIncompleteToday = false
         return {
             Self.levelsSeries(rows: repo.displayDays, todayKey: Repository.localDayKey(Date()),
                               dropsIncompleteToday: dropsIncompleteToday, pick: pick)

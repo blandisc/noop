@@ -68,7 +68,7 @@ final class HoyMatrizBuilderTests: XCTestCase {
                       sentinel: Preparedness.SentinelRead? = nil,
                       sentinelHistory: [Preparedness.SentinelNight]? = nil,
                       bodyHistory: [Preparedness.BodyNight] = [],
-                      nights: Int = 21) -> Preparedness.Read {
+                      nights: Int = 21, autonomicPossible: Bool = true) -> Preparedness.Read {
         let drivers: [Preparedness.Driver] = [
             .init(axis: .autonomic, state: autonomicOut ? .high : .inRange,
                   orientedZ: autonomicOut ? -1.2 : 0.2),
@@ -83,7 +83,8 @@ final class HoyMatrizBuilderTests: XCTestCase {
         return Preparedness.Read(
             verdict: verdict, drivers: drivers, signalsPresent: 3, signalsTotal: 4,
             maturity: .trusted, autonomicNights: nights, trend: nil,
-            sentinel: sentinel, sentinelHistory: historia, bodyHistory: bodyHistory)
+            sentinel: sentinel, sentinelHistory: historia, bodyHistory: bodyHistory,
+            autonomicPossible: autonomicPossible)
     }
 
     private func inputs(prep: Preparedness.Read?,
@@ -485,6 +486,17 @@ final class HoyMatrizBuilderTests: XCTestCase {
         XCTAssertFalse(fria.contains("out") || fria.contains("fuera"), "el lado frío no es «fuera»: \(fria)")
         XCTAssertFalse(unaSola.contains("ease") || unaSola.contains("calma"), "con una sola juzgada no hay «en calma»: \(unaSola)")
         XCTAssertTrue(ambas.contains("ease") || ambas.contains("calma"), "con las dos juzgadas y ninguna fuera: «en calma»: \(ambas)")
+    }
+
+    /// FER-128 r4/r5: sin una sola noche y sin lectura posible, Sueño dice «aún no leo tus noches»
+    /// (no «Conociéndote»); con lectura posible pero sin noches, «Conociéndote» como su gemela.
+    func test_128_sueno_sin_noches_no_promete_conociendote_sin_lectura_posible() {
+        let keys = LiquidHoyBuilder.dayKeys(endingAt: now, calendar: cal, count: 14)
+        let dias = keys.map { metric(day: $0, sleepMin: nil, eff: nil) }
+        let sin = LiquidHoyBuilder.matriz(inputs(prep: prep(verdict: .lowSignal, autonomicPossible: false), dias: dias))
+        XCTAssertEqual(seccion(sin, id: "sleep")?.sublabel, "no nights recorded yet")
+        let conociendo = LiquidHoyBuilder.matriz(inputs(prep: prep(verdict: .lowSignal), dias: dias))
+        XCTAssertEqual(seccion(conociendo, id: "sleep")?.sublabel, "Getting to know you")
     }
 
     // MARK: 17 — Historia juzgada con SU día (no se repinta)

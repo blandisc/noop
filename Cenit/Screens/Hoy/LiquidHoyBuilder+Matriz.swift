@@ -111,7 +111,7 @@ extension LiquidHoyBuilder {
                 // «Conociéndote» promete un proceso en marcha; sin una sola noche registrada y sin
                 // lectura posible (sin Salud), el héroe ya dijo lo contrario — la misma verdad corta
                 // que su gemela FC (FER-128, explorador r4).
-                if prep == nil || prep?.autonomicPossible == false {
+                if prep?.autonomicPossible == false {
                     return String(localized: "matriz.sueno.sinnoches", defaultValue: "no nights recorded yet")
                 }
                 return String(localized: "hero.title.calibrando", defaultValue: "Getting to know you")
@@ -606,7 +606,7 @@ extension LiquidHoyBuilder {
             // FER-59: la escalerita es la tendencia de tus últimos 7 días — describir la
             // VENTANA, no un «vs» (los cortes son fijos; no es una comparación personal).
             sublabel: stressHoy == nil ? nil
-                : String(localized: "matriz.stress.sub", defaultValue: "last 7 days"),
+                : String(localized: "matriz.stress.sub", defaultValue: "today · 7 days"),
             chartID: "matriz-stress",
             chart: .escalerita(niveles: niveles),
             glifoSello: .estres,
@@ -736,7 +736,7 @@ extension LiquidHoyBuilder {
         return f
     }
     /// A partir de la segunda semana hacia atrás el día de la semana se repite («dom» dos o tres
-    /// veces en 14/20 noches): el rótulo lleva también el día del mes («dom 10»): formato propio del scrub — corto para la celda; las hojas usan `EEEdMMM` («dom 9 ago») — no el de
+    /// veces en 14/20 noches): el rótulo lleva también el día del mes («dom 10»). Formato propio del scrub, corto para la celda; las hojas usan `EEEdMMM` («dom 9 ago») y Tendencias el suyo — no es el de
     /// Tendencias (FER-128, explorador r3).
     static func weekdayDiaFormatter(locale: Locale, calendar: Calendar) -> DateFormatter {
         let f = DateFormatter()

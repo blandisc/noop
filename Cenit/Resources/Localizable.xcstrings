@@ -977,6 +977,23 @@
         }
       }
     },
+    "guardian.hoja.racha.noche" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your two signals woke up outside your pattern, for the %@ night."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus dos señales amanecieron fuera de tu patrón, por %@ noche."
+          }
+        }
+      }
+    },
     "guardian.regla.clave" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3853,7 +3870,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "aún no hay noches registradas"
+            "value" : "aún no leo tus noches"
           }
         }
       }
@@ -10877,7 +10894,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Por encima de tu base, buena señal."
+            "value" : "Arriba de tu base, buena señal."
           }
         }
       }
@@ -25912,7 +25929,7 @@
       }
     },
     "hoy.desconectado.cache" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -25929,7 +25946,7 @@
       }
     },
     "hoy.desconectado.hint" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -25963,7 +25980,7 @@
       }
     },
     "hoy.noche.noregistrada" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -25980,7 +25997,7 @@
       }
     },
     "hoy.senal.insuficiente" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -25997,7 +26014,7 @@
       }
     },
     "hoy.sync.pendiente" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -26268,19 +26285,19 @@
         }
       }
     },
-    "HRV is how much the time between your heartbeats varies, in milliseconds, while you sleep. More variation usually means a nervous system that's better rested. What matters isn't the number itself, but how it compares with your own average." : {
+    "HRV is how much the time between your heartbeats varies, in milliseconds, across your day. More variation usually means a nervous system that's better rested. What matters isn't the number itself, but how it compares with your own average." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "HRV is how much the time between your heartbeats varies, in milliseconds, while you sleep. More variation usually means a nervous system that's better rested. What matters isn't the number itself, but how it compares with your own average."
+            "value" : "HRV is how much the time between your heartbeats varies, in milliseconds, across your day. More variation usually means a nervous system that's better rested. What matters isn't the number itself, but how it compares with your own average."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "La VFC es cuánto varía el tiempo entre tus latidos, en milisegundos, mientras duermes. Más variación suele indicar un sistema nervioso más descansado. Lo que importa no es el número en sí, sino cómo se compara con tu propio promedio."
+            "value" : "La VFC es cuánto varía el tiempo entre tus latidos, en milisegundos, a lo largo de tu día. Más variación suele indicar un sistema nervioso más descansado. Lo que importa no es el número en sí, sino cómo se compara con tu propio promedio."
           }
         }
       }
@@ -30512,7 +30529,7 @@
       }
     },
     "manual.contexto.carga" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -30529,7 +30546,7 @@
       }
     },
     "manual.contexto.carga.sub" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -30546,7 +30563,7 @@
       }
     },
     "manual.contexto.esfuerzo" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -30563,7 +30580,7 @@
       }
     },
     "manual.contexto.esfuerzo.sub" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -30580,7 +30597,7 @@
       }
     },
     "manual.contexto.estres" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -30597,7 +30614,7 @@
       }
     },
     "manual.contexto.estres.sub" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -30614,7 +30631,7 @@
       }
     },
     "manual.contexto.intro" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -30665,7 +30682,7 @@
       }
     },
     "manual.contexto.porque" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -30682,7 +30699,7 @@
       }
     },
     "manual.contexto.sec.porque" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -30699,7 +30716,7 @@
       }
     },
     "manual.contexto.sec.que" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -30716,7 +30733,7 @@
       }
     },
     "manual.contexto.titulo" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -30733,7 +30750,7 @@
       }
     },
     "manual.contexto.vfc" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -30750,7 +30767,7 @@
       }
     },
     "manual.contexto.vfc.sub" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -31453,7 +31470,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ · respiración fuera"
+            "value" : "%@ · se salió la respiración"
           }
         }
       }
@@ -31470,7 +31487,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ · temperatura fuera"
+            "value" : "%@ · se salió la temperatura"
           }
         }
       }
@@ -31748,18 +31765,18 @@
       }
     },
     "matriz.stress.sub" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "last 7 days"
+            "value" : "today · 7 days"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "últimos 7 días"
+            "value" : "hoy · 7 días"
           }
         }
       }
@@ -31799,7 +31816,7 @@
       }
     },
     "matriz.vfc.sub" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -34739,19 +34756,19 @@
         }
       }
     },
-    "No HRV from last night. That can happen if you didn't wear your Apple Watch to sleep, or the night was too short for it to record." : {
+    "No HRV today. That can happen if you didn't wear your Apple Watch, or it didn't get a long enough stretch to record." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No HRV from last night. That can happen if you didn't wear your Apple Watch to sleep, or the night was too short for it to record."
+            "value" : "No HRV today. That can happen if you didn't wear your Apple Watch, or it didn't get a long enough stretch to record."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sin VFC de anoche. Puede pasar si no dormiste con tu Apple Watch, o si la noche fue muy corta para registrarla."
+            "value" : "Sin VFC hoy. Puede pasar si no traías tu Apple Watch, o si no tuvo un tramo lo bastante largo para registrarla."
           }
         }
       }

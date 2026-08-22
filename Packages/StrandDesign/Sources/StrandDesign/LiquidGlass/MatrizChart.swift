@@ -889,10 +889,15 @@ public struct MatrizEscalerita: View {
                     let celda = CGRect(x: x0, y: y0, width: max(paso - gap, 1), height: max(altoFila - gap, 1))
                     let camino = Path(roundedRect: celda, cornerRadius: MatrizTokens.escaleraCeldaRadio)
                     if let nivel, k <= nivel {
+                        // HOY pleno solo cuando hay CALOR (ocre/siena): en «bajo» (tinta) el alfa pleno
+                        // lo volvía la celda más oscura de la rejilla — alfa-recencia contra
+                        // color-calor (FER-128, explorador r5). La columna de hoy se marca por su rejilla.
+                        let pleno = (esHoy || seleccionada) && nivel > 0
                         ctx.fill(camino, with: .color(Self.colorNivel(nivel).opacity(
-                            (esHoy || seleccionada) ? MatrizChartDraw.hoyAlfa : MatrizTokens.heatHistAlfa)))
+                            pleno ? MatrizChartDraw.hoyAlfa : MatrizTokens.heatHistAlfa)))
                     } else {
-                        ctx.fill(camino, with: .color(LiquidColor.tinta900.opacity(MatrizTokens.escaleraApagadaAlfa)))
+                        let alfa = esHoy ? MatrizTokens.escaleraHoyApagadaAlfa : MatrizTokens.escaleraApagadaAlfa
+                        ctx.fill(camino, with: .color(LiquidColor.tinta900.opacity(alfa)))
                     }
                 }
                 if seleccionada {

@@ -157,13 +157,13 @@ extension MetricInfo {
         MetricInfo(
             id: "hrv",
             name: "HRV",
-            headline: "HRV is how much the time between your heartbeats varies, in milliseconds, while you sleep. More variation usually means a nervous system that's better rested. What matters isn't the number itself, but how it compares with your own average.",
+            headline: "HRV is how much the time between your heartbeats varies, in milliseconds, across your day. More variation usually means a nervous system that's better rested. What matters isn't the number itself, but how it compares with your own average.",
             displayValue: value.map { "\(Int($0.rounded()))" } ?? "—",
             unit: String(localized: "ms"),
             headerTint: value == nil ? .neutral : .metric,
             bands: [],
             note: value == nil
-                ? "No HRV from last night. That can happen if you didn't wear your Apple Watch to sleep, or the night was too short for it to record."
+                ? "No HRV today. That can happen if you didn't wear your Apple Watch, or it didn't get a long enough stretch to record."
                 : "HRV is personal. There are no universal good/bad thresholds: only your trend over time.",
             method: Method(
                 prose: "The number you see is the HRV Apple records: SDNN, the overall spread of the time between your heartbeats. Your daily verdict does NOT read this signal (SDNN): it stands on your resting heart rate and your sleep, and on your nocturnal RMSSD when the night is dense enough. SDNN is shown here as a reference against your own average. The trend uses a different HRV measure, RMSSD, recomputed from the beat-to-beat intervals of your densest nights; RMSSD tracks the vagal, rest-and-repair branch specifically, while SDNN blends both branches, so the two won't always move together.",

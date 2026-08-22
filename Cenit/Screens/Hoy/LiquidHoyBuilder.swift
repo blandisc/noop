@@ -216,7 +216,7 @@ enum LiquidHoyBuilder {
         let temp = LiquidGuardianHoja.Senal(
             id: "temp",
             etiqueta: String(localized: "Skin temperature"),
-            valor: tempVal, tono: LiquidColor.ambar, fuera: tempFuera,
+            valor: tempVal, tono: LiquidColor.doradoTemp, fuera: tempFuera,
             icono: .termo,
             a11y: a11ySenal(String(localized: "Skin temperature"), tempVal, fuera: tempFuera, comparando: comparando),
             serie: tempSerie)
@@ -253,7 +253,7 @@ enum LiquidHoyBuilder {
                 hechas: hechas, necesarias: necesarias)
         }()
 
-        return LiquidGuardianHoja(
+        var hoja = LiquidGuardianHoja(
             // #inject r6 · «Guardian» a secas (decisión del dueño: le gusta más sin artículo).
             titulo: String(localized: "Guardian"),
             explicacion: String(localized: "It watches two signals from your night, your skin temperature and your breathing, against your own pattern from recent weeks. It doesn't vote on your verdict: it only pushes toward a lighter day when both drift out together. An approximation, not a diagnosis."),
@@ -282,6 +282,9 @@ enum LiquidHoyBuilder {
                 // contrato de procedencia de las 9 hojas de métrica).
                 origenSufijo: estado == .sinLectura ? nil : String(localized: "last night")),
             calibracion: calibracion)
+        // Con racha el chip y el sello del módulo van en rojo: la hoja también (FER-56, espejo).
+        hoja.racha = estado == .juntas && (prep?.sentinel?.streakNights ?? 0) >= 2
+        return hoja
     }
 
     /// Atajo de compatibilidad: hoja sin series (previews / callers viejos).
@@ -317,8 +320,12 @@ enum LiquidHoyBuilder {
                     false, false)
         case .juntas:
             let streak = prep?.sentinel?.streakNights ?? 0
+            // La racha con su ordinal, como el chip («· 3.ª noche»): la hoja decía «por segunda
+            // noche» aunque fueran tres (FER-128, quisquilloso r5).
             let conteo = streak >= 2
-                ? String(localized: "Your two signals woke up outside your pattern, for a second night.")
+                ? String(format: String(localized: "guardian.hoja.racha.noche",
+                                        defaultValue: "Your two signals woke up outside your pattern, for the %@ night."),
+                         LiquidHoyBuilder.ordinalMarcador(streak))
                 : String(localized: "Your two signals woke up outside your pattern together.")
             return (String(localized: "Both out"),
                     nil,
@@ -470,7 +477,7 @@ enum LiquidHoyBuilder {
         let a11y = a11yDomino(temp: tempPts, resp: respPts, encendida: encendida)
         return .init(
             carriles: [
-                .init(id: "temp", icono: .termo, tono: LiquidColor.ambar,
+                .init(id: "temp", icono: .termo, tono: LiquidColor.doradoTemp,
                       noches: tempPts, a11y: String(localized: "Skin temperature")),
                 .init(id: "resp", icono: .resp, tono: LiquidColor.azul,
                       noches: respPts, a11y: String(localized: "Breathing")),

@@ -1093,8 +1093,10 @@ struct LiquidMetricSheetView: View {
     /// misma noche. Lo que se mide despierto (pasos, esfuerzo, FC del día) conserva «hoy».
     private var selloHoy: String {
         guard nightly else { return String(localized: "TODAY · \(Self.diaCorto(Date()))") }
-        let anoche = Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date()
-        return String(localized: "LAST NIGHT · \(Self.diaCorto(anoche))")
+        // La noche se llama por su día de DESPERTAR en toda la app (la clave de `displayDays`, el
+        // último punto de la gráfica de esta hoja, el scrub de la Matriz): «ANOCHE · 22 ago» es la
+        // noche que terminó hoy. «Hoy − 1» apuntaba a otro punto de la misma gráfica (FER-128, r5).
+        return String(localized: "LAST NIGHT · \(Self.diaCorto(Date()))")
     }
 
     /// «MEDIA · 30 DÍAS» / «MEDIA · 30 NOCHES» / «MEDIA · 6 MESES» / «MEDIA · 1 AÑO» /
@@ -1271,7 +1273,8 @@ struct LiquidMetricSheetView: View {
                 ? String(localized: "\(d.total) nights with data in this range")
                 : String(localized: "\(d.total) days with data in this range")
             LiquidFraseNivel(nivel: nil, conteo: total, tono: tono,
-                             sinLectura: String(localized: "No reading today"))
+                             sinLectura: nightly ? String(localized: "No reading last night")
+                                                 : String(localized: "No reading today"))
         }
     }
 
