@@ -6222,6 +6222,23 @@
         }
       }
     },
+    "%@, read, not compared yet, %@." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, read, not compared yet, %@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, leída, todavía sin comparar, %@."
+          }
+        }
+      }
+    },
     "%@, no data, %@." : {
       "extractionState" : "manual",
       "localizations" : {
