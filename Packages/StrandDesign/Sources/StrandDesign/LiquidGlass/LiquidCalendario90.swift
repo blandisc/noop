@@ -557,7 +557,11 @@ public struct LiquidLeyendaNiveles: View {
                     ForEach(niveles) { item($0) }
                 }
             } else {
-                HStack(spacing: LiquidSpace.s400) {
+                // Un layout de FLUJO, no un HStack: con cuatro peldaños en español («Una señal
+                // fuera» es largo) a 1× no caben en una fila y el HStack partía UNA etiqueta en
+                // dos líneas mientras las otras tres quedaban en una — la fila dispareja que
+                // se vio en el simulador. El flujo pasa el peldaño entero al renglón siguiente.
+                LiquidFlujoLeyenda(espacioH: LiquidSpace.s400, espacioV: LiquidSpace.s200) {
                     ForEach(niveles) { item($0) }
                 }
             }
@@ -592,6 +596,42 @@ public struct LiquidLeyendaNiveles: View {
     /// Lo que dicta cada parada: swatch y palabra combinados en una sola frase por peldaño.
     public static func dictado(_ nivel: LiquidCalendario90.NivelLeyenda) -> String {
         nivel.etiqueta
+    }
+}
+
+/// Layout de flujo para leyendas: coloca los hijos en fila y pasa al renglón siguiente el
+/// que ya no cabe ENTERO — nunca parte un hijo en dos. Es lo que un `HStack` no sabe hacer.
+public struct LiquidFlujoLeyenda: Layout {
+    private let espacioH: CGFloat
+    private let espacioV: CGFloat
+
+    public init(espacioH: CGFloat, espacioV: CGFloat) {
+        self.espacioH = espacioH
+        self.espacioV = espacioV
+    }
+
+    public func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let ancho = proposal.width ?? .infinity
+        var x: CGFloat = 0, y: CGFloat = 0, altoFila: CGFloat = 0, anchoMax: CGFloat = 0
+        for sub in subviews {
+            let t = sub.sizeThatFits(.unspecified)
+            if x > 0 && x + t.width > ancho { x = 0; y += altoFila + espacioV; altoFila = 0 }
+            x += t.width + espacioH
+            altoFila = max(altoFila, t.height)
+            anchoMax = max(anchoMax, x - espacioH)
+        }
+        return CGSize(width: ancho == .infinity ? anchoMax : min(ancho, anchoMax), height: y + altoFila)
+    }
+
+    public func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var x = bounds.minX, y = bounds.minY, altoFila: CGFloat = 0
+        for sub in subviews {
+            let t = sub.sizeThatFits(.unspecified)
+            if x > bounds.minX && x + t.width > bounds.maxX { x = bounds.minX; y += altoFila + espacioV; altoFila = 0 }
+            sub.place(at: CGPoint(x: x, y: y), proposal: .unspecified)
+            x += t.width + espacioH
+            altoFila = max(altoFila, t.height)
+        }
     }
 }
 

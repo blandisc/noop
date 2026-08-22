@@ -399,8 +399,11 @@ struct PreparacionDetalleModelo {
     static func inicialesDesde(_ inicio: Date, calendario: Calendar = .current) -> [String] {
         let simbolos = calendario.shortWeekdaySymbols
         guard simbolos.count == 7 else { return Array(repeating: "", count: 7) }
+        // Las SIETE, no cuatro con huecos. Heredé el ritmo disperso del calendario de 90
+        // («L · M · V · D»), pero aquel lo necesita porque su celda mide ~20 pt y siete
+        // iniciales no caben; aquí la celda mide ~46 y sobra sitio. Con huecos, la canaleta
+        // del mosaico se leía como incompleta, no como ritmo (visto en el simulador).
         return (0..<7).map { i in
-            guard i % 2 == 0 else { return "" }
             let d = calendario.date(byAdding: .day, value: i, to: inicio) ?? inicio
             // `weekday` es 1-based (1 = domingo), y `shortWeekdaySymbols` es 0-based.
             return simbolos[calendario.component(.weekday, from: d) - 1]
