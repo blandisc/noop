@@ -104,7 +104,7 @@ private struct EntrenarMapCell: View {
     var body: some View {
         EntrenarView(openRoutine: { _ in }, openBreathe: {}, openIntervals: {},
                      openHistory: {}, openWeeklyPlan: {}, openRoutines: {}, openRestDay: {},
-                     openWorkoutSession: { _ in })
+                     openWorkoutSession: { _ in }, openMuscleMap: {})
             .environmentObject(model.repo)
             .environment(model)
             .environmentObject(TabRouter())
@@ -409,7 +409,8 @@ private struct EntrenarFlowsMapCell: View {
                         openWeeklyPlan: { path.append(Route.weeklyPlan) },
                         openRoutines: { path.append(Route.weeklyPlan) },
                         openRestDay: { path.append(Route.restDay) },
-                        openWorkoutSession: { path.append($0) }
+                        openWorkoutSession: { path.append($0) },
+                        openMuscleMap: { path.append(MuscleVolumeRoute()) }
                     )
                     .navigationDestination(for: Route.self) { destination($0) }
                     .navigationDestination(for: RoutineEditorRoute.self) { route in

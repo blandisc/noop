@@ -32,29 +32,57 @@ public struct WeekTokens: View {
     }
 
     public var body: some View {
-        let strip = HStack(spacing: 0) {
+        let cells = HStack(spacing: 0) {
             ForEach(Array(days.enumerated()), id: \.offset) { i, day in
                 VStack(spacing: CenitMetrics.space1 + 2) {
                     token(day)
                     Text(verbatim: i < labels.count ? labels[i] : "")
-                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                        .entrenarWeekDayLabel().foregroundStyle(theme.inkTertiary)
                 }
                 .frame(maxWidth: .infinity)
-                // Sin esto la tira se leía «L M X J V S D» y el estado de cada día —el dato
-                // entero de la fila— no llegaba a quien no la ve.
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(label(for: day, dayName: i < labels.count ? labels[i] : ""))
             }
         }
         .frame(minHeight: EntrenarMetrics.row)
         .contentShape(Rectangle())
 
         if let action {
-            Button(action: action) { strip }
+            // Un `Button` es SIEMPRE una hoja de accesibilidad: VoiceOver no baja a sus hijos. Sin un
+            // label propio en el Button, las 7 etiquetas por día (puestas abajo en la rama sin acción)
+            // quedan selladas dentro de un subárbol que el botón no hereda de forma confiable. Aquí se
+            // fija el label compuesto explícito — «L, entrenado, empuje. M, descanso. …» — para que la
+            // tira tocable diga lo mismo que la tira estática.
+            Button(action: action) { cells }
                 .buttonStyle(EntrenarPressStyle())
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(weekLabel)
                 .accessibilityAddTraits(.isButton)
         } else {
-            strip
+            // Sin esto la tira se leía «L M X J V S D» y el estado de cada día —el dato entero de la
+            // fila— no llegaba a quien no la ve.
+            HStack(spacing: 0) {
+                ForEach(Array(days.enumerated()), id: \.offset) { i, day in
+                    VStack(spacing: CenitMetrics.space1 + 2) {
+                        token(day)
+                        Text(verbatim: i < labels.count ? labels[i] : "")
+                            .entrenarWeekDayLabel().foregroundStyle(theme.inkTertiary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(label(for: day, dayName: i < labels.count ? labels[i] : ""))
+                }
+            }
+            .frame(minHeight: EntrenarMetrics.row)
+            .contentShape(Rectangle())
+        }
+    }
+
+    /// La semana entera en un solo label, para el Button (VoiceOver nunca entra a sus hijos): junta
+    /// las 7 etiquetas por día con un punto y espacio.
+    private var weekLabel: Text {
+        Array(days.enumerated()).reduce(Text(verbatim: "")) { acc, pair in
+            let (i, day) = pair
+            let sep = i == 0 ? Text(verbatim: "") : Text(verbatim: ". ")
+            return acc + sep + label(for: day, dayName: i < labels.count ? labels[i] : "")
         }
     }
 

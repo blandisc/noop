@@ -138,6 +138,10 @@ public enum EntrenarMetrics {
     public static let familyDot: CGFloat = 9
     /// El aro de papel que lo recorta cuando cae sobre un fondo ocupado (una miniatura, una tarjeta).
     public static let familyDotKnockout: CGFloat = 15
+    /// Cuánto se indenta el subtítulo de una fila bajo un `EntrenarFamilyDot`, para que quede
+    /// alineado con el NOMBRE (después del punto), no con el punto mismo — el diámetro del punto
+    /// (9) más el aire que lo separa del texto en esa misma fila (7).
+    public static let familyDotIndent: CGFloat = familyDot + 7
 
     // MARK: - Ritmo de la landing («Ritmo 1b», FER-130)
     //
@@ -239,6 +243,35 @@ public extension View {
     }
 }
 
+/// El chip de «marca» de la Bitácora (handoff «Niveles», tokens.json «9.5+1.2 chips»): 9.5 pt / 600 /
+/// tracking 1.2 — el mismo escalón de tipografía que las columnas del calendario, un paso más chico
+/// que el kicker de cabecera. El color (verdeProfundo sobre su propio tinte al 10 %) lo pone quien
+/// arma el chip, no este modificador.
+///
+/// `relativeTo: .caption2` (quisquilloso ronda 2): a diferencia de `entrenarCabeceraKicker` —un
+/// rótulo fijo, «chrome»— esta es una PALABRA leída («marca»/«marcas»), así que sí debe crecer con
+/// Dynamic Type.
+public extension View {
+    func entrenarMarcaChip() -> some View {
+        self.font(InstrumentoType.grotesk(9.5, weight: .semibold, relativeTo: .caption2))
+            .tracking(1.2)
+    }
+}
+
+/// La inicial del día bajo cada token de `WeekTokens` (handoff «Niveles», prototipo línea 55):
+/// 10.5 pt / 600 / tracking 1.4 — un escalón entre el chip de marca (9.5) y el kicker de cabecera
+/// (11.5), porque siete letras solas necesitan más aire que un número de chip para no verse
+/// apachurradas contra su vecino.
+///
+/// `relativeTo: .caption2` (quisquilloso ronda 2): es contenido leído (la inicial del día), no
+/// chrome fijo, así que escala con Dynamic Type como el resto del texto de la tira.
+public extension View {
+    func entrenarWeekDayLabel() -> some View {
+        self.font(InstrumentoType.grotesk(10.5, weight: .semibold, relativeTo: .caption2))
+            .tracking(1.4)
+    }
+}
+
 #if DEBUG
 #Preview("Entrenar · cabecera kicker") {
     Text(verbatim: "Entrenar · Sáb 15 ago")
@@ -275,6 +308,13 @@ public extension View {
                         }
                     }
             }
+        }
+        Text("NIVELES · CHIP DE MARCA Y ETIQUETA DE DÍA").instrumentoOverline().foregroundStyle(t.inkTertiary)
+        HStack(spacing: 12) {
+            Text("1 mark").entrenarMarcaChip().foregroundStyle(t.positiveText)
+                .padding(.horizontal, CenitMetrics.space2).padding(.vertical, CenitMetrics.space1)
+                .background(t.tint(t.positiveText), in: Capsule())
+            Text(verbatim: "L").entrenarWeekDayLabel().foregroundStyle(t.inkTertiary)
         }
     }
     .padding(24)
