@@ -11,7 +11,9 @@ import StrandDesign
 
 struct SessionKeypad: View {
     let theme: InstrumentoTheme
-    /// Label for the ± quick-step pill (metric «±2,5», imperial «±5»).
+    /// Magnitud del paso rápido, con el signo `±` (métrico «±2,5», imperial «±5», reps «±1») — la
+    /// rejilla la parte en las dos teclas «+…»/«−…» (FER-134 ítem 8; antes era el texto de una sola
+    /// píldora que solo sumaba).
     let stepLabel: String
     /// Whether «copiar anterior» is available (there's a «last time» to copy).
     let canCopyPrevious: Bool
@@ -23,17 +25,29 @@ struct SessionKeypad: View {
     let onBackspace: () -> Void
     let onNext: () -> Void
     let onCopyPrevious: () -> Void
+    /// Sube el valor de la celda activa un paso (tecla «+…» de la rejilla).
     let onStep: () -> Void
+    /// Baja el valor de la celda activa un paso (tecla «−…» de la rejilla). Mismo paso que `onStep`,
+    /// dirección opuesta — antes el teclado solo subía (FER-134 ítem 8: la rejilla del handoff trae
+    /// las dos direcciones como teclas propias, ya no una sola píldora que solo sumaba).
+    var onStepDown: () -> Void = {}
+    /// Habilita la tecla «−…»: se atenúa (no desaparece) donde no hay una dirección de baja real —
+    /// el editor de rutina, por ejemplo, prescribe (solo sube), no registra en vivo (FER-134 ítem 8).
+    var stepDownEnabled: Bool = true
     /// «Copiar arriba» (FER-88 · E7, co-edición quirúrgica): copia el valor de la MISMA columna de
     /// la serie ANTERIOR dentro de la MISMA prescripción — un atajo del editor de rutina, no una
     /// lectura de historial (eso es `onCopyPrevious`, que el editor mantiene apagado a propósito).
-    /// `nil` oculta el accesorio por completo (mismo patrón que `onRPE`): la sesión en vivo no lo
-    /// pasa, así que nunca dibuja una pastilla muerta.
+    /// `nil` oculta el accesorio por completo: la sesión en vivo no lo pasa, así que nunca dibuja una
+    /// pastilla muerta.
     var onCopyAbove: (() -> Void)? = nil
-    /// Opens the RPE picker. nil until RPE capture lands (FER-815) → the «RPE ▾» accessory is hidden, not
-    /// shown disabled (no dead buttons).
-    var onRPE: (() -> Void)? = nil
     var onPlates: () -> Void = {}
+    /// Palomea (o desmarca) la serie de la celda activa — la MISMA acción que el ✓ de `SetTable`
+    /// (FER-134 ítem 8: la rejilla absorbe la confirmación como su propia tecla «✓ Serie», no un
+    /// accesorio aparte). La sesión en vivo pasa aquí `confirmOrToggleSet(ei:si:)`.
+    var onConfirmSet: () -> Void = {}
+    /// Habilita «✓ Serie»: se atenúa (no desaparece) donde no hay una serie que palomear — el editor
+    /// de rutina prescribe, no registra (mismo motivo que `stepDownEnabled`).
+    var confirmSetEnabled: Bool = true
     /// Hides the keypad without registering anything (canvas pass 2026-07-15) — every keystroke has
     /// already committed live to the model, so dismissing loses nothing.
     var onHide: () -> Void = {}
@@ -45,9 +59,8 @@ struct SessionKeypad: View {
     var isPaused: Bool = false
     /// «QUEDABAN» — RIR (reps in reserve) capturado junto con la serie (FER-134, prototipo «Sesión en
     /// vivo»): 0 · 1 · 2 · 3 · 4+, índice en `Self.rirLabels`. Se guarda como RPE = 10 − RIR al
-    /// palomear (mismo campo `WorkingSet.rpe` que ya usa `onRPE` — no es un dato nuevo, es otra cara
-    /// del mismo). `nil` oculta la fila entera (mismo patrón que `onRPE`/`onCopyAbove`): sin un
-    /// destino que la lea, la fila sería un control muerto.
+    /// palomear (mismo campo `WorkingSet.rpe`). `nil` oculta la fila entera (mismo patrón que
+    /// `onCopyAbove`): sin un destino que la lea, la fila sería un control muerto.
     var selectedRIR: Int? = nil
     var onSelectRIR: ((Int) -> Void)? = nil
 
@@ -133,6 +146,10 @@ struct SessionKeypad: View {
     }
 
     // MARK: Accessory bar
+    //
+    // FER-134 ítem 8: la rejilla de abajo absorbe el paso (`stepLabel`), «RPE ▾» (lo lee el segmento
+    // QUEDABAN) y «discos» (ahora tecla propia) — esta fila se queda solo con lo que la rejilla NO
+    // dibuja: ocultar, pausa, copiar (anterior/arriba) y «Siguiente».
 
     private var accessoryBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -163,12 +180,6 @@ struct SessionKeypad: View {
                 if let onCopyAbove {
                     pill(String(localized: "copy above"), action: onCopyAbove)
                 }
-                pill(stepLabel, action: onStep)
-                // FER-815: each accessory appears only when its function exists — never a permanent
-                // disabled placeholder. RPE shows once a handler is wired; plates once the math is on.
-                if let onRPE { pill("RPE ▾", action: onRPE) }
-                // r16: fuera el glifo «⛓» (tofu en Grotesk) — la pastilla queda en el puro «discos».
-                if platesEnabled { pill(String(localized: "plates"), action: onPlates) }
                 Spacer(minLength: 4)
                 Button(action: onNext) {
                     Text("Next").font(StrandFont.subhead).fontWeight(.semibold)
@@ -179,7 +190,7 @@ struct SessionKeypad: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text("Next field"))
             }
-            .padding(.horizontal, 16).padding(.vertical, 8)
+            .padding(.horizontal, CenitMetrics.cardPadding).padding(.vertical, CenitMetrics.space2)
         }
     }
 
@@ -196,51 +207,94 @@ struct SessionKeypad: View {
         .disabled(!enabled)
     }
 
-    // MARK: Keys
+    // MARK: Keys — rejilla 4×4 (FER-134 ítem 8, handoff «Sesión en vivo» bloque teclado)
+    //
+    // Fila 1: 1 · 2 · 3 · discos — Fila 2: 4 · 5 · 6 · +paso — Fila 3: 7 · 8 · 9 · −paso —
+    // Fila 4: , · 0 · ⌫ · ✓ Serie. Las cuatro teclas de la columna derecha son ACCIÓN (fondo tinta,
+    // texto papel); las doce numéricas son DATO (fondo `keyCap`, texto tinta) — el mismo contraste
+    // que ya distinguía «Siguiente» del resto, ahora dentro de la rejilla en vez de en la barra.
+
+    /// Una tecla de la rejilla: numérica (dato) o de acción (comando).
+    private enum Key: Hashable { case digit(Character), comma, backspace, plates, stepUp, stepDown, confirmSet }
 
     private var keys: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: EntrenarMetrics.keyGap) {
             ForEach(keyRows, id: \.self) { row in
-                HStack(spacing: 6) {
+                HStack(spacing: EntrenarMetrics.keyGap) {
                     ForEach(row, id: \.self) { key in keyButton(key) }
                 }
             }
         }
-        .padding(.horizontal, 8).padding(.top, 8).padding(.bottom, 22)   // bottom respects the home indicator
+        // Mismo inset que la fila QUEDABAN y la barra de accesorios: en el prototipo las tres viven
+        // en el mismo contenedor (10 16 18), así que el borde de «1 · 4 · 7 · ,» se alinea con ellas.
+        .padding(.horizontal, CenitMetrics.cardPadding).padding(.top, CenitMetrics.space2).padding(.bottom, 22)   // bottom respects the home indicator
     }
 
-    private var keyRows: [[String]] {
-        [["1", "2", "3"], ["4", "5", "6"], ["7", "8", "9"], [",", "0", "⌫"]]
+    private var keyRows: [[Key]] {
+        [
+            [.digit("1"), .digit("2"), .digit("3"), .plates],
+            [.digit("4"), .digit("5"), .digit("6"), .stepUp],
+            [.digit("7"), .digit("8"), .digit("9"), .stepDown],
+            [.comma, .digit("0"), .backspace, .confirmSet]
+        ]
     }
 
-    @ViewBuilder private func keyButton(_ key: String) -> some View {
+    /// La magnitud desnuda de `stepLabel` (quita el `±`) para rotular «+…»/«−…» — reps «±1» da
+    /// «+1»/«−1», kg «±2,5» da «+2,5»/«−2,5», libras «±5» da «+5»/«−5».
+    private var stepMagnitude: String { stepLabel.hasPrefix("±") ? String(stepLabel.dropFirst()) : stepLabel }
+
+    @ViewBuilder private func keyButton(_ key: Key) -> some View {
         switch key {
-        case ",":
-            flatKey(",") { onComma() }
-        case "⌫":
-            flatKey("⌫", size: 17) { onBackspace() }
-        default:
-            Button { if let c = key.first { onDigit(c) } } label: {
-                Text(key)
-                    .font(.system(size: 20)).foregroundStyle(theme.ink) // token-exempt: numeral de tecla del keypad
-                    .frame(maxWidth: .infinity).frame(height: 46)
-                    .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(theme.keyCap)) // token-exempt: geometría de dato
-                    .shadow(color: theme.ink.opacity(0.08), radius: 0, x: 0, y: 1) // token-exempt: sombra sutil <0.10
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(Text(key))
+        case .comma:
+            digitKey(",") { onComma() }
+        case .backspace:
+            digitKey("⌫", size: 17, accessibilityLabel: Text("Delete")) { onBackspace() }
+        case .digit(let c):
+            digitKey(String(c)) { onDigit(c) }
+        case .plates:
+            actionKey(String(localized: "plates"), enabled: platesEnabled,
+                      accessibilityLabel: Text("plates"), action: onPlates)
+        case .stepUp:
+            actionKey("+\(stepMagnitude)", accessibilityLabel: Text("Increase by \(stepMagnitude)"), action: onStep)
+        case .stepDown:
+            actionKey("−\(stepMagnitude)", enabled: stepDownEnabled,
+                      accessibilityLabel: Text("Decrease by \(stepMagnitude)"), action: onStepDown)
+        case .confirmSet:
+            actionKey(String(localized: "✓ Serie"), enabled: confirmSetEnabled,
+                      accessibilityLabel: Text("Mark set as done"), action: onConfirmSet)
         }
     }
 
-    private func flatKey(_ glyph: String, size: CGFloat = 20, action: @escaping () -> Void) -> some View {
+    /// Tecla DATO — el keycap blanco calcado de UIKit (`keyCap`), numerales o glifos de edición.
+    private func digitKey(_ glyph: String, size: CGFloat = 20, accessibilityLabel: Text? = nil,
+                           action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(glyph).font(.system(size: size)).foregroundStyle(theme.inkSecondary) // token-exempt: tamaño de tecla derivado (parámetro)
-                .frame(maxWidth: .infinity).frame(height: 46)
+            Text(glyph)
+                .font(.system(size: size)).foregroundStyle(theme.ink) // token-exempt: numeral de tecla del keypad
+                .frame(maxWidth: .infinity).frame(height: EntrenarMetrics.keyCap)
+                .background(RoundedRectangle(cornerRadius: EntrenarMetrics.keyRadius, style: .continuous).fill(theme.keyCap))
+                .shadow(color: theme.ink.opacity(0.08), radius: 0, x: 0, y: 1) // token-exempt: sombra sutil <0.10
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(Text(glyph == "⌫" ? "Delete" : glyph))
+        .accessibilityLabel(accessibilityLabel ?? Text(glyph))
+    }
+
+    /// Tecla ACCIÓN — fondo tinta (`theme.ink`, NO un hue: es tinta900), texto papel, glifo/etiqueta
+    /// 13/600. Se atenúa (no desaparece) cuando `enabled` es falso para que la rejilla no salte.
+    private func actionKey(_ label: String, enabled: Bool = true, accessibilityLabel: Text,
+                            action: @escaping () -> Void) -> some View {
+        Button(action: { if enabled { action() } }) {
+            Text(label)
+                .font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.paper)
+                .frame(maxWidth: .infinity).frame(height: EntrenarMetrics.keyCap)
+                .background(RoundedRectangle(cornerRadius: EntrenarMetrics.keyRadius, style: .continuous).fill(theme.ink))
+                .opacity(enabled ? 1 : StrandPalette.disabledOpacity)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(!enabled)
+        .accessibilityLabel(accessibilityLabel)
     }
 }
 

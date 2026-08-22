@@ -236,6 +236,17 @@ public enum EntrenarMetrics {
     public static let doneRowThumb: CGFloat = 28
     /// El thumb de un ejercicio PRÓXIMO en el acordeón (handoff «Sesión en vivo» §7).
     public static let comingRowThumb: CGFloat = 34
+
+    // MARK: - Rejilla 4×4 del teclado propio (FER-134 ítem 8, handoff «Sesión en vivo» bloque teclado)
+
+    /// El lado de cada tecla de la rejilla (numéricas y las 4 de acción) — el mismo mínimo de toque
+    /// que `CenitMetrics.touchTarget`, nombrado aquí porque la rejilla lo fija por diseño (handoff),
+    /// no por regla de accesibilidad genérica.
+    public static let keyCap: CGFloat = 44
+    /// El radio de esquina de cada tecla.
+    public static let keyRadius: CGFloat = 12
+    /// El aire horizontal y vertical entre teclas de la rejilla.
+    public static let keyGap: CGFloat = 6
 }
 
 /// El estado de una celda del calendario de entrenamiento. Es un token porque lo consumen dos

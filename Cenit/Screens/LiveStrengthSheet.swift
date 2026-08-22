@@ -1060,8 +1060,17 @@ struct LiveStrengthSheet: View {
     /// activa) y registra con su descanso.
     private func toggleEntrenarSet(ei: Int, run: StrengthSessionModel.ExerciseRun, rowId: String) {
         guard let si = run.sets.firstIndex(where: { $0.id == rowId }) else { return }
-        let set = run.sets[si]
-        let isCurrent = si == run.currentSet && !set.done
+        confirmOrToggleSet(ei: ei, si: si)
+    }
+
+    /// El núcleo de la acción ✓, compartido por `SetTable` (`toggleEntrenarSet`, por id de fila) y la
+    /// tecla «✓ Serie» de la rejilla propia (FER-134 ítem 8, `onConfirmSet`, por índice de la celda
+    /// activa): desmarcar una serie hecha es corrección sin descanso; palomear la pendiente la
+    /// selecciona (si no era ya la actual) y registra con su descanso.
+    private func confirmOrToggleSet(ei: Int, si: Int) {
+        guard session.runs.indices.contains(ei), session.runs[ei].sets.indices.contains(si) else { return }
+        let set = session.runs[ei].sets[si]
+        let isCurrent = si == session.runs[ei].currentSet && !set.done
         withAnimation(.snappy) {
             if set.done {
                 session.toggleDone(exercise: ei, set: si)
@@ -1360,8 +1369,10 @@ struct LiveStrengthSheet: View {
             onBackspace: { keypadBackspace() },
             onNext: { focusNextCell() },
             onCopyPrevious: { if let run { prefillTapped(ei: ei, si: si, run: run); syncBufferFromModel(cell) } },
-            onStep: { keypadStep(cell) },
+            onStep: { keypadStep(cell, sign: 1) },
+            onStepDown: { keypadStep(cell, sign: -1) },
             onPlates: { openPlates(ei: ei, si: si) },
+            onConfirmSet: { confirmOrToggleSet(ei: ei, si: si) },
             onHide: { withAnimation(.snappy(duration: 0.22)) { activeCell = nil } },
             // La MISMA pausa que la cabecera (FER-133), no una segunda: cuando el teclado está
             // abierto la cabecera queda lejos del pulgar, y sin esto el control se aleja justo
@@ -3526,12 +3537,13 @@ struct LiveStrengthSheet: View {
         if !buffer.isEmpty { buffer.removeLast() }
         commitBuffer()
     }
-    /// Quick add a plate / rep with the ± pill (adds the step; decrement via editing). Acts on the active
-    /// cell's row, which `activeCell` has already made the current set.
-    private func keypadStep(_ cell: CellRef) {
+    /// Quick add/subtract a plate / rep with the rejilla's «+…»/«−…» keys (FER-134 ítem 8: antes una
+    /// sola píldora que solo sumaba; `sign` es `1` o `-1`). Acts on the active cell's row, which
+    /// `activeCell` has already made the current set.
+    private func keypadStep(_ cell: CellRef, sign: Int) {
         switch cell {
-        case .weight: session.bumpWeight(byKg: weightStepKg)
-        case .reps:   session.bumpReps(1)
+        case .weight: session.bumpWeight(byKg: weightStepKg * Double(sign))
+        case .reps:   session.bumpReps(sign)
         }
         syncBufferFromModel(cell)
     }

@@ -9264,6 +9264,23 @@
         }
       }
     },
+    "✓ Serie" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "✓ Serie"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "✓ Serie"
+          }
+        }
+      }
+    },
     "0" : {
 
     },
@@ -19538,6 +19555,23 @@
         }
       }
     },
+    "Decrease by %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Decrease by %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disminuir %@"
+          }
+        }
+      }
+    },
     "Decrease distance" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -27523,6 +27557,23 @@
         }
       }
     },
+    "Increase by %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Increase by %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aumentar %@"
+          }
+        }
+      }
+    },
     "Increase distance" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -31549,6 +31600,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Marcar la serie %lld como no hecha"
+          }
+        }
+      }
+    },
+    "Mark set as done" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark set as done"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marcar serie como hecha"
           }
         }
       }
