@@ -180,7 +180,14 @@ public struct LiquidSheetHeader: View {
                 // proto-v2 `.hero`) y habla en el TONO de la hoja (`.when{color:var(--tono)}`,
                 // pedido del dueño). El numeral y su séquito (unidad/sufijo/procedencia)
                 // conservan su baseline propia en el sub-stack.
-                HStack(alignment: .center, spacing: 4) {
+                // XC7-06 (FER-128 r7) · En tamaños de accesibilidad el sello baja a su propia
+                // línea: en la misma fila que el numeral quedaba «LAST…» — la fecha y la palabra
+                // desaparecían. Mismo umbral que `limiteNumeral`, un escalón más arriba.
+                let apilado = tamanoTexto >= .accessibility1
+                let filaDato = apilado
+                    ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4))
+                    : AnyLayout(HStackLayout(alignment: .center, spacing: 4))
+                filaDato {
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
                         // #inject · El separador «:» del reloj (sueño «7:25») baja a tinta/700
                         // como en el mock: los dígitos mandan en el hue, los dos puntos son
@@ -203,14 +210,14 @@ public struct LiquidSheetHeader: View {
                     // bajo presión de ancho, el que cede/trunca es el sello — nunca el dato.
                     .layoutPriority(1)
                     if let sello {
-                        Spacer(minLength: LiquidSpace.s200)
+                        if !apilado { Spacer(minLength: LiquidSpace.s200) }
                         Text(verbatim: sello)
                             .font(LiquidType.filaRango)
                             // Tono del sello con el ámbar DEMOTADO a su voz de texto
                             // (revisión adversarial: el ámbar crudo mide 3.8:1 en footnote,
                             // bajo el 4.5:1 de AA — mismo fix que `LiquidLevelRow.tonoRotulo`).
                             .foregroundStyle(Self.tonoTexto(numeralTono))
-                            .lineLimit(1)
+                            .lineLimit(apilado ? nil : 1)
                     }
                 }
                 .lineLimit(limiteNumeral)
@@ -261,7 +268,7 @@ public struct LiquidSheetHeader: View {
     /// Con «—» el caller ya no manda sello (FER-128 r6: no se afirma una noche que no existe); si llega, se dice.
     ///
     /// F0.2 · `sello` (ventana del dato) va ENTRE el dato y el origen.
-    static func a11yLabel(titulo: String, numeral: String?, unidad: String?,
+    public static func a11yLabel(titulo: String, numeral: String?, unidad: String?,
                           sufijo: String? = nil, sello: String? = nil,
                           origen: String?) -> String {
         var parts = [titulo]

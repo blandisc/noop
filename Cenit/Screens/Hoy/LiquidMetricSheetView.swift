@@ -419,7 +419,12 @@ struct LiquidMetricSheetView: View {
             explicacion: String(localized: datoInfo.headline),
             // L5.1 — el ⓘ se nombra solo en VoiceOver (antes leía «VFC, uno»).
             infoMostrar: String(localized: "Show explanation"),
-            infoOcultar: String(localized: "Hide explanation"))
+            infoOcultar: String(localized: "Hide explanation"),
+            // Sueño: «7 h 25 min» en vez de «7:25 h» (XC7-01); las demás hojas, la voz normal.
+            a11yLabel: hv.a11y.map {
+                LiquidSheetHeader.a11yLabel(titulo: tituloHoja, numeral: $0, unidad: nil,
+                                            sello: hv.sello, origen: nil)
+            })
     }
 
     // FER-29 · C6 — the recovery sheet body (recoveryContent / recoveryReadingText /
@@ -698,8 +703,10 @@ struct LiquidMetricSheetView: View {
     private var trendBlock: some View {
         // Fuera del call: el type-checker de iOS se atora con expresiones largas dentro de
         // un builder (ver la nota de `curvaEstado`).
+        // Un NaN/±inf no es un dato (la Matriz lo filtra en `finito`; el plot lo clampeaba al
+        // TECHO del dominio — FER-128 r7).
         let puntos: [(fecha: Date, valor: Double)] =
-            trendData.map { (p: TrendPoint) in (fecha: p.date, valor: p.value) }
+            trendData.filter { $0.value.isFinite }.map { (p: TrendPoint) in (fecha: p.date, valor: p.value) }
         let ejeFmt: (Date) -> String = Self.ejeFechaFmt(puntos)
         let popupFecha: (Date) -> String = { (d: Date) -> String in Self.popupDiaFmt.string(from: d) }
         let popupValor: (Double) -> String = { (v: Double) -> String in self.trendValueFormat(v) }
@@ -1074,7 +1081,10 @@ struct LiquidMetricSheetView: View {
         return ComparisonEngine.stat(valores).mean
     }
 
-    private var heroVentana: (numeral: String?, sello: String?) {
+    /// `a11y`: la voz del numeral cuando el reloj «7:25» NO se puede leer tal cual (Sueño →
+    /// «7 h 25 min», la misma de la Matriz — FER-128 r7: el arreglo r6 llegó a la celda y no a
+    /// su hoja gemela). `nil` = la cabecera compone la voz normal.
+    private var heroVentana: (numeral: String?, sello: String?, a11y: String?) {
         let w = levelsHost.window
         // El rango EFECTIVO manda, no el seleccionado: cuando la ventana se auto-ensancha
         // porque no había días suficientes, el sello tiene que decir la que de verdad se
@@ -1084,15 +1094,16 @@ struct LiquidMetricSheetView: View {
             // las filas), no el «7h 12m» del tile —el numeral y su escala tienen que hablar
             // igual (auditoría 2026-08-03)—.
             if datoInfo.id == "sleep", let v = datoInfo.levelsTodayValue {
-                return (levelsValueFormat(v), selloHoy)
+                return (levelsValueFormat(v), selloHoy, LiquidHoyBuilder.a11ySueno(v))
             }
             // Sin número no hay noche/día que sellar («—» + «ANOCHE · 22 ago» afirmaba una noche
             // que la misma hoja declaraba inexistente — FER-128 r6).
-            return (datoInfo.displayValue, datoInfo.displayValue == "—" ? nil : selloHoy)
+            return (datoInfo.displayValue, datoInfo.displayValue == "—" ? nil : selloHoy, nil)
         }
         // El MISMO número que clasifica el nivel (`valorMostrado`, sin el día parcial de Pasos) —
         // el numeral y su carril no pueden separarse (FER-128 r7).
-        return (valorMostrado.map(levelsValueFormat) ?? datoInfo.displayValue, selloMedia(w.range))
+        return (valorMostrado.map(levelsValueFormat) ?? datoInfo.displayValue, selloMedia(w.range),
+                datoInfo.id == "sleep" ? valorMostrado.map(LiquidHoyBuilder.a11ySueno) : nil)
     }
 
     /// «HOY · 3 AGO» de día; «ANOCHE · 2 AGO» en lo que se mide durmiendo. La fecha la compone
@@ -1101,8 +1112,12 @@ struct LiquidMetricSheetView: View {
     /// FER-79 · D7 (dueño): lo NOCTURNO se fecha como la noche que fue. Antes el guardián decía
     /// «anoche · 15 ago» y la hoja de la misma señal «hoy · 16 ago»: dos convenciones para la
     /// misma noche. Lo que se mide despierto (pasos, esfuerzo, FC del día) conserva «hoy».
-    private var selloHoy: String {
+    private var selloHoy: String? {
         guard nightly else { return String(localized: "TODAY · \(Self.diaCorto(Date()))") }
+        // La MISMA respuesta que el overline («Última noche registrada · 19 ago»): si la noche que
+        // la hoja pinta no es la de anoche, el numeral no se sella «ANOCHE» — el overline ya la
+        // fecha (FER-128 r7: dos criterios de «anoche» en la misma hoja).
+        if datoInfo.id == "sleep", nocheSueno != nil, !nocheEsDeAnoche { return nil }
         // La noche se llama por su día de DESPERTAR en toda la app (la clave de `displayDays`, el
         // último punto de la gráfica de esta hoja, el scrub de la Matriz): «ANOCHE · 22 ago» es la
         // noche que terminó hoy. «Hoy − 1» apuntaba a otro punto de la misma gráfica (FER-128, r5).
@@ -1114,7 +1129,7 @@ struct LiquidMetricSheetView: View {
     ///
     /// Los rangos largos se nombran por su unidad natural, no por su cuenta de días: «1 año»
     /// se lee, «365 días» se calcula. Por eso medio año y año tienen su propia frase.
-    private func selloMedia(_ rango: ExploreRange) -> String {
+    private func selloMedia(_ rango: ExploreRange) -> String? {
         switch rango {
         case .week:
             return selloHoy
@@ -1299,6 +1314,7 @@ struct LiquidMetricSheetView: View {
         // La MISMA decimación del explorador (MetricTrendChart:196, maxPoints 80).
         let puntos = MetricWindowMath
             .decimatedPoints(rows: window.rows, values: window.values, maxPoints: 80)
+            .filter { $0.value.isFinite }
             .map { (fecha: $0.date, valor: $0.value) }
         let ejeFmt: (Date) -> String = Self.ejeFechaFmt(puntos)
         let popupFecha: (Date) -> String = { (d: Date) -> String in Self.popupDiaFmt.string(from: d) }

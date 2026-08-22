@@ -28,6 +28,10 @@ public struct LiquidLevelRow: View {
     private let tono: Color
     private let hoyEtiqueta: String?
     private let a11yHint: String?
+    /// XC7-07 (FER-128 r7) · A tamaños de accesibilidad las tres columnas no caben y el texto
+    /// partía PALABRAS («Athlet / e range», «0 night / s»): la fila se apila y cada texto tiene
+    /// el ancho entero.
+    @Environment(\.dynamicTypeSize) private var tamanoTexto
     private let onTap: () -> Void
 
     /// La etiqueta escala con Dynamic Type como su rango y su conteo (`captionLectura`,
@@ -55,11 +59,16 @@ public struct LiquidLevelRow: View {
 
     public var body: some View {
         Button(action: onTap) {
-            HStack(spacing: LiquidSpace.s300) {
-                punto
+            let apilado = tamanoTexto >= .accessibility1
+            let fila = apilado
+                ? AnyLayout(VStackLayout(alignment: .leading, spacing: LiquidSpace.s150))
+                : AnyLayout(HStackLayout(spacing: LiquidSpace.s300))
+            fila {
+                if !apilado { punto }
                 // La etiqueta y el rótulo de HOY viajan juntos (gap chico): son una sola
                 // idea, no dos columnas — el `Spacer` de abajo los separa del rango.
                 HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s150) {
+                    if apilado { punto }
                     Text(verbatim: etiqueta)
                         .font(.system(size: etiquetaPt))
                         .fontWeight(activa ? .bold : .regular)
@@ -70,7 +79,7 @@ public struct LiquidLevelRow: View {
                             .foregroundStyle(tonoRotulo)
                     }
                 }
-                Spacer(minLength: LiquidSpace.s200)
+                if !apilado { Spacer(minLength: LiquidSpace.s200) }
                 // Rango 13/600 tinta700 y conteo 12 tinta500 — SIEMPRE, aunque la fila esté
                 // activa (mock `.lvl .rng {13/600 tinta700}`, `.lvl .cnt {12 tinta500}`; la
                 // fila activa se distingue por la etiqueta en bold+tinta900, el tick y el wash,
@@ -83,7 +92,7 @@ public struct LiquidLevelRow: View {
                     .font(LiquidType.filaConteo)
                     .monospacedDigit()
                     .foregroundStyle(LiquidColor.tinta500)
-                    .frame(minWidth: 52, alignment: .trailing)
+                    .frame(minWidth: apilado ? nil : 52, alignment: .trailing)
             }
             .padding(.horizontal, LiquidSpace.s400)
             .padding(.vertical, LiquidSpace.s300)

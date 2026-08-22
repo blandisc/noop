@@ -426,6 +426,8 @@ enum LiquidHoyBuilder {
         a11y: String,
         vacio: String
     ) -> LiquidGuardianHoja.SerieMini {
+        // Nada no finito entra a la mini-serie (mismo contrato que `finito` de la Matriz — r7).
+        let puntos = puntos.filter { $0.valor.isFinite }
         let vals = puntos.map(\.valor)
         let lo: Double
         let hi: Double
