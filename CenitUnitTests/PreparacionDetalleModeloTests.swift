@@ -147,7 +147,7 @@ final class PreparacionDetalleModeloTests: XCTestCase {
         XCTAssertEqual(m.rejilla.count, 30)
         XCTAssertEqual(m.conteos["none"], 30)
         XCTAssertNotNil(m.avisoVentanaSinVeredicto)
-        XCTAssertTrue(m.atribucion.isEmpty, "sin días leídos no hay nada que atribuir")
+        XCTAssertTrue(m.conteosSenal.isEmpty, "sin días leídos no hay nada que contar")
     }
 
     /// 🔴 A quien nunca duerme con reloj el motor advierte que «tu base se está formando» NO se
@@ -186,7 +186,7 @@ final class PreparacionDetalleModeloTests: XCTestCase {
             healthConnected: true, asOf: Date(), calendario: cal)
         XCTAssertNil(m.palabraHoy, "sin noche grabada no hay veredicto que decir")
         XCTAssertNil(m.selloConfianza)
-        XCTAssertTrue(m.ejesHoy.isEmpty, "ni «por qué hoy» de un día que no se leyó")
+        XCTAssertNil(m.actaHoy, "ni boleta de hoy de un día que no se leyó")
     }
 
     // MARK: - La atribución
@@ -202,10 +202,11 @@ final class PreparacionDetalleModeloTests: XCTestCase {
         }
         let m = PreparacionDetalleModelo.build(prep: read(historia), healthConnected: true,
                                                asOf: Date(), calendario: cal)
-        let auto = m.atribucion.first { $0.id == "autonomic" }
+        let auto = m.conteosSenal.first { $0.id == "autonomic" }
         XCTAssertEqual(auto?.dias, 6, "los 10 días sin lectura no entran aunque traigan el eje")
-        XCTAssertEqual(m.atribucion.first { $0.id == "sleep" }?.dias, 0)
-        XCTAssertEqual(m.atribucion.first { $0.id == "leidas" }?.dias, 20)
+        XCTAssertEqual(m.conteosSenal.first { $0.id == "sleep" }?.dias, 0)
+        XCTAssertEqual(m.conteosSenal.count, 3, "tres señales, ninguna fila de cobertura: la cobertura va en la nota")
+        XCTAssertTrue(m.notaConteos.contains("20"), "la nota dice de cuántas mañanas leídas: «\(m.notaConteos)»")
     }
 
     /// La palabra del mosaico es NEUTRA y en tercera persona: «Hoy ve leve» sobre un día de
@@ -246,26 +247,27 @@ final class PreparacionDetalleModeloTests: XCTestCase {
         XCTAssertFalse(metodo.localizedCaseInsensitiveContains("señales en reposo contra tu propia base"),
                        "el sueño NO se compara contra la base del usuario, sino contra un piso fijo")
 
-        let auto = try es("prep.atr.auto")
-        XCTAssertFalse(auto.localizedCaseInsensitiveContains("VFC"),
-                       "la atribución de 30 días es SOLO FC en reposo: la VFC de Apple no vota y la RMSSD nocturna nunca cuenta históricamente")
+        // El rótulo del conteo de FC en reposo es la clave compartida «Resting HR»; lo que
+        // NO puede decir «VFC» ahora es la nota ni la a11y de los conteos.
+        let nota = try es("prep.conteos.nota.fmt")
+        XCTAssertFalse(nota.localizedCaseInsensitiveContains("VFC"),
+                       "la atribución de 30 días es SOLO FC en reposo: la VFC de Apple no vota")
     }
 
-    /// La atribución del sueño no puede decir solo «dormiste menos»: el eje vota con
-    /// `shortVsNeed || poorEfficiency`, así que una noche fragmentada de duración normal
-    /// vota igual y quedaría sin explicación.
-    /// Vigila la AFIRMACIÓN, no una palabra concreta: el pie tiene que nombrar las dos formas
-    /// de votar. Atarla a un término exacto («continua») hizo que la prueba cayera cuando el
-    /// copy se acortó a «corto o entrecortado», que dice lo mismo mejor. Una guarda de ciencia
-    /// no debe congelar la redacción, solo impedir que se pierda la mitad del hecho.
-    func testLaAtribucionDeSuenoNombraLasDosFormasDeVotar() throws {
-        let pie = try es("prep.atr.sueno")
-        let duracion = ["corto", "menos", "poco"]
-        let continuidad = ["entrecortado", "continua", "fragmentad", "interrump"]
-        XCTAssertTrue(duracion.contains { pie.localizedCaseInsensitiveContains($0) },
-                      "falta la noche corta: «\(pie)»")
-        XCTAssertTrue(continuidad.contains { pie.localizedCaseInsensitiveContains($0) },
-                      "falta la noche fragmentada, que vota igual que la corta: «\(pie)»")
+    /// El piso «hoy» es la MISMA boleta que Hoy: para el mismo `Read`, las filas son idénticas.
+    /// Es la regla de reuso de FUNCIÓN (no de dato): cada vez que cada superficie tuvo su
+    /// propia tabla terminaron contradiciéndose sobre el cuerpo del mismo usuario.
+    func testElPisoHoyEsLaMismaBoletaQueHoy() throws {
+        let claves = PreparacionDetalleModelo.dayKeys(endingAt: Date(), calendar: cal, count: 30)
+        let prep = read(claves.map { noche($0, .caution) }, verdict: .caution)
+        let m = PreparacionDetalleModelo.build(prep: prep, healthConnected: true,
+                                               asOf: Date(), calendario: cal)
+        let mia = try XCTUnwrap(m.actaHoy)
+        let deHoy = LiquidHoyBuilder.acta(prep: prep, healthConnected: true)
+        XCTAssertEqual(mia.filas.map(\.id), deHoy.filas.map(\.id))
+        XCTAssertEqual(mia.filas.map(\.palabra), deHoy.filas.map(\.palabra))
+        XCTAssertEqual(mia.filas.map(\.estado), deHoy.filas.map(\.estado))
+        XCTAssertEqual(mia.vigilantes, deHoy.vigilantes)
     }
 
     /// El héroe más visto de la app prometía un «rango» de sueño personal que el motor no

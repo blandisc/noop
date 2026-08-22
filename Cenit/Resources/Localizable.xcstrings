@@ -33,38 +33,6 @@
         }
       }
     },
-    "prep.atr.auto" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "outside your base"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "fuera de tu base"
-          }
-        }
-      }
-    },
-    "prep.atr.centinela" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "both, never one alone"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "las dos, nunca una sola"
-          }
-        }
-      }
-    },
     "prep.atr.centinela.nombre" : {
       "localizations" : {
         "en" : {
@@ -77,86 +45,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Temp y respiración"
-          }
-        }
-      }
-    },
-    "prep.atr.leidas" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "the rest had no signal"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "el resto sin señal"
-          }
-        }
-      }
-    },
-    "prep.atr.leidas.nombre" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mornings read"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mañanas leídas"
-          }
-        }
-      }
-    },
-    "prep.atr.sueno" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "short or broken up"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "corto o entrecortado"
-          }
-        }
-      }
-    },
-    "prep.atribucion.nota" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "These are the nights each signal came in outside your range. A single night out doesn't move your verdict on its own, so these numbers won't add up to the mosaic above."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Son las noches en que cada señal vino fuera de tu rango. Una noche fuera no mueve tu veredicto por sí sola, así que estos números no cuadran con el mosaico de arriba."
-          }
-        }
-      }
-    },
-    "prep.atribucion.titulo" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "What went out, and how often"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Qué se salió, y cuántas veces"
           }
         }
       }
@@ -241,50 +129,50 @@
         }
       }
     },
-    "prep.eje.dentro" : {
+    "prep.conteo.a11y.fmt" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "In your range"
+            "value" : "%1$d of %2$d nights out"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "En tu rango"
+            "value" : "%1$d de %2$d noches fuera"
           }
         }
       }
     },
-    "prep.eje.fuera" : {
+    "prep.conteos.nota.fmt" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Outside your range"
+            "value" : "Out of %d mornings with a reading. A single night out doesn't move your verdict on its own, which is why these counts won't add up to the squares above."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fuera de tu rango"
+            "value" : "De %d mañanas con lectura. Una noche fuera no mueve tu veredicto por sí sola: por eso estas cuentas no cuadran con los cuadros de arriba."
           }
         }
       }
     },
-    "prep.hoy.titulo" : {
+    "prep.dias.corto.fmt" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Why today"
+            "value" : "%d d"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Por qué hoy"
+            "value" : "%d d"
           }
         }
       }
@@ -317,6 +205,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cada cuadro se juzga con la base que tenías hasta ese día, así que no cambia si regresas a verlo después. Lo que no puede cargar es el ajuste de tendencia que solo aplica a la mañana que estás viviendo: por eso un cuadro viejo puede diferir de lo que Hoy dijo en voz alta ese día. La carga de entrenamiento no vota aquí."
+          }
+        }
+      }
+    },
+    "prep.metodo.regla" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Two days in a row move the verdict."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dos días seguidos mueven el veredicto."
           }
         }
       }
@@ -493,6 +397,54 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%1$@ de tu base"
+          }
+        }
+      }
+    },
+    "prep.senales.hoy" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoy"
+          }
+        }
+      }
+    },
+    "prep.senales.mes" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nights out, over 30 days"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las noches fuera, en 30 días"
+          }
+        }
+      }
+    },
+    "prep.senales.titulo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your three signals"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus tres señales"
           }
         }
       }

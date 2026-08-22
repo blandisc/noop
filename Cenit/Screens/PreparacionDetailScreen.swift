@@ -73,7 +73,10 @@ struct PreparacionDetailScreen: View {
             // el canal viejo. De paso, el `motivo` del numeral repetía palabra por palabra la
             // cláusula de abajo, y VoiceOver decía la misma frase dos paradas seguidas.
             datos: [],
-            veredicto: modelo.palabraHoy ?? "—",
+            // FER-129: la palabra va por `palabra:` (displayL, 30), el slot que ocupa el hueco
+            // del numeral. Con `veredicto:` (17 pt) el campo no tenía nada que lo sostuviera y
+            // el rótulo se comía con el chrome. Es el mismo token que la palabra de Hoy.
+            palabra: modelo.palabraHoy ?? "—",
             // Sin `onVolver`: esta pantalla siempre vive dentro de `DetailChrome`, que ya pone
             // su propio «‹ Tendencias». El botón del campo nunca llegaba a pintarse.
             // Sin veredicto la franja quedaba MUDA: solo el rótulo en caja alta sobre color,
@@ -122,74 +125,65 @@ struct PreparacionDetailScreen: View {
                 LiquidNotaLine(aviso).liquidSeccion(top: 0)
             }
 
-            if !modelo.atribucion.isEmpty {
-                LiquidFranjaSeccion(String(localized: "prep.atribucion.titulo",
-                                           defaultValue: "What went out, and how often"),
+            // ── «Tus tres señales»: DOS PISOS, dos relojes ─────────────────────────────
+            // El estado de HOY es crudo; el mosaico de arriba es post-histéresis. Mezclarlos en
+            // una fila hacía que un cuadro verde con «FC · HOY FUERA» al lado se leyera como
+            // bug aunque sea la histéresis funcionando (lo cazaron los dos revisores; el motor
+            // lo advierte por escrito en `VerdictNight`). Cada piso con su subtítulo y su pieza.
+            if let acta = modelo.actaHoy {
+                LiquidFranjaSeccion(String(localized: "prep.senales.titulo",
+                                           defaultValue: "Your three signals"),
                                     tono: tono)
-                VStack(alignment: .leading, spacing: LiquidSpace.s300) {
-                    // UNA columna, no la rejilla 2×2 por omisión. La cajita se dimensiona
-                    // a su contenido y `LazyVGrid` no estira las más cortas, así que en la
-                    // fila 2 «Temp y respiración» pedía dos líneas de rótulo y «Mañanas
-                    // leídas» una: las dos tarjetas quedaban con el canto inferior a distinta
-                    // altura. No es texto desigual, es una tarjeta física más corta que su
-                    // vecina, y era el único lugar de la pantalla donde eso pasaba.
-                    //
-                    // Acortar el rótulo era la otra salida y se descartó: «resp.» no existe
-                    // como abreviatura en español, y ese rótulo nombra la única regla del
-                    // centinela. Apilar además alinea esta sección con «Por qué hoy», que ya
-                    // es una lista de una columna: las dos secciones de EJES de la pantalla
-                    // pasan a leerse con la misma anatomía.
-                    LiquidCajitaGrid(columnas: 1) {
-                        ForEach(modelo.atribucion) { eje in
-                            LiquidCajita(rotulo: eje.nombre,
-                                         valor: "\(eje.dias)",
-                                         unidad: PreparacionDetalleModelo.unidadDiasCorta(eje.dias),
-                                         pie: eje.pie,
-                                         a11yValor: PreparacionDetalleModelo.unidadDias(eje.dias))
+                VStack(alignment: .leading, spacing: LiquidSpace.s400) {
+                    // Piso «Hoy»: la boleta tal cual la pinta el acta de Hoy. Misma función
+                    // (`LiquidHoyBuilder.acta`), mismas filas, mismos vigilantes — cero tablas
+                    // propias. Temp y respiración NO son fila hermana de FC/sueño: son fichas de
+                    // «vigilan sin votar», la distinción que el acta ya había hecho.
+                    VStack(alignment: .leading, spacing: LiquidSpace.s250) {
+                        Text(String(localized: "prep.senales.hoy", defaultValue: "Today"))
+                            .liquidLabel()
+                            .foregroundStyle(LiquidColor.tinta500)
+                        LiquidBoletaCard(votantes: acta.filas.map {
+                            .init(id: $0.id, glifo: $0.glifo, nombre: $0.etiqueta, sub: $0.sub,
+                                  estado: $0.estado, umbral: $0.umbral, fuera: $0.fuera,
+                                  tonoVoto: $0.tonoVoto, palabra: $0.palabra,
+                                  hueMetrica: $0.hueMetrica, a11y: $0.a11y,
+                                  magnitud: $0.magnitud)
+                        })
+                        if !acta.vigilantes.isEmpty {
+                            HStack(spacing: LiquidSpace.s150) {
+                                if let etiqueta = acta.vigilantesLabel {
+                                    Text(verbatim: etiqueta)
+                                        .font(LiquidType.captionLectura)
+                                        .foregroundStyle(LiquidColor.tinta500)
+                                }
+                                ForEach(acta.vigilantes, id: \.self) { LiquidVigilanteChip(nombre: $0) }
+                            }
+                            .accessibilityElement(children: .combine)
+                            .accessibilityLabel(Text(verbatim: acta.vigilantesA11y ?? acta.vigilantes.joined(separator: ", ")))
                         }
                     }
-                    // El veredicto de una noche es POST-histéresis y estos ejes son los CRUDOS de
-                    // esa noche: una noche mala aislada puede salir «todo en rango» con un eje
-                    // fuera. El motor lo advierte por escrito; si la pantalla no lo dijera, los
-                    // dos bloques se contradirían solos a la vista del usuario.
-                    LiquidNotaLine(String(localized: "prep.atribucion.nota",
-                                          defaultValue: "These are the nights each signal came in outside your range. A single night out doesn't move your verdict on its own, so these numbers won't add up to the mosaic above."))
-                }
-                .liquidSeccion()
-            }
 
-            if !modelo.ejesHoy.isEmpty {
-                LiquidFranjaSeccion(String(localized: "prep.hoy.titulo",
-                                           defaultValue: "Why today"),
-                                    tono: tono)
-                VStack(spacing: 0) {
-                    ForEach(Array(modelo.ejesHoy.enumerated()), id: \.element.id) { i, eje in
-                        if i > 0 { LiquidCapilar(eje: .horizontal) }
-                        // A tallas de accesibilidad se apila, como el reparto y las cajitas de
-                        // esta misma pantalla: `LiquidType.cuerpo` es fijo y `label` escala, así
-                        // que en una fila el rótulo se quedaba chico junto a un estado partido
-                        // en dos líneas.
-                        Group {
-                            if tipo.isAccessibilitySize {
-                                VStack(alignment: .leading, spacing: LiquidSpace.s075) {
-                                    Text(eje.nombre).font(LiquidType.cuerpo)
-                                        .foregroundStyle(LiquidColor.tinta900)
-                                    Text(eje.estado).liquidLabel()
-                                        .foregroundStyle(eje.fuera ? tono : LiquidColor.tinta500)
-                                }
-                            } else {
-                                HStack(spacing: LiquidSpace.s250) {
-                                    Text(eje.nombre).font(LiquidType.cuerpo)
-                                        .foregroundStyle(LiquidColor.tinta900)
-                                    Spacer(minLength: LiquidSpace.s250)
-                                    Text(eje.estado).liquidLabel()
-                                        .foregroundStyle(eje.fuera ? tono : LiquidColor.tinta500)
+                    // Piso «el mes»: cuántas noches se salió cada señal, en barras con color de
+                    // IDENTIDAD sobre la escala compartida de la ventana. «Cuál» lo dice la barra;
+                    // el veredicto lo dice el mosaico. Solo días CON veredicto.
+                    if !modelo.conteosSenal.isEmpty {
+                        VStack(alignment: .leading, spacing: LiquidSpace.s250) {
+                            Text(String(localized: "prep.senales.mes",
+                                        defaultValue: "Nights out, over 30 days"))
+                                .liquidLabel()
+                                .foregroundStyle(LiquidColor.tinta500)
+                            VStack(alignment: .leading, spacing: LiquidSpace.s200) {
+                                ForEach(Array(modelo.conteosSenal.enumerated()), id: \.element.id) { i, c in
+                                    LiquidBarraConteo(glifo: c.glifo, rotulo: c.nombre,
+                                                      conteo: c.dias, escala: PreparacionDetalleModelo.ventana,
+                                                      tono: c.tono, valorTexto: c.valorTexto,
+                                                      indice: i, a11yLabel: c.nombre,
+                                                      a11yValue: c.a11y)
                                 }
                             }
+                            LiquidNotaLine(modelo.notaConteos)
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.vertical, LiquidSpace.s250)
-                        .accessibilityElement(children: .combine)
                     }
                 }
                 .liquidSeccion()
@@ -200,26 +194,15 @@ struct PreparacionDetailScreen: View {
     }
 
     private var metodo: some View {
-        // El capilar y los paddings reducidos son el patrón que Sueño ya fijó para un pie sin
-        // franja propia (`pieMetodo`): sin ellos quedan 38 pt de aire sin ninguna costura que
-        // los explique, que es el hueco muerto que aquel comentario describe.
+        // El capilar y los paddings reducidos son el patrón que Sueño fijó para un pie sin
+        // franja propia (`pieMetodo`). El método va PLEGADO —la prosa a un toque— pero la
+        // LEYENDA de los cuadros queda siempre visible: es lo único del método que el ojo
+        // necesita sin leer, porque decodifica el mosaico de arriba. Reusa `NivelLeyenda`.
         VStack(alignment: .leading, spacing: LiquidSpace.s300) {
             LiquidCapilar(eje: .horizontal)
-            // El componente compartido de la familia (`LiquidMetodo` + `LiquidNotaLine`), no un
-            // bloque a mano: plegable, cerrado por omisión, y CON su cita en pantalla. Sueño ya lo
-            // hacía así; aquí las fuentes vivían solo en comentarios del motor, que el usuario
-            // nunca ve. CLAUDE.md pide citar el método, y citarlo donde se lee.
-            // Las claves que YA usa toda la familia (Sueño, Carga, la hoja de métrica, Hoy y las
-            // pantallas de papel). Preparación había acuñado «Ver el método», y era la única voz
-            // distinta del app para el mismo control.
             LiquidMetodo(title: String(localized: "How it's calculated"),
                          mostrar: String(localized: "Show explanation"),
                          ocultar: String(localized: "Hide explanation")) {
-                // Las TRES líneas con `LiquidNotaLine`, como Sueño. `LiquidType.cuerpo` es la
-                // fuente del SISTEMA a 12.5, y la cita de abajo ya era Grotesk a 10.5: la
-                // explicación y su fuente salían en dos tipografías y dos tamaños distintos
-                // dentro del mismo bloque. El tono (700 contra el 500 por omisión) es lo único
-                // que separa la explicación de la referencia.
                 VStack(alignment: .leading, spacing: LiquidSpace.s300) {
                     LiquidNotaLine(String(localized: "prep.metodo.como",
                                           defaultValue: "Every morning I look at three things. Your resting heart rate, against your own base: that's the axis that votes, and your HRV measured while you sleep rides along with it only on nights that have enough of it, never on its own (the all-day HRV you see elsewhere in the app never votes). Your sleep, against the floor sleep science recommends, not against your own history. And the sentinel, skin temperature and breathing, which only counts when both run high together. None out is «all in range»; one is «one signal out»; two or more is «two or more out». A sustained downward trend can also bring that change forward."),
@@ -227,9 +210,26 @@ struct PreparacionDetailScreen: View {
                     LiquidNotaLine(String(localized: "prep.metodo.limite",
                                           defaultValue: "Each square is judged with the base you had up to that day, so it doesn't change if you come back to look later. What it can't carry is the trend nudge that only applies to the morning you're living: that's why an older square can differ from what Today said out loud that day. Training load doesn't vote here."),
                                    tono: LiquidColor.tinta700)
-                    LiquidNotaLine("Hirshkowitz et al., 2015 (sleep need); Task Force of the European Society of Cardiology, 1996 (HRV); Mishra et al., 2020 (illness sentinel).")
                 }
             }
+            // La leyenda: los mismos cuadros del mosaico con su palabra neutra, y la regla de
+            // dos días como una pista más de la misma fila.
+            HStack(spacing: LiquidSpace.s400) {
+                ForEach(modelo.leyenda) { nivel in
+                    HStack(spacing: LiquidSpace.s125) {
+                        RoundedRectangle(cornerRadius: LiquidRadius.hairline, style: .continuous)
+                            .fill(nivel.color)
+                            .frame(width: LiquidSpace.s300, height: LiquidSpace.s300)
+                        Text(verbatim: nivel.etiqueta)
+                            .font(LiquidType.captionLectura)
+                            .foregroundStyle(LiquidColor.tinta500)
+                    }
+                }
+            }
+            .accessibilityElement(children: .combine)
+            LiquidNotaLine(String(localized: "prep.metodo.regla",
+                                  defaultValue: "Two days in a row move the verdict."))
+            LiquidNotaLine("Hirshkowitz et al., 2015 (sleep need); Task Force of the European Society of Cardiology, 1996 (HRV); Mishra et al., 2020 (illness sentinel).")
         }
         .liquidSeccion(top: LiquidSpace.s200, bottom: LiquidSpace.s800)
     }
@@ -280,20 +280,16 @@ struct PreparacionDetalleModelo {
         let cuerpo: String
     }
 
-    /// Un eje de la atribución: cuántas de las 30 noches vino fuera.
-    struct EjeAtribucion: Identifiable, Equatable {
+    /// Una señal del piso «el mes»: cuántas de las noches LEÍDAS vino fuera. Color y glifo
+    /// de IDENTIDAD (el mismo que su celda en la Matriz de Hoy), nunca de juicio.
+    struct ConteoSenal: Identifiable, Equatable {
         let id: String
+        let glifo: LiquidIcon.Glyph
         let nombre: String
-        let dias: Int
-        let pie: String
-    }
-
-    /// Una fila del «por qué hoy», derivada de `Read.drivers`.
-    struct EjeHoy: Identifiable, Equatable {
-        let id: String
-        let nombre: String
-        let estado: String
-        let fuera: Bool
+        let dias: Int?
+        let tono: Color
+        let valorTexto: String
+        let a11y: String
     }
 
     let estado: Estado
@@ -306,8 +302,16 @@ struct PreparacionDetalleModelo {
     let conteos: [String: Int]
     let pistaCobertura: String?
     let avisoVentanaSinVeredicto: String?
-    let atribucion: [EjeAtribucion]
-    let ejesHoy: [EjeHoy]
+    /// El piso «hoy» de «Tus tres señales»: la boleta TAL CUAL la arma Hoy
+    /// (`LiquidHoyBuilder.acta`) — misma función, mismas filas, mismos vigilantes. Cero tablas
+    /// propias: cada vez que cada superficie tuvo la suya terminaron contradiciéndose.
+    /// `nil` cuando no hay veredicto anclado a la noche (no se pinta el piso).
+    let actaHoy: LiquidActa?
+    /// El piso «el mes»: las tres señales con su conteo de noches fuera, sobre la ventana.
+    let conteosSenal: [ConteoSenal]
+    let notaConteos: String
+    /// La leyenda de los cuadros del mosaico, reusando la pieza del calendario.
+    let leyenda: [LiquidCalendario90.NivelLeyenda]
     let copySinPermiso: Bienvenida
     let copySinHistoria: Bienvenida
     /// Lo que dice el campo cuando NO hay veredicto. Tres estados, tres frases: una franja
@@ -431,7 +435,8 @@ struct PreparacionDetalleModelo {
     static let cargando = PreparacionDetalleModelo(
         estado: .cargando, palabraHoy: nil, clausulaHoy: nil, selloConfianza: nil,
         tonoHoy: LiquidColor.tinta500, rejilla: [], peldanos: peldanosBase, conteos: [:],
-        pistaCobertura: nil, avisoVentanaSinVeredicto: nil, atribucion: [], ejesHoy: [],
+        pistaCobertura: nil, avisoVentanaSinVeredicto: nil, actaHoy: nil, conteosSenal: [],
+        notaConteos: "", leyenda: [],
         copySinPermiso: bienvenidaSinPermiso, copySinHistoria: bienvenidaSinHistoria,
         inicialesDia: Array(repeating: "", count: 7))
 
@@ -512,57 +517,51 @@ struct PreparacionDetalleModelo {
         // La atribución solo mira los días CON veredicto: contar ejes sobre días que no se
         // leyeron inventaría noches que nunca existieron.
         let leidas = (prep?.verdictHistory ?? []).filter { $0.verdict != .lowSignal }
-        let atribucion: [EjeAtribucion] = leidas.isEmpty ? [] : [
-            .init(id: "autonomic", nombre: String(localized: "Resting HR"),
-                  dias: leidas.filter(\.autonomicOut).count,
-                  // La VFC de Apple no vota (`wHRV = 0`) y la RMSSD nocturna «nunca sola, nunca
-                  // históricamente»: sobre 30 días este eje es SOLO la FC en reposo.
-                  pie: String(localized: "prep.atr.auto",
-                              defaultValue: "outside your base")),
-            .init(id: "sleep", nombre: String(localized: "Sleep"),
-                  dias: leidas.filter(\.sleepOut).count,
-                  // El eje vota con `shortVsNeed || poorEfficiency`: decir solo «dormiste menos»
-                  // deja fuera la noche fragmentada de duración normal, que vota igual.
-                  pie: String(localized: "prep.atr.sueno",
-                              defaultValue: "short or broken up")),
-            .init(id: "sentinel", // Corto A PROPÓSITO: con `lineLimit(2)` el nombre largo ocupaba dos líneas y su
-                  // vecino de fila una, así que la rejilla no cerraba pareja. De los cuatro
-                  // rótulos solo este era largo, y siempre cae junto a uno corto.
-                  nombre: String(localized: "prep.atr.centinela.nombre",
-                                 defaultValue: "Temp and breathing"),
-                  dias: leidas.filter(\.sentinelOut).count,
-                  pie: String(localized: "prep.atr.centinela",
-                              defaultValue: "both, never one alone")),
-            .init(id: "leidas", nombre: String(localized: "prep.atr.leidas.nombre",
-                                               defaultValue: "Mornings read"),
-                  dias: conLectura,
-                  pie: String(localized: "prep.atr.leidas",
-                              defaultValue: "the rest had no signal")),
-        ]
-
         let hayVeredicto = prep != nil && prep?.verdict != .lowSignal && prep?.isNightAnchored == true
 
-        let ejesHoy: [EjeHoy] = hayVeredicto ? (prep?.drivers ?? []).compactMap { d in
-            guard d.axis == .autonomic || d.axis == .sleep else { return nil }
-            return EjeHoy(id: "\(d.axis)",
-                          nombre: d.axis == .sleep ? String(localized: "Sleep")
-                                                   : String(localized: "Resting HR"),
-                          estado: d.state.isOut
-                              ? String(localized: "prep.eje.fuera", defaultValue: "Outside your range")
-                              : String(localized: "prep.eje.dentro", defaultValue: "In your range"),
-                          fuera: d.state.isOut)
-        } : []
+        // Piso «el mes». Solo días CON veredicto (contar ejes sobre días que no se leyeron
+        // inventaría noches). El par cuenta solo noches CORROBORADAS (`sentinelOut` es AND):
+        // una sola señal alta se vigila, no se cuenta. El color es de IDENTIDAD: rosa FC,
+        // índigo sueño y `doradoTemp` para el par — NO el ámbar, que es el MISMO hex que el
+        // ámbar de juicio «una señal fuera» y esta hoja enseña a distinguirlos.
+        func conteo(_ id: String, _ glifo: LiquidIcon.Glyph, _ nombre: String,
+                    _ dias: Int?, _ tono: Color) -> ConteoSenal {
+            let valor = dias.map { String(format: String(localized: "prep.dias.corto.fmt",
+                                                          defaultValue: "%d d"), $0) }
+                ?? LiquidCajita.sinDato
+            let a11y = dias.map {
+                String(format: String(localized: "prep.conteo.a11y.fmt",
+                                      defaultValue: "%1$d of %2$d nights out"), $0, ventana)
+            } ?? String(localized: "no data")
+            return ConteoSenal(id: id, glifo: glifo, nombre: nombre, dias: dias,
+                               tono: tono, valorTexto: valor, a11y: a11y)
+        }
+        let conteosSenal: [ConteoSenal] = leidas.isEmpty ? [] : [
+            conteo("autonomic", .corazon, String(localized: "Resting HR"),
+                   leidas.filter(\.autonomicOut).count, LiquidColor.rosa),
+            conteo("sleep", .luna, String(localized: "Sleep"),
+                   leidas.filter(\.sleepOut).count, LiquidColor.indigo),
+            conteo("sentinel", .termo, String(localized: "prep.atr.centinela.nombre",
+                                               defaultValue: "Temp and breathing"),
+                   leidas.filter(\.sentinelOut).count, LiquidColor.doradoTemp),
+        ]
+        let notaConteos = String(format: String(localized: "prep.conteos.nota.fmt",
+                                                defaultValue: "Out of %d mornings with a reading. A single night out doesn't move your verdict on its own, which is why these counts won't add up to the squares above."),
+                                 conLectura)
 
-        // Dos vacíos que NO son el mismo, y el orden importa:
-        //   · SERIE VACÍA (sin historia, o sin permiso) → no se dibuja mosaico: 30 cuadros
-        //     grises no son información, son un reproche. Va el estado de bienvenida.
-        //   · VENTANA SIN VEREDICTO (hay noches, todas sin lectura) → el mosaico SÍ se dibuja,
-        //     entero en el peldaño vacío, y lo dice. Nunca «0 de 0»: el denominador son 30.
-        //
-        // La versión anterior escribía la primera rama como `historia.isEmpty && !ventanaVacia`,
-        // que es una contradicción: sin historia TODAS las celdas caen en «sin lectura», así que
-        // `ventanaVacia` siempre es cierto y la rama nunca corría. El usuario sin historia veía
-        // un mosaico de 30 huecos en vez de su bienvenida.
+        // Piso «hoy»: la MISMA acta que Hoy. Solo con veredicto anclado a la noche — sin él
+        // el acta de Hoy pinta sus propios estados («Conociéndote», «Lectura de día») que
+        // aquí ya dice el campo; no se duplica.
+        let actaHoy: LiquidActa? = hayVeredicto
+            ? LiquidHoyBuilder.acta(prep: prep, healthConnected: healthConnected)
+            : nil
+
+        let leyenda: [LiquidCalendario90.NivelLeyenda] = [
+            .init(id: "full", color: tono(.full), etiqueta: peldano(.full)),
+            .init(id: "caution", color: tono(.caution), etiqueta: peldano(.caution)),
+            .init(id: "easy", color: tono(.easy), etiqueta: peldano(.easy)),
+        ]
+
         let estado: Estado
         if !healthConnected { estado = .sinPermiso }
         else if prep == nil || (prep?.verdictHistory ?? []).isEmpty { estado = .sinHistoria }
@@ -584,8 +583,10 @@ struct PreparacionDetalleModelo {
                                                   defaultValue: "%1$d of %2$d with a reading"),
                                    conLectura, ventana),
             avisoVentanaSinVeredicto: ventanaVacia ? avisoVacio(prep) : nil,
-            atribucion: atribucion,
-            ejesHoy: ejesHoy,
+            actaHoy: actaHoy,
+            conteosSenal: conteosSenal,
+            notaConteos: notaConteos,
+            leyenda: leyenda,
             copySinPermiso: bienvenidaSinPermiso,
             copySinHistoria: bienvenidaSinHistoria,
             inicialesDia: inicialesDesde(primerDia, calendario: calendario))
