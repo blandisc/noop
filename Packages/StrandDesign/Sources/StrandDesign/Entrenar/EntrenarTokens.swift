@@ -138,6 +138,39 @@ public enum EntrenarMetrics {
     public static let familyDot: CGFloat = 9
     /// El aro de papel que lo recorta cuando cae sobre un fondo ocupado (una miniatura, una tarjeta).
     public static let familyDotKnockout: CGFloat = 15
+
+    // MARK: - Ritmo de la landing («Ritmo 1b», FER-130)
+    //
+    // Los márgenes verticales literales del handoff, de arriba a abajo. Donde el número ya
+    // coincidía con un token de `CenitMetrics` (4/8/12/16) la landing usa ESE, no uno nuevo —
+    // los de aquí son los que no tenían casa: 6, 18, 20, 24, 28 y los dos que sí coinciden pero
+    // el handoff los nombra aparte porque son parte del mismo ritmo nombrado, no un espaciado
+    // genérico (se documenta la equivalencia en cada uno).
+
+    /// El «HOY · día» del héroe, separado del hilo del veredicto de arriba.
+    public static let heroKickerTop: CGFloat = 24
+    /// El nombre de la rutina, separado de su kicker «HOY».
+    public static let heroTitleTop: CGFloat = 6
+    /// La línea de músculos, separada del título. (= `CenitMetrics.space2`.)
+    public static let heroSubTop: CGFloat = CenitMetrics.space2
+    /// Los tres numerales de la sesión («~50 min · 6 ejercicios · 18 series»), separados del subtítulo.
+    public static let heroNumeralsTop: CGFloat = 20
+    /// El canal entre los tres numerales, cuando se dibujan como bloques sueltos (handoff «canal 28»)
+    /// — la landing hoy los lee como una sola frase con «·», así que este canal no tiene un sitio
+    /// vivo todavía; se documenta para no perder el número del handoff.
+    public static let heroNumeralsGap: CGFloat = 28
+    /// La línea de progresión / subida del día, separada de los numerales. (= `CenitMetrics.gap`.)
+    public static let heroProgressTop: CGFloat = CenitMetrics.gap
+    /// La fila «Empezar + Otra forma», separada del bloque de arriba.
+    public static let ctaRowTop: CGFloat = 20
+    /// El primer nivel del hub («Tu plan»), separado de la fila CTA.
+    public static let firstLevelTop: CGFloat = 18
+    /// Cada nivel del hub que NO es el primero, separado del nivel anterior.
+    /// Los niveles siguientes (el prototipo los separa con margin-top 10; el README da el rango 2-10 y
+    /// el segundo nivel real de la landing usa 10). Con 2 el filo quedaba pegado a la fila de arriba.
+    public static let levelTop: CGFloat = 10
+    /// El aire entre el filo superior de un nivel y su fila de encabezado. (= `CenitMetrics.space1`.)
+    public static let levelPadTop: CGFloat = CenitMetrics.space1
 }
 
 /// El estado de una celda del calendario de entrenamiento. Es un token porque lo consumen dos
@@ -186,7 +219,36 @@ public enum EntrenarCalendarState: Sendable, Hashable {
     }
 }
 
+/// El kicker compartido de Entrenar (handoff «Ritmo 1b», tokens.json): 11.5 pt / 600 / tracking 1.5,
+/// mayúsculas — el color es lo único que cambia por rol (tinta700 en la cabecera de pantalla,
+/// tinta500 en el overline del héroe y en `EntrenarNivel`). El handoff dibuja los tres con el mismo
+/// inline style, así que los tres usan esta misma receta en vez de tres kickers distintos.
+///
+/// Distinto, a propósito, del kicker de fecha de `TodayView` (`shortDate`, 11 pt / 600 /
+/// tracking 2 — ver `TodayView.headerBlock`): esa receta es la fecha SOLA, sin acompañante, con el
+/// tracking más abierto que da aire a un renglón vacío. Aquí el kicker comparte fila con el botón
+/// «?» (handoff «Prototipo Entrenar.dc.html» línea 52, literal 11.5/600/1.5) — no es un descuido de
+/// no mirar a Hoy, es que la pareja fecha+acción pide una medida distinta a la fecha sola. Si un
+/// tercer lugar necesita este mismo patrón (fecha + acompañante), promuévelo a un token compartido
+/// en vez de copiar el número.
+public extension View {
+    func entrenarCabeceraKicker() -> some View {
+        self.font(InstrumentoType.grotesk(11.5, weight: .semibold))
+            .tracking(1.5)
+            .textCase(.uppercase)
+    }
+}
+
 #if DEBUG
+#Preview("Entrenar · cabecera kicker") {
+    Text(verbatim: "Entrenar · Sáb 15 ago")
+        .entrenarCabeceraKicker()
+        .foregroundStyle(InstrumentoTheme.base.inkSecondary)
+        .padding(24)
+        .background(InstrumentoTheme.base.paper)
+        .instrumentoTheme(.base)
+}
+
 #Preview("Entrenar · tokens") {
     let t = InstrumentoTheme.base
     return VStack(alignment: .leading, spacing: 20) {

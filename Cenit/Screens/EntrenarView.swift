@@ -153,43 +153,49 @@ private struct EntrenarLanding: View {
         // height back into layout and looped as the plan grew — 99% CPU, «Invalid frame dimension», freeze.
         // `sectionGap` (28) still gives more air between blocks than the old 18; no measured-height feedback.
         ScrollView {
-            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
+            // Ritmo 1b (handoff FER-130): el VStack raíz ya no reparte un `sectionGap` uniforme —
+            // cada bloque carga su propio margen superior, así que la cabecera / el hilo / el héroe
+            // pueden llevar el aire literal del handoff sin heredar uno genérico encima. Los estados
+            // fuera de alcance (sin plan, error de carga) conservan el `sectionGap` de antes como su
+            // propio padding explícito, para no moverles ni un punto.
+            VStack(alignment: .leading, spacing: 0) {
                 // FER-952 (owner): the «Train» wordmark + tab glyph row retired — the dock already
                 // names the tab.
+                // FER-130: la cabecera del hub — «Entrenar · {fecha}» a la izquierda, el «?» de los
+                // trucos a la derecha. Reemplaza al wordmark retirado arriba; vive FUERA del gate de
+                // carga porque no depende del plan.
+                cabecera
                 // FER-85: el hilo del veredicto — el ÚNICO portador del veredicto en Entrenar y la
-                // primera cosa que se lee. Vive FUERA del gate de carga porque habla del CUERPO, no
-                // del plan: no tiene por qué esperar a que la base de datos conteste, y así el «?»
-                // de ayuda tampoco aparece a destiempo.
-                HStack(spacing: CenitMetrics.space2) {
-                    hiloDelVeredicto
-                    // El «?» del handoff: los trucos siguen ahí para quien los busque, pero
-                    // dejan de ocupar una tarjeta en la pantalla principal (decisión del dueño).
-                    Button { showTricks = true } label: {
-                        Image(systemName: "questionmark.circle")
-                            .font(StrandFont.glyph(.lead))
-                            .foregroundStyle(theme.inkTertiary)
-                            .frame(width: EntrenarMetrics.row, height: EntrenarMetrics.row)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(EntrenarPressStyle())
-                    .accessibilityLabel(Text("Tricks"))
-                }
+                // primera cosa que se lee del cuerpo. Vive FUERA del gate de carga porque habla del
+                // CUERPO, no del plan: no tiene por qué esperar a que la base de datos conteste.
+                hiloDelVeredicto.padding(.top, CenitMetrics.space2)
                 if loaded {
                     if loadFailed {
                         loadErrorState       // store couldn't be read — «No pudimos leer tus rutinas · Reintentar»
+                            .padding(.top, CenitMetrics.sectionGap)
                     } else if split.isEmpty {
                         emptyStateB          // hero «Empecemos por tu plan» + «Crear mi plan» (mock 5a)
+                            .padding(.top, CenitMetrics.sectionGap)
                         plantillaRow         // «O empieza sin plan» → Rutinas de plantilla (the one kept row)
+                            .padding(.top, CenitMetrics.sectionGap)
                         otraForma            // «Otra forma ›» — las mismas cuatro puertas, plegadas
+                            .padding(.top, CenitMetrics.sectionGap)
                         constanciaSection    // empty Constancia — «tus sesiones aparecerán aquí»
+                            .padding(.top, CenitMetrics.sectionGap)
                         footRows
+                            .padding(.top, CenitMetrics.sectionGap)
                     } else {
                         // Handoff v4b order (FER-939): open hero + discs up top, then the sunken-band
-                        // sections (session · plan · consistency), then the quiet foot rows.
+                        // sections (session · plan · consistency), then the quiet foot rows. Ritmo 1b
+                        // (FER-130): cada nivel carga su propio margen — primer nivel 18, los siguientes 2.
                         heroSection       // ① open hero «Hoy · {día}» + «Empezar» + the five discs
+                            .padding(.top, EntrenarMetrics.heroKickerTop)
                         tuPlanSection     // ④ «TU PLAN» — week squares + every routine + new-routine row
+                            .padding(.top, EntrenarMetrics.firstLevelTop)
                         constanciaSection // ⑤ 90-day dot grid — no streak guilt (mock 1a)
+                            .padding(.top, EntrenarMetrics.levelTop)
                         footRows          // ⑥ history (Dieta off — FER-992)
+                            .padding(.top, CenitMetrics.sectionGap)
                     }
                 }
             }
@@ -298,7 +304,7 @@ private struct EntrenarLanding: View {
     private var heroSection: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(hoyOverline)
-                .groteskSheetTitle().textCase(.uppercase).foregroundStyle(theme.inkTertiary)
+                .entrenarCabeceraKicker().foregroundStyle(theme.inkTertiary)
             if let r = todayRoutine {
                 // «Bisel»: la marca de familia es una regla vertical, no un cuadro en línea. El cuadro vivía
                 // dentro del HStack, así que le robaba ancho al título y lo empujaba a la derecha; con
@@ -306,37 +312,55 @@ private struct EntrenarLanding: View {
                 // plomo con «Empezar» y los discos— y el texto se indenta después de ella, en vez de que
                 // la regla se salga al canalón. Su alto lo deriva del contenido: crece sola con la segunda
                 // línea y con Dynamic Type.
-                VStack(alignment: .leading, spacing: 8) {
+                //
+                // Ritmo 1b (FER-130): cada línea carga su propio margen superior (`EntrenarMetrics`),
+                // ya no un espaciado uniforme de 8 — título, subtítulo, numerales y progresión llevan
+                // aire distinto en el handoff.
+                VStack(alignment: .leading, spacing: 0) {
                     Text(r.name)
                         .font(InstrumentoType.grotesk(32, weight: .bold)).tracking(-1)
                         .foregroundStyle(theme.ink)
                         .lineLimit(2).minimumScaleFactor(0.65)
                         .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, EntrenarMetrics.heroTitleTop)
                     if let muscles = routineMuscleLine(r.id) {
                         Text(muscles).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                            .padding(.top, EntrenarMetrics.heroSubTop)
                     }
                     // Los tres numerales suben al héroe (handoff v2 §4): la forma de la sesión se lee
                     // junto a su nombre, no tres bloques abajo. Y son la ÚNICA marca de familia del
                     // bloque — la regla vertical teñida que iba junto al nombre se retiró: dos marcas
                     // del mismo color en el mismo sitio es decir la identidad dos veces.
-                    sesionMetrics(r.id).padding(.top, CenitMetrics.space1)
-                    subidaDelDia
+                    sesionMetrics(r.id).padding(.top, EntrenarMetrics.heroNumeralsTop)
+                    subidaDelDia.padding(.top, EntrenarMetrics.heroProgressTop)
                 }
-                .padding(.top, 8)
             } else {
                 Text("Rest")
                     .font(InstrumentoType.grotesk(32, weight: .bold)).tracking(-1)
                     .foregroundStyle(theme.inkSecondary)
-                    .padding(.top, 8)
+                    .padding(.top, EntrenarMetrics.heroTitleTop)
                 Text("Your plan doesn't schedule today. A good day to recover.")
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 4)
+                    .padding(.top, EntrenarMetrics.heroSubTop)
             }
-            // FER-944 rhythm: the datum→action border (16) reads clearly wider than the hero's inner
-            // gaps (4/8), so the block squints as three masses — text, button, discs.
-            empezarButton.padding(.top, CenitMetrics.sectionGapCompact)
-            otraForma.padding(.top, CenitMetrics.space2)
+            // Fila CTA (FER-130, handoff «Ritmo 1b»): «Empezar» y «Otra forma ›» viven en la MISMA
+            // fila ahora — antes «Otra forma» ocupaba su propia fila debajo. El enlace conserva su
+            // pliegue (decisión del dueño): lo que se despliega se inserta DEBAJO de la fila entera,
+            // no dentro de ella. Con Dynamic Type grande, `ViewThatFits` apila los dos en vez de
+            // recortarlos.
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .center, spacing: 16) {
+                    empezarButton
+                    otraFormaEnlace(fillsWidth: false)
+                }
+                VStack(alignment: .leading, spacing: CenitMetrics.space2) {
+                    empezarButton
+                    otraFormaEnlace(fillsWidth: false)
+                }
+            }
+            .padding(.top, EntrenarMetrics.ctaRowTop)
+            otraFormaPliegue
         }
     }
 
@@ -411,7 +435,7 @@ private struct EntrenarLanding: View {
         if todayRoutine != nil {
             tintedEmpezarButton
         } else {
-            StrandCTAButton(empezarLabel, kind: .outline) { startOrResume() }
+            StrandCTAButton(empezarLabel, kind: .outline, fillsWidth: false) { startOrResume() }
         }
     }
 
@@ -578,19 +602,18 @@ private struct EntrenarLanding: View {
         // three: three colours here would compete with the five coloured discs right above. The unit
         // words stay quiet ink. (FER-944)
         let accent = routineTint(region(name: todayRoutine?.name ?? ""))
-        return HStack(alignment: .firstTextBaseline, spacing: 6) {
+        // FER-130 · ritmo 1b: tres columnas con canal 28 (`heroNumeralsGap`), como el handoff — no una
+        // frase unida por «·». El layout cambia; la LECTURA no: `.combine` sigue diciendo «~50 min,
+        // 6 exercises, 18 sets» de un tirón (FER-944). Layout y VoiceOver son cosas distintas.
+        return HStack(alignment: .firstTextBaseline, spacing: EntrenarMetrics.heroNumeralsGap) {
             if estMinutes > 0 {
                 bigStat(Text(verbatim: "~\(estMinutes)"), unit: Text("min"), valueColor: accent)
-                dotSeparator
             }
             bigStat(Text(verbatim: "\(exerciseCounts[rid] ?? 0)"), unit: Text("exercises"), valueColor: accent)
             if sets > 0 {
-                dotSeparator
                 bigStat(Text(verbatim: "\(sets)"), unit: Text("sets"), valueColor: accent)
             }
         }
-        // VoiceOver reads the cluster as ONE phrase — the numerals combine into their unit words and
-        // the «·» separators are hidden, so it says «~50 min, 6 exercises, 18 sets», not the glyphs. (FER-944)
         .accessibilityElement(children: .combine)
     }
 
@@ -602,11 +625,6 @@ private struct EntrenarLanding: View {
         value.font(InstrumentoType.groteskNumber(24)).foregroundStyle(valueColor ?? theme.ink)
             + Text(verbatim: " ")
             + unit.font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-    }
-
-    private var dotSeparator: some View {
-        Text(verbatim: "·").font(StrandFont.caption).foregroundStyle(theme.inkDim)
-            .accessibilityHidden(true)   // VoiceOver reads the cluster as a phrase, not the «·» glyphs (FER-944)
     }
 
     /// «Hoy subes Press banca · 82,5 kg y Press militar · 26 kg» — the names+loads in the raise green.
@@ -670,21 +688,11 @@ private struct EntrenarLanding: View {
 
     private var tuPlanSection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            InstrumentoSectionBand("Your plan") {
-                // Decisión Fer (2026-07-16 v2): la puerta habla en la MISMA voz sutil que el
-                // «N sesiones · 90 días» de Consistencia, con chevron para decir «tócame».
-                Button { openWeeklyPlan() } label: {
-                    HStack(spacing: 4) {
-                        Text("Edit routines and week")
-                            .font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
-                        StrandIcon.disclosure.image
-                            .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
-                    }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(Text("Edit routines and week"))
-            }
+            // FER-130 «Ritmo 1b»: el nivel deja la banda hundida (`InstrumentoSectionBand`) por un
+            // filo superior + `EntrenarNivel` — la misma pieza que ya sirve la sesión en vivo. La
+            // fila entera es la puerta a «Editar» ahora (antes era un botón anidado dentro de la
+            // banda); mismo destino, mismo copy, un solo tap target de 44 pt.
+            nivelHub { EntrenarNivel("Your plan", value: "Edit routines and week", kickerStyle: .handoff) { openWeeklyPlan() } }
             weekStrip
             // Handoff v4b: EVERY routine lists here (today's included — its «↗ N suben» badge is the
             // reason it earns a row beyond the hero). Reversal of the earlier hero-only decision (FER-939).
@@ -884,50 +892,87 @@ private struct EntrenarLanding: View {
 
     /// El enlace + el pliegue, como una sola pieza. Se coloca en los dos estados (con plan y sin
     /// plan): una vista, dos colocaciones, para que no nazcan dos comportamientos.
+    ///
+    /// FER-130 «Ritmo 1b»: en el héroe con plan, el enlace se muda a la MISMA fila que «Empezar»
+    /// (`heroSection`), así que se partió en `otraFormaEnlace` (el toggle) + `otraFormaPliegue` (lo
+    /// que se despliega) para poder colocarlos por separado sin duplicar el cuerpo. Esta variable
+    /// sigue siendo la pieza compuesta para el único otro llamador (`emptyStateB`, fuera de alcance
+    /// de este issue): mismo comportamiento, sin tocarlo.
     private var otraForma: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Button {
-                withAnimation(reduceMotion ? StrandMotion.fade : StrandMotion.gentle) {
-                    otraFormaAbierta.toggle()
-                }
-            } label: {
-                HStack(spacing: CenitMetrics.space1) {
-                    Text("Other ways")
-                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                    StrandIcon.down.image
-                        .font(StrandFont.glyph(.chevron, weight: .semibold))
-                        .foregroundStyle(theme.inkTertiary)
-                        .rotationEffect(.degrees(otraFormaAbierta ? 180 : 0))
-                    Spacer(minLength: 0)
-                }
-                .frame(maxWidth: .infinity, minHeight: EntrenarMetrics.row, alignment: .leading)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(EntrenarPressStyle())
-            .accessibilityValue(Text(otraFormaAbierta ? "expanded" : "collapsed"))
+            otraFormaEnlace()
+            otraFormaPliegue
+        }
+    }
 
-            if otraFormaAbierta {
-                VStack(alignment: .leading, spacing: 0) {
-                    filoDelPliegue
-                    ForEach(Array(puertas.enumerated()), id: \.element.id) { i, puerta in
-                        puertaRow(puerta)
-                        if i < puertas.count - 1 { filoDelPliegue }
-                    }
-                    filoDelPliegue
-                    Text("Your routine for today stays put: this is separate, no guilt.")
-                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.top, CenitMetrics.rowVPad)
-                }
-                .padding(.top, CenitMetrics.space2)
-                .transition(.opacity)
-                .accessibilityElement(children: .contain)
+    /// El toggle «Other ways ›» solo. `fillsWidth` (default `true`, el comportamiento de antes):
+    /// `false` lo compacta para vivir junto a «Empezar» en el héroe (handoff: «min-h 44, 13px,
+    /// tinta700, padding 0 6px»). El handoff dibuja ahí el chevron fijo de navegación, pero esta
+    /// pantalla ya reserva «›» (`.disclosure`) para «te llevo a otro lado» en los tres encabezados
+    /// de nivel — reciclarlo aquí, junto al CTA principal, le enseñaría al usuario vidente que este
+    /// enlace navega cuando en realidad despliega en su sitio. Las dos variantes usan `.down`, el
+    /// mismo chevron que rota; se prioriza la regla dura del comentario de arriba sobre la lectura
+    /// literal del handoff.
+    private func otraFormaEnlace(fillsWidth: Bool = true) -> some View {
+        Button {
+            withAnimation(reduceMotion ? StrandMotion.fade : StrandMotion.gentle) {
+                otraFormaAbierta.toggle()
             }
+        } label: {
+            HStack(spacing: CenitMetrics.space1) {
+                Text("Other ways")
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                StrandIcon.down.image
+                    .font(StrandFont.glyph(.chevron, weight: .semibold))
+                    .foregroundStyle(theme.inkTertiary)
+                    .rotationEffect(.degrees(otraFormaAbierta ? 180 : 0))
+                    .accessibilityHidden(true)
+                if fillsWidth { Spacer(minLength: 0) }
+            }
+            .padding(.horizontal, fillsWidth ? 0 : CenitMetrics.space1 + 2)   // handoff «padding 0 6px»
+            .frame(maxWidth: fillsWidth ? .infinity : nil, minHeight: EntrenarMetrics.row, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(EntrenarPressStyle())
+        .accessibilityValue(Text(otraFormaAbierta ? "expanded" : "collapsed"))
+    }
+
+    /// El contenido que se despliega bajo el enlace — las cuatro puertas. Se coloca DEBAJO de la
+    /// fila entera del toggle (y, en el héroe, debajo de la fila CTA completa), nunca dentro de ella.
+    @ViewBuilder private var otraFormaPliegue: some View {
+        if otraFormaAbierta {
+            VStack(alignment: .leading, spacing: 0) {
+                filoDelPliegue
+                ForEach(Array(puertas.enumerated()), id: \.element.id) { i, puerta in
+                    puertaRow(puerta)
+                    if i < puertas.count - 1 { filoDelPliegue }
+                }
+                filoDelPliegue
+                Text("Your routine for today stays put: this is separate, no guilt.")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, CenitMetrics.rowVPad)
+            }
+            .padding(.top, CenitMetrics.space2)
+            .transition(.opacity)
+            .accessibilityElement(children: .contain)
         }
     }
 
     private var filoDelPliegue: some View {
         Rectangle().fill(theme.hairline).frame(height: 1)
+    }
+
+    /// La cabecera de un nivel del hub (FER-130 «Ritmo 1b»): filo superior de 1 pt + el aire del
+    /// handoff antes de la fila — envuelve el mismo `EntrenarNivel` que ya sirve «Ver toda la
+    /// biblioteca» en la sesión en vivo, sin tocar ese componente ni su otro llamador. El margen
+    /// EXTERNO del nivel (18 el primero, 2 los siguientes) lo pone quien coloca `tuPlanSection` /
+    /// `constanciaSection`, no esta función — así un mismo nivel sirve como primero o como segundo.
+    private func nivelHub<Nivel: View>(@ViewBuilder _ nivel: () -> Nivel) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            filoDelPliegue
+            nivel().padding(.top, EntrenarMetrics.levelPadTop)
+        }
     }
 
     /// Una fila del pliegue: glifo, título y subtítulo. Sin «›» al final — dos de las cuatro no
@@ -1048,10 +1093,9 @@ private struct EntrenarLanding: View {
         let days = constanciaCalendarDays
         let total = days.filter { if case .done = $0.state { return true }; return false }.count
         return VStack(alignment: .leading, spacing: 12) {
-            InstrumentoSectionBand("Consistency") {
-                Text("\(total) sessions · 63 days")
-                    .font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
-            }
+            // FER-130 «Ritmo 1b»: mismo cambio que «Tu plan» — filo superior + `EntrenarNivel`, sin
+            // acción (no navega, como la banda que reemplaza).
+            nivelHub { EntrenarNivel("Consistency", value: "\(total) sessions · 63 days", kickerStyle: .handoff) }
             TrainingCalendar(days: days, size: .mini, summary: constanciaSummary(total),
                               monthLabels: constanciaMonthLabels)
             if total == 0 {
@@ -1336,6 +1380,46 @@ private struct EntrenarLanding: View {
     private var hoyOverline: String {
         let day = Calendar.current.standaloneWeekdaySymbols[(todayWeekday - 1) % 7]
         return String(localized: "Today · \(day)")
+    }
+
+    // MARK: - Cabecera (FER-130 «Ritmo 1b»)
+    //
+    // «Entrenar · {fecha}» a la izquierda, el «?» de los trucos a la derecha — reemplaza al wordmark
+    // retirado en FER-952. Antes el «?» vivía en la misma fila que el hilo del veredicto; el handoff
+    // los separa: la cabecera es de la PANTALLA (nombra el tab y el día), el hilo es del CUERPO.
+
+    private var cabecera: some View {
+        HStack(spacing: CenitMetrics.space2) {
+            Text(cabeceraKicker)
+                .entrenarCabeceraKicker()
+                .foregroundStyle(theme.inkSecondary)
+            Spacer(minLength: CenitMetrics.space2)
+            Button { showTricks = true } label: {
+                Image(systemName: "questionmark.circle")
+                    .font(StrandFont.glyph(.lead))
+                    .foregroundStyle(theme.inkTertiary)
+                    .frame(width: EntrenarMetrics.row, height: EntrenarMetrics.row)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(EntrenarPressStyle())
+            .accessibilityLabel(Text("Tricks"))
+        }
+    }
+
+    /// «Entrenar · Sáb 15 ago» — el nombre del tab más la fecha real de hoy, no un rótulo fijo.
+    private var cabeceraKicker: String {
+        String(localized: "Train · \(cabeceraFecha)")
+    }
+
+    /// La fecha de hoy en la plantilla localizada «EEE d MMM» («sáb 15 ago» / «Sat 15 Aug»), con la
+    /// inicial en mayúscula — la plantilla de weekday corto sale toda en minúsculas en es-MX.
+    private var cabeceraFecha: String {
+        let f = DateFormatter()
+        f.locale = Locale.autoupdatingCurrent
+        f.setLocalizedDateFormatFromTemplate("EEE d MMM")
+        let s = f.string(from: Date())
+        guard let first = s.first else { return s }
+        return String(first).uppercased() + s.dropFirst()
     }
 
     /// El hilo del veredicto: la misma pastilla que es la puerta de Hoy, construida por el MISMO
