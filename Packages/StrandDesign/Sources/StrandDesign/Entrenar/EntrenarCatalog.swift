@@ -90,7 +90,7 @@ public struct EntrenarCatalogView: View {
                     RestBand(kicker: "REST · SET 1 → 2",
                              mode: .heartRate(remainingBpm: 18, targetBpm: 110, currentBpm: 128),
                              trailing: "1:18",
-                             note: "at 5 bpm I say «almost» · at 2:30 I let you go even if it hasn't dropped",
+                             note: "at 5 bpm I say «almost» · at 3:00 I let you go even if it hasn't dropped",
                              onSkip: {})
                     RestBand(kicker: "REST · SET 2 → 3",
                              mode: .heartRate(remainingBpm: 0, targetBpm: 110, currentBpm: 108),
