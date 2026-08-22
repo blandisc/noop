@@ -356,13 +356,13 @@ public struct LiquidGuardianScreen: View {
 enum LiquidGuardianFixtures {
 
     private static let reglaTexto =
-        "Una sola señal fuera nunca empuja tu día. Solo la pareja, dos noches seguidas."
-    private static let reglaClave = "Solo la pareja, dos noches seguidas."
+        "Una sola señal fuera nunca empuja tu día. Solo la pareja, la misma noche."
+    private static let reglaClave = "Solo la pareja, la misma noche."
     private static let pie = "tus últimas 14 noches · la banda es tu patrón"
     private static let metodo = LiquidGuardianHoja.Metodo(
-        titulo: "Cómo se obtuvo",
-        mostrar: "Ver cómo se obtuvo",
-        ocultar: "Ocultar cómo se obtuvo",
+        titulo: "Cómo se calcula",
+        mostrar: "Ver cómo se calcula",
+        ocultar: "Ocultar cómo se calcula",
         nota: "Las dos señales se leen de tu Apple Watch mientras duermes y se comparan contra tu propio patrón de las últimas semanas, no contra tablas de población. Una desviación aislada se ignora a propósito: un cuarto caliente o una cobija de más la producen solas.",
         origenEtiqueta: "Apple Salud",
         origenSufijo: "anoche")

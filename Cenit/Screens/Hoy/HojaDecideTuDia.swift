@@ -58,7 +58,7 @@ struct HojaDecideTuDia: View {
                 combo(LiquidColor.ambar,
                       String(localized: "hero.title.caution", defaultValue: "Go light today"),
                       String(localized: "manual.deciden.c2.sub",
-                             defaultValue: "One signal out of your range, and I tell you which."))
+                             defaultValue: "One signal out, and I tell you which."))
                 combo(LiquidColor.negativo,
                       String(localized: "hero.title.easy", defaultValue: "Recover"),
                       String(localized: "manual.deciden.c3.sub",
@@ -66,7 +66,7 @@ struct HojaDecideTuDia: View {
                 combo(LiquidColor.tinta500,
                       String(localized: "hero.title.calibrando", defaultValue: "Getting to know you"),
                       String(localized: "manual.deciden.c4.sub",
-                             defaultValue: "Not enough reading tonight. Without data I don't guess."))
+                             defaultValue: "Not enough reading last night. Without data I don't guess."))
             }
             .padding(LiquidSpace.s300)
             .frame(maxWidth: .infinity, alignment: .leading)

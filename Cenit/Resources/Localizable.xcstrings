@@ -1092,22 +1092,6 @@
         }
       }
     },
-    "hero.sub.desfase.fuera" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "One of your signals stepped out today; the verdict changes if that repeats two days in a row."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hoy una de tus señales se salió; el veredicto cambia si eso se repite dos días seguidos."
-          }
-        }
-      }
-    },
     "hero.sub.desfase" : {
       "localizations" : {
         "en" : {
@@ -3944,13 +3928,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No usable nights yet · your range takes shape with the next ones"
+            "value" : "No usable nights yet · your range is taking shape"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aún sin noches útiles · tu rango se forma con las próximas"
+            "value" : "Aún sin noches útiles · tu rango se está formando"
           }
         }
       }
@@ -24922,7 +24906,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your resting heart rate woke up in your base, and your sleep reached the recommended range."
+            "value" : "Your resting heart rate came in at your base, and your sleep reached the recommended range."
           }
         },
         "es" : {
@@ -30822,13 +30806,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Not enough reading tonight. Without data I don't guess."
+            "value" : "Not enough reading last night. Without data I don't guess."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No hubo lectura suficiente esta noche. Sin datos no adivino."
+            "value" : "No hubo lectura suficiente anoche. Sin datos no adivino."
           }
         }
       }
@@ -31673,7 +31657,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hoy"
+            "value" : "hoy"
           }
         }
       }

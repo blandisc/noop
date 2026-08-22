@@ -195,7 +195,7 @@ public enum MatrizTokens {
     public static let hilosLatidoW: Double = 1.15
     /// El inset horizontal de la gráfica: el anillo de HOY latiendo llega a `hilosAnillo +
     /// hilosAnilloLatido + hilosAnilloTrazo/2` = 8 pt del centro del último punto — el inset de la
-    /// familia (5) lo cortaba. Es también el inset del DEDO (fuente única, P-3).
+    /// familia (4) lo cortaba. Es también el inset del DEDO (fuente única, P-3).
     public static let hilosInset: CGFloat = hilosAnillo + hilosAnilloLatido + hilosAnilloTrazo / 2
     /// El nudo del par (línea punteada entre los dos puntos ámbar) y la columna que lo resalta.
     public static let hilosNudoTrazo: CGFloat = 1.5

@@ -41,7 +41,7 @@ extension LiquidHoyBuilder {
         let hoyKey = keys.last
         let hoy = hoyKey.flatMap { byDay[$0] }
         let prep = i.prep
-        let razonCarga = i.carga?.acwr
+        let razonCarga = finito(i.carga?.acwr)
 
         // Severidades de HOY (única fuente: HoyGramatica).
         let alertaSueno = mapaAlerta(HoyGramatica.severidad(senal: .sleep, prep: prep, razonCarga: razonCarga))
@@ -52,7 +52,7 @@ extension LiquidHoyBuilder {
         // —— 1. Sueño (14 columnas) ——
         let keysSueno = Array(keys.suffix(matrizVentanaSueno))
         let noches: [MatrizColumnas.Noche] = keysSueno.map { day in
-            let min = byDay[day]?.totalSleepMin
+            let min = finito(byDay[day]?.totalSleepMin)
             // Historia juzgada con bodyHistory de ESE día — jamás con el juicio de hoy.
             let out = bodyByDay[day]?.sleepOut == true
             let alerta: MedidorLunar.Alerta = {
@@ -63,7 +63,7 @@ extension LiquidHoyBuilder {
             let horas = min.map { $0 / 60.0 }
             return MatrizColumnas.Noche(valor: horas, alerta: alerta)
         }
-        let valorSueno = HoyGramatica.valorODash(hoy?.totalSleepMin) {
+        let valorSueno = HoyGramatica.valorODash(finito(hoy?.totalSleepMin)) {
             HoyGramatica.formatoDuracion($0)
         }
         // Scrub (FER-55): cada noche con su día + horas + estado, ya formateados. El
@@ -87,7 +87,7 @@ extension LiquidHoyBuilder {
         let fueraRangoSueno = String(localized: "matriz.sueno.rango.fuera.v2",
                                      defaultValue: "outside the recommended range")
         let scrubSueno: [MatrizSeccion.ScrubNoche] = keysSueno.enumerated().map { idx, day in
-            let mins = byDay[day]?.totalSleepMin
+            let mins = finito(byDay[day]?.totalSleepMin)
             let offsetDesdeFin = keysSueno.count - 1 - idx
             let fecha = weekdayLabel(offsetFromToday: offsetDesdeFin, now: i.now,
                                      calendar: i.calendar, formatter: diaFmt, nocturna: true)
@@ -132,7 +132,9 @@ extension LiquidHoyBuilder {
             // el orden y el manual «?». Carga NUNCA vota (loadAxis inRange/noData).
             valor: valorSueno,
             // «h» como su gemela dice «lpm», su hoja y el prototipo (quisquilloso Q-06).
-            unidad: valorSueno == "—" ? nil : String(localized: "h"),
+            // Por HISTORIA, como FC: la cara ya oculta la unidad cuando el valor es «—», y con el
+            // gate por hoy el scrub de antier enseñaba «7:20» sin «h» (quisquilloso Q3-11).
+            unidad: noches.contains(where: { $0.valor != nil }) ? String(localized: "h") : nil,
             destacada: true,
             sublabel: sublabelSueno,
             chartID: "matriz-sleep",
@@ -450,7 +452,7 @@ extension LiquidHoyBuilder {
         // scrub alinee 1:1 con los puntos que dibuja la colina.
         let keysEstelaPrev = Array(keys.dropLast().suffix(matrizVentanaEstela))
         let estelaPairs: [(day: String, v: Double)] = keysEstelaPrev.compactMap { k in
-            cargaSeriesByDay[k].map { (k, $0) }
+            finito(cargaSeriesByDay[k]).map { (k, $0) }
         }
         let estela: [Double] = estelaPairs.map(\.v)
         let valorCarga = HoyGramatica.valorODash(razonCarga) { String(format: "%.2f", $0) }
@@ -515,7 +517,7 @@ extension LiquidHoyBuilder {
             valor: valorEsf,
             // Fuente única del sufijo de escala (no un literal): la hoja de detalle usa el
             // mismo `MetricFormat.scaleSuffix`, así que Matriz y hoja no divergen.
-            unidad: valorEsf == "—" ? nil : MetricFormat.forMetric(.strain).scaleSuffix,
+            unidad: ptsEsf.contains(where: { $0 != nil }) ? MetricFormat.forMetric(.strain).scaleSuffix : nil,
             sublabel: valorEsf == "—" ? nil
                 : String(localized: "matriz.esf.sub", defaultValue: "today's effort so far"),
             chartID: "matriz-strain",
@@ -526,8 +528,8 @@ extension LiquidHoyBuilder {
         // —— 5. Estrés | Pasos ——
         let keysEstres = Array(keys.suffix(matrizVentanaEstres))
         // Cortes fijos 1.0/2.0 SOLO como geometría (StressBand) — sin color de juicio.
-        let niveles: [Int?] = keysEstres.map { day in stressByDay[day].map(nivelStress) }
-        let stressHoy = hoyKey.flatMap { stressByDay[$0] }
+        let niveles: [Int?] = keysEstres.map { day in finito(stressByDay[day]).map(nivelStress) }
+        let stressHoy = hoyKey.flatMap { finito(stressByDay[$0]) }
         // FER-125 (prototipo aprobado): la palabra va en MINÚSCULA («bajo · medio · alto») y
         // toma el color de calor de su nivel (la misma rampa que las celdas, FER-60).
         func palabraStress(_ v: Double) -> String {
@@ -613,7 +615,7 @@ extension LiquidHoyBuilder {
             id: "steps", hue: LiquidColor.teal,
             titulo: String(localized: "Steps"),
             valor: valorPasos,
-            unidad: valorPasos == "—" ? nil : String(localized: "matriz.pasos.k", defaultValue: "k"),
+            unidad: ptsPasos.contains(where: { $0 != nil }) ? String(localized: "matriz.pasos.k", defaultValue: "k") : nil,
             sublabel: valorPasos == "—" ? nil
                 : String(localized: "matriz.pasos.sub", defaultValue: "today · 14 days"),
             chartID: "matriz-steps",
@@ -914,7 +916,7 @@ extension LiquidHoyBuilder {
         // (espejo del gate fantasma del Cosmos — Grok #3).
         guard ptsFC.last.flatMap({ $0 }) != nil else {
             // Sin la noche pero con historia: «anoche · sin lectura», como su scrub (Q2-13).
-            guard ptsFC.contains(where: { $0 != nil }), prep?.isNightAnchored != false else { return nil }
+            guard ptsFC.contains(where: { $0 != nil }), prep?.isNightAnchored == true else { return nil }
             return String(format: String(localized: "matriz.scrub.sinlectura", defaultValue: "%@ · no reading"),
                           String(localized: "matriz.sueno.anoche", defaultValue: "last night"))
         }

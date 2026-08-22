@@ -87,7 +87,7 @@ struct HoyMatrizHost: View {
                 return String(localized: "hoy.leyendo", defaultValue: "Reading your night…")
             case .sinSync:
                 return String(localized: "hoy.sync.pendiente",
-                              defaultValue: "Pending sync · pull down to sync")
+                              defaultValue: "Sync pending · pull down")
             case .nocheNoRegistrada:
                 return String(localized: "hoy.noche.noregistrada",
                               defaultValue: "The night wasn't recorded")
