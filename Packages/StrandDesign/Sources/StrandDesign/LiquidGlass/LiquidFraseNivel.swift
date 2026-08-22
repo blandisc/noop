@@ -50,10 +50,18 @@ public struct LiquidFraseNivel: View {
     /// para leerse como un solo bloque (mismo signo que el resto de la escala display).
     private static let nivelTracking: CGFloat = -0.3
 
+    /// XC7-06 / Q8-12 (FER-128) · la misma regla que `LiquidSheetHeader`: a tamaños de
+    /// accesibilidad el sello baja a su propia línea en vez de estrangular el nivel.
+    @Environment(\.dynamicTypeSize) private var tamanoTexto
+
     public var body: some View {
+        let apilado = tamanoTexto >= .accessibility1
+        let fila = apilado
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: LiquidSpace.s100))
+            : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: LiquidSpace.s200))
         VStack(alignment: .leading, spacing: LiquidSpace.s100) {
             if let titulo = nivel ?? sinLectura {
-                HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s200) {
+                fila {
                     Text(verbatim: titulo)
                         .font(LiquidType.nivelTitulo)
                         .tracking(Self.nivelTracking)
@@ -61,13 +69,14 @@ public struct LiquidFraseNivel: View {
                         // Escala con Dynamic Type y ENVUELVE: el nivel nunca se trunca.
                         .fixedSize(horizontal: false, vertical: true)
                     if let sello {
-                        Spacer(minLength: LiquidSpace.s200)
+                        if !apilado { Spacer(minLength: LiquidSpace.s200) }
                         // El MISMO sello que las 9 hojas de métrica (`LiquidSheetHeader`): `filaRango`
-                        // (FER-128 r7 — cambiaba de familia y tamaño solo en el guardián).
+                        // y el tono de TEXTO (ámbar demotado a `atencionTexto`, AA — el crudo mide
+                        // 3.8:1 a 13 pt) (FER-128 r7/r8 — cambiaba de familia, tamaño y tono solo aquí).
                         Text(verbatim: sello)
                             .font(LiquidType.filaRango)
-                            .foregroundStyle(nivel != nil ? tono : LiquidColor.tinta500)
-                            .lineLimit(1)
+                            .foregroundStyle(nivel != nil ? LiquidSheetHeader.tonoTexto(tono) : LiquidColor.tinta500)
+                            .lineLimit(apilado ? nil : 1)
                             .layoutPriority(1)
                     }
                 }

@@ -7556,7 +7556,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "tu último día"
+            "value" : "tu día más reciente"
           }
         }
       }
@@ -7573,7 +7573,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "no fue tu último día"
+            "value" : "no fue tu día más reciente"
           }
         }
       }

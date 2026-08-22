@@ -475,7 +475,7 @@ enum LiquidGuardianFixtures {
         infoMostrar: "Mostrar explicación", infoOcultar: "Ocultar explicación",
         nivel: "Una señal fuera",
         conteo: "Tu temperatura amaneció fuera de tu patrón; la respiración, donde siempre.",
-        sello: nil, enPatron: false,
+        sello: "ANOCHE · 3 AGO", enPatron: false,
         temp: temp("+0.9°", fuera: true, serie: tempSerieOut),
         resp: resp("14 rpm", fuera: false, serie: respSerieIn),
         pieTarjeta: pie,
@@ -514,7 +514,7 @@ enum LiquidGuardianFixtures {
         nivel: nil,
         sinLectura: "Sin lectura de anoche",
         conteo: "Sin noche grabada, el guardián no tiene contra qué comparar.",
-        sello: "ANOCHE · 3 AGO", enPatron: false,
+        sello: nil, enPatron: false,
         temp: temp("—", fuera: false, serie: serie(
             valores: [0.1, 0.0, -0.1, 0.2, 0.1, -0.05, 0.15, 0.05, -0.1, 0.0, 0.1, 0.05, 0.0, 0.0],
             fueraAnoche: false, anillo: true, banda: -0.8...0.8,

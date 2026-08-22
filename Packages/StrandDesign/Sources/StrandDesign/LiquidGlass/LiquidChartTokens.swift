@@ -122,7 +122,10 @@ public enum LiquidChart {
     /// contaba 11 donde la fila de nivel afirmaba 12; medir el paso MÍNIMO prefiere no
     /// dibujar ninguno a dibujar una cuenta falsa.
     static func hayEspacioParaPuntos(centros: [CGFloat]) -> Bool {
-        guard centros.count > 1, centros.count <= puntoDatoUmbral else { return false }
+        guard !centros.isEmpty, centros.count <= puntoDatoUmbral else { return false }
+        // Una sola lectura SIEMPRE cabe: no hay paso que medir, y la Matriz la pinta
+        // (FER-128 r8 — con `> 1` la rama n=1 del plot estaba muerta).
+        if centros.count == 1 { return true }
         var minPaso = CGFloat.greatestFiniteMagnitude
         for i in centros.indices.dropFirst() {
             minPaso = Swift.min(minPaso, abs(centros[i] - centros[i - 1]))

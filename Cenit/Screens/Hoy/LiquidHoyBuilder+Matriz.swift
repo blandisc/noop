@@ -900,9 +900,6 @@ extension LiquidHoyBuilder {
         return s.lowercased(with: locale)
     }
 
-    /// Dominio de línea: min/max de puntos+base con padding, o fallback.
-    /// Dominio de los carriles de FC: la serie + la banda completa, con aire — la banda
-    /// nunca se corta en el borde del lienzo (los carriles de fuera necesitan existir).
     /// Lo que VoiceOver lee por un sueño: «7 h 25 min» (la clave plural ya existe), nunca «7:25».
     static func a11ySueno(_ mins: Double) -> String {
         let total = Int(mins.rounded()); let h = total / 60, m = total % 60
@@ -917,6 +914,9 @@ extension LiquidHoyBuilder {
         return v
     }
 
+    /// Dominio de línea: min/max de puntos+base con padding, o fallback.
+    /// Dominio de los carriles de FC: la serie + la banda completa, con aire — la banda
+    /// nunca se corta en el borde del lienzo (los carriles de fuera necesitan existir).
     static func dominioCarriles(_ pts: [Double?], banda: ClosedRange<Double>?,
                                 fallback: ClosedRange<Double>) -> ClosedRange<Double> {
         var vals = pts.compactMap { $0 }.filter(\.isFinite)

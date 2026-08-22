@@ -151,7 +151,10 @@ public struct LiquidLevelRow: View {
         let esTono: Bool = activa
         RoundedRectangle(cornerRadius: 1, style: .continuous)
             .fill(esTono ? tono : LiquidColor.tinta10)
-            .frame(width: activa ? 2.5 : 2, height: activa ? 17 : 14)
+            // Apilado (AX): el tick se sienta en la baseline junto a la etiqueta, así que crece
+            // con la letra — a 14 pt fijos quedaba como un guion bajo (FER-128 r8).
+            .frame(width: activa ? 2.5 : 2,
+                   height: tamanoTexto >= .accessibility1 ? etiquetaPt : (activa ? 17 : 14))
             .frame(width: 8)
     }
 }
@@ -198,6 +201,8 @@ public struct LiquidLevelsList: View {
 
     private let filas: [Fila]
     private let tono: Color
+    /// La sangría del separador sigue al texto también cuando la fila se apila (r8).
+    @Environment(\.dynamicTypeSize) private var tamanoTexto
 
     public init(filas: [Fila], tono: Color) {
         self.filas = filas
@@ -221,7 +226,8 @@ public struct LiquidLevelsList: View {
                     Rectangle()
                         .fill(LiquidColor.tinta10)
                         .frame(height: 1)
-                        .padding(.leading, LiquidSpace.s400 + 8 + LiquidSpace.s300)
+                        .padding(.leading, LiquidSpace.s400 + 8
+                                 + (tamanoTexto >= .accessibility1 ? LiquidSpace.s150 : LiquidSpace.s300))
                 }
             }
         }
@@ -265,3 +271,17 @@ public struct LiquidLevelsList: View {
         .environment(\.liquidMotionDisabled, true)
 }
 #endif
+
+/// XC7-07 · a tamaños AX la fila se apila (punto + etiqueta / rango / conteo) y nada parte palabras.
+#Preview("Liquid · LevelRow AX") {
+    LiquidLevelsList(
+        filas: [
+            .init(etiqueta: "Rango de atleta", rango: "≥ 71", conteo: "0 noches"),
+            .init(etiqueta: "Alto", rango: "60–70", conteo: "4 noches", esHoy: true, activa: true),
+            .init(etiqueta: "Bajo", rango: "< 45", conteo: "1 noche"),
+        ],
+        tono: LiquidColor.cian)
+        .padding(LiquidSpace.s550)
+        .background(LiquidSheetFondo(tone: LiquidColor.cian))
+        .environment(\.dynamicTypeSize, .accessibility3)
+}

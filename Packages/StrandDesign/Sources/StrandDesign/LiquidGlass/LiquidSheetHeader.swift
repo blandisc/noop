@@ -182,7 +182,7 @@ public struct LiquidSheetHeader: View {
                 // conservan su baseline propia en el sub-stack.
                 // XC7-06 (FER-128 r7) · En tamaños de accesibilidad el sello baja a su propia
                 // línea: en la misma fila que el numeral quedaba «LAST…» — la fecha y la palabra
-                // desaparecían. Mismo umbral que `limiteNumeral`, un escalón más arriba.
+                // desaparecían. Dos escalones arriba de `limiteNumeral` (salta `.xxxLarge`).
                 let apilado = tamanoTexto >= .accessibility1
                 let filaDato = apilado
                     ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4))
@@ -408,7 +408,7 @@ struct LiquidInfoBoton: View {
 /// L5 · en tamaños AX la fila del numeral envuelve en vez de truncar la etiqueta de origen.
 #Preview("Liquid · SheetHeader AX") {
     LiquidSheetHeader(icono: .onda, titulo: "VFC", tono: LiquidColor.cian,
-                      numeral: "56", unidad: "ms",
+                      numeral: "56", unidad: "ms", sello: "ANOCHE · 3 AGO",
                       origenEtiqueta: "Apple Salud · anoche",
                       explicacion: "La variación entre latidos mientras duermes.",
                       infoMostrar: "Mostrar explicación",

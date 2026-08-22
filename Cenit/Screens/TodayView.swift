@@ -65,7 +65,8 @@ private struct PullSyncHint: View {
                 // mientras HealthKit trabajaba (el sello que lo prometía nunca se montó).
                 // Una palabra basta, en la voz del sistema.
                 Text(String(localized: "hoy.sincronizando", defaultValue: "Syncing…"))
-                    .font(InstrumentoType.grotesk(12, weight: .medium))
+                    // Escala con Dynamic Type como todo lo que se lee en Hoy (FER-128 r8).
+                    .font(LiquidType.captionLectura)
                     .foregroundStyle(LiquidColor.tinta500)
                     .transition(.opacity)
                     .accessibilityAddTraits(.updatesFrequently)

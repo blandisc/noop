@@ -130,10 +130,12 @@ final class LiquidChartMotorTests: XCTestCase {
         XCTAssertTrue(LiquidChart.hayEspacioParaPuntos(centros: centrosPorTiempo(dias: dias)))
     }
 
-    /// Casos degenerados: sin serie y con un solo punto no hay discos que repartir (con 1
-    /// punto la gráfica ya cae al pozo vacío, y `x(_:_:)` lo centra).
+    /// Casos degenerados: sin serie no hay discos; con UN punto sí (FER-128 r8: la lectura
+    /// sola se pinta al FINAL del ancho útil, como en la Matriz — antes `false` dejaba el
+    /// lienzo en blanco mientras la voz sí la decía).
     func test_densidad_seriesDegeneradas() {
         XCTAssertFalse(LiquidChart.hayEspacioParaPuntos(centros: []))
-        XCTAssertFalse(LiquidChart.hayEspacioParaPuntos(centros: [150]))
+        XCTAssertTrue(LiquidChart.hayEspacioParaPuntos(centros: [150]),
+                      "una lectura sola cabe siempre: el plot la pinta")
     }
 }
