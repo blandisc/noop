@@ -1487,7 +1487,8 @@ private struct EntrenarLanding: View {
             let a = tally[$0] ?? 0, b = tally[$1] ?? 0
             return a != b ? a > b : (idx[$0] ?? 0) < (idx[$1] ?? 0)
         }.prefix(3)
-        return top.map { MuscleVocabulary.es[$0] ?? $0.capitalized }
+        // Por idioma (FER-128 r16): en inglés decía «Pecho · Hombros» bajo «TODAY».
+        return top.map(StrengthDisplay.muscle)
     }
 }
 

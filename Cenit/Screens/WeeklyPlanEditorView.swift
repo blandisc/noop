@@ -993,7 +993,7 @@ struct WeeklyPlanEditorView: View {
         let idx = Dictionary(uniqueKeysWithValues: order.enumerated().map { ($1, $0) })
         return order.sorted { let a = tally[$0] ?? 0, b = tally[$1] ?? 0
             return a != b ? a > b : (idx[$0] ?? 0) < (idx[$1] ?? 0) }
-            .prefix(3).map { MuscleVocabulary.es[$0] ?? $0.capitalized }
+            .prefix(3).map(StrengthDisplay.muscle)   // por idioma (FER-128 r16)
     }
 
     /// Whole days since each routine was last completed (newest session per routine wins).

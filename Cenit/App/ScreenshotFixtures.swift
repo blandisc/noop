@@ -154,7 +154,12 @@ enum ScreenshotFixtures {
                     try? await store.setRoutineSchedule(weekday: ((wd + 1) % 7) + 1, routineId: ids[2])
                 }
             }
-            model.repo.setDashboard(days: days)   // publica al final → dispara loadAll
+            // Como los otros fixtures con historia: el motor se publica para que héroe, hilo y acta
+            // digan lo que dirían en producción con 7 noches (FER-128 r16).
+            let prepTrain = Preparedness.evaluate(.init(
+                days: days, strainByDay: [:], trend: nil, asOf: Repository.localDayKey(today)))
+            model.repo.setDashboard(days: days, appleHealthDays: Set(days.map(\.day)),
+                                    preparedness: prepTrain)   // publica al final → dispara loadAll
             return
         }
 
