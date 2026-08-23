@@ -339,7 +339,8 @@ struct ExerciseDetailScreen: View {
         historyDays = byDayBest.values.sorted { $0.ts > $1.ts }
         historyDaysAscending = historyDays.sorted { $0.ts < $1.ts }
 
-        let cal = Calendar.current
+        // La misma semana (lunes→domingo) que el historial y la tira de Entrenar (r15).
+        let cal = Calendar.semanaLunes
         if let thisWeek = cal.dateInterval(of: .weekOfYear, for: Date())?.start {
             weeklyVolumes = (0..<7).reversed().map { back in
                 guard let start = cal.date(byAdding: .weekOfYear, value: -back, to: thisWeek),

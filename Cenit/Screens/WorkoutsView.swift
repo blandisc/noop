@@ -277,7 +277,7 @@ struct WorkoutsView: View {
     /// Total strength volume per week over the last 8 weeks (oldest→newest), Monday-anchored; last bucket
     /// = current week. Same bucketing as `WorkoutHistoryScreen.weeklyVolumes`.
     private func weeklyStrengthVolumes() -> [WeekVolume] {
-        var cal = Calendar.current; cal.firstWeekday = 2
+        let cal = Calendar.semanaLunes
         let thisWeekStart = cal.dateInterval(of: .weekOfYear, for: Date())?.start ?? Date()
         var buckets = [Double](repeating: 0, count: 8)
         for s in strengthSessions {

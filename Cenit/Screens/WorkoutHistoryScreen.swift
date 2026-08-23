@@ -745,7 +745,7 @@ struct WorkoutHistoryScreen: View {
     /// Total volume per week over the last 8 weeks (oldest→newest), Monday-anchored. The last bucket is
     /// the current week (drawn in `dataRecovery`).
     private var weeklyVolumes: [WeekVolume] {
-        var cal = Calendar.current; cal.firstWeekday = 2
+        let cal = Calendar.semanaLunes
         let thisWeekStart = cal.dateInterval(of: .weekOfYear, for: Date())?.start ?? Date()
         var buckets = [Double](repeating: 0, count: 8)
         var counts = [Int](repeating: 0, count: 8)

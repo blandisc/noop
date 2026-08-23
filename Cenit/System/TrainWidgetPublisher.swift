@@ -46,7 +46,8 @@ enum TrainWidgetPublisher {
         // La tira se DIBUJA lunes→domingo; la semana se CUENTA igual, gane o no el locale
         // (es_MX/en_US empiezan en domingo: la sesión del domingo pasado caía en la «D» del final,
         // que se lee como el domingo próximo — FER-128 r14).
-        guard let weekStart = Self.semanaLunes(calendar).dateInterval(of: .weekOfYear, for: now)?.start else { return [] }
+        var lunes = calendar; lunes.firstWeekday = 2
+        guard let weekStart = lunes.dateInterval(of: .weekOfYear, for: now)?.start else { return [] }
         let done = TrainingStreak.completedDayStarts(sessions, calendar: calendar)
         var out: Set<Int> = []
         for offset in 0..<7 {
@@ -54,12 +55,6 @@ enum TrainWidgetPublisher {
             if done.contains(day) { out.insert(calendar.component(.weekday, from: day)) }
         }
         return out
-    }
-
-    /// El mismo calendario con la semana empezando en LUNES, como la tira (`orderedWeekdays` = 2…7,1)
-    /// y el Calendario 90 del Detalle de Sueño (`firstWeekday = 2`).
-    static func semanaLunes(_ calendar: Calendar) -> Calendar {
-        var c = calendar; c.firstWeekday = 2; return c
     }
 
     /// The day's initial, localized — same call `EntrenarView.weekdayLetter` already makes.
@@ -84,17 +79,30 @@ enum TrainWidgetPublisher {
         let todayRoutineId = WeeklySplit.todayRoutineId(split: split, todayWeekday: todayWeekday)
         let todayRoutineName = todayRoutineId.flatMap { routineNames[$0] }
 
+        let pendiente = prep == nil && !fullyLoaded
         let hilo = LiquidHoyBuilder.hiloEntrenar(prep: prep, nights: prep?.autonomicNights ?? 0,
                                                  healthConnected: healthConnected,
-                                                 verdictPending: prep == nil && !fullyLoaded,
+                                                 verdictPending: pendiente,
                                                  hasPlan: todayRoutineId != nil)
-        let verdict = hilo.map { TrainWidgetSnapshot.Verdict(tone: .init($0.tono), word: $0.palabra) }
+        let verdict = verdictToPublish(hilo: hilo, pendiente: pendiente,
+                                       previo: TrainWidgetSnapshot.read()?.verdict)
 
         let snap = snapshot(todayRoutineName: todayRoutineName, sessionLive: sessionLive,
                             verdict: verdict, week: weekDays, now: now)
         TrainWidgetSnapshot.write(snap)
         WidgetCenter.shared.reloadTimelines(ofKind: TrainWidgetSnapshot.trainTodayKind)
         WidgetCenter.shared.reloadTimelines(ofKind: TrainWidgetSnapshot.weekKind)
+    }
+}
+
+extension TrainWidgetPublisher {
+    /// Mientras el veredicto se LEE (`prep == nil && !fullyLoaded`) el hilo es nil; publicar `nil` borraba
+    /// la palabra de la pantalla de inicio en cada arranque. Se conserva la previa, como el reloj
+    /// (`pushWatchIdleContext`) — FER-128 r15.
+    static func verdictToPublish(hilo: LiquidHoyBuilder.HiloEntrenar?, pendiente: Bool,
+                                 previo: TrainWidgetSnapshot.Verdict?) -> TrainWidgetSnapshot.Verdict? {
+        if let hilo { return .init(tone: .init(hilo.tono), word: hilo.palabra) }
+        return pendiente ? previo : nil
     }
 }
 

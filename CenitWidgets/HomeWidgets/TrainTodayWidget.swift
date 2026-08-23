@@ -129,8 +129,10 @@ private struct RoutineBody: View {
     }
 
     private var a11yLabel: Text {
+        // La palabra del veredicto también se DICE (r15): en el teléfono y el reloj el hilo se lee.
         (today.sessionLive ? Text("Continue") : Text("Start routine"))
             + Text(verbatim: ", ") + Text(verbatim: today.routineName)
+            + (verdict.map { Text(verbatim: ", ") + Text(verbatim: $0.word) } ?? Text(verbatim: ""))
     }
 }
 
@@ -160,7 +162,8 @@ private struct RestBody: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text("Rest day"))
+        .accessibilityLabel(Text("Rest day")
+            + (verdict.map { Text(verbatim: ", ") + Text(verbatim: $0.word) } ?? Text(verbatim: "")))
     }
 }
 
@@ -205,6 +208,14 @@ struct TrainTodayWidget: Widget {
     TrainTodayEntry(date: .now, snapshot: TrainWidgetSnapshot(
         writtenAt: .now, today: .init(routineName: "Empuje", sessionLive: false),
         verdict: .init(tone: .clear, word: String(localized: "In range")), week: []))
+}
+
+#Preview("Palabra larga (hueca)", as: .systemSmall) {
+    TrainTodayWidget()
+} timeline: {
+    TrainTodayEntry(date: .now, snapshot: TrainWidgetSnapshot(
+        writtenAt: .now, today: .init(routineName: "Empuje", sessionLive: false),
+        verdict: .init(tone: .hollow, word: "Todavía no puedo leer tus mañanas"), week: []))
 }
 
 #Preview("Día de descanso", as: .systemSmall) {

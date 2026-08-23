@@ -778,12 +778,21 @@ struct SleepDetailScreen: View {
                     // ella. Antes aquí iba la media, que no se pierde — vive en su cajita
                     // «Promedio», dos filas abajo.
                     fraseNivelHistorial(window)
-                    if let pctChange, let dias = range.days {
-                        // Dice contra QUÉ («vs los 30 días anteriores») y con «−» tipográfico (r14).
+                    // La MISMA voz que el chip de Tendencias (`TrendStatSummary`): «N% vs el mes pasado»,
+                    // el periodo por el rango, y bajo ±1 % se calla en vez de «+0 %» (r14/r15).
+                    if let pctChange, abs(pctChange) >= 1, let periodo = range.comparisonPeriod {
                         let n = Int(pctChange.rounded())
-                        let signo = n >= 0 ? "+\(n)" : "−\(abs(n))"
-                        LiquidNotaLine(String(localized: "sueno.hist.vsanterior",
-                                              defaultValue: "\(signo) % vs the previous \(dias) days"),
+                        let mag = "\(n >= 0 ? "+" : "−")\(abs(n))%"
+                        let texto: String = {
+                            switch periodo {
+                            case .week:     return String(localized: "\(mag) vs last week")
+                            case .month:    return String(localized: "\(mag) vs last month")
+                            case .quarter:  return String(localized: "\(mag) vs last quarter")
+                            case .halfYear: return String(localized: "\(mag) vs the previous 6 months")
+                            case .year:     return String(localized: "\(mag) vs last year")
+                            }
+                        }()
+                        LiquidNotaLine(texto,
                                        tono: pctChange >= 0 ? LiquidColor.positivo
                                                             : LiquidColor.atencionTexto)
                     }

@@ -105,6 +105,17 @@ final class TrainWidgetPublisherTests: XCTestCase {
         XCTAssertTrue(completadas.isEmpty)
     }
 
+    // MARK: - verdictToPublish (r15: mientras se lee, el widget conserva su palabra)
+
+    func testVerdictToPublishConservaLaPalabraMientrasSeLee() {
+        let previo = TrainWidgetSnapshot.Verdict(tone: .clear, word: "En rango")
+        XCTAssertEqual(TrainWidgetPublisher.verdictToPublish(hilo: nil, pendiente: true, previo: previo)?.word, "En rango")
+        XCTAssertNil(TrainWidgetPublisher.verdictToPublish(hilo: nil, pendiente: false, previo: previo),
+                     "resuelto sin hilo (sin veredicto y sin plan) → sin palabra")
+        let hilo = LiquidHoyBuilder.HiloEntrenar(tono: .atencion, palabra: "Hoy ve leve", consejo: nil)
+        XCTAssertEqual(TrainWidgetPublisher.verdictToPublish(hilo: hilo, pendiente: false, previo: previo)?.word, "Hoy ve leve")
+    }
+
     // MARK: - Mapeo de tono (la resolución del veredicto a texto/tono)
 
     func testMapeoDeTonoCubreLosCuatroCasos() {

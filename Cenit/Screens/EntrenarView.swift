@@ -1144,7 +1144,7 @@ private struct EntrenarLanding: View {
     /// filled-check squares (handoff v4b).
     private func trainedThisWeek(_ wd: Int) -> String? {
         // La semana se cuenta lunes→domingo, como se dibuja (FER-128 r14; misma regla que el widget).
-        let cal = TrainWidgetPublisher.semanaLunes(Calendar.current)
+        let cal = Calendar.semanaLunes
         guard let start = cal.dateInterval(of: .weekOfYear, for: Date())?.start else { return nil }
         for i in 0..<7 {
             guard let date = cal.date(byAdding: .day, value: i, to: start),

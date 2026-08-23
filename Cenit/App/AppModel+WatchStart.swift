@@ -26,13 +26,14 @@ extension AppModel {
     func pushWatchIdleContext() async {
         // Mientras el veredicto se lee (`prep == nil && !fullyLoaded`) no se empuja nada: `hiloEntrenar`
         // devuelve nil y borraría la palabra que el reloj ya tenía (r14).
-        if repo.todayPreparedness == nil && !repo.fullyLoaded { return }
+        let pendiente = repo.todayPreparedness == nil && !repo.fullyLoaded
+        if pendiente { return }
         let routine = await todayRoutineForWatch()
         let hilo = LiquidHoyBuilder.hiloEntrenar(
             prep: repo.todayPreparedness,
             nights: repo.todayPreparedness?.autonomicNights ?? 0,
             healthConnected: healthBridge?.auth == .authorized,
-            verdictPending: repo.todayPreparedness == nil && !repo.fullyLoaded,
+            verdictPending: pendiente,
             hasPlan: routine != nil)
         mirroringBridge?.pushIdleContext(word: hilo?.palabra, toneRaw: hilo.map(Self.watchToneRaw(_:)),
                                          advice: hilo?.consejo, routineName: routine?.name)

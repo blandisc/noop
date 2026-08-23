@@ -102,14 +102,17 @@ struct WeekWidgetView: View {
             }
             .buttonStyle(.plain)
             .accessibilityElement(children: .ignore)
+            // La palabra del veredicto también se DICE (r15): en el teléfono y el reloj el hilo se lee.
             .accessibilityLabel((today.sessionLive ? Text("Continue") : Text("Start routine"))
-                + Text(verbatim: ", ") + Text(verbatim: today.routineName))
+                + Text(verbatim: ", ") + Text(verbatim: today.routineName)
+                + (snapshot.verdict.map { Text(verbatim: ", ") + Text(verbatim: $0.word) } ?? Text(verbatim: "")))
             .accessibilityHint(Text("Opens today's guided session"))
             .accessibilityAddTraits(.isButton)
         } else {
             headerRow(title: Text("Rest day"), verdict: snapshot.verdict, cta: nil)
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel(Text("Rest day"))
+                .accessibilityLabel(Text("Rest day")
+                    + (snapshot.verdict.map { Text(verbatim: ", ") + Text(verbatim: $0.word) } ?? Text(verbatim: "")))
         }
     }
 
@@ -133,7 +136,7 @@ struct WeekWidgetView: View {
                         .font(.system(size: M.verdict, weight: .medium))
                         .foregroundStyle(verdict.tone.strandTone.word(theme))
                         // Las palabras huecas largas («Todavía no puedo leer tus mañanas») no
-                        // se truncan en systemSmall (FER-128 r14): dos líneas y escala como el título.
+                        // se truncan en systemMedium (FER-128 r14): dos líneas y escala como el título.
                         .lineLimit(2)
                         .minimumScaleFactor(0.8)
                 }
