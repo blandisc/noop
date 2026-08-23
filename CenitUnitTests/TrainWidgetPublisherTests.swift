@@ -80,6 +80,24 @@ final class TrainWidgetPublisherTests: XCTestCase {
         XCTAssertEqual(completadas, [2])   // lunes
     }
 
+    /// La semana se cuenta lunes→domingo aunque el locale empiece en domingo (es_MX/en_US): la
+    /// sesión del domingo ANTERIOR no cae en la «D» del final de la tira (FER-128 r14).
+    func testThisWeekCompletedWeekdaysSemanaEmpiezaEnLunesAunqueElLocaleNo() {
+        var domingoPrimero = cal; domingoPrimero.firstWeekday = 1
+        let sabado = domingoPrimero.date(from: DateComponents(year: 2026, month: 8, day: 22, hour: 10))!
+        let domingoPasado = domingoPrimero.date(from: DateComponents(year: 2026, month: 8, day: 16, hour: 9))!
+        let sesion = StrengthSession(routineId: "push",
+                                     startTs: Int(domingoPasado.timeIntervalSince1970),
+                                     endTs: Int(domingoPasado.timeIntervalSince1970) + 1800)
+        let completadas = TrainWidgetPublisher.thisWeekCompletedWeekdays(sessions: [sesion], now: sabado, calendar: domingoPrimero)
+        XCTAssertTrue(completadas.isEmpty, "el domingo 16 es de la semana pasada: \(completadas)")
+        // …y el domingo PRÓXIMO (23) sí es de esta semana.
+        let domingoProximo = domingoPrimero.date(from: DateComponents(year: 2026, month: 8, day: 23, hour: 9))!
+        let s2 = StrengthSession(routineId: "push", startTs: Int(domingoProximo.timeIntervalSince1970),
+                                 endTs: Int(domingoProximo.timeIntervalSince1970) + 1800)
+        XCTAssertEqual(TrainWidgetPublisher.thisWeekCompletedWeekdays(sessions: [s2], now: sabado, calendar: domingoPrimero), [1])
+    }
+
     func testThisWeekCompletedWeekdaysIgnoraSesionesSinTerminar() {
         let lunes = cal.date(from: DateComponents(year: 2026, month: 8, day: 17, hour: 8, minute: 0))!
         let sesion = StrengthSession(routineId: "push", startTs: Int(lunes.timeIntervalSince1970), endTs: nil)

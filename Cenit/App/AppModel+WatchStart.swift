@@ -24,6 +24,9 @@ extension AppModel {
     /// watch. Best-effort and silent on every failure path (no store, no plan, no watch) — the watch
     /// simply keeps whatever it last knew, or its existing «sin lectura» look.
     func pushWatchIdleContext() async {
+        // Mientras el veredicto se lee (`prep == nil && !fullyLoaded`) no se empuja nada: `hiloEntrenar`
+        // devuelve nil y borraría la palabra que el reloj ya tenía (r14).
+        if repo.todayPreparedness == nil && !repo.fullyLoaded { return }
         let routine = await todayRoutineForWatch()
         let hilo = LiquidHoyBuilder.hiloEntrenar(
             prep: repo.todayPreparedness,

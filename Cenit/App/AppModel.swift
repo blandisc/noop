@@ -215,7 +215,12 @@ import UIKit
         repo.$dashboard
             .sink { [weak self] _ in
                 guard let self else { return }
-                Task { await self.publishTrainOutsideApp() }
+                Task {
+                    await self.publishTrainOutsideApp()
+                    // La cara del reloj también: antes solo recibía el veredicto al arrancar la app
+                    // (cuando aún no existe), al emparejar y al terminar una sesión (FER-128 r14).
+                    await self.pushWatchIdleContext()
+                }
             }
             .store(in: &hrCancellables)
 

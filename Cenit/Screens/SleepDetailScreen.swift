@@ -778,9 +778,12 @@ struct SleepDetailScreen: View {
                     // ella. Antes aquí iba la media, que no se pierde — vive en su cajita
                     // «Promedio», dos filas abajo.
                     fraseNivelHistorial(window)
-                    if let pctChange {
-                        LiquidNotaLine(pctChange >= 0 ? "+\(Int(pctChange.rounded()))%"
-                                                      : "\(Int(pctChange.rounded()))%",
+                    if let pctChange, let dias = range.days {
+                        // Dice contra QUÉ («vs los 30 días anteriores») y con «−» tipográfico (r14).
+                        let n = Int(pctChange.rounded())
+                        let signo = n >= 0 ? "+\(n)" : "−\(abs(n))"
+                        LiquidNotaLine(String(localized: "sueno.hist.vsanterior",
+                                              defaultValue: "\(signo) % vs the previous \(dias) days"),
                                        tono: pctChange >= 0 ? LiquidColor.positivo
                                                             : LiquidColor.atencionTexto)
                     }

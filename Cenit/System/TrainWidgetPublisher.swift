@@ -43,7 +43,10 @@ enum TrainWidgetPublisher {
     /// «trained» dots can never disagree with the app's.
     static func thisWeekCompletedWeekdays(sessions: [StrengthSession], now: Date,
                                           calendar: Calendar = .current) -> Set<Int> {
-        guard let weekStart = calendar.dateInterval(of: .weekOfYear, for: now)?.start else { return [] }
+        // La tira se DIBUJA lunes→domingo; la semana se CUENTA igual, gane o no el locale
+        // (es_MX/en_US empiezan en domingo: la sesión del domingo pasado caía en la «D» del final,
+        // que se lee como el domingo próximo — FER-128 r14).
+        guard let weekStart = Self.semanaLunes(calendar).dateInterval(of: .weekOfYear, for: now)?.start else { return [] }
         let done = TrainingStreak.completedDayStarts(sessions, calendar: calendar)
         var out: Set<Int> = []
         for offset in 0..<7 {
@@ -51,6 +54,12 @@ enum TrainWidgetPublisher {
             if done.contains(day) { out.insert(calendar.component(.weekday, from: day)) }
         }
         return out
+    }
+
+    /// El mismo calendario con la semana empezando en LUNES, como la tira (`orderedWeekdays` = 2…7,1)
+    /// y el Calendario 90 del Detalle de Sueño (`firstWeekday = 2`).
+    static func semanaLunes(_ calendar: Calendar) -> Calendar {
+        var c = calendar; c.firstWeekday = 2; return c
     }
 
     /// The day's initial, localized — same call `EntrenarView.weekdayLetter` already makes.

@@ -1130,6 +1130,23 @@
         }
       }
     },
+    "sueno.hist.vsanterior" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ %% vs the previous %lld days"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ %% vs los %lld días anteriores"
+          }
+        }
+      }
+    },
     "sueno.cal.corta" : {
       "extractionState" : "manual",
       "localizations" : {
