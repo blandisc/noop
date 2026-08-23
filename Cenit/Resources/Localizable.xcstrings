@@ -1147,6 +1147,23 @@
         }
       }
     },
+    "sueno.deuda.titulo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sleep debt"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deuda de sueño"
+          }
+        }
+      }
+    },
     "sueno.cal.corta" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4614,9 +4631,6 @@
         }
       }
     },
-    ", typical %@%%" : {
-
-    },
     ", typical %lld%%" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5651,9 +5665,6 @@
         }
       }
     },
-    "%@ nights" : {
-
-    },
     "%@ of %@" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5798,9 +5809,6 @@
           }
         }
       }
-    },
-    "%@ raising" : {
-
     },
     "%@ ran off your usual" : {
       "extractionState" : "manual",
@@ -6123,16 +6131,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@, %@%@"
-          }
-        }
-      }
-    },
-    "%@, %@%% last night" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$@, %2$@%% last night"
           }
         }
       }
@@ -6836,23 +6834,6 @@
                 }
               }
             }
-          }
-        }
-      }
-    },
-    "%lld cycles, %lld%% awake" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld cycles, %lld%% awake"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld ciclos, %lld %% despierto"
           }
         }
       }
@@ -7951,7 +7932,7 @@
       }
     },
     "%lld raising" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "variations" : {
@@ -46951,9 +46932,6 @@
         }
       }
     },
-    "Showing the last %@ days" : {
-
-    },
     "Showing the last %lld days" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -47511,16 +47489,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Etapas de sueño en detalle"
-          }
-        }
-      }
-    },
-    "Sleep stages: deep %@ percent, light %@ percent, REM %@ percent, awake %@ percent" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Sleep stages: deep %1$@ percent, light %2$@ percent, REM %3$@ percent, awake %4$@ percent"
           }
         }
       }
@@ -55170,23 +55138,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Desfase de fin de semana"
-          }
-        }
-      }
-    },
-    "Weekly debt" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Weekly debt"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Deuda de la semana"
           }
         }
       }

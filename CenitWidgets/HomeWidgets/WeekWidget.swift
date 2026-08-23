@@ -139,6 +139,7 @@ struct WeekWidgetView: View {
                         // se truncan en systemMedium (FER-128 r14): dos líneas y escala como el título.
                         .lineLimit(2)
                         .minimumScaleFactor(0.8)
+                        .multilineTextAlignment(.trailing)
                 }
                 if let cta {
                     Text(cta)

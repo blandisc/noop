@@ -46,8 +46,7 @@ enum TrainWidgetPublisher {
         // La tira se DIBUJA lunes→domingo; la semana se CUENTA igual, gane o no el locale
         // (es_MX/en_US empiezan en domingo: la sesión del domingo pasado caía en la «D» del final,
         // que se lee como el domingo próximo — FER-128 r14).
-        var lunes = calendar; lunes.firstWeekday = 2
-        guard let weekStart = lunes.dateInterval(of: .weekOfYear, for: now)?.start else { return [] }
+        guard let weekStart = calendar.semanaLunes.dateInterval(of: .weekOfYear, for: now)?.start else { return [] }
         let done = TrainingStreak.completedDayStarts(sessions, calendar: calendar)
         var out: Set<Int> = []
         for offset in 0..<7 {

@@ -87,7 +87,9 @@ struct SleepDetailScreen: View {
                     }
                     seccion(String(localized: "Regularity")) { regularidadContent }
                     if let debt = model.weeklyDebtMinutes, debt >= 15, model.weeklyDebtNights.count >= 2 {
-                        seccion(String(localized: "Weekly debt")) { weeklyDebtContent(debt) }
+                        // «Deuda de sueño», no «de la semana»: la ventana es rodante (últimas 7 noches), y
+                        // el titular de adentro ya lo dice así (FER-128 r16).
+                        seccion(String(localized: "sueno.deuda.titulo", defaultValue: "Sleep debt")) { weeklyDebtContent(debt) }
                     }
                     if durationParsed.count >= 2 {
                         seccion(String(localized: "History")) { trendContent }
@@ -728,7 +730,7 @@ struct SleepDetailScreen: View {
             LiquidNotaLine(
                 String(localized: "What you missed versus what your body needs. One good night won't clear it."))
         }
-        // Flota porque trae su PROPIO titular («1 h 45 m · de retraso esta semana»): la
+        // Flota porque trae su PROPIO titular («1 h 45 min · de retraso en tus últimas 7 noches»): la
         // tarjeta existe para amarrar el titular a su evidencia. Los bloques cuyo título lo
         // pone la franja —hipnograma, calendario— van planos; envolverlos sería un marco
         // dentro de otro marco. Era el único bloque que rompía la regla.
@@ -784,8 +786,19 @@ struct SleepDetailScreen: View {
                     // «Promedio», dos filas abajo.
                     fraseNivelHistorial(window)
                     // La MISMA voz que el chip de Tendencias (`TrendStatSummary`): «N% vs el mes pasado»,
-                    // el periodo por el rango, y bajo ±1 % se calla en vez de «+0 %» (r14/r15).
-                    if let pctChange, abs(pctChange) >= 1, let periodo = range.comparisonPeriod {
+                    // el periodo por el rango, y bajo ±1 % «Estable este mes» en tinta (r14/r15/r16).
+                    if let pctChange, abs(pctChange) < 1, let periodo = range.comparisonPeriod {
+                        let estable: String = {
+                            switch periodo {
+                            case .week:     return String(localized: "Stable this week")
+                            case .month:    return String(localized: "Stable this month")
+                            case .quarter:  return String(localized: "Stable this quarter")
+                            case .halfYear: return String(localized: "Stable these 6 months")
+                            case .year:     return String(localized: "Stable this year")
+                            }
+                        }()
+                        LiquidNotaLine(estable, tono: LiquidColor.tinta500)
+                    } else if let pctChange, let periodo = range.comparisonPeriod {
                         let n = Int(pctChange.rounded())
                         let mag = "\(n >= 0 ? "+" : "−")\(abs(n))%"
                         let texto: String = {
