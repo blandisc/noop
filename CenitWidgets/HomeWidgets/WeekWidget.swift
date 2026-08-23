@@ -132,7 +132,10 @@ struct WeekWidgetView: View {
                     Text(verbatim: verdict.word)
                         .font(.system(size: M.verdict, weight: .medium))
                         .foregroundStyle(verdict.tone.strandTone.word(theme))
-                        .lineLimit(1)
+                        // Las palabras huecas largas («Todavía no puedo leer tus mañanas») no
+                        // se truncan en systemSmall (FER-128 r14): dos líneas y escala como el título.
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.8)
                 }
                 if let cta {
                     Text(cta)

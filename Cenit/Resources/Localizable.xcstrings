@@ -42374,17 +42374,6 @@
         }
       }
     },
-    "sync in Today" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sincroniza en Hoy"
-          }
-        }
-      }
-    },
     "no verdict without your night" : {
       "extractionState" : "manual",
       "localizations" : {

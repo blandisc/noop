@@ -671,7 +671,11 @@ enum LiquidHoyBuilder {
         // Sin veredicto: tres razones distintas, tres frases distintas. Colapsarlas en
         // «Conociéndote» le decía «te estoy conociendo» a quien nunca conectó Salud.
         if !healthConnected {
-            return .init(tono: .hueco, palabra: String(localized: "Connect Apple Health"), consejo: nil)
+            // La misma palabra grande que el héroe («Aún no conozco tu base»); la CTA baja al
+            // consejo, como el resto de causas ponen ahí la suya (FER-128 r14).
+            return .init(tono: .hueco,
+                         palabra: String(localized: "I don\'t know your baseline yet"),
+                         consejo: String(localized: "Connect Apple Health"))
         }
         // Espejo de la tabla del héroe (`suenoFallback`): la misma palabra grande en Hoy, en el hilo
         // de Entrenar, en el reloj y en el widget (FER-128 r13 — el hilo tenía su propio if-chain y

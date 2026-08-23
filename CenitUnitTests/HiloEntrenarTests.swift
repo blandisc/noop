@@ -34,7 +34,7 @@ final class HiloEntrenarTests: XCTestCase {
 
     /// El hilo dice la MISMA palabra grande que el héroe en cada causa sin veredicto (FER-128 r13):
     /// 0…3 noches «Conociéndote», 4…∞ «Sin lectura de hoy», sin FC posible «Todavía no puedo leer
-    /// tus mañanas», base rancia «Tu rango necesita noches frescas».
+    /// tus mañanas», base rancia «Tu rango necesita noches nuevas».
     func testSinVeredicto_elHiloEspejaAlHeroe() {
         func titulo(_ h: LiquidHoyModel.Hero) -> String {
             if case .demotado(_, let t, _) = h { return t }
@@ -51,6 +51,12 @@ final class HiloEntrenarTests: XCTestCase {
         let rancia = read(.lowSignal, nightAnchored: true, maturity: .stale)
         XCTAssertEqual(hilo(rancia, nights: 30)?.palabra,
                        titulo(LiquidHoyBuilder.hero(prep: rancia, nights: 30).0))
+        // Sin Salud conectada también: la palabra del héroe, la CTA en el consejo (r14).
+        let sinSalud = read(.lowSignal, nightAnchored: true)
+        XCTAssertEqual(hilo(sinSalud, nights: 30, health: false)?.palabra,
+                       titulo(LiquidHoyBuilder.hero(prep: sinSalud, nights: 30, healthConnected: false).0))
+        XCTAssertEqual(hilo(sinSalud, nights: 30, health: false)?.consejo,
+                       String(localized: "Connect Apple Health"))
     }
 
     /// La regla que el gate encontró rota: sin noche anclada, Hoy NO dice la palabra. El hilo
