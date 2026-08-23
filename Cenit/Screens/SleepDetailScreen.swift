@@ -498,7 +498,10 @@ struct SleepDetailScreen: View {
             let faltan = max(0, SleepRegularity.minNights - model.regularityNights)
             return String(localized: "Still learning your schedule · \(faltan) nights to go")
         }
-        return regularityWordText(r.score)
+        // La leyenda va con mayúscula inicial como en la hoja («Muy regular»); la misma palabra en
+        // minúscula vive dentro de la frase «…, ritmo muy regular» (r15).
+        let palabra = regularityWordText(r.score)
+        return palabra.prefix(1).uppercased() + palabra.dropFirst()
     }
 
     // MARK: - 3. Anoche vs lo típico — barras con marca de promedio
@@ -717,7 +720,9 @@ struct SleepDetailScreen: View {
     private func weeklyDebtContent(_ debt: Double) -> some View {
         VStack(alignment: .leading, spacing: LiquidSpace.s300) {
             LiquidFraseNivel(nivel: hoursMinutes(debt),
-                             conteo: String(localized: "behind this week"),
+                             // Son las últimas 7 noches rodantes, no la semana lunes→domingo que
+                             // Entrenar acaba de fijar: se dice así (r15).
+                             conteo: String(localized: "sueno.deuda.ultimas7", defaultValue: "behind over your last 7 nights"),
                              tono: LiquidColor.atencionTexto)
             weeklyDebtBars(debt)
             LiquidNotaLine(
@@ -748,7 +753,7 @@ struct SleepDetailScreen: View {
             tono: LiquidColor.atencion,
             maximo: maximo,
             a11yLabel: String(localized: "Hours above or below your sleep need, each of the last 7 nights"),
-            a11yValue: "\(hoursMinutes(debt)) \(String(localized: "behind this week"))",
+            a11yValue: "\(hoursMinutes(debt)) \(String(localized: "sueno.deuda.ultimas7", defaultValue: "behind over your last 7 nights"))",
             formatoValor: { m in m < 0 ? "−\(hoursMinutes(-m))" : "+\(hoursMinutes(m))" })
     }
 

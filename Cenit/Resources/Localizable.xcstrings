@@ -1130,6 +1130,23 @@
         }
       }
     },
+    "sueno.deuda.ultimas7" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "behind over your last 7 nights"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "de retraso en tus últimas 7 noches"
+          }
+        }
+      }
+    },
     "sueno.cal.corta" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -15101,23 +15118,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Comportamiento"
-          }
-        }
-      }
-    },
-    "behind this week" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "behind this week"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "de retraso esta semana"
           }
         }
       }

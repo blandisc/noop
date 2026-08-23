@@ -127,7 +127,9 @@ public struct LiquidOrbeEntrada: View {
 
     public var body: some View {
         ZStack {
-            LiquidColor.fondoGradient.ignoresSafeArea()
+            // El papel de fondo se funde JUNTO con el orbe (abajo, dentro del mismo `opacity`): con el
+            // gradiente opaco hasta `onFin`, el orbe se disolvía sobre BLANCO y luego el blanco sobre
+            // Hoy — un cuadro en blanco entre la entrada y la app (FER-128 r15, explorador).
             // Con tope de 60 Hz explícito, como el resto del sistema: sin él, en ProMotion
             // esto pediría 120 cuadros por segundo justo durante el arranque en frío, cuando
             // HealthKit, SQLite y la construcción de la app ya se pelean por el CPU.
@@ -141,12 +143,16 @@ public struct LiquidOrbeEntrada: View {
                                         paused: scenePhase != .active)) { ctx in
                     let t = tiempo(ctx.date)
                     let cuadro = EntradaSimulacion.cuadro(t: t, reduce: sinViaje)
-                    Canvas(rendersAsynchronously: false) { g, size in
-                        dibujar(&g, size: size, cuadro: cuadro, t: t, origenLienzo: origen)
+                    ZStack {
+                        LiquidColor.fondoGradient.ignoresSafeArea()
+                        Canvas(rendersAsynchronously: false) { g, size in
+                            dibujar(&g, size: size, cuadro: cuadro, t: t, origenLienzo: origen)
+                        }
                     }
                     // El fundido de salida se aplica AQUÍ y no dentro del Canvas: así atenúa la
-                    // composición ya resuelta en vez de cada relleno por separado (que dejaría
-                    // ver las partículas traslapándose entre sí mientras se apaga).
+                    // composición ya resuelta (papel + orbe) en vez de cada relleno por separado (que
+                    // dejaría ver las partículas traslapándose entre sí mientras se apaga), y Hoy
+                    // aparece DEBAJO mientras el orbe se apaga — sin cuadro en blanco.
                     .opacity(cuadro.alfa)
                 }
             }
