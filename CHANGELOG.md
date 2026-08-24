@@ -20,6 +20,22 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **Entrenar: Crear plan — tres caminos / Train: Create plan — three paths** (FER-137).
+  **ES** — Nueva pantalla «Tres caminos»: el chip «Crear plan» de la landing y el CTA «Crear mi
+  plan» del primer uso ya no saltan directo a una hoja; abren esta puerta única con tres filas.
+  PLANTILLAS lista los cinco grupos del catálogo (Empuje · Jalón · Pierna, Cuerpo completo, Torso /
+  Pierna, En casa, Movilidad) — tocar uno copia TODAS sus rutinas y arma la semana llenando los días
+  libres en orden (lunes primero; un día que ya tenías asignado nunca se pisa), y vuelve a la
+  landing con el aviso «Plantilla aplicada · semana armada, edítala cuando quieras». DESDE CERO
+  empuja «Nueva rutina» a la Biblioteca en su flujo de creación existente. «Importar de tu IA» abre
+  el importador `noop.workout.v1` existente. **EN** — A new «Three paths» screen: the landing's
+  «Create plan» chip and the first-use «Build my plan» CTA now open this single door instead of
+  jumping straight to a sheet. TEMPLATES lists the catalog's five groups — tapping one copies ALL of
+  its routines and fills the free days of the week in order (never overwriting a day you already
+  assigned), then returns to the landing with a success toast. FROM SCRATCH pushes «New routine»
+  into the existing library create-flow. «Import from your AI» opens the existing
+  `noop.workout.v1` importer.
+
 - **Entrenar: Modo Foco — serie, descanso, hecho / Train: Focus Mode — set, rest, done** (FER-135).
   **ES** — Foco gana un tercer estado, HECHO, entre cada serie cerrada del último ejercicio y la
   siguiente: el ejercicio recién terminado a pantalla completa («Ejercicio hecho: ‹nombre›» + el

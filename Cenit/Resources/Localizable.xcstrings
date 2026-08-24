@@ -61084,6 +61084,210 @@
           }
         }
       }
+    },
+    "Create your plan" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create your plan"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crear tu plan"
+          }
+        }
+      }
+    },
+    "Three paths" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Three paths"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tres caminos"
+          }
+        }
+      }
+    },
+    "Ready-made templates, your own routine, or the plan you already have in your AI" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ready-made templates, your own routine, or the plan you already have in your AI"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "plantillas listas, tu propia rutina, o el plan que ya tienes en tu IA"
+          }
+        }
+      }
+    },
+    "catalog routines" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "catalog routines"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "rutinas del catálogo"
+          }
+        }
+      }
+    },
+    "From scratch" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From scratch"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desde cero"
+          }
+        }
+      }
+    },
+    "1 routine" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 routine"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 rutina"
+          }
+        }
+      }
+    },
+    "%lld routines" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld routines"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld rutinas"
+          }
+        }
+      }
+    },
+    "Choose exercises from the library (%lld in the catalog)" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose exercises from the library (%lld in the catalog)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "elige ejercicios de la biblioteca (%lld en el catálogo)"
+          }
+        }
+      }
+    },
+    "Import from your AI" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import from your AI"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importar de tu IA"
+          }
+        }
+      }
+    },
+    "Paste the plan you built with your LLM · noop.workout.v1" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paste the plan you built with your LLM · noop.workout.v1"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "pega el plan que armaste con tu LLM · noop.workout.v1"
+          }
+        }
+      }
+    },
+    "Choosing a template creates its routines and your week is set; you can always edit it later, day by day." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choosing a template creates its routines and your week is set; you can always edit it later, day by day."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Al elegir plantilla se crean sus rutinas y la semana queda armada; todo se puede editar después, día por día."
+          }
+        }
+      }
+    },
+    "Template applied · your week is set, edit it whenever" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Template applied · your week is set, edit it whenever"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Plantilla aplicada · semana armada, edítala cuando quieras"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"
