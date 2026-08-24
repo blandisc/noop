@@ -154,6 +154,7 @@ struct ExerciseLibraryScreen: View {
                 Button { search = "" } label: {
                     Image(systemName: "xmark.circle.fill").foregroundStyle(theme.inkTertiary)
                 }.buttonStyle(.plain)
+                    .accessibilityLabel(Text("Clear search"))
             }
         }
         .padding(.horizontal, CenitMetrics.gap).padding(.vertical, CenitMetrics.rowVPad)

@@ -221,7 +221,7 @@ struct TrainingBodyScreen: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Your body · \(cabeceraFecha)").groteskOverline().foregroundStyle(theme.inkTertiary)
+            Text("Your body · \(cabeceraFecha)").entrenarCabeceraKicker().foregroundStyle(theme.inkTertiary)
             if loaded {
                 hiloDelVeredicto.padding(.top, 8)
             }
@@ -432,7 +432,7 @@ struct TrainingBodyScreen: View {
     /// carries its weekly sets, the raw number the Schoenfeld band judges.
     private var ranking: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Loaded muscles · last 7 days").groteskOverline().foregroundStyle(theme.inkTertiary)
+            Text("Loaded muscles · last 7 days").entrenarCabeceraKicker().foregroundStyle(theme.inkTertiary)
                 .padding(.bottom, 8)
             muscleColumnHeader.padding(.bottom, 2)
             ForEach(Array(rankingLoads.enumerated()), id: \.element.muscle) { i, m in
@@ -1002,7 +1002,7 @@ private struct MuscleDetailView: View {
             Text(value).font(InstrumentoType.groteskTileValue).foregroundStyle(color ?? theme.ink)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(12)
+        .padding(CenitMetrics.gap)
         .instrumentoCard(.control, theme: theme)
     }
 

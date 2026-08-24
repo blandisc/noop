@@ -156,6 +156,7 @@ public struct EntrenarChip: View {
                 StrandIcon.disclosure.image
                     .font(StrandFont.glyph(.chevron, weight: .semibold))
                     .foregroundStyle(theme.inkTertiary)
+                    .accessibilityHidden(true)
             }
         }
         .padding(.horizontal, CenitMetrics.space2 + 1)

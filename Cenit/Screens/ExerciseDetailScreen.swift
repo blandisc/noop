@@ -501,7 +501,7 @@ struct ExerciseDetailScreen: View {
             }
         }
         .padding(.horizontal, 11).padding(.vertical, 5)  // token-exempt: chip 11/5 del handoff
-        .background(primary ? familyTint.opacity(0.12) : theme.patternBlock,  // token-exempt: tinte 12% del handoff
+        .background(primary ? familyTint.opacity(StrandOpacity.tintFill) : theme.patternBlock,
                     in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
         .accessibilityElement()
         .accessibilityLabel("\(StrengthDisplay.muscle(muscle)), \(String(localized: primary ? "primary" : "assisting"))")
@@ -637,7 +637,7 @@ struct ExerciseDetailScreen: View {
                         .font(InstrumentoType.grotesk(13, weight: .bold)).monospacedDigit()
                         .foregroundStyle(theme.dataRecovery)
                         .padding(.horizontal, 9).padding(.vertical, 3)  // token-exempt: chip delta del handoff
-                        .background(theme.dataRecovery.opacity(0.12),   // token-exempt: tinte 12% del handoff
+                        .background(theme.dataRecovery.opacity(StrandOpacity.tintFill),
                                     in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
                 }
             }

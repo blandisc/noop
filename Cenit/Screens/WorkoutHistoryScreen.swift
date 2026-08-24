@@ -360,7 +360,7 @@ struct WorkoutHistoryScreen: View {
             }
             Text(caption).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
         }
-        .padding(12)
+        .padding(CenitMetrics.gap)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
@@ -712,6 +712,7 @@ struct WorkoutHistoryScreen: View {
                     StrandIcon.disclosure.image
                         .font(StrandFont.glyph(.chevron, weight: .semibold))
                         .foregroundStyle(theme.inkTertiary)
+                        .accessibilityHidden(true)
                 }
                 .padding(CenitMetrics.cardPadding)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -720,6 +721,9 @@ struct WorkoutHistoryScreen: View {
                     .strokeBorder(theme.hairline, lineWidth: 1))
             }
             .buttonStyle(.plain)
+            // Revisión final (g4-a11y): sin agrupamiento, VoiceOver exponía ícono/título/subtítulo/
+            // chevron como controles sueltos.
+            .accessibilityElement(children: .combine)
 
             HStack(spacing: 10) {
                 ForEach(Array(sessions.prefix(3).enumerated()), id: \.element.id) { index, session in
@@ -1679,12 +1683,17 @@ struct WorkoutSessionDetailScreen: View {
                     Text(g.name).font(StrandFont.headline).foregroundStyle(theme.ink)
                     StrandIcon.disclosure.image
                         .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                        .accessibilityHidden(true)
                     Spacer(minLength: 0)
                 }
                 .frame(minHeight: EntrenarMetrics.row)
                 .contentShape(Rectangle())
             }
             .buttonStyle(EntrenarPressStyle())
+            // Revisión final (g4-a11y): igual que `progressRow`/`manualEntryRow` — combinar y ocultar
+            // el chevron para que VoiceOver anuncie un solo control con un rótulo, no el glifo suelto.
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(Text(g.name))
             .accessibilityHint(Text("Opens the exercise"))
         } else {
             Text(g.name).font(StrandFont.headline).foregroundStyle(theme.ink)

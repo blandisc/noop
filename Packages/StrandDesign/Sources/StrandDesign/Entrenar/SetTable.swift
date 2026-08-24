@@ -198,7 +198,14 @@ public struct SetTable: View {
     private var reflow: Bool { Self.reflows(at: typeSize) }
     /// RPE solo tiene sentido donde hay reps que calificar (peso×reps, peso corporal) — Punto 3.
     private var showsRPE: Bool { showRPE && kind.hasRepsColumn }
-    private var isSingleDatumRow: Bool { Self.combinesAccessibilityChildren(kind: kind, showRPE: showRPE) }
+    /// Ronda 2 revisión final, hallazgo grave (g4-a11y): `combinesAccessibilityChildren(kind:showRPE:)`
+    /// solo cuenta las celdas de DATO — para `.time` da «1 control», pero el check ✓ (`check(_:)`) es
+    /// un `Button` real y VIVO siempre que `onToggle` esté presente, así que combinar la fila lo
+    /// funde y lo vuelve inalcanzable. Solo combinar cuando el check no es interactivo (`onToggle ==
+    /// nil`, p. ej. una tabla de solo lectura) — con `onToggle`, la fila deja ambos controles sueltos.
+    private var isSingleDatumRow: Bool {
+        Self.combinesAccessibilityChildren(kind: kind, showRPE: showRPE) && onToggle == nil
+    }
 
     public var body: some View {
         VStack(spacing: 0) {

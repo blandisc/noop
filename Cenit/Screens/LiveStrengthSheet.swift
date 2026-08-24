@@ -823,7 +823,10 @@ struct LiveStrengthSheet: View {
                     Image(systemName: "checkmark.circle.fill")
                         .font(StrandFont.glyph(.chevron)).foregroundStyle(theme.dataRecovery)
                 }
-                .opacity(StrandOpacity.dim)
+                // Revisión final (g4-a11y): `StrandOpacity.dim` (0.45, el MISMO canal que
+                // `disabledOpacity`) sobre texto legible colapsaba el contraste muy bajo AA — la fila
+                // sigue siendo un `Button` activo, no un control deshabilitado. `theme.inkTertiary` ya
+                // lee «hecho/secundario» a alfa completo; no hace falta atenuar encima.
                 .padding(.vertical, 4)
             }
             .frame(minHeight: 44)
@@ -859,7 +862,8 @@ struct LiveStrengthSheet: View {
                     Text(prescriptionText(run)).font(InstrumentoType.groteskNumber(12, weight: .regular)).foregroundStyle(theme.inkTertiary)
                         .lineLimit(1)
                 }
-                .opacity(StrandOpacity.dim)
+                // Revisión final (g4-a11y): mismo fix que `doneRow` — `StrandOpacity.dim` sobre texto
+                // legible en una fila `Button` activa colapsaba el contraste muy bajo AA.
                 .padding(.vertical, 4)
             }
             .frame(minHeight: 44)
@@ -2589,9 +2593,15 @@ struct LiveStrengthSheet: View {
 
     private func watchLine(_ icon: String, _ text: LocalizedStringKey, retry: Bool) -> some View {
         HStack(spacing: 6) {
-            Image(systemName: icon).font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
-                .accessibilityHidden(true)
-            Text(text).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            // Ronda 2 revisión final, hallazgo grave (g4-a11y): `.combine` vivía en el HStack completo,
+            // fundiendo el botón «Retry» — un `Button` hermano real — en un solo elemento estático sin
+            // acción. Solo el icono+texto se combinan; el botón queda fuera, alcanzable para VoiceOver.
+            HStack(spacing: 6) {
+                Image(systemName: icon).font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
+                    .accessibilityHidden(true)
+                Text(text).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            }
+            .accessibilityElement(children: .combine)
             if retry {
                 Button { model.retryWatchMirroring() } label: {
                     Text("Retry").font(StrandFont.caption).fontWeight(.medium).foregroundStyle(theme.ink)
@@ -2599,7 +2609,6 @@ struct LiveStrengthSheet: View {
                 .buttonStyle(.plain).padding(.leading, 2)
             }
         }
-        .accessibilityElement(children: .combine)
     }
 
     /// FER-969 (X-01): the final save failed — the workout is still on this phone (FER-798 snapshot);
@@ -2609,12 +2618,16 @@ struct LiveStrengthSheet: View {
             Image(systemName: "exclamationmark.triangle")
                 .font(StrandFont.glyph(.chevron)).foregroundStyle(theme.critical)
                 .accessibilityHidden(true)
+            // Ronda 2 revisión final, hallazgo grave (g4-a11y): `.combine` vivía en el HStack completo,
+            // fundiendo el único botón «Retry» del camino de recuperación de errores — VoiceOver no
+            // podía reintentar el guardado. Solo el bloque de texto se combina; el botón queda suelto.
             VStack(alignment: .leading, spacing: 1) {
                 Text("Couldn't save the workout. Try again.")
                     .font(StrandFont.caption).fontWeight(.medium).foregroundStyle(theme.ink)
                 Text("Your sets are safe on this phone.")
                     .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
             }
+            .accessibilityElement(children: .combine)
             Spacer(minLength: 8)
             Button { model.retryStrengthSave() } label: {
                 Text("Retry").font(StrandFont.caption).fontWeight(.medium).foregroundStyle(theme.ink)
@@ -2625,7 +2638,6 @@ struct LiveStrengthSheet: View {
         .padding(.vertical, 10)
         .background(theme.paper)
         .overlay(alignment: .bottom) { Rectangle().fill(theme.hairline).frame(height: 1) }
-        .accessibilityElement(children: .combine)
     }
 
     // MARK: Exercise header + inline rows
@@ -2758,7 +2770,10 @@ struct LiveStrengthSheet: View {
                         TapRing(color: theme.dataStrain, animated: !reduceMotion)
                     }
                 }
-                .contentShape(Rectangle())
+                // Revisión final (g4-a11y): el frame dibujado es 30×44 — bajo el mínimo HIG 44×44 en
+                // el eje horizontal. Mismo patrón que `focusRoundStep`: el toque se extiende sin
+                // cambiar el dibujo.
+                .contentShape(Rectangle().inset(by: -7))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text("More options for \(run.name)"))
@@ -2848,7 +2863,9 @@ struct LiveStrengthSheet: View {
             .scaleEffect(hinted ? 1.18 : 1)
             .animation(.snappy, value: hinted)
             .frame(width: 30, height: 44)
-            .contentShape(Rectangle())
+            // Revisión final (g4-a11y, menor): mismo hueco de 30pt horizontal que `exerciseMenuButton`;
+            // extendido por consistencia aunque el gesto principal es un drag, no un tap preciso.
+            .contentShape(Rectangle().inset(by: -7))
             // FER-936: the ember nudge from the menu fades on its own after a couple of seconds.
             .task(id: reorderHint) {
                 guard reorderHint == ei else { return }
@@ -4180,7 +4197,7 @@ struct LiveStrengthSheet: View {
             // Conserved from FER-409 (not in the 1l mock, but it's the only path to the fatigue map).
             if !s.muscles.isEmpty { summaryMuscles(s.muscles) }
 
-            if let band = s.costBand { receiptCost(band, tomorrowPct: s.costTomorrowPct) }
+            if let band = s.costBand { receiptCost(band) }
 
             // FER-87: the workout only really reached Apple Health when the Watch recorded it
             // (always true) or the iPhone's opt-in mirror is on — the exact gate the save itself
@@ -4586,14 +4603,19 @@ struct LiveStrengthSheet: View {
         }
     }
 
-    /// Recovery cost + tomorrow's projection (conserves FER-409/442). FER-87 drops the filled
+    /// Recovery cost (conserves FER-409). FER-87 drops the filled
     /// `patternBlock` box: the active band now reads as its name UNDERLINED in its AA reading-tone
     /// (`OKLab.darkened`, never the raw data hue on text <24pt) among the other two bands, dimmed —
     /// plain ink on paper, no molding. `Self.bandDetail`'s fixed per-band text is unchanged (still no
     /// `SessionRecoveryCost.Result.basis` — `StrengthSummary.costBand` only ever stores the `Band`).
-    private func receiptCost(_ band: SessionRecoveryCost.Band, tomorrowPct: Int?) -> some View {
+    /// Revisión final (FER-140), hallazgo grave: copy.md «Acta» prohíbe explícitamente cualquier
+    /// frase de mañana hasta que exista F4 — `tomorrowPct` ya no se pinta aquí (el dato sigue vivo
+    /// en `StrengthSummary.costTomorrowPct` para cuando F4 exista).
+    private func receiptCost(_ band: SessionRecoveryCost.Band) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Recovery cost").groteskOverline(small: true).foregroundStyle(theme.inkTertiary)
+            // Revisión final (g5-copy): copy.md «Acta» manda `COSTO CARDIOVASCULAR` para este rótulo,
+            // no «Costo de recuperación» — dos frases distintas para el mismo bloque.
+            Text("Cardiovascular cost").groteskOverline(small: true).foregroundStyle(theme.inkTertiary)
             Group {
                 if reflow {
                     VStack(alignment: .leading, spacing: 4) {
@@ -4611,15 +4633,10 @@ struct LiveStrengthSheet: View {
             }
             Text(Self.bandDetail(band)).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
-            // Tomorrow's projection given today's cost (FER-442): the prose in ink, the datum in
-            // recovery green. Hidden when there isn't ~2 weeks of base (the engine returns nil).
-            if let pct = tomorrowPct {
-                (Text("Tomorrow, if you rest well, you should be around ").foregroundColor(theme.inkSecondary)
-                    + Text("~\(pct)%").foregroundColor(theme.positiveText).fontWeight(.semibold))
-                    .font(StrandFont.caption)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            Text("Estimate · you decide").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+            // Revisión final (g5-copy): copy.md pide solo `estimación`, no «Estimación · tú decides».
+            // Clave distinta a la «Estimate» ya existente (es «Estimado», otro contexto) para no
+            // colisionar dos entradas iguales en el catálogo.
+            Text("Estimate, you decide").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                 .padding(.top, 2)
         }
         .accessibilityElement(children: .combine)
@@ -4810,6 +4827,10 @@ struct LiveStrengthSheet: View {
                 .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
                     .strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                // Revisión final (FER-140), hallazgo grave: sin esto el toque real quedaba en 26–34pt
+                // en varias filas (reps, peso añadido, distancia), por debajo del mínimo HIG de 44pt.
+                // Mismo patrón que `focusRoundStep`: el dibujo se queda chico, el toque llega a 44pt.
+                .contentShape(Rectangle().inset(by: -max(0, (44 - size) / 2)))
         }
         .buttonStyle(.plain)
     }

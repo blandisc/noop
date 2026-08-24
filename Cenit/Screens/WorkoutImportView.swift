@@ -170,7 +170,7 @@ struct WorkoutImportView: View {
 
             VStack(alignment: .leading, spacing: CenitMetrics.gap) {
                 HStack(alignment: .center, spacing: CenitMetrics.space2) {
-                    Text("STEP 1 · THE PROMPT").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Text("STEP 1 · THE PROMPT").entrenarCabeceraKicker().foregroundStyle(theme.inkTertiary)
                     Spacer(minLength: CenitMetrics.space2)
                     QuietButton(copied ? "✓ Copied" : "Copy") { copyPrompt() }
                 }
@@ -189,7 +189,7 @@ struct WorkoutImportView: View {
             }
 
             VStack(alignment: .leading, spacing: CenitMetrics.gap) {
-                Text("STEP 2 · BRING THE RESULT").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text("STEP 2 · BRING THE RESULT").entrenarCabeceraKicker().foregroundStyle(theme.inkTertiary)
                     .frame(minHeight: EntrenarMetrics.row, alignment: .leading)
                 dashedPasteField
                 HStack(spacing: CenitMetrics.gap) {
@@ -218,7 +218,7 @@ struct WorkoutImportView: View {
             BackButton(role: .back, theme: theme) {
                 if midWork { confirmDiscard = true } else { dismiss() }
             }
-            Text("Import plan · bring your own AI").instrumentoOverline().foregroundStyle(theme.inkSecondary)
+            Text("Import plan · bring your own AI").entrenarCabeceraKicker().foregroundStyle(theme.inkSecondary)
             Spacer(minLength: 0)
         }
     }
@@ -311,11 +311,14 @@ struct WorkoutImportView: View {
                 .foregroundStyle(isOmitted ? theme.inkTertiary : theme.ink)
             if isOmitted {
                 HStack(spacing: CenitMetrics.space2) {
+                    // Ronda 2 revisión final, hallazgo grave (g4-a11y): `.combine` vivía en el HStack
+                    // completo, fundiendo «Undo» (un Button hermano) en un elemento estático — VoiceOver
+                    // no podía deshacer un «Omitir». Solo el texto se combina; el botón queda suelto.
                     Text("Omitted").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+                        .accessibilityElement(children: .combine)
                     Spacer(minLength: CenitMetrics.space2)
                     undoLink { omitted.remove(key) }
                 }
-                .accessibilityElement(children: .combine)
             } else if let resolved {
                 let isAuto = autoMatched.contains(key)   // FER-794: pre-resolved, marked as automatic
                 HStack(spacing: CenitMetrics.space2) {
@@ -334,10 +337,10 @@ struct WorkoutImportView: View {
                     .foregroundStyle(theme.verdict)
                     .padding(.horizontal, 9).padding(.vertical, 3)
                     .background(theme.verdict.opacity(StrandOpacity.tintFill), in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
+                    .accessibilityElement(children: .combine)
                     Spacer(minLength: CenitMetrics.space2)
                     undoLink { resolution[key] = nil; autoMatched.remove(key) }
                 }
-                .accessibilityElement(children: .combine)
                 Button { mappingTarget = MappingName(name: name) } label: {
                     Text("Change mapping").font(InstrumentoType.grotesk(13, weight: .medium)).foregroundStyle(theme.inkTertiary).underline()
                 }
@@ -616,21 +619,6 @@ struct WorkoutImportView: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(overline).instrumentoOverline().foregroundStyle(theme.inkTertiary)
             Text(title).font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking).foregroundStyle(theme.ink)
-        }
-    }
-
-    private func step<Action: View>(_ n: Int, _ text: LocalizedStringKey,
-                                    @ViewBuilder action: () -> Action) -> some View {
-        HStack(alignment: .top, spacing: CenitMetrics.gap) {
-            Text("\(n)").font(InstrumentoType.groteskNumber(15))
-                .foregroundStyle(theme.paperHi)
-                .frame(width: 26, height: 26)
-                .background(Circle().fill(theme.dataStrain))
-            VStack(alignment: .leading, spacing: CenitMetrics.gap) {
-                Text(text).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                action()
-            }
         }
     }
 

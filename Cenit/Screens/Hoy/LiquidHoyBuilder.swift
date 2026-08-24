@@ -638,7 +638,8 @@ enum LiquidHoyBuilder {
         // Sin veredicto: tres razones distintas, tres frases distintas. Colapsarlas en
         // «Conociéndote» le decía «te estoy conociendo» a quien nunca conectó Salud.
         if !healthConnected {
-            return .init(tono: .hueco, palabra: String(localized: "Connect Apple Health"), consejo: nil)
+            // copy.md: «Sin permiso de Salud | `Conecta Apple Salud`» — imperativo, no infinitivo.
+            return .init(tono: .hueco, palabra: String(localized: "Conecta Apple Health"), consejo: nil)
         }
         if prep?.autonomicPossible == false {
             return .init(tono: .hueco, palabra: String(localized: "No reading today"),
