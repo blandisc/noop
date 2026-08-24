@@ -190,8 +190,9 @@ public enum EntrenarMetrics {
     /// Los tres numerales de la sesión («~50 min · 6 ejercicios · 18 series»), separados del subtítulo.
     public static let heroNumeralsTop: CGFloat = 20
     /// El canal entre los tres numerales, cuando se dibujan como bloques sueltos (handoff «canal 28»)
-    /// — la landing hoy los lee como una sola frase con «·», así que este canal no tiene un sitio
-    /// vivo todavía; se documenta para no perder el número del handoff.
+    /// — usado por la sesión en vivo y la landing («Tu plan»/héroe) para el `HStack` de numerales
+    /// (`EntrenarView.swift`); corrección revisión final (g3-adn): el comentario decía huérfano y no
+    /// lo era.
     public static let heroNumeralsGap: CGFloat = 28
     /// La línea de progresión / subida del día, separada de los numerales. (= `CenitMetrics.gap`.)
     public static let heroProgressTop: CGFloat = CenitMetrics.gap

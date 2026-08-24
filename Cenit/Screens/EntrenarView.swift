@@ -609,7 +609,9 @@ private struct EntrenarLanding: View {
             ? String(localized: "exercise \(p.index) of \(p.total) · \(p.doneSets) sets done")
             : String(localized: "\(p.doneSets) sets done")
         guard let last = lastDoneSet(session) else { return head }
-        let kg = UnitFormatter.massFromKilograms(last.kg, system: unitSystem)
+        // `StrengthDisplay.weight`, no `massFromKilograms`: en imperial el peso absoluto se lee
+        // redondeado («182 lb») en TODA la sección de fuerza; el crudo daba «181.9 lb» solo aquí.
+        let kg = StrengthDisplay.weight(last.kg, system: unitSystem)
         return head + " · " + String(localized: "last: \(last.name) \(kg) × \(last.reps)")
     }
 
@@ -892,7 +894,7 @@ private struct EntrenarLanding: View {
 
     /// «Hoy subes Press banca · 82,5 kg y Press militar · 26 kg» — the names+loads in the raise green.
     private var raiseText: Text {
-        let parts = raisesToday.map { "\($0.name) · \(UnitFormatter.massFromKilograms($0.kg, system: unitSystem))" }
+        let parts = raisesToday.map { "\($0.name) · \(StrengthDisplay.weight($0.kg, system: unitSystem))" }
         // Grotesk RELATIVO al subhead, igual que su fila hermana: las dos pueden estar en pantalla a
         // la vez y con Dynamic Type una crecía y la otra se quedaba clavada en 13 pt.
         let strong = parts.map {
@@ -922,7 +924,7 @@ private struct EntrenarLanding: View {
     private var heldRaiseText: Text {
         let shown = deferredToday.prefix(3)
         let rest = deferredToday.count - shown.count
-        let parts = shown.map { "\($0.name) · \(UnitFormatter.massFromKilograms($0.kg, system: unitSystem))" }
+        let parts = shown.map { "\($0.name) · \(StrengthDisplay.weight($0.kg, system: unitSystem))" }
         // Grotesk RELATIVE to the surrounding subhead: the weights are the datum of this sentence, so
         // they have to grow with it — a fixed 13 pt stayed put while the prose reached xxxLarge.
         let strong = parts.map {
@@ -1358,7 +1360,7 @@ private struct EntrenarLanding: View {
     /// «Fresco: pecho · hombros» — hasta 2 músculos en estado `.fresh` (quisquilloso ronda 3: el
     /// músculo PRINCIPAL, `muscleLoads.first`, siempre tiene `relative == 1.0` así que nunca cae aquí
     /// — no hay riesgo de listarlo dos veces). Reusa la MISMA etiqueta «Fresh: »/«Fresco: » y el
-    /// MISMO patrón de unión sin adjetivo flexionado que `TrainingBodyScreen.freshLine`, para que la
+    /// MISMO patrón de unión sin adjetivo flexionado que `TrainingBodyScreen.muscleReading`, para que la
     /// landing y su pantalla hermana no inventen dos vocabularios para lo mismo. `nil` cuando ningún
     /// músculo está fresco (primeras sesiones: todo lo tocado carga, nada está fresco todavía).
     private var freshMusclesClause: Text? {

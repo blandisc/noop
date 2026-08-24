@@ -6691,7 +6691,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@: listo."
+            "value" : "%@, hecha"
           }
         }
       }
@@ -18224,6 +18224,22 @@
         }
       }
     },
+    "Clear search" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear search"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Borrar búsqueda"
+          }
+        }
+      }
+    },
     "Close" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -22855,23 +22871,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Estimado"
-          }
-        }
-      }
-    },
-    "Estimate · you decide" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Estimate · you decide"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Estimación · tú decides"
           }
         }
       }
@@ -42955,19 +42954,36 @@
         }
       }
     },
-    "Recovery cost" : {
+    "Cardiovascular cost" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Recovery cost"
+            "value" : "Cardiovascular cost"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Costo de recuperación"
+            "value" : "Costo cardiovascular"
+          }
+        }
+      }
+    },
+    "Estimate, you decide" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estimate"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "estimación"
           }
         }
       }
@@ -43294,7 +43310,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "no subas el peso"
+            "value" : "hoy más suave, no subas"
           }
         }
       }
@@ -45410,6 +45426,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "reserva vagal en reposo"
+          }
+        }
+      }
+    },
+    "Resting, %lld seconds left" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resting, %lld seconds left"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Descansando, quedan %lld segundos"
           }
         }
       }
@@ -61739,6 +61771,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "50% suave"
+          }
+        }
+      }
+    },
+    "set %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "serie %@"
           }
         }
       }

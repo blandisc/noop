@@ -109,6 +109,7 @@ public struct EntrenarHilo: View {
                 StrandIcon.disclosure.image
                     .font(StrandFont.glyph(.chevron, weight: .semibold))
                     .foregroundStyle(theme.inkTertiary)
+                    .accessibilityHidden(true)
             }
         }
         .frame(minHeight: EntrenarMetrics.row)
