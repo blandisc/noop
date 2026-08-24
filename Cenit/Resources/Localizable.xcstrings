@@ -23455,23 +23455,53 @@
         }
       }
     },
-    "FOCUS MODE · SET %@ OF %@" : {
+    "Exit Focus" : {
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
-            "value" : "FOCUS MODE · SET %1$@ OF %2$@"
+            "state" : "translated",
+            "value" : "Exit Focus"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Salir de Foco"
           }
         }
       }
     },
-    "FOCUS MODE · SET %lld OF %lld" : {
+    "Exercise done" : {
       "extractionState" : "manual",
       "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exercise done"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "MODO FOCO · SERIE %1$lld DE %2$lld"
+            "value" : "Ejercicio hecho"
+          }
+        }
+      }
+    },
+    "Set done" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set done"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Serie hecha"
           }
         }
       }
@@ -42225,6 +42255,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "La subida a %@ espera"
+          }
+        }
+      }
+    },
+    "the raise to %@ is on record" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "la subida a %@ quedó registrada"
+          }
+        }
+      }
+    },
+    "raise earned: %@ ▲" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "subida ganada: %@ ▲"
           }
         }
       }

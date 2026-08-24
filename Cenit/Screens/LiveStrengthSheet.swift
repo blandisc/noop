@@ -157,9 +157,24 @@ struct LiveStrengthSheet: View {
     /// Full-screen «Focus mode» cover — entry from the inline set list; dismiss returns to the table
     /// without ending the session (mock v21 handoff). Additive only; does not replace `inlineSession`.
     @State private var focusMode = false
-    /// Manual Tiempo/FC toggle for the full-screen rest hero (FER-934). nil = follow `currentRestMode`
-    /// (FC when a rest target exists and the strap has signal); the user can flip it either way.
-    @State private var focusRestShowsHR: Bool?
+    /// FER-135 (V6 «Modo Foco: serie · descanso · hecho», prototipo `foco.txt`): the just-finished
+    /// exercise's index, held while its «Exercise done» screen shows. Cleared by tapping «Next» /
+    /// «Finish workout», which is the only way past this screen (besides exiting Focus entirely).
+    /// Rest itself is untouched — the countdown already started in the background; this only delays
+    /// which screen the user sees until they acknowledge the exercise is done.
+    ///
+    /// (Revisión ronda 1, hallazgo grave: `registerActiveSet` used to set this the INSTANT the
+    /// exercise's last work set was checked, jumping straight to HECHO even when a real rest had
+    /// just started — the descanso kept running silently behind the done screen, inverting the
+    /// prototype's order (`nav.focoCheck` always enters `focoRest`; `focoDone` only once the rest
+    /// itself is over, `datos-estado.txt` líneas 161/417). Now `registerActiveSet` only stamps this
+    /// directly when no real rest starts (a 0-second fixed rest, or the session's last set); when a
+    /// rest DOES start, it stashes `pendingFocusDoneEi` instead, and the `onChange(of: session.phase)`
+    /// below promotes it here only once that rest ends — by skip or by timing out.
+    @State private var focusDoneEi: Int?
+    /// See `focusDoneEi`'s note above: the exercise that finished into a real rest, held until that
+    /// rest ends (`session.phase` leaves `.resting`), at which point it becomes `focusDoneEi`.
+    @State private var pendingFocusDoneEi: Int?
     /// Which exercise's «···» paper menu is open (FER-894 · «Cómo llego a Cambiar»), by run index. nil = closed.
     @State private var menuExerciseIndex: Int?
     /// The exercise whose «Change {exercise}» sheet is open (FER-894). nil = closed.
@@ -317,7 +332,16 @@ struct LiveStrengthSheet: View {
                 bodyLibraryPickerSheet
             }
             .onChange(of: session.phase) { _, phase in
-                if phase != .resting { restAnchorEi = nil }
+                if phase != .resting {
+                    restAnchorEi = nil
+                    // FER-135 (revisión ronda 1, hallazgo grave): el descanso real que arrancó al
+                    // registrar la última serie del ejercicio ya terminó (se acabó o se saltó) —
+                    // hasta ahora es cuando HECHO puede aparecer, nunca antes.
+                    if let pending = pendingFocusDoneEi {
+                        pendingFocusDoneEi = nil
+                        focusDoneEi = pending
+                    }
+                }
                 // El pulso con el que ARRANCA el descanso (revisión ronda 2, hallazgo menor): sin esto
                 // `RestBand` nunca dibuja el punto del riel mientras el pulso todavía va cayendo — solo
                 // al llegar. Se captura una sola vez al entrar a descanso, se limpia al salir.
@@ -375,6 +399,10 @@ struct LiveStrengthSheet: View {
             }
             .fullScreenCover(isPresented: $focusMode) {
                 bodyFocusCover
+            }
+            // FER-135: a stale «Exercise done» screen must never greet the NEXT time Focus opens.
+            .onChange(of: focusMode) { _, isOpen in
+                if !isOpen { focusDoneEi = nil; pendingFocusDoneEi = nil }
             }
     }
 
@@ -1235,6 +1263,23 @@ struct LiveStrengthSheet: View {
         let ei = session.currentIndex
         let si = session.runs.indices.contains(ei) ? session.runs[ei].currentSet : -1
         session.registerCurrentSet(restingHR: restingBaseline, maxHR: profileMaxHR)
+        // FER-135 (V6 «hecho»): checked AFTER registering, against the run's own sets — not against
+        // whether `currentIndex` moved — because a superset round can jump `currentIndex` to a
+        // teammate exercise while THIS exercise still has rounds left (`registerCurrentSet`'s
+        // round-robin path). Only when `ei` itself has no `.work` set left undone is it really done.
+        //
+        // Revisión ronda 1, hallazgo grave: whether HECHO shows NOW or waits for `pendingFocusDoneEi`
+        // to be promoted (see its doc) depends on whether a real rest just started — `Self.focusDoneTiming`
+        // is the pure decision, tested without mounting the view.
+        let exerciseFullyDone = session.runs.indices.contains(ei)
+            && !session.runs[ei].sets.contains(where: { $0.kind == .work && !$0.done })
+        if focusMode {
+            switch Self.focusDoneTiming(exerciseFullyDone: exerciseFullyDone, restStarting: session.phase == .resting) {
+            case .none: break
+            case .pending: pendingFocusDoneEi = ei
+            case .immediate: focusDoneEi = ei
+            }
+        }
         // FER-134 «QUEDABAN»: la serie que se ACABA de registrar hereda el RIR elegido en el teclado,
         // como RPE = 10 − RIR — salvo que ya tuviera un RPE puesto a mano por la hoja de RPE, que
         // nunca se pisa (ver nota de `selectedRIR`). `registerCurrentSet` solo cambia banderas de la
@@ -1252,6 +1297,19 @@ struct LiveStrengthSheet: View {
         }
         selectedRIR = nil
         selectedRIRTarget = nil
+    }
+
+    /// FER-135 (V6, revisión ronda 1, hallazgo grave): whether the just-finished exercise's HECHO
+    /// screen should show right away or wait for the rest that just started to end first. The
+    /// prototype (`datos-estado.txt` líneas 161/417) is unambiguous: checking any set always enters
+    /// `focoRest` first; `focoDone` only becomes true once that rest is over. `.pending` defers to
+    /// `pendingFocusDoneEi` (promoted by the `onChange(of: session.phase)` that fires when the rest
+    /// ends); `.immediate` is only for the cases with no real rest to wait through (a 0-second fixed
+    /// rest, or the very last set of the whole session).
+    enum FocusDoneTiming: Equatable { case none, pending, immediate }
+    static func focusDoneTiming(exerciseFullyDone: Bool, restStarting: Bool) -> FocusDoneTiming {
+        guard exerciseFullyDone else { return .none }
+        return restStarting ? .pending : .immediate
     }
 
     /// La decisión pura detrás de `registerActiveSet` (revisión ronda 1, hallazgo grave): qué RPE
@@ -1776,118 +1834,340 @@ struct LiveStrengthSheet: View {
     /// descarta, y una que ya rindió su acta no vuelve atrás.
     private var puedeControlarPausa: Bool { !isEmptyAdHoc && session.summary == nil }
 
-    /// El modo foco pide lo mismo: algo que registrar.
-    private var puedeEnfocar: Bool { !isEmptyAdHoc && session.summary == nil }
+    /// El modo foco pide lo mismo que la pausa, MÁS una serie pendiente: sin esto, tocar «Foco»
+    /// después de registrar la última serie desde la tabla en línea caía en el estado de respaldo
+    /// genérico de `focusCapturePhase` («All done» / «No pending set…») en vez de cualquiera de los
+    /// tres estados con voz de Instrumento que define V6 (ronda 4, hallazgo menor).
+    private var puedeEnfocar: Bool { !isEmptyAdHoc && session.summary == nil && !session.isComplete }
 
     // MARK: - Focus mode (full-screen cover · additive entry from the inline list)
 
-    /// Full-screen capture/rest surface. Closing returns to the inline table; session state is unchanged.
-    /// FER-934: while resting, the whole surface flips to the `dataRecovery` green with crema ink
-    /// (handoff `_RestFull`); the capture variant keeps the paper background untouched.
+    /// Full-screen capture/rest/done surface (FER-135, V6 «Modo Foco», prototipo `foco.txt`). Closing
+    /// returns to the inline table; session state is unchanged. The header («‹ · Foco · ejercicio N de
+    /// M · reloj») is now the SAME across all three states — the prototype draws it once, outside the
+    /// three state blocks — so it no longer flips to FER-934's green/crema dress for rest: the rest
+    /// state's own skin is `RestBand` (see `focusRestPhase`), which is paper + ink like the rest of the
+    /// app. `focusDoneEi` (set by `registerActiveSet`) wins over both `session.phase` states while it's
+    /// set — the just-finished exercise gets its own screen before the next one takes over.
     private var focusModeView: some View {
-        let resting = session.phase == .resting
-        return VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
-            // Canvas pass 2026-07-15 (handoff `_FocusScreen`): capturing shows «× · MODO FOCO · SERIE
-            // N DE M · reloj»; resting keeps FER-934's toggle-left/×-right green arrangement.
+        VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 12) {
-                if resting {
-                    focusRestModeToggle
-                    Spacer(minLength: 0)
-                    focusCloseButton(onGreen: true)
-                } else {
-                    focusCloseButton(onGreen: false)
-                    if let run = session.current {
-                        Text("FOCUS MODE · SET \(min(run.currentSet + 1, run.sets.count)) OF \(run.sets.count)")
-                            .instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                            .lineLimit(1).minimumScaleFactor(0.8)
+                focusCloseButton()
+                focusHeaderKicker
+                    .lineLimit(1).minimumScaleFactor(0.8)
+                Spacer(minLength: 0)
+                TimelineView(.periodic(from: Date(), by: 1)) { ctx in
+                    Text(Self.clock(session.elapsedSeconds(now: ctx.date)))
+                        .font(InstrumentoType.groteskNumber(15)).monospacedDigit()
+                        .foregroundStyle(theme.inkSecondary)
+                }
+                .accessibilityHidden(true)
+            }
+            .padding(.bottom, CenitMetrics.sectionGap)
+
+            // Revisión ronda 3, hallazgo grave: sin ScrollView, a Dynamic Type grande (AX3-AX5) el
+            // contenido de cualquiera de los tres estados (thumb + título de 2 líneas + numerales +
+            // botón primario + quick links + «Salir de Foco») podía desbordar el alto de pantalla sin
+            // forma de llegar al botón. `GeometryReader` + `.frame(minHeight:)` conserva el layout de
+            // siempre (los `Spacer` internos siguen empujando a los tamaños normales) y solo activa el
+            // scroll cuando el contenido real no cabe.
+            GeometryReader { geo in
+                ScrollView {
+                    Group {
+                        if let doneEi = focusDoneEi, session.runs.indices.contains(doneEi) {
+                            focusDonePhase(doneEi)
+                        } else if session.phase == .resting {
+                            focusRestPhase
+                        } else {
+                            focusCapturePhase
+                        }
                     }
-                    Spacer(minLength: 0)
-                    TimelineView(.periodic(from: Date(), by: 1)) { ctx in
-                        Text(Self.clock(session.elapsedSeconds(now: ctx.date)))
-                            .font(InstrumentoType.groteskNumber(15)).monospacedDigit()
-                            .foregroundStyle(theme.inkSecondary)
-                    }
-                    .accessibilityHidden(true)
+                    .frame(minHeight: geo.size.height, alignment: .top)
                 }
             }
-
-            if resting {
-                focusRestPhase
-            } else {
-                focusCapturePhase
-            }
-            Spacer(minLength: 0)
         }
         .padding(.horizontal, CenitMetrics.screenPadding)
         .padding(.top, CenitMetrics.sectionGap)
         .padding(.bottom, CenitMetrics.screenPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background((resting ? theme.dataRecovery : theme.paper).ignoresSafeArea())
+        .background(theme.paper.ignoresSafeArea())
         .instrumentoTheme(theme)
         .preferredColorScheme(.light)
     }
 
+    /// The exercise whose position the header counts: the just-finished one while HECHO shows, else
+    /// whichever exercise the current state (rest or capture) is about — the same anchor `RestBand`'s
+    /// kicker uses (`accordionIndex`), so the header never disagrees with the body below it.
+    private var focusHeaderIndex: Int { focusDoneEi ?? accordionIndex }
+
+    /// «Foco · ejercicio 2 de 6» — position counted only among non-skipped exercises, matching every
+    /// other position count in this screen (`focusRestNextCard`'s old sibling `restBandNextRow`, the
+    /// plan navigator).
+    ///
+    /// Revisión ronda 1, hallazgo grave: this used to build the count with an interpolated
+    /// `String(localized: "exercise \(position) of \(actives.count)")` — a key the catalog never
+    /// had, so it always rendered in English regardless of device language. `"Exercise %lld of %lld"`
+    /// already exists translated (es «Ejercicio %lld de %lld»); reusing it via `Text`'s own
+    /// interpolation (not `String(localized:)`) is what actually resolves against the catalog. Case
+    /// doesn't matter — `entrenarCabeceraKicker()` uppercases everything below.
+    private var focusHeaderKicker: some View {
+        let actives = session.runs.enumerated().filter { !$0.element.skipped }
+        let position = actives.firstIndex { $0.offset == focusHeaderIndex }.map { $0 + 1 }
+        return Group {
+            if let position {
+                (Text("Focus") + Text(verbatim: " · ")
+                 + Text("Exercise \(position) of \(actives.count)"))
+                    .entrenarCabeceraKicker().foregroundStyle(theme.inkTertiary)
+            } else {
+                Text("Focus").entrenarCabeceraKicker().foregroundStyle(theme.inkTertiary)
+            }
+        }
+    }
+
+    /// «Salir de Foco ›» — the prototype's quiet exit link, repeated at the foot of all three states
+    /// (SERIE/DESCANSO/HECHO). Same action as the header's «‹», just a second, lower-friction door out
+    /// (copy.md: no two doors to the SAME destructive action, but this one is plain navigation).
+    private var focusExitLink: some View {
+        Button { focusMode = false } label: {
+            (Text("Exit Focus") + Text(verbatim: " ›"))
+                .font(StrandFont.subhead).fontWeight(.medium).foregroundStyle(theme.inkSecondary)
+        }
+        .buttonStyle(.plain)
+        .frame(minHeight: CenitMetrics.touchTarget)
+        .frame(maxWidth: .infinity, alignment: .center)
+    }
+
+    /// SERIE (FER-135, V6, prototipo `foco.txt`): centered thumb + title (→ exercise detail) + «serie N
+    /// de M · anterior X» + the KG/REPS numerals + the earned-raise line (weightReps only) + the ink
+    /// «✓ Serie hecha» pill + the quiet links + prev/next bar + «Salir de Foco». Everything below the
+    /// title stays type-specific (bodyweight/time/distance keep their existing captures — the prototype
+    /// only drew the weightReps case).
     @ViewBuilder private var focusCapturePhase: some View {
         if let run = session.current {
-            // Canvas pass 2026-07-15: rebuilt to the owner's handoff capture — centered thumb + name +
-            // «la última vez», KG/REPS stepper cards, the big ink «✓ Registrar serie» pill, the quick
-            // links row, and a prev/next exercise bar at the bottom.
-            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
+            VStack(spacing: 0) {
                 Spacer(minLength: 0)
-                // Canvas pass 2026-07-15: bigger hero (56pt thumb + 24pt Grotesk title), the row
-                // left-aligned (long names get the room), the whole block vertically centered.
-                HStack(spacing: 14) {
-                    SessionRunThumb(exerciseId: run.exerciseId, side: 56)
-                        // r25 (owner): mismo marco de familia que la Biblioteca y la tarjeta activa.
-                        .overlay(RoundedRectangle(cornerRadius: ExerciseThumbnail.tileCornerRadius(side: 56), style: .continuous)
-                            .strokeBorder(categoryTint(run), lineWidth: 2))
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(run.name).font(InstrumentoType.grotesk(24, weight: .semibold))
-                            .foregroundStyle(theme.ink)
-                            .lineLimit(2).minimumScaleFactor(0.7)
-                        if let prev = previousText(run) {
-                            Text(String(localized: "last time ") + prev)
-                                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                        }
+                // Ronda 4, hallazgo menor: un solo `spacing: space2` (8) para los tres elementos
+                // apretaba más el hero de lo que pide el proto (thumb→título 12, título→serie 8) —
+                // `spacing: 0` + padding explícito por hijo separa los dos huecos.
+                VStack(spacing: 0) {
+                    Button { openDetail(run) } label: {
+                        SessionRunThumb(exerciseId: run.exerciseId, side: EntrenarMetrics.focusThumb)
+                            .overlay(RoundedRectangle(cornerRadius: ExerciseThumbnail.tileCornerRadius(side: EntrenarMetrics.focusThumb), style: .continuous)
+                                .strokeBorder(categoryTint(run), lineWidth: 2))
                     }
-                    Spacer(minLength: 0)
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Text(run.name)).accessibilityHint(Text("View exercise detail"))
+
+                    Button { openDetail(run) } label: {
+                        Text(run.name).font(InstrumentoType.grotesk(EntrenarMetrics.focusTitle, weight: .bold))
+                            .foregroundStyle(theme.ink).multilineTextAlignment(.center)
+                            .lineLimit(2).minimumScaleFactor(0.7)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Text(run.name)).accessibilityHint(Text("View exercise detail"))
+                    .padding(.top, CenitMetrics.gap)
+
+                    focusSerieLine(run).padding(.top, CenitMetrics.space2)
+                    // r20/r28 (owner, heredado): el foco sigue narrando la superserie igual que antes.
+                    focusSupersetCaption(session.currentIndex).padding(.top, CenitMetrics.space2)
                 }
-                // r20/r28 (owner): el foco SIEMPRE narra la superserie — quien no es el último lleva
-                // la leyenda «sin descanso entre A1 y A2»; el último (que sí descansa) lleva el
-                // sello «SUPERSERIE · A2» en vez de un copy que no le aplica.
-                focusSupersetCaption(session.currentIndex)
+                .padding(.top, EntrenarMetrics.focusHeroTop)
 
                 switch run.type {
                 case .weightReps:
-                    HStack(alignment: .top, spacing: 12) {
-                        focusKgCard
-                        focusRepsCard(run)
+                    // Revisión ronda 2, hallazgo grave: este VStack solía llevar `spacing:
+                    // CenitMetrics.gap` (12) MIENTRAS cada hijo también traía su propio
+                    // `.padding(.top, …)` — SwiftUI suma ambos, así que el hueco real doblaba
+                    // (o casi) el token documentado (`focusRaiseTop`=18 renderizaba 30;
+                    // `focusRegisterTop`=36 renderizaba 48). `spacing: 0` + padding explícito por
+                    // hijo hace que el margen visible sea EXACTAMENTE el token que dice ser.
+                    VStack(spacing: 0) {
+                        HStack(alignment: .lastTextBaseline, spacing: CenitMetrics.sectionGap) {
+                            focusValueBlock(UnitFormatter.massUnit(units).uppercased(),
+                                           value: plateNumber(displayWeight(session.currentSet?.weightKg ?? 0)),
+                                           valueTint: theme.dataStrain,
+                                           minusLabel: "Decrease weight", plusLabel: "Increase weight",
+                                           minus: { session.bumpWeight(byKg: -weightStepKg) },
+                                           plus: { session.bumpWeight(byKg: weightStepKg) }) {
+                                // r15 (owner, heredado): el atajo a discos solo existe en ejercicios de
+                                // BARRA — en dumbbell/máquina la leyenda queda en el puro paso «±2,5».
+                                if usesBarbell(session.currentIndex) {
+                                    Button {
+                                        platesTarget = PlatesTarget(ei: session.currentIndex,
+                                                                    weightKg: session.currentSet?.weightKg ?? 0)
+                                    } label: {
+                                        Text("±\(StrengthDisplay.incrementNumber(weightStepKg, system: units)) · " + String(localized: "plates"))
+                                            .font(StrandFont.caption).foregroundStyle(theme.inkTertiary).underline()
+                                            .lineLimit(1)
+                                    }
+                                    .buttonStyle(.plain)
+                                } else {
+                                    Text("±\(StrengthDisplay.incrementNumber(weightStepKg, system: units))")
+                                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                                }
+                            }
+                            Text(verbatim: "×")
+                                .font(InstrumentoType.grotesk(EntrenarMetrics.focusValueSeparator, weight: .medium))
+                                .foregroundStyle(theme.inkTertiary)
+                                .accessibilityHidden(true)
+                            focusValueBlock(String(localized: "Reps").uppercased(),
+                                           value: "\(session.currentSet?.reps ?? 0)", valueTint: theme.ink,
+                                           minusLabel: "Decrease reps", plusLabel: "Increase reps",
+                                           minus: { session.bumpReps(-1) }, plus: { session.bumpReps(1) }) {
+                                if let lr = run.lastReps {
+                                    Text(String(localized: "target \(lr)"))
+                                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                                } else {
+                                    Color.clear.frame(height: 14)
+                                }
+                            }
+                        }
+                        .padding(.top, EntrenarMetrics.focusValuesTop)
+                        // «subida ganada»: solo la raya APLICADA (no la que espera el veredicto) —
+                        // misma lectura que `raiseLine` en la fila del ejercicio (FER-82).
+                        //
+                        // Mismo bug de familia que `focusHeaderKicker`/`focusSerieLine` (revisión
+                        // ronda 1, hallazgo grave): `String(localized:)` interpolado necesita la clave
+                        // EXACTA en el catálogo — se agregó «raise earned: %@ ▲» (es «subida ganada:
+                        // %@ ▲») en vez de dejarla en inglés.
+                        if let raise = run.proposedRaise, !raise.waiting {
+                            Text(verbatim: String(localized: "raise earned: \(massText(raise.toKg)) ▲"))
+                                .font(StrandFont.subhead).foregroundStyle(theme.positiveText)
+                                .padding(.top, EntrenarMetrics.focusRaiseTop)
+                        }
+                        focusRegisterButton.padding(.top, EntrenarMetrics.focusRegisterTop)
+                        focusQuickLinks(run).padding(.top, CenitMetrics.gap)
                     }
-                    focusRegisterButton
-                    focusQuickLinks(run)
                 case .bodyweight:
-                    focusRepsHero
-                    focusAddedWeightRow
-                    focusRegisterButton
-                    focusQuickLinks(run)
+                    VStack(spacing: CenitMetrics.gap) {
+                        focusRepsHero
+                        focusAddedWeightRow
+                        focusRegisterButton
+                        focusQuickLinks(run)
+                    }
+                    .padding(.top, EntrenarMetrics.focusValuesTop)
                 case .time:
-                    focusTimeControls
+                    focusTimeControls.padding(.top, EntrenarMetrics.focusValuesTop)
                 case .distance:
-                    focusDistanceControls
+                    focusDistanceControls.padding(.top, EntrenarMetrics.focusValuesTop)
                 }
                 Spacer(minLength: 0)
                 focusPrevNextBar
+                focusExitLink.padding(.top, CenitMetrics.space2)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         } else {
-            VStack(alignment: .leading, spacing: CenitMetrics.gap) {
+            VStack(spacing: CenitMetrics.gap) {
                 // r20 (owner): voz Grotesk también aquí — mismo cierre que completePhase.
                 Text("All done").font(InstrumentoType.grotesk(24, weight: .semibold)).foregroundStyle(theme.ink)
                 Text("No pending set. Close focus mode to finish from the list.")
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
+                focusExitLink
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         }
+    }
+
+    /// «serie N de M · anterior X»: N counts only `.work` sets up to and including the active one (a
+    /// warm-up is never «serie 0», same rule `restBandKicker`/`focusRestCaption` already used). M is
+    /// the real planned total, not a fixture — a routine with 3 or 5 work sets reads its own number.
+    ///
+    /// Revisión ronda 1, hallazgo grave: same bug as `focusHeaderKicker` — the compound interpolated
+    /// key this used to build (`"set %lld of %lld · last time %@"`) never existed in the catalog, so
+    /// it always rendered English. Built from two catalog keys that DO exist and are translated
+    /// (`"Set %lld of %lld"`, `"last time %@"`) joined by the same bare «·» separator every other
+    /// two-part line in this file uses.
+    private func focusSerieLine(_ run: StrengthSessionModel.ExerciseRun) -> some View {
+        let n = run.sets.prefix(run.currentSet + 1).reduce(0) { $0 + ($1.kind == .work ? 1 : 0) }
+        let total = run.sets.filter { $0.kind == .work }.count
+        let base = String(localized: "Set \(n) of \(total)")
+        let text = previousText(run).map { "\(base) · " + String(localized: "last time \($0)") } ?? base
+        return Text(verbatim: text)
+            .font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+            .multilineTextAlignment(.center)
+    }
+
+    /// HECHO (FER-135, V6, prototipo `foco.txt`): the just-finished exercise's own screen, held by
+    /// `focusDoneEi` until the athlete taps through — «Next: ‹next exercise› ›» while more remain, or
+    /// «Finish workout ›» (the same confirm the header's own «Terminar» opens) once `session.isComplete`.
+    /// Never shows KG/REPS (a done exercise has nothing left to capture) — the exercise's own set count
+    /// and, when the day earned one, the applied raise are the only numbers here.
+    ///
+    /// Copy deliberately NOT literal (revisión ronda 1, hallazgo menor): the prototype's title is
+    /// «‹ejercicio›, hecha» (name + «, hecha»), which agrees in gender with the exercise's own noun.
+    /// «Sentadilla» is feminine («hecha») but most exercise names in the catalog are masculine
+    /// («Press banca hecho», not «hecha») — the prototype's fixed suffix breaks on its own catalog.
+    /// «Ejercicio hecho: ‹nombre›» sidesteps the agreement entirely, same principle as
+    /// `copy-no-supone-genero` elsewhere in this codebase. Flagged for the owner to confirm as an
+    /// intentional deviation, not silently swapped.
+    @ViewBuilder private func focusDonePhase(_ ei: Int) -> some View {
+        let run = session.runs[ei]
+        let doneCount = run.sets.filter { $0.kind == .work && $0.done }.count
+        let raise = run.proposedRaise
+        let isLast = session.isComplete
+        let nextRun = isLast ? nil : session.current
+        // Revisión ronda 2, hallazgo grave: dos `Spacer(minLength: 0)` simétricos alrededor del
+        // bloque lo CENTRABAN en el espacio sobrante después del padding de 120, en vez de anclarlo
+        // justo debajo (como el `margin-top:120px` fijo del prototipo). Un solo `Spacer` al final
+        // deja que el bloque quede pegado al padding y el resto del alto caiga abajo — mismo patrón
+        // que `focusCapturePhase` usa para su bottom bar.
+        VStack(spacing: 0) {
+            // Igual que en `.weightReps` de `focusCapturePhase` (hallazgo grave hermano): este
+            // VStack solía llevar `spacing: CenitMetrics.space2` (8) ADEMÁS del `.padding(.top, …)`
+            // explícito del botón, así que el hueco real doblaba `focusRegisterTop`/`sectionGap`
+            // (28) a 36. `spacing: 0` + padding explícito por hijo corrige el margen al token real.
+            VStack(spacing: 0) {
+                (Text("Exercise done") + Text(verbatim: ": \(run.name)"))
+                    .font(InstrumentoType.grotesk(EntrenarMetrics.focusTitle, weight: .bold))
+                    .foregroundStyle(theme.ink).multilineTextAlignment(.center)
+                if let raise, !raise.waiting {
+                    // Revisión ronda 1, hallazgo grave: la clave compuesta que armaba esto no existía
+                    // en el catálogo (siempre en inglés). Reconstruida a partir de dos claves que sí
+                    // existen y ya están traducidas: «%lld sets» y la nueva «the raise to %@ is on
+                    // record» (es «la subida a %@ quedó registrada»).
+                    Text(verbatim: String(localized: "\(doneCount) sets")
+                         + " · " + String(localized: "the raise to \(massText(raise.toKg)) is on record"))
+                        .font(StrandFont.subhead).foregroundStyle(theme.inkTertiary).multilineTextAlignment(.center)
+                        .padding(.top, CenitMetrics.space2)
+                } else {
+                    Text(verbatim: String(localized: "\(doneCount) sets"))
+                        .font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+                        .padding(.top, CenitMetrics.space2)
+                }
+                Button {
+                    // Revisión ronda 2, hallazgo grave: este botón gobierna la transición HECHO →
+                    // siguiente ejercicio/terminar sesión — el mismo tipo de gesto que
+                    // `focusRegisterButton` ya guarda contra Reduce Motion, pero este quedó sin la
+                    // guarda cuando se agregó en la misma PR.
+                    withAnimation(reduceMotion ? nil : StrandMotion.gentle) { focusDoneEi = nil }
+                    if isLast {
+                        focusMode = false
+                        finishTapped()
+                    }
+                } label: {
+                    Group {
+                        if let nextRun {
+                            Text("Next") + Text(verbatim: ": \(nextRun.name) ›")
+                        } else {
+                            Text("Finish workout") + Text(verbatim: " ›")
+                        }
+                    }
+                    .font(InstrumentoType.groteskHeadline(15)).foregroundStyle(theme.paper)
+                    .padding(.horizontal, CenitMetrics.sectionGap)
+                    .frame(height: EntrenarMetrics.primaryButton)
+                    // Ronda 4, hallazgo grave (hermano de `focusRegisterButton`): mismo relleno sin
+                    // excepción nombrada en DESIGN.md §8.7 — tinta, no verde.
+                    .background(theme.ink, in: Capsule())
+                }
+                .buttonStyle(.plain)
+                .padding(.top, CenitMetrics.sectionGap)
+                focusExitLink.padding(.top, CenitMetrics.space2)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.top, EntrenarMetrics.focusDoneTop)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
     private var focusWeightHero: some View {
@@ -1967,101 +2247,66 @@ struct LiveStrengthSheet: View {
         .accessibilityElement(children: .contain)
     }
 
+    /// «✓ Serie hecha» (FER-135, V6, prototipo `foco.txt`). Ronda 4, hallazgo grave: el prototipo
+    /// dibuja este pill relleno de verde, pero DESIGN.md §8.7 solo nombra DOS excepciones a la
+    /// regla «el color nunca llena fondos/chrome» (§8.4) — el pill «+ Serie» (`dataStrain`, dentro
+    /// del recibo) y el icono de los chips troquel — y ninguna cubre este botón. Sin una excepción
+    /// nombrada y aprobada por el dueño, el CTA vuelve a tinta, como el «Register set» de FER-92x
+    /// que este sustituye.
     private var focusRegisterButton: some View {
         Button {
-            withAnimation(StrandMotion.gentle) {
+            // Revisión ronda 1, hallazgo grave: este botón gobierna TODAS las transiciones de estado
+            // de Foco (serie → descanso/hecho) — sin la guarda de `reduceMotion` era el único gesto
+            // del flujo que ignoraba la preferencia, a diferencia de cada otro call site del archivo.
+            withAnimation(reduceMotion ? nil : StrandMotion.gentle) {
                 registerActiveSet()
             }
         } label: {
-            // Canvas pass 2026-07-15: the handoff's big ink capsule.
-            Label("Register set", systemImage: "checkmark")
+            Label("Set done", systemImage: "checkmark")
                 .font(InstrumentoType.groteskHeadline(17)).foregroundStyle(theme.paper)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 15)
+                .padding(.horizontal, EntrenarMetrics.focusPrimaryButtonPadding)
+                .frame(height: EntrenarMetrics.focusPrimaryButton)
                 .background(theme.ink, in: Capsule())
         }
         .buttonStyle(.plain)
+        .frame(maxWidth: .infinity, alignment: .center)
     }
 
-    /// The focus close «×» — ink-on-paper while capturing, crema-on-green while resting (FER-934).
-    private func focusCloseButton(onGreen: Bool) -> some View {
-        // El disco compartido, en su variante sobre acento (el descanso pinta la pantalla de verde
-        // debajo). NO cierra la sesión: sale del modo foco — por eso conserva su propio label.
-        BackButton(role: .close, surface: onGreen ? .accent : .paper, theme: theme) { focusMode = false }
+    /// La cabecera «‹» de Foco (revisión ronda 3, hallazgo grave) — ink-on-paper always now (FER-135:
+    /// the rest state stopped painting the screen green, so the button no longer needs an
+    /// accent-surface variant, FER-934's original reason for the `onGreen` parameter). El prototipo
+    /// dibuja «‹», no «×» — `role: .close` (aspa) quedó heredado del disco compartido de antes de
+    /// FER-934 sin corregirse cuando esta cabecera se unificó para las tres pantallas; `role: .back`
+    /// (chevron.left) es el glifo más cercano al «‹» del proto que el componente compartido ofrece. El
+    /// gesto sigue siendo «salir de Foco», no «atrás» en la pila — por eso conserva su propio label de
+    /// accesibilidad en vez del que trae `Role.back`.
+    private func focusCloseButton() -> some View {
+        // El disco compartido. NO cierra la sesión: sale del modo foco — por eso conserva su propio label.
+        BackButton(role: .back, surface: .paper, theme: theme) { focusMode = false }
             .accessibilityLabel(Text("Close focus mode"))
     }
 
-    /// The KG stepper card (extracted so the capture switch stays cheap to type-check).
-    private var focusKgCard: some View {
-        focusStepperCard(UnitFormatter.massUnit(units).uppercased(),
-                         value: plateNumber(displayWeight(session.currentSet?.weightKg ?? 0)),
-                         // r19 (auditoría UI): la carga es familia EMBER en toda la sesión — el verde
-                         // es recuperación/veredicto y el teclado ya lo reserva para «Siguiente».
-                         valueTint: theme.dataStrain,
-                         minusLabel: "Decrease weight", plusLabel: "Increase weight",
-                         minus: { session.bumpWeight(byKg: -weightStepKg) },
-                         plus: { session.bumpWeight(byKg: weightStepKg) }) {
-            // r15 (owner): el atajo a discos solo existe en ejercicios de BARRA — en dumbbell/
-            // máquina la leyenda queda en el puro paso «±2,5».
-            if usesBarbell(session.currentIndex) {
-                Button {
-                    platesTarget = PlatesTarget(ei: session.currentIndex,
-                                                weightKg: session.currentSet?.weightKg ?? 0)
-                } label: {
-                    // r14: fuera el glifo «⛓» (tofu en Grotesk) — la leyenda queda «±2,5 · discos».
-                    Text("±\(StrengthDisplay.incrementNumber(weightStepKg, system: units)) · " + String(localized: "plates"))
-                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary).underline()
-                        .lineLimit(1)
-                }
-                .buttonStyle(.plain)
-            } else {
-                Text("±\(StrengthDisplay.incrementNumber(weightStepKg, system: units))")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-            }
-        }
-    }
-
-    /// The REPS stepper card (see `focusKgCard`).
-    private func focusRepsCard(_ run: StrengthSessionModel.ExerciseRun) -> some View {
-        focusStepperCard(String(localized: "Reps").uppercased(),
-                         value: "\(session.currentSet?.reps ?? 0)",
-                         valueTint: theme.ink,
-                         minusLabel: "Decrease reps", plusLabel: "Increase reps",
-                         minus: { session.bumpReps(-1) },
-                         plus: { session.bumpReps(1) }) {
-            if let lr = run.lastReps {
-                Text(String(localized: "target \(lr)"))
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-            } else {
-                Color.clear.frame(height: 14)
-            }
-        }
-    }
-
-    /// One handoff stepper card: overline unit, −/+ round steps flanking the big Grotesk value, and a
-    /// caption slot («±2,5 · discos» / «objetivo N»).
-    private func focusStepperCard<Caption: View>(_ overline: String, value: String, valueTint: Color,
+    /// KG/REPS in SERIE (FER-135, V6, prototipo `foco.txt`): a bare kicker + 52pt Grotesk numeral
+    /// flanked by −/+ steps, no card chrome — the prototype draws these plain, centered on the paper,
+    /// not boxed (the old boxed «handoff stepper card» this replaces lived here through FER-92x).
+    private func focusValueBlock<Caption: View>(_ kicker: String, value: String, valueTint: Color,
                                                  minusLabel: LocalizedStringKey, plusLabel: LocalizedStringKey,
                                                  minus: @escaping () -> Void, plus: @escaping () -> Void,
                                                  @ViewBuilder caption: () -> Caption) -> some View {
         VStack(spacing: 6) {
-            Text(overline).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            // r23 (owner): spacing y padding ceden ~20pt al numeral — un «102,5» ya no se encoge
-            // a letra chica entre los dos cuadros.
-            HStack(spacing: 6) {
+            Text(verbatim: kicker).entrenarFocusValueKicker().foregroundStyle(theme.inkTertiary)
+            HStack(spacing: CenitMetrics.space2) {
                 focusRoundStep("minus", label: minusLabel, action: minus)
-                Text(value).font(InstrumentoType.groteskNumber(32)).monospacedDigit()
+                Text(value).instrumentoHero(EntrenarMetrics.focusValue).monospacedDigit()
                     .foregroundStyle(valueTint).lineLimit(1).minimumScaleFactor(0.55)
-                    .frame(maxWidth: .infinity)
+                    // Revisión ronda 1, hallazgo menor: sin esto VoiceOver leía «80» pelón si el
+                    // rotor aterrizaba directo en el numeral, en vez de «KG 80» — el kicker + el
+                    // valor combinados, no solo el orden de swipe.
+                    .accessibilityLabel(Text(verbatim: "\(kicker) \(value)"))
                 focusRoundStep("plus", label: plusLabel, action: plus)
             }
             caption()
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 14).padding(.horizontal, 8)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
-            .strokeBorder(theme.hairline, lineWidth: 1))
         .accessibilityElement(children: .contain)
     }
 
@@ -2262,246 +2507,53 @@ struct LiveStrengthSheet: View {
         .opacity(captured ? 1 : StrandOpacity.dim)
     }
 
-    /// Rest phase scaled to full-screen, fully dressed in `dataRecovery` green + crema ink (FER-934,
-    /// handoff `_RestFull`). Reuses the inline card's readiness/time evaluation patterns; only the
-    /// vestment changes, the rest engine (`extendRest`/`skipRest`/`computeRestTarget`) is untouched.
+    /// DESCANSO (FER-135, V6, prototipo `foco.txt`): no bespoke green full-screen hero any more
+    /// (FER-934's dress retires with this — the header stopped flipping to accent, see
+    /// `focusModeView`). The prototype's «riel · tick «listo» · punto de FC · SIGUE · nota» is exactly
+    /// `RestBand`, already built for the inline list (§«Inline rest band» below) — «solo la piel
+    /// cambia, la lógica de descanso es la de V5» means reusing it whole, not redrawing its parts at a
+    /// bigger size. Same `RestReadinessRule` evaluation the inline card runs; only the chrome around it
+    /// (the fullscreen header + «Salir de Foco») is new.
     private var focusRestPhase: some View {
-        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
-            // Canvas pass 2026-07-15: the exercise's thumbnail anchors the caption — you know whose
-            // rest this is at a glance, same as the list.
-            HStack(spacing: 10) {
-                if session.runs.indices.contains(accordionIndex) {
-                    SessionRunThumb(exerciseId: session.runs[accordionIndex].exerciseId, side: 28)
-                }
-                Text(focusRestCaption).font(StrandFont.subhead).foregroundStyle(theme.paper)
-            }
-
-            if focusRestWantsHR, let started = session.restStartedAt {
+        // Revisión ronda 1, hallazgo grave: `RestBand` dibujaba aquí el pixel de siempre de la lista
+        // en línea (numeral 40 pt, alineado a la izquierda, «Saltar» 36 pt) en vez del que pide el
+        // prototipo de Foco (52 pt, centrado, «Saltar» 46 pt) — `large: true` es la única diferencia;
+        // `RestReadinessRule` y el resto del motor de descanso no se tocan.
+        // Ronda 4, hallazgo grave (segunda parte): `spacing: sectionGap` metía un hueco de 28pt
+        // ENTRE el contenido de `RestBand` y `focusExitLink` sin importar el orden — `spacing: 0`
+        // más el padding explícito de 4pt en `focusExitLink` es lo único que deja el hueco real en
+        // el mt:4 del prototipo.
+        VStack(alignment: .center, spacing: 0) {
+            let hrMode = session.currentRestMode == .heartRate
+            if hrMode, let started = session.restStartedAt {
                 TimelineView(.periodic(from: started, by: 1)) { ctx in
-                    // r20 (auditoría UX #1): mismo congelamiento que la tarjeta inline.
                     let tick = session.paused ? (session.pausedAt ?? ctx.date) : ctx.date
                     let elapsed = max(0, Int(tick.timeIntervalSince(started)))
                     let v = RestReadinessRule.evaluate(
                         currentHR: model.watchBpm, worn: model.watchBpm != nil, restingHR: restingBaseline,
                         elapsedS: elapsed, targetHR: session.currentRestTarget)
-                    let noSignal = v.state == .noSignal
-                    if !noSignal {
-                        focusRestHRHero(elapsed: elapsed, readiness: v)
+                    if v.state == .noSignal {
+                        restBandTimeBody(end: session.restEndsAt, now: tick, noStrapFallback: true, large: true)
                     } else {
-                        focusRestTimeHero(end: session.restEndsAt, now: tick, noStrapFallback: noSignal)
+                        restBandHRBody(elapsed: elapsed, readiness: v, large: true)
                     }
                 }
             } else if let end = session.restEndsAt, let started = session.restStartedAt {
                 TimelineView(.periodic(from: started, by: 1)) { ctx in
-                    focusRestTimeHero(end: end,
+                    restBandTimeBody(end: end,
                                       now: session.paused ? (session.pausedAt ?? ctx.date) : ctx.date,
-                                      noStrapFallback: false)
+                                      noStrapFallback: false, large: true)
                 }
             }
-
-            HStack(spacing: CenitMetrics.gap) {
-                focusRestAdjust("−15") { session.extendRest(byseconds: -15) }
-                Button { withAnimation(StrandMotion.gentle) { session.skipRest() } } label: {
-                    Text("Skip")
-                        .font(StrandFont.headline).foregroundStyle(theme.dataRecovery)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, CenitMetrics.sectionGap)
-                        .background(theme.paper, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(Text("Skip rest"))
-                focusRestAdjust("+15") { session.extendRest(byseconds: 15) }
-            }
-
-            Spacer(minLength: 0)   // r6: «SIGUE» baja hasta el fondo, con su margen del contenedor
-            focusRestNextCard
+            // Ronda 4, hallazgo grave: el `Spacer` vivía ENTRE el contenido de `RestBand` (que ya
+            // trae «Saltar» y SIGUE) y `focusExitLink`, empujándolo al fondo de la pantalla en vez
+            // de pegarlo bajo «Saltar» como pide el proto (mt:4). Mismo patrón que `focusDonePhase`:
+            // el link va pegado al contenido y el `Spacer` va AL FINAL, absorbiendo el resto del alto.
+            focusExitLink.padding(.top, CenitMetrics.space1)
+            Spacer(minLength: 0)
         }
+        .padding(.top, EntrenarMetrics.focusRestTop)
         .frame(maxHeight: .infinity, alignment: .top)
-    }
-
-    /// «<ejercicio> · serie N ✓» — the just-completed set, for orientation while the screen is all green.
-    private var focusRestCaption: String {
-        guard session.runs.indices.contains(accordionIndex) else { return String(localized: "Rest") }
-        let run = session.runs[accordionIndex]
-        let doneIndex = run.currentSet - 1
-        guard run.sets.indices.contains(doneIndex) else { return run.name }
-        let n = run.sets.prefix(doneIndex + 1).reduce(0) { $0 + ($1.kind == .work ? 1 : 0) }
-        return "\(run.name) · " + String(localized: "set \(n)") + " ✓"
-    }
-
-    /// Tiempo/FC segmented toggle (FER-934 §3.2) — only shown when the active rest actually resolved a
-    /// heart-rate target; a fixed-time rest has nothing to switch to. Defaults to FC (`nil` ≙ true).
-    @ViewBuilder private var focusRestModeToggle: some View {
-        // r7: el toggle vive SIEMPRE en el descanso (handoff) — en descansos por tiempo arranca en
-        // «Tiempo»; la pestaña FC muestra el pulso en vivo (y cae a tiempo si no hay señal).
-        Group {
-            let showsHR = focusRestShowsHR ?? (session.currentRestMode == .heartRate)
-            HStack(spacing: 2) {
-                focusRestModeTab(String(localized: "Time"), systemImage: "timer", active: !showsHR) {
-                    focusRestShowsHR = false
-                }
-                focusRestModeTab(String(localized: "HR"), systemImage: "heart.fill", active: showsHR) {
-                    focusRestShowsHR = true
-                }
-            }
-            .padding(3)
-            // r6: rectangular como el handoff — misma gramática que el selector global.
-            .background(theme.paper.opacity(StrandOpacity.tintFillStrong),
-                        in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
-        }
-    }
-
-    /// El héroe del descanso respeta el toggle también en descansos POR TIEMPO (r7): si el usuario
-    /// pide FC y hay pulso, lo enseña aunque el descanso sea fijo.
-    private var focusRestWantsHR: Bool { focusRestShowsHR ?? (session.currentRestMode == .heartRate) }
-
-    private func focusRestModeTab(_ label: String, systemImage: String, active: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Label(label, systemImage: systemImage)
-                .font(StrandFont.caption).fontWeight(.semibold)
-                .foregroundStyle(active ? theme.dataRecovery : theme.paper)
-                .padding(.horizontal, 12).padding(.vertical, 6)
-                .background(active ? theme.paper : Color.clear,
-                            in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func focusRestHRHero(elapsed: Int, readiness v: RestReadiness) -> some View {
-        let bpm = model.watchBpm ?? 0
-        let target = session.currentRestTarget
-        let ready = v.ready
-        return VStack(alignment: .leading, spacing: CenitMetrics.gap) {
-            if ready {
-                Text("Ready")
-                    .instrumentoHero(76).foregroundStyle(theme.paper)
-            } else {
-                HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.gap) {
-                    Text("\(bpm)").instrumentoHero(100).monospacedDigit().foregroundStyle(theme.paper)
-                    Text("bpm").font(InstrumentoType.grotesk(14, weight: .bold)).foregroundStyle(theme.paper.opacity(StrandOpacity.muted))
-                }
-            }
-            if let target, !ready {
-                (Text(String(localized: "dropping toward "))
-                 + Text("\(target) bpm").bold()
-                 + Text(" · " + String(localized: "the phone will buzz")))
-                    .font(StrandFont.caption).foregroundStyle(theme.paper.opacity(StrandOpacity.muted))
-            } else if let toReady = v.bpmToReady, !ready {
-                Text("\(toReady) bpm to ready")
-                    .font(StrandFont.subhead).foregroundStyle(theme.paper.opacity(StrandOpacity.muted))
-            }
-            focusRestHRTrack(bpm: bpm, target: target)
-            Text("\(Self.clock(elapsed)) " + String(localized: "of rest · the phone buzzes on arrival"))
-                .font(StrandFont.caption).foregroundStyle(theme.paper.opacity(StrandOpacity.muted))
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityElement(children: .combine)
-    }
-
-    private func focusRestTimeHero(end: Date?, now: Date, noStrapFallback: Bool) -> some View {
-        let cappedEnd = noStrapFallback
-            ? min(end ?? now, (session.restStartedAt ?? now).addingTimeInterval(300))
-            : end
-        let remaining = cappedEnd.map { max(0, Int($0.timeIntervalSince(now).rounded(.up))) } ?? 0
-        let total = max(1, cappedEnd.map { Int($0.timeIntervalSince(session.restStartedAt ?? now)) } ?? remaining)
-        return VStack(alignment: .leading, spacing: CenitMetrics.gap) {
-            ZStack {
-                Circle().stroke(theme.paper.opacity(0.22), lineWidth: 10)  // token-exempt: pista sin llenar del anillo de progreso (geometría, FER-934)
-                Circle()
-                    .trim(from: 0, to: max(0, min(1, Double(remaining) / Double(total))))
-                    .stroke(theme.paper, style: StrokeStyle(lineWidth: 10, lineCap: .round))
-                    .rotationEffect(.degrees(-90))
-                    // r22: barrido CONTINUO — el anillo drena en lineal de 1 s en vez de brincar
-                    // por segundo (ReduceMotion lo respeta el sistema al aplanar la transacción).
-                    .animation(.linear(duration: 1), value: remaining)
-                VStack(spacing: 2) {
-                    Text(Self.clock(remaining))
-                        .instrumentoHero(72).monospacedDigit().foregroundStyle(theme.paper)
-                        .contentTransition(.numericText())
-                    Text(String(localized: "of \(total) s"))
-                        .font(StrandFont.caption).foregroundStyle(theme.paper.opacity(StrandOpacity.muted))
-                }
-            }
-            .frame(width: 232, height: 232)
-            .frame(maxWidth: .infinity)
-            Text(noStrapFallback ? String(localized: "No heart-rate signal: resting by time, 5 min cap")
-                                  : String(localized: "Rings and buzzes when it ends."))
-                .font(StrandFont.caption).foregroundStyle(theme.paper.opacity(StrandOpacity.muted))
-                .frame(maxWidth: .infinity, alignment: .center)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityElement(children: .combine)
-        // r20 (auditoría UX #3): hitos, no ticks.
-        .accessibilityLabel(Text(restA11yPhrase(remaining: remaining)))
-        .accessibilityAddTraits(.updatesFrequently)
-    }
-
-    /// Focus-mode FC track (FER-934): crema-on-green variant of `restHRTrack`, kept separate so the
-    /// shared inline-card track (dataHeart→dataRecovery gradient) is untouched.
-    private func focusRestHRTrack(bpm: Int, target: Int?) -> some View {
-        GeometryReader { geo in
-            let w = geo.size.width
-            let hi = Double((target ?? bpm) + 40)
-            let lo = Double(target ?? bpm)
-            let frac = hi > lo ? max(0, min(1, (hi - Double(bpm)) / (hi - lo))) : 1
-            ZStack(alignment: .leading) {
-                Capsule().fill(theme.paper.opacity(0.22))  // token-exempt: pista sin llenar de la barra de FC (geometría, FER-934)
-                Capsule().fill(theme.paper).frame(width: w * frac)
-                Rectangle().fill(theme.paper).frame(width: 2, height: 14)
-                    .offset(x: w - 1)
-            }
-        }
-        .frame(height: 6)
-    }
-
-    private func focusRestAdjust(_ label: String, _ action: @escaping () -> Void) -> some View {
-        // r29 (owner): centrado ÓPTICO — el signo (glifo proporcional con su propio side-bearing)
-        // descentraba el conjunto dentro del frame; ahora vive en un riel fijo de 12pt y el «15»
-        // queda con geometría IDÉNTICA en ambos botones.
-        let sign = String(label.prefix(1))
-        let digits = String(label.dropFirst())
-        return Button(action: action) {
-            HStack(spacing: 0) {
-                Text(sign).font(InstrumentoType.groteskNumber(17)).frame(width: 12)
-                Text(digits).font(InstrumentoType.groteskNumber(17))
-            }
-            .foregroundStyle(theme.paper)
-            .frame(width: 56)
-            .padding(.vertical, CenitMetrics.sectionGap)
-            .background(theme.paper.opacity(StrandOpacity.tintFillStrong), in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
-                .strokeBorder(theme.paper.opacity(StrandOpacity.strokeSoft), lineWidth: 1))
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(Text(label == "−15" ? "Subtract 15 seconds" : "Add 15 seconds"))
-    }
-
-    /// «SIGUE» card (FER-934 §3.6): the next real step, derived the same way the inline UI derives it —
-    /// `registerCurrentSet` already advanced `session.current`/`currentSet` before starting this rest, so
-    /// it reflects either the next set of the active exercise or the next exercise once this one is done.
-    @ViewBuilder private var focusRestNextCard: some View {
-        if let run = session.current {
-            let si = run.currentSet
-            let n = run.sets.prefix(si + 1).reduce(0) { $0 + ($1.kind == .work ? 1 : 0) }
-            let load = run.sets.indices.contains(si) ? run.sets[si].weightKg : nil
-            HStack(spacing: 12) {
-                // Canvas pass 2026-07-15: the next exercise's thumbnail rides the SIGUE card.
-                SessionRunThumb(exerciseId: run.exerciseId, side: 34)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Next").instrumentoOverline().foregroundStyle(theme.paper)
-                    if let load, load > 0 {
-                        Text("\(run.name) · " + String(localized: "set \(n)") + " · \(massText(load))")
-                            .font(StrandFont.subhead).foregroundStyle(theme.paper)
-                    } else {
-                        Text("\(run.name) · " + String(localized: "set \(n)"))
-                            .font(StrandFont.subhead).foregroundStyle(theme.paper)
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 14).padding(.vertical, 12)
-            .background(theme.paper.opacity(StrandOpacity.tintFillStrong), in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
-        }
     }
 
     /// Total planned sets across non-skipped exercises (the progress denominator).
@@ -3339,7 +3391,7 @@ struct LiveStrengthSheet: View {
     /// Descanso por FC: el numeral es cuánto FALTA en latidos; el riel de pulso (`RestPulseRail`, ya
     /// embebido en `RestBand`) dibuja la caída hacia el umbral. La regla del motor no cambia: «casi» a
     /// 5 lpm (`RestReadinessState.almostReady`), listo al llegar o al soltar por tope (`v.ready`).
-    private func restBandHRBody(elapsed: Int, readiness v: RestReadiness) -> some View {
+    private func restBandHRBody(elapsed: Int, readiness v: RestReadiness, large: Bool = false) -> some View {
         RestBand(
             kicker: restBandKicker,
             mode: .heartRate(remainingBpm: v.bpmToReady, targetBpm: v.targetReadyHR ?? 0,
@@ -3349,6 +3401,7 @@ struct LiveStrengthSheet: View {
             isAlmost: v.state == .almostReady,
             isReady: v.ready,
             startBpm: restStartBpm,
+            large: large,
             onSkip: { withAnimation(StrandMotion.gentle) { session.skipRest() } },
             next: { restBandNextRow }
         )
@@ -3361,7 +3414,7 @@ struct LiveStrengthSheet: View {
 
     /// Reloj fijo: sin pulso no se inventa un número de latidos — el numeral es el tiempo, «elapsed de
     /// target» (también el respaldo honesto de un descanso por FC sin señal, tope 5 min).
-    private func restBandTimeBody(end: Date?, now: Date, noStrapFallback: Bool) -> some View {
+    private func restBandTimeBody(end: Date?, now: Date, noStrapFallback: Bool, large: Bool = false) -> some View {
         let started = session.restStartedAt ?? now
         let cappedEnd = noStrapFallback ? min(end ?? now, started.addingTimeInterval(300)) : end
         let totalS = cappedEnd.map { max(0, Int($0.timeIntervalSince(started))) } ?? 0
@@ -3374,6 +3427,7 @@ struct LiveStrengthSheet: View {
             // (`datos-estado.txt`); sin reloj, el aviso honesto de que no hay señal (revisión ronda 2).
             trailing: model.watchBpm == nil ? String(localized: "no watch on your wrist") : Self.clock(elapsed),
             note: noStrapFallback ? "resting by clock: connect your Apple Watch for rest by heart rate" : nil,
+            large: large,
             onSkip: { withAnimation(StrandMotion.gentle) { session.skipRest() } },
             next: { restBandNextRow }
         )

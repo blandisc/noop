@@ -20,6 +20,33 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **Entrenar: Modo Foco — serie, descanso, hecho / Train: Focus Mode — set, rest, done** (FER-135).
+  **ES** — Foco gana un tercer estado, HECHO, entre cada serie cerrada del último ejercicio y la
+  siguiente: el ejercicio recién terminado a pantalla completa («Ejercicio hecho: ‹nombre›» + el
+  número de series y, si el día ganó una subida, la que quedó registrada), con «Siguiente: ‹próximo
+  ejercicio› ›» (o «Terminar el entrenamiento ›» si era el último) y «Salir de Foco ›». El copy del
+  título se aparta a propósito del literal del prototipo («‹ejercicio›, hecha») porque ese sufijo
+  concuerda en género con el nombre del ejercicio y la mayoría del catálogo es masculino («Press
+  banca hecho», no «hecha»); queda pendiente de que el dueño confirme esta fórmula como definitiva.
+  La cabecera SERIE ya
+  no repite el texto de sync heredado de la sesión: solo el thumb centrado con el marco del tinte de
+  familia, el título, «serie N de M · anterior X», los numerales KG/REPS y «✓ Serie hecha». El
+  DESCANSO reusa `RestBand` sin tocar su lógica (`RestReadinessRule`, formateadores, hitos) — solo la
+  piel de Foco. Reduce Motion respetado en las tres transiciones (serie → descanso, descanso →
+  siguiente, hecho → siguiente/terminar).
+  **EN** — Focus gains a third state, DONE, between checking off the last exercise's final set and
+  moving to the next: the just-finished exercise full-screen ("Exercise done: ‹name›" + its set
+  count and, when the day earned one, the raise now on record), with "Next: ‹next exercise› ›" (or
+  "Finish workout ›" if it was the last one) and "Exit Focus ›". The title copy deliberately departs
+  from the prototype's literal ("‹exercise›, done") because that suffix agrees in gender with the
+  exercise's own noun and most of the catalog is masculine; pending owner confirmation as final.
+  The SET header no longer repeats the
+  session's legacy sync copy — just the centered thumb ringed in the family tint, the title, "set N
+  of M · last time X", the KG/REPS numerals, and "✓ Set done". REST reuses `RestBand` untouched
+  (`RestReadinessRule`, formatters, milestones) — only Focus's skin changes. Reduce Motion is honored
+  across all three transitions (set → rest, rest → next, done → next/finish).
+  ([LiveStrengthSheet.swift](Cenit/Screens/LiveStrengthSheet.swift), [EntrenarTokens.swift](Packages/StrandDesign/Sources/StrandDesign/Entrenar/EntrenarTokens.swift))
+
 - **Entrenar: sesión en vivo — el cuerpo (ejercicios, tabla, descanso, teclado) / Train: live session — the body (exercises, table, rest, keypad)** (FER-134).
   **ES** — El descanso entre series adopta la banda `RestBand` (ya existía en el catálogo, ahora la usa la sesión en vivo): kicker «DESCANSO · SERIE N → N+1», numeral grande con «faltan N lpm» (con Apple Watch) o el tiempo restante (sin reloj), riel con marca de «listo», y el hilo «SIGUE: N · ejercicio» con su miniatura. La lógica del descanso por FC —«casi» a 5 lpm del umbral, piso de 20 s, tope de 3:00— no cambia, solo su piel (revisión ronda 4: el copy decía «2:30», un número que el motor nunca soltaba). El teclado propio suma una fila «QUEDABAN» (RIR): 0 · 1 · 2 · 3 · 4+, capturado al palomear y guardado como RPE = 10 − RIR en el mismo campo que ya existía (`WorkingSet.rpe`) — no es un dato nuevo, con área táctil real de 44 pt (antes 30, revisión ronda 4). La columna de la tabla que lee «Q n» en filas hechas ahora se llama QUEDABAN (visual y VoiceOver), no RPE. Al cerrar todas las series de un ejercicio, el pie suma la pastilla «Hecho · Siguiente: {ejercicio} ›» junto a «+ Serie» (revisión ronda 4: faltaba por completo). El teclado pasa a la rejilla 4×4 del handoff: 1 2 3 discos / 4 5 6 +2,5 / 7 8 9 −2,5 / , 0 ⌫ ✓ Serie, con las cuatro teclas de acción en tinta; la barra de arriba se queda solo con lo que la rejilla no dibuja (ocultar, pausa, copiar anterior/arriba, siguiente). La tabla, la subida propuesta, el menú ⋯, el modo mover y el resto de la sesión en vivo siguen igual.
   **EN** — Rest between sets adopts the `RestBand` skin (already in the catalog, now consumed by the live session): kicker "REST · SET N → N+1", a large numeral reading "N bpm left" (with Apple Watch) or the remaining time (without one), a rail with a "ready" mark, and a "NEXT: N · exercise" thread with its thumbnail. The heart-rate rest logic — "almost" at 5 bpm from target, a 20 s floor, a 3:00 cap — is unchanged, only its skin is new (round-4 review: the copy said "2:30", a number the engine never actually granted). The custom keypad gains a "REMAINING" (RIR) row: 0 · 1 · 2 · 3 · 4+, captured at check-off and stored as RPE = 10 − RIR in the same existing field (`WorkingSet.rpe`) — not a new data point, now with a real 44 pt touch target (was 30, round-4 review). The table column reading "Q n" on finished rows is now labeled REMAINING (visual and VoiceOver), not RPE. Once every set of an exercise is checked off, the footer adds a "Done · Next: {exercise} ›" pill next to "Add set" (round-4 review: it was missing entirely). The keypad becomes the handoff's 4×4 grid: 1 2 3 plates / 4 5 6 +2.5 / 7 8 9 −2.5 / , 0 ⌫ ✓ Set, with the four action keys in ink; the bar above keeps only what the grid doesn't draw (hide, pause, copy last/above, next). The table, the proposed jump, the ⋯ menu, move mode, and the rest of the live session are unchanged.
