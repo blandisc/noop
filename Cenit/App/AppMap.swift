@@ -103,8 +103,8 @@ private struct EntrenarMapCell: View {
 
     var body: some View {
         EntrenarView(openRoutine: { _ in }, openBreathe: {}, openIntervals: {},
-                     openHistory: {}, openWeeklyPlan: {}, openRoutines: {}, openRestDay: {},
-                     openWorkoutSession: { _ in })
+                     openHistory: {}, openWeeklyPlan: {}, openRoutines: {},
+                     openWorkoutSession: { _ in }, openMuscleMap: {})
             .environmentObject(model.repo)
             .environment(model)
             .environmentObject(TabRouter())
@@ -389,7 +389,7 @@ private struct NewRoutineFlowMapCell: View {
 private struct EntrenarFlowsMapCell: View {
     // FER-92: `dieta` retirada — su fila llevaba un año comentada y la ruta no era alcanzable.
     // `DietCaptureView` sigue en el repo, sin puerta, hasta que tenga su propio issue.
-    private enum Route: String, Hashable { case breathe, intervals, history, weeklyPlan, restDay, library }
+    private enum Route: String, Hashable { case breathe, intervals, history, weeklyPlan, library }
 
     @State private var model = AppModel()
     @StateObject private var media = MediaDownloadCoordinator()
@@ -408,8 +408,8 @@ private struct EntrenarFlowsMapCell: View {
                         openHistory: { path.append(Route.history) },
                         openWeeklyPlan: { path.append(Route.weeklyPlan) },
                         openRoutines: { path.append(Route.weeklyPlan) },
-                        openRestDay: { path.append(Route.restDay) },
-                        openWorkoutSession: { path.append($0) }
+                        openWorkoutSession: { path.append($0) },
+                        openMuscleMap: { path.append(MuscleVolumeRoute()) }
                     )
                     .navigationDestination(for: Route.self) { destination($0) }
                     .navigationDestination(for: RoutineEditorRoute.self) { route in
@@ -433,14 +433,10 @@ private struct EntrenarFlowsMapCell: View {
         .environmentObject(TabRouter())
         .environmentObject(historyCoordinator)
         .environmentObject(HealthKitBridge(repo: model.repo, appleDeviceId: "map-apple", noopDeviceId: "map"))
-        .overlay(alignment: .bottom) {
-            // El pill flotante REAL (FER-716): aparece al minimizar la sesión («‹») y la re-abre.
-            if model.strengthSession != nil && !model.strengthSheetPresented {
-                MapSessionPillHost(model: model)
-                    .padding(.bottom, CenitMetrics.space2)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-            }
-        }
+        // FER-132 ronda 3 (ux, menor): esta celda del arnés monta EntrenarView directo, sin pestañas
+        // — equivale siempre a «estar en la pestaña Entrenar», así que replica aquí la condición de
+        // RootTabView.swift:245 (`&& selection != .train`) retirando el pill del todo: el héroe de
+        // Sesión viva de EntrenarView ya cubre ese estado y el pill lo duplicaría.
         .animation(StrandMotion.gentle, value: model.strengthSheetPresented)
         .fullScreenCover(isPresented: $model.strengthSheetPresented, onDismiss: {
             if model.strengthSession?.summary != nil { model.closeStrengthSummary() }
@@ -477,10 +473,6 @@ private struct EntrenarFlowsMapCell: View {
                 openRoutine: { path.append(RoutineEditorRoute.routine(routineId: $0)) },
                 openLibrary: { path.append(Route.library) },
                 openDay: { path.append(RoutineEditorRoute.planDay(weekday: $0)) })
-        case .restDay:
-            RestDayScreen(openIntervals: { path.append(Route.intervals) },
-                          openBreathe: { path.append(Route.breathe) },
-                          openRoutines: { path.append(Route.weeklyPlan) })
         case .library:   ExerciseLibraryScreen()
         }
     }

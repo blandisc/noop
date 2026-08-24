@@ -47,61 +47,6 @@ public enum SessionClock {
     }
 }
 
-// MARK: - Session progress bar
-
-/// The strength session's progress: one segment per exercise, its width ∝ its set count, filled
-/// `done` (0…1) in the routine hue with the remainder in `hairline`. A flat instrument — length with
-/// a zero base is the channel, the hue is identity; no axes, no shadow. (FER-716)
-public struct SessionProgressBar: View {
-    /// One exercise: how many sets it holds (drives width) and how done it is (0…1, drives fill).
-    public struct Segment: Equatable {
-        public var sets: Int
-        public var done: Double
-        /// r7 (owner): cada segmento puede llevar el hue de SU ejercicio (familia push/pull/legs);
-        /// nil cae al `hue` global de la barra.
-        public var tint: Color?
-        public init(sets: Int, done: Double, tint: Color? = nil) {
-            self.sets = sets; self.done = max(0, done); self.tint = tint
-        }
-    }
-    let segments: [Segment]
-    let hue: Color
-    var track: Color
-    var height: CGFloat
-    public init(segments: [Segment], hue: Color, track: Color, height: CGFloat = 5) {
-        self.segments = segments; self.hue = hue; self.track = track; self.height = height
-    }
-    /// Overall completion 0…100, weighted by each segment's set count (FER-915, VoiceOver value).
-    private var completionPercent: Int {
-        let total = max(segments.reduce(0) { $0 + $1.sets }, 1)
-        let done = segments.reduce(0.0) { $0 + Double($1.sets) * min($1.done, 1) }
-        return Int((done / Double(total)) * 100)
-    }
-    public var body: some View {
-        GeometryReader { geo in
-            let gap: CGFloat = 3
-            let totalSets = max(segments.reduce(0) { $0 + $1.sets }, 1)
-            let gaps = CGFloat(max(segments.count - 1, 0)) * gap
-            let usable = max(geo.size.width - gaps, 0)
-            HStack(spacing: gap) {
-                ForEach(Array(segments.enumerated()), id: \.offset) { _, seg in
-                    let w = usable * CGFloat(seg.sets) / CGFloat(totalSets)
-                    ZStack(alignment: .leading) {
-                        Capsule().fill(track)
-                        Capsule().fill(seg.tint ?? hue)
-                            .frame(width: w * CGFloat(min(seg.done, 1)))
-                    }
-                    .frame(width: w)
-                }
-            }
-        }
-        .frame(height: height)
-        .accessibilityElement()
-        .accessibilityLabel(Text("Session progress"))
-        .accessibilityValue(Text("\(completionPercent)% complete"))
-    }
-}
-
 // MARK: - Active-session pill
 
 /// The floating «a session is running» pill (FER-716): it hovers over the dock in all five tabs and
@@ -217,10 +162,6 @@ public struct SessionPill: View {
 #Preview("Session instruments") {
     let t = InstrumentoTheme.base
     return VStack(spacing: 28) {
-        SessionProgressBar(segments: [.init(sets: 4, done: 1), .init(sets: 4, done: 0.5),
-                                      .init(sets: 3, done: 0), .init(sets: 5, done: 0)],
-                           hue: t.dataSleep, track: t.hairline)
-            .padding(.horizontal, 24)
         SessionPill(routineName: "Pierna", elapsed: "24:10", bpm: 118, hue: t.dataSleep,
                     theme: t, accessibilityLabel: Text(verbatim: "Sesión activa"),
                     accessibilityHint: Text(verbatim: "Vuelve a la sesión")) {}

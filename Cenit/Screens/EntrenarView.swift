@@ -11,13 +11,39 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 // the datum, hierarchy by space). Today's session is the spine now: the hero «Hoy» sits up top behind a
 // SINGLE solid «Empezar {rutina}» that starts the guided session in ONE tap (F1) — no chooser, no
 // intermediate screen. «¿otro tipo?» under it opens the secondary chooser (otra rutina / intervals /
-// breathe / live). A rest day swaps the door for a quiet outline button that opens the «Hoy descansas»
-// sheet (F3). Below the hero: a contextual suggestion, the week strip + streak in one card (F10), the
-// plan as a collapsible disclosure with a single «Editar» action (F5).
+// breathe / live). A rest day is a STATE of this same hero (`heroSectionDescanso`, FER-132): title
+// «Descanso», no numerals, a paper «Movilidad» door and the full loaded-muscles module — no separate
+// screen. Below the hero, the three handoff levels (FER-131): TU SEMANA · MÚSCULOS CARGADOS · BITÁCORA.
 //
 // Color appears ONLY on the recovery datum (the today-dot, the Today recovery
 // line); everything else is ink on paper. Navigation is owned by the tab's `NavigationStack` in
 // RootTabView; the landing pushes via the injected closures and hosts the guided session + sheets here.
+
+/// La boleta del veredicto de Hoy, compartida por la landing de Entrenar (FER-85) y la cabecera de la
+/// sesión en vivo (FER-133): el MISMO `LiquidActaVeredicto` con el MISMO contexto, para que ninguna
+/// de las dos pantallas pueda contar el día distinto. Sin «Ver más»: ninguna de las dos cambia de
+/// pestaña desde aquí, solo cierran la hoja.
+struct VeredictoActaSheet: View {
+    let prep: Preparedness.Read?
+    let healthConnected: Bool
+    let fullyLoaded: Bool
+    /// Mientras Salud sincroniza, la misma causa que Hoy («sigue leyéndose»); la ventana
+    /// nocturna/sync viejo quedan en Hoy (FER-128 r13).
+    var causaT3: LiquidHoyBuilder.CausaT3? = nil
+    /// La misma lectura cruda que Hoy: «sin comparar», no «sin dato» (FER-128 r12).
+    var lecturasHoy: (rhr: Bool, sueno: Bool) = (false, false)
+
+    var body: some View {
+        LiquidMetricSheet(tono: LiquidHoyBuilder.actaTono(prep), detent: .porContenido) {
+            LiquidActaVeredicto(
+                LiquidHoyBuilder.acta(prep: prep, healthConnected: healthConnected,
+                                      verdictPending: prep == nil && !fullyLoaded,
+                                      causaT3: causaT3, lecturasHoy: lecturasHoy),
+                onVerMas: nil)
+        }
+        .preferredColorScheme(.light)
+    }
+}
 
 struct EntrenarView: View {
     /// Inject: los hooks de recarga en caliente van AQUÍ y no en `EntrenarLanding`. Swift emite los
@@ -36,20 +62,20 @@ struct EntrenarView: View {
     /// Push the weekly plan editor (FER-533) — opened from «Tu plan · Editar» and the empty state.
     var openWeeklyPlan: () -> Void
     /// Push «Mis rutinas» (the routine library) — the single home for create/import/templates/library now
-    /// (F4): reached from the secondary chooser's «Otra rutina» and the rest sheet's «Elegir una rutina».
+    /// (F4): reached from the secondary chooser's «Otra rutina».
     var openRoutines: () -> Void
-    /// Push «Hoy descansas» (v3 · 2B) — the rest-day screen (was a sheet, now a push, FER-718).
-    var openRestDay: () -> Void
     /// Push «Otra forma de entrenar» (v3 · 3e) — the alternative-training chooser (was a sheet, now a push).
     /// Push a completed strength session's detail (from a «done» day in the week strip).
     var openWorkoutSession: (WorkoutSessionRoute) -> Void
+    /// Push «Tu cuerpo» (`MuscleVolumeRoute`, FER-131) — from the landing's «Músculos cargados» line.
+    var openMuscleMap: () -> Void
 
     var body: some View {
         EntrenarLanding(openRoutine: openRoutine,
                         openBreathe: openBreathe, openIntervals: openIntervals,
                         openHistory: openHistory, openWeeklyPlan: openWeeklyPlan,
-                        openRoutines: openRoutines, openRestDay: openRestDay,
-                        openWorkoutSession: openWorkoutSession)
+                        openRoutines: openRoutines,
+                        openWorkoutSession: openWorkoutSession, openMuscleMap: openMuscleMap)
             .instrumentoTheme(.base)
             .enableInjection()   // Inject: ver la nota en `inject` arriba (no-op en Release)
     }
@@ -67,8 +93,8 @@ private struct EntrenarLanding: View {
     var openHistory: () -> Void
     var openWeeklyPlan: () -> Void
     var openRoutines: () -> Void
-    var openRestDay: () -> Void
     var openWorkoutSession: (WorkoutSessionRoute) -> Void
+    var openMuscleMap: () -> Void
 
     @State private var loaded = false
     @State private var loadFailed = false   // store couldn't be read — a real error, NOT «no plan yet»
@@ -91,6 +117,10 @@ private struct EntrenarLanding: View {
     @State private var showVeredictoActa = false
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
     private var unitSystem: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
+    /// El MISMO «Marcar todo recuperado» que lee `TrainingBodyScreen` (FER-525): sin este filtro
+    /// «Músculos cargados» seguía anunciando una espalda cargada después de que el atleta ya la
+    /// marcó fresca en «Tu cuerpo» — la misma línea, dos respuestas.
+    @AppStorage("muscleRecoveryResetAt") private var muscleRecoveryResetAt: Double = 0
     /// Top primary muscles per routine (Spanish display labels), built from the same per-routine exercise
     /// fetch that feeds `exerciseCounts` — drives the hero muscle line and the «También en tu plan» subtitles.
     @State private var routineMuscles: [String: [String]] = [:]
@@ -109,14 +139,23 @@ private struct EntrenarLanding: View {
     /// Today's routine resolved into guided-session slots, prefetched on load so «Empezar» starts in one
     /// tap (F1). Empty when today is a rest day or the routine has no exercises.
     @State private var todaySlots: [StrengthSessionModel.PlanSlot] = []
+    /// FER-131 «Niveles»: per-muscle load events over the trailing 84 days — the SAME engine
+    /// (`MuscleFatigueMap`, via `repo.muscleSetEvents`) `TrainingBodyScreen` reads, never a second
+    /// derivation of the map. Feeds the «Músculos cargados» line only; empty ⇒ that level stays hidden.
+    @State private var muscleEvents: [MuscleFatigueMap.MuscleSetEvent] = []
+    /// Per-session volume/set count, keyed by session id (FER-131 · Bitácora rows) — one aggregate read.
+    @State private var sessionVolumes: [String: (volumeKg: Double, setCount: Int)] = [:]
+    /// How many personal records landed inside each of the two most-recent sessions (FER-131 · el chip
+    /// «N marca(s)»), keyed by session id. Only computed for the rows the landing actually shows.
+    @State private var bitacoraMarcas: [String: Int] = [:]
     /// El pliegue de «Otra forma»: privado de la vista y SIN persistir — cada visita abre cerrado.
     @State private var otraFormaAbierta = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// The Daily Brief's «Empezar» arrived (via `TabRouter`) before this view finished loading its
     /// prefetched slots — start today's session as soon as `load()` completes (FER-613).
     @State private var startWhenLoaded = false
-    /// Presents the live-HR workout sheet from the «Formas de entrenar» → «En vivo» chip (same sheet the
-    /// rest-day / other-ways screens use).
+    /// Presents the live-HR workout sheet from the «Formas de entrenar» → «En vivo» chip (the same sheet
+    /// «Otra forma» presents).
     /// Presents the starter-templates list from the first-use «Rutinas de plantilla» row (mock 5a).
     @State private var showTemplates = false
     /// FER-952: the hub's Import door-chip.
@@ -129,6 +168,10 @@ private struct EntrenarLanding: View {
     /// silently re-presenting via `startStrengthSession`'s no-op guard (which looks like "start new").
     @State private var confirmResumeStrength = false
     @State private var saveError = false
+    /// «Terminar sesión ›» del héroe de sesión viva (FER-132 · ⑤): el MISMO confirm de descarte que
+    /// el pill flotante ya presenta desde `RootTabView` — solo que la landing no tiene acceso a ese
+    /// binding, así que sostiene el suyo propio y llama al mismo `endStrengthSession(save: false)`.
+    @State private var confirmEndLiveSession = false
 
     /// Monday-first display order in the Calendar weekday convention.
     private let orderedWeekdays = [2, 3, 4, 5, 6, 7, 1]
@@ -153,43 +196,87 @@ private struct EntrenarLanding: View {
         // height back into layout and looped as the plan grew — 99% CPU, «Invalid frame dimension», freeze.
         // `sectionGap` (28) still gives more air between blocks than the old 18; no measured-height feedback.
         ScrollView {
-            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
+            // Ritmo 1b (handoff FER-130): el VStack raíz ya no reparte un `sectionGap` uniforme —
+            // cada bloque carga su propio margen superior, así que la cabecera / el hilo / el héroe
+            // pueden llevar el aire literal del handoff sin heredar uno genérico encima. Los estados
+            // fuera de alcance (sin plan, error de carga) conservan el `sectionGap` de antes como su
+            // propio padding explícito, para no moverles ni un punto.
+            VStack(alignment: .leading, spacing: 0) {
                 // FER-952 (owner): the «Train» wordmark + tab glyph row retired — the dock already
                 // names the tab.
+                // FER-130: la cabecera del hub — «Entrenar · {fecha}» a la izquierda, el «?» de los
+                // trucos a la derecha. Reemplaza al wordmark retirado arriba; vive FUERA del gate de
+                // carga porque no depende del plan.
+                cabecera
                 // FER-85: el hilo del veredicto — el ÚNICO portador del veredicto en Entrenar y la
-                // primera cosa que se lee. Vive FUERA del gate de carga porque habla del CUERPO, no
-                // del plan: no tiene por qué esperar a que la base de datos conteste, y así el «?»
-                // de ayuda tampoco aparece a destiempo.
-                HStack(spacing: CenitMetrics.space2) {
-                    hiloDelVeredicto
-                    // El «?» del handoff: los trucos siguen ahí para quien los busque, pero
-                    // dejan de ocupar una tarjeta en la pantalla principal (decisión del dueño).
-                    Button { showTricks = true } label: {
-                        Image(systemName: "questionmark.circle")
-                            .font(StrandFont.glyph(.lead))
-                            .foregroundStyle(theme.inkTertiary)
-                            .frame(width: EntrenarMetrics.row, height: EntrenarMetrics.row)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(EntrenarPressStyle())
-                    .accessibilityLabel(Text("Tricks"))
+                // primera cosa que se lee del cuerpo. Vive FUERA del gate de carga porque habla del
+                // CUERPO, no del plan: no tiene por qué esperar a que la base de datos conteste.
+                //
+                // FER-132 §5: con `loadFailed` el hilo se OCULTA — el hilo habla del cuerpo, pero
+                // esta pantalla ya no pudo leer NADA de la base, y un veredicto flotando sobre un
+                // error de lectura sugiere que el resto sí cargó cuando no fue así.
+                if !loadFailed {
+                    hiloDelVeredicto.padding(.top, CenitMetrics.space2)
                 }
                 if loaded {
                     if loadFailed {
-                        loadErrorState       // store couldn't be read — «No pudimos leer tus rutinas · Reintentar»
+                        loadErrorState       // §5 — «No pude leer tu plan» + Reintentar, niveles ocultos
+                            .padding(.top, CenitMetrics.sectionGap)
+                    } else if let live = model.strengthSession {
+                        // ⑤ Sesión viva: gana sobre CUALQUIER otro estado — incluido «sin plan todavía»
+                        // (un entrenamiento rápido, sin rutina, puede arrancar sin split armado). Sin
+                        // «Otra forma» ni Músculos (el prototipo excluye la línea de músculos con
+                        // `s.viva` — `muestraMuscLinea`) — pero SÍ Bitácora: `muestraBitacora` del
+                        // prototipo NO excluye `s.viva` (a propósito, `bitacoraDef` incluso define una
+                        // fila dedicada para ese caso), así que la sesión que corre no calla el
+                        // historial de las que ya cerraron. TU SEMANA SIEMPRE debajo, con o sin split:
+                        // `muestraSemana` del prototipo solo se apaga en `errorLectura`; sin plan la
+                        // tira cae en contornos vacíos y el valor dice «toca un día ›».
+                        heroSectionSesionViva(live)
+                            .padding(.top, EntrenarMetrics.heroKickerTop)
+                        semanaSection
+                            .padding(.top, EntrenarMetrics.firstLevelTop)
+                        if !recentSessions90.isEmpty {
+                            bitacoraSection
+                                .padding(.top, EntrenarMetrics.levelTop)
+                        }
                     } else if split.isEmpty {
-                        emptyStateB          // hero «Empecemos por tu plan» + «Crear mi plan» (mock 5a)
-                        plantillaRow         // «O empieza sin plan» → Rutinas de plantilla (the one kept row)
-                        otraForma            // «Otra forma ›» — las mismas cuatro puertas, plegadas
-                        constanciaSection    // empty Constancia — «tus sesiones aparecerán aquí»
-                        footRows
+                        primerUsoSection     // ④ Primer uso — «Arma tu semana» + plantillas + Crear mi plan
+                            .padding(.top, EntrenarMetrics.heroKickerTop)
                     } else {
-                        // Handoff v4b order (FER-939): open hero + discs up top, then the sunken-band
-                        // sections (session · plan · consistency), then the quiet foot rows.
-                        heroSection       // ① open hero «Hoy · {día}» + «Empezar» + the five discs
-                        tuPlanSection     // ④ «TU PLAN» — week squares + every routine + new-routine row
-                        constanciaSection // ⑤ 90-day dot grid — no streak guilt (mock 1a)
-                        footRows          // ⑥ history (Dieta off — FER-992)
+                        // FER-131 «Niveles»: los tres niveles del handoff, en el orden del prototipo —
+                        // TU SEMANA (tira de tokens) → MÚSCULOS CARGADOS (estimación, una línea, o el
+                        // módulo completo en descanso — FER-132) → BITÁCORA (2 filas + puerta). La
+                        // rejilla de 90 días (Constancia) se retira: el handoff la tumba (§11), el dato
+                        // vive en Bitácora → Historial. Ritmo 1b (FER-130): cada nivel carga su propio
+                        // margen — primer nivel 18, los siguientes 2.
+                        heroSection       // ① en rango / ② recupera / ③ descanso
+                            .padding(.top, EntrenarMetrics.heroKickerTop)
+                        semanaSection     // TU SEMANA — week tokens + every OTHER routine + new-routine row
+                            .padding(.top, EntrenarMetrics.firstLevelTop)
+                        if sessions.isEmpty {
+                            // «Músculos cargados y Bitácora aparecen después de tu primera sesión.
+                            // Mientras, silencio.» — plan armado, cero sesiones registradas todavía (§5).
+                            silencioPrimeraSesion
+                                .padding(.top, EntrenarMetrics.levelTop)
+                        } else if todayRoutine == nil {
+                            // ③ Descanso: el módulo completo de músculos reemplaza la línea (FER-132).
+                            // Ronda 3 (grok, menor): mismo guard que `muscleSection` — sin sets recientes
+                            // el módulo no tiene nada que mostrar (encabezado + columnas vacías).
+                            if !muscleLoads.isEmpty {
+                                muscleSectionModulo
+                                    .padding(.top, EntrenarMetrics.levelTop)
+                            }
+                            bitacoraSection
+                                .padding(.top, EntrenarMetrics.levelTop)
+                        } else {
+                            if !muscleLoads.isEmpty {
+                                muscleSection   // MÚSCULOS CARGADOS — una línea, estimación
+                                    .padding(.top, EntrenarMetrics.levelTop)
+                            }
+                            bitacoraSection     // BITÁCORA — 2 filas + «Historial y progreso ›»
+                                .padding(.top, EntrenarMetrics.levelTop)
+                        }
                     }
                 }
             }
@@ -206,26 +293,15 @@ private struct EntrenarLanding: View {
         // que sirve Hoy, así que las dos pantallas no pueden divergir ni en la tabla ni en la
         // gráfica de cajas. «Ver más» cierra la hoja sin cambiar de pestaña.
         .sheet(isPresented: $showVeredictoActa) {
-            LiquidMetricSheet(tono: LiquidHoyBuilder.actaTono(repo.todayPreparedness),
-                              detent: .porContenido) {
-                // El MISMO contexto que Hoy le pasa a su acta: sin `healthConnected` la hoja afirmaba
-                // «anoche no llegó nada» a quien simplemente no ha conectado Salud, y sin él las dos
-                // pantallas contaban historias distintas del mismo día — justo lo que este épico mata.
-                LiquidActaVeredicto(
-                    LiquidHoyBuilder.acta(prep: repo.todayPreparedness,
-                                          healthConnected: healthConnected,
-                                          verdictPending: repo.todayPreparedness == nil && !repo.fullyLoaded,
-                                          // Mientras Salud sincroniza, la misma causa que Hoy («sigue
-                                          // leyéndose»); la ventana nocturna/sync viejo quedan en Hoy (r13).
-                                          causaT3: health.syncing ? .leyendo : nil,
-                                          // La misma lectura cruda que Hoy: «sin comparar», no «sin dato» (r12).
-                                          lecturasHoy: LiquidHoyBuilder.lecturasHoy(repo.today)),
-                    // Sin «Ver más»: ese botón lleva a Tendencias, y la decisión del handoff es que
-                    // esta hoja no cambia de pestaña. Un CTA de ancho completo que solo cierra la hoja
-                    // promete un viaje que no ocurre (y su hint de VoiceOver lo dice en voz alta).
-                    onVerMas: nil)
-            }
-            .preferredColorScheme(.light)
+            // El MISMO contexto que Hoy le pasa a su acta: sin `healthConnected` la hoja afirmaba
+            // «anoche no llegó nada» a quien simplemente no ha conectado Salud, y sin él las dos
+            // pantallas contaban historias distintas del mismo día — justo lo que este épico mata.
+            // `VeredictoActaSheet` (compartida con `LiveStrengthSheet`, FER-133) es el único sitio que
+            // arma este contenido, para que las dos pantallas no puedan divergir.
+            VeredictoActaSheet(prep: repo.todayPreparedness, healthConnected: healthConnected,
+                               fullyLoaded: repo.fullyLoaded,
+                               causaT3: health.syncing ? .leyendo : nil,
+                               lecturasHoy: LiquidHoyBuilder.lecturasHoy(repo.today))
         }
         // First-use «Rutinas de plantilla» (mock 5a): the grouped templates list. «Add to my routines»
         // is the only action here (no `onStart`), so a copy lands in «My routines» and the landing
@@ -246,8 +322,8 @@ private struct EntrenarLanding: View {
         .navigationDestination(isPresented: $showTricks) {
             WorkshopTricksScreen()
         }
-        // «En vivo» from the expanded «Más formas» pill — the live-HR free workout, same sheet the
-        // rest-day / other-ways screens present (theme passed explicitly; it doesn't cross `.sheet`).
+        // «En vivo» from the expanded «Más formas» pill — the live-HR free workout, the same sheet
+        // «Otra forma» presents (theme passed explicitly; it doesn't cross `.sheet`).
         // FER-950: disc said «Rápido»/«Movilidad» but AppModel only re-opens the live session — make
         // that resume path explicit (ConfirmCard), never clobber.
         .instrumentoConfirm(
@@ -260,6 +336,21 @@ private struct EntrenarLanding: View {
                     model.resumeStrengthSession()
                 },
                 .init(String(localized: "Not now"), role: .secondary)
+            ]
+        )
+        // «Terminar sesión ›» del héroe de sesión viva (FER-132 · ⑤): la MISMA copia y la MISMA
+        // acción que el ✕ del pill flotante ya usa en `RootTabView` — un solo confirm de descarte,
+        // repetido a propósito porque cada anfitrión sostiene su propio `@State`.
+        .instrumentoConfirm(
+            isPresented: $confirmEndLiveSession,
+            title: String(localized: "Discard this session?"),
+            context: String(localized: "SESSION · IN PROGRESS"),
+            message: String(localized: "Its logged sets won't be saved."),
+            actions: [
+                .init(String(localized: "Keep training"), role: .primary),
+                .init(String(localized: "Discard session"), role: .destructive) {
+                    model.endStrengthSession(save: false)
+                }
             ]
         )
         // The guided strength session (FER-347) is now presented at the shell (`RootTabView`) as a
@@ -301,48 +392,228 @@ private struct EntrenarLanding: View {
     // «Empezar» as the screen's second decision (FER-920 decision #1, applied here).
 
     private var heroSection: some View {
+        Group {
+            if let r = todayRoutine {
+                heroSectionRoutineDay(r)
+            } else {
+                heroSectionDescanso
+            }
+        }
+    }
+
+    /// ① En rango / ② Recupera: el héroe con la rutina de hoy. Sin cambios de fondo (FER-132 solo
+    /// toca los OTROS estados) salvo el kicker, que ya lee el consejo de hoy (`hoyOverline`).
+    private func heroSectionRoutineDay(_ r: Routine) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(hoyOverline)
-                .groteskSheetTitle().textCase(.uppercase).foregroundStyle(theme.inkTertiary)
-            if let r = todayRoutine {
-                // «Bisel»: la marca de familia es una regla vertical, no un cuadro en línea. El cuadro vivía
-                // dentro del HStack, así que le robaba ancho al título y lo empujaba a la derecha; con
-                // nombres de dos líneas el bloque perdía el eje. Ahora la REGLA marca el margen —queda a
-                // plomo con «Empezar» y los discos— y el texto se indenta después de ella, en vez de que
-                // la regla se salga al canalón. Su alto lo deriva del contenido: crece sola con la segunda
-                // línea y con Dynamic Type.
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(r.name)
-                        .font(InstrumentoType.grotesk(32, weight: .bold)).tracking(-1)
-                        .foregroundStyle(theme.ink)
-                        .lineLimit(2).minimumScaleFactor(0.65)
-                        .fixedSize(horizontal: false, vertical: true)
-                    if let muscles = routineMuscleLine(r.id) {
-                        Text(muscles).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                    }
-                    // Los tres numerales suben al héroe (handoff v2 §4): la forma de la sesión se lee
-                    // junto a su nombre, no tres bloques abajo. Y son la ÚNICA marca de familia del
-                    // bloque — la regla vertical teñida que iba junto al nombre se retiró: dos marcas
-                    // del mismo color en el mismo sitio es decir la identidad dos veces.
-                    sesionMetrics(r.id).padding(.top, CenitMetrics.space1)
-                    subidaDelDia
-                }
-                .padding(.top, 8)
-            } else {
-                Text("Rest")
+                .entrenarCabeceraKicker().foregroundStyle(theme.inkTertiary)
+            // «Bisel»: la marca de familia es una regla vertical, no un cuadro en línea. El cuadro vivía
+            // dentro del HStack, así que le robaba ancho al título y lo empujaba a la derecha; con
+            // nombres de dos líneas el bloque perdía el eje. Ahora la REGLA marca el margen —queda a
+            // plomo con «Empezar» y los discos— y el texto se indenta después de ella, en vez de que
+            // la regla se salga al canalón. Su alto lo deriva del contenido: crece sola con la segunda
+            // línea y con Dynamic Type.
+            //
+            // Ritmo 1b (FER-130): cada línea carga su propio margen superior (`EntrenarMetrics`),
+            // ya no un espaciado uniforme de 8 — título, subtítulo, numerales y progresión llevan
+            // aire distinto en el handoff.
+            VStack(alignment: .leading, spacing: 0) {
+                Text(r.name)
                     .font(InstrumentoType.grotesk(32, weight: .bold)).tracking(-1)
-                    .foregroundStyle(theme.inkSecondary)
-                    .padding(.top, 8)
-                Text("Your plan doesn't schedule today. A good day to recover.")
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .foregroundStyle(theme.ink)
+                    .lineLimit(2).minimumScaleFactor(0.65)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 4)
+                    .padding(.top, EntrenarMetrics.heroTitleTop)
+                // §5 «plan sin sesiones» (FER-132 ronda 2): cero sesiones registradas todavía ⇒ el
+                // subtítulo lo dice — «tu plan está listo · primera vez con esta rutina» (copy.md,
+                // prototipo `planNuevo.sub`) — en vez de la línea de músculos, que hoy no tiene una
+                // «última vez» real que anunciar.
+                if sessions.isEmpty {
+                    Text("Your plan is ready · first time with this routine")
+                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, EntrenarMetrics.heroSubTop)
+                } else if let muscles = routineMuscleLine(r.id) {
+                    Text(muscles).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                        .padding(.top, EntrenarMetrics.heroSubTop)
+                }
+                // Los tres numerales suben al héroe (handoff v2 §4): la forma de la sesión se lee
+                // junto a su nombre, no tres bloques abajo. Y son la ÚNICA marca de familia del
+                // bloque — la regla vertical teñida que iba junto al nombre se retiró: dos marcas
+                // del mismo color en el mismo sitio es decir la identidad dos veces.
+                sesionMetrics(r.id).padding(.top, EntrenarMetrics.heroNumeralsTop)
+                subidaDelDia.padding(.top, EntrenarMetrics.heroProgressTop)
             }
-            // FER-944 rhythm: the datum→action border (16) reads clearly wider than the hero's inner
-            // gaps (4/8), so the block squints as three masses — text, button, discs.
-            empezarButton.padding(.top, CenitMetrics.sectionGapCompact)
-            otraForma.padding(.top, CenitMetrics.space2)
+            // Fila CTA (FER-130, handoff «Ritmo 1b»): «Empezar» y «Otra forma ›» viven en la MISMA
+            // fila ahora — antes «Otra forma» ocupaba su propia fila debajo. El enlace conserva su
+            // pliegue (decisión del dueño): lo que se despliega se inserta DEBAJO de la fila entera,
+            // no dentro de ella. Con Dynamic Type grande, `ViewThatFits` apila los dos en vez de
+            // recortarlos.
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .center, spacing: EntrenarMetrics.ctaRowGap) {
+                    empezarButton
+                    otraFormaEnlace(fillsWidth: false)
+                }
+                VStack(alignment: .leading, spacing: CenitMetrics.space2) {
+                    empezarButton
+                    otraFormaEnlace(fillsWidth: false)
+                }
+            }
+            .padding(.top, EntrenarMetrics.ctaRowTop)
+            otraFormaPliegue
         }
+    }
+
+    /// ③ Descanso (+ leve): el héroe del handoff «Descanso» — título a 40 pt, SIN numerales ni
+    /// progresión (no hay sesión que medir), y la única puerta es «Movilidad · 20 min» en papel. El
+    /// hilo de arriba ya pinta ámbar cuando el consejo de hoy es `.lighter`; este bloque solo añade
+    /// la cláusula de texto — nunca reordena ni repite el veredicto.
+    private var heroSectionDescanso: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // FER-132 ronda 2: kicker FIJO «Hoy» — copy literal del prototipo (`descansoLeve.hk: "Hoy"`,
+            // sin el día). `hoyOverline` interpola el día para los héroes con rutina; reusarlo aquí
+            // colaba «Hoy · Martes» en cualquier descanso que no fuera `.recover`.
+            Text("Today").entrenarCabeceraKicker().foregroundStyle(theme.inkTertiary)
+            Text("Rest")
+                .font(InstrumentoType.grotesk(EntrenarMetrics.restHeroTitle, weight: .bold)).tracking(-1)
+                .foregroundStyle(theme.ink)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, EntrenarMetrics.heroTitleTop)
+            Text(descansoSubtitulo)
+                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, EntrenarMetrics.heroSubTop)
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .center, spacing: EntrenarMetrics.ctaRowGap) {
+                    movilidadButton
+                    otraFormaEnlace(fillsWidth: false)
+                }
+                VStack(alignment: .leading, spacing: CenitMetrics.space2) {
+                    movilidadButton
+                    otraFormaEnlace(fillsWidth: false)
+                }
+            }
+            .padding(.top, EntrenarMetrics.ctaRowTop)
+            otraFormaPliegue
+        }
+    }
+
+    /// «Movilidad · 20 min» — papel, la única puerta del héroe de descanso (copy.md «Héroe»).
+    private var movilidadButton: some View {
+        StrandCTAButton("Mobility · 20 min", kind: .outline, fillsWidth: false) { startMobilityFromDisc() }
+    }
+
+    /// «tu semana marca descanso» + (si el consejo de hoy es `.lighter`) la cláusula ámbar del
+    /// handoff — LA MISMA señal que ya tiñe el hilo de arriba, nombrada en el subtítulo.
+    private var descansoSubtitulo: String {
+        advice == .lighter
+            ? String(localized: "Your week marks rest · you woke up with a signal off")
+            : String(localized: "Your week marks rest")
+    }
+
+    /// ⑤ Sesión viva: el héroe entero habla de la sesión en curso, no del plan del día — kicker «EN
+    /// CURSO · N MIN», el nombre de la rutina que corre (puede no ser la de hoy — FER-86), el avance
+    /// como numerales, y SOLO «Continuar» + «Terminar sesión»: sin «Otra forma» (ya hay una sesión
+    /// abierta) y sin progresión (no hay subida que anunciar a mitad de sesión).
+    private func heroSectionSesionViva(_ session: StrengthSessionModel) -> some View {
+        // FER-132 ronda 2: `TimelineView` — igual que `ActiveSessionPillHost`, el pill que este héroe
+        // reemplaza en Entrenar — para que «N min» avance solo mientras la landing está en pantalla,
+        // en vez de quedarse congelado hasta el siguiente cambio de estado ajeno.
+        TimelineView(.periodic(from: .now, by: 1)) { context in
+            heroSesionVivaBody(session, now: context.date)
+        }
+    }
+
+    private func heroSesionVivaBody(_ session: StrengthSessionModel, now: Date) -> some View {
+        let minutes = max(0, session.elapsedSeconds(now: now) / 60)
+        let progress = liveSessionProgress(session)
+        let accent = routineTint(region(name: session.routineName))
+        return VStack(alignment: .leading, spacing: 0) {
+            Text(String(localized: "In progress · \(minutes) min"))
+                .entrenarCabeceraKicker().foregroundStyle(theme.inkTertiary)
+            Text(session.routineName)
+                .font(InstrumentoType.grotesk(32, weight: .bold)).tracking(-1)
+                .foregroundStyle(theme.ink)
+                .lineLimit(2).minimumScaleFactor(0.65)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, EntrenarMetrics.heroTitleTop)
+            Text(liveSessionSubtitle(session, progress))
+                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                .padding(.top, EntrenarMetrics.heroSubTop)
+            HStack(alignment: .firstTextBaseline, spacing: EntrenarMetrics.heroNumeralsGap) {
+                bigStat(Text(verbatim: "\(minutes)"), unit: Text("min"), valueColor: accent)
+                // Ronda 3 (ux, grave): una sesión rápida sin rutina arranca con `activeExercises`/`runs`
+                // vacíos — sin este guard se mostraba «0 / 0» tanto de ejercicio como de series, justo
+                // lo que `liveSessionSubtitle` (línea 557) ya evita con el mismo dato.
+                if progress.total > 0 {
+                    bigStat(Text(verbatim: "\(progress.index)"), unit: Text(verbatim: "/ \(progress.total)"), valueColor: accent)
+                }
+                if progress.totalSets > 0 {
+                    bigStat(Text(verbatim: "\(progress.doneSets)"),
+                            unit: Text(verbatim: "/ \(progress.totalSets)") + Text(verbatim: " ") + Text("sets"),
+                            valueColor: accent)
+                }
+            }
+            .padding(.top, EntrenarMetrics.heroNumeralsTop)
+            .accessibilityElement(children: .combine)
+            HStack(alignment: .center, spacing: EntrenarMetrics.ctaRowGap) {
+                StrandCTAButton("Continue", tint: theme.positiveText, fillsWidth: false) {
+                    model.resumeStrengthSession()
+                }
+                Button { confirmEndLiveSession = true } label: {
+                    HStack(spacing: CenitMetrics.space1) {
+                        Text("End session").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                        StrandIcon.disclosure.image
+                            .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                            .accessibilityHidden(true)
+                    }
+                    .padding(.horizontal, CenitMetrics.space1 + 2)
+                    .frame(minHeight: EntrenarMetrics.row, alignment: .leading)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(EntrenarPressStyle())
+                .accessibilityElement(children: .combine)
+            }
+            .padding(.top, EntrenarMetrics.ctaRowTop)
+        }
+    }
+
+    /// «ejercicio 2 de 6 · 5 series hechas · última: Sentadilla trasera 80 kg × 8» — el avance de la
+    /// sesión en curso, cerrando con la última serie marcada (copy.md «Héroe»: «omite partes sin
+    /// dato» — la cláusula «última:» solo se omite cuando de verdad no hay ningún set `done` todavía,
+    /// p. ej. justo al arrancar la sesión).
+    private func liveSessionSubtitle(_ session: StrengthSessionModel,
+                                      _ p: (index: Int, total: Int, doneSets: Int, totalSets: Int)) -> String {
+        let head = p.total > 0
+            ? String(localized: "exercise \(p.index) of \(p.total) · \(p.doneSets) sets done")
+            : String(localized: "\(p.doneSets) sets done")
+        guard let last = lastDoneSet(session) else { return head }
+        let kg = UnitFormatter.massFromKilograms(last.kg, system: unitSystem)
+        return head + " · " + String(localized: "last: \(last.name) \(kg) × \(last.reps)")
+    }
+
+    /// El último set marcado `done` en toda la sesión (cualquier corrida, no solo la enfocada), por
+    /// `doneTs` más reciente — la misma fuente que `doneCount` ya recorre, sin inventar un segundo
+    /// modelo. `nil` cuando ninguna serie se ha marcado todavía (arranque de sesión).
+    private func lastDoneSet(_ session: StrengthSessionModel) -> (name: String, kg: Double, reps: Int)? {
+        var best: (ts: Int, name: String, kg: Double, reps: Int)?
+        for run in session.runs {
+            for s in run.sets where s.done {
+                let ts = s.doneTs ?? 0
+                if best == nil || ts > best!.ts { best = (ts, run.name, s.weightKg, s.reps) }
+            }
+        }
+        return best.map { (name: $0.name, kg: $0.kg, reps: $0.reps) }
+    }
+
+    /// El avance de la sesión viva: qué ejercicio activo enfoca (1-based, entre los NO saltados) y
+    /// cuántas series ya se marcaron sobre el total planeado.
+    private func liveSessionProgress(_ session: StrengthSessionModel) -> (index: Int, total: Int, doneSets: Int, totalSets: Int) {
+        let active = session.activeExercises
+        let total = active.count
+        let index = (active.firstIndex { $0.index == session.currentIndex }.map { $0 + 1 }) ?? min(total, 1)
+        let totalSets = active.reduce(0) { $0 + $1.run.sets.count }
+        return (max(index, total > 0 ? 1 : 0), total, session.doneCount, totalSets)
     }
 
     /// The handoff's per-routine tint (mock 1a). The family is derived from the routine's exercises'
@@ -388,35 +659,19 @@ private struct EntrenarLanding: View {
 
     /// The one solid button per screen (F8): a day with a routine fills it («Empezar {rutina}»); a rest
     /// day leaves it open but quiet (outline). Both route through `startToday`.
-    /// El nombre de la rutina que la sesión viva está corriendo, cuando NO es la de hoy.
     ///
-    /// FER-86: el botón decía «Continuar» y se teñía con el color de la rutina de HOY aunque la
-    /// sesión viva fuera de otra. Si ayer empezaste Tirón y no lo cerraste, hoy el héroe pintaba
-    /// «Empuje» con sus músculos y sus números, el botón decía «Continuar» en ámbar de empuje, y al
-    /// tocarlo aterrizabas en Tirón. Nada te avisaba. La sesión sobrevive entre días a propósito
-    /// (`restoreInProgressStrengthSessionIfNeeded`), así que el caso es cotidiano, no raro.
-    private var sesionVivaDeOtraRutina: String? {
-        guard let viva = model.strengthSession?.routineName, !viva.isEmpty else { return nil }
-        return viva == todayRoutine?.name ? nil : viva
-    }
-
-    /// El verbo del botón. «Continuar» a secas solo cuando la sesión viva ES la de hoy; si es otra,
-    /// la nombra, porque el resto del héroe está hablando de una rutina distinta.
-    private var empezarLabel: LocalizedStringKey {
-        if let otra = sesionVivaDeOtraRutina { return "Continue \(otra)" }
-        return model.strengthSession != nil ? "Continue" : "Empezar"
-    }
-
-    /// Re-open the live session if one is running (any day, incl. rest days), otherwise start today's.
-    private func startOrResume() {
-        if model.strengthSession != nil { model.resumeStrengthSession() } else { startToday() }
-    }
+    /// FER-132 ronda 2: el chequeo de «sesión viva de otra rutina» (FER-86) que este botón cargaba
+    /// (`sesionVivaDeOtraRutina` / la rama «Continue {otra}») quedó MUERTO cuando ⑤ ganó su propio
+    /// héroe (`heroSectionSesionViva`) — `heroSectionRoutineDay`, el único llamador de este botón,
+    /// solo se pinta cuando `model.strengthSession == nil` (ver el `body`, línea ~199). Ese caso lo
+    /// resuelve ahora el héroe de sesión viva, con su propio «Continuar» + «Terminar sesión».
+    private var empezarLabel: LocalizedStringKey { "Empezar" }
 
     @ViewBuilder private var empezarButton: some View {
         if todayRoutine != nil {
             tintedEmpezarButton
         } else {
-            StrandCTAButton(empezarLabel, kind: .outline) { startOrResume() }
+            StrandCTAButton(empezarLabel, kind: .outline, fillsWidth: false) { startToday() }
         }
     }
 
@@ -434,14 +689,20 @@ private struct EntrenarLanding: View {
         // Que sea el MISMO verde de «avanza» en toda la app, y no un verde nuevo, es a propósito:
         // `positiveText` es el verde del veredicto ya oscurecido hasta cumplir contraste de texto.
         StrandCTAButton(empezarLabel, tint: theme.positiveText, fillsWidth: false) {
-            startOrResume()
+            startToday()
         }
     }
 
     /// F1: a day with a routine starts the guided session in one tap (slots prefetched on load); an empty
-    /// routine opens its plan to edit instead of an empty session; a rest day opens the «Hoy descansas» sheet.
+    /// routine opens its plan to edit instead of an empty session; a rest day starts guided mobility
+    /// directly (FER-132 — the old standalone rest-day screen is retired, no sheet in between).
     private func startToday() {
-        guard let r = todayRoutine else { openRestDay(); return }
+        // FER-132: el descanso ya NO empuja una pantalla propia — es un estado de la landing
+        // (la pantalla dedicada al descanso se retira). «Empezar» en un día de descanso no existe como botón (el héroe
+        // ofrece «Movilidad · 20 min» en su lugar), pero un llamador externo (p. ej. la muñeca o el
+        // Daily Brief) puede seguir pidiendo «empezar hoy» en un día sin rutina: arranca la misma
+        // movilidad guiada que el botón del héroe.
+        guard let r = todayRoutine else { startMobilityFromDisc(); return }
         // FER-82: the slots carry the verdict they were seeded with. If it moved since the prefetch
         // (the case that matters: they were built while the verdict was still being computed and it
         // landed a second later), rebuild ONCE before starting — otherwise the whole session runs on
@@ -583,19 +844,18 @@ private struct EntrenarLanding: View {
         // three: three colours here would compete with the five coloured discs right above. The unit
         // words stay quiet ink. (FER-944)
         let accent = routineTint(region(name: todayRoutine?.name ?? ""))
-        return HStack(alignment: .firstTextBaseline, spacing: 6) {
+        // FER-130 · ritmo 1b: tres columnas con canal 28 (`heroNumeralsGap`), como el handoff — no una
+        // frase unida por «·». El layout cambia; la LECTURA no: `.combine` sigue diciendo «~50 min,
+        // 6 exercises, 18 sets» de un tirón (FER-944). Layout y VoiceOver son cosas distintas.
+        return HStack(alignment: .firstTextBaseline, spacing: EntrenarMetrics.heroNumeralsGap) {
             if estMinutes > 0 {
                 bigStat(Text(verbatim: "~\(estMinutes)"), unit: Text("min"), valueColor: accent)
-                dotSeparator
             }
             bigStat(Text(verbatim: "\(exerciseCounts[rid] ?? 0)"), unit: Text("exercises"), valueColor: accent)
             if sets > 0 {
-                dotSeparator
                 bigStat(Text(verbatim: "\(sets)"), unit: Text("sets"), valueColor: accent)
             }
         }
-        // VoiceOver reads the cluster as ONE phrase — the numerals combine into their unit words and
-        // the «·» separators are hidden, so it says «~50 min, 6 exercises, 18 sets», not the glyphs. (FER-944)
         .accessibilityElement(children: .combine)
     }
 
@@ -607,11 +867,6 @@ private struct EntrenarLanding: View {
         value.font(InstrumentoType.groteskNumber(24)).foregroundStyle(valueColor ?? theme.ink)
             + Text(verbatim: " ")
             + unit.font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-    }
-
-    private var dotSeparator: some View {
-        Text(verbatim: "·").font(StrandFont.caption).foregroundStyle(theme.inkDim)
-            .accessibilityHidden(true)   // VoiceOver reads the cluster as a phrase, not the «·» glyphs (FER-944)
     }
 
     /// «Hoy subes Press banca · 82,5 kg y Press militar · 26 kg» — the names+loads in the raise green.
@@ -634,12 +889,15 @@ private struct EntrenarLanding: View {
         return t
     }
 
-    /// «Te espera la subida: Press banca · 82,5 kg. Puedes tomarla en la sesión.» — the held raise,
-    /// named. Same shape as `raiseText` but in reading ink: a fact being held, not a green go-ahead.
+    /// «Hoy mantienes: Press banca · 82,5 kg · la subida espera» — el copy literal del handoff
+    /// (copy.md «Héroe»: `Hoy mantienes: 80 kg · la subida espera`, Hoy ve leve / Recupera) para la
+    /// subida retenida. El prefijo va en tinta500 (`inkTertiary`), el peso en 600/tinta (bold, ink) —
+    /// misma jerarquía que `raiseText` — y la cláusula final en tinta500 otra vez. Nombra el ejercicio
+    /// (el ejemplo del handoff no lo hace porque solo ilustra un caso, pero con más de una subida
+    /// retenida el nombre es la única forma de no ambigüar cuál kilaje corresponde a cuál).
     ///
-    /// Two separators, two jobs: « · » binds a name to its weight, «, » separates exercises, and the
-    /// list closes with a period before the second sentence. Long days are capped at three names and
-    /// summarised, so the hero never turns into a paragraph.
+    /// Dos separadores, dos trabajos: « · » une un nombre a su peso, «, » separa ejercicios. Los días
+    /// largos se limitan a tres nombres y se resumen, para que el héroe no se vuelva un párrafo.
     private var heldRaiseText: Text {
         let shown = deferredToday.prefix(3)
         let rest = deferredToday.count - shown.count
@@ -651,49 +909,36 @@ private struct EntrenarLanding: View {
                 .font(InstrumentoType.groteskNumber(13, weight: .bold, relativeTo: .subheadline))
                 .foregroundStyle(theme.ink)
         }
-        var t = (deferredToday.count == 1 ? Text("The raise waits:") : Text("The raises wait:"))
-            + Text(verbatim: " ")
+        var t = Text("Today you keep:").foregroundStyle(theme.inkTertiary) + Text(verbatim: " ")
         for (i, s) in strong.enumerated() {
             if i > 0 { t = t + Text(verbatim: ", ") }
             t = t + s
         }
         // Spanish takes no comma before «y», so the tail joins with a plain space.
         if rest > 0 { t = t + Text(verbatim: " ") + Text("and \(rest) more") }
-        return t + Text(verbatim: ". ")
-            + (deferredToday.count == 1 ? Text("You can take it in the session.")
-                                        : Text("You can take them in the session."))
+        return t + Text(verbatim: " · ")
+            + (deferredToday.count == 1 ? Text("the raise waits") : Text("the raises wait"))
+                .foregroundStyle(theme.inkTertiary)
     }
 
-    // MARK: - ③ Week strip + streak (one card now — F10)
+    // MARK: - ② «Tu semana» — WeekTokens + «También en tu plan» (FER-131 «Niveles»)
 
-    // MARK: - ③ «También en tu plan» — the rest of the plan + utility rows (mock 1a)
-    //
-    // Today's routine is the hero; every OTHER routine in the split lists here with its tint, its
-    // «day · muscles» line and an «Empezar» pill that starts THAT session directly (loading its slots on
-    // demand). Below the routines, two utility rows: «otra forma de entrenar» (the secondary chooser
-    // until 3e lands in F3) and Diet. The section overline keeps a quiet «Editar» into the weekly plan.
-
-    private var tuPlanSection: some View {
+    /// «TU SEMANA» (FER-131 «Niveles»): kicker + valor (`semanaValor`) + la tira de `WeekTokens` —
+    /// la misma pieza que StrandDesign ya expone para «hecho» relleno / «hoy» aro de tinta / «futuro»
+    /// contorno / «descanso» punteado, en vez del cuadro de 26 pt dibujado a mano que la landing traía
+    /// (FER-83 · E2 lo construyó, nadie lo consumía todavía). Debajo, «También en tu plan» (decisión
+    /// del dueño, no re-litigar): una fila por rutina que NO es la de hoy — `otherPlanRoutines`, que
+    /// ya existía sin llamador — con la piel nueva de `planRoutineRow` (`EntrenarFamilyDot`).
+    private var semanaSection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            InstrumentoSectionBand("Your plan") {
-                // Decisión Fer (2026-07-16 v2): la puerta habla en la MISMA voz sutil que el
-                // «N sesiones · 90 días» de Consistencia, con chevron para decir «tócame».
-                Button { openWeeklyPlan() } label: {
-                    HStack(spacing: 4) {
-                        Text("Edit routines and week")
-                            .font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
-                        StrandIcon.disclosure.image
-                            .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
-                    }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(Text("Edit routines and week"))
-            }
-            weekStrip
-            // Handoff v4b: EVERY routine lists here (today's included — its «↗ N suben» badge is the
-            // reason it earns a row beyond the hero). Reversal of the earlier hero-only decision (FER-939).
-            ForEach(planRows, id: \.routineId) { row in
+            // El encabezado NO es botón: la tira `WeekTokens` de abajo ya abre el editor semanal, y un
+            // segundo blanco tocable con el mismo destino justo encima duplicaba el tap target — algo
+            // que este mismo cambio evita en MÚSCULOS CARGADOS y BITÁCORA (sus encabezados tampoco
+            // navegan; solo la fila de dato lo hace).
+            nivelHub { EntrenarNivel("Your week", value: semanaValor, kickerStyle: .handoff) }
+            WeekTokens(days: weekTokenDays, labels: orderedWeekdays.map(weekdayLetter)) { openWeeklyPlan() }
+                .padding(.top, CenitMetrics.space2)
+            ForEach(otherPlanRoutines, id: \.routineId) { row in
                 planRoutineRow(row)
             }
             // Sin día asignado: visibles igual (antes una rutina nueva no salía en ningún lado del
@@ -703,6 +948,35 @@ private struct EntrenarLanding: View {
             }
             nuevaRutinaRow
         }
+    }
+
+    /// Los 7 tokens de `WeekTokens`, en el orden L→D (`orderedWeekdays`): hecho = lo que de verdad se
+    /// entrenó esa semana (`trainedThisWeek`, gana sobre lo planeado); hoy = aro de tinta, SIEMPRE,
+    /// nunca el color del veredicto; planeado = contorno del tinte de familia; descanso = punteado.
+    /// Sin ejercicios clasificables una rutina cae en `.push` (mismo respaldo que `routineTint(nil)`
+    /// ya usaba: `dataStrain`), así que el color de reserva no cambia.
+    private var weekTokenDays: [EntrenarDayToken] {
+        orderedWeekdays.map { wd in
+            if let doneName = trainedThisWeek(wd) {
+                return .done(region(name: doneName)?.family ?? .push)
+            }
+            if wd == todayWeekday {
+                return .today(isRest: todayRoutine == nil)
+            }
+            if let rid = split[wd] {
+                return .planned(routineCategory[rid]?.family ?? .push)
+            }
+            return .rest
+        }
+    }
+
+    /// «2 de 3 ›» — entrenado esta semana / días con rutina asignada. Sin ningún día asignado (una
+    /// sesión viva arrancada sin plan, FER-132) la tira se pinta igual, en contornos, y el valor dice
+    /// «toca un día ›» — el mismo literal de copy.md que usa `primerUsoSection`.
+    private var semanaValor: LocalizedStringKey {
+        guard !split.isEmpty else { return "Tap a day" }
+        let done = orderedWeekdays.filter { trainedThisWeek($0) != nil }.count
+        return "\(done) of \(split.count)"
     }
 
     /// Tarjeta de una-sola-vez hacia los trucos del taller (decisión Fer 2026-07-16): se descarta
@@ -725,116 +999,6 @@ private struct EntrenarLanding: View {
         }
         .padding(.top, CenitMetrics.space2)
     }
-
-    /// Mon→Sun strip of the weekly split under «Also in your plan»: one equal cell per weekday, tinted
-    /// when a routine is assigned, muted on rest days, and today marked with the same ring language as
-    /// Constancia. Tapping an assigned day opens that routine.
-    private var weekStrip: some View {
-        HStack(spacing: 0) {
-            ForEach(orderedWeekdays, id: \.self) { wd in
-                weekStripCell(wd)
-            }
-        }
-        .padding(.top, CenitMetrics.gap).padding(.bottom, CenitMetrics.space2)
-    }
-
-
-
-
-    @ViewBuilder
-    private func weekStripCell(_ wd: Int) -> some View {
-        let routineId = split[wd]
-        let region = routineId.flatMap { routineCategory[$0] }
-        let isToday = wd == todayWeekday
-        let hasRoutine = routineId != nil
-        // Handoff v4b: 26pt rounded squares. A day already trained this week fills with that session's
-        // routine tint and takes a paper check; today is a paper square ringed in its routine's tint;
-        // an assigned future day keeps its tinted letter over the wash; a rest day is just wash.
-        let doneRegion = trainedThisWeek(wd).map { self.region(name: $0) }   // `region` local shadows the func
-        let doneTint = doneRegion.map { routineTint($0) }
-        /// Entrenaste algo distinto a lo planeado ese día: el contorno lo delata.
-        let swapped = doneRegion != nil && hasRoutine && doneRegion! != region
-        let a11y = weekStripAccessibilityLabel(wd)
-        let cell = VStack(spacing: 5) {
-            Text(weekdayLetter(wd))
-                .font(InstrumentoType.grotesk(10, weight: .semibold))
-                .foregroundStyle(isToday ? theme.ink : (hasRoutine ? routineTint(region) : theme.inkTertiary))
-                .accessibilityHidden(true)
-            ZStack {
-                if let doneTint {
-                    // Relleno = lo que ENTRENASTE. Si además había algo planeado y NO fue lo que hiciste,
-                    // el contorno lleva el color de lo planeado (decisión Fer 2026-07-18): el mismo cuadro
-                    // carga las dos dimensiones sin inventar un cuarto estado, y cuando coinciden se lee
-                    // como un cuadro sólido normal. Ese desvío hoy se perdía por completo.
-                    RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous).fill(doneTint)
-                    if swapped {
-                        RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
-                            .strokeBorder(routineTint(region), lineWidth: 2.5)
-                    }
-                    StrandIcon.confirm.image
-                        .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.paper)
-                } else if isToday {
-                    RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous).fill(theme.surface)
-                    RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
-                        .strokeBorder(todayRingTint, lineWidth: 1.5)
-                } else if hasRoutine {
-                    // 2026-07-16 (bug Fer «no se actualizan los cuadritos»): un día asignado solo cambiaba
-                    // el tinte de la LETRA — invisible. Se le puso un wash con anillo suave, pero seguía
-                    // leyéndose como descanso (bug Fer 2026-07-18: «el martes tiene rutina y no aparece»):
-                    // `tintFill` + `strokeSoft` a 1pt desaparecen sobre el papel. Ahora el CONTORNO lleva
-                    // el color a plena opacidad y el relleno es papel: la diferencia vive en el cuadro,
-                    // que es lo que se mira, y no en una letra de 10pt. Lleno = hecho, contorno =
-                    // planeado pendiente, liso = descanso — tres estados que ya no se confunden.
-                    RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
-                        .fill(theme.paper)
-                    RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
-                        .strokeBorder(routineTint(region), lineWidth: 2)
-                } else {
-                    RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous).fill(theme.patternBlock)
-                }
-            }
-            // FER-85 (decisión del dueño): los cuadros CONSERVAN lo que dicen —el desvío del plan
-            // en doble color y el toque por día— y solo cambian de piel para hacer juego con la
-            // sección nueva: el token de la semana en vez de un 26 suelto.
-            .frame(width: EntrenarMetrics.weekToken, height: EntrenarMetrics.weekToken)
-            .accessibilityHidden(true)
-        }
-        .frame(maxWidth: .infinity)
-        .frame(minHeight: EntrenarMetrics.row)   // HIG tap target (FER-947) — el dibujo es menor; la celda absorbe
-        .contentShape(Rectangle())
-
-        if let routineId {
-            Button { openRoutine(routineId) } label: { cell }
-                .buttonStyle(.plain)
-                .accessibilityLabel(Text(verbatim: a11y))
-        } else {
-            cell
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(Text(verbatim: a11y))
-        }
-    }
-
-    /// VoiceOver label for a week-strip day: weekday + trained / assigned / rest (and «today» when it is).
-    private func weekStripAccessibilityLabel(_ wd: Int) -> String {
-        let head: String = {
-            if wd == todayWeekday { return String(localized: "Today") }
-            return Calendar.current.standaloneWeekdaySymbols[(wd - 1) % 7]
-        }()
-        if let name = trainedThisWeek(wd) {
-            if name.isEmpty { return String(localized: "\(head), trained") }
-            return String(localized: "\(head), you trained \(name)")
-        }
-        if let rid = split[wd], let name = routinesById[rid]?.name {
-            return String(localized: "\(head), assigned to \(name)")
-        }
-        return String(localized: "\(head), rest day")
-    }
-
-    // MARK: - «Formas de entrenar» — the six training doors, always visible at the foot (FER-787)
-    //
-    // No longer a collapsible button (FER-783): the six doors sit as a permanent icon row below Constancia,
-    // at the foot of the screen. Color still lands ONLY on the datum (each icon's data-token tint over
-    // paper), so no raw hex or new tokens.
 
     // MARK: - «Otra forma ›» — el pliegue de las cuatro puertas (FER-85)
     //
@@ -867,19 +1031,20 @@ private struct EntrenarLanding: View {
     ///
     /// Movilidad usa `figure.cooldown`, no `figure.run`: las otras dos puertas a la misma sesión
     /// (día de descanso y «Otra forma de entrenar») ya usaban cooldown. Un solo vocabulario.
+    /// FER-132 ronda 2: el chequeo `sesionViva` que estas cuatro puertas cargaban quedó MUERTO — este
+    /// pliegue solo se dibuja desde `heroSectionRoutineDay` y `heroSectionDescanso`, y el `body` (ver
+    /// línea ~199) solo pinta esos dos héroes cuando `model.strengthSession == nil`. La subtítulo
+    /// «Resumes the session you have open» nunca se alcanzaba.
     private var puertas: [Puerta] {
-        let sesionViva = model.strengthSession != nil
-        return [
+        [
             Puerta(icon: "bolt.fill", label: "Quick",
-                   subtitle: sesionViva ? "Resumes the session you have open"
-                                        : "Starts empty, you log as you go",
+                   subtitle: "Starts empty, you log as you go",
                    hint: "Starts a quick strength session, no routine.") { startQuickStrength() },
             Puerta(icon: "timer", label: "Intervals",
                    subtitle: "Rounds by time, same logging",
                    hint: "Opens the interval timer.") { openIntervals() },
             Puerta(icon: "figure.cooldown", label: "Mobility",
-                   subtitle: sesionViva ? "Resumes the session you have open"
-                                        : "Guided, no weights · 20 min",
+                   subtitle: "Guided, no weights · 20 min",
                    hint: "Starts a guided mobility session.") { startMobilityFromDisc() },
             Puerta(icon: "wind", label: "Breathe",
                    subtitle: "Guided breathing · 3 min",
@@ -887,52 +1052,75 @@ private struct EntrenarLanding: View {
         ]
     }
 
-    /// El enlace + el pliegue, como una sola pieza. Se coloca en los dos estados (con plan y sin
-    /// plan): una vista, dos colocaciones, para que no nazcan dos comportamientos.
-    private var otraForma: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Button {
-                withAnimation(reduceMotion ? StrandMotion.fade : StrandMotion.gentle) {
-                    otraFormaAbierta.toggle()
-                }
-            } label: {
-                HStack(spacing: CenitMetrics.space1) {
-                    Text("Other ways")
-                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                    StrandIcon.down.image
-                        .font(StrandFont.glyph(.chevron, weight: .semibold))
-                        .foregroundStyle(theme.inkTertiary)
-                        .rotationEffect(.degrees(otraFormaAbierta ? 180 : 0))
-                    Spacer(minLength: 0)
-                }
-                .frame(maxWidth: .infinity, minHeight: EntrenarMetrics.row, alignment: .leading)
-                .contentShape(Rectangle())
+    /// El toggle «Other ways ›» solo. `fillsWidth` (default `true`, el comportamiento de antes):
+    /// `false` lo compacta para vivir junto a «Empezar» en el héroe (handoff: «min-h 44, 13px,
+    /// tinta700, padding 0 6px»). El handoff dibuja ahí el chevron fijo de navegación, pero esta
+    /// pantalla ya reserva «›» (`.disclosure`) para «te llevo a otro lado» en los tres encabezados
+    /// de nivel — reciclarlo aquí, junto al CTA principal, le enseñaría al usuario vidente que este
+    /// enlace navega cuando en realidad despliega en su sitio. Las dos variantes usan `.down`, el
+    /// mismo chevron que rota; se prioriza la regla dura del comentario de arriba sobre la lectura
+    /// literal del handoff.
+    private func otraFormaEnlace(fillsWidth: Bool = true) -> some View {
+        Button {
+            withAnimation(reduceMotion ? StrandMotion.fade : StrandMotion.gentle) {
+                otraFormaAbierta.toggle()
             }
-            .buttonStyle(EntrenarPressStyle())
-            .accessibilityValue(Text(otraFormaAbierta ? "expanded" : "collapsed"))
+        } label: {
+            HStack(spacing: CenitMetrics.space1) {
+                Text("Other ways")
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                StrandIcon.down.image
+                    .font(StrandFont.glyph(.chevron, weight: .semibold))
+                    .foregroundStyle(theme.inkTertiary)
+                    .rotationEffect(.degrees(otraFormaAbierta ? 180 : 0))
+                    .accessibilityHidden(true)
+                if fillsWidth { Spacer(minLength: 0) }
+            }
+            .padding(.horizontal, fillsWidth ? 0 : CenitMetrics.space1 + 2)   // handoff «padding 0 6px»
+            .frame(maxWidth: fillsWidth ? .infinity : nil, minHeight: EntrenarMetrics.row, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(EntrenarPressStyle())
+        .accessibilityValue(Text(otraFormaAbierta ? "expanded" : "collapsed"))
+    }
 
-            if otraFormaAbierta {
-                VStack(alignment: .leading, spacing: 0) {
-                    filoDelPliegue
-                    ForEach(Array(puertas.enumerated()), id: \.element.id) { i, puerta in
-                        puertaRow(puerta)
-                        if i < puertas.count - 1 { filoDelPliegue }
-                    }
-                    filoDelPliegue
-                    Text("Your routine for today stays put: this is separate, no guilt.")
-                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.top, CenitMetrics.rowVPad)
+    /// El contenido que se despliega bajo el enlace — las cuatro puertas. Se coloca DEBAJO de la
+    /// fila entera del toggle (y, en el héroe, debajo de la fila CTA completa), nunca dentro de ella.
+    @ViewBuilder private var otraFormaPliegue: some View {
+        if otraFormaAbierta {
+            VStack(alignment: .leading, spacing: 0) {
+                filoDelPliegue
+                ForEach(Array(puertas.enumerated()), id: \.element.id) { i, puerta in
+                    puertaRow(puerta)
+                    if i < puertas.count - 1 { filoDelPliegue }
                 }
-                .padding(.top, CenitMetrics.space2)
-                .transition(.opacity)
-                .accessibilityElement(children: .contain)
+                filoDelPliegue
+                Text("Your routine for today stays put: this is separate, no guilt.")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, CenitMetrics.rowVPad)
             }
+            .padding(.top, CenitMetrics.space2)
+            .transition(.opacity)
+            .accessibilityElement(children: .contain)
         }
     }
 
     private var filoDelPliegue: some View {
         Rectangle().fill(theme.hairline).frame(height: 1)
+    }
+
+    /// La cabecera de un nivel del hub (FER-130 «Ritmo 1b»): filo superior de 1 pt + el aire del
+    /// handoff antes de la fila — envuelve el mismo `EntrenarNivel` que ya sirve «Ver toda la
+    /// biblioteca» en la sesión en vivo, sin tocar ese componente ni su otro llamador. El margen
+    /// EXTERNO del nivel (18 el primero, 2 los siguientes) lo pone quien coloca `semanaSection` /
+    /// `muscleSection` / `bitacoraSection`, no esta función — así un mismo nivel sirve como primero
+    /// o como segundo.
+    private func nivelHub<Nivel: View>(@ViewBuilder _ nivel: () -> Nivel) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            filoDelPliegue
+            nivel().padding(.top, EntrenarMetrics.levelPadTop)
+        }
     }
 
     /// Una fila del pliegue: glifo, título y subtítulo. Sin «›» al final — dos de las cuatro no
@@ -968,18 +1156,6 @@ private struct EntrenarLanding: View {
         .accessibilityHint(puerta.hint)
     }
 
-    /// Quiet standalone foot row at the very bottom: history («consultar»), distinct from the discs'
-    /// «empezar» (mock 1a / v4b).
-    ///
-    /// FER-92: la fila de Dieta llevaba comentada desde FER-992 y su cableado seguía vivo (el
-    /// closure viajaba por dos vistas hasta una ruta que nadie podía alcanzar). El dueño pidió
-    /// retirar la ruta muerta; la PANTALLA (`DietCaptureView`) se queda intacta, esperando su issue.
-    private var footRows: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            utilityRow(icon: "chart.line.uptrend.xyaxis", label: "Mis entrenamientos y progreso") { openHistory() }
-        }
-    }
-
     /// One quiet full-width foot row (history / diet): leading glyph, label, trailing disclosure chevron.
     private func utilityRow(icon: String, label: LocalizedStringKey, action: @escaping () -> Void) -> some View {
         Button(action: action) {
@@ -993,43 +1169,43 @@ private struct EntrenarLanding: View {
                 Spacer(minLength: 8)
                 StrandIcon.disclosure.image.font(StrandFont.glyph(.inline, weight: .semibold))
                     .foregroundStyle(theme.inkDim)
+                    .accessibilityHidden(true)
             }
             .padding(.vertical, CenitMetrics.gap)
             .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)   // HIG tap target (FER-944)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
     }
 
-    /// One «También en tu plan» routine: the whole row is a single tap target that opens the routine
-    /// (FER-784). The trailing chevron carries THAT routine's tint (same color as the leading dot) — a
-    /// glanceable «this opens» affordance, one color per routine, no new tokens.
+    /// One «También en tu plan» routine (FER-131 «Niveles»: fila 44 con `EntrenarFamilyDot` + nombre +
+    /// días + ›). Since this row only ever lists routines OTHER than today's (`otherPlanRoutines`),
+    /// the earned-raise badge that used to condition on `row.routineId == todayRoutineId` could never
+    /// fire here — retired with the reskin instead of carrying dead reachability forward. The whole row
+    /// is a single tap target that opens the routine (FER-784); the trailing chevron carries THAT
+    /// routine's tint, same color as the leading dot.
     private func planRoutineRow(_ row: (routineId: String, name: String, days: String)) -> some View {
         Button { openRoutine(row.routineId) } label: {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 7) {
-                        RoundedRectangle(cornerRadius: 3, style: .continuous)  // token-exempt: geometría de dato
-                            .fill(routineFill(region(name: row.name))).frame(width: 8, height: 8)
+                        EntrenarFamilyDot(routineFill(region(name: row.name)))
                         Text(row.name).font(StrandFont.body).foregroundStyle(theme.ink)
                     }
                     Text(planRowSubtitle(row)).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                        .padding(.leading, 15)
+                        .padding(.leading, EntrenarMetrics.familyDotIndent)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                // Handoff v4b: the earned-raise badge on its routine's row («↗ 2 suben»).
-                if row.routineId == todayRoutineId, !raisesToday.isEmpty {
-                    (Text(verbatim: "↗ ") + Text("\(raisesToday.count) raising"))
-                        .font(InstrumentoType.grotesk(11, weight: .bold))
-                        .foregroundStyle(theme.dataRecovery)
-                }
                 StrandIcon.disclosure.image.font(StrandFont.glyph(.inline, weight: .semibold))
                     .foregroundStyle(routineTint(region(name: row.name)))
+                    .accessibilityHidden(true)
             }
+            .frame(minHeight: EntrenarMetrics.row)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .padding(.vertical, 9)
+        .accessibilityElement(children: .combine)
         .overlay(alignment: .bottom) { Divider().overlay(theme.hairline) }
     }
 
@@ -1039,105 +1215,251 @@ private struct EntrenarLanding: View {
         return muscles.isEmpty ? row.days : ([row.days] + muscles).joined(separator: " · ")
     }
 
-    // MARK: - ④ Constancia — TrainingCalendar(.mini), 63 días (9 semanas) terminando hoy (FER-90 · E9)
+    // MARK: - ③ Músculos cargados — una línea, estimación (FER-131 «Niveles»)
     //
-    // Migrado desde el dot-grid hecho a mano por mes (sus tres ayudantes se retiraron con este
-    // cambio): la pieza compartida ya cubre agrupar por semana + teñir por familia + el resumen de
-    // VoiceOver. Sin `onTapDay`: la landing es un resumen, no un punto de entrada a una sesión — eso
-    // vive en el historial (`WorkoutHistoryScreen`, punto 2 de FER-90). `constancyMonthsCache`/
-    // `ConstancyMonth`/`computeConstancyMonths()` NO se tocan aquí: siguen alimentando la tira semanal
-    // (`trainedThisWeek`, debajo) — esta migración calcula su propia ventana de 63 días directo sobre
-    // `sessions`/`routineCategory`, sin pasar por ese caché mensual.
+    // La rejilla de 90 días (Constancia) se retira aquí: el handoff la tumba (§11), y el dato vive en
+    // Bitácora → Historial. `TrainingCalendar` sigue vivo en StrandDesign — lo sigue usando el
+    // historial (`WorkoutHistoryScreen`) — solo esta landing deja de dibujarlo.
 
-    private var constanciaSection: some View {
-        let days = constanciaCalendarDays
-        let total = days.filter { if case .done = $0.state { return true }; return false }.count
-        return VStack(alignment: .leading, spacing: 12) {
-            InstrumentoSectionBand("Consistency") {
-                Text("\(total) sessions · 63 days")
-                    .font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
-            }
-            TrainingCalendar(days: days, size: .mini, summary: constanciaSummary(total),
-                              monthLabels: constanciaMonthLabels)
-            if total == 0 {
-                Text("Your sessions will appear here, each in its routine's color.")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                    .fixedSize(horizontal: false, vertical: true)
+    /// El MISMO motor que «Tu cuerpo» (`MuscleFatigueMap`, vía `repo.muscleSetEvents`) — nunca una
+    /// segunda derivación del mapa. `load()` llena `muscleEvents`; aquí solo se reduce a `loads`.
+    private var muscleLoads: [MuscleFatigueMap.MuscleLoad] { MuscleFatigueMap.loads(events: muscleEvents) }
+
+    private var muscleSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            nivelHub { EntrenarNivel("Loaded muscles", value: "estimate", kickerStyle: .handoff) }
+            if let line = muscleLine {
+                Button { openMuscleMap() } label: {
+                    HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.space1) {
+                        line
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        StrandIcon.disclosure.image
+                            .font(StrandFont.glyph(.inline, weight: .semibold))
+                            .foregroundStyle(theme.inkTertiary)
+                            .accessibilityHidden(true)
+                    }
+                    .frame(minHeight: EntrenarMetrics.row)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityElement(children: .combine)
             }
         }
     }
 
-    /// Día local (`yyyy-MM-dd`, `Calendar.current`) — el mismo criterio que el historial usa, para no
-    /// repetir el día fantasma UTC vs local ya documentado en memoria del repo.
-    private static let dayKeyFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.calendar = Calendar.current
-        f.timeZone = .current
-        f.dateFormat = "yyyy-MM-dd"
-        return f
-    }()
-
-    /// La sesión más reciente por día local — gana la de `startTs` mayor si dos cayeron el mismo día
-    /// (mismo criterio que el historial). Lee `sessions` directo, sin pasar por `constancyMonthsCache`.
-    private var constanciaLatestSessionByDay: [String: StrengthSession] {
-        var out: [String: StrengthSession] = [:]
-        for s in sessions where s.endTs != nil {
-            let key = Self.dayKeyFormatter.string(from: Date(timeIntervalSince1970: TimeInterval(s.startTs)))
-            if let existing = out[key], existing.startTs >= s.startTs { continue }
-            out[key] = s
-        }
-        return out
-    }
-
-    /// Los últimos 63 días locales (9 semanas), más viejo primero — la misma ventana que el propio
-    /// componente ya usa como su ejemplo de referencia (`demoDays`/`#Preview` de `TrainingCalendar.swift`,
-    /// «27 sessions in the last 9 weeks», verificado en el código de este worktree). `.done(.push)` es
-    /// el mismo respaldo visual que `routineFill(nil)` ya usaba (cae en `theme.dataStrain`, y
-    /// `EntrenarFamily.push.tint` es ese mismo color): el tono de reserva no cambia.
-    private var constanciaCalendarDays: [EntrenarCalendarDay] {
-        let cal = Calendar.current
-        let today = cal.startOfDay(for: Date())
-        let byDay = constanciaLatestSessionByDay
-        return (0..<63).reversed().compactMap { offset in
-            guard let day = cal.date(byAdding: .day, value: -offset, to: today) else { return nil }
-            let key = Self.dayKeyFormatter.string(from: day)
-            guard let s = byDay[key] else { return EntrenarCalendarDay(id: key, state: .empty) }
-            if let rid = s.routineId, let region = routineCategory[rid] {
-                return EntrenarCalendarDay(id: key, state: .done(region.family))
+    /// ③ Descanso: el módulo COMPLETO de músculos cargados (handoff «Descanso»), en vez de la línea
+    /// — hasta 5 filas `MuscleLoadRow`, la MISMA pieza y el MISMO `muscleLoads` que `muscleSection`
+    /// y `TrainingBodyScreen` leen, nunca una segunda derivación del mapa. Cierra con «Mañana:
+    /// {rutina}» cuando el split ya nombra la rutina de mañana.
+    private var muscleSectionModulo: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // El encabezado «últimos 7 días ›» SÍ navega a Tu cuerpo: en el prototipo el <div> del
+            // encabezado del módulo lleva `onClick nav.cuerpo` (a diferencia de la LÍNEA de músculos,
+            // donde solo la fila de dato navega). Las filas de abajo son lectura, no puertas.
+            nivelHub {
+                EntrenarNivel("Loaded muscles", value: "last 7 days", kickerStyle: .handoff) { openMuscleMap() }
             }
-            return EntrenarCalendarDay(id: key, state: .done(.push))
-        }
-    }
-
-    /// Qué filas (de 7 días) llevan rótulo de mes — mismo mecanismo que el historial: fila 0 siempre,
-    /// y cualquier fila cuyo primer día caiga en un mes distinto al de la fila anterior.
-    private var constanciaMonthLabels: [Int: LocalizedStringKey] {
-        let cal = Calendar.current
-        let days = constanciaCalendarDays
-        var labels: [Int: LocalizedStringKey] = [:]
-        var lastMonth: Int?
-        for (rowIndex, start) in stride(from: 0, to: days.count, by: 7).enumerated() {
-            guard let date = Self.dayKeyFormatter.date(from: days[start].id) else { continue }
-            let month = cal.component(.month, from: date)
-            if rowIndex == 0 || month != lastMonth {
-                labels[rowIndex] = LocalizedStringKey(cal.shortMonthSymbols[(month - 1) % 12].lowercased())
+            HStack {
+                Text("Load").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Spacer(minLength: CenitMetrics.space2)
+                Text("Sets · 7d").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             }
-            lastMonth = month
+            .padding(.top, CenitMetrics.space2)
+            ForEach(Array(muscleLoads.prefix(5)), id: \.muscle) { load in
+                muscleModuloRow(load)
+            }
+            if let tomorrow = tomorrowRoutineName {
+                Divider().overlay(theme.hairline)
+                Text("Tomorrow: \(tomorrow)")
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .frame(minHeight: EntrenarMetrics.row, alignment: .leading)
+            }
         }
-        return labels
     }
 
-    /// Resumen para VoiceOver: la rejilla es UN solo elemento, nunca celda por celda (Estados). Antes
-    /// de esta migración cada día tenía su propia etiqueta de accesibilidad (retirada con el resto del
-    /// dot-grid a mano) — no se pierde alcance real: esa pieza tampoco navegaba a ningún lado al tocar
-    /// un día (solo abría un popover informativo), y toda sesión sigue disponible completa en el
-    /// historial.
-    private func constanciaSummary(_ total: Int) -> LocalizedStringKey {
-        "\(total) sessions in the last 9 weeks"
+    /// Una fila del módulo — misma receta que `TrainingBodyScreen.loadRow`: «hoy» / «ayer» / «hace N
+    /// d» / «fresco», la MISMA escalera de recencia, para que las dos pantallas nunca contradigan.
+    private func muscleModuloRow(_ load: MuscleFatigueMap.MuscleLoad) -> MuscleLoadRow {
+        MuscleLoadRow(
+            name: MuscleAtlas.name(load.muscle),
+            load: load.relative,
+            recency: load.state == .fresh ? "fresh"
+                : load.daysSinceLast == 0 ? "today" : load.daysSinceLast == 1 ? "yesterday" : "\(load.daysSinceLast) d ago",
+            sets: load.weeklySets,
+            isFresh: load.state == .fresh,
+            action: { openMuscleMap() }
+        )
     }
 
-    /// The «hoy» ring tint: today's scheduled routine, or a neutral hairline on a rest day.
-    private var todayRingTint: Color { todayRoutine.map { routineTint(region(name: $0.name)) } ?? theme.hairlineStrong }
+    /// Tomorrow's routine name from the weekly split — `nil` = tomorrow is also a rest day. (Movida
+    /// aquí de la pantalla dedicada al descanso, retirada con FER-132: el descanso ya no empuja pantalla propia.)
+    private var tomorrowRoutineName: String? {
+        let tomorrow = (todayWeekday % 7) + 1
+        return split[tomorrow].flatMap { routinesById[$0]?.name }
+    }
+
+    /// «Espalda baja · hace 3 días · Fresco: pecho · hombros» — el músculo más cargado (600, tinta900)
+    /// + su estado de recencia (13 SF, tinta700): «hoy» / «hace N d», y la segunda cláusula de
+    /// copy.md con los músculos frescos, cuando los hay. Separados por «·» en vez de un adjetivo
+    /// flexionado («cargada»/«cargado»/«cargadas»): el catálogo mezcla géneros y números (femenino
+    /// singular «Espalda baja», femenino plural «Pantorrillas», masculino plural «Cuádriceps»,
+    /// «Glúteos»…) y un solo adjetivo fijo no concuerda con todos. `nil` cuando no hay eventos (el
+    /// nivel se oculta en el llamador).
+    ///
+    /// Recencia en los cuatro estados del handoff (copy.md «Niveles»): «hoy» · «ayer» · «hace N d» ·
+    /// «fresco». `TrainingBodyScreen` (la pantalla a la que este renglón navega, `loadRow`/`lastText`)
+    /// usa la misma escalera, para que la MISMA recencia no se lea distinto entre pantallas hermanas.
+    private var muscleLine: Text? {
+        guard let top = muscleLoads.first else { return nil }
+        let mainName = Text(MuscleAtlas.name(top.muscle))
+            .font(StrandFont.subhead).fontWeight(.semibold).foregroundStyle(theme.ink)
+        let state: Text = top.daysSinceLast == 0 ? muscleLineReading(Text("today"))
+                        : top.daysSinceLast == 1 ? muscleLineReading(Text("yesterday"))
+                                                 : muscleLineReading(Text("\(top.daysSinceLast) d ago"))
+        var line = mainName + muscleLineReading(Text(verbatim: " · ")) + state
+        if let fresh = freshMusclesClause {
+            line = line + muscleLineReading(Text(verbatim: " · ")) + fresh
+        }
+        return line
+    }
+
+    private func muscleLineReading(_ t: Text) -> Text { t.font(StrandFont.subhead).foregroundStyle(theme.inkSecondary) }
+
+    /// «Fresco: pecho · hombros» — hasta 2 músculos en estado `.fresh` (quisquilloso ronda 3: el
+    /// músculo PRINCIPAL, `muscleLoads.first`, siempre tiene `relative == 1.0` así que nunca cae aquí
+    /// — no hay riesgo de listarlo dos veces). Reusa la MISMA etiqueta «Fresh: »/«Fresco: » y el
+    /// MISMO patrón de unión sin adjetivo flexionado que `TrainingBodyScreen.freshLine`, para que la
+    /// landing y su pantalla hermana no inventen dos vocabularios para lo mismo. `nil` cuando ningún
+    /// músculo está fresco (primeras sesiones: todo lo tocado carga, nada está fresco todavía).
+    private var freshMusclesClause: Text? {
+        let fresh = muscleLoads.filter { $0.state == .fresh }.sorted { $0.load < $1.load }.prefix(2)
+        guard !fresh.isEmpty else { return nil }
+        let names = fresh.enumerated().reduce(Text(verbatim: "")) { acc, pair in
+            let (i, load) = pair
+            let sep = i == 0 ? Text(verbatim: "") : muscleLineReading(Text(verbatim: " · "))
+            return acc + sep + muscleLineReading(Text(MuscleAtlas.name(load.muscle)))
+        }
+        return muscleLineReading(Text("Fresh: ")) + names
+    }
+
+    // MARK: - ④ Bitácora — 2 filas + «Historial y progreso ›» (FER-131 «Niveles»)
+
+    private var bitacoraSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            nivelHub { EntrenarNivel("Training log", value: bitacoraValor, kickerStyle: .handoff) }
+            ForEach(Array(recentSessions90.prefix(2)), id: \.id) { session in
+                bitacoraRow(session)
+            }
+            utilityRow(icon: "chart.line.uptrend.xyaxis", label: "History and progress") { openHistory() }
+        }
+    }
+
+    /// Sesiones COMPLETADAS en los últimos 90 días naturales, del más reciente al más viejo — la
+    /// MISMA ventana que anuncia `bitacoraValor`, para que sus dos filas nunca contradigan al
+    /// encabezado (quisquilloso ronda 2: `sessions.prefix(2)` sin filtro podía enseñar dos sesiones
+    /// mientras el encabezado decía «0 sesiones · 90 días»). `sessions` ya viene ordenado
+    /// `startTs DESC` (`recentSessions(limit:)`).
+    ///
+    /// `endTs != nil` — igual que `WorkoutHistoryScreen.latestSessionByLocalDay`/`weeklyVolumes` filtran
+    /// el MISMO array `sessions` — para que una sesión EN CURSO nunca aparezca como fila terminada con
+    /// duración/volumen mal calculados, ni abra el acta de un entrenamiento que aún no cerró
+    /// (quisquilloso ronda 3).
+    private var recentSessions90: [StrengthSession] {
+        let cutoff = Date().timeIntervalSince1970 - 90 * 86_400
+        return sessions.filter { $0.endTs != nil && Double($0.startTs) >= cutoff }
+    }
+
+    /// «11 sesiones · 90 días» — singular aparte, mismo patrón que `marcaChip` («1 marca» vs «N marcas»):
+    /// una `LocalizedStringKey` interpolada nunca resuelve plural sola.
+    private var bitacoraValor: LocalizedStringKey {
+        recentSessions90.count == 1 ? "1 session · 90 days" : "\(recentSessions90.count) sessions · 90 days"
+    }
+
+    /// Una fila de Bitácora: «Mié 12 · Tirón A» + chip «N marca(s)» (si hubo) · «44 min · 4,880 kg» ·
+    /// esfuerzo «11.1 /21» (si hay FC del Watch). Toca → la misma hoja que abre el historial.
+    private func bitacoraRow(_ session: StrengthSession) -> some View {
+        Button { openWorkoutSession(bitacoraRoute(session)) } label: {
+            HStack(alignment: .center, spacing: CenitMetrics.space2) {
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: CenitMetrics.space1) {
+                        Text(verbatim: bitacoraTitle(session))
+                            .font(StrandFont.body).foregroundStyle(theme.ink).lineLimit(1)
+                        if let marks = bitacoraMarcas[session.id], marks > 0 {
+                            marcaChip(marks)
+                        }
+                    }
+                    Text(verbatim: bitacoraSubtitle(session))
+                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                }
+                Spacer(minLength: CenitMetrics.space2)
+                if let strain = session.strain {
+                    // 13 pt está bajo el piso de 24 pt: `dataStrain` puro (#C4631F) da ~3.6:1 sobre el
+                    // papel, no los 4.5:1 que pide texto chico. Mismo remedio que `SessionStatsBar` ya
+                    // usa con `dataHeart` — oscurecer a contraste, no el hue crudo.
+                    (Text(verbatim: StrengthHistoryFormat.strain(strain))
+                        .font(InstrumentoType.grotesk(13, weight: .bold))
+                        .foregroundStyle(OKLab.darkened(theme.dataStrain, toContrast: 4.5, against: theme.paper))
+                     + Text(verbatim: " /21").font(StrandFont.caption).foregroundStyle(theme.inkTertiary))
+                }
+            }
+            .frame(minHeight: EntrenarMetrics.row)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .overlay(alignment: .bottom) { Divider().overlay(theme.hairline) }
+    }
+
+    /// El chip «N marca(s)»: verdeProfundo sobre su propio tinte al 10 % (`StrandOpacity.tintFill`).
+    private func marcaChip(_ count: Int) -> some View {
+        Text(count == 1 ? "1 mark" : "\(count) marks")
+            .entrenarMarcaChip()
+            .foregroundStyle(theme.positiveText)
+            .padding(.horizontal, CenitMetrics.space2)
+            .padding(.vertical, CenitMetrics.space1)
+            .background(theme.tint(theme.positiveText), in: Capsule())
+    }
+
+    /// «Mié 12 · Tirón A».
+    private func bitacoraTitle(_ session: StrengthSession) -> String {
+        let day = Date(timeIntervalSince1970: TimeInterval(session.startTs))
+            .formatted(.dateTime.weekday(.abbreviated).day())
+        let capitalized = day.prefix(1).uppercased() + day.dropFirst()
+        let name = session.routineId.flatMap { routinesById[$0]?.name } ?? String(localized: "Strength workout")
+        return "\(capitalized) · \(name)"
+    }
+
+    /// «44 min · 4,880 kg».
+    private func bitacoraSubtitle(_ session: StrengthSession) -> String {
+        var parts: [String] = []
+        if let mins = StrengthHistoryFormat.durationMinutes(start: session.startTs, end: session.endTs) {
+            parts.append(StrengthHistoryFormat.durationText(mins))
+        }
+        if let vol = sessionVolumes[session.id], vol.volumeKg > 0 {
+            parts.append(StrengthHistoryFormat.volume(vol.volumeKg, system: unitSystem))
+        }
+        return parts.joined(separator: " · ")
+    }
+
+    private func bitacoraRoute(_ session: StrengthSession) -> WorkoutSessionRoute {
+        let name = session.routineId.flatMap { routinesById[$0]?.name } ?? String(localized: "Strength workout")
+        return WorkoutSessionRoute(id: session.id, startTs: session.startTs, endTs: session.endTs,
+                                   strain: session.strain, avgHr: session.avgHr, routineName: name)
+    }
+
+    /// «Músculos cargados y Bitácora aparecen después de tu primera sesión. Mientras, silencio.» —
+    /// plan armado, cero sesiones registradas todavía (copy.md «Primer uso»).
+    private var silencioPrimeraSesion: some View {
+        // Mismo filo superior que cualquier otro nivel (`nivelHub`): sin él el corte entre TU SEMANA y
+        // este mensaje no se leía igual que el corte entre dos niveles cualesquiera.
+        VStack(alignment: .leading, spacing: 0) {
+            filoDelPliegue
+            Text("Loaded muscles and Log appear after your first session. Until then, silence.")
+                .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, EntrenarMetrics.levelPadTop)
+        }
+    }
 
     /// The routine trained on this week's `weekday`, if a completed session exists that day — read from
     /// the same 90-day Constancia buckets (they always cover the current week). Drives the week strip's
@@ -1157,53 +1479,84 @@ private struct EntrenarLanding: View {
         return nil
     }
 
-    // MARK: - Empty state B (no split yet → build the week)
-
-    private var emptyStateB: some View {
-        VStack(spacing: 14) {
-            Image(systemName: "calendar.badge.plus")
-                .font(.system(size: 36, weight: .regular)).foregroundStyle(theme.inkTertiary).accessibilityHidden(true)  // token-exempt: glifo 36pt fuera de banda empty
-            Text("No plan yet").font(InstrumentoType.groteskHeadline(20)).foregroundStyle(theme.ink).multilineTextAlignment(.center)
-            Text("Build your week to see today and your progress.")
-                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
-            StrandCTAButton("Build my week") { openWeeklyPlan() }
-                .padding(.top, 4)
-        }
-        .frame(maxWidth: .infinity).padding(.vertical, 30).padding(.horizontal, 18)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
-    }
-
-    // MARK: - First use · «O empieza sin plan» → Rutinas de plantilla (mock 5a)
+    // MARK: - ④ Primer uso (sin rutinas) — «Arma tu semana» (FER-132)
     //
-    // The one door kept from the mock's «empieza sin plan» trio: template routines, ready to edit. The
-    // other two mock rows (Rápido de fuerza · Otra forma de entrenar) are dropped here — the always-visible
-    // «Formas de entrenar» pill row below already carries Rápido and the alternative forms, so we don't
-    // repeat them. A quiet overline, then a single tappable row that opens the templates list.
+    // Sin ningún día asignado todavía: el héroe habla del arranque, no de un día — mismo lenguaje
+    // tipográfico que `heroSectionRoutineDay` (kicker + título Grotesk 32), plantillas tocables +
+    // «Importar tu plan de tu IA ›» en vez de «Empezar», y TU SEMANA vacía (`weekTokenDays` ya cae
+    // en contornos por sí solo cuando `split` está vacío — no hace falta un caso especial). SIN
+    // «Otra forma» (no hay sesión de hoy que ofrecer una alternativa) y SIN Músculos/Bitácora — la
+    // misma nota de silencio que «plan sin sesiones» los explica.
 
-    private var plantillaRow: some View {
+    private var primerUsoSection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Or start without a plan").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                .padding(.bottom, 4)
-            Button { showTemplates = true } label: {
-                HStack(spacing: 12) {
-                    Image(systemName: "square.stack.3d.up").font(.system(size: 18)).foregroundStyle(theme.inkSecondary)  // token-exempt: glifo 18pt fuera de banda lead
-                        .frame(width: 26)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Template routines").font(StrandFont.body).foregroundStyle(theme.ink)
-                        Text("push · pull · legs · full body, ready to edit")
-                            .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    StrandIcon.disclosure.image.font(.system(size: 14, weight: .semibold))  // token-exempt: chevron de fila fuera de banda
-                        .foregroundStyle(theme.inkDim)
+            Text("Let's start")
+                .entrenarCabeceraKicker().foregroundStyle(theme.inkTertiary)
+            Text("Build your week")
+                .font(InstrumentoType.grotesk(32, weight: .bold)).tracking(-1)
+                .foregroundStyle(theme.ink)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, EntrenarMetrics.heroTitleTop)
+            Text("Choose a template or build your own routine · Entrenar serves it to you every day after that")
+                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, EntrenarMetrics.heroSubTop)
+            primerUsoChips.padding(.top, CenitMetrics.gap)
+            Button { showHubImport = true } label: {
+                HStack(spacing: CenitMetrics.space1) {
+                    Text("Import your AI's plan").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    StrandIcon.disclosure.image
+                        .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                        .accessibilityHidden(true)
                 }
-                .padding(.vertical, 11).contentShape(Rectangle())
+                .frame(minHeight: EntrenarMetrics.row, alignment: .leading)
+                .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(EntrenarPressStyle())
+            .accessibilityElement(children: .combine)
+            StrandCTAButton("Build my plan", tint: theme.positiveText, fillsWidth: false) { showTemplates = true }
+                .padding(.top, CenitMetrics.space1)
+            nivelHub { EntrenarNivel("Your week", value: "Tap a day", kickerStyle: .handoff) }
+                .padding(.top, EntrenarMetrics.firstLevelTop)
+            WeekTokens(days: weekTokenDays, labels: orderedWeekdays.map(weekdayLetter)) { openWeeklyPlan() }
+                .padding(.top, CenitMetrics.space2)
+            silencioPrimeraSesion.padding(.top, EntrenarMetrics.levelTop)
         }
     }
+
+    /// Tres plantillas tocables (nombre + «lista para editar»): tocar cualquiera abre la misma hoja
+    /// de plantillas (`StarterTemplatesSheet`) — el mismo destino que «Crear mi plan», solo un atajo
+    /// más corto para quien ya sabe cuál quiere.
+    private var primerUsoChips: some View {
+        HStack(spacing: CenitMetrics.space2) {
+            ForEach(Self.primerUsoGroupNames, id: \.self) { name in
+                Button { showTemplates = true } label: {
+                    // token-exempt: 1 pt es el hairline entre nombre y «lista para editar» dentro del
+                    // chip, más chico que `CenitMetrics.space1` (4). El archivo ya tiene otros gaps sin
+                    // token (2, 7, 8, 9, 12); no es una regresión nueva de este PR.
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(LocalizedStringKey(name)).font(StrandFont.body).fontWeight(.semibold).foregroundStyle(theme.ink)
+                        Text("Ready to edit").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    }
+                    .padding(.horizontal, CenitMetrics.space2)
+                    // El prototipo pide 36 pt; sube a EntrenarMetrics.row (44 pt) por el mínimo de
+                    // tap target de HIG — misma regla que el resto de filas de esta pantalla
+                    // (sesionMetrics, heroSesionVivaBody). Deviation documentada ronda 3 (quisquilloso).
+                    .frame(minHeight: EntrenarMetrics.row, alignment: .leading)
+                    .background(theme.surface, in: Capsule())
+                    .overlay(Capsule().strokeBorder(theme.hairline, lineWidth: 1))
+                }
+                .buttonStyle(EntrenarPressStyle())
+                .accessibilityLabel(Text(LocalizedStringKey(name)) + Text(verbatim: ", ") + Text("Ready to edit"))
+            }
+        }
+    }
+
+    /// Nombres de las tres plantillas destacadas (mismo vocabulario que `StarterTemplatesSheet`, sin
+    /// re-exponer su enum privado): Empuje · Jalón · Pierna, Cuerpo completo, Torso / Pierna — el
+    /// catálogo es-MX real (`Localizable.xcstrings`), corregido ronda 3 (quisquilloso, menor): el
+    /// comentario decía «Tirón»/«Superior·Inferior», vocabulario que el catálogo no produce.
+    private static let primerUsoGroupNames: [String] = ["Push Pull Legs", "Full body", "Upper / Lower"]
 
     // MARK: - Error state · store couldn't be read (distinct from «no plan yet»)
     //
@@ -1213,8 +1566,8 @@ private struct EntrenarLanding: View {
     private var loadErrorState: some View {
         card {
             VStack(alignment: .leading, spacing: CenitMetrics.gap) {
-                Text("We couldn't read your routines").font(InstrumentoType.groteskHeadline(20)).foregroundStyle(theme.ink)
-                Text("Something went wrong opening your data.")
+                Text("I couldn't read your plan").font(InstrumentoType.groteskHeadline(20)).foregroundStyle(theme.ink)
+                Text("Something failed opening your routines · your data is intact")
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
                 StrandCTAButton("Retry", kind: .outline) { Task { await load() } }
@@ -1255,54 +1608,40 @@ private struct EntrenarLanding: View {
     private var todayRoutineId: String? { WeeklySplit.todayRoutineId(split: split, todayWeekday: todayWeekday) }
     private var todayRoutine: Routine? { todayRoutineId.flatMap { routinesById[$0] } }
 
-    /// One month's worth of Constancia dot-grid data.
-    private struct ConstancyMonth: Identifiable {
-        let id: Int              // 0 = current month, 1 = last month, 2 = two months ago
-        let label: String        // «Jul»
+    /// One month's worth of «which days did I train» data — all that survives now that the Constancia
+    /// dot-grid itself is retired (§11): `trainedThisWeek` only ever reads `year`/`month`/`trained`.
+    /// The grid used to also read a month label, session count, day count, current-month flag and a
+    /// fade — those went with it (FER-131, quisquilloso ronda 2: don't keep computing what nothing
+    /// reads any more).
+    private struct ConstancyMonth {
         let year: Int
-        let month: Int           // calendar month (1...12) — lets a tapped day rebuild its exact date
-        let count: Int           // sessions that month
-        let daysInMonth: Int
+        let month: Int           // calendar month (1...12)
         let trained: [Int: String]   // dayOfMonth → the (latest) routine's name that day («» = unknown routine)
-        let isCurrent: Bool
-        let fade: Double
     }
 
-    /// The last three calendar months (oldest → current) as dot-grid data: for each, the days you trained
-    /// keyed to the latest routine that day, plus the session count. Read from the last-200 completed
-    /// sessions (well over 90 days' worth). No streak, no adherence — just the pattern.
+    /// The last three calendar months (oldest → current): for each, the days you trained keyed to the
+    /// latest routine that day. Read from the last-200 completed sessions (well over 90 days' worth).
     /// Called once per `load()` into `constancyMonthsCache` (FER-948) — not from the view body.
     private func computeConstancyMonths() -> [ConstancyMonth] {
         let cal = Calendar.current
         guard let startOfThisMonth = cal.date(from: cal.dateComponents([.year, .month], from: Date())) else { return [] }
         // Bucket completed sessions by (year, month); within a month keep the first-seen (latest) routine per day.
-        var byYM: [DateComponents: (count: Int, trained: [Int: String])] = [:]
+        var byYM: [DateComponents: [Int: String]] = [:]
         for s in sessions where s.endTs != nil {
             let c = cal.dateComponents([.year, .month, .day], from: Date(timeIntervalSince1970: TimeInterval(s.startTs)))
             let key = DateComponents(year: c.year, month: c.month)
-            var bucket = byYM[key] ?? (0, [:])
-            bucket.count += 1
-            if let day = c.day, bucket.trained[day] == nil {
-                bucket.trained[day] = s.routineId.flatMap { routinesById[$0]?.name } ?? ""
+            var trained = byYM[key] ?? [:]
+            if let day = c.day, trained[day] == nil {
+                trained[day] = s.routineId.flatMap { routinesById[$0]?.name } ?? ""
             }
-            byYM[key] = bucket
+            byYM[key] = trained
         }
-        let fades: [Double] = [0.72, 0.88, 1.0]
         return (0..<3).reversed().compactMap { offset in     // 2,1,0 → oldest first
-            guard let monthDate = cal.date(byAdding: .month, value: -offset, to: startOfThisMonth),
-                  let month = cal.dateComponents([.month], from: monthDate).month else { return nil }
+            guard let monthDate = cal.date(byAdding: .month, value: -offset, to: startOfThisMonth) else { return nil }
             let ym = cal.dateComponents([.year, .month], from: monthDate)
-            guard let year = ym.year else { return nil }
-            let bucket = byYM[DateComponents(year: ym.year, month: ym.month)] ?? (0, [:])
-            return ConstancyMonth(id: offset,
-                                  label: cal.shortMonthSymbols[(month - 1) % 12].capitalized,
-                                  year: year,
-                                  month: month,
-                                  count: bucket.count,
-                                  daysInMonth: cal.range(of: .day, in: .month, for: monthDate)?.count ?? 30,
-                                  trained: bucket.trained,
-                                  isCurrent: offset == 0,
-                                  fade: fades[2 - offset])
+            guard let year = ym.year, let month = ym.month else { return nil }
+            let trained = byYM[DateComponents(year: year, month: month)] ?? [:]
+            return ConstancyMonth(year: year, month: month, trained: trained)
         }
     }
 
@@ -1340,8 +1679,53 @@ private struct EntrenarLanding: View {
     }
 
     private var hoyOverline: String {
+        // FER-132 · ② Recupera: el kicker nombra la fuente del consejo («tu semana marca»), no el
+        // día — el día ya vive en la cabecera de arriba. Copy literal del handoff (copy.md «Héroe»).
+        if advice == .recover {
+            return String(localized: "Today · your week marks")
+        }
         let day = Calendar.current.standaloneWeekdaySymbols[(todayWeekday - 1) % 7]
         return String(localized: "Today · \(day)")
+    }
+
+    // MARK: - Cabecera (FER-130 «Ritmo 1b»)
+    //
+    // «Entrenar · {fecha}» a la izquierda, el «?» de los trucos a la derecha — reemplaza al wordmark
+    // retirado en FER-952. Antes el «?» vivía en la misma fila que el hilo del veredicto; el handoff
+    // los separa: la cabecera es de la PANTALLA (nombra el tab y el día), el hilo es del CUERPO.
+
+    private var cabecera: some View {
+        HStack(spacing: CenitMetrics.space2) {
+            Text(cabeceraKicker)
+                .entrenarCabeceraKicker()
+                .foregroundStyle(theme.inkSecondary)
+            Spacer(minLength: CenitMetrics.space2)
+            Button { showTricks = true } label: {
+                Image(systemName: "questionmark.circle")
+                    .font(StrandFont.glyph(.lead))
+                    .foregroundStyle(theme.inkTertiary)
+                    .frame(width: EntrenarMetrics.row, height: EntrenarMetrics.row)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(EntrenarPressStyle())
+            .accessibilityLabel(Text("Tricks"))
+        }
+    }
+
+    /// «Entrenar · Sáb 15 ago» — el nombre del tab más la fecha real de hoy, no un rótulo fijo.
+    private var cabeceraKicker: String {
+        String(localized: "Train · \(cabeceraFecha)")
+    }
+
+    /// La fecha de hoy en la plantilla localizada «EEE d MMM» («sáb 15 ago» / «Sat 15 Aug»), con la
+    /// inicial en mayúscula — la plantilla de weekday corto sale toda en minúsculas en es-MX.
+    private var cabeceraFecha: String {
+        let f = DateFormatter()
+        f.locale = Locale.autoupdatingCurrent
+        f.setLocalizedDateFormatFromTemplate("EEE d MMM")
+        let s = f.string(from: Date())
+        guard let first = s.first else { return s }
+        return String(first).uppercased() + s.dropFirst()
     }
 
     /// El hilo del veredicto: la misma pastilla que es la puerta de Hoy, construida por el MISMO
@@ -1358,21 +1742,12 @@ private struct EntrenarLanding: View {
             healthConnected: healthConnected,
             verdictPending: repo.todayPreparedness == nil && !repo.fullyLoaded,
             hasPlan: todayRoutine != nil) {
-            EntrenarHilo(tone: hiloTono(hilo.tono),
+            EntrenarHilo(tone: hilo.tono.entrenarTone,
                          word: LocalizedStringKey(hilo.palabra),
                          advice: hilo.consejo.map { LocalizedStringKey($0) },
                          hint: "Opens today's ballot") {
                 showVeredictoActa = true
             }
-        }
-    }
-
-    private func hiloTono(_ t: LiquidHoyBuilder.HiloEntrenar.Tono) -> EntrenarHilo.Tone {
-        switch t {
-        case .claro:    return .clear
-        case .atencion: return .caution
-        case .alerta:   return .ease
-        case .hueco:    return .hollow
         }
     }
 
@@ -1382,6 +1757,20 @@ private struct EntrenarLanding: View {
 
 
     // MARK: - Data
+
+    /// How many personal records fall inside one session's [inicio, fin] — el chip «N marca(s)» de
+    /// Bitácora. Solo se llama para las 2 filas que la landing muestra (acotado, no un barrido).
+    private func marcaCount(for session: StrengthSession) async -> Int {
+        let sets = await repo.sessionSets(sessionId: session.id)
+        let exerciseIds = Set(sets.map(\.exerciseId))
+        let start = session.startTs, end = session.endTs ?? session.startTs
+        var count = 0
+        for exerciseId in exerciseIds {
+            let prs = await repo.personalRecords(exerciseId: exerciseId)
+            count += prs.filter { $0.ts >= start && $0.ts <= end }.count
+        }
+        return count
+    }
 
     /// Rebuild the whole screen from the store. Returns whether THIS pass published its work: false
     /// when the store is unavailable or a newer pass won the race, so a caller that depends on fresh
@@ -1446,6 +1835,21 @@ private struct EntrenarLanding: View {
             heldToday = held
         }
         let recent = (try? await store.recentSessions(limit: 200)) ?? []
+        // FER-131 «Niveles»: el mismo fetch que `TrainingBodyScreen` (84 días) para «Músculos
+        // cargados» — nunca una segunda derivación del mapa — más el volumen agregado por sesión y si
+        // alguna de las 2 filas de Bitácora trajo una marca (el rango de la sesión toca un PR).
+        let cal = Calendar.current
+        let muscleSince = cal.date(byAdding: .day, value: -84, to: cal.startOfDay(for: Date())) ?? Date()
+        let muscleEv = await repo.muscleSetEvents(sinceTs: Int(muscleSince.timeIntervalSince1970),
+                                                  resetTs: Int(muscleRecoveryResetAt))
+        let volumes = await repo.sessionVolumes()
+        // FER-131 quisquilloso ronda 3: las 2 filas que Bitácora muestra son `recentSessions90`
+        // (completadas, `endTs != nil`, ventana de 90 días) — no `recent.prefix(2)`, que podía incluir
+        // una sesión en curso y desperdiciar el cómputo en una fila que la landing ni siquiera pinta.
+        let cutoff90 = Date().timeIntervalSince1970 - 90 * 86_400
+        let bitacoraRows = recent.filter { $0.endTs != nil && Double($0.startTs) >= cutoff90 }.prefix(2)
+        var marcas: [String: Int] = [:]
+        for s in bitacoraRows { marcas[s.id] = await marcaCount(for: s) }
         // Every read is done: from here on there is no await, so the publish below is atomic. A pass
         // that lost the race drops its work y NO toca `loaded`: el pase ganador ya está en vuelo y lo
         // encenderá con datos. Encenderlo aquí pintaba el estado de PRIMER USO («Empecemos por tu
@@ -1461,6 +1865,9 @@ private struct EntrenarLanding: View {
         split = splitMap
         todaySlots = slots
         sessions = recent
+        muscleEvents = muscleEv
+        sessionVolumes = volumes
+        bitacoraMarcas = marcas
         // After sessions + routines (→ routinesById): bucket once for Constancia + week strip (FER-948).
         constancyMonthsCache = computeConstancyMonths()
         loaded = true
@@ -1492,112 +1899,20 @@ private struct EntrenarLanding: View {
     }
 }
 
-// MARK: - «Hoy descansas. También cuenta.» (v3 · 2B) — a PUSHED screen now (FER-718)
-//
-// What «Empezar» opens on a rest day, and what the streak row protects. Reframed to the mock: the streak
-// is explicitly SAFE (resting does not break it), a card carries the one cited light alternative, a
-// quieter «Si aun así quieres entrenar» section lists the other ways, and a footer names tomorrow's
-// routine from the split.
-//
-// FER-82: that card now speaks from the SAME verdict as Hoy and the landing (`repo.trainingAdvice`).
-// It used to read the 0–100 score, which meant a rest day could offer an OPTIONAL EXTRA session while
-// Hoy was painting «Recupera» — a second oracle, inside Entrenar, recommending the one thing the new
-// mapping says it must never recommend. Only «Recupera» surfaces a suggestion here now.
+#endif
 
-struct RestDayScreen: View {
-    var openIntervals: () -> Void
-    var openBreathe: () -> Void
-    var openRoutines: () -> Void
+// MARK: - El tono del hilo, una sola vez
 
-    @Environment(\.instrumentoTheme) private var theme
-    @EnvironmentObject private var repo: Repository
-    @Environment(AppModel.self) private var model
-
-    @State private var split: [Int: String] = [:]
-    @State private var routineNames: [String: String] = [:]
-    /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
-    @ObserveInjection private var inject
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                Text("Today you rest").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                Text("Today you rest. It counts too.")
-                    .font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking)
-                    .foregroundStyle(theme.ink).padding(.top, 3)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                streakBullet.padding(.top, 16)
-
-                Text("If you still want to train").instrumentoOverline()
-                    .foregroundStyle(theme.inkTertiary).padding(.top, CenitMetrics.sectionGap)
-                VStack(spacing: 0) {
-                    // Las cuatro formas de moverse, siempre completas: esta lista es una elección,
-                    // no una recomendación. La movilidad ya no sube ni baja según el veredicto —el
-                    // camino «suave» se retiró (FER-85)— así que la fila es incondicional.
-                    row("figure.cooldown", "Mobility · 20 min") { model.startMobilityOneOff() }
-                    row("timer", "Intervals · 12 min") { openIntervals() }
-                    row("list.bullet", "Pick a routine") { openRoutines() }
-                    row("wind", "Breathe", last: true) { openBreathe() }
-                }
-                .padding(.top, 6)
-
-                if let tomorrow = tomorrowRoutineName {
-                    Divider().overlay(theme.hairline).padding(.top, CenitMetrics.sectionGap)
-                    Text("Tomorrow: \(tomorrow)")
-                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary).padding(.top, 14)
-                }
-            }
-            .padding(.top, 20)
-            .padding(.horizontal, CenitMetrics.screenPadding)
-            .padding(.bottom, CenitMetrics.screenPadding)
-            .frame(maxWidth: .infinity, alignment: .leading)
+extension LiquidHoyBuilder.HiloEntrenar.Tono {
+    /// El mapeo `Tono` → `EntrenarHilo.Tone` que comparten la landing (`hiloDelVeredicto`) y la
+    /// cabecera de la sesión en vivo (`LiveStrengthSheet`, FER-133). Una sola definición: antes
+    /// vivía copiada en los dos archivos.
+    var entrenarTone: EntrenarHilo.Tone {
+        switch self {
+        case .claro:    return .clear
+        case .atencion: return .caution
+        case .alerta:   return .ease
+        case .hueco:    return .hollow
         }
-        .background(theme.paper.ignoresSafeArea())
-        .task { await load() }
-        .enableInjection()
-    }
-
-    /// The streak-protected reassurance: color only on the recovery bullet, copy explicit that resting
-    /// keeps the streak intact.
-    private var streakBullet: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Circle().fill(theme.dataRecovery).frame(width: 8, height: 8)
-            Text("Resting doesn't break your streak. A planned rest day keeps it going.")
-                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
-    private func row(_ icon: String, _ title: LocalizedStringKey, last: Bool = false, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 12) {
-                Image(systemName: icon).font(StrandFont.glyph(.lead)).foregroundStyle(theme.inkSecondary).frame(width: 26)
-                Text(title).font(StrandFont.body).foregroundStyle(theme.ink)
-                Spacer(minLength: 8)
-                StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkDim)
-                    .accessibilityHidden(true)
-            }
-            .frame(minHeight: EntrenarMetrics.row).contentShape(Rectangle())
-        }
-        .buttonStyle(EntrenarPressStyle())
-        .overlay(alignment: .bottom) { if !last { Divider().overlay(theme.hairline) } }
-    }
-
-
-    /// Tomorrow's routine name from the weekly split (nil = tomorrow is also a rest day).
-    private var tomorrowRoutineName: String? {
-        let tomorrow = (Calendar.current.component(.weekday, from: Date()) % 7) + 1
-        return split[tomorrow].flatMap { routineNames[$0] }
-    }
-
-    private func load() async {
-        guard let store = await repo.storeHandle() else { return }
-        let sched = (try? await store.routineSchedule()) ?? []
-        split = Dictionary(sched.map { ($0.weekday, $0.routineId) }, uniquingKeysWith: { a, _ in a })
-        let rs = (try? await store.routines()) ?? []
-        routineNames = Dictionary(rs.map { ($0.id, $0.name) }, uniquingKeysWith: { a, _ in a })
     }
 }
-
-#endif

@@ -1,6 +1,159 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%lld sessions · 90 days" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld sessions · 90 days"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld sesiones · 90 días"
+          }
+        }
+      }
+    },
+    "1 session · 90 days" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 session · 90 days"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 sesión · 90 días"
+          }
+        }
+      }
+    },
+    "1 mark" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 mark"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 marca"
+          }
+        }
+      }
+    },
+    "%lld marks" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld marks"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld marcas"
+          }
+        }
+      }
+    },
+    "Loaded muscles" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loaded muscles"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Músculos cargados"
+          }
+        }
+      }
+    },
+    "estimate" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "estimate"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "estimación"
+          }
+        }
+      }
+    },
+    "Training log" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Training log"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bitácora"
+          }
+        }
+      }
+    },
+    "History and progress" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "History and progress"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Historial y progreso"
+          }
+        }
+      }
+    },
+    "Loaded muscles and Log appear after your first session. Until then, silence." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loaded muscles and Log appear after your first session. Until then, silence."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Músculos cargados y Bitácora aparecen después de tu primera sesión. Mientras, silencio."
+          }
+        }
+      }
+    },
     "Vista clásica" : {
       "localizations" : {
         "en" : {
@@ -33,38 +186,6 @@
         }
       }
     },
-    "prep.atr.auto" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "outside your base"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "fuera de tu base"
-          }
-        }
-      }
-    },
-    "prep.atr.centinela" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "both, never one alone"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "las dos, nunca una sola"
-          }
-        }
-      }
-    },
     "prep.atr.centinela.nombre" : {
       "localizations" : {
         "en" : {
@@ -77,86 +198,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Temp y respiración"
-          }
-        }
-      }
-    },
-    "prep.atr.leidas" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "the rest had no signal"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "el resto sin señal"
-          }
-        }
-      }
-    },
-    "prep.atr.leidas.nombre" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mornings read"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mañanas leídas"
-          }
-        }
-      }
-    },
-    "prep.atr.sueno" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "short or broken up"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "corto o entrecortado"
-          }
-        }
-      }
-    },
-    "prep.atribucion.nota" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "These are the nights each signal came in outside your range. A single night out doesn't move your verdict on its own, so these numbers won't add up to the mosaic above."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Son las noches en que cada señal vino fuera de tu rango. Una noche fuera no mueve tu veredicto por sí sola, así que estos números no cuadran con el mosaico de arriba."
-          }
-        }
-      }
-    },
-    "prep.atribucion.titulo" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "What went out, and how often"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Qué se salió, y cuántas veces"
           }
         }
       }
@@ -241,50 +282,50 @@
         }
       }
     },
-    "prep.eje.dentro" : {
+    "prep.conteo.a11y.fmt" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "In your range"
+            "value" : "%1$d of %2$d nights out"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "En tu rango"
+            "value" : "%1$d de %2$d noches fuera"
           }
         }
       }
     },
-    "prep.eje.fuera" : {
+    "prep.conteos.nota.fmt" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Outside your range"
+            "value" : "Out of %d mornings with a reading. A single night out doesn't move your verdict on its own, which is why these counts won't add up to the squares above."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fuera de tu rango"
+            "value" : "De %d mañanas con lectura. Una noche fuera no mueve tu veredicto por sí sola: por eso estas cuentas no cuadran con los cuadros de arriba."
           }
         }
       }
     },
-    "prep.hoy.titulo" : {
+    "prep.dias.corto.fmt" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Why today"
+            "value" : "%d d"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Por qué hoy"
+            "value" : "%d d"
           }
         }
       }
@@ -294,13 +335,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Every morning I look at three things. Your resting heart rate, against your own base: that's the axis that votes, and your HRV measured while you sleep rides along with it only on nights that have enough of it, never on its own (the all-day HRV you see elsewhere in the app never votes). Your sleep, against the floor sleep science recommends, not against your own history. And the sentinel, skin temperature and breathing, which only counts when both run high together. None out is «all in range»; one is «one signal out»; two or more is «two or more out». A sustained downward trend can also bring that change forward."
+            "value" : "Every morning I look at three things. Your resting heart rate, against your own base: that's the axis that votes, and your HRV measured while you sleep rides along with it only on nights that have enough of it, never on its own (the all-day HRV you see elsewhere in the app never votes). Your sleep, against the floor sleep science recommends, not against your own history, and it votes out if it came short or broken up. And the sentinel, skin temperature and breathing, which only counts when both run high together. None out is «all in range»; one is «one signal out»; two or more is «two or more out». A sustained downward trend can also bring that change forward."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cada mañana miro tres cosas. Tu FC en reposo, contra tu propia base: ese es el eje que vota, y tu VFC medida mientras duermes lo acompaña solo en las noches que traen suficiente, nunca sola (la VFC de todo el día que ves en otras partes del app nunca vota). Tu sueño, contra el piso que recomienda la ciencia del sueño, no contra tu propio historial. Y el centinela, temperatura de piel y respiración, que solo cuenta cuando las dos van altas juntas. Ninguna fuera es «todo en rango»; una es «una señal fuera»; dos o más es «dos o más fuera». Una tendencia sostenida a la baja también puede adelantar ese cambio."
+            "value" : "Cada mañana miro tres cosas. Tu FC en reposo, contra tu propia base: ese es el eje que vota, y tu VFC medida mientras duermes lo acompaña solo en las noches que traen suficiente, nunca sola (la VFC de todo el día que ves en otras partes del app nunca vota). Tu sueño, contra el piso que recomienda la ciencia del sueño, no contra tu propio historial, y vota fuera si vino corto o entrecortado. Y el centinela, temperatura de piel y respiración, que solo cuenta cuando las dos van altas juntas. Ninguna fuera es «todo en rango»; una es «una señal fuera»; dos o más es «dos o más fuera». Una tendencia sostenida a la baja también puede adelantar ese cambio."
           }
         }
       }
@@ -317,6 +358,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cada cuadro se juzga con la base que tenías hasta ese día, así que no cambia si regresas a verlo después. Lo que no puede cargar es el ajuste de tendencia que solo aplica a la mañana que estás viviendo: por eso un cuadro viejo puede diferir de lo que Hoy dijo en voz alta ese día. La carga de entrenamiento no vota aquí."
+          }
+        }
+      }
+    },
+    "prep.metodo.regla" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Two days in a row move the verdict."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dos días seguidos mueven el veredicto."
           }
         }
       }
@@ -497,6 +554,38 @@
         }
       }
     },
+    "prep.senales.hoy" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoy"
+          }
+        }
+      }
+    },
+    "prep.senales.mes" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nights out, over 30 days"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las noches fuera, en 30 días"
+          }
+        }
+      }
+    },
     "prep.sinHistoria.cuerpo" : {
       "localizations" : {
         "en" : {
@@ -541,6 +630,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Preparación"
+          }
+        }
+      }
+    },
+    "prep.votos.titulo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The votes"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los votos"
           }
         }
       }
@@ -9550,6 +9655,23 @@
         }
       }
     },
+    "✓ Serie" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "✓ Serie"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "✓ Serie"
+          }
+        }
+      }
+    },
     "0" : {
 
     },
@@ -16247,23 +16369,6 @@
         }
       }
     },
-    "Build my week" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Build my week"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Armar mi semana"
-          }
-        }
-      }
-    },
     "Build your HIIT" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -16294,22 +16399,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Arma tu plan"
-          }
-        }
-      }
-    },
-    "Build your week to see today and your progress." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Build your week to see today and your progress."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Arma tu semana para ver tu día y tu progreso."
           }
         }
       }
@@ -19823,6 +19912,23 @@
         }
       }
     },
+    "Decrease by %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Decrease by %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disminuir %@"
+          }
+        }
+      }
+    },
     "Decrease distance" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -20854,6 +20960,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Listo"
+          }
+        }
+      }
+    },
+    "Done · Next: %@" : {
+      "extractionState" : "manual",
+      "comment" : "Pastilla del pie de un ejercicio ya cerrado (FER-134, handoff «Sesión en vivo» §5): «Hecho · Siguiente: Prensa ›». %@ es el nombre del siguiente ejercicio.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Done · Next: %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hecho · Siguiente: %@"
+          }
+        }
+      }
+    },
+    "Done. Next: %@" : {
+      "extractionState" : "manual",
+      "comment" : "VoiceOver de la pastilla «Hecho · Siguiente: %@» (FER-134).",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Done. Next: %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hecho. Siguiente: %@"
           }
         }
       }
@@ -23509,6 +23651,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Primera vez con esta rutina."
+          }
+        }
+      }
+    },
+    "Your plan is ready · first time with this routine" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your plan is ready · first time with this routine"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tu plan está listo · primera vez con esta rutina"
           }
         }
       }
@@ -26954,23 +27113,6 @@
         }
       }
     },
-    "If you still want to train" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "If you still want to train"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Si aun así quieres entrenar"
-          }
-        }
-      }
-    },
     "If you turn it on there, your Apple Watch measures your heartbeat beat by beat far more often while you sleep. That density is what my nightly HRV reading needs. The morning verdict rides on your resting heart rate, with it or without it." : {
       "localizations" : {
         "en" : {
@@ -27145,7 +27287,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Importa el plan de tu IA"
+            "value" : "Importar tu plan de tu IA"
           }
         }
       }
@@ -27534,6 +27676,23 @@
         }
       }
     },
+    "Increase by %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Increase by %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aumentar %@"
+          }
+        }
+      }
+    },
     "Increase distance" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -27808,23 +27967,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "INTERVALOS"
-          }
-        }
-      }
-    },
-    "Intervals · 12 min" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Intervals · 12 min"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Intervalos · 12 min"
           }
         }
       }
@@ -31513,6 +31655,23 @@
         }
       }
     },
+    "Mark set as done" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark set as done"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marcar serie como hecha"
+          }
+        }
+      }
+    },
     "Mark your meals · 0 of %@" : {
 
     },
@@ -35044,22 +35203,6 @@
         }
       }
     },
-    "No plan yet" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No plan yet"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aún no tienes un plan"
-          }
-        }
-      }
-    },
     "no prior %@" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -38370,23 +38513,6 @@
         }
       }
     },
-    "Or start without a plan" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Or start without a plan"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "O empieza sin plan"
-          }
-        }
-      }
-    },
     "Other" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -39326,23 +39452,6 @@
         }
       }
     },
-    "Pick a routine" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pick a routine"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Elegir una rutina"
-          }
-        }
-      }
-    },
     "Pick at least one exercise" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -40153,23 +40262,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "EMPUJE"
-          }
-        }
-      }
-    },
-    "push · pull · legs · full body, ready to edit" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "push · pull · legs · full body, ready to edit"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "empuje · tirón · pierna · cuerpo completo, listas para editar"
           }
         }
       }
@@ -42047,28 +42139,6 @@
         }
       }
     },
-    "The raises wait:" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Te esperan las subidas:"
-          }
-        }
-      }
-    },
-    "You can take them in the session." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Puedes tomarlas en la sesión."
-          }
-        }
-      }
-    },
     "and %lld more" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -42542,24 +42612,24 @@
         }
       }
     },
-    "The raise waits:" : {
+    "the raise waits" : {
       "extractionState" : "manual",
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Te espera la subida:"
+            "value" : "la subida espera"
           }
         }
       }
     },
-    "You can take it in the session." : {
+    "the raises wait" : {
       "extractionState" : "manual",
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Puedes tomarla en la sesión."
+            "value" : "las subidas esperan"
           }
         }
       }
@@ -43451,7 +43521,6 @@
       }
     },
     "REST" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -43463,6 +43532,160 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "DESCANSO"
+          }
+        }
+      }
+    },
+    "REST · SET %@ → %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "REST · SET %@ → %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DESCANSO · SERIE %@ → %@"
+          }
+        }
+      }
+    },
+    "at 5 bpm I say «almost» · at 3:00 I let you go even if it hasn't dropped" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "at 5 bpm I say «almost» · at 3:00 I let you go even if it hasn't dropped"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "a 5 lpm te digo «casi» · a 3:00 te suelto aunque no baje"
+          }
+        }
+      }
+    },
+    "no watch on your wrist" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "no watch on your wrist"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sin reloj en la muñeca"
+          }
+        }
+      }
+    },
+    "resting by clock: connect your Apple Watch for rest by heart rate" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "resting by clock: connect your Apple Watch for rest by heart rate"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "descanso por tiempo, tope 5 min · conecta el Watch para descanso por FC"
+          }
+        }
+      }
+    },
+    "more than 20 bpm left" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "more than 20 bpm left"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "faltan más de 20"
+          }
+        }
+      }
+    },
+    "10 bpm left" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "10 bpm left"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "faltan 10"
+          }
+        }
+      }
+    },
+    "Reps left kicker" : {
+      "extractionState" : "manual",
+      "comment" : "Kicker QUEDABAN de la fila RIR del teclado de sesión (FER-134). Clave propia, distinta de «Remaining» (usada por IntervalTimerView para el tiempo restante del temporizador) para no pisar esa traducción.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remaining"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "quedaban"
+          }
+        }
+      }
+    },
+    "at check-off" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "at check-off"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "al palomear"
+          }
+        }
+      }
+    },
+    "Reps in reserve: %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reps in reserve: %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Repeticiones en reserva: %@"
           }
         }
       }
@@ -43666,23 +43889,6 @@
         }
       }
     },
-    "Rest day today" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rest day today"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hoy descansas"
-          }
-        }
-      }
-    },
     "Rest day: your plan has no meals today. Come back tomorrow or use ‹ ›." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -43812,57 +44018,6 @@
         }
       }
     },
-    "Resting" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Resting"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "En descanso"
-          }
-        }
-      }
-    },
-    "Resting · by HR" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Resting · by HR"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "En descanso · por FC"
-          }
-        }
-      }
-    },
-    "Resting · by time" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Resting · by time"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "En descanso · por tiempo"
-          }
-        }
-      }
-    },
     "Resting %@" : {
 
     },
@@ -43896,23 +44051,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Descansar también cuenta. Aquí no hay racha que perder."
-          }
-        }
-      }
-    },
-    "Resting doesn't break your streak. A planned rest day keeps it going." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Resting doesn't break your streak. A planned rest day keeps it going."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Descansar no rompe tu racha. Un día de descanso planeado la mantiene."
           }
         }
       }
@@ -47844,23 +47982,6 @@
         }
       }
     },
-    "Something went wrong opening your data." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Something went wrong opening your data."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Algo falló al abrir tus datos."
-          }
-        }
-      }
-    },
     "Source" : {
       "localizations" : {
         "en" : {
@@ -49794,23 +49915,6 @@
         }
       }
     },
-    "Template routines" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Template routines"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rutinas de plantilla"
-          }
-        }
-      }
-    },
     "Template" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -51723,6 +51827,22 @@
         }
       }
     },
+    "yesterday" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "yesterday"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ayer"
+          }
+        }
+      }
+    },
     "today" : {
       "localizations" : {
         "en" : {
@@ -51922,6 +52042,17 @@
         }
       }
     },
+    "Today you keep:" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoy mantienes:"
+          }
+        }
+      }
+    },
     "Today you raise" : {
       "localizations" : {
         "es" : {
@@ -51944,39 +52075,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hoy subes a %@"
-          }
-        }
-      }
-    },
-    "Today you rest" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Today you rest"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hoy descansas"
-          }
-        }
-      }
-    },
-    "Today you rest. It counts too." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Today you rest. It counts too."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hoy descansas. También cuenta."
           }
         }
       }
@@ -52623,6 +52721,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Entrenar"
+          }
+        }
+      }
+    },
+    "Train · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Train · %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entrenar · %@"
           }
         }
       }
@@ -54824,23 +54938,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No pudimos leer eso como un archivo de plan. Pega el resultado completo que te dio tu IA, o sube el .json."
-          }
-        }
-      }
-    },
-    "We couldn't read your routines" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "We couldn't read your routines"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No pudimos leer tus rutinas"
           }
         }
       }
@@ -60272,17 +60369,6 @@
         }
       }
     },
-    "Resumes the session you have open" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Retoma la sesión que tienes abierta"
-          }
-        }
-      }
-    },
     "Your routine for today stays put: this is separate, no guilt." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -60290,17 +60376,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tu rutina del día no se toca: esto es aparte, sin culpa."
-          }
-        }
-      }
-    },
-    "Continue %@" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Continuar %@"
           }
         }
       }
@@ -60506,6 +60581,311 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : ". De apoyo: "
+          }
+        }
+      }
+    },
+    "Today · your week marks" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today · your week marks"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoy · tu semana marca"
+          }
+        }
+      }
+    },
+    "Your week marks rest" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your week marks rest"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tu semana marca descanso"
+          }
+        }
+      }
+    },
+    "Your week marks rest · you woke up with a signal off" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your week marks rest · you woke up with a signal off"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tu semana marca descanso · amaneciste con una señal fuera"
+          }
+        }
+      }
+    },
+    "In progress · %lld min" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In progress · %lld min"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En curso · %lld min"
+          }
+        }
+      }
+    },
+    "exercise %lld of %lld · %lld sets done" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "exercise %lld of %lld · %lld sets done"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ejercicio %lld de %lld · %lld series hechas"
+          }
+        }
+      }
+    },
+    "exercise %lld of %lld · in progress" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "exercise %lld of %lld · in progress"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ejercicio %lld de %lld · en curso"
+          }
+        }
+      }
+    },
+    "paused" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "paused"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "pausada"
+          }
+        }
+      }
+    },
+    "last: %@ %@ × %lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "last: %@ %@ × %lld"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "última: %@ %@ × %lld"
+          }
+        }
+      }
+    },
+    "%lld sets done" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld sets done"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld series hechas"
+          }
+        }
+      }
+    },
+    "I couldn't read your plan" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I couldn't read your plan"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No pude leer tu plan"
+          }
+        }
+      }
+    },
+    "Something failed opening your routines · your data is intact" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Something failed opening your routines · your data is intact"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "algo falló al abrir tus rutinas · tus datos están intactos"
+          }
+        }
+      }
+    },
+    "Sets · 7d" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sets · 7d"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Series · 7 d"
+          }
+        }
+      }
+    },
+    "Tap a day" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap a day"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "toca un día"
+          }
+        }
+      }
+    },
+    "Build your week" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Build your week"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arma tu semana"
+          }
+        }
+      }
+    },
+    "Let's start" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Let's start"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Empecemos"
+          }
+        }
+      }
+    },
+    "Choose a template or build your own routine · Entrenar serves it to you every day after that" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a template or build your own routine · Entrenar serves it to you every day after that"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "elige una plantilla o crea tu rutina · después Entrenar te la sirve cada día"
+          }
+        }
+      }
+    },
+    "Build my plan" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Build my plan"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crear mi plan"
+          }
+        }
+      }
+    },
+    "Ready to edit" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ready to edit"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lista para editar"
+          }
+        }
+      }
+    },
+    "End session" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "End session"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Terminar sesión"
           }
         }
       }

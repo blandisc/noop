@@ -32,29 +32,57 @@ public struct WeekTokens: View {
     }
 
     public var body: some View {
-        let strip = HStack(spacing: 0) {
+        let cells = HStack(spacing: 0) {
             ForEach(Array(days.enumerated()), id: \.offset) { i, day in
                 VStack(spacing: CenitMetrics.space1 + 2) {
                     token(day)
                     Text(verbatim: i < labels.count ? labels[i] : "")
-                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                        .entrenarWeekDayLabel().foregroundStyle(theme.inkTertiary)
                 }
                 .frame(maxWidth: .infinity)
-                // Sin esto la tira se leía «L M X J V S D» y el estado de cada día —el dato
-                // entero de la fila— no llegaba a quien no la ve.
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(label(for: day, dayName: i < labels.count ? labels[i] : ""))
             }
         }
         .frame(minHeight: EntrenarMetrics.row)
         .contentShape(Rectangle())
 
         if let action {
-            Button(action: action) { strip }
+            // Un `Button` es SIEMPRE una hoja de accesibilidad: VoiceOver no baja a sus hijos. Sin un
+            // label propio en el Button, las 7 etiquetas por día (puestas abajo en la rama sin acción)
+            // quedan selladas dentro de un subárbol que el botón no hereda de forma confiable. Aquí se
+            // fija el label compuesto explícito — «L, entrenado, empuje. M, descanso. …» — para que la
+            // tira tocable diga lo mismo que la tira estática.
+            Button(action: action) { cells }
                 .buttonStyle(EntrenarPressStyle())
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(weekLabel)
                 .accessibilityAddTraits(.isButton)
         } else {
-            strip
+            // Sin esto la tira se leía «L M X J V S D» y el estado de cada día —el dato entero de la
+            // fila— no llegaba a quien no la ve.
+            HStack(spacing: 0) {
+                ForEach(Array(days.enumerated()), id: \.offset) { i, day in
+                    VStack(spacing: CenitMetrics.space1 + 2) {
+                        token(day)
+                        Text(verbatim: i < labels.count ? labels[i] : "")
+                            .entrenarWeekDayLabel().foregroundStyle(theme.inkTertiary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(label(for: day, dayName: i < labels.count ? labels[i] : ""))
+                }
+            }
+            .frame(minHeight: EntrenarMetrics.row)
+            .contentShape(Rectangle())
+        }
+    }
+
+    /// La semana entera en un solo label, para el Button (VoiceOver nunca entra a sus hijos): junta
+    /// las 7 etiquetas por día con un punto y espacio.
+    private var weekLabel: Text {
+        Array(days.enumerated()).reduce(Text(verbatim: "")) { acc, pair in
+            let (i, day) = pair
+            let sep = i == 0 ? Text(verbatim: "") : Text(verbatim: ". ")
+            return acc + sep + label(for: day, dayName: i < labels.count ? labels[i] : "")
         }
     }
 
@@ -89,22 +117,26 @@ public struct WeekTokens: View {
     }
 }
 
-/// La barra de estado de la sesión en vivo: volumen · series · pulso · pausa · Foco.
+/// La barra de estado de la sesión en vivo: volumen · series · pulso · Foco.
 /// El único hue es el del pulso, y solo en su numeral.
+///
+/// La pausa VIVÍA aquí; con FER-133 (handoff «Sesión en vivo» v4) vuelve a la cabecera —el disco
+/// ❚❚/▶ junto al reloj— y el teclado conserva su propio accesorio de pausa (misma acción,
+/// `AppModel.pauseStrengthSession`/`resumeStrengthSessionFromPause`, dos caras). Esta barra ya no
+/// controla nada de eso; `isPaused` se queda solo para atenuar sus propias cifras.
 public struct SessionStatsBar: View {
     private let volume: String
     private let sets: String
     private let pulse: String?
     private let isPaused: Bool
-    private let onPause: (() -> Void)?
     private let onFocus: (() -> Void)?
 
     @Environment(\.instrumentoTheme) private var theme
 
     public init(volume: String, sets: String, pulse: String? = nil, isPaused: Bool = false,
-                onPause: (() -> Void)? = nil, onFocus: (() -> Void)? = nil) {
+                onFocus: (() -> Void)? = nil) {
         self.volume = volume; self.sets = sets; self.pulse = pulse
-        self.isPaused = isPaused; self.onPause = onPause; self.onFocus = onFocus
+        self.isPaused = isPaused; self.onFocus = onFocus
     }
 
     public var body: some View {
@@ -137,11 +169,6 @@ public struct SessionStatsBar: View {
     }
 
     @ViewBuilder private var controls: some View {
-        if let onPause {
-            control(isPaused ? "play.fill" : "pause.fill",
-                    label: isPaused ? Text("Resume session") : Text("Pause session"),
-                    action: onPause)
-        }
         if let onFocus {
             control("scope", label: Text("Focus mode"), action: onFocus)
                 .accessibilityHint(Text("Opens a full-screen set logger"))
@@ -196,9 +223,9 @@ public struct SessionStatsBar: View {
 
 #Preview("SessionStatsBar · estados") {
     VStack(spacing: 20) {
-        SessionStatsBar(volume: "4,880", sets: "12", pulse: "128", onPause: {}, onFocus: {})
-        SessionStatsBar(volume: "4,880", sets: "12", onPause: {}, onFocus: {})
-        SessionStatsBar(volume: "12,480", sets: "24", pulse: "96", isPaused: true, onPause: {}, onFocus: {})
+        SessionStatsBar(volume: "4,880", sets: "12", pulse: "128", onFocus: {})
+        SessionStatsBar(volume: "4,880", sets: "12", onFocus: {})
+        SessionStatsBar(volume: "12,480", sets: "24", pulse: "96", isPaused: true, onFocus: {})
     }
     .padding(24)
     .background(InstrumentoTheme.base.paper)
@@ -209,7 +236,7 @@ public struct SessionStatsBar: View {
     VStack(spacing: 20) {
         WeekTokens(days: [.done(.push), .rest, .done(.pull), .rest, .rest, .today(isRest: false), .planned(.legs)],
                    labels: ["L", "M", "X", "J", "V", "S", "D"], action: {})
-        SessionStatsBar(volume: "4,880", sets: "12", pulse: "128", onPause: {}, onFocus: {})
+        SessionStatsBar(volume: "4,880", sets: "12", pulse: "128", onFocus: {})
     }
     .padding(24)
     .background(InstrumentoTheme.base.paper)

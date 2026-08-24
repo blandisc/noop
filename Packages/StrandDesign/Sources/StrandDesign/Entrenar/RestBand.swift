@@ -73,7 +73,7 @@ public struct RestPulseRail: View {
     }
 }
 
-public struct RestBand: View {
+public struct RestBand<Next: View>: View {
     private let kicker: LocalizedStringKey
     private let mode: RestBandMode
     private let note: LocalizedStringKey?
@@ -83,15 +83,20 @@ public struct RestBand: View {
     /// El pulso con el que empezó este descanso (el máximo visto). Sin él, el riel no coloca punto.
     private let startBpm: Int?
     private let onSkip: (() -> Void)?
+    /// «SIGUE» — el próximo ejercicio, thumb 24 + texto (handoff «Sesión en vivo» §6). `EmptyView`
+    /// (el `Next` por defecto) cuando el llamador no tiene un siguiente que mostrar — la banda no
+    /// reserva espacio para nada, como con `note`/`onSkip`.
+    private let next: Next
 
     @Environment(\.instrumentoTheme) private var theme
 
     public init(kicker: LocalizedStringKey, mode: RestBandMode, trailing: String? = nil,
                 note: LocalizedStringKey? = nil, isAlmost: Bool = false, isReady: Bool = false,
-                startBpm: Int? = nil, onSkip: (() -> Void)? = nil) {
+                startBpm: Int? = nil, onSkip: (() -> Void)? = nil,
+                @ViewBuilder next: () -> Next = { EmptyView() }) {
         self.kicker = kicker; self.mode = mode; self.trailing = trailing
         self.note = note; self.isAlmost = isAlmost; self.isReady = isReady
-        self.startBpm = startBpm; self.onSkip = onSkip
+        self.startBpm = startBpm; self.onSkip = onSkip; self.next = next()
     }
 
     public var body: some View {
@@ -118,6 +123,7 @@ public struct RestBand: View {
                     .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                     .fixedSize(horizontal: false, vertical: true)
             }
+            next
             if let onSkip {
                 Button(action: onSkip) {
                     Text("Skip")

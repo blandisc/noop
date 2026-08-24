@@ -61,7 +61,7 @@ public struct EntrenarHilo: View {
     private let tone: Tone
     private let word: LocalizedStringKey
     private let advice: LocalizedStringKey?
-    /// El radio del orbe. Landing 15.5 · sesión 11 · hoja 20 (handoff v3).
+    /// El radio del orbe. Landing 15.5 · sesión 11 · hoja 20 · cabecera de sesión iPhone 32 (handoff v3/v4).
     private let radio: CGFloat
     /// A dónde lleva, para VoiceOver: sin esto la puerta principal de la pantalla se anunciaba como
     /// «botón» a secas y nadie sabía qué iba a abrir.

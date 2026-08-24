@@ -11,6 +11,11 @@ import SwiftUI
 /// «›» solo cuando el nivel es puerta. Cuando es puerta, TODO el encabezado es tocable a 44 pt —
 /// no solo el chevron, que es un blanco de 11 pt disfrazado de botón.
 public struct EntrenarNivel: View {
+    /// El estilo del kicker. `.overline` es el de siempre (default); `.handoff` es el kicker de la
+    /// landing de Entrenar (FER-130).
+    public enum KickerStyle: Sendable { case overline, handoff }
+    private let kickerStyle: KickerStyle
+
     private let kicker: LocalizedStringKey
     private let value: LocalizedStringKey?
     private let action: (() -> Void)?
@@ -18,8 +23,8 @@ public struct EntrenarNivel: View {
     @Environment(\.instrumentoTheme) private var theme
 
     public init(_ kicker: LocalizedStringKey, value: LocalizedStringKey? = nil,
-                action: (() -> Void)? = nil) {
-        self.kicker = kicker; self.value = value; self.action = action
+                kickerStyle: KickerStyle = .overline, action: (() -> Void)? = nil) {
+        self.kicker = kicker; self.kickerStyle = kickerStyle; self.value = value; self.action = action
     }
 
     public var body: some View {
@@ -35,7 +40,15 @@ public struct EntrenarNivel: View {
 
     private var row: some View {
         HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.space2) {
-            Text(kicker).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            // FER-130: el hub de Entrenar pide el kicker del handoff (Grotesk 11.5/600 +1.5, uppercase); los
+            // demás llamadores (la hoja «Ver toda la biblioteca» de la sesión) conservan el overline de
+            // siempre. Default = lo de antes, para que un componente compartido no cambie pantallas que
+            // nadie pidió tocar.
+            if kickerStyle == .handoff {
+                Text(kicker).entrenarCabeceraKicker().foregroundStyle(theme.inkTertiary)
+            } else {
+                Text(kicker).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            }
             Spacer(minLength: CenitMetrics.space2)
             if let value {
                 Text(value)
@@ -46,6 +59,7 @@ public struct EntrenarNivel: View {
                 StrandIcon.disclosure.image
                     .font(StrandFont.glyph(.chevron, weight: .semibold))
                     .foregroundStyle(theme.inkTertiary)
+                    .accessibilityHidden(true)
             }
         }
         .frame(minHeight: EntrenarMetrics.row)

@@ -76,6 +76,30 @@ struct LiveStrengthSheet: View {
     /// This session's prior notes for `noteTarget.exerciseId` (across other sessions), loaded when the
     /// sheet opens — «NOTAS ANTERIORES». nil = still loading / not opened; [] = loaded, honestly empty.
     @State private var noteHistory: [ExerciseNote]?
+    /// «QUEDABAN» — RIR (reps in reserve) del teclado propio (FER-134): índice en
+    /// `SessionKeypad.rirLabels` (0…4 = «4+»). Se aplica al REGISTRAR una serie (`registerActiveSet`)
+    /// como RPE = 10 − RIR — mismo campo `WorkingSet.rpe` que la hoja de RPE ya escribe, así que un
+    /// RPE puesto a mano por esa hoja ANTES de palomear no se pisa (ver `registerActiveSet`). Vive en
+    /// la vista, no en el modelo: es la cara de captura, no un dato nuevo de la sesión. `nil` = el
+    /// usuario NUNCA tocó el segmento esta serie — `registerActiveSet` entonces NO inventa un RPE
+    /// (revisión ronda 1): un dato jamás capturado se queda sin capturar, nunca se rellena con un
+    /// valor por defecto. Se limpia a `nil` en cada registro, así que cada serie parte honesta.
+    @State private var selectedRIR: Int?
+    /// La serie para la que se eligió `selectedRIR` (revisión ronda 2, hallazgo grave): sin esto, elegir
+    /// QUEDABAN mientras el teclado está abierto en la serie A y luego palomear la serie B directo desde
+    /// su ✓ de tabla (capacidad existente — «palomear CUALQUIER pendiente») escribía el RPE de A en B.
+    /// `registerActiveSet` solo aplica `selectedRIR` si esta serie coincide con la que se está
+    /// registrando; en cualquier otro caso, o al no coincidir, se limpia igual — nunca sobrevive a un
+    /// registro ajeno.
+    struct RIRTarget: Equatable { let ei: Int; let si: Int }
+    @State private var selectedRIRTarget: RIRTarget?
+
+    /// La decisión pura detrás del candado de `selectedRIRTarget` (revisión ronda 2, hallazgo grave):
+    /// el RIR elegido solo sobrevive para la MISMA serie en la que se tocó el segmento. Probada en
+    /// `LiveStrengthSheetRIRTests`.
+    static func rirScoped(selectedRIR: Int?, selectedRIRTarget: RIRTarget?, registering: RIRTarget) -> Int? {
+        selectedRIRTarget == registering ? selectedRIR : nil
+    }
 
     /// The empty «Rápido de fuerza» state (FER-762): no routine, no exercises added yet. Its search field
     /// opens `ExerciseLibraryScreen` in ADD mode; the freshness suggestions load once when this state
@@ -143,6 +167,9 @@ struct LiveStrengthSheet: View {
     /// The terminal «Nothing to save» result card for discarding an empty session (FER-894 · Estados 2).
     @State private var nothingToSave = false
     @State private var saveError = false
+    /// El hilo compacto de la cabecera (FER-133): la MISMA hoja del acta de Hoy que abre el hilo de
+    /// la landing (`EntrenarView.showVeredictoActa`) — dos puertas, un solo destino.
+    @State private var showVeredictoActa = false
     /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
     @ObserveInjection private var inject
 
@@ -291,6 +318,10 @@ struct LiveStrengthSheet: View {
             }
             .onChange(of: session.phase) { _, phase in
                 if phase != .resting { restAnchorEi = nil }
+                // El pulso con el que ARRANCA el descanso (revisión ronda 2, hallazgo menor): sin esto
+                // `RestBand` nunca dibuja el punto del riel mientras el pulso todavía va cayendo — solo
+                // al llegar. Se captura una sola vez al entrar a descanso, se limpia al salir.
+                if phase == .resting { restStartBpm = model.watchBpm } else { restStartBpm = nil }
             }
     }
 
@@ -317,6 +348,12 @@ struct LiveStrengthSheet: View {
             }
             .sheet(item: $changeExercise) { target in
                 bodyChangeSheet(target)
+            }
+            // El hilo compacto de la cabecera (FER-133) abre la MISMA hoja del acta de Hoy que
+            // `EntrenarView.hiloDelVeredicto` — mismo modelo y misma vista, para que la sesión y la
+            // landing nunca puedan contar el día distinto.
+            .sheet(isPresented: $showVeredictoActa) {
+                bodyVeredictoActaSheet
             }
             // r15: durante el modo foco estos cuatro presentadores externos se SILENCIAN (binding
             // constante nil) — el cover cuelga sus propias copias adentro; dos presentadores vivos
@@ -409,6 +446,14 @@ struct LiveStrengthSheet: View {
         )
         .instrumentoTheme(theme).preferredColorScheme(.light)
         .presentationBackground(theme.paper)
+    }
+
+    /// La boleta del veredicto (FER-133): `VeredictoActaSheet`, la MISMA vista que
+    /// `EntrenarView.showVeredictoActa` — dos call sites, un solo oráculo.
+    private var bodyVeredictoActaSheet: some View {
+        VeredictoActaSheet(prep: model.repo.todayPreparedness,
+                           healthConnected: model.healthBridge?.auth == .authorized,
+                           fullyLoaded: model.repo.fullyLoaded)
     }
 
     @ViewBuilder
@@ -738,6 +783,7 @@ struct LiveStrengthSheet: View {
                 // full strength so the hilo reads continuous while the finished exercise recedes. The
                 // row's breathing lives HERE (vertical padding), not in list insets, so cells butt up.
                 HStack(spacing: 12) {
+                    SessionRunThumb(exerciseId: run.exerciseId, side: EntrenarMetrics.doneRowThumb)
                     VStack(alignment: .leading, spacing: 1) {
                         supersetTag(ei)
                         Text(run.name).font(StrandFont.body).foregroundStyle(theme.inkTertiary).lineLimit(1)
@@ -776,6 +822,7 @@ struct LiveStrengthSheet: View {
                 // Canvas pass: upcoming rows now dim exactly like done rows (the row that «se escapaba»)
                 // — content only, so the rail thread stays alive. Breathing inside the content.
                 HStack(spacing: 12) {
+                    SessionRunThumb(exerciseId: run.exerciseId, side: EntrenarMetrics.comingRowThumb)
                     VStack(alignment: .leading, spacing: 1) {
                         supersetTag(ei)
                         Text(run.name).font(StrandFont.body).foregroundStyle(theme.ink).lineLimit(1)
@@ -937,7 +984,8 @@ struct LiveStrengthSheet: View {
     private func segmentView(_ segment: SetSegment, run: StrengthSessionModel.ExerciseRun, ei: Int) -> some View {
         switch segment {
         case let .table(rows, showHeader):
-            SetTable(kind: entrenarKind(run.type), rows: rows, showRPE: true, showHeader: showHeader,
+            SetTable(kind: entrenarKind(run.type), rows: rows, showRPE: true,
+                     rpeColumnLabel: "Reps left kicker", showHeader: showHeader,
                      onToggle: { rowId in toggleEntrenarSet(ei: ei, run: run, rowId: rowId) },
                      onTapCell: { rowId, cellKind in tapEntrenarCell(ei: ei, run: run, rowId: rowId, cellKind: cellKind) },
                      onDelete: { rowId in deleteEntrenarSet(ei: ei, run: run, rowId: rowId) })
@@ -989,7 +1037,11 @@ struct LiveStrengthSheet: View {
                 primaryState: weightEditing ? .editing : (ghost ? .ghost : .touched),
                 reps: repsEditing ? buffer : formatCell(Double(set.reps), isInt: true),
                 repsState: repsEditing ? .editing : (ghost ? .ghost : .touched),
-                rpe: set.rpe.map(Self.formatDecimalComma),
+                // «Q n» (QUEDABAN) en filas hechas, no el RPE crudo (handoff «Sesión en vivo» §4):
+                // el campo sigue siendo `set.rpe` — RIR y RPE son la misma medida, dos caras — solo
+                // cambia cómo se LEE en esta tabla. Filas sin registrar aún no tienen esta lectura
+                // (`SetTable` cae al rótulo «RPE» tenue por defecto cuando `rpe` es `nil`).
+                rpe: set.done ? set.rpe.map(Self.qLabel(fromRPE:)) : set.rpe.map(Self.formatDecimalComma),
                 done: set.done, isWarmup: isWarmup, isCurrent: isCurrent)
         case .time:
             let time = (set.timeS ?? 0) > 0 ? Self.clock(set.timeS ?? 0) : nil
@@ -1008,8 +1060,17 @@ struct LiveStrengthSheet: View {
     /// activa) y registra con su descanso.
     private func toggleEntrenarSet(ei: Int, run: StrengthSessionModel.ExerciseRun, rowId: String) {
         guard let si = run.sets.firstIndex(where: { $0.id == rowId }) else { return }
-        let set = run.sets[si]
-        let isCurrent = si == run.currentSet && !set.done
+        confirmOrToggleSet(ei: ei, si: si)
+    }
+
+    /// El núcleo de la acción ✓, compartido por `SetTable` (`toggleEntrenarSet`, por id de fila) y la
+    /// tecla «✓ Serie» de la rejilla propia (FER-134 ítem 8, `onConfirmSet`, por índice de la celda
+    /// activa): desmarcar una serie hecha es corrección sin descanso; palomear la pendiente la
+    /// selecciona (si no era ya la actual) y registra con su descanso.
+    private func confirmOrToggleSet(ei: Int, si: Int) {
+        guard session.runs.indices.contains(ei), session.runs[ei].sets.indices.contains(si) else { return }
+        let set = session.runs[ei].sets[si]
+        let isCurrent = si == session.runs[ei].currentSet && !set.done
         withAnimation(.snappy) {
             if set.done {
                 session.toggleDone(exercise: ei, set: si)
@@ -1069,11 +1130,64 @@ struct LiveStrengthSheet: View {
                restSlotIndex(run, ei: ei) == nil {
                 restInlineSlice(run)
             }
+            // «Hecho · Siguiente: Prensa ›» (handoff «Sesión en vivo» §5, revisión ronda 4 — grave: no
+            // existía). Convive con «+ Serie», no la reemplaza: agregar una serie de más tras cerrar el
+            // ejercicio sigue siendo posible (capacidad #10 del inventario).
+            if exerciseWorkSetsAllDone(run) {
+                exerciseDoneNextPill(ei)
+                    .padding(.top, 8)
+            }
             addSetButton(ei)
         }
         // r22 (simetría): la tarjeta cerraba con 8 abajo vs 12 arriba — parejo con el tope.
         .padding(.horizontal, CenitMetrics.receiptPadding)
         .padding(.top, 8).padding(.bottom, 12)
+    }
+
+    /// Todas las series de TRABAJO del ejercicio ya cerradas (un calentamiento nunca cuenta, mismo
+    /// criterio que el resto de la tabla) — y hay al menos una.
+    private func exerciseWorkSetsAllDone(_ run: StrengthSessionModel.ExerciseRun) -> Bool {
+        let workSets = run.sets.filter { $0.kind == .work }
+        return !workSets.isEmpty && workSets.allSatisfy(\.done)
+    }
+
+    /// La pastilla papel del pie cuando el ejercicio ya cerró: «Hecho» solo, o «Hecho · Siguiente:
+    /// {nombre} ›» cuando hay otro ejercicio activo después — nunca se inventa un «siguiente» si este
+    /// era el último (QA ronda 4: «última serie del último ejercicio → sin Siguiente»). El toque salta
+    /// al primer set pendiente del siguiente ejercicio, el mismo camino que usa «Próximos».
+    private func exerciseDoneNextPill(_ ei: Int) -> some View {
+        let next = session.activeExercises.first { $0.index > ei }
+        return Button {
+            guard let next else { return }
+            withAnimation(StrandMotion.gentle) {
+                session.select(exerciseIndex: next.index, setIndex: next.run.sets.firstIndex { !$0.done } ?? 0)
+            }
+        } label: {
+            HStack(spacing: 6) {
+                StrandIcon.confirm.image.font(StrandFont.glyph(.inline, weight: .semibold))
+                    .foregroundStyle(theme.positiveText)
+                if let next {
+                    Text("Done · Next: \(next.run.name)")
+                } else {
+                    Text("Done")
+                }
+                Spacer(minLength: 0)
+                if next != nil {
+                    StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold))
+                        .foregroundStyle(theme.inkTertiary)
+                }
+            }
+            .font(InstrumentoType.grotesk(15, weight: .medium)).foregroundStyle(theme.ink)
+            .padding(.horizontal, CenitMetrics.gap)
+            .frame(maxWidth: .infinity, minHeight: EntrenarMetrics.row)
+            .background(theme.paper, in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
+                .strokeBorder(theme.hairlineStrong, lineWidth: 1))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(next == nil)
+        .accessibilityLabel(next.map { Text("Done. Next: \($0.run.name)") } ?? Text("Done"))
     }
 
     /// «Recibo» (owner r6): superficie PLANA — borde hairline, cero sombra. One simple
@@ -1099,6 +1213,14 @@ struct LiveStrengthSheet: View {
     /// LAST set advances `currentIndex` to the next exercise, but the rest card must stay GLUED under
     /// the exercise you just finished — so every register path stamps the anchor before advancing.
     @State private var restAnchorEi: Int?
+    /// El pulso en el instante en que arrancó el descanso (revisión ronda 2, hallazgo menor; comentario
+    /// corregido en ronda 3 — es una lectura puntual, no un máximo corrido): `RestBand` necesita este
+    /// dato para dibujar el punto del riel MIENTRAS el pulso cae, no solo al llegar (`RestBand.railProgress`
+    /// es `1` — listo — sin `startBpm`). Se captura una vez al entrar a descanso (`bodyChrome`'s
+    /// `.onChange(of: session.phase)`) y se limpia al salir; si el pulso sigue subiendo unos segundos
+    /// más tras entrar a descanso, el riel arranca desde esa lectura y no desde el pico real — aceptado
+    /// porque el riel solo ilustra la caída, no reporta el pico.
+    @State private var restStartBpm: Int?
 
     /// The exercise whose accordion is OPEN: while resting, the anchor (the exercise you just worked)
     /// holds the accordion open — the jump to `currentIndex` happens when the rest ends (owner r6).
@@ -1110,7 +1232,58 @@ struct LiveStrengthSheet: View {
     /// advance. The anchor clears when the rest ends (`onChange` of `session.phase`).
     private func registerActiveSet() {
         restAnchorEi = session.currentIndex
+        let ei = session.currentIndex
+        let si = session.runs.indices.contains(ei) ? session.runs[ei].currentSet : -1
         session.registerCurrentSet(restingHR: restingBaseline, maxHR: profileMaxHR)
+        // FER-134 «QUEDABAN»: la serie que se ACABA de registrar hereda el RIR elegido en el teclado,
+        // como RPE = 10 − RIR — salvo que ya tuviera un RPE puesto a mano por la hoja de RPE, que
+        // nunca se pisa (ver nota de `selectedRIR`). `registerCurrentSet` solo cambia banderas de la
+        // serie ya existente (nunca reordena el arreglo), así que `ei`/`si` capturados ANTES siguen
+        // apuntando a la misma serie después. `rpeToWrite` decide SI se escribe algo — revisión
+        // ronda 1, hallazgo grave: sin tocar el segmento, no se inventa un dato.
+        // El RIR elegido solo se aplica si se eligió PARA esta misma serie (`selectedRIRTarget`) —
+        // si el usuario lo eligió en otra celda y palomeó ésta directo desde el ✓ de tabla sin volver
+        // a tocar el segmento, no se le fabrica un RPE ajeno (revisión ronda 2, hallazgo grave).
+        let rirForThisSet = Self.rirScoped(selectedRIR: selectedRIR, selectedRIRTarget: selectedRIRTarget,
+                                           registering: RIRTarget(ei: ei, si: si))
+        if session.runs.indices.contains(ei), session.runs[ei].sets.indices.contains(si),
+           let rpe = Self.rpeToWrite(selectedRIR: rirForThisSet, existingRPE: session.runs[ei].sets[si].rpe) {
+            session.setRPE(exercise: session.runs[ei].id, set: session.runs[ei].sets[si].id, rpe: rpe)
+        }
+        selectedRIR = nil
+        selectedRIRTarget = nil
+    }
+
+    /// La decisión pura detrás de `registerActiveSet` (revisión ronda 1, hallazgo grave): qué RPE
+    /// escribir al registrar una serie, o `nil` para no tocar el campo. Dos guardas, cada una
+    /// honesta a su manera: un RPE ya puesto a mano (`existingRPE != nil`, por la hoja de RPE) nunca
+    /// se pisa, y si el usuario NUNCA tocó el segmento «QUEDABAN» esta serie (`selectedRIR == nil`,
+    /// p.ej. palomeó directo desde el ✓ de la tabla sin abrir el teclado) no se fabrica un RPE por
+    /// defecto — el dato se queda sin capturar, como de verdad está. Probada en
+    /// `LiveStrengthSheetRIRTests`.
+    static func rpeToWrite(selectedRIR: Int?, existingRPE: Double?) -> Double? {
+        guard existingRPE == nil, let rir = selectedRIR else { return nil }
+        return rpe(fromRIR: rir)
+    }
+
+    /// RIR → RPE (FER-134): el motor guarda esfuerzo percibido en RPE (0–10); «QUEDABAN» es la MISMA
+    /// captura leída como reps en reserva. RPE = 10 − RIR; «4+» se guarda como RIR 4 (RPE 6) — el
+    /// motor no distingue «4» de «más de 4», las dos leen «con margen». Probada en
+    /// `LiveStrengthSheetRIRTests`.
+    static func rpe(fromRIR rir: Int) -> Double { Double(10 - min(4, max(0, rir))) }
+
+    /// La lectura inversa para la tabla (handoff «Sesión en vivo» §4, ítem 4: «"Q n" ... en filas
+    /// hechas (QUEDABAN = RIR)»): el motor solo guarda RPE (`WorkingSet.rpe`), así que la columna
+    /// de `SetTable` recibe la lectura QUEDABAN ya formateada en vez del RPE crudo — el campo no
+    /// cambia, solo cómo se lee en ESTA tabla (RIR = 10 − RPE, saturado a 0…4, «4+» en el tope).
+    /// `RoutineEditorScreen` sigue leyendo `set.rpe` sin pasar por aquí — su columna RPE es RPE de
+    /// verdad, no QUEDABAN (revisión ronda 3, hallazgo grave/menor duplicado).
+    static func qLabel(fromRPE rpe: Double) -> String {
+        let rir = 10 - Int(rpe.rounded())
+        let clamped = min(max(rir, 0), 4)
+        // «Q» es la abreviatura del prototipo (copy.md «Sesión en vivo»), no una palabra a traducir —
+        // igual que el badge «C» de calentamiento en la misma tabla (`badgeText` arriba).
+        return clamped >= 4 ? "Q 4+" : "Q \(clamped)"
     }
 
     /// The set index the inline rest card slots BEFORE — nil when the rest follows the exercise's
@@ -1196,15 +1369,22 @@ struct LiveStrengthSheet: View {
             onBackspace: { keypadBackspace() },
             onNext: { focusNextCell() },
             onCopyPrevious: { if let run { prefillTapped(ei: ei, si: si, run: run); syncBufferFromModel(cell) } },
-            onStep: { keypadStep(cell) },
+            onStep: { keypadStep(cell, sign: 1) },
+            onStepDown: { keypadStep(cell, sign: -1) },
             onPlates: { openPlates(ei: ei, si: si) },
+            onConfirmSet: { confirmOrToggleSet(ei: ei, si: si) },
             onHide: { withAnimation(.snappy(duration: 0.22)) { activeCell = nil } },
-            // La MISMA pausa que la barra de estado, no una segunda: el teclado ocupa el sitio de
-            // esa barra, así que sin esto el control desaparece justo mientras registras una serie
-            // — que es exactamente cuando te interrumpen. Una decisión, dos superficies del mismo
-            // borde inferior.
+            // La MISMA pausa que la cabecera (FER-133), no una segunda: cuando el teclado está
+            // abierto la cabecera queda lejos del pulgar, y sin esto el control se aleja justo
+            // mientras registras una serie — que es exactamente cuando te interrumpen. Una
+            // decisión (`alternarPausa`), dos superficies.
             onPause: alternarPausa,
-            isPaused: session.paused
+            isPaused: session.paused,
+            // Solo se muestra elegido si el segmento se tocó para ESTA MISMA celda — cambiar a otra
+            // serie sin registrar ya no arrastra visualmente la elección anterior (ver `selectedRIRTarget`).
+            selectedRIR: Self.rirScoped(selectedRIR: selectedRIR, selectedRIRTarget: selectedRIRTarget,
+                                        registering: RIRTarget(ei: ei, si: si)),
+            onSelectRIR: { selectedRIR = $0; selectedRIRTarget = RIRTarget(ei: ei, si: si) }
         )
         .transition(.move(edge: .bottom))
     }
@@ -1323,175 +1503,248 @@ struct LiveStrengthSheet: View {
         switch ref { case let .weight(e, s): return (e, s); case let .reps(e, s): return (e, s) }
     }
 
-    // MARK: _LiveHead (FER-929 — replaces the old `sessionHeader`: nav + title + live counters)
+    // MARK: _LiveHead (FER-929 — cabecera COMPACTA desde FER-133, handoff «Sesión en vivo» v4)
 
     private var liveHead: some View {
-        VStack(alignment: .leading, spacing: CenitMetrics.gap) {
-            // Nav row: minimize «‹» (session stays alive, the pill re-opens it) · live/paused pulse.
-            HStack(spacing: 10) {
-                // FER-998: el mismo disco que el resto de la app. El rol es `.back` (chevron) pero
-                // NO vuelve: minimiza — la sesión sigue viva y la píldora la reabre. Por eso el
-                // label de VoiceOver es suyo y no el «Atrás» del componente.
-                BackButton(role: .back, theme: theme) { model.strengthSheetPresented = false }
-                    .accessibilityLabel(Text("Minimize session"))
-                Spacer(minLength: 8)
-                HStack(spacing: 6) {
-                    // Canvas pass 2026-07-15: recording-red and STILL — a state lamp, not a heartbeat
-                    // (the pulsing ember dot read as «loading»; owner call).
-                    Circle().fill(session.paused ? theme.inkDim : theme.critical)
-                        .frame(width: 8, height: 8)
-                    Text(session.paused ? "Paused" : "In progress")
-                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                }
-                .accessibilityElement(children: .combine)
-            }
-            .padding(.leading, -2)   // el disco de 40 vive en un marco de 44: solo 2pt de aire que recuperar
-
-            // Title, underlined solid `ink` (not the dotted neutral rule reserved for table values).
-            // Canvas pass 2026-07-15: sin subrayado — el peso de la tipografía basta (owner call).
-            // FER-952 (A2): the overline ABOVE the title retired — the title gets the full width and
-            // its meta rides BELOW as its own line (family dot · exercises · sets · done).
-            // FER-952: same title voice as the editor (Grotesk screen title) — the two screens are
-            // one instrument in two moments.
-            Text(isEmptyAdHoc ? String(localized: "Quick strength") : session.routineName)
-                .font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking)
-                .foregroundStyle(theme.ink)
-                .lineLimit(1).minimumScaleFactor(0.7)
-
+        VStack(alignment: .leading, spacing: 0) {
+            sessionHeaderRow
+            // Barra 3pt en el tinte de la rutina (FER-133 · V4) — reemplaza el desglose por ejercicio
+            // de FER-929: el handoff la simplifica a «% ejercicios hechos», y el desglose ya se lee en
+            // el riel de la lista de abajo (doble contabilidad). No hay plan en ad-hoc.
             if !isEmptyAdHoc {
-                HStack(spacing: 8) {
-                    HStack(spacing: 5) {
-                        EntrenarFamilyDot(sessionRegion.tint(theme))
-                        if let word = sessionRegionWord { Text(word) }
-                    }
-                    Text("\(session.activeExercises.count) exercises · \(sessionSetsTotal) sets · \(session.doneCount) done")
-                        .monospacedDigit()
-                }
-                .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                .accessibilityHidden(true)   // the progress bar's a11y value already tells this story
+                sessionProgressStrip.padding(.top, CenitMetrics.gap)
             }
-
-            // Metrics: clock (dims + freezes while paused, FER-823) · BPM (strap-only, never «♥ --») ·
-            // done/total · Spacer · Pausa/Reanuda + Terminar (or Discard for an empty ad-hoc session).
-            HStack(alignment: .firstTextBaseline, spacing: 10) {
-                TimelineView(.periodic(from: Date(), by: 1)) { ctx in
-                    let elapsed = session.elapsedSeconds(now: ctx.date)
-                    Text(Self.clock(elapsed))
-                        .font(InstrumentoType.groteskSessionClockInline)
-                        .tracking(InstrumentoType.groteskSessionClockTracking)
-                        .foregroundStyle(session.paused ? theme.inkTertiary : theme.ink)
-                        // r22: los dígitos RUEDAN en vez de parpadear — misma voz que el descanso.
-                        .contentTransition(.numericText())
-                        .animation(.default, value: elapsed)
-                        .accessibilityLabel(Text(session.paused ? "Paused at \(Self.clock(elapsed))"
-                                                                 : "Elapsed \(Self.clock(elapsed))"))
-                        // r20 (auditoría UX #3): el trait le dice a VoiceOver que NO re-anuncie
-                        // cada tick — el usuario lo consulta, el reloj no lo interrumpe.
-                        .accessibilityAddTraits(.updatesFrequently)
-                }
-                // FER-86: el pulso bajó a la barra de estado con la pausa (decisión #6, variante A).
-                // Estaba aquí Y allá abajo sería decirlo dos veces en la misma pantalla.
-                // r20 (auditoría UX #6a): el progreso estaba por TRIPLICADO (texto + filete + barra
-                // inferior) — fuera el textual; el filete de abajo y los contadores ya lo cuentan.
-                Spacer(minLength: 8)
-                headActionButtons
-            }
-
-            // Per-exercise progress, a 3px filete (FER-823: no hue while paused). No plan in ad-hoc.
-            if !isEmptyAdHoc {
-                SessionProgressBar(segments: progressSegments,
-                                   hue: session.paused ? theme.inkDim : theme.dataStrain,
-                                   track: theme.hairline, height: 3)
-                    // anim r7: el llenado del segmento se anima al palomear (antes saltaba).
-                    .animation(StrandMotion.gentle, value: session.doneCount)
-                    .accessibilityLabel(Text("Session progress"))
-                    .accessibilityValue(Text("\(session.doneCount) of \(sessionSetsTotal) sets"))
-            }
-
+            // El hilo compacto del veredicto (FER-133): SOLO con lighter/recover, silencio en lo demás.
+            hiloCompacto
             // The Apple Watch mirror status (FER-742) — drawn ONLY when the watch fails.
             watchStatusLine
         }
-        .padding(.horizontal, CenitMetrics.screenPadding)
-        .padding(.top, 14)
-        .padding(.bottom, 12)
+        .padding(.horizontal, EntrenarMetrics.sessionHeaderMarginH)
+        .padding(.top, EntrenarMetrics.sessionHeaderPaddingTop)
+        .padding(.bottom, EntrenarMetrics.sessionHeaderPaddingBottom)
         .background(theme.paper)
         // Canvas pass 2026-07-15: the bottom hairline under the progress bar is gone — the whitespace
         // and the rail thread separate head from list on their own (owner call, punto 6).
     }
 
-    /// The session's movement region (push/pull/legs), classified from its runs' exercises — the same
-    /// single-source rule every routine surface uses (FER-898). Feeds the header's meta dot (A2).
-    private var sessionRegion: RoutineRegion? {
-        let per = session.runs.map { run in
-            ExerciseCatalog.all.first(where: { $0.id == run.exerciseId })?.primaryMuscles ?? []
+    /// La fila de la cabecera compacta: «‹» minimiza · punto de familia + título · sub «ejercicio N de
+    /// M · en curso» / «pausada» a la izquierda; ♥ (solo con FC viva) · reloj · pausa · «Terminar» a
+    /// la derecha — todo en una sola fila de 36 pt de alto (handoff «Sesión en vivo» v4).
+    private var sessionHeaderRow: some View {
+        HStack(spacing: CenitMetrics.space2) {
+            // FER-998: el mismo gesto de siempre. El rol es minimizar (chevron) pero NO vuelve:
+            // la sesión sigue viva y la píldora la reabre. Por eso el label de VoiceOver es suyo.
+            sessionHeaderDisc("chevron.left", label: Text("Minimize session")) {
+                model.strengthSheetPresented = false
+            }
+            VStack(alignment: .leading, spacing: CenitMetrics.space1) {
+                HStack(spacing: CenitMetrics.space2) {
+                    // Sin rutina (sesión rápida) no hay familia que señalar: el punto se calla,
+                    // igual que el subtítulo de abajo.
+                    if !isEmptyAdHoc {
+                        EntrenarFamilyDot(railTint, size: EntrenarMetrics.familyDotCompact)
+                    }
+                    Text(isEmptyAdHoc ? String(localized: "Quick strength") : session.routineName)
+                        .entrenarSessionHeaderTitle()
+                        .foregroundStyle(theme.ink)
+                        .lineLimit(1).minimumScaleFactor(0.8)
+                }
+                if !isEmptyAdHoc {
+                    sessionHeaderSubtitle
+                        .font(StrandFont.footnote)
+                        .foregroundStyle(theme.inkTertiary)
+                        .lineLimit(1).minimumScaleFactor(0.8)   // mismo criterio que el título
+                }
+            }
+            Spacer(minLength: CenitMetrics.space2)
+            sessionHeaderHeartRate
+            sessionHeaderClock
+            if let alternarPausa {
+                sessionHeaderDisc(session.paused ? "play.fill" : "pause.fill",
+                                   label: Text(session.paused ? "Resume session" : "Pause session"),
+                                   glyph: .inline, action: alternarPausa)
+            }
+            sessionHeaderEndButton
         }
-        return RoutineClassifier.classify(primaryMusclesPerExercise: per)
     }
 
-    /// The region as a quiet word next to the dot («push» / «pull» / «legs» / «full body»).
-    /// Claves con prefijo `muscleGroup.` — las mismas del planificador semanal. La clave DESNUDA «Push»
-    /// choca con el botón «Push» del catálogo, que localiza a «Sube», así que la píldora de la sesión
-    /// activa acababa diciendo «● Sube» en vez de «● Empuje» (bug Fer 2026-07-18).
-    private var sessionRegionWord: LocalizedStringKey? {
-        switch sessionRegion {
-        case .push: return "muscleGroup.push"
-        case .pull: return "muscleGroup.pull"
-        case .legs: return "muscleGroup.legs"
-        case .fullBody: return "muscleGroup.fullBody"
-        case nil: return nil
+    /// «ejercicio 2 de 6 · en curso» / «pausada» (copy.md «Sesión en vivo»). Solo con ejercicios reales.
+    private var sessionHeaderSubtitle: Text {
+        session.paused
+            ? Text("paused")
+            : Text("exercise \(activeExercisePosition) of \(session.activeExercises.count) · in progress")
+    }
+
+    /// La posición (base 1) del ejercicio activo entre los NO saltados — mismo criterio que
+    /// `session.activeExercises`, la fuente que ya usa el navegador de plan.
+    private var activeExercisePosition: Int {
+        (session.activeExercises.firstIndex { $0.index == accordionIndex } ?? 0) + 1
+    }
+
+    /// ♥ 118 — SOLO con FC viva (Apple Watch conectado). SIN punto animado a propósito (decisión del
+    /// dueño): el numeral ya es la señal de vida, un segundo indicador parpadeando al lado no añade
+    /// nada y compite con el reloj.
+    @ViewBuilder private var sessionHeaderHeartRate: some View {
+        if let bpm = model.watchBpm {
+            // El numeral es 13 pt, por debajo del piso de 24 en que el ADN permite el hue saturado en
+            // texto — el mismo tono de lectura que `SessionStatsBar` ya usa para este mismo hue.
+            let tone = OKLab.darkened(theme.dataHeart, toContrast: 4.5, against: theme.paper)
+            HStack(spacing: CenitMetrics.space1) {
+                Image(systemName: "heart.fill").font(StrandFont.glyph(.chevron))
+                Text("\(bpm)").font(StrandFont.subhead.weight(.semibold))
+            }
+            .foregroundStyle(tone)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text("Heart rate \(bpm) beats per minute"))
         }
     }
 
-    /// r21 (deuda front): los botones-cápsula del header salen de UNA fábrica — misma gramática
-    /// (surface + hairlineStrong), solo cambia el contenido. r24 (owner): altura FIJA en vez de
-    /// padding vertical — Pausar (SF subhead) y Terminar (Grotesk) tienen métricas de fuente
-    /// distintas y sus cápsulas salían de tamaños diferentes.
-    ///
-    /// El cromo ya no vive aquí: es `headerCapsule(_:)` de StrandDesign, el mismo que viste a la
-    /// acción con nombre de las barras (Guardar). Esto queda solo como el envoltorio de botón.
-    private func headerCapsule<Content: View>(action: @escaping () -> Void,
-                                              @ViewBuilder content: () -> Content) -> some View {
+    private var sessionHeaderClock: some View {
+        TimelineView(.periodic(from: Date(), by: 1)) { ctx in
+            let elapsed = session.elapsedSeconds(now: ctx.date)
+            Text(Self.clock(elapsed))
+                .font(InstrumentoType.groteskSessionClockCompact)
+                .tracking(InstrumentoType.groteskSessionClockCompactTracking)
+                .foregroundStyle(session.paused ? theme.inkTertiary : theme.ink)
+                // r22: los dígitos RUEDAN en vez de parpadear — misma voz que el descanso.
+                .contentTransition(.numericText())
+                .animation(.default, value: elapsed)
+                .accessibilityLabel(Text(session.paused ? "Paused at \(Self.clock(elapsed))"
+                                                         : "Elapsed \(Self.clock(elapsed))"))
+                // r20 (auditoría UX #3): el trait le dice a VoiceOver que NO re-anuncie cada tick —
+                // el usuario lo consulta, el reloj no lo interrumpe.
+                .accessibilityAddTraits(.updatesFrequently)
+        }
+    }
+
+    /// Un disco de 36 «papel + canto» (handoff «Sesión en vivo» v4): mismo lenguaje que `BackButton`
+    /// (papel + filo `hairlineStrong`), al tamaño compacto de esta cabecera — comparte fila con el
+    /// reloj y «Terminar», y el disco de 40 de `BackButton` la desbordaba.
+    /// `glyph`: `.chevron` (12) para el «‹» de minimizar, que SÍ es un chevron; `.inline` (15) para
+    /// ❚❚/▶, el mismo tamaño con que el teclado dibuja la otra cara de `alternarPausa`.
+    private func sessionHeaderDisc(_ symbol: String, label: Text, glyph: StrandFont.GlyphSize = .chevron,
+                                   action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            content().headerCapsule(theme)
+            Image(systemName: symbol)
+                .font(StrandFont.glyph(glyph, weight: .semibold))
+                .foregroundStyle(theme.ink)
+                .frame(width: EntrenarMetrics.secondaryButton, height: EntrenarMetrics.secondaryButton)
+                .background(Circle().fill(theme.paper))
+                .overlay(Circle().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                .frame(width: EntrenarMetrics.row, height: EntrenarMetrics.row)   // 44 pt de toque
+                .contentShape(Circle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(EntrenarPressStyle())
+        .accessibilityLabel(label)
     }
 
-    /// La acción de la cabecera. UNA, no tres: «Terminar» siempre, o «Descartar» mientras la sesión
-    /// ad hoc sigue vacía.
-    ///
-    /// Antes (FER-823) la cabecera se reconfiguraba entera según `session.paused`: pausada mostraba
-    /// «Reanudar», corriendo mostraba «❚❚ + Terminar», vacía mostraba «Descartar». Eso hacía bailar
-    /// el botón de Terminar bajo el dedo justo cuando más lo quieres quieto. El control de pausa se
-    /// mudó a la barra de estado (decisión #6 del épico, variante A) y la cabecera se calló.
-    @ViewBuilder private var headActionButtons: some View {
+    /// «Terminar» siempre, o «Descartar» mientras la sesión ad hoc sigue vacía — la misma regla que
+    /// el header a pantalla completa tenía antes de FER-133, ahora en la píldora compacta.
+    @ViewBuilder private var sessionHeaderEndButton: some View {
         if isEmptyAdHoc {
-            headerCapsule(action: { discardEmptySession() }) {
-                Text("Discard").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+            sessionHeaderPill(Text("Discard"), accessibilityLabel: Text("Discard workout")) {
+                discardEmptySession()
             }
-            .accessibilityLabel(Text("Discard workout"))
         } else {
-            // r20 (auditoría UX #6d + owner): Terminar-y-guardar es el acto constructivo esperado —
-            // vestirlo de alarma desensibilizaba el rojo del Descartar real. Tinta, voz Grotesk.
-            headerCapsule(action: { finishTapped() }) {
-                Text("Finish").font(InstrumentoType.grotesk(15, weight: .semibold)).foregroundStyle(theme.ink)
+            sessionHeaderPill(Text("Finish"), accessibilityLabel: Text("Finish workout")) {
+                finishTapped()
             }
-            .accessibilityLabel(Text("Finish workout"))
         }
     }
+
+    /// La píldora «papel + canto» de 36 pt de alto de la cabecera — mismo lenguaje que
+    /// `sessionHeaderDisc`, en cápsula en vez de círculo.
+    private func sessionHeaderPill(_ label: Text, accessibilityLabel: Text, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            label
+                .entrenarSessionEndLabel()
+                .foregroundStyle(theme.ink)
+                .padding(.horizontal, CenitMetrics.receiptPadding)
+                .frame(height: EntrenarMetrics.secondaryButton)
+                .background(Capsule().fill(theme.paper))
+                .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+        }
+        .buttonStyle(EntrenarPressStyle())
+        .frame(minHeight: CenitMetrics.touchTarget)   // 44 pt de toque sobre el dibujo de 36
+        .contentShape(Capsule())
+        .accessibilityLabel(accessibilityLabel)
+    }
+
+    // MARK: - Barra de progreso (FER-133 · V4)
+
+    private var sessionProgressStrip: some View {
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                RoundedRectangle(cornerRadius: EntrenarMetrics.progressBarRadius, style: .continuous)
+                    .fill(theme.hairline)
+                RoundedRectangle(cornerRadius: EntrenarMetrics.progressBarRadius, style: .continuous)
+                    .fill(session.paused ? theme.inkDim : railTint)
+                    .frame(width: geo.size.width * sessionProgressFraction)
+            }
+        }
+        .frame(height: EntrenarMetrics.progressBar)
+        .animation(StrandMotion.gentle, value: sessionProgressFraction)
+        .accessibilityElement()
+        .accessibilityLabel(Text("Session progress"))
+        .accessibilityValue(Text("\(Int((sessionProgressFraction * 100).rounded())) percent complete"))
+    }
+
+    /// Ejercicios NO saltados ya completados: el índice ya quedó atrás, o todas sus series están
+    /// hechas. A diferencia de `railState`, NO antepone «es el activo»: para un % de barra, el
+    /// ejercicio abierto con todas sus series palomeadas ya cuenta como hecho (el borde se adelanta
+    /// una fracción, que es lo honesto para el progreso).
+    private var doneExerciseCount: Int {
+        session.activeExercises.filter { entry in
+            entry.index < session.currentIndex || entry.run.sets.allSatisfy(\.done)
+        }.count
+    }
+
+    /// % de ejercicios hechos (hechos/total) — 0 al inicio de la sesión, 1 cuando todos cierran.
+    private var sessionProgressFraction: CGFloat {
+        let total = session.activeExercises.count
+        guard total > 0 else { return 0 }
+        return CGFloat(doneExerciseCount) / CGFloat(total)
+    }
+
+    // MARK: - Hilo compacto del veredicto (FER-133 · V4)
+
+    /// SOLO cuando el día tiene algo que decir Y lo dice conteniendo la subida (`lighter`/`recover`):
+    /// `TrainingRegulation.explainsHeldRaise` es exactamente ese criterio (`speaks && !allowsRaise`).
+    /// Con `planAsIs`/`silent`/`pending` el hilo calla — el handoff dice «en verde, silencio», y el
+    /// veredicto ya se dijo una vez en la landing (`EntrenarView.hiloDelVeredicto`).
+    @ViewBuilder private var hiloCompacto: some View {
+        if TrainingRegulation.explainsHeldRaise(model.repo.trainingAdvice),
+           let hilo = LiquidHoyBuilder.hiloEntrenar(
+               prep: model.repo.todayPreparedness,
+               nights: model.repo.todayPreparedness?.autonomicNights ?? 0,
+               healthConnected: model.healthBridge?.auth == .authorized,
+               verdictPending: model.repo.todayPreparedness == nil && !model.repo.fullyLoaded,
+               hasPlan: !isEmptyAdHoc) {
+            EntrenarHilo(tone: hilo.tono.entrenarTone,
+                         word: LocalizedStringKey(hilo.palabra),
+                         advice: hilo.consejo.map { LocalizedStringKey($0) },
+                         radio: EntrenarMetrics.orbeSesionCabecera,
+                         hint: "Opens today's ballot") {
+                showVeredictoActa = true
+            }
+            // `CenitMetrics.gap` (12), no `space2` (8) como en `EntrenarView.hiloDelVeredicto`: ahí el
+            // hilo abre la landing y separa del héroe de la sesión; aquí separa de la barra de
+            // progreso de 3 pt — un elemento más delgado pide más aire para no leerse pegado.
+            .padding(.top, CenitMetrics.gap)
+        }
+    }
+
 
     // MARK: - La barra de estado (FER-86 · E5 — ahora es `SessionStatsBar`, la pieza de E2)
     //
     // La barra dejó de dibujarse a mano: monta `SessionStatsBar` del paquete, que se construyó en
-    // E2 con este mismo contrato (volumen · series · pulso · pausa · foco) y llevaba desde entonces
+    // E2 con este mismo contrato (volumen · series · pulso · foco) y llevaba desde entonces
     // sin un solo call site en la app.
     //
-    // Y con ella baja EL CONTROL DE PAUSA, que vivía en la cabecera. Es la decisión #6 del épico,
-    // variante A: «cabecera de una línea, solo reloj y Terminar; el pulso y la pausa bajan a la
-    // barra de estado». La cabecera deja de reconfigurarse entera según `session.paused` — un
-    // intercambio que hacía bailar el botón de Terminar bajo el dedo justo cuando más lo quieres
-    // quieto. `model.pauseStrengthSession()` y `model.resumeStrengthSessionFromPause()` son las
-    // mismas llamadas: solo cambia quién las dispara.
+    // FER-133: el control de pausa VUELVE a la cabecera (arriba) — el teclado conserva el suyo
+    // (`keypad(for:)`, sin cambios), y esta barra se queda solo con volumen · series · pulso · foco.
+    // `model.pauseStrengthSession()` y `model.resumeStrengthSessionFromPause()` son las mismas
+    // llamadas de siempre: solo cambia quién las dispara.
 
     private var statsBar: some View {
         SessionStatsBar(
@@ -1503,15 +1756,14 @@ struct LiveStrengthSheet: View {
             sets: "\(session.doneCount)/\(sessionSetsTotal)",
             pulse: model.watchBpm.map { "\($0)" },
             isPaused: session.paused,
-            onPause: alternarPausa,
             onFocus: puedeEnfocar ? { focusMode = true } : nil
         )
         .accessibilityElement(children: .contain)
     }
 
-    /// Pausar o reanudar, según toque. Una sola definición para las DOS superficies del borde
-    /// inferior (la barra de estado y el teclado, que se turnan el mismo sitio): así no pueden
-    /// divergir ni quedar una sin la otra. `nil` cuando no hay sesión que pausar.
+    /// Pausar o reanudar, según toque. Una sola definición para las DOS superficies que la disparan
+    /// (la cabecera y el teclado, que se turnan el borde inferior): así no pueden divergir ni quedar
+    /// una sin la otra. `nil` cuando no hay sesión que pausar.
     private var alternarPausa: (() -> Void)? {
         guard puedeControlarPausa else { return nil }
         return {
@@ -2249,17 +2501,6 @@ struct LiveStrengthSheet: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 14).padding(.vertical, 12)
             .background(theme.paper.opacity(StrandOpacity.tintFillStrong), in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
-        }
-    }
-
-    /// One progress segment per non-skipped exercise: width ∝ its set count, fill = fraction of its sets done.
-    private var progressSegments: [SessionProgressBar.Segment] {
-        session.runs.filter { !$0.skipped }.map { run in
-            let total = max(run.sets.count, 1)
-            let done = run.sets.filter(\.done).count
-            // r7 (owner): cada segmento en el hue de SU ejercicio (familia push/pull/legs).
-            return .init(sets: total, done: Double(done) / Double(total),
-                         tint: session.paused ? nil : categoryTint(run))
         }
     }
 
@@ -3044,15 +3285,24 @@ struct LiveStrengthSheet: View {
         .padding(.leading, 44)
     }
 
-    // MARK: - Inline rest card (1k, FER-716)
+    // MARK: - Inline rest band (FER-134 · E2 «Sesión en vivo»: adopta `RestBand` de StrandDesign)
+    //
+    // El descanso deja de ser una tarjeta elevada y pasa a ser la BANDA de la Matriz (`RestBand`,
+    // `StrandDesign/Entrenar/RestBand.swift`): filo arriba y filo abajo, sin sombra ni fondo propio —
+    // la única elevación del flujo (`floatShadow`) se retira con ella. La REGLA no cambia una coma
+    // (`RestReadinessRule.evaluate`, «casi» a 5 lpm, piso 20 s, tope 3:00 (`defaultMaxRestS`), en
+    // `RestReadinessRule.swift`
+    // de StrandAnalytics): esto es la piel, no el motor.
 
-    /// The rest card — the ONE surface in the flow that lifts off the paper (`floatShadow`), because it's
-    /// literally above the session's time. Slots between the marked set and the next; the table never
-    /// disappears. By-HR: the live pulse drops toward the threshold; by-time: a countdown. No strap on an
-    /// HR rest → it degrades to a capped timer with an honest notice (no dashes, no red).
+    /// El ejercicio del descanso activo — el mismo que sostiene el acordeón abierto mientras se
+    /// descansa (`accordionIndex`). `RestBand` necesita su cabecera «DESCANSO · SERIE N → M».
+    private var accordionRestRun: StrengthSessionModel.ExerciseRun? {
+        session.runs.indices.contains(accordionIndex) ? session.runs[accordionIndex] : nil
+    }
+
     @ViewBuilder private var restInlineCard: some View {
         let hrMode = session.currentRestMode == .heartRate
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: CenitMetrics.space2) {
             if hrMode, let started = session.restStartedAt {
                 // FER-1003: watch live HR (model.watchBpm) replaces band pulse reader.
                 TimelineView(.periodic(from: started, by: 1)) { ctx in
@@ -3065,99 +3315,132 @@ struct LiveStrengthSheet: View {
                         currentHR: model.watchBpm, worn: model.watchBpm != nil, restingHR: restingBaseline,
                         elapsedS: elapsed, targetHR: session.currentRestTarget)
                     if v.state == .noSignal {
-                        restCardTimeBody(end: session.restEndsAt, now: tick, noStrapFallback: true)
+                        restBandTimeBody(end: session.restEndsAt, now: tick, noStrapFallback: true)
                     } else {
-                        restCardHRBody(elapsed: elapsed, readiness: v)
+                        restBandHRBody(elapsed: elapsed, readiness: v)
                     }
                 }
                 .sensoryFeedback(.success, trigger: model.watchBpm != nil && session.currentRestTarget != nil)
             } else if let end = session.restEndsAt, let started = session.restStartedAt {
                 TimelineView(.periodic(from: started, by: 1)) { ctx in
-                    restCardTimeBody(end: end,
+                    restBandTimeBody(end: end,
                                      now: session.paused ? (session.pausedAt ?? ctx.date) : ctx.date,
                                      noStrapFallback: false)
                 }
             }
-            restCardPills
-            // (El «SIGUE» vive solo en el descanso a pantalla completa — owner call 2026-07-15: dentro
-            // del mismo ejercicio ya sabes qué sigue, la tarjeta en línea no lo repite.)
+            // «Cambiar descanso» (editor de umbral, capacidad #4 del inventario) sigue vivo — `RestBand`
+            // solo trae el «Saltar» (su `onSkip`), así que el cambio de umbral se queda como pastilla
+            // propia bajo la banda.
+            restEditorPill
         }
-        // r21 (auditoría UI V6): 17/15 a ojo → el padding del recibo, como sus rebanadas hermanas.
-        .padding(.horizontal, CenitMetrics.receiptPadding).padding(.vertical, CenitMetrics.receiptPadding)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
-            .strokeBorder(theme.hairlineStrong, lineWidth: 1))
-        .floatShadow(theme)
-        .padding(.horizontal, -4).padding(.vertical, 10)
-        .accessibilityElement(children: .combine)
+        .padding(.horizontal, -4).padding(.vertical, EntrenarMetrics.restBandOuterInset)
     }
 
-    /// By-HR rest body: the live pulse dropping toward the threshold, with a gradient track + ink tick.
-    private func restCardHRBody(elapsed: Int, readiness v: RestReadiness) -> some View {
-        let bpm = model.watchBpm ?? 0
-        let target = session.currentRestTarget
-        let ready = v.ready
-        return VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                // r19 (auditoría UI): overline de token en tinta terciaria — el estado ya lo cuenta
-                // el numeral; el hue jamás anuncia (§8.4).
-                Text("Resting · by HR").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                Spacer()
-                Text("\(Self.clock(elapsed)) elapsed").font(StrandFont.caption).monospacedDigit()
-                    .foregroundStyle(theme.inkTertiary)
-            }
-            Text(ready ? String(localized: "Ready") : "\(bpm)")
-                .font(InstrumentoType.groteskRestPulse).tracking(InstrumentoType.groteskRestPulseTracking)
-                .monospacedDigit()
-                .foregroundStyle(theme.dataRecovery)
-                .contentTransition(.numericText())
-            // El riel es la pieza compartida (FER-86): el mismo descanso aparece aquí, a pantalla
-            // completa y —E15— en el reloj. Y sin objetivo ya no finge estar listo.
-            RestPulseRail(bpm: bpm, target: target)
-            if let target, !ready {
-                (Text(String(localized: "dropping toward "))
-                 + Text("\(target) bpm").foregroundColor(theme.dataRecovery).bold()
-                 + Text(" · " + String(localized: "the phone will buzz")))
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
+    /// Descanso por FC: el numeral es cuánto FALTA en latidos; el riel de pulso (`RestPulseRail`, ya
+    /// embebido en `RestBand`) dibuja la caída hacia el umbral. La regla del motor no cambia: «casi» a
+    /// 5 lpm (`RestReadinessState.almostReady`), listo al llegar o al soltar por tope (`v.ready`).
+    private func restBandHRBody(elapsed: Int, readiness v: RestReadiness) -> some View {
+        RestBand(
+            kicker: restBandKicker,
+            mode: .heartRate(remainingBpm: v.bpmToReady, targetBpm: v.targetReadyHR ?? 0,
+                             currentBpm: model.watchBpm),
+            trailing: Self.clock(elapsed),
+            note: "at 5 bpm I say «almost» · at 3:00 I let you go even if it hasn't dropped",
+            isAlmost: v.state == .almostReady,
+            isReady: v.ready,
+            startBpm: restStartBpm,
+            onSkip: { withAnimation(StrandMotion.gentle) { session.skipRest() } },
+            next: { restBandNextRow }
+        )
+        // r20 (auditoría UX #3), FER-134: VoiceOver oye hitos, no cada tick — «faltan más de 20» ·
+        // «faltan 10» · «casi» · «listo» (copy.md «Sesión en vivo»), no la cuenta fina en latidos.
+        .accessibilityLabel(Text(session.paused ? String(localized: "Paused")
+                                                : restHRA11yPhrase(v)))
+        .accessibilityAddTraits(.updatesFrequently)
     }
 
-    /// The FC track: a linear scale from a warm start toward the threshold; the ink tick is the threshold
-    /// (position is the channel), the `dataHeart → dataRecovery` gradient reinforces hot → goal.
-    /// By-time rest body (also the no-strap fallback for an HR rest, capped at 5 min with a notice).
-    private func restCardTimeBody(end: Date?, now: Date, noStrapFallback: Bool) -> some View {
-        let cappedEnd = noStrapFallback ? min(end ?? now, (session.restStartedAt ?? now).addingTimeInterval(300)) : end
-        let remaining = cappedEnd.map { max(0, Int($0.timeIntervalSince(now).rounded(.up))) } ?? 0
-        return VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                // r20 (auditoría UX #1): en pausa el overline lo DICE — el reloj congelado sin
-                // etiqueta parecería colgado.
-                Text(session.paused ? "Paused" : (noStrapFallback ? "Resting · by time" : "Resting"))
-                    .instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                Spacer()
-            }
-            Text(Self.clock(remaining))
-                .font(InstrumentoType.groteskRestPulse).tracking(InstrumentoType.groteskRestPulseTracking)
-                .monospacedDigit()
-                .foregroundStyle(remaining == 0 ? theme.dataRecovery : theme.ink)
-                .contentTransition(.numericText())
-            if noStrapFallback {
-                Text("No heart-rate signal: resting by time, 5 min cap")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        // r20 (auditoría UX #3): VoiceOver oye hitos, no cada tick — label cuantizado + trait.
-        .accessibilityElement(children: .ignore)
+    /// Reloj fijo: sin pulso no se inventa un número de latidos — el numeral es el tiempo, «elapsed de
+    /// target» (también el respaldo honesto de un descanso por FC sin señal, tope 5 min).
+    private func restBandTimeBody(end: Date?, now: Date, noStrapFallback: Bool) -> some View {
+        let started = session.restStartedAt ?? now
+        let cappedEnd = noStrapFallback ? min(end ?? now, started.addingTimeInterval(300)) : end
+        let totalS = cappedEnd.map { max(0, Int($0.timeIntervalSince(started))) } ?? 0
+        let elapsed = max(0, min(totalS, Int(now.timeIntervalSince(started))))
+        let remaining = totalS - elapsed
+        return RestBand(
+            kicker: restBandKicker,
+            mode: .clock(elapsed: Self.clock(elapsed), target: Self.clock(totalS)),
+            // Con reloj de Apple Watch presente el kicker muestra el transcurrido, como el prototipo
+            // (`datos-estado.txt`); sin reloj, el aviso honesto de que no hay señal (revisión ronda 2).
+            trailing: model.watchBpm == nil ? String(localized: "no watch on your wrist") : Self.clock(elapsed),
+            note: noStrapFallback ? "resting by clock: connect your Apple Watch for rest by heart rate" : nil,
+            onSkip: { withAnimation(StrandMotion.gentle) { session.skipRest() } },
+            next: { restBandNextRow }
+        )
         .accessibilityLabel(Text(session.paused ? String(localized: "Paused")
                                                 : restA11yPhrase(remaining: remaining)))
         .accessibilityAddTraits(.updatesFrequently)
     }
 
-    /// r20 (auditoría UX #3): el restante del descanso para VoiceOver, en cubetas (60/30/15 s) —
-    /// el cursor encima del reloj deja de parlotear cada segundo.
+    /// «DESCANSO · SERIE 1 → 2»: la serie de trabajo que se acaba de cerrar y la que sigue, contadas
+    /// solo entre series de trabajo (un calentamiento nunca aparece en este número — mismo criterio
+    /// que el badge de `SetTable`/`entrenarRow`).
+    private var restBandKicker: LocalizedStringKey {
+        guard let run = accordionRestRun, let lastDone = run.sets.lastIndex(where: { $0.done }) else {
+            return "REST"
+        }
+        let from = run.sets.prefix(lastDone + 1).reduce(0) { $0 + ($1.kind == .work ? 1 : 0) }
+        // Si lo único cerrado hasta ahora es un calentamiento, `from` da 0 — no hay una «serie 0» en
+        // ningún otro lugar de la tabla (los badges arrancan en 1), así que el kicker se queda sin
+        // numerar en vez de imprimir «SET 0 → 1» (revisión ronda 3, hallazgo menor).
+        guard from > 0 else { return "REST" }
+        let nextIdx = run.sets.index(after: lastDone)
+        let to = run.sets.indices.contains(nextIdx)
+            ? run.sets.prefix(nextIdx + 1).reduce(0) { $0 + ($1.kind == .work ? 1 : 0) }
+            : from + 1
+        return "REST · SET \(String(from)) → \(String(to))"
+    }
+
+    /// «SIGUE» dentro de la banda de descanso en línea (handoff «Sesión en vivo» §6): thumb 24 +
+    /// «N · nombre · sets × reps». Misma fuente que `focusRestNextCard` (`session.current`, ya
+    /// avanzado por `registerCurrentSet` antes de arrancar el descanso) — el próximo paso real, sea
+    /// la siguiente serie del mismo ejercicio o el siguiente ejercicio. `EmptyView` cuando no hay
+    /// paso siguiente (última serie de la sesión).
+    @ViewBuilder private var restBandNextRow: some View {
+        if let run = session.current {
+            let position = (session.activeExercises.firstIndex { $0.index == session.currentIndex } ?? 0) + 1
+            HStack(spacing: 8) {
+                SessionRunThumb(exerciseId: run.exerciseId, side: 24)
+                Text(verbatim: "\(position) · \(run.name) · \(prescriptionCountText(run))")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(Text("Next: \(run.name)"))
+        }
+    }
+
+    /// «4 × 10» — número de series de trabajo × reps del primer set, para el renglón SIGUE. Reusa el
+    /// mismo criterio que el resto de la tabla (calentamientos no cuentan como serie de trabajo).
+    private func prescriptionCountText(_ run: StrengthSessionModel.ExerciseRun) -> String {
+        let workSets = run.sets.filter { $0.kind == .work }
+        guard run.type == .weightReps || run.type == .bodyweight else {
+            return String(localized: "\(workSets.count) sets")
+        }
+        let reps = workSets.first?.reps ?? run.sets.first?.reps ?? 0
+        return "\(workSets.count) × \(reps)"
+    }
+
+    /// Milestones del descanso por FC para VoiceOver (copy.md «Sesión en vivo»): «faltan más de 20» ·
+    /// «faltan 10» · «casi» · «listo» — cuatro palabras, no el conteo fino en latidos.
+    private func restHRA11yPhrase(_ v: RestReadiness) -> String {
+        if v.ready { return String(localized: "Ready") }
+        if v.state == .almostReady { return String(localized: "Almost") }
+        let remaining = v.bpmToReady ?? 0
+        return remaining > 20 ? String(localized: "more than 20 bpm left") : String(localized: "10 bpm left")
+    }
+
+    /// r20 (auditoría UX #3): el restante del descanso por tiempo para VoiceOver, en cubetas (60/30/15 s)
+    /// — el cursor encima del reloj deja de parlotear cada segundo.
     private func restA11yPhrase(remaining: Int) -> String {
         guard remaining > 0 else { return String(localized: "Rest done") }
         if remaining <= 10 { return String(localized: "Resting, almost done") }
@@ -3165,17 +3448,13 @@ struct LiveStrengthSheet: View {
         return String(localized: "Resting, \(bucket) seconds left")
     }
 
-    private var restCardPills: some View {
-        HStack(spacing: 10) {
+    /// «Cambiar descanso» — el editor de umbral (capacidad #4 del inventario), intacto: `RestBand` no
+    /// trae este control, así que se queda como su propia pastilla de papel bajo la banda.
+    private var restEditorPill: some View {
+        HStack {
             Button { openRestEditor(ei: session.currentIndex,
                                     setIndex: session.runs.indices.contains(session.currentIndex) ? session.runs[session.currentIndex].currentSet : nil) } label: {
                 Label("Change rest", systemImage: "pencil").font(StrandFont.caption).foregroundStyle(theme.ink)
-                    .padding(.horizontal, 13).padding(.vertical, 6)
-                    .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
-            }
-            .buttonStyle(.plain)
-            Button { withAnimation(StrandMotion.gentle) { session.skipRest() } } label: {
-                Text("Skip").font(StrandFont.caption).foregroundStyle(theme.ink)
                     .padding(.horizontal, 13).padding(.vertical, 6)
                     .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
             }
@@ -3258,12 +3537,13 @@ struct LiveStrengthSheet: View {
         if !buffer.isEmpty { buffer.removeLast() }
         commitBuffer()
     }
-    /// Quick add a plate / rep with the ± pill (adds the step; decrement via editing). Acts on the active
-    /// cell's row, which `activeCell` has already made the current set.
-    private func keypadStep(_ cell: CellRef) {
+    /// Quick add/subtract a plate / rep with the rejilla's «+…»/«−…» keys (FER-134 ítem 8: antes una
+    /// sola píldora que solo sumaba; `sign` es `1` o `-1`). Acts on the active cell's row, which
+    /// `activeCell` has already made the current set.
+    private func keypadStep(_ cell: CellRef, sign: Int) {
         switch cell {
-        case .weight: session.bumpWeight(byKg: weightStepKg)
-        case .reps:   session.bumpReps(1)
+        case .weight: session.bumpWeight(byKg: weightStepKg * Double(sign))
+        case .reps:   session.bumpReps(sign)
         }
         syncBufferFromModel(cell)
     }

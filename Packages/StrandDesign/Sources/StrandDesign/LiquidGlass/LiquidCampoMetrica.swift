@@ -109,6 +109,12 @@ public struct LiquidCampoMetrica<Pie: View>: View {
     private let titulo: String
     private let glifo: LiquidIcon.Glyph?
     private let datos: [Dato]
+    /// FER-129: la PALABRA de un veredicto categórico, pintada a `displayL` (30) en el hueco
+    /// donde una métrica numérica pone su numeral de 56. Preparación no tiene número: sin
+    /// esto, `datos: []` dejaba `numerales` vacío y el rótulo quedaba apilado a 3 pt del
+    /// veredicto de 17, pegado al chrome — el campo no tenía nada que lo sostuviera.
+    /// Mismo token que la palabra del héroe de Hoy, así la hoja y Hoy hablan al mismo tamaño.
+    private let palabra: String?
     private let veredicto: String?
     private let clausula: String?
     private let onVolver: (() -> Void)?
@@ -127,6 +133,7 @@ public struct LiquidCampoMetrica<Pie: View>: View {
                 titulo: String,
                 glifo: LiquidIcon.Glyph? = nil,
                 datos: [Dato],
+                palabra: String? = nil,
                 veredicto: String? = nil,
                 clausula: String? = nil,
                 volverTitulo: String = "",
@@ -139,6 +146,11 @@ public struct LiquidCampoMetrica<Pie: View>: View {
         self.titulo = titulo
         self.glifo = glifo
         self.datos = datos
+        // Son dos formas de la MISMA cosa a dos escalas (30 para un veredicto categórico sin
+        // numeral, 17 para la frase bajo un numeral): pasarlas juntas apilaría dos titulares.
+        assert(palabra == nil || veredicto == nil,
+               "LiquidCampoMetrica: `palabra:` y `veredicto:` son excluyentes")
+        self.palabra = palabra
         self.veredicto = veredicto
         self.clausula = clausula
         self.volverTitulo = volverTitulo
@@ -153,6 +165,14 @@ public struct LiquidCampoMetrica<Pie: View>: View {
         VStack(alignment: .leading, spacing: LiquidSpace.s075) {
             if let onVolver { botonVolver(onVolver) }
             encabezado
+            if let palabra {
+                Text(palabra)
+                    .font(LiquidType.displayL)
+                    .tracking(LiquidType.displayLTracking)
+                    .foregroundStyle(LiquidColor.papelAlto)
+                    .padding(.top, LiquidSpace.s200)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             numerales
                 // Un solo elemento para VoiceOver: el papel cerraba el héroe con
                 // `children: .combine` y la primera versión lo abrió en 6 paradas por
@@ -321,6 +341,22 @@ public struct LiquidCampoMetrica<Pie: View>: View {
 }
 
 #if DEBUG
+#Preview("Liquid · Campo · palabra (veredicto categórico)") {
+    // FER-129: sin numeral, la PALABRA ocupa el hueco del numeral a displayL. Es lo que le
+    // da cuerpo al campo de Preparación; con `datos: []` y sin `palabra:` el rótulo quedaba
+    // apilado al veredicto de 17 pt y pegado al chrome.
+    VStack(spacing: LiquidSpace.s800) {
+        LiquidCampoMetrica(tono: LiquidColor.atencion, titulo: "Preparación", datos: [],
+                           palabra: "Hoy ve leve",
+                           clausula: "Tu FC en reposo amaneció arriba de tu base.") {
+            LiquidCampoSello("28 noches de base")
+        }
+        LiquidCampoMetrica(tono: LiquidColor.tinta500, titulo: "Preparación", datos: [],
+                           palabra: "—", clausula: "Sin veredicto esta mañana.")
+    }
+    .background(LiquidColor.fondoGradient)
+}
+
 #Preview("Liquid · Campo de métrica") {
     ScrollView {
         VStack(spacing: LiquidSpace.s800) {

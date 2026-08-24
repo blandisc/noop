@@ -924,10 +924,17 @@ struct RoutineEditorScreen: View {
                 onNext: { focusNextCell(after: cell) },
                 onCopyPrevious: {},
                 onStep: { keypadStep(cell) },
+                // El editor PRESCRIBE (sube un valor de plantilla); no hay una dirección de «baja»
+                // que registrar aquí — eso es el registro EN VIVO (`LiveStrengthSheet`). Atenuada,
+                // no ausente, para que la rejilla no salte de tamaño (FER-134 ítem 8, hallazgo
+                // grave: sin esto quedaba activa y muda).
+                stepDownEnabled: false,
                 // «Copiar arriba» (FER-88): atajo del EDITOR, no lectura de historial — copia la
                 // MISMA columna de la serie anterior DENTRO de esta misma prescripción. Oculto en la
                 // primera serie de un ejercicio: no hay «arriba» de qué copiar.
                 onCopyAbove: cell.si > 0 ? { copyAbove(cell) } : nil,
+                // Tampoco hay una serie que palomear aquí (mismo motivo que `stepDownEnabled`).
+                confirmSetEnabled: false,
                 onHide: { withAnimation(.snappy(duration: 0.22)) { activeCell = nil } }
             )
             .transition(.move(edge: .bottom))

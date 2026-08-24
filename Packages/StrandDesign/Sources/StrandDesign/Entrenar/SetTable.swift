@@ -163,6 +163,7 @@ public struct SetTable: View {
     private let kind: EntrenarExerciseKind
     private let rows: [EntrenarSetRow]
     private let showRPE: Bool
+    private let rpeColumnLabel: LocalizedStringKey
     private let showHeader: Bool
     private let onToggle: ((String) -> Void)?
     private let onTapCell: ((String, EntrenarCellKind) -> Void)?
@@ -178,12 +179,19 @@ public struct SetTable: View {
     ///   tabla o el corte «WORK SETS» entre calentamiento y serie de trabajo parte sus filas en más
     ///   de una `SetTable` — el llamador apaga el encabezado en los tramos que no son el primero,
     ///   porque UN ejercicio lleva UN encabezado, no uno por tramo.
+    /// - Parameter rpeColumnLabel: rótulo (visual + VoiceOver) de la columna que `rpe` alimenta.
+    ///   Por defecto «RPE» (el editor de rutina la usa cruda); la sesión en vivo la pisa con
+    ///   «Reps left kicker» («quedaban») porque esa columna ahí lee QUEDABAN, no RPE crudo, en
+    ///   filas hechas (handoff «Sesión en vivo» §4, revisión ronda 4: rótulo y valor no pueden
+    ///   contradecirse).
     public init(kind: EntrenarExerciseKind, rows: [EntrenarSetRow], showRPE: Bool = false,
+                rpeColumnLabel: LocalizedStringKey = "RPE",
                 showHeader: Bool = true,
                 onToggle: ((String) -> Void)? = nil,
                 onTapCell: ((String, EntrenarCellKind) -> Void)? = nil,
                 onDelete: ((String) -> Void)? = nil) {
-        self.kind = kind; self.rows = rows; self.showRPE = showRPE; self.showHeader = showHeader
+        self.kind = kind; self.rows = rows; self.showRPE = showRPE
+        self.rpeColumnLabel = rpeColumnLabel; self.showHeader = showHeader
         self.onToggle = onToggle; self.onTapCell = onTapCell; self.onDelete = onDelete
     }
 
@@ -219,7 +227,7 @@ public struct SetTable: View {
                 Text("TIME").instrumentoOverline().frame(maxWidth: .infinity, alignment: .trailing)
             }
             if showsRPE {
-                Text("RPE").instrumentoOverline().frame(width: EntrenarMetrics.rpeColumn, alignment: .trailing)
+                Text(rpeColumnLabel).instrumentoOverline().frame(width: EntrenarMetrics.rpeColumn, alignment: .trailing)
             }
             Color.clear.frame(width: EntrenarMetrics.row, height: 1)
         }
@@ -417,7 +425,7 @@ public struct SetTable: View {
                     .font(InstrumentoType.groteskNumber(15, weight: .bold, relativeTo: .subheadline))
                     .foregroundStyle(theme.dataEffort)
             } else {
-                Text("RPE").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text(rpeColumnLabel).instrumentoOverline().foregroundStyle(theme.inkTertiary)
             }
         }
         .frame(width: EntrenarMetrics.rpeColumn, alignment: .trailing)
@@ -529,7 +537,7 @@ public struct SetTable: View {
         switch cellKind {
         case .primary:    column = Text(kind.primaryColumn)
         case .reps:       column = Text("REPS")
-        case .rpe:        column = Text("RPE")
+        case .rpe:        column = Text(rpeColumnLabel)
         case .pairedTime: column = Text("TIME")
         }
         let subject = row.isWarmup ? Text("warm-up set") : Text("set \(row.badge)")
