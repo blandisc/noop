@@ -109,6 +109,13 @@ private struct EntrenarLanding: View {
     /// FER-85/FER-84: la boleta del veredicto, servida DENTRO de Entrenar. El hilo la abre como
     /// hoja; nunca cambia de pestaña. Es la misma acta que Hoy sirve, con el mismo modelo.
     @State private var showVeredictoActa = false
+    /// FER-138: TU SEMANA (encabezado y tira) abre la hoja rápida de rotar días — pero solo cuando
+    /// ya hay al menos una rutina en el split (`semanaSection`); en primer uso (`split` vacío,
+    /// `primerUsoSection`) TU SEMANA sigue abriendo el editor completo vía `openWeeklyPlan`, porque
+    /// la hoja rápida solo rota entre rutinas YA programadas y no tiene forma de asignar la primera.
+    /// «Editar rutinas y semana ›» (`utilityRow` en `semanaSection`) también sigue llevando a
+    /// `WeeklyPlanEditorView` vía `openWeeklyPlan`.
+    @State private var showWeekEditorSheet = false
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
     private var unitSystem: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
     /// El MISMO «Marcar todo recuperado» que lee `TrainingBodyScreen` (FER-525): sin este filtro
@@ -300,6 +307,16 @@ private struct EntrenarLanding: View {
             // arma este contenido, para que las dos pantallas no puedan divergir.
             VeredictoActaSheet(prep: repo.todayPreparedness, healthConnected: healthConnected,
                                fullyLoaded: repo.fullyLoaded)
+        }
+        // FER-138: la hoja rápida de rotar días — TU SEMANA (encabezado y tira) la abre, en las dos
+        // secciones que la muestran. `$split` es un binding: rotar un día en la hoja actualiza esta
+        // misma landing al instante, sin esperar a que la hoja cierre.
+        .sheet(isPresented: $showWeekEditorSheet) {
+            WeekEditorSheet(theme: theme, split: $split, routines: routines,
+                            orderedWeekdays: orderedWeekdays, todayWeekday: todayWeekday,
+                            doneWeekdays: Set(orderedWeekdays.filter { trainedThisWeek($0) != nil }),
+                            dayLetter: weekdayLetter)
+                .environmentObject(repo)
         }
         // First-use «Rutinas de plantilla» (mock 5a): the grouped templates list. «Add to my routines»
         // is the only action here (no `onStart`), so a copy lands in «My routines» and the landing
@@ -935,12 +952,12 @@ private struct EntrenarLanding: View {
     /// ya existía sin llamador — con la piel nueva de `planRoutineRow` (`EntrenarFamilyDot`).
     private var semanaSection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // El encabezado NO es botón: la tira `WeekTokens` de abajo ya abre el editor semanal, y un
-            // segundo blanco tocable con el mismo destino justo encima duplicaba el tap target — algo
-            // que este mismo cambio evita en MÚSCULOS CARGADOS y BITÁCORA (sus encabezados tampoco
-            // navegan; solo la fila de dato lo hace).
-            nivelHub { EntrenarNivel("Your week", value: semanaValor, kickerStyle: .handoff) }
-            WeekTokens(days: weekTokenDays, labels: orderedWeekdays.map(weekdayLetter)) { openWeeklyPlan() }
+            // FER-138: el encabezado y la tira abren la hoja rápida de rotar días (`WeekEditorSheet`),
+            // no `WeeklyPlanEditorView` — ese editor completo se mudó a «Editar rutinas y semana ›»
+            // (`utilityRow` más abajo), así que sigue teniendo una puerta y ninguna de las dos queda
+            // huérfana.
+            nivelHub { EntrenarNivel("Your week", value: semanaValor, kickerStyle: .handoff) { showWeekEditorSheet = true } }
+            WeekTokens(days: weekTokenDays, labels: orderedWeekdays.map(weekdayLetter)) { showWeekEditorSheet = true }
                 .padding(.top, CenitMetrics.space2)
             ForEach(otherPlanRoutines, id: \.routineId) { row in
                 planRoutineRow(row)
@@ -950,6 +967,10 @@ private struct EntrenarLanding: View {
             ForEach(unscheduledRoutines, id: \.id) { r in
                 planRoutineRow((routineId: r.id, name: r.name, days: String(localized: "no day yet")))
             }
+            // FER-138: la puerta al editor COMPLETO (`WeeklyPlanEditorView`) — asignar rutinas a días,
+            // gestionar carpetas — ya no vive en el encabezado/tira (que ahora abren la hoja rápida de
+            // rotar); sin esta fila `openWeeklyPlan` quedaría sin llamador.
+            utilityRow(icon: "calendar.badge.clock", label: "Edit routines and week") { openWeeklyPlan() }
             nuevaRutinaRow
         }
     }
@@ -1522,7 +1543,11 @@ private struct EntrenarLanding: View {
             // plantillas, un solo camino de los tres que ahora ofrece la puerta.
             StrandCTAButton("Build my plan", tint: theme.positiveText, fillsWidth: false) { showCreatePlan = true }
                 .padding(.top, CenitMetrics.space1)
-            nivelHub { EntrenarNivel("Your week", value: "Tap a day", kickerStyle: .handoff) }
+            // FER-138 (ronda 2, grave): con `split` vacío no hay nada que rotar — la hoja rápida
+            // solo tiene sentido una vez que ya existe al menos una rutina programada. Aquí TU
+            // SEMANA sigue abriendo el editor completo (`openWeeklyPlan` → `WeeklyPlanEditorView`),
+            // el único lugar donde se puede asignar la primera rutina a un día.
+            nivelHub { EntrenarNivel("Your week", value: "Tap a day", kickerStyle: .handoff) { openWeeklyPlan() } }
                 .padding(.top, EntrenarMetrics.firstLevelTop)
             WeekTokens(days: weekTokenDays, labels: orderedWeekdays.map(weekdayLetter)) { openWeeklyPlan() }
                 .padding(.top, CenitMetrics.space2)
