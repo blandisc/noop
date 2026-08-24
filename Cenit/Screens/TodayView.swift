@@ -372,7 +372,8 @@ struct TodayView: View {
                     .recEntranceGate()
             }
             .sheet(item: $strainDetail) { item in
-                StrainDetailScreen(theme: theme, model: item.model, estimated: item.estimated)
+                StrainDetailScreen(theme: theme, model: item.model, estimated: item.estimated,
+                                  sinPermiso: health.auth != .authorized && health.auth != .unavailable)
                     .recEntranceGate()
             }
             .sheet(item: $skinTempDetail) { item in

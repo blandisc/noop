@@ -4138,23 +4138,6 @@
     "\n" : {
 
     },
-    " · fixed scale from 0 to 21" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : " · fixed scale from 0 to 21"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : " · escala fija de 0 a 21"
-          }
-        }
-      }
-    },
     " and " : {
       "localizations" : {
         "en" : {
@@ -5504,6 +5487,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ del voto"
+          }
+        }
+      }
+    },
+    "%@ out of 21" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ out of 21"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ de 21"
           }
         }
       }
@@ -21923,6 +21923,23 @@
         }
       }
     },
+    "Cénit can't read your strain: Apple Health hasn't granted permission. Turn it on and today's workouts will show up here." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cénit can't read your strain: Apple Health hasn't granted permission. Turn it on and today's workouts will show up here."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cénit no puede leer tu esfuerzo: Apple Salud no le ha dado permiso. Actívalo y tus entrenamientos de hoy aparecerán aquí."
+          }
+        }
+      }
+    },
     "Hours asleep per night, with your bands behind." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -23089,23 +23106,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bajando"
-          }
-        }
-      }
-    },
-    "falls in " : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "falls in "
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "cae en "
           }
         }
       }
@@ -36837,6 +36837,23 @@
         }
       }
     },
+    "of 21" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "of 21"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "de 21"
+          }
+        }
+      }
+    },
     "of last month" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -40887,6 +40904,23 @@
         }
       }
     },
+    "Reading your day strain…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reading your day strain…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leyendo tu esfuerzo del día…"
+          }
+        }
+      }
+    },
     "Reading your history…" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -43817,23 +43851,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Repeticiones en reserva: %@"
-          }
-        }
-      }
-    },
-    "Rest / Light" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rest / Light"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reposo / ligero"
           }
         }
       }
@@ -49213,6 +49230,23 @@
         }
       }
     },
+    "Strain history" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Strain history"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Historial de esfuerzo"
+          }
+        }
+      }
+    },
     "Strained" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -52165,6 +52199,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hoy toca descanso.\nRecupera primero."
+          }
+        }
+      }
+    },
+    "Today falls in %@ · fixed scale from 0 to 21" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today falls in %@ · fixed scale from 0 to 21"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoy cae en %@ · escala fija de 0 a 21"
           }
         }
       }

@@ -5,82 +5,89 @@ import StrandAnalytics
 import CenitStore
 import Foundation
 
-// MARK: - StrainDetailScreen — el «Detalle de Esfuerzo» en «Instrumento» (FER-238 · FER-859)
+// MARK: - StrainDetailScreen — el «Detalle de Esfuerzo» en vidrio Liquid (FER-101 · TND-10)
 //
-// Hermana del detalle de Recuperación que se retiró en FER-119 (patrón FER-857): reutiliza el esqueleto del handoff «Detalle de
-// Tendencias Final» — héroe invertido → niveles → historial siempre abierto
-// (`GraficaRangos`) → calendario 90 días → método + sello. NO extiende `MetricDetailScreen`/
-// `MetricDetailSpec` (esos son para vitales de serie escalar). El esfuerzo es una métrica
-// compuesta: el hero es el valor de HOY en escala fija 0–21 (el score asentado del día), y su
-// referencia son zonas fijas. (La curva intradía «hora a hora» se retiró en FER-1025: sin banda
-// no hay pulso segundo a segundo que la alimente.)
+// Migración PURAMENTE VISUAL del esqueleto «Tendencias Final» (papel «Instrumento») a los legos
+// Liquid, calcando el patrón de `SleepDetailScreen.swift` (la vara de medir de esta migración):
+// campo teñido a sangre (`LiquidCampoMetrica`) → costuras de sección (`LiquidFranjaSeccion`) →
+// niveles fijos (`LiquidBandsTable`) → historial (`LiquidRangeSelector` + `LiquidGraficaNiveles` +
+// `LiquidResumenVentana` + `LiquidLevelsList`) → calendario (`LiquidCalendario90`) → método + sello
+// (`LiquidCapilar` + `LiquidMetodo` + `LiquidOrigenChip`, patrón `pieMetodo` de Sueño). Segunda
+// referencia: `PreparacionDetailScreen.swift` (estados vacíos, skeleton, sin-permiso).
 //
-// Se presenta vía `.sheet(item:)` con el tema vivo pasado EXPLÍCITO (no propaga por `.sheet`, FER-162)
-// y SIN `NavigationStack` anidado (FER-171). Consume `StrandAnalytics` TAL CUAL: no crea math.
+// `StrainDetailModel` NO CAMBIA (contrato de datos congelado para esta tarea): consume
+// `StrandAnalytics` tal cual (hoy, la serie, los drivers) — cero math nueva. El esfuerzo sigue
+// siendo DESCRIPTIVO, sin semáforo: el tono es SIEMPRE `LiquidColor.ambar` (identidad de esfuerzo,
+// no juicio — ver el swatch «ámbar · esfuerzo/piel» en `LiquidColor.swift`).
+//
+// Se presenta vía `.sheet(item:)` con el tema vivo pasado EXPLÍCITO (no propaga por `.sheet`,
+// FER-162; el tema ya NO se referencia dentro — se conserva solo por compatibilidad de firma con
+// los call sites, mismo trato que `SleepDetailScreen`/`TrainingLoadSheet`) y SIN `NavigationStack`
+// anidado (FER-171).
 
-/// Light «Instrumento» Detalle de Esfuerzo. Built once from a `StrainDetailModel` (the caller injects the
-/// model so the screen stays DB-free). Themed explicitly for the sheet.
+/// Detalle de Esfuerzo en vidrio Liquid. Se arma UNA vez desde un `StrainDetailModel` (el caller
+/// inyecta el modelo para que la pantalla siga sin tocar la base de datos).
 struct StrainDetailScreen: View {
-    /// The live «Instrumento» theme, passed explicitly (sheets start a fresh environment). (FER-162)
+    /// El tema vivo «Instrumento», retenido por compatibilidad con los call sites — la hoja Liquid
+    /// ya no lo referencia. (FER-101, mismo trato que `SleepDetailScreen`/`TrainingLoadSheet`)
     var theme: InstrumentoTheme = .base
-    /// Everything the screen draws from the in-memory dashboard, derived ONCE by the caller (no DB here).
+    /// Todo lo que la pantalla dibuja, derivado UNA vez por el caller desde `repo`. Contrato
+    /// congelado para esta migración: NO se toca.
     let model: StrainDetailModel
-    /// FER-885: today's «Day load» is an Apple workout-HR estimate (Apple-only mode, FER-883), not a
-    /// band-measured Day Strain. Flips the footer to the Apple seal and adds the honest under-count hedge.
+    /// FER-885: el «Day load» de hoy es un estimado de FC de entrenamiento de Apple (modo
+    /// solo-Apple, FER-883), no un Day Strain medido por banda. Cambia el sello del pie al de
+    /// Apple y añade el hedge honesto de sub-conteo.
     var estimated: Bool = false
+    /// `true` cuando Apple Salud NO está autorizado. Mismo predicado que Sueño/Hoy. (FER-101)
+    var sinPermiso: Bool = false
 
-    /// The trend block's period window (W/M/3M/6M/1Y/ALL). Defaults to a month.
+    /// La ventana del historial (S/M/3M/6M/1A/TODO). Por omisión, un mes.
     @State private var range: ExploreRange = .month
-    /// The strain series with each `day` string parsed to a `Date` exactly ONCE (not per slice / per
-    /// render) — the window math reads `date` straight from here. Built in `.task`. (FER-216 lesson)
+    /// La serie de esfuerzo con cada llave de día parseada UNA vez en el `.task`.
     @State private var parsed: [(day: String, date: Date?, value: Double)] = []
-    /// The tapped day for the calendar read-out. (FER-830)
-    @State private var selectedStrainDay: RecoveryDay? = nil
-    /// The hero's ⓘ toggles the «Qué medimos» card right under the inverted field. (FER-859)
+    /// El día tocado en el calendario, por su llave de día. (FER-830)
+    @State private var selectedStrainDayID: String? = nil
+    /// El ⓘ del campo abre la tarjeta «Qué medimos» bajo él. (FER-859)
     @State private var infoOpen = false
+    /// El carril del historial que el dedo explora; `nil` = ninguno (paridad Sueño/Carga).
+    @State private var bandaExplorada: Int? = nil
 
-    // MARK: - Body — el esqueleto estándar del handoff «Detalle de Tendencias Final» (FER-859)
+    /// El tono de la pantalla: el esfuerzo es SIEMPRE ámbar-identidad, nunca un semáforo — esta
+    /// hoja es descriptiva. (§8.9 DESIGN.md; swatch «ámbar · esfuerzo/piel» en `LiquidColor.swift`)
+    private static let tono = LiquidColor.ambar
+
+    // MARK: - Body
 
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
+                if let v = shownToday {
+                    campoConDato(v)
+                } else {
+                    campoSinDato
+                }
+                if infoOpen { whatWeMeasureCard }
                 if !model.loaded {
-                    Group {
-                        heroFlat
-                        ChartWell(theme).loading(height: 160).padding(.top, 22)
-                    }
-                    .padding(CenitMetrics.screenPadding)
+                    LiquidSheetSkeleton(a11yCargando: String(localized: "Reading your day strain…"))
+                        .liquidSeccion()
                 } else if model.hasData {
-                    if shownToday != nil {
-                        heroField
-                    } else {
-                        heroFlat.padding(CenitMetrics.screenPadding)
-                    }
-                    if infoOpen { whatWeMeasureCard }
                     seccion(String(localized: "Levels")) { levelsContent }
                     seccion(String(localized: "See your history")) { historyContent }
                     if parsed.contains(where: { $0.value > 0 }) {
                         seccion(String(localized: "Calendar · 90 days")) { calendarContent }
                     }
-                    PieMetodo(theme: theme) {
-                        metodoBlock
-                    } sello: {
-                        sourceFooter
-                    }
-                } else {
-                    heroFlat.padding(CenitMetrics.screenPadding)
+                    pieMetodo
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(theme.paper)
+        .background { LiquidSheetFondo(tone: Self.tono).ignoresSafeArea() }
+        .presentationBackground { LiquidSheetFondo(tone: Self.tono) }
         .presentationDragIndicator(.visible)
-        .sheetPaper(theme)
-        // FER-954: re-run when the placeholder model is replaced by the real one (same seam as
-        // Sueño/Recuperación, FER-953) and hop the day-key parse off-main. The placeholder pass
-        // bails early so the parse runs only on the real model.
+        .presentationCornerRadius(LiquidRadius.hoja)
+        // FER-954: re-corre cuando el modelo placeholder se cambia por el real; parseo off-main.
         .task(id: model.loaded) {
-            guard model.loaded else { return }   // placeholder pass — nothing to parse yet (FER-954)
+            guard model.loaded else { return }   // pasada placeholder — nada que parsear (FER-954)
             range = .month
             let series = model.series
             parsed = await Task.detached(priority: .userInitiated) {
@@ -89,154 +96,149 @@ struct StrainDetailScreen: View {
         }
     }
 
-    /// One skeleton section: shared `SeccionBloque` (franja + handoff padding 14 · 20 · 22).
-    private func seccion(_ title: String, @ViewBuilder content: () -> some View) -> some View {
-        SeccionBloque(title, theme: theme, content: content)
+    /// Una sección: la costura a sangre + su contenido con el margen del sistema.
+    @ViewBuilder
+    private func seccion<Content: View>(_ titulo: String, @ViewBuilder content: () -> Content) -> some View {
+        LiquidFranjaSeccion(titulo, tono: Self.tono)
+        content().liquidSeccion()
     }
 
-    // MARK: - 1. Héroe invertido — siempre `dataStrain` (descriptivo, sin semáforo)
+    // MARK: - 1. El campo (héroe) — un solo numeral, descriptivo, sin semáforo
 
-    /// The value shown as today's strain: the settled day score (`repo.today.strain`, estimated from Apple
-    /// workout HR in Apple-only mode). Drives the hero number, its plain-language reading, and the
-    /// highlighted level — one value, never a contradiction on-screen.
+    /// El valor mostrado como esfuerzo de hoy: el score asentado del día (`repo.today.strain`,
+    /// estimado de FC de entrenamiento de Apple en modo solo-Apple). Contrato sin tocar.
     private var shownToday: Double? { model.today }
 
-    /// The inverted hero: the ONE field saturated at 100% of `theme.dataStrain`. Overline + ⓘ,
-    /// 60pt Grotesk numeral (recRise), «en curso» capsule, verdict line. Text is paper on hue.
-    private var heroField: some View {
-        let v = shownToday ?? 0
-        return HeroInvertido(
-            glyph: .strain,
-            title: "Day Strain",
-            hue: theme.dataStrain,
-            theme: theme,
-            onInfo: { withAnimation(StrandMotion.interactive) { infoOpen.toggle() } },
-            numeral: {
-                HeroNumeral(fmt(v), suffix: "/ 21", theme: theme) {
-                    Text("in progress")
-                        .font(InstrumentoType.grotesk(13, weight: .semibold))
-                        .foregroundStyle(theme.paper)
-                        .heroCapsule(theme: theme)
-                }
-            },
-            verdict: {
-                // Keep `heroReading` as ONE localized sentence (existing String Catalog keys). Splitting the
-                // four zone strings cleanly into short-clause + secondary clause is awkward for "Moderate
-                // effort today." Visual fidelity to the mock's two-tone verdict is secondary to not inventing
-                // new copy. (FER-859)
-                Text(heroReading)
-                    .font(InstrumentoType.grotesk(15, weight: .semibold))
-                    .foregroundStyle(theme.paper)
-                    .fixedSize(horizontal: false, vertical: true)
-            },
-            trailing: {
+    /// El carril (de `bandasEsfuerzo`) en el que cae `shownToday`, o `nil` sin dato. Único
+    /// predicado de la pantalla: lo leen el campo, la tabla de niveles, el historial y el
+    /// calendario — nunca una segunda copia de los cortes (paridad `SleepDetailScreen.indiceCarril`).
+    private var indiceHoy: Int? { shownToday.flatMap(Self.indiceCarril) }
+
+    /// El campo teñido a sangre con dato: numeral + «de 21», veredicto de una frase, y al pie el
+    /// aviso de «en curso» + el sello de confianza — la ranura libre que el campo existe para
+    /// cargar (paridad `SleepDetailScreen.pieCampo`).
+    private func campoConDato(_ v: Double) -> some View {
+        LiquidCampoMetrica(
+            tono: Self.tono,
+            titulo: String(localized: "Day Strain"),
+            glifo: .llama,
+            datos: [.init(valor: fmt(v), rotulo: String(localized: "of 21"),
+                         a11y: String(localized: "\(fmt(v)) out of 21"))],
+            veredicto: heroReadingConDato(v),
+            infoAbierto: infoOpen,
+            infoEtiqueta: String(localized: "What we measure"),
+            onInfo: { withAnimation(LiquidMotion.lift) { infoOpen.toggle() } }
+        ) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s150) {
+                // El score de hoy SIEMPRE está acumulándose (el esfuerzo se lee segundo a
+                // segundo mientras el día corre) — el mismo aviso que la cápsula «en curso»
+                // llevaba pegada al numeral en «Instrumento». (FER-101)
+                LiquidCampoSello(String(localized: "in progress"))
                 if let tier = model.confidence {
-                    tier.sello(theme: theme, onField: true)
-                        .padding(.top, 2)
+                    LiquidCampoSello(tier.confidenceLabelText, a11y: tier.confidenceA11yText)
                 }
             }
-        )
+        }
     }
 
-    /// The ⓘ card under the hero: what the score measures, in plain language.
-    private var whatWeMeasureCard: some View {
-        QueMedimosCard(title: "What we measure", explanation: heroExplanation, theme: theme)
-    }
-
-    /// The flat hero for score-less states (loading / empty / history-only): the pre-handoff identity —
-    /// no inverted field for a number we don't have.
-    private var heroFlat: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            InstrumentoScreenTitle("Day Strain", theme: theme, explanation: heroExplanation, glyph: .strain)
-            VStack(alignment: .leading, spacing: 10) {
-                Text(verbatim: "—")
-                    .instrumentoHero(46)
-                    .foregroundStyle(theme.inkTertiary)
-                Text(heroReading)
-                    .font(StrandFont.headline)
-                    .foregroundStyle(theme.ink)
-                    .fixedSize(horizontal: false, vertical: true)
+    /// El campo APAGADO: sin dato de hoy (cargando, sin permiso, o con historia pero sin score
+    /// de hoy) el numeral es un guion, nunca un cero. Mismo patrón que
+    /// `SleepDetailScreen.campoApagado`.
+    private var campoSinDato: some View {
+        LiquidCampoMetrica(
+            tono: Self.tono,
+            titulo: String(localized: "Day Strain"),
+            glifo: .llama,
+            datos: [.init(valor: LiquidCajita.sinDato, rotulo: String(localized: "of 21"),
+                         a11y: String(localized: "no data"), ausente: true)],
+            clausula: clausulaSinDato
+        ) {
+            if sinPermiso {
+                LiquidVerMas(title: String(localized: "Manage Apple Health permissions"),
+                             tone: LiquidColor.papelAlto) { Self.abrirAjustesSalud() }
             }
         }
     }
 
-    /// The hero ⓘ copy — the standard day-strain explanation (Edwards/Banister).
-    private var heroExplanation: LocalizedStringKey {
-        "Day Strain is your cardiovascular load on a 0–21 scale. Each second your heart rate is recorded, it's placed in an intensity zone (1–5); higher zones weigh more, and the total is compressed logarithmically so 21 is a theoretical maximum: a full day at peak intensity. (Edwards 1993; Banister 1991)"
+    /// Tres vacíos distintos, no uno: cargando · sin permiso · con permiso y sin score de hoy.
+    /// Mismo árbol de tres ramas que `SleepDetailScreen.clausulaVacia`.
+    private var clausulaSinDato: String {
+        guard model.loaded else { return String(localized: "Reading your day strain…") }
+        if sinPermiso {
+            return String(localized: "Cénit can't read your strain: Apple Health hasn't granted permission. Turn it on and today's workouts will show up here.")
+        }
+        if !model.series.isEmpty {
+            return String(localized: "No strain from today yet: your recent history is below.")
+        }
+        return String(localized: "No strain yet. Day Strain builds from your workout heart rate: open this again after your next workout syncs from Apple Health.")
     }
 
-    /// A plain-language reading of today's strain by zone, or an honest "no strain yet" when there's no
-    /// score (strain is strap-only; Apple Health doesn't compute it). The zone is derived from the SAME
-    /// `MetricInfo.strain` bands the levels block shows, so the reading and the highlighted zone can never
-    /// disagree if a boundary is ever retuned (single source of truth — no second copy of the thresholds).
-    /// Source strings are English; the es values live in `Localizable.xcstrings`.
-    private var heroReading: LocalizedStringKey {
-        guard let v = shownToday else {
-            if !model.series.isEmpty { return "No strain from today yet: your recent history is below." }
-            return "No strain yet. Day Strain builds from your workout heart rate: open this again after your next workout syncs from Apple Health."
+    /// Abre Ajustes de iOS en la ficha de la app — mismo atajo que Sueño (FER-102).
+    private static func abrirAjustesSalud() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
+    }
+
+    /// La tarjeta del ⓘ bajo el campo: qué mide el score, en lenguaje llano. Mismo patrón que
+    /// `SleepDetailScreen.queMedimosCard`.
+    private var whatWeMeasureCard: some View {
+        VStack(alignment: .leading, spacing: LiquidSpace.s150) {
+            Text(String(localized: "What we measure"))
+                .font(LiquidType.tituloFila)
+                .foregroundStyle(LiquidColor.tinta900)
+            Text(heroExplanation)
+                .font(LiquidType.cuerpo)
+                .lineSpacing(LiquidType.cuerpoLineSpacing)
+                .foregroundStyle(LiquidColor.tinta700)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        switch MetricInfo.strain(v).bands.firstIndex(where: \.isActive) ?? 0 {
-        case 0:  return "Light load today: plenty left in the tank."
-        case 1:  return "Moderate effort today."
-        case 2:  return "Hard effort today: solid work."
-        default: return "All-out day: about as much strain as you carry."
+        .liquidTarjetaSeccion()
+        .liquidSeccion(top: LiquidSpace.s400, bottom: LiquidSpace.s200)
+    }
+
+    /// El copy del ⓘ — la explicación estándar del día (Edwards/Banister). Texto SIN CAMBIOS.
+    private var heroExplanation: String {
+        String(localized: "Day Strain is your cardiovascular load on a 0–21 scale. Each second your heart rate is recorded, it's placed in an intensity zone (1–5); higher zones weigh more, and the total is compressed logarithmically so 21 is a theoretical maximum: a full day at peak intensity. (Edwards 1993; Banister 1991)")
+    }
+
+    /// La frase de una línea bajo el numeral, por carril de `bandasEsfuerzo`. Las MISMAS cuatro
+    /// frases de siempre (el carril «extreme» comparte la última con «hard», igual que en
+    /// «Instrumento»: solo cuatro lecturas para cinco carriles). Texto SIN CAMBIOS.
+    private func heroReadingConDato(_ v: Double) -> String {
+        switch indiceHoy ?? 0 {
+        case 0:  return String(localized: "Light load today: plenty left in the tank.")
+        case 1:  return String(localized: "Moderate effort today.")
+        case 2:  return String(localized: "Hard effort today: solid work.")
+        default: return String(localized: "All-out day: about as much strain as you carry.")
         }
     }
 
-    // MARK: - 2. Niveles (las 4 bandas fijas de `MetricInfo.strain`, la activa marcada)
+    // MARK: - 2. Niveles — las 5 bandas fijas de `MetricLevels.strain`, la de hoy marcada
+    //
+    // «LiquidBandsTable» (no `LiquidLevelsList`): esta tabla es la variante CLÁSICA, de solo
+    // lectura — sin conteos, sin tap. `LiquidLevelsList` es la lista TOCABLE que explora el
+    // historial (§3, abajo); mezclarlas es justo el defecto que
+    // `LiquidSheetEstadosRenderTests.swift:24` documenta como regla de la familia. Ver
+    // `LiquidMetricSheetView.bandsTableBlock` (:925-936) para el mismo call site en la hoja de
+    // métrica clásica.
 
     private var levelsContent: some View {
-        let bands = MetricInfo.strain(shownToday).bands
-        return VStack(alignment: .leading, spacing: 8) {
-            if let v = shownToday, let active = bands.first(where: \.isActive) {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(fmt(v))
-                        .font(InstrumentoType.groteskNumber(24, weight: .bold))
-                        .foregroundStyle(theme.dataStrain)
-                    (Text("falls in ")
-                     + Text(active.label)
-                     + Text(" · fixed scale from 0 to 21"))
-                        .font(InstrumentoType.grotesk(13))
-                        .foregroundStyle(theme.inkSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+        VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+            if let i = indiceHoy {
+                let b = Self.bandasEsfuerzo[i]
+                LiquidReadingLine(
+                    String(localized: "Today falls in \(b.label) · fixed scale from 0 to 21"),
+                    highlight: b.label, highlightTone: Self.tono)
             }
-            VStack(spacing: 0) {
-                ForEach(Array(bands.enumerated()), id: \.offset) { _, band in
-                    zoneRow(band)
-                }
-            }
-            .padding(.top, 2)
+            LiquidBandsTable(
+                filas: Self.bandasEsfuerzo.enumerated().map { i, b in
+                    LiquidBandsTable.Fila(etiqueta: b.label, rango: b.range, activa: i == indiceHoy)
+                },
+                tono: Self.tono)
         }
     }
 
-    /// One zone row: a dot (active → the strain hue, else quiet ink) + label + its range, with a subtle
-    /// active highlight. Token-only.
-    private func zoneRow(_ band: MetricInfo.Band) -> some View {
-        HStack(spacing: 10) {
-            Circle()
-                .fill(band.isActive ? theme.dataStrain : theme.inkTertiary.opacity(StrandOpacity.dim))
-                .frame(width: 8, height: 8)
-            Text(band.label)
-                .font(band.isActive
-                      ? InstrumentoType.grotesk(13, weight: .semibold)
-                      : InstrumentoType.grotesk(13))
-                .foregroundStyle(band.isActive ? theme.ink : theme.inkSecondary)
-            Spacer(minLength: 8)
-            Text(band.range)
-                .font(InstrumentoType.groteskNumber(12))
-                .foregroundStyle(band.isActive ? theme.dataStrain : theme.inkTertiary)
-        }
-        .padding(.vertical, 9)
-        .padding(.horizontal, 8)
-        .frame(maxWidth: .infinity)
-        .background(
-            RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
-                .fill(band.isActive ? theme.tint(theme.dataStrain) : Color.clear)
-        )
-    }
-
-    // MARK: - 4. Ver tu historial (SIEMPRE abierto) — PeriodSelector + GraficaRangos + tiles + drivers
+    // MARK: - 3. Ver tu historial (SIEMPRE abierto) — selector + gráfica + resumen + escalera
 
     private var historyContent: some View {
         let window = MetricWindowMath.make(parsed, selected: range)
@@ -244,176 +246,341 @@ struct StrainDetailScreen: View {
         let mediaStat = ComparisonEngine.stat(smoothed)
         let rawStat = ComparisonEngine.stat(window.values)
         let pct = range.periodComparison(of: model.series)?.pctChange
-        return VStack(alignment: .leading, spacing: 8) {
-            SegmentedPillControl(ExploreRange.allCases, selection: $range, theme: theme) { $0.label }
+        return VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+            LiquidRangeSelector(opciones: ExploreRange.allCases.map(\.label),
+                                seleccion: rangeSeleccion, tono: Self.tono)
             if window.values.count > 1 {
-                GraficaRangos(
-                    points: smoothed,
-                    bands: Self.strainBands(theme),
-                    ticks: [.init(v: 18, label: "18"), .init(v: 13, label: "13"), .init(v: 8, label: "8")],
-                    hue: theme.dataStrain, ymin: 6, ymax: 19,
-                    startLabel: window.rows.first.flatMap { MetricWindowMath.axisLabel($0.day) } ?? "",
-                    endLabel: window.rows.last.flatMap { MetricWindowMath.axisLabel($0.day) } ?? "",
-                    mediaValue: fmt(mediaStat.mean),
-                    mediaNote: String(localized: "average of the \(range.name)"),
-                    mediaDelta: pct.map { $0 >= 0 ? "+\(Int($0.rounded()))%" : "\(Int($0.rounded()))%" },
-                    deltaColor: theme.inkSecondary,
-                    countUnit: "d",
-                    anchorMedia: String(localized: "7-day moving average: day-to-day strain is noisy."),
-                    anchorRangos: String(localized: "How many days of the period fell in each band. Tap one to see its days on the chart."),
-                    scrub: true,
-                    labels: window.rows.map { MetricWindowMath.axisLabel($0.day) ?? "" },
-                    theme: theme)
-                    .padding(.top, 6)
-                    .id(range)
-                HStack(alignment: .top, spacing: 8) {
-                    TileSurface(label: String(localized: "Average"),
-                                value: fmt(mediaStat.mean),
-                                theme: theme)
-                    TileSurface(label: String(localized: "Range"),
-                                value: "\(fmt(rawStat.min))–\(fmt(rawStat.max))",
-                                theme: theme)
-                    TileSurface(label: String(localized: "Today"),
-                                value: shownToday.map { fmt($0) } ?? "—",
-                                valueColor: shownToday != nil ? theme.dataStrain : nil,
-                                theme: theme)
+                VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+                    fraseNivelHistorial(window)
+                    if let pct {
+                        LiquidNotaLine(pct >= 0 ? "+\(Int(pct.rounded()))%" : "\(Int(pct.rounded()))%",
+                                       tono: pct >= 0 ? LiquidColor.positivo : LiquidColor.atencionTexto)
+                    }
+                    graficaHistorial(window, smoothed: smoothed)
+                    LiquidNotaLine(String(localized: "7-day moving average: day-to-day strain is noisy."))
+                    LiquidResumenVentana(celdas: [
+                        .init(rotulo: String(localized: "Average"), valor: fmt(mediaStat.mean)),
+                        .init(rotulo: String(localized: "Range"),
+                              valor: "\(fmt(rawStat.min))–\(fmt(rawStat.max))"),
+                        .init(rotulo: String(localized: "Today"),
+                              valor: shownToday.map(fmt) ?? LiquidCajita.sinDato,
+                              tono: shownToday != nil ? Self.tono : nil),
+                    ])
                 }
-                .padding(.top, 4)
+                .liquidTarjetaSeccion()
+                LiquidLevelsList(filas: carrilesHistorial(window), tono: Self.tono)
+                LiquidNotaLine(String(localized: "How many days of the period fell in each band. Tap one to see its days on the chart."))
             } else {
-                ChartWell(theme).empty(text: "Not enough days in this range to draw a trend.")
-                    .padding(.top, 6)
+                LiquidGraficaNiveles(puntos: [], bandas: [], dominio: Self.dominioEsfuerzo, ticksY: [],
+                                     tono: Self.tono,
+                                     estadoVacio: String(localized: "Not enough days in this range to draw a trend."),
+                                     a11yLabel: String(localized: "Strain history"))
             }
             if !model.drivers.isEmpty {
-                whatMovesCard
-                    .padding(.top, 10)
+                whatMovesCard.padding(.top, LiquidSpace.s250)
             }
         }
     }
 
-    /// The four fixed strain lanes for `GraficaRangos`, derived from `MetricInfo.strain` (its bands now
-    /// carry numeric bounds) — the SAME ladder the hero verdict and the Niveles table read, never
-    /// restated as a second math source. Colors rest→extreme: low / mid / full / deep amber; list
-    /// order high→low mirrors Recovery.
-    static func strainBands(_ theme: InstrumentoTheme) -> [GraficaRangos.Banda] {
-        let ramp = [theme.strainRampLow, theme.strainRampMid, theme.dataStrain, theme.strainDeep]
-        // Display words per lane (rest→extreme); bounds/ranges come from the ladder itself.
-        let words = [String(localized: "Rest / Light"), String(localized: "Moderate"),
-                     String(localized: "Hard"), String(localized: "Extreme")]
-        return MetricInfo.strain(nil).bands.enumerated().reversed().map { i, band in
-            GraficaRangos.Banda(label: words[Swift.min(i, words.count - 1)],
-                                lo: band.lower, hi: band.upper,
-                                color: ramp[Swift.min(i, ramp.count - 1)],
-                                range: band.range)
+    /// El índice del selector ⇄ `ExploreRange`; cambiar de rango suelta el carril explorado.
+    private var rangeSeleccion: Binding<Int> {
+        Binding(
+            get: { ExploreRange.allCases.firstIndex(of: range) ?? 0 },
+            set: { idx in
+                range = ExploreRange.allCases[idx]
+                bandaExplorada = nil
+            })
+    }
+
+    /// El carril resaltado en la gráfica y en la escalera: el que el dedo explora, o si no hay
+    /// ninguno, el de hoy.
+    private var destacado: Int? { bandaExplorada ?? indiceHoy }
+
+    /// El carril de HOY y cuántos días del periodo cayeron con él — el mismo contrato que
+    /// `SleepDetailScreen.fraseNivelHistorial`, con `LiquidFraseNivel`.
+    @ViewBuilder private func fraseNivelHistorial(_ window: MetricWindow) -> some View {
+        if let i = indiceHoy {
+            let b = Self.bandasEsfuerzo[i]
+            let n = window.values.filter { v in
+                (b.lo == nil || v >= b.lo!) && (b.hi == nil || v < b.hi!)
+            }.count
+            LiquidFraseNivel(nivel: b.label,
+                             conteo: String(localized: "\(n) of your last \(window.values.count) days"),
+                             tono: Self.tono)
+        } else {
+            LiquidFraseNivel(nivel: nil,
+                             conteo: String(localized: "\(window.values.count) days with data in this range"),
+                             tono: Self.tono,
+                             sinLectura: String(localized: "No reading today"))
         }
     }
 
-    /// «Qué mueve tu esfuerzo» — directional drivers, gated (FER-239). Card disappears entirely when
-    /// nothing clears the sufficiency gate (FER-246 / mock: no empty-state message).
+    /// La gráfica del historial: la serie SUAVIZADA a 7 días (día a día el esfuerzo es ruidoso —
+    /// mismo criterio que «Instrumento»), con los carriles fijos detrás.
+    private func graficaHistorial(_ window: MetricWindow, smoothed: [Double]) -> some View {
+        let puntos = MetricWindowMath
+            .decimatedPoints(rows: window.rows, values: smoothed, maxPoints: 80)
+            .map { (fecha: $0.date, valor: $0.value) }
+        return LiquidGraficaNiveles(
+            puntos: puntos,
+            bandas: Self.bandasEsfuerzo.enumerated().map { i, b in
+                LiquidChartBanda(lo: b.lo, hi: b.hi, color: b.color, activa: i == destacado)
+            },
+            dominio: Self.dominioEsfuerzo,
+            ticksY: [(18, "18"), (13, "13"), (8, "8")],
+            tono: Self.tono,
+            puntoHoy: shownToday != nil ? puntos.last : nil,
+            hoyAnillo: bandaExplorada != nil && bandaExplorada != indiceHoy,
+            formatoScrub: { v, f in "\(fmt(v)) · \(Self.ejeFechaFmt.string(from: f))" },
+            formatoValorScrub: { fmt($0) },
+            formatoFechaScrub: { Self.ejeFechaFmt.string(from: $0) },
+            formatoFechaEje: { Self.ejeFechaFmt.string(from: $0) },
+            atenuarFuera: bandaExplorada != nil,
+            estadoVacio: String(localized: "Not enough days in this range to draw a trend."),
+            a11yLabel: String(localized: "Strain history"))
+            .id(range)
+    }
+
+    /// Los carriles tocables bajo la gráfica: tocar uno resalta sus días; re-tocarlo limpia.
+    /// Mismo contrato que `SleepDetailScreen.carrilesHistorial` / `TrainingLoadSheet.nivelesLista`.
+    private func carrilesHistorial(_ window: MetricWindow) -> [LiquidLevelsList.Fila] {
+        let hint = String(localized: "Highlights this level on the chart")
+        let hoyRotulo = String(localized: "· today")
+        return Self.bandasEsfuerzo.indices.map { i in
+            let b = Self.bandasEsfuerzo[i]
+            let n = window.values.filter { v in
+                (b.lo == nil || v >= b.lo!) && (b.hi == nil || v < b.hi!)
+            }.count
+            return LiquidLevelsList.Fila(
+                etiqueta: b.label, rango: b.range,
+                conteo: n == 1 ? String(localized: "\(n) day") : String(localized: "\(n) days"),
+                esHoy: i == indiceHoy, activa: i == destacado,
+                hoyEtiqueta: hoyRotulo, a11yHint: hint,
+                onTap: {
+                    withAnimation(LiquidMotion.lift) {
+                        bandaExplorada = (bandaExplorada == i) ? nil : i
+                    }
+                })
+        }
+    }
+
+    /// «Qué mueve tu esfuerzo» — drivers direccionales, ya gateados por el motor (FER-239). La
+    /// tarjeta desaparece entera cuando nada cruza el umbral de suficiencia (sin mensaje vacío).
+    /// Cabecera propia (overline + chip «tendencia, no causa»): no hay gemelo Liquid de
+    /// `QueLaMueveHeader` (esa pieza es de la familia «Instrumento», theme-based), así que se
+    /// compone en línea con los mismos tokens que `LiquidVigilanteChip` (cápsula punteada,
+    /// `captionLectura`/`tinta700`) en vez de acuñar una pieza nueva del DS para un solo uso.
     private var whatMovesCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            QueLaMueveHeader("What moves your strain", chip: "trend, not cause", theme: theme)
+        VStack(alignment: .leading, spacing: LiquidSpace.s250) {
+            HStack(alignment: .center, spacing: LiquidSpace.s200) {
+                Text(String(localized: "What moves your strain"))
+                    .liquidLabel()
+                    .foregroundStyle(LiquidColor.tinta500)
+                Text(String(localized: "trend, not cause"))
+                    .font(LiquidType.captionLectura)
+                    .foregroundStyle(LiquidColor.tinta700)
+                    .padding(.horizontal, LiquidSpace.s225)
+                    .padding(.vertical, LiquidSpace.s075)
+                    .overlay(
+                        Capsule().stroke(LiquidColor.tinta10,
+                                        style: StrokeStyle(lineWidth: 1.2, dash: [3, 3]))
+                    )
+            }
             ForEach(model.drivers, id: \.driver) { finding in
                 Text(Self.driverPhrase(finding))
-                    .font(StrandFont.caption)
-                    .foregroundStyle(theme.inkSecondary)
+                    .font(LiquidType.captionLectura)
+                    .foregroundStyle(LiquidColor.tinta700)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .padding(EdgeInsets(top: 12, leading: 14, bottom: 12, trailing: 14))
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .instrumentoCard(.card, theme: theme)
+        .liquidTarjetaSeccion()
     }
 
-    /// The directional sentence for a driver. The direction comes from the user's data; no number is ever
-    /// shown. Source strings are English; the es-MX values live in `Localizable.xcstrings`.
-    private static func driverPhrase(_ f: StrainDriverFinding) -> LocalizedStringKey {
+    /// La frase direccional de un driver — el dato es siempre una DIRECCIÓN, nunca un número.
+    /// Texto SIN CAMBIOS (mismas 4 claves).
+    private static func driverPhrase(_ f: StrainDriverFinding) -> String {
         switch (f.driver, f.trend) {
-        case (.sameDayRecovery, .rises): return "Tends to run higher on days you start more recovered."
-        case (.sameDayRecovery, .falls): return "Tends to run lower on days you start more recovered."
-        case (.priorDayStrain, .rises):  return "Tends to run higher the day after a hard effort."
-        case (.priorDayStrain, .falls):  return "Tends to ease off the day after a hard effort."
+        case (.sameDayRecovery, .rises): return String(localized: "Tends to run higher on days you start more recovered.")
+        case (.sameDayRecovery, .falls): return String(localized: "Tends to run lower on days you start more recovered.")
+        case (.priorDayStrain, .rises):  return String(localized: "Tends to run higher the day after a hard effort.")
+        case (.priorDayStrain, .falls):  return String(localized: "Tends to ease off the day after a hard effort.")
         }
     }
 
-    // MARK: - 5. Calendario · 90 días (YearHeatStrip re-tint + leyenda + read-out)
+    // MARK: - Los carriles fijos — UNA sola escalera, compartida por niveles/historial/calendario
+    //
+    // FER-101: antes esta pantalla tenía DOS ladders distintas para la misma métrica —
+    // `MetricInfo.strain(_:).bands` (5 carriles) para la tabla estática, y una `strainBands(theme:)`
+    // propia que colapsaba «rest»+«light» en una sola etiqueta «Rest / Light» de 4 carriles para la
+    // gráfica (con un desfase de índice real: el carril «hard» clampeaba a la palabra/color de
+    // «extreme» — ver el `.enumerated().reversed()` + `Swift.min(i, words.count - 1)` del original).
+    // Se deriva UNA vez de `MetricLevels.displayBands(for: .strain)` — la misma fuente que ya
+    // alimentaba `MetricInfo.strain` por debajo — y las CINCO bandas (rest/light/moderate/hard/
+    // extreme) se usan tal cual en los tres bloques. Decisión anotada para el orquestador: el
+    // conteo de carriles visibles en la tabla y en la gráfica del historial pasa de 4 a 5 (más
+    // fiel al motor); las 4 frases del héroe NO cambian (se preservó el mismo `switch` de 4 casos
+    // sobre el mismo índice 0-4, así que «hard» y «extreme» siguen leyendo la MISMA frase, como
+    // en «Instrumento»).
+
+    struct BandaEsfuerzo {
+        let key: String
+        let label: String
+        let lo: Double?
+        let hi: Double?
+        let color: Color
+        let range: String
+    }
+
+    static let bandasEsfuerzo: [BandaEsfuerzo] = MetricLevels.displayBands(for: .strain).map { band in
+        BandaEsfuerzo(key: band.key,
+                     label: String(localized: String.LocalizationValue(band.name)),
+                     lo: band.lower, hi: band.upper,
+                     color: colorNivel(band.key),
+                     range: band.range)
+    }
+
+    /// El tono de cada carril: un solo ámbar graduado por opacidad, rest→extreme — la misma
+    /// idea que la rampa de etapas de Sueño (`SleepDetailScreen.coloresEtapa`) o de duración
+    /// (`colorCarril`), nunca un semáforo (esta hoja es descriptiva).
+    private static func colorNivel(_ key: String) -> Color {
+        switch key {
+        case "rest":     return Self.tono.opacity(0.24)  // token-exempt: rampa graduada de esfuerzo
+        case "light":    return Self.tono.opacity(0.42)  // token-exempt: rampa graduada de esfuerzo
+        case "moderate": return Self.tono.opacity(0.62)  // token-exempt: rampa graduada de esfuerzo
+        case "hard":     return Self.tono.opacity(0.82)  // token-exempt: rampa graduada de esfuerzo
+        default:         return Self.tono                 // "extreme"
+        }
+    }
+
+    /// El carril en que cae un valor. Único predicado numérico de la pantalla.
+    static func indiceCarril(_ v: Double) -> Int? {
+        bandasEsfuerzo.firstIndex { b in (b.lo == nil || v >= b.lo!) && (b.hi == nil || v < b.hi!) }
+    }
+
+    /// El dominio Y del historial: 6–19, como en «Instrumento».
+    private static let dominioEsfuerzo: ClosedRange<Double> = 6...19
+
+    private static let ejeFechaFmt: DateFormatter = {
+        let f = DateFormatter(); f.setLocalizedDateFormatFromTemplate("dMMM"); return f
+    }()
+
+    // MARK: - 4. Calendario · 90 días
 
     private var calendarContent: some View {
-        HeatCalendarSection(
-            days: model.strainHeat,
-            selected: $selectedStrainDay,
-            tint: strainHeatTint,
-            readoutValue: { String(format: "%.1f", $0) },
-            readoutWord: { strainWord($0) },
-            emptyHint: "Tap a day to see its strain.",
-            legend: [(theme.dataStrain, String(localized: "hard")),
-                     (theme.strainRampMid, String(localized: "moderate")),
-                     (theme.strainRampLow, String(localized: "light")),
-                     (theme.hairline, String(localized: "no data"))],
-            theme: theme
-        )
+        LiquidCalendario90(
+            dias: calendarioDias,
+            tono: Self.tono,
+            leyenda: Self.leyendaCalendario,
+            seleccion: $selectedStrainDayID,
+            a11yLabel: String(localized: "Calendar · 90 days"),
+            pistaVacia: String(localized: "Tap a day to see its strain."),
+            sinLectura: String(localized: "no data"),
+            a11yConteo: { conDato, total in
+                String(localized: "\(conDato) of your last \(total) days")
+            })
     }
 
-    /// Strain is descriptive (not evaluative), so the heat is one hue at three intensities — tokens for
-    /// the mid/low rungs (FER-859).
-    private func strainHeatTint(_ v: Double) -> Color {
-        if v >= 14 { return theme.dataStrain }
-        if v >= 8 { return theme.strainRampMid }
-        return theme.strainRampLow
-    }
-
-    /// A short state word for the calendar read-out (matches the legend rungs and the tint thresholds).
-    private func strainWord(_ v: Double) -> LocalizedStringKey {
-        if v >= 14 { return "hard" }
-        if v >= 8 { return "moderate" }
-        return "light"
-    }
-
-    // MARK: - Método + sello
-
-    private var metodoBlock: some View {
-        Metodo(title: String(localized: "How it's calculated"), theme: theme) {
-            Text("Each second of heart rate is mapped to one of five intensity zones; time in the higher zones counts for much more. The weighted total is compressed onto a 0–21 scale through a logarithmic curve, so the top of the scale represents a theoretical full day at peak intensity.")
-                .font(StrandFont.subhead)
-                .foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-            Text("Heart-rate-zone load (TRIMP), compressed logarithmically. (Edwards 1993; Banister 1991)")
-                .font(StrandFont.caption)
-                .foregroundStyle(theme.inkTertiary)
-                .fixedSize(horizontal: false, vertical: true)
-            // FER-885: honest hedge when the load is an Apple workout-HR estimate (no strap).
-            if estimated {
-                Text("Estimated from your Apple Watch workout heart rate. It doesn't include activity outside those workouts, so it can read a little low.")
-                    .font(StrandFont.caption)
-                    .foregroundStyle(theme.inkTertiary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+    /// Los 90 días, ya resueltos desde `model.strainHeat` (RETIENE el mismo `buildHeat` compartido
+    /// con otras pantallas — sin tocar).
+    private var calendarioDias: [LiquidCalendario90.Dia] {
+        var mesVisto: String? = nil
+        return model.strainHeat.map { dia -> LiquidCalendario90.Dia in
+            let key = Self.calDayFmt.string(from: dia.date)
+            let mes = Self.mesFmt.string(from: dia.date)
+            let rotuloMes: String? = mes == mesVisto ? nil : mes
+            mesVisto = mes
+            let v = dia.score
+            return LiquidCalendario90.Dia(
+                id: key, fecha: dia.date,
+                intensidad: v.map(Self.intensidadEsfuerzo),
+                etiqueta: Self.ejeFechaFmt.string(from: dia.date),
+                valor: v.map(fmt),
+                palabra: v.map(Self.strainWord),
+                mes: rotuloMes)
         }
     }
 
-    private var sourceFooter: some View {
-        OriginStamp(origin: estimated ? .apple : .computed,
-                    when: String(localized: "today, in progress"), inProgress: true, theme: theme)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, 2)
+    /// La intensidad de la retícula, graduada por la MISMA escalera de 5 carriles que Niveles e
+    /// Historial (paridad `SleepDetailScreen.intensidadSueno`).
+    private static func intensidadEsfuerzo(_ v: Double) -> Double {
+        guard let i = indiceCarril(v) else { return 0 }
+        switch bandasEsfuerzo[i].key {
+        case "extreme":  return 1.0
+        case "hard":     return 0.8
+        case "moderate": return 0.55
+        case "light":    return 0.3
+        default:         return 0        // "rest"
+        }
+    }
+
+    /// La leyenda: TRES peldaños de muestra (lleno · medio · vacío) + «sin dato», el mismo
+    /// tratamiento impresionista que `SleepDetailScreen.leyendaCalendario` — y las MISMAS tres
+    /// palabras que ya traía el calendario en «Instrumento» (`strainHeatTint`/`strainWord`), sin
+    /// nuevas claves.
+    private static var leyendaCalendario: [LiquidCalendario90.NivelLeyenda] {
+        [
+            .init(id: "hard", color: tono.opacity(LiquidCalendario90.alfa(intensidad: 1)),
+                  etiqueta: String(localized: "hard")),
+            .init(id: "moderate", color: tono.opacity(LiquidCalendario90.alfa(intensidad: 0.5)),
+                  etiqueta: String(localized: "moderate")),
+            .init(id: "light", color: tono.opacity(LiquidCalendario90.alfa(intensidad: 0)),
+                  etiqueta: String(localized: "light")),
+            .init(id: "nodata", color: LiquidColor.tinta7, etiqueta: String(localized: "no data")),
+        ]
+    }
+
+    /// La palabra corta del calendario (mismos tres cortes de siempre: 14 / 8). Texto SIN CAMBIOS.
+    private static func strainWord(_ v: Double) -> String {
+        if v >= 14 { return String(localized: "hard") }
+        if v >= 8 { return String(localized: "moderate") }
+        return String(localized: "light")
+    }
+
+    private static let calDayFmt = DayKey.utcFormatter
+    private static let mesFmt: DateFormatter = {
+        let f = DateFormatter(); f.setLocalizedDateFormatFromTemplate("MMM"); return f
+    }()
+
+    // MARK: - Método + sello — patrón `pieMetodo` de Sueño (capilar sin franja propia)
+
+    private var pieMetodo: some View {
+        VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+            LiquidCapilar(eje: .horizontal)
+            LiquidMetodo(title: String(localized: "How it's calculated"),
+                         mostrar: String(localized: "Show explanation"),
+                         ocultar: String(localized: "Hide explanation")) {
+                LiquidNotaLine(String(localized: "Each second of heart rate is mapped to one of five intensity zones; time in the higher zones counts for much more. The weighted total is compressed onto a 0–21 scale through a logarithmic curve, so the top of the scale represents a theoretical full day at peak intensity."),
+                               tono: LiquidColor.tinta700)
+                LiquidNotaLine(String(localized: "Heart-rate-zone load (TRIMP), compressed logarithmically. (Edwards 1993; Banister 1991)"))
+                if estimated {
+                    LiquidNotaLine(String(localized: "Estimated from your Apple Watch workout heart rate. It doesn't include activity outside those workouts, so it can read a little low."))
+                }
+            }
+            LiquidOrigenChip(glyph: .llama, badgeTono: Self.tono,
+                             etiqueta: estimated ? DataOrigin.apple.label : DataOrigin.computed.label,
+                             sufijo: String(localized: "today, in progress"))
+        }
+        .liquidSeccion(top: LiquidSpace.s200, bottom: LiquidSpace.s800)
     }
 
     // MARK: - Format
 
-    /// Strain reads to one decimal (0–21), like the row and the hero.
+    /// El esfuerzo se lee a un decimal (0–21), como la fila y el campo.
     private func fmt(_ v: Double) -> String { String(format: "%.1f", v) }
 }
 
 // MARK: - Sheet item
 
-/// Identifiable wrapper so the light «Instrumento» Detalle de Esfuerzo can ride `.sheet(item:)` (the
-/// model itself isn't Identifiable). Opened from Cuerpo's «Day Strain» row. (FER-238)
+/// Envoltura `Identifiable` para que el detalle Liquid de Esfuerzo viaje en `.sheet(item:)` (el
+/// modelo mismo no es `Identifiable`). Se abre desde la fila «Day Strain» de Cuerpo. (FER-238)
 struct StrainDetailItem: Identifiable {
     let id: UUID
     let model: StrainDetailModel
-    /// FER-885: today's load is an Apple workout-HR estimate (Apple-only mode), captured when the sheet opens.
+    /// FER-885: la carga de hoy es un estimado de FC de entrenamiento de Apple (modo solo-Apple),
+    /// capturado cuando se abre la hoja.
     var estimated: Bool = false
-    /// FER-954: an explicit `id` lets the built model swap in under the SAME presentation identity
-    /// (same pattern as `SleepDetailItem`, FER-953).
+    /// FER-954: un `id` explícito deja que el modelo ya construido entre bajo la MISMA identidad
+    /// de presentación (mismo patrón que `SleepDetailItem`, FER-953).
     init(id: UUID = UUID(), model: StrainDetailModel, estimated: Bool = false) {
         self.id = id; self.model = model; self.estimated = estimated
     }
@@ -425,6 +592,8 @@ struct StrainDetailItem: Identifiable {
 // over this; the caller (Cuerpo) builds it with `StrainDetailModel.build(...)` from the in-memory
 // dashboard so the screen stays DB-free. It CONSUMES `StrandAnalytics` as-is (no new math): today's score
 // from `repo.today.strain`, the 14d+ series from `repo.days`.
+//
+// FER-101: this contract is UNCHANGED by the Liquid migration — kept verbatim.
 
 struct StrainDetailModel {
     /// Today's Day Strain (0–21), or nil while there's no score yet (strap-only, no Apple fallback).
@@ -530,6 +699,14 @@ private func sampleStrainSeries(days: Int = 60) -> [(day: String, value: Double)
     Color.clear.sheet(isPresented: .constant(true)) {
         StrainDetailScreen(
             model: StrainDetailModel(today: nil, series: [], loaded: true, drivers: []))
+    }
+}
+
+#Preview("Strain detail: sin permiso") {
+    Color.clear.sheet(isPresented: .constant(true)) {
+        StrainDetailScreen(
+            model: StrainDetailModel(today: nil, series: [], loaded: true, drivers: []),
+            sinPermiso: true)
     }
 }
 #endif
