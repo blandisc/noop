@@ -87,27 +87,42 @@ public struct RestBand<Next: View>: View {
     /// (el `Next` por defecto) cuando el llamador no tiene un siguiente que mostrar — la banda no
     /// reserva espacio para nada, como con `note`/`onSkip`.
     private let next: Next
+    /// La variante GRANDE, centrada, que pide DESCANSO en Foco a pantalla completa (FER-135, V6,
+    /// revisión ronda 1, hallazgo grave: el prototipo `foco.txt` dibuja un numeral de 52 pt
+    /// centrado y un «Saltar» de 46 pt — no los 40 pt/alineado a la izquierda/36 pt de la banda en
+    /// línea). `false` por defecto conserva el pixel de siempre en la lista en línea y el reloj — la
+    /// lógica del descanso (`RestReadinessRule`) no cambia con esto, solo la piel.
+    private let large: Bool
 
     @Environment(\.instrumentoTheme) private var theme
 
     public init(kicker: LocalizedStringKey, mode: RestBandMode, trailing: String? = nil,
                 note: LocalizedStringKey? = nil, isAlmost: Bool = false, isReady: Bool = false,
-                startBpm: Int? = nil, onSkip: (() -> Void)? = nil,
+                startBpm: Int? = nil, large: Bool = false, onSkip: (() -> Void)? = nil,
                 @ViewBuilder next: () -> Next = { EmptyView() }) {
         self.kicker = kicker; self.mode = mode; self.trailing = trailing
         self.note = note; self.isAlmost = isAlmost; self.isReady = isReady
-        self.startBpm = startBpm; self.onSkip = onSkip; self.next = next()
+        self.startBpm = startBpm; self.large = large; self.onSkip = onSkip; self.next = next()
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: EntrenarMetrics.bandGap) {
-            HStack(alignment: .firstTextBaseline) {
+        VStack(alignment: large ? .center : .leading, spacing: EntrenarMetrics.bandGap) {
+            // Ronda 4, hallazgo grave: `trailing` (el reloj transcurrido) solo pertenece a la banda
+            // en línea, donde comparte la fila con el kicker. La pantalla completa de DESCANSO en
+            // Foco ya dice el mismo dato dentro del numeral grande — repetirlo a la derecha rompe la
+            // simetría centrada que pide el prototipo y estira un `Spacer` sin ancla en una fila a
+            // todo lo ancho de la pantalla.
+            if large {
                 Text(kicker).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                Spacer(minLength: CenitMetrics.space2)
-                if let trailing {
-                    Text(verbatim: trailing)
-                        .font(InstrumentoType.groteskNumber(13, weight: .bold, relativeTo: .caption))
-                        .foregroundStyle(theme.inkSecondary)
+            } else {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(kicker).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Spacer(minLength: CenitMetrics.space2)
+                    if let trailing {
+                        Text(verbatim: trailing)
+                            .font(InstrumentoType.groteskNumber(13, weight: .bold, relativeTo: .caption))
+                            .foregroundStyle(theme.inkSecondary)
+                    }
                 }
             }
             headline
@@ -121,6 +136,7 @@ public struct RestBand<Next: View>: View {
             if let note {
                 Text(note)
                     .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    .multilineTextAlignment(large ? .center : .leading)
                     .fixedSize(horizontal: false, vertical: true)
             }
             next
@@ -130,22 +146,30 @@ public struct RestBand<Next: View>: View {
                         .font(StrandFont.caption.weight(.semibold))
                         .foregroundStyle(theme.inkSecondary)
                         .padding(.horizontal, CenitMetrics.gap)
-                        .frame(height: EntrenarMetrics.secondaryButton)
+                        .frame(height: large ? EntrenarMetrics.focusRestSkip : EntrenarMetrics.secondaryButton)
                         .background(theme.paper, in: Capsule())
                         .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
-                        // dibujo 36, toque 44 (HIG)
+                        // dibujo 36 (46 en Foco), toque 44 (HIG)
                         .frame(minHeight: EntrenarMetrics.row)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(EntrenarPressStyle())
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: large ? .center : .leading)
         .padding(.vertical, EntrenarMetrics.bandGap)
-        .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 1) }
-        .overlay(alignment: .bottom) { Rectangle().fill(theme.hairline).frame(height: 1) }
+        // Revisión ronda 3, hallazgo grave: los filetes arriba/abajo son gramática de LISTA — separan
+        // esta banda de la fila vecina cuando vive en línea. La variante GRANDE de Foco no tiene
+        // ninguna fila alrededor (es pantalla completa, sobre papel en blanco); ahí el prototipo no
+        // dibuja ningún borde. `!large` evita dos reglas huérfanas flotando solas en Foco.
+        .overlay(alignment: .top) { if !large { Rectangle().fill(theme.hairline).frame(height: 1) } }
+        .overlay(alignment: .bottom) { if !large { Rectangle().fill(theme.hairline).frame(height: 1) } }
         .accessibilityElement(children: .combine)
     }
+
+    /// El tamaño del numeral: 40 pt en la lista en línea, 52 pt (`focusRestValue`) en la variante
+    /// GRANDE de Foco (revisión ronda 1, hallazgo grave).
+    private var headlineSize: CGFloat { large ? EntrenarMetrics.focusRestValue : 40 }
 
     /// El numeral grande. Con pulso, el dato es cuánto falta EN LATIDOS; sin pulso, el tiempo.
     @ViewBuilder private var headline: some View {
@@ -153,13 +177,13 @@ public struct RestBand<Next: View>: View {
         case .heartRate(let remaining, _, _):
             if isReady {
                 Text("Ready")
-                    .font(InstrumentoType.grotesk(40, weight: .bold, relativeTo: .largeTitle))
+                    .font(InstrumentoType.grotesk(headlineSize, weight: .bold, relativeTo: .largeTitle))
                     .foregroundStyle(theme.positiveText)
             } else if isAlmost {
                 // La banda de honestidad del motor (5 lpm) tiene su propia palabra, la que la nota
                 // promete: sin esto, «casi» era un parámetro que nadie leía y una promesa incumplida.
                 Text("Almost")
-                    .font(InstrumentoType.grotesk(40, weight: .bold, relativeTo: .largeTitle))
+                    .font(InstrumentoType.grotesk(headlineSize, weight: .bold, relativeTo: .largeTitle))
                     .foregroundStyle(OKLab.darkened(theme.dataHeart, toContrast: 4.5, against: theme.paper))
             } else if let remaining {
                 // Una sola frase, no tres fragmentos: partida en «te faltan» + N + «lpm más» decía
@@ -167,10 +191,11 @@ public struct RestBand<Next: View>: View {
                 (Text("you need").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                  + Text(verbatim: " ")
                  + Text(verbatim: "\(remaining)")
-                    .font(InstrumentoType.groteskNumber(40, weight: .bold, relativeTo: .largeTitle))
+                    .font(InstrumentoType.groteskNumber(headlineSize, weight: .bold, relativeTo: .largeTitle))
                     .foregroundStyle(theme.dataHeart)
                  + Text(verbatim: " ")
                  + Text("bpm").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary))
+                    .multilineTextAlignment(large ? .center : .leading)
                     .fixedSize(horizontal: false, vertical: true)
             } else {
                 Text("Waiting for your pulse")
@@ -178,10 +203,11 @@ public struct RestBand<Next: View>: View {
             }
         case .clock(let elapsed, let target):
             (Text(verbatim: elapsed)
-                .font(InstrumentoType.groteskNumber(40, weight: .bold, relativeTo: .largeTitle))
+                .font(InstrumentoType.groteskNumber(headlineSize, weight: .bold, relativeTo: .largeTitle))
                 .foregroundStyle(theme.ink)
              + Text(verbatim: " ")
              + Text("of \(target)").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary))
+                .multilineTextAlignment(large ? .center : .leading)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }

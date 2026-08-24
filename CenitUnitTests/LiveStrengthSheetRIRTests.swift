@@ -89,4 +89,29 @@ final class LiveStrengthSheetRIRTests: XCTestCase {
         XCTAssertEqual(LiveStrengthSheet.qLabel(fromRPE: 5), "Q 4+")
         XCTAssertEqual(LiveStrengthSheet.qLabel(fromRPE: 0), "Q 4+")
     }
+
+    // MARK: - focusDoneTiming: HECHO nunca se cuela delante de un descanso que sigue corriendo
+    // (FER-135, V6, revisión ronda 1, hallazgo grave — la regresión que este archivo no atrapó antes
+    // de merge: `registerActiveSet` mostraba HECHO al instante de palomear la última serie, mientras
+    // el descanso real (FC/temporizador) seguía corriendo en silencio detrás).
+
+    /// El caso que rompía: última serie de un ejercicio NO final, con un descanso real (`rest.seconds
+    /// > 0`) arrancando detrás — HECHO debe ESPERAR (`.pending`, promovido cuando el descanso termine
+    /// o se salte), nunca aparecer ya.
+    func testFocusDoneWaitsForARealRestToEndFirst() {
+        XCTAssertEqual(LiveStrengthSheet.focusDoneTiming(exerciseFullyDone: true, restStarting: true), .pending)
+    }
+
+    /// Sin descanso real que esperar (descanso fijo de 0 s, o la última serie de la última sesión) —
+    /// HECHO puede mostrarse de inmediato, como antes.
+    func testFocusDoneShowsImmediatelyWithNoRealRest() {
+        XCTAssertEqual(LiveStrengthSheet.focusDoneTiming(exerciseFullyDone: true, restStarting: false), .immediate)
+    }
+
+    /// El ejercicio TODAVÍA tiene series de trabajo pendientes (p. ej. un salto de superserie a un
+    /// compañero a mitad de ronda) — nunca hay nada que mostrar, sin importar si arrancó un descanso.
+    func testFocusDoneNoneWhileExerciseStillHasWorkLeft() {
+        XCTAssertEqual(LiveStrengthSheet.focusDoneTiming(exerciseFullyDone: false, restStarting: true), .none)
+        XCTAssertEqual(LiveStrengthSheet.focusDoneTiming(exerciseFullyDone: false, restStarting: false), .none)
+    }
 }
