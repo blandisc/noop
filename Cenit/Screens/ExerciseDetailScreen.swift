@@ -13,6 +13,14 @@ import StrandAnalytics
 struct ExerciseDetailScreen: View {
     let exercise: Exercise
 
+    /// Opens straight into the «Progress» tab (FER-136 · V7: `WorkoutHistoryScreen`'s «Progreso por
+    /// ejercicio» rows land here on the 1RM trend, not the guide). Every other call site keeps the
+    /// default `.guide` landing.
+    init(exercise: Exercise, startOnProgress: Bool = false) {
+        self.exercise = exercise
+        _tab = State(initialValue: startOnProgress ? .progress : .guide)
+    }
+
     @Environment(\.instrumentoTheme) private var theme
     @Environment(\.openURL) private var openURL
     @Environment(\.dismiss) private var dismiss

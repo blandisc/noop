@@ -31,6 +31,21 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
   substitution-dictionary format (per-number one/other plurals), since each line interpolates several
   independently-pluralized numbers.
 
+- **Onboarding: el primer arranque dice la verdad cuando aún no hay veredicto / Onboarding:
+  first-run tells the truth before there's a verdict** (FER-141).
+  **ES** — Auditoría de los estados del onboarding. Cuando Cénit todavía no puede darte una palabra
+  (poca base, o un reloj sin usar de noche), el flujo dejó de prometer de más: la explicación de
+  «con qué se compara» ya no dice «contra tus propias 0 noches»; la pantalla sin frecuencia en
+  reposo ya no promete una lectura «en 4 noches» cuando lo que falta es el permiso de Salud (que se
+  arregla ahí, no esperando); y el cierre para quien trae reloj pero no ha dormido con él ahora le
+  dice «úsalo también de noche» en vez de tratarlo como si no tuviera reloj. Más arreglos finos de
+  VoiceOver y de texto. **EN** — An audit of the onboarding states. When Cénit can't give you a word
+  yet (thin baseline, or a watch not worn at night), the flow stops over-promising: the «how it's
+  computed» card no longer says «against your own 0 nights»; the no-resting-heart screen no longer
+  promises a reading «in 4 nights» when the real blocker is the Health permission (fixed there, not
+  by waiting); and the close for someone who has a watch but hasn't slept in it now says «wear it to
+  sleep, too» instead of treating them as watchless. Plus small VoiceOver and copy fixes.
+
 - **Entrenar: Crear plan — tres caminos / Train: Create plan — three paths** (FER-137).
   **ES** — Nueva pantalla «Tres caminos»: el chip «Crear plan» de la landing y el CTA «Crear mi
   plan» del primer uso ya no saltan directo a una hoja; abren esta puerta única con tres filas.
@@ -46,6 +61,30 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
   assigned), then returns to the landing with a success toast. FROM SCRATCH pushes «New routine»
   into the existing library create-flow. «Import from your AI» opens the existing
   `noop.workout.v1` importer.
+
+- **Entrenar: Tu cuerpo, Historial y el acta — el hilo del veredicto, progreso por ejercicio y el
+  recibo / Train: Your body, History and the ballot — the verdict thread, per-exercise progress and
+  the receipt** (FER-136). **ES** — «Tu cuerpo» gana el hilo del veredicto (el mismo orbe y la misma
+  boleta que Entrenar y la sesión en vivo): la palabra del día se completa con una lectura generada
+  del mapa de carga muscular («Cuádriceps con carga de hoy, Espalda a medias»), seguida de una
+  «Lectura gruesa» en prosa y la nota de honestidad literal del handoff bajo el ranking de músculos
+  cargados (con sus columnas «Carga» / «Series · 7 d»). «Mis entrenamientos» pasa a «Historial y
+  progreso»: la cabecera cuenta las sesiones y marcas nuevas de los últimos 90 días, cada fila de
+  sesión suma el esfuerzo «/21» y su chip de marca (mismo tratamiento que la Bitácora de la landing),
+  y una nueva sección «Progreso» lista los ejercicios con historial y su 1RM estimado — toca uno para
+  abrir su detalle ya en el tab Progreso, con «Registrar entreno a mano ›» al pie, hacia el mismo
+  formulario manual que ya existía. En el acta de la sesión en vivo, «Compartir…» pasa a «Imprimir
+  recibo»: mismo destino (el recibo térmico), copy del handoff. **EN** — "Your body" gains the
+  verdict thread (the same orb and the same ballot Train and the live session already show): the
+  day's word is completed by a sentence generated from the muscle-load map ("Quads loaded today,
+  Back halfway"), followed by a "Rough read" paragraph and the handoff's literal honesty note under
+  the loaded-muscles ranking (with its "Load" / "Sets · 7 d" columns). "My workouts" becomes "History
+  and progress": the header counts the last 90 days' sessions and new marks, each session row adds
+  its effort "/21" and mark chip (same treatment as the landing's Log), and a new "Progress" section
+  lists exercises with history and their estimated 1RM — tap one to open its detail already on the
+  Progress tab — with "Log a workout by hand ›" at the foot, into the same manual form that already
+  existed. On the live session's ballot, "Share…" becomes "Print receipt": same destination (the
+  thermal receipt), handoff copy.
 
 - **Entrenar: Modo Foco — serie, descanso, hecho / Train: Focus Mode — set, rest, done** (FER-135).
   **ES** — Foco gana un tercer estado, HECHO, entre cada serie cerrada del último ejercicio y la

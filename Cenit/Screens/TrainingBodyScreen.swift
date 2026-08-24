@@ -60,6 +60,13 @@ struct MuscleVolumeRoute: Hashable {}
 struct TrainingBodyScreen: View {
     let theme: InstrumentoTheme
     @EnvironmentObject var repo: Repository
+    /// El MISMO puente de Salud que la landing (`EntrenarView.healthConnected`): sin él el hilo no
+    /// puede distinguir «sin lectura» de «sin conectar Salud» (FER-136 · V7).
+    @EnvironmentObject private var health: HealthKitBridge
+    /// La boleta del veredicto, servida DENTRO de «Tu cuerpo» (FER-136 · V7): el MISMO
+    /// `VeredictoActaSheet` que abre la landing y la sesión en vivo — un solo destino, nunca una
+    /// segunda acta.
+    @State private var showVeredictoActa = false
 
     /// All completed work sets in the trailing 84 days, expanded to per-muscle events (one fetch). The
     /// decay carries recency (no window, FER-719); the detail's weekly trend buckets the whole span.
@@ -146,12 +153,6 @@ struct TrainingBodyScreen: View {
     private var loadByMuscle: [String: MuscleFatigueMap.MuscleLoad] {
         Dictionary(loads.map { ($0.muscle, $0) }, uniquingKeysWith: { a, _ in a })
     }
-    private var recommendation: MuscleFatigueMap.Recommendation {
-        guard !systemicGate else {
-            return MuscleFatigueMap.Recommendation(readyMuscles: [], gatedBySystemic: true)
-        }
-        return MuscleFatigueMap.recommendation(loads: loads, recovery: nil)
-    }
     /// The most-loaded muscle (loads come back sorted by load, desc) — labels & outlines the figure.
     private var topMuscle: MuscleFatigueMap.MuscleLoad? { loads.first }
     /// The muscle the floating label & figure outline point at: the active peek, else the most-loaded.
@@ -159,8 +160,6 @@ struct TrainingBodyScreen: View {
         if let p = peeked { return loadByMuscle[p] ?? MuscleFatigueMap.MuscleLoad(muscle: p, load: 0, relative: 0, daysSinceLast: 0, state: .fresh, weeklySets: 0, band: .below) }
         return topMuscle
     }
-    /// The muscles still in the loaded band — the hero's «still loaded today» line (most-loaded first).
-    private var loadedMuscles: [MuscleFatigueMap.MuscleLoad] { loads.filter { $0.state == .loaded } }
 
     var body: some View {
         ScrollView {
@@ -171,7 +170,10 @@ struct TrainingBodyScreen: View {
                         emptyState
                     } else {
                         figures
-                        if !rankingLoads.isEmpty { ranking }
+                        if !rankingLoads.isEmpty {
+                            ranking
+                            grossReading
+                        }
                         volumeSection
                         method
                     }
@@ -199,96 +201,71 @@ struct TrainingBodyScreen: View {
             )
             .preferredColorScheme(.light)
         }
+        // El hilo del veredicto abre la MISMA boleta que Entrenar (`EntrenarView.showVeredictoActa`)
+        // y la sesión en vivo (`LiveStrengthSheet.bodyVeredictoActaSheet`) — el mismo contenido, para
+        // que Tu cuerpo no pueda contar el día distinto (FER-136 · V7).
+        .sheet(isPresented: $showVeredictoActa) {
+            VeredictoActaSheet(prep: repo.todayPreparedness, healthConnected: healthConnected,
+                               fullyLoaded: repo.fullyLoaded)
+        }
         .enableInjection()
     }
 
-    // MARK: - Header — the grotesk verdict leads, the recovery bullet explains the gate
+    // MARK: - Header — kicker + el hilo del veredicto (FER-136 · V7)
+    //
+    // El MISMO hilo que la landing y la sesión en vivo: mismo constructor
+    // (`LiquidHoyBuilder.hiloEntrenar`), mismo componente (`EntrenarHilo`, orbe 44) y la MISMA hoja
+    // del veredicto al toque (`VeredictoActaSheet`) — Tu cuerpo no puede contar el día distinto. La
+    // frase que completa la palabra sale del MISMO `loads` que ya ordena la ficha y el pie
+    // (`muscleReading`), nunca una segunda derivación del mapa.
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Your body").groteskOverline().foregroundStyle(theme.inkTertiary)
-            verdictHeadline
-                .padding(.top, 4)
-            if loaded && !(loads.isEmpty && !hasHistory) {
-                recoveryBullet
-                    .padding(.top, 10)
+            Text("Your body · \(cabeceraFecha)").groteskOverline().foregroundStyle(theme.inkTertiary)
+            if loaded {
+                hiloDelVeredicto.padding(.top, 8)
             }
         }
     }
 
-    /// The two-line verdict in the handoff's grotesk voice: what's fresh to train, what still
-    /// carries load. Ink only — the color lives in the figures (Instrumento).
-    @ViewBuilder private var verdictHeadline: some View {
-        Group {
-            if !loaded || (loads.isEmpty && !hasHistory) {
-                Text("What to train today")
-            } else if recommendation.gatedBySystemic {
-                Text("Today calls for rest.\nRecover first.")
-            } else if loads.isEmpty || recommendation.readyMuscles.count == loads.count {
-                Text("All fresh.\nTrain what you like.")
-            } else if recommendation.readyMuscles.isEmpty {
-                Text("Everything still carries load.\nGive it a day or go light.")
-            } else {
-                freshLine + Text("\n") + stillLoadedLine
+    /// «Sáb 15 ago» — el mismo helper compartido que usa la cabecera de la landing
+    /// (`StrandFormat.weekdayHeading`, quisquilloso ronda 4: antes dos copias a mano).
+    private var cabeceraFecha: String { StrandFormat.weekdayHeading(Date()) }
+
+    @ViewBuilder private var hiloDelVeredicto: some View {
+        if let hilo = LiquidHoyBuilder.hiloEntrenar(
+            prep: repo.todayPreparedness,
+            nights: repo.todayPreparedness?.autonomicNights ?? 0,
+            healthConnected: healthConnected,
+            verdictPending: repo.todayPreparedness == nil && !repo.fullyLoaded,
+            // `repo` no expone la rutina de hoy en esta pantalla (a diferencia de
+            // `EntrenarView.todayRoutine`), pero es inofensivo: `hasPlan` solo mueve el `consejo` del
+            // tono `.claro` (`LiquidHoyBuilder.swift:618`), y aquí ese consejo SIEMPRE se reemplaza por
+            // `muscleReading` salvo en `.hueco`, donde `hasPlan` nunca se lee.
+            hasPlan: true) {
+            EntrenarHilo(tone: hilo.tono.entrenarTone,
+                         word: LocalizedStringKey(hilo.palabra),
+                         // Hueco (sin lectura / sin conectar Salud / conociéndote): el consejo de
+                         // copy.md, tal cual. Con veredicto: la palabra se completa con el mapa; si el
+                         // mapa no tiene nada que decir (todo fresco), cae al consejo genérico del
+                         // constructor en vez de quedarse mudo (quisquilloso ronda 4: la landing SIEMPRE
+                         // trae `hilo.consejo` para ese mismo tono con `hasPlan: true`).
+                         advice: hilo.tono == .hueco
+                            ? hilo.consejo.map { LocalizedStringKey($0) }
+                            : (muscleReading.map { LocalizedStringKey($0.thread) }
+                               ?? hilo.consejo.map { LocalizedStringKey($0) }),
+                         radio: EntrenarMetrics.orbeCuerpo,
+                         hint: "Opens today's ballot") {
+                showVeredictoActa = true
             }
         }
-        .font(InstrumentoType.grotesk(25, weight: .bold, relativeTo: .title2))
-        .foregroundStyle(theme.ink)
-        .fixedSize(horizontal: false, vertical: true)
     }
 
-    /// «Fresh: Chest · Shoulders.» — the ready muscles, most-fresh first.
-    private var freshLine: Text {
-        let ready = Array(recommendation.readyMuscles.prefix(2))
-        let names = ready.indices.reduce(Text(verbatim: "")) { acc, i in
-            let sep = i == 0 ? Text(verbatim: "") : Text(verbatim: " · ")
-            return acc + sep + Text(MuscleAtlas.name(ready[i]))
-        }
-        return Text("Fresh: ") + names + Text(verbatim: ".")
-    }
-
-    /// «Glutes still carries load.» — the most-loaded muscle; or a neutral tail when nothing is
-    /// in the loaded band.
-    private var stillLoadedLine: Text {
-        guard let top = loadedMuscles.first else { return Text("The rest can wait.") }
-        return Text(MuscleAtlas.name(top.muscle)) + Text(" still carries load.")
-    }
-
-    /// The verdict bullet — dot in the day's color, one honest line (FER-82). It used to print the
-    /// 0–100 score («Recuperación 62 · hoy toca descansar»), which is the second oracle this epic
-    /// removes: the same morning Hoy could be saying «En rango». It now says the day's word, and
-    /// says nothing at all when there is no usable read.
-    @ViewBuilder private var recoveryBullet: some View {
-        if let line = verdictBulletText {
-            HStack(alignment: .firstTextBaseline, spacing: 7) {
-                Circle().fill(verdictDotColor)
-                    .frame(width: 8, height: 8)
-                    .alignmentGuide(.firstTextBaseline) { d in d[.bottom] - 1 }
-                Text(line)
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .accessibilityElement(children: .combine)
-        }
-    }
-
-    private var verdictBulletText: LocalizedStringKey? {
-        switch repo.trainingAdvice {
-        case .planAsIs: return "In range · today's gate doesn't hold you back."
-        case .lighter:  return "Go light today · keep it moderate."
-        case .recover:  return "Recover · today calls for rest or something gentle."
-        case .silent:   return "No reading today · the map goes by your log."
-        case .pending:  return nil
-        }
-    }
-
-    private var verdictDotColor: Color {
-        switch repo.trainingAdvice {
-        case .planAsIs: return theme.verdict
-        case .lighter:  return theme.warning
-        case .recover:  return theme.critical
-        case .silent, .pending: return theme.inkTertiary
-        }
+    private var healthConnected: Bool {
+        #if DEBUG
+        if ScreenshotFixtures.activeState() != nil { return true }
+        #endif
+        return health.auth == .authorized
     }
 
     // MARK: - Figures (detailed anatomical silhouettes)
@@ -451,12 +428,13 @@ struct TrainingBodyScreen: View {
 
     // MARK: - Ranking
 
-    /// «Más cargados · 7 días» — fixed to the last 7 days (the mock); each row carries its weekly
-    /// sets, the raw number the Schoenfeld band judges.
+    /// «Músculos cargados · últimos 7 días» — fixed to the last 7 days (the handoff); each row
+    /// carries its weekly sets, the raw number the Schoenfeld band judges.
     private var ranking: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Most loaded · 7 days").groteskOverline().foregroundStyle(theme.inkTertiary)
+            Text("Loaded muscles · last 7 days").groteskOverline().foregroundStyle(theme.inkTertiary)
                 .padding(.bottom, 8)
+            muscleColumnHeader.padding(.bottom, 2)
             ForEach(Array(rankingLoads.enumerated()), id: \.element.muscle) { i, m in
                 if i > 0 { Divider().overlay(theme.hairline) }
                 loadRow(m.muscle)
@@ -464,15 +442,124 @@ struct TrainingBodyScreen: View {
         }
     }
 
-    // MARK: - Method foot — the one-line method with its cite, expanding into the full paragraph
+    /// «CARGA · SERIES · 7 D» — el par de columnas que `MuscleLoadRow` dibuja (nombre / riel /
+    /// recencia / series / chevron), rotulado una sola vez arriba de la lista (FER-136 · V7). Oculto de
+    /// VoiceOver: cada fila ya anuncia su propia carga y series en `MuscleLoadRow.accessibilityLabel`.
+    /// Reserva el mismo número de columnas que `MuscleLoadRow.rowContent` (nombre / riel 120 / recencia
+    /// / series / chevron), con placeholders invisibles para la recencia y el chevron — sin ellos
+    /// «Sets · 7 d» caía sobre la columna de recencia de cada fila, no sobre la de series.
+    private var muscleColumnHeader: some View {
+        HStack(spacing: CenitMetrics.gap) {
+            Color.clear.frame(maxWidth: .infinity)
+            Text("Load").instrumentoOverline().frame(maxWidth: 120, alignment: .leading)
+            Text(verbatim: "yesterday").font(StrandFont.caption).fixedSize(horizontal: true, vertical: false).hidden()
+            Text("Sets · 7 d").instrumentoOverline()
+            StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold)).hidden()
+        }
+        .foregroundStyle(theme.inkTertiary)
+        .accessibilityHidden(true)
+    }
+
+    // MARK: - Lectura gruesa + nota de honestidad (FER-136 · V7)
+    //
+    // La misma prosa en dos anchos: `thread` (el hilo del veredicto, corto) y `gross` (el pie de
+    // «Músculos cargados», completo) — ambas leen el MISMO `loads` que ya ordena `ranking`, nunca
+    // una segunda derivación del mapa.
+
+    private struct MuscleReading { let thread: String; let gross: String }
+
+    private var muscleReading: MuscleReading? {
+        let notFresh = loads.filter { $0.state != .fresh }   // `loads` ya viene ordenado por carga desc
+        guard let first = notFresh.first else { return nil }
+        let second = notFresh.dropFirst().first
+        // El hilo (corto) NUNCA lleva la recencia entre paréntesis de un músculo «a medias» — copy.md
+        // línea 16: «piernas cargadas de hoy, espalda a medias». La lectura gruesa (larga) SÍ la lleva
+        // — línea 60: «espalda a medias (hace 3 días)» — así que cada ancho pide su propia cláusula
+        // (`includeRecency`), NUNCA una segunda derivación del mapa.
+        let threadClauses = [loadClause(first), second.map { loadClause($0) }].compactMap { $0 }
+        let thread = threadClauses.joined(separator: ", ")
+        let grossClauses = [loadClause(first, includeRecency: true), second.map { loadClause($0, includeRecency: true) }].compactMap { $0 }
+        var gross = grossClauses.count == 2 ? String(localized: "\(grossClauses[0]) and \(grossClauses[1])") : grossClauses[0]
+        gross += "."
+        let freshRoom = loads.filter { $0.state == .fresh && $0.weeklySets < MuscleFatigueMap.weeklyBandLow }
+            .sorted { $0.weeklySets < $1.weeklySets }
+            .prefix(2)
+        if !freshRoom.isEmpty {
+            let names = freshRoom.map { muscleNameText($0.muscle) }
+            let sets = freshRoom.map { setsText($0.weeklySets) }
+            let nameText = names.count == 2 ? String(localized: "\(names[0]) and \(names[1])") : names[0]
+            let setsCombined = sets.count == 2 ? String(localized: "\(sets[0]) and \(sets[1])") : sets[0]
+            // quisquilloso ronda 4: SIN adjetivo pegado al nombre («listos») — "Pantorrillas"/"Espalda
+            // baja" son femeninos y "listos" no concuerda; misma disciplina invariante que `loadClause`.
+            gross += " " + String(localized: "Room for more sets in \(nameText) (\(setsCombined) of the 10–20 guide).")
+        }
+        return MuscleReading(thread: thread, gross: gross)
+    }
+
+    /// «Cuádriceps con carga de hoy» / «Espalda a medias» — sin concordancia de género (evita una
+    /// tabla de género por músculo): un fraseo invariante, correcto en español para cualquier músculo.
+    /// SIN coma propia (el join de `muscleReading` pone la única coma, entre cláusulas) — copy.md:
+    /// «piernas cargadas de hoy, espalda a medias», nunca una coma dentro de cada cláusula.
+    /// `includeRecency` añade «(hace N d)» a un músculo «a medias» SOLO para la lectura gruesa (larga);
+    /// el hilo (corto) se queda en «a medias» a secas.
+    private func loadClause(_ m: MuscleFatigueMap.MuscleLoad, includeRecency: Bool = false) -> String {
+        let name = muscleNameText(m.muscle)
+        if m.state == .moderate {
+            guard includeRecency else { return name + String(localized: " halfway") }
+            return name + String(localized: " halfway (\(recencyText(m.daysSinceLast)))")
+        }
+        switch m.daysSinceLast {
+        case 0: return name + String(localized: " loaded today")
+        case 1: return name + String(localized: " loaded yesterday")
+        default: return name + String(localized: " loaded \(m.daysSinceLast) d ago")
+        }
+    }
+
+    /// «hoy» / «ayer» / «hace N d» — las mismas tres llaves que `MuscleDetailView.lastText` ya usa,
+    /// en `String` (no `LocalizedStringKey`) para poder interpolarlas dentro de la cláusula generada.
+    private func recencyText(_ days: Int) -> String {
+        switch days {
+        case 0: return String(localized: "today")
+        case 1: return String(localized: "yesterday")
+        default: return String(localized: "\(days) d ago")
+        }
+    }
+
+    /// El nombre del músculo en `String` (no `LocalizedStringKey`): el hilo (`EntrenarHilo.advice`) y
+    /// la «Lectura gruesa» solo aceptan texto ya resuelto para poder interpolarlo en la oración
+    /// generada. Mismo mapeo de 17 llaves que `MuscleAtlas.name`, vía `MuscleAtlas.nameKey` (la única
+    /// fuente) — antes un segundo switch de 17 casos, duplicado a mano.
+    private func muscleNameText(_ muscle: String) -> String {
+        String(localized: String.LocalizationValue(MuscleAtlas.nameKey(muscle)))
+    }
+
+    /// «Lectura gruesa: …» + la nota de honestidad literal (copy.md), bajo el ranking — silencio
+    /// cuando el mapa no tiene nada cargado ni a medias que contar todavía.
+    @ViewBuilder private var grossReading: some View {
+        if let reading = muscleReading {
+            (Text("Rough read: ").font(StrandFont.caption).fontWeight(.semibold).foregroundColor(theme.ink)
+             + Text(verbatim: reading.gross).font(StrandFont.caption).foregroundColor(theme.inkSecondary))
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 12)
+        }
+        Text("Load = sets that touch the muscle × how much it weighs in each exercise (primary 1, secondary ½) × time: every 2 days it's worth half. Fresh and loaded are compared against your most-loaded muscle, not a table. Sets = work sets from the last 7 days; 10–20 is a guide, not a target. You decide.")
+            .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.top, 8)
+    }
+
+    // MARK: - Method foot — the cite, behind one disclosure
+    //
+    // FER-136 · V7 added the literal honesty note (`grossReading`, copy.md line 61) above, which
+    // already states the mechanic in plain words — repeating it here as the button's visible teaser
+    // would say the same thing twice on the same screen. The teaser now only names the citation this
+    // foot exists for; the full paragraph (still with its academic cite) stays behind the tap.
 
     private var method: some View {
         VStack(alignment: .leading, spacing: 0) {
             Button { withAnimation(StrandMotion.interactive) { showMethod.toggle() } } label: {
-                (Text("Each set loads the muscles it works and fades by half every 2 days · ")
-                    .font(StrandFont.caption).foregroundColor(theme.inkTertiary)
-                 + Text("See the method ›")
-                    .font(StrandFont.caption).fontWeight(.semibold).foregroundColor(theme.inkSecondary))
+                Text("See the method ›")
+                    .font(StrandFont.caption).fontWeight(.semibold).foregroundColor(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
                     .multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
