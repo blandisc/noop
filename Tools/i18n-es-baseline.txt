@@ -83,7 +83,6 @@ Pick 2–4 to overlay.
 Recalibrada el %@
 Resting %@
 Round %@ of %@
-Set %@
 Set %@ · %@ × %@ reps
 Showing the last %@ days
 Sleep stages: deep %@ percent, light %@ percent, REM %@ percent, awake %@ percent
@@ -104,12 +103,10 @@ Z%@
 Zones as a percentage of your max heart rate (%@ bpm, Tanaka). The rest of the day you were resting or very light.
 adherence · %@ of %@ meals
 applies to all %@ work sets
-kg
 max weight · %@ wk
 ms²
 night to night
 nights in a row · kept %@ of %@
-of %@
 rest %@ + margin %@ bpm
 typical warming into sleep
 vs your normal · ~%@ bpm · %@ sessions
