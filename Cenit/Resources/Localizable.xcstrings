@@ -15494,6 +15494,23 @@
         }
       }
     },
+    "Both markers near your base yesterday." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Both markers near your base yesterday."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ambos marcadores cerca de tu base ayer."
+          }
+        }
+      }
+    },
     "Both of your signals woke up in your range." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -18417,6 +18434,23 @@
         }
       }
     },
+    "Consistent" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Consistent"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Constante"
+          }
+        }
+      }
+    },
     "Continue" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -21151,19 +21185,19 @@
         }
       }
     },
-    "Each night's deviation · the band is your typical swing (±your variation) · 0 is your baseline." : {
+    "Each night's deviation in °C · 0 is your own base." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Each night's deviation · the band is your typical swing (±your variation) · 0 is your baseline."
+            "value" : "Each night's deviation in °C · 0 is your own base."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Desviación de cada noche · la banda es tu vaivén típico (±tu variación) · 0 es tu base."
+            "value" : "La desviación de cada noche en °C · 0 es tu propia base."
           }
         }
       }
@@ -21870,6 +21904,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "10–20 sano · ver método"
+          }
+        }
+      }
+    },
+    "Cénit can't read your skin temperature: Apple Health hasn't granted permission. Turn it on and your nights will show up here." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cénit can't read your skin temperature: Apple Health hasn't granted permission. Turn it on and your nights will show up here."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cénit no puede leer tu temperatura de la piel: Apple Salud no le ha dado permiso. Actívalo y tus noches aparecerán aquí."
           }
         }
       }
@@ -28978,6 +29029,23 @@
         }
       }
     },
+    "Last night falls in %@ · 0 is your own base" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last night falls in %@ · 0 is your own base"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anoche cae en %@ · 0 es tu propia base"
+          }
+        }
+      }
+    },
     "Last night only one of your two signals came through. The guardian needs both before it can say anything." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -29480,6 +29548,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "aprendiendo tu base"
+          }
+        }
+      }
+    },
+    "Learning" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Learning"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aprendiendo"
           }
         }
       }
@@ -34432,7 +34517,21 @@
       }
     },
     "night to night" : {
-
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "night to night"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "noche a noche"
+          }
+        }
+      }
     },
     "Nightly readings" : {
       "extractionState" : "manual",
@@ -40968,6 +41067,23 @@
         }
       }
     },
+    "Reading your skin temperature…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reading your skin temperature…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leyendo tu temperatura de la piel…"
+          }
+        }
+      }
+    },
     "reading.vsBase.hrv.above" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -47452,6 +47568,23 @@
         }
       }
     },
+    "Skin temp history" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skin temp history"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Historial de temp. de piel"
+          }
+        }
+      }
+    },
     "Skin temp short" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -49015,7 +49148,21 @@
       }
     },
     "Still learning how consistent your nightly warming is: keep wearing it to bed." : {
-
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Still learning how consistent your nightly warming is: keep wearing it to bed."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aún aprendemos qué tan constante es tu calentamiento nocturno: sigue durmiendo con el reloj."
+          }
+        }
+      }
     },
     "Still learning your normal range. Once there are enough nights, I'll tell you whether a value is high or low for you." : {
       "extractionState" : "manual",
@@ -52378,23 +52525,6 @@
         }
       }
     },
-    "Today, vs your range" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Today, vs your range"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hoy, vs tu rango"
-          }
-        }
-      }
-    },
     "Today's connection" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -53439,25 +53569,22 @@
         }
       }
     },
-    "typical swing · 0 = your baseline" : {
+    "typical warming into sleep" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "typical swing · 0 = your baseline"
+            "value" : "typical warming into sleep"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "vaivén típico · 0 = tu base"
+            "value" : "calentamiento típico al dormir"
           }
         }
       }
-    },
-    "typical warming into sleep" : {
-
     },
     "unchanged" : {
       "extractionState" : "manual",
@@ -58142,6 +58269,23 @@
         }
       }
     },
+    "Your body's warming as you fall asleep is steady night-to-night. A consistent wind-down: an association, not a full 24-hour rhythm." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your body's warming as you fall asleep is steady night-to-night. A consistent wind-down: an association, not a full 24-hour rhythm."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El calentamiento de tu cuerpo al quedarte dormido es estable noche a noche. Un cierre del día constante: una asociación, no un ritmo completo de 24 horas."
+          }
+        }
+      }
+    },
     "your breathing" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -58945,23 +59089,6 @@
         }
       }
     },
-    "Your nightly baseline" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your nightly baseline"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu base nocturna"
-          }
-        }
-      }
-    },
     "Your nightly skin temperature and breathing, watched against your own pattern." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -58975,6 +59102,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tu temperatura de piel y tu respiración de la noche, vigiladas contra tu propio patrón."
+          }
+        }
+      }
+    },
+    "Your nightly warming into sleep swings a fair amount night-to-night. A steadier wind-down tends to settle it. An association, not a full 24-hour rhythm." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your nightly warming into sleep swings a fair amount night-to-night. A steadier wind-down tends to settle it. An association, not a full 24-hour rhythm."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu calentamiento nocturno al dormir oscila bastante noche a noche. Un cierre del día más estable suele asentarlo. Una asociación, no un ritmo completo de 24 horas."
+          }
+        }
+      }
+    },
+    "Your nightly warming into sleep varies a moderate amount night-to-night. An association, not a full 24-hour rhythm." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your nightly warming into sleep varies a moderate amount night-to-night. An association, not a full 24-hour rhythm."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu calentamiento nocturno al dormir varía una cantidad moderada noche a noche. Una asociación, no un ritmo completo de 24 horas."
           }
         }
       }

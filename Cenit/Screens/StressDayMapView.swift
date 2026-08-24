@@ -209,7 +209,9 @@ struct StressDayMapBlock: View {
                 guard let v = hora.valor else { return String(localized: "during activity or sleep") }
                 let lectura = "\(String(format: "%.1f", v)) · \(StressDetailScreen.palabraEstres(v))"
                 guard let titulo = Self.tituloEvento(map, hora: hora.id, startOfDay: startOfDay)
-                else { return lectura }
+                // El tercer brazo del `eventLine` del papel (TND11-7): hora con lectura y sin
+                // evento lo DICE, no lo calla — misma clave viva del titular.
+                else { return "\(lectura) · \(String(localized: "no event on your calendar"))" }
                 return "\(lectura) · \(titulo)"
             },
             a11yLabel: String(localized: "Stress through the day"),

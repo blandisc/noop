@@ -336,7 +336,10 @@ struct StressDetailScreen: View {
             // cajita Liquid es tinta neutra, así que la frase dice la DIRECCIÓN, no un color.
             return String(localized: "Markers vs your base: resting heart rate up or HRV down reads as activation.")
         }
-        return String(localized: "Both markers near your base today.")
+        // «today» solo cuando el ancla ES hoy (TND11-6): los deltas son del día anclado.
+        return model.anchorIsToday
+            ? String(localized: "Both markers near your base today.")
+            : String(localized: "Both markers near your base yesterday.")
     }
 
     // MARK: - 4. Tus patrones — calma + regularidad + observaciones (FER-378/388)
@@ -479,9 +482,11 @@ struct StressDetailScreen: View {
                         .init(rotulo: String(localized: "Average"), valor: fmt(stat.mean)),
                         .init(rotulo: String(localized: "Range"),
                               valor: "\(fmt(stat.min))–\(fmt(stat.max))"),
+                        // «Hoy» solo cuando el ancla ES hoy (TND11-1): con ancla en ayer la
+                        // celdita pintaba el score de AYER bajo el rótulo «Today».
                         .init(rotulo: String(localized: "Today"),
-                              valor: model.heroIsFresh ? fmt(model.score) : LiquidCajita.sinDato,
-                              tono: model.heroIsFresh ? tono : nil),
+                              valor: model.anchorIsToday ? fmt(model.score) : LiquidCajita.sinDato,
+                              tono: model.anchorIsToday ? tono : nil),
                     ])
                 }
                 .liquidTarjetaSeccion()
@@ -506,10 +511,12 @@ struct StressDetailScreen: View {
             })
     }
 
-    /// El carril del ANCLA fresca (hoy o ayer), o nil sin lectura. Único predicado de la
-    /// pantalla: lo leen el campo, niveles, historial y calendario.
+    /// El carril de HOY, o nil cuando el ancla es ayer o no hay lectura (TND11-5: el historial
+    /// afirma «hoy» — frase, resaltado, «· hoy» — así que su predicado es `anchorIsToday`, el
+    /// mismo de «Hoy cae en…»; el campo, que SÍ fecha su dato con el sello, sigue en
+    /// `heroIsFresh`).
     private func indiceAncla(_ model: StressModel) -> Int? {
-        model.heroIsFresh ? Self.indiceCarril(model.score) : nil
+        model.anchorIsToday ? Self.indiceCarril(model.score) : nil
     }
 
     /// El carril resaltado: el que el dedo explora, o si no hay ninguno, el del ancla.
@@ -551,7 +558,9 @@ struct StressDetailScreen: View {
             // Los ticks afirman los CORTES reales del motor (1 y 2) más el techo de la escala.
             ticksY: [(3, "3"), (2, "2"), (1, "1")],
             tono: tono,
-            puntoHoy: model.heroIsFresh ? puntos.last : nil,
+            // La joya de «hoy» solo cuando el ancla ES hoy (TND11-4): con ancla en ayer el
+            // último punto es ayer y la gráfica lo vestiría de hoy.
+            puntoHoy: model.anchorIsToday ? puntos.last : nil,
             hoyAnillo: bandaExplorada != nil && bandaExplorada != indiceAncla(model),
             formatoScrub: { v, f in "\(fmt(v)) · \(Self.ejeFechaFmt.string(from: f))" },
             formatoValorScrub: { fmt($0) },
