@@ -42732,6 +42732,237 @@
         }
       }
     },
+    "Your body · %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu cuerpo · %@"
+          }
+        }
+      }
+    },
+    "Loaded muscles · last 7 days" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Músculos cargados · últimos 7 días"
+          }
+        }
+      }
+    },
+    "Sets · 7 d" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Series · 7 d"
+          }
+        }
+      }
+    },
+    "Session · %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sesión · %@"
+          }
+        }
+      }
+    },
+    "Rough read: " : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lectura gruesa: "
+          }
+        }
+      }
+    },
+    "Load = sets that touch the muscle × how much it weighs in each exercise (primary 1, secondary ½) × time: every 2 days it's worth half. Fresh and loaded are compared against your most-loaded muscle, not a table. Sets = work sets from the last 7 days; 10–20 is a guide, not a target. You decide." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Carga = series que tocan el músculo × cuánto pesa en cada ejercicio (principal 1, secundaria ½) × tiempo: cada 2 días vale la mitad. «Fresco» y «cargado» se comparan contra tu músculo más cargado, no contra una tabla. Series = series de trabajo de los últimos 7 días; 10–20 es guía, no meta. Tú decides."
+          }
+        }
+      }
+    },
+    " halfway" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " a medias"
+          }
+        }
+      }
+    },
+    " halfway (%@)" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " a medias (%@)"
+          }
+        }
+      }
+    },
+    " loaded today" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " con carga de hoy"
+          }
+        }
+      }
+    },
+    " loaded yesterday" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " con carga de ayer"
+          }
+        }
+      }
+    },
+    " loaded %lld d ago" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " con carga de hace %lld d"
+          }
+        }
+      }
+    },
+    "Room for more sets in %@ (%@ of the 10–20 guide)." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Margen de series en %@ (%@ de la guía 10–20)."
+          }
+        }
+      }
+    },
+    "Log · 90 days" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bitácora · 90 días"
+          }
+        }
+      }
+    },
+    "History and progress" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Historial y progreso"
+          }
+        }
+      }
+    },
+    "1 new mark" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 marca nueva"
+          }
+        }
+      }
+    },
+    "%lld new marks" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld marcas nuevas"
+          }
+        }
+      }
+    },
+    "per exercise" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "por ejercicio"
+          }
+        }
+      }
+    },
+    "Est. 1RM %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1RM est. %@"
+          }
+        }
+      }
+    },
+    "Log a workout by hand" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Registrar entreno a mano"
+          }
+        }
+      }
+    },
+    "Opens the manual workout form" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre el formulario de entreno a mano"
+          }
+        }
+      }
+    },
+    "Print receipt" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Imprimir recibo"
+          }
+        }
+      }
+    },
     "Your iPhone has notifications off for Cénit. You can turn them on in Settings." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -46880,17 +47111,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Compartir"
-          }
-        }
-      }
-    },
-    "Share…" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Compartir…"
           }
         }
       }
@@ -60953,22 +61173,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "algo falló al abrir tus rutinas · tus datos están intactos"
-          }
-        }
-      }
-    },
-    "Sets · 7d" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sets · 7d"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Series · 7 d"
           }
         }
       }

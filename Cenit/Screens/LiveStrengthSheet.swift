@@ -4187,8 +4187,10 @@ struct LiveStrengthSheet: View {
             // reads, so this row never claims a save the app never attempted.
             if s.watchRecorded || saveStrengthWorkouts { receiptHealthSaved(s) }
 
+            // copy.md «Acta»: «Imprimir recibo» — el handoff manda, sustituye a «Compartir…». El
+            // destino no cambia: el recibo térmico ya existente (`ReceiptPrinterScreen`).
             Button { shareReceipt = ShareRef(sessionId: session.id) } label: {
-                Label("Share…", systemImage: "square.and.arrow.up")
+                Label("Print receipt", systemImage: "printer")
                     .font(StrandFont.subhead).fontWeight(.medium)
                     .foregroundStyle(theme.ink)
                     .frame(maxWidth: .infinity).padding(.vertical, 13)
@@ -4197,12 +4199,14 @@ struct LiveStrengthSheet: View {
             }
             .buttonStyle(.plain).padding(.top, 6)
 
+            // copy.md «Acta»: «Listo» va en verde (quisquilloso ronda 4) — mismo token `positiveText`
+            // que ya marca «hecho» en el resto del acta (raise, PRs, etc.), no tinta.
             Button { model.closeStrengthSummary() } label: {
                 Text("Done")
                     .font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3)
                     .foregroundStyle(theme.paper)
                     .frame(maxWidth: .infinity).padding(.vertical, 15)
-                    .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous))
+                    .background(theme.positiveText, in: RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous))
             }
             .buttonStyle(.plain)
         }

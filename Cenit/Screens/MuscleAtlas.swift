@@ -17,8 +17,11 @@ enum MuscleAtlas {
 
     enum Side { case front, back }
 
-    /// Spanish-by-catalog display name (English source key, es lives in Localizable.xcstrings).
-    static func name(_ muscle: String) -> LocalizedStringKey {
+    /// El mapeo de 17 llaves del catálogo → su nombre de despliegue (English source key, es vive en
+    /// Localizable.xcstrings) — la ÚNICA fuente; `name` (abajo) y `TrainingBodyScreen.muscleNameText`
+    /// (FER-136 · V7, que necesita `String` ya resuelto para interpolarlo en una oración generada) lo
+    /// consumen los dos, en vez de mantener dos switches de 17 casos sincronizados a mano.
+    static func nameKey(_ muscle: String) -> String {
         switch muscle {
         case "abdominals": return "Abs"
         case "abductors": return "Abductors"
@@ -37,8 +40,13 @@ enum MuscleAtlas {
         case "shoulders": return "Shoulders"
         case "traps": return "Traps"
         case "triceps": return "Triceps"
-        default: return LocalizedStringKey(muscle)
+        default: return muscle
         }
+    }
+
+    /// Spanish-by-catalog display name (English source key, es lives in Localizable.xcstrings).
+    static func name(_ muscle: String) -> LocalizedStringKey {
+        LocalizedStringKey(nameKey(muscle))
     }
 }
 

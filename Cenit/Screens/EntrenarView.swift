@@ -1271,7 +1271,7 @@ private struct EntrenarLanding: View {
             HStack {
                 Text("Load").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 Spacer(minLength: CenitMetrics.space2)
-                Text("Sets · 7d").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text("Sets · 7 d").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             }
             .padding(.top, CenitMetrics.space2)
             ForEach(Array(muscleLoads.prefix(5)), id: \.muscle) { load in
@@ -1419,14 +1419,10 @@ private struct EntrenarLanding: View {
         .overlay(alignment: .bottom) { Divider().overlay(theme.hairline) }
     }
 
-    /// El chip «N marca(s)»: verdeProfundo sobre su propio tinte al 10 % (`StrandOpacity.tintFill`).
+    /// El chip «N marca(s)»: mismo componente compartido que Historial (`EntrenarMarcaChip`,
+    /// StrandDesign — quisquilloso ronda 4: antes dos copias `private` idénticas).
     private func marcaChip(_ count: Int) -> some View {
-        Text(count == 1 ? "1 mark" : "\(count) marks")
-            .entrenarMarcaChip()
-            .foregroundStyle(theme.positiveText)
-            .padding(.horizontal, CenitMetrics.space2)
-            .padding(.vertical, CenitMetrics.space1)
-            .background(theme.tint(theme.positiveText), in: Capsule())
+        EntrenarMarcaChip(count, theme: theme)
     }
 
     /// «Mié 12 · Tirón A».
@@ -1729,14 +1725,9 @@ private struct EntrenarLanding: View {
 
     /// La fecha de hoy en la plantilla localizada «EEE d MMM» («sáb 15 ago» / «Sat 15 Aug»), con la
     /// inicial en mayúscula — la plantilla de weekday corto sale toda en minúsculas en es-MX.
-    private var cabeceraFecha: String {
-        let f = DateFormatter()
-        f.locale = Locale.autoupdatingCurrent
-        f.setLocalizedDateFormatFromTemplate("EEE d MMM")
-        let s = f.string(from: Date())
-        guard let first = s.first else { return s }
-        return String(first).uppercased() + s.dropFirst()
-    }
+    /// `StrandFormat.weekdayHeading` (StrandDesign): mismo helper compartido con la cabecera de «Tu
+    /// cuerpo» (quisquilloso ronda 4: antes dos copias a mano).
+    private var cabeceraFecha: String { StrandFormat.weekdayHeading(Date()) }
 
     /// El hilo del veredicto: la misma pastilla que es la puerta de Hoy, construida por el MISMO
     /// constructor (`LiquidHoyBuilder.hiloEntrenar`) para que las dos pantallas no puedan divergir.
