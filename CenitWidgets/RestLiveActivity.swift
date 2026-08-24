@@ -392,9 +392,10 @@ private struct ActionsRow: View {
         }
     }
 
-    // Active set: one primary «Completar» that logs the set and enters the rest.
+    // Active set: one primary «✓ Completar serie» that logs the set and enters the rest (lámina
+    // «Fuera de la app · Live Activity»: the checkmark is part of the label, not a separate glyph).
     private var activeActions: some View {
-        PrimaryButton(title: Text("Complete"), intent: RestCompleteSetIntent(), theme: theme)
+        PrimaryButton(title: Text(verbatim: "✓ ") + Text("Complete set"), intent: RestCompleteSetIntent(), theme: theme)
             .accessibilityLabel(Text("Complete set"))
             .accessibilityHint(Text("Logs the set and advances"))
     }
