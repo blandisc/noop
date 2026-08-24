@@ -745,7 +745,7 @@ struct StressDetailScreen: View {
                     ? String(localized: "Today's value is your recorded daily stress score (0–3). The trend, bands and markers are derived the same way.")
                     : String(localized: "We compare today's resting heart rate and HRV with your own 30-day baseline. A higher-than-usual resting HR and a lower-than-usual HRV both push the score up: classic signs the body is activated. The combined shift becomes a z-score sum, squashed onto 0–3 by a logistic curve: 0 calm, 1.5 at your baseline, 3 highly activated."),
                                tono: LiquidColor.tinta700)
-                LiquidNotaLine(String(localized: "«Calm time» is the share of the last month that sat in the Low band; «steadiness» is how much your daily index varies week to week (its coefficient of variation: lower is steadier). The Low / Moderate / High bands (0–1 / 1–2 / 2–3) are the same for everyone because the index is already adjusted to your own baseline. (Plews 2013)"),
+                LiquidNotaLine(String(localized: "«Calm time» is the share of the last month that sat in the Low band; «steadiness» is how much your daily index varies week to week (its coefficient of variation: lower is steadier). The Low / Medium / High bands (0–1 / 1–2 / 2–3) are the same for everyone because the index is already adjusted to your own baseline. (Plews 2013)"),
                                tono: LiquidColor.tinta700)
                 LiquidNotaLine(String(localized: "Combined resting-HR / HRV z-score through a logistic curve. HRV via RMSSD (Task Force, 1996). An estimate, not a diagnosis."))
             }

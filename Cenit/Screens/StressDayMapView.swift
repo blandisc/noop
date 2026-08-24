@@ -201,9 +201,16 @@ struct StressDayMapBlock: View {
             referenciaEtiqueta: String(localized: "your usual calm"),
             dominio: 0...3,
             seleccion: $scrubHora,
+            // TND11-2: el cruzado hora↔calendario del papel (`eventLine`) vive en el chip —
+            // hora sin lectura explica por qué («durante actividad o sueño»), hora con evento
+            // nombra el evento. El chip no trunca (`.fixedSize()`), así que el título se
+            // recorta aquí, como el `lineLimit(1)` del original.
             formatoChip: { hora in
-                guard let v = hora.valor else { return String(localized: "no reading") }
-                return "\(String(format: "%.1f", v)) · \(StressDetailScreen.palabraEstres(v))"
+                guard let v = hora.valor else { return String(localized: "during activity or sleep") }
+                let lectura = "\(String(format: "%.1f", v)) · \(StressDetailScreen.palabraEstres(v))"
+                guard let titulo = Self.tituloEvento(map, hora: hora.id, startOfDay: startOfDay)
+                else { return lectura }
+                return "\(lectura) · \(titulo)"
             },
             a11yLabel: String(localized: "Stress through the day"),
             a11yValue: "")
@@ -212,6 +219,17 @@ struct StressDayMapBlock: View {
     /// «14:00» — la etiqueta de una hora civil, con el reloj del sistema.
     private static func horaEtiqueta(_ h: Int, startOfDay: Date) -> String {
         startOfDay.addingTimeInterval(TimeInterval(h * 3600)).formatted(.dateTime.hour())
+    }
+
+    /// El evento timed que cruza una hora civil — el MISMO predicado de solape que la vieja
+    /// `StressBarsStrip.eventTitle(atHour:)`, con el título limpio y recortado para el chip.
+    private static func tituloEvento(_ map: CalendarDayMap.DayMap, hora h: Int,
+                                     startOfDay: Date) -> String? {
+        let s = startOfDay.addingTimeInterval(TimeInterval(h * 3600))
+        let e = s.addingTimeInterval(3600)
+        guard let ev = map.timed.first(where: { $0.start < e && $0.end > s }) else { return nil }
+        let limpio = EventTitleCleaner.clean(ev.title)
+        return limpio.count > 24 ? "\(limpio.prefix(24))…" : limpio
     }
 
     // MARK: Moments — ranked list (time + event + band word), capilares between rows

@@ -4691,18 +4691,18 @@
         }
       }
     },
-    "«Calm time» is the share of the last month that sat in the Low band; «steadiness» is how much your daily index varies week to week (its coefficient of variation: lower is steadier). The Low / Moderate / High bands (0–1 / 1–2 / 2–3) are the same for everyone because the index is already adjusted to your own baseline. (Plews 2013)" : {
+    "«Calm time» is the share of the last month that sat in the Low band; «steadiness» is how much your daily index varies week to week (its coefficient of variation: lower is steadier). The Low / Medium / High bands (0–1 / 1–2 / 2–3) are the same for everyone because the index is already adjusted to your own baseline. (Plews 2013)" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "«Calm time» is the share of the last month that sat in the Low band; «steadiness» is how much your daily index varies week to week (its coefficient of variation: lower is steadier). The Low / Moderate / High bands (0–1 / 1–2 / 2–3) are the same for everyone because the index is already adjusted to your own baseline. (Plews 2013)"
+            "value" : "«Calm time» is the share of the last month that sat in the Low band; «steadiness» is how much your daily index varies week to week (its coefficient of variation: lower is steadier). The Low / Medium / High bands (0–1 / 1–2 / 2–3) are the same for everyone because the index is already adjusted to your own baseline. (Plews 2013)"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "«Tiempo en calma» es la parte del último mes que cayó en la banda Baja; «regularidad» es cuánto varía tu índice día a día de semana a semana (su coeficiente de variación: menor es más estable). Las bandas Baja / Moderada / Alta (0–1 / 1–2 / 2–3) son iguales para todos porque el índice ya está ajustado a tu propia base. (Plews 2013)"
+            "value" : "«Tiempo en calma» es la parte del último mes que cayó en la banda “Bajo”; «regularidad» es cuánto varía tu índice día a día de semana a semana (su coeficiente de variación: menor es más estable). Las bandas “Bajo” / “Medio” / “Alto” (0–1 / 1–2 / 2–3) son iguales para todos porque el índice ya está ajustado a tu propia base. (Plews 2013)"
           }
         }
       }
@@ -21068,6 +21068,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tendencia de duración"
+          }
+        }
+      }
+    },
+    "during activity or sleep" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "during activity or sleep"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "durante actividad o sueño"
           }
         }
       }
