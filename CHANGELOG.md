@@ -20,6 +20,11 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **Entrenar: cotejo fino de Biblioteca, Detalle, la pill y los avisos contra el prototipo / Train: fine-tooth pass over Library, Detail, the pill and the prompts against the prototype** (FER-139).
+  **ES** — La Biblioteca encabeza con «Biblioteca · N ejercicios» en el kicker del handoff, su búsqueda dice «busca por nombre, músculo o equipo», la sección con historial anota «mejor marca» y «＋ Crear ejercicio» es la píldora de papel abajo a la derecha. En el Detalle del ejercicio, el tipo de medida acompaña al overline y «Cambiar tipo de medida ›» vive al pie de las tres pestañas, como en la lámina. El punto de la pill flotante pasa a índigo. El aviso de descartar pregunta «¿Descartar el entrenamiento?» y dice cuántas series se pierden, con el número real. En la Live Activity, el botón de la serie activa dice «✓ Completar serie». El dock y la voz del Apple Watch ya coincidían: sin cambios.
+  **EN** — The Library leads with "Library · N exercises" in the handoff kicker, its search says "search by name, muscle or equipment", the with-history section notes "best mark" and "＋ Create exercise" is the paper pill at the bottom right. In the exercise Detail, the measure type joins the overline and "Change measure type ›" sits under all three tabs, as in the artboard. The floating pill's dot turns indigo. The discard prompt asks "Discard the workout?" and says how many sets are lost, with the real number. In the Live Activity, the active-set button reads "✓ Complete set". The dock and the Apple Watch voice already matched: untouched.
+  ([ExerciseLibraryScreen.swift](Cenit/Screens/ExerciseLibraryScreen.swift), [ExerciseDetailScreen.swift](Cenit/Screens/ExerciseDetailScreen.swift), [RootTabView.swift](CenitApp/App/RootTabView.swift), [RestLiveActivity.swift](CenitWidgets/RestLiveActivity.swift))
+
 - **Onboarding: el primer arranque dice la verdad cuando aún no hay veredicto / Onboarding:
   first-run tells the truth before there's a verdict** (FER-141).
   **ES** — Auditoría de los estados del onboarding. Cuando Cénit todavía no puede darte una palabra

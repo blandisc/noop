@@ -11662,6 +11662,47 @@
         }
       }
     },
+    "Library · %lld exercises" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Library · %lld exercise"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Library · %lld exercises"
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Biblioteca · %lld ejercicio"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Biblioteca · %lld ejercicios"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "Add 15 seconds" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -15085,6 +15126,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mejor %@"
+          }
+        }
+      }
+    },
+    "Best mark" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Best mark"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "mejor marca"
           }
         }
       }
@@ -20412,6 +20470,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "¿Descartar esta importación?"
+          }
+        }
+      }
+    },
+    "Discard the workout?" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Discard the workout?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Descartar el entrenamiento?"
           }
         }
       }
@@ -42358,6 +42433,47 @@
         }
       }
     },
+    "You'll lose %lld logged set(s) today. This can't be undone." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "You'll lose %lld logged set today. This can't be undone."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "You'll lose %lld logged sets today. This can't be undone."
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Se pierde %lld serie de hoy. No se puede deshacer."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Se pierden %lld series de hoy. No se puede deshacer."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "DIST" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -45985,7 +46101,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Buscar ejercicio"
+            "value" : "busca por nombre, músculo o equipo"
           }
         }
       }

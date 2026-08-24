@@ -260,11 +260,16 @@ struct RootTabView: View {
         return content
         // El ConfirmCard del ✕ del pill vive AQUÍ (pantalla completa): colgado del host del pill se
         // anclaba a su frame angosto — velo recortado y esquinas rotas (bug Fer 2026-07-16).
+        // Handoff V10 (FER-139): título + mensaje alineados al prototipo, con el conteo REAL de
+        // series de hoy y su plural correcto. Los rótulos de acción se quedan en «Seguir
+        // entrenando»/«Descartar sesión» — no «Cancelar»/«Descartar» a secas — porque `ConfirmCard`
+        // (StrandDesign, FER-836) documenta como ley que esos dos genéricos no existen en este
+        // sistema; cada acción nombra lo que hace.
         .instrumentoConfirm(
             isPresented: $confirmDiscardSession,
-            title: String(localized: "Discard this session?"),
+            title: String(localized: "Discard the workout?"),
             context: String(localized: "SESSION · IN PROGRESS"),
-            message: String(localized: "Its logged sets won't be saved."),
+            message: String(localized: "You'll lose \(appModel.strengthSession?.doneCount ?? 0) logged set(s) today. This can't be undone."),
             actions: [
                 .init(String(localized: "Keep training"), role: .primary),
                 .init(String(localized: "Discard session"), role: .destructive) {
@@ -515,8 +520,8 @@ private extension View {
 /// Hosts the `SessionPill` with a live-ticking clock (FER-716): a `TimelineView` recomputes the
 /// elapsed time each second, and the BPM is the Apple Watch live mirror (`model.watchBpm` — the same
 /// source as the session header; nil = no watch reading, so the pill drops its ♥ segment instead
-/// of freezing a stale sample). Tapping re-opens the session. The routine hue is the effort ember
-/// (`dataStrain`) — the same hue the session screen and the approved previews use.
+/// of freezing a stale sample). Tapping re-opens the session. The routine hue is the indigo
+/// (`dataSleep`) — the prototype's 6px pill dot (handoff V10 · FER-139), not the effort ember.
 private struct ActiveSessionPillHost: View {
     @Bindable var model: AppModel
     /// Decisión Fer (2026-07-16): el ✕ del pill DESCARTA — destructivo, así que siempre confirma.
@@ -535,7 +540,7 @@ private struct ActiveSessionPillHost: View {
                     bpm: model.watchBpm,
                     detail: total > 0 ? String(localized: "set \(min(session.doneCount + 1, total))/\(total)") : nil,
                     paused: session.paused,
-                    hue: theme.dataStrain,
+                    hue: theme.dataSleep,
                     theme: theme,
                     accessibilityLabel: pillLabel(session.routineName, elapsed, model.watchBpm),
                     accessibilityHint: Text("Returns to the session"),

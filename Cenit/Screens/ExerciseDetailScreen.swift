@@ -100,6 +100,9 @@ struct ExerciseDetailScreen: View {
                 case .progress: progressTab
                 case .history:  historyTab
                 }
+                // Handoff V10 (FER-139): «Cambiar tipo de medida» is a persistent footer, visible
+                // under any of the three tabs — not only Guía.
+                measurementSection
             }
             .padding(.top, CenitMetrics.gap)
             .padding(.horizontal, CenitMetrics.screenPadding)
@@ -171,13 +174,14 @@ struct ExerciseDetailScreen: View {
     // MARK: - Tabs (v3 · 1g/1h)
 
     /// «Guía» — how the exercise loads the body and how to do it. In the handoff's order (FER-739):
-    /// muscles (chips) → how-to → variants → «measured by» + YouTube at the foot. The media hero
+    /// muscles (chips) → how-to → variants → YouTube at the foot. «Measured by» moved out to
+    /// `measurementSection` as a persistent footer (handoff V10 · FER-139): «Cambiar tipo de
+    /// medida» reads the same whichever tab you're on, not just Guía. The media hero
     /// (FER-751/722/778) already sits above the segmented control, so nothing repeats it here.
     @ViewBuilder private var guideTab: some View {
         musclesSection
         if !exercise.displayInstructions(localized: StrengthDisplay.localized).isEmpty { howToSection }
         variantsSection
-        measurementSection
         youtubeRow
     }
 
@@ -383,9 +387,10 @@ struct ExerciseDetailScreen: View {
         }
     }
 
-    /// The overline over the title (handoff): «primary muscle(s) · equipment» — «PECHO · BARRA», or
-    /// «PIERNA / ESPALDA · BARRA» for a compound with two primaries. Falls back to the measurement
-    /// type when the exercise carries neither (a bare custom one).
+    /// The overline over the title (handoff V10 · FER-139): «primary muscle(s) · equipment ·
+    /// measurement type» — «PECHO · BARRA · PESO × REPS», or «PIERNA / ESPALDA · BARRA · …» for a
+    /// compound with two primaries. Falls back to the bare measurement type when the exercise
+    /// carries neither muscle nor equipment (a bare custom one).
     private var metaLine: String {
         let muscles = exercise.primaryMuscles.prefix(2).map { StrengthDisplay.muscle($0) }
         let equip = exercise.equipment.flatMap { $0.isEmpty ? nil : StrengthDisplay.equipment($0) }
@@ -393,6 +398,7 @@ struct ExerciseDetailScreen: View {
         if !muscles.isEmpty { parts.append(muscles.joined(separator: " / ")) }
         if let equip { parts.append(equip) }
         guard !parts.isEmpty else { return StrengthDisplay.typeName(effectiveType) }
+        parts.append(StrengthDisplay.typeName(effectiveType))
         return parts.joined(separator: " · ")
     }
 
