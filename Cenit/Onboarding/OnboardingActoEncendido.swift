@@ -291,7 +291,7 @@ struct OnbActoEncendido: View {
     private func calibrando(noches: Int, faltan: Int, dias: Int) -> some View {
         Spacer(minLength: LiquidSpace.s800)
 
-        OnbOverline(OnbCopy.lecturaOverline).liquidEntrada(index: 0)
+        OnbOverline(OnbCopy.encontreOverline).liquidEntrada(index: 0)
         OnbTitular(OnbCopy.calibrandoTitular)
             .padding(.top, LiquidSpace.s250)
             .liquidEntrada(index: 1)
@@ -561,6 +561,12 @@ struct OnbActoEncendido: View {
 
         revelado = true   // el lienzo pasa a `.dentro`; la pantalla queda vacía sobre el orbe
 
+        // Las ramas sin palabra (calibrando/sinRitmo/sinDatos) muestran su contenido AQUÍ mismo, al
+        // revelarse: para ellas el foco de VoiceOver va ya, no al final de la coreografía de la
+        // palabra —que no usan—. Fijarlo tras `mostrarResto` lo movía ~1.75 s después de que el
+        // texto ya se podía leer, arriesgando arrebatarle el foco a quien ya había empezado.
+        if case .lectura = l {} else { focoRevelado = true }
+
         // 2 · Teñido. Solo existe donde hay color que revelar: en las otras tres ramas
         //     (`destinoTinte == nil`) eran 450 ms de espera con la pantalla vacía y nada
         //     cambiando. El SILENCIO de abajo, en cambio, se queda en las cuatro: sin palabra que
@@ -583,12 +589,14 @@ struct OnbActoEncendido: View {
         withAnimation(LiquidMotion.glassOut(LiquidMotion.quick)) { mostrarInfo = true }
         await esperar(corto ? 0 : OnbGuion.esperaResto)
 
-        // 6 · El resto, con el stagger de 60 ms del sistema (`liquidEntrada`). El foco de
-        //     VoiceOver va DESPUÉS: moverlo antes de que el bloque exista lo deja sin destino.
+        // 6 · El resto, con el stagger de 60 ms del sistema (`liquidEntrada`).
         mostrarResto = true
-        focoRevelado = true
 
+        // El foco de VoiceOver va DESPUÉS de que el bloque exista, o se queda sin destino: para
+        // `.lectura` ese bloque es la palabra recién revelada, así que se enfoca AQUÍ. Las demás
+        // ramas ya mostraron su contenido al revelarse y recibieron el foco allá arriba.
         if case .lectura = l {
+            focoRevelado = true
             withAnimation(LiquidMotion.glassOut(LiquidMotion.gentle)) { mostrarRotulo = true }
             await esperar(OnbGuion.rotulo)
             esconderRotulo()
