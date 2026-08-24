@@ -2,7 +2,7 @@ import SwiftUI
 import StrandDesign
 import StrandAnalytics
 
-// MARK: - Acto 5 · el perfil (FER-113)
+// MARK: - Acto 6 · el perfil (FER-113)
 //
 // Cuatro datos que el motor necesita de ti y que Apple Salud casi siempre ya sabe: edad, sexo,
 // peso y estatura. La EDAD, ella sola, manda tus zonas de frecuencia cardiaca (`Profile.hrMax` =

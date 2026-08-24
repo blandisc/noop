@@ -98,9 +98,11 @@ struct OnbActoCiclo: View {
         }
     }
 
-    /// ¿Hay noches con el reloj puesto? Es lo que decide qué cierre es honesto: prometerle «duerme
-    /// con el reloj» a quien no tiene reloj es una instrucción imposible, y prometerle «si algún
-    /// día usas un reloj» a quien ya duerme con uno lo trata de desconocido.
+    /// ¿Hay noches con el reloj puesto? Decide qué cierre es honesto. OJO: el Ciclo solo se alcanza
+    /// desde lectura/calibrando (las ramas sin reloj de verdad salen antes), así que `false` solo
+    /// ocurre en `.calibrando(0)` —alguien CON reloj (hay FC en reposo) pero sin noches nocturnas—.
+    /// Por eso el cierre «sin reloj» le habla a quien tiene reloj y no ha dormido con él, no a quien
+    /// no tiene ninguno.
     private var conReloj: Bool {
         switch landing {
         case let .lectura(_, noches, _):     return noches > 0

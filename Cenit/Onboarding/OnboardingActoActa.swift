@@ -2,7 +2,7 @@ import SwiftUI
 import StrandDesign
 import StrandAnalytics
 
-// MARK: - Acto 6 · El acta (FER-109)
+// MARK: - Acto 5 · El acta (FER-109)
 //
 // De qué está hecha la palabra. El lienzo entra en `.descomposicion`: el orbe se desarma en tres
 // pozos, uno por eje, DELANTE del usuario — es el mismo gesto que el acta explica en texto, y por
@@ -102,7 +102,7 @@ struct OnbActoActa: View {
             Group {
                 OnbTarjeta {
                     OnbOverline(OnbCopy.actaOverlineContra)
-                    OnbCuerpo(OnbCopy.actaContra(noches: noches))
+                    OnbCuerpo(OnbCopy.actaContra)
                 }
                 .padding(.top, LiquidSpace.s800)
 
@@ -139,16 +139,6 @@ struct OnbActoActa: View {
         case .caution:   return LiquidColor.atencionTexto
         case .easy:      return LiquidColor.negativo
         case .lowSignal: return LiquidColor.tinta700
-        }
-    }
-
-    /// Las noches de la base autonómica que el motor de verdad carga. Sin desenlace todavía, 0:
-    /// el acta no inventa un número para llenar la frase.
-    private var noches: Int {
-        switch landing {
-        case let .lectura(_, n, _):      return n
-        case let .calibrando(n, _, _):   return n
-        default:                          return 0
         }
     }
 }
