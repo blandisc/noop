@@ -378,7 +378,8 @@ struct TodayView: View {
             }
             .sheet(item: $skinTempDetail) { item in
                 SkinTempDetailScreen(theme: theme, model: item.model,
-                                     loadWarmingMagnitudes: { await repo.nocturnalWarmingMagnitudes() })
+                                     loadWarmingMagnitudes: { await repo.nocturnalWarmingMagnitudes() },
+                                     sinPermiso: health.auth != .authorized && health.auth != .unavailable)
                     .recEntranceGate()
             }
             .sheet(item: $stressDetail) { item in
