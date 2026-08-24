@@ -20,6 +20,17 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **Onboarding: plurales del acto 4 con formato de sustitución / Onboarding: act-4 plurals via substitution** (FER-142).
+  **ES** — Las tres frases del primer día que cuentan tu historia y tus noches con el reloj
+  («onb.4.historia» y las dos de «calibrando») ya concuerdan con el número: con una sola noche
+  dicen «1 noche», no «1 noches», y el posesivo acompaña («tu 1 día … tu 1 noche», nunca
+  «tus 1 …»). Se pasaron al formato de diccionario de sustitución del catálogo (plural one/other
+  por número), porque cada frase interpola varios números que se pluralizan por separado. **EN** —
+  The three first-run lines that count your history and your nights with the watch on now agree with
+  the count: a single night reads «1 night», not «1 nights». They moved to the String Catalog
+  substitution-dictionary format (per-number one/other plurals), since each line interpolates several
+  independently-pluralized numbers.
+
 - **Onboarding: el primer arranque dice la verdad cuando aún no hay veredicto / Onboarding:
   first-run tells the truth before there's a verdict** (FER-141).
   **ES** — Auditoría de los estados del onboarding. Cuando Cénit todavía no puede darte una palabra
