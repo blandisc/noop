@@ -1969,13 +1969,97 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "I already have your %lld days of history, and %lld nights with the watch on."
+            "value" : "I already have your %1$#@days@ of history, and %2$#@nights@ with the watch on."
+          },
+          "substitutions" : {
+            "days" : {
+              "argNum" : 1,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg day"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg days"
+                    }
+                  }
+                }
+              }
+            },
+            "nights" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg night"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg nights"
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ya tengo tus %lld días de historia, y %lld noches con el reloj puesto."
+            "value" : "Ya tengo %1$#@days@ de historia, y %2$#@nights@ con el reloj puesto."
+          },
+          "substitutions" : {
+            "days" : {
+              "argNum" : 1,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "tu %arg día"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "tus %arg días"
+                    }
+                  }
+                }
+              }
+            },
+            "nights" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg noche"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg noches"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -2020,13 +2104,97 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "I already have your %lld days of history, but I've got %lld nights with the watch on. Your word arrives as soon as I gather %lld."
+            "value" : "I already have your %1$#@days@ of history, but I've got %2$#@nights@ with the watch on. Your word arrives as soon as I gather %3$lld."
+          },
+          "substitutions" : {
+            "days" : {
+              "argNum" : 1,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg day"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg days"
+                    }
+                  }
+                }
+              }
+            },
+            "nights" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg night"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg nights"
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ya tengo tus %lld días de historia, pero llevo %lld noches con el reloj puesto. Tu palabra llega en cuanto junte %lld."
+            "value" : "Ya tengo %1$#@days@ de historia, pero llevo %2$#@nights@ con el reloj puesto. Tu palabra llega en cuanto junte %3$lld."
+          },
+          "substitutions" : {
+            "days" : {
+              "argNum" : 1,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "tu %arg día"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "tus %arg días"
+                    }
+                  }
+                }
+              }
+            },
+            "nights" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg noche"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg noches"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -2037,13 +2205,97 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "I already have your %lld days of history and your %lld nights. What I still don't have is today: your watch hasn't published this morning's resting heart rate yet."
+            "value" : "I already have your %1$#@days@ of history and your %2$#@nights@. What I still don't have is today: your watch hasn't published this morning's resting heart rate yet."
+          },
+          "substitutions" : {
+            "days" : {
+              "argNum" : 1,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg day"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg days"
+                    }
+                  }
+                }
+              }
+            },
+            "nights" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg night"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg nights"
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ya tengo tus %lld días de historia y tus %lld noches. Lo que todavía no tengo es hoy: tu reloj no ha publicado tu frecuencia cardiaca en reposo de esta mañana."
+            "value" : "Ya tengo %1$#@days@ de historia y %2$#@nights@. Lo que todavía no tengo es hoy: tu reloj no ha publicado tu frecuencia cardiaca en reposo de esta mañana."
+          },
+          "substitutions" : {
+            "days" : {
+              "argNum" : 1,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "tu %arg día"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "tus %arg días"
+                    }
+                  }
+                }
+              }
+            },
+            "nights" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "tu %arg noche"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "tus %arg noches"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }

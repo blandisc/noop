@@ -24,6 +24,16 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
   **ES** — La Biblioteca encabeza con «Biblioteca · N ejercicios» en el kicker del handoff, su búsqueda dice «busca por nombre, músculo o equipo», la sección con historial anota «mejor marca» y «＋ Crear ejercicio» es la píldora de papel abajo a la derecha. En el Detalle del ejercicio, el tipo de medida acompaña al overline y «Cambiar tipo de medida ›» vive al pie de las tres pestañas, como en la lámina. El punto de la pill flotante pasa a índigo. El aviso de descartar pregunta «¿Descartar el entrenamiento?» y dice cuántas series se pierden, con el número real. En la Live Activity, el botón de la serie activa dice «✓ Completar serie». El dock y la voz del Apple Watch ya coincidían: sin cambios.
   **EN** — The Library leads with "Library · N exercises" in the handoff kicker, its search says "search by name, muscle or equipment", the with-history section notes "best mark" and "＋ Create exercise" is the paper pill at the bottom right. In the exercise Detail, the measure type joins the overline and "Change measure type ›" sits under all three tabs, as in the artboard. The floating pill's dot turns indigo. The discard prompt asks "Discard the workout?" and says how many sets are lost, with the real number. In the Live Activity, the active-set button reads "✓ Complete set". The dock and the Apple Watch voice already matched: untouched.
   ([ExerciseLibraryScreen.swift](Cenit/Screens/ExerciseLibraryScreen.swift), [ExerciseDetailScreen.swift](Cenit/Screens/ExerciseDetailScreen.swift), [RootTabView.swift](CenitApp/App/RootTabView.swift), [RestLiveActivity.swift](CenitWidgets/RestLiveActivity.swift))
+- **Onboarding: plurales del acto 4 con formato de sustitución / Onboarding: act-4 plurals via substitution** (FER-142).
+  **ES** — Las tres frases del primer día que cuentan tu historia y tus noches con el reloj
+  («onb.4.historia» y las dos de «calibrando») ya concuerdan con el número: con una sola noche
+  dicen «1 noche», no «1 noches», y el posesivo acompaña («tu 1 día … tu 1 noche», nunca
+  «tus 1 …»). Se pasaron al formato de diccionario de sustitución del catálogo (plural one/other
+  por número), porque cada frase interpola varios números que se pluralizan por separado. **EN** —
+  The three first-run lines that count your history and your nights with the watch on now agree with
+  the count: a single night reads «1 night», not «1 nights». They moved to the String Catalog
+  substitution-dictionary format (per-number one/other plurals), since each line interpolates several
+  independently-pluralized numbers.
 
 - **Onboarding: el primer arranque dice la verdad cuando aún no hay veredicto / Onboarding:
   first-run tells the truth before there's a verdict** (FER-141).
