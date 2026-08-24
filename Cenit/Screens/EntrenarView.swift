@@ -158,6 +158,10 @@ private struct EntrenarLanding: View {
     @State private var showTricks = false
     /// FER-952: the hub's «New routine» — pushes the unified create flow (library → editor).
     @State private var showCreateRoutine = false
+    /// FER-137: «Crear plan» — the single door into «Tres caminos» (plantillas / desde cero / importar).
+    @State private var showCreatePlan = false
+    /// Success toast after a template group is applied from `CrearPlanScreen` — auto-dismisses.
+    @State private var showPlanAppliedToast = false
     /// FER-950: Quick / Mobility discs with a live strength session — confirm resume instead of
     /// silently re-presenting via `startStrengthSession`'s no-op guard (which looks like "start new").
     @State private var confirmResumeStrength = false
@@ -283,6 +287,8 @@ private struct EntrenarLanding: View {
         // FER-969: el fallo de escritura es un banner honesto, no éxito silencioso. Componente
         // compartido desde 2026-07-19 (era la misma copia en tres pantallas).
         .saveErrorToast(isPresented: $saveError)
+        // FER-137: el eco de «Plantilla aplicada» tras volver de `CrearPlanScreen`.
+        .planAppliedToast(isPresented: $showPlanAppliedToast)
         // La boleta del veredicto, dentro de Entrenar (FER-85): el mismo modelo y la misma vista
         // que sirve Hoy, así que las dos pantallas no pueden divergir ni en la tabla ni en la
         // gráfica de cajas. «Ver más» cierra la hoja sin cambiar de pestaña.
@@ -310,6 +316,12 @@ private struct EntrenarLanding: View {
         // FER-952: «＋ Nueva rutina» del hub — el flujo unificado directo (Biblioteca → editor).
         .navigationDestination(isPresented: $showCreateRoutine) {
             ExerciseLibraryScreen(createFlow: true) { picks in createRoutineFromHub(picks) }
+        }
+        // FER-137: «Crear plan» — la puerta única de «Tres caminos».
+        .navigationDestination(isPresented: $showCreatePlan) {
+            CrearPlanScreen(openRoutine: openRoutine, onChange: { await load() }) {
+                showPlanAppliedToast = true
+            }
         }
         .navigationDestination(isPresented: $showTricks) {
             WorkshopTricksScreen()
@@ -985,7 +997,12 @@ private struct EntrenarLanding: View {
                 showCreateRoutine = true
             }
             HStack(spacing: CenitMetrics.space2) {
-                CrearPlanChip(onTemplates: { showTemplates = true }, onImport: { showHubImport = true })
+                // FER-137: el chip abre «Tres caminos» (`CrearPlanScreen`) directo, ya no el paperMenu
+                // de dos ítems de `CrearPlanChip` — ese componente sigue vivo para «Tu Plan» (FER-88),
+                // que aún reparte Plantilla/Importar en su propio menú.
+                InstrumentoToolChip(systemImage: "rectangle.stack.badge.plus", label: Text("Create plan")) {
+                    showCreatePlan = true
+                }
                 InstrumentoToolChip(systemImage: "questionmark.circle", label: Text("Tricks")) { showTricks = true }
             }
         }
@@ -1505,7 +1522,9 @@ private struct EntrenarLanding: View {
             }
             .buttonStyle(EntrenarPressStyle())
             .accessibilityElement(children: .combine)
-            StrandCTAButton("Build my plan", tint: theme.positiveText, fillsWidth: false) { showTemplates = true }
+            // FER-137: el CTA de primer uso abre «Tres caminos» — antes saltaba derecho a la hoja de
+            // plantillas, un solo camino de los tres que ahora ofrece la puerta.
+            StrandCTAButton("Build my plan", tint: theme.positiveText, fillsWidth: false) { showCreatePlan = true }
                 .padding(.top, CenitMetrics.space1)
             nivelHub { EntrenarNivel("Your week", value: "Tap a day", kickerStyle: .handoff) }
                 .padding(.top, EntrenarMetrics.firstLevelTop)
