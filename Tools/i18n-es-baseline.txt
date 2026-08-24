@@ -88,7 +88,6 @@ Set %@ · %@ × %@ reps
 Showing the last %@ days
 Sleep stages: deep %@ percent, light %@ percent, REM %@ percent, awake %@ percent
 Step %@ of 4
-Still learning how consistent your nightly warming is: keep wearing it to bed.
 Sync the last few weeks, on-device: Cénit reads your Apple Health HR, HRV, sleep, SpO₂ and steps. Nothing leaves your iPhone; your strength workouts are saved back to Apple Health when you allow it. (For a one-time bulk history, use the export import above.)
 Task Force 1996; Plews 2013
 Tendencias
@@ -107,11 +106,9 @@ applies to all %@ work sets
 kg
 max weight · %@ wk
 ms²
-night to night
 nights in a row · kept %@ of %@
 of %@
 rest %@ + margin %@ bpm
-typical warming into sleep
 vs your normal · ~%@ bpm · %@ sessions
 your rest + %@ bpm margin
 ~%@%%
