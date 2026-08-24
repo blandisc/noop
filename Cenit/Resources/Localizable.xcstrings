@@ -1,6 +1,414 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Your plan, from your AI" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your plan, from your AI"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu plan, de tu IA"
+          }
+        }
+      }
+    },
+    "Cénit never calls the network. Copy the prompt, run it in your AI with your plan, and paste the result here." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cénit never calls the network. Copy the prompt, run it in your AI with your plan, and paste the result here."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cénit no llama a la red. Copia el prompt, córrelo en tu IA con tu plan, y pega aquí el resultado."
+          }
+        }
+      }
+    },
+    "STEP 1 · THE PROMPT" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "STEP 1 · THE PROMPT"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PASO 1 · EL PROMPT"
+          }
+        }
+      }
+    },
+    "✓ Copied" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "✓ Copied"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "✓ copiado"
+          }
+        }
+      }
+    },
+    "STEP 2 · BRING THE RESULT" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "STEP 2 · BRING THE RESULT"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PASO 2 · TRAE EL RESULTADO"
+          }
+        }
+      }
+    },
+    "Exercises that don't match the catalog go through a mapping step (pick an equivalent or create it) before anything is written." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exercises that don't match the catalog go through a mapping step (pick an equivalent or create it) before anything is written."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los ejercicios que no casen con el catálogo pasan por un paso de mapeo (elegir equivalente o crearlo) antes de escribir nada."
+          }
+        }
+      }
+    },
+    "Import plan · bring your own AI" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import plan · bring your own AI"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importar plan · trae tu propia IA"
+          }
+        }
+      }
+    },
+    "Paste the JSON" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paste the JSON"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pegar el JSON"
+          }
+        }
+      }
+    },
+    "or open the downloaded .json file" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "or open the downloaded .json file"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "o abre el archivo .json descargado"
+          }
+        }
+      }
+    },
+    "Open file" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open file"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abrir archivo"
+          }
+        }
+      }
+    },
+    "It read well" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It read well"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se leyó bien"
+          }
+        }
+      }
+    },
+    "Routines read" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Routines read"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rutinas leídas"
+          }
+        }
+      }
+    },
+    "Fix" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fix"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Corregir"
+          }
+        }
+      }
+    },
+    "1 exercise" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 exercise"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 ejercicio"
+          }
+        }
+      }
+    },
+    "1 to map (already resolved)" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 to map (already resolved)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 por mapear (ya resuelto)"
+          }
+        }
+      }
+    },
+    "%lld to map (already resolved)" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld to map (already resolved)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld por mapear (ya resueltos)"
+          }
+        }
+      }
+    },
+    "1 mapped" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 mapped"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 mapeado"
+          }
+        }
+      }
+    },
+    "%lld mapped" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld mapped"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld mapeados"
+          }
+        }
+      }
+    },
+    "Your week · editor" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your week · editor"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu semana · editor"
+          }
+        }
+      }
+    },
+    "Tap a day to rotate its routine. The routines are the ones you already have; days you've already trained don't change." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap a day to rotate its routine. The routines are the ones you already have; days you've already trained don't change."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toca un día para rotar su rutina. Las rutinas son las que ya tienes; los días que ya entrenaste no cambian."
+          }
+        }
+      }
+    },
+    "Days already trained can't be edited" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Days already trained can't be edited"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los días ya hechos no se editan"
+          }
+        }
+      }
+    },
+    "Already done" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Already done"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "hecha"
+          }
+        }
+      }
+    },
+    "Not editable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not editable"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No editable"
+          }
+        }
+      }
+    },
+    "Tap to rotate" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap to rotate"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "toca para rotar"
+          }
+        }
+      }
+    },
     "%lld sessions · 90 days" : {
       "extractionState" : "manual",
       "localizations" : {

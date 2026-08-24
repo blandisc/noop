@@ -34,6 +34,23 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
   the count: a single night reads «1 night», not «1 nights». They moved to the String Catalog
   substitution-dictionary format (per-number one/other plurals), since each line interpolates several
   independently-pluralized numbers.
+- **Entrenar: importar tu plan en dos pasos, y una hoja rápida para rotar tu semana / Train:
+  import your plan in two steps, and a quick sheet to rotate your week** (FER-138).
+  **ES** — La pantalla de importar (traer tu plan de tu IA) se rediseñó en dos fases: PASO 1 copia
+  el prompt real («✓ copiado» al tocar), PASO 2 pega o abre el .json en una zona punteada; leer el
+  plan confirma con «Se leyó bien», el número real de rutinas/ejercicios y cuántos necesitaron mapeo
+  (singular/plural correcto), cada rutina en el tinte de su tipo. La lógica de lectura y creación no
+  cambió. Además, TU SEMANA en la landing de Entrenar ahora abre una hoja rápida: tocar un día futuro
+  u hoy rota su rutina (Descanso → rutina → rutina → …) y lo guarda al instante; un día ya entrenado
+  no se toca (aviso). El editor completo (asignar carpetas, gestionar rutinas) se mudó a «Editar
+  rutinas y semana ›», sin perder su puerta. **EN** — The import screen (bring your plan from your
+  AI) is now two phases: STEP 1 copies the real prompt («✓ Copied» on tap), STEP 2 pastes or opens
+  the .json in a dashed drop zone; a successful read confirms with «It read well», the real routine/
+  exercise counts and how many needed mapping (correct singular/plural), each routine tinted by its
+  type. The read/create logic is unchanged. Also, TU SEMANA on the Train landing now opens a quick
+  sheet: tapping a future or today's day rotates its routine (Rest → routine → routine → …) and
+  saves it instantly; an already-trained day can't be edited (a toast says so). The full editor
+  (assign folders, manage routines) moved to «Edit routines and week ›», keeping its own door.
 
 - **Onboarding: el primer arranque dice la verdad cuando aún no hay veredicto / Onboarding:
   first-run tells the truth before there's a verdict** (FER-141).
