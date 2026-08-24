@@ -20,6 +20,21 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **Onboarding: el primer arranque dice la verdad cuando aún no hay veredicto / Onboarding:
+  first-run tells the truth before there's a verdict** (FER-141).
+  **ES** — Auditoría de los estados del onboarding. Cuando Cénit todavía no puede darte una palabra
+  (poca base, o un reloj sin usar de noche), el flujo dejó de prometer de más: la explicación de
+  «con qué se compara» ya no dice «contra tus propias 0 noches»; la pantalla sin frecuencia en
+  reposo ya no promete una lectura «en 4 noches» cuando lo que falta es el permiso de Salud (que se
+  arregla ahí, no esperando); y el cierre para quien trae reloj pero no ha dormido con él ahora le
+  dice «úsalo también de noche» en vez de tratarlo como si no tuviera reloj. Más arreglos finos de
+  VoiceOver y de texto. **EN** — An audit of the onboarding states. When Cénit can't give you a word
+  yet (thin baseline, or a watch not worn at night), the flow stops over-promising: the «how it's
+  computed» card no longer says «against your own 0 nights»; the no-resting-heart screen no longer
+  promises a reading «in 4 nights» when the real blocker is the Health permission (fixed there, not
+  by waiting); and the close for someone who has a watch but hasn't slept in it now says «wear it to
+  sleep, too» instead of treating them as watchless. Plus small VoiceOver and copy fixes.
+
 - **Entrenar: Crear plan — tres caminos / Train: Create plan — three paths** (FER-137).
   **ES** — Nueva pantalla «Tres caminos»: el chip «Crear plan» de la landing y el CTA «Crear mi
   plan» del primer uso ya no saltan directo a una hoja; abren esta puerta única con tres filas.
