@@ -391,7 +391,8 @@ struct TodayView: View {
                                    patternsLoader: { await StressDayMapPresenter.timeOfDayPatterns(
                                        repo: repo, maxHR: model.profile.hrMax, restingHR: stressRestingHR) },
                                    eventPatternsLoader: { await StressDayMapPresenter.eventPatterns(
-                                       repo: repo, map: stressDayMap) })
+                                       repo: repo, map: stressDayMap) },
+                                   sinPermiso: health.auth != .authorized && health.auth != .unavailable)
                     .recEntranceGate()
             }
             .sheet(item: $metricSpec) { spec in

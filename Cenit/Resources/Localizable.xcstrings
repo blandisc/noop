@@ -5508,6 +5508,23 @@
         }
       }
     },
+    "%@ out of 3" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ out of 3"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ de 3"
+          }
+        }
+      }
+    },
     "%@ overlapping days · %@ %@ correlation" : {
       "localizations" : {
         "en" : {
@@ -11387,22 +11404,6 @@
         }
       }
     },
-    "Activated" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Activated"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Activado"
-          }
-        }
-      }
-    },
     "active" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -14603,23 +14604,6 @@
         }
       }
     },
-    "Base" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Base"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Base"
-          }
-        }
-      }
-    },
     "Based on a short night — confidence low." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -16549,22 +16533,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Confianza del cálculo"
-          }
-        }
-      }
-    },
-    "Calm" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Calm"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Calma"
           }
         }
       }
@@ -21104,23 +21072,6 @@
         }
       }
     },
-    "during activity or sleep" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "during activity or sleep"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "durante actividad o sueño"
-          }
-        }
-      }
-    },
     "e.g. Running" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -21936,6 +21887,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cénit no puede leer tu esfuerzo: Apple Salud no le ha dado permiso. Actívalo y tus entrenamientos de hoy aparecerán aquí."
+          }
+        }
+      }
+    },
+    "Cénit can't read your stress: Apple Health hasn't granted permission. Turn it on and your readings will show up here." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cénit can't read your stress: Apple Health hasn't granted permission. Turn it on and your readings will show up here."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cénit no puede leer tu estrés: Apple Salud no le ha dado permiso. Actívalo y tus lecturas aparecerán aquí."
           }
         }
       }
@@ -25509,23 +25477,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mantén"
-          }
-        }
-      }
-    },
-    "Hold and slide to read each hour" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hold and slide to read each hour"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mantén y desliza para ver cada hora"
           }
         }
       }
@@ -30768,6 +30719,23 @@
         }
       }
     },
+    "Markers vs your base: resting heart rate up or HRV down reads as activation." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Markers vs your base: resting heart rate up or HRV down reads as activation."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marcadores contra tu base: FC en reposo arriba o VFC abajo se lee como activación."
+          }
+        }
+      }
+    },
     "Mandsager 2018 (JAMA) · Kodama 2009" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -31684,23 +31652,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Marcadores"
-          }
-        }
-      }
-    },
-    "Markers vs your base: toward stress in amber, toward calm in green." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Markers vs your base: toward stress in amber, toward calm in green."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Marcadores vs tu base: hacia más estrés en ámbar, hacia calma en verde."
           }
         }
       }
@@ -36850,6 +36801,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "de 21"
+          }
+        }
+      }
+    },
+    "of 3" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "of 3"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "de 3"
           }
         }
       }
@@ -49247,6 +49215,23 @@
         }
       }
     },
+    "Stress history" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stress history"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Historial de estrés"
+          }
+        }
+      }
+    },
     "Strained" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -52216,6 +52201,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hoy cae en %@ · escala fija de 0 a 21"
+          }
+        }
+      }
+    },
+    "Today falls in %@ · fixed scale from 0 to 3" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today falls in %@ · fixed scale from 0 to 3"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoy cae en %@ · escala fija de 0 a 3"
           }
         }
       }
@@ -57956,22 +57958,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "tu base"
-          }
-        }
-      }
-    },
-    "Your base" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your base"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu base"
           }
         }
       }
