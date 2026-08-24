@@ -201,15 +201,25 @@ struct StrainDetailScreen: View {
         String(localized: "Day Strain is your cardiovascular load on a 0–21 scale. Each second your heart rate is recorded, it's placed in an intensity zone (1–5); higher zones weigh more, and the total is compressed logarithmically so 21 is a theoretical maximum: a full day at peak intensity. (Edwards 1993; Banister 1991)")
     }
 
-    /// La frase de una línea bajo el numeral, por carril de `bandasEsfuerzo`. Las MISMAS cuatro
-    /// frases de siempre (el carril «extreme» comparte la última con «hard», igual que en
-    /// «Instrumento»: solo cuatro lecturas para cinco carriles). Texto SIN CAMBIOS.
+    /// La frase de una línea bajo el numeral, por CLAVE de carril — las MISMAS cuatro frases de
+    /// siempre, realineadas a la escalera única (TND10-2: el `switch` por índice venía de la era
+    /// de 4 bandas y nunca se reordenó al pasar a 5, así que un día «Light» decía «Moderate
+    /// effort» — un peldaño corrido en toda la escalera). Cuatro lecturas para cinco carriles:
+    /// «rest» y «light» comparten la primera, igual que la hoja de Hoy nombra suave lo suave.
     private func heroReadingConDato(_ v: Double) -> String {
-        switch indiceHoy ?? 0 {
-        case 0:  return String(localized: "Light load today: plenty left in the tank.")
-        case 1:  return String(localized: "Moderate effort today.")
-        case 2:  return String(localized: "Hard effort today: solid work.")
-        default: return String(localized: "All-out day: about as much strain as you carry.")
+        // `indiceHoy` nunca es nil aquí (solo se llama con dato y la escalera es partición
+        // total), pero el guion cae al carril más bajo, no al más alto.
+        Self.fraseCarril(indiceHoy.map { Self.bandasEsfuerzo[$0].key } ?? "rest")
+    }
+
+    /// La frase por CLAVE, separada para que la guarda (`StrainEscaleraUnicaTests`) pueda fijar
+    /// el mapeo carril→frase sin montar la vista.
+    static func fraseCarril(_ key: String) -> String {
+        switch key {
+        case "rest", "light": return String(localized: "Light load today: plenty left in the tank.")
+        case "moderate":      return String(localized: "Moderate effort today.")
+        case "hard":          return String(localized: "Hard effort today: solid work.")
+        default:              return String(localized: "All-out day: about as much strain as you carry.")
         }
     }
 
@@ -327,7 +337,9 @@ struct StrainDetailScreen: View {
                 LiquidChartBanda(lo: b.lo, hi: b.hi, color: b.color, activa: i == destacado)
             },
             dominio: Self.dominioEsfuerzo,
-            ticksY: [(18, "18"), (13, "13"), (8, "8")],
+            // Los ticks del eje afirman los CORTES reales del motor (10/14/18), no la escalera
+            // vieja 14/8 (TND10-3): un eje que marca 8 y 13 se lee como si fueran fronteras.
+            ticksY: [(18, "18"), (14, "14"), (10, "10")],
             tono: Self.tono,
             puntoHoy: shownToday != nil ? puntos.last : nil,
             hoyAnillo: bandaExplorada != nil && bandaExplorada != indiceHoy,
@@ -504,7 +516,14 @@ struct StrainDetailScreen: View {
     /// Historial (paridad `SleepDetailScreen.intensidadSueno`).
     private static func intensidadEsfuerzo(_ v: Double) -> Double {
         guard let i = indiceCarril(v) else { return 0 }
-        switch bandasEsfuerzo[i].key {
+        return alturaNivel(bandasEsfuerzo[i].key)
+    }
+
+    /// El peldaño de cada carril en la retícula (rest→extreme). ÚNICO mapa: lo leen la celda y
+    /// la leyenda, para que el swatch de una palabra sea EXACTAMENTE la tinta de su carril
+    /// (TND10-1: la leyenda a `alfa(1/0.5/0)` decía «hard» con la tinta de «extreme»).
+    private static func alturaNivel(_ key: String) -> Double {
+        switch key {
         case "extreme":  return 1.0
         case "hard":     return 0.8
         case "moderate": return 0.55
@@ -513,27 +532,33 @@ struct StrainDetailScreen: View {
         }
     }
 
-    /// La leyenda: TRES peldaños de muestra (lleno · medio · vacío) + «sin dato», el mismo
-    /// tratamiento impresionista que `SleepDetailScreen.leyendaCalendario` — y las MISMAS tres
-    /// palabras que ya traía el calendario en «Instrumento» (`strainHeatTint`/`strainWord`), sin
-    /// nuevas claves.
+    /// La leyenda: TRES peldaños de muestra + «sin dato», el mismo tratamiento impresionista que
+    /// `SleepDetailScreen.leyendaCalendario` (tres muestras para cinco tintas — «extreme» queda
+    /// más oscuro que el peldaño más oscuro de la leyenda, a propósito). Cada swatch lleva la
+    /// tinta REAL de su carril vía `alturaNivel` (TND10-1), y las MISMAS tres palabras en
+    /// minúscula que ya traía el calendario en «Instrumento» — sin nuevas claves.
     private static var leyendaCalendario: [LiquidCalendario90.NivelLeyenda] {
         [
-            .init(id: "hard", color: tono.opacity(LiquidCalendario90.alfa(intensidad: 1)),
+            .init(id: "hard",
+                  color: tono.opacity(LiquidCalendario90.alfa(intensidad: alturaNivel("hard"))),
                   etiqueta: String(localized: "hard")),
-            .init(id: "moderate", color: tono.opacity(LiquidCalendario90.alfa(intensidad: 0.5)),
+            .init(id: "moderate",
+                  color: tono.opacity(LiquidCalendario90.alfa(intensidad: alturaNivel("moderate"))),
                   etiqueta: String(localized: "moderate")),
-            .init(id: "light", color: tono.opacity(LiquidCalendario90.alfa(intensidad: 0)),
+            .init(id: "light",
+                  color: tono.opacity(LiquidCalendario90.alfa(intensidad: alturaNivel("light"))),
                   etiqueta: String(localized: "light")),
             .init(id: "nodata", color: LiquidColor.tinta7, etiqueta: String(localized: "no data")),
         ]
     }
 
-    /// La palabra corta del calendario (mismos tres cortes de siempre: 14 / 8). Texto SIN CAMBIOS.
-    private static func strainWord(_ v: Double) -> String {
-        if v >= 14 { return String(localized: "hard") }
-        if v >= 8 { return String(localized: "moderate") }
-        return String(localized: "light")
+    /// La palabra del día tocado — la MISMA etiqueta que Niveles y la escalera del historial,
+    /// por CLAVE de la escalera única (paridad `SleepDetailScreen.sleepWord`; TND10-1: los
+    /// cortes viejos 14/8 contradecían la tinta de la celda, p. ej. 8.5 se teñía «light» y
+    /// decía «moderate»).
+    static func strainWord(_ v: Double) -> String {
+        guard let i = indiceCarril(v) else { return bandasEsfuerzo.first?.label ?? "" }
+        return bandasEsfuerzo[i].label
     }
 
     private static let calDayFmt = DayKey.utcFormatter
