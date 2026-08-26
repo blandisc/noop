@@ -71,17 +71,21 @@ final class CompareExploreEscaleraUnicaTests: XCTestCase {
         XCTAssertEqual(MetricIdentity.identity(forKey: "spo2").glyph, .resp)
     }
 
-    /// Una métrica sin identidad en la hoja canónica cae a verdePrimario SIN glifo (precedente
-    /// recovery / vo2max): una clave inventada y una del catálogo sin familia (weight) lo hacen.
-    func testPuenteFallbackVerdePrimarioSinGlifo() {
+    /// Una métrica sin familia cae a tinta NEUTRA sin glifo — NO a verdePrimario (FER-108 · Grok D1):
+    /// ese verde ya significa «veredicto/recuperación», prestárselo a una métrica sin identidad es
+    /// pintar con un color que ya dice otra cosa (el mismo defecto del papel). Neutro = «sin identidad
+    /// aún», honesto. Una clave inventada y una del catálogo sin familia (weight) lo hacen.
+    func testPuenteFallbackNeutroSinGlifo() {
         let banana = MetricIdentity.identity(forKey: "banana")
-        XCTAssertEqual(banana.hue, LiquidColor.verdePrimario)
+        XCTAssertEqual(banana.hue, LiquidColor.tinta500, "sin identidad = tinta neutra, no el verde de veredicto")
         XCTAssertNil(banana.glyph)
         let weight = MetricIdentity.identity(forKey: "weight")
-        XCTAssertEqual(weight.hue, LiquidColor.verdePrimario)
-        XCTAssertNil(weight.glyph, "body composition aún no tiene familia: fallback documentado")
-        // recovery ES verdePrimario legítimamente (verde de veredicto), no un hueco.
+        XCTAssertEqual(weight.hue, LiquidColor.tinta500, "composición corporal aún sin familia: neutro, no verde")
+        XCTAssertNil(weight.glyph)
+        // recovery SÍ es verdePrimario legítimamente (verde de veredicto, su identidad real): está
+        // mapeado EXPLÍCITO, no cae por el fallback — por eso NO cambió a neutro.
         XCTAssertEqual(MetricIdentity.identity(forKey: "recovery").hue, LiquidColor.verdePrimario)
+        XCTAssertNil(MetricIdentity.identity(forKey: "recovery").glyph)
     }
 
     /// El puente cubre CADA métrica del catálogo (no truena por una clave nueva): siempre devuelve un

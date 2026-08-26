@@ -132,6 +132,28 @@ enum MetricCatalog {
 
     static func inCategory(_ c: String) -> [MetricDescriptor] { all.filter { $0.category == c } }
 
+    /// The ONE normalization from an INGEST key — what the HealthKit path and the two Apple-Health
+    /// screens (`DataSourcesView`, `AppleHealthView`) speak — to the CATALOG key that `MetricCatalog`,
+    /// `MetricIdentity` (Liquid hue/glyph) and `canonicalTitle` are all keyed by. Only two keys
+    /// diverge: `resting_hr` (catalog `rhr`) and `asleep_min` (catalog `sleep_total_min`); every
+    /// other ingest key already IS a catalog key and passes through. Coined here (FER-108 cimientos)
+    /// so the Apple-Health screens reuse the ONE identity/title source instead of re-inventing a third
+    /// convention for the same metric. See [[MetricIdentity.identity(forIngestKey:)]].
+    static func catalogKey(forIngestKey key: String) -> String {
+        switch key {
+        case "resting_hr": return "rhr"
+        case "asleep_min": return "sleep_total_min"
+        default:           return key
+        }
+    }
+
+    /// The catalog descriptor for an INGEST or catalog key (normalizes via `catalogKey(forIngestKey:)`
+    /// first). `nil` only for a key that is in neither convention.
+    static func descriptor(forIngestKey key: String) -> MetricDescriptor? {
+        let ck = catalogKey(forIngestKey: key)
+        return all.first { $0.key == ck }
+    }
+
     /// Display name for a category key (`categories` stays English internally —
     /// it's identity for grouping and checks like `category == "Strain"`).
     static func localizedCategory(_ c: String) -> String {
