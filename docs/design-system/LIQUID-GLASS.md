@@ -207,6 +207,16 @@ con paridad probada por fixtures.
 8. **El lienzo del Ecosistema es un sistema cerrado 364×324** (`EcosistemaSimulacion.Geometria`)
    escalado al ancho disponible — specs internas de componente (regla §0), no tokens de
    `LiquidSpace`; mismo precedente que los paths de los cables retirados.
+9. **El cuadro-héroe «lente teñida» — excepción sancionada a «el tono nunca tiñe el fondo de la
+   tarjeta».** El héroe del aterrizaje de Tendencias (`liquidLenteTenida`, FER-100) rellena su
+   tarjeta con un **gradiente diagonal del tono del veredicto** (claro → profundo, `tonoCampo`) +
+   especular en el canto + sombra con el glow del propio tono. Rompe a propósito la regla de que
+   el vidrio de un módulo es casi blanco y el color vive solo en la aurora del filo (§4/§7),
+   porque aquí el cuadro teñido ES la señal de «entraste a la vista larga» y su tono ES el
+   veredicto. Sin veredicto se APAGA a papel/tinta (`papelGradient`) — sin verde sin veredicto.
+   Decisión del dueño (vista lado a lado contra los módulos neutros). Mismo estatuto que
+   `LiquidHill` (#6): es la ÚNICA superficie con esta excepción; **no se extiende** a otras
+   tarjetas ni a las hojas de detalle (que usan `LiquidCampoMetrica`, plano y a sangre).
 
 ## 9. Cómo extender el sistema
 
