@@ -192,6 +192,26 @@ final class LiquidF0bPiezasTests: XCTestCase {
         XCTAssertEqual(LiquidGraficaSuperpuesta.resolverEstado(dos, rango), .datos)
     }
 
+    /// Dos métricas ELEGIDAS, pero la ventana solo deja UNA con lecturas: la causa es «sin
+    /// lecturas en el rango», no «faltan métricas». La pieza debe caer a `.sinLecturas` (su copy
+    /// «no hay datos en <rango>»), nunca a `.minimo` (el copy de «conecta Apple Health»). Si el
+    /// caller filtrara las series vacías ANTES de preguntar el estado —el defecto TND30-1— la
+    /// pieza vería una sola serie y elegiría el mensaje equivocado.
+    func test_superpuesta_dosElegidas_soloUnaConLecturasEnVentana_daSinLecturas() {
+        let ancla = Date(timeIntervalSince1970: 1_700_000_000)
+        let rango = ancla...(ancla.addingTimeInterval(7 * 86_400))
+        let conLecturas = serie("a", ancla, LiquidColor.cian)           // 5 puntos dentro
+        let fueraDeVentana = LiquidGraficaSuperpuesta.Serie(
+            id: "b", nombre: "B", color: LiquidColor.rosa,
+            puntos: [(fecha: ancla.addingTimeInterval(40 * 86_400), valor: 1)],  // fuera del rango
+            dominio: 0...1)
+        let estado = LiquidGraficaSuperpuesta.resolverEstado([conLecturas, fueraDeVentana], rango)
+        XCTAssertEqual(estado, .sinLecturas,
+                       "dos elegidas, una sin lecturas en la ventana: la causa es el rango, no el conteo")
+        XCTAssertNotEqual(estado, .minimo,
+                          "nunca .minimo con dos series elegidas: mostraría el copy de HealthKit")
+    }
+
     /// El rango recorta: un punto fuera de la ventana elegida no puede seguir dibujándose.
     func test_superpuesta_elRangoRecortaLosPuntos() {
         let ancla = Date(timeIntervalSince1970: 1_700_000_000)

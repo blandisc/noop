@@ -7,13 +7,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$lld %2$@ across %3$lld · %4$@"
+            "value" : "%1$lld %2$@ · %3$@"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$lld %2$@ en %3$lld · %4$@"
+            "value" : "%1$lld %2$@ · %3$@"
           }
         }
       }
@@ -126,13 +126,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$lld overlapping days · %2$@ %3$@ correlation"
+            "value" : "%1$lld overlapping days · %2$@ correlation"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$lld días en común · correlación %2$@ %3$@"
+            "value" : "%1$lld días en común · correlación %2$@"
           }
         }
       }
@@ -150,6 +150,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%1$@ frente a %2$@, r es igual a %3$@, %4$lld días"
+          }
+        }
+      }
+    },
+    "At most 4 metrics." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "At most 4 metrics."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Máximo 4 métricas."
+          }
+        }
+      }
+    },
+    "Pick 2–4 metrics to overlay." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pick 2–4 metrics to overlay."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elige de 2 a 4 métricas para superponer."
           }
         }
       }
@@ -204,23 +238,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : " Sin relación clara, se mueven de forma independiente."
-          }
-        }
-      }
-    },
-    " When %@ rises, %@ %@ — a %@ %@ link." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : " When %@ rises, %@ %@ — a %@ %@ link."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : " Cuando %1$@ sube, %2$@ %3$@, un vínculo %5$@ %4$@."
           }
         }
       }
@@ -940,16 +957,6 @@
         }
       }
     },
-    "%@ overlapping days · %@ %@ correlation" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$@ overlapping days · %2$@ %3$@ correlation"
-          }
-        }
-      }
-    },
     "%@ preview" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1496,19 +1503,19 @@
         }
       }
     },
-    "%@ ↔ %@: r = %@ (%@ %@) over %lld shared days." : {
-      "extractionState" : "stale",
+    "%@ ↔ %@: r = %@ (%@) over %lld shared days." : {
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ ↔ %@: r = %@ (%@ %@) over %lld shared days."
+            "value" : "%@ ↔ %@: r = %@ (%@) over %lld shared days."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$@ ↔ %2$@: r = %3$@ (%4$@ %5$@) en %6$lld días en común."
+            "value" : "%1$@ ↔ %2$@: r = %3$@ (%4$@) en %5$lld días en común."
           }
         }
       }

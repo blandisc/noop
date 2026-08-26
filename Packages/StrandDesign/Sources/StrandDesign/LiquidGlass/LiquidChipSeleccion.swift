@@ -26,6 +26,14 @@ public struct LiquidChipSeleccion: View {
     private let a11yQuitar: String
     private let onQuitar: () -> Void
 
+    /// En tallas de accesibilidad el nombre puede desbordar la fila de flujo (el layout mide el
+    /// chip con su ancho ideal): ahí se le pone techo y se deja envolver a dos renglones en vez
+    /// de correrse fuera del bisel (TND30-5).
+    @Environment(\.dynamicTypeSize) private var tamano
+    /// Techo del nombre en AX: cabe con holgura en el ancho de flujo del iPhone más chico
+    /// (≈276 pt menos el punto, la ✕ y el padding de la cápsula).
+    private let anchoNombreAX: CGFloat = 200
+
     public init(nombre: String, tono: Color, a11yQuitar: String,
                 onQuitar: @escaping () -> Void) {
         self.nombre = nombre
@@ -46,7 +54,10 @@ public struct LiquidChipSeleccion: View {
                 Text(verbatim: nombre)
                     .font(LiquidType.tituloFila)
                     .foregroundStyle(LiquidColor.tinta900)
-                    .lineLimit(1)
+                    .lineLimit(tamano.isAccessibilitySize ? 2 : 1)
+                    .truncationMode(.tail)
+                    .frame(maxWidth: tamano.isAccessibilitySize ? anchoNombreAX : nil,
+                           alignment: .leading)
                 // La seña de quitar. Decorativa: la acción vive en el chip entero.
                 Image(systemName: "xmark")
                     .font(LiquidType.iconSF(size: 9))
@@ -59,8 +70,10 @@ public struct LiquidChipSeleccion: View {
         }
         .buttonStyle(.liquidPress)
         .liquidGlass(.pastillaSolida)
+        // El `Button` YA aporta el trait `.isButton`; repetirlo hacía que VoiceOver dijera
+        // «botón, botón» (TND30-6). El label reemplaza el texto por «Quitar <métrica>», una
+        // sola parada.
         .accessibilityLabel(Text(verbatim: a11yQuitar))
-        .accessibilityAddTraits(.isButton)
     }
 }
 

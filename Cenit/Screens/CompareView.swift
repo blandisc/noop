@@ -59,6 +59,9 @@ private struct CompareSeries: Identifiable {
 
 struct CompareView: View {
     @EnvironmentObject var repo: Repository
+    /// Accessibility text size — the pair card stacks its header instead of racing the title
+    /// against the r value at AX sizes (TND30-5).
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     /// Default starter selection (falls back gracefully if a key is missing). All three resolve
     /// from the merged dashboard (`displayDays`), so a user sees an overlay on first open. (FER-275)
@@ -91,12 +94,20 @@ struct CompareView: View {
                 metricSection
 
                 if selected.count < minSelection {
-                    emptyWell(String(localized: "Compare needs at least two metrics with history. Connect Apple Health in Data Sources first."))
+                    // Fewer than two picked isn't a data problem — the picker is right there.
+                    // Telling them to connect Apple Health would lie (TND30-2). The HealthKit
+                    // copy is reserved below, for when nothing they picked has ANY history.
+                    emptyWell(String(localized: "Pick 2–4 metrics to overlay."))
                 } else {
                     let series = activeSeries
                     if series.allSatisfy({ $0.rows.isEmpty }) {
                         if loadedOnce {
-                            emptyWell(sinDatosMensaje)
+                            // Two causes, two copies (TND30-2): nothing has ANY history (the
+                            // real no-permission / no-data case → connect Apple Health) vs.
+                            // there is history but none in THIS window (→ widen the range).
+                            emptyWell(noHistoryAtAll
+                                ? String(localized: "Compare needs at least two metrics with history. Connect Apple Health in Data Sources first.")
+                                : sinDatosMensaje)
                         } else {
                             LiquidSheetSkeleton(a11yCargando: String(localized: "Reading your history…"))
                         }
@@ -186,16 +197,18 @@ struct CompareView: View {
         }
     }
 
-    /// "N readings across M · <range>" caption near the control, flagging any auto-widen. Built
-    /// from localized format strings — the paper concatenated a hardcoded English "across" and the
-    /// "· sparse widened" suffix, so neither ever translated (FER-104 / TND-30).
+    /// "N readings · <range>" caption near the control, flagging any auto-widen. Built from
+    /// localized format strings — the paper concatenated a hardcoded English "across" and the
+    /// "· sparse widened" suffix, so neither ever translated (FER-104 / TND-30). The series count
+    /// is dropped here: it lives in the Overlay block's «N series», and "en 3" named nothing in
+    /// es-MX (TND30-3).
     private var rangeCaption: String {
         let series = activeSeries
         let total = series.reduce(0) { $0 + $1.rows.count }
         let unit = total == 1 ? String(localized: "reading") : String(localized: "readings")
         let base = String(format: String(localized: "compare.caption.readings",
-                                         defaultValue: "%1$lld %2$@ across %3$lld · %4$@"),
-                          total, unit, series.count, range.phrase)
+                                         defaultValue: "%1$lld %2$@ · %3$@"),
+                          total, unit, range.phrase)
         guard anyWidened else { return base }
         return String(format: String(localized: "compare.caption.widened",
                                      defaultValue: "%1$@ · sparse widened"), base)
@@ -203,6 +216,13 @@ struct CompareView: View {
 
     private var sinDatosMensaje: String {
         String(localized: "No data for these metrics in \(range.phrase). Widen the range or pick metrics you've logged.")
+    }
+
+    /// True once loaded when NO selected metric has any history at all — the genuine no-data /
+    /// no-HealthKit-permission case, distinct from "has history, none in this window". Reserves
+    /// the "connect Apple Health" copy for the case where connecting is actually the fix (TND30-2).
+    private var noHistoryAtAll: Bool {
+        selected.allSatisfy { (fullSeries[$0.id] ?? []).isEmpty }
     }
 
     // MARK: - Loading
@@ -331,10 +351,15 @@ struct CompareView: View {
     /// FER-319). `anyWidened`/`phrase` come from the parent (they change only with selection/range).
     private func overlaySection(_ series: [CompareSeries]) -> some View {
         let nonEmpty = series.filter { !$0.rows.isEmpty }
+        // Pass ALL selected series (not just the non-empty) so the PIECE resolves the honest
+        // state: with 2+ picked but < 2 carrying readings in the window, it lands on
+        // `.sinLecturas` («No data in <range>»), never `.minimo` (the HealthKit copy). Pre-
+        // filtering here collapsed a 1-of-2 window into a fake "pick more metrics" (TND30-1).
+        // The trailing count stays the drawable count («N series»).
         return bloque(title: String(localized: "Overlay"),
                       trailing: String(format: String(localized: "compare.overlay.count",
                                                       defaultValue: "%lld series"), nonEmpty.count)) {
-            CompareOverlay(series: nonEmpty, anyWidened: anyWidened, phrase: range.phrase)
+            CompareOverlay(series: series, anyWidened: anyWidened, phrase: range.phrase)
         }
     }
 
@@ -453,24 +478,37 @@ struct CompareView: View {
 
     /// One pairwise correlation on its own opaque paper card (composed in-line: a single-use card
     /// stays atoms in the screen, not a coined DS piece — DS rule §7). Two identity swatches, the
-    /// A↔B pair in canonical names, the r value as the only saturated datum, the strength phrase and
-    /// the overlap footer.
+    /// A↔B pair in canonical names, the r value in neutral ink (its sign carried by the leading
+    /// «−», never by color — a negative correlation is not an alarm, TND30-4), the strength phrase
+    /// and the overlap footer. At AX text sizes the header stacks instead of racing title against
+    /// value on one line (TND30-5).
     private func pairCard(_ p: PairResult) -> some View {
-        let tint = correlationColor(p.r)
+        let swatches = HStack(spacing: LiquidSpace.s075) {
+            Circle().fill(p.a.color).frame(width: 8, height: 8)
+            Circle().fill(p.b.color).frame(width: 8, height: 8)
+        }
+        .accessibilityHidden(true)
+        let titulo = Text(verbatim: "\(p.a.metric.canonicalTitle) ↔ \(p.b.metric.canonicalTitle)")
+            .font(LiquidType.tituloFila)
+            .foregroundStyle(LiquidColor.tinta900)
+        // Neutral ink: the value is the datum by SIZE (valorM/mono), not by hue. Sign is the «−».
+        let valorR = Text(verbatim: "r = \(signedR(p.r))")
+            .font(LiquidType.valorM).monospacedDigit()
+            .foregroundStyle(LiquidColor.tinta900)
+
         return VStack(alignment: .leading, spacing: LiquidSpace.s200) {
-            HStack(spacing: LiquidSpace.s250) {
-                HStack(spacing: LiquidSpace.s075) {
-                    Circle().fill(p.a.color).frame(width: 8, height: 8)
-                    Circle().fill(p.b.color).frame(width: 8, height: 8)
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: LiquidSpace.s150) {
+                    HStack(spacing: LiquidSpace.s250) { swatches; titulo }
+                    valorR
                 }
-                .accessibilityHidden(true)
-                Text(verbatim: "\(p.a.metric.canonicalTitle) ↔ \(p.b.metric.canonicalTitle)")
-                    .font(LiquidType.tituloFila)
-                    .foregroundStyle(LiquidColor.tinta900)
-                Spacer(minLength: LiquidSpace.s200)
-                Text(verbatim: "r = \(signedR(p.r))")
-                    .font(LiquidType.valorM).monospacedDigit()
-                    .foregroundStyle(tint)
+            } else {
+                HStack(spacing: LiquidSpace.s250) {
+                    swatches
+                    titulo
+                    Spacer(minLength: LiquidSpace.s200)
+                    valorR
+                }
             }
 
             Text(verbatim: insightSentence(p))
@@ -530,7 +568,7 @@ struct CompareView: View {
     private func insightSentence(_ p: PairResult) -> String {
         let aT = p.a.metric.canonicalTitle
         let bT = p.b.metric.canonicalTitle
-        let head = String(localized: "\(aT) ↔ \(bT): r = \(signedR(p.r)) (\(strengthWord(p.r)) \(directionWord(p.r))) over \(p.n) shared days.")
+        let head = String(localized: "\(aT) ↔ \(bT): r = \(signedR(p.r)) (\(strengthDirection(p.r))) over \(p.n) shared days.")
         guard abs(p.r) >= 0.3 else {
             return head + String(localized: " No clear relationship: they move largely independently.")
         }
@@ -543,8 +581,8 @@ struct CompareView: View {
 
     private func pairFooter(_ p: PairResult) -> String {
         String(format: String(localized: "compare.pair.footer",
-                              defaultValue: "%1$lld overlapping days · %2$@ %3$@ correlation"),
-               p.n, strengthWord(p.r), directionWord(p.r))
+                              defaultValue: "%1$lld overlapping days · %2$@ correlation"),
+               p.n, strengthDirection(p.r))
     }
 
     private func pairA11y(_ p: PairResult) -> String {
@@ -575,10 +613,13 @@ struct CompareView: View {
         return r >= 0 ? String(localized: "positive") : String(localized: "negative")
     }
 
-    /// The r value is the datum, so it carries the only saturated hue in the card: verdict green for
-    /// a positive link, the contained brick red for a negative one (red reserved for genuine signal).
-    private func correlationColor(_ r: Double) -> Color {
-        r >= 0 ? LiquidColor.verdePrimario : LiquidColor.negativo
+    /// Strength + direction as ONE phrase, with no dangling space when the direction is empty
+    /// (|r| < 0.1 → «negligible», not «negligible ») — the double-space the footer and the insight
+    /// head both inherited (paper duda c). Order matches the paper: strength then direction.
+    private func strengthDirection(_ r: Double) -> String {
+        let dir = directionWord(r)
+        let str = strengthWord(r)
+        return dir.isEmpty ? str : "\(str) \(dir)"
     }
 }
 
@@ -591,9 +632,14 @@ struct CompareView: View {
 /// IDENTITY, names are CANONICAL. The tooltip is a sibling piece (the chart doesn't format dates):
 /// a fixed readout at the top of the plot, since the chart doesn't expose the cursor x.
 private struct CompareOverlay: View {
-    let series: [CompareSeries]        // already filtered to non-empty
+    let series: [CompareSeries]        // ALL selected — the piece resolves .minimo/.sinLecturas (TND30-1)
     let anyWidened: Bool
     let phrase: String
+
+    /// The drawable series (non-empty in the window) — the tooltip rows and the a11y label follow
+    /// the legend, which the piece builds from the non-empty ones. `series` keeps the empties only
+    /// so the piece can count what was PICKED and pick the honest empty-state message.
+    private var visibles: [CompareSeries] { series.filter { !$0.rows.isEmpty } }
 
     /// Built once per construction (init), never per scrub tick.
     private let liquidSeries: [LiquidGraficaSuperpuesta.Serie]
@@ -687,13 +733,13 @@ private struct CompareOverlay: View {
 
     private var a11yLabel: String {
         String(format: String(localized: "compare.chart.a11y", defaultValue: "Comparing %1$@"),
-               series.map(\.metric.canonicalTitle).joined(separator: ", "))
+               visibles.map(\.metric.canonicalTitle).joined(separator: ", "))
     }
 
-    /// One tooltip row per series, in legend order — the scrubbed day's REAL value, or nil («—»).
+    /// One tooltip row per drawn series, in legend order — the scrubbed day's REAL value, or nil («—»).
     private func filas(on date: Date) -> [LiquidTooltipMulti.Fila] {
         let day = Repository.utcDayKey(date)
-        return series.map { s in
+        return visibles.map { s in
             LiquidTooltipMulti.Fila(
                 id: s.id, color: s.color, nombre: s.metric.canonicalTitle,
                 valor: s.value(on: day).map { s.metric.format($0) })
@@ -752,6 +798,8 @@ private struct MetricPickerSheet: View {
             tone: MetricIdentity.hue(for: metric),
             seleccionado: isOn,
             deshabilitado: atCap,
+            // Why the row is inert: VoiceOver otherwise reads a dimmed row with no reason (TND30-7).
+            a11yHint: atCap ? String(localized: "At most 4 metrics.") : nil,
             divider: !ultima) {
                 withAnimation(LiquidMotion.selector) {
                     if isOn { selected.removeAll { $0 == metric } }

@@ -10,7 +10,9 @@ import SwiftUI
 // navegación y se vuelve un TOGGLE — el chevron se cambia por un ✓ en el tono cuando está
 // elegida (hueco reservado cuando no, para que el layout no salte), y anuncia `.isSelected`.
 // `deshabilitado` la apaga y la vuelve inerte (el tope de 4 en el picker de Comparar): sin
-// glow, en tinta terciaria, sin acción. El `subtitle` es opcional — vacío no dibuja renglón.
+// glow, en tinta terciaria, sin acción. Con `a11yHint` la fila inerte DICE por qué no responde
+// («máximo 4 métricas»), que si no VoiceOver leería una fila apagada sin razón (TND30-7). El
+// `subtitle` es opcional — vacío no dibuja renglón.
 
 public struct LiquidListRow: View {
     private let title: String
@@ -21,11 +23,13 @@ public struct LiquidListRow: View {
     private let seleccionado: Bool?
     /// Fila apagada e inerte (tope de selección alcanzado).
     private let deshabilitado: Bool
+    /// Pista de VoiceOver YA localizada — sobre todo para explicar por qué la fila está inerte.
+    private let a11yHint: String?
     private let divider: Bool
     private let action: (() -> Void)?
 
     public init(title: String, subtitle: String = "", trailing: String? = nil, tone: Color,
-                seleccionado: Bool? = nil, deshabilitado: Bool = false,
+                seleccionado: Bool? = nil, deshabilitado: Bool = false, a11yHint: String? = nil,
                 divider: Bool = true, action: (() -> Void)? = nil) {
         self.title = title
         self.subtitle = subtitle
@@ -33,20 +37,24 @@ public struct LiquidListRow: View {
         self.tone = tone
         self.seleccionado = seleccionado
         self.deshabilitado = deshabilitado
+        self.a11yHint = a11yHint
         self.divider = divider
         self.action = action
     }
 
     public var body: some View {
-        // Una fila apagada no es un botón: no responde y no debe leerse como accionable.
+        // Una fila apagada no es un botón: no responde y no debe leerse como accionable. La
+        // pista (vacía = ninguna) explica el porqué de la fila inerte.
         if let action, !deshabilitado {
             Button(action: action) { content }
                 .buttonStyle(.liquidPress)
                 .accessibilityAddTraits(traits)
+                .accessibilityHint(Text(verbatim: a11yHint ?? ""))
         } else {
             content
                 .accessibilityElement(children: .combine)
                 .accessibilityAddTraits(traits)
+                .accessibilityHint(Text(verbatim: a11yHint ?? ""))
         }
     }
 
@@ -149,7 +157,8 @@ public struct LiquidListCard<Content: View>: View {
         LiquidListRow(title: "Esfuerzo", tone: LiquidColor.ambar, seleccionado: true, action: {})
         LiquidListRow(title: "Sueño", tone: LiquidColor.indigo, seleccionado: false, action: {})
         LiquidListRow(title: "FC en reposo", tone: LiquidColor.rosa,
-                      seleccionado: false, deshabilitado: true, divider: false, action: {})
+                      seleccionado: false, deshabilitado: true,
+                      a11yHint: "Máximo 4 métricas.", divider: false, action: {})
     }
     .liquidTarjetaSeccion()
     .padding(LiquidSpace.s550)
