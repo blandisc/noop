@@ -297,6 +297,15 @@ public struct LiquidEcosistema: View {
         return LiquidSpace.ecosistemaRecorteTop * escala
     }
 
+    /// Pulido /inject (ojo del dueño 2026-08-25): en el estado SIN veredicto el rótulo del orbe
+    /// «FC EN REPOSO» caía sobre el kicker PREPARACIÓN y los puntos bajos del orbe. Hay ~64 pt de
+    /// aire muerto ARRIBA (radioOrbe 56, centro.y 136), así que subimos el orbe + sus rótulos ahí
+    /// y abrimos el hueco contra el kicker/título, que se quedan clavados abajo. Solo demotado:
+    /// el orbe del veredicto real (ya aprobado) no se toca. No aplica en separado (otro layout).
+    private var levanteDemotado: CGFloat {
+        (esDemotado && !esSeparadaEstable) ? 26 * escala : 0
+    }
+
     private var lienzo: some View {
         ZStack(alignment: .topLeading) {
             // Lector de ancho (una vía): el hueco reservado escala CON el lienzo — en un
@@ -329,7 +338,7 @@ public struct LiquidEcosistema: View {
                 // que las esferas viajen de vuelta (mismo retardo que la palabra): subir
                 // el lienzo antes de tiempo les cortaba la cabeza a los vigías contra el
                 // clipped() del contenedor.
-                .offset(y: descensoSeparado - recorteCompacto)
+                .offset(y: descensoSeparado - recorteCompacto - levanteDemotado)
                 // Pulido /inject (ojo del dueño): ambient (ease-in-out) en vez de glass-out
                 // — el arranque del glass-out se sentía un empujón. Al SEPARAR el lienzo
                 // espera la anticipación (el orbe toma aire) y PLANEA hacia abajo; al UNIR
@@ -597,7 +606,11 @@ public struct LiquidEcosistema: View {
             // otros 24 pt (−44 → −20): el orbe gana ese aire; bajo el subtítulo quedan ~18 pt
             // como corte de sección. Con puerta-ACCIÓN (Connect Health) la pastilla es la
             // última fila del propio bloque (viaja con él).
-            .frame(height: G.lienzo.height - (heroInfo ? 20 : 44)
+            // Pulido /inject (dueño 2026-08-25): en el estado SIN veredicto el bloque de texto
+            // (kicker PREPARACIÓN + título de 2 líneas) baja 16 pt para despejar los rótulos
+            // laterales del orbe (TEMPERATURA rozaba la 1ª línea). Va de la mano con `levanteDemotado`
+            // (el orbe sube 26): cada grupo a su aire. El veredicto real y la pastilla no se mueven.
+            .frame(height: G.lienzo.height - (heroInfo ? (esDemotado ? 4 : 20) : 44)
                    - (compacto ? LiquidSpace.ecosistemaAcercaVeredicto : 0), alignment: .bottom)
             .opacity(esSeparadaEstable ? 0 : 1)
             // Deriva sutil (overlapping action, ojo del dueño): la palabra no aparece —
@@ -827,6 +840,12 @@ public struct LiquidEcosistema: View {
 
     private var esCalibrando: Bool {
         if case .calibrando = coreo { return true }
+        return false
+    }
+
+    /// Titular demotado (sin veredicto): el caso de 2 líneas que necesita más aire contra el orbe.
+    private var esDemotado: Bool {
+        if case .demotado = hero { return true }
         return false
     }
 
