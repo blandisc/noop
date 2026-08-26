@@ -25,6 +25,29 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
   **EN** — The "What to expect" text at the top of "What's New" no longer presents the WHOOP band as the supported path. It now describes what the app actually does: it reads your Apple Watch and iPhone from Apple Health and computes everything on your device, with no hardware to pair — matching what the Terms already say. The only band mention left is historical: earlier versions read it, and that path was retired.
   ([AppChangelog.swift](Cenit/System/AppChangelog.swift))
 
+- **Entrenar: la pestaña Progreso del detalle de ejercicio, alineada al handoff / Train: the exercise detail's Progress tab, aligned to the handoff** (FER-149).
+  **ES** — El chip de tendencia del 1RM estimado ahora compara quincena contra quincena en una
+  ventana FIJA de 90 días anclada a hoy calendario (no al último registro): si dejaste de entrenar,
+  la ventana se vacía y el chip calla en vez de mostrar un dato viejo. El cambio se redondea a
+  entero y calla también por debajo de 2 puntos porcentuales, el ruido propio de la fórmula de
+  Epley. El overline ya no dice «HOY» sobre un dato de otro día. Las dos mini-tarjetas de mejor
+  serie / volumen semanal y el aviso del ciclo se retiran; en su lugar, tres filas de texto bajo
+  «RECORDS»: mejor peso, mejor volumen EN UNA SESIÓN (agrupado por sesión, no por día — dos
+  sesiones el mismo día no se fusionan) y el ciclo de progresión, que ahora anuncia el incremento
+  («sube 2,5 kg hoy ▲») en vez del peso destino, y solo en ese estado. El héroe de media del
+  detalle baja a 150pt.
+  **EN** — The exercise detail's estimated-1RM trend chip now compares fortnight vs. fortnight over
+  a FIXED 90-day window anchored at today's calendar date (never the last logged day): if training
+  lapsed, the window empties and the chip goes silent instead of showing a stale number. The change
+  rounds to an integer and stays silent below a 2-percentage-point noise floor, informed by the
+  Epley formula's own uncertainty. The overline no longer claims "TODAY" over another day's data.
+  The best-set / weekly-volume mini-cards and the cycle note are retired; in their place, three text
+  rows under "RECORDS": best weight, best volume in ONE SESSION (grouped by session, not by day —
+  two sessions the same day don't merge), and the progression cycle, which now announces the
+  increment ("raise 2.5 kg today ▲") instead of the destination weight, and only in that state. The
+  detail's media hero shrinks to 150pt.
+  ([OneRepMax.swift](Packages/StrandAnalytics/Sources/StrandAnalytics/OneRepMax.swift), [SessionVolume.swift](Packages/StrandAnalytics/Sources/StrandAnalytics/SessionVolume.swift), [ExerciseDetailScreen.swift](Cenit/Screens/ExerciseDetailScreen.swift), [EntrenarTokens.swift](Packages/StrandDesign/Sources/StrandDesign/Entrenar/EntrenarTokens.swift))
+
 - **Entrenar: QUEDABAN por día en el Historial del ejercicio / Train: reps-left per day in the exercise's History** (FER-147).
   **ES** — Cada bloque de día en la pestaña Historial del detalle de ejercicio ahora anota cuántas series hiciste y, si registraste esfuerzo esa sesión, «QUEDABAN 2-3» junto al conteo; si ningún set del día lo capturó, el fragmento no aparece — silencio, no un cero fabricado. La cabecera del día suma el nombre de la rutina cuando aplica («Sáb 15 · Pierna A»), o solo la fecha en una sesión libre. De paso se corrigió un error latente en la consulta de historial: al llegar a 600 sets guardados, el tope conservaba los más VIEJOS y descartaba los recientes; ahora conserva los más recientes, como el resto de la app espera.
   **EN** — Each day block in the exercise detail's History tab now notes how many sets you did and, when that session captured effort, "QUEDABAN 2-3" alongside the count; when no set of the day captured one, the fragment is omitted entirely — silence, not a fabricated zero. The day header adds the routine's name when it applies ("Sat 15 · Leg A"), or just the date for a free session. Along the way, a latent bug in the history query got fixed: once a history reached 600 saved sets, the cap kept the OLDEST ones and dropped the recent ones; it now keeps the most recent, as the rest of the app expects.

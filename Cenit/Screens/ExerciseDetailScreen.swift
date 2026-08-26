@@ -44,11 +44,16 @@ struct ExerciseDetailScreen: View {
                                            rpes: [Double], routineName: String?)] = []
     @State private var historyDays: [(ts: Int, weightKg: Double, reps: Int)] = []
     @State private var historyDaysAscending: [(ts: Int, weightKg: Double, reps: Int)] = []
-    @State private var weeklyVolumes: [Double] = []
     @State private var seriesCache: [ProgressMetric: [Double]] = [:]
     /// Stored best-per-metric records for this exercise (FER-504/505). Read-only; derived on save.
     /// Where this exercise's progression cycle stands (FER-F); nil = no slot opted in.
     @State private var cycleState: ProgressionState? = nil
+    /// The cycle's own `fromKg` (FER-149) — `ProgressionPlanner.evaluate`'s `Raise.fromKg`, the SAME
+    /// current weight the classifier used to reach `cycleState` (opted-out sessions already excluded,
+    /// same as the planner's `visible.last?.workingKg`). `cycleLine`'s «sube N kg hoy» increment reads
+    /// this instead of re-deriving "current" from `historyDays`, which carries every logged day
+    /// including opted-out ones the classifier itself ignores.
+    @State private var cycleFromKg: Double? = nil
     /// Which series the progress chart shows (FER-505). Est. 1RM is the default hero trend.
     /// The v3 · 1g/1h segmented view: Guide (muscles + how-to) / Progress (trend + records) / History (per-day sets).
     @State private var tab: DetailTab = .guide
@@ -80,9 +85,13 @@ struct ExerciseDetailScreen: View {
     @State private var saveError = false
     private var effectiveType: ExerciseType { shownType ?? exercise.type }
 
-    /// A per-day metric the progress views derive from the raw history.
+    /// A per-day metric the progress views derive from the raw history. `.weight`'s only consumer
+    /// (the retired «Best set» mini-card) is gone as of FER-149; `.volume` predates this screen's
+    /// records rows and was already unread before this change (its own byDay sum, not the
+    /// per-SESSION grouping `SessionVolume.best` now uses) — left as-is, unrelated pre-existing dead
+    /// code, not something this change should silently delete.
     private enum ProgressMetric: Hashable {
-        case weight, oneRM, volume
+        case oneRM, volume
     }
 
     var body: some View {
@@ -126,6 +135,7 @@ struct ExerciseDetailScreen: View {
             // FER-F: where the progression cycle stands — only if some routine slot opted in for this
             // exercise (first enabled slot wins; multi-routine overlap is rare and reads the same history).
             cycleState = nil
+            cycleFromKg = nil
             if exercise.type == .weightReps, let store = await repo.storeHandle() {
                 let rs = (try? await store.routines()) ?? []
                 var slot: RoutineExercise? = nil
@@ -140,9 +150,11 @@ struct ExerciseDetailScreen: View {
                     // the same silence gate the hero uses; the task re-runs when the verdict lands.
                     let advice = repo.trainingAdvice
                     if TrainingRegulation.hasLanded(advice) {
-                        cycleState = ProgressionPlanner.evaluate(
+                        let evaluated = ProgressionPlanner.evaluate(
                             re: re, history: history, inventory: inventory,
-                            equipment: exercise.equipment, advice: advice)?.state
+                            equipment: exercise.equipment, advice: advice)
+                        cycleState = evaluated?.state
+                        cycleFromKg = evaluated?.raise?.fromKg
                     }
                 }
             }
@@ -200,9 +212,11 @@ struct ExerciseDetailScreen: View {
         if mediaCoordinator.isEnabled, let mediaURL, UIImage(contentsOfFile: mediaURL.path) != nil {
             ZStack(alignment: .topTrailing) {
                 AnimatedGIFView(url: mediaURL, isPlaying: isLoopPlaying)
-                    // Handoff: the hero is a fixed 176pt banner, not a full-width square — the
+                    // Handoff (FER-149): the hero is a fixed 150pt banner (`detailHeroMedia`, its
+                    // OWN token — `ExerciseThumbnail.heroHeight` (176) stays untouched, it's shared
+                    // with every other tile that component draws), not a full-width square — the
                     // segmented control and the datum stay above the fold.
-                    .frame(maxWidth: .infinity).frame(height: ExerciseThumbnail.heroHeight)
+                    .frame(maxWidth: .infinity).frame(height: EntrenarMetrics.detailHeroMedia)
                     .clipShape(RoundedRectangle(cornerRadius: ExerciseThumbnail.heroCornerRadius, style: .continuous))
                     .accessibilityHidden(true)
                 Button { isLoopPlaying.toggle() } label: {
@@ -230,6 +244,10 @@ struct ExerciseDetailScreen: View {
                     ExerciseThumbnail(hero: nil)
                     if loadingMedia { ProgressView().tint(theme.inkTertiary) }
                 }
+                // `ExerciseThumbnail(hero:)` draws its own fixed 176pt slot (shared component, not
+                // touched) — clipped down to the screen's own 150pt token so the placeholder matches
+                // the real media hero above without a second height living on the component itself.
+                .frame(maxWidth: .infinity).frame(height: EntrenarMetrics.detailHeroMedia).clipped()
                 .overlay(RoundedRectangle(cornerRadius: ExerciseThumbnail.heroCornerRadius, style: .continuous)
                     .strokeBorder(familyTint, lineWidth: 2))
                 if !mediaCoordinator.isEnabled { mediaOffHint }
@@ -268,7 +286,7 @@ struct ExerciseDetailScreen: View {
         if loaded {
             if history.isEmpty { emptyHistory } else {
                 progressSection
-                cycleBlock
+                recordsSection
                 Text("From your best set with the Epley (1985) formula. A progress signal, not a target to load.")
                     .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -380,24 +398,10 @@ struct ExerciseDetailScreen: View {
         historyDays = byDayBest.values.sorted { $0.ts > $1.ts }
         historyDaysAscending = historyDays.sorted { $0.ts < $1.ts }
 
-        let cal = Calendar.current
-        if let thisWeek = cal.dateInterval(of: .weekOfYear, for: Date())?.start {
-            weeklyVolumes = (0..<7).reversed().map { back in
-                guard let start = cal.date(byAdding: .weekOfYear, value: -back, to: thisWeek),
-                      let end = cal.date(byAdding: .weekOfYear, value: 1, to: start) else { return 0 }
-                let s = Int(start.timeIntervalSince1970), e = Int(end.timeIntervalSince1970)
-                return history.filter { $0.startTs >= s && $0.startTs < e }
-                    .reduce(0.0) { $0 + $1.weightKg * Double($1.reps) }
-            }
-        } else {
-            weeklyVolumes = []
-        }
-
         seriesCache = [
             .oneRM: OneRepMax.dailySparkline(history.map {
                 (day: dayKey($0.startTs), weightKg: $0.weightKg, reps: $0.reps)
             }).map(\.estimatedKg),
-            .weight: byDay { Swift.max($0, $1.weightKg) },
             .volume: byDay { $0 + $1.weightKg * Double($1.reps) },
         ]
     }
@@ -410,6 +414,14 @@ struct ExerciseDetailScreen: View {
                 .instrumentoOverline().foregroundStyle(theme.inkTertiary)
             Text(StrengthDisplay.name(exercise))
                 // §8.7: redesigned sheets title in Grotesk (handoff: 700 26px, tight tracking).
+                // FER-149 deviation (documented, not silent): spec C asked for 30pt IF a reasonable
+                // role token existed to add to StrandDesign. The closest existing role,
+                // `InstrumentoType.groteskScreenTitle`, is 25pt — not 30, and not this screen's own
+                // 26pt either. Minting a brand-new 30pt token whose only caller would be this one
+                // screen isn't "a reasonable role token", it's a bespoke number wearing a token's
+                // clothes — exactly what the design system rule (StrandDesign law, no one-off sizes)
+                // exists to prevent. Kept at 26 per the system's own guard rail; a real 30pt role
+                // token is a system-level design decision for `/ui`, not this issue.
                 .font(InstrumentoType.grotesk(26, weight: .bold)).tracking(InstrumentoType.groteskHeroTrackingScaled(26))
                 .foregroundStyle(theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
@@ -647,27 +659,42 @@ struct ExerciseDetailScreen: View {
 
     private var progressSection: some View {
         let oneRM = series(.oneRM)
+        let deltaPercent = trendDeltaPercent
         return VStack(alignment: .leading, spacing: 0) {
-            // Handoff: overline + the tab's ONE dominant number — today's estimated 1RM — with a
-            // quiet green delta chip when the trend is up.
-            Text("ESTIMATED 1RM · TODAY").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            // FER-149 spec A: the kicker is the FIXED text below, no conditional variant — it never
+            // claims «TODAY»/«HOY» over stale data (the old bug the spec's collateral fix targeted)
+            // because it says «90 DAYS», not a same-day claim, regardless of when the last log was.
+            Text("TREND · ESTIMATED 1RM · 90 DAYS")
+                .instrumentoOverline().foregroundStyle(theme.inkTertiary)
             HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.gap) {
                 if let latest = oneRM.last {
+                    // FER-149 spec A ("numeral 22 índigo") is literal, not "the family's tint" — the
+                    // fixed hue `theme.dataSleep` is the SAME token the rest of the codebase already
+                    // calls «índigo» (`LiquidActaVeredicto`, `MedidorLunar`, et al.). The chart accent
+                    // and the frame/muscle-dot below stay on `familyTint` (untouched, out of this
+                    // issue's scope) — only the hero numeral itself follows the arbitrated spec.
                     HStack(alignment: .firstTextBaseline, spacing: 3) {
                         Text(verbatim: StrengthDisplay.weightNumber(latest, system: system))
-                            .font(InstrumentoType.groteskHeroNumeral(44)).tracking(InstrumentoType.groteskHeroTrackingScaled(44))
-                            .foregroundStyle(theme.ink)
+                            .font(InstrumentoType.groteskHeroNumeral(22)).tracking(InstrumentoType.groteskHeroTrackingScaled(22))
+                            .foregroundStyle(theme.dataSleep)
                         Text(verbatim: StrengthDisplay.weightUnit(system))
-                            .font(InstrumentoType.grotesk(22, weight: .bold)).foregroundStyle(theme.inkTertiary)
+                            .font(InstrumentoType.grotesk(15, weight: .bold)).foregroundStyle(theme.inkTertiary)
                     }
                 }
-                if let first = oneRM.first, let last = oneRM.last, last > first + 0.05 {
-                    Text("↗ +\(StrengthDisplay.weight(last - first, system: system)) / \(weeksSpan) wk")
+                // Fortnight-vs-fortnight delta over the fixed 90-day window (`trendDeltaPercent`,
+                // FER-149 · CSO+CDO-signed formula) — replaces the old first-vs-entire-history delta
+                // wholesale, not alongside it. Green when the trend reads up, `warning` (the other
+                // data tone the sign can honestly ask for) when it reads down; the noise floor
+                // already guarantees this never fires at 0%.
+                if let deltaPercent {
+                    let tone = deltaPercent > 0 ? theme.dataRecovery : theme.warning
+                    Text(verbatim: "≈ \(deltaPercent > 0 ? "+" : "")\(deltaPercent) %")
                         .font(InstrumentoType.grotesk(13, weight: .bold)).monospacedDigit()
-                        .foregroundStyle(theme.dataRecovery)
+                        .foregroundStyle(tone)
                         .padding(.horizontal, 9).padding(.vertical, 3)  // token-exempt: chip delta del handoff
-                        .background(theme.dataRecovery.opacity(StrandOpacity.tintFill),
+                        .background(tone.opacity(StrandOpacity.tintFill),
                                     in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
+                        .accessibilityLabel(deltaAccessibilityLabel(deltaPercent))
                 }
             }
             .padding(.top, 3)
@@ -684,21 +711,29 @@ struct ExerciseDetailScreen: View {
                     .padding(.top, CenitMetrics.cardPadding)
                     .accessibilityLabel(Text("Est. 1RM") + Text(verbatim: " trend"))
             }
-
-            // BEST SET · VOLUME / WK — two mini cards, each with its own mini chart.
-            HStack(alignment: .top, spacing: CenitMetrics.gap) {
-                bestSetCard
-                volumeCard
-            }
-            .padding(.top, 14)  // token-exempt: 14 del handoff
         }
     }
 
-    /// The whole logged span in weeks (≥1), for the delta chip and card captions.
-    private var weeksSpan: Int {
-        let days = historyDays
-        guard days.count >= 2 else { return 1 }
-        return max(1, (days.first!.ts - days.last!.ts) / 604_800)
+    /// «≈ +N %» — fortnight-vs-fortnight change in estimated 1RM over the FIXED 90-day window
+    /// anchored at today, calendar LOCAL (`OneRepMax.windowDeltaPercent`, FER-149; formula + guards
+    /// documented and tested there). `nil` — no chip at all, never «0 %» — when the data doesn't
+    /// clear the window's own minimums or the noise floor. The anchor is passed as
+    /// `Repository.localDayKey(Date())` — the SAME local-zone day-key convention as every set's own
+    /// `day` below (`dayKey`, which wraps the same call) — never a bare `Date` the callee would have
+    /// to reconvert itself (that mismatch was the FER-149 QA UTC-vs-local bug).
+    private var trendDeltaPercent: Int? {
+        OneRepMax.windowDeltaPercent(
+            history.map { (day: dayKey($0.startTs), weightKg: $0.weightKg, reps: $0.reps) },
+            todayKey: Repository.localDayKey(Date()))
+    }
+
+    /// VoiceOver reading of the delta chip («aproximadamente 6 por ciento más en 90 días» /
+    /// «… menos …») — the visual chip is a bare glyph-and-number string, not a sentence.
+    private func deltaAccessibilityLabel(_ percent: Int) -> Text {
+        let n = abs(percent)
+        return percent > 0
+            ? Text("Approximately \(n) percent more over 90 days")
+            : Text("Approximately \(n) percent less over 90 days")
     }
 
     /// A short uppercase month for the chart's x axis («MAY»), localized.
@@ -708,98 +743,90 @@ struct ExerciseDetailScreen: View {
             .formatted(.dateTime.month(.abbreviated)).uppercased()
     }
 
-    /// «MEJOR SERIE» — the all-time heaviest set + the max-weight-by-day mini sparkline.
-    @ViewBuilder private var bestSetCard: some View {
-        if let best = history.max(by: { $0.weightKg < $1.weightKg }) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text("Best set").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text(verbatim: StrengthDisplay.weightNumber(best.weightKg, system: system))
-                        .font(InstrumentoType.grotesk(20, weight: .bold)).monospacedDigit()
-                        .foregroundStyle(theme.ink)
-                    Text(verbatim: "× \(best.reps)")
-                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+    /// «RECORDS» — 3 plain text rows (FER-149; replaces the retired best-set/volume mini-cards and
+    /// the cycle NoteStrip wholesale). Each row is independently optional and hidden on its own —
+    /// the block itself only renders once at least one has something to say.
+    @ViewBuilder private var recordsSection: some View {
+        let bestSet = bestSetLine
+        let bestVolume = bestVolumeLine
+        let cycle = cycleLine
+        if bestSet != nil || bestVolume != nil || cycle != nil {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Records").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    .padding(.bottom, CenitMetrics.space2)
+                if let bestSet {
+                    recordRow(Text("Best weight"), bestSet)
+                    if bestVolume != nil || cycle != nil { Divider().overlay(theme.hairline) }
                 }
-                Sparkline(values: series(.weight),
-                          gradient: Gradient(colors: [familyTint, familyTint]),
-                          bandColor: .clear, showsArea: false, showsHead: true, showsScrub: true,
-                          valueFormat: { StrengthDisplay.weight($0, system: system) })
-                    .frame(height: 36)
-                    .padding(.top, 7)  // token-exempt: 7 del handoff
-                    .accessibilityHidden(true)
-                Text("max weight · \(weeksSpan) wk")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                    .padding(.top, 4)
+                if let bestVolume {
+                    recordRow(Text("Best volume in one session"), bestVolume)
+                    if cycle != nil { Divider().overlay(theme.hairline) }
+                }
+                if let cycle {
+                    recordRow(Text("Progression cycle"), cycle)
+                }
             }
-            .padding(.horizontal, 13).padding(.vertical, CenitMetrics.gap)  // token-exempt: 13 del handoff
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))  // token-exempt: radio 14 del handoff
-            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))  // token-exempt: radio 14 del handoff
-            .accessibilityElement(children: .combine)
+            .padding(.top, 14)  // token-exempt: 14 del handoff (mismo aire que las mini-tarjetas retiradas)
         }
     }
 
-    /// «VOLUMEN / SEM» — last week's tonnage + seven weekly bars (the current week in full hue).
-    private var volumeCard: some View {
-        let vols = weeklyVolumes
-        var streak = 0
-        var i = vols.count - 1
-        while i > 0, vols[i] > vols[i - 1] + 0.0001 { streak += 1; i -= 1 }
-        return VStack(alignment: .leading, spacing: 3) {
-            Text("Volume / wk").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Text(verbatim: StrengthHistoryFormat.volume(vols.last ?? 0, system: system))
-                .font(InstrumentoType.grotesk(20, weight: .bold)).monospacedDigit()
-                .foregroundStyle(theme.ink)
-            weeklyBars(vols)
-                .frame(height: 36)
-                .padding(.top, 7)  // token-exempt: 7 del handoff
-                .accessibilityHidden(true)
-            Group {
-                if streak >= 1 {
-                    Text("↗ up \(streak) wk").foregroundStyle(theme.dataRecovery)
-                } else {
-                    Text("steady").foregroundStyle(theme.inkTertiary)
-                }
-            }
-            .font(StrandFont.caption)
-            .padding(.top, 4)
+    /// One RECORDS row: a quiet label, the raw value on the trailing edge. `value` carries its OWN
+    /// foreground color per case (set by its source below) — this helper only sets the shared font,
+    /// so it never overrides the «▲» accent `cycleLine` paints on `.readyToAdvance`.
+    private func recordRow(_ label: Text, _ value: Text) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.gap) {
+            label.font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+            Spacer(minLength: 8)
+            value.font(InstrumentoType.grotesk(15, weight: .semibold)).monospacedDigit()
         }
-        .padding(.horizontal, 13).padding(.vertical, CenitMetrics.gap)  // token-exempt: 13 del handoff
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))  // token-exempt: radio 14 del handoff
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))  // token-exempt: radio 14 del handoff
+        .padding(.vertical, CenitMetrics.gap)
         .accessibilityElement(children: .combine)
     }
 
-    /// Seven rounded weekly bars — tints of the family hue, the latest week in full hue.
-    private func weeklyBars(_ vols: [Double]) -> some View {
-        WeeklyBarsChart(vols: vols, accent: familyTint, theme: theme,
-                        valueFormat: { StrengthHistoryFormat.volume($0, system: system) })
+    /// «Mejor peso» — the all-time heaviest set, raw, no hedge («82,5 kg × 8»).
+    private var bestSetLine: Text? {
+        guard let best = history.max(by: { $0.weightKg < $1.weightKg }) else { return nil }
+        return Text(verbatim: "\(StrengthDisplay.weight(best.weightKg, system: system)) × \(best.reps)")
+            .foregroundColor(theme.ink)
     }
 
-    /// «CICLO ACTUAL» — where this exercise's progression stands, in one sentence with real numbers.
-    /// Only renders when some routine slot opted into progression for this exercise.
-    @ViewBuilder private var cycleBlock: some View {
-        if let line = cycleLine {
-            NoteStrip(style: .info, theme: theme) {
-                VStack(alignment: .leading, spacing: 5) {
-                    Text("Current cycle").instrumentoOverline().foregroundStyle(theme.dataRecovery)
-                    line.font(StrandFont.caption).foregroundStyle(theme.ink)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-        }
+    /// «Mejor volumen en una sesión» — grouped by `WorkSetHistoryRow.sessionId`, NEVER by calendar
+    /// day (`SessionVolume.best`, FER-149): two sessions logged the same day stay two records, not
+    /// one merged one. All-time, no window; hidden when nothing logged has positive volume.
+    private var bestVolumeLine: Text? {
+        guard let best = SessionVolume.best(history.map {
+            (sessionId: $0.sessionId, startTs: $0.startTs, weightKg: $0.weightKg, reps: $0.reps)
+        }) else { return nil }
+        return Text(verbatim: StrengthHistoryFormat.volume(best.volumeKg, system: system))
+            .foregroundColor(theme.ink)
     }
 
+    /// «Ciclo de progresión» — where this exercise's progression stands, in one sentence with real
+    /// numbers. `nil` unless some routine slot opted into progression for this exercise.
     private var cycleLine: Text? {
         guard let state = cycleState else { return nil }
         let kg = { (v: Double) in StrengthDisplay.weight(v, system: system) }
         switch state {
         case .inCycle(let done, let of):
             let at = historyDays.last.map { kg($0.weightKg) } ?? ""
-            return Text("You're \(done) of \(of) sessions in with \(at).")
+            return Text("You're \(done) of \(of) sessions in with \(at).").foregroundColor(theme.ink)
         case .readyToAdvance(let newKg):
-            return Text("Cycle complete: your next session arrives with \(kg(newKg)).")
+            // FER-149: the OLD copy named the destination weight («arrives with 65 kg»); the CSO's
+            // records row instead names the INCREMENT — «raise 2.5 kg today» — with a green «▲»
+            // that appears ONLY in this state, never elsewhere in the row.
+            // FER-149 QA: `actual` MUST be the same "current weight" the classifier itself used to
+            // reach `.readyToAdvance` — `cycleFromKg` (`ProgressionPlanner.evaluate`'s `Raise.fromKg`)
+            // already excludes opted-out sessions, exactly like the classifier does. Re-deriving it
+            // from `historyDays` instead (a) risked reading the OLDEST logged day rather than the
+            // newest (`historyDays` sorts descending — `.last` is the oldest) and (b) could include an
+            // opted-out day's weight the classifier had already ignored, either of which could show
+            // an increment nowhere close to `newKg − actual`. `cycleFromKg` is nil only if the
+            // classifier's own `raise` came back nil (shouldn't happen in `.readyToAdvance`); the
+            // fallback keeps the row from crashing rather than claiming perfect data.
+            let current = cycleFromKg ?? historyDaysAscending.last?.weightKg ?? newKg
+            let increment = max(0, newKg - current)
+            return Text("Raise \(kg(increment)) today").foregroundColor(theme.ink)
+                + Text(verbatim: " ▲").foregroundColor(theme.dataRecovery)
         case .deferred(let newKg):
             // FER-82: the cause is the day's verdict, not a recovery score. Naming the score here
             // was a third voice that could contradict both Hoy and Entrenar on the same morning.
@@ -808,15 +835,18 @@ struct ExerciseDetailScreen: View {
             // rango». El texto prometía una condición más estrecha que la real, y se cumplía sola
             // el día que la pantalla llamaba de otro modo.
             return Text("The raise to \(kg(newKg)) waits for a day that doesn't hold it back. You can take it anyway.")
+                .foregroundColor(theme.ink)
         case .stalled(let sessions):
             return Text("\(sessions) sessions without hitting the goal at this weight.")
+                .foregroundColor(theme.ink)
         case .deloading(let fromKg, let toKg):
             return Text("Proposed deload: \(kg(fromKg)) → \(kg(toKg)), then rebuild.")
+                .foregroundColor(theme.ink)
         }
     }
 
-    /// A metric as a per-day series, oldest→newest. Max-weight takes the day's heaviest set;
-    /// volume sums weight×reps over the day; 1RM reuses the cited `OneRepMax.dailySparkline`.
+    /// A metric as a per-day series, oldest→newest. `.oneRM` reuses the cited
+    /// `OneRepMax.dailySparkline`; the only current caller (the trend chart above).
     private func series(_ metric: ProgressMetric) -> [Double] {
         seriesCache[metric] ?? []
     }
@@ -853,59 +883,6 @@ struct ExerciseDetailScreen: View {
         }
     }
 
-}
-
-// MARK: - Weekly volume bars (handoff «Detalle · Progreso», mini card)
-
-/// Seven weekly tonnage bars; dragging pins a week (full hue) and shows its value above — the same
-/// scrub reading model as the line charts.
-private struct WeeklyBarsChart: View {
-    let vols: [Double]
-    let accent: Color
-    let theme: InstrumentoTheme
-    let valueFormat: (Double) -> String
-
-    @State private var scrubIndex: Int? = nil
-
-    var body: some View {
-        let top: Double = max(vols.max() ?? 1.0, 0.0001)
-        return GeometryReader { (geo: GeometryProxy) in
-            HStack(alignment: .bottom, spacing: 5) {
-                ForEach(Array(vols.enumerated()), id: \.offset) { (idx: Int, v: Double) in
-                    let active: Bool = scrubIndex.map { (s: Int) in s == idx } ?? (idx == vols.count - 1)
-                    let ratio: Double = v / top
-                    let barH: CGFloat = max(3, geo.size.height * CGFloat(ratio))
-                    RoundedRectangle(cornerRadius: 2, style: .continuous)  // token-exempt: geometría de barra del sparkline
-                        .fill(active ? accent : accent.opacity(0.28))  // token-exempt: tinte 28% del handoff
-                        .frame(height: barH)
-                        .frame(maxWidth: .infinity)
-                }
-            }
-            .frame(height: geo.size.height, alignment: .bottom)
-            .contentShape(Rectangle())
-            .gesture(
-                DragGesture(minimumDistance: 0)
-                    .onChanged { (g: DragGesture.Value) in
-                        let w: CGFloat = max(geo.size.width, 1)
-                        let frac: CGFloat = max(0, min(0.999, g.location.x / w))
-                        let i: Int = Int(frac * CGFloat(vols.count))
-                        if i != scrubIndex { ChartHaptics.datumChanged() }
-                        scrubIndex = i
-                    }
-                    .onEnded { (_: DragGesture.Value) in scrubIndex = nil }
-            )
-            .overlay(alignment: .top) {
-                if let i = scrubIndex, vols.indices.contains(i) {
-                    Text(verbatim: valueFormat(vols[i]))
-                        .font(InstrumentoType.grotesk(11, weight: .bold)).monospacedDigit()
-                        .foregroundStyle(accent)
-                        .padding(.horizontal, 5).padding(.vertical, 1)
-                        .background(theme.surface.opacity(0.9), in: RoundedRectangle(cornerRadius: 4, style: .continuous))  // token-exempt: tooltip
-                        .offset(y: -14)
-                }
-            }
-        }
-    }
 }
 
 // MARK: - Trend chart with axes (handoff «Detalle · Progreso»)
