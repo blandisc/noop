@@ -308,6 +308,12 @@ public enum EntrenarMetrics {
     /// bloque arrancaba pegado a la cabecera (solo el `sectionGap` genérico del contenedor, 28, la
     /// mitad de lo que le toca). Sumado al `sectionGap` de la cabecera (28) da los 56 del proto.
     public static let focusRestTop: CGFloat = 28
+
+    /// Alto del héroe de media en el Detalle de ejercicio (FER-149, «como el handoff»): 150, más
+    /// bajo que `ExerciseThumbnail.heroHeight` (176). Token PROPIO — `heroHeight` es compartido
+    /// (Biblioteca, celdas de rutina, el mismo componente en más superficies) y no se toca; solo el
+    /// marco del héroe de Detalle encoge.
+    public static let detailHeroMedia: CGFloat = 150
 }
 
 /// El estado de una celda del calendario de entrenamiento. Es un token porque lo consumen dos

@@ -1046,7 +1046,7 @@ struct WorkoutHistoryScreen: View {
     /// «Progreso por ejercicio» (FER-136 · V7): los ejercicios con historial REAL (sets logueados en
     /// las sesiones de `recentSessions`), no la composición actual de las rutinas — un ejercicio sigue
     /// apareciendo aquí aunque su rutina se haya editado o borrado después. 1RM reusa
-    /// `OneRepMax.dailySparkline(...).last` — el MISMO cálculo que el héroe «Estimated 1RM · Today» de
+    /// `OneRepMax.dailySparkline(...).last` — el MISMO cálculo que el numeral del héroe de
     /// `ExerciseDetailScreen.progressSection` (no `bestEstimate`, que es el máximo histórico y podía
     /// mostrar un número distinto al tocar la fila y entrar al mismo ejercicio; quisquilloso ronda 4).
     /// Deduplicado por exerciseId, tope 6 filas (mismo tope que `loadProgressionRows`), sesiones más
