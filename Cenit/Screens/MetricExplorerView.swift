@@ -54,11 +54,11 @@ private let longDateFmt: DateFormatter = {
 }()
 private func longDate(_ d: Date) -> String { longDateFmt.string(from: d) }
 
-/// The origin vocabulary for a catalog metric — the sheet's rule (source → «Apple Health» /
-/// «On-device»). Used both as the row subtitle and the detail's provenance chip label.
-private func originVocabulary(_ m: MetricDescriptor) -> String {
-    m.source == "apple-health" ? String(localized: "Apple Health") : String(localized: "On-device")
-}
+// `originVocabulary(_:)` + `metricIsCalculated(_:)` now live in CompareView.swift (unguarded, shared
+// by both instruments): the origin label speaks the Hoy sheet's CLOSED vocabulary — «Apple Health» /
+// «Apple Watch» / «Calculated on your phone» — instead of the raw catalog tag (C-16). Used here as
+// the catalog row subtitle and the detail's provenance chip label; the chip keeps its identity
+// glyph/hue and only the text changes.
 
 // MARK: - On-device series resolver / range
 //
@@ -234,6 +234,9 @@ struct MetricDetailView: View {
     }
 
     @State private var range: ExploreRange = .month
+    /// The field's ⓘ opens the uniform «What we measure» card beneath it (D3/C-17, calco
+    /// StrainDetailScreen.infoOpen). ONE card for all 35 metrics — no per-metric essay.
+    @State private var infoOpen = false
     /// Full ascending series for this metric — ALL history.
     @State private var series: [(day: String, value: Double)] = []
     /// The series with each `day` string parsed to a `Date` exactly ONCE — the shared window math
@@ -291,20 +294,21 @@ struct MetricDetailView: View {
         return ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 heroField
+                if infoOpen { whatWeMeasureCard }
                 fusionRow
                 if !loaded {
                     LiquidSheetSkeleton(a11yCargando: String(localized: "Reading your history…"))
                         .liquidSeccion()
                 } else if series.isEmpty {
                     // ONLY genuine empty state: no data in the entire history.
-                    LiquidFranjaSeccion(String(localized: "Your history"), tono: hue)
+                    LiquidFranjaSeccion(String(localized: "History"), tono: hue)
                     LiquidGraficaNiveles(
                         puntos: [], bandas: [], dominio: 0...1, ticksY: [], tono: hue,
                         estadoVacio: String(localized: "No history yet. Connect Apple Health in Data Sources and it fills every metric you can explore here."),
                         a11yLabel: String(localized: "\(metric.canonicalTitle) trend"))
                         .liquidSeccion()
                 } else {
-                    LiquidFranjaSeccion(String(localized: "Your history"), tono: hue)
+                    LiquidFranjaSeccion(String(localized: "History"), tono: hue)
                     trendContent(window: window).liquidSeccion()
                     LiquidFranjaSeccion(String(localized: "What correlates"), tono: hue)
                     correlationContent.liquidSeccion()
@@ -332,13 +336,21 @@ struct MetricDetailView: View {
                 titulo: metric.canonicalTitle,
                 glifo: glyph,
                 datos: [heroDato(last.value)],
-                clausula: asOfClause)
+                clausula: asOfClause,
+                // D3/C-17: the ⓘ opens the uniform «What we measure» card (no verdict, no level
+                // phrase — A17). Same lever the sibling MetricDetailScreen uses.
+                infoAbierto: infoOpen,
+                infoEtiqueta: String(localized: "What we measure"),
+                onInfo: { withAnimation(LiquidMotion.lift) { infoOpen.toggle() } })
         } else {
             LiquidCampoMetrica(
                 tono: hue,
                 titulo: metric.canonicalTitle,
                 glifo: glyph,
-                datos: [.init(valor: LiquidCajita.sinDato, rotulo: metric.localizedCategory,
+                // C-01: no category rótulo — it only echoed the title / a redundant category under a
+                // numeral whose identity the title already names; the «as of <date>» clause carries
+                // the temporal context.
+                datos: [.init(valor: LiquidCajita.sinDato, rotulo: "",
                               a11y: String(localized: "no data"), ausente: true)])
         }
     }
@@ -348,19 +360,39 @@ struct MetricDetailView: View {
     /// stay WHOLE — `fmt` converts + relabels them as one string, and re-splitting it is fragile.
     /// The bare-number logic mirrors `MetricDescriptor.format` exactly.
     private func heroDato(_ v: Double) -> LiquidCampoMetrica<EmptyView>.Dato {
+        // C-01: no rótulo — the numeral carried a repeated category («Recovery» under a «Recovery»
+        // title). The title names the metric; the «as of <date>» clause dates the number.
         switch metric.unit {
         case "kg", "°C":
-            return .init(valor: fmt(v), rotulo: metric.localizedCategory)
+            return .init(valor: fmt(v), rotulo: "")
         default:
             let n = metric.decimals == 0 ? String(Int(v.rounded()))
                                          : String(format: "%.\(metric.decimals)f", v)
-            return .init(valor: n, unidad: metric.unit, rotulo: metric.localizedCategory)
+            return .init(valor: n, unidad: metric.unit, rotulo: "")
         }
     }
 
     private var asOfClause: String? {
         guard let day = latest?.day, let d = Repository.parseDayKey(day) else { return nil }
         return String(localized: "as of \(longDate(d))")
+    }
+
+    /// The ⓘ card under the field: ONE uniform «what we measure» line for ALL 35 catalog metrics —
+    /// no per-metric essay, no verdict, no level phrase (D3/C-17, A17). Same shape as
+    /// `StrainDetailScreen.whatWeMeasureCard`.
+    private var whatWeMeasureCard: some View {
+        VStack(alignment: .leading, spacing: LiquidSpace.s150) {
+            Text(String(localized: "What we measure"))
+                .font(LiquidType.tituloFila)
+                .foregroundStyle(LiquidColor.tinta900)
+            Text(String(localized: "The daily series of this metric, in its unit; the number above is the most recent day."))
+                .font(LiquidType.cuerpo)
+                .lineSpacing(LiquidType.cuerpoLineSpacing)
+                .foregroundStyle(LiquidColor.tinta700)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .liquidTarjetaSeccion()
+        .liquidSeccion(top: LiquidSpace.s400, bottom: LiquidSpace.s200)
     }
 
     /// FER-670 (DECLARED DEGRADATION): when a second source reported the shown day (steps / sleep
@@ -469,8 +501,9 @@ struct MetricDetailView: View {
         let rows = correlationCache
         return VStack(alignment: .leading, spacing: LiquidSpace.s300) {
             LiquidNotaLine(String(localized: "Pearson r over the visible window · |r| ≥ 0.30, n ≥ 10"))
-            // Association, not cause. (FER-299)
-            LiquidNotaLine(String(localized: "Association, not cause: these move together, neither drives the other."))
+            // Association, not cause. (FER-299) C-05: ONE disclaimer key across both instruments —
+            // the same LiquidNotaLine Compare shows, so the piece never speaks two texts.
+            LiquidNotaLine(String(localized: "Association, not cause: moving together isn't one driving the other."))
             if rows.isEmpty {
                 Text(String(localized: "Nothing in the catalog moves clearly with \(metric.canonicalTitle.lowercased()) over this window. Widen the range to surface relationships."))
                     .font(LiquidType.cuerpo)
@@ -566,18 +599,30 @@ struct MetricDetailView: View {
 
     // MARK: - 4. Método + sello de procedencia
 
+    /// D3/C-17 (b): the method line, HONEST by origin. «Your latest daily reading, shown raw, with no
+    /// smoothing» LIED for the on-device-computed metrics (recovery / strain / stress) — those are a
+    /// calculation, not a raw reading. Two templates, not 35 methods: a measured value vs. a computed
+    /// one, keyed to the SAME «calculated» bucket as the provenance chip (`metricIsCalculated`). No
+    /// verdict, no level phrase (A17).
+    private var metodoTexto: String {
+        metricIsCalculated(metric)
+            ? String(localized: "The number is the most recent calculated value; the chart traces the daily values across the range.")
+            : String(localized: "The number is the most recent value in this series; the chart traces the daily values across the range.")
+    }
+
     private var pieMetodo: some View {
         VStack(alignment: .leading, spacing: LiquidSpace.s300) {
             LiquidCapilar(eje: .horizontal)
             LiquidMetodo(title: String(localized: "How it's calculated"),
                          mostrar: String(localized: "Show explanation"),
                          ocultar: String(localized: "Hide explanation")) {
-                LiquidNotaLine(String(localized: "The number is your latest daily reading, shown raw, with no smoothing. The trend traces the values you've logged over the range you pick."),
-                               tono: LiquidColor.tinta700)
+                LiquidNotaLine(metodoTexto, tono: LiquidColor.tinta700)
             }
-            // Provenance chip: the source vocabulary («Apple Health» / «On-device») over the metric's
-            // own identity mark — a glyph badge for the ~7 canonical families, a plain tone dot for the
-            // rest (glyph == nil, TND31-4: no invented `.rayo`). Hue = identity. Only with history.
+            // Provenance chip: the Hoy sheet's CLOSED vocabulary («Apple Health» / «Apple Watch» /
+            // «Calculated on your phone», C-16) over the metric's own identity mark — a glyph badge for
+            // the ~7 canonical families, a plain tone dot for the rest (glyph == nil, TND31-4: no
+            // invented `.rayo`). Only the LABEL adopts the vocabulary; glyph + hue stay identity. With
+            // history only.
             if !series.isEmpty {
                 LiquidOrigenChip(glyph: glyph, badgeTono: hue,
                                  etiqueta: originVocabulary(metric))

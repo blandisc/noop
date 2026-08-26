@@ -33,18 +33,50 @@
         }
       }
     },
-    "The number is your latest daily reading, shown raw, with no smoothing. The trend traces the values you've logged over the range you pick." : {
+    "The daily series of this metric, in its unit; the number above is the most recent day." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The number is your latest daily reading, shown raw, with no smoothing. The trend traces the values you've logged over the range you pick."
+            "value" : "The daily series of this metric, in its unit; the number above is the most recent day."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "El número es tu lectura diaria más reciente, sin suavizar. La tendencia traza los valores que registraste en el rango que elijas."
+            "value" : "La serie diaria de esta métrica, en su unidad; el número de arriba es el día más reciente."
+          }
+        }
+      }
+    },
+    "The number is the most recent calculated value; the chart traces the daily values across the range." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The number is the most recent calculated value; the chart traces the daily values across the range."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El número es el valor calculado más reciente; la gráfica traza los diarios del rango."
+          }
+        }
+      }
+    },
+    "The number is the most recent value in this series; the chart traces the daily values across the range." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The number is the most recent value in this series; the chart traces the daily values across the range."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El número es el valor más reciente de esta serie; la gráfica traza los diarios del rango."
           }
         }
       }
@@ -265,7 +297,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : " Cuando %1$@ sube, %2$@ %3$@, un vínculo %5$@ %4$@."
+            "value" : " Cuando el %1$@ sube, %2$@ %3$@, un vínculo %5$@ %4$@."
           }
         }
       }
@@ -1409,7 +1441,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ · n = %lld"
+            "value" : "%@ · n=%lld"
           }
         }
       }
@@ -8595,24 +8627,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Asociación, no causa, moverse juntas no es que una empuje a la otra."
-          }
-        }
-      }
-    },
-    "Association, not cause: these move together, neither drives the other." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Association, not cause: these move together, neither drives the other."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Asociación, no causa, se mueven juntas, ninguna empuja a la otra."
+            "value" : "Asociación, no causa: moverse juntas no es que una empuje a la otra."
           }
         }
       }
@@ -19237,7 +19252,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Variabilidad de la frecuencia cardiaca"
+            "value" : "Variabilidad de la frecuencia cardíaca"
           }
         }
       }
@@ -33714,7 +33729,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Frecuencia cardiaca en reposo"
+            "value" : "Frecuencia cardíaca en reposo"
           }
         }
       }

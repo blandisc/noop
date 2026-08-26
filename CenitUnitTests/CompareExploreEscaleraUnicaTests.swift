@@ -100,10 +100,19 @@ final class CompareExploreEscaleraUnicaTests: XCTestCase {
         }
         XCTAssertEqual(title("strain"), "Effort", "Hoy dice «Effort», no «Day Strain»")
         XCTAssertEqual(title("stress"), "Stress", "Hoy dice «Stress», no «Day Stress»")
+        // D4/C-18: VFC y FC en reposo también toman el nombre CORTO de Hoy — «HRV»/«Resting HR» (es
+        // «VFC»/«FC en reposo»), NUNCA el largo «Heart Rate Variability»/«Resting Heart Rate», que
+        // HJ-12 rechazó como título (el largo solo vive en la expansión del ⓘ). La suite corre en
+        // inglés, así que se afirma contra el defaultValue EN.
+        XCTAssertEqual(title("hrv"), "HRV", "Hoy titula «HRV», no «Heart Rate Variability»")
+        XCTAssertEqual(title("rhr"), "Resting HR", "Hoy titula «Resting HR», no «Resting Heart Rate»")
         // Una métrica sin override conserva su título de catálogo.
         XCTAssertEqual(title("recovery"), "Recovery")
-        // El título CRUDO del catálogo sigue intacto (otros lo consumen como identidad).
+        // El título CRUDO del catálogo sigue intacto (otros lo consumen como identidad): el largo se
+        // conserva en `.title`, aunque `canonicalTitle` ya devuelva el corto.
         XCTAssertEqual(MetricCatalog.all.first { $0.key == "strain" }!.title, "Day Strain")
+        XCTAssertEqual(MetricCatalog.all.first { $0.key == "hrv" }!.title, "Heart Rate Variability")
+        XCTAssertEqual(MetricCatalog.all.first { $0.key == "rhr" }!.title, "Resting Heart Rate")
     }
 
     // MARK: - foco 2: UN solo rango (ExploreRange), con la frase heredada de CompareRange

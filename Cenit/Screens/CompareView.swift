@@ -27,6 +27,36 @@ import CenitStore
 // yyyy-MM-dd → Date, fixed UTC / en_US_POSIX — the shared day-key parser (FER-325).
 private func parseCompareDay(_ day: String) -> Date? { Repository.parseDayKey(day) }
 
+// MARK: - Shared provenance vocabulary (C-16 / C-13 / D3) — one voice for both instruments
+//
+// Compare's picker rows and Explore's catalog rows / provenance chip / method foot all speak the
+// SAME closed vocabulary as the Hoy sheet (`LiquidMetricSheetView.origen`): three on-device-computed
+// metrics say «Calculated on your phone», the two wrist-only signals say «Apple Watch», everything
+// else «Apple Health». Only the LABEL adopts the vocabulary — a row/chip keeps its identity glyph +
+// hue (the twins' rule). Lives here (unguarded) so the iOS-only Explorer can always reference it.
+
+/// True when Cénit COMPUTES this metric on-device (vs. a measured Apple / imported value) — the
+/// same «calculado en el teléfono» bucket the Hoy sheet's `origen` uses (recovery / strain / stress).
+func metricIsCalculated(_ m: MetricDescriptor) -> Bool {
+    switch m.key {
+    case "recovery", "strain", "stress": return true
+    default:                             return false
+    }
+}
+
+/// The origin label in the Hoy sheet's CLOSED vocabulary (`LiquidMetricSheetView.origen`): computed
+/// metrics → «Calculated on your phone», wrist-only signals (skin temp / respiratory rate) → «Apple
+/// Watch», everything else → «Apple Health». Reuses the sheet's keys verbatim; the caller keeps the
+/// identity glyph/hue and only swaps the text (C-16). Shared by Explore (row subtitle + provenance
+/// chip) and Compare's picker rows (C-13).
+func originVocabulary(_ m: MetricDescriptor) -> String {
+    if metricIsCalculated(m) { return String(localized: "Calculated on your phone") }
+    switch m.key {
+    case "skin_temp", "resp_rate": return String(localized: "Apple Watch")
+    default:                       return String(localized: "Apple Health")
+    }
+}
+
 // MARK: - Range control (shared spec — W / M / 3M / 6M / 1Y / ALL)
 //
 // Compare shares the canonical `ExploreRange` (`Cenit/Data/ExploreRange.swift`) with every
@@ -67,7 +97,8 @@ struct CompareView: View {
     /// from the merged dashboard (`displayDays`), so a user sees an overlay on first open. (FER-275)
     private static let defaultKeys = ["recovery", "strain", "hrv"]
 
-    @State private var range: ExploreRange = .year
+    // C-08: opens on M (month), matching Explore / the vital detail / MetricDetailScreen — not 1Y.
+    @State private var range: ExploreRange = .month
     /// Ordered selection (max 4). Drives the legend order.
     @State private var selected: [MetricDescriptor] = []
     /// Presents the metric picker as a scroll-stable sheet (a `Menu` resets its scroll on each
@@ -586,10 +617,13 @@ struct CompareView: View {
     }
 
     private func pairA11y(_ p: PairResult) -> String {
-        String(format: String(localized: "compare.pair.a11y",
+        // C-03: VoiceOver reads the r with the SAME minus glyph the screen shows (U+2212), not the
+        // ASCII hyphen `%.2f` emits — so the spoken value matches `signedR`'s «−».
+        let rTexto = String(format: "%.2f", p.r).replacingOccurrences(of: "-", with: "−")
+        return String(format: String(localized: "compare.pair.a11y",
                               defaultValue: "%1$@ versus %2$@, r equals %3$@, %4$lld days"),
                p.a.metric.canonicalTitle, p.b.metric.canonicalTitle,
-               String(format: "%.2f", p.r), p.n)
+               rTexto, p.n)
     }
 
     private func signedR(_ r: Double) -> String {
@@ -650,6 +684,17 @@ private struct CompareOverlay: View {
     /// `liquidScrubPan` — NEVER a DragGesture of our own (FER-977).
     @State private var scrubDay: Date? = nil
 
+    // C-19: Compare respects the imperial toggle like the Explore detail / MetricDetailScreen —
+    // weight (kg → lb) and skin temp (°C → °F) re-label; every other metric is unit-agnostic and
+    // renders unchanged. Only the DISPLAYED scrub readout + tooltip values convert; the min–max
+    // normalization domain is shape-only and never shown as a number, so it stays raw SI.
+    @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
+    @AppStorage(UnitPrefs.temperatureKey) private var temperatureRaw = ""
+    private var unitSystem: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
+    private var temperatureUnit: TemperatureUnit {
+        UnitPrefs.resolveTemperature(system: unitSystem, override: temperatureRaw)
+    }
+
     // The chart dates are UTC-anchored (`parseCompareDay` = UTC epoch day), so both format in UTC to
     // label the right calendar day (FER-630), with the current locale for month/weekday names.
     private static let ejeFmt: DateFormatter = {
@@ -699,7 +744,8 @@ private struct CompareOverlay: View {
                     series: liquidSeries,
                     rango: rango,
                     seleccion: $scrubDay,
-                    formatoValor: { serie, v in porId[serie.id]?.format(v) ?? "" },
+                    formatoValor: { serie, v in
+                        porId[serie.id]?.format(v, system: unitSystem, temperature: temperatureUnit) ?? "" },
                     a11yLabel: a11yLabel,
                     formatoFechaEje: { Self.ejeFmt.string(from: $0) },
                     rotulosRejilla: (bajo: String(localized: "low"),
@@ -742,7 +788,7 @@ private struct CompareOverlay: View {
         return visibles.map { s in
             LiquidTooltipMulti.Fila(
                 id: s.id, color: s.color, nombre: s.metric.canonicalTitle,
-                valor: s.value(on: day).map { s.metric.format($0) })
+                valor: s.value(on: day).map { s.metric.format($0, system: unitSystem, temperature: temperatureUnit) })
         }
     }
 }
@@ -795,6 +841,9 @@ private struct MetricPickerSheet: View {
         let atCap = !isOn && selected.count >= maxSelection
         return LiquidListRow(
             title: metric.canonicalTitle,
+            // C-13: the same origin subtitle the Explore catalog carries, in the closed vocabulary
+            // (C-16) — so a metric names its provenance identically in both instruments' pickers.
+            subtitle: originVocabulary(metric),
             tone: MetricIdentity.hue(for: metric),
             seleccionado: isOn,
             deshabilitado: atCap,

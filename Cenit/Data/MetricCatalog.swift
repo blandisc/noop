@@ -19,14 +19,20 @@ struct MetricDescriptor: Identifiable, Hashable {
 
     /// The ONE canonical display name — the name Hoy already shows, so a metric is called the same
     /// thing on every screen (FER-104 / HJ-13: «una métrica, un nombre»). The raw `title` stays
-    /// «Day Strain» / «Day Stress» (identity other call sites read), but Hoy's Matrix / sheet titles
-    /// those two «Effort» / «Stress» — this override returns that canonical name so Compare and Explore
-    /// stop reintroducing «Day Strain» in chips / legends / tooltips. Every other metric returns its
-    /// catalog title unchanged. (Consumed by the visual migration, TND-30/31.)
+    /// «Day Strain» / «Day Stress» / «Heart Rate Variability» / «Resting Heart Rate» (identity other
+    /// call sites read), but Hoy titles those with SHORT names — «Effort» / «Stress» and «HRV» / «VFC»
+    /// and «Resting HR» / «FC en reposo» — so this override returns that canonical name and Compare /
+    /// Explore stop reintroducing the long forms in chips / legends / tooltips / navTitle. The long
+    /// name is only ever an ⓘ expansion, never a title (D4/C-18, HJ-12). Every other metric returns
+    /// its catalog title unchanged. (Consumed by the visual migration, TND-30/31.)
     var canonicalTitle: String {
         switch key {
         case "strain": return String(localized: "Effort")
         case "stress": return String(localized: "Stress")
+        // D4/C-18: the exact short strings Hoy's Matrix uses — «HRV»/«VFC» (matriz.vfc) and
+        // «Resting HR»/«FC en reposo» — not the long «Heart Rate Variability»/«Resting Heart Rate».
+        case "hrv":    return String(localized: "HRV")
+        case "rhr":    return String(localized: "Resting HR")
         default:       return title
         }
     }
