@@ -25,6 +25,22 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
   **EN** — Each day block in the exercise detail's History tab now notes how many sets you did and, when that session captured effort, "QUEDABAN 2-3" alongside the count; when no set of the day captured one, the fragment is omitted entirely — silence, not a fabricated zero. The day header adds the routine's name when it applies ("Sat 15 · Leg A"), or just the date for a free session. Along the way, a latent bug in the history query got fixed: once a history reached 600 saved sets, the cap kept the OLDEST ones and dropped the recent ones; it now keeps the most recent, as the rest of the app expects.
   ([StrengthStore.swift](Packages/CenitStore/Sources/CenitStore/StrengthStore.swift), [ExerciseDetailScreen.swift](Cenit/Screens/ExerciseDetailScreen.swift), [WorkoutHistoryScreen.swift](Cenit/Screens/WorkoutHistoryScreen.swift))
 
+- **Tendencias: Esfuerzo, Estrés y Temp de piel en vidrio / Trends: Effort, Stress and Skin temp in glass** (FER-101).
+  **ES** — Las tres pantallas de detalle que faltaban de la sección Tendencias cruzan al lenguaje
+  Liquid que ya hablan Sueño y Preparación: campo teñido a sangre con la identidad de cada métrica
+  (ámbar de esfuerzo, la rampa de calor del estrés, el dorado de temperatura), historial con
+  selector de rango, gráfica explorable y escalera tocable, calendario de 90 días y el pie de
+  método con su sello de origen honesto (Temp ahora dice «Apple Watch»; nada afirma procedencia
+  sobre un guion). De paso, cada pantalla quedó con UNA sola escalera derivada del motor — el
+  calendario de Esfuerzo ya no dice «moderate» sobre una celda teñida de ligero, la frase grande
+  del héroe ya no corre un peldaño, y Estrés unificó sus tres vocabularios en Bajo / Medio / Alto.
+  Con el dato anclado en ayer, nada dice «hoy». El mapa del día de Estrés conserva el cruzado
+  hora↔calendario en el chip del dedo.
+  **EN** — The three remaining Trends detail screens cross into the Liquid language that Sleep and
+  Preparedness already speak: full-bleed tinted field per metric identity, range-selectable
+  explorable history with a tappable ladder, the 90-day calendar, and the method foot with an
+  honest origin stamp. Each screen now derives every representation from ONE engine ladder, and
+  nothing claims "today" over yesterday's anchored reading.
 - **Entrenar: dos nombres que el dueño eligió — «Ciclos de subida» y «Hecho · {ejercicio}» / Train: two names the owner picked — "Raise cycles" and "Done · {exercise}"** (FER-148, FER-150).
   **ES** — En Historial, la sección de pesos que subieron o esperan deja de llamarse «Tu progresión» y pasa a «Ciclos de subida»: en la misma pantalla ya vive «Progreso» (tu fuerza estimada por ejercicio) y los dos nombres casi iguales nombraban cosas distintas. Y en el Modo Foco, la pantalla de ejercicio terminado titula «Hecho · Press banca», el ritmo del prototipo sin su problema de género.
   **EN** — In History, the raised-or-waiting weights section is no longer "Your progression" but "Raise cycles": "Progress" (your estimated strength per exercise) lives on the same screen and the two near-identical names meant different things. And in Focus Mode, the finished-exercise screen titles "Done · Bench press", the prototype's rhythm without its gender problem.
