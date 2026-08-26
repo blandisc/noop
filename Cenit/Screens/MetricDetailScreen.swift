@@ -138,26 +138,30 @@ struct MetricDetailScreen: View {
         // history on every redraw. (FER-216)
         let window = MetricWindowMath.make(parsedSeries, selected: range)
         return Group {
-            if isNarrative && !isIntraday {
+            if (isNarrative && !isIntraday) || spec.descriptor.key == "steps" {
                 // FER-103 · TND-20: the four scalar narrative vitals (HRV / rhr / resp_rate / SpO₂)
-                // ride the Liquid body. The fondo goes on BOTH presentation forms — `background` for
-                // Cuerpo's overlay layer and `presentationBackground` for Hoy's sheet (same pair as
+                // ride the Liquid body; TND-21 adds Steps on its own Liquid skeleton. The fondo goes
+                // on BOTH presentation forms — `background` for Cuerpo's overlay layer and
+                // `presentationBackground` for Hoy's sheet (same pair as
                 // SleepDetailScreen/SkinTempDetailScreen, FER-102) — so neither call site changes.
                 ScrollView {
-                    narrativeBodyLiquid(window)
+                    if spec.descriptor.key == "steps" {
+                        stepsBodyLiquid(window)
+                    } else {
+                        narrativeBodyLiquid(window)
+                    }
                 }
                 .background { LiquidSheetFondo(tone: liquidTono).ignoresSafeArea() }
                 .presentationBackground { LiquidSheetFondo(tone: liquidTono) }
                 .presentationDragIndicator(.visible)
                 .presentationCornerRadius(LiquidRadius.hoja)
             } else {
-                // Paper «Instrumento» skeletons, untouched: Heart Rate's intraday path, Steps and
-                // VO₂max migrate in their own TND blocks (regla de transición FER-103).
+                // Paper «Instrumento» skeletons, untouched: Heart Rate's intraday path and VO₂max
+                // migrate in their own TND blocks (regla de transición FER-103). Steps' paper tree
+                // (`stepsBodyFinal`) stays compiled as the rollback, no longer called from here.
                 ScrollView {
                     if isIntraday {
                         narrativeIntradayFinal(window)
-                    } else if spec.descriptor.key == "steps" {
-                        stepsBodyFinal(window)
                     } else if spec.descriptor.key == "vo2max" {
                         vo2maxBodyFinal(window)
                     }
@@ -2145,12 +2149,14 @@ struct MetricDetailScreen: View {
 
     /// La identidad Liquid de la métrica — calco del mapa id→hue de la hoja de Hoy
     /// (`LiquidMetricSheetView.tono` :225-248): hrv → cian · rhr → rosa · resp_rate/spo2 → azul
-    /// (familia respiratoria). Nunca un color de juicio: el veredicto lo dicen las palabras.
+    /// (familia respiratoria) · steps → teal (TND-21). Nunca un color de juicio: el veredicto lo
+    /// dicen las palabras.
     private var liquidTono: Color {
         switch spec.descriptor.key {
-        case "hrv": return LiquidColor.cian
-        case "rhr": return LiquidColor.rosa
-        default:    return LiquidColor.azul   // resp_rate, spo2
+        case "hrv":   return LiquidColor.cian
+        case "rhr":   return LiquidColor.rosa
+        case "steps": return LiquidColor.teal
+        default:      return LiquidColor.azul   // resp_rate, spo2
         }
     }
 
@@ -2158,9 +2164,10 @@ struct MetricDetailScreen: View {
     /// «el set Liquid no tiene gota»; el oxígeno comparte la familia respiratoria, igual que su hue.
     private var liquidGlifo: LiquidIcon.Glyph {
         switch spec.descriptor.key {
-        case "hrv": return .onda
-        case "rhr": return .corazon
-        default:    return .resp              // resp_rate, spo2
+        case "hrv":   return .onda
+        case "rhr":   return .corazon
+        case "steps": return .pasos
+        default:      return .resp              // resp_rate, spo2
         }
     }
 
@@ -2416,6 +2423,10 @@ struct MetricDetailScreen: View {
         case ("resp_rate", "elevated"): return tono
         case ("spo2", "low"):         return tono.opacity(0.50)  // token-exempt: rampa graduada de identidad (geometría de dato)
         case ("spo2", "normal"):      return tono
+        // Steps (TND-21): la tinta sube con el valor — misma rampa de 3 carriles que la de VFC.
+        case ("steps", "sedentary"):  return tono.opacity(0.32)  // token-exempt: rampa graduada de identidad (geometría de dato)
+        case ("steps", "active"):     return tono.opacity(0.62)  // token-exempt: rampa graduada de identidad (geometría de dato)
+        case ("steps", "veryActive"): return tono
         default:                      return tono
         }
     }
@@ -2667,10 +2678,11 @@ struct MetricDetailScreen: View {
 
     private var liquidA11yGrafica: String {
         switch spec.descriptor.key {
-        case "hrv":  return String(localized: "HRV history")
-        case "rhr":  return String(localized: "Resting heart rate history")
-        case "spo2": return String(localized: "Blood oxygen history")
-        default:     return String(localized: "Breathing history")
+        case "hrv":   return String(localized: "HRV history")
+        case "rhr":   return String(localized: "Resting heart rate history")
+        case "spo2":  return String(localized: "Blood oxygen history")
+        case "steps": return String(localized: "Steps history")
+        default:      return String(localized: "Breathing history")
         }
     }
 
@@ -2860,6 +2872,227 @@ struct MetricDetailScreen: View {
         .liquidSeccion(top: LiquidSpace.s200, bottom: LiquidSpace.s800)
     }
 
+    // MARK: - Cuerpo de Pasos en vidrio Liquid (FER-103 · TND-21)
+    //
+    // Migración PURAMENTE VISUAL del camino de Pasos (`stepsBodyFinal`, que queda como rollback)
+    // sobre los mismos legos que el cuerpo narrativo de arriba. Las decisiones ya cobradas:
+    //
+    // · ANCLA FRESCA (TND20-F2): el campo con dato SOLO cuando `liquidValorFresco` dice que la
+    //   última fila ES hoy — un teléfono sin uso no viste un conteo viejo de «hoy». El conteo de
+    //   hoy además está SIEMPRE acumulándose (`spec.currentDayIncomplete`, FER-264): el campo lo
+    //   sella «en curso» (calco StrainDetailScreen) y la serie trazada / los promedios de ventana
+    //   leen SOLO días completos (`trendStatRows`), exactamente el reparto del papel.
+    // · ESCALERA ÚNICA (TND-19): los 3 carriles del motor via `spec.info.bands` (sedentary /
+    //   active / veryActive — la guarda `MetricInfoEscaleraUnicaTests` los fija); palabra, color
+    //   (rampa teal en `liquidColorNivel`) y conteos salen SOLO de ahí.
+    // · CONTEOS = LO TRAZADO (TND20-F3): frase y escalera cuentan `plot` (la media móvil de 7
+    //   días sobre días completos, el mismo reparto que `graficaRangosBlock` hacía en papel).
+    // · VOZ diurna (TND20-F4): pasos habla en DÍAS (`BandSummaryCopy.isNightly("steps")` = false).
+    // · Sello de origen (M1/M2): «Apple Health» — el vocabulario de la hoja de Hoy
+    //   (`LiquidMetricSheetView.origen`: steps → appleSalud); `liquidPieMetodo` ya lo resuelve.
+
+    /// El esqueleto Liquid de Pasos: campo → (ⓘ) → patrón → historial → método. «Tu patrón» va
+    /// ANTES del historial — la posición de familia (A-UX-09), no el orden del papel.
+    @ViewBuilder private func stepsBodyLiquid(_ window: MetricWindow) -> some View {
+        LazyVStack(alignment: .leading, spacing: 0) {
+            if let v = liquidValorFresco {
+                liquidStepsCampoConDato(v)
+            } else {
+                liquidStepsCampoSinDato
+            }
+            if infoOpen { liquidQueMedimosCard }
+            if !loaded {
+                LiquidSheetSkeleton(a11yCargando: String(localized: "Reading your history…"))
+                    .liquidSeccion()
+            } else if !enoughHistory {
+                // Reuniendo: la cláusula/sello del campo ya lo dice; con ≥1 lectura el pie de
+                // método se conserva (paridad papel: `calibrationBlock` + pie).
+                if !series.isEmpty { liquidPieMetodo }
+            } else {
+                if stepsMovers != nil {
+                    seccionLiquid(String(localized: "Your pattern")) { liquidStepsPatronContent }
+                }
+                if parsedSeries.count >= 2 {
+                    seccionLiquid(String(localized: "History")) { liquidStepsHistoryContent(window) }
+                }
+                liquidPieMetodo
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // MARK: TND-21 · 1. El campo — conteo de hoy en curso, la media de 7 días como veredicto
+
+    /// El campo teñido con dato: numeral = el conteo de HOY (sin unidad, como el héroe de papel),
+    /// veredicto = la media de 7 días (la MISMA llave y el MISMO reparto que `heroSecondaryText`:
+    /// la media corre sobre la serie completa, hoy parcial incluido — calco, no invento), y en la
+    /// ranura libre «en curso» (`currentDayIncomplete`), la cápsula «Apple» del papel y el aviso
+    /// de calibración en voz de pasos.
+    private func liquidStepsCampoConDato(_ v: Double) -> some View {
+        LiquidCampoMetrica(
+            tono: liquidTono,
+            titulo: String(localized: spec.info.name),
+            glifo: liquidGlifo,
+            datos: [.init(valor: fmt(v), rotulo: String(localized: "today"))],
+            veredicto: liquidStepsVeredicto,
+            infoAbierto: infoOpen,
+            infoEtiqueta: String(localized: "What we measure"),
+            onInfo: { withAnimation(LiquidMotion.lift) { infoOpen.toggle() } }
+        ) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s150) {
+                // El conteo de hoy SIEMPRE está acumulándose (FER-264) — el mismo aviso que
+                // Esfuerzo y la FC intradía llevan pegado al numeral. (calco StrainDetailScreen)
+                LiquidCampoSello(String(localized: "in progress"))
+                if todayFromApple {
+                    LiquidCampoSello(String(localized: "Apple"))
+                }
+                // FER-254: pasos «reúne» (no «calibra») y NUNCA promete un «rango normal» —
+                // no tiene banda personal. Por eso no cruza el sello genérico de calibración.
+                if loaded, !enoughHistory {
+                    LiquidCampoSello(String(localized: "Gathering · \(series.count) of 7 days"))
+                }
+            }
+        }
+    }
+
+    /// «media de 7 días · N pasos» — el dato que era la cláusula del héroe de papel, con su llave.
+    private var liquidStepsVeredicto: String? {
+        guard let avg = SeriesShape.latestMovingAverage(allValues, window: 7) else { return nil }
+        return String(localized: "7-day average · \(fmt(avg)) steps")
+    }
+
+    /// El campo APAGADO: sin conteo de hoy el numeral es un guion, nunca un cero. Separado del
+    /// genérico porque aquella cláusula habla de «vital» y promete «rango normal» — pasos no es
+    /// lo uno ni tiene lo otro (FER-254).
+    private var liquidStepsCampoSinDato: some View {
+        LiquidCampoMetrica(
+            tono: liquidTono,
+            titulo: String(localized: spec.info.name),
+            glifo: liquidGlifo,
+            datos: [.init(valor: LiquidCajita.sinDato,
+                          rotulo: String(localized: "today"),
+                          a11y: String(localized: "no data"), ausente: true)],
+            clausula: liquidStepsClausulaSinDato
+        ) {
+            if sinPermiso {
+                LiquidVerMas(title: String(localized: "Manage Apple Health permissions"),
+                             tone: LiquidColor.papelAlto) { Self.abrirAjustesSalud() }
+            }
+        }
+    }
+
+    /// Cuatro vacíos distintos, no uno: cargando · sin permiso · con historia y sin conteo de
+    /// hoy · reuniendo N de 7 días. Mismo árbol que `liquidClausulaSinDato`, en voz de pasos.
+    private var liquidStepsClausulaSinDato: String {
+        guard loaded else { return String(localized: "Reading your history…") }
+        if sinPermiso {
+            return String(localized: "Cénit can't read your steps: Apple Health hasn't granted permission. Turn it on and your daily count will show up here.")
+        }
+        if enoughHistory {
+            return String(localized: "No reading from today yet: your recent history is below.")
+        }
+        return String(localized: "Gathering your days · \(series.count) of 7. Walk a few more days and your daily average and trend will show up here.")
+    }
+
+    // MARK: TND-21 · 2. Tu patrón — fin de semana vs entre semana
+
+    /// `LiquidTendenciaCard` (posición y pieza de la familia, A-UX-09) con las MISMAS frases y el
+    /// MISMO gate (`stepsMovers != nil`) que `stepsPatronFinalContent` tenía en papel.
+    @ViewBuilder private var liquidStepsPatronContent: some View {
+        if let m = stepsMovers {
+            let pctStr = "\(m.pct)%"
+            LiquidTendenciaCard(
+                overline: String(localized: "What moves your steps"),
+                chip: String(localized: "trend, not cause"),
+                lineas: [m.weekendHigher
+                    ? String(localized: "Your weekends average about \(fmt(m.weekendAvg)) steps: roughly \(pctStr) more than your weekdays.")
+                    : String(localized: "Your weekends average about \(fmt(m.weekendAvg)) steps: roughly \(pctStr) fewer than your weekdays.")])
+        }
+    }
+
+    // MARK: TND-21 · 3. Historial — días completos, escalera del motor, sin joya de «hoy»
+
+    /// Selector + gráfica + resumen + escalera tocable. Paridad `graficaRangosBlock` + FER-264:
+    /// la serie trazada lee SOLO días completos (`trendStatRows` tira el parcial de hoy — el borde
+    /// derecho no se hunde con la mañana) y se suaviza a 7 días. Hoy vive en el campo, «en curso».
+    private func liquidStepsHistoryContent(_ window: MetricWindow) -> some View {
+        let rows = trendStatRows(window)
+        let plot = SeriesShape.movingAverage(rows.map(\.value), window: 7)
+        return VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+            if visibleBlocks.contains(.periodSelector) {
+                LiquidRangeSelector(opciones: ExploreRange.allCases.map(\.label),
+                                    seleccion: liquidRangeSeleccion, tono: liquidTono)
+            }
+            if rows.count > 1 {
+                VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+                    // TND20-F3: frase y escalera cuentan LO QUE LA GRÁFICA TRAZA (`plot`).
+                    liquidFraseNivelHistorial(window, plot: plot)
+                    liquidStepsGrafica(rows: rows, plot: plot)
+                    LiquidNotaLine(String(localized: "7-day moving average of completed days: today, still adding up, stays out of the line."))
+                    LiquidResumenVentana(celdas: liquidStepsResumenCeldas(window))
+                }
+                .liquidTarjetaSeccion()
+                if !liquidBandas.isEmpty {
+                    LiquidLevelsList(filas: liquidCarriles(window, plot: plot), tono: liquidTono)
+                    LiquidNotaLine(String(localized: "How many days of the period fell in each band. Tap one to see its days on the chart."))
+                }
+            } else {
+                // Un solo día completo o ninguno en el rango → el pozo vacío honesto (calco).
+                LiquidGraficaNiveles(puntos: [], bandas: [],
+                                     dominio: liquidDominio(plot: []), ticksY: [],
+                                     tono: liquidTono,
+                                     estadoVacio: liquidEstadoVacio,
+                                     a11yLabel: liquidA11yGrafica)
+            }
+        }
+    }
+
+    /// La gráfica del historial de pasos: carriles del motor detrás, ticks en los cortes reales
+    /// (5,000 / 10,000) y SIN joya de «hoy» — el último punto trazado es AYER (el parcial de hoy
+    /// queda fuera de la línea): vestirlo de «hoy» sería la clase ancla-vieja (TND20-F6).
+    private func liquidStepsGrafica(rows: [(day: String, value: Double)],
+                                    plot: [Double]) -> some View {
+        let puntos = MetricWindowMath
+            .decimatedPoints(rows: rows, values: plot, maxPoints: 80)
+            .map { (fecha: $0.date, valor: $0.value) }
+        return LiquidGraficaNiveles(
+            puntos: puntos,
+            bandas: liquidBandas.enumerated().map { i, b in
+                LiquidChartBanda(lo: b.lo, hi: b.hi, color: b.color, activa: i == liquidDestacado)
+            },
+            dominio: liquidDominio(plot: plot),
+            ticksY: liquidTicksY,
+            tono: liquidTono,
+            puntoHoy: nil,
+            formatoScrub: { v, f in "\(fmt(v)) · \(Self.ejeFechaLiquid.string(from: f))" },
+            formatoValorScrub: { fmt($0) },
+            formatoFechaScrub: { Self.ejeFechaLiquid.string(from: $0) },
+            formatoFechaEje: { Self.ejeFechaLiquid.string(from: $0) },
+            atenuarFuera: bandaExplorada != nil,
+            estadoVacio: liquidEstadoVacio,
+            a11yLabel: liquidA11yGrafica)
+            .id(range)
+    }
+
+    /// El trío del resumen de Pasos: Promedio (crudo, días completos — paridad `averageCell`) ·
+    /// Tendencia (Δ% vs periodo anterior, la MISMA pieza `liquidCeldaTendencia`, que ya excluye
+    /// hoy vía `trendComparisonSeries`) · Racha (días seguidos ≥ tu media de 7 días — el dato del
+    /// papel que no vive en ningún otro lado). HOY y MEDIA 7D no se repiten aquí: ya viven en el
+    /// campo como numeral y veredicto — con la vara, las hermanas también eligen su tercera celda
+    /// (VFC Consistencia · FCr Rango · SpO₂ Noches < 95%).
+    private func liquidStepsResumenCeldas(_ window: MetricWindow) -> [LiquidResumenVentana.Celda] {
+        let stat = ComparisonEngine.stat(trendStatRows(window).map(\.value))
+        var celdas = [LiquidResumenVentana.Celda(rotulo: String(localized: "Average"),
+                                                 valor: fmt(stat.mean))]
+        if let t = liquidCeldaTendencia(window) { celdas.append(t) }
+        if let racha = stepsStreak {
+            celdas.append(.init(rotulo: String(localized: "Streak"),
+                                valor: racha == 1 ? String(localized: "\(racha) day")
+                                                  : String(localized: "\(racha) days")))
+        }
+        return celdas
+    }
+
 }
 
 
@@ -2916,6 +3149,18 @@ private func sampleVitalSeries(base: Double, swing: Double, days: Int = 40) -> [
             depth: .full,
             seriesLoader: { sampleVitalSeries(base: 14.5, swing: 1.2) },
             nightVitalsLoader: { .init(respiration: 14.8, restingHR: 54) }
+        )
+    }
+}
+
+#Preview("MetricDetailScreen: Steps (full)") {
+    Color.clear.sheet(isPresented: .constant(true)) {
+        MetricDetailScreen(
+            spec: .steps(4_820),
+            depth: .full,
+            todayFromApple: true,
+            seriesLoader: { sampleVitalSeries(base: 8_200, swing: 2_600) },
+            todayKey: MetricDetailScreen.dayParser.string(from: Date())
         )
     }
 }

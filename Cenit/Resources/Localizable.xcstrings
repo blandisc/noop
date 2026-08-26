@@ -5389,6 +5389,23 @@
         }
       }
     },
+    "7-day moving average of completed days: today, still adding up, stays out of the line." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "7-day moving average of completed days: today, still adding up, stays out of the line."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Media móvil de 7 días sobre días completos: hoy, que aún acumula, queda fuera de la línea."
+          }
+        }
+      }
+    },
     "7-day moving average · last %@." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -13277,6 +13294,23 @@
         }
       }
     },
+    "Cénit can't read your steps: Apple Health hasn't granted permission. Turn it on and your daily count will show up here." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cénit can't read your steps: Apple Health hasn't granted permission. Turn it on and your daily count will show up here."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cénit no puede leer tus pasos: Apple Salud no le ha dado permiso. Actívalo y tu conteo diario aparecerá aquí."
+          }
+        }
+      }
+    },
     "Cénit can't read your strain: Apple Health hasn't granted permission. Turn it on and today's workouts will show up here." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -17845,6 +17879,23 @@
         }
       }
     },
+    "Gathering your days · %lld of 7. Walk a few more days and your daily average and trend will show up here." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gathering your days · %lld of 7. Walk a few more days and your daily average and trend will show up here."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reuniendo tus días · %lld de 7. Camina unos días más y aquí aparecerán tu promedio diario y tu tendencia."
+          }
+        }
+      }
+    },
     "Gathering your sessions" : {
       "localizations" : {
         "en" : {
@@ -17857,6 +17908,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Estamos juntando tus sesiones"
+          }
+        }
+      }
+    },
+    "Gathering · %lld of 7 days" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gathering · %lld of 7 days"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reuniendo · %lld de 7 días"
           }
         }
       }
@@ -37227,6 +37295,23 @@
         }
       }
     },
+    "Steps history" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steps history"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Historial de pasos"
+          }
+        }
+      }
+    },
     "Steps per unit of motion, %lld" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -37551,6 +37636,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Exigido"
+          }
+        }
+      }
+    },
+    "Streak" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Streak"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Racha"
           }
         }
       }
@@ -47383,6 +47485,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tu semana · editor"
+          }
+        }
+      }
+    },
+    "Your weekends average about %@ steps: roughly %@ fewer than your weekdays." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your weekends average about %@ steps: roughly %@ fewer than your weekdays."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus fines de semana promedian unos %1$@ pasos: cerca de %2$@ menos que tus días entre semana."
+          }
+        }
+      }
+    },
+    "Your weekends average about %@ steps: roughly %@ more than your weekdays." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your weekends average about %@ steps: roughly %@ more than your weekdays."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus fines de semana promedian unos %1$@ pasos: cerca de %2$@ más que tus días entre semana."
           }
         }
       }
