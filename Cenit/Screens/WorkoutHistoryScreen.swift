@@ -450,7 +450,10 @@ struct WorkoutHistoryScreen: View {
     private var progressionBlock: some View {
         if !progressionRows.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
-                InstrumentoSectionBand("Your progression")
+                // «Ciclos de subida», no «Tu progresión» (FER-148, decisión del dueño): en esta misma
+                // pantalla vive «Progreso» (1RM por ejercicio, FER-136) y los dos nombres casi
+                // iguales nombraban cosas distintas — este es el plan de subida, aquel el marcador.
+                InstrumentoSectionBand("Raise cycles")
                 ForEach(progressionRows) { row in
                     HStack(spacing: 10) {
                         Text(row.name)

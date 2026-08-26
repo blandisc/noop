@@ -24206,19 +24206,20 @@
         }
       }
     },
-    "Exercise done" : {
+    "Done heading" : {
+      "comment" : "Título de HECHO en Foco: «Hecho · {nombre}» (FER-150). Clave propia: «Done» a secas ya es el botón «Listo».",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Exercise done"
+            "value" : "Done"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ejercicio hecho"
+            "value" : "Hecho"
           }
         }
       }
@@ -60160,19 +60161,19 @@
         }
       }
     },
-    "Your progression" : {
+    "Raise cycles" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your progression"
+            "value" : "Raise cycles"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tu progresión"
+            "value" : "Ciclos de subida"
           }
         }
       }
