@@ -4,24 +4,29 @@ import StrandAnalytics
 import CenitStore
 import Foundation
 
-// MARK: - Apple Health (per-source page) — light «Instrumento diurno» (FER-338)
+// MARK: - Apple Health (per-source page) — Liquid Glass (FER-108)
 //
-// Reskin of the legacy dark per-source viewer to warm paper: one range control at the top
-// (`SegmentedPillControl` in its themed light mode), a grid of uniform metric tiles (every tile the
-// same height, value in its metric hue, label a quiet overline), then chart sections — Corazón y
-// vitales · Actividad y energía · Composición corporal · Sueño — each a light chart on paper with an
-// avg/min/max footer. Color lives ONLY on the data (the tile hero, the chart line); chrome is ink,
-// groups are separated by space + hairlines (no card-in-card). The data plumbing is UNCHANGED:
-// everything reads from the "apple-health" source, all history loads once, the range control windows
-// it client-side relative to the latest point, and sparse series auto-widen exactly as before.
+// Migration of the per-source Apple Health viewer from the light «Instrumento diurno» paper to
+// Liquid Glass, sibling to Compare/Explore (TND-30/31) and Data Sources (FER-108): the neutral
+// `LiquidSheetFondo`, inset section overlines (Compare's pattern, never a franja a sangre), the
+// range control as `LiquidRangeSelector`, uniform composed metric tiles (this screen has no
+// delta — the hero value + a sparkline replace it), and chart cards built from the shared Liquid
+// chart core with an avg/min/max/points footer.
 //
-// The light tiles/charts are built inline (the shared `StatTile`/`ChartCard`/`SectionHeader`/`ChartFooter`
-// are tuned for the dark `StrandPalette` and render as dark cards on paper). The shared `TrendChart`
-// and `Sparkline` ARE paper-aware (flat, paper-legible axes), so they're reused with light tokens.
+// THE MIGRATION IS SKIN, NOT THREAD: the data plumbing is UNCHANGED — everything still reads
+// from the "apple-health" source, all history loads once, the range control windows it
+// client-side relative to the latest point, and sparse series auto-widen exactly as before.
+//
+// CIMIENTOS (FER-108): every hue and canonical name comes from the shared bridge —
+// `MetricIdentity.identity(forIngestKey:)` for color/glyph, `MetricCatalog.descriptor(forIngestKey:)?.canonicalTitle`
+// for the name — never a locally invented label or an ad hoc paper-era accent. Several Apple
+// Health metrics (VO₂ max, weight, body fat, lean mass, BMI, active energy) have no canonical
+// family yet and fall to the catalog's documented default (verdePrimario, no glyph) — that
+// collapse is an accepted, documented gap in the identity bridge itself, not something this
+// screen invents.
 
 struct AppleHealthView: View {
     @EnvironmentObject var repo: Repository
-    @Environment(\.instrumentoTheme) private var theme
 
     // Imperial/Metric display preference (D#103). Weight and lean mass (stored kg) re-label to lb here;
     // every other Apple Health metric is unit-agnostic. Display-only.
@@ -91,8 +96,24 @@ struct AppleHealthView: View {
         return f
     }()
 
+    /// Chart card height — must match the Liquid chart core's internal `LiquidChartAlto.explorador`
+    /// (144, package-internal) so the single-point/empty wells this screen composes by hand line up
+    /// with the real chart. Same duplication precedent as `LiquidSheetSkeleton.Alto.grafica`.
+    private static let chartHeight: CGFloat = 144
+
+    /// Uniform tile height so every tile in the grid reads as one row regardless of whether it
+    /// carries a sparkline/caption — the same "uniform-height tile" contract the paper had.
+    private static let tileMinHeight: CGFloat = 100
+
     // yyyy-MM-dd → Date via the shared UTC / en_US_POSIX parser (FER-325).
     private func date(_ day: String) -> Date? { Repository.parseDayKey(day) }
+
+    /// The canonical short name for an Apple Health ingest key — the ONE bridge (FER-108
+    /// cimientos): never a locally invented label, and reconciled so a tile and its chart card
+    /// call the same metric by the same name.
+    private func metricLabel(_ key: String) -> String {
+        MetricCatalog.descriptor(forIngestKey: key)?.canonicalTitle ?? key
+    }
 
     // MARK: - Range control (W / M / 3M / 6M / 1Y / ALL) — the ONE pill control.
 
@@ -151,15 +172,12 @@ struct AppleHealthView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s550) {
                 header
                 if loaded && !hasAnyData {
-                    EmptyStateView(
-                        systemImage: "heart.text.square",
-                        title: "Nothing imported yet",
-                        message: "On an iPhone: Health app, tap your photo, Export All Health Data, then import the .zip here in Data Sources.")
+                    emptyState
                 } else if !loaded {
-                    LoadingStateView("Reading your Apple Health history…")
+                    LiquidSheetSkeleton(a11yCargando: String(localized: "Reading your Apple Health history…"))
                 } else {
                     rangeControl
                     tileGrid
@@ -169,26 +187,50 @@ struct AppleHealthView: View {
                     sleepSection
                 }
             }
-            .padding(.top, 20)
-            .padding(.horizontal, CenitMetrics.screenPadding)
-            .padding(.bottom, CenitMetrics.screenPadding)
+            .padding(.horizontal, LiquidSpace.s550)
+            .padding(.top, LiquidSpace.s550)
+            .padding(.bottom, LiquidSpace.s800)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(theme.paper.ignoresSafeArea())
+        .scrollIndicators(.hidden)
+        .background { LiquidSheetFondo().ignoresSafeArea() }
         .task { await load() }
         .onChange(of: range) { rebuildWindowCache() }
     }
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Apple Health").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Text("Apple Health").font(StrandFont.title1).foregroundStyle(theme.ink)
+            LiquidOverline(String(localized: "Apple Health"))
+            Text(String(localized: "Apple Health"))
+                .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
+                .foregroundStyle(LiquidColor.tinta900)
             if let s = spanSubtitle {
-                Text(verbatim: s).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                Text(verbatim: s)
+                    .font(LiquidType.cuerpo)
+                    .foregroundStyle(LiquidColor.tinta500)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, 2)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isHeader)
+    }
+
+    /// The honest empty state: no imported history at all yet. Composed from atoms (no 1:1 Liquid
+    /// piece for this) inside the same solid-card recipe every other block on this screen uses.
+    private var emptyState: some View {
+        VStack(alignment: .leading, spacing: LiquidSpace.s150) {
+            Text(String(localized: "Nothing imported yet"))
+                .font(LiquidType.tituloFila)
+                .foregroundStyle(LiquidColor.tinta900)
+            Text(String(localized: "On an iPhone: Health app, tap your photo, Export All Health Data, then import the .zip here in Data Sources."))
+                .font(LiquidType.cuerpo)
+                .lineSpacing(LiquidType.cuerpoLineSpacing)
+                .foregroundStyle(LiquidColor.tinta700)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .liquidTarjetaSeccion()
     }
 
     /// Rebuild the per-metric resolved-window cache from scratch. Called once after
@@ -252,27 +294,44 @@ struct AppleHealthView: View {
     // MARK: - Range control + header span
 
     private var rangeControl: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
-                SegmentedPillControl(RangeWindow.allCases, selection: $range, theme: theme) { $0.label }
-                Spacer()
-                Text(range.caption).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+        VStack(alignment: .leading, spacing: LiquidSpace.s200) {
+            LiquidRangeSelector(opciones: RangeWindow.allCases.map(\.label),
+                                seleccion: rangeIndex, tono: LiquidColor.tinta700)
+                .accessibilityLabel(String(localized: "Time range"))
+            HStack(alignment: .firstTextBaseline) {
+                Text(verbatim: rangeSummaryCaption)
+                    .font(LiquidType.captionLectura)
+                    .foregroundStyle(anyWidened ? LiquidColor.atencionTexto : LiquidColor.tinta500)
+                    .accessibilityLabel(rangeSummaryCaption)
+                Spacer(minLength: LiquidSpace.s200)
+                Text(verbatim: range.caption)
+                    .font(LiquidType.captionLectura)
+                    .foregroundStyle(LiquidColor.tinta500)
             }
-            Text(verbatim: rangeSummaryCaption)
-                .font(StrandFont.footnote)
-                .foregroundStyle(theme.inkTertiary)
-                .accessibilityLabel(rangeSummaryCaption)
         }
+    }
+
+    /// A Binding<Int> bridging `LiquidRangeSelector`'s index to `range` (allCases order = W…ALL) —
+    /// the same bridge pattern Compare/Explore use for `ExploreRange`.
+    private var rangeIndex: Binding<Int> {
+        Binding(
+            get: { RangeWindow.allCases.firstIndex(of: range) ?? 0 },
+            set: { range = RangeWindow.allCases[$0] })
+    }
+
+    /// True if any tracked series had to auto-widen past the selected range.
+    private var anyWidened: Bool {
+        Self.seriesKeys.contains { !raw($0).isEmpty && effectiveRange($0) != range }
     }
 
     /// Window-level caption near the control: how many days the per-day rows span in
     /// the selected range, plus a flag if any tracked series had to auto-widen.
     private var rangeSummaryCaption: String {
         let n = windowedRows.count
-        let unit = n == 1 ? "day" : "days"
-        let anyWidened = Self.seriesKeys.contains { !raw($0).isEmpty && effectiveRange($0) != range }
-        let base = "\(n) \(unit) · \(range.name)"
-        return anyWidened ? base + " · some sparse series widened" : base
+        let unit = n == 1 ? String(localized: "day") : String(localized: "days")
+        return anyWidened
+            ? String(localized: "\(n) \(unit) · \(range.name) · some sparse series widened")
+            : String(localized: "\(n) \(unit) · \(range.name)")
     }
 
     /// Header subtitle reflects the windowed (visible) per-day span.
@@ -285,7 +344,7 @@ struct AppleHealthView: View {
         let loS = Self.spanFormatter.string(from: lo)
         let hiS = Self.spanFormatter.string(from: hi)
         let span = loS == hiS ? loS : "\(loS) → \(hiS)"
-        return "\(rows.count) days · \(span)"
+        return String(localized: "\(rows.count) days · \(span)")
     }
 
     /// AppleDaily rows trimmed to the active window (for the span readout), taken
@@ -307,37 +366,25 @@ struct AppleHealthView: View {
         }
     }
 
-    // MARK: - Metric tiles (uniform-height light tiles in an adaptive grid)
+    // MARK: - Metric tiles (uniform-height Liquid tiles in an adaptive grid)
 
     private var tileGrid: some View {
         LazyVGrid(
-            columns: [GridItem(.adaptive(minimum: 168), spacing: CenitMetrics.gap)],
+            columns: [GridItem(.adaptive(minimum: 168), spacing: LiquidSpace.s200)],
             alignment: .leading,
-            spacing: CenitMetrics.gap
+            spacing: LiquidSpace.s200
         ) {
-            statTile(key: "steps", label: "Steps",
-                     accent: theme.dataSteps, fmt: { intString($0) })
-            statTile(key: "resting_hr", label: "Resting HR",
-                     accent: theme.dataHeart, unit: String(localized: "bpm"),
-                     fmt: { "\(Int($0.rounded()))" })
-            statTile(key: "hrv", label: "HRV",
-                     accent: theme.dataHrv, unit: String(localized: "ms"),
-                     fmt: { "\(Int($0.rounded()))" })
-            statTile(key: "vo2max", label: "VO₂ Max",
-                     accent: theme.dataSpO2, unit: String(localized: "ml/kg"),
-                     fmt: { String(format: "%.1f", $0) })
-            statTile(key: "weight", label: "Weight",
-                     accent: theme.dataSteps,
-                     fmt: { massLabel($0) })
-            statTile(key: "body_fat", label: "Body Fat",
-                     accent: theme.dataStrain, unit: "%",
-                     fmt: { String(format: "%.1f", $0) })
-            statTile(key: "lean_mass", label: "Lean Mass",
-                     accent: theme.dataSteps,
-                     fmt: { massLabel($0) })
-            statTile(key: "asleep_min", label: "Asleep avg",
-                     accent: theme.dataSleep,
-                     aggregate: .mean, fmt: { durationString($0) })
+            liquidStatTile(key: "steps", fmt: { intString($0) })
+            liquidStatTile(key: "resting_hr", unit: String(localized: "bpm"),
+                           fmt: { "\(Int($0.rounded()))" })
+            liquidStatTile(key: "hrv", unit: String(localized: "ms"),
+                           fmt: { "\(Int($0.rounded()))" })
+            liquidStatTile(key: "vo2max", unit: String(localized: "ml/kg"),
+                           fmt: { String(format: "%.1f", $0) })
+            liquidStatTile(key: "weight", fmt: { massLabel($0) })
+            liquidStatTile(key: "body_fat", unit: "%", fmt: { String(format: "%.1f", $0) })
+            liquidStatTile(key: "lean_mass", fmt: { massLabel($0) })
+            liquidStatTile(key: "asleep_min", aggregate: .mean, fmt: { durationString($0) })
             workoutsTile
         }
     }
@@ -345,16 +392,17 @@ struct AppleHealthView: View {
     /// How a tile's hero value is derived from its window.
     private enum Aggregate { case latest, mean }
 
-    /// A light metric tile: a quiet overline label, the value in its metric hue (ink when empty), an
-    /// optional sparkline, and a caption — on paper, hairline-bordered, uniform height. Sparse-safe:
-    /// the window auto-falls-back to ALL, the hero is the LATEST point ("as of <date>") unless a mean
+    /// A Liquid metric tile composed from atoms (no delta here — `LiquidMetricTile` requires one
+    /// and this screen has none, only a sparkline): a quiet label + icon drop, the value in its
+    /// identity hue (ink when empty), an optional sparkline, and a caption. Sparse-safe: the
+    /// window auto-falls-back to ALL, the hero is the LATEST point ("as of <date>") unless a mean
     /// is requested, and the sparkline + caption track the same resolved window.
-    private func statTile(key: String, label: LocalizedStringKey,
-                          accent: Color, unit: String = "",
-                          aggregate: Aggregate = .latest,
-                          fmt: @escaping (Double) -> String) -> some View {
+    private func liquidStatTile(key: String, unit: String = "",
+                                aggregate: Aggregate = .latest,
+                                fmt: @escaping (Double) -> String) -> some View {
         let rows = resolvedWindow(key)
         let values = rows.map(\.value)
+        let identity = MetricIdentity.identity(forIngestKey: key)
         let value: String
         let caption: String?
         if values.isEmpty {
@@ -369,217 +417,204 @@ struct AppleHealthView: View {
             case .mean:
                 let m = mean(values) ?? 0
                 value = unit.isEmpty ? fmt(m) : "\(fmt(m)) \(unit)"
-                caption = "avg · \(values.count)d"
+                caption = String(localized: "avg · \(values.count)d")
             }
         }
-        return lightTile(label: label, value: value, caption: caption,
-                         accent: values.isEmpty ? theme.inkTertiary : accent,
-                         sparkline: values.count > 1 ? sparkValues(values) : nil,
-                         sparkColor: accent)
+        return liquidTile(label: metricLabel(key), value: value, caption: caption,
+                          tone: values.isEmpty ? LiquidColor.tinta500 : identity.hue,
+                          glyph: identity.glyph,
+                          sparkline: values.count > 1 ? sparkValues(values) : nil)
     }
 
-    /// Workouts is a count, not a series — its own tile.
+    /// Workouts is a count, not a series — its own tile, still on the same recipe.
     private var workoutsTile: some View {
-        lightTile(label: "Workouts",
+        liquidTile(label: String(localized: "Workouts"),
                   value: "\(workoutCount)",
                   caption: workoutCount > 0 ? String(localized: "Apple-logged") : nil,
-                  accent: workoutCount > 0 ? theme.dataStrain : theme.inkTertiary,
-                  sparkline: nil, sparkColor: theme.dataStrain)
+                  tone: workoutCount > 0 ? LiquidColor.ambar : LiquidColor.tinta500,
+                  glyph: .carga,
+                  sparkline: nil)
     }
 
-    /// One light tile, uniform height, on paper with a hairline border (no nested fill). Value carries
-    /// the metric hue (the datum); label + caption stay ink.
-    private func lightTile(label: LocalizedStringKey, value: String, caption: String?,
-                           accent: Color, sparkline: [Double]?, sparkColor: Color) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                .lineLimit(2).minimumScaleFactor(0.8)
+    /// One composed Liquid tile, uniform height: icon drop + label, value in tone, optional
+    /// sparkline, optional caption — on the solid-card recipe (`liquidTarjetaSeccion`).
+    private func liquidTile(label: String, value: String, caption: String?,
+                            tone: Color, glyph: LiquidIcon.Glyph?,
+                            sparkline: [Double]?) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            HStack(spacing: LiquidSpace.s150) {
+                if let glyph {
+                    LiquidIconDrop(glyph, tone: tone)
+                }
+                Text(verbatim: label).liquidLabel().foregroundStyle(LiquidColor.tinta500)
+                    .lineLimit(2).minimumScaleFactor(0.8)
+            }
             Spacer(minLength: 4)
-            Text(value).font(StrandFont.number(26)).foregroundStyle(accent)
+            Text(verbatim: value).font(LiquidType.valorL).foregroundStyle(tone)
                 .lineLimit(1).minimumScaleFactor(0.6)
             if let sparkline, sparkline.count > 1 {
                 Sparkline(values: sparkline,
-                          gradient: ChartWell.fillGradient(sparkColor),
+                          gradient: ChartWell.fillGradient(tone),
                           showsArea: false, showsHead: false, showsScrub: false)
                     .frame(height: 22).padding(.top, 4)
             }
             if let caption {
-                Text(verbatim: caption).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                Text(verbatim: caption).font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
                     .lineLimit(1).padding(.top, 2)
             }
         }
-        .padding(14)
-        .frame(maxWidth: .infinity, minHeight: CenitMetrics.tileHeight, alignment: .topLeading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
-            .strokeBorder(theme.hairline, lineWidth: 1))
+        .frame(minHeight: Self.tileMinHeight, alignment: .topLeading)
+        .liquidTarjetaSeccion(padding: LiquidSpace.s300)
+        .accessibilityElement(children: .combine)
     }
 
-    // MARK: - Chart sections (light chart cards, uniform per page)
+    // MARK: - Chart sections (Liquid chart cards, uniform per page)
 
     private var heartSection: some View {
-        chartSection("Heart & Vitals", overline: "Cardiac") {
-            chartCard(title: "Resting heart rate", key: "resting_hr",
-                      hue: theme.dataHeart, fallback: 40...80,
+        chartSection(String(localized: "Heart & Vitals")) {
+            chartCard(key: "resting_hr", fallback: 40...80,
                       fmt: { "\(Int($0.rounded())) \(String(localized: "bpm"))" })
-            chartCard(title: "Heart rate variability", key: "hrv",
-                      hue: theme.dataHrv, fallback: 20...120,
+            chartCard(key: "hrv", fallback: 20...120,
                       fmt: { "\(Int($0.rounded())) ms" })
-            chartCard(title: "Blood oxygen", key: "spo2",
-                      hue: theme.dataSpO2, fallback: 90...100,
+            chartCard(key: "spo2", fallback: 90...100,
                       fmt: { String(format: "%.1f%%", $0) })
-            chartCard(title: "Respiratory rate", key: "resp_rate",
-                      hue: theme.dataSpO2, fallback: 10...22,
+            chartCard(key: "resp_rate", fallback: 10...22,
                       fmt: { String(format: "%.1f rpm", $0) })
         }
     }
 
     private var activitySection: some View {
-        chartSection("Activity & Energy", overline: "Movement") {
-            chartCard(title: "Steps", key: "steps",
-                      hue: theme.dataSteps, fallback: 0...12000,
+        chartSection(String(localized: "Activity & Energy")) {
+            chartCard(key: "steps", fallback: 0...12000,
                       fmt: { intString($0) })
-            chartCard(title: "Active energy", key: "active_kcal",
-                      hue: theme.dataStrain, fallback: 0...1000,
+            chartCard(key: "active_kcal", fallback: 0...1000,
                       fmt: { "\(intString($0)) kcal" })
         }
     }
 
     private var bodySection: some View {
-        chartSection("Body Composition", overline: "Slow threads") {
-            chartCard(title: "Weight", key: "weight",
-                      hue: theme.dataSteps, fallback: 50...100,
-                      fmt: { massLabel($0) })
-            chartCard(title: "Body fat", key: "body_fat",
-                      hue: theme.dataStrain, fallback: 8...35,
-                      fmt: { String(format: "%.1f%%", $0) })
-            chartCard(title: "Lean body mass", key: "lean_mass",
-                      hue: theme.dataSteps, fallback: 40...80,
-                      fmt: { massLabel($0) })
-            chartCard(title: "BMI", key: "bmi",
-                      hue: theme.dataHrv, fallback: 16...35,
-                      fmt: { String(format: "%.1f", $0) })
+        chartSection(String(localized: "Body Composition")) {
+            chartCard(key: "weight", fallback: 50...100, fmt: { massLabel($0) })
+            chartCard(key: "body_fat", fallback: 8...35, fmt: { String(format: "%.1f%%", $0) })
+            chartCard(key: "lean_mass", fallback: 40...80, fmt: { massLabel($0) })
+            chartCard(key: "bmi", fallback: 16...35, fmt: { String(format: "%.1f", $0) })
         }
     }
 
     private var sleepSection: some View {
-        chartSection("Sleep", overline: "Rest") {
-            chartCard(title: "Asleep", key: "asleep_min",
-                      hue: theme.dataSleep, fallback: 240...600,
-                      fmt: { durationString($0) })
+        chartSection(String(localized: "Sleep")) {
+            chartCard(key: "asleep_min", fallback: 240...600, fmt: { durationString($0) })
         }
     }
 
-    /// A light chart section: a quiet overline + title + the range caption, then its cards. Hierarchy by
-    /// space — no surrounding box.
+    /// A Liquid chart section: an inset overline (Compare's pattern — never a franja a sangre) +
+    /// the range caption, then its cards.
     @ViewBuilder
-    private func chartSection<Cards: View>(_ title: LocalizedStringKey, overline: LocalizedStringKey,
-                                           @ViewBuilder cards: () -> Cards) -> some View {
-        VStack(alignment: .leading, spacing: CenitMetrics.gap) {
+    private func chartSection<Cards: View>(_ title: String, @ViewBuilder cards: () -> Cards) -> some View {
+        VStack(alignment: .leading, spacing: LiquidSpace.s300) {
             HStack(alignment: .firstTextBaseline) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(overline).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                    Text(title).font(StrandFont.title2).foregroundStyle(theme.ink)
-                }
-                Spacer()
-                Text(range.caption).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                Text(verbatim: title)
+                    .font(LiquidType.franja).tracking(LiquidType.franjaTracking).textCase(.uppercase)
+                    .foregroundStyle(LiquidColor.tinta500)
+                    .accessibilityAddTraits(.isHeader)
+                Spacer(minLength: LiquidSpace.s200)
+                Text(verbatim: range.caption)
+                    .font(LiquidType.captionLectura)
+                    .foregroundStyle(LiquidColor.tinta500)
             }
             cards()
         }
     }
 
-    /// One light chart card for a metric series: header (title + "N readings · range" + avg) + the
-    /// shared `TrendChart` with paper-legible axes and a single-hue line + avg/min/max footer, on paper
-    /// with a hairline border. Sparse-safe via resolvedWindow.
+    /// One Liquid chart card for a metric series: header (canonical name + "N readings · range" +
+    /// avg in tone) + the raw-line history (`LiquidGraficaNiveles`, no bands — this dossier has no
+    /// level ladder) with an avg/min/max/points footer (`LiquidResumenVentana`), on the solid-card
+    /// recipe. Sparse-safe via `resolvedWindow`; a lone reading and a truly-empty series get their
+    /// own honest wells (the shared chart engine folds both into one "not enough points" state, so
+    /// this screen keeps its own — the contract calls out the single-point state by name).
     @ViewBuilder
-    private func chartCard(title: LocalizedStringKey, key: String, hue: Color,
-                           fallback: ClosedRange<Double>,
+    private func chartCard(key: String, fallback: ClosedRange<Double>,
                            fmt: @escaping (Double) -> String) -> some View {
         let rows = resolvedWindow(key)
         let pts = trendPoints(rows)
         let vals = rows.map(\.value)
-        let trailing = mean(vals).map { fmt($0) }
-        // A single concrete footer (avg / min / max / point-count) keeps every card uniform, with
-        // dashes only in the defensive no-data case.
-        let footerItems: [(LocalizedStringKey, String)] = {
-            guard let avg = mean(vals), let lo = vals.min(), let hi = vals.max() else {
-                return [("Avg", "—"), ("Min", "—"), ("Max", "—"), ("Points", "0")]
+        let title = metricLabel(key)
+        let hue = MetricIdentity.identity(forIngestKey: key).hue
+        let avg = mean(vals)
+        let footerCeldas: [LiquidResumenVentana.Celda] = {
+            guard let avg, let lo = vals.min(), let hi = vals.max() else {
+                return [
+                    .init(rotulo: String(localized: "Avg"), valor: "—"),
+                    .init(rotulo: String(localized: "Min"), valor: "—"),
+                    .init(rotulo: String(localized: "Max"), valor: "—"),
+                    .init(rotulo: String(localized: "Points"), valor: "0"),
+                ]
             }
-            return [("Avg", fmt(avg)), ("Min", fmt(lo)), ("Max", fmt(hi)), ("Points", "\(vals.count)")]
+            return [
+                .init(rotulo: String(localized: "Avg"), valor: fmt(avg), tono: hue),
+                .init(rotulo: String(localized: "Min"), valor: fmt(lo)),
+                .init(rotulo: String(localized: "Max"), valor: fmt(hi)),
+                .init(rotulo: String(localized: "Points"), valor: "\(vals.count)"),
+            ]
         }()
-        VStack(alignment: .leading, spacing: 12) {
+
+        VStack(alignment: .leading, spacing: LiquidSpace.s300) {
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                    Text(verbatim: rangeNote(forKey: key)).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                    Text(verbatim: title).font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
+                    Text(verbatim: rangeNote(forKey: key)).font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
                 }
-                Spacer()
-                if let trailing {
-                    Text(verbatim: trailing).font(StrandFont.bodyNumber).foregroundStyle(hue)
+                Spacer(minLength: LiquidSpace.s200)
+                if let avg {
+                    Text(verbatim: fmt(avg)).font(LiquidType.valorM).foregroundStyle(hue)
                 }
             }
             Group {
                 if pts.count >= 2 {
-                    TrendChart(
-                        points: pts,
-                        gradient: ChartWell.fillGradient(hue),
-                        valueRange: valueRange(pts, fallback: fallback),
-                        showsArea: true,
-                        height: CenitMetrics.chartHeight,
-                        valueFormat: fmt,
-                        axisLabelColor: theme.inkTertiary,
-                        gridLineColor: theme.hairline
-                    )
+                    LiquidGraficaNiveles(
+                        puntos: pts,
+                        bandas: [],
+                        dominio: valueRange(vals, fallback: fallback),
+                        ticksY: [],
+                        tono: hue,
+                        formatoValorScrub: fmt,
+                        formatoFechaScrub: { Self.asOfFormatter.string(from: $0) },
+                        formatoFechaEje: { Self.asOfFormatter.string(from: $0) },
+                        estadoVacio: String(localized: "No readings recorded."),
+                        a11yLabel: String(localized: "\(title) trend"))
                 } else if let only = vals.last {
-                    // A single point is not a line — present the lone reading, never an "empty" state
-                    // when the series has data.
+                    // A single point is not a line — present the lone reading, never an "empty"
+                    // state when the series has data.
                     singlePoint(only, fmt: fmt, accent: hue)
                 } else {
                     emptyChart
                 }
             }
-            .frame(height: CenitMetrics.chartHeight)
+            .frame(height: Self.chartHeight)
             .clipped()
-            divider
-            lightFooter(footerItems)
+            LiquidResumenVentana(celdas: footerCeldas)
         }
-        .padding(CenitMetrics.cardPadding)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
-            .strokeBorder(theme.hairline, lineWidth: 1))
-    }
-
-    private var divider: some View { Divider().overlay(theme.hairline) }
-
-    /// A light footer row of small "label / value" stats (avg/min/max/points). Labels ink-quiet, values
-    /// ink-secondary — no color here (the chart line carries the hue).
-    private func lightFooter(_ items: [(LocalizedStringKey, String)]) -> some View {
-        HStack(spacing: 0) {
-            ForEach(Array(items.enumerated()), id: \.offset) { _, it in
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(it.0).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                    Text(verbatim: it.1).font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-        }
+        .liquidTarjetaSeccion()
     }
 
     /// Lone-reading body for series with exactly one point in range.
     private func singlePoint(_ value: Double, fmt: (Double) -> String, accent: Color) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Latest reading").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Text(verbatim: fmt(value)).font(StrandFont.number(34)).foregroundStyle(accent)
+        VStack(alignment: .leading, spacing: LiquidSpace.s150) {
+            Text(String(localized: "Latest reading")).liquidLabel().foregroundStyle(LiquidColor.tinta500)
+            Text(verbatim: fmt(value)).font(LiquidType.valorTileL).tracking(LiquidType.valorTileTracking)
+                .foregroundStyle(accent)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }
 
     private var emptyChart: some View {
-        Text("No readings recorded.")
-            .font(StrandFont.subhead)
-            .foregroundStyle(theme.inkTertiary)
+        Text(String(localized: "No readings recorded."))
+            .font(LiquidType.cuerpo)
+            .foregroundStyle(LiquidColor.tinta500)
+            .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+            .background(LiquidColor.tinta7,
+                        in: RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous))
     }
 
     // MARK: - Series helpers (sparse-data fallback to ALL)
@@ -635,17 +670,17 @@ struct AppleHealthView: View {
         let rows = resolvedWindow(key)
         let eff = effectiveRange(key)
         let n = rows.count
-        let unit = n == 1 ? "reading" : "readings"
+        let unit = n == 1 ? String(localized: "reading") : String(localized: "readings")
         if eff != range {
-            return "\(n) \(unit) · sparse: widened to \(eff.name)"
+            return String(localized: "\(n) \(unit) · sparse: widened to \(eff.name)")
         }
-        return "\(n) \(unit) · \(range.name)"
+        return String(localized: "\(n) \(unit) · \(range.name)")
     }
 
-    private func trendPoints(_ rows: [(day: String, value: Double)]) -> [TrendPoint] {
+    private func trendPoints(_ rows: [(day: String, value: Double)]) -> [(fecha: Date, valor: Double)] {
         rows.compactMap { row in
             guard let dt = date(row.day) else { return nil }
-            return TrendPoint(date: dt, value: row.value)
+            return (fecha: dt, valor: row.value)
         }
     }
 
@@ -660,9 +695,8 @@ struct AppleHealthView: View {
         return values.reduce(0, +) / Double(values.count)
     }
 
-    private func valueRange(_ pts: [TrendPoint], fallback: ClosedRange<Double>, pad: Double = 0.12) -> ClosedRange<Double> {
-        let v = pts.map(\.value)
-        guard let lo = v.min(), let hi = v.max() else { return fallback }
+    private func valueRange(_ values: [Double], fallback: ClosedRange<Double>, pad: Double = 0.12) -> ClosedRange<Double> {
+        guard let lo = values.min(), let hi = values.max() else { return fallback }
         if hi <= lo { return (lo - 1)...(hi + 1) }
         let span = hi - lo
         return (lo - span * pad)...(hi + span * pad)
