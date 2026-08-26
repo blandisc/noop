@@ -372,12 +372,14 @@ struct TodayView: View {
                     .recEntranceGate()
             }
             .sheet(item: $strainDetail) { item in
-                StrainDetailScreen(theme: theme, model: item.model, estimated: item.estimated)
+                StrainDetailScreen(theme: theme, model: item.model, estimated: item.estimated,
+                                  sinPermiso: health.auth != .authorized && health.auth != .unavailable)
                     .recEntranceGate()
             }
             .sheet(item: $skinTempDetail) { item in
                 SkinTempDetailScreen(theme: theme, model: item.model,
-                                     loadWarmingMagnitudes: { await repo.nocturnalWarmingMagnitudes() })
+                                     loadWarmingMagnitudes: { await repo.nocturnalWarmingMagnitudes() },
+                                     sinPermiso: health.auth != .authorized && health.auth != .unavailable)
                     .recEntranceGate()
             }
             .sheet(item: $stressDetail) { item in
@@ -390,7 +392,8 @@ struct TodayView: View {
                                    patternsLoader: { await StressDayMapPresenter.timeOfDayPatterns(
                                        repo: repo, maxHR: model.profile.hrMax, restingHR: stressRestingHR) },
                                    eventPatternsLoader: { await StressDayMapPresenter.eventPatterns(
-                                       repo: repo, map: stressDayMap) })
+                                       repo: repo, map: stressDayMap) },
+                                   sinPermiso: health.auth != .authorized && health.auth != .unavailable)
                     .recEntranceGate()
             }
             .sheet(item: $metricSpec) { spec in

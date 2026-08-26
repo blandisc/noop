@@ -5,94 +5,122 @@ import StrandAnalytics
 import CenitStore
 import Foundation
 
-// MARK: - SkinTempDetailScreen — el «Detalle de Temperatura de la piel» en «Instrumento» (FER-256)
+// MARK: - SkinTempDetailScreen — el «Detalle de Temperatura de la piel» en vidrio Liquid (FER-101 · TND-12)
 //
-// Hermana de `StrainDetailScreen` (FER-238) y `StressDetailScreen` (FER-241): REUSA su lenguaje visual
-// (hero con `HeroInvertido`, `theme: InstrumentoTheme` explícito, `sheetPaper`,
-// `ScrollView`→`VStack` full-bleed Final, `PieMetodo`, los wells) pero
-// con su propio modelo. Reemplaza, para la temperatura de piel en Cuerpo, la vieja hoja OSCURA del catálogo
-// (`MetricExplorerView`). Se presenta vía `.sheet(item:)` con el tema vivo pasado EXPLÍCITO (no propaga por
-// `.sheet`, FER-162) y SIN `NavigationStack` anidado (FER-171).
+// Migración PURAMENTE VISUAL del esqueleto «Tendencias Final» (papel «Instrumento») a los legos
+// Liquid, calcando el patrón de `SleepDetailScreen.swift` (la vara de esta migración) y de
+// `StrainDetailScreen.swift` / `StressDetailScreen.swift` (los bloques hermanos ya firmados):
+// campo teñido a sangre (`LiquidCampoMetrica`) → costuras de sección (`LiquidFranjaSeccion`) →
+// lectura de nivel (`LiquidReadingLine`; los rangos viven en la escalera tocable del historial,
+// UX-08) → historial (`LiquidRangeSelector` + `LiquidGraficaNiveles` +
+// `LiquidResumenVentana` + `LiquidLevelsList`) → método + sello (patrón `pieMetodo` de Sueño).
 //
-// La temperatura de piel es una DESVIACIÓN (±°C) respecto a la base nocturna de cada quien, centrada en ~0,
-// y de polaridad NEUTRAL (más no es bueno ni malo — como el esfuerzo). Eso dicta qué bloques aplican
-// honestamente y cuáles NO:
-//  · Hero = la ÚLTIMA lectura con signo (no la media 7d): es una señal puntual y así coincide con la fila.
-//  · El chip mes-vs-mes del `TrendStatSummary` va en DELTA ABSOLUTO (°C), no en %: sobre una media ≈0 el
-//    porcentaje se dispara (de +0.05 a +0.10 °C ⇒ «+100%») y miente. (TrendStatSummary.absoluteChange)
-//  · Consistencia = la DESVIACIÓN ESTÁNDAR en °C, no el CV%: dividir entre una media ≈0 no significa nada.
-//  · La gráfica lleva una BANDA sutil de «variación típica» (±tu SD) alrededor de 0 — el contexto de qué es
-//    mucho/poco PARA TI, sin inventar umbrales clínicos (skin temp no tiene bandas validadas citables).
-// Por eso NO trae «rango normal» con umbrales fijos ni placeholder de calendario.
+// `SkinTempDetailModel` NO CAMBIA (contrato de datos congelado): consume `repo.displayDays`
+// tal cual — cero matemática nueva. La identidad es el DORADO propio de la temperatura de piel
+// (`LiquidColor.doradoTemp` + glifo `.termo`), el MISMO par que ya visten la hoja de Hoy
+// (`LiquidMetricSheetView.swift:235` / `:264`) y el guardián (`LiquidHoyBuilder+Matriz.swift:404-405`)
+// — nunca el ámbar de juicio (FER-79 · D2). El campo se tiñe por identidad, no por veredicto.
 //
-// Esqueleto Final (misma forma que `MetricDetailScreen.narrativeBodyFinal`): HeroInvertido →
-// SeccionBloque «Today, vs your range» → «Your story» → (opcional thermal) → «Your pattern» → PieMetodo.
-// Consume `repo.displayDays` TAL CUAL: no crea matemática.
+// UNA SOLA ESCALERA (regla de oro TND-10): las cuatro bandas salen de
+// `MetricLevels.displayBands(for: .skinTemp)` (< −0.4 bajo tu base · −0.4–+0.4 en tu base ·
+// +0.4–+0.8 ligeramente elevada · ≥ +0.8 elevada — los cortes de `ReadinessEngine`) y TODAS
+// las representaciones — tabla de niveles, gráfica, escalera tocable, frase del campo y gate
+// del streak — derivan del MISMO arreglo por CLAVE. El papel traía DOS vocabularios para la
+// misma métrica a un tap de distancia: aquí «Normal/Unusual for you» con cortes ±1 SD
+// personales, y en la hoja de Hoy la escalera fija del motor (`LiquidMetricSheetView:319`).
+// Se unifican al motor; el ±SD personal no se pierde — vive en la celda «Variación» del
+// resumen (la DE de la ventana del selector, UX-10/M5).
+//
+// La temperatura de piel es una DESVIACIÓN (±°C) contra la base nocturna propia, de polaridad
+// NEUTRAL, y el delta vs el periodo anterior va en DELTA ABSOLUTO (°C), nunca en %: sobre una
+// media ≈0 el porcentaje miente (razón original FER-256, conservada — la nota bajo la gráfica,
+// UX-11). Sin calendario de
+// 90 días a propósito, como el papel: una retícula de intensidad sobre una desviación con
+// signo diría que «más frío» y «sin dato» se parecen.
+//
+// Se presenta vía `.sheet(item:)` desde Hoy y como capa desde Cuerpo, con el tema vivo pasado
+// EXPLÍCITO (FER-162 — la hoja Liquid ya no lo referencia; se conserva por compatibilidad de
+// firma con los call sites) y SIN `NavigationStack` anidado (FER-171).
 
-/// Light «Instrumento» Detalle de Temperatura de la piel. Built once from a `SkinTempDetailModel` (the
-/// caller injects it so the screen stays DB-free), themed explicitly for the sheet boundary.
+/// Detalle de Temperatura de la piel en vidrio Liquid. Se arma desde un `SkinTempDetailModel`
+/// (el caller inyecta el modelo para que la pantalla siga sin tocar la base de datos).
 struct SkinTempDetailScreen: View {
-    /// The live «Instrumento» theme, passed explicitly (sheets start a fresh environment). (FER-162)
+    /// El tema vivo «Instrumento», retenido por compatibilidad con los call sites — la hoja
+    /// Liquid ya no lo referencia (mismo trato que `SleepDetailScreen`/`StrainDetailScreen`).
     var theme: InstrumentoTheme = .base
     /// Everything the screen draws from the in-memory dashboard, derived ONCE by the caller (no DB here).
     let model: SkinTempDetailModel
     /// Loads the recent per-night distal warming magnitudes (°C) for the nocturnal thermal-stability read
     /// (FER-850), behind the experimental toggle. The heavy multi-night skin-temp read lives in the repo.
     var loadWarmingMagnitudes: () async -> [Double?] = { [] }
+    /// `true` cuando Apple Salud NO está autorizado (mismo predicado que Sueño/Esfuerzo/Estrés,
+    /// FER-101). TodayView ya lo pasa; el cabo real es CuerpoView, que cablea FER-100.
+    var sinPermiso: Bool = false
 
     /// The trend block's period window (W/M/3M/6M/1Y/ALL). Defaults to a month.
     @State private var range: ExploreRange = .month
     /// The series with each `day` string parsed to a `Date` exactly ONCE (not per slice / per render) — the
     /// window math reads `date` straight from here. Built in `.task`. (FER-216 lesson)
     @State private var parsed: [(day: String, date: Date?, value: Double)] = []
-    /// Which inline disclosure is open (one at a time): `"band"`. (Detalle de Vital)
-    @State private var openDisclosure: String? = nil
     /// The nocturnal thermal-stability read (typical warming + night-to-night consistency), loaded async
     /// behind the experimental toggle; `nil` until loaded or when off. (FER-850)
     @State private var thermal: ThermalStabilityEngine.Result? = nil
+    /// El ⓘ del campo abre la tarjeta «Qué medimos» bajo él (patrón Sueño/Esfuerzo).
+    @State private var infoOpen = false
+    /// El carril del historial que el dedo explora; `nil` = ninguno (paridad Sueño/Esfuerzo).
+    @State private var bandaExplorada: Int? = nil
+
+    /// El tono de la pantalla: el dorado PROPIO de la temperatura de piel — la identidad que ya
+    /// visten la hoja de Hoy (`LiquidMetricSheetView.swift:235`) y el guardián
+    /// (`LiquidHoyBuilder+Matriz.swift:404`). Existe justamente para no confundirse con el
+    /// ámbar de atención (FER-79 · D2; `MatrizContrasteTests` fija la separación).
+    private static let tono = LiquidColor.doradoTemp
+
+    // MARK: - Body — el esqueleto del bloque, en vidrio
 
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
-                heroFinal
-                // Streak chip sits on paper below the inverted hero (warning tint reads on paper, not on
-                // the saturated dataStrain field). Does not map into HeroInvertido's three slots cleanly.
-                if let s = streak {
-                    streakChip(s)
-                        .padding(.horizontal, 20)
-                        .padding(.top, 10)
-                }
-                if !model.loaded {
-                    ChartWell(theme).loading(height: 160)
-                        .padding(.horizontal, 20)
-                        .padding(.top, 14)
+                if let v = model.today {
+                    campoConDato(v)
                 } else {
-                    SeccionBloque(String(localized: "Today, vs your range"), theme: theme) {
-                        inlineBandSection
+                    campoSinDato
+                }
+                if infoOpen { whatWeMeasureCard }
+                if !model.loaded {
+                    LiquidSheetSkeleton(a11yCargando: String(localized: "Reading your skin temperature…"))
+                        .liquidSeccion()
+                } else if model.hasData {
+                    // Niveles = solo la lectura del ancla (UX-08: los rangos viven en la
+                    // escalera tocable del historial); sin lectura, la sección se oculta.
+                    if indiceAncla != nil {
+                        seccion(String(localized: "Levels")) { levelsContent }
                     }
-                    if model.series.count >= 2 {
-                        SeccionBloque(String(localized: "Your story"), theme: theme) {
-                            historiaFinalContent
-                        }
+                    // UX-04: la sección monta hasta que el parseo terminó (calco del gate
+                    // `durationParsed.count >= 2` de Sueño) — sin brinco del primer frame.
+                    if parsed.count >= 2 {
+                        seccion(String(localized: "History")) { historyContent }
                     }
                     if WhitespaceMetricsExperiment.isEnabled, let t = thermal {
-                        SeccionBloque(String(localized: "Nightly thermal stability"), theme: theme) {
-                            thermalBlock(t)
-                        }
+                        seccion(String(localized: "Nightly thermal stability")) { thermalBlock(t) }
                     }
-                    SeccionBloque(String(localized: "Your pattern"), theme: theme) {
-                        patronFinalContent
-                    }
-                    pieMetodoFinal
+                    // UX-13: sin franja «Qué la mueve» en Temp — no hay motor de hallazgos
+                    // propio, así que no se promete uno; la frase poblacional (alcohol,
+                    // fiebre, calor) vive como nota del pie de método.
+                    pieMetodo
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(theme.paper)
+        // El fondo va en las DOS formas de presentación: `background` para la capa de Cuerpo
+        // y `presentationBackground` para la hoja de Hoy (mismo par que Sueño, FER-102).
+        .background { LiquidSheetFondo(tone: Self.tono).ignoresSafeArea() }
+        .presentationBackground { LiquidSheetFondo(tone: Self.tono) }
         .presentationDragIndicator(.visible)
-        .sheetPaper(theme)
+        .presentationCornerRadius(LiquidRadius.hoja)
         // FER-954: hop the day-key parse off-main (same seam as the other detail screens, FER-953).
-        .task {
+        .task(id: model.loaded) {
+            guard model.loaded else { return }   // pasada placeholder — nada que parsear
             range = .month
             let series = model.series
             parsed = await Task.detached(priority: .userInitiated) {
@@ -108,111 +136,125 @@ struct SkinTempDetailScreen: View {
         }
     }
 
-    private func toggle(_ key: String) { openDisclosure = (openDisclosure == key) ? nil : key }
-
-    // MARK: - Hero Final (HeroInvertido · neutral polarity · dataStrain hue)
-
-    /// Inverted hero: signed °C deviation as the numeral, plain-language reading as the verdict.
-    /// Hue is `theme.dataStrain` (ember/amber) — neutral identity, not a good/bad verdict color.
-    private var heroFinal: some View {
-        let v = model.today
-        return HeroInvertido(
-            glyph: .skinTemp,
-            title: "Skin temp",
-            hue: theme.dataStrain,
-            theme: theme,
-            numeral: {
-                if let v {
-                    HeroNumeral(fmt(v), suffix: "°C", size: 60, theme: theme)
-                } else {
-                    Text(verbatim: "—")
-                        .font(InstrumentoType.groteskNumber(60, weight: .bold))
-                        .tracking(-2)
-                        .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
-                }
-            },
-            verdict: {
-                Text(heroReading)
-                    .font(InstrumentoType.grotesk(15, weight: .semibold))
-                    .foregroundStyle(theme.paper)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        )
+    /// Una sección: la costura a sangre + su contenido con el margen del sistema.
+    @ViewBuilder
+    private func seccion<Content: View>(_ titulo: String, @ViewBuilder content: () -> Content) -> some View {
+        LiquidFranjaSeccion(titulo, tono: Self.tono)
+        content().liquidSeccion()
     }
 
-    // MARK: - Estabilidad térmica nocturna (FER-850) — tras el toggle experimental
+    // MARK: - 1. El campo (héroe) — desviación con signo, identidad dorada, sin semáforo
 
-    /// The «Nightly thermal stability» block: the typical distal warming (°C) into sleep as the datum, a
-    /// night-to-night consistency word, and an honest one-liner. Framed as an ASSOCIATION — never a full
-    /// 24-hour circadian amplitude (we only have the night). Only shown with the experimental toggle on.
-    @ViewBuilder private func thermalBlock(_ t: ThermalStabilityEngine.Result) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Nightly thermal stability").groteskOverline().foregroundStyle(theme.inkTertiary)
-            if t.stability == .learning {
-                Text("Still learning how consistent your nightly warming is: keep wearing it to bed.")
-                    .font(StrandFont.caption)
-                    .foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            } else {
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text(verbatim: String(format: "%.1f", t.typicalWarmingC))
-                        .instrumentoHero(44)
-                        .foregroundStyle(theme.ink)
-                    Text(verbatim: "°C").font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
-                    Text("typical warming into sleep")
-                        .font(StrandFont.caption)
-                        .foregroundStyle(theme.inkSecondary)
-                }
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("night to night").groteskOverline().foregroundStyle(theme.inkTertiary)
-                    Text(thermalWord(t.stability))
-                        .font(StrandFont.number(21, weight: .semibold))
-                        .foregroundStyle(thermalColor(t.stability))
-                }
-                Text(thermalCopy(t))
-                    .font(StrandFont.caption)
-                    .foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+    /// El carril (de `bandasTemp`) en que cae la última lectura, o `nil` sin lectura. Único
+    /// predicado de la pantalla: lo leen el campo, la tabla de niveles, el historial y el gate
+    /// del streak — nunca una segunda copia de los cortes (paridad `StrainDetailScreen.indiceHoy`).
+    private var indiceAncla: Int? { model.today.flatMap(Self.indiceCarril) }
+
+    /// El campo teñido a sangre con dato: la desviación con signo + «°C vs tu base», la frase
+    /// de lectura por CLAVE de carril y, en la ranura libre, el chip de racha (noches seguidas
+    /// derivando hacia el mismo lado — la señal que la temperatura de piel de verdad carga).
+    private func campoConDato(_ v: Double) -> some View {
+        LiquidCampoMetrica(
+            tono: Self.tono,
+            titulo: String(localized: "Skin temp"),
+            glifo: .termo,
+            // B7: a11y deletreado (calco del patrón de las hermanas «%@ out of 21») — «+0.5»
+            // a secas se dicta ambiguo; la voz dice grados y contra qué base.
+            datos: [.init(valor: Self.fmt(v), unidad: "°C",
+                          rotulo: String(localized: "vs your base"),
+                          a11y: String(localized: "\(Self.fmt(v)) degrees vs your base"))],
+            veredicto: Self.fraseCarril(indiceAncla.map { Self.bandasTemp[$0].key } ?? "inBase"),
+            infoAbierto: infoOpen,
+            infoEtiqueta: String(localized: "What we measure"),
+            onInfo: { withAnimation(LiquidMotion.lift) { infoOpen.toggle() } }
+        ) {
+            // El streak chip del papel (:210) vive aquí, como sello del campo — la ranura que
+            // el componente existe para cargar (paridad `StrainDetailScreen` «in progress»).
+            // El tinte ámbar de alarma del papel no cruza: el sello habla en papel, la
+            // dirección la dicen las palabras «más cálida / más fría».
+            if let s = streak {
+                LiquidCampoSello(streakTexto(s))
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func thermalWord(_ s: ThermalStabilityEngine.Stability) -> LocalizedStringKey {
-        switch s {
-        case .consistent: return "Consistent"
-        case .moderate:   return "Moderate"
-        case .variable:   return "Variable"
-        case .learning:   return "Learning"
+    /// El campo APAGADO: sin lectura el numeral es un guion, nunca un cero. Mismo patrón que
+    /// `SleepDetailScreen.campoApagado` / `StrainDetailScreen.campoSinDato`.
+    private var campoSinDato: some View {
+        LiquidCampoMetrica(
+            tono: Self.tono,
+            titulo: String(localized: "Skin temp"),
+            glifo: .termo,
+            datos: [.init(valor: LiquidCajita.sinDato,
+                          rotulo: String(localized: "vs your base"),
+                          a11y: String(localized: "no data"), ausente: true)],
+            clausula: clausulaSinDato
+        ) {
+            if sinPermiso {
+                LiquidVerMas(title: String(localized: "Manage Apple Health permissions"),
+                             tone: LiquidColor.papelAlto) { Self.abrirAjustesSalud() }
+            }
         }
     }
 
-    private func thermalColor(_ s: ThermalStabilityEngine.Stability) -> Color {
-        switch s {
-        case .consistent: return theme.dataRecovery
-        case .moderate:   return theme.ink
-        case .variable:   return theme.warning
-        case .learning:   return theme.inkTertiary
+    /// Cuatro vacíos distintos, no uno: cargando · sin permiso · con historia sin lectura
+    /// fresca · vacío total. Mismo árbol que `StrainDetailScreen.clausulaSinDato`.
+    private var clausulaSinDato: String {
+        guard model.loaded else { return String(localized: "Reading your skin temperature…") }
+        if sinPermiso {
+            return String(localized: "Cénit can't read your skin temperature: Apple Health hasn't granted permission. Turn it on and your nights will show up here.")
+        }
+        if !model.series.isEmpty {
+            return String(localized: "No reading from last night yet: your recent history is below.")
+        }
+        return String(localized: "No skin-temperature reading yet. Wear your Apple Watch to sleep and open this again after it syncs.")
+    }
+
+    /// Abre Ajustes de iOS en la ficha de la app — mismo atajo que Sueño/Esfuerzo (FER-102).
+    private static func abrirAjustesSalud() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
+    }
+
+    /// La tarjeta del ⓘ bajo el campo: qué mide el número, en lenguaje llano. El MISMO texto
+    /// que el papel enseñaba al tocar la barra del vaivén (misma clave) — la explicación no se
+    /// pierde, cambia de puerta (patrón `SleepDetailScreen.queMedimosCard`).
+    private var whatWeMeasureCard: some View {
+        VStack(alignment: .leading, spacing: LiquidSpace.s150) {
+            Text(String(localized: "What we measure"))
+                .font(LiquidType.tituloFila)
+                .foregroundStyle(LiquidColor.tinta900)
+            Text(String(localized: "How far last night's skin temperature ran from your own recent baseline, in °C. We learn your normal over recent nights, so 0 is your usual and the number is the shift up or down. A single warm or cool night rarely means much: what's worth noticing is several nights in a row drifting the same way. It's a comfort signal, not a thermometer or a diagnosis."))
+                .font(LiquidType.cuerpo)
+                .lineSpacing(LiquidType.cuerpoLineSpacing)
+                .foregroundStyle(LiquidColor.tinta700)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .liquidTarjetaSeccion()
+        .liquidSeccion(top: LiquidSpace.s400, bottom: LiquidSpace.s200)
+    }
+
+    /// La frase de una línea bajo el numeral, por CLAVE de carril — realineada a la escalera
+    /// única: el gate pasa del ±0.3 suelto del papel al corte ±0.4 del motor (una sola fuente
+    /// de cortes). UX-12: «elevated» tiene frase PROPIA — un +0.9 no es «a touch warmer»;
+    /// directa y sin diagnóstico, derivada por CLAVE (nunca un segundo corte).
+    static func fraseCarril(_ key: String) -> String {
+        switch key {
+        case "below":    return String(localized: "A touch cooler than your baseline last night.")
+        case "warm":     return String(localized: "A touch warmer than your baseline last night.")
+        case "elevated": return String(localized: "Notably warmer than your base last night.")
+        default:         return String(localized: "Right around your usual nighttime baseline.")
         }
     }
 
-    /// Honest, localized one-liner — composed in the UI (not the engine's English `copy`) so it localizes
-    /// with the app catalog. ASSOCIATION framing, never a 24-hour circadian-amplitude claim. (FER-850)
-    private func thermalCopy(_ t: ThermalStabilityEngine.Result) -> LocalizedStringKey {
-        switch t.stability {
-        case .consistent: return "Your body's warming as you fall asleep is steady night-to-night. A consistent wind-down: an association, not a full 24-hour rhythm."
-        case .moderate:   return "Your nightly warming into sleep varies a moderate amount night-to-night. An association, not a full 24-hour rhythm."
-        case .variable:   return "Your nightly warming into sleep swings a fair amount night-to-night. A steadier wind-down tends to settle it. An association, not a full 24-hour rhythm."
-        case .learning:   return ""
-        }
-    }
-
-    // MARK: - Streak chip (nights warmer / cooler)
+    // MARK: - Streak (noches seguidas derivando al mismo lado)
 
     /// A run of recent nights drifting the same side of the baseline — the signal skin temp actually
-    /// carries. nil when last night sat near baseline (|dev| < 0.3 °C) or there's no reading.
+    /// carries. nil cuando la última lectura cae EN TU BASE (el carril del motor, antes un ±0.3
+    /// propio) o no hay lectura. La racha misma sigue contando por SIGNO, como siempre.
     private var streak: (count: Int, warmer: Bool)? {
-        guard let today = model.today, abs(today) >= 0.3 else { return nil }
+        guard let today = model.today, let i = Self.indiceCarril(today),
+              Self.bandasTemp[i].key != "inBase" else { return nil }
         let warmer = today > 0
         var n = 0
         for v in model.series.map(\.value).reversed() {
@@ -221,297 +263,325 @@ struct SkinTempDetailScreen: View {
         return n >= 1 ? (n, warmer) : nil
     }
 
-    private func streakChip(_ s: (count: Int, warmer: Bool)) -> some View {
-        let text: LocalizedStringKey = {
-            switch (s.count, s.warmer) {
-            case (1, true):  return "First night warmer"
-            case (_, true):  return "\(s.count) nights warmer"
-            case (1, false): return "First night cooler"
-            default:         return "\(s.count) nights cooler"
-            }
-        }()
-        return HStack(spacing: 3) {
-            Image(systemName: s.warmer ? "arrow.up" : "arrow.down").font(.system(size: 9, weight: .semibold)) // token-exempt: microtexto <10pt
-            Text(text).font(StrandFont.footnote)
-        }
-        .foregroundStyle(theme.warning)
-        .padding(.horizontal, 7).padding(.vertical, 2)
-        .background(Capsule().fill(theme.warning.opacity(StrandOpacity.tintFill)))
-    }
-
-    // MARK: Inline «typical swing» band (±1 SD around 0 = your baseline), tappable
-    // Content of SeccionBloque «Today, vs your range» — math/geometry/disclosure VERBATIM.
-
-    @ViewBuilder private var inlineBandSection: some View {
-        if model.typicalSD > 0.01, let today = model.today {
-            let sd = model.typicalSD
-            let axisLo = -sd * 2.2, axisHi = sd * 2.2, span = axisHi - axisLo
-            let bandLo = CGFloat((-sd - axisLo) / span), bandHi = CGFloat((sd - axisLo) / span)
-            let zero = CGFloat((0 - axisLo) / span)
-            let mark = CGFloat(min(max((today - axisLo) / span, 0.02), 0.98))
-            VStack(alignment: .leading, spacing: 0) {
-                Button { withAnimation(.easeInOut(duration: 0.25)) { toggle("band") } } label: {
-                    inlineBandBar(bandLo: bandLo, bandHi: bandHi, zero: zero, mark: mark, sd: sd, today: today)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(Text("Your nightly baseline"))
-                if openDisclosure == "band" {
-                    inlineDisclosure(
-                        label: "Your nightly baseline",
-                        text: "How far last night's skin temperature ran from your own recent baseline, in °C. We learn your normal over recent nights, so 0 is your usual and the number is the shift up or down. A single warm or cool night rarely means much: what's worth noticing is several nights in a row drifting the same way. It's a comfort signal, not a thermometer or a diagnosis."
-                    ).padding(.top, 9)
-                }
-            }
+    /// Las MISMAS cuatro claves del chip del papel, resueltas a `String` para el sello.
+    private func streakTexto(_ s: (count: Int, warmer: Bool)) -> String {
+        switch (s.count, s.warmer) {
+        case (1, true):  return String(localized: "First night warmer")
+        case (_, true):  return String(localized: "\(s.count) nights warmer")
+        case (1, false): return String(localized: "First night cooler")
+        default:         return String(localized: "\(s.count) nights cooler")
         }
     }
 
-    private func inlineBandBar(bandLo: CGFloat, bandHi: CGFloat, zero: CGFloat, mark: CGFloat, sd: Double, today: Double) -> some View {
-        let open = openDisclosure == "band"
-        let outside = today < -sd || today > sd
-        return VStack(spacing: 6) {
-            // The ±SD edge numbers sit under the band's ACTUAL edges (not the bar's ends, which left them
-            // floating away from the band), and last night's deviation is rotulated above the mark — amber
-            // when it ran past the typical swing. `.position` anchors each by fraction, clamped off the edge.
-            // (Detalle de Vital — rótulos desalineados, mismo fix que la barra de los vitales)
-            GeometryReader { geo in
-                let w = geo.size.width
-                let clampX: (CGFloat) -> CGFloat = { x in min(max(x, 14), w - 14) }
-                ZStack(alignment: .topLeading) {
-                    ZStack(alignment: .leading) {
-                        Capsule().fill(theme.hairline)
-                        Capsule().fill(theme.dataStrain.opacity(StrandOpacity.tintFillStrong))
-                            .frame(width: max(0, w * (bandHi - bandLo)))
-                            .offset(x: w * bandLo)
-                        Rectangle().fill(theme.hairlineStrong).frame(width: 1, height: 14)
-                            .offset(x: w * zero - 0.5)
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 2, style: .continuous).fill(theme.paper).frame(width: 7, height: 16) // token-exempt: geometría de dato
-                            RoundedRectangle(cornerRadius: 1.5, style: .continuous).fill(theme.ink).frame(width: 3, height: 14) // token-exempt: geometría de dato
-                        }
-                        .offset(x: w * mark - 3.5)
-                    }
-                    .frame(width: w, height: 8)
-                    .position(x: w / 2, y: 23)
+    // MARK: - 2. Niveles — la lectura del ancla contra la escalera única
+    //
+    // UX-08 (pasada F4/F5): UNA sola escalera visible por pantalla. La `LiquidBandsTable`
+    // estática duplicaba los rangos que la `LiquidLevelsList` TOCABLE del historial ya
+    // enseña; aquí queda solo «Anoche cae en…» (la MISMA pregunta del vaivén ±SD del papel,
+    // con la escalera del motor). La sección entera se oculta sin lectura (gate en el body).
 
-                    Text(fmt(today)).font(StrandFont.footnote).monospacedDigit()
-                        .foregroundStyle(outside ? theme.warning : theme.ink).fixedSize()
-                        .position(x: clampX(w * mark), y: 8)
-
-                    Text(fmt(-sd)).font(StrandFont.footnote).monospacedDigit()
-                        .foregroundStyle(theme.inkTertiary).fixedSize()
-                        .position(x: clampX(w * bandLo), y: 38)
-                    Text(fmt(sd)).font(StrandFont.footnote).monospacedDigit()
-                        .foregroundStyle(theme.inkTertiary).fixedSize()
-                        .position(x: clampX(w * bandHi), y: 38)
-                }
-            }
-            .frame(height: 46)
-            HStack(spacing: 5) {
-                Text("typical swing · 0 = your baseline").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                StrandIcon.info.image.font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
-            }
+    @ViewBuilder private var levelsContent: some View {
+        if let i = indiceAncla {
+            let b = Self.bandasTemp[i]
+            LiquidReadingLine(
+                String(localized: "Last night falls in \(b.label) · 0 is your own base"),
+                highlight: b.label, highlightTone: Self.tono)
         }
-        .padding(4)
-        // Warm paper tint when open, not the near-white `surface`. (Detalle de Vital fix)
-        .background(open ? theme.hairline : Color.clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous)) // token-exempt: fondo condicional
-        .contentShape(Rectangle())
     }
 
-    /// A plain-language, NON-clinical reading of last night's deviation, or an honest "no reading yet" when
-    /// there's none. Thresholds are deliberately soft (≈±0.3 °C ≈ a typical night-to-night swing): we never
-    /// claim fever or illness — just whether the night sat near, above or below the user's own baseline.
-    /// Source strings are English; the es values live in `Localizable.xcstrings`.
-    private var heroReading: LocalizedStringKey {
-        guard let v = model.today else {
-            if !model.series.isEmpty { return "No reading from last night yet: your recent history is below." }
-            return "No skin-temperature reading yet. Wear your Apple Watch to sleep and open this again after it syncs."
-        }
-        if abs(v) < 0.3 { return "Right around your usual nighttime baseline." }
-        return v > 0 ? "A touch warmer than your baseline last night."
-                     : "A touch cooler than your baseline last night."
-    }
+    // MARK: - 3. Ver tu historial — selector + gráfica + resumen + escalera
 
-    // MARK: - Your story — period selector + GraficaRangos + TileSurface strip
-
-    @ViewBuilder private var historiaFinalContent: some View {
+    private var historyContent: some View {
         let window = MetricWindowMath.make(parsed, selected: range)
         let stat = ComparisonEngine.stat(window.values)
         let comparison = window.range.periodComparison(of: model.series)
-        // Absolute °C delta vs the previous period — only when there IS one. A percentage would be unstable
-        // on a near-zero mean, so we never compute one. (FER-264 / FER-256)
+        // Absolute °C delta vs the previous period — only when there IS one. A percentage would be
+        // unstable on a near-zero mean, so we never compute one. (FER-264 / FER-256, conservado;
+        // UX-11: el delta vive en la nota bajo la gráfica, en °C — nunca un «+12%».)
         let periodDelta: Double? = (comparison?.previous.n ?? 0) > 0 ? comparison?.delta : nil
-        VStack(alignment: .leading, spacing: 8) {
-            SegmentedPillControl(ExploreRange.allCases, selection: $range, theme: theme) { $0.label }
+        return VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+            LiquidRangeSelector(opciones: ExploreRange.allCases.map(\.label),
+                                seleccion: rangeSeleccion, tono: Self.tono)
             if window.values.count > 1 {
-                graficaRangosBlock(window: window, mean: stat.mean, periodDelta: periodDelta)
-                    .padding(.top, 6)
-                    .id(range)
-                tileStripFinal(mean: stat.mean, sd: model.consistencySD ?? 0, change: periodDelta)
-                    .padding(.top, 4)
-            } else {
-                ChartWell(theme).empty(text: "Not enough days in this range to draw a trend.")
-            }
-        }
-    }
-
-    /// GraficaRangos over the windowed nightly deviations: personal ±SD wash, 0 = baseline ref line,
-    /// HRV-style personal Rangos lanes (no clinical bands), absolute °C period delta (neutral color).
-    @ViewBuilder private func graficaRangosBlock(window: MetricWindow, mean: Double, periodDelta: Double?) -> some View {
-        let typical = model.typicalSD
-        let domain = chartRange(window.values, typical: typical)
-        let bands = graficaRangosBands()
-        let wash: GraficaRangos.Wash? = typical > 0.01
-            ? .init(lo: -typical, hi: typical)
-            : nil
-        let labels = window.rows.map { MetricWindowMath.axisLabel($0.day) ?? "" }
-        GraficaRangos(
-            points: window.values,
-            bands: bands,
-            ticks: graficaTicks(domain: domain),
-            wash: wash,
-            refLine: .init(v: 0, label: nil),
-            hue: theme.dataStrain,
-            ymin: domain.lowerBound,
-            ymax: domain.upperBound,
-            startLabel: window.rows.first.flatMap { MetricWindowMath.axisLabel($0.day) } ?? "",
-            endLabel: window.rows.last.flatMap { MetricWindowMath.axisLabel($0.day) } ?? "",
-            mediaValue: fmt(mean),
-            mediaNote: String(localized: "average of the \(window.range.name)"),
-            mediaDelta: periodDelta.map { fmt($0) },
-            deltaColor: theme.inkSecondary,
-            countUnit: "n",
-            anchorMedia: String(localized: "Each night's deviation · the band is your typical swing (±your variation) · 0 is your baseline."),
-            anchorRangos: bands.isEmpty ? nil
-                : String(localized: "How many days of the period fell in each band. Tap one to see its days on the chart."),
-            scrub: true,
-            labels: labels,
-            fmt: { fmt($0) },
-            theme: theme
-        )
-    }
-
-    /// Personal ±σ lanes for Rangos mode (mirror MetricDetailScreen HRV: no clinical bands).
-    private func graficaRangosBands() -> [GraficaRangos.Banda] {
-        let sd = model.typicalSD
-        guard sd > 0.01 else { return [] }
-        let lo = -sd, hi = sd
-        return [
-            .init(label: String(localized: "Unusual for you"), lo: hi.nextUp, hi: nil,
-                  color: theme.warning, range: "≥ \(fmt(hi))"),
-            .init(label: String(localized: "Normal for you"), lo: lo, hi: hi.nextUp,
-                  color: theme.dataStrain, range: "\(fmt(lo))–\(fmt(hi))"),
-            .init(label: String(localized: "Unusual for you"), lo: nil, hi: lo,
-                  color: theme.warning, range: "< \(fmt(lo))")
-        ]
-    }
-
-    private func graficaTicks(domain: ClosedRange<Double>) -> [GraficaRangos.Tick] {
-        let lo = domain.lowerBound, hi = domain.upperBound
-        guard hi > lo else { return [] }
-        let mid = (lo + hi) / 2
-        return [
-            .init(v: hi, label: fmt(hi)),
-            .init(v: mid, label: fmt(mid)),
-            .init(v: lo, label: fmt(lo))
-        ]
-    }
-
-    /// Stat strip as display-only TileSurface tiles (Final). The old tappable Average / Variation /
-    /// Change disclosures do not map 1:1 onto TileSurface, so they are not recreated here.
-    @ViewBuilder private func tileStripFinal(mean: Double, sd: Double, change: Double?) -> some View {
-        HStack(alignment: .top, spacing: 8) {
-            TileSurface(label: String(localized: "Average"),
-                        value: fmt(mean),
-                        caption: "°C",
-                        theme: theme)
-            TileSurface(label: String(localized: "Variation"),
-                        value: "±\(String(format: "%.1f", sd))",
-                        caption: "°C",
-                        theme: theme)
-            TileSurface(label: String(localized: "Change"),
-                        value: change.map { fmt($0) } ?? "—",
-                        caption: change != nil ? "°C" : nil,
-                        theme: theme)
-        }
-    }
-
-    // MARK: - Your pattern — static prose (no findings engine for skin temp)
-
-    private var patronFinalContent: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            QueLaMueveHeader("What moves it", chip: "trend, not cause", theme: theme)
-            Text("Tends to rise with alcohol, fever, and ambient heat.")
-                .font(StrandFont.caption)
-                .foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
-    // MARK: Disclosure panel (band bar only) + method foot
-
-    @ViewBuilder private func disclosurePanel<C: View>(@ViewBuilder content: () -> C) -> some View {
-        HStack(spacing: 0) {
-            Rectangle().fill(theme.hairlineStrong).frame(width: 2)
-            VStack(alignment: .leading, spacing: 6) { content() }
-                .padding(.horizontal, 12).padding(.vertical, 11)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .background(theme.surface)
-        .clipShape(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
-        // Fade in place (no slide) — smoother than flying in from the top. (Detalle de Vital fix)
-        .transition(.opacity)
-    }
-
-    private func inlineDisclosure(label: LocalizedStringKey, text: LocalizedStringKey) -> some View {
-        disclosurePanel {
-            Text(label).groteskOverline().foregroundStyle(theme.inkTertiary)
-            Text(text).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .accessibilityElement(children: .combine)
-    }
-
-    /// PieMetodo: method disclosure + origin seal (origin `.band`, when «last night»).
-    @ViewBuilder private var pieMetodoFinal: some View {
-        PieMetodo(theme: theme) {
-            Metodo(title: String(localized: "How it's calculated"), theme: theme) {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Each night your Apple Watch records skin temperature. We compare it with a rolling baseline of your own recent nights and report the difference in °C: so the value is always relative to you, not an absolute temperature. The trend and the spread are computed from that same nightly deviation.")
-                        .font(StrandFont.subhead)
-                        .foregroundStyle(theme.inkSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Text("Nightly skin-temperature deviation from a personal rolling baseline. A comfort signal, not a thermometer or a diagnosis.")
-                        .font(StrandFont.caption)
-                        .foregroundStyle(theme.inkTertiary)
-                        .fixedSize(horizontal: false, vertical: true)
+                VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+                    fraseNivelHistorial(window)
+                    graficaHistorial(window)
+                    // UX-11: el «Cambio» vs el periodo anterior baja del trío a esta nota —
+                    // como el «+12%» de las hermanas pero en °C absolutos (sobre una media
+                    // ≈0 el porcentaje miente, FER-256). Sin periodo previo, no hay nota.
+                    if let periodDelta {
+                        LiquidNotaLine(String(localized: "\(Self.fmt(periodDelta)) °C vs previous period"))
+                    }
+                    LiquidNotaLine(String(localized: "Each night's deviation in °C · 0 is your own base."))
+                    // UX-10/M5: el trío habla de la VENTANA — «Variación» es la DE de los
+                    // valores del rango del selector (no el `typicalSD` global de toda la
+                    // serie, que no cambiaba con el selector); «Anoche» es el ancla, con
+                    // guion honesto si no hay lectura (paridad de la celda «Hoy» de las
+                    // hermanas). Nunca un CV%: dividir entre una media ≈0 no significa nada.
+                    LiquidResumenVentana(celdas: [
+                        .init(rotulo: String(localized: "Average"),
+                              valor: "\(Self.fmt(stat.mean)) °C"),
+                        .init(rotulo: String(localized: "Variation"),
+                              valor: "±\(String(format: "%.1f", stat.stdev)) °C"),
+                        .init(rotulo: String(localized: "Last night"),
+                              valor: model.today.map { "\(Self.fmt($0)) °C" } ?? LiquidCajita.sinDato,
+                              tono: model.today != nil ? Self.tono : nil),
+                    ])
                 }
-            }
-        } sello: {
-            if !model.series.isEmpty {
-                OriginStamp(origin: .band, when: String(localized: "last night"), theme: theme)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.top, 2)
+                .liquidTarjetaSeccion()
+                LiquidLevelsList(filas: carrilesHistorial(window), tono: Self.tono)
+                LiquidNotaLine(String(localized: "How many nights of the period fell in each band. Tap one to see its nights on the chart."))
+            } else {
+                LiquidGraficaNiveles(puntos: [], bandas: [], dominio: Self.dominioTemp([]), ticksY: [],
+                                     tono: Self.tono,
+                                     estadoVacio: String(localized: "Not enough nights in this range to draw a trend."),
+                                     a11yLabel: String(localized: "Skin temp history"))
             }
         }
     }
 
-    // MARK: - Format + window math (mirror the sibling screens, scoped to this screen)
+    /// El índice del selector ⇄ `ExploreRange`; cambiar de rango suelta el carril explorado.
+    private var rangeSeleccion: Binding<Int> {
+        Binding(
+            get: { ExploreRange.allCases.firstIndex(of: range) ?? 0 },
+            set: { idx in
+                range = ExploreRange.allCases[idx]
+                bandaExplorada = nil
+            })
+    }
 
-    /// Skin-temp reads as a SIGNED deviation at one decimal (e.g. "+0.3", "−0.2"), like the row and hero.
-    private func fmt(_ v: Double) -> String { String(format: "%+.1f", v) }
+    /// El carril resaltado en la gráfica y en la escalera: el que el dedo explora, o si no hay
+    /// ninguno, el del ancla.
+    private var destacado: Int? { bandaExplorada ?? indiceAncla }
 
-    /// Auto-fit the chart's axis to the data, always including 0 and the ±typical band so the band reads as
-    /// a band (not a clipped edge), with a little padding.
-    private func chartRange(_ values: [Double], typical: Double) -> ClosedRange<Double> {
-        // Open the axis around the ±typical band (≈ band ± 0.85× its full width) so it reads as a central
-        // stripe with air above and below — not a full-bleed box. Always include 0 and the data. (Detalle de Vital)
-        let edge = typical + Swift.max(typical * 1.7, 0.1)
-        let lo = Swift.min(values.min() ?? 0, -edge, 0)
-        let hi = Swift.max(values.max() ?? 0, edge, 0)
+    /// El carril de la última noche y cuántas noches del periodo cayeron con ella — el mismo
+    /// contrato que `SleepDetailScreen.fraseNivelHistorial` (voz en NOCHES: la temperatura de
+    /// piel es una lectura nocturna, `BandSummaryCopy.isNightly`).
+    @ViewBuilder private func fraseNivelHistorial(_ window: MetricWindow) -> some View {
+        if let i = indiceAncla {
+            let b = Self.bandasTemp[i]
+            let n = window.values.filter { v in
+                (b.lo == nil || v >= b.lo!) && (b.hi == nil || v < b.hi!)
+            }.count
+            LiquidFraseNivel(nivel: b.label,
+                             conteo: String(localized: "\(n) of your last \(window.values.count) nights"),
+                             tono: Self.tono)
+        } else {
+            LiquidFraseNivel(nivel: nil,
+                             conteo: String(localized: "\(window.values.count) nights with data in this range"),
+                             tono: Self.tono,
+                             sinLectura: String(localized: "No reading last night"))
+        }
+    }
+
+    /// La gráfica del historial: la serie CRUDA noche a noche (los huecos son el dato — la
+    /// piel se mide a ratos), con los carriles del motor detrás y los ticks afirmando los
+    /// CORTES reales (−0.4 / +0.4 / +0.8) más el 0 de tu base.
+    private func graficaHistorial(_ window: MetricWindow) -> some View {
+        let puntos = MetricWindowMath
+            .decimatedPoints(rows: window.rows, values: window.values, maxPoints: 80)
+            .map { (fecha: $0.date, valor: $0.value) }
+        return LiquidGraficaNiveles(
+            puntos: puntos,
+            bandas: Self.bandasTemp.enumerated().map { i, b in
+                LiquidChartBanda(lo: b.lo, hi: b.hi, color: b.color, activa: i == destacado)
+            },
+            dominio: Self.dominioTemp(window.values),
+            ticksY: [(0.8, Self.fmt(0.8)), (0.4, Self.fmt(0.4)), (0, "0"), (-0.4, Self.fmt(-0.4))],
+            tono: Self.tono,
+            puntoHoy: model.today != nil ? puntos.last : nil,
+            hoyAnillo: bandaExplorada != nil && bandaExplorada != indiceAncla,
+            formatoScrub: { v, f in "\(Self.fmt(v)) · \(Self.ejeFechaFmt.string(from: f))" },
+            formatoValorScrub: { Self.fmt($0) },
+            formatoFechaScrub: { Self.ejeFechaFmt.string(from: $0) },
+            formatoFechaEje: { Self.ejeFechaFmt.string(from: $0) },
+            atenuarFuera: bandaExplorada != nil,
+            estadoVacio: String(localized: "Not enough nights in this range to draw a trend."),
+            a11yLabel: String(localized: "Skin temp history"))
+            .id(range)
+    }
+
+    /// Los carriles tocables bajo la gráfica: tocar uno resalta sus noches; re-tocarlo limpia.
+    /// Mismo contrato que `SleepDetailScreen.carrilesHistorial` / `StrainDetailScreen`.
+    private func carrilesHistorial(_ window: MetricWindow) -> [LiquidLevelsList.Fila] {
+        let hint = String(localized: "Highlights this level on the chart")
+        let hoyRotulo = String(localized: "· last night")
+        let iAncla = indiceAncla
+        return Self.bandasTemp.indices.map { i in
+            let b = Self.bandasTemp[i]
+            let n = window.values.filter { v in
+                (b.lo == nil || v >= b.lo!) && (b.hi == nil || v < b.hi!)
+            }.count
+            return LiquidLevelsList.Fila(
+                etiqueta: b.label, rango: b.range,
+                conteo: n == 1 ? String(localized: "\(n) night") : String(localized: "\(n) nights"),
+                esHoy: i == iAncla, activa: i == destacado,
+                hoyEtiqueta: hoyRotulo, a11yHint: hint,
+                onTap: {
+                    withAnimation(LiquidMotion.lift) {
+                        bandaExplorada = (bandaExplorada == i) ? nil : i
+                    }
+                })
+        }
+    }
+
+    // MARK: - La escalera única — UNA sola, compartida por campo/niveles/historial/streak
+    //
+    // FER-101 · TND-12: el papel traía DOS copias de cortes para la misma métrica — los
+    // «Normal/Unusual for you» de ±1 SD personales de esta pantalla y la escalera fija del
+    // motor que la hoja de Hoy ya enseña (`LiquidMetricSheetView:319` → `FixedMetric.skinTemp`),
+    // más un ±0.3 suelto duplicado en el héroe y en el gate del streak. Se deriva UNA vez de
+    // `MetricLevels.displayBands(for: .skinTemp)` — los cortes de `ReadinessEngine`, citados en
+    // `MetricLevels.swift:104-106` — y TODO sale de aquí por CLAVE. El rango se compone con el
+    // MISMO formato ASCII con signo que la hoja de Hoy usa para esta métrica
+    // (`LiquidMetricSheetView.swift:1494-1510`), para que las dos superficies digan el mismo
+    // número byte a byte.
+
+    struct BandaTemp {
+        let key: String
+        let label: String
+        let lo: Double?
+        let hi: Double?
+        let color: Color
+        let range: String
+    }
+
+    static let bandasTemp: [BandaTemp] = MetricLevels.displayBands(for: .skinTemp).map { band in
+        BandaTemp(key: band.key,
+                  label: String(localized: String.LocalizationValue(band.name)),
+                  lo: band.lower, hi: band.upper,
+                  color: colorNivel(band.key),
+                  range: rangoNivel(lo: band.lower, hi: band.upper))
+    }
+
+    /// El tono de cada carril: un solo dorado graduado por opacidad, del más tenue (bajo tu
+    /// base) al pleno (elevada) — la tinta sube con el calor, literal. Misma idea que la rampa
+    /// de esfuerzo (`StrainDetailScreen.colorNivel`), nunca un semáforo: el ámbar de alarma que
+    /// el papel ponía en «Unusual for you» no cruza al vidrio — la palabra del carril lo dice.
+    private static func colorNivel(_ key: String) -> Color {
+        switch key {
+        case "below":  return Self.tono.opacity(0.24)  // token-exempt: rampa graduada de temperatura
+        case "inBase": return Self.tono.opacity(0.45)  // token-exempt: rampa graduada de temperatura
+        case "warm":   return Self.tono.opacity(0.72)  // token-exempt: rampa graduada de temperatura
+        default:       return Self.tono                 // "elevated"
+        }
+    }
+
+    /// «< -0.4» · «-0.4–+0.4» · «≥ +0.8» — los cortes con el signo SIEMPRE visible, en el
+    /// mismo formato bespoke que la hoja de Hoy (`rangoNivel` de `LiquidMetricSheetView`).
+    private static func rangoNivel(lo: Double?, hi: Double?) -> String {
+        switch (lo, hi) {
+        case let (nil, .some(h)):      return "< \(fmt(h))"
+        case let (.some(l), nil):      return "≥ \(fmt(l))"
+        case let (.some(l), .some(h)): return "\(fmt(l))–\(fmt(h))"
+        default:                       return ""
+        }
+    }
+
+    /// El carril en que cae un valor. Único predicado numérico de la pantalla.
+    static func indiceCarril(_ v: Double) -> Int? {
+        bandasTemp.firstIndex { b in (b.lo == nil || v >= b.lo!) && (b.hi == nil || v < b.hi!) }
+    }
+
+    /// El dominio Y del historial: siempre abre los cortes del motor con aire (piso −0.9,
+    /// techo +1.0) e incluye el dato — así el carril «elevada» se lee como carril y no como
+    /// borde recortado. Presentación pura, cero matemática de datos.
+    private static func dominioTemp(_ values: [Double]) -> ClosedRange<Double> {
+        let lo = Swift.min(values.min() ?? 0, -0.9)
+        let hi = Swift.max(values.max() ?? 0, 1.0)
         let pad = Swift.max((hi - lo) * 0.06, 0.05)
         return (lo - pad)...(hi + pad)
     }
+
+    private static let ejeFechaFmt: DateFormatter = {
+        let f = DateFormatter(); f.setLocalizedDateFormatFromTemplate("dMMM"); return f
+    }()
+
+    // MARK: - 4. Estabilidad térmica nocturna (FER-850) — tras el toggle experimental
+
+    /// The «Nightly thermal stability» block: the typical distal warming (°C) into sleep as the datum, a
+    /// night-to-night consistency word, and an honest one-liner. Framed as an ASSOCIATION — never a full
+    /// 24-hour circadian amplitude (we only have the night). Only shown with the experimental toggle on.
+    /// La palabra de constancia habla en tinta neutra (el verde/ámbar de juicio del papel no
+    /// cruza al vidrio — mismo trato que «constancia» en Estrés).
+    @ViewBuilder private func thermalBlock(_ t: ThermalStabilityEngine.Result) -> some View {
+        if t.stability == .learning {
+            LiquidNotaLine(String(localized: "Still learning how consistent your nightly warming is: keep wearing it to bed."),
+                           tono: LiquidColor.tinta700)
+        } else {
+            VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+                LiquidCajitaGrid {
+                    // B8: compactas, como las cajitas de palabra de Estrés — «Consistente»
+                    // a `valorL` desbordaba la rejilla de 2.
+                    LiquidCajita(rotulo: String(localized: "typical warming into sleep"),
+                                 valor: String(format: "%.1f", t.typicalWarmingC),
+                                 unidad: "°C",
+                                 tono: Self.tono,
+                                 compacto: true)
+                    LiquidCajita(rotulo: String(localized: "night to night"),
+                                 valor: thermalWord(t.stability),
+                                 compacto: true)
+                }
+                LiquidNotaLine(thermalCopy(t), tono: LiquidColor.tinta700)
+            }
+        }
+    }
+
+    private func thermalWord(_ s: ThermalStabilityEngine.Stability) -> String {
+        switch s {
+        case .consistent: return String(localized: "Consistent")
+        case .moderate:   return String(localized: "Moderate")
+        case .variable:   return String(localized: "Variable")
+        case .learning:   return String(localized: "Learning")
+        }
+    }
+
+    /// Honest, localized one-liner — composed in the UI (not the engine's English `copy`) so it localizes
+    /// with the app catalog. ASSOCIATION framing, never a 24-hour circadian-amplitude claim. (FER-850)
+    private func thermalCopy(_ t: ThermalStabilityEngine.Result) -> String {
+        switch t.stability {
+        case .consistent: return String(localized: "Your body's warming as you fall asleep is steady night-to-night. A consistent wind-down: an association, not a full 24-hour rhythm.")
+        case .moderate:   return String(localized: "Your nightly warming into sleep varies a moderate amount night-to-night. An association, not a full 24-hour rhythm.")
+        case .variable:   return String(localized: "Your nightly warming into sleep swings a fair amount night-to-night. A steadier wind-down tends to settle it. An association, not a full 24-hour rhythm.")
+        case .learning:   return ""
+        }
+    }
+
+    // MARK: - Método + sello — patrón `pieMetodo` de Sueño (capilar sin franja propia)
+    //
+    // UX-13: la frase poblacional («alcohol, fiebre, calor ambiente») NO es un hallazgo del
+    // usuario — vive aquí como nota de método, no bajo una franja «Qué la mueve» que
+    // prometería un motor de hallazgos que la piel no tiene.
+
+    private var pieMetodo: some View {
+        VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+            LiquidCapilar(eje: .horizontal)
+            LiquidMetodo(title: String(localized: "How it's calculated"),
+                         mostrar: String(localized: "Show explanation"),
+                         ocultar: String(localized: "Hide explanation")) {
+                LiquidNotaLine(String(localized: "Each night your Apple Watch records skin temperature. We compare it with a rolling baseline of your own recent nights and report the difference in °C: so the value is always relative to you, not an absolute temperature. The trend and the spread are computed from that same nightly deviation."),
+                               tono: LiquidColor.tinta700)
+                LiquidNotaLine(String(localized: "Tends to rise with alcohol, fever, and ambient heat."),
+                               tono: LiquidColor.tinta700)
+                LiquidNotaLine(String(localized: "Nightly skin-temperature deviation from a personal rolling baseline. A comfort signal, not a thermometer or a diagnosis."))
+            }
+            // SIEMPRE Apple Watch: el sello de papel decía «Medido por tu banda» (`.band`) y
+            // eso es una MENTIRA — la app es solo-Apple y ningún usuario tuvo banda (axioma
+            // «cero banda»). M1: la MISMA clave que la hoja de Hoy declara para esta métrica
+            // (`LiquidMetricSheetView.origen` → `.appleWatch` para `skin_temp`, :365) — el
+            // reloj es quien la mide, no «Apple Salud» a secas.
+            LiquidOrigenChip(glyph: .termo, badgeTono: Self.tono,
+                             etiqueta: String(localized: "Apple Watch"),
+                             sufijo: String(localized: "last night"))
+        }
+        .liquidSeccion(top: LiquidSpace.s200, bottom: LiquidSpace.s800)
+    }
+
+    // MARK: - Format
+
+    /// Skin-temp reads as a SIGNED deviation at one decimal ("+0.3", "-0.2"), like the row, the
+    /// hero and the hoja de Hoy (ASCII «-», paridad `LiquidMetricSheetView.levelsValueFormat`).
+    private static func fmt(_ v: Double) -> String { String(format: "%+.1f", v) }
 
     /// The canonical UTC day-key formatter — read side of the day-key contract (FER-754).
     static let dayParser = DayKey.utcFormatter
@@ -536,8 +606,8 @@ struct SkinTempDetailModel {
         return ComparisonEngine.stat(vals).stdev
     }
 
-    /// The typical night-to-night swing (±1 SD) used for the chart's «typical variation» band; 0 when there
-    /// isn't enough history (then no band is drawn).
+    /// The typical night-to-night swing (±1 SD) used for the «Variation» cell; 0 when there
+    /// isn't enough history.
     var typicalSD: Double { consistencySD ?? 0 }
 
     /// True when there's a reading or any stored history to draw (the rich path); false → empty.
@@ -552,7 +622,7 @@ struct SkinTempDetailModel {
 
 // MARK: - Sheet item
 
-/// Identifiable wrapper so the light «Instrumento» Detalle de Temperatura de la piel can ride `.sheet(item:)`
+/// Identifiable wrapper so the Liquid Detalle de Temperatura de la piel can ride `.sheet(item:)`
 /// (the model itself isn't Identifiable). Built fresh on tap in Cuerpo. (FER-256)
 struct SkinTempDetailItem: Identifiable {
     let id = UUID()
@@ -576,7 +646,7 @@ private func sampleSkinTempSeries(days: Int = 60) -> [(day: String, value: Doubl
 #Preview("Skin temp detail: con datos") {
     Color.clear.sheet(isPresented: .constant(true)) {
         SkinTempDetailScreen(
-            model: SkinTempDetailModel.build(latest: 0.3, series: sampleSkinTempSeries(), loaded: true))
+            model: SkinTempDetailModel.build(latest: 0.5, series: sampleSkinTempSeries(), loaded: true))
     }
 }
 
@@ -584,6 +654,14 @@ private func sampleSkinTempSeries(days: Int = 60) -> [(day: String, value: Doubl
     Color.clear.sheet(isPresented: .constant(true)) {
         SkinTempDetailScreen(
             model: SkinTempDetailModel.build(latest: nil, series: [], loaded: true))
+    }
+}
+
+#Preview("Skin temp detail: sin permiso") {
+    Color.clear.sheet(isPresented: .constant(true)) {
+        SkinTempDetailScreen(
+            model: SkinTempDetailModel.build(latest: nil, series: [], loaded: true),
+            sinPermiso: true)
     }
 }
 #endif
