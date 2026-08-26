@@ -10818,6 +10818,23 @@
         }
       }
     },
+    "Calibrating your base · %lld of 7 days. We need a few more days to show your 7-day average, your normal range and the trend." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calibrating your base · %lld of 7 days. We need a few more days to show your 7-day average, your normal range and the trend."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calibrando tu base · %lld de 7 días. Necesitamos unos días más para mostrar tu promedio de 7 días, tu rango normal y la tendencia."
+          }
+        }
+      }
+    },
     "Calibrating your base · %lld of 7 nights. We need a few more nights to show your 7-day average, your normal range and the trend." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -10831,6 +10848,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Calibrando tu base · %lld de 7 noches. Necesitamos unas noches más para mostrar tu promedio de 7 días, tu rango normal y la tendencia."
+          }
+        }
+      }
+    },
+    "Calibrating · %lld of 7 days" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calibrating · %lld of 7 days"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calibrando · %lld de 7 días"
           }
         }
       }
@@ -13175,19 +13209,19 @@
         }
       }
     },
-    "Cénit can't read this vital: Apple Health hasn't granted permission. Turn it on and your nights will show up here." : {
+    "Cénit can't read this vital: Apple Health hasn't granted permission. Turn it on and your readings will show up here." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cénit can't read this vital: Apple Health hasn't granted permission. Turn it on and your nights will show up here."
+            "value" : "Cénit can't read this vital: Apple Health hasn't granted permission. Turn it on and your readings will show up here."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cénit no puede leer esta señal: Apple Salud no le ha dado permiso. Actívalo y tus noches aparecerán aquí."
+            "value" : "Cénit no puede leer esta señal: Apple Salud no le ha dado permiso. Actívalo y tus lecturas aparecerán aquí."
           }
         }
       }
@@ -26142,6 +26176,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sin lectura de anoche."
+          }
+        }
+      }
+    },
+    "No reading from today yet: your recent history is below." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No reading from today yet: your recent history is below."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aún no hay lectura de hoy: abajo está tu historial reciente."
           }
         }
       }
@@ -40167,19 +40218,19 @@
         }
       }
     },
-    "Today falls in %@ · your normal range from %lld nights" : {
+    "Today falls in %@ · your normal range from %lld days" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Today falls in %@ · your normal range from %lld nights"
+            "value" : "Today falls in %@ · your normal range from %lld days"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hoy cae en %@ · tu rango normal de %lld noches"
+            "value" : "Hoy cae en %@ · tu rango normal de %lld días"
           }
         }
       }

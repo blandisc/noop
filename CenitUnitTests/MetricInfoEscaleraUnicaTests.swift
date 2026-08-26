@@ -125,9 +125,10 @@ final class MetricInfoEscaleraUnicaTests: XCTestCase {
 
     // MARK: - (d) El héroe de SpO₂ solo tiene 2 lecturas — el «Borderline fantasma» está muerto
 
-    /// Barrido 85…100: el héroe solo produce DOS palabras («Low» / «Healthy»), cortadas en el 95 del
-    /// motor. El switch viejo tenía TRES tramos (≥ 95 / ≥ 90 / < 90) contra los DOS de la escalera:
-    /// un 94% leía «Borderline» en el héroe y «low» en la tabla de la misma pantalla.
+    /// Barrido 85…100: el héroe solo produce DOS palabras — y son LAS DE LA ESCALERA
+    /// (`MetricLevels.name`: «Low» / «Normal»), no un vocabulario propio (TND20-F1: «Healthy» era
+    /// una segunda palabra para el carril que la escalera llama «Normal»). El switch viejo tenía
+    /// TRES tramos (≥ 95 / ≥ 90 / < 90): un 94% leía «Borderline» en el héroe y «low» en la tabla.
     func testHeroeSpO2SoloDosLecturas() {
         var palabras = Set<String>()
         for decimo in stride(from: 850, through: 1000, by: 1) {
@@ -140,13 +141,14 @@ final class MetricInfoEscaleraUnicaTests: XCTestCase {
             XCTAssertEqual(lectura.healthy, key == "normal",
                            "el héroe de \(v)% debe leer el nivel del motor (\(key))")
         }
-        XCTAssertEqual(palabras, ["Low", "Healthy"], "exactamente dos lecturas posibles")
+        XCTAssertEqual(palabras, Set(MetricLevels.levels(for: .bloodOxygen).map { MetricLevels.name(for: $0.key) }),
+                       "las lecturas del héroe SON los nombres de la escalera, ni una más")
     }
 
-    /// Los cortes exactos: 95 es «Healthy» (half-open [95, ∞)); 94.9 es «Low» — y 94, el viejo
+    /// Los cortes exactos: 95 es «Normal» (half-open [95, ∞)); 94.9 es «Low» — y 94, el viejo
     /// «Borderline», ahora lee «Bajo» («Low»).
     func testCorteDelHeroeEnNoventaYCinco() {
-        XCTAssertEqual(MetricDetailScreen.spo2HeroVerdict(95).word, "Healthy")
+        XCTAssertEqual(MetricDetailScreen.spo2HeroVerdict(95).word, "Normal")
         XCTAssertTrue(MetricDetailScreen.spo2HeroVerdict(95).healthy)
         XCTAssertEqual(MetricDetailScreen.spo2HeroVerdict(94.9).word, "Low")
         XCTAssertEqual(MetricDetailScreen.spo2HeroVerdict(94).word, "Low")

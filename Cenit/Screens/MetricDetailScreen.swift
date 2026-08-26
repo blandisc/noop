@@ -1820,9 +1820,10 @@ struct MetricDetailScreen: View {
     /// readings exist (patrón `StrainDetailScreen.fraseCarril`, TND-19). The word is the catalog key
     /// («Healthy» / «Low», es «Sano» / «Bajo»); the caller maps healthy → verdict, not → warning.
     static func spo2HeroVerdict(_ value: Double) -> (word: String, healthy: Bool) {
-        let i = MetricLevels.index(of: value, for: .bloodOxygen)
-        let healthy = MetricLevels.levels(for: .bloodOxygen)[i].key == "normal"
-        return (healthy ? "Healthy" : "Low", healthy)
+        // TND20-F1: la palabra es LA MISMA de la escalera (`MetricLevels.name` → «Normal»/«Low»)
+        // — «Healthy» era un segundo vocabulario a un tap del carril que dice «Normal».
+        let level = MetricLevels.levels(for: .bloodOxygen)[MetricLevels.index(of: value, for: .bloodOxygen)]
+        return (MetricLevels.name(for: level.key), level.key == "normal")
     }
 
     /// "7-day level · 58 ms" — the trailing-average context that used to be the hero. nil until calibrated.
@@ -2175,9 +2176,18 @@ struct MetricDetailScreen: View {
     }
 
     /// El esqueleto Liquid del camino narrativo (ver el MARK de arriba para el mapa de bloques).
+    /// La lectura del ancla SOLO si es fresca — su llave de día es HOY (TND20-F2, la clase
+    /// ancla-de-ayer de las gemelas): una noche vieja no se viste de «hoy/anoche». Sin
+    /// `todayKey` del caller se resuelve aquí (body = MainActor, mismo reloj que el resto).
+    private var liquidValorFresco: Double? {
+        guard let last = series.last else { return nil }
+        let tk = todayKey ?? Repository.localDayKey(Date())
+        return last.day == tk ? last.value : nil
+    }
+
     @ViewBuilder private func narrativeBodyLiquid(_ window: MetricWindow) -> some View {
         LazyVStack(alignment: .leading, spacing: 0) {
-            if let v = todayValue {
+            if let v = liquidValorFresco {
                 liquidCampoConDato(v)
             } else {
                 liquidCampoSinDato
@@ -2245,7 +2255,11 @@ struct MetricDetailScreen: View {
                 // Con 1 lectura el campo tiene dato pero la base aún calibra: el aviso vive
                 // como sello, no como una segunda escalera de cortes.
                 if loaded, !enoughHistory {
-                    LiquidCampoSello(String(localized: "Calibrating · \(series.count) of 7 nights"))
+                    // TND20-F4: la voz sigue a la métrica (BandSummaryCopy.isNightly) — VFC y
+                    // FC en reposo cuentan DÍAS, no noches.
+                    LiquidCampoSello(liquidNocturno
+                        ? String(localized: "Calibrating · \(series.count) of 7 nights")
+                        : String(localized: "Calibrating · \(series.count) of 7 days"))
                 }
             }
         }
@@ -2276,12 +2290,18 @@ struct MetricDetailScreen: View {
     private var liquidClausulaSinDato: String {
         guard loaded else { return String(localized: "Reading your history…") }
         if sinPermiso {
-            return String(localized: "Cénit can't read this vital: Apple Health hasn't granted permission. Turn it on and your nights will show up here.")
+            // Neutro a propósito («lecturas»): la misma cláusula sirve a métricas diurnas y
+            // nocturnas (TND20-F4).
+            return String(localized: "Cénit can't read this vital: Apple Health hasn't granted permission. Turn it on and your readings will show up here.")
         }
         if enoughHistory {
-            return String(localized: "No reading from last night yet: your recent history is below.")
+            return liquidNocturno
+                ? String(localized: "No reading from last night yet: your recent history is below.")
+                : String(localized: "No reading from today yet: your recent history is below.")
         }
-        return String(localized: "Calibrating your base · \(series.count) of 7 nights. We need a few more nights to show your 7-day average, your normal range and the trend.")
+        return liquidNocturno
+            ? String(localized: "Calibrating your base · \(series.count) of 7 nights. We need a few more nights to show your 7-day average, your normal range and the trend.")
+            : String(localized: "Calibrating your base · \(series.count) of 7 days. We need a few more days to show your 7-day average, your normal range and the trend.")
     }
 
     /// Abre Ajustes de iOS en la ficha de la app — mismo atajo que Sueño/Esfuerzo (FER-102).
@@ -2294,7 +2314,7 @@ struct MetricDetailScreen: View {
     /// tramos del motor, TND-19); los vitales personales = la banda ±σ («Normal/Inusual para ti»).
     /// El campo NUNCA se tiñe por juicio (las gemelas tampoco lo hacen): la palabra basta.
     private var liquidVeredicto: String? {
-        guard let today = todayValue else { return nil }
+        guard let today = liquidValorFresco else { return nil }
         if spec.descriptor.key == "spo2" {
             let v = Self.spo2HeroVerdict(today)
             return String(localized: String.LocalizationValue(v.word))
@@ -2403,7 +2423,7 @@ struct MetricDetailScreen: View {
     /// El carril en que cae la lectura de hoy, o `nil` sin lectura/sin base. Único predicado del
     /// camino Liquid: lo leen el campo, Niveles, el historial y la escalera tocable.
     private var liquidIndiceAncla: Int? {
-        guard let v = todayValue else { return nil }
+        guard let v = liquidValorFresco else { return nil }
         return liquidBandas.firstIndex { b in
             (b.lo == nil || v >= b.lo!) && (b.hi == nil || v < b.hi!)
         }
@@ -2421,8 +2441,9 @@ struct MetricDetailScreen: View {
         if let i = liquidIndiceAncla {
             let b = liquidBandas[i]
             if spec.descriptor.key == "hrv", let s = baselineState {
+                // TND20-F4: VFC habla en DÍAS (BandSummaryCopy.isNightly la declara diurna).
                 LiquidReadingLine(
-                    String(localized: "Today falls in \(b.label) · your normal range from \(s.nValid) nights"),
+                    String(localized: "Today falls in \(b.label) · your normal range from \(s.nValid) days"),
                     highlight: b.label, highlightTone: liquidTono)
             } else if liquidNocturno {
                 LiquidReadingLine(
@@ -2493,14 +2514,18 @@ struct MetricDetailScreen: View {
             }
             if window.values.count > 1 {
                 VStack(alignment: .leading, spacing: LiquidSpace.s300) {
-                    liquidFraseNivelHistorial(window)
+                    // TND20-F3: la frase y la escalera cuentan LO QUE LA GRÁFICA TRAZA (`plot`,
+                    // la media móvil donde se suaviza) — el papel (`GraficaRangos`) contaba los
+                    // puntos graficados; contar la serie cruda hacía que tocar «12 noches» no
+                    // encendiera 12 puntos.
+                    liquidFraseNivelHistorial(window, plot: plot)
                     liquidGraficaHistorial(window, plot: plot)
                     LiquidNotaLine(liquidNotaGrafica)
                     LiquidResumenVentana(celdas: liquidResumenCeldas(window))
                 }
                 .liquidTarjetaSeccion()
                 if !liquidBandas.isEmpty {
-                    LiquidLevelsList(filas: liquidCarriles(window), tono: liquidTono)
+                    LiquidLevelsList(filas: liquidCarriles(window, plot: plot), tono: liquidTono)
                     LiquidNotaLine(liquidNocturno
                         ? String(localized: "How many nights of the period fell in each band. Tap one to see its nights on the chart.")
                         : String(localized: "How many days of the period fell in each band. Tap one to see its days on the chart."))
@@ -2528,26 +2553,28 @@ struct MetricDetailScreen: View {
 
     /// El carril del ancla y cuántos días/noches del periodo cayeron con él — mismo contrato que
     /// `fraseNivelHistorial` de las gemelas.
-    @ViewBuilder private func liquidFraseNivelHistorial(_ window: MetricWindow) -> some View {
+    @ViewBuilder private func liquidFraseNivelHistorial(_ window: MetricWindow,
+                                                        plot: [Double]) -> some View {
         if let i = liquidIndiceAncla {
             let b = liquidBandas[i]
-            let n = window.values.filter { v in
+            // TND20-F3: se cuenta la serie TRAZADA (paridad `GraficaRangos`: contaba `points`).
+            let n = plot.filter { v in
                 (b.lo == nil || v >= b.lo!) && (b.hi == nil || v < b.hi!)
             }.count
             LiquidFraseNivel(nivel: b.label,
                              conteo: liquidNocturno
-                                ? String(localized: "\(n) of your last \(window.values.count) nights")
-                                : String(localized: "\(n) of your last \(window.values.count) days"),
+                                ? String(localized: "\(n) of your last \(plot.count) nights")
+                                : String(localized: "\(n) of your last \(plot.count) days"),
                              tono: liquidTono)
         } else {
-            // `sinLectura` solo cuando de verdad NO hay lectura: VFC sin base tiene lectura
-            // pero cero carriles — decir «Hoy sin lectura» ahí mentiría (estado honesto).
+            // `sinLectura` solo cuando de verdad NO hay lectura FRESCA: VFC sin base tiene
+            // lectura pero cero carriles — decir «Hoy sin lectura» ahí mentiría (estado honesto).
             LiquidFraseNivel(nivel: nil,
                              conteo: liquidNocturno
                                 ? String(localized: "\(window.values.count) nights with data in this range")
                                 : String(localized: "\(window.values.count) days with data in this range"),
                              tono: liquidTono,
-                             sinLectura: todayValue != nil ? nil
+                             sinLectura: liquidValorFresco != nil ? nil
                                 : (liquidNocturno
                                     ? String(localized: "No reading last night")
                                     : String(localized: "No reading today")))
@@ -2700,14 +2727,15 @@ struct MetricDetailScreen: View {
 
     /// Los carriles tocables bajo la gráfica: tocar uno resalta sus días/noches; re-tocarlo limpia.
     /// Mismo contrato que `carrilesHistorial` de las gemelas.
-    private func liquidCarriles(_ window: MetricWindow) -> [LiquidLevelsList.Fila] {
+    private func liquidCarriles(_ window: MetricWindow, plot: [Double]) -> [LiquidLevelsList.Fila] {
         let hint = String(localized: "Highlights this level on the chart")
         let hoyRotulo = liquidNocturno ? String(localized: "· last night") : String(localized: "· today")
         let iAncla = liquidIndiceAncla
         let bandas = liquidBandas
         return bandas.indices.map { i in
             let b = bandas[i]
-            let n = window.values.filter { v in
+            // TND20-F3: la serie TRAZADA, para que «N noches» encienda N puntos.
+            let n = plot.filter { v in
                 (b.lo == nil || v >= b.lo!) && (b.hi == nil || v < b.hi!)
             }.count
             let conteo: String = liquidNocturno
