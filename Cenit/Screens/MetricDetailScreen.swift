@@ -2564,9 +2564,13 @@ struct MetricDetailScreen: View {
 
     /// El carril del ancla y cuántos días/noches del periodo cayeron con él — mismo contrato que
     /// `fraseNivelHistorial` de las gemelas.
+    /// `anclaEnLinea`: false cuando el ancla fresca NO es un punto trazado (Pasos: la línea
+    /// solo lleva días completos y el parcial de hoy queda fuera, TND21-1) — la frase no nombra
+    /// el carril del parcial como si fuera el de la serie.
     @ViewBuilder private func liquidFraseNivelHistorial(_ window: MetricWindow,
-                                                        plot: [Double]) -> some View {
-        if let i = liquidIndiceAncla {
+                                                        plot: [Double],
+                                                        anclaEnLinea: Bool = true) -> some View {
+        if anclaEnLinea, let i = liquidIndiceAncla {
             let b = liquidBandas[i]
             // TND20-F3: se cuenta la serie TRAZADA (paridad `GraficaRangos`: contaba `points`).
             let n = plot.filter { v in
@@ -2745,10 +2749,13 @@ struct MetricDetailScreen: View {
 
     /// Los carriles tocables bajo la gráfica: tocar uno resalta sus días/noches; re-tocarlo limpia.
     /// Mismo contrato que `carrilesHistorial` de las gemelas.
-    private func liquidCarriles(_ window: MetricWindow, plot: [Double]) -> [LiquidLevelsList.Fila] {
+    private func liquidCarriles(_ window: MetricWindow, plot: [Double],
+                                anclaEnLinea: Bool = true) -> [LiquidLevelsList.Fila] {
         let hint = String(localized: "Highlights this level on the chart")
         let hoyRotulo = liquidNocturno ? String(localized: "· last night") : String(localized: "· today")
-        let iAncla = liquidIndiceAncla
+        // TND21-1: sin ancla en la línea (Pasos), ninguna fila viste «· today» de un punto
+        // que no está trazado.
+        let iAncla = anclaEnLinea ? liquidIndiceAncla : nil
         let bandas = liquidBandas
         return bandas.indices.map { i in
             let b = bandas[i]
@@ -2762,7 +2769,7 @@ struct MetricDetailScreen: View {
             return LiquidLevelsList.Fila(
                 etiqueta: b.label, rango: b.range,
                 conteo: conteo,
-                esHoy: i == iAncla, activa: i == liquidDestacado,
+                esHoy: i == iAncla, activa: i == (bandaExplorada ?? iAncla),
                 hoyEtiqueta: hoyRotulo, a11yHint: hint,
                 onTap: {
                     withAnimation(LiquidMotion.lift) {
@@ -3026,14 +3033,17 @@ struct MetricDetailScreen: View {
             if rows.count > 1 {
                 VStack(alignment: .leading, spacing: LiquidSpace.s300) {
                     // TND20-F3: frase y escalera cuentan LO QUE LA GRÁFICA TRAZA (`plot`).
-                    liquidFraseNivelHistorial(window, plot: plot)
+                    // TND21-1: el ancla (parcial de hoy) NO está en la línea de días completos —
+                    // sin «· today» ni carril del parcial; el campo ya carga el parcial arriba.
+                    liquidFraseNivelHistorial(window, plot: plot, anclaEnLinea: false)
                     liquidStepsGrafica(rows: rows, plot: plot)
                     LiquidNotaLine(String(localized: "7-day moving average of completed days: today, still adding up, stays out of the line."))
                     LiquidResumenVentana(celdas: liquidStepsResumenCeldas(window))
                 }
                 .liquidTarjetaSeccion()
                 if !liquidBandas.isEmpty {
-                    LiquidLevelsList(filas: liquidCarriles(window, plot: plot), tono: liquidTono)
+                    LiquidLevelsList(filas: liquidCarriles(window, plot: plot, anclaEnLinea: false),
+                                     tono: liquidTono)
                     LiquidNotaLine(String(localized: "How many days of the period fell in each band. Tap one to see its days on the chart."))
                 }
             } else {
@@ -3058,7 +3068,8 @@ struct MetricDetailScreen: View {
         return LiquidGraficaNiveles(
             puntos: puntos,
             bandas: liquidBandas.enumerated().map { i, b in
-                LiquidChartBanda(lo: b.lo, hi: b.hi, color: b.color, activa: i == liquidDestacado)
+                // TND21-1: el wash sigue SOLO al dedo — el ancla parcial no está en la línea.
+                LiquidChartBanda(lo: b.lo, hi: b.hi, color: b.color, activa: i == bandaExplorada)
             },
             dominio: liquidDominio(plot: plot),
             ticksY: liquidTicksY,
