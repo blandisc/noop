@@ -20,6 +20,11 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **Hoy · sin lectura: el orbe sube para que «PREPARACIÓN» no se encime / Today · no reading: the orb lifts so "READINESS" no longer overlaps it** (FER-156).
+  **ES** — En la pantalla de Hoy, cuando aún no hay lectura de la mañana (héroe «Todavía no puedo leer tus mañanas»), el kicker PREPARACIÓN caía sobre el orbe y el bloque venía apretado. Ahora el orbe y sus rótulos suben 26 pt hacia el aire de arriba, y el bloque de texto baja 16 pt: PREPARACIÓN queda debajo del orbe en claro y el título tiene aire limpio. Solo aplica a ese estado sin veredicto; el orbe del veredicto real no cambia.
+  **EN** — On Today, when the morning reading hasn't arrived yet (the "I can't read your mornings yet" hero), the READINESS kicker sat on top of the orb and the block felt cramped. The orb and its labels now lift 26 pt into the air above, and the text block drops 16 pt: READINESS clears the orb and the title gets clean air. Scoped to that no-verdict state only; the real-verdict orb is unchanged.
+  ([LiquidEcosistema.swift](Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/LiquidEcosistema.swift))
+
 - **«Qué esperar» ya no menciona la banda retirada / "What to expect" no longer mentions the retired band** (FER-152).
   **ES** — El texto de «Qué esperar», al inicio de «Novedades», dejó de presentar la banda WHOOP como el camino soportado. Ahora describe lo que la app hace de verdad: lee tu Apple Watch y tu iPhone desde Apple Salud y calcula todo en tu dispositivo, sin hardware que emparejar — igual que ya dicen los Términos. La única mención a la banda que queda es histórica: una versión anterior la leía, y ese camino se retiró.
   **EN** — The "What to expect" text at the top of "What's New" no longer presents the WHOOP band as the supported path. It now describes what the app actually does: it reads your Apple Watch and iPhone from Apple Health and computes everything on your device, with no hardware to pair — matching what the Terms already say. The only band mention left is historical: earlier versions read it, and that path was retired.
