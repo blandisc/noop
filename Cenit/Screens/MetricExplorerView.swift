@@ -359,7 +359,7 @@ struct MetricDetailView: View {
     /// sibling detail's typography). The two SI-stored units that carry an imperial form (kg / °C)
     /// stay WHOLE — `fmt` converts + relabels them as one string, and re-splitting it is fragile.
     /// The bare-number logic mirrors `MetricDescriptor.format` exactly.
-    private func heroDato(_ v: Double) -> LiquidCampoMetrica<EmptyView>.Dato {
+    private func heroDato(_ v: Double) -> LiquidCampoDato {
         // C-01: no rótulo — the numeral carried a repeated category («Recovery» under a «Recovery»
         // title). The title names the metric; the «as of <date>» clause dates the number.
         switch metric.unit {
