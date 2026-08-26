@@ -92,7 +92,7 @@ struct LiquidDetalleLegoTests {
 
     @Test("Un dato calibrando se marca ausente y lleva su motivo a VoiceOver")
     func datoCalibrando() {
-        let d = LiquidCampoMetrica<EmptyView>.Dato.calibrando(
+        let d = LiquidCampoDato.calibrando(
             rotulo: "Regularidad", motivo: "aún sin base, faltan 3 noches")
         #expect(d.ausente, "sin esto el «··» se pinta igual que una medición real")
         #expect(d.valor == "··")
@@ -101,8 +101,8 @@ struct LiquidDetalleLegoTests {
 
     @Test("Un dato medido NO se marca ausente")
     func datoMedido() {
-        let d = LiquidCampoMetrica<EmptyView>.Dato(valor: "7:12", unidad: "h",
-                                                   rotulo: "Dormido", a11y: "7 horas 12 minutos")
+        let d = LiquidCampoDato(valor: "7:12", unidad: "h",
+                                rotulo: "Dormido", a11y: "7 horas 12 minutos")
         #expect(!d.ausente)
         #expect(d.a11y == "7 horas 12 minutos", "«7:12» se dicta como hora del reloj")
     }

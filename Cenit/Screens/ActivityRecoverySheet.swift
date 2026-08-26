@@ -120,7 +120,7 @@ struct ActivityRecoverySheet: View {
 
     /// El numeral del campo: el delta del deporte tope con su signo, o el guion cuando apenas se mueve.
     /// Misma convención de signo que la tarjeta: delta ≥ 0 → amaneces MÁS BAJO → «−N».
-    private func numeralDato(_ top: ActivityCost?, showsNumeral: Bool) -> LiquidCampoMetrica<EmptyView>.Dato {
+    private func numeralDato(_ top: ActivityCost?, showsNumeral: Bool) -> LiquidCampoDato {
         guard let cost = top, showsNumeral else {
             return .init(valor: LiquidCajita.sinDato, rotulo: "",
                          a11y: String(localized: "no data"), ausente: true)

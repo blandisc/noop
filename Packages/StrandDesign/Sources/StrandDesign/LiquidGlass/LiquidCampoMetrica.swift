@@ -70,6 +70,13 @@ public struct LiquidCampoSello: View {
     }
 }
 
+/// Un numeral del campo (`LiquidCampoMetrica.Dato`) como tipo de nivel de módulo. El tipo no
+/// depende del genérico `Pie`, pero como está anidado en un genérico, referenciarlo desde fuera
+/// obligaba a escribir `LiquidCampoMetrica<EmptyView>.Dato` — un papercut que ya mordió dos veces.
+/// Este alias da la forma limpia sin romper a las gemelas, que construyen `datos: [.init(...)]`
+/// por inferencia y siguen compilando igual.
+public typealias LiquidCampoDato = LiquidCampoMetrica<EmptyView>.Dato
+
 /// La cabecera teñida a sangre de una pantalla de detalle: numeral (o par de numerales),
 /// veredicto, cláusula y una ranura libre al pie, calados sobre una masa plana del tono.
 public struct LiquidCampoMetrica<Pie: View>: View {
