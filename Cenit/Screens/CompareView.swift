@@ -1,85 +1,76 @@
 import SwiftUI
 import Foundation
-import Charts
 import StrandDesign
 import StrandAnalytics
 import CenitStore
 
-// MARK: - Compare — en lenguaje «Instrumento diurno» (FER-268)
+// MARK: - Compare — en vidrio «Liquid Glass» (FER-104 · TND-30)
 //
-// The "overlay metrics & draw conclusions" screen. Pick 2–4 metrics from the
-// catalog, choose a time window, and read them on a single normalized overlay
-// chart (each metric min–max scaled to 0–1 within the window so different units
-// share an axis). Below, every pair of selected metrics gets a live Pearson-r
-// correlation readout with a plain-English conclusion. Pure read-side: each
-// metric loads from repo.series; everything else is derived in-view.
+// The "overlay metrics & draw conclusions" screen. Pick 2–4 metrics from the catalog, choose a
+// time window, and read them on a single overlay chart where EACH line is min–max scaled within
+// its own window (different units share the plot by shape, never by magnitude). Below, every pair
+// of selected metrics gets a live Pearson-r correlation with a plain-English conclusion. Pure
+// read-side: each metric loads from repo, everything else is derived in-view.
 //
-// Visual language: «Instrumento diurno» (FER-131) — warm paper, color ONLY in the
-// datum (the overlay lines and the r value), hierarchy by space. Presented from
-// Cuerpo as a light `.sheet` with the live theme injected at the root (it doesn't
-// cross the `.sheet` boundary, FER-162) and NO nested NavigationStack (FER-171);
-// you drag to dismiss. Was a dark legacy sheet before the reskin.
+// Visual language: Liquid Glass. Presented from Cuerpo and Bucle as a `.sheet`; the sheet's own
+// backdrop is `LiquidSheetFondo` (neutral — Compare has no single subject to tint) with the hoja
+// corner radius. You drag to dismiss; no nested NavigationStack (FER-171).
+//
+// THE MIGRATION IS SKIN, NOT THREAD (FER-104): the data path, the windowing, the memoized
+// `activeSeries`, and the OFF-MAIN Pearson scan with reattach-by-id (FER-976) are conserved
+// verbatim from the paper screen. What changed is every surface, and two invariants the paper
+// violated that TND-29 exists to fix:
+//   • COLOR IS IDENTITY, per metric — `MetricIdentity.hue(for:)`, never a palette-by-index. Each
+//     series/chip/swatch/tooltip dot wears the SAME hue as its family on every screen.
+//   • NAME IS CANONICAL — `canonicalTitle` says «Effort», never «Day Strain» (HJ-13).
 
 // yyyy-MM-dd → Date, fixed UTC / en_US_POSIX — the shared day-key parser (FER-325).
 private func parseCompareDay(_ day: String) -> Date? { Repository.parseDayKey(day) }
 
-// MARK: - Range control (shared spec — W / M / 3M / 6M / 1Y / ALL)
+// MARK: - Shared provenance vocabulary (C-16 / C-13 / D3) — one voice for both instruments
+//
+// Compare's picker rows and Explore's catalog rows / provenance chip / method foot all speak the
+// SAME closed vocabulary as the Hoy sheet (`LiquidMetricSheetView.origen`): three on-device-computed
+// metrics say «Calculated on your phone», the two wrist-only signals say «Apple Watch», everything
+// else «Apple Health». Only the LABEL adopts the vocabulary — a row/chip keeps its identity glyph +
+// hue (the twins' rule). Lives here (unguarded) so the iOS-only Explorer can always reference it.
 
-/// The canonical Strand range window. `days == nil` means ALL of history.
-enum CompareRange: String, CaseIterable, Identifiable {
-    case week, month, quarter, half, year, all
-    var id: String { rawValue }
-
-    var label: String {
-        switch self {
-        case .week:    return String(localized: "W")
-        case .month:   return String(localized: "M")
-        case .quarter: return String(localized: "3M")
-        case .half:    return String(localized: "6M")
-        case .year:    return String(localized: "1Y")
-        case .all:     return String(localized: "ALL")
-        }
-    }
-
-    /// The trailing window length in days; nil = everything.
-    var days: Int? {
-        switch self {
-        case .week:    return 7
-        case .month:   return 30
-        case .quarter: return 90
-        case .half:    return 180
-        case .year:    return 365
-        case .all:     return nil
-        }
-    }
-
-    /// A human phrase for sentences ("over 1Y").
-    var phrase: String {
-        switch self {
-        case .week:    return String(localized: "the last 7 days")
-        case .month:   return String(localized: "30 days")
-        case .quarter: return String(localized: "3 months")
-        case .half:    return String(localized: "6 months")
-        case .year:    return String(localized: "1 year")
-        case .all:     return String(localized: "all history")
-        }
-    }
-
-    /// This range plus every LARGER range, ascending — the auto-expand search order
-    /// when a selected window holds zero points for a series.
-    var widening: [CompareRange] {
-        let order: [CompareRange] = [.week, .month, .quarter, .half, .year, .all]
-        guard let i = order.firstIndex(of: self) else { return [.all] }
-        return Array(order[i...])
+/// True when Cénit COMPUTES this metric on-device (vs. a measured Apple / imported value) — the
+/// same «calculado en el teléfono» bucket the Hoy sheet's `origen` uses (recovery / strain / stress).
+func metricIsCalculated(_ m: MetricDescriptor) -> Bool {
+    switch m.key {
+    case "recovery", "strain", "stress": return true
+    default:                             return false
     }
 }
 
+/// The origin label in the Hoy sheet's CLOSED vocabulary (`LiquidMetricSheetView.origen`): computed
+/// metrics → «Calculated on your phone», wrist-only signals (skin temp / respiratory rate) → «Apple
+/// Watch», everything else → «Apple Health». Reuses the sheet's keys verbatim; the caller keeps the
+/// identity glyph/hue and only swaps the text (C-16). Shared by Explore (row subtitle + provenance
+/// chip) and Compare's picker rows (C-13).
+func originVocabulary(_ m: MetricDescriptor) -> String {
+    if metricIsCalculated(m) { return String(localized: "Calculated on your phone") }
+    switch m.key {
+    case "skin_temp", "resp_rate": return String(localized: "Apple Watch")
+    default:                       return String(localized: "Apple Health")
+    }
+}
+
+// MARK: - Range control (shared spec — W / M / 3M / 6M / 1Y / ALL)
+//
+// Compare shares the canonical `ExploreRange` (`Cenit/Data/ExploreRange.swift`) with every
+// drill-down, window math included (`MetricWindowMath`). `ExploreRange.phrase` carries the
+// sentence phrase Compare used to own (FER-104 / TND-29).
+
 // MARK: - Per-series model
 
-/// One selected metric, resolved over the active window: its descriptor, the
-/// windowed (day,value) rows, a stable display color, and its real min/max.
+/// One selected metric, resolved over the active window: its descriptor, the windowed (day,value)
+/// rows, its IDENTITY color, and its real min/max.
 private struct CompareSeries: Identifiable {
     let metric: MetricDescriptor
+    /// The metric's IDENTITY hue (`MetricIdentity.hue`), not a color-by-index. This is the whole
+    /// point of the identity bridge: the same signal is the same color everywhere.
     let color: Color
     let rows: [(day: String, value: Double)]
 
@@ -87,14 +78,6 @@ private struct CompareSeries: Identifiable {
     var values: [Double] { rows.map(\.value) }
     var realMin: Double { values.min() ?? 0 }
     var realMax: Double { values.max() ?? 0 }
-
-    /// Min–max normalize a value into 0…1 within this series' window. Flat series
-    /// (max == min) collapse to the mid-line so they still render.
-    func normalized(_ v: Double) -> Double {
-        let lo = realMin, hi = realMax
-        guard hi > lo else { return 0.5 }
-        return min(max((v - lo) / (hi - lo), 0), 1)
-    }
 
     /// The value on a given day, if recorded.
     func value(on day: String) -> Double? {
@@ -106,45 +89,30 @@ private struct CompareSeries: Identifiable {
 
 struct CompareView: View {
     @EnvironmentObject var repo: Repository
-    /// The live «Instrumento» theme, injected at the sheet root by Cuerpo (it doesn't propagate through
-    /// `.sheet`, FER-162). Drives every surface, ink and datum color on the warm paper.
-    @Environment(\.instrumentoTheme) private var theme
+    /// Accessibility text size — the pair card stacks its header instead of racing the title
+    /// against the r value at AX sizes (TND30-5).
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
-    /// Distinct, high-legibility series colors on warm paper: the «Instrumento» data hues (deep,
-    /// saturated — NOT the bright dark-system ramps, which bleach on light paper). All four clear AA at
-    /// numeral/line weight. Order is the legend + color mapping (verdict green → HRV cyan → sleep indigo
-    /// → strain ember). (FER-268)
-    private var seriesPalette: [Color] {
-        [theme.verdict, theme.dataHrv, theme.dataSleep, theme.dataStrain]
-    }
-
-    /// Default starter selection (falls back gracefully if a key is missing). All three resolve from the
-    /// merged dashboard (`displayDays`), so a strap user sees an overlay on first open — not an empty
-    /// well — without importing a CSV. (FER-275)
+    /// Default starter selection (falls back gracefully if a key is missing). All three resolve
+    /// from the merged dashboard (`displayDays`), so a user sees an overlay on first open. (FER-275)
     private static let defaultKeys = ["recovery", "strain", "hrv"]
 
-    @State private var range: CompareRange = .year
-    /// Ordered selection (max 4). Drives both the legend order and color mapping.
+    // C-08: opens on M (month), matching Explore / the vital detail / MetricDetailScreen — not 1Y.
+    @State private var range: ExploreRange = .month
+    /// Ordered selection (max 4). Drives the legend order.
     @State private var selected: [MetricDescriptor] = []
-    /// Presents the metric picker as a scroll-stable sheet. A SwiftUI `Menu` rebuilds (and resets its
-    /// scroll to the top) every time the parent re-renders — and Compare re-renders on each `repo` tick
-    /// while the strap syncs — so a long catalog menu was unusable: scrolling down snapped back up. A
-    /// `.sheet` keeps its own scroll state across parent re-renders. (FER-279)
+    /// Presents the metric picker as a scroll-stable sheet (a `Menu` resets its scroll on each
+    /// parent re-render while the strap syncs — unusable, FER-279).
     @State private var showPicker = false
     /// Full-history series per selected metric id (ascending by day).
     @State private var fullSeries: [String: [(day: String, value: Double)]] = [:]
     @State private var loadedOnce = false
 
-    /// Cache of the last pairwise-correlation scan + the inputs it was computed for.
-    /// The scan (alignByDay + Pearson over full windows) is expensive and was re-run on
-    /// every body evaluation — including hover/animation/HR ticks. We recompute it only
-    /// when the windowed series content actually changes (see `correlationKey`).
+    /// Cache of the last pairwise-correlation scan + the inputs it was computed for (FER-976).
     @State private var pairCache: [PairResult] = []
     @State private var pairCacheKey: String = ""
 
-    /// `activeSeries` recomputed ONLY on selection/range/fetch change (FER-976) — the plain computed
-    /// property below was re-derived on every access (≥4×/render: overlay, correlation, rangeCaption,
-    /// task/onChange), each pass re-slicing `fullSeries` per selected metric.
+    /// `activeSeries` recomputed ONLY on selection/range/fetch change (FER-976).
     @State private var activeSeriesCache: [CompareSeries] = []
 
     private let maxSelection = 4
@@ -152,36 +120,45 @@ struct CompareView: View {
 
     var body: some View {
         ScrollView {
-            // Rhythm by space: sections breathe on `sectionGap`, no rule between them — hierarchy by
-            // space, not boxes (DESIGN.md §8). Color lives only on the overlay lines and the r value.
-            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s550) {
                 header
                 metricSection
 
                 if selected.count < minSelection {
-                    ChartWell(theme, icon: "arrow.left.arrow.right", cornerRadius: CenitMetrics.cardRadius, bordered: true).empty(text: "Compare needs at least two metrics with history. Connect Apple Health in Data Sources first.")
+                    // Fewer than two picked isn't a data problem — the picker is right there.
+                    // Telling them to connect Apple Health would lie (TND30-2). The HealthKit
+                    // copy is reserved below, for when nothing they picked has ANY history.
+                    emptyWell(String(localized: "Pick 2–4 metrics to overlay."))
                 } else {
                     let series = activeSeries
                     if series.allSatisfy({ $0.rows.isEmpty }) {
-                        ChartWell(theme, icon: "arrow.left.arrow.right", cornerRadius: CenitMetrics.cardRadius, bordered: true).empty(text: loadedOnce
-                            ? "No data for these metrics in \(range.phrase). Widen the range or pick metrics you've logged."
-                            : "Reading your history…")
+                        if loadedOnce {
+                            // Two causes, two copies (TND30-2): nothing has ANY history (the
+                            // real no-permission / no-data case → connect Apple Health) vs.
+                            // there is history but none in THIS window (→ widen the range).
+                            emptyWell(noHistoryAtAll
+                                ? String(localized: "Compare needs at least two metrics with history. Connect Apple Health in Data Sources first.")
+                                : sinDatosMensaje)
+                        } else {
+                            LiquidSheetSkeleton(a11yCargando: String(localized: "Reading your history…"))
+                        }
                     } else {
                         overlaySection(series)
                         correlationSection(series)
                     }
                 }
             }
-            .padding(.horizontal, CenitMetrics.screenPadding)
-            .padding(.top, 20)
-            .padding(.bottom, CenitMetrics.screenPadding)
+            .padding(.horizontal, LiquidSpace.s550)
+            .padding(.top, LiquidSpace.s550)
+            .padding(.bottom, LiquidSpace.s800)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(theme.paper)
+        .scrollIndicators(.hidden)
+        .presentationBackground { LiquidSheetFondo() }
         .presentationDragIndicator(.visible)
-        .sheetPaper(theme)
+        .presentationCornerRadius(LiquidRadius.hoja)
         .sheet(isPresented: $showPicker) {
-            MetricPickerSheet(selected: $selected, maxSelection: maxSelection, theme: theme)
+            MetricPickerSheet(selected: $selected, maxSelection: maxSelection)
         }
         .task { await loadIfNeeded() }
         .task(id: selectionKey) {
@@ -189,13 +166,11 @@ struct CompareView: View {
             recomputeActiveSeries()
             refreshPairCache(activeSeries)
         }
-        // FER-976: range is the other input `activeSeries` depends on (selection is covered by
-        // `.task(id: selectionKey)` above via `selectionKey`).
+        // FER-976: range is the other input `activeSeries` depends on.
         .onChange(of: range) {
             recomputeActiveSeries()
         }
-        // Recompute the pairwise scan only when the windowed series content changes,
-        // never on hover/animation/HR-tick re-renders that don't touch these inputs.
+        // Recompute the pairwise scan only when the windowed series content changes.
         .onChange(of: correlationKey(activeSeries)) {
             refreshPairCache(activeSeries)
         }
@@ -204,13 +179,17 @@ struct CompareView: View {
     // MARK: - Title
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Compare").font(InstrumentoType.groteskHeadline(28)).foregroundStyle(theme.ink)
-            Text("Overlay signals, draw conclusions.")
-                .font(StrandFont.subhead)
-                .foregroundStyle(theme.inkSecondary)
+        VStack(alignment: .leading, spacing: LiquidSpace.s100) {
+            Text(String(localized: "Compare"))
+                .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
+                .foregroundStyle(LiquidColor.tinta900)
+            Text(String(localized: "Overlay signals, draw conclusions."))
+                .font(LiquidType.cuerpo)
+                .foregroundStyle(LiquidColor.tinta500)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isHeader)
     }
 
     // MARK: - Selection key (re-loads when the set of metrics changes)
@@ -219,40 +198,23 @@ struct CompareView: View {
 
     // MARK: - Active windowed series
 
-    /// A full-history series' rows over a given range, taken RELATIVE TO THAT SERIES'
-    /// LATEST data point (not "now"); `.all` returns everything.
-    private func slice(_ full: [(day: String, value: Double)], _ r: CompareRange) -> [(day: String, value: Double)] {
-        guard let n = r.days else { return full }
-        guard let lastDay = full.last?.day, let last = parseCompareDay(lastDay) else { return [] }
-        let cutoff = last.addingTimeInterval(-Double(n - 1) * 86_400)
-        return full.filter { row in
-            guard let d = parseCompareDay(row.day) else { return false }
-            return d >= cutoff
-        }
+    private func parsed(_ full: [(day: String, value: Double)]) -> MetricWindowMath.Parsed {
+        full.map { (day: $0.day, date: parseCompareDay($0.day), value: $0.value) }
     }
 
-    /// The range actually used for a series: the SELECTED range when its window holds
-    /// ≥1 point, else the smallest LARGER range that does. So sparse metrics still
-    /// overlay against dense ones, and switching ranges stays visibly distinct.
-    private func effectiveRange(_ full: [(day: String, value: Double)]) -> CompareRange {
-        guard !full.isEmpty else { return range }
-        for r in range.widening where !slice(full, r).isEmpty { return r }
-        return .all
-    }
-
-    /// Selected metrics resolved to windowed rows + stable colors, in pick order. Reads the memoized
-    /// cache (FER-976) — see `recomputeActiveSeries()`, called from `.task(id: selectionKey)` and
-    /// `.onChange(of: range)`, the only two inputs this depends on.
+    /// Selected metrics resolved to windowed rows + IDENTITY colors, in pick order. Reads the
+    /// memoized cache (FER-976).
     private var activeSeries: [CompareSeries] { activeSeriesCache }
 
     private func recomputeActiveSeries() {
-        activeSeriesCache = selected.enumerated().map { idx, metric in
+        activeSeriesCache = selected.map { metric in
             let full = fullSeries[metric.id] ?? []
-            let rows = slice(full, effectiveRange(full))
+            let window = MetricWindowMath.make(parsed(full), selected: range)
             return CompareSeries(
                 metric: metric,
-                color: seriesPalette[idx % seriesPalette.count],
-                rows: rows
+                // IDENTITY, per metric — the color-by-index of the paper is dead (FER-104 / TND-29).
+                color: MetricIdentity.hue(for: metric),
+                rows: window.rows
             )
         }
     }
@@ -261,24 +223,43 @@ struct CompareView: View {
     private var anyWidened: Bool {
         selected.contains { metric in
             let full = fullSeries[metric.id] ?? []
-            return !full.isEmpty && effectiveRange(full) != range
+            guard !full.isEmpty else { return false }
+            return MetricWindowMath.effectiveRange(parsed(full), selected: range) != range
         }
     }
 
-    /// "N readings · <range>" caption near the control, flagging any auto-widen.
+    /// "N readings · <range>" caption near the control, flagging any auto-widen. Built from
+    /// localized format strings — the paper concatenated a hardcoded English "across" and the
+    /// "· sparse widened" suffix, so neither ever translated (FER-104 / TND-30). The series count
+    /// is dropped here: it lives in the Overlay block's «N series», and "en 3" named nothing in
+    /// es-MX (TND30-3).
     private var rangeCaption: String {
         let series = activeSeries
         let total = series.reduce(0) { $0 + $1.rows.count }
-        let unit = total == 1 ? "reading" : "readings"
-        let base = "\(total) \(unit) across \(series.count) · \(range.phrase)"
-        return anyWidened ? base + " · sparse widened" : base
+        let unit = total == 1 ? String(localized: "reading") : String(localized: "readings")
+        let base = String(format: String(localized: "compare.caption.readings",
+                                         defaultValue: "%1$lld %2$@ · %3$@"),
+                          total, unit, range.phrase)
+        guard anyWidened else { return base }
+        return String(format: String(localized: "compare.caption.widened",
+                                     defaultValue: "%1$@ · sparse widened"), base)
+    }
+
+    private var sinDatosMensaje: String {
+        String(localized: "No data for these metrics in \(range.phrase). Widen the range or pick metrics you've logged.")
+    }
+
+    /// True once loaded when NO selected metric has any history at all — the genuine no-data /
+    /// no-HealthKit-permission case, distinct from "has history, none in this window". Reserves
+    /// the "connect Apple Health" copy for the case where connecting is actually the fix (TND30-2).
+    private var noHistoryAtAll: Bool {
+        selected.allSatisfy { (fullSeries[$0.id] ?? []).isEmpty }
     }
 
     // MARK: - Loading
 
     private func loadIfNeeded() async {
         guard selected.isEmpty else { return }
-        // Seed the default selection from whichever default keys exist.
         var picks: [MetricDescriptor] = []
         for key in Self.defaultKeys {
             if let m = MetricCatalog.all.first(where: { $0.key == key }) { picks.append(m) }
@@ -287,27 +268,22 @@ struct CompareView: View {
         selected = Array(picks.prefix(maxSelection))
     }
 
-    /// Load (and cache) the full history for any selected metric not yet fetched.
-    ///
-    /// Two data paths (FER-275): metrics that are nightly dashboard fields read from `repo.displayDays`
-    /// — the merged source Cuerpo/Today use, which resolves for **strap users** (their computed scores
-    /// live under "<deviceId>-noop", which the import-only `repo.series()` never sees). Everything else
-    /// (Apple-Health body metrics, HR-zone splits, derived sleep percentages) falls back to `series()`.
-    /// Full history is kept on purpose: `slice`/`effectiveRange` auto-widen a sparse series past the
-    /// selected range to ALL, so the cache must hold every row — the window is applied in-view (FER-27).
+    /// Load (and cache) the full history for any selected metric not yet fetched. Two data paths
+    /// (FER-275): dashboard fields read from `repo.displayDays` via the shared
+    /// `MetricSeriesResolver.dashboardSeries` (FER-104 / TND-29, foco 3 — the SAME resolver Explore
+    /// uses, so a key reads the same number on both screens); everything else falls back to
+    /// `series()`. Full history is kept so the in-view window can auto-widen a sparse series.
     private func loadSelected() async {
         let missing = selected.filter { fullSeries[$0.id] == nil }
-        // Dashboard-resolvable metrics: extract synchronously from the in-memory merged dashboard.
         var resolved: [(id: String, series: [(day: String, value: Double)])] = []
         var needsSeries: [MetricDescriptor] = []
         for metric in missing {
-            if let pick = Self.dailyPicker(for: metric.key) {
-                resolved.append((metric.id, dailySeries(pick)))
+            if let series = MetricSeriesResolver.dashboardSeries(metric.key, from: repo.displayDays) {
+                resolved.append((metric.id, series))
             } else {
                 needsSeries.append(metric)
             }
         }
-        // The genuinely import-/Apple-only metrics still load (concurrently) from `series()`.
         let fetched = await withTaskGroup(of: (String, [(day: String, value: Double)]).self) { group in
             for metric in needsSeries {
                 group.addTask { (metric.id, await repo.series(key: metric.key, source: metric.source)) }
@@ -321,144 +297,100 @@ struct CompareView: View {
         loadedOnce = true
     }
 
-    /// A metric's full daily history (ascending by day) from the merged dashboard — same contract as
-    /// `repo.series()`, but resolving for strap users too. (FER-275)
-    private func dailySeries(_ pick: (DailyMetric) -> Double?) -> [(day: String, value: Double)] {
-        repo.displayDays
-            .compactMap { row in pick(row).map { (row.day, $0) } }
-            .sorted { $0.day < $1.day }
-    }
+    // MARK: - Metric picker section (range control + chips, on the paper)
 
-    /// The nightly-dashboard field for a metric key, or `nil` for keys that aren't computed on-device
-    /// (body composition, HR-zone splits, derived sleep percentages) — those keep the import-/Apple-only
-    /// `series()` path. Mirrors the per-metric extraction Cuerpo's rows + `vitalSeries` already use. (FER-275)
-    private static func dailyPicker(for key: String) -> ((DailyMetric) -> Double?)? {
-        switch key {
-        case "recovery":         return { $0.recovery }
-        case "strain":           return { $0.strain }
-        case "hrv":              return { $0.avgHrv }
-        case "rhr":              return { $0.restingHr.map(Double.init) }
-        case "resp_rate":        return { $0.respRateBpm }
-        case "spo2":             return { $0.spo2Pct }
-        case "skin_temp":        return { $0.skinTempDevC }
-        case "steps":            return { $0.steps.map(Double.init) }
-        case "sleep_total_min":  return { $0.totalSleepMin }
-        case "sleep_deep_min":   return { $0.deepMin }
-        case "sleep_rem_min":    return { $0.remMin }
-        case "sleep_light_min":  return { $0.lightMin }
-        case "sleep_efficiency": return { $0.efficiency.map { $0 <= 1.0 ? $0 * 100 : $0 } }
-        // NOTE: `active_kcal` stays on the `series()` path on purpose — the catalog sources it from Apple
-        // Health, and the dashboard's `activeKcalEst` is a *different* figure (an HR-only whole-day
-        // estimate), so resolving it here would silently swap that metric's meaning. (FER-275)
-        default:                 return nil
-        }
-    }
-
-    // MARK: - Metric picker section (range control + chips, on a contained surface)
-
-    // The controls live directly on the paper (no surface card): hierarchy by space, not boxes
-    // (Instrumento rule 3), and the full screen width keeps the 6-segment range control from wrapping
-    // — the earlier card padding squeezed "ALL"/«TODO» onto a second line. (FER-275)
     private var metricSection: some View {
-        VStack(alignment: .leading, spacing: CenitMetrics.gap) {
-            Text("Metrics").groteskOverline().foregroundStyle(theme.inkTertiary)
+        VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+            Text(String(localized: "Metrics"))
+                .font(LiquidType.franja).tracking(LiquidType.franjaTracking).textCase(.uppercase)
+                .foregroundStyle(LiquidColor.tinta500)
 
-            SegmentedPillControl(CompareRange.allCases, selection: $range, theme: theme) { $0.label }
-                .accessibilityLabel("Time range")
+            LiquidRangeSelector(opciones: ExploreRange.allCases.map(\.label),
+                                seleccion: rangeIndex, tono: LiquidColor.tinta700)
+                .accessibilityLabel(String(localized: "Time range"))
 
             HStack(alignment: .firstTextBaseline) {
                 if selected.count >= minSelection {
-                    Text(rangeCaption)
-                        .font(StrandFont.footnote)
-                        .foregroundStyle(anyWidened ? theme.warning : theme.inkTertiary)
+                    Text(verbatim: rangeCaption)
+                        .font(LiquidType.captionLectura)
+                        .foregroundStyle(anyWidened ? LiquidColor.atencionTexto : LiquidColor.tinta500)
                         .accessibilityLabel(rangeCaption)
                 }
-                Spacer(minLength: 8)
+                Spacer(minLength: LiquidSpace.s200)
                 addButton
             }
 
             if selected.isEmpty {
-                Text("Nothing selected yet.")
-                    .font(StrandFont.subhead)
-                    .foregroundStyle(theme.inkTertiary)
+                Text(String(localized: "Nothing selected yet."))
+                    .font(LiquidType.cuerpo)
+                    .foregroundStyle(LiquidColor.tinta500)
             } else {
-                FlowChips(metrics: selected, colorFor: colorFor, theme: theme) { metric in
-                    remove(metric)
+                LiquidFlujoLeyenda(espacioH: LiquidSpace.s150, espacioV: LiquidSpace.s150) {
+                    ForEach(selected) { metric in
+                        LiquidChipSeleccion(
+                            nombre: metric.canonicalTitle,
+                            tono: MetricIdentity.hue(for: metric),
+                            a11yQuitar: String(localized: "Remove \(metric.canonicalTitle)")) {
+                                remove(metric)
+                            }
+                    }
                 }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// Opens the metric picker sheet. (A button, not a `Menu`: a long `Menu` resets its scroll on every
-    /// parent re-render — unusable while the strap syncs. See `showPicker`. FER-279.) Always tappable —
-    /// the picker is where you both add and remove, so it stays reachable at the 4-metric cap.
-    private var addButton: some View {
-        Button {
-            showPicker = true
-        } label: {
-            HStack(spacing: 6) {
-                Image(systemName: "plus.circle.fill")
-                Text(selected.count >= maxSelection ? "Max 4" : "Add metric")
-                    .font(StrandFont.subhead)
-            }
-            .foregroundStyle(selected.count >= maxSelection ? theme.inkTertiary : theme.verdict)
-        }
-        .buttonStyle(.plain)
-        .fixedSize()
-        .accessibilityLabel("Add or remove metrics")
+    /// A Binding<Int> bridging `LiquidRangeSelector`'s index to `range` (allCases order = W…ALL).
+    private var rangeIndex: Binding<Int> {
+        Binding(
+            get: { ExploreRange.allCases.firstIndex(of: range) ?? 0 },
+            set: { range = ExploreRange.allCases[$0] })
     }
 
-    private func colorFor(_ metric: MetricDescriptor) -> Color {
-        guard let idx = selected.firstIndex(of: metric) else { return theme.inkSecondary }
-        return seriesPalette[idx % seriesPalette.count]
+    /// Opens the picker. Always tappable — the picker is where you add AND remove, so it stays
+    /// reachable at the 4-metric cap.
+    private var addButton: some View {
+        let atMax = selected.count >= maxSelection
+        return Button {
+            showPicker = true
+        } label: {
+            HStack(spacing: LiquidSpace.s150) {
+                Image(systemName: "plus.circle.fill")
+                    .font(LiquidType.iconSF(size: 14))
+                Text(atMax ? String(localized: "Max 4") : String(localized: "Add metric"))
+                    .font(LiquidType.boton)
+            }
+            .foregroundStyle(atMax ? LiquidColor.tinta500 : LiquidColor.tinta900)
+            .padding(.horizontal, LiquidSpace.s300)
+            .padding(.vertical, LiquidSpace.s150)
+        }
+        .buttonStyle(.liquidPress)
+        .liquidGlass(.pastillaSolida)
+        .fixedSize()
+        .accessibilityLabel(String(localized: "Add or remove metrics"))
     }
 
     private func remove(_ metric: MetricDescriptor) {
-        withAnimation(StrandMotion.gentle) { selected.removeAll { $0 == metric } }
+        withAnimation(LiquidMotion.selector) { selected.removeAll { $0 == metric } }
     }
 
     // MARK: - Overlay chart section
 
-    @ViewBuilder
+    /// The overlay + tooltip live in their OWN view so the scrub — which writes the day binding on
+    /// every finger tick — re-renders JUST this block, never the correlation cards below, and so the
+    /// per-series plot data is built ONCE per construction, not per tick (paridad `OverlayChart`,
+    /// FER-319). `anyWidened`/`phrase` come from the parent (they change only with selection/range).
     private func overlaySection(_ series: [CompareSeries]) -> some View {
         let nonEmpty = series.filter { !$0.rows.isEmpty }
-        block(title: "Overlay", trailing: "\(nonEmpty.count) series") {
-            VStack(alignment: .leading, spacing: 12) {
-                Text(anyWidened
-                    ? "Min–max normalized · sparse series widened past \(range.phrase) · hover for real values"
-                    : "Each line min–max normalized within \(range.phrase) · hover for real values")
-                    .font(StrandFont.footnote)
-                    .foregroundStyle(theme.inkTertiary)
-                    .fixedSize(horizontal: false, vertical: true)
-                OverlayChart(series: nonEmpty, theme: theme, height: CenitMetrics.chartHeight)
-                legend(nonEmpty)
-            }
-        }
-    }
-
-    private func legend(_ series: [CompareSeries]) -> some View {
-        VStack(spacing: 0) {
-            ForEach(Array(series.enumerated()), id: \.element.id) { idx, s in
-                HStack(spacing: 10) {
-                    RoundedRectangle(cornerRadius: 2, style: .continuous)   // token-exempt: geometría de dato (muestra de leyenda)
-                        .fill(s.color)
-                        .frame(width: 14, height: 3)
-                    Text(s.metric.title)
-                        .font(StrandFont.subhead)
-                        .foregroundStyle(theme.ink)
-                    Spacer()
-                    Text("\(s.metric.format(s.realMin)) – \(s.metric.format(s.realMax))")
-                        .font(StrandFont.captionNumber)
-                        .foregroundStyle(theme.inkSecondary)
-                }
-                .padding(.vertical, 7)
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel("\(s.metric.title), range \(s.metric.format(s.realMin)) to \(s.metric.format(s.realMax))")
-                if idx < series.count - 1 {
-                    Divider().overlay(theme.hairline)
-                }
-            }
+        // Pass ALL selected series (not just the non-empty) so the PIECE resolves the honest
+        // state: with 2+ picked but < 2 carrying readings in the window, it lands on
+        // `.sinLecturas` («No data in <range>»), never `.minimo` (the HealthKit copy). Pre-
+        // filtering here collapsed a 1-of-2 window into a fake "pick more metrics" (TND30-1).
+        // The trailing count stays the drawable count («N series»).
+        return bloque(title: String(localized: "Overlay"),
+                      trailing: String(format: String(localized: "compare.overlay.count",
+                                                      defaultValue: "%lld series"), nonEmpty.count)) {
+            CompareOverlay(series: series, anyWidened: anyWidened, phrase: range.phrase)
         }
     }
 
@@ -481,10 +413,7 @@ struct CompareView: View {
         let n: Int
     }
 
-    /// A stable fingerprint of the inputs the correlation scan depends on: the
-    /// non-empty series (in order) and their windowed content. Row content only
-    /// changes when `selected`, `range`, or fetched `fullSeries` change, so this
-    /// covers every case that alters the scan result. Used to invalidate `pairCache`.
+    /// A stable fingerprint of the correlation inputs, to invalidate `pairCache`.
     private func correlationKey(_ series: [CompareSeries]) -> String {
         series
             .filter { !$0.rows.isEmpty }
@@ -492,18 +421,15 @@ struct CompareView: View {
             .joined(separator: "|")
     }
 
-    /// Cached accessor used by the body. Returns the memoized scan when the inputs
-    /// match `pairCacheKey`; otherwise computes once for THIS render (without mutating
-    /// state — that would be illegal mid-body) so the visible result is never stale by
-    /// a frame. The matching `.onChange`/`.task` then persists the same result into
-    /// `@State`, so subsequent renders (hover/animation/HR ticks) hit the cache.
+    /// Cached accessor used by the body: memoized scan when inputs match, else a one-shot compute
+    /// for THIS render (no state mutation mid-body).
     private func pairResults(_ series: [CompareSeries]) -> [PairResult] {
         correlationKey(series) == pairCacheKey ? pairCache : computePairResults(series)
     }
 
-    /// The actual (expensive) pairwise scan, pure — Sendable in, Sendable out — so it's usable both
-    /// synchronously (below) AND inside `Task.detached` (FER-976). `nonisolated` opts OUT of this
-    /// View's inferred MainActor isolation.
+    /// The expensive pairwise scan, pure — Sendable in, Sendable out — usable synchronously AND in
+    /// `Task.detached` (FER-976). The canonical compute floor (`CorrelationStrength.minPairs`) and
+    /// the strength ladder are TND-29's single source of truth.
     private nonisolated static func computePairScans(
         _ series: [(id: String, rows: [(day: String, value: Double)])]
     ) -> [PairScan] {
@@ -512,16 +438,16 @@ struct CompareView: View {
         for i in 0..<(series.count - 1) {
             for j in (i + 1)..<series.count {
                 let pairs = CorrelationEngine.alignByDay(series[i].rows, series[j].rows)
-                guard pairs.count >= 3, let c = CorrelationEngine.pearson(pairs) else { continue }
+                guard pairs.count >= CorrelationStrength.minPairs,
+                      let c = CorrelationEngine.pearson(pairs) else { continue }
                 out.append(PairScan(aId: series[i].id, bId: series[j].id, r: c.r, n: c.n))
             }
         }
-        // Strongest relationships first.
         out.sort { abs($0.r) > abs($1.r) }
         return out
     }
 
-    /// Reattaches a Sendable `PairScan` to the display-only `CompareSeries` (color/metric), by id.
+    /// Reattaches a Sendable `PairScan` to its display-only `CompareSeries` (color/metric), by id.
     private func attachPairResults(_ scans: [PairScan], series: [CompareSeries]) -> [PairResult] {
         let byId = Dictionary(uniqueKeysWithValues: series.map { ($0.id, $0) })
         return scans.compactMap { scan in
@@ -530,18 +456,15 @@ struct CompareView: View {
         }
     }
 
-    /// The actual (expensive) pairwise scan. Pure — no view state read/written. Synchronous — used ONLY
-    /// as `pairResults(_:)`'s same-frame fallback (see its doc above); the scheduled/background refresh
-    /// below (`refreshPairCache`) runs the SAME math off-main via `Task.detached`.
+    /// Pure synchronous scan, used ONLY as `pairResults`'s same-frame fallback.
     private func computePairResults(_ series: [CompareSeries]) -> [PairResult] {
         let s = series.filter { !$0.rows.isEmpty }
         return attachPairResults(Self.computePairScans(s.map { (id: $0.id, rows: $0.rows) }), series: s)
     }
 
-    /// Recompute the pair cache if (and only if) the correlation inputs changed. Dispatches the
-    /// (expensive) scan to `Task.detached` off a Sendable (id, rows) snapshot — never a raw
-    /// `CompareSeries` (it carries a `Color`) — then reattaches + assigns `pairCache` back on MainActor
-    /// (FER-976), same seam as `PreparacionDetalleModelo.buildDetached`.
+    /// Recompute the pair cache off-main iff the correlation inputs changed. Dispatches the scan to
+    /// `Task.detached` off a Sendable (id, rows) snapshot — never a raw `CompareSeries` (it carries a
+    /// `Color`) — then reattaches + assigns back on MainActor (FER-976).
     private func refreshPairCache(_ series: [CompareSeries]) {
         let key = correlationKey(series)
         guard key != pairCacheKey else { return }
@@ -560,21 +483,21 @@ struct CompareView: View {
     @ViewBuilder
     private func correlationSection(_ series: [CompareSeries]) -> some View {
         let pairs = pairResults(series)
-        block(title: "How They Move Together", trailing: pairs.isEmpty ? nil : "\(pairs.count) pairs") {
-            VStack(alignment: .leading, spacing: CenitMetrics.gap) {
-                Text("Pearson r · \(range.phrase)")
-                    .font(StrandFont.footnote)
-                    .foregroundStyle(theme.inkTertiary)
+        bloque(title: String(localized: "How They Move Together"),
+               trailing: pairs.isEmpty ? nil
+                : String(format: String(localized: "compare.pairs.count",
+                                        defaultValue: "%lld pairs"), pairs.count)) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+                Text(String(localized: "Pearson r · \(range.phrase)"))
+                    .font(LiquidType.captionLectura)
+                    .foregroundStyle(LiquidColor.tinta500)
 
-                // Association, not cause: overlapping trends move together; that's not
-                // one causing the other. (FER-299)
-                Text("Association, not cause: moving together isn't one driving the other.")
-                    .font(StrandFont.footnote)
-                    .foregroundStyle(theme.inkTertiary)
-                    .fixedSize(horizontal: false, vertical: true)
+                // Association, not cause: overlapping trends move together; that's not one causing
+                // the other. `LiquidNotaLine` is the house of the sheet disclaimer. (FER-299)
+                LiquidNotaLine(String(localized: "Association, not cause: moving together isn't one driving the other."))
 
                 if pairs.isEmpty {
-                    ChartWell(theme, icon: "arrow.left.arrow.right", cornerRadius: CenitMetrics.cardRadius, bordered: true).empty(text: "Not enough overlapping days between these metrics in \(range.phrase). Widen the range.")
+                    emptyWell(String(localized: "Not enough overlapping days between these metrics in \(range.phrase). Widen the range."))
                 } else {
                     ForEach(pairs) { p in
                         pairCard(p)
@@ -584,56 +507,77 @@ struct CompareView: View {
         }
     }
 
-    /// One pairwise correlation on its own surface card.
+    /// One pairwise correlation on its own opaque paper card (composed in-line: a single-use card
+    /// stays atoms in the screen, not a coined DS piece — DS rule §7). Two identity swatches, the
+    /// A↔B pair in canonical names, the r value in neutral ink (its sign carried by the leading
+    /// «−», never by color — a negative correlation is not an alarm, TND30-4), the strength phrase
+    /// and the overlap footer. At AX text sizes the header stacks instead of racing title against
+    /// value on one line (TND30-5).
     private func pairCard(_ p: PairResult) -> some View {
-        let tint = correlationColor(p.r)
-        return VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 10) {
-                // Two color swatches for the pair.
-                HStack(spacing: 3) {
-                    Circle().fill(p.a.color).frame(width: 8, height: 8)
-                    Circle().fill(p.b.color).frame(width: 8, height: 8)
+        let swatches = HStack(spacing: LiquidSpace.s075) {
+            Circle().fill(p.a.color).frame(width: 8, height: 8)
+            Circle().fill(p.b.color).frame(width: 8, height: 8)
+        }
+        .accessibilityHidden(true)
+        let titulo = Text(verbatim: "\(p.a.metric.canonicalTitle) ↔ \(p.b.metric.canonicalTitle)")
+            .font(LiquidType.tituloFila)
+            .foregroundStyle(LiquidColor.tinta900)
+        // Neutral ink: the value is the datum by SIZE (valorM/mono), not by hue. Sign is the «−».
+        // C-04: the coefficient is written the SAME way as the Explorer — the bare signed number,
+        // no «r = » prefix (jargon for this non-technical audience; the strength word in the footer
+        // names it, the Explorer's bar names it there). One coefficient, one written form.
+        let valorR = Text(verbatim: signedR(p.r))
+            .font(LiquidType.valorM).monospacedDigit()
+            .foregroundStyle(LiquidColor.tinta900)
+
+        return VStack(alignment: .leading, spacing: LiquidSpace.s200) {
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: LiquidSpace.s150) {
+                    HStack(spacing: LiquidSpace.s250) { swatches; titulo }
+                    valorR
                 }
-                Text("\(p.a.metric.title) ↔ \(p.b.metric.title)")
-                    .font(StrandFont.headline)
-                    .foregroundStyle(theme.ink)
-                Spacer()
-                Text("r = \(signedR(p.r))")
-                    .font(InstrumentoType.groteskNumber(18))
-                    .foregroundStyle(tint)
+            } else {
+                HStack(spacing: LiquidSpace.s250) {
+                    swatches
+                    titulo
+                    Spacer(minLength: LiquidSpace.s200)
+                    valorR
+                }
             }
 
-            Text(insightSentence(p))
-                .font(StrandFont.subhead)
-                .foregroundStyle(theme.inkSecondary)
+            Text(verbatim: insightSentence(p))
+                .font(LiquidType.captionLectura)
+                .foregroundStyle(LiquidColor.tinta700)
                 .fixedSize(horizontal: false, vertical: true)
 
-            Text("\(p.n) overlapping days · \(strengthWord(p.r)) \(directionWord(p.r)) correlation")
-                .font(StrandFont.footnote)
-                .foregroundStyle(theme.inkTertiary)
+            Text(verbatim: pairFooter(p))
+                .font(LiquidType.caption)
+                .foregroundStyle(LiquidColor.tinta500)
         }
-        .padding(CenitMetrics.cardPadding)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
-            .strokeBorder(theme.hairline, lineWidth: 1))
+        .liquidTarjetaSeccion()
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(p.a.metric.title) versus \(p.b.metric.title), r equals \(String(format: "%.2f", p.r)), \(p.n) days")
+        .accessibilityLabel(Text(verbatim: pairA11y(p)))
     }
 
-    // MARK: - Shared scaffold + wells (mirrors SleepDetailScreen / MetricDetailScreen)
+    // MARK: - Shared scaffold + wells
 
-    /// A titled block on the paper: a quiet overline (+ optional trailing count) and content — no
-    /// card-in-card; `surface` is used sparingly inside (Instrumento rule 3).
+    /// A titled block on the paper: a quiet overline (+ optional trailing count) and content. The
+    /// overline speaks in the section-strip voice of the migrated family, inset (not full-bleed:
+    /// Compare's sections carry interactive controls, unlike the read-only detail gemelas).
     @ViewBuilder
-    private func block<Content: View>(title: LocalizedStringKey, trailing: String? = nil,
-                                      @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+    private func bloque<Content: View>(title: String, trailing: String? = nil,
+                                       @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: LiquidSpace.s300) {
             HStack(alignment: .firstTextBaseline) {
-                Text(title).groteskOverline().foregroundStyle(theme.inkTertiary)
+                Text(verbatim: title)
+                    .font(LiquidType.franja).tracking(LiquidType.franjaTracking).textCase(.uppercase)
+                    .foregroundStyle(LiquidColor.tinta500)
+                    .accessibilityAddTraits(.isHeader)
                 if let trailing {
-                    Spacer(minLength: 8)
-                    Text(trailing).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                    Spacer(minLength: LiquidSpace.s200)
+                    Text(verbatim: trailing)
+                        .font(LiquidType.filaConteo)
+                        .foregroundStyle(LiquidColor.tinta500)
                 }
             }
             content()
@@ -641,33 +585,63 @@ struct CompareView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    /// An honest empty state on opaque paper (inside a glass sheet, never glass-on-glass).
+    private func emptyWell(_ text: String) -> some View {
+        Text(verbatim: text)
+            .font(LiquidType.cuerpo)
+            .foregroundStyle(LiquidColor.tinta500)
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity)
+            .liquidTarjetaSeccion()
+    }
+
     // MARK: - Insight language
 
-    /// "Weight ↔ Recovery: r = −0.34 (moderate negative) over 1Y" + a plain-English
-    /// conclusion when |r| is notable.
+    /// "Weight ↔ Recovery: r = −0.34 (moderate negative) over N shared days." + a plain-English
+    /// conclusion when |r| is notable. Names are CANONICAL («Effort», not «Day Strain»).
     private func insightSentence(_ p: PairResult) -> String {
-        let head = String(localized: "\(p.a.metric.title) ↔ \(p.b.metric.title): r = \(signedR(p.r)) (\(strengthWord(p.r)) \(directionWord(p.r))) over \(p.n) shared days.")
+        let aT = p.a.metric.canonicalTitle
+        let bT = p.b.metric.canonicalTitle
+        let head = String(localized: "\(aT) ↔ \(bT): r = \(signedR(p.r)) (\(strengthDirection(p.r))) over \(p.n) shared days.")
         guard abs(p.r) >= 0.3 else {
             return head + String(localized: " No clear relationship: they move largely independently.")
         }
         let lower = p.r < 0
-        let aT = p.a.metric.title.lowercased()
-        let bT = p.b.metric.title.lowercased()
+        let aLower = aT.lowercased()
+        let bLower = bT.lowercased()
         let verb = lower ? String(localized: "tends to fall") : String(localized: "tends to rise")
-        return head + String(localized: " When \(aT) rises, \(bT) \(verb): a \(strengthWord(p.r)) \(directionWord(p.r)) link.")
+        return head + String(localized: " When \(aLower) rises, \(bLower) \(verb): a \(strengthWord(p.r)) \(directionWord(p.r)) link.")
+    }
+
+    private func pairFooter(_ p: PairResult) -> String {
+        String(format: String(localized: "compare.pair.footer",
+                              defaultValue: "%1$lld overlapping days · %2$@ correlation"),
+               p.n, strengthDirection(p.r))
+    }
+
+    private func pairA11y(_ p: PairResult) -> String {
+        // C-03: VoiceOver speaks the EXACT visible string — `signedR`, so the «+» is spoken for a
+        // positive r and the «−» (U+2212) for a negative, never the bare `%.2f` (ASCII hyphen, no +).
+        let rTexto = signedR(p.r)
+        return String(format: String(localized: "compare.pair.a11y",
+                              defaultValue: "%1$@ versus %2$@, r equals %3$@, %4$lld days"),
+               p.a.metric.canonicalTitle, p.b.metric.canonicalTitle,
+               rTexto, p.n)
     }
 
     private func signedR(_ r: Double) -> String {
         (r >= 0 ? "+" : "−") + String(format: "%.2f", abs(r))
     }
 
+    /// The localized strength word for a coefficient. The CUTS are the canonical
+    /// `CorrelationStrength` ladder (StrandAnalytics, TND-29); the WORD is localized here.
     private func strengthWord(_ r: Double) -> String {
-        switch abs(r) {
-        case ..<0.1:  return String(localized: "negligible")
-        case ..<0.3:  return String(localized: "weak")
-        case ..<0.5:  return String(localized: "moderate")
-        case ..<0.7:  return String(localized: "strong")
-        default:      return String(localized: "very strong")
+        switch CorrelationStrength.classify(r: r) {
+        case .negligible: return String(localized: "negligible")
+        case .weak:       return String(localized: "weak")
+        case .moderate:   return String(localized: "moderate")
+        case .strong:     return String(localized: "strong")
+        case .veryStrong: return String(localized: "very strong")
         }
     }
 
@@ -676,383 +650,214 @@ struct CompareView: View {
         return r >= 0 ? String(localized: "positive") : String(localized: "negative")
     }
 
-    /// The r value is the datum, so it carries the only saturated hue in the card: verdict green for a
-    /// positive link, the contained brick red for a negative one (red reserved for genuine signal).
-    private func correlationColor(_ r: Double) -> Color {
-        r >= 0 ? theme.verdict : theme.critical
+    /// Strength + direction as ONE phrase, with no dangling space when the direction is empty
+    /// (|r| < 0.1 → «negligible», not «negligible ») — the double-space the footer and the insight
+    /// head both inherited (paper duda c). Order matches the paper: strength then direction.
+    private func strengthDirection(_ r: Double) -> String {
+        let dir = directionWord(r)
+        let str = strengthWord(r)
+        return dir.isEmpty ? str : "\(str) \(dir)"
     }
 }
 
-// MARK: - Selected-metric chips (wrapping flow layout)
+// MARK: - Overlay chart + tooltip (isolated so scrub re-renders only here)
 
-/// Removable chips for the active selection, tinted to each series' color, on warm paper.
-private struct FlowChips: View {
-    let metrics: [MetricDescriptor]
-    let colorFor: (MetricDescriptor) -> Color
-    var theme: InstrumentoTheme
-    let onRemove: (MetricDescriptor) -> Void
+/// The normalized overlay chart with its live scrub readout. Owns the scrub day so a finger tick
+/// re-renders only this block (the correlation cards stay put), and builds the per-series plot data
+/// ONCE per construction — the same isolation the paper's `OverlayChart` had (FER-319). The chart
+/// draws its own crosshair, per-series rings and legend (real min–max per series). Color is
+/// IDENTITY, names are CANONICAL. The tooltip is a sibling piece (the chart doesn't format dates):
+/// a fixed readout at the top of the plot, since the chart doesn't expose the cursor x.
+private struct CompareOverlay: View {
+    let series: [CompareSeries]        // ALL selected — the piece resolves .minimo/.sinLecturas (TND30-1)
+    let anyWidened: Bool
+    let phrase: String
 
-    private let columns = [GridItem(.adaptive(minimum: 150), spacing: 8, alignment: .leading)]
+    /// The drawable series (non-empty in the window) — the tooltip rows and the a11y label follow
+    /// the legend, which the piece builds from the non-empty ones. `series` keeps the empties only
+    /// so the piece can count what was PICKED and pick the honest empty-state message.
+    private var visibles: [CompareSeries] { series.filter { !$0.rows.isEmpty } }
+
+    /// Built once per construction (init), never per scrub tick.
+    private let liquidSeries: [LiquidGraficaSuperpuesta.Serie]
+    private let porId: [String: MetricDescriptor]
+    private let rango: ClosedRange<Date>
+
+    /// The day under the finger (nil at rest). Published by `LiquidGraficaSuperpuesta` via
+    /// `liquidScrubPan` — NEVER a DragGesture of our own (FER-977).
+    @State private var scrubDay: Date? = nil
+
+    // C-19: Compare respects the imperial toggle like the Explore detail / MetricDetailScreen —
+    // weight (kg → lb) and skin temp (°C → °F) re-label; every other metric is unit-agnostic and
+    // renders unchanged. Only the DISPLAYED scrub readout + tooltip values convert; the min–max
+    // normalization domain is shape-only and never shown as a number, so it stays raw SI.
+    @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
+    @AppStorage(UnitPrefs.temperatureKey) private var temperatureRaw = ""
+    private var unitSystem: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
+    private var temperatureUnit: TemperatureUnit {
+        UnitPrefs.resolveTemperature(system: unitSystem, override: temperatureRaw)
+    }
+
+    // The chart dates are UTC-anchored (`parseCompareDay` = UTC epoch day), so both format in UTC to
+    // label the right calendar day (FER-630), with the current locale for month/weekday names.
+    private static let ejeFmt: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = .autoupdatingCurrent
+        f.timeZone = TimeZone(secondsFromGMT: 0)
+        f.setLocalizedDateFormatFromTemplate("dMMM")
+        return f
+    }()
+    private static let tooltipFmt: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = .autoupdatingCurrent
+        f.timeZone = TimeZone(secondsFromGMT: 0)
+        f.setLocalizedDateFormatFromTemplate("EEEdMMMyyyy")
+        return f
+    }()
+
+    init(series: [CompareSeries], anyWidened: Bool, phrase: String) {
+        self.series = series
+        self.anyWidened = anyWidened
+        self.phrase = phrase
+        self.liquidSeries = series.map { s in
+            LiquidGraficaSuperpuesta.Serie(
+                id: s.id,
+                nombre: s.metric.canonicalTitle,
+                color: s.color,
+                puntos: s.rows.compactMap { row in
+                    parseCompareDay(row.day).map { (fecha: $0, valor: row.value) }
+                },
+                // Min–max of the window per series (`CompareSeries` real min/max) — NEVER a fixed
+                // MetricLevels band, which would spawn a fourth scale (FER-104 / TND-30).
+                dominio: s.realMin...s.realMax)
+        }
+        self.porId = Dictionary(uniqueKeysWithValues: series.map { ($0.id, $0.metric) })
+        let fechas = series.flatMap { $0.rows.compactMap { parseCompareDay($0.day) } }
+        self.rango = (fechas.min() ?? Date())...(fechas.max() ?? Date())
+    }
 
     var body: some View {
-        LazyVGrid(columns: columns, alignment: .leading, spacing: 8) {
-            ForEach(metrics) { metric in
-                let color = colorFor(metric)
-                HStack(spacing: 7) {
-                    Circle().fill(color).frame(width: 8, height: 8)
-                    Text(metric.title)
-                        .font(StrandFont.subhead)
-                        .foregroundStyle(theme.ink)
-                        .lineLimit(1)
-                    Spacer(minLength: 2)
-                    Button {
-                        onRemove(metric)
-                    } label: {
-                        StrandIcon.close.image
-                            .font(.system(size: 9, weight: .bold))   // token-exempt: microtexto <10pt
-                            .foregroundStyle(theme.inkTertiary)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Remove \(metric.title)")
+        VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+            Text(verbatim: caption)
+                .font(LiquidType.captionLectura)
+                .foregroundStyle(LiquidColor.tinta500)
+                .fixedSize(horizontal: false, vertical: true)
+            ZStack(alignment: .top) {
+                LiquidGraficaSuperpuesta(
+                    series: liquidSeries,
+                    rango: rango,
+                    seleccion: $scrubDay,
+                    formatoValor: { serie, v in
+                        porId[serie.id]?.format(v, system: unitSystem, temperature: temperatureUnit) ?? "" },
+                    a11yLabel: a11yLabel,
+                    formatoFechaEje: { Self.ejeFmt.string(from: $0) },
+                    rotulosRejilla: (bajo: String(localized: "low"),
+                                     medio: String(localized: "mid"),
+                                     alto: String(localized: "high")),
+                    mensajeMinimo: String(localized: "Compare needs at least two metrics with history. Connect Apple Health in Data Sources first."),
+                    mensajeSinLecturas: sinDatos)
+                if let d = scrubDay {
+                    LiquidTooltipMulti(fecha: Self.tooltipFmt.string(from: d), filas: filas(on: d))
+                        .padding(.top, LiquidSpace.s200)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .allowsHitTesting(false)
                 }
-                .padding(.horizontal, 11)
-                .padding(.vertical, 8)
-                .background(
-                    Capsule(style: .continuous).fill(theme.paper)
-                )
-                .overlay(
-                    Capsule(style: .continuous).stroke(color.opacity(0.4), lineWidth: 1)   // token-exempt: 0.4 en frontera de banda (strokeSoft .30 aclararía el borde)
-                )
             }
+        }
+    }
+
+    private var caption: String {
+        anyWidened
+            ? String(format: String(localized: "compare.overlay.caption.widened",
+                                    defaultValue: "Min–max normalized · sparse series widened past %1$@ · drag to read values"),
+                     phrase)
+            : String(format: String(localized: "compare.overlay.caption",
+                                    defaultValue: "Each line min–max normalized within %1$@ · drag to read values"),
+                     phrase)
+    }
+
+    private var sinDatos: String {
+        String(localized: "No data for these metrics in \(phrase). Widen the range or pick metrics you've logged.")
+    }
+
+    private var a11yLabel: String {
+        String(format: String(localized: "compare.chart.a11y", defaultValue: "Comparing %1$@"),
+               visibles.map(\.metric.canonicalTitle).joined(separator: ", "))
+    }
+
+    /// One tooltip row per drawn series, in legend order — the scrubbed day's REAL value, or nil («—»).
+    private func filas(on date: Date) -> [LiquidTooltipMulti.Fila] {
+        let day = Repository.utcDayKey(date)
+        return visibles.map { s in
+            LiquidTooltipMulti.Fila(
+                id: s.id, color: s.color, nombre: s.metric.canonicalTitle,
+                valor: s.value(on: day).map { s.metric.format($0, system: unitSystem, temperature: temperatureUnit) })
         }
     }
 }
 
-// MARK: - Metric picker sheet (scroll-stable replacement for the catalog Menu)
+// MARK: - Metric picker sheet (scroll-stable, Liquid)
 
-/// The "add / remove metrics" picker, as a light «Instrumento» sheet (FER-279). Replaces the old
-/// catalog `Menu`, which reset its scroll to the top on every parent re-render — so on a syncing strap
-/// you couldn't scroll it. A `.sheet` owns its scroll state across re-renders. Grouped by catalog
-/// category; tap a row to toggle (a checkmark marks the picked ones); rows disable at the 4-metric cap,
-/// but already-picked rows stay tappable so you can swap. Mutates the shared `selected` binding; you
-/// drag down to dismiss.
+/// The "add / remove metrics" picker, as a Liquid summary-sheet shell (`LiquidMetricSheet` +
+/// `LiquidSheetHeader` + the sheet's own `LiquidSheetFondo`). Replaces the old catalog `Menu`,
+/// which reset its scroll to the top on every parent re-render (FER-279). Grouped by catalog
+/// category; each row is a `LiquidListRow` toggle (a ✓ marks the picked ones); rows disable at the
+/// 4-metric cap, but already-picked rows stay tappable so you can swap. Drag down to dismiss.
 private struct MetricPickerSheet: View {
     @Binding var selected: [MetricDescriptor]
     let maxSelection: Int
-    var theme: InstrumentoTheme
+
+    /// Neutral: the picker has no single subject either, so its plasta is a quiet warm-gray breath.
+    private let tono = LiquidColor.tinta500
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: CenitMetrics.gap) {
-                Text("Metrics").font(InstrumentoType.groteskHeadline(22)).foregroundStyle(theme.ink)
-                Text("Pick 2–4 to overlay.")
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                    .padding(.bottom, 4)
-
-                ForEach(MetricCatalog.categories, id: \.self) { category in
-                    let metrics = MetricCatalog.inCategory(category)
-                    if !metrics.isEmpty {
-                        Text(MetricCatalog.localizedCategory(category))
-                            .groteskOverline().foregroundStyle(theme.inkTertiary)
-                            .padding(.top, 10)
-                        VStack(spacing: 0) {
-                            ForEach(Array(metrics.enumerated()), id: \.element.id) { i, metric in
-                                row(metric)
-                                if i < metrics.count - 1 { Divider().overlay(theme.hairline) }
-                            }
-                        }
-                    }
+        LiquidMetricSheet(tono: tono, detent: .porContenido) {
+            LiquidSheetHeader(icono: nil,
+                              titulo: String(localized: "Metrics"),
+                              tono: tono, numeral: nil)
+            LiquidNotaLine(String(localized: "Pick 2–4 to overlay."))
+            ForEach(MetricCatalog.categories, id: \.self) { category in
+                let metrics = MetricCatalog.inCategory(category)
+                if !metrics.isEmpty {
+                    seccion(category, metrics)
                 }
             }
-            .padding(CenitMetrics.screenPadding)
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(theme.paper)
-        .presentationDragIndicator(.visible)
-        .presentationDetents([.large])
-        .sheetPaper(theme)
     }
 
-    private func row(_ metric: MetricDescriptor) -> some View {
+    private func seccion(_ category: String, _ metrics: [MetricDescriptor]) -> some View {
+        VStack(alignment: .leading, spacing: LiquidSpace.s200) {
+            Text(MetricCatalog.localizedCategory(category))
+                .font(LiquidType.franja).tracking(LiquidType.franjaTracking).textCase(.uppercase)
+                .foregroundStyle(LiquidColor.tinta500)
+            VStack(spacing: 0) {
+                ForEach(Array(metrics.enumerated()), id: \.element.id) { i, metric in
+                    fila(metric, ultima: i == metrics.count - 1)
+                }
+            }
+            .liquidTarjetaSeccion(padding: LiquidSpace.s300)
+        }
+    }
+
+    private func fila(_ metric: MetricDescriptor, ultima: Bool) -> some View {
         let isOn = selected.contains(metric)
         let atCap = !isOn && selected.count >= maxSelection
-        return Button {
-            withAnimation(StrandMotion.gentle) {
-                if isOn { selected.removeAll { $0 == metric } }
-                else if selected.count < maxSelection { selected.append(metric) }
-            }
-        } label: {
-            HStack(spacing: 12) {
-                Image(systemName: metric.icon)
-                    .font(StrandFont.glyph(.inline))
-                    .foregroundStyle(atCap ? theme.inkTertiary : theme.inkSecondary)
-                    .frame(width: 24)
-                Text(metric.title)
-                    .font(StrandFont.body)
-                    .foregroundStyle(atCap ? theme.inkTertiary : theme.ink)
-                Spacer(minLength: 8)
-                if isOn {
-                    StrandIcon.confirm.image
-                        .font(StrandFont.glyph(.inline, weight: .semibold))
-                        .foregroundStyle(theme.verdict)
+        return LiquidListRow(
+            title: metric.canonicalTitle,
+            // C-13: the same origin subtitle the Explore catalog carries, in the closed vocabulary
+            // (C-16) — so a metric names its provenance identically in both instruments' pickers.
+            subtitle: originVocabulary(metric),
+            tone: MetricIdentity.hue(for: metric),
+            seleccionado: isOn,
+            deshabilitado: atCap,
+            // Why the row is inert: VoiceOver otherwise reads a dimmed row with no reason (TND30-7).
+            a11yHint: atCap ? String(localized: "At most 4 metrics.") : nil,
+            divider: !ultima) {
+                withAnimation(LiquidMotion.selector) {
+                    if isOn { selected.removeAll { $0 == metric } }
+                    else if selected.count < maxSelection { selected.append(metric) }
                 }
             }
-            .padding(.vertical, 12)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .disabled(atCap)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(metric.title)
-        .accessibilityAddTraits(isOn ? [.isButton, .isSelected] : .isButton)
-    }
-}
-
-// MARK: - Overlay chart (custom multi-line Swift Chart, normalized 0–1)
-
-/// Draws each series as its own colored line on a shared 0…1 normalized y-axis.
-/// Hovering reveals a crosshair plus a tooltip listing every series' REAL value on
-/// the nearest day.
-private struct OverlayChart: View {
-    let series: [CompareSeries]
-    var theme: InstrumentoTheme
-    var height: CGFloat = 260
-
-    @State private var hoverX: CGFloat? = nil
-    /// Day currently under the finger (nil when not scrubbing) — drives VoiceOver value. (FER-977)
-    @State private var a11yDay: String? = nil
-
-    // A flat, plottable point: the series title (drives the categorical color
-    // scale), the date, and the min–max normalized y.
-    private struct Plot: Identifiable {
-        // Stable identity (one value per metric per day) so Chart can diff across renders instead
-        // of treating every point as new on each hover tick — was `UUID()`, which forced full rebuilds.
-        var id: String { title + "@" + String(date.timeIntervalSince1970) }
-        let title: String
-        let date: Date
-        let norm: Double
-    }
-
-    /// All series flattened into normalized plot points (dropping unparseable days), and the
-    /// union of all days present (ascending) for hover snapping. Both are derived purely from
-    /// `series`, so they're computed ONCE in init — not on every `body` pass. Swift Charts
-    /// re-evaluates `body` on every hover tick; recomputing the flatten/parse/sort there meant
-    /// rebuilding the whole dataset per cursor move. `init` only re-runs when the parent passes
-    /// new `series`, never when the internal `hoverX` @State changes (FER-319).
-    private let plots: [Plot]
-    private let allDays: [String]
-    /// Day strings paired with their already-parsed dates — built once in init so
-    /// hover/scrub nearest-day lookup never re-parses strings per frame.
-    private let allDates: [(day: String, date: Date)]
-
-    init(series: [CompareSeries], theme: InstrumentoTheme, height: CGFloat = 260) {
-        self.series = series
-        self.theme = theme
-        self.height = height
-        self.plots = series.flatMap { s in
-            s.rows.compactMap { row -> Plot? in
-                guard let d = parseCompareDay(row.day) else { return nil }
-                return Plot(title: s.metric.title, date: d, norm: s.normalized(row.value))
-            }
-        }
-        var set = Set<String>()
-        for s in series { for r in s.rows { set.insert(r.day) } }
-        self.allDays = set.sorted()
-        self.allDates = set.compactMap { day -> (day: String, date: Date)? in
-            guard let date = parseCompareDay(day) else { return nil }
-            return (day: day, date: date)
-        }.sorted { $0.date < $1.date }
-    }
-
-    private static let a11yDateFmt: DateFormatter = {
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.dateFormat = "EEE d MMM"
-        return f
-    }()
-
-    /// VoiceOver value: scrub day if active, else the last day present across series. (FER-977)
-    private var accessibilityValueText: String {
-        let day = a11yDay ?? allDays.last
-        guard let day else { return "No data" }
-        let dateStr: String = {
-            if let d = parseCompareDay(day) { return Self.a11yDateFmt.string(from: d) }
-            return day
-        }()
-        let values = series.map { s -> String in
-            let formatted = s.value(on: day).map { s.metric.format($0) } ?? "—"
-            return "\(s.metric.title) \(formatted)"
-        }
-        return values.joined(separator: ", ") + ", on \(dateStr)"
-    }
-
-    private var accessibilityLabelText: String {
-        let names = series.map(\.metric.title).joined(separator: ", ")
-        return "Comparing \(names)"
-    }
-
-    var body: some View {
-        Chart(plots) { p in
-            LineMark(
-                x: .value("Date", p.date),
-                y: .value("Normalized", p.norm)
-            )
-            .interpolationMethod(.catmullRom)
-            .lineStyle(StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round))
-            .foregroundStyle(by: .value("Metric", p.title))
-
-            PointMark(
-                x: .value("Date", p.date),
-                y: .value("Normalized", p.norm)
-            )
-            .symbolSize(10)
-            .foregroundStyle(by: .value("Metric", p.title))
-        }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(accessibilityLabelText))
-        .accessibilityValue(Text(accessibilityValueText))
-        .chartForegroundStyleScale(range: series.map(\.color))
-        .chartYScale(domain: 0...1)
-        .chartYAxis {
-            // Normalized axis — label endpoints as low/high rather than raw numbers.
-            AxisMarks(position: .leading, values: [0.0, 0.5, 1.0]) { value in
-                AxisGridLine().foregroundStyle(theme.hairline)
-                AxisValueLabel {
-                    if let d = value.as(Double.self) {
-                        Text(d == 0 ? "low" : d == 1 ? "high" : "mid")
-                            .font(StrandFont.footnote)
-                            .foregroundStyle(theme.inkTertiary)
-                    }
-                }
-            }
-        }
-        .chartXAxis {
-            AxisMarks(values: .automatic(desiredCount: 5)) { _ in
-                AxisGridLine().foregroundStyle(theme.hairline)
-                AxisValueLabel().foregroundStyle(theme.inkTertiary)
-                    .font(StrandFont.footnote)
-            }
-        }
-        .chartLegend(.hidden) // legend rendered separately with real min/max
-        .chartOverlay { proxy in
-            GeometryReader { geo in
-                let plot = geo[proxy.plotFrame!]
-                // Day under the finger — drives crosshair/tooltip and VoiceOver value. (FER-977)
-                let selectedDay: String? = hoverX.flatMap { nearestDay(toX: $0, proxy: proxy, plot: plot) }
-                ZStack(alignment: .topLeading) {
-                    // Full-bleed hit target so scrub works before any crosshair exists (same pattern as
-                    // TrendChart — without it the ZStack is 0×0 until the first touch lands). (FER-977)
-                    Color.clear
-                        .onChange(of: selectedDay) { _, day in a11yDay = day }
-
-                    if let day = selectedDay,
-                       let d = parseCompareDay(day),
-                       let px = proxy.position(forX: d) {
-                        let cx = px + plot.minX
-                        // Vertical crosshair at the hovered day.
-                        Rectangle()
-                            .fill(theme.hairlineStrong)
-                            .frame(width: 1, height: geo.size.height)
-                            .position(x: cx, y: geo.size.height / 2)
-
-                        // Dot on each series at this day (where it has a value).
-                        ForEach(series) { s in
-                            if let v = s.value(on: day),
-                               let py = proxy.position(forY: s.normalized(v)) {
-                                Circle()
-                                    .fill(s.color)
-                                    .frame(width: 9, height: 9)
-                                    .overlay(Circle().stroke(theme.paper, lineWidth: 2))
-                                    .position(x: cx, y: py + plot.minY)
-                            }
-                        }
-
-                        MultiTooltip(
-                            day: day,
-                            series: series,
-                            theme: theme,
-                            anchorX: cx,
-                            container: geo.size
-                        )
-                    }
-                }
-                .animation(StrandMotion.fade, value: hoverX)
-                .contentShape(Rectangle())
-                // Shared toolkit: finger drag on iOS + pointer hover on macOS → same `hoverX`. (FER-977)
-                .scrubGesture(enabled: true, hoverX: $hoverX)
-            }
-        }
-        .frame(height: height)
-    }
-
-    /// Map a cursor x back to the nearest day-string present in the data.
-    private func nearestDay(toX x: CGFloat, proxy: ChartProxy, plot: CGRect) -> String? {
-        guard !allDates.isEmpty else { return nil }
-        let relX = x - plot.minX
-        guard let target: Date = proxy.value(atX: relX) else { return nil }
-        return allDates.min(by: { a, b in
-            abs(a.date.timeIntervalSince(target)) < abs(b.date.timeIntervalSince(target))
-        })?.day
-    }
-}
-
-// MARK: - Multi-series tooltip
-
-/// A floating tooltip listing each series' REAL value on the hovered day, kept
-/// inside the chart bounds.
-private struct MultiTooltip: View {
-    let day: String
-    let series: [CompareSeries]
-    var theme: InstrumentoTheme
-    let anchorX: CGFloat
-    let container: CGSize
-
-    private static let dateLabelFmt: DateFormatter = {
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.dateFormat = "EEE d MMM yyyy"
-        return f
-    }()
-    private var dateLabel: String {
-        guard let d = parseCompareDay(day) else { return day }
-        return Self.dateLabelFmt.string(from: d)
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Text(dateLabel)
-                .font(StrandFont.footnote)
-                .foregroundStyle(theme.inkTertiary)
-            ForEach(series) { s in
-                HStack(spacing: 7) {
-                    Circle().fill(s.color).frame(width: 7, height: 7)
-                    Text(s.metric.title)
-                        .font(StrandFont.caption)
-                        .foregroundStyle(theme.inkSecondary)
-                    Spacer(minLength: 12)
-                    Text(s.value(on: day).map { s.metric.format($0) } ?? "—")
-                        .font(StrandFont.captionNumber)
-                        .foregroundStyle(theme.ink)
-                }
-            }
-        }
-        .padding(10)
-        .instrumentoCard(.inset, theme: theme)
-        .shadow(color: .black.opacity(0.12), radius: 10, y: 6)   // token-exempt: opacidad de sombra (fuera de banda)
-        .frame(width: tooltipWidth, alignment: .leading)
-        .position(x: clampedX, y: tooltipHeight / 2 + 8)
-        .allowsHitTesting(false)
-    }
-
-    private var tooltipWidth: CGFloat { 220 }
-    private var tooltipHeight: CGFloat { CGFloat(24 + series.count * 18) }
-
-    /// Keep the tooltip on the side of the crosshair with more room, clamped.
-    private var clampedX: CGFloat {
-        let half = tooltipWidth / 2
-        let preferRight = anchorX < container.width / 2
-        let target = preferRight ? anchorX + half + 14 : anchorX - half - 14
-        return min(max(target, half + 4), container.width - half - 4)
     }
 }
 
@@ -1067,9 +872,9 @@ private func comparePreviewRepo() -> Repository {
 }
 
 #Preview("Compare") {
-    CompareView()
-        .instrumentoTheme(.base)
-        .environmentObject(comparePreviewRepo())
-        .frame(width: 920, height: 860)
+    Color.clear.sheet(isPresented: .constant(true)) {
+        CompareView()
+            .environmentObject(comparePreviewRepo())
+    }
 }
 #endif

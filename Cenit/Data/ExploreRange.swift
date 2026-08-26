@@ -27,6 +27,20 @@ enum ExploreRange: Int, CaseIterable, Identifiable, Hashable {
         case .year: return String(localized: "year"); case .all: return String(localized: "all time")
         }
     }
+
+    /// A human phrase for sentences ("over 1Y" → "over 3 months"). Moved here from the retired
+    /// `CompareView.CompareRange` (FER-104 / TND-29, foco 2): Compare and every drill-down now share
+    /// ONE range enum, so the overlay/correlation captions read from the same window model.
+    var phrase: String {
+        switch self {
+        case .week:    return String(localized: "the last 7 days")
+        case .month:   return String(localized: "30 days")
+        case .quarter: return String(localized: "3 months")
+        case .half:    return String(localized: "6 months")
+        case .year:    return String(localized: "1 year")
+        case .all:     return String(localized: "all history")
+        }
+    }
     /// Trailing days the window spans (nil = everything).
     var days: Int? { self == .all ? nil : rawValue }
 

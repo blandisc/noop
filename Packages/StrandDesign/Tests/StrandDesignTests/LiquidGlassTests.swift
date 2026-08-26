@@ -314,6 +314,18 @@ final class LiquidGlassTests: XCTestCase {
                        "ESFUERZO, 10.0")
     }
 
+    /// TND31-4 · el chip de procedencia NO inventa un glifo: con `glyph == nil` (las ~28 métricas del
+    /// Explorador sin glifo canónico) no dibuja el badge de glifo — la identidad la lleva el punto de
+    /// tono. Con un glifo concreto (todos los demás call sites) el badge se conserva.
+    func test_origenChip_sinGlifoNoDibujaBadge() {
+        let sinGlifo = LiquidOrigenChip(glyph: nil, badgeTono: LiquidColor.verdePrimario,
+                                        etiqueta: "En tu dispositivo")
+        XCTAssertFalse(sinGlifo.dibujaBadge, "sin glifo canónico el chip no debe dibujar badge")
+        let conGlifo = LiquidOrigenChip(glyph: .corazon, badgeTono: LiquidColor.rosa,
+                                        etiqueta: "Apple Salud")
+        XCTAssertTrue(conGlifo.dibujaBadge, "con un glifo concreto el badge se conserva")
+    }
+
     func test_a11y_zoneMeter() {
         let segmentos: [LiquidZoneMeter.Segmento] = [
             .init(peso: 1, color: .red, activa: false, etiqueta: "AGOTADO"),

@@ -75,7 +75,10 @@ public struct LiquidMetodo<Content: View>: View {
 /// YA localizados del caller (mismo contrato cerrado que `LiquidOrigen`). Es cromo, no
 /// dato: tamaño fijo. Se lee como UN elemento en VoiceOver (el badge es decorativo).
 public struct LiquidOrigenChip: View {
-    private let glyph: LiquidIcon.Glyph
+    /// `nil` = la fuente no tiene glifo canónico (TND31-4): en vez de inventar uno (un `.rayo` teñido
+    /// mentía «calculado» para las ~28 métricas del Explorador sin glifo), la identidad la lleva SOLO
+    /// el punto de tono. Los demás call sites pasan un glifo concreto → badge, sin cambio de conducta.
+    private let glyph: LiquidIcon.Glyph?
     private let badgeTono: Color
     private let etiqueta: String
     private let sufijo: String?
@@ -83,8 +86,11 @@ public struct LiquidOrigenChip: View {
     /// Geometría interna del badge (contrato §5: candidato menor, no token del sistema).
     private static let badge: CGFloat = 16
     private static let badgeGlifo: CGFloat = 9
+    /// El punto de tono que sustituye al badge cuando no hay glifo: menor que el badge, centrado en su
+    /// mismo hueco de 16 pt para que la fila no salte entre una fuente con glifo y una sin él.
+    private static let punto: CGFloat = 8
 
-    public init(glyph: LiquidIcon.Glyph, badgeTono: Color,
+    public init(glyph: LiquidIcon.Glyph? = nil, badgeTono: Color,
                 etiqueta: String, sufijo: String? = nil) {
         self.glyph = glyph
         self.badgeTono = badgeTono
@@ -92,13 +98,26 @@ public struct LiquidOrigenChip: View {
         self.sufijo = sufijo
     }
 
+    /// TND31-4 · contrato verificable: el badge de glifo SOLO existe con un glifo canónico. Sin él se
+    /// dibuja el punto de tono, nunca un glifo inventado. (Fijado por `LiquidGlassTests`.)
+    var dibujaBadge: Bool { glyph != nil }
+
     public var body: some View {
         HStack(spacing: LiquidSpace.s150) {
-            RoundedRectangle(cornerRadius: LiquidSpace.s100, style: .continuous)
-                .fill(badgeTono)
-                .frame(width: Self.badge, height: Self.badge)
-                .overlay(LiquidIcon(glyph, size: Self.badgeGlifo, color: .white))
-                .accessibilityHidden(true)
+            if let glyph {
+                RoundedRectangle(cornerRadius: LiquidSpace.s100, style: .continuous)
+                    .fill(badgeTono)
+                    .frame(width: Self.badge, height: Self.badge)
+                    .overlay(LiquidIcon(glyph, size: Self.badgeGlifo, color: .white))
+                    .accessibilityHidden(true)
+            } else {
+                // Sin glifo canónico: identidad por el punto de tono, mismo hueco que el badge.
+                Circle()
+                    .fill(badgeTono)
+                    .frame(width: Self.punto, height: Self.punto)
+                    .frame(width: Self.badge, height: Self.badge)
+                    .accessibilityHidden(true)
+            }
             HStack(spacing: LiquidSpace.s100) {
                 Text(verbatim: etiqueta)
                     .foregroundStyle(LiquidColor.tinta700)
@@ -217,6 +236,9 @@ public struct LiquidVerMas: View {
         // El chip calculado (esfuerzo/estrés): badge tenue, sin sufijo.
         LiquidOrigenChip(glyph: .rayo, badgeTono: LiquidColor.tinta500,
                          etiqueta: "Calculado en el teléfono")
+        // TND31-4 · fuente sin glifo canónico: punto de tono en vez de un glifo inventado.
+        LiquidOrigenChip(glyph: nil, badgeTono: LiquidColor.verdePrimario,
+                         etiqueta: "En tu dispositivo")
         LiquidNotaLine("Conecta Apple Salud para ver tu VFC aquí.")
         LiquidNotaLine("Se muestran los últimos 47 días.", tono: LiquidColor.atencionTexto)
         LiquidVerMas(title: "Ver más en Tendencias", hint: "Abre el detalle completo",
