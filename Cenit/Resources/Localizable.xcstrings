@@ -5457,6 +5457,23 @@
         }
       }
     },
+    "7-day moving average: night-to-night values are noisy." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "7-day moving average: night-to-night values are noisy."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Media móvil de 7 días: los valores noche a noche son ruidosos."
+          }
+        }
+      }
+    },
     "7D" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -9703,6 +9720,23 @@
         }
       }
     },
+    "Blood oxygen history" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blood oxygen history"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Historial de oxígeno en sangre"
+          }
+        }
+      }
+    },
     "Body" : {
       "comment" : "A section of the app that shows the user's health and stress levels.",
       "extractionState" : "stale",
@@ -10173,6 +10207,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Respiración"
+          }
+        }
+      }
+    },
+    "Breathing history" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Breathing history"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Historial de respiración"
           }
         }
       }
@@ -10763,6 +10814,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Calibrando"
+          }
+        }
+      }
+    },
+    "Calibrating your base · %lld of 7 nights. We need a few more nights to show your 7-day average, your normal range and the trend." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calibrating your base · %lld of 7 nights. We need a few more nights to show your 7-day average, your normal range and the trend."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calibrando tu base · %lld de 7 noches. Necesitamos unas noches más para mostrar tu promedio de 7 días, tu rango normal y la tendencia."
+          }
+        }
+      }
+    },
+    "Calibrating · %lld of 7 nights" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calibrating · %lld of 7 nights"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calibrando · %lld de 7 noches"
           }
         }
       }
@@ -13086,6 +13171,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cénit %@ · todo se calcula en tu iPhone · sin cuenta · sin servidor"
+          }
+        }
+      }
+    },
+    "Cénit can't read this vital: Apple Health hasn't granted permission. Turn it on and your nights will show up here." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cénit can't read this vital: Apple Health hasn't granted permission. Turn it on and your nights will show up here."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cénit no puede leer esta señal: Apple Salud no le ha dado permiso. Actívalo y tus noches aparecerán aquí."
           }
         }
       }
@@ -18158,6 +18260,23 @@
         }
       }
     },
+    "HRV history" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "HRV history"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Historial de VFC"
+          }
+        }
+      }
+    },
     "HRV (RMSSD)" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -21802,6 +21921,23 @@
         }
       }
     },
+    "Last night falls in %@ · population reference, not your verdict" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last night falls in %@ · population reference, not your verdict"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anoche cae en %@ · referencia poblacional, no tu veredicto"
+          }
+        }
+      }
+    },
     "Last night only one of your two signals came through. The guardian needs both before it can say anything." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -25361,6 +25497,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Estabilidad térmica nocturna"
+          }
+        }
+      }
+    },
+    "Nightly values · the healthy zone is 95% or above." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nightly values · the healthy zone is 95% or above."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Valores por noche · la zona sana es 95% o más."
           }
         }
       }
@@ -32800,6 +32953,23 @@
         }
       }
     },
+    "Resting heart rate history" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resting heart rate history"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Historial de FC en reposo"
+          }
+        }
+      }
+    },
     "Resting HR is elevated and HRV is below your baseline: both classic signs of high activation. Prioritise rest, hydration and an easy day." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -39976,6 +40146,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hoy cae en %@ · escala fija de 0 a 3"
+          }
+        }
+      }
+    },
+    "Today falls in %@ · population reference, not your verdict" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today falls in %@ · population reference, not your verdict"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoy cae en %@ · referencia poblacional, no tu veredicto"
+          }
+        }
+      }
+    },
+    "Today falls in %@ · your normal range from %lld nights" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today falls in %@ · your normal range from %lld nights"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoy cae en %@ · tu rango normal de %lld noches"
           }
         }
       }

@@ -414,7 +414,8 @@ struct TodayView: View {
                     intradayCurveLoader: spec.blocks.contains(.intradayCurve) ? { hrPoints } : nil,
                     hrMax: Double(model.profile.hrMax),
                     restingHR: resolveMeasured(todayOnly: true) { $0.restingHr.map(Double.init) }?.value,
-                    todayKey: Repository.localDayKey(Date())
+                    todayKey: Repository.localDayKey(Date()),
+                    sinPermiso: health.auth != .authorized && health.auth != .unavailable
                 )
                 .recEntranceGate()
             }

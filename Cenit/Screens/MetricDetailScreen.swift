@@ -75,6 +75,10 @@ struct MetricDetailScreen: View {
     /// the DB-free screen can't reproduce timezone-for-timezone). Lets the trend figures drop the
     /// in-progress current day for a cumulative metric (steps). nil → nothing is dropped. (FER-264)
     var todayKey: String? = nil
+    /// `true` cuando Apple Salud NO está autorizado — el campo Liquid apagado lo explica y ofrece el
+    /// CTA a Ajustes (calco `StrainDetailScreen.sinPermiso`, FER-101). Default `false`: los call
+    /// sites existentes compilan sin cambios; el orquestador cablea TodayView/CuerpoView. (TND-20)
+    var sinPermiso: Bool = false
 
     enum Depth { case focus, full }
 
@@ -118,6 +122,9 @@ struct MetricDetailScreen: View {
     @State private var loaded = false
     /// The inverted hero's ⓘ toggles the «What we measure» card under the field (Final skeleton).
     @State private var infoOpen = false
+    /// El carril del historial Liquid que el dedo explora; `nil` = ninguno (paridad
+    /// Sueño/Esfuerzo/Temp de piel — TND-20).
+    @State private var bandaExplorada: Int? = nil
 
 
 
@@ -130,22 +137,36 @@ struct MetricDetailScreen: View {
         // re-deriving `effectiveRange`/`windowed`/`windowValues` and re-parsing the whole
         // history on every redraw. (FER-216)
         let window = MetricWindowMath.make(parsedSeries, selected: range)
-        return ScrollView {
-            // Every metric this screen renders routes to a Final skeleton (the four scalar narrative
-            // vitals HRV / rhr / resp_rate / SpO₂, Heart Rate's intraday path, Steps, and VO₂max).
+        return Group {
             if isNarrative && !isIntraday {
-                narrativeBodyFinal(window)
-            } else if isIntraday {
-                narrativeIntradayFinal(window)
-            } else if spec.descriptor.key == "steps" {
-                stepsBodyFinal(window)
-            } else if spec.descriptor.key == "vo2max" {
-                vo2maxBodyFinal(window)
+                // FER-103 · TND-20: the four scalar narrative vitals (HRV / rhr / resp_rate / SpO₂)
+                // ride the Liquid body. The fondo goes on BOTH presentation forms — `background` for
+                // Cuerpo's overlay layer and `presentationBackground` for Hoy's sheet (same pair as
+                // SleepDetailScreen/SkinTempDetailScreen, FER-102) — so neither call site changes.
+                ScrollView {
+                    narrativeBodyLiquid(window)
+                }
+                .background { LiquidSheetFondo(tone: liquidTono).ignoresSafeArea() }
+                .presentationBackground { LiquidSheetFondo(tone: liquidTono) }
+                .presentationDragIndicator(.visible)
+                .presentationCornerRadius(LiquidRadius.hoja)
+            } else {
+                // Paper «Instrumento» skeletons, untouched: Heart Rate's intraday path, Steps and
+                // VO₂max migrate in their own TND blocks (regla de transición FER-103).
+                ScrollView {
+                    if isIntraday {
+                        narrativeIntradayFinal(window)
+                    } else if spec.descriptor.key == "steps" {
+                        stepsBodyFinal(window)
+                    } else if spec.descriptor.key == "vo2max" {
+                        vo2maxBodyFinal(window)
+                    }
+                }
+                .background(theme.paper)
+                .presentationDragIndicator(.visible)
+                .sheetPaper(theme)
             }
         }
-        .background(theme.paper)
-        .presentationDragIndicator(.visible)
-        .sheetPaper(theme)
         .task {
             range = defaultRange
             if let loader = intradayCurveLoader {
@@ -2096,6 +2117,712 @@ struct MetricDetailScreen: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 10).padding(.vertical, 9)
         .instrumentoCard(.inset, theme: theme)
+    }
+
+    // MARK: - Cuerpo narrativo en vidrio Liquid (FER-103 · TND-20)
+    //
+    // Migración PURAMENTE VISUAL del camino narrativo (HRV / FC en reposo / Respiración / SpO₂ — un
+    // solo árbol para los cuatro) del papel «Instrumento» a los legos Liquid, calcando el patrón de
+    // `SleepDetailScreen` (la vara) y de `StrainDetailScreen` / `StressDetailScreen` /
+    // `SkinTempDetailScreen` (los bloques hermanos ya firmados): campo teñido a sangre
+    // (`LiquidCampoMetrica`) → costuras de sección (`LiquidFranjaSeccion`) → lectura de nivel
+    // (`LiquidReadingLine`; los rangos viven en la escalera tocable del historial, A-UX-08) →
+    // patrón (`LiquidTendenciaCard`, posición de las gemelas: entre Niveles e Historial) →
+    // historial (`LiquidRangeSelector` + `LiquidGraficaNiveles` + `LiquidResumenVentana` +
+    // `LiquidLevelsList`) → espectral VFC (`LiquidCajitaGrid`, calco «Estabilidad térmica») →
+    // método + sello (patrón `pieMetodo` de Sueño).
+    //
+    // La plomería de datos NO CAMBIA (A14): spec + closures + `.task` con parseo off-main quedan tal
+    // cual; cero matemática nueva. La ESCALERA ÚNICA (TND-19) es la fuente de toda palabra/color:
+    // `spec.info.bands` (con `key` de motor) para FCr/Resp/SpO₂, la banda personal ±σ para VFC, y
+    // `spo2HeroVerdict` para el héroe de SpO₂. El CAMPO se tiñe SIEMPRE por identidad (cian/rosa/
+    // azul, calco `LiquidMetricSheetView.tono` :225-248), nunca por juicio.
+    //
+    // Los helpers de papel del camino narrativo (narrativeBodyFinal, hoyVsRangoContent,
+    // graficaRangosBlock, tileStripFinal, …) quedan INTACTOS: los cuerpos de Pasos / VO₂max /
+    // intradía siguen en papel hasta sus propios bloques, y el árbol viejo es el rollback.
+
+    /// La identidad Liquid de la métrica — calco del mapa id→hue de la hoja de Hoy
+    /// (`LiquidMetricSheetView.tono` :225-248): hrv → cian · rhr → rosa · resp_rate/spo2 → azul
+    /// (familia respiratoria). Nunca un color de juicio: el veredicto lo dicen las palabras.
+    private var liquidTono: Color {
+        switch spec.descriptor.key {
+        case "hrv": return LiquidColor.cian
+        case "rhr": return LiquidColor.rosa
+        default:    return LiquidColor.azul   // resp_rate, spo2
+        }
+    }
+
+    /// El glifo del campo — calco `LiquidMetricSheetView.glifo` :255-269. spo2 → `.resp`:
+    /// «el set Liquid no tiene gota»; el oxígeno comparte la familia respiratoria, igual que su hue.
+    private var liquidGlifo: LiquidIcon.Glyph {
+        switch spec.descriptor.key {
+        case "hrv": return .onda
+        case "rhr": return .corazon
+        default:    return .resp              // resp_rate, spo2
+        }
+    }
+
+    /// Voz nocturna («anoche»/«noches») para SpO₂ y Respiración; diurna para VFC y FC en reposo —
+    /// el MISMO reparto que `BandSummaryCopy.isNightly` fija para toda la app.
+    private var liquidNocturno: Bool { BandSummaryCopy.isNightly(metricID: spec.descriptor.key) }
+
+    /// Una sección: la costura a sangre + su contenido con el margen del sistema (calco gemelas).
+    @ViewBuilder
+    private func seccionLiquid<Content: View>(_ titulo: String, @ViewBuilder content: () -> Content) -> some View {
+        LiquidFranjaSeccion(titulo, tono: liquidTono)
+        content().liquidSeccion()
+    }
+
+    /// El esqueleto Liquid del camino narrativo (ver el MARK de arriba para el mapa de bloques).
+    @ViewBuilder private func narrativeBodyLiquid(_ window: MetricWindow) -> some View {
+        LazyVStack(alignment: .leading, spacing: 0) {
+            if let v = todayValue {
+                liquidCampoConDato(v)
+            } else {
+                liquidCampoSinDato
+            }
+            if infoOpen { liquidQueMedimosCard }
+            if !loaded {
+                LiquidSheetSkeleton(a11yCargando: String(localized: "Reading your history…"))
+                    .liquidSeccion()
+            } else if !enoughHistory {
+                // Calibrando: la cláusula/sello del campo ya lo dice; con ≥1 lectura el pie de
+                // método se conserva (paridad con el papel: `calibrationBlock` + pie).
+                if !series.isEmpty { liquidPieMetodo }
+            } else {
+                // Niveles = solo la lectura del ancla (A-UX-08: los rangos viven en la escalera
+                // tocable del historial); sin lectura de hoy, la sección se oculta.
+                if liquidIndiceAncla != nil {
+                    seccionLiquid(String(localized: "Levels")) { liquidLevelsContent }
+                }
+                // «Tu patrón» — franja propia entre Niveles e Historial (A-UX-09: la posición
+                // que las gemelas fijaron para «Qué lo mueve»).
+                if hasPatron {
+                    seccionLiquid(String(localized: "Your pattern")) { liquidPatronContent }
+                }
+                // La sección monta hasta que el parseo terminó (A-UX-04, calco del gate
+                // `parsed.count >= 2` de Sueño/Esfuerzo): sin esto, el primer frame pinta la
+                // gráfica vacía y brinca al llegar `parsedSeries`.
+                if parsedSeries.count >= 2 {
+                    seccionLiquid(String(localized: "History")) { liquidHistoryContent(window) }
+                }
+                if spec.descriptor.key == "hrv", let s = spectral {
+                    seccionLiquid(String(localized: "Your HRV by frequency")) { liquidSpectralContent(s) }
+                }
+                liquidPieMetodo
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // MARK: TND-20 · 1. El campo (héroe) — identidad por métrica, veredicto en palabras
+
+    /// El campo teñido a sangre con dato: numeral + unidad con el rótulo temporal («hoy»/«anoche»),
+    /// el veredicto de la escalera única, y en la ranura libre las cápsulas que el héroe de papel
+    /// llevaba pegadas al numeral («nivel 7 días · …», «Apple») como `LiquidCampoSello`.
+    private func liquidCampoConDato(_ v: Double) -> some View {
+        LiquidCampoMetrica(
+            tono: liquidTono,
+            titulo: String(localized: spec.info.name),
+            glifo: liquidGlifo,
+            datos: [.init(valor: fmt(v), unidad: unit,
+                          rotulo: liquidNocturno ? String(localized: "last night")
+                                                 : String(localized: "today"))],
+            veredicto: liquidVeredicto,
+            infoAbierto: infoOpen,
+            infoEtiqueta: String(localized: "What we measure"),
+            onInfo: { withAnimation(LiquidMotion.lift) { infoOpen.toggle() } }
+        ) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s150) {
+                if let s = liquidSello7d {
+                    LiquidCampoSello(s)
+                }
+                // FER-487: el dato de hoy vino de Apple Salud — la cápsula «Apple» del papel.
+                if todayFromApple {
+                    LiquidCampoSello(String(localized: "Apple"))
+                }
+                // Con 1 lectura el campo tiene dato pero la base aún calibra: el aviso vive
+                // como sello, no como una segunda escalera de cortes.
+                if loaded, !enoughHistory {
+                    LiquidCampoSello(String(localized: "Calibrating · \(series.count) of 7 nights"))
+                }
+            }
+        }
+    }
+
+    /// El campo APAGADO: sin lectura el numeral es un guion, nunca un cero (patrón
+    /// `SleepDetailScreen.campoApagado` / `StrainDetailScreen.campoSinDato`).
+    private var liquidCampoSinDato: some View {
+        LiquidCampoMetrica(
+            tono: liquidTono,
+            titulo: String(localized: spec.info.name),
+            glifo: liquidGlifo,
+            datos: [.init(valor: LiquidCajita.sinDato,
+                          rotulo: liquidNocturno ? String(localized: "last night")
+                                                 : String(localized: "today"),
+                          a11y: String(localized: "no data"), ausente: true)],
+            clausula: liquidClausulaSinDato
+        ) {
+            if sinPermiso {
+                LiquidVerMas(title: String(localized: "Manage Apple Health permissions"),
+                             tone: LiquidColor.papelAlto) { Self.abrirAjustesSalud() }
+            }
+        }
+    }
+
+    /// Cuatro vacíos distintos, no uno: cargando · sin permiso · con historia y sin lectura
+    /// fresca · calibrando N de 7 noches. Mismo árbol que `SkinTempDetailScreen.clausulaSinDato`.
+    private var liquidClausulaSinDato: String {
+        guard loaded else { return String(localized: "Reading your history…") }
+        if sinPermiso {
+            return String(localized: "Cénit can't read this vital: Apple Health hasn't granted permission. Turn it on and your nights will show up here.")
+        }
+        if enoughHistory {
+            return String(localized: "No reading from last night yet: your recent history is below.")
+        }
+        return String(localized: "Calibrating your base · \(series.count) of 7 nights. We need a few more nights to show your 7-day average, your normal range and the trend.")
+    }
+
+    /// Abre Ajustes de iOS en la ficha de la app — mismo atajo que Sueño/Esfuerzo (FER-102).
+    private static func abrirAjustesSalud() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
+    }
+
+    /// El veredicto en palabras bajo el numeral. SpO₂ = `spo2HeroVerdict` (la escalera de DOS
+    /// tramos del motor, TND-19); los vitales personales = la banda ±σ («Normal/Inusual para ti»).
+    /// El campo NUNCA se tiñe por juicio (las gemelas tampoco lo hacen): la palabra basta.
+    private var liquidVeredicto: String? {
+        guard let today = todayValue else { return nil }
+        if spec.descriptor.key == "spo2" {
+            let v = Self.spo2HeroVerdict(today)
+            return String(localized: String.LocalizationValue(v.word))
+        }
+        guard let band = normalRange else { return nil }
+        return band.contains(today)
+            ? String(localized: "Normal for you")
+            : String(localized: "Unusual for you")
+    }
+
+    /// «nivel 7 días · 58 ms» — la cápsula de contexto que era la cláusula del héroe de papel.
+    private var liquidSello7d: String? {
+        guard let avg = SeriesShape.latestMovingAverage(allValues, window: 7) else { return nil }
+        return String(localized: "7-day level · \(fmt(avg)) \(unit)")
+    }
+
+    /// La tarjeta del ⓘ bajo el campo — el MISMO copy de cabecera del papel (`readingCopy(.header)`),
+    /// re-vestido (patrón `SleepDetailScreen.queMedimosCard`).
+    @ViewBuilder private var liquidQueMedimosCard: some View {
+        if let reading = readingCopy(for: .header) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s150) {
+                Text(String(localized: "What we measure"))
+                    .font(LiquidType.tituloFila)
+                    .foregroundStyle(LiquidColor.tinta900)
+                Text(reading)
+                    .font(LiquidType.cuerpo)
+                    .lineSpacing(LiquidType.cuerpoLineSpacing)
+                    .foregroundStyle(LiquidColor.tinta700)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .liquidTarjetaSeccion()
+            .liquidSeccion(top: LiquidSpace.s400, bottom: LiquidSpace.s200)
+        }
+    }
+
+    // MARK: TND-20 · La escalera única, vestida Liquid
+
+    /// Un carril de la escalera Liquid. Para FCr/Resp/SpO₂ sale de `spec.info.bands` (la escalera
+    /// del motor, con `key` — TND-19); para VFC de la banda personal ±σ (`graficaRangosBands`
+    /// conservada como DATO). Nunca una segunda copia de cortes.
+    struct BandaVitalLiquid {
+        let key: String?
+        let label: String
+        let lo: Double?
+        let hi: Double?
+        let color: Color
+        let range: String
+    }
+
+    /// Los carriles de esta métrica, en el orden ascendente del motor (paridad gemelas). VFC sin
+    /// base → `[]` (modo sin carriles, estado honesto).
+    private var liquidBandas: [BandaVitalLiquid] {
+        if spec.descriptor.key == "hrv" {
+            guard let nr = normalRange else { return [] }
+            let lo = nr.lowerBound, hi = nr.upperBound
+            // Carriles half-open que cubren la banda personal CERRADA [lo, hi] — el MISMO reparto
+            // que `graficaRangosBands()` usa en el papel (below / within / above).
+            return [
+                BandaVitalLiquid(key: "below", label: String(localized: "Unusual for you"),
+                                 lo: nil, hi: lo,
+                                 color: Self.liquidColorNivel(metric: "hrv", key: "below", tono: liquidTono),
+                                 range: "< \(fmt(lo))"),
+                BandaVitalLiquid(key: "within", label: String(localized: "Normal for you"),
+                                 lo: lo, hi: hi.nextUp,
+                                 color: Self.liquidColorNivel(metric: "hrv", key: "within", tono: liquidTono),
+                                 range: "\(fmt(lo))–\(fmt(hi))"),
+                BandaVitalLiquid(key: "above", label: String(localized: "Unusual for you"),
+                                 lo: hi.nextUp, hi: nil,
+                                 color: Self.liquidColorNivel(metric: "hrv", key: "above", tono: liquidTono),
+                                 range: "≥ \(fmt(hi))")
+            ]
+        }
+        return spec.info.bands
+            .filter { $0.lower != nil || $0.upper != nil }
+            .map { b in
+                BandaVitalLiquid(key: b.key,
+                                 label: plainLocalizedLabel(b.label),
+                                 lo: b.lower, hi: b.upper,
+                                 color: Self.liquidColorNivel(metric: spec.descriptor.key,
+                                                              key: b.key, tono: liquidTono),
+                                 range: b.range)
+            }
+    }
+
+    /// El tono de cada carril: UNA rampa del hue de identidad graduada por CLAVE — la tinta sube
+    /// con el valor de la métrica, literal (calco `StrainDetailScreen.colorNivel` /
+    /// `SkinTempDetailScreen.colorNivel`). Nunca un semáforo ni `theme.*` en el camino Liquid:
+    /// `laneColor` (TND-19) queda para el papel restante. Estática para poder fijarla en tests.
+    static func liquidColorNivel(metric: String, key: String?, tono: Color) -> Color {
+        switch (metric, key) {
+        case ("hrv", "below"):        return tono.opacity(0.32)  // token-exempt: rampa graduada de identidad (geometría de dato)
+        case ("hrv", "within"):       return tono.opacity(0.62)  // token-exempt: rampa graduada de identidad (geometría de dato)
+        case ("hrv", "above"):        return tono
+        case ("rhr", "rhrAthlete"):   return tono.opacity(0.28)  // token-exempt: rampa graduada de identidad (geometría de dato)
+        case ("rhr", "rhrLow"):       return tono.opacity(0.48)  // token-exempt: rampa graduada de identidad (geometría de dato)
+        case ("rhr", "rhrTypical"):   return tono.opacity(0.70)  // token-exempt: rampa graduada de identidad (geometría de dato)
+        case ("rhr", "rhrHigher"):    return tono
+        case ("resp_rate", "normal"): return tono.opacity(0.55)  // token-exempt: rampa graduada de identidad (geometría de dato)
+        case ("resp_rate", "elevated"): return tono
+        case ("spo2", "low"):         return tono.opacity(0.50)  // token-exempt: rampa graduada de identidad (geometría de dato)
+        case ("spo2", "normal"):      return tono
+        default:                      return tono
+        }
+    }
+
+    /// El carril en que cae la lectura de hoy, o `nil` sin lectura/sin base. Único predicado del
+    /// camino Liquid: lo leen el campo, Niveles, el historial y la escalera tocable.
+    private var liquidIndiceAncla: Int? {
+        guard let v = todayValue else { return nil }
+        return liquidBandas.firstIndex { b in
+            (b.lo == nil || v >= b.lo!) && (b.hi == nil || v < b.hi!)
+        }
+    }
+
+    /// El carril resaltado en la gráfica y en la escalera: el que el dedo explora, o el del ancla.
+    private var liquidDestacado: Int? { bandaExplorada ?? liquidIndiceAncla }
+
+    // MARK: TND-20 · 2. Niveles — la lectura del ancla contra la escalera única
+
+    /// «Hoy/Anoche cae en X · …» — la banda inline del papel MUERE (A-UX-08, degradación
+    /// decidida): los rangos viven en la escalera tocable del historial. El `positionSlider`
+    /// del papel no era tocable (solo a11y), así que no se pierde interacción.
+    @ViewBuilder private var liquidLevelsContent: some View {
+        if let i = liquidIndiceAncla {
+            let b = liquidBandas[i]
+            if spec.descriptor.key == "hrv", let s = baselineState {
+                LiquidReadingLine(
+                    String(localized: "Today falls in \(b.label) · your normal range from \(s.nValid) nights"),
+                    highlight: b.label, highlightTone: liquidTono)
+            } else if liquidNocturno {
+                LiquidReadingLine(
+                    String(localized: "Last night falls in \(b.label) · population reference, not your verdict"),
+                    highlight: b.label, highlightTone: liquidTono)
+            } else {
+                LiquidReadingLine(
+                    String(localized: "Today falls in \(b.label) · population reference, not your verdict"),
+                    highlight: b.label, highlightTone: liquidTono)
+            }
+        }
+    }
+
+    // MARK: TND-20 · 3. Tu patrón — hallazgos direccionales + señales de anoche
+
+    /// `LiquidTendenciaCard` (la pieza de las gemelas, A-UX-09) con las MISMAS frases de
+    /// `WhatMovesItFinding.phrase`, más las señales de anoche como notas. Las flechas ↑/↓ del papel
+    /// no cruzan: la dirección la dicen las palabras, como en Esfuerzo/Estrés.
+    @ViewBuilder private var liquidPatronContent: some View {
+        VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+            if visibleBlocks.contains(.whatMovesIt), !series.isEmpty {
+                if whatMovesItFindings.isEmpty {
+                    LiquidNotaLine(String(localized: "Not enough data yet: keep wearing your Apple Watch and check back in a few weeks."),
+                                   tono: LiquidColor.tinta700)
+                } else {
+                    LiquidTendenciaCard(
+                        overline: String(localized: "What we see in your history"),
+                        chip: String(localized: "trend, not cause"),
+                        lineas: whatMovesItFindings.map { plainLocalizedLabel($0.phrase) })
+                }
+            }
+            if visibleBlocks.contains(.nightVitals),
+               nightVitals.respiration != nil || nightVitals.restingHR != nil {
+                VStack(alignment: .leading, spacing: LiquidSpace.s100) {
+                    LiquidNotaLine(liquidSenalesNoche, tono: LiquidColor.tinta700)
+                    if let reading = readingCopy(for: .nightVitals) {
+                        LiquidNotaLine(plainLocalizedLabel(reading))
+                    }
+                }
+            }
+        }
+    }
+
+    /// «Otras señales de anoche · Respiración 14.6 · FC reposo 52» — mismas claves que el papel
+    /// (`narrativeNightLine`): la respiración se omite en el detalle de Respiración (es el héroe).
+    private var liquidSenalesNoche: String {
+        let label = String(localized: "Other signals from last night")
+        let rhr = nightVitals.restingHR.map { "\(Int($0.rounded()))" } ?? "—"
+        if spec.descriptor.key == "resp_rate" {
+            return "\(label) · " + String(localized: "Resting HR \(rhr)")
+        }
+        let resp = nightVitals.respiration.map { String(format: "%.1f", $0) } ?? "—"
+        return "\(label) · " + String(localized: "Respiration \(resp) · Resting HR \(rhr)")
+    }
+
+    // MARK: TND-20 · 4. Historial — selector + gráfica + resumen + escalera tocable
+
+    private func liquidHistoryContent(_ window: MetricWindow) -> some View {
+        // SpO₂ (clínica) grafica noches CRUDAS; los vitales personales suavizan la serie nocturna
+        // ruidosa a 7 días — el MISMO reparto que `graficaRangosBlock` hace en el papel.
+        let plot: [Double] = spec.clinicalBands
+            ? window.values
+            : SeriesShape.movingAverage(window.values, window: 7)
+        return VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+            if visibleBlocks.contains(.periodSelector) {
+                LiquidRangeSelector(opciones: ExploreRange.allCases.map(\.label),
+                                    seleccion: liquidRangeSeleccion, tono: liquidTono)
+            }
+            if window.values.count > 1 {
+                VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+                    liquidFraseNivelHistorial(window)
+                    liquidGraficaHistorial(window, plot: plot)
+                    LiquidNotaLine(liquidNotaGrafica)
+                    LiquidResumenVentana(celdas: liquidResumenCeldas(window))
+                }
+                .liquidTarjetaSeccion()
+                if !liquidBandas.isEmpty {
+                    LiquidLevelsList(filas: liquidCarriles(window), tono: liquidTono)
+                    LiquidNotaLine(liquidNocturno
+                        ? String(localized: "How many nights of the period fell in each band. Tap one to see its nights on the chart.")
+                        : String(localized: "How many days of the period fell in each band. Tap one to see its days on the chart."))
+                }
+            } else {
+                // Una sola lectura o ninguna en el rango → el pozo vacío honesto (calco gemelas).
+                LiquidGraficaNiveles(puntos: [], bandas: [],
+                                     dominio: liquidDominio(plot: []), ticksY: [],
+                                     tono: liquidTono,
+                                     estadoVacio: liquidEstadoVacio,
+                                     a11yLabel: liquidA11yGrafica)
+            }
+        }
+    }
+
+    /// El índice del selector ⇄ `ExploreRange`; cambiar de rango suelta el carril explorado.
+    private var liquidRangeSeleccion: Binding<Int> {
+        Binding(
+            get: { ExploreRange.allCases.firstIndex(of: range) ?? 0 },
+            set: { idx in
+                range = ExploreRange.allCases[idx]
+                bandaExplorada = nil
+            })
+    }
+
+    /// El carril del ancla y cuántos días/noches del periodo cayeron con él — mismo contrato que
+    /// `fraseNivelHistorial` de las gemelas.
+    @ViewBuilder private func liquidFraseNivelHistorial(_ window: MetricWindow) -> some View {
+        if let i = liquidIndiceAncla {
+            let b = liquidBandas[i]
+            let n = window.values.filter { v in
+                (b.lo == nil || v >= b.lo!) && (b.hi == nil || v < b.hi!)
+            }.count
+            LiquidFraseNivel(nivel: b.label,
+                             conteo: liquidNocturno
+                                ? String(localized: "\(n) of your last \(window.values.count) nights")
+                                : String(localized: "\(n) of your last \(window.values.count) days"),
+                             tono: liquidTono)
+        } else {
+            // `sinLectura` solo cuando de verdad NO hay lectura: VFC sin base tiene lectura
+            // pero cero carriles — decir «Hoy sin lectura» ahí mentiría (estado honesto).
+            LiquidFraseNivel(nivel: nil,
+                             conteo: liquidNocturno
+                                ? String(localized: "\(window.values.count) nights with data in this range")
+                                : String(localized: "\(window.values.count) days with data in this range"),
+                             tono: liquidTono,
+                             sinLectura: todayValue != nil ? nil
+                                : (liquidNocturno
+                                    ? String(localized: "No reading last night")
+                                    : String(localized: "No reading today")))
+        }
+    }
+
+    /// La gráfica del historial con los carriles de la escalera única detrás y los ticks
+    /// afirmando los CORTES reales del motor (paridad TND10-3).
+    private func liquidGraficaHistorial(_ window: MetricWindow, plot: [Double]) -> some View {
+        let puntos = MetricWindowMath
+            .decimatedPoints(rows: window.rows, values: plot, maxPoints: 80)
+            .map { (fecha: $0.date, valor: $0.value) }
+        return LiquidGraficaNiveles(
+            puntos: puntos,
+            bandas: liquidBandas.enumerated().map { i, b in
+                LiquidChartBanda(lo: b.lo, hi: b.hi, color: b.color, activa: i == liquidDestacado)
+            },
+            dominio: liquidDominio(plot: plot),
+            ticksY: liquidTicksY,
+            tono: liquidTono,
+            puntoHoy: todayValue != nil ? puntos.last : nil,
+            hoyAnillo: bandaExplorada != nil && bandaExplorada != liquidIndiceAncla,
+            formatoScrub: { v, f in "\(fmt(v)) · \(Self.ejeFechaLiquid.string(from: f))" },
+            formatoValorScrub: { fmt($0) },
+            formatoFechaScrub: { Self.ejeFechaLiquid.string(from: $0) },
+            formatoFechaEje: { Self.ejeFechaLiquid.string(from: $0) },
+            atenuarFuera: bandaExplorada != nil,
+            estadoVacio: liquidEstadoVacio,
+            a11yLabel: liquidA11yGrafica)
+            .id(range)
+    }
+
+    /// El dominio Y: SpO₂ su dominio clínico fijo (88–100); VFC la banda personal con aire (la
+    /// MISMA aritmética que `graficaDomain` del papel); FCr/Resp abren TODOS los cortes del motor
+    /// con el dato incluido — así el carril se lee como carril y no como borde recortado (paridad
+    /// `SkinTempDetailScreen.dominioTemp`). Presentación pura, cero matemática de datos.
+    private func liquidDominio(plot: [Double]) -> ClosedRange<Double> {
+        if let domain = spec.chartDomain { return domain }
+        if spec.descriptor.key == "hrv", let band = normalRange {
+            let span = band.upperBound - band.lowerBound
+            let pad = Swift.max(span * 0.6, 1)
+            let lo = Swift.min(band.lowerBound - pad, plot.min() ?? band.lowerBound)
+            let hi = Swift.max(band.upperBound + pad, plot.max() ?? band.upperBound)
+            return lo...hi
+        }
+        let cortes = liquidBandas.flatMap { [$0.lo, $0.hi].compactMap { $0 } }
+        let lo = Swift.min(plot.min() ?? (cortes.min() ?? 0), cortes.min() ?? (plot.min() ?? 0))
+        let hi = Swift.max(plot.max() ?? (cortes.max() ?? 1), cortes.max() ?? (plot.max() ?? 1))
+        guard hi > lo else { return (lo - 1)...(hi + 1) }
+        let pad = (hi - lo) * 0.1
+        return (lo - pad)...(hi + pad)
+    }
+
+    /// Los ticks del eje: los cortes reales de la escalera (SpO₂ añade los extremos de su dominio
+    /// clínico, paridad `clinicalYAxisValues`; VFC los bordes de su banda personal).
+    private var liquidTicksY: [(valor: Double, etiqueta: String)] {
+        if spec.descriptor.key == "spo2", let domain = spec.chartDomain {
+            let cortes = Set(liquidBandas.flatMap { [$0.lo, $0.hi].compactMap { $0 } })
+            return ([domain.lowerBound, domain.upperBound] + cortes)
+                .sorted(by: >)
+                .map { ($0, fmt($0)) }
+        }
+        if spec.descriptor.key == "hrv" {
+            guard let band = normalRange else { return [] }
+            return [(band.upperBound, fmt(band.upperBound)), (band.lowerBound, fmt(band.lowerBound))]
+        }
+        let cortes = Set(liquidBandas.flatMap { [$0.lo, $0.hi].compactMap { $0 } })
+        return cortes.sorted(by: >).map { ($0, fmt($0)) }
+    }
+
+    /// La nota bajo la gráfica: qué línea es (suavizada vs cruda) — el conmutador Media ⇄ Rangos
+    /// del papel MUERE (A9); la información sobrevive en la gráfica + la escalera con conteos.
+    private var liquidNotaGrafica: String {
+        spec.clinicalBands
+            ? String(localized: "Nightly values · the healthy zone is 95% or above.")
+            : String(localized: "7-day moving average: night-to-night values are noisy.")
+    }
+
+    private var liquidEstadoVacio: String {
+        liquidNocturno
+            ? String(localized: "Not enough nights in this range to draw a trend.")
+            : String(localized: "Not enough days in this range to draw a trend.")
+    }
+
+    private var liquidA11yGrafica: String {
+        switch spec.descriptor.key {
+        case "hrv":  return String(localized: "HRV history")
+        case "rhr":  return String(localized: "Resting heart rate history")
+        case "spo2": return String(localized: "Blood oxygen history")
+        default:     return String(localized: "Breathing history")
+        }
+    }
+
+    /// El trío del resumen por métrica, calcando `statCells` del papel (M4: promedio/rango CRUDOS
+    /// de la ventana del selector): VFC Promedio/Tendencia/Consistencia · FCr Promedio/Tendencia/
+    /// Rango · Resp Promedio/Rango · SpO₂ Promedio/«Noches < 95%».
+    private func liquidResumenCeldas(_ window: MetricWindow) -> [LiquidResumenVentana.Celda] {
+        let stat = ComparisonEngine.stat(window.values)
+        let promedio = LiquidResumenVentana.Celda(
+            rotulo: String(localized: "Average"),
+            valor: unit.isEmpty ? fmt(stat.mean) : "\(fmt(stat.mean)) \(unit)")
+        let rango = LiquidResumenVentana.Celda(
+            rotulo: String(localized: "Range"),
+            valor: "\(fmt(stat.min))–\(fmt(stat.max))")
+        switch spec.descriptor.key {
+        case "hrv":
+            var celdas = [promedio]
+            if let t = liquidCeldaTendencia(window) { celdas.append(t) }
+            if let cv = SeriesShape.coefficientOfVariation(allValues, window: 7) {
+                let steady = Int((cv * 100).rounded()) <= 10
+                celdas.append(.init(rotulo: String(localized: "Consistency"),
+                                    valor: String(localized: steady ? "Steady" : "Variable")))
+            }
+            return celdas
+        case "rhr":
+            var celdas = [promedio]
+            if let t = liquidCeldaTendencia(window) { celdas.append(t) }
+            celdas.append(rango)
+            return celdas
+        case "spo2":
+            guard let threshold = spec.lowThreshold else { return [promedio] }
+            // Las MISMAS cifras que `spo2StatCells`: noches < 95% del último mes.
+            let recent = MetricWindowMath.slice(parsedSeries, for: .month)
+            let low = recent.reduce(0) { $0 + ($1.value < threshold ? 1 : 0) }
+            return [promedio,
+                    .init(rotulo: String(localized: "Nights < 95%"),
+                          valor: String(localized: "\(low) of \(recent.count)"),
+                          tono: low > 0 ? LiquidColor.atencionTexto : nil)]
+        default:   // resp_rate
+            return [promedio, rango]
+        }
+    }
+
+    /// «▲ 3%» coloreado por la polaridad de la métrica — la MISMA lógica que `trendCell` +
+    /// `trendDeltaColor` del papel, dicha en las voces de texto Liquid (positivo/atención).
+    private func liquidCeldaTendencia(_ window: MetricWindow) -> LiquidResumenVentana.Celda? {
+        guard let pct = window.range.periodComparison(of: trendComparisonSeries)?.pctChange else { return nil }
+        let rounded = Int(abs(pct).rounded())
+        let arrow = rounded == 0 ? "" : (pct >= 0 ? "▲ " : "▼ ")
+        let tono: Color? = {
+            guard rounded != 0 else { return nil }
+            switch trendPolarity {
+            case .higherIsBetter: return pct > 0 ? LiquidColor.positivo : LiquidColor.atencionTexto
+            case .lowerIsBetter:  return pct < 0 ? LiquidColor.positivo : LiquidColor.atencionTexto
+            case .neutral:        return nil
+            }
+        }()
+        return .init(rotulo: String(localized: "Trend"), valor: "\(arrow)\(rounded)%", tono: tono)
+    }
+
+    /// Los carriles tocables bajo la gráfica: tocar uno resalta sus días/noches; re-tocarlo limpia.
+    /// Mismo contrato que `carrilesHistorial` de las gemelas.
+    private func liquidCarriles(_ window: MetricWindow) -> [LiquidLevelsList.Fila] {
+        let hint = String(localized: "Highlights this level on the chart")
+        let hoyRotulo = liquidNocturno ? String(localized: "· last night") : String(localized: "· today")
+        let iAncla = liquidIndiceAncla
+        let bandas = liquidBandas
+        return bandas.indices.map { i in
+            let b = bandas[i]
+            let n = window.values.filter { v in
+                (b.lo == nil || v >= b.lo!) && (b.hi == nil || v < b.hi!)
+            }.count
+            let conteo: String = liquidNocturno
+                ? (n == 1 ? String(localized: "\(n) night") : String(localized: "\(n) nights"))
+                : (n == 1 ? String(localized: "\(n) day") : String(localized: "\(n) days"))
+            return LiquidLevelsList.Fila(
+                etiqueta: b.label, rango: b.range,
+                conteo: conteo,
+                esHoy: i == iAncla, activa: i == liquidDestacado,
+                hoyEtiqueta: hoyRotulo, a11yHint: hint,
+                onTap: {
+                    withAnimation(LiquidMotion.lift) {
+                        bandaExplorada = (bandaExplorada == i) ? nil : i
+                    }
+                })
+        }
+    }
+
+    private static let ejeFechaLiquid: DateFormatter = {
+        let f = DateFormatter(); f.setLocalizedDateFormatFromTemplate("dMMM"); return f
+    }()
+
+    // MARK: TND-20 · 5. Espectral VFC — calco EXACTO del patrón «Estabilidad térmica»
+    // (`SkinTempDetailScreen.thermalBlock` :513-525): cajitas + notas de hedge. Cero pérdida
+    // de copy — las claves (subtítulos, frases «vs tu normal», Lomb-Scargle) se conservan.
+
+    @ViewBuilder private func liquidSpectralContent(_ s: SpectralHRV) -> some View {
+        VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+            LiquidCajitaGrid {
+                LiquidCajita(rotulo: "\(String(localized: "Respiratory")) · HF",
+                             valor: liquidSpectralValor(s.hf.value),
+                             unidad: "ms²",
+                             pie: liquidSpectralPie(
+                                subtitulo: String(localized: "your calm signal, tied to your breathing"),
+                                label: s.hf.label),
+                             tono: liquidTono,
+                             compacto: true)
+                if let lf = s.lf {
+                    LiquidCajita(rotulo: "\(String(localized: "Slow")) · LF",
+                                 valor: liquidSpectralValor(lf.value),
+                                 unidad: "ms²",
+                                 pie: liquidSpectralPie(
+                                    subtitulo: String(localized: "slow waves; a mix of signals"),
+                                    label: lf.label),
+                                 compacto: true)
+                }
+                LiquidCajita(rotulo: String(localized: "Total variation"),
+                             valor: liquidSpectralValor(s.total),
+                             unidad: "ms²",
+                             pie: String(localized: "everything together, the “volume” of your HRV"),
+                             compacto: true)
+            }
+            if s.lf == nil {
+                LiquidNotaLine(String(localized: "Last night's reading was short, so it only covers the respiratory part: not the slow waves."),
+                               tono: LiquidColor.tinta700)
+            } else if s.hf.label == nil {
+                LiquidNotaLine(String(localized: "Still learning your normal range. Once there are enough nights, I'll tell you whether a value is high or low for you."),
+                               tono: LiquidColor.tinta700)
+            }
+            LiquidNotaLine(String(localized: "Computed from last night's heartbeats (Lomb-Scargle). These are descriptive band powers to compare against yourself: not a diagnosis or a “stress balance.”"))
+        }
+    }
+
+    private func liquidSpectralValor(_ v: Double) -> String {
+        Self.groupedInt.string(from: NSNumber(value: Int(v.rounded()))) ?? "\(Int(v.rounded()))"
+    }
+
+    /// El pie de una cajita espectral: subtítulo + «vs tu normal» (mismas claves que el papel).
+    private func liquidSpectralPie(subtitulo: String, label: HRVSpectralBaseline.Label?) -> String {
+        guard let frase = liquidFraseEspectral(label) else { return subtitulo }
+        return "\(subtitulo) · \(frase)"
+    }
+
+    /// «vs tu normal» por banda; nil mientras calibra — mismas claves que `spectralLabelPhrase`.
+    private func liquidFraseEspectral(_ label: HRVSpectralBaseline.Label?) -> String? {
+        switch label {
+        case .higher: return String(localized: "higher than your normal")
+        case .normal: return String(localized: "within your normal")
+        case .lower:  return String(localized: "lower than your normal")
+        case nil:     return nil
+        }
+    }
+
+    // MARK: TND-20 · 6. Método + sello — patrón `pieMetodo` de Sueño (capilar sin franja propia)
+
+    private var liquidPieMetodo: some View {
+        VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+            LiquidCapilar(eje: .horizontal)
+            if visibleBlocks.contains(.method), let method = spec.info.method {
+                LiquidMetodo(title: String(localized: "How it's calculated"),
+                             mostrar: String(localized: "Show explanation"),
+                             ocultar: String(localized: "Hide explanation")) {
+                    LiquidNotaLine(String(localized: method.prose), tono: LiquidColor.tinta700)
+                    if let citation = method.citation {
+                        LiquidNotaLine(String(localized: citation))
+                    }
+                }
+            }
+            // M1: el MISMO vocabulario de procedencia que la hoja de Hoy declara por métrica
+            // (`LiquidMetricSheetView.origen` :360-367): hrv/rhr/spo2 → «Apple Health»,
+            // resp_rate → «Apple Watch». El sello de papel «Medido por tu banda» no cruza
+            // (axioma cero banda). M2: nunca procedencia sobre un guion — el chip solo con
+            // historia, y el sufijo temporal solo cuando HAY lectura fresca.
+            if !series.isEmpty {
+                LiquidOrigenChip(glyph: liquidGlifo, badgeTono: liquidTono,
+                                 etiqueta: spec.descriptor.key == "resp_rate"
+                                     ? String(localized: "Apple Watch")
+                                     : String(localized: "Apple Health"),
+                                 sufijo: todayValue != nil
+                                     ? (liquidNocturno ? String(localized: "last night")
+                                                       : String(localized: "today"))
+                                     : nil)
+            }
+        }
+        .liquidSeccion(top: LiquidSpace.s200, bottom: LiquidSpace.s800)
     }
 
 }
