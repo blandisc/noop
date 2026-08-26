@@ -68,24 +68,45 @@ extension MetricDetailScreen {
         return ""
     }
 
-    /// Colour ramp for population lanes: low index = first band in factory order (often “best” or “normal”).
-    func bandLaneColors(count: Int) -> [Color] {
-        switch spec.descriptor.key {
-        case "spo2":
-            // Normal / Borderline / Low
-            return [theme.verdict, theme.warning, theme.critical]
-        case "rhr":
-            // Athlete range / Low / Typical / Higher — lower is better. FER-43 (gate /cso): la banda
-            // alta baja de `critical` a `warning`. Se suavizó la PALABRA («Higher», no «Elevated»)
-            // porque >80 lpm sigue dentro del normal adulto de la AHA (60–100); dejar el rojo de
-            // alarma hacía que el color siguiera gritando lo que el copy ya no afirma.
-            return [theme.verdictDeep, theme.verdict, theme.inkSecondary, theme.warning]
-        case "resp_rate":
-            // Low / Typical / Elevated / High
-            return [theme.inkSecondary, theme.verdict, theme.warning, theme.critical]
+    /// Colour of one population lane, keyed off the band's engine KEY — never its position in the
+    /// array. Positional ramps were the TND-19 defect class: when SpO₂ and Respiration shrank to the
+    /// engine's two bands, the stale index ramps painted SpO₂'s «low (< 95)» lane green (verdict) and
+    /// «normal» amber — inverted — and Respiration's «elevated (≥ 20)» green. A band with no engine
+    /// key (or an unmapped one) falls back to the metric's own hue, matching the old `default`.
+    /// Static (theme/fallback injected) so the key→colour map is pinned by `MetricInfoEscaleraUnicaTests`.
+    static func laneColor(metric: String, bandKey: String?,
+                          theme: InstrumentoTheme, fallback: Color) -> Color {
+        switch (metric, bandKey) {
+        case ("spo2", "normal"):
+            return theme.verdict
+        case ("spo2", "low"):
+            // < 95% absorbs the retired «Borderline» stretch (90–95), so it reads warning, not the old
+            // sub-90 critical: one band, one honest amber — same softening logic as rhr's FER-43.
+            return theme.warning
+        // Athlete range / Low / Typical / Higher — lower is better. FER-43 (gate /cso): la banda
+        // alta baja de `critical` a `warning`. Se suavizó la PALABRA («Higher», no «Elevated»)
+        // porque >80 lpm sigue dentro del normal adulto de la AHA (60–100); dejar el rojo de
+        // alarma hacía que el color siguiera gritando lo que el copy ya no afirma.
+        case ("rhr", "rhrAthlete"):
+            return theme.verdictDeep
+        case ("rhr", "rhrLow"):
+            return theme.verdict
+        case ("rhr", "rhrTypical"):
+            return theme.inkSecondary
+        case ("rhr", "rhrHigher"):
+            return theme.warning
+        case ("resp_rate", "normal"):
+            return theme.verdict
+        case ("resp_rate", "elevated"):
+            return theme.warning
         default:
-            return (0..<count).map { _ in metricHue }
+            return fallback
         }
+    }
+
+    /// Instance sugar over `laneColor` with this screen's metric, theme and hue plugged in.
+    func bandLaneColor(key: String?) -> Color {
+        Self.laneColor(metric: spec.descriptor.key, bandKey: key, theme: theme, fallback: metricHue)
     }
 
     var unit: String { spec.info.unit ?? "" }

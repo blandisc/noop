@@ -7,8 +7,15 @@ import SwiftUI
 // `MetricInfoSheet:914`) con el mismo motor y scrub de la familia, y el pie de stats
 // min/prom/max YA formateados por el caller (contrato §3 F4).
 //
-// Sin bandas ni ticks: la curva FC habla sola; el contexto lo dan el último valor y las
-// stats. Estados `.cargando` (skeleton sobrio) y `.vacio` (mensaje del caller).
+// Sin bandas de clasificación: la curva FC habla sola; el contexto lo dan el último valor,
+// las stats y, opcionales, los ticks del eje Y, la referencia punteada y el punto marcado
+// (ver TND-23 abajo). Estados `.cargando` (skeleton sobrio) y `.vacio` (mensaje del caller).
+//
+// FER-103 · TND-23 (detalle de FC intradía): la pieza aprende dos contextos OPCIONALES que
+// el papel ya dibujaba y que sin ellos se perderían en la migración — `referencia` (la FC
+// en reposo de anoche como punteada horizontal, contexto en tinta) y `puntoMarcado` (el
+// PICO del día: la joya se ancla ahí en vez del último punto). Ambos con default `nil`,
+// así que la hoja de Hoy no cambia ni un pixel.
 
 public struct LiquidCurvaFC: View {
     private let titulo: String
@@ -16,6 +23,13 @@ public struct LiquidCurvaFC: View {
     private let ultimo: String?
     private let puntos: [(fecha: Date, valor: Double)]
     private let dominio: ClosedRange<Double>
+    /// Punteada horizontal de referencia (la FC en reposo de anoche). El valor viene en el
+    /// dominio del caller y la etiqueta que lo nombra vive en su caption (paridad del
+    /// papel, `peakRestingCaption`). `nil` = sin línea. (TND-23)
+    private let referencia: Double?
+    /// El punto MARCADO de la curva (el pico del día): la joya se ancla ahí en vez del
+    /// último punto. `nil` = joya en el último punto, el comportamiento de siempre. (TND-23)
+    private let puntoMarcado: (fecha: Date, valor: Double)?
     private let stats: (min: String, prom: String, max: String)?
     /// Rótulos localizados de las tres stats («MÍN/PROM/MÁX»). El contrato §3 F4 no los
     /// lista, pero el DS no puede inventar copy (D3) — el caller los pasa junto a los
@@ -40,6 +54,8 @@ public struct LiquidCurvaFC: View {
                 ultimo: String? = nil,
                 puntos: [(fecha: Date, valor: Double)],
                 dominio: ClosedRange<Double>,
+                referencia: Double? = nil,
+                puntoMarcado: (fecha: Date, valor: Double)? = nil,
                 stats: (min: String, prom: String, max: String)? = nil,
                 statsEtiquetas: (min: String, prom: String, max: String)? = nil,
                 ticksY: [(valor: Double, etiqueta: String)] = [],
@@ -54,6 +70,8 @@ public struct LiquidCurvaFC: View {
         self.ultimo = ultimo
         self.puntos = puntos
         self.dominio = dominio
+        self.referencia = referencia
+        self.puntoMarcado = puntoMarcado
         self.stats = stats
         self.statsEtiquetas = statsEtiquetas
         self.ticksY = ticksY
@@ -99,7 +117,10 @@ public struct LiquidCurvaFC: View {
         case .datos:
             LiquidChartPlot(puntos: puntos, bandas: [], dominio: dominio,
                             ticksY: ticksY, tono: LiquidColor.rosa,
-                            puntoHoy: puntos.last, hoyAnillo: false,
+                            // TND-23: con pico marcado la joya se ancla en el pico (la
+                            // lectura que el caption nombra); sin él, en el último punto.
+                            puntoHoy: puntoMarcado ?? puntos.last, hoyAnillo: false,
+                            lineaRef: referencia,
                             formatoScrub: formatoScrub,
                             formatoValorScrub: formatoValorScrub,
                             formatoFechaScrub: formatoFechaScrub,
@@ -184,12 +205,17 @@ private func curvaDemo() -> [(fecha: Date, valor: Double)] {
         f.setLocalizedDateFormatFromTemplate("jmm")
         return { (d: Date) -> String in f.string(from: d) }
     }()
+    // TND-23: la punteada de referencia (FC en reposo) y la joya anclada al PICO del día.
+    let demo = curvaDemo()
+    let pico = demo.max { $0.valor < $1.valor }
     var curva = LiquidCurvaFC(
         titulo: "Pulsaciones por minuto",
         subtitulo: "Promedio de 5 min · desde medianoche",
         ultimo: "72 lpm",
-        puntos: curvaDemo(),
+        puntos: demo,
         dominio: 40...105,
+        referencia: 52,
+        puntoMarcado: pico,
         stats: (min: "48", prom: "64", max: "98"),
         statsEtiquetas: (min: "Mín", prom: "Prom", max: "Máx"),
         ticksY: [(100, "100"), (70, "70"), (45, "45")],

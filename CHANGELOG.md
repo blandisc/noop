@@ -20,6 +20,22 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **Tendencias: el detalle de vital completo en vidrio / Trends: the full vital detail in glass** (FER-103).
+  **ES** — Los siete esqueletos del detalle de vital (VFC, FC en reposo, Respiración, SpO₂, Pasos,
+  VO₂max y FC del día con Tiempo en zonas) cruzan al lenguaje Liquid, cerrando el último salto
+  papel↔vidrio de la app: «Ver más» desde la hoja de Hoy aterriza ahora en su misma familia, con el
+  numeral sembrado desde el primer frame y los MISMOS veredictos que la hoja (adiós al «Inusual
+  para ti» que contradecía a «buena señal»). De paso murieron bugs que vivían en producción: la
+  escalera de Pasos con 4 bandas contra las 3 del motor, los colores de SpO₂ invertidos (el carril
+  bajo se pintaba verde), un «Límite» fantasma, y sellos que contaban los días en el calendario
+  equivocado. Las zonas de FC muestran las seis siempre — un día de reposo ya no desaparece — y la
+  curva del día gana la línea de tu FC en reposo y el pico marcado.
+  **EN** — All seven vital-detail skeletons cross into Liquid glass, closing the app's last
+  paper↔glass seam: "See more" from a Today sheet now lands in its own family, the numeral seeded
+  from the first frame with the SAME verdict phrases as the sheet. Along the way, live production
+  bugs died: the Steps ladder disagreeing with the engine, SpO₂ lane colors inverted, a phantom
+  "Borderline", and date seals counted in the wrong calendar. HR zones always show all six, and the
+  day curve gains your resting-HR line and the marked peak.
 - **Hoy · los rótulos de las señales despegan del orbe / Today · the signal labels lift off the orb** (FER-157).
   **ES** — En el héroe «El Ecosistema», los cuatro rótulos de las señales (SUEÑO, FC EN REPOSO, RESPIRACIÓN, TEMPERATURA) caían sobre los puntos del orbe cuando su cuerpo cruzaba la cara del orbe. Ahora, cuando un rótulo caería sobre el disco, se empuja hasta el borde del orbe: los cuatro quedan legibles en los flancos, ninguno encima de las partículas. Los rótulos que ya estaban fuera del orbe no se mueven, así que el look del veredicto no cambia. Aplica igual al estado con veredicto y al estado sin lectura.
   **EN** — In the "Ecosystem" hero, the four signal labels (sleep, resting HR, respiration, skin temperature) landed on the orb's dots whenever their body crossed the orb's face. Now, when a label would fall on the disc, it's pushed out to the orb's edge: all four stay readable on the flanks, none over the particles. Labels already clear of the orb don't move, so the verdict look is unchanged. Applies to both the verdict state and the no-reading state.
