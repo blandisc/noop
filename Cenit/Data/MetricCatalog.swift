@@ -17,6 +17,20 @@ struct MetricDescriptor: Identifiable, Hashable {
     /// and stays English — surface it through this for anything user-visible.
     var localizedCategory: String { MetricCatalog.localizedCategory(category) }
 
+    /// The ONE canonical display name — the name Hoy already shows, so a metric is called the same
+    /// thing on every screen (FER-104 / HJ-13: «una métrica, un nombre»). The raw `title` stays
+    /// «Day Strain» / «Day Stress» (identity other call sites read), but Hoy's Matrix / sheet titles
+    /// those two «Effort» / «Stress» — this override returns that canonical name so Compare and Explore
+    /// stop reintroducing «Day Strain» in chips / legends / tooltips. Every other metric returns its
+    /// catalog title unchanged. (Consumed by the visual migration, TND-30/31.)
+    var canonicalTitle: String {
+        switch key {
+        case "strain": return String(localized: "Effort")
+        case "stress": return String(localized: "Stress")
+        default:       return title
+        }
+    }
+
     func format(_ v: Double) -> String {
         let n = decimals == 0 ? String(Int(v.rounded())) : String(format: "%.\(decimals)f", v)
         return unit.isEmpty ? n : "\(n) \(unit)"

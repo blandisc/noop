@@ -65,35 +65,13 @@ private func metricAccent(_ m: MetricDescriptor, theme: InstrumentoTheme) -> Col
 // window math in `Cenit/Screens/MetricTrendChart.swift` (`MetricWindowMath`, FER-269); the Explorer
 // drives its SegmentedPillControl from the same enum.
 
-// MARK: - On-device series resolver (FER-281)
-
-/// The daily series for a catalog `key` read from the merged on-device dashboard (`repo.displayDays`),
-/// or `nil` for keys the dashboard doesn't compute (import-only: weight / body fat / BMI / HR zones /
-/// avg·max HR / derived sleep %). The Explore catalog historically read only `repo.series` (the imports
-/// table), which is empty for a strap user without a WHOOP export — so every metric looked dataless. This
-/// resolves the scores the strap computes on device, mirroring the key→field map the Cuerpo detail
-/// screens use (FER-149). Callers fall back to `repo.series` when this returns `nil` or an empty series.
-private func dashboardSeries(_ key: String, from days: [DailyMetric]) -> [(day: String, value: Double)]? {
-    let pick: (DailyMetric) -> Double?
-    switch key {
-    case "recovery":         pick = { $0.recovery }
-    case "hrv":              pick = { $0.avgHrv }
-    case "rhr":              pick = { $0.restingHr.map(Double.init) }
-    case "resp_rate":        pick = { $0.respRateBpm }
-    case "spo2":             pick = { $0.spo2Pct }
-    case "skin_temp":        pick = { $0.skinTempDevC }
-    case "strain":           pick = { $0.strain }
-    case "steps":            pick = { $0.steps.map(Double.init) }
-    case "sleep_total_min":  pick = { $0.totalSleepMin }
-    case "sleep_efficiency": pick = { $0.efficiency }
-    case "sleep_deep_min":   pick = { $0.deepMin }
-    case "sleep_rem_min":    pick = { $0.remMin }
-    case "sleep_light_min":  pick = { $0.lightMin }
-    case "active_kcal", "energy_kcal": pick = { $0.activeKcalEst }
-    default:                 return nil
-    }
-    return days.compactMap { row in pick(row).map { (row.day, $0) } }.sorted { $0.day < $1.day }
-}
+// MARK: - On-device series resolver
+//
+// Explore no longer defines its own key→series map. It shares `MetricSeriesResolver`
+// (`Cenit/Data/MetricSeriesResolver.swift`) with Compare, so a catalog key resolves to the SAME number
+// on both screens (FER-104 / TND-29, foco 3). The private copy diverged from Compare's on two metrics
+// (sleep_efficiency read raw 0–1 here; calories resolved the HR-only `activeKcalEst` estimate) — the
+// shared resolver adopts the correct decision for each (efficiency → %, calories → `series()`).
 
 // MARK: - Root: categorized list
 
@@ -174,7 +152,7 @@ struct MetricExplorerView: View {
         let keysBySource = await repo.availableKeySets(sources: MetricCatalog.all.map(\.source))
         var map: [String: Bool] = [:]
         for metric in MetricCatalog.all {
-            let onDevice = !(dashboardSeries(metric.key, from: dash) ?? []).isEmpty
+            let onDevice = !(MetricSeriesResolver.dashboardSeries(metric.key, from: dash) ?? []).isEmpty
             let imported = keysBySource[metric.source]?.contains(metric.key) ?? false
             map[metric.id] = !(onDevice || imported)
         }
@@ -342,7 +320,7 @@ struct MetricDetailView: View {
         // Candidates for the correlation scan: every OTHER metric with data — on-device OR imported.
         let candidates = MetricCatalog.all.filter { other in
             guard other.id != metric.id else { return false }
-            let onDevice = !(dashboardSeries(other.key, from: dash) ?? []).isEmpty
+            let onDevice = !(MetricSeriesResolver.dashboardSeries(other.key, from: dash) ?? []).isEmpty
             let imported = keysBySource[other.source]?.contains(other.key) ?? false
             return onDevice || imported
         }
@@ -350,7 +328,7 @@ struct MetricDetailView: View {
         let loadedOthers: [(metric: MetricDescriptor, series: [(day: String, value: Double)])] =
             await withTaskGroup(of: (MetricDescriptor, [(day: String, value: Double)]).self) { group in
                 for other in candidates {
-                    let onDevice = dashboardSeries(other.key, from: dash) ?? []
+                    let onDevice = MetricSeriesResolver.dashboardSeries(other.key, from: dash) ?? []
                     if onDevice.isEmpty {
                         group.addTask { (other, await repo.series(key: other.key, source: other.source)) }
                     } else {
@@ -363,7 +341,7 @@ struct MetricDetailView: View {
             }
 
         // Focal series: on-device if the dashboard computes this metric, else the imported series.
-        let focalOnDevice = dashboardSeries(metric.key, from: dash) ?? []
+        let focalOnDevice = MetricSeriesResolver.dashboardSeries(metric.key, from: dash) ?? []
         let focalSeries = focalOnDevice.isEmpty
             ? await repo.series(key: metric.key, source: metric.source)
             : focalOnDevice

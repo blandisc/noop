@@ -24,55 +24,12 @@ import CenitStore
 private func parseCompareDay(_ day: String) -> Date? { Repository.parseDayKey(day) }
 
 // MARK: - Range control (shared spec — W / M / 3M / 6M / 1Y / ALL)
-
-/// The canonical Strand range window. `days == nil` means ALL of history.
-enum CompareRange: String, CaseIterable, Identifiable {
-    case week, month, quarter, half, year, all
-    var id: String { rawValue }
-
-    var label: String {
-        switch self {
-        case .week:    return String(localized: "W")
-        case .month:   return String(localized: "M")
-        case .quarter: return String(localized: "3M")
-        case .half:    return String(localized: "6M")
-        case .year:    return String(localized: "1Y")
-        case .all:     return String(localized: "ALL")
-        }
-    }
-
-    /// The trailing window length in days; nil = everything.
-    var days: Int? {
-        switch self {
-        case .week:    return 7
-        case .month:   return 30
-        case .quarter: return 90
-        case .half:    return 180
-        case .year:    return 365
-        case .all:     return nil
-        }
-    }
-
-    /// A human phrase for sentences ("over 1Y").
-    var phrase: String {
-        switch self {
-        case .week:    return String(localized: "the last 7 days")
-        case .month:   return String(localized: "30 days")
-        case .quarter: return String(localized: "3 months")
-        case .half:    return String(localized: "6 months")
-        case .year:    return String(localized: "1 year")
-        case .all:     return String(localized: "all history")
-        }
-    }
-
-    /// This range plus every LARGER range, ascending — the auto-expand search order
-    /// when a selected window holds zero points for a series.
-    var widening: [CompareRange] {
-        let order: [CompareRange] = [.week, .month, .quarter, .half, .year, .all]
-        guard let i = order.firstIndex(of: self) else { return [.all] }
-        return Array(order[i...])
-    }
-}
+//
+// Compare no longer defines its own range enum. It shares the canonical `ExploreRange`
+// (`Cenit/Data/ExploreRange.swift`) with every drill-down, and the window math with them too
+// (`MetricWindowMath`, `MetricTrendChart.swift`). Was a private `CompareRange` — a verbatim copy of
+// `ExploreRange` plus a re-implemented slice/effectiveRange — retired in FER-104 / TND-29 (foco 2).
+// `ExploreRange.phrase` carries the sentence phrase Compare used to own.
 
 // MARK: - Per-series model
 
@@ -123,7 +80,7 @@ struct CompareView: View {
     /// well — without importing a CSV. (FER-275)
     private static let defaultKeys = ["recovery", "strain", "hrv"]
 
-    @State private var range: CompareRange = .year
+    @State private var range: ExploreRange = .year
     /// Ordered selection (max 4). Drives both the legend order and color mapping.
     @State private var selected: [MetricDescriptor] = []
     /// Presents the metric picker as a scroll-stable sheet. A SwiftUI `Menu` rebuilds (and resets its
@@ -219,25 +176,11 @@ struct CompareView: View {
 
     // MARK: - Active windowed series
 
-    /// A full-history series' rows over a given range, taken RELATIVE TO THAT SERIES'
-    /// LATEST data point (not "now"); `.all` returns everything.
-    private func slice(_ full: [(day: String, value: Double)], _ r: CompareRange) -> [(day: String, value: Double)] {
-        guard let n = r.days else { return full }
-        guard let lastDay = full.last?.day, let last = parseCompareDay(lastDay) else { return [] }
-        let cutoff = last.addingTimeInterval(-Double(n - 1) * 86_400)
-        return full.filter { row in
-            guard let d = parseCompareDay(row.day) else { return false }
-            return d >= cutoff
-        }
-    }
-
-    /// The range actually used for a series: the SELECTED range when its window holds
-    /// ≥1 point, else the smallest LARGER range that does. So sparse metrics still
-    /// overlay against dense ones, and switching ranges stays visibly distinct.
-    private func effectiveRange(_ full: [(day: String, value: Double)]) -> CompareRange {
-        guard !full.isEmpty else { return range }
-        for r in range.widening where !slice(full, r).isEmpty { return r }
-        return .all
+    /// A full-history series parsed into the shared window model (each `day` → `Date` once), so the
+    /// canonical `MetricWindowMath` (slice + auto-widen, FER-269) can window it exactly like every
+    /// drill-down does — no re-implemented copy. (FER-104 / TND-29, foco 2.)
+    private func parsed(_ full: [(day: String, value: Double)]) -> MetricWindowMath.Parsed {
+        full.map { (day: $0.day, date: parseCompareDay($0.day), value: $0.value) }
     }
 
     /// Selected metrics resolved to windowed rows + stable colors, in pick order. Reads the memoized
@@ -248,11 +191,14 @@ struct CompareView: View {
     private func recomputeActiveSeries() {
         activeSeriesCache = selected.enumerated().map { idx, metric in
             let full = fullSeries[metric.id] ?? []
-            let rows = slice(full, effectiveRange(full))
+            // The window (effective range + rows) is computed by the shared math, RELATIVE TO THAT
+            // SERIES' LATEST point, auto-widening a sparse series to the smallest larger range that
+            // holds ≥1 point — the same behavior Compare's private copy had.
+            let window = MetricWindowMath.make(parsed(full), selected: range)
             return CompareSeries(
                 metric: metric,
                 color: seriesPalette[idx % seriesPalette.count],
-                rows: rows
+                rows: window.rows
             )
         }
     }
@@ -261,7 +207,8 @@ struct CompareView: View {
     private var anyWidened: Bool {
         selected.contains { metric in
             let full = fullSeries[metric.id] ?? []
-            return !full.isEmpty && effectiveRange(full) != range
+            guard !full.isEmpty else { return false }
+            return MetricWindowMath.effectiveRange(parsed(full), selected: range) != range
         }
     }
 
@@ -301,8 +248,10 @@ struct CompareView: View {
         var resolved: [(id: String, series: [(day: String, value: Double)])] = []
         var needsSeries: [MetricDescriptor] = []
         for metric in missing {
-            if let pick = Self.dailyPicker(for: metric.key) {
-                resolved.append((metric.id, dailySeries(pick)))
+            // The ONE shared «key → daily on-device series» resolver (FER-104 / TND-29, foco 3): the
+            // same map Explore uses, so a key resolves to the same number on both screens.
+            if let series = MetricSeriesResolver.dashboardSeries(metric.key, from: repo.displayDays) {
+                resolved.append((metric.id, series))
             } else {
                 needsSeries.append(metric)
             }
@@ -321,39 +270,6 @@ struct CompareView: View {
         loadedOnce = true
     }
 
-    /// A metric's full daily history (ascending by day) from the merged dashboard — same contract as
-    /// `repo.series()`, but resolving for strap users too. (FER-275)
-    private func dailySeries(_ pick: (DailyMetric) -> Double?) -> [(day: String, value: Double)] {
-        repo.displayDays
-            .compactMap { row in pick(row).map { (row.day, $0) } }
-            .sorted { $0.day < $1.day }
-    }
-
-    /// The nightly-dashboard field for a metric key, or `nil` for keys that aren't computed on-device
-    /// (body composition, HR-zone splits, derived sleep percentages) — those keep the import-/Apple-only
-    /// `series()` path. Mirrors the per-metric extraction Cuerpo's rows + `vitalSeries` already use. (FER-275)
-    private static func dailyPicker(for key: String) -> ((DailyMetric) -> Double?)? {
-        switch key {
-        case "recovery":         return { $0.recovery }
-        case "strain":           return { $0.strain }
-        case "hrv":              return { $0.avgHrv }
-        case "rhr":              return { $0.restingHr.map(Double.init) }
-        case "resp_rate":        return { $0.respRateBpm }
-        case "spo2":             return { $0.spo2Pct }
-        case "skin_temp":        return { $0.skinTempDevC }
-        case "steps":            return { $0.steps.map(Double.init) }
-        case "sleep_total_min":  return { $0.totalSleepMin }
-        case "sleep_deep_min":   return { $0.deepMin }
-        case "sleep_rem_min":    return { $0.remMin }
-        case "sleep_light_min":  return { $0.lightMin }
-        case "sleep_efficiency": return { $0.efficiency.map { $0 <= 1.0 ? $0 * 100 : $0 } }
-        // NOTE: `active_kcal` stays on the `series()` path on purpose — the catalog sources it from Apple
-        // Health, and the dashboard's `activeKcalEst` is a *different* figure (an HR-only whole-day
-        // estimate), so resolving it here would silently swap that metric's meaning. (FER-275)
-        default:                 return nil
-        }
-    }
-
     // MARK: - Metric picker section (range control + chips, on a contained surface)
 
     // The controls live directly on the paper (no surface card): hierarchy by space, not boxes
@@ -363,7 +279,7 @@ struct CompareView: View {
         VStack(alignment: .leading, spacing: CenitMetrics.gap) {
             Text("Metrics").groteskOverline().foregroundStyle(theme.inkTertiary)
 
-            SegmentedPillControl(CompareRange.allCases, selection: $range, theme: theme) { $0.label }
+            SegmentedPillControl(ExploreRange.allCases, selection: $range, theme: theme) { $0.label }
                 .accessibilityLabel("Time range")
 
             HStack(alignment: .firstTextBaseline) {
@@ -512,7 +428,9 @@ struct CompareView: View {
         for i in 0..<(series.count - 1) {
             for j in (i + 1)..<series.count {
                 let pairs = CorrelationEngine.alignByDay(series[i].rows, series[j].rows)
-                guard pairs.count >= 3, let c = CorrelationEngine.pearson(pairs) else { continue }
+                // The canonical compute floor for a trustworthy Pearson r (FER-104 / TND-29, foco 1).
+                guard pairs.count >= CorrelationStrength.minPairs,
+                      let c = CorrelationEngine.pearson(pairs) else { continue }
                 out.append(PairScan(aId: series[i].id, bId: series[j].id, r: c.r, n: c.n))
             }
         }
@@ -661,13 +579,16 @@ struct CompareView: View {
         (r >= 0 ? "+" : "−") + String(format: "%.2f", abs(r))
     }
 
+    /// The localized strength word for a coefficient. The CUTS are the canonical `CorrelationStrength`
+    /// ladder (StrandAnalytics) — one source of truth for «how strong is an r» (FER-104 / TND-29, foco
+    /// 1); the WORD is localized here so the strings resolve against the app bundle, not the package.
     private func strengthWord(_ r: Double) -> String {
-        switch abs(r) {
-        case ..<0.1:  return String(localized: "negligible")
-        case ..<0.3:  return String(localized: "weak")
-        case ..<0.5:  return String(localized: "moderate")
-        case ..<0.7:  return String(localized: "strong")
-        default:      return String(localized: "very strong")
+        switch CorrelationStrength.classify(r: r) {
+        case .negligible: return String(localized: "negligible")
+        case .weak:       return String(localized: "weak")
+        case .moderate:   return String(localized: "moderate")
+        case .strong:     return String(localized: "strong")
+        case .veryStrong: return String(localized: "very strong")
         }
     }
 

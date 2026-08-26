@@ -53865,6 +53865,22 @@
         }
       }
     },
+    "medium" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "medium"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "medio"
+          }
+        }
+      }
+    },
     "moderate" : {
       "extractionState" : "stale",
       "localizations" : {

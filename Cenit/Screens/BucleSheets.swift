@@ -544,11 +544,16 @@ enum BucleFormat {
         }
     }
 
+    /// The word for a Cohen's *d* EFFECT SIZE (a standardized mean difference), by the conventional
+    /// 0.20 / 0.50 / 0.80 cuts. This is a DIFFERENT scale from correlation strength
+    /// (`CorrelationStrength`, which grades a Pearson |r|): they are legitimately distinct, so they are
+    /// NOT unified. The 0.50–0.80 band reads «medium» (Cohen's canonical term) rather than «moderate»,
+    /// so the two scales never share the ambiguous word «moderate» (FER-104 / TND-29, foco 1).
     static func magnitudeWord(_ d: Double) -> String {
         switch abs(d) {
         case ..<0.2:  return String(localized: "negligible")
         case ..<0.5:  return String(localized: "small")
-        case ..<0.8:  return String(localized: "moderate")
+        case ..<0.8:  return String(localized: "medium")
         default:      return String(localized: "large")
         }
     }
