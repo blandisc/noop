@@ -3,21 +3,29 @@ import SwiftUI
 import StrandDesign
 import StrandAnalytics
 
-// MARK: - Fitness Age detail (FER-141)
+// MARK: - Fitness Age detail — «Edad física» en vidrio Liquid (FER-141 · FER-105 · TND-33)
 //
-// The light «Instrumento diurno» sheet you reach by tapping the «Edad física» row in Cuerpo. It
-// presents the headline number honestly in all three states the engine distinguishes:
+// Migración PURAMENTE VISUAL del esqueleto «Tendencias Final» (papel «Instrumento») a los legos
+// Liquid, calcando el patrón de `SkinTempDetailScreen.swift` (la vara) y de las hermanas ya
+// firmadas: campo teñido a sangre (`LiquidCampoMetrica`) → costuras de sección
+// (`LiquidFranjaSeccion`) → cajitas / notas → método + sello. La matemática y el copy se
+// conservan; esto es un reskin.
 //
-//   • ready / estimate — HeroInvertido (longevity green) with always-on ESTIMATE capsule, delta +
-//     non-clinical disclaimer as the verdict, «What moves it» tiles, measured VO₂max (Apple), and
-//     PieMetodo with the transparency checklist + Nes/HUNT method.
-//   • notReady — no made-up number: an honest empty well + the checklist of what's still missing.
+// Presenta el número honestamente en los dos estados que el motor distingue:
+//   • ready / estimate — campo verde longevidad con cápsula ESTIMATE permanente, delta + margen +
+//     disclaimer no-clínico como veredicto, «What moves it» (2 cajitas RHR/actividad + ancla),
+//     VO₂max medido (Apple, complementario) y método con el checklist de transparencia + Nes/HUNT.
+//   • notReady — sin número inventado: campo apagado + el checklist de lo que aún falta.
 //
-// Esqueleto Final (misma forma que `MetricDetailScreen.narrativeBodyFinal` / `SkinTempDetailScreen`):
-// HeroInvertido → SeccionBloque… → PieMetodo. Full-bleed (franjas edge-to-edge). The theme is passed
-// EXPLICITLY — it does not propagate through `.sheet`. Math and copy are preserved; this is a reskin.
-// The VO₂max block (FER-215) shows Apple Health's MEASURED VO₂max (when present) as a complementary,
-// source-labeled datum — it does NOT feed the Nes Fitness Age (that stays the model's own comparison).
+// IDENTIDAD VERDE: `fitness_age` no está en el mapa canónico de tonos, así que toma
+// `LiquidColor.verdePrimario` — coincide con el verde de longevidad de Hoy. El VO₂max de Apple
+// (FER-215) se muestra como dato complementario etiquetado con su fuente; NO alimenta la Edad
+// física de Nes (esa sigue siendo la comparación propia del modelo).
+//
+// Se presenta como CAPA desde Cuerpo (`detailOverlayContent`): sus `.presentation*` propios están
+// inertes en producción (solo actúan en su #Preview). El fondo va por `background` (la capa) Y
+// `presentationBackground` (la hoja del #Preview). El param `theme` se conserva como compat muerto
+// — la hoja Liquid ya no lo referencia, pero los call sites de `CuerpoView` lo pasan (FER-100).
 
 struct FitnessAgeDetailView: View {
     let snapshot: FitnessAgeSnapshot
@@ -31,23 +39,27 @@ struct FitnessAgeDetailView: View {
     /// when connected-but-no-reading, the block hides entirely. (FER-215)
     var appleConnectHint: Bool = false
     /// The fitness TRAJECTORY over weeks (rising / stable / falling) from `VO2maxTrend` (FER-679), plus
-    /// the raw VO₂max series for the context sparkline. `nil` below the data minimum → block hidden. (FER-833)
-    /// Kept on the API so call sites are unchanged; the Final «Edad física» layout does not surface the
-    /// trend block (see `vo2TrendBlock` retirement note in the reskin report).
+    /// the raw VO₂max series for the context sparkline. Kept on the API so call sites are unchanged; the
+    /// Final «Edad física» layout does not surface the trend block (dead compat, as before).
     var vo2Trend: VO2maxTrend.Result? = nil
-    /// The raw measured VO₂max series (values only, oldest→newest) behind the trend, for the context line.
+    /// The raw measured VO₂max series (values only, oldest→newest) behind the trend. Dead compat.
     var vo2Series: [Double] = []
-    /// The active «Instrumento» theme, passed explicitly (does NOT propagate through `.sheet`).
+    /// El tema vivo «Instrumento», retenido por compatibilidad con los call sites — la hoja Liquid ya
+    /// no lo referencia (mismo trato que las hermanas ya migradas).
     var theme: InstrumentoTheme = .base
 
-    @State private var contentHeight: CGFloat = 0
+    /// El ⓘ del campo abre la tarjeta «Qué medimos» bajo él — paridad con las gemelas
+    /// (`StrainDetailScreen`/`SkinTempDetailScreen`). (FER-105 · M1)
+    @State private var infoOpen = false
 
-    /// Longevity green for the inverted hero field (`#2E7D57`).
-    private var longevityHue: Color { theme.dataRejuvenates }
+    /// El tono de la pantalla: el VERDE de longevidad, la identidad de la Edad física.
+    private static let tono = LiquidColor.verdePrimario
+
+    // MARK: - Body — el esqueleto del bloque, en vidrio
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
+            LazyVStack(alignment: .leading, spacing: 0) {
                 if let result = snapshot.result {
                     readyBody(result)
                 } else {
@@ -55,268 +67,219 @@ struct FitnessAgeDetailView: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(GeometryReader { g in
-                Color.clear.preference(key: SheetContentHeightKey.self, value: g.size.height)
-            })
         }
-        .onPreferenceChange(SheetContentHeightKey.self) { contentHeight = $0 }
-        .background(theme.paper)
-        .presentationDetents(contentHeight > 0 ? [.height(contentHeight)] : [.large])
+        // El fondo va en las DOS formas de presentación: `background` para la capa de Cuerpo y
+        // `presentationBackground` para la hoja del #Preview (mismo par que las hermanas, FER-102).
+        .background { LiquidSheetFondo(tone: Self.tono).ignoresSafeArea() }
+        .presentationBackground { LiquidSheetFondo(tone: Self.tono) }
         .presentationDragIndicator(.visible)
-        .sheetPaper(theme)
+        .presentationCornerRadius(LiquidRadius.hoja)
+    }
+
+    /// Una sección: la costura a sangre + su contenido con el margen del sistema.
+    @ViewBuilder
+    private func seccion<Content: View>(_ titulo: String, pista: String? = nil,
+                                        @ViewBuilder content: () -> Content) -> some View {
+        LiquidFranjaSeccion(titulo, pista: pista, tono: Self.tono)
+        content().liquidSeccion()
     }
 
     // MARK: - Ready / estimate (Final skeleton)
 
     @ViewBuilder private func readyBody(_ result: FitnessAgeResult) -> some View {
-        heroFinal(result)
-        SeccionBloque(String(localized: "What moves it"), theme: theme) {
-            leversFinalContent
-        }
+        campoConDato(result)
+        if infoOpen { whatWeMeasureCard }
+        seccion(String(localized: "What moves it")) { leversContent }
         if showsVO2maxSection {
-            SeccionBloque(String(localized: "VO₂max"), pista: String(localized: "Apple"), theme: theme) {
-                vo2maxFinalContent
-            }
+            seccion(String(localized: "VO₂max"), pista: String(localized: "Apple")) { vo2maxContent }
         }
-        pieMetodoFinal
+        pieMetodo
     }
 
-    // MARK: - Hero Final (HeroInvertido · dataRejuvenates · always-on Estimate capsule)
+    // MARK: - 1. El campo (héroe) — edad física, identidad verde, cápsula ESTIMATE permanente
 
-    private func heroFinal(_ result: FitnessAgeResult) -> some View {
+    /// El campo teñido con dato: la edad física como numeral, el delta vs tu edad como veredicto, el
+    /// margen ±años + el disclaimer no-clínico en la cláusula, y la cápsula ESTIMATE permanente en la
+    /// ranura del pie (el sello del campo).
+    private func campoConDato(_ result: FitnessAgeResult) -> some View {
         let ageNum = Int(result.fitnessAge.rounded())
-        return HeroInvertido(
-            glyph: .fitnessAge,
-            title: "Physical age",
-            hue: longevityHue,
-            theme: theme,
-            numeral: {
-                HeroNumeral("\(ageNum)", suffix: String(localized: "years"), size: 60, theme: theme) {
-                    Text("Estimate")
-                        .font(InstrumentoType.grotesk(11, weight: .semibold))
-                        .foregroundStyle(theme.paper)
-                        .heroCapsule(theme: theme)
-                }
-            },
-            verdict: {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(deltaSubtitle(result))
-                        .font(InstrumentoType.grotesk(15, weight: .semibold))
-                        .foregroundStyle(theme.paper)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Text("An estimate with a ±\(Int(result.bandYears.rounded()))-year margin.")
-                        .font(InstrumentoType.grotesk(14))
-                        .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
-                        .fixedSize(horizontal: false, vertical: true)
-                    // Non-clinical disclaimer lives in the hero reading (moved from disclaimerStrip).
-                    Text("It's a comparison of your fitness, not your biological age or a medical diagnosis.")
-                        .font(InstrumentoType.grotesk(14))
-                        .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-        )
-    }
-
-    // MARK: - What moves it (QueLaMueveHeader + TileSurface × 2 + BarraAncla)
-
-    private var leversFinalContent: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            QueLaMueveHeader("What moves it", chip: "trend, not cause", theme: theme)
-            HStack(alignment: .top, spacing: 8) {
-                TileSurface(
-                    label: String(localized: "Resting heart rate"),
-                    value: snapshot.restingHR.map { "\(Int($0.rounded())) bpm" } ?? "—",
-                    valueColor: theme.dataHeart,
-                    caption: String(localized: "The lower it is, the younger."),
-                    swatch: theme.dataHeart,
-                    theme: theme
-                )
-                TileSurface(
-                    label: String(localized: "Recent activity"),
-                    value: "\(snapshot.activeDays) / 7 days",
-                    valueColor: theme.dataStrain,
-                    caption: String(localized: "More active days also bring it down."),
-                    swatch: theme.dataStrain,
-                    theme: theme
-                )
-            }
-            BarraAncla(String(localized: "Nes/HUNT model (2011)"), color: longevityHue, theme: theme)
+        let bandInt = Int(result.bandYears.rounded())
+        return LiquidCampoMetrica(
+            tono: Self.tono,
+            titulo: String(localized: "Physical age"),
+            glifo: .fitnessAge,
+            // a11y omitido a propósito: el fallback del Dato dicta «valor + unidad» y la unidad
+            // «years» ya está localizada, así que VoiceOver dice «36 years» sin una clave aparte.
+            datos: [.init(valor: "\(ageNum)", unidad: String(localized: "years"), rotulo: "")],
+            veredicto: deltaSubtitle(result),
+            clausula: String(localized: "An estimate with a ±\(bandInt)-year margin.")
+                + " " + String(localized: "It's a comparison of your fitness, not your biological age or a medical diagnosis."),
+            infoAbierto: infoOpen,
+            infoEtiqueta: String(localized: "What we measure"),
+            onInfo: { withAnimation(LiquidMotion.lift) { infoOpen.toggle() } }) {
+            LiquidCampoSello(String(localized: "Estimate"))
         }
     }
 
-    // MARK: - VO₂max (Apple Health, measured · FER-215) — simple SeccionBloque
+    // MARK: - 2. What moves it — 2 cajitas (RHR · actividad) + ancla Nes/HUNT
+    //
+    // Los valores van EN TINTA (no teñidos): dos cajitas de color bajo un campo ya verde sería
+    // demasiado color (LiquidCajita §, DESIGN §8.4-2). El «trend, not cause» del papel se retira: RHR
+    // y actividad son las ENTRADAS del modelo, no hallazgos de tendencia; el ancla dice de dónde sale.
 
-    private var showsVO2maxSection: Bool {
-        appleVO2max != nil || appleConnectHint
+    private var leversContent: some View {
+        VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+            LiquidCajitaGrid(columnas: 2) {
+                LiquidCajita(
+                    rotulo: String(localized: "Resting heart rate"),
+                    valor: snapshot.restingHR.map { "\(Int($0.rounded()))" } ?? LiquidCajita.sinDato,
+                    unidad: snapshot.restingHR != nil ? String(localized: "bpm") : "",
+                    pie: String(localized: "The lower it is, the younger."))
+                LiquidCajita(
+                    rotulo: String(localized: "Recent activity"),
+                    valor: "\(snapshot.activeDays) / 7",
+                    unidad: String(localized: "days"),
+                    pie: String(localized: "More active days also bring it down."))
+            }
+            LiquidNotaLine(String(localized: "Nes/HUNT model (2011)"))
+        }
     }
 
-    @ViewBuilder private var vo2maxFinalContent: some View {
+    // MARK: - 3. VO₂max (Apple Health, measured · FER-215)
+
+    private var showsVO2maxSection: Bool { appleVO2max != nil || appleConnectHint }
+
+    @ViewBuilder private var vo2maxContent: some View {
         if let vo2 = appleVO2max {
-            vo2maxSimple(vo2)
-        } else if appleConnectHint {
-            vo2maxConnectNudgeContent
-        }
-    }
-
-    private func vo2maxSimple(_ vo2: Double) -> some View {
-        let expected = Int(VO2maxReference.expected(age: chronoAge, sex: sex).rounded())
-        return VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text(verbatim: "\(Int(vo2.rounded()))")
-                    .font(InstrumentoType.groteskNumber(28, weight: .bold))
-                    .foregroundStyle(theme.dataSpO2)
-                Text(verbatim: "ml/kg/min")
-                    .font(InstrumentoType.grotesk(13))
-                    .foregroundStyle(theme.inkTertiary)
-            }
-            Text("Measured by your Apple Watch during exercise.")
-                .font(StrandFont.subhead)
-                .foregroundStyle(theme.ink)
-                .fixedSize(horizontal: false, vertical: true)
-            BarraAncla(
-                String(localized: "The average for your age is around \(expected)."),
-                color: theme.dataSpO2,
-                theme: theme
-            )
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityElement(children: .combine)
-    }
-
-    /// No Apple reading + not connected: a quiet, no-number invite. No action button — connecting lives in Today / Settings.
-    private var vo2maxConnectNudgeContent: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
-            StrandIcon.heart.image
-                .font(StrandFont.glyph(.chevron))
-                .foregroundStyle(theme.dataHeart)
-            Text("Connect Apple Health to see your VO₂max.")
-                .font(StrandFont.caption)
-                .foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    // MARK: - PieMetodo (checklist + disclaimer + Nes/HUNT prose + origin seal)
-
-    @ViewBuilder private var pieMetodoFinal: some View {
-        PieMetodo(theme: theme) {
-            Metodo(title: String(localized: "How it's calculated"), theme: theme) {
-                VStack(alignment: .leading, spacing: 12) {
-                    // Transparency checklist (was usingSection) — preserved verbatim inside method.
-                    Text("What we're using")
-                        .font(InstrumentoType.grotesk(10, weight: .semibold))
-                        .tracking(1.2)
-                        .textCase(.uppercase)
-                        .foregroundStyle(theme.inkTertiary)
-                    VStack(spacing: 0) {
-                        usingRow(status: profileStatus, label: "Age and sex", detail: ageSexDetail)
-                        Divider().overlay(theme.hairline).padding(.leading, 38)
-                        usingRow(status: status("rhr"), label: "Resting heart rate",
-                                 detail: "\(snapshot.rhrNights) of 7 nights")
-                        Divider().overlay(theme.hairline).padding(.leading, 38)
-                        usingRow(status: status("activity"), label: "Recent activity",
-                                 detail: "\(snapshot.activeDays) of 7 days")
-                    }
-                    .instrumentoCard(.control, theme: theme, fill: theme.surface)
-
-                    Text("Based on the Nes/HUNT model (2011): it estimates your aerobic capacity from your resting heart rate and activity, and compares it with the average for your age.")
-                        .font(StrandFont.caption)
-                        .foregroundStyle(theme.inkTertiary)
-                        .fixedSize(horizontal: false, vertical: true)
-
-                    // disclaimerStrip content (moved into method for calculation transparency).
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        StrandIcon.info.image
-                            .font(StrandFont.glyph(.chevron))
-                            .foregroundStyle(theme.inkTertiary)
-                        Text("It's a comparison of your fitness, not your biological age or a medical diagnosis.")
-                            .font(StrandFont.caption)
-                            .foregroundStyle(theme.inkSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
+            let expected = Int(VO2maxReference.expected(age: chronoAge, sex: sex).rounded())
+            VStack(alignment: .leading, spacing: LiquidSpace.s250) {
+                HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s150) {
+                    Text(verbatim: "\(Int(vo2.rounded()))")
+                        .font(LiquidType.valorL)
+                        .foregroundStyle(LiquidColor.azul)
+                    Text(verbatim: "ml/kg/min")
+                        .font(LiquidType.unidad)
+                        .foregroundStyle(LiquidColor.tinta500)
                 }
+                .accessibilityElement(children: .combine)
+                LiquidNotaLine(String(localized: "Measured by your Apple Watch during exercise."),
+                               tono: LiquidColor.tinta700)
+                LiquidNotaLine(String(localized: "The average for your age is around \(expected)."))
             }
-        } sello: {
-            OriginStamp(origin: .computed, when: String(localized: "today"), theme: theme)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.top, 2)
+        } else if appleConnectHint {
+            // No Apple reading + not connected: a quiet, no-number invite. No button — connecting
+            // lives in Today / Settings (parity with the paper original).
+            LiquidNotaLine(String(localized: "Connect Apple Health to see your VO₂max."),
+                           tono: LiquidColor.tinta700)
         }
     }
 
-    // MARK: - Not ready (no number — honest empty state, Final wrappers)
+    // MARK: - 4. Not ready (no number — honest empty state)
 
     @ViewBuilder private var notReadyBody: some View {
-        HeroInvertido(
-            glyph: .fitnessAge,
-            title: "Physical age",
-            hue: longevityHue,
-            theme: theme,
-            numeral: {
-                Text(verbatim: "—")
-                    .font(InstrumentoType.groteskNumber(60, weight: .bold))
-                    .tracking(-2)
-                    .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
-            },
-            verdict: {
-                Text("We can't calculate your physical age yet.")
-                    .font(InstrumentoType.grotesk(15, weight: .semibold))
-                    .foregroundStyle(theme.paper)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        )
+        LiquidCampoMetrica(
+            tono: Self.tono,
+            titulo: String(localized: "Physical age"),
+            glifo: .fitnessAge,
+            datos: [.init(valor: LiquidCajita.sinDato, rotulo: "",
+                          a11y: String(localized: "no data"), ausente: true)],
+            // B2/B3: el vacío vive en la CLÁUSULA (no en el veredicto) y en voz impersonal de
+            // la familia, como `SkinTempDetailScreen.campoSinDato` / `StrainDetailScreen`.
+            clausula: String(localized: "Cénit can't work out your physical age yet. The list below shows what it still needs."))
 
-        SeccionBloque(String(localized: "What we need"), theme: theme) {
-            VStack(alignment: .leading, spacing: 8) {
-                VStack(spacing: 0) {
-                    usingRow(status: profileStatus, label: "Age and sex", detail: ageSexDetail)
-                    Divider().overlay(theme.hairline).padding(.leading, 38)
-                    usingRow(status: status("rhr"), label: "Resting heart rate",
-                             detail: "\(snapshot.rhrNights) of 4 nights needed")
+        seccion(String(localized: "What we need")) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s250) {
+                VStack(alignment: .leading, spacing: 0) {
+                    usingRow(profileStatus, label: String(localized: "Age and sex"),
+                             motivo: String(localized: "Add your age and sex."))
+                    // T3: mismo marco que el método (cobertura sobre 7, la del motor
+                    // `FitnessAgeEngine`), no un «de 4» que se leía «5 de 4». B6: oración con punto.
+                    usingRow(status("rhr"), label: String(localized: "Resting heart rate"),
+                             motivo: String(localized: "\(snapshot.rhrNights) of 7 nights so far."))
                 }
-                .instrumentoCard(.control, theme: theme, fill: theme.surface)
-                Text("Wear your Apple Watch to sleep and this fills in on its own.")
-                    .font(StrandFont.caption)
-                    .foregroundStyle(theme.inkTertiary)
-                    .fixedSize(horizontal: false, vertical: true)
+                .liquidTarjetaSeccion()
+                LiquidNotaLine(String(localized: "Wear your Apple Watch to sleep and this fills in on its own."))
             }
         }
 
         if showsVO2maxSection {
-            SeccionBloque(String(localized: "VO₂max"), pista: String(localized: "Apple"), theme: theme) {
-                vo2maxFinalContent
-            }
+            seccion(String(localized: "VO₂max"), pista: String(localized: "Apple")) { vo2maxContent }
         }
-
-        pieMetodoFinal
+        // B4: sin dato, sin pie de método ni chip de origen sobre un guion (paridad gemelas /
+        // ActivityRecovery). El método y su sello viven solo en el estado con dato.
     }
 
-    // MARK: - Checklist rows (shared ready / not-ready / method)
+    // MARK: - 5. Método + sello — patrón `pieMetodo` de Sueño (capilar sin franja propia)
 
-    private func usingRow(status: FitnessReadinessStatus, label: LocalizedStringKey,
-                          detail: LocalizedStringKey) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: statusIcon(status)).font(StrandFont.glyph(.inline))
-                .foregroundStyle(statusColor(status)).frame(width: 20)
-            Text(label).font(StrandFont.subhead).foregroundStyle(theme.ink)
-            Spacer(minLength: 8)
-            Text(detail).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-                .multilineTextAlignment(.trailing)
+    private var pieMetodo: some View {
+        VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+            LiquidCapilar(eje: .horizontal)
+            LiquidMetodo(title: String(localized: "How it's calculated"),
+                         mostrar: String(localized: "Show explanation"),
+                         ocultar: String(localized: "Hide explanation")) {
+                // Transparency checklist (was «usingSection») — preserved inside the method.
+                Text(String(localized: "What we're using")).liquidLabel().foregroundStyle(LiquidColor.tinta500)
+                VStack(alignment: .leading, spacing: 0) {
+                    usingRow(profileStatus, label: String(localized: "Age and sex"),
+                             motivo: String(localized: "Add your age and sex."))
+                    // B6: motivo como oración completa con punto (paridad `LiquidChecklistRow`).
+                    usingRow(status("rhr"), label: String(localized: "Resting heart rate"),
+                             motivo: String(localized: "\(snapshot.rhrNights) of 7 nights so far."))
+                    usingRow(status("activity"), label: String(localized: "Recent activity"),
+                             motivo: String(localized: "\(snapshot.activeDays) of 7 days so far."))
+                }
+                .liquidTarjetaSeccion()
+                LiquidNotaLine(String(localized: "Based on the Nes/HUNT model (2011): it estimates your aerobic capacity from your resting heart rate and activity, and compares it with the average for your age."),
+                               tono: LiquidColor.tinta700)
+                LiquidNotaLine(String(localized: "It's a comparison of your fitness, not your biological age or a medical diagnosis."))
+            }
+            // B5: sin sufijo temporal («hoy»): no es la lectura de hoy sino un estimado
+            // (paridad «Carga calculada», que tampoco lo lleva).
+            LiquidOrigenChip(glyph: .fitnessAge, badgeTono: Self.tono,
+                             etiqueta: String(localized: "Calculated on your phone"))
         }
-        .padding(.horizontal, 14).padding(.vertical, 12)
-        .frame(maxWidth: .infinity)
-        .accessibilityElement(children: .combine)
+        .liquidSeccion(top: LiquidSpace.s200, bottom: LiquidSpace.s800)
+    }
+
+    // MARK: - ⓘ «Qué medimos» — tarjeta bajo el campo (paridad gemelas, FER-105 · M1)
+
+    /// La tarjeta del ⓘ: qué mide la Edad física, en la prosa que la pantalla ya tiene (el
+    /// modelo Nes/HUNT). Mismo patrón que `StrainDetailScreen.whatWeMeasureCard`.
+    private var whatWeMeasureCard: some View {
+        VStack(alignment: .leading, spacing: LiquidSpace.s150) {
+            Text(String(localized: "What we measure"))
+                .font(LiquidType.tituloFila)
+                .foregroundStyle(LiquidColor.tinta900)
+            Text(String(localized: "Based on the Nes/HUNT model (2011): it estimates your aerobic capacity from your resting heart rate and activity, and compares it with the average for your age."))
+                .font(LiquidType.cuerpo)
+                .lineSpacing(LiquidType.cuerpoLineSpacing)
+                .foregroundStyle(LiquidColor.tinta700)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .liquidTarjetaSeccion()
+        .liquidSeccion(top: LiquidSpace.s400, bottom: LiquidSpace.s200)
+    }
+
+    // MARK: - Checklist row (shared method / not-ready)
+    //
+    // `LiquidChecklistRow` muestra el motivo SOLO cuando el factor está ausente: un check honesto no
+    // necesita excusa. El detalle de conteo del papel para las filas PRESENTES («5 de 7 noches») se
+    // retira — el check ya dice «lo tenemos» (degradación declarada de la migración). `.partial` se
+    // trata como ausente (no está del todo), y ahí el motivo sí aparece.
+
+    private func usingRow(_ status: FitnessReadinessStatus, label: String, motivo: String) -> LiquidChecklistRow {
+        LiquidChecklistRow(etiqueta: label, presente: status == .satisfied, motivo: motivo, tono: Self.tono)
     }
 
     // MARK: - Direction + copy
 
-    private func deltaSubtitle(_ result: FitnessAgeResult) -> LocalizedStringKey {
+    private func deltaSubtitle(_ result: FitnessAgeResult) -> String {
         let yrs = Int(abs(result.deltaYears).rounded())
         switch result.direction {
-        case .younger: return "\(yrs) years younger than your age of \(chronoAge)."
-        case .older:   return "\(yrs) years above your age of \(chronoAge)."
-        case .even:    return "Right at your age of \(chronoAge)."
+        // T7: UN molde compartido con Edad corporal («… than your age of N.», con punto).
+        case .younger: return String(localized: "\(yrs) years younger than your age of \(chronoAge).")
+        case .older:   return String(localized: "\(yrs) years older than your age of \(chronoAge).")
+        case .even:    return String(localized: "Right at your age of \(chronoAge).")
         }
     }
 
@@ -329,30 +292,6 @@ struct FitnessAgeDetailView: View {
     /// Age + sex share one row: both come from the profile, so the row is satisfied unless one is unset.
     private var profileStatus: FitnessReadinessStatus {
         (status("age") == .satisfied && status("sex") == .satisfied) ? .satisfied : .missing
-    }
-
-    private var ageSexDetail: LocalizedStringKey {
-        switch sex.lowercased() {
-        case "female":    return "\(chronoAge), woman"
-        case "nonbinary": return "\(chronoAge), non-binary"
-        default:          return "\(chronoAge), man"
-        }
-    }
-
-    private func statusIcon(_ s: FitnessReadinessStatus) -> String {
-        switch s {
-        case .satisfied: return "checkmark.circle.fill"
-        case .partial:   return "circle.lefthalf.filled"
-        case .missing:   return "circle"
-        }
-    }
-
-    private func statusColor(_ s: FitnessReadinessStatus) -> Color {
-        switch s {
-        case .satisfied: return theme.dataRecovery   // verde = we have it
-        case .partial:   return theme.warning         // ámbar = partial
-        case .missing:   return theme.inkTertiary     // quiet, no alarm
-        }
     }
 }
 
@@ -375,10 +314,10 @@ private func previewSnapshot(rhr: Int, strainActiveDays: Int, age: Int, sex: Str
     }
 }
 
-#Preview("Fitness Age: older (estimate)") {
+#Preview("Fitness Age: older (estimate) + VO₂max") {
     Color.clear.sheet(isPresented: .constant(true)) {
         FitnessAgeDetailView(snapshot: previewSnapshot(rhr: 72, strainActiveDays: 4, age: 36),
-                             chronoAge: 36, sex: "male")
+                             chronoAge: 36, sex: "male", appleVO2max: 41)
     }
 }
 

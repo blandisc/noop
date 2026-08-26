@@ -2,28 +2,38 @@ import SwiftUI
 import StrandDesign
 import StrandAnalytics
 
-// MARK: - ActivityRecoverySheet — «Cómo amaneces tras cada deporte» (FER-139)
+// MARK: - ActivityRecoverySheet — «Cómo amaneces tras cada deporte» en vidrio Liquid (FER-139 · FER-105 · TND-33)
 //
-// The light «Instrumento diurno» detail for the ActivityCost engine: per sport, how far below your
-// rest-day Charge you tend to wake the morning after a session, over YOUR history. A descriptive
-// ASSOCIATION, not a causal cost — every string and the "See the method" disclosure frame it that way
-// (regression to the mean, non-random rest days, day-of-week confounders are named).
+// Migración PURAMENTE VISUAL del esqueleto «Tendencias Final» (papel «Instrumento») a los legos
+// Liquid, calcando el patrón de `SkinTempDetailScreen.swift` (la vara de esta migración) y de las
+// hermanas ya firmadas: campo teñido a sangre (`LiquidCampoMetrica`) → costura de sección
+// (`LiquidFranjaSeccion`) → tarjetas de deporte compuestas EN LÍNEA con átomos Liquid → método +
+// sello (patrón `pieMetodo` de Sueño). La matemática y el orden del ranking NO CAMBIAN.
 //
-// Esqueleto Final (misma forma que `MetricDetailScreen.narrativeBodyFinal` / `SkinTempDetailScreen`):
-// HeroInvertido → SeccionBloque «Your sports» (TarjetaSesion B) → disclaimer → PieMetodo.
-// Full-bleed. Theme is passed explicitly (it does NOT cross the `.sheet` boundary). Math and
-// ranking are preserved; this is a reskin of the sport list only.
+// IDENTIDAD ÁMBAR (decisión ya tomada, FER-105/A): el campo se tiñe con `LiquidColor.ambar`, la
+// paridad con Esfuerzo (strain) — NO el verde de longevidad de las otras dos hojas de Tendencias.
+// El default verde de las hojas de edad violaría la identidad: «tras el deporte» habla de carga,
+// no de longevidad.
 //
-// Cards are read-only (they don't navigate); the sheet ranks them in the engine's exact order and
-// never re-sorts or re-filters. Empty input (no sport with enough sessions, or no untouched rest day)
-// shows the honest "gathering your sessions" state instead of a fabricated number.
+// LAS TARJETAS DE DEPORTE se componen EN LÍNEA (regla §7: `LiquidTarjetaSesion` sería de uso
+// único): una `LiquidBarraConteo` sobre ESCALA COMPARTIDA de |delta| en puntos (así los deportes
+// se comparan entre sí de un vistazo — «cuál me pega más»), + un chip de confianza + una
+// `LiquidNotaLine` con la nota de sesión/vuelta a la base. La confianza `.building` atenúa la
+// tarjeta (0.72), como el papel. El orden es EXACTAMENTE el del motor (|delta| desc · .solid ·
+// name asc); nunca se re-ordena ni se filtra.
+//
+// Se presenta como CAPA desde Cuerpo (`detailOverlayContent`), no como `.sheet`: sus
+// `.presentation*` propios están inertes en producción (solo actúan en su #Preview). El fondo va
+// por `background` (la capa) Y `presentationBackground` (la hoja del #Preview). El param `theme`
+// se conserva como compat muerto — la hoja Liquid ya no lo referencia, pero los call sites de
+// `CuerpoView` lo pasan y no se tocan (FER-100).
 
 struct ActivityRecoverySheet: View {
     /// One `ActivityCost` per sport, already ranked by the engine (|delta| desc · .solid · name asc).
     let costs: [ActivityCost]
 
-    /// The active «Instrumento diurno» theme, passed explicitly (it does NOT cross the `.sheet`
-    /// environment boundary), so the sheet renders on the same warm paper as Cuerpo.
+    /// El tema vivo «Instrumento», retenido por compatibilidad con los call sites — la hoja Liquid
+    /// ya no lo referencia (mismo trato que las hermanas ya migradas).
     var theme: InstrumentoTheme = .base
 
     /// When there are no sessions yet AND Apple Health isn't connected, the empty state offers a quiet
@@ -31,117 +41,168 @@ struct ActivityRecoverySheet: View {
     /// Today). Never set when there's already data.
     var appleConnectHint: Bool = false
 
+    /// El ⓘ del campo abre la tarjeta «Qué medimos» bajo él — paridad con las gemelas
+    /// (`StrainDetailScreen`/`SkinTempDetailScreen`). (FER-105 · M1)
+    @State private var infoOpen = false
+
+    /// El tono de la pantalla: el ÁMBAR de identidad (paridad con Esfuerzo), nunca el verde de las
+    /// hojas de edad. Existe para no confundir «carga tras el deporte» con «longevidad».
+    private static let tono = LiquidColor.ambar
+
+    // MARK: - Body — el esqueleto del bloque, en vidrio
+
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                heroFinal
+            LazyVStack(alignment: .leading, spacing: 0) {
                 if costs.isEmpty {
-                    emptyState
-                        .padding(.horizontal, 20)
-                } else {
-                    SeccionBloque(String(localized: "Your sports"), theme: theme) {
-                        VStack(alignment: .leading, spacing: 12) {
-                            ForEach(Array(costs.enumerated()), id: \.offset) { _, cost in
-                                sportCard(cost)
-                            }
-                        }
+                    campoSinDato
+                    if appleConnectHint {
+                        LiquidNotaLine(String(localized: "Your workouts can come from Apple Health. Connect it from Today to add them here."))
+                            .liquidSeccion()
                     }
-                    Text("It's an estimate from your own history, not a diagnosis.")
-                        .font(StrandFont.footnote)
-                        .foregroundStyle(theme.inkTertiary)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.horizontal, 20)
-                        .padding(.top, 4)
-                    pieMetodoFinal
+                } else {
+                    campoConDato
+                    if infoOpen { whatWeMeasureCard }
+                    seccion(String(localized: "Your sports")) { sportsContent }
+                    LiquidNotaLine(String(localized: "It's an estimate from your own history, not a diagnosis."))
+                        .liquidSeccion(top: LiquidSpace.s100, bottom: LiquidSpace.s200)
+                    pieMetodo
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(theme.paper)
-        .presentationDetents([.large])
+        // El fondo va en las DOS formas de presentación: `background` para la capa de Cuerpo y
+        // `presentationBackground` para la hoja del #Preview (mismo par que las hermanas, FER-102).
+        .background { LiquidSheetFondo(tone: Self.tono).ignoresSafeArea() }
+        .presentationBackground { LiquidSheetFondo(tone: Self.tono) }
         .presentationDragIndicator(.visible)
-        .sheetPaper(theme)
+        .presentationCornerRadius(LiquidRadius.hoja)
     }
 
-    // MARK: - Hero Final (HeroInvertido · dataStrain · top-sport delta)
+    /// Una sección: la costura a sangre + su contenido con el margen del sistema.
+    @ViewBuilder
+    private func seccion<Content: View>(_ titulo: String, @ViewBuilder content: () -> Content) -> some View {
+        LiquidFranjaSeccion(titulo, tono: Self.tono)
+        content().liquidSeccion()
+    }
 
-    /// Inverted hero: the top-ranked sport's median delta as numeral (engine order is |delta| desc ·
-    /// .solid · name asc, so `costs.first` is already the largest effect). Association reading as
-    /// verdict. No new aggregate/median is invented here.
-    private var heroFinal: some View {
-        // FER: numeral = costs.first (tope del ranking del engine), no un promedio nuevo.
+    // MARK: - 1. El campo (héroe) — delta del deporte tope, identidad ámbar, signo −/+
+
+    /// El campo teñido con dato: el numeral es el delta del deporte TOPE del ranking del motor
+    /// (`costs.first` ya es el efecto más grande), con el signo −/+ del papel. `barelyMoves` → guion
+    /// y veredicto neutro (no se inventa un número sobre un efecto que apenas se mueve).
+    private var campoConDato: some View {
         let top = costs.first
         let showsNumeral = top.map { abs($0.delta) >= ActivityCostEngine.barelyMovesPoints } ?? false
-        return HeroInvertido(
-            glyph: .afterSport,
-            title: "After each sport",
-            hue: theme.dataStrain,
-            theme: theme,
-            numeral: {
-                if let cost = top, showsNumeral {
-                    let pts = Int(abs(cost.delta).rounded())
-                    // Same sign convention as sportCard: delta ≥ 0 → lower next morning → "−N".
-                    HeroNumeral("\(cost.delta >= 0 ? "−" : "+")\(pts)",
-                                suffix: String(localized: "points"),
-                                size: 60,
-                                theme: theme)
-                } else {
-                    Text(verbatim: "—")
-                        .font(InstrumentoType.groteskNumber(60, weight: .bold))
-                        .tracking(-2)
-                        .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
-                }
-            },
-            verdict: {
-                Text(heroVerdict)
-                    .font(InstrumentoType.grotesk(15, weight: .semibold))
-                    .foregroundStyle(theme.paper)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        )
+        return LiquidCampoMetrica(
+            tono: Self.tono,
+            titulo: String(localized: "After each sport"),
+            glifo: .afterSport,
+            datos: [numeralDato(top, showsNumeral: showsNumeral)],
+            veredicto: heroVerdict,
+            infoAbierto: infoOpen,
+            infoEtiqueta: String(localized: "What we measure"),
+            onInfo: { withAnimation(LiquidMotion.lift) { infoOpen.toggle() } })
     }
 
-    /// Association framing (not cause). Reuses the body prose idea when there is data; neutral when empty.
-    private var heroVerdict: LocalizedStringKey {
-        if costs.isEmpty {
-            return "Still gathering how you wake after each sport."
+    /// El campo APAGADO (sin sesiones): numeral en guion, nunca un cero. B2: el vacío vive SOLO en
+    /// la cláusula (sin veredicto), como `SkinTempDetailScreen.campoSinDato` / `StrainDetailScreen`.
+    /// B3: voz impersonal de la familia («Cénit necesita…»).
+    private var campoSinDato: some View {
+        LiquidCampoMetrica(
+            tono: Self.tono,
+            titulo: String(localized: "After each sport"),
+            glifo: .afterSport,
+            datos: [.init(valor: LiquidCajita.sinDato, rotulo: "",
+                          a11y: String(localized: "no data"), ausente: true)],
+            clausula: String(localized: "Cénit needs about 6 sessions of the same sport before it can show how you wake afterward. Keep logging your workouts and this fills in on its own."))
+    }
+
+    /// El numeral del campo: el delta del deporte tope con su signo, o el guion cuando apenas se mueve.
+    /// Misma convención de signo que la tarjeta: delta ≥ 0 → amaneces MÁS BAJO → «−N».
+    private func numeralDato(_ top: ActivityCost?, showsNumeral: Bool) -> LiquidCampoMetrica<EmptyView>.Dato {
+        guard let cost = top, showsNumeral else {
+            return .init(valor: LiquidCajita.sinDato, rotulo: "",
+                         a11y: String(localized: "no data"), ausente: true)
         }
+        let pts = Int(abs(cost.delta).rounded())
+        let firmado = "\(cost.delta >= 0 ? "−" : "+")\(pts)"
+        // a11y omitido a propósito: el fallback del Dato dicta «valor + unidad» y la unidad «points»
+        // ya está localizada, así que VoiceOver dice «−8 points» sin una clave aparte.
+        return .init(valor: firmado, unidad: String(localized: "points"), rotulo: "")
+    }
+
+    /// Association framing (not cause). Solo se llama CON dato (desde `campoConDato`); el campo
+    /// vacío lleva su propia cláusula, así que la rama `costs.isEmpty` se retiró (B2). B7: la
+    /// métrica del motor (0–100 tipo recuperación) es «Recovery»/«Recuperación», el término que
+    /// el resto del app usa para ese número, no «Charge» (fuera del glosario) ni «Carga» (esfuerzo).
+    private var heroVerdict: String {
         if let top = costs.first, abs(top.delta) < ActivityCostEngine.barelyMovesPoints {
-            return "Your next-day Charge barely moves after the sports we can see so far."
+            return String(localized: "Your next-day Recovery barely moves after the sports we can see so far.")
         }
-        // Same association idea as the former body lead-in (short form for the inverted field).
-        return "How your Charge tends to look the morning after each sport, vs your rest days. Observed in your history, not a cause."
+        return String(localized: "How your Recovery tends to look the morning after each sport, vs your rest days. Observed in your history, not a cause.")
     }
 
-    // MARK: - Sport card (TarjetaSesion variant B)
+    // MARK: - 2. Tus deportes — tarjetas compuestas en línea (barra de escala compartida + nota)
 
-    /// One sport as TarjetaSesion B: big delta + recovery bar + session note. A `.building` result is
-    /// shown slightly dimmed to read as provisional without hiding it.
-    private func sportCard(_ cost: ActivityCost) -> some View {
+    /// La escala COMPARTIDA de todas las barras: el mayor |delta| en puntos de la lista (piso 1). Con
+    /// ella, la barra de cada deporte se lee contra las demás («cuál me pega más») en vez de contra sí
+    /// misma. Se deriva UNA vez de la lista que el motor ya ordenó.
+    private var escalaPuntos: Int {
+        max(1, costs.map { Int(abs($0.delta).rounded()) }.max() ?? 1)
+    }
+
+    private var sportsContent: some View {
+        let escala = escalaPuntos
+        return VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+            ForEach(Array(costs.enumerated()), id: \.offset) { idx, cost in
+                sportCard(cost, escala: escala, indice: idx)
+            }
+        }
+    }
+
+    /// Un deporte, compuesto EN LÍNEA con átomos Liquid (no `LiquidTarjetaSesion`, uso único): la barra
+    /// de conteo sobre la escala compartida (|delta| en puntos) + el chip de confianza + la nota de
+    /// sesión. `.building` atenúa la tarjeta (0.72) para leerse como provisional sin ocultarla. La
+    /// frase completa (asociación, nunca causa) va como etiqueta de VoiceOver; la barra muestra la nota.
+    private func sportCard(_ cost: ActivityCost, escala: Int, indice: Int) -> some View {
         let dimmed = cost.confidence == .building
         let pts = Int(abs(cost.delta).rounded())
-        let barValue = "\(cost.delta >= 0 ? "−" : "+")\(pts) pts"
-        // FER: barPct is a UI approximation only (no engine formula for "return to base" progress).
-        // 1.0 when daysToBaseline is known, 0.5 when still open / climbing back without a day count.
-        let barPct: Double = cost.daysToBaseline != nil ? 1.0 : 0.5
-        let barNota = barNote(for: cost)
-        let chip: LocalizedStringKey = cost.confidence == .solid
-            ? "solid"
-            : "building"
-        return TarjetaSesion(
-            titulo: cost.sport,
-            chip: chip,
-            barValue: barValue,
-            barColor: theme.dataStrain,
-            barPct: barPct,
-            barOpacity: dimmed ? 0.72 : 1,
-            barNota: barNota,
-            theme: theme
-        )
+        // Misma convención de signo que el campo: delta ≥ 0 → amaneces MÁS BAJO → «−N pts».
+        let valorTexto = "\(cost.delta >= 0 ? "−" : "+")\(pts) pts"
+        return VStack(alignment: .leading, spacing: LiquidSpace.s250) {
+            LiquidBarraConteo(
+                rotulo: cost.sport,
+                conteo: pts,
+                escala: escala,
+                tono: Self.tono,
+                valorTexto: valorTexto,
+                indice: indice,
+                a11yLabel: cost.sport,
+                a11yValue: valorTexto)
+            HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s200) {
+                confidenceChip(cost.confidence)
+                LiquidNotaLine(barNote(for: cost))
+                Spacer(minLength: 0)
+            }
+        }
+        .liquidTarjetaSeccion()
         .opacity(dimmed ? 0.72 : 1)
-        // Full association sentence (preserved verbatim) for VoiceOver; bar shows the short nota.
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(sentence(for: cost)))
+    }
+
+    /// El chip de confianza: cápsula punteada en tinta neutra (mismos tokens que el chip-disclaimer de
+    /// `LiquidTendenciaCard`), un rótulo de estado — nunca un dato. Reusa las claves «solid»/«building».
+    private func confidenceChip(_ confidence: ScoreConfidence) -> some View {
+        Text(confidence == .solid ? String(localized: "solid") : String(localized: "building"))
+            .font(LiquidType.captionLectura)
+            .foregroundStyle(LiquidColor.tinta700)
+            .padding(.horizontal, LiquidSpace.s225)
+            .padding(.vertical, LiquidSpace.s075)
+            .overlay(Capsule().stroke(LiquidColor.tinta10,
+                                      style: StrokeStyle(lineWidth: 1.2, dash: [3, 3])))
+            .accessibilityHidden(true)
     }
 
     /// Session / climb-back note for the bar. Uses the same fields as `sentence(for:)` without changing
@@ -162,7 +223,7 @@ struct ActivityRecoverySheet: View {
     }
 
     // MARK: - Sentence (localized; association, never causal)
-    // Preserved verbatim for any future call site / a11y; cards use barNote for the TarjetaSesion slot.
+    // Preserved verbatim for the card's VoiceOver label; the visible bar uses barNote for its slot.
 
     /// The plain-language impact line, built from the engine's fields. English source strings mirror
     /// `ActivityCost.sentence()` so the catalog (es-MX / de) translates a wording the engine already
@@ -172,88 +233,68 @@ struct ActivityRecoverySheet: View {
     private func sentence(for cost: ActivityCost) -> LocalizedStringKey {
         let n = cost.n
         if abs(cost.delta) < ActivityCostEngine.barelyMovesPoints {
-            return "Sessions like this are barely linked to any change in your next-day Charge (n=\(n))."
+            return "Sessions like this are barely linked to any change in your next-day Recovery (n=\(n))."
         }
         let pts = Int(abs(cost.delta).rounded())
         let lower = cost.delta >= 0
         guard let days = cost.daysToBaseline else {
             return lower
-                ? "Sessions like this are typically followed by a Charge about \(pts) points lower the next morning (n=\(n))."
-                : "Sessions like this are typically followed by a Charge about \(pts) points higher the next morning (n=\(n))."
+                ? "Sessions like this are typically followed by a Recovery about \(pts) points lower the next morning (n=\(n))."
+                : "Sessions like this are typically followed by a Recovery about \(pts) points higher the next morning (n=\(n))."
         }
         if days == 1 {
             return lower
-                ? "Sessions like this are typically followed by a Charge about \(pts) points lower the next morning, climbing back in about 1 day (n=\(n))."
-                : "Sessions like this are typically followed by a Charge about \(pts) points higher the next morning, climbing back in about 1 day (n=\(n))."
+                ? "Sessions like this are typically followed by a Recovery about \(pts) points lower the next morning, climbing back in about 1 day (n=\(n))."
+                : "Sessions like this are typically followed by a Recovery about \(pts) points higher the next morning, climbing back in about 1 day (n=\(n))."
         }
         return lower
-            ? "Sessions like this are typically followed by a Charge about \(pts) points lower the next morning, climbing back in about \(days) days (n=\(n))."
-            : "Sessions like this are typically followed by a Charge about \(pts) points higher the next morning, climbing back in about \(days) days (n=\(n))."
+            ? "Sessions like this are typically followed by a Recovery about \(pts) points lower the next morning, climbing back in about \(days) days (n=\(n))."
+            : "Sessions like this are typically followed by a Recovery about \(pts) points higher the next morning, climbing back in about \(days) days (n=\(n))."
     }
 
-    // MARK: - PieMetodo (method + origin seal)
+    // MARK: - 3. Método + sello — patrón `pieMetodo` de Sueño (capilar sin franja propia)
 
-    /// Method prose moved from the old DisclosureGroup into Metodo (verbatim); origin seal in sello.
-    @ViewBuilder private var pieMetodoFinal: some View {
-        PieMetodo(theme: theme) {
-            Metodo(title: String(localized: "How it's calculated"), theme: theme) {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("We compare the median of your Charge the morning after each sport against your “untouched” rest days (no workouts, and not the days right after a session). The difference is what you see here.")
-                        .font(StrandFont.subhead)
-                        .foregroundStyle(theme.inkSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Text("It's an association, not a cause. Things like training on the days you already wake up well (then drifting back down), resting when you're tired or sick, or which day of the week you train all play a part.")
-                        .font(StrandFont.caption)
-                        .foregroundStyle(theme.inkTertiary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Text("Medians over your own history (Plews et al., 2013; HRV via RMSSD, Task Force 1996).")
-                        .font(StrandFont.caption)
-                        .foregroundStyle(theme.inkTertiary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+    /// Method prose moved verbatim into `LiquidMetodo`; computed origin chip (medians over your own
+    /// history) closes it, with the SAME «Calculated on your phone» vocabulary the hoja de Hoy uses.
+    private var pieMetodo: some View {
+        VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+            LiquidCapilar(eje: .horizontal)
+            LiquidMetodo(title: String(localized: "How it's calculated"),
+                         mostrar: String(localized: "Show explanation"),
+                         ocultar: String(localized: "Hide explanation")) {
+                LiquidNotaLine(String(localized: "We compare the median of your Recovery the morning after each sport against your “untouched” rest days (no workouts, and not the days right after a session). The difference is what you see here."),
+                               tono: LiquidColor.tinta700)
+                LiquidNotaLine(String(localized: "It's an association, not a cause. Things like training on the days you already wake up well (then drifting back down), resting when you're tired or sick, or which day of the week you train all play a part."),
+                               tono: LiquidColor.tinta700)
+                LiquidNotaLine(String(localized: "Medians over your own history (Plews et al., 2013; HRV via RMSSD, Task Force 1996)."))
             }
-        } sello: {
-            OriginStamp(origin: .computed, when: String(localized: "today"), theme: theme)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.top, 2)
+            // B5: sin sufijo temporal («hoy»): esto no es la lectura de hoy sino medianas sobre
+            // tu historial (paridad «Carga calculada», que tampoco lo lleva).
+            LiquidOrigenChip(glyph: .afterSport, badgeTono: Self.tono,
+                             etiqueta: String(localized: "Calculated on your phone"))
         }
+        .liquidSeccion(top: LiquidSpace.s200, bottom: LiquidSpace.s800)
     }
 
-    // MARK: - Empty state ("gathering your sessions")
+    // MARK: - ⓘ «Qué medimos» — tarjeta bajo el campo (paridad gemelas, FER-105 · M1)
 
-    /// Shown when the engine returns nothing — most often because no sport has ~6 sessions yet. We
-    /// don't try to split that from the rarer "no untouched rest day" cause (it's not cheaply knowable
-    /// here), so we show the dominant, honest message and never fabricate a progress number.
-    private var emptyState: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "hourglass")
-                .font(StrandFont.glyph(.empty))
-                .foregroundStyle(theme.inkTertiary)
-                .accessibilityHidden(true)
-            Text("Gathering your sessions")
-                .font(StrandFont.title2)
-                .foregroundStyle(theme.ink)
-                .multilineTextAlignment(.center)
-            Text("We need about 6 sessions of the same sport to start showing how you wake afterward. Keep logging your workouts and this fills in on its own.")
-                .font(StrandFont.subhead)
-                .foregroundStyle(theme.inkSecondary)
-                .multilineTextAlignment(.center)
+    /// La tarjeta del ⓘ: qué medimos tras cada deporte, en la prosa que la pantalla ya tiene (la
+    /// comparación del método). Mismo patrón que `StrainDetailScreen.whatWeMeasureCard`.
+    private var whatWeMeasureCard: some View {
+        VStack(alignment: .leading, spacing: LiquidSpace.s150) {
+            Text(String(localized: "What we measure"))
+                .font(LiquidType.tituloFila)
+                .foregroundStyle(LiquidColor.tinta900)
+            Text(String(localized: "We compare the median of your Recovery the morning after each sport against your “untouched” rest days (no workouts, and not the days right after a session). The difference is what you see here."))
+                .font(LiquidType.cuerpo)
+                .lineSpacing(LiquidType.cuerpoLineSpacing)
+                .foregroundStyle(LiquidColor.tinta700)
                 .fixedSize(horizontal: false, vertical: true)
-            if appleConnectHint {
-                Text("Your workouts can come from Apple Health. Connect it from Today to add them here.")
-                    .font(StrandFont.caption)
-                    .foregroundStyle(theme.inkTertiary)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 4)
-            }
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 28)
+        .liquidTarjetaSeccion()
+        .liquidSeccion(top: LiquidSpace.s400, bottom: LiquidSpace.s200)
     }
 }
-
-// MARK: - Helpers
 
 // MARK: - Preview
 

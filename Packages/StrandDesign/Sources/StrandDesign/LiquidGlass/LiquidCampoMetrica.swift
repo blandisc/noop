@@ -299,11 +299,17 @@ public struct LiquidCampoMetrica<Pie: View>: View {
                         .foregroundStyle(LiquidColor.papelAlto.opacity(LiquidCampo.alfaRotulo))
                 }
             }
-            Text(dato.rotulo)
-                .font(LiquidType.label)
-                .tracking(LiquidType.labelTracking)
-                .textCase(.uppercase)
-                .foregroundStyle(LiquidColor.papelAlto.opacity(LiquidCampo.alfaRotulo))
+            // Un rótulo vacío no pinta una línea fantasma bajo el numeral: las hojas que no
+            // etiquetan su numeral (edad física/corporal, tras cada deporte) pasan `rotulo: ""`,
+            // y `Text("")` dejaba un renglón hueco con su `spacing` s050 encima. Las gemelas con
+            // rótulo (Sueño «Dormido», Esfuerzo «de 21») no cambian. (FER-105 · T1)
+            if !dato.rotulo.isEmpty {
+                Text(dato.rotulo)
+                    .font(LiquidType.label)
+                    .tracking(LiquidType.labelTracking)
+                    .textCase(.uppercase)
+                    .foregroundStyle(LiquidColor.papelAlto.opacity(LiquidCampo.alfaRotulo))
+            }
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(dato.rotulo))

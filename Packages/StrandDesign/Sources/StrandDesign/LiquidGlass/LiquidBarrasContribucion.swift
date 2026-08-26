@@ -190,7 +190,11 @@ public struct LiquidBarrasContribucion: View {
                 }
             }
         } else {
-            HStack(spacing: LiquidSpace.s250) {
+            // Baseline compartida entre la etiqueta y el número (misma familia que
+            // `LiquidChecklistRow` / `LiquidCajita`): a `.center` los dos textos, de tamaños
+            // distintos, no compartían línea. La pista (barra de 22 pt, sin texto) alinea su
+            // fondo a esa baseline, como la marca de `LiquidChecklistRow`. (FER-105 · T8)
+            HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s250) {
                 etiqueta(factor).frame(width: anchoEtiqueta, alignment: .leading)
                 pista(factor)
                 detalle(factor).frame(width: anchoDetalle, alignment: .trailing)
