@@ -33,15 +33,21 @@ struct StressDayMapBlock: View {
             }
     }
 
+    // M6: TODOS los estados viven dentro de la MISMA tarjeta de sección que `ready` —
+    // antes invitación/denegado/restringido/elige/cargando flotaban desnudos sobre el
+    // fondo y la sección cambiaba de anatomía según el permiso.
     @ViewBuilder private var content: some View {
-        switch model.phase {
-        case .needsPermission: invitation
-        case .denied:          deniedView
-        case .restricted:      restrictedView
-        case .chooseCalendars: chooseView
-        case .loading:         loadingView
-        case .ready(let map):  ready(map)
+        Group {
+            switch model.phase {
+            case .needsPermission: invitation
+            case .denied:          deniedView
+            case .restricted:      restrictedView
+            case .chooseCalendars: chooseView
+            case .loading:         loadingView
+            case .ready(let map):  ready(map)
+            }
         }
+        .liquidTarjetaSeccion()
     }
 
     // MARK: - Permission / selection states
@@ -97,12 +103,11 @@ struct StressDayMapBlock: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    /// M6: el cargando con el patrón de la familia — los bloques redacted del skeleton,
+    /// no una frase suelta (mismo trato que `!model.loaded` en las gemelas).
     private var loadingView: some View {
-        Text("Crossing your day…")
-            .font(LiquidType.cuerpo)
-            .foregroundStyle(LiquidColor.tinta500)
+        LiquidSheetSkeleton(a11yCargando: String(localized: "Crossing your day…"))
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, LiquidSpace.s600)
     }
 
     // MARK: - Ready — «Momentos primero» en la tarjeta de la familia (FER-433 · FER-101)
@@ -136,11 +141,14 @@ struct StressDayMapBlock: View {
             if !map.allDay.isEmpty { allDayRow(map.allDay) }
             calendarsFooter(map.selectedNames)
         }
-        .liquidTarjetaSeccion()
     }
 
-    // MARK: Headline — the answer (peak + its event + over-calm)
+    // MARK: Headline — the answer (peak + its event + over-threshold)
 
+    /// M7: la línea de lectura de la familia (`LiquidReadingLine`, el highlight es el evento
+    /// o la hora del pico) en vez de un `Text` a mano con `tituloGemela`. T2: comillas «».
+    /// UX-16: el piso 1.0 es un corte FIJO del motor (`StressMoments.activatedFloor`), no una
+    /// calma personal — el copy dice «umbral de activación», nunca «tu calma habitual».
     @ViewBuilder private func headline(_ c: StressDayMap.Coincidence?) -> some View {
         if let c {
             let time = c.peakDate.formatted(.dateTime.hour().minute())
@@ -148,23 +156,22 @@ struct StressDayMapBlock: View {
             VStack(alignment: .leading, spacing: LiquidSpace.s075) {
                 if let ev = c.event {
                     let clean = EventTitleCleaner.clean(ev.title)
-                    // Reuses the existing coincidence copy keys (FER-433); clean title for display.
-                    Text("Your highest point today, \(time), fell within “\(clean)”.")
-                        .font(LiquidType.tituloGemela)
-                        .foregroundStyle(LiquidColor.tinta900)
-                        .fixedSize(horizontal: false, vertical: true)
+                    LiquidReadingLine(
+                        String(localized: "Your highest point today, \(time), fell within «\(clean)»."),
+                        highlight: clean,
+                        highlightTone: StressDetailScreen.tonoEstres(c.peakStress))
                 } else {
-                    Text("Your highest point today was at \(time)")
-                        .font(LiquidType.tituloGemela)
-                        .foregroundStyle(LiquidColor.tinta900)
-                        .fixedSize(horizontal: false, vertical: true)
+                    LiquidReadingLine(
+                        String(localized: "Your highest point today was at \(time)"),
+                        highlight: time,
+                        highlightTone: StressDetailScreen.tonoEstres(c.peakStress))
                     Text("no event on your calendar")
                         .font(LiquidType.captionLectura)
                         .foregroundStyle(LiquidColor.tinta700)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 if overCalm >= 0.1 {
-                    Text("+\(magFmt(overCalm)) over your usual calm.")
+                    Text("+\(magFmt(overCalm)) over the activation threshold.")
                         .font(LiquidType.captionLectura)
                         .foregroundStyle(StressDetailScreen.tonoEstres(c.peakStress))
                 }
@@ -194,11 +201,16 @@ struct StressDayMapBlock: View {
                   valor: counts[h] > 0 ? sums[h] / Double(counts[h]) : nil,
                   etiqueta: Self.horaEtiqueta(h, startOfDay: startOfDay))
         }
+        // B9: resumen honesto para VoiceOver — promedio del día sobre las horas que SÍ
+        // tuvieron lectura (el componente añade solo el rótulo de la referencia).
+        let medidas = horas.compactMap(\.valor)
+        let promedio = medidas.isEmpty ? 0 : medidas.reduce(0, +) / Double(medidas.count)
         return LiquidBarrasHora(
             horas: horas,
             tono: tono,
             referencia: StressMoments.activatedFloor,
-            referenciaEtiqueta: String(localized: "your usual calm"),
+            // UX-16: el piso es un corte fijo del motor, no una calma personal.
+            referenciaEtiqueta: String(localized: "activation threshold"),
             dominio: 0...3,
             seleccion: $scrubHora,
             // TND11-2: el cruzado hora↔calendario del papel (`eventLine`) vive en el chip —
@@ -215,7 +227,7 @@ struct StressDayMapBlock: View {
                 return "\(lectura) · \(titulo)"
             },
             a11yLabel: String(localized: "Stress through the day"),
-            a11yValue: "")
+            a11yValue: String(localized: "Day average \(String(format: "%.1f", promedio)) of 3 · \(medidas.count) hours with readings"))
     }
 
     /// «14:00» — la etiqueta de una hora civil, con el reloj del sistema.
@@ -254,11 +266,13 @@ struct StressDayMapBlock: View {
         let time = mo.date.formatted(.dateTime.hour().minute())
         let cleanTitle = mo.event.map { EventTitleCleaner.clean($0.title) }
         return HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s200) {
+            // B10/UX-17: sin `.frame(width: 38)` crudo — la hora pide su ancho (con reloj
+            // de 12 h o Dynamic Type grande, 38 pt la trozaba); el que trunca es el título.
             Text(verbatim: time)
                 .font(LiquidType.valorS)
                 .foregroundStyle(LiquidColor.tinta500)
-                .frame(width: 38, alignment: .leading)
                 .monospacedDigit()
+                .fixedSize()
             if let cleanTitle {
                 Text(verbatim: cleanTitle)
                     .font(LiquidType.captionLectura)
@@ -330,9 +344,10 @@ private struct CalendarPickerSheet: View {
         ScrollView {
             VStack(alignment: .leading, spacing: LiquidSpace.s400) {
                 VStack(alignment: .leading, spacing: LiquidSpace.s100) {
+                    // B11: título de SUB-HOJA (`tituloHoja`), calco de la hoja de etapas de
+                    // Sueño — `displayS` es el display del campo héroe, no de una sub-hoja.
                     Text("Choose calendars")
-                        .font(LiquidType.displayS)
-                        .tracking(LiquidType.displaySTracking)
+                        .font(LiquidType.tituloHoja)
                         .foregroundStyle(LiquidColor.tinta900)
                     Text("We'll only cross the ones you pick.")
                         .font(LiquidType.cuerpo)
@@ -373,6 +388,9 @@ private struct CalendarPickerSheet: View {
         }
         .background { LiquidSheetFondo(tone: LiquidColor.tinta500).ignoresSafeArea() }
         .presentationBackground { LiquidSheetFondo(tone: LiquidColor.tinta500) }
+        // B11: sub-hoja a media altura, como la de etapas de Sueño (:1237) — un picker de
+        // calendarios no es una hoja completa.
+        .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(LiquidRadius.hoja)
         .onAppear { selected = model.selectedIDs }

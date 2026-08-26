@@ -10,8 +10,9 @@ import Foundation
 // Migración PURAMENTE VISUAL del esqueleto «Tendencias Final» (papel «Instrumento») a los legos
 // Liquid, calcando el patrón de `SleepDetailScreen.swift` (la vara de esta migración) y de
 // `StrainDetailScreen.swift` (el bloque hermano ya firmado): campo teñido a sangre
-// (`LiquidCampoMetrica`) → costuras de sección (`LiquidFranjaSeccion`) → niveles fijos
-// (`LiquidBandsTable`) → mapa del día (`StressDayMapBlock`, ya en vidrio) → historial
+// (`LiquidCampoMetrica`) → costuras de sección (`LiquidFranjaSeccion`) → lectura de nivel
+// (`LiquidReadingLine`; los rangos viven en la escalera tocable del historial, UX-08) →
+// mapa del día (`StressDayMapBlock`, ya en vidrio) → historial
 // (`LiquidRangeSelector` + `LiquidGraficaNiveles` + `LiquidResumenVentana` + `LiquidLevelsList`)
 // → calendario (`LiquidCalendario90`) → método + sello (patrón `pieMetodo` de Sueño).
 //
@@ -53,7 +54,7 @@ struct StressDetailScreen: View {
     /// Runs after `patternsLoader` so the daily summaries it reads are already backfilled. (FER-388)
     var eventPatternsLoader: (() async -> [StressEventPatterns.Pattern])? = nil
     /// `true` cuando Apple Salud NO está autorizado (mismo predicado que Sueño/Esfuerzo, FER-101).
-    /// Los call sites de hoy (TodayView / CuerpoView) aún no lo pasan — cabo suelto reportado.
+    /// TodayView ya lo pasa; el cabo real es CuerpoView, que cablea FER-100.
     var sinPermiso: Bool = false
 
     /// The trend block's period window (W/M/3M/6M/1Y/ALL). Defaults to a month.
@@ -98,7 +99,10 @@ struct StressDetailScreen: View {
                         campoSinDato
                     }
                     if infoOpen { whatWeMeasureCard }
-                    if model.heroIsFresh {
+                    // Niveles = solo la lectura «Hoy cae en…» (UX-08: los rangos viven en la
+                    // escalera tocable del historial). Con ancla en ayer la frase mentiría,
+                    // así que la sección entera se oculta (gate `anchorIsToday`).
+                    if model.anchorIsToday {
                         seccion(String(localized: "Levels")) { levelsContent(model) }
                     }
                     // Level 1.5 · mapa del día BEFORE «qué lo mueve» (FER-433).
@@ -108,13 +112,16 @@ struct StressDetailScreen: View {
                         }
                     }
                     if model.heroIsFresh {
-                        seccion(String(localized: "What moves it")) { whatMovesContent(model) }
+                        // B2/UX-05: clave propia, paralela a «Qué mueve tu esfuerzo».
+                        seccion(String(localized: "What moves your stress")) { whatMovesContent(model) }
                     }
                     if hasPatternsSection(model) {
                         seccion(String(localized: "Your patterns")) { patternsContent(model) }
                     }
-                    if model.fullTrend.count >= 2 {
-                        seccion(String(localized: "See your history")) { historyContent(model) }
+                    // UX-04: la sección monta hasta que el parseo terminó (calco del gate
+                    // `durationParsed.count >= 2` de Sueño) — sin brinco del primer frame.
+                    if parsed.count >= 2 {
+                        seccion(String(localized: "History")) { historyContent(model) }
                     }
                     if parsed.contains(where: { $0.value > 0 }) {
                         seccion(String(localized: "Calendar · 90 days")) { calendarContent }
@@ -171,8 +178,10 @@ struct StressDetailScreen: View {
     // MARK: - 1. El campo (héroe) — calor del nivel, nunca semáforo
 
     /// El campo teñido a sangre con dato: numeral + «de 3», el veredicto es la frase del motor
-    /// (`model.explanation`, fuente única de contenido — FER-860) y, al pie, el sello con fecha
-    /// cuando el ancla es ayer (el chip datado del papel, FER-397).
+    /// (`model.explanation`, fuente única de contenido — FER-860) cuando el ancla ES hoy, y una
+    /// cláusula datada en pasado cuando el ancla es ayer (UX-06: `model.explanation` habla en
+    /// presente/«today» y el modelo está congelado, así que la vista degrada — como Sueño con
+    /// «anoche»). Al pie, el sello con fecha cuando el ancla es ayer (FER-397).
     private func campoConDato(_ model: StressModel) -> some View {
         LiquidCampoMetrica(
             tono: tono,
@@ -180,15 +189,22 @@ struct StressDetailScreen: View {
             glifo: .estres,
             datos: [.init(valor: fmt(model.score), rotulo: String(localized: "of 3"),
                           a11y: String(localized: "\(fmt(model.score)) out of 3"))],
-            veredicto: model.explanation,
+            veredicto: model.anchorIsToday ? model.explanation : clausulaAncladaAyer(model),
             infoAbierto: infoOpen,
             infoEtiqueta: String(localized: "What we measure"),
             onInfo: { withAnimation(LiquidMotion.lift) { infoOpen.toggle() } }
         ) {
             if !model.anchorIsToday {
-                LiquidCampoSello(String(localized: "Yesterday · \(chipDate(model.anchorDayKey))"))
+                LiquidCampoSello(String(localized: "yesterday · \(chipDate(model.anchorDayKey))"))
             }
         }
+    }
+
+    /// La cláusula del campo con ancla en ayer (UX-06): fecha el nivel y no promete «hoy» —
+    /// el dato fresco llega cuando el reloj sincroniza.
+    private func clausulaAncladaAyer(_ model: StressModel) -> String {
+        let nivel = Self.indiceCarril(model.score).map { Self.bandasEstres[$0].label } ?? ""
+        return String(localized: "Yesterday's reading fell in \(nivel). Today's refreshes after your Apple Watch syncs.")
     }
 
     /// El campo APAGADO: sin lectura fresca el numeral es un guion, nunca un cero. Mismo patrón
@@ -255,29 +271,19 @@ struct StressDetailScreen: View {
         Self.dayParser.date(from: dayKey).map { Self.chipDateFormatter.string(from: $0) } ?? ""
     }
 
-    // MARK: - 2. Niveles — las 3 bandas fijas del motor, la del ancla marcada
+    // MARK: - 2. Niveles — la lectura del ancla contra la escalera única
     //
-    // Sustituye a la mini-escala de gradiente del papel: la MISMA información (los cortes fijos
-    // 0–1/1–2/2–3 y dónde cae hoy) dicha con la pieza de la familia (`LiquidBandsTable`, la
-    // variante clásica de solo lectura — paridad `StrainDetailScreen.levelsContent`).
+    // UX-08 (pasada F4/F5): UNA sola escalera visible por pantalla. La `LiquidBandsTable`
+    // estática duplicaba los rangos que la `LiquidLevelsList` TOCABLE del historial ya
+    // enseña; aquí queda solo «Hoy cae en…», y la sección entera se oculta cuando el ancla
+    // no es hoy (gate en el body — con ancla en ayer la frase mentiría).
 
-    private func levelsContent(_ model: StressModel) -> some View {
-        let i = Self.indiceCarril(model.score)
-        return VStack(alignment: .leading, spacing: LiquidSpace.s300) {
-            // «Hoy cae en …» solo cuando el ancla ES hoy: con ancla en ayer la frase mentiría
-            // (el sello del campo ya dice la fecha).
-            if model.anchorIsToday, let i {
-                let b = Self.bandasEstres[i]
-                LiquidReadingLine(
-                    String(localized: "Today falls in \(b.label) · fixed scale from 0 to 3"),
-                    highlight: b.label, highlightTone: tono)
-            }
-            LiquidBandsTable(
-                filas: Self.bandasEstres.enumerated().map { j, b in
-                    LiquidBandsTable.Fila(etiqueta: b.label, rango: b.range,
-                                          activa: model.anchorIsToday && j == i)
-                },
-                tono: tono)
+    @ViewBuilder private func levelsContent(_ model: StressModel) -> some View {
+        if model.anchorIsToday, let i = Self.indiceCarril(model.score) {
+            let b = Self.bandasEstres[i]
+            LiquidReadingLine(
+                String(localized: "Today falls in \(b.label) · fixed scale from 0 to 3"),
+                highlight: b.label, highlightTone: tono)
         }
     }
 
@@ -374,33 +380,13 @@ struct StressDetailScreen: View {
     }
 
     /// «LO QUE VEMOS EN TU HISTORIAL» + chip «TENDENCIA, NO CAUSA» + líneas no causales.
-    /// Cabecera compuesta en línea con los mismos tokens que
-    /// `StrainDetailScreen.whatMovesCard` (:385-409) — no hay gemelo Liquid de
-    /// `QueLaMueveHeader` y no se acuña una pieza nueva del DS para un solo uso.
+    /// UX-09: la pieza es `LiquidTendenciaCard` (la MISMA que Esfuerzo) — el chip punteado
+    /// ya no se copia a mano por pantalla.
     private var observationsCard: some View {
-        VStack(alignment: .leading, spacing: LiquidSpace.s250) {
-            HStack(alignment: .center, spacing: LiquidSpace.s200) {
-                Text(String(localized: "What we see in your history"))
-                    .liquidLabel()
-                    .foregroundStyle(LiquidColor.tinta500)
-                Text(String(localized: "trend, not cause"))
-                    .font(LiquidType.captionLectura)
-                    .foregroundStyle(LiquidColor.tinta700)
-                    .padding(.horizontal, LiquidSpace.s225)
-                    .padding(.vertical, LiquidSpace.s075)
-                    .overlay(
-                        Capsule().stroke(LiquidColor.tinta10,
-                                         style: StrokeStyle(lineWidth: 1.2, dash: [3, 3]))
-                    )
-            }
-            ForEach(Array(observationLines.enumerated()), id: \.offset) { _, linea in
-                Text(verbatim: linea)
-                    .font(LiquidType.captionLectura)
-                    .foregroundStyle(LiquidColor.tinta700)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .liquidTarjetaSeccion()
+        LiquidTendenciaCard(
+            overline: String(localized: "What we see in your history"),
+            chip: String(localized: "trend, not cause"),
+            lineas: observationLines)
     }
 
     /// Las MISMAS frases de siempre (claves intactas), resueltas a `String` para la tarjeta.
@@ -482,11 +468,13 @@ struct StressDetailScreen: View {
                         .init(rotulo: String(localized: "Average"), valor: fmt(stat.mean)),
                         .init(rotulo: String(localized: "Range"),
                               valor: "\(fmt(stat.min))–\(fmt(stat.max))"),
-                        // «Hoy» solo cuando el ancla ES hoy (TND11-1): con ancla en ayer la
-                        // celdita pintaba el score de AYER bajo el rótulo «Today».
-                        .init(rotulo: String(localized: "Today"),
-                              valor: model.anchorIsToday ? fmt(model.score) : LiquidCajita.sinDato,
-                              tono: model.anchorIsToday ? tono : nil),
+                        // UX-14: con ancla fresca en AYER la celda dice «Ayer» con su score
+                        // (no un guion bajo «Hoy» — el dato existe, solo es de ayer, TND11-1);
+                        // con ancla más vieja vuelve «Hoy» + guion.
+                        .init(rotulo: model.heroIsFresh && !model.anchorIsToday
+                                ? String(localized: "Yesterday") : String(localized: "Today"),
+                              valor: model.heroIsFresh ? fmt(model.score) : LiquidCajita.sinDato,
+                              tono: model.heroIsFresh ? tono : nil),
                     ])
                 }
                 .liquidTarjetaSeccion()
@@ -511,17 +499,24 @@ struct StressDetailScreen: View {
             })
     }
 
-    /// El carril de HOY, o nil cuando el ancla es ayer o no hay lectura (TND11-5: el historial
-    /// afirma «hoy» — frase, resaltado, «· hoy» — así que su predicado es `anchorIsToday`, el
+    /// El carril de HOY, o nil cuando el ancla es ayer o no hay lectura (TND11-5: lo que
+    /// afirma «hoy» — la frase y el chip «· hoy» — usa este predicado `anchorIsToday`, el
     /// mismo de «Hoy cae en…»; el campo, que SÍ fecha su dato con el sello, sigue en
     /// `heroIsFresh`).
     private func indiceAncla(_ model: StressModel) -> Int? {
         model.anchorIsToday ? Self.indiceCarril(model.score) : nil
     }
 
-    /// El carril resaltado: el que el dedo explora, o si no hay ninguno, el del ancla.
+    /// El carril del ANCLA FRESCA (hoy o ayer) — el resaltado de la gráfica y la escalera
+    /// tocable puede marcar el carril de ayer sin afirmar «hoy» (UX-14: el chip «· hoy»
+    /// sigue gateado a `anchorIsToday` vía `indiceAncla`).
+    private func indiceAnclaFresca(_ model: StressModel) -> Int? {
+        model.heroIsFresh ? Self.indiceCarril(model.score) : nil
+    }
+
+    /// El carril resaltado: el que el dedo explora, o si no hay ninguno, el del ancla fresca.
     private func destacado(_ model: StressModel) -> Int? {
-        bandaExplorada ?? indiceAncla(model)
+        bandaExplorada ?? indiceAnclaFresca(model)
     }
 
     /// El carril de HOY y cuántos días del periodo cayeron con él — mismo contrato que
@@ -758,19 +753,26 @@ struct StressDetailScreen: View {
                                tono: LiquidColor.tinta700)
                 LiquidNotaLine(String(localized: "Combined resting-HR / HRV z-score through a logistic curve. HRV via RMSSD (Task Force, 1996). An estimate, not a diagnosis."))
             }
+            // M1: la MISMA clave de procedencia que la hoja de Hoy usa para el estrés
+            // (`LiquidMetricSheetView.origenChipVista` → «Calculated on your phone»).
             LiquidOrigenChip(glyph: .estres, badgeTono: tono,
-                             etiqueta: DataOrigin.computed.label,
+                             etiqueta: String(localized: "Calculated on your phone"),
                              sufijo: originWhen(model))
         }
         .liquidSeccion(top: LiquidSpace.s200, bottom: LiquidSpace.s800)
     }
 
-    /// Origin stamp «when» — the day's anchor the screen already computes (today / yesterday).
+    /// Origin stamp «when» — the day's anchor the screen already computes. M2: «ayer · fecha»
+    /// SOLO con ancla fresca en ayer; con ancla más vieja el sello dice solo la fecha (no
+    /// afirma un «ayer» que ya no es cierto).
     private func originWhen(_ model: StressModel) -> String {
         if model.anchorIsToday {
             return String(localized: "today")
         }
-        return String(localized: "Yesterday · \(chipDate(model.anchorDayKey))")
+        if model.heroIsFresh {
+            return String(localized: "yesterday · \(chipDate(model.anchorDayKey))")
+        }
+        return chipDate(model.anchorDayKey)
     }
 
     // MARK: - Format

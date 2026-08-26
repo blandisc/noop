@@ -10,7 +10,8 @@ import Foundation
 // Migración PURAMENTE VISUAL del esqueleto «Tendencias Final» (papel «Instrumento») a los legos
 // Liquid, calcando el patrón de `SleepDetailScreen.swift` (la vara de medir de esta migración):
 // campo teñido a sangre (`LiquidCampoMetrica`) → costuras de sección (`LiquidFranjaSeccion`) →
-// niveles fijos (`LiquidBandsTable`) → historial (`LiquidRangeSelector` + `LiquidGraficaNiveles` +
+// lectura de nivel (`LiquidReadingLine`; los rangos viven en la escalera tocable del historial,
+// UX-08) → historial (`LiquidRangeSelector` + `LiquidGraficaNiveles` +
 // `LiquidResumenVentana` + `LiquidLevelsList`) → calendario (`LiquidCalendario90`) → método + sello
 // (`LiquidCapilar` + `LiquidMetodo` + `LiquidOrigenChip`, patrón `pieMetodo` de Sueño). Segunda
 // referencia: `PreparacionDetailScreen.swift` (estados vacíos, skeleton, sin-permiso).
@@ -71,8 +72,22 @@ struct StrainDetailScreen: View {
                     LiquidSheetSkeleton(a11yCargando: String(localized: "Reading your day strain…"))
                         .liquidSeccion()
                 } else if model.hasData {
-                    seccion(String(localized: "Levels")) { levelsContent }
-                    seccion(String(localized: "See your history")) { historyContent }
+                    // Niveles = solo la lectura del ancla (UX-08: los rangos viven en la
+                    // escalera tocable del historial); sin lectura, la sección se oculta.
+                    if indiceHoy != nil {
+                        seccion(String(localized: "Levels")) { levelsContent }
+                    }
+                    // «Qué mueve tu esfuerzo» — franja propia entre Niveles e Historial
+                    // (UX-09: una anatomía y una posición en las tres gemelas).
+                    if !model.drivers.isEmpty {
+                        seccion(String(localized: "What moves your strain")) { whatMovesCard }
+                    }
+                    // La sección monta hasta que el parseo terminó (UX-04, calco del gate
+                    // `durationParsed.count >= 2` de Sueño): sin esto, el primer frame
+                    // pinta la gráfica vacía y brinca al llegar `parsed`.
+                    if parsed.count >= 2 {
+                        seccion(String(localized: "History")) { historyContent }
+                    }
                     if parsed.contains(where: { $0.value > 0 }) {
                         seccion(String(localized: "Calendar · 90 days")) { calendarContent }
                     }
@@ -120,7 +135,7 @@ struct StrainDetailScreen: View {
     private func campoConDato(_ v: Double) -> some View {
         LiquidCampoMetrica(
             tono: Self.tono,
-            titulo: String(localized: "Day Strain"),
+            titulo: String(localized: "Effort"),
             glifo: .llama,
             datos: [.init(valor: fmt(v), rotulo: String(localized: "of 21"),
                          a11y: String(localized: "\(fmt(v)) out of 21"))],
@@ -147,7 +162,7 @@ struct StrainDetailScreen: View {
     private var campoSinDato: some View {
         LiquidCampoMetrica(
             tono: Self.tono,
-            titulo: String(localized: "Day Strain"),
+            titulo: String(localized: "Effort"),
             glifo: .llama,
             datos: [.init(valor: LiquidCajita.sinDato, rotulo: String(localized: "of 21"),
                          a11y: String(localized: "no data"), ausente: true)],
@@ -223,28 +238,19 @@ struct StrainDetailScreen: View {
         }
     }
 
-    // MARK: - 2. Niveles — las 5 bandas fijas de `MetricLevels.strain`, la de hoy marcada
+    // MARK: - 2. Niveles — la lectura del ancla contra la escalera única
     //
-    // «LiquidBandsTable» (no `LiquidLevelsList`): esta tabla es la variante CLÁSICA, de solo
-    // lectura — sin conteos, sin tap. `LiquidLevelsList` es la lista TOCABLE que explora el
-    // historial (§3, abajo); mezclarlas es justo el defecto que
-    // `LiquidSheetEstadosRenderTests.swift:24` documenta como regla de la familia. Ver
-    // `LiquidMetricSheetView.bandsTableBlock` (:925-936) para el mismo call site en la hoja de
-    // métrica clásica.
+    // UX-08 (pasada F4/F5): UNA sola escalera visible por pantalla. La `LiquidBandsTable`
+    // estática duplicaba los rangos que la `LiquidLevelsList` TOCABLE del historial ya
+    // enseña; aquí queda solo la lectura «Hoy cae en…». La sección entera se oculta sin
+    // lectura del ancla (gate en el body).
 
-    private var levelsContent: some View {
-        VStack(alignment: .leading, spacing: LiquidSpace.s300) {
-            if let i = indiceHoy {
-                let b = Self.bandasEsfuerzo[i]
-                LiquidReadingLine(
-                    String(localized: "Today falls in \(b.label) · fixed scale from 0 to 21"),
-                    highlight: b.label, highlightTone: Self.tono)
-            }
-            LiquidBandsTable(
-                filas: Self.bandasEsfuerzo.enumerated().map { i, b in
-                    LiquidBandsTable.Fila(etiqueta: b.label, rango: b.range, activa: i == indiceHoy)
-                },
-                tono: Self.tono)
+    @ViewBuilder private var levelsContent: some View {
+        if let i = indiceHoy {
+            let b = Self.bandasEsfuerzo[i]
+            LiquidReadingLine(
+                String(localized: "Today falls in \(b.label) · fixed scale from 0 to 21"),
+                highlight: b.label, highlightTone: Self.tono)
         }
     }
 
@@ -253,7 +259,6 @@ struct StrainDetailScreen: View {
     private var historyContent: some View {
         let window = MetricWindowMath.make(parsed, selected: range)
         let smoothed = SeriesShape.movingAverage(window.values, window: 7)
-        let mediaStat = ComparisonEngine.stat(smoothed)
         let rawStat = ComparisonEngine.stat(window.values)
         let pct = range.periodComparison(of: model.series)?.pctChange
         return VStack(alignment: .leading, spacing: LiquidSpace.s300) {
@@ -268,8 +273,10 @@ struct StrainDetailScreen: View {
                     }
                     graficaHistorial(window, smoothed: smoothed)
                     LiquidNotaLine(String(localized: "7-day moving average: day-to-day strain is noisy."))
+                    // M4: el trío es crudo/crudo/crudo — la gráfica sigue suavizada con su
+                    // nota, pero el promedio del resumen es de la serie SIN suavizar.
                     LiquidResumenVentana(celdas: [
-                        .init(rotulo: String(localized: "Average"), valor: fmt(mediaStat.mean)),
+                        .init(rotulo: String(localized: "Average"), valor: fmt(rawStat.mean)),
                         .init(rotulo: String(localized: "Range"),
                               valor: "\(fmt(rawStat.min))–\(fmt(rawStat.max))"),
                         .init(rotulo: String(localized: "Today"),
@@ -285,9 +292,6 @@ struct StrainDetailScreen: View {
                                      tono: Self.tono,
                                      estadoVacio: String(localized: "Not enough days in this range to draw a trend."),
                                      a11yLabel: String(localized: "Strain history"))
-            }
-            if !model.drivers.isEmpty {
-                whatMovesCard.padding(.top, LiquidSpace.s250)
             }
         }
     }
@@ -337,9 +341,10 @@ struct StrainDetailScreen: View {
                 LiquidChartBanda(lo: b.lo, hi: b.hi, color: b.color, activa: i == destacado)
             },
             dominio: Self.dominioEsfuerzo,
-            // Los ticks del eje afirman los CORTES reales del motor (10/14/18), no la escalera
-            // vieja 14/8 (TND10-3): un eje que marca 8 y 13 se lee como si fueran fronteras.
-            ticksY: [(18, "18"), (14, "14"), (10, "10")],
+            // Los ticks del eje afirman los CUATRO cortes reales del motor (6/10/14/18), no la
+            // escalera vieja 14/8 (TND10-3): un eje que marca 8 y 13 se lee como si fueran
+            // fronteras. Con el dominio 0–19 (UX-03) el carril Descanso ya no se clampea.
+            ticksY: [(18, "18"), (14, "14"), (10, "10"), (6, "6")],
             tono: Self.tono,
             puntoHoy: shownToday != nil ? puntos.last : nil,
             hoyAnillo: bandaExplorada != nil && bandaExplorada != indiceHoy,
@@ -378,34 +383,13 @@ struct StrainDetailScreen: View {
 
     /// «Qué mueve tu esfuerzo» — drivers direccionales, ya gateados por el motor (FER-239). La
     /// tarjeta desaparece entera cuando nada cruza el umbral de suficiencia (sin mensaje vacío).
-    /// Cabecera propia (overline + chip «tendencia, no causa»): no hay gemelo Liquid de
-    /// `QueLaMueveHeader` (esa pieza es de la familia «Instrumento», theme-based), así que se
-    /// compone en línea con los mismos tokens que `LiquidVigilanteChip` (cápsula punteada,
-    /// `captionLectura`/`tinta700`) en vez de acuñar una pieza nueva del DS para un solo uso.
+    /// UX-09: la pieza es `LiquidTendenciaCard` (overline + chip «tendencia, no causa»), la
+    /// MISMA que Estrés — el chip punteado ya no se copia a mano por pantalla.
     private var whatMovesCard: some View {
-        VStack(alignment: .leading, spacing: LiquidSpace.s250) {
-            HStack(alignment: .center, spacing: LiquidSpace.s200) {
-                Text(String(localized: "What moves your strain"))
-                    .liquidLabel()
-                    .foregroundStyle(LiquidColor.tinta500)
-                Text(String(localized: "trend, not cause"))
-                    .font(LiquidType.captionLectura)
-                    .foregroundStyle(LiquidColor.tinta700)
-                    .padding(.horizontal, LiquidSpace.s225)
-                    .padding(.vertical, LiquidSpace.s075)
-                    .overlay(
-                        Capsule().stroke(LiquidColor.tinta10,
-                                        style: StrokeStyle(lineWidth: 1.2, dash: [3, 3]))
-                    )
-            }
-            ForEach(model.drivers, id: \.driver) { finding in
-                Text(Self.driverPhrase(finding))
-                    .font(LiquidType.captionLectura)
-                    .foregroundStyle(LiquidColor.tinta700)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .liquidTarjetaSeccion()
+        LiquidTendenciaCard(
+            overline: String(localized: "What we see in your history"),
+            chip: String(localized: "trend, not cause"),
+            lineas: model.drivers.map(Self.driverPhrase))
     }
 
     /// La frase direccional de un driver — el dato es siempre una DIRECCIÓN, nunca un número.
@@ -469,8 +453,9 @@ struct StrainDetailScreen: View {
         bandasEsfuerzo.firstIndex { b in (b.lo == nil || v >= b.lo!) && (b.hi == nil || v < b.hi!) }
     }
 
-    /// El dominio Y del historial: 6–19, como en «Instrumento».
-    private static let dominioEsfuerzo: ClosedRange<Double> = 6...19
+    /// El dominio Y del historial: 0–19 (UX-03) — el piso 6 de «Instrumento» clampeaba el
+    /// carril Descanso: un día de 2.3 se dibujaba pegado al borde como si fuera un 6.
+    private static let dominioEsfuerzo: ClosedRange<Double> = 0...19
 
     private static let ejeFechaFmt: DateFormatter = {
         let f = DateFormatter(); f.setLocalizedDateFormatFromTemplate("dMMM"); return f
@@ -535,21 +520,19 @@ struct StrainDetailScreen: View {
     /// La leyenda: TRES peldaños de muestra + «sin dato», el mismo tratamiento impresionista que
     /// `SleepDetailScreen.leyendaCalendario` (tres muestras para cinco tintas — «extreme» queda
     /// más oscuro que el peldaño más oscuro de la leyenda, a propósito). Cada swatch lleva la
-    /// tinta REAL de su carril vía `alturaNivel` (TND10-1), y las MISMAS tres palabras en
-    /// minúscula que ya traía el calendario en «Instrumento» — sin nuevas claves.
+    /// tinta REAL de su carril vía `alturaNivel` (TND10-1), y su palabra ES la etiqueta del
+    /// carril de la escalera única en minúscula (UX-15, calco de
+    /// `StressDetailScreen.leyendaCalendario`) — nunca una segunda copia de las palabras.
     private static var leyendaCalendario: [LiquidCalendario90.NivelLeyenda] {
-        [
-            .init(id: "hard",
-                  color: tono.opacity(LiquidCalendario90.alfa(intensidad: alturaNivel("hard"))),
-                  etiqueta: String(localized: "hard")),
-            .init(id: "moderate",
-                  color: tono.opacity(LiquidCalendario90.alfa(intensidad: alturaNivel("moderate"))),
-                  etiqueta: String(localized: "moderate")),
-            .init(id: "light",
-                  color: tono.opacity(LiquidCalendario90.alfa(intensidad: alturaNivel("light"))),
-                  etiqueta: String(localized: "light")),
-            .init(id: "nodata", color: LiquidColor.tinta7, etiqueta: String(localized: "no data")),
-        ]
+        var out = ["hard", "moderate", "light"].compactMap { key -> LiquidCalendario90.NivelLeyenda? in
+            guard let b = bandasEsfuerzo.first(where: { $0.key == key }) else { return nil }
+            return .init(id: b.key,
+                         color: tono.opacity(LiquidCalendario90.alfa(intensidad: alturaNivel(b.key))),
+                         etiqueta: b.label.lowercased(with: Locale.current))
+        }
+        out.append(.init(id: "nodata", color: LiquidColor.tinta7,
+                         etiqueta: String(localized: "no data")))
+        return out
     }
 
     /// La palabra del día tocado — la MISMA etiqueta que Niveles y la escalera del historial,
@@ -581,9 +564,15 @@ struct StrainDetailScreen: View {
                     LiquidNotaLine(String(localized: "Estimated from your Apple Watch workout heart rate. It doesn't include activity outside those workouts, so it can read a little low."))
                 }
             }
+            // M1: las MISMAS claves de procedencia que la hoja de Hoy usa por métrica
+            // (`LiquidMetricSheetView.origenChipVista`): esfuerzo = calculado en el teléfono;
+            // estimado = la carga que midió Apple (FER-883/D8). M2 · contrato 2 de la hoja:
+            // el sufijo «hoy, en curso» solo cuando HAY score de hoy — con puro historial no
+            // se estampa un «en curso» sobre un guion.
             LiquidOrigenChip(glyph: .llama, badgeTono: Self.tono,
-                             etiqueta: estimated ? DataOrigin.apple.label : DataOrigin.computed.label,
-                             sufijo: String(localized: "today, in progress"))
+                             etiqueta: estimated ? String(localized: "Apple Health")
+                                                 : String(localized: "Calculated on your phone"),
+                             sufijo: model.today != nil ? String(localized: "today, in progress") : nil)
         }
         .liquidSeccion(top: LiquidSpace.s200, bottom: LiquidSpace.s800)
     }

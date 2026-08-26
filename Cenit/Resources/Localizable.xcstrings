@@ -1,6 +1,40 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@ degrees vs your base" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ degrees vs your base"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ grados respecto a tu base"
+          }
+        }
+      }
+    },
+    "%@ °C vs previous period" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ °C vs previous period"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ °C vs el periodo anterior"
+          }
+        }
+      }
+    },
     "%lld sessions · 90 days" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -14,6 +48,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld sesiones · 90 días"
+          }
+        }
+      }
+    },
+    "+%@ over the activation threshold." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "+%@ over the activation threshold."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "+%@ sobre el umbral de activación."
           }
         }
       }
@@ -69,6 +120,23 @@
         }
       }
     },
+    "Day average %@ of 3 · %lld hours with readings" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Day average %@ of 3 · %lld hours with readings"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Promedio del día %@ de 3 · %lld horas con lectura"
+          }
+        }
+      }
+    },
     "Loaded muscles" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -82,6 +150,108 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Músculos cargados"
+          }
+        }
+      }
+    },
+    "Not enough nights in this range to draw a trend." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not enough nights in this range to draw a trend."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No hay suficientes noches en este rango para dibujar una tendencia."
+          }
+        }
+      }
+    },
+    "Notably warmer than your base last night." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notably warmer than your base last night."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notablemente más cálida que tu base anoche."
+          }
+        }
+      }
+    },
+    "What moves your stress" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What moves your stress"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qué mueve tu estrés"
+          }
+        }
+      }
+    },
+    "Yesterday's reading fell in %@. Today's refreshes after your Apple Watch syncs." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yesterday's reading fell in %@. Today's refreshes after your Apple Watch syncs."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La lectura de ayer cayó en %@. La de hoy se actualiza cuando sincroniza tu Apple Watch."
+          }
+        }
+      }
+    },
+    "Your highest point today, %@, fell within «%@»." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your highest point today, %@, fell within «%@»."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu punto más alto de hoy, %@, cayó dentro de «%@»."
+          }
+        }
+      }
+    },
+    "activation threshold" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "activation threshold"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "umbral de activación"
           }
         }
       }
@@ -3827,6 +3997,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tu veredicto se apoya en tu FC en reposo de la noche, y no ha llegado. Dormir con tu Apple Watch es lo que la destraba."
+          }
+        }
+      }
+    },
+    "yesterday · %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "yesterday · %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ayer · %@"
           }
         }
       }
@@ -8769,22 +8956,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "+%@ más tarde"
-          }
-        }
-      }
-    },
-    "+%@ over your usual calm." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "+%@ over your usual calm."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "+%@ sobre tu calma habitual."
           }
         }
       }
@@ -17127,23 +17298,6 @@
         }
       }
     },
-    "Change" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Change"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cambio"
-          }
-        }
-      }
-    },
     "Change %@" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -24603,23 +24757,6 @@
         }
       }
     },
-    "hard" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "hard"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "duro"
-          }
-        }
-      }
-    },
     "Hard" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -29870,23 +30007,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Biblioteca"
-          }
-        }
-      }
-    },
-    "light" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "light"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ligero"
           }
         }
       }
@@ -46228,23 +46348,6 @@
         }
       }
     },
-    "See your history" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "See your history"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ve tu historial"
-          }
-        }
-      }
-    },
     "See your metrics for today" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -57302,23 +57405,6 @@
         }
       }
     },
-    "Yesterday · %@" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Yesterday · %@"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ayer · %@"
-          }
-        }
-      }
-    },
     "you" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -58810,22 +58896,6 @@
         }
       }
     },
-    "Your highest point today, %@, fell within “%@”." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your highest point today, %@, fell within “%@”."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu punto más alto de hoy, %@, cayó dentro de «%@»."
-          }
-        }
-      }
-    },
     "Your history" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -60044,7 +60114,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tu estrés tiende a ser más alto los %@."
+            "value" : "Tu estrés tiende a ser más alto en %@."
           }
         }
       }
@@ -60076,7 +60146,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tu estrés tiende a ser más bajo los %@."
+            "value" : "Tu estrés tiende a ser más bajo en %@."
           }
         }
       }
@@ -60308,22 +60378,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "tu banda típica · %@"
-          }
-        }
-      }
-    },
-    "your usual calm" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "your usual calm"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "tu calma habitual"
           }
         }
       }
