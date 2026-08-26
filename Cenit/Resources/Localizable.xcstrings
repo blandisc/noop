@@ -1,6 +1,54 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@ trend" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ trend"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tendencia de %@"
+          }
+        }
+      }
+    },
+    "Change" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cambio"
+          }
+        }
+      }
+    },
+    "The number is your latest daily reading, shown raw, with no smoothing. The trend traces the values you've logged over the range you pick." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The number is your latest daily reading, shown raw, with no smoothing. The trend traces the values you've logged over the range you pick."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El número es tu lectura diaria más reciente, sin suavizar. La tendencia traza los valores que registraste en el rango que elijas."
+          }
+        }
+      }
+    },
     "compare.caption.readings" : {
       "extractionState" : "manual",
       "localizations" : {
