@@ -401,6 +401,11 @@ struct TodayView: View {
                     spec: spec,
                     depth: .full,
                     theme: theme,
+                    // VIT-07: VO₂max es Apple-only — invita a conectar Salud desde su vacío
+                    // cuando no hay permiso ni lectura (espejo de CuerpoView :433).
+                    appleConnectHint: spec.descriptor.key == "vo2max"
+                        && health.auth != .authorized && health.auth != .unavailable
+                        && latestAppleVO2max == nil,
                     // FER-487: seal today's datum «Apple» when it came from Apple Health, matching the tile.
                     todayFromApple: todayVitalFromApple(spec.descriptor.key),
                     // FER-635: which nights are Apple-sourced, so the detail folds the baseline/σ, CV and Δ%
@@ -412,6 +417,9 @@ struct TodayView: View {
                         ? { whatMovesItFindings(for: spec.descriptor.key) }
                         : nil,
                     intradayCurveLoader: spec.blocks.contains(.intradayCurve) ? { hrPoints } : nil,
+                    // VIT-06 (FER-702): el desglose espectral de VFC, igual que CuerpoView :448
+                    // — sin él, el detalle abierto desde Hoy perdía la sección entera.
+                    spectralLoader: spec.descriptor.key == "hrv" ? { await loadSpectralHRV() } : nil,
                     hrMax: Double(model.profile.hrMax),
                     restingHR: resolveMeasured(todayOnly: true) { $0.restingHr.map(Double.init) }?.value,
                     todayKey: Repository.localDayKey(Date()),
@@ -564,6 +572,12 @@ struct TodayView: View {
             // FER-73 · HJ-14/INT-03: Breathing era la ÚNICA vital sin «Ver más» aunque su
             // detalle ya existe (Cuerpo lo abre con el mismo spec) y el loader vivía aquí.
             present = { metricSpec = .respiratory(resolveMeasured(todayOnly: true) { $0.respRateBpm }?.value) }
+        case "vo2max":
+            // VIT-07: la hoja de VO₂max gana «Ver más» como las demás — el MISMO spec que
+            // abre Cuerpo (:1121), con la última medición de Apple (sin gate de frescura:
+            // Apple lo mide ralo por diseño).
+            present = { metricSpec = .vo2max(value: latestAppleVO2max,
+                                             age: model.profile.age, sex: model.profile.sex) }
         case "skin_temp":
             // Skin temp has its own rich Detalle (`SkinTempDetailScreen`, the SAME Cuerpo opens), not the
             // generic `MetricDetailScreen`, so «Ver más» presents its dedicated item. (FER-763)
@@ -1637,9 +1651,23 @@ struct TodayView: View {
     /// «Ver más» opens the steps detail on the value the tile shows. (FER-254)
     private var freshSteps: Int? { liquidSteps().estimated ? nil : liquidSteps().raw }
 
+    /// Most recent Apple Health VO₂max (ml/kg/min) — NOT a daily metric (Apple updates it occasionally
+    /// after outdoor workouts), so the latest available reading wins, no freshness gate. Mirror of
+    /// CuerpoView (VIT-07).
+    private var latestAppleVO2max: Double? {
+        appleDays.last(where: { $0.vo2max != nil })?.vo2max
+    }
+
     /// The FULL daily series (oldest → newest) for a vital — the detail carries its own range selector,
     /// so it needs all history, not just the trailing window.
     private func vitalSeries(for key: String) -> [(day: String, value: Double)] {
+        // VIT-07: VO₂max isn't a nightly dashboard metric — it lives in the Apple daily rows, measured
+        // sparsely (FER-257). Every reading is a real measurement. Mirror of CuerpoView.
+        if key == "vo2max" {
+            return appleDays
+                .compactMap { row in row.vo2max.map { (row.day, $0) } }
+                .sorted { $0.day < $1.day }
+        }
         let pick: (DailyMetric) -> Double?
         switch key {
         case "hrv":       pick = { $0.avgHrv }
@@ -1670,6 +1698,28 @@ struct TodayView: View {
         MetricDetailScreen.NightVitals(
             respiration: resolveMeasured(todayOnly: true) { $0.respRateBpm }?.value,
             restingHR: resolveMeasured(todayOnly: true) { $0.restingHr.map(Double.init) }?.value)
+    }
+
+    /// Last night's frequency-domain HRV breakdown (LF/HF/total, ms²) + a per-band «your normal» label,
+    /// read from the `-noop` computed `metricSeries` the pipeline persisted (FER-702). Returns nil when
+    /// there is no band-night spectrum, so the section stays hidden (an Apple-only night has none).
+    /// VIT-06: calco de CuerpoView.loadSpectralHRV — el detalle de VFC abierto desde Hoy perdía la
+    /// sección espectral entera porque el loader nunca se cableaba.
+    private func loadSpectralHRV() async -> MetricDetailScreen.SpectralHRV? {
+        let hf = (await repo.computedSeries(key: "hrv_hf")).sorted { $0.day < $1.day }
+        guard let latest = hf.last else { return nil }
+        let day = latest.day
+        let lf = (await repo.computedSeries(key: "hrv_lf")).sorted { $0.day < $1.day }
+        let total = (await repo.computedSeries(key: "hrv_totalpower")).sorted { $0.day < $1.day }
+        func band(_ s: [(day: String, value: Double)]) -> MetricDetailScreen.SpectralHRV.Band? {
+            guard let today = s.first(where: { $0.day == day }) else { return nil }
+            let history = s.filter { $0.day < day }.map { Optional($0.value) }   // exclude tonight
+            return .init(value: today.value,
+                         label: HRVSpectralBaseline.label(value: today.value, history: history))
+        }
+        guard let hfBand = band(hf) else { return nil }
+        let totalVal = total.first(where: { $0.day == day })?.value ?? hfBand.value
+        return .init(hf: hfBand, lf: band(lf), total: totalVal)
     }
 
     // MARK: - Derived text

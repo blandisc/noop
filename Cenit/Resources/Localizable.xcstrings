@@ -5338,6 +5338,23 @@
         }
       }
     },
+    "7-day average · %@ %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "7-day average · %@ %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "promedio de 7 días · %@ %@"
+          }
+        }
+      }
+    },
     "7-day average · %@ steps" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5350,7 +5367,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Promedio de 7 días · %@ pasos"
+            "value" : "promedio de 7 días · %@ pasos"
           }
         }
       }
@@ -10869,36 +10886,36 @@
         }
       }
     },
-    "Calibrating your base · %lld of 7 days. We need a few more days to show your 7-day average, your normal range and the trend." : {
+    "Calibrating your base · %lld of 7 days. I need a few more days to show your 7-day average, your normal range and the trend." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Calibrating your base · %lld of 7 days. We need a few more days to show your 7-day average, your normal range and the trend."
+            "value" : "Calibrating your base · %lld of 7 days. I need a few more days to show your 7-day average, your normal range and the trend."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Calibrando tu base · %lld de 7 días. Necesitamos unos días más para mostrar tu promedio de 7 días, tu rango normal y la tendencia."
+            "value" : "Calibrando tu base · %lld de 7 días. Necesito unos días más para mostrar tu promedio de 7 días, tu rango normal y la tendencia."
           }
         }
       }
     },
-    "Calibrating your base · %lld of 7 nights. We need a few more nights to show your 7-day average, your normal range and the trend." : {
+    "Calibrating your base · %lld of 7 nights. I need a few more nights to show your 7-day average, your normal range and the trend." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Calibrating your base · %lld of 7 nights. We need a few more nights to show your 7-day average, your normal range and the trend."
+            "value" : "Calibrating your base · %lld of 7 nights. I need a few more nights to show your 7-day average, your normal range and the trend."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Calibrando tu base · %lld de 7 noches. Necesitamos unas noches más para mostrar tu promedio de 7 días, tu rango normal y la tendencia."
+            "value" : "Calibrando tu base · %lld de 7 noches. Necesito unas noches más para mostrar tu promedio de 7 días, tu rango normal y la tendencia."
           }
         }
       }
@@ -12317,6 +12334,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Conecta Apple Salud para llenar pasos y más."
+          }
+        }
+      }
+    },
+    "Connect Apple Health to see your VO₂max" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect Apple Health to see your VO₂max"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conecta Apple Salud para ver tu VO₂max"
           }
         }
       }
@@ -16273,6 +16307,23 @@
         }
       }
     },
+    "Equivalent age" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Equivalent age"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edad equivalente"
+          }
+        }
+      }
+    },
     "Equivalent option" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -17380,6 +17431,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ajustado con %lld días en que tu iPhone también contó pasos. Confianza: media."
+          }
+        }
+      }
+    },
+    "Fitness category" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fitness category"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Categoría de forma"
           }
         }
       }
@@ -22057,6 +22125,23 @@
         }
       }
     },
+    "Last night falls in %@ · healthy adults usually sit at 95%% or above" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last night falls in %@ · healthy adults usually sit at 95%% or above"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anoche cae en %@ · los adultos sanos suelen estar en 95%% o más"
+          }
+        }
+      }
+    },
     "Last night falls in %@ · population reference, not your verdict" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -26277,7 +26362,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aún no hay lectura de anoche, abajo está tu historial reciente."
+            "value" : "Aún no hay lectura de anoche: abajo está tu historial reciente."
           }
         }
       }
@@ -27125,6 +27210,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aún sin datos suficientes"
+          }
+        }
+      }
+    },
+    "Not enough data yet: keep logging your days and check back in a few weeks." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not enough data yet: keep logging your days and check back in a few weeks."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aún no hay suficientes datos: sigue registrando tus días y vuelve en unas semanas."
           }
         }
       }
@@ -32721,7 +32823,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Respiración %@ · FC reposo %@"
+            "value" : "Respiración %@ · FC en reposo %@"
           }
         }
       }
@@ -47741,7 +47843,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zona 1 · muy ligero"
+            "value" : "Zona 1 · muy ligera"
           }
         }
       }
@@ -47758,7 +47860,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zona 2 · ligero"
+            "value" : "Zona 2 · ligera"
           }
         }
       }
@@ -47775,7 +47877,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zona 3 · moderado"
+            "value" : "Zona 3 · moderada"
           }
         }
       }
@@ -47809,7 +47911,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zona 5 · máximo"
+            "value" : "Zona 5 · máxima"
           }
         }
       }
@@ -49008,6 +49110,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "un solo voto"
+          }
+        }
+      }
+    },
+    "average over %lld days · %@ %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "average over %lld days · %@ %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "promedio de %lld días · %@ %@"
+          }
+        }
+      }
+    },
+    "average over %lld days · %@ steps" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "average over %lld days · %@ steps"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "promedio de %lld días · %@ pasos"
           }
         }
       }
@@ -53504,7 +53640,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "mín %@ · máx %@ bpm"
+            "value" : "mín %@ · máx %@ lpm"
           }
         }
       }
@@ -53521,7 +53657,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "mín %@ · máx %@ · reposo %@ bpm"
+            "value" : "mín %@ · máx %@ · reposo %@ lpm"
           }
         }
       }
@@ -53537,7 +53673,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "min elevado (zona 3+)"
+            "value" : "min elevados (zona 3+)"
           }
         }
       }

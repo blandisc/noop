@@ -155,4 +155,50 @@ final class MetricInfoEscaleraUnicaTests: XCTestCase {
         XCTAssertEqual(MetricDetailScreen.spo2HeroVerdict(88).word, "Low")
         XCTAssertFalse(MetricDetailScreen.spo2HeroVerdict(88).healthy)
     }
+
+    // MARK: - (e) El camino VIVO (Liquid, FER-103): rampa de identidad por métrica y CLAVE
+    //
+    // B4 · Los pins de `laneColor` de arriba fijan el PAPEL (el rollback compila y se queda);
+    // estos fijan el vidrio: `liquidColorNivel` es UNA rampa del hue de identidad graduada por
+    // la clave del motor — la tinta sube con el valor, nunca un semáforo ni una posición.
+
+    /// La rampa completa, carril por carril, con las claves REALES de las 4 vitales + pasos.
+    /// Una clave renombrada o un case borrado cae al `default` (tono pleno) y truena el pin.
+    func testLiquidColorNivelPorClave() {
+        let tono = Color.pink
+        func c(_ m: String, _ k: String) -> Color {
+            MetricDetailScreen.liquidColorNivel(metric: m, key: k, tono: tono)
+        }
+        // VFC — 3 carriles personales: la tinta sube below → within → above.
+        XCTAssertEqual(c("hrv", "below"), tono.opacity(0.32))
+        XCTAssertEqual(c("hrv", "within"), tono.opacity(0.62))
+        XCTAssertEqual(c("hrv", "above"), tono)
+        // FC en reposo — 4 carriles del motor.
+        XCTAssertEqual(c("rhr", "rhrAthlete"), tono.opacity(0.28))
+        XCTAssertEqual(c("rhr", "rhrLow"), tono.opacity(0.48))
+        XCTAssertEqual(c("rhr", "rhrTypical"), tono.opacity(0.70))
+        XCTAssertEqual(c("rhr", "rhrHigher"), tono)
+        // Respiración — 2 carriles.
+        XCTAssertEqual(c("resp_rate", "normal"), tono.opacity(0.55))
+        XCTAssertEqual(c("resp_rate", "elevated"), tono)
+        // SpO₂ — 2 carriles: «low» NUNCA plena (la inversión posicional de TND-19).
+        XCTAssertEqual(c("spo2", "low"), tono.opacity(0.50))
+        XCTAssertEqual(c("spo2", "normal"), tono)
+        // Pasos (TND-21) — 3 carriles del motor.
+        XCTAssertEqual(c("steps", "sedentary"), tono.opacity(0.32))
+        XCTAssertEqual(c("steps", "active"), tono.opacity(0.62))
+        XCTAssertEqual(c("steps", "veryActive"), tono)
+    }
+
+    /// La rampa de zonas del intradía (TND-23): el reposo en tinta quieta (`tinta10`, jamás el
+    /// hue) y las cinco zonas graduando el tono hasta la zona 5 PLENA.
+    func testLiquidZonaRampa() {
+        let tono = Color.pink
+        XCTAssertEqual(MetricDetailScreen.liquidZonaRampa(0, tono: tono), LiquidColor.tinta10)
+        XCTAssertEqual(MetricDetailScreen.liquidZonaRampa(1, tono: tono), tono.opacity(0.35))
+        XCTAssertEqual(MetricDetailScreen.liquidZonaRampa(2, tono: tono), tono.opacity(0.5))
+        XCTAssertEqual(MetricDetailScreen.liquidZonaRampa(3, tono: tono), tono.opacity(0.65))
+        XCTAssertEqual(MetricDetailScreen.liquidZonaRampa(4, tono: tono), tono.opacity(0.82))
+        XCTAssertEqual(MetricDetailScreen.liquidZonaRampa(5, tono: tono), tono)
+    }
 }

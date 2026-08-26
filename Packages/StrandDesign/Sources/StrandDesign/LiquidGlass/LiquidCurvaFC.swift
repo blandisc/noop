@@ -7,8 +7,9 @@ import SwiftUI
 // `MetricInfoSheet:914`) con el mismo motor y scrub de la familia, y el pie de stats
 // min/prom/max YA formateados por el caller (contrato §3 F4).
 //
-// Sin bandas ni ticks: la curva FC habla sola; el contexto lo dan el último valor y las
-// stats. Estados `.cargando` (skeleton sobrio) y `.vacio` (mensaje del caller).
+// Sin bandas de clasificación: la curva FC habla sola; el contexto lo dan el último valor,
+// las stats y, opcionales, los ticks del eje Y, la referencia punteada y el punto marcado
+// (ver TND-23 abajo). Estados `.cargando` (skeleton sobrio) y `.vacio` (mensaje del caller).
 //
 // FER-103 · TND-23 (detalle de FC intradía): la pieza aprende dos contextos OPCIONALES que
 // el papel ya dibujaba y que sin ellos se perderían en la migración — `referencia` (la FC
