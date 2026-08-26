@@ -1,60 +1,299 @@
 # Cénit — Feature Guide
 
 Cénit is a standalone, fully **offline** health app on **Apple Health** — **no account, no
-cloud** — stores everything on-device in SQLite, imports your Apple Health (and optional historical
-WHOOP CSV) exports, and computes recovery, strain, HRV and sleep locally. Direct WHOOP band
-pairing was retired (FER-1003). Cénit is the iOS app (`Cenit`); its UI and data layer live under
-`Cenit/`, on top of the cross-platform Swift packages.
+cloud** — that stores everything on-device in SQLite, imports your Apple Health export, and
+computes readiness (preparedness), strain, HRV and sleep locally on your iPhone. There is no
+wearable to pair: Cénit reads the samples your **Apple Watch** already saves to Apple Health.
+Direct WHOOP band pairing and the live Bluetooth layer were retired (FER-1003). Cénit is the iOS
+app (`Cenit`); its UI and data layer live under `Cenit/`, on top of the cross-platform Swift
+packages.
 
 > **Not affiliated with WHOOP.** Cénit is independent software for *your own* data. Historical
-> "WHOOP" references name hardware the app once interoperated with, or import formats it can still
-> read. **Cénit is not a medical device** — every metric (HR, HRV, recovery, strain, sleep, SpO₂,
-> respiration, skin temperature) is an approximation, not a clinical reading, and must not be
-> used to diagnose, treat or make health decisions.
+> "WHOOP" references name hardware the app once interoperated with; a legacy WHOOP-sourced data
+> partition still on your device is shown as **"On-device"**, never as a band. **Cénit is not a
+> medical device** — every metric (HR, HRV, readiness, strain, sleep, SpO₂, respiration, skin
+> temperature) is an approximation, not a clinical reading, and must not be used to diagnose,
+> treat or make health decisions.
 
-Cénit is built on community reverse-engineering work, with thanks to:
+Cénit stores its history on-device with [`groue/GRDB.swift`](https://github.com/groue/GRDB.swift)
+(SQLite). Earlier versions interoperated with WHOOP hardware directly over Bluetooth — that path
+is **retired** (FER-1003), but the reverse-engineering work it stood on deserves the credit:
 
 | Project | Contribution |
 | --- | --- |
-| [`johnmiddleton12/my-whoop`](https://github.com/johnmiddleton12/my-whoop) | WHOOP 4.0 BLE protocol — framing, commands, decoding |
-| [`b-nnett/goose`](https://github.com/b-nnett/goose) | WHOOP 5.0 / MG BLE protocol |
-| [`groue/GRDB.swift`](https://github.com/groue/GRDB.swift) | On-device SQLite persistence |
+| [`groue/GRDB.swift`](https://github.com/groue/GRDB.swift) | On-device SQLite persistence (still in use) |
+| [`johnmiddleton12/my-whoop`](https://github.com/johnmiddleton12/my-whoop) | WHOOP 4.0 BLE protocol (retired band era) |
+| [`b-nnett/goose`](https://github.com/b-nnett/goose) | WHOOP 5.0 / MG BLE protocol (retired band era) |
 
 ---
 
 ## At a glance
 
-Cénit is a **tab bar** app. Five tabs sit along the bottom — **Today**, **Trends**, **Live**
-and **Sleep**, plus a **More** tab that opens a grouped list of every remaining screen
-(*Insights*, *Body*, *Data*, *App*). The live connection state and battery % (bonded /
-connecting / disconnected) surface inside the **Today** and **Live** screens, not in a global
-chrome. The whole UI is dark, and a first-run wizard walks you through pairing.
+Cénit is a **four-tab** app, all of it warm-paper **«Instrumento diurno»** (one dominant number,
+color only on the datum, hierarchy by space). The tabs are **Hoy** (Today), **Tendencias** (your
+body over time), **Entrenar** (Train), and **Ajustes** (Settings):
 
-Screens are grouped below by whether they need a connected strap:
-
-| Needs a connected strap (live BLE) | Works from imported data alone |
+| Tab | What it is |
 | --- | --- |
-| Live, Breathe (for haptics), Intervals (for haptics), Health Monitor (live HR), Automations (to act) | Control Center, Explore, Compare, Insights, Sleep, Trends, Workouts, Stress, Apple Health, Data Sources |
+| **Hoy** | The verdict home — today's readiness word and the SEÑALES grid. |
+| **Tendencias** | Your body over time — the trend of every signal, plus sleep, stress, vitals, body composition and longevity. |
+| **Entrenar** | The training planner — plan, routines, a guided live strength session, plus Breathe and Intervals. |
+| **Ajustes** | Profile, units, data & backup, illness watch, reminders, support. |
 
-Most of Cénit works the moment you import an export. The strap adds the *live* layer — real-time
-heart rate, haptic cues, and physical-input automations.
+There is **no live-connection chrome, no battery indicator, no "pairing" state** anywhere:
+everything is computed from Apple Health samples and on-device math. The one place a live heart
+rate appears is *inside a guided strength session*, mirrored from a paired **Apple Watch** — not a
+band. Most of Cénit works the moment you connect (or import) Apple Health; a few surfaces sharpen
+over your first couple of weeks and always say so while they calibrate.
+
+Every metric is an approximation computed locally. Nothing is uploaded.
 
 ---
 
-## Connection states
+## Hoy — Today
 
-Throughout the app the strap reports one of three states:
+**Tab: Hoy · the verdict home. Works from Apple Health data, computed on-device.**
 
-- **Disconnected** — no strap found (critical / red dot).
-- **Connecting** — found and connecting, finishing the secure pairing handshake (warning / amber).
-- **Bonded** — paired and streaming; haptics and live HR are available (positive / green).
+`TodayView.swift` (with the `Cenit/Screens/Hoy/` builders) is the home screen — «El Ecosistema».
+A header with the short date and the **24-hour dial seal** (no live BPM), then, when you have data:
 
-> WHOOP straps do **not** appear in *Settings → Bluetooth*. They advertise on a custom
-> profile that only apps like Cénit can find — so there's nothing to pair in iOS Settings.
+- **The verdict hero** — the orb, with **one dominant word** — today's *Preparedness* reading
+  (**In range**, **Go light today**, or **Recover**, and **Getting to know you** while the baseline
+  calibrates) — and a plain-language clause. Color lands only on the datum. Tapping "how I got here"
+  opens the **verdict acta** — the same word and math the onboarding and Entrenar show, so no two
+  screens can disagree.
+- **Training load** — a strip with your ACWR band (recent vs. your usual) when there's enough
+  recorded strain.
+- **SEÑALES** — a uniform tile grid, each with a sparkline: **Sleep, HRV, Resting HR, Day strain,
+  Steps, Skin temp, Respiration, Stress**. Resting HR is your **nocturnal** rate, measured by your
+  Apple Watch during sleep and read through Apple Health. Tapping a tile opens its metric sheet
+  (14-day curve, bands, level table); "Ver más" escalates to the rich detail screen.
+- **Manuals & guardian** — «¿Qué decide tu día?» and «Tu contexto» explain the reading; the
+  **guardian sheet** shows the sentinel pair (skin temp + respiration) and why it only votes when
+  both drift together.
 
-Commands that drive the strap motor (any wrist buzz) and the live realtime stream require a
-**bonded** connection. Where a feature needs this, it is noted below and the button is disabled
-until you bond.
+**Data** — everything comes from Apple Health plus on-device computation (`repo.todayPreparedness`,
+the measured `DailyMetric` rows, on-device step estimation when Apple has no count). No network,
+no account, no server.
+
+**Empty state** — with no data and no Health permission, the **orb sleeps**: "Connect Apple Health
+and it will start beating with your nights," a **Connect Apple Health** button (opening Data
+Sources), and "Everything stays on your iPhone. No account, no cloud." The button connects Apple
+Health — there is nothing to scan.
+
+The **illness early-warning** banner also appears here when triggered (see below).
+
+---
+
+## Tendencias — your body over time
+
+**Tab: Tendencias · works from Apple Health data, computed on-device.**
+
+The second tab is labeled **Tendencias** and shows `CuerpoView.swift` — your body over time, on
+warm paper. A **W / M / 3M / 6M / 1Y / ALL** range control re-windows every sparkline and the
+hero's "vs your average" delta at once. Top to bottom:
+
+- **Preparación hero** — no 0–100 recovery score (that died with the band): the **verdict word**
+  for today, tinted, with its clause; or a calibration bar ("N/4", "Calibrating your baseline") on
+  a young baseline. Tapping opens the **Preparación detail** ("your 30 mornings": today's word as
+  anchor, a mosaic of 30 mornings, how often each of the three signals drifted, and the method).
+- **Rest & load** — Sleep (minutes), Day strain / Day load, and Stress (0–3), each a tappable
+  sparkline column.
+- **Training load** — the ACWR band in a word (Low / Optimal / High) with the ratio and a
+  mini-trend; "—" and a calibration note under ~2 weeks of recorded strain.
+- **Your body** — a card that opens the **muscle map** (`TrainingBodyScreen`): per-muscle load
+  crossed with your recovery.
+- **Vitals** — a grid of **HRV, Resting HR, Blood Oxygen, Heart Rate** (intraday average),
+  **Respiratory** and **Skin temp**, each tappable to its detail screen.
+- **Activity** — Steps and Workouts (7d), plus "how you wake after each sport" (a per-sport
+  recovery ranking).
+- **Longevity** — **Physical age** (Nes/HUNT 2011, from resting HR + activity), **Body age**
+  (VitalityEngine over 28 nights), and **VO₂ Max** (your Apple Watch's latest reading). All labeled
+  "Estimate", all with non-clinical disclaimers.
+- **Footer** — **Compare** and **See all metrics** (Explore).
+
+Detail screens reachable from here:
+
+- **Sleep detail** (`SleepDetailScreen.swift`) — a hypnogram of last night, last-night-vs-typical
+  bars, per-night metric tiles, the week's sleep debt, a 90-night calendar, and the method. From
+  Apple Health sleep sessions + on-device nightly metrics.
+- **Stress detail** (`StressDetailScreen.swift`) — a single-number Stress Monitor (0–3, its own
+  color ramp, never the recovery traffic light), what moves it (resting HR + HRV vs your baseline),
+  your patterns, history, a 90-day calendar, and the method.
+- **Skin temp detail** (`SkinTempDetailScreen.swift`) — signed deviation vs your rolling nightly
+  baseline (Apple Watch wrist temperature), a warm/cool streak, bands, history, and (behind the
+  experimental toggle) nightly thermal stability.
+- **Physical age / Body age** (`FitnessAgeDetailView.swift`, `BodyAgeSheet.swift`) — the longevity
+  estimates, what moves each, and honest "not enough signals yet" states.
+- **Compare** (`CompareView.swift`) — overlay 2–4 metrics on a normalized axis and read every
+  pair's **Pearson r** ("Association, not cause"). Sparse series auto-widen.
+- **Explore** (`MetricExplorerView.swift`) — the whole signal catalog, one tap deep: latest value,
+  a trend with a range control, and **"What correlates"** (Pearson scan, |r| ≥ 0.30, n ≥ 10).
+- **Workouts** (`WorkoutsView.swift`) — the activity log: totals, weekly volume, by-sport, and a
+  session list → detail. "Each session is a workout from Apple Health, an on-device capture, or a
+  manual entry."
+- **Apple Health** (`AppleHealthView.swift`) — the per-source viewer for everything read from the
+  `apple-health` source, with tiles and chart sections (Heart & Vitals, Activity & Energy, Body
+  Composition, Sleep).
+
+Every value reads from the merged on-device dashboard (`repo.displayDays`); sparse series auto-widen
+so a short window is never empty. The only wearable the copy ever names is the **Apple Watch**.
+
+---
+
+## Entrenar — Train
+
+**Tab: Entrenar · the training planner. Fully offline; no account, no network.**
+
+`EntrenarView.swift` is a **planner** on warm paper. Its data comes from the on-device store
+(SQLite/GRDB), the exercise catalog and strength rules of `StrandTraining`/`StrandAnalytics`, and
+the same day-verdict Hoy uses. Top to bottom:
+
+- **The verdict thread** — the first line talks about your *body*, not the plan; tapping it opens
+  the same verdict acta Hoy serves (never switches tabs).
+- **The hero, by day** — a **routine day** shows the routine name, its muscles, "~50 min · 6
+  exercises · 18 sets", and today's earned progression ("Hoy subes…" / "Hoy mantienes… la subida
+  espera"), with one solid green **Empezar** that starts the guided session in a tap; a **rest day**
+  shows "Descanso" and a single **Movilidad · 20 min** door; a **live session** wins over both, with
+  an "En curso · N min" ticker and **Continuar** / **Terminar sesión**.
+- **"Otra forma ›"** — four fixed doors that never read the verdict: **Rápido** (an empty strength
+  session), **Intervalos**, **Movilidad**, **Respira**.
+- **Tu semana** — a Mon→Sun token strip (done / today / planned / rest), a row per other routine,
+  and the way into **Tu Plan**, **Nueva rutina**, and **Crear plan**.
+- **Músculos cargados** — a one-line recovery estimate (or, on a rest day, the full per-muscle
+  module), from `MuscleFatigueMap` over 84 days. Tapping opens the muscle map.
+- **Bitácora** — the last completed sessions ("Mié 12 · Tirón A", marks, "44 min · 4 880 kg",
+  effort "/21" when the Apple Watch gave HR), and **Historial y progreso ›**.
+
+First-run (no split) shows "Arma tu semana", template chips, "Import your plan from your AI ›", and
+a **Crear mi plan** CTA.
+
+**Create a plan — three paths** (`CrearPlanScreen.swift`, FER-137). One door, three rows, all
+offline: **Templates** (copying a group copies its routines *and* fills the free days of the week in
+order, never overwriting an assigned day), **From scratch** (New routine → the library create-flow),
+and **Import from your AI** (`WorkoutImportView.swift`) — Cénit hands you a prompt, you run it in
+*your own* LLM, and you bring back a `noop.workout.v1` file that becomes real routines. **Cénit never
+calls the network** — you run the LLM step yourself.
+
+**Tu Plan** (`WeeklyPlanEditorView.swift`) — one surface: assign a routine or rest to each day (top),
+weekly volume by muscle group, and every routine in a flat list (create / import / templates /
+library / folders). `WeekEditorSheet.swift` is the quick way to rotate one day through the routines
+already in the split.
+
+**Routine editor** (`RoutineEditorScreen.swift`, FER-839) — one editor for viewing, editing, and
+starting: the screen *is* the routine (Notes-style autosave, a "Guardado"/Undo banner; edits lock
+while a session is live). On today's routine it evaluates progression per slot (history + your plate
+inventory + the verdict). **Rest editor** (`RestEditorScreen.swift`) handles all five real rest
+shapes (fixed, resting-margin, peak-drop, fixed-BPM, HR reference); **progression setup**
+(`ProgressionSetupScreen.swift`) sets a rep floor/ceiling and a load step from your plate math.
+
+**Exercise library & detail** (`ExerciseLibraryScreen.swift`, `ExerciseDetailScreen.swift`) — browse
+the on-device catalog (search + filter by muscle/equipment), or multi-select into a routine. A
+detail shows which muscles an exercise loads and your estimated-1RM trend; "Create exercise" adds
+your own.
+
+**The guided live strength session** (`LiveStrengthSheet.swift`, `StrengthSessionModel.swift`) — the
+big piece. It presents as a **full-screen cover** owned by `AppModel`, so minimizing it (‹) or
+switching tabs never loses it; a **floating pill** re-opens it from any tab. It runs 100% offline and
+without HealthKit — logging strength is manual.
+
+- **Set → rest → done.** The active exercise row is edited inline with Cénit's **own keypad**
+  (`SessionKeypad.swift`): a 3-column grid whose "Next" key is the confirm affordance and carries the
+  only accent. Marking a set done logs it; the **rest** appears as an inline countdown card. Rest and
+  finish **haptics come from the iPhone** (`AppModel.buzz` — which explicitly replaces the retired
+  strap motor).
+- **The receipt.** When you finish, a receipt renders in place; the full-screen thermal print is
+  `ReceiptPrinterScreen.swift`, and `SavedTicketsScreen.swift` is the grid of saved mini-receipts.
+  `ShareCardView.swift` renders the shareable card.
+- **Effort/HR only if present.** A session records HR and an effort score only when it carries
+  **Apple Watch** heart rate; without it, those blocks are omitted (never invented as zero).
+
+**History** — **Mis entrenamientos** (`WorkoutHistoryScreen.swift`) lists completed sessions →
+**detail** (`WorkoutDetailScreen.swift`, honest hero: effort → avg HR → duration); **ManualWorkoutSheet**
+adds a workout you tracked elsewhere.
+
+**Breathe & Intervals** (hub tools):
+
+- **Respira** (`BreathingView.swift`) — a paced-breathing trainer: a visual orb plus an **iPhone
+  haptic cue** (one pulse on the inhale, two on the exhale). The live HRV/RMSSD readout and the
+  coherence card were **retired with the band** (FER-1003) — solo breathing has no live R-R source.
+- **Intervalos** (`IntervalTimerView.swift`) — a silent **haptic HIIT timer**: the phone buzzes each
+  transition (WORK / REST / DONE, countdown ring, session progress), so you can train without looking.
+
+---
+
+## Ajustes — Settings
+
+**Tab: Ajustes · always available.**
+
+`AjustesView.swift` opens directly (no "More" drawer, no dark legacy Settings). Warm paper, sheet
+navigation. A privacy chip up top ("On this iPhone · no account · no cloud"), then:
+
+- **Profile** — Age, Sex, Weight, Height (wheel/segmented editors, unit-aware), and **Max heart
+  rate** (Automatic = Tanaka, 208 − 0.7·age, or a Manual override). These drive your zones and
+  workout-burn estimates.
+- **App** — **Units & format** (Metric/Imperial, temperature °C/°F; display only, storage is SI).
+- **Data** — **Data & sources** (→ Data Sources) and **Recalibrate recovery** (re-anchor your
+  baseline from today; reversible, with Undo).
+- **Salud** — the **illness watch** toggle (`behavior.illnessWatch`, off by default; see below).
+- **Morning notice** (`AjustesAvisoMatutino.swift`) — a reminder (not a delivery: the app doesn't
+  wake itself; the reading computes when you open it) to read yourself in the morning, at a time you
+  set. Asks notification permission on enable; won't fake being on if iOS denied it.
+- **Training reminder** (`AjustesRecordatorioEntreno.swift`) — same pattern, on your training days
+  (read straight from your weekly split).
+- **AFib History** (`AjustesHistorialFA.swift`) — an *informed door* to Apple's AFib History,
+  shown only while your Apple Watch isn't yet giving dense beat-to-beat series. It presents both
+  faces evenly — what it tunes (night HRV as a 0.5 co-vote) and what it costs (Apple requires
+  confirming an AFib diagnosis; not for under-22s; turns off real-time irregular-rhythm alerts) —
+  and never recommends or diagnoses.
+- **During a session** — three off-by-default toggles: keep the screen on, a sound when a timed rest
+  ends, and a rest-is-up notification.
+- **Experimental** — experimental metrics (nightly vagal reserve, thermal stability, nocturnal
+  respiration, post-session recovery) and **Download the exercise library** — the **one** opt-in
+  exception to Cénit's zero-network rule (off by default; downloads exercise animations from a CDN,
+  exposing your IP to that service; with a "Delete downloaded media" button).
+- **More** — **About & support** (→ Support).
+
+---
+
+## Data Sources
+
+**More › Ajustes › Data & sources · the import hub. Everything stays on your device.**
+
+`DataSourcesView.swift` — bring your history in once, then it's yours. It is **Apple Health only**;
+there is no WHOOP CSV import and no live-Bluetooth "strap" section (both retired). Sections:
+
+- **Import** — **Apple Health Export**: import an `export.zip` (from *Health app → profile → Export
+  All Health Data*). Cénit streams and aggregates years of HR, HRV, sleep, SpO₂, steps and body
+  composition **locally**, showing record counts and a summary.
+- **Apple Health** (live sync) — connect and keep a **two-way sync**: per-stage progress, a coverage
+  summary (days + span), a per-metric "what landed" list, and write-back permissions. Two opt-in
+  toggles (off by default): **Save workouts to Apple Health** (your strength sessions as workouts +
+  an estimated active-energy ring) and **Record on Apple Watch** (only if a watch is paired — real
+  HR/calories on the watch).
+- **Coverage** — a diagnostic 30-day grid with a legend: **On-device**, **Apple Health only**, **No
+  data**, plus a per-source day-count rollup.
+- **Backup** — **Export / Import** a single backup file (Import replaces device data and relaunches),
+  and an optional **Automatic iCloud backup** to a folder you choose (Back up now / Restore / Turn
+  off).
+
+All imports run on-device; nothing is uploaded.
+
+---
+
+## Illness early-warning
+
+Cénit watches for the classic early-illness/strain signature on-device (`IllnessSignalEngine`). It
+compares your last ~2 days against a ~28-night baseline (ending 3 days ago) across **resting HR,
+HRV, skin-temperature deviation and respiration** — all within-source Apple Health z-scores — behind
+a **≥2-signal corroboration gate**, with explicit suppression of confounders (alcohol, hard/late
+training, sauna, already-ill, read from your journal). When it raises, a banner appears on **Hoy**:
+*"Your body looks strained: … Consider taking it easy,"* naming the concrete signals.
+
+On a clear→raised transition, Cénit also posts a **system notification** (at most once per local
+day). The toggle lives in **Ajustes → Salud** and is **opt-in** (off by default — enabling it asks
+notification permission). Needs at least 14 nights of baseline. On-device and approximate —
+informational only, **not** a diagnosis.
 
 ---
 
@@ -84,10 +323,9 @@ before you finish restarts at act 1.
   (15 stages), a **2.5 s floor** (reading 180 days can't look like a blink) and a **20 s ceiling**
   (after which a real "enter anyway" exit appears); a failed sync offers **Reintentar**. Then the
   field converges, densifies to the evidence that actually exists, **tints with the verdict**, falls
-  silent, and the **verdict word** fades in — borrowed from the same builder that says it on
-  **Control Center**, so the two screens can never disagree. The landing has four branches
-  (`OnboardingLanding.swift`, decided by what *landed* in the local database, never by the
-  permission):
+  silent, and the **verdict word** fades in — borrowed from the same builder that says it on **Hoy**,
+  so the two screens can never disagree. The landing has four branches (`OnboardingLanding.swift`,
+  decided by what *landed* in the local database, never by the permission):
   - **lectura** — there's a word, with a confidence line ("8 of 14 nights") and a history line; an
     ⓘ points to the Acta.
   - **calibrando** — resting HR arrived but the baseline is young: no word, an honest count
@@ -117,369 +355,48 @@ before you finish restarts at act 1.
 still works, and leaves both doors open (reconsider and grant, or enter anyway). It never reappears
 on its own.
 
-You can edit your **Profile** any time from **Settings**.
+You can edit your **Profile** any time from **Ajustes**.
 
 ---
 
-## Control Center
-
-**Tab: Today · works from imported data; live connection status shows on this screen.**
-
-The home dashboard (`TodayView.swift`, titled "Control Center"). A tight, gapless grid:
-
-- **Health alert banner** — the illness early-warning banner appears here when triggered (see
-  [Illness early-warning](#illness-early-warning)).
-- **Today's Synthesis** — the signature **Recovery Ring** (HRV and resting HR underneath) beside
-  a plain-English read-out ("Recovery is strong and sleep was consistent.") and a recovery state
-  word (Depleted / Low / Steady / Primed / Peak).
-- **Key Metrics** — a uniform tile grid, each with a 14-day sparkline: Recovery, Day Strain
-  (of 21), Sleep (hours + efficiency), HRV, Resting HR, Blood Oxygen, Respiratory, Steps,
-  Weight, Calories. WHOOP metrics come from the `strap` source; Steps/Weight/Calories/
-  Respiratory pull from `apple-health`. Sparse series (e.g. weight) fall back to all history so
-  a tile never shows empty when data exists.
-- **Last Workouts** — up to six recent sessions as tiles (duration, date, avg HR, kcal).
-- **Data Sources** — a footer showing whether WHOOP and Apple Health data are present, with day/
-  session counts.
-
----
-
-## Live
-
-**Tab: Live · needs a bonded strap for HR; the hardware-test surface.**
-
-`LiveView.swift` is the real-time heart-rate screen and the pairing/diagnostics surface:
-
-- A large **smoothed heart rate** (BPM) — Cénit shows a spike-filtered median over a ~10 s
-  window, not the raw per-beat value, so it's stable. Recent **R-R intervals** (ms) are listed
-  beneath.
-- **Status grid** — battery %, last decoded frame type, last decoded event.
-- **Controls**:
-  - **Scan & Connect / Re-scan** — start or restart BLE scanning.
-  - **Buzz strap** — fire a test haptic buzz (requires a **bonded** connection).
-  - **Disconnect** — drop the connection.
-- A scrolling **BLE log** of frames, events and actions — useful for confirming the strap is
-  streaming.
-
-Opening Live starts the realtime HR stream and requests a fresh battery reading; leaving it
-stops the realtime stream (the lightweight standard HR keeps recording).
-
----
-
-## Breathe
-
-**More › Body: Breathe · works visually without a strap; needs a bonded strap for haptic cues.**
-
-`BreathingView.swift` — an **HRV haptic breathing biofeedback** trainer, and Cénit's flagship
-novel feature. Because the strap both *measures* HRV (from R-R intervals) and *buzzes*, Cénit can
-pace your breath with a felt cue and watch your HRV respond in real time.
-
-- **Pick a pace**: Relax 4-6 (4 s inhale / 6 s exhale), Coherence 5.5 (equal ~5.5 breaths/min),
-  or Box 4-4.
-- **Start a session** — a soft orb expands on the inhale and contracts on the exhale, with your
-  live BPM in its centre. With a strap bonded you feel **one pulse on the inhale, two on the
-  exhale**, so you can breathe with your eyes closed. Without a strap it's visual-only ("Visual
-  only" pill).
-- **Live readouts**: heart rate, a rolling **HRV (RMSSD)** over the last ~30 beats, and the
-  current pace.
-- **Coherence estimate** — a normalized bar (RMSSD mapped 0–120 ms) with a band word (Building /
-  Settling / Coherent / Deep calm). This is an estimate, not a clinical reading — trends across a
-  session matter more than any single number.
-
-A "Test buzz" button fires a single pulse (bonded only).
-
----
-
-## Intervals
-
-**More › Body: Intervals · works visually without a strap; needs a bonded strap for haptic cues.**
-
-`IntervalTimerView.swift` — a **silent haptic HIIT interval timer**. Train hands-free: the strap
-buzzes every transition so you never look at the screen.
-
-- **Configure** Work seconds (5–600), Rest seconds (5–600) and Rounds (1–30).
-- A big glanceable **stage face**: WORK / REST / DONE, the current round, a countdown ring, and a
-  total-session progress bar (elapsed / planned).
-- **Haptic cues** (bonded strap): a strong triple-buzz into each WORK block, a short single buzz
-  into REST, a 3-2-1 tick on the last seconds of each phase, and a long 5-loop buzz when the
-  session finishes.
-- **Start / Pause / Restart** and **Reset**.
-
-With no strap bonded it still works as a large visual timer (without haptics), prompting you to
-bond on the Live screen.
-
----
-
-## Explore (Metric Explorer)
-
-**More › Insights: Explore · works from imported data.**
-
-`MetricExplorerView.swift` — a catalog of every signal, one tap deep. The root is a grouped list
-(by `MetricCatalog` category); a faint trailing dot marks metrics with no recorded data. Tapping a
-metric opens its **detail dossier**:
-
-- A **W / M / 3M / 6M / 1Y / ALL** range control.
-- A hero **trend chart** with the latest value and "as of *date*".
-- A uniform stat row: **Average, Min, Max, Latest, and Δ vs the previous equal-length window**
-  (tinted by whether the change is the "good" direction for that metric).
-- **What correlates** — a cross-catalog Pearson scan over the visible window (|r| ≥ 0.30,
-  n ≥ 10), top 6, each with an r-bar.
-
-Sparse metrics (weight, body fat) auto-widen the window when the selected range holds no points,
-and flag that they did, so you always see real data instead of an empty state.
-
----
-
-## Compare
-
-**More › Insights: Compare · works from imported data.**
-
-`CompareView.swift` — overlay **2–4 metrics** from the catalog and read how they move together:
-
-- Pick metrics from a grouped menu; selected metrics show as removable colored chips.
-- A **W / M / 3M / 6M / 1Y / ALL** range control.
-- A **normalized overlay chart** — each line min–max scaled to 0–1 within the window so different
-  units share an axis. Hovering shows a crosshair and a tooltip with every series' **real** value
-  on the nearest day; the legend lists each series' true min–max range.
-- **How They Move Together** — every selected pair gets a live **Pearson r** with a plain-English
-  conclusion ("When weight rises, recovery tends to fall — a moderate negative link.").
-
-Sparse series auto-widen so they still overlay against dense ones.
-
----
-
-## Insights
-
-**More › Insights: Insights · works from imported data (needs WHOOP journal answers for behaviour effects).**
-
-`InsightsView.swift` — "interrogate what affects what", in two halves:
-
-1. **Behaviour Effects** — splits your logged WHOOP **journal** answers (Alcohol, Caffeine, Late
-   meal, Meditation…) into days each behaviour *was* vs *was not* logged, then compares a chosen
-   outcome (Recovery / HRV / Sleep / RHR) between the two groups. Each effect card shows a
-   plain-English sentence, the with/without means and group counts, a **SIGNIFICANT / EXPLORATORY**
-   pill, and an effect size (**Cohen's d**) with a magnitude word. Tint is sign-aware: a behaviour
-   that moves the outcome the "good" way reads positive/green, the "bad" way reads red. Without
-   journal data, Cénit explains how to start logging.
-2. **Metric Relationships** — a curated set of **Pearson** correlations: Sleep performance ↔
-   Recovery, HRV ↔ Recovery, Resting HR ↔ Recovery, and Recovery → next-day recovery (1-day lag).
-   Each is a one-line insight with r, a significance pill, an r-bar, and a strength/direction reading.
-
----
-
-## Sleep
-
-**Tab: Sleep · works from imported WHOOP data.**
-
-`SleepView.swift` — last night, read in two seconds:
-
-- **Stage breakdown hero** — a **hypnogram** (reconstructed from stage durations) or, if intervals
-  can't be reconstructed, a proportional stacked stage bar. Footer shows REM / Deep / Light / Awake
-  each as "Xh Ym · NN%", with time-in-bed, efficiency, and onset–wake times.
-- **Night detail** — a uniform tile grid, each with a sparkline and a "vs typical" caption: Sleep
-  Performance, Efficiency, Consistency, Hours vs Needed, Restorative (deep + REM share),
-  Respiratory, and Sleep Debt (vs your personal sleep need, floored at 7.5 h).
-- **Stages vs typical** — Deep / REM / Light as horizontal bars, last-night minutes with a marker
-  at your personal mean, so highs and lows pop.
-- **Asleep duration** — a trailing-30-night hours trend with avg / min / max.
-
-If no sleep sessions are imported, Cénit points you to Data Sources.
-
----
-
-## Trends
-
-**Tab: Trends · works from imported WHOOP data.**
-
-`TrendsView.swift` — the longitudinal view ("the thread of you over time"):
-
-- A **W / M / 3M / 6M / 1Y / ALL** range control (default 3M).
-- A hero **Recovery** chart with avg / peak / low / day-count.
-- **Daily signals** — small multiples for **HRV**, **Resting HR** and **Day Strain**, each with
-  mean / min / max.
-- A **recovery year heat-strip** — a calendar of recovery scores across the past year (or all
-  history on ALL), with a depleted→peaked legend.
-
-Windows are taken relative to your latest recorded day and auto-widen on sparse data.
-
----
-
-## Workouts
-
-**More › Body: Workouts · works from imported WHOOP and Apple Health data.**
-
-`WorkoutsView.swift` — the activity log, threaded together:
-
-- A **7D / 30D / 90D / 1Y / All** range control (auto-picks the tightest range with ≥2 sessions).
-- **Summary tiles** — Total Workouts, Total Time, Total Calories, Total Distance, Most Active sport.
-- **Activity Breakdown** — per-sport cards (sessions, time, kcal, avg per session), sport-specific
-  icons.
-- **All Sessions** — a uniform table: date/time, sport, duration, avg HR, kcal, distance, and a
-  **source badge** (WHOOP or Apple) per row.
-
----
-
-## Health Monitor
-
-**More › Body: Health · live HR needs a bonded strap; vitals come from imported WHOOP data.**
-
-`HealthView.swift` — live vitals:
-
-- **Live heart rate hero** — a streaming HR sparkline tinted by zone, with a zone pill, "% Max",
-  your Max HR (from Settings) and a streaming/idle state. When the strap reports HR as 0, Cénit
-  derives it from the latest R-R interval and notes "from R-R".
-- **Vital Signs** — a tile grid from your most recent imported day: Respiratory Rate, Blood O₂,
-  Resting HR, HRV and Skin Temp, each colored by whether it sits in a healthy range ("In range" /
-  "Out of range").
-
-With no live HR and no imported day, Cénit prompts you to connect or import.
-
----
-
-## Stress
-
-**More › Body: Stress · works from imported WHOOP data.**
-
-`StressView.swift` — a clear, single-number **Stress Monitor** (0–3) with a LOW / MEDIUM / HIGH
-band and one plain-English line on *why*:
-
-- Today's value is your **recorded daily stress score** if one exists; otherwise Cénit **derives**
-  it transparently — comparing today's resting HR and HRV to your own 30-day baseline (higher RHR
-  and lower HRV both push stress up), combining two z-scores and squashing onto 0–3 with a logistic
-  curve (0 calm · 1.5 baseline · 3 high).
-- A semicircular **gauge** (its own blue → mint → amber ramp, deliberately not the recovery traffic
-  light), the band, and an explanation tuned to your RHR/HRV shifts.
-- **Today's markers** — the stress value (with sparkline), Resting HR and HRV vs baseline (tinted
-  toward stress or recovery), and "Calm time" (share of recent days in the LOW band).
-- A multi-range **trend** chart.
-- A **"How this is computed"** card laying out the exact method and band legend.
-
----
-
-## Apple Health
-
-**More › Data: Apple Health · works from imported Apple Health data.**
-
-`AppleHealthView.swift` — the per-source page for everything imported from the `apple-health`
-source, read locally on your device:
-
-- A **W / M / 3M / 6M / 1Y / ALL** range control.
-- **Tiles**: Steps, Resting HR, HRV, VO₂ Max, Weight, Body Fat, Lean Mass, Asleep avg, Workouts.
-- **Chart sections** — Heart & Vitals (resting HR, HRV, blood oxygen, respiratory rate), Activity
-  & Energy (steps, active energy), Body Composition (weight, body fat, lean mass, BMI), and Sleep
-  (asleep). Each chart has an avg / min / max / point-count footer.
-
-Sparse weekly series (weight, body fat) auto-widen to all history so a short window is never empty;
-a single reading is shown as a "Latest reading" value rather than an empty chart.
-
----
-
-## Data Sources
-
-**More › Data: Data Sources · the import hub. Everything stays on your device.**
-
-`DataSourcesView.swift` — bring your history in once, then it's yours:
-
-### WHOOP Export (CSV)
-Import your full WHOOP history — recovery, strain, sleep, workouts — from a WHOOP data export
-(`.zip` or unzipped folder). Works for WHOOP 4.0, 5.0 and MG. Get one from
-*app.whoop.com → Data Management*. Cénit reports the records imported and the date span, and shows
-how many days and sleeps are stored.
-
-### Apple Health
-Import an Apple Health export (`export.zip`) from *Health app → profile → Export All Health Data*.
-Cénit **streams and aggregates** it locally — years of HR, HRV, sleep, SpO₂, steps, body
-composition and more. Large exports take a minute or two.
-
-### WHOOP Strap (Live BLE)
-Shows whether the strap is bonded and streaming. Pairs directly over Bluetooth — no WHOOP app,
-no cloud. Open **Live** to pair if it isn't connected.
-
-All imports run on-device; nothing is uploaded. WHOOP data is stored under the `strap` source
-and Apple Health under `apple-health`, so per-source pages and cross-source consensus stay distinct.
-
----
-
-## Automations
-
-**More › App: Automations · needs a bonded strap to act/buzz; settings save without one.**
-
-`AutomationsView.swift` — turn the strap's physical inputs and live biometrics into on-device
-strap actions and haptic coaching.
-
-### Double-tap → action
-Double-tap the strap to trigger an action. Pick one of:
-
-| Action | What it does |
-| --- | --- |
-| Nothing | No action |
-| Buzz back (confirm) | Fires a confirming wrist buzz |
-| Mark a moment | Records a timestamped "moment" (with a confirming buzz) |
-
-A **Test action** button runs it without the strap. Recent moments are listed and can be cleared.
-
-### Haptic coaching
-- **HR-zone coaching** — buzz when you hit your top zone (ease off) and again when you recover,
-  using your max HR from Settings.
-- **Resting stress nudge (experimental)** — a gentle buzz when your HRV drops while your heart
-  rate is calm — a cue to take a paced breath. Conservative, rate-limited to **once every
-  15 minutes**, off by default.
-
-### Smart alarm
-Wake to a wrist buzz. This arms the strap's **own firmware alarm**, so it still fires even if Cénit
-is closed. Set your wake time — the strap buzzes at exactly that time. Cénit does not currently do
-light-sleep early wake.
-
----
-
-## Illness early-warning
-
-Cénit watches for the classic early-illness/strain signature on-device. It compares your last ~2
-days against a ~28-day baseline (ending 3 days ago) for resting HR, HRV, skin-temperature
-deviation and respiration. When **two or more** anomalies appear — e.g. resting HR up ≥5 bpm,
-HRV down ≥20%, skin temp up ≥0.6 °C, respiration up — a banner appears on **Control Center**:
-*"Your body looks strained — … Consider taking it easy."*
-
-On a banner transition from clear to raised, Cénit also posts a **system notification** (at most
-once per local day) so the warning reaches you when the window is closed. The toggle lives in
-**Automations → Illness early-warning** and is **opt-in** (off by default — enabling it triggers
-the notification-permission prompt). Needs at least 14 days
-of history. On-device and approximate — informational only, **not** a diagnosis.
-
----
-
-## Settings
-
-**More › App: Settings · always available.**
-
-`SettingsView.swift`:
-
-- **Profile** — age, sex, weight, height, and max heart rate (auto-estimated via Tanaka, or a
-  manual override). These power your zones, calorie estimates and recovery baselines.
-- **Strap** — connection status, battery, and Re-scan / Disconnect controls.
-- **About** — version, the "all your data, none of the cloud" note, a **medical disclaimer**, and
-  attribution to the community protocols Cénit is built on.
+## App-level gates & notices
+
+Around the four tabs, a few whole-app surfaces:
+
+- **Terms gate** (`TermsGateView.swift`, `Terms.swift`) — a clickwrap over *everything* (before
+  onboarding), re-shown if the terms materially change (`currentVersion` "2.0"). The four points you
+  accept: Cénit reads from Apple Health on your device (**no separate hardware pairing required**);
+  it's offline and local (no account, server or telemetry); it's general wellness, not a medical
+  device; and there's no warranty.
+- **What's New** (`WhatsNewView.swift`) — the in-app changelog, shown automatically after an update
+  and reachable from Ajustes: a "What to expect" section, then each release.
+- **Restore offer** (`ContentView.swift`, FER-116) — shortly after onboarding, *only* if Apple
+  Health is authorized but no data landed, Cénit offers to restore from a **backup file you exported
+  yourself** (it has no cloud of its own). "Choose a backup file…" / "Not now".
+- **Store failure** (`StoreFailureView.swift`) — if the local database can't open (a wedged
+  migration or a corrupt file), an honest full-screen paper state with **Retry** and **Restore from
+  backup…**, never an eternally empty dashboard.
 
 ---
 
 ## Support
 
-**More › App: Support · always available. Cénit is free and always will be.**
+**More › Ajustes › About & support · Cénit is free.**
 
-`SupportView.swift`:
-
-- **Built on** — credit to the community reverse-engineering projects Cénit stands on.
-- **Donate (optional)** — never a paywall; the whole app works without it. Copy-to-clipboard
-  crypto addresses (Bitcoin, Cardano, Ethereum, XRP) for anyone who wants to chip in toward
-  future work (Windows, the iOS port, new features). The app never asks again.
-- A reminder: **not affiliated with WHOOP; interoperability software for your own device and
-  data; not a medical device.**
+`SupportView.swift` — thinned to essentials: Cénit's identity and version, a short mission ("A health
+app built on Apple Health. Everything stays on this device… an independent, experimental project"),
+and a single footer disclaimer: **"Not a medical device."**
 
 ---
 
 ## Privacy & data ownership
 
-- **Offline by design.** Cénit talks to your strap directly over Bluetooth Low Energy — there is
-  no server in the middle. No account, no sync, no cloud.
-- **On-device storage.** All history (imported and live-captured) is stored locally in SQLite
-  via GRDB.
-- **Your data is yours.** Imports happen once and stay on your device; nothing is uploaded.
+- **Offline by design.** Cénit reads the samples your **Apple Watch** and iPhone already save to
+  **Apple Health**, on your device. No account, no sync, no cloud, no telemetry, no server — and no
+  wearable to pair.
+- **On-device storage.** All history (imported and computed) is stored locally in SQLite via GRDB.
+- **Your data is yours.** Imports happen once and stay on your device; backups are files *you*
+  export (with an optional iCloud folder *you* choose). Nothing is uploaded.
+- **One opt-in network exception.** Downloading the exercise-animation library (Ajustes →
+  Experimental) is off by default; enabling it fetches media from a CDN and exposes your IP to that
+  service. Every other part of Cénit makes zero network calls.
