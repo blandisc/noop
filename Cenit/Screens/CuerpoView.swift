@@ -587,8 +587,8 @@ private struct CuerpoLanding: View {
     /// Wraps a domain module's content in `LiquidModulo`: the aurora edge in the hue of ITS OWN data
     /// (a 1:1 `MetricIdentity` reflection, never a raw theme token). Only `animated` modules keep a
     /// live-spinning aurora — in a scrolling list, more clocks wash the piece out — the rest render a
-    /// STILL edge via `liquidMotionDisabled` (which also parks that module's glass on the material
-    /// fallback instead of the iOS 26 native lens; an accepted trade for a screen this long).
+    /// STILL edge via `liquidAmbientPaused`, which freezes ONLY the aurora: unlike `liquidMotionDisabled`,
+    /// it does NOT gate `LiquidModulo`'s glass, so the 4 still modules keep the iOS 26 native lens.
     @ViewBuilder
     private func liquidModulo<Content: View>(index: Int, tones: [Color], period: Double,
                                              reverse: Bool = false, animated: Bool,
@@ -599,7 +599,7 @@ private struct CuerpoLanding: View {
         } else {
             LiquidModulo(index: index, auroraTones: tones, auroraPeriod: period,
                         auroraReverse: reverse, content: content)
-                .environment(\.liquidMotionDisabled, true)
+                .environment(\.liquidAmbientPaused, true)
         }
     }
 
