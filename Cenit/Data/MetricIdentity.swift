@@ -78,4 +78,12 @@ enum MetricIdentity {
 
     /// The Liquid drop glyph for a catalog metric (nil when it has none).
     static func glyph(for metric: MetricDescriptor) -> LiquidIcon.Glyph? { identity(forKey: metric.key).glyph }
+
+    /// Identity for an INGEST key (what the Apple-Health screens speak). Normalizes through
+    /// `MetricCatalog.catalogKey(forIngestKey:)` first, so `resting_hr` reads as `rhr` (rosa · corazón)
+    /// and `asleep_min` as the sleep family (índigo · luna) instead of falling to the `verdePrimario`
+    /// default. The port MUST use this, never `identity(forKey:)` on a raw ingest key (FER-108).
+    static func identity(forIngestKey key: String) -> (hue: Color, glyph: LiquidIcon.Glyph?) {
+        identity(forKey: MetricCatalog.catalogKey(forIngestKey: key))
+    }
 }
