@@ -663,7 +663,7 @@ enum LiquidHoyBuilder {
         // «no conozco tu base» a alguien con años de historia es FALSO — y saldría en cada arranque.
         // Preferimos decir la verdad pequeña: lo estamos leyendo.
         if prep == nil, verdictPending {
-            return (.demotado(kicker: String(localized: "READINESS"),
+            return (.demotado(kicker: nil,
                               title: String(localized: "Reading your night…"),
                               subtitle: String(localized: "One moment.")),
                     .autonomic, nil)
@@ -901,7 +901,7 @@ enum LiquidHoyBuilder {
         // único camino real es conceder el permiso (revote /inject).
         guard healthConnected else {
             return .demotado(
-                kicker: String(localized: "READINESS"),
+                kicker: nil,
                 title: String(localized: "I don\'t know your baseline yet"),
                 subtitle: String(localized: "Connect Apple Health in Settings and your daily verdict will appear here."))
         }
@@ -915,10 +915,10 @@ enum LiquidHoyBuilder {
         // y sin ella no habrá veredicto. Se dice la verdad, y qué haría falta.
         guard autonomicPosible else {
             return .demotado(
-                kicker: String(localized: "READINESS"),
+                kicker: nil,
                 title: String(localized: "hero.title.sinfc", defaultValue: "I can't read your mornings yet"),
                 subtitle: String(localized: "hero.sub.sinfc",
-                                 defaultValue: "Your verdict stands on your resting heart rate at night, and it hasn't arrived. Sleeping with your Apple Watch is what unlocks it."))
+                                 defaultValue: "It rests on your resting heart rate at night, which hasn't arrived. Sleeping with your Apple Watch unlocks it."))
         }
         // BASE RANCIA (quinta vuelta adversarial): quien deja el reloj dos semanas conserva su
         // historia, así que `autonomicPossible` sigue en true y el conteo llega al tope — pero
@@ -926,7 +926,7 @@ enum LiquidHoyBuilder {
         // mientras la Matriz mostraba, hoy, el número. Lo que no llegó es la base, no el dato.
         if baseRancia {
             return .demotado(
-                kicker: String(localized: "READINESS"),
+                kicker: nil,
                 title: String(localized: "hero.title.rancia", defaultValue: "Your range needs fresh nights"),
                 subtitle: String(localized: "hero.sub.rancia",
                                  defaultValue: "It's been too long since your last nights with the watch: your range went stale and I can't judge today against it."))
@@ -934,12 +934,12 @@ enum LiquidHoyBuilder {
         let (noche, total) = calibracionConteo(nights: nights)
         guard noche < total else {
             return .demotado(
-                kicker: String(localized: "READINESS"),
+                kicker: nil,
                 title: String(localized: "No reading today"),
                 subtitle: String(localized: "Your range is formed; today's reading hasn't arrived yet."))
         }
         return .demotado(
-            kicker: String(localized: "READINESS"),
+            kicker: nil,
             title: String(localized: "hero.title.calibrando", defaultValue: "Getting to know you"),
             subtitle: String(localized: "Night \(noche) of \(total) · your range is taking shape"))
     }

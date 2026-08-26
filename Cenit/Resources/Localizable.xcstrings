@@ -51189,13 +51189,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your verdict stands on your resting heart rate at night, and it hasn't arrived. Sleeping with your Apple Watch is what unlocks it."
+            "value" : "It rests on your resting heart rate at night, which hasn't arrived. Sleeping with your Apple Watch unlocks it."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tu veredicto se apoya en tu FC en reposo de la noche, y no ha llegado. Dormir con tu Apple Watch es lo que la destraba."
+            "value" : "Se apoya en tu FC en reposo de la noche, que aún no llega. Dormir con tu Apple Watch la destraba."
           }
         }
       }
