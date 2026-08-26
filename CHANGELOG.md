@@ -20,6 +20,22 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **Tendencias: Esfuerzo, Estrés y Temp de piel en vidrio / Trends: Effort, Stress and Skin temp in glass** (FER-101).
+  **ES** — Las tres pantallas de detalle que faltaban de la sección Tendencias cruzan al lenguaje
+  Liquid que ya hablan Sueño y Preparación: campo teñido a sangre con la identidad de cada métrica
+  (ámbar de esfuerzo, la rampa de calor del estrés, el dorado de temperatura), historial con
+  selector de rango, gráfica explorable y escalera tocable, calendario de 90 días y el pie de
+  método con su sello de origen honesto (Temp ahora dice «Apple Watch»; nada afirma procedencia
+  sobre un guion). De paso, cada pantalla quedó con UNA sola escalera derivada del motor — el
+  calendario de Esfuerzo ya no dice «moderate» sobre una celda teñida de ligero, la frase grande
+  del héroe ya no corre un peldaño, y Estrés unificó sus tres vocabularios en Bajo / Medio / Alto.
+  Con el dato anclado en ayer, nada dice «hoy». El mapa del día de Estrés conserva el cruzado
+  hora↔calendario en el chip del dedo.
+  **EN** — The three remaining Trends detail screens cross into the Liquid language that Sleep and
+  Preparedness already speak: full-bleed tinted field per metric identity, range-selectable
+  explorable history with a tappable ladder, the 90-day calendar, and the method foot with an
+  honest origin stamp. Each screen now derives every representation from ONE engine ladder, and
+  nothing claims "today" over yesterday's anchored reading.
 - **Entrenar: Modo Foco — serie, descanso, hecho / Train: Focus Mode — set, rest, done** (FER-135).
   **ES** — Foco gana un tercer estado, HECHO, entre cada serie cerrada del último ejercicio y la
   siguiente: el ejercicio recién terminado a pantalla completa («Ejercicio hecho: ‹nombre›» + el
