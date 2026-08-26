@@ -14,11 +14,14 @@ import SwiftUI
 //   · la EDAD CORPORAL es el DATO — el único punto teñido, con `tono`, y la única etiqueta
 //     con color. Nunca al revés: teñir la referencia convertiría el ancla en una segunda
 //     afirmación y la comparación perdería su punto de apoyo.
-// `tono` lo manda el caller y se espera que siga la CONVENCIÓN DE SIGNO de la hoja, que
-// está escrita completa en `LiquidBarrasContribucion`: verde (`positivo`) cuando la edad
-// corporal RESTA años, ámbar (`atencion`) cuando los SUMA. Es contraintuitiva a propósito
-// —menos edad corporal es buena noticia, así que el número negativo es el que se celebra—
-// y por eso vive documentada en un solo lugar, no repartida en dos.
+// `tono` lo pone ENTERO el caller; la pieza no conoce la convención de signo ni la aplica:
+// solo tiñe con `tono` el punto del dato (la edad corporal) y su etiqueta. La hoja de Edad
+// corporal le pasa una escalera de VEREDICTO de 4 ramas CON rojo (`BodyAgeSheet.tintLiquid`):
+// verde cuando la edad corporal RESTA años, tinta cuando estás en tu edad, ámbar cuando SUMA
+// pocos y rojo cuando SUMA muchos. Es distinta de la escalera 3-vías SIN rojo de
+// `LiquidBarrasContribucion` (esa es 3-way a propósito); la traducción de signo a color vive
+// en el call site, no en esta pieza. Contraintuitiva a propósito: menos edad corporal es
+// buena noticia, así que el signo negativo es el que se celebra.
 //
 // La marca del dato viaja desde la edad real hasta la edad corporal al entrar: el recorrido
 // ES el delta. Con Reduce Motion aparece colocada, sin viaje.

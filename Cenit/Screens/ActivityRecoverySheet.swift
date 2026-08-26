@@ -41,6 +41,10 @@ struct ActivityRecoverySheet: View {
     /// Today). Never set when there's already data.
     var appleConnectHint: Bool = false
 
+    /// El ⓘ del campo abre la tarjeta «Qué medimos» bajo él — paridad con las gemelas
+    /// (`StrainDetailScreen`/`SkinTempDetailScreen`). (FER-105 · M1)
+    @State private var infoOpen = false
+
     /// El tono de la pantalla: el ÁMBAR de identidad (paridad con Esfuerzo), nunca el verde de las
     /// hojas de edad. Existe para no confundir «carga tras el deporte» con «longevidad».
     private static let tono = LiquidColor.ambar
@@ -58,6 +62,7 @@ struct ActivityRecoverySheet: View {
                     }
                 } else {
                     campoConDato
+                    if infoOpen { whatWeMeasureCard }
                     seccion(String(localized: "Your sports")) { sportsContent }
                     LiquidNotaLine(String(localized: "It's an estimate from your own history, not a diagnosis."))
                         .liquidSeccion(top: LiquidSpace.s100, bottom: LiquidSpace.s200)
@@ -94,11 +99,15 @@ struct ActivityRecoverySheet: View {
             titulo: String(localized: "After each sport"),
             glifo: .afterSport,
             datos: [numeralDato(top, showsNumeral: showsNumeral)],
-            veredicto: heroVerdict)
+            veredicto: heroVerdict,
+            infoAbierto: infoOpen,
+            infoEtiqueta: String(localized: "What we measure"),
+            onInfo: { withAnimation(LiquidMotion.lift) { infoOpen.toggle() } })
     }
 
-    /// El campo APAGADO (sin sesiones): numeral en guion, nunca un cero; la explicación de qué falta
-    /// vive en la cláusula, y el veredicto es el «juntando» de siempre.
+    /// El campo APAGADO (sin sesiones): numeral en guion, nunca un cero. B2: el vacío vive SOLO en
+    /// la cláusula (sin veredicto), como `SkinTempDetailScreen.campoSinDato` / `StrainDetailScreen`.
+    /// B3: voz impersonal de la familia («Cénit necesita…»).
     private var campoSinDato: some View {
         LiquidCampoMetrica(
             tono: Self.tono,
@@ -106,8 +115,7 @@ struct ActivityRecoverySheet: View {
             glifo: .afterSport,
             datos: [.init(valor: LiquidCajita.sinDato, rotulo: "",
                           a11y: String(localized: "no data"), ausente: true)],
-            veredicto: heroVerdict,
-            clausula: String(localized: "We need about 6 sessions of the same sport to start showing how you wake afterward. Keep logging your workouts and this fills in on its own."))
+            clausula: String(localized: "Cénit needs about 6 sessions of the same sport before it can show how you wake afterward. Keep logging your workouts and this fills in on its own."))
     }
 
     /// El numeral del campo: el delta del deporte tope con su signo, o el guion cuando apenas se mueve.
@@ -124,15 +132,15 @@ struct ActivityRecoverySheet: View {
         return .init(valor: firmado, unidad: String(localized: "points"), rotulo: "")
     }
 
-    /// Association framing (not cause). Reuses the body prose idea when there is data; neutral when empty.
+    /// Association framing (not cause). Solo se llama CON dato (desde `campoConDato`); el campo
+    /// vacío lleva su propia cláusula, así que la rama `costs.isEmpty` se retiró (B2). B7: la
+    /// métrica del motor (0–100 tipo recuperación) es «Recovery»/«Recuperación», el término que
+    /// el resto del app usa para ese número, no «Charge» (fuera del glosario) ni «Carga» (esfuerzo).
     private var heroVerdict: String {
-        if costs.isEmpty {
-            return String(localized: "Still gathering how you wake after each sport.")
-        }
         if let top = costs.first, abs(top.delta) < ActivityCostEngine.barelyMovesPoints {
-            return String(localized: "Your next-day Charge barely moves after the sports we can see so far.")
+            return String(localized: "Your next-day Recovery barely moves after the sports we can see so far.")
         }
-        return String(localized: "How your Charge tends to look the morning after each sport, vs your rest days. Observed in your history, not a cause.")
+        return String(localized: "How your Recovery tends to look the morning after each sport, vs your rest days. Observed in your history, not a cause.")
     }
 
     // MARK: - 2. Tus deportes — tarjetas compuestas en línea (barra de escala compartida + nota)
@@ -225,23 +233,23 @@ struct ActivityRecoverySheet: View {
     private func sentence(for cost: ActivityCost) -> LocalizedStringKey {
         let n = cost.n
         if abs(cost.delta) < ActivityCostEngine.barelyMovesPoints {
-            return "Sessions like this are barely linked to any change in your next-day Charge (n=\(n))."
+            return "Sessions like this are barely linked to any change in your next-day Recovery (n=\(n))."
         }
         let pts = Int(abs(cost.delta).rounded())
         let lower = cost.delta >= 0
         guard let days = cost.daysToBaseline else {
             return lower
-                ? "Sessions like this are typically followed by a Charge about \(pts) points lower the next morning (n=\(n))."
-                : "Sessions like this are typically followed by a Charge about \(pts) points higher the next morning (n=\(n))."
+                ? "Sessions like this are typically followed by a Recovery about \(pts) points lower the next morning (n=\(n))."
+                : "Sessions like this are typically followed by a Recovery about \(pts) points higher the next morning (n=\(n))."
         }
         if days == 1 {
             return lower
-                ? "Sessions like this are typically followed by a Charge about \(pts) points lower the next morning, climbing back in about 1 day (n=\(n))."
-                : "Sessions like this are typically followed by a Charge about \(pts) points higher the next morning, climbing back in about 1 day (n=\(n))."
+                ? "Sessions like this are typically followed by a Recovery about \(pts) points lower the next morning, climbing back in about 1 day (n=\(n))."
+                : "Sessions like this are typically followed by a Recovery about \(pts) points higher the next morning, climbing back in about 1 day (n=\(n))."
         }
         return lower
-            ? "Sessions like this are typically followed by a Charge about \(pts) points lower the next morning, climbing back in about \(days) days (n=\(n))."
-            : "Sessions like this are typically followed by a Charge about \(pts) points higher the next morning, climbing back in about \(days) days (n=\(n))."
+            ? "Sessions like this are typically followed by a Recovery about \(pts) points lower the next morning, climbing back in about \(days) days (n=\(n))."
+            : "Sessions like this are typically followed by a Recovery about \(pts) points higher the next morning, climbing back in about \(days) days (n=\(n))."
     }
 
     // MARK: - 3. Método + sello — patrón `pieMetodo` de Sueño (capilar sin franja propia)
@@ -254,17 +262,37 @@ struct ActivityRecoverySheet: View {
             LiquidMetodo(title: String(localized: "How it's calculated"),
                          mostrar: String(localized: "Show explanation"),
                          ocultar: String(localized: "Hide explanation")) {
-                LiquidNotaLine(String(localized: "We compare the median of your Charge the morning after each sport against your “untouched” rest days (no workouts, and not the days right after a session). The difference is what you see here."),
+                LiquidNotaLine(String(localized: "We compare the median of your Recovery the morning after each sport against your “untouched” rest days (no workouts, and not the days right after a session). The difference is what you see here."),
                                tono: LiquidColor.tinta700)
                 LiquidNotaLine(String(localized: "It's an association, not a cause. Things like training on the days you already wake up well (then drifting back down), resting when you're tired or sick, or which day of the week you train all play a part."),
                                tono: LiquidColor.tinta700)
                 LiquidNotaLine(String(localized: "Medians over your own history (Plews et al., 2013; HRV via RMSSD, Task Force 1996)."))
             }
+            // B5: sin sufijo temporal («hoy»): esto no es la lectura de hoy sino medianas sobre
+            // tu historial (paridad «Carga calculada», que tampoco lo lleva).
             LiquidOrigenChip(glyph: .afterSport, badgeTono: Self.tono,
-                             etiqueta: String(localized: "Calculated on your phone"),
-                             sufijo: String(localized: "today"))
+                             etiqueta: String(localized: "Calculated on your phone"))
         }
         .liquidSeccion(top: LiquidSpace.s200, bottom: LiquidSpace.s800)
+    }
+
+    // MARK: - ⓘ «Qué medimos» — tarjeta bajo el campo (paridad gemelas, FER-105 · M1)
+
+    /// La tarjeta del ⓘ: qué medimos tras cada deporte, en la prosa que la pantalla ya tiene (la
+    /// comparación del método). Mismo patrón que `StrainDetailScreen.whatWeMeasureCard`.
+    private var whatWeMeasureCard: some View {
+        VStack(alignment: .leading, spacing: LiquidSpace.s150) {
+            Text(String(localized: "What we measure"))
+                .font(LiquidType.tituloFila)
+                .foregroundStyle(LiquidColor.tinta900)
+            Text(String(localized: "We compare the median of your Recovery the morning after each sport against your “untouched” rest days (no workouts, and not the days right after a session). The difference is what you see here."))
+                .font(LiquidType.cuerpo)
+                .lineSpacing(LiquidType.cuerpoLineSpacing)
+                .foregroundStyle(LiquidColor.tinta700)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .liquidTarjetaSeccion()
+        .liquidSeccion(top: LiquidSpace.s400, bottom: LiquidSpace.s200)
     }
 }
 

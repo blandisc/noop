@@ -1,6 +1,40 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@ years" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ years"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ años"
+          }
+        }
+      }
+    },
+    "%lld years" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld years"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld años"
+          }
+        }
+      }
+    },
     "50 = typical" : {
       "localizations" : {
         "en" : {
@@ -2871,53 +2905,36 @@
         }
       }
     },
-    "%lld of 4 nights needed" : {
+    "%lld of 7 days so far." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld of 4 nights needed"
+            "value" : "%lld of 7 days so far."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld de 4 noches necesarias"
+            "value" : "%lld de 7 días hasta ahora."
           }
         }
       }
     },
-    "%lld of 7 days" : {
+    "%lld of 7 nights so far." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld of 7 days"
+            "value" : "%lld of 7 nights so far."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld de 7 días"
-          }
-        }
-      }
-    },
-    "%lld of 7 nights" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld of 7 nights"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld de 7 noches"
+            "value" : "%lld de 7 noches hasta ahora."
           }
         }
       }
@@ -3862,36 +3879,19 @@
         }
       }
     },
-    "%lld years above your age of %lld." : {
+    "%lld years older than your age of %lld." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld years above your age of %lld."
+            "value" : "%lld years older than your age of %lld."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld años por encima de tu edad de %lld."
-          }
-        }
-      }
-    },
-    "%lld years older than your age (%lld)" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld years older than your age (%lld)"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld años mayor que tu edad (%lld)"
+            "value" : "%lld años mayor que tu edad de %lld."
           }
         }
       }
@@ -3909,23 +3909,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld años más joven que tus %lld"
-          }
-        }
-      }
-    },
-    "%lld years younger than your age (%lld)" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld years younger than your age (%lld)"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld años más joven que tu edad (%lld)"
           }
         }
       }
@@ -16494,13 +16477,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Estimate"
+            "value" : "estimate"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Estimado"
+            "value" : "estimado"
           }
         }
       }
@@ -20019,19 +20002,19 @@
         }
       }
     },
-    "How your Charge tends to look the morning after each sport, vs your rest days. Observed in your history, not a cause." : {
+    "How your Recovery tends to look the morning after each sport, vs your rest days. Observed in your history, not a cause." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "How your Charge tends to look the morning after each sport, vs your rest days. Observed in your history, not a cause."
+            "value" : "How your Recovery tends to look the morning after each sport, vs your rest days. Observed in your history, not a cause."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cómo suele verse tu Carga la mañana después de cada deporte, vs tus días de descanso. Observado en tu historial, no una causa."
+            "value" : "Cómo suele verse tu Recuperación la mañana después de cada deporte, vs tus días de descanso. Observado en tu historial, no una causa."
           }
         }
       }
@@ -20261,19 +20244,19 @@
       "comment" : "A message in the hero when the Body Age reading is not yet available.",
       "isCommentAutoGenerated" : true
     },
-    "I need at least 3 signals to work this out without guessing. You have %lld." : {
+    "Cénit needs at least 3 signals to work this out without guessing. So far it has %lld." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "I need at least 3 signals to work this out without guessing. You have %lld."
+            "value" : "Cénit needs at least 3 signals to work this out without guessing. So far it has %lld."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Necesito al menos 3 señales para calcularla sin adivinar. Llevas %lld."
+            "value" : "Cénit necesita al menos 3 señales para calcularla sin adivinar. Por ahora lleva %lld."
           }
         }
       }
@@ -33937,23 +33920,6 @@
         }
       }
     },
-    "Right at your chronological age (%lld)" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Right at your chronological age (%lld)"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Justo en tu edad cronológica (%lld)"
-          }
-        }
-      }
-    },
     "Right in your target range." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -35432,121 +35398,121 @@
         }
       }
     },
-    "Sessions like this are barely linked to any change in your next-day Charge (n=%lld)." : {
+    "Sessions like this are barely linked to any change in your next-day Recovery (n=%lld)." : {
       "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sessions like this are barely linked to any change in your next-day Charge (n=%lld)."
+            "value" : "Sessions like this are barely linked to any change in your next-day Recovery (n=%lld)."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Las sesiones de este deporte apenas se relacionan con un cambio en tu Charge del día siguiente (n=%lld)."
+            "value" : "Las sesiones de este deporte apenas se relacionan con un cambio en tu Recuperación del día siguiente (n=%lld)."
           }
         }
       }
     },
-    "Sessions like this are typically followed by a Charge about %lld points higher the next morning (n=%lld)." : {
+    "Sessions like this are typically followed by a Recovery about %lld points higher the next morning (n=%lld)." : {
       "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sessions like this are typically followed by a Charge about %lld points higher the next morning (n=%lld)."
+            "value" : "Sessions like this are typically followed by a Recovery about %lld points higher the next morning (n=%lld)."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Después de una sesión así, sueles amanecer con un Charge unos %lld puntos más arriba (n=%lld)."
+            "value" : "Después de una sesión así, sueles amanecer con una Recuperación unos %lld puntos más arriba (n=%lld)."
           }
         }
       }
     },
-    "Sessions like this are typically followed by a Charge about %lld points higher the next morning, climbing back in about %lld days (n=%lld)." : {
+    "Sessions like this are typically followed by a Recovery about %lld points higher the next morning, climbing back in about %lld days (n=%lld)." : {
       "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sessions like this are typically followed by a Charge about %lld points higher the next morning, climbing back in about %lld days (n=%lld)."
+            "value" : "Sessions like this are typically followed by a Recovery about %lld points higher the next morning, climbing back in about %lld days (n=%lld)."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Después de una sesión así, sueles amanecer con un Charge unos %lld puntos más arriba, y vuelves a tu nivel en unos %lld días (n=%lld)."
+            "value" : "Después de una sesión así, sueles amanecer con una Recuperación unos %lld puntos más arriba, y vuelves a tu nivel en unos %lld días (n=%lld)."
           }
         }
       }
     },
-    "Sessions like this are typically followed by a Charge about %lld points higher the next morning, climbing back in about 1 day (n=%lld)." : {
+    "Sessions like this are typically followed by a Recovery about %lld points higher the next morning, climbing back in about 1 day (n=%lld)." : {
       "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sessions like this are typically followed by a Charge about %lld points higher the next morning, climbing back in about 1 day (n=%lld)."
+            "value" : "Sessions like this are typically followed by a Recovery about %lld points higher the next morning, climbing back in about 1 day (n=%lld)."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Después de una sesión así, sueles amanecer con un Charge unos %lld puntos más arriba, y vuelves a tu nivel en un día (n=%lld)."
+            "value" : "Después de una sesión así, sueles amanecer con una Recuperación unos %lld puntos más arriba, y vuelves a tu nivel en un día (n=%lld)."
           }
         }
       }
     },
-    "Sessions like this are typically followed by a Charge about %lld points lower the next morning (n=%lld)." : {
+    "Sessions like this are typically followed by a Recovery about %lld points lower the next morning (n=%lld)." : {
       "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sessions like this are typically followed by a Charge about %lld points lower the next morning (n=%lld)."
+            "value" : "Sessions like this are typically followed by a Recovery about %lld points lower the next morning (n=%lld)."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Después de una sesión así, sueles amanecer con un Charge unos %lld puntos más abajo (n=%lld)."
+            "value" : "Después de una sesión así, sueles amanecer con una Recuperación unos %lld puntos más abajo (n=%lld)."
           }
         }
       }
     },
-    "Sessions like this are typically followed by a Charge about %lld points lower the next morning, climbing back in about %lld days (n=%lld)." : {
+    "Sessions like this are typically followed by a Recovery about %lld points lower the next morning, climbing back in about %lld days (n=%lld)." : {
       "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sessions like this are typically followed by a Charge about %lld points lower the next morning, climbing back in about %lld days (n=%lld)."
+            "value" : "Sessions like this are typically followed by a Recovery about %lld points lower the next morning, climbing back in about %lld days (n=%lld)."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Después de una sesión así, sueles amanecer con un Charge unos %lld puntos más abajo, y vuelves a tu nivel en unos %lld días (n=%lld)."
+            "value" : "Después de una sesión así, sueles amanecer con una Recuperación unos %lld puntos más abajo, y vuelves a tu nivel en unos %lld días (n=%lld)."
           }
         }
       }
     },
-    "Sessions like this are typically followed by a Charge about %lld points lower the next morning, climbing back in about 1 day (n=%lld)." : {
+    "Sessions like this are typically followed by a Recovery about %lld points lower the next morning, climbing back in about 1 day (n=%lld)." : {
       "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sessions like this are typically followed by a Charge about %lld points lower the next morning, climbing back in about 1 day (n=%lld)."
+            "value" : "Sessions like this are typically followed by a Recovery about %lld points lower the next morning, climbing back in about 1 day (n=%lld)."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Después de una sesión así, sueles amanecer con un Charge unos %lld puntos más abajo, y vuelves a tu nivel en un día (n=%lld)."
+            "value" : "Después de una sesión así, sueles amanecer con una Recuperación unos %lld puntos más abajo, y vuelves a tu nivel en un día (n=%lld)."
           }
         }
       }
@@ -37728,23 +37694,6 @@
         }
       }
     },
-    "Still gathering how you wake after each sport." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Still gathering how you wake after each sport."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aún estoy juntando cómo amaneces tras cada deporte."
-          }
-        }
-      }
-    },
     "Still learning how consistent your nightly warming is: keep wearing it to bed." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -39193,19 +39142,19 @@
         }
       }
     },
-    "The band, not the exact point, is the reading." : {
+    "The range, not the exact point, is the reading." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The band, not the exact point, is the reading."
+            "value" : "The range, not the exact point, is the reading."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "La banda, no el punto exacto, es la lectura."
+            "value" : "El rango, no el punto exacto, es la lectura."
           }
         }
       }
@@ -43145,19 +43094,19 @@
         }
       }
     },
-    "We can't calculate your physical age yet." : {
+    "Cénit can't work out your physical age yet. The list below shows what it still needs." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "We can't calculate your physical age yet."
+            "value" : "Cénit can't work out your physical age yet. The list below shows what it still needs."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Todavía no podemos calcular tu edad física."
+            "value" : "Cénit aún no puede calcular tu edad física. La lista de abajo muestra lo que le falta."
           }
         }
       }
@@ -43179,18 +43128,18 @@
         }
       }
     },
-    "We compare the median of your Charge the morning after each sport against your “untouched” rest days (no workouts, and not the days right after a session). The difference is what you see here." : {
+    "We compare the median of your Recovery the morning after each sport against your “untouched” rest days (no workouts, and not the days right after a session). The difference is what you see here." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "We compare the median of your Charge the morning after each sport against your “untouched” rest days (no workouts, and not the days right after a session). The difference is what you see here."
+            "value" : "We compare the median of your Recovery the morning after each sport against your “untouched” rest days (no workouts, and not the days right after a session). The difference is what you see here."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Comparamos la mediana de tu Charge la mañana siguiente a cada deporte contra tus días de descanso «intactos» (sin entrenamientos y fuera de los días posteriores a una sesión). La diferencia es lo que ves aquí."
+            "value" : "Comparamos la mediana de tu Recuperación la mañana siguiente a cada deporte contra tus días de descanso «intactos» (sin entrenamientos y fuera de los días posteriores a una sesión). La diferencia es lo que ves aquí."
           }
         }
       }
@@ -43342,18 +43291,18 @@
         }
       }
     },
-    "We need about 6 sessions of the same sport to start showing how you wake afterward. Keep logging your workouts and this fills in on its own." : {
+    "Cénit needs about 6 sessions of the same sport before it can show how you wake afterward. Keep logging your workouts and this fills in on its own." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "We need about 6 sessions of the same sport to start showing how you wake afterward. Keep logging your workouts and this fills in on its own."
+            "value" : "Cénit needs about 6 sessions of the same sport before it can show how you wake afterward. Keep logging your workouts and this fills in on its own."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Necesitamos unas 6 sesiones de un mismo deporte para empezar a ver cómo amaneces después. Sigue registrando tus entrenamientos y esto se llena solo."
+            "value" : "Cénit necesita unas 6 sesiones de un mismo deporte antes de poder mostrar cómo amaneces. Sigue registrando tus entrenamientos y esto se completa solo."
           }
         }
       }
@@ -44157,23 +44106,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lo que te faltó dormir frente a lo que tu cuerpo necesita. No se salda con una sola noche buena."
-          }
-        }
-      }
-    },
-    "What's moving it" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "What's moving it"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Qué la mueve"
           }
         }
       }
@@ -45883,19 +45815,19 @@
         }
       }
     },
-    "Your band" : {
+    "Your range" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your band"
+            "value" : "Your range"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tu banda"
+            "value" : "Tu rango"
           }
         }
       }
@@ -46676,19 +46608,19 @@
         }
       }
     },
-    "Your next-day Charge barely moves after the sports we can see so far." : {
+    "Your next-day Recovery barely moves after the sports we can see so far." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your next-day Charge barely moves after the sports we can see so far."
+            "value" : "Your next-day Recovery barely moves after the sports we can see so far."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tu Carga del día siguiente casi no se mueve tras los deportes que alcanzamos a ver."
+            "value" : "Tu Recuperación del día siguiente casi no se mueve tras los deportes que alcanzamos a ver."
           }
         }
       }
@@ -50117,19 +50049,19 @@
         }
       }
     },
-    "connect Apple Health" : {
+    "Connect Apple Health to include them." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "connect Apple Health"
+            "value" : "Connect Apple Health to include them."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "conecta Apple Salud"
+            "value" : "Conecta Apple Salud para incluirlos."
           }
         }
       }
@@ -54120,36 +54052,36 @@
         }
       }
     },
-    "needs nights" : {
+    "Needs a few more nights." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "needs nights"
+            "value" : "Needs a few more nights."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "faltan noches"
+            "value" : "Faltan algunas noches."
           }
         }
       }
     },
-    "needs valid nights" : {
+    "Needs a few more valid nights." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "needs valid nights"
+            "value" : "Needs a few more valid nights."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "faltan noches válidas"
+            "value" : "Faltan algunas noches válidas."
           }
         }
       }

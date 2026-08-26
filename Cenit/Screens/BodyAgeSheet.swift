@@ -36,6 +36,10 @@ struct BodyAgeSheet: View {
     /// no lo referencia (mismo trato que las hermanas ya migradas).
     var theme: InstrumentoTheme = .base
 
+    /// El ⓘ del campo abre la tarjeta «Qué medimos» bajo él — paridad con las gemelas
+    /// (`StrainDetailScreen`/`SkinTempDetailScreen`). (FER-105 · M1)
+    @State private var infoOpen = false
+
     /// El tono de la pantalla: el VERDE de longevidad, la identidad de la Edad corporal (el CAMPO). El
     /// color del VEREDICTO vive solo en la banda (`tintLiquid(forDelta:)`).
     private static let tono = LiquidColor.verdePrimario
@@ -72,8 +76,11 @@ struct BodyAgeSheet: View {
 
     @ViewBuilder private func withData(_ r: VitalityEngine.Result) -> some View {
         campoConDato(r)
-        seccion(String(localized: "Your band")) { bandContent(r) }
-        seccion(String(localized: "What's moving it")) { movesContent(r) }
+        if infoOpen { whatWeMeasureCard }
+        // B1: «Tu rango» — «banda» es el strap en el glosario y esta app RETIRÓ la banda.
+        // T2: «What moves it», la MISMA clave que Edad física (no «What's moving it»).
+        seccion(String(localized: "Your range")) { bandContent(r) }
+        seccion(String(localized: "What moves it")) { movesContent(r) }
         pieMetodo
     }
 
@@ -90,7 +97,10 @@ struct BodyAgeSheet: View {
             datos: [.init(valor: "\(bodyAge)", unidad: String(localized: "years"), rotulo: "")],
             veredicto: deltaSentence(r),
             // Partial nuance lives in the hero reading (was a separate chip + caption).
-            clausula: r.isPartialEstimate ? Self.partialCaveat(r) : nil) {
+            clausula: r.isPartialEstimate ? Self.partialCaveat(r) : nil,
+            infoAbierto: infoOpen,
+            infoEtiqueta: String(localized: "What we measure"),
+            onInfo: { withAnimation(LiquidMotion.lift) { infoOpen.toggle() } }) {
             LiquidCampoSello(String(localized: "Estimate"))
         }
     }
@@ -105,15 +115,18 @@ struct BodyAgeSheet: View {
                 edadCorporal: r.bodyAge,
                 edadReal: r.chronoAge,
                 dominio: Self.dominio(r),
-                etiquetaCorporal: "\(Int(r.bodyAge.rounded()))",
-                etiquetaReal: "\(Int(r.chronoAge.rounded()))",
+                // T4: el contrato del DS pide «N años» en las etiquetas del dato y la referencia.
+                // Los extremos de la banda van desnudos («26»/«36») por contrato del DS (comparten
+                // el carril inferior con la edad real; tres «años» ahí se encimarían).
+                etiquetaCorporal: String(localized: "\(Int(r.bodyAge.rounded())) years"),
+                etiquetaReal: String(localized: "\(Int(r.chronoAge.rounded())) years"),
                 tono: Self.tintLiquid(forDelta: r.deltaYears),
                 bandaAnos: r.bandYears,
                 etiquetaBandaBaja: "\(lo)",
                 etiquetaBandaAlta: "\(hi)",
                 a11yLabel: String(localized: "Body age"),
                 a11yValue: Self.bandAccessibility(r))
-            LiquidNotaLine(String(localized: "The band, not the exact point, is the reading."))
+            LiquidNotaLine(String(localized: "The range, not the exact point, is the reading."))
             // Vitality — the same measure on a 0–100 scale (quiet, in ink, never a second hero).
             LiquidCajita(rotulo: String(localized: "The same measure, 0–100"),
                          valor: "\(Int(r.vitality.rounded()))",
@@ -130,7 +143,7 @@ struct BodyAgeSheet: View {
                 maximo: Self.maximo(r.contributions),
                 poloIzquierdo: String(localized: "← rejuvenates you"),
                 poloDerecho: String(localized: "ages you →"),
-                a11yLabel: String(localized: "What's moving it"),
+                a11yLabel: String(localized: "What moves it"),
                 a11yValue: Self.barsAccessibility(r.contributions))
 
             // Differentiator vs the cardio-only Physical Age (FER-141) — verbatim.
@@ -156,11 +169,30 @@ struct BodyAgeSheet: View {
                 LiquidNotaLine(String(localized: "A wellness comparison, not a biological age or a clinical diagnosis. HRV is estimated from nighttime PPG; the reference norm is conservative."),
                                tono: LiquidColor.tinta700)
             }
+            // B5: sin sufijo temporal («hoy»): la edad corporal es un estimado, no la lectura de hoy.
             LiquidOrigenChip(glyph: .corazon, badgeTono: Self.tono,
-                             etiqueta: String(localized: "Calculated on your phone"),
-                             sufijo: String(localized: "today"))
+                             etiqueta: String(localized: "Calculated on your phone"))
         }
         .liquidSeccion(top: LiquidSpace.s200, bottom: LiquidSpace.s800)
+    }
+
+    // MARK: - ⓘ «Qué medimos» — tarjeta bajo el campo (paridad gemelas, FER-105 · M1)
+
+    /// La tarjeta del ⓘ: qué es la Edad corporal, en la prosa que la pantalla ya tiene (la nota
+    /// del método). Mismo patrón que `StrainDetailScreen.whatWeMeasureCard`.
+    private var whatWeMeasureCard: some View {
+        VStack(alignment: .leading, spacing: LiquidSpace.s150) {
+            Text(String(localized: "What we measure"))
+                .font(LiquidType.tituloFila)
+                .foregroundStyle(LiquidColor.tinta900)
+            Text(String(localized: "A wellness comparison, not a biological age or a clinical diagnosis. HRV is estimated from nighttime PPG; the reference norm is conservative."))
+                .font(LiquidType.cuerpo)
+                .lineSpacing(LiquidType.cuerpoLineSpacing)
+                .foregroundStyle(LiquidColor.tinta700)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .liquidTarjetaSeccion()
+        .liquidSeccion(top: LiquidSpace.s400, bottom: LiquidSpace.s200)
     }
 
     // MARK: - 5. Empty (fewer than 3 signals) — checklist de qué está hecha, sin número inventado
@@ -174,7 +206,9 @@ struct BodyAgeSheet: View {
                 glifo: .corazon,
                 datos: [.init(valor: LiquidCajita.sinDato, rotulo: "",
                               a11y: String(localized: "no data"), ausente: true)],
-                veredicto: String(localized: "I need at least 3 signals to work this out without guessing. You have \(present.count)."))
+                // B2/B3: el vacío vive en la CLÁUSULA (no en el veredicto) y en voz impersonal
+                // de la familia (nunca «yo necesito»), como las gemelas.
+                clausula: String(localized: "Cénit needs at least 3 signals to work this out without guessing. So far it has \(present.count)."))
 
             seccion(String(localized: "What it's built from")) {
                 VStack(alignment: .leading, spacing: LiquidSpace.s250) {
@@ -189,8 +223,8 @@ struct BodyAgeSheet: View {
                     LiquidNotaLine(String(localized: "As more nights sync, it appears on its own: we don't show a half-finished number."))
                 }
             }
-
-            pieMetodo
+            // B4: sin dato, sin pie de método ni chip de origen sobre un guion (paridad gemelas /
+            // ActivityRecovery). El método y su sello viven solo en el estado con dato.
         }
     }
 
@@ -199,9 +233,10 @@ struct BodyAgeSheet: View {
     private func deltaSentence(_ r: VitalityEngine.Result) -> String {
         let chrono = Int(r.chronoAge.rounded())
         let d = Int(r.deltaYears.rounded())
-        if d > 0 { return String(localized: "\(d) years younger than your age (\(chrono))") }
-        if d < 0 { return String(localized: "\(-d) years older than your age (\(chrono))") }
-        return String(localized: "Right at your chronological age (\(chrono))")
+        // T7: UN molde compartido con Edad física («… than your age of N.», con punto final).
+        if d > 0 { return String(localized: "\(d) years younger than your age of \(chrono).") }
+        if d < 0 { return String(localized: "\(-d) years older than your age of \(chrono).") }
+        return String(localized: "Right at your age of \(chrono).")
     }
 
     /// Names which heaviest factor(s) the reading is missing (FER-643), so the caveat is specific: an
@@ -222,12 +257,14 @@ struct BodyAgeSheet: View {
     // MARK: - Empty-state coverage
 
     private struct Factor { let key: String; let label: String; let reason: String }
+    // B6: los motivos de fila ausente son oraciones completas con punto (paridad
+    // `LiquidChecklistRow` preview y las cláusulas de la familia), no fragmentos en minúscula.
     private static let factorChecklist: [Factor] = [
-        .init(key: "rhr",         label: String(localized: "Nighttime resting HR"), reason: String(localized: "needs nights")),
-        .init(key: "sleep",       label: String(localized: "Sleep"),                reason: String(localized: "needs nights")),
-        .init(key: "consistency", label: String(localized: "Sleep regularity"),     reason: String(localized: "needs nights")),
-        .init(key: "hrv",         label: String(localized: "HRV"),                  reason: String(localized: "needs valid nights")),
-        .init(key: "steps",       label: String(localized: "Steps"),                reason: String(localized: "connect Apple Health")),
+        .init(key: "rhr",         label: String(localized: "Nighttime resting HR"), reason: String(localized: "Needs a few more nights.")),
+        .init(key: "sleep",       label: String(localized: "Sleep"),                reason: String(localized: "Needs a few more nights.")),
+        .init(key: "consistency", label: String(localized: "Sleep regularity"),     reason: String(localized: "Needs a few more nights.")),
+        .init(key: "hrv",         label: String(localized: "HRV"),                  reason: String(localized: "Needs a few more valid nights.")),
+        .init(key: "steps",       label: String(localized: "Steps"),                reason: String(localized: "Connect Apple Health to include them.")),
     ]
     private var presentFactors: Set<String> {
         var s = Set<String>()
@@ -314,7 +351,12 @@ struct BodyAgeSheet: View {
             .joined(separator: "; ")
     }
 
-    private static func signed(_ years: Double) -> String { String(format: "%+.1f", years) }
+    /// El número del factor CON unidad y con el menos real (U+2212), como pide el contrato del DS
+    /// («−1.2 años») y como el numeral de ActivityRecovery ya arma su «−N». (FER-105 · T5)
+    private static func signed(_ years: Double) -> String {
+        let numero = (years < 0 ? "\u{2212}" : "+") + String(format: "%.1f", abs(years))
+        return String(localized: "\(numero) years")
+    }
 
     /// Localized spoken value for one contribution factor.
     private static func barAccessibility(_ years: Double) -> String {

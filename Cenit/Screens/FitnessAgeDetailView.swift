@@ -48,6 +48,10 @@ struct FitnessAgeDetailView: View {
     /// no lo referencia (mismo trato que las hermanas ya migradas).
     var theme: InstrumentoTheme = .base
 
+    /// El ⓘ del campo abre la tarjeta «Qué medimos» bajo él — paridad con las gemelas
+    /// (`StrainDetailScreen`/`SkinTempDetailScreen`). (FER-105 · M1)
+    @State private var infoOpen = false
+
     /// El tono de la pantalla: el VERDE de longevidad, la identidad de la Edad física.
     private static let tono = LiquidColor.verdePrimario
 
@@ -84,6 +88,7 @@ struct FitnessAgeDetailView: View {
 
     @ViewBuilder private func readyBody(_ result: FitnessAgeResult) -> some View {
         campoConDato(result)
+        if infoOpen { whatWeMeasureCard }
         seccion(String(localized: "What moves it")) { leversContent }
         if showsVO2maxSection {
             seccion(String(localized: "VO₂max"), pista: String(localized: "Apple")) { vo2maxContent }
@@ -108,7 +113,10 @@ struct FitnessAgeDetailView: View {
             datos: [.init(valor: "\(ageNum)", unidad: String(localized: "years"), rotulo: "")],
             veredicto: deltaSubtitle(result),
             clausula: String(localized: "An estimate with a ±\(bandInt)-year margin.")
-                + " " + String(localized: "It's a comparison of your fitness, not your biological age or a medical diagnosis.")) {
+                + " " + String(localized: "It's a comparison of your fitness, not your biological age or a medical diagnosis."),
+            infoAbierto: infoOpen,
+            infoEtiqueta: String(localized: "What we measure"),
+            onInfo: { withAnimation(LiquidMotion.lift) { infoOpen.toggle() } }) {
             LiquidCampoSello(String(localized: "Estimate"))
         }
     }
@@ -175,15 +183,19 @@ struct FitnessAgeDetailView: View {
             glifo: .fitnessAge,
             datos: [.init(valor: LiquidCajita.sinDato, rotulo: "",
                           a11y: String(localized: "no data"), ausente: true)],
-            veredicto: String(localized: "We can't calculate your physical age yet."))
+            // B2/B3: el vacío vive en la CLÁUSULA (no en el veredicto) y en voz impersonal de
+            // la familia, como `SkinTempDetailScreen.campoSinDato` / `StrainDetailScreen`.
+            clausula: String(localized: "Cénit can't work out your physical age yet. The list below shows what it still needs."))
 
         seccion(String(localized: "What we need")) {
             VStack(alignment: .leading, spacing: LiquidSpace.s250) {
                 VStack(alignment: .leading, spacing: 0) {
                     usingRow(profileStatus, label: String(localized: "Age and sex"),
                              motivo: String(localized: "Add your age and sex."))
+                    // T3: mismo marco que el método (cobertura sobre 7, la del motor
+                    // `FitnessAgeEngine`), no un «de 4» que se leía «5 de 4». B6: oración con punto.
                     usingRow(status("rhr"), label: String(localized: "Resting heart rate"),
-                             motivo: String(localized: "\(snapshot.rhrNights) of 4 nights needed"))
+                             motivo: String(localized: "\(snapshot.rhrNights) of 7 nights so far."))
                 }
                 .liquidTarjetaSeccion()
                 LiquidNotaLine(String(localized: "Wear your Apple Watch to sleep and this fills in on its own."))
@@ -193,8 +205,8 @@ struct FitnessAgeDetailView: View {
         if showsVO2maxSection {
             seccion(String(localized: "VO₂max"), pista: String(localized: "Apple")) { vo2maxContent }
         }
-
-        pieMetodo
+        // B4: sin dato, sin pie de método ni chip de origen sobre un guion (paridad gemelas /
+        // ActivityRecovery). El método y su sello viven solo en el estado con dato.
     }
 
     // MARK: - 5. Método + sello — patrón `pieMetodo` de Sueño (capilar sin franja propia)
@@ -210,21 +222,42 @@ struct FitnessAgeDetailView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     usingRow(profileStatus, label: String(localized: "Age and sex"),
                              motivo: String(localized: "Add your age and sex."))
+                    // B6: motivo como oración completa con punto (paridad `LiquidChecklistRow`).
                     usingRow(status("rhr"), label: String(localized: "Resting heart rate"),
-                             motivo: String(localized: "\(snapshot.rhrNights) of 7 nights"))
+                             motivo: String(localized: "\(snapshot.rhrNights) of 7 nights so far."))
                     usingRow(status("activity"), label: String(localized: "Recent activity"),
-                             motivo: String(localized: "\(snapshot.activeDays) of 7 days"))
+                             motivo: String(localized: "\(snapshot.activeDays) of 7 days so far."))
                 }
                 .liquidTarjetaSeccion()
                 LiquidNotaLine(String(localized: "Based on the Nes/HUNT model (2011): it estimates your aerobic capacity from your resting heart rate and activity, and compares it with the average for your age."),
                                tono: LiquidColor.tinta700)
                 LiquidNotaLine(String(localized: "It's a comparison of your fitness, not your biological age or a medical diagnosis."))
             }
+            // B5: sin sufijo temporal («hoy»): no es la lectura de hoy sino un estimado
+            // (paridad «Carga calculada», que tampoco lo lleva).
             LiquidOrigenChip(glyph: .fitnessAge, badgeTono: Self.tono,
-                             etiqueta: String(localized: "Calculated on your phone"),
-                             sufijo: String(localized: "today"))
+                             etiqueta: String(localized: "Calculated on your phone"))
         }
         .liquidSeccion(top: LiquidSpace.s200, bottom: LiquidSpace.s800)
+    }
+
+    // MARK: - ⓘ «Qué medimos» — tarjeta bajo el campo (paridad gemelas, FER-105 · M1)
+
+    /// La tarjeta del ⓘ: qué mide la Edad física, en la prosa que la pantalla ya tiene (el
+    /// modelo Nes/HUNT). Mismo patrón que `StrainDetailScreen.whatWeMeasureCard`.
+    private var whatWeMeasureCard: some View {
+        VStack(alignment: .leading, spacing: LiquidSpace.s150) {
+            Text(String(localized: "What we measure"))
+                .font(LiquidType.tituloFila)
+                .foregroundStyle(LiquidColor.tinta900)
+            Text(String(localized: "Based on the Nes/HUNT model (2011): it estimates your aerobic capacity from your resting heart rate and activity, and compares it with the average for your age."))
+                .font(LiquidType.cuerpo)
+                .lineSpacing(LiquidType.cuerpoLineSpacing)
+                .foregroundStyle(LiquidColor.tinta700)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .liquidTarjetaSeccion()
+        .liquidSeccion(top: LiquidSpace.s400, bottom: LiquidSpace.s200)
     }
 
     // MARK: - Checklist row (shared method / not-ready)
@@ -243,8 +276,9 @@ struct FitnessAgeDetailView: View {
     private func deltaSubtitle(_ result: FitnessAgeResult) -> String {
         let yrs = Int(abs(result.deltaYears).rounded())
         switch result.direction {
+        // T7: UN molde compartido con Edad corporal («… than your age of N.», con punto).
         case .younger: return String(localized: "\(yrs) years younger than your age of \(chronoAge).")
-        case .older:   return String(localized: "\(yrs) years above your age of \(chronoAge).")
+        case .older:   return String(localized: "\(yrs) years older than your age of \(chronoAge).")
         case .even:    return String(localized: "Right at your age of \(chronoAge).")
         }
     }
