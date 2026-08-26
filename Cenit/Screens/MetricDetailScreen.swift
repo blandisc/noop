@@ -3247,13 +3247,18 @@ struct MetricDetailScreen: View {
 
     /// «Measured today / yesterday / N days ago» — el ancla temporal, con las claves del papel
     /// (:848-862, que queda como rollback).
+    ///
+    /// TND22-1: el delta sale de las MISMAS llaves de día que compara `liquidValorFresco`
+    /// (ambas parseadas en UTC, diferencia en calendario UTC). Mezclar `parseDayKey` (UTC
+    /// medianoche) con `Calendar.current.startOfDay` local corría el sello +1 al oeste de
+    /// UTC: una medición de HOY decía «Measured yesterday» junto a una joya encendida
+    /// (la clase fila-fantasma UTC↔local que `MetricTrendChart` ya documenta).
     private var liquidVo2SelloMedido: String? {
-        guard let day = series.last?.day, let date = Repository.parseDayKey(day) else { return nil }
-        let cal = Calendar.current
-        guard let d = cal.dateComponents([.day],
-                                         from: cal.startOfDay(for: date),
-                                         to: cal.startOfDay(for: Date())).day,
-              d >= 0 else { return nil }
+        guard let day = series.last?.day, let date = Repository.parseDayKey(day),
+              let hoy = Repository.parseDayKey(todayKey ?? Repository.localDayKey(Date()))
+        else { return nil }
+        var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "UTC")!
+        guard let d = cal.dateComponents([.day], from: date, to: hoy).day, d >= 0 else { return nil }
         switch d {
         case 0:  return String(localized: "Measured today")
         case 1:  return String(localized: "Measured yesterday")
