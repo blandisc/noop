@@ -20,6 +20,11 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **Hoy · sin lectura: sin kicker, subtítulo más corto y matriz alineada / Today · no reading: no kicker, shorter subtitle, aligned matrix** (FER-159).
+  **ES** — En el estado sin lectura de Hoy, el héroe «Todavía no puedo leer tus mañanas» ya no lleva el rótulo «PREPARACIÓN» encima (queda como el estado con veredicto, que tampoco lo lleva), y su subtítulo se acortó a dos líneas sin perder la explicación (necesita tu FC en reposo de la noche; dormir con tu Apple Watch la destraba). Además, las tarjetas de «Deciden tu día» y «Te vigila» ahora comparten el mismo margen que el héroe, así que todo el contenido alinea.
+  **EN** — On Today's no-reading state, the "I can't read your mornings yet" hero no longer shows the "READINESS" label above it (matching the verdict state, which has none), and its subtitle is shorter — two lines instead of three, without dropping the explanation (it needs your resting heart rate at night; sleeping with your Apple Watch unlocks it). The "Deciden tu día" and "Te vigila" cards now share the hero's margin, so all the content lines up.
+  ([LiquidHoyBuilder.swift](Cenit/Screens/Hoy/LiquidHoyBuilder.swift), [MatrizTokens.swift](Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/MatrizTokens.swift))
+
 - **Tendencias: el detalle de vital completo en vidrio / Trends: the full vital detail in glass** (FER-103).
   **ES** — Los siete esqueletos del detalle de vital (VFC, FC en reposo, Respiración, SpO₂, Pasos,
   VO₂max y FC del día con Tiempo en zonas) cruzan al lenguaje Liquid, cerrando el último salto

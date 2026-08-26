@@ -135,9 +135,11 @@ public enum MatrizTokens {
     // cuadrícula de dos columnas dentro de tres estantes con «?». Medidas del prototipo aprobado,
     // llevadas a los tokens de espacio del sistema.
 
-    /// El margen de los estantes al bisel: el mismo del dock (`LiquidSpace.dockSide`, 16), para
-    /// que la columna de vidrio y el dock compartan filo. El héroe y la franja siguen en 24.
-    public static let margenModulos: CGFloat = LiquidSpace.s400
+    /// El margen de los estantes al bisel: 24 (`LiquidSpace.s600`), el MISMO del héroe y la franja
+    /// (decisión del dueño 2026-08-26). Antes valía 16 (= `dockSide`) para compartir filo con el
+    /// dock, pero la columna de módulos quedaba más ancha que el héroe de arriba y se leía descentrada;
+    /// ahora todo el contenido comparte un solo margen y alinea. El dock mantiene su propio filo (16).
+    public static let margenModulos: CGFloat = LiquidSpace.s600
     /// Padding interior del módulo (prototipo 18/18/14 → tokens 16/16/12).
     public static let moduloPadH: CGFloat = LiquidSpace.s400
     public static let moduloPadTop: CGFloat = LiquidSpace.s400
