@@ -470,7 +470,7 @@ private struct CuerpoLanding: View {
                                eventPatternsLoader: { await StressDayMapPresenter.eventPatterns(
                                    repo: repo, map: stressDayMap) })
         } else if let item = trainingLoadItem {
-            TrainingLoadSheet(model: item.model, theme: theme)
+            TrainingLoadSheet(model: item.model)
         } else if let item = skinTempDetail {
             SkinTempDetailScreen(theme: theme, model: item.model,
                                  loadWarmingMagnitudes: { await repo.nocturnalWarmingMagnitudes() })

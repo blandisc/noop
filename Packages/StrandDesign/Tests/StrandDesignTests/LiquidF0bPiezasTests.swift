@@ -235,6 +235,28 @@ final class LiquidF0bPiezasTests: XCTestCase {
         XCTAssertEqual(LiquidTooltipMulti.a11yValor(filas: [], sinLectura: "—"), "")
     }
 
+    // MARK: - Checklist · un factor ausente NUNCA oculta su motivo
+
+    /// El criterio de aceptación central de «de qué está hecha» (edad corporal) y «lo que falta»
+    /// (edad física): un factor AUSENTE se muestra con su razón, no se borra. Si esta rama
+    /// devolviera `false` para un ausente con motivo, la hoja escondería justo por qué le falta
+    /// ese factor y afirmaría una completitud que el dato no tiene.
+    func test_checklist_ausenteConMotivo_muestraElMotivo() {
+        XCTAssertTrue(LiquidChecklistRow.muestraMotivo(presente: false,
+                                                       motivo: "Sin noches suficientes todavía."),
+                      "un factor ausente con motivo SIEMPRE lo enseña")
+    }
+
+    /// Un factor presente no necesita excusa, y un ausente sin razón no dibuja una línea vacía.
+    func test_checklist_presenteYAusenteSinMotivo_noDibujanMotivo() {
+        XCTAssertFalse(LiquidChecklistRow.muestraMotivo(presente: true,
+                                                        motivo: "Frecuencia en reposo"),
+                       "un factor presente no lleva motivo")
+        XCTAssertFalse(LiquidChecklistRow.muestraMotivo(presente: false, motivo: nil))
+        XCTAssertFalse(LiquidChecklistRow.muestraMotivo(presente: false, motivo: ""),
+                       "un motivo vacío no cuenta como razón")
+    }
+
     // MARK: - Helpers
 
     private func serie(_ id: String, _ ancla: Date, _ color: Color) -> LiquidGraficaSuperpuesta.Serie {
