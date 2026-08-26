@@ -69,8 +69,8 @@ private func originVocabulary(_ m: MetricDescriptor) -> String {
 // MARK: - Root: categorized picker
 
 /// The "Explore" picker in Liquid — categories as inset sections, metrics as `LiquidListRow`s on a
-/// solid card, each pushing the generic `MetricDetailView`. A subtle trailing "No data" flags
-/// metrics whose series is empty.
+/// solid card, each pushing the generic `MetricDetailView`. A metric with no series at all is flagged
+/// in the a11y hint only ("No data"), never as a visible trailing word (TND31-3).
 struct MetricExplorerView: View {
     /// Conserved from the paper call site (Cuerpo passes it explicitly; sheets start a fresh
     /// environment, FER-162). The Liquid surfaces read `LiquidColor`; `theme` survives ONLY to feed
@@ -144,11 +144,13 @@ struct MetricExplorerView: View {
                         LiquidListRow(
                             title: metric.canonicalTitle,
                             subtitle: originVocabulary(metric),
-                            // A subtle provenance-line count is dropped for the Explorer; the trailing
-                            // slot carries the honest "no data" flag (the paper's faint dot), only for
-                            // a metric with no series at all (probeEmptiness).
-                            trailing: (emptyByID[metric.id] ?? false) ? String(localized: "No data") : nil,
+                            // «No data» is a11y-ONLY (TND31-3): the paper flagged an empty metric with a
+                            // quiet dot, never the WORD. `LiquidListRow`'s only trailing slot is a String
+                            // that VoiceOver speaks, and adding a visual-only dot slot is a DS redesign out
+                            // of scope here — so the flag lives in the a11y hint, the trailing stays the
+                            // bare chevron (spec's fallback). Only for a metric with no series (probeEmptiness).
                             tone: MetricIdentity.hue(for: metric),
+                            a11yHint: (emptyByID[metric.id] ?? false) ? String(localized: "No data") : nil,
                             divider: idx < metrics.count - 1)
                     }
                     .buttonStyle(.plain)
@@ -188,6 +190,8 @@ struct MetricDetailView: View {
     /// Conserved for the un-migrated `FusionAgreementRow` (FER-670); the Liquid surfaces ignore it.
     var theme: InstrumentoTheme = .base
     @EnvironmentObject var repo: Repository
+    /// Drives the correlation row's AX-size stacking (TND31-1), the same lever CompareView.pairCard uses.
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     // Imperial/Metric display preference (D#103). Display-only: weight (kg) and skin temp (°C)
     // re-label; everything else is unit-agnostic and renders unchanged.
@@ -198,6 +202,36 @@ struct MetricDetailView: View {
         UnitPrefs.resolveTemperature(system: unitSystem, override: temperatureRaw)
     }
     private func fmt(_ v: Double) -> String { metric.format(v, system: unitSystem, temperature: temperatureUnit) }
+
+    /// The displayed number for `v` WITHOUT its unit (TND31-2). The generic detail's `fmt` folds
+    /// number+unit into one string, so the range extremes had to be built from `fmt` and doubled the
+    /// unit («68 %–76 %»). This mirrors the sibling `MetricDetailScreen`, which keeps a bare `fmt`
+    /// number and a separate `unit` suffix — the extremes join as bare numbers and the unit prints
+    /// ONCE. The two SI units with an imperial form convert here too (kg → kg/lb at one decimal, like
+    /// `UnitFormatter.massFromKilograms`; °C → °C/°F at the metric's precision), so the range never
+    /// double-labels in either system. Everything else falls to the plain decimals path (`format`).
+    private func bareNumber(_ v: Double) -> String {
+        switch metric.unit {
+        case "kg":
+            return String(format: "%.1f", unitSystem == .imperial ? UnitFormatter.kgToPounds(v) : v)
+        case "°C":
+            let t = temperatureUnit == .fahrenheit ? UnitFormatter.celsiusToFahrenheit(v) : v
+            return metric.decimals == 0 ? String(Int(t.rounded())) : String(format: "%.\(metric.decimals)f", t)
+        default:
+            return metric.decimals == 0 ? String(Int(v.rounded())) : String(format: "%.\(metric.decimals)f", v)
+        }
+    }
+
+    /// The active display-unit label ("%", "min", "kg"/"lb", "°C"/"°F", …); "" for a unitless metric.
+    private var displayUnit: String { metric.displayUnit(system: unitSystem, temperature: temperatureUnit) }
+
+    /// «68–76 %» — the window range as bare extremes with the unit exactly ONCE (TND31-2), never the
+    /// doubled «68 %–76 %». En-dash between the extremes (no spaces), one leading space before the unit,
+    /// matching `MetricDescriptor.format`'s «\(n) \(unit)». Unitless metrics drop the suffix.
+    private func rangoValor(_ lo: Double, _ hi: Double) -> String {
+        let cuerpo = "\(bareNumber(lo))–\(bareNumber(hi))"
+        return displayUnit.isEmpty ? cuerpo : "\(cuerpo) \(displayUnit)"
+    }
 
     @State private var range: ExploreRange = .month
     /// Full ascending series for this metric — ALL history.
@@ -392,7 +426,7 @@ struct MetricDetailView: View {
         let promedio = LiquidResumenVentana.Celda(
             rotulo: String(localized: "Average"), valor: fmt(stat.mean))
         let rango = LiquidResumenVentana.Celda(
-            rotulo: String(localized: "Range"), valor: "\(fmt(stat.min))–\(fmt(stat.max))")
+            rotulo: String(localized: "Range"), valor: rangoValor(stat.min, stat.max))
         guard let pct = window.range.periodComparison(of: series)?.pctChange else {
             return [promedio, rango]
         }
@@ -461,30 +495,46 @@ struct MetricDetailView: View {
     /// One correlate: the OTHER metric's identity dot + canonical name + «category · n = N», its
     /// signed r as a zero-axis bar (magnitude |r|, side = sign, hue = identity), and the value in
     /// neutral ink with the sign carried by the leading «−» (TND30-4: a negative correlation is not
-    /// an alarm). Composed in-line — DS rule §7 (see the file header).
+    /// an alarm). Composed in-line — DS rule §7 (see the file header). At AX text sizes the row
+    /// STACKS — identity on top, bar + r value below — so «−0.99» never clips and the title never
+    /// races the value on one line (TND31-1, the same fix CompareView.pairCard made for TND30-5).
     private func correlationRow(_ row: CorrRow) -> some View {
         let tono = MetricIdentity.hue(for: row.metric)
         let valor = (row.r >= 0 ? "+" : "−") + String(format: "%.2f", abs(row.r))
-        return HStack(spacing: LiquidSpace.s300) {
-            // The correlate's identity mark — a plain tone dot, the same identity language the
-            // catalog rows carry (LiquidListRow's leading dot), minus its glow (a DS-owned value).
-            Circle()
-                .fill(tono)
-                .frame(width: 8, height: 8)
-                .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: LiquidSpace.s050) {
-                Text(row.metric.canonicalTitle)
-                    .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
-                Text(String(localized: "\(row.metric.localizedCategory) · n = \(row.n)"))
-                    .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
-            }
-            Spacer(minLength: LiquidSpace.s200)
-            HStack(spacing: LiquidSpace.s250) {
-                rBar(row.r, tono: tono)
-                Text(verbatim: valor)
-                    .font(LiquidType.valorM).monospacedDigit()
-                    .foregroundStyle(LiquidColor.tinta900)
-                    .frame(width: 52, alignment: .trailing)
+        // The correlate's identity mark — a plain tone dot, the same identity language the catalog
+        // rows carry (LiquidListRow's leading dot), minus its glow (a DS-owned value).
+        let punto = Circle().fill(tono).frame(width: 8, height: 8).accessibilityHidden(true)
+        let identidad = VStack(alignment: .leading, spacing: LiquidSpace.s050) {
+            Text(row.metric.canonicalTitle)
+                .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
+            Text(String(localized: "\(row.metric.localizedCategory) · n = \(row.n)"))
+                .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
+        }
+        let valorTexto = Text(verbatim: valor)
+            .font(LiquidType.valorM).monospacedDigit()
+            .foregroundStyle(LiquidColor.tinta900)
+
+        return Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: LiquidSpace.s200) {
+                    HStack(spacing: LiquidSpace.s300) { punto; identidad }
+                    HStack(spacing: LiquidSpace.s250) {
+                        rBar(row.r, tono: tono)
+                        // No fixed width at AX sizes: the mono value grows past 52 pt and must not clip.
+                        valorTexto.fixedSize()
+                        Spacer(minLength: 0)
+                    }
+                }
+            } else {
+                HStack(spacing: LiquidSpace.s300) {
+                    punto
+                    identidad
+                    Spacer(minLength: LiquidSpace.s200)
+                    HStack(spacing: LiquidSpace.s250) {
+                        rBar(row.r, tono: tono)
+                        valorTexto.frame(width: 52, alignment: .trailing)
+                    }
+                }
             }
         }
         .padding(.vertical, LiquidSpace.s250)
@@ -526,10 +576,10 @@ struct MetricDetailView: View {
                                tono: LiquidColor.tinta700)
             }
             // Provenance chip: the source vocabulary («Apple Health» / «On-device») over the metric's
-            // own identity badge (glyph ?? `.rayo` for the fallback family, hue = identity). Never on
-            // a dash — only with history.
+            // own identity mark — a glyph badge for the ~7 canonical families, a plain tone dot for the
+            // rest (glyph == nil, TND31-4: no invented `.rayo`). Hue = identity. Only with history.
             if !series.isEmpty {
-                LiquidOrigenChip(glyph: glyph ?? .rayo, badgeTono: hue,
+                LiquidOrigenChip(glyph: glyph, badgeTono: hue,
                                  etiqueta: originVocabulary(metric))
             }
         }
