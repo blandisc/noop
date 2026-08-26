@@ -324,7 +324,8 @@ public extension EcosistemaSimulacion {
             // lunas parpadeaban a medio viaje — ambos factores rondan cero ahí). Son
             // cuerpos permanentes: trazables de la órbita a la estación sin cortes.
             trazos += trazosLuna(t: t, luna: l, apertura: apertura,
-                                 still: e.still, alfa: 1, rotuloAlfa: alfaFundida)
+                                 still: e.still, alfa: 1, rotuloAlfa: alfaFundida,
+                                 centroOrbe: centroOrbe, radioOrbe: CGFloat(radio))
         }
 
         // 3 · EL ORBE (o su graduación: el embrión madurando en vivo, FER-20).
@@ -384,7 +385,8 @@ public extension EcosistemaSimulacion {
         // 6 · Cuerpos FRONTALES (z ≥ 0) + estelas frontales.
         for l in lunas where l.orb.z >= 0 {
             trazos += trazosLuna(t: t, luna: l, apertura: apertura,
-                                 still: e.still, alfa: 1, rotuloAlfa: alfaFundida)
+                                 still: e.still, alfa: 1, rotuloAlfa: alfaFundida,
+                                 centroOrbe: centroOrbe, radioOrbe: CGFloat(radio))
         }
         if !enEclipse {
             for (g, v) in vigias.enumerated() where v.z >= 0 {
@@ -399,7 +401,10 @@ public extension EcosistemaSimulacion {
         if !enEclipse {
             for (g, v) in vigias.enumerated() {
                 let dep = (v.z + 1) / 2
-                let punto = CGPoint(x: v.centro.x, y: v.centro.y + v.radio + 12)
+                // A′ (FER-157): mismo empuje al filo que las decisoras (ver `rotuloAlFilo`).
+                let punto = rotuloAlFilo(
+                    CGPoint(x: v.centro.x, y: v.centro.y + v.radio + 12),
+                    centroOrbe: centroOrbe, radioOrbe: CGFloat(radio))
                 let alfaR = (0.30 + 0.5 * dep) * alfaFundida * alfaZonaTitulo(punto.y)
                 guard alfaR > 0.02 else { continue }
                 trazos.append(.rotulo(g == 0 ? .temperatura : .respiracion,
@@ -419,7 +424,7 @@ public extension EcosistemaSimulacion {
         luna l: (orb: Orbital, rotulo: RotuloOrbital, rotK: Double, hueca: Bool,
                  fuera: Bool, nivel: Double?),
         apertura: Double, still: Bool, alfa: Double,
-        rotuloAlfa: Double) -> [Trazo] {
+        rotuloAlfa: Double, centroOrbe: CGPoint, radioOrbe: CGFloat) -> [Trazo] {
         var trazos: [Trazo] = []
         let dep = (l.orb.z + 1) / 2
         // El gauge se revela con la apertura (nivelMezcla): en órbita la luna es
@@ -438,7 +443,11 @@ public extension EcosistemaSimulacion {
             tinta: l.rotulo == .reposo ? .reposo : .sueno)))
         // El rótulo orbital CEDE a los overlays al parquearse (allí viven las
         // etiquetas de estación con su valor sólido).
-        let punto = CGPoint(x: l.orb.centro.x, y: l.orb.centro.y + l.orb.radio + 13)
+        // A′ (FER-157): el ancla natural cuelga del cuerpo; si cae sobre el disco del orbe,
+        // `rotuloAlFilo` la empuja al borde para que el texto no se dibuje sobre las partículas.
+        let punto = rotuloAlFilo(
+            CGPoint(x: l.orb.centro.x, y: l.orb.centro.y + l.orb.radio + 13),
+            centroOrbe: centroOrbe, radioOrbe: radioOrbe)
         let alfaRotulo = (0.35 + 0.5 * dep) * rotuloAlfa * (1 - apertura)
             * alfaZonaTitulo(punto.y)
         if alfaRotulo > 0.02 {
@@ -460,6 +469,23 @@ public extension EcosistemaSimulacion {
         if y >= fin { return 0 }
         let f = Double((y - inicio) / (fin - inicio))
         return 1 - f * f * (3 - 2 * f)
+    }
+
+    /// A′ (FER-157): empuja el punto de un rótulo radialmente hacia AFUERA hasta el filo del orbe
+    /// (`radioOrbe + margenRotuloOrbe`) cuando caería dentro del disco de partículas — así el texto
+    /// nunca se dibuja encima del orbe. Fuera del filo NO toca nada, así que los rótulos de flanco
+    /// (el look del veredicto ya aprobado) quedan igual; solo se recolocan los que pisaban el orbe.
+    /// El empuje es continuo en la distancia y la dirección la marca el propio cuerpo, así que el
+    /// rótulo se despega sin brincar y queda estable bajo Reduce Motion (órbitas quietas).
+    static func rotuloAlFilo(_ punto: CGPoint, centroOrbe: CGPoint, radioOrbe: CGFloat) -> CGPoint {
+        let dx = punto.x - centroOrbe.x
+        let dy = punto.y - centroOrbe.y
+        let d = (dx * dx + dy * dy).squareRoot()
+        let filo = radioOrbe + Geometria.margenRotuloOrbe
+        guard d < filo else { return punto }
+        // Degenerado (rótulo justo en el centro): lo bajamos al filo inferior.
+        guard d > 0.001 else { return CGPoint(x: centroOrbe.x, y: centroOrbe.y + filo) }
+        return CGPoint(x: centroOrbe.x + dx / d * filo, y: centroOrbe.y + dy / d * filo)
     }
 
     /// UN vigía (FER-22: dos de nacimiento — ya no hay guardián que se parta).
