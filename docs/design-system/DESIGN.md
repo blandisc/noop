@@ -260,6 +260,16 @@ The redesign language. It reads like a precision instrument printed on **warm pa
 light mode, **one dominant number**, **meaningful color (value + signal identity)**, hierarchy by space.
 It lives **alongside** the dark system (§1–§7) — no shipped screen changes in FER-131.
 
+> **2026-08 · Tendencias salió del inventario Instrumento (épico FER-97).** Toda la pestaña
+> Tendencias — su aterrizaje (`CuerpoView`, FER-100), las gemelas, el detalle de vital, Sueño,
+> Comparar/Explorador, longevidad y «Fuentes de datos»/«Apple Health» — migró a **Liquid Glass**
+> (§ LIQUID-GLASS.md). «Instrumento diurno» sigue siendo canónico para lo que aún es papel:
+> **Entrenar** (WorkoutsView / WorkoutHistoryScreen / RestEditor), **Ajustes**, **Bucle**, **Dieta**.
+> Los componentes de papel compartidos (`HeroInvertido`, `TileSurface`, `BarraAncla`, `SeccionBloque`,
+> `PieMetodo`, `GraficaRangos`, …) NO se borraron: los detalles migrados los conservan como
+> *rollback* deliberado y Entrenar todavía es su consumidor vivo. Su retiro espera a que Entrenar
+> migre (FER-106 lo dejó documentado; borrado diferido).
+
 > **Source of truth:** `Instrumento.swift` (theme + type) and `InstrumentoStates.swift`
 > (scaffold + states) in the `StrandDesign` package. Renderable proof of every state:
 > `InstrumentoSnapshotTests` (`swift test --filter InstrumentoSnapshotTests` → `/tmp/noop-fer131/`).
