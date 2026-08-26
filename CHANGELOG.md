@@ -36,6 +36,44 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
   bugs died: the Steps ladder disagreeing with the engine, SpO₂ lane colors inverted, a phantom
   "Borderline", and date seals counted in the wrong calendar. HR zones always show all six, and the
   day curve gains your resting-HR line and the marked peak.
+- **Hoy · sin lectura: el orbe sube para que «PREPARACIÓN» no se encime / Today · no reading: the orb lifts so "READINESS" no longer overlaps it** (FER-156).
+  **ES** — En la pantalla de Hoy, cuando aún no hay lectura de la mañana (héroe «Todavía no puedo leer tus mañanas»), el kicker PREPARACIÓN caía sobre el orbe y el bloque venía apretado. Ahora el orbe y sus rótulos suben 26 pt hacia el aire de arriba, y el bloque de texto baja 16 pt: PREPARACIÓN queda debajo del orbe en claro y el título tiene aire limpio. Solo aplica a ese estado sin veredicto; el orbe del veredicto real no cambia.
+  **EN** — On Today, when the morning reading hasn't arrived yet (the "I can't read your mornings yet" hero), the READINESS kicker sat on top of the orb and the block felt cramped. The orb and its labels now lift 26 pt into the air above, and the text block drops 16 pt: READINESS clears the orb and the title gets clean air. Scoped to that no-verdict state only; the real-verdict orb is unchanged.
+  ([LiquidEcosistema.swift](Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/LiquidEcosistema.swift))
+
+- **«Qué esperar» ya no menciona la banda retirada / "What to expect" no longer mentions the retired band** (FER-152).
+  **ES** — El texto de «Qué esperar», al inicio de «Novedades», dejó de presentar la banda WHOOP como el camino soportado. Ahora describe lo que la app hace de verdad: lee tu Apple Watch y tu iPhone desde Apple Salud y calcula todo en tu dispositivo, sin hardware que emparejar — igual que ya dicen los Términos. La única mención a la banda que queda es histórica: una versión anterior la leía, y ese camino se retiró.
+  **EN** — The "What to expect" text at the top of "What's New" no longer presents the WHOOP band as the supported path. It now describes what the app actually does: it reads your Apple Watch and iPhone from Apple Health and computes everything on your device, with no hardware to pair — matching what the Terms already say. The only band mention left is historical: earlier versions read it, and that path was retired.
+  ([AppChangelog.swift](Cenit/System/AppChangelog.swift))
+
+- **Entrenar: la pestaña Progreso del detalle de ejercicio, alineada al handoff / Train: the exercise detail's Progress tab, aligned to the handoff** (FER-149).
+  **ES** — El chip de tendencia del 1RM estimado ahora compara quincena contra quincena en una
+  ventana FIJA de 90 días anclada a hoy calendario (no al último registro): si dejaste de entrenar,
+  la ventana se vacía y el chip calla en vez de mostrar un dato viejo. El cambio se redondea a
+  entero y calla también por debajo de 2 puntos porcentuales, el ruido propio de la fórmula de
+  Epley. El overline ya no dice «HOY» sobre un dato de otro día. Las dos mini-tarjetas de mejor
+  serie / volumen semanal y el aviso del ciclo se retiran; en su lugar, tres filas de texto bajo
+  «RECORDS»: mejor peso, mejor volumen EN UNA SESIÓN (agrupado por sesión, no por día — dos
+  sesiones el mismo día no se fusionan) y el ciclo de progresión, que ahora anuncia el incremento
+  («sube 2,5 kg hoy ▲») en vez del peso destino, y solo en ese estado. El héroe de media del
+  detalle baja a 150pt.
+  **EN** — The exercise detail's estimated-1RM trend chip now compares fortnight vs. fortnight over
+  a FIXED 90-day window anchored at today's calendar date (never the last logged day): if training
+  lapsed, the window empties and the chip goes silent instead of showing a stale number. The change
+  rounds to an integer and stays silent below a 2-percentage-point noise floor, informed by the
+  Epley formula's own uncertainty. The overline no longer claims "TODAY" over another day's data.
+  The best-set / weekly-volume mini-cards and the cycle note are retired; in their place, three text
+  rows under "RECORDS": best weight, best volume in ONE SESSION (grouped by session, not by day —
+  two sessions the same day don't merge), and the progression cycle, which now announces the
+  increment ("raise 2.5 kg today ▲") instead of the destination weight, and only in that state. The
+  detail's media hero shrinks to 150pt.
+  ([OneRepMax.swift](Packages/StrandAnalytics/Sources/StrandAnalytics/OneRepMax.swift), [SessionVolume.swift](Packages/StrandAnalytics/Sources/StrandAnalytics/SessionVolume.swift), [ExerciseDetailScreen.swift](Cenit/Screens/ExerciseDetailScreen.swift), [EntrenarTokens.swift](Packages/StrandDesign/Sources/StrandDesign/Entrenar/EntrenarTokens.swift))
+
+- **Entrenar: QUEDABAN por día en el Historial del ejercicio / Train: reps-left per day in the exercise's History** (FER-147).
+  **ES** — Cada bloque de día en la pestaña Historial del detalle de ejercicio ahora anota cuántas series hiciste y, si registraste esfuerzo esa sesión, «QUEDABAN 2-3» junto al conteo; si ningún set del día lo capturó, el fragmento no aparece — silencio, no un cero fabricado. La cabecera del día suma el nombre de la rutina cuando aplica («Sáb 15 · Pierna A»), o solo la fecha en una sesión libre. De paso se corrigió un error latente en la consulta de historial: al llegar a 600 sets guardados, el tope conservaba los más VIEJOS y descartaba los recientes; ahora conserva los más recientes, como el resto de la app espera.
+  **EN** — Each day block in the exercise detail's History tab now notes how many sets you did and, when that session captured effort, "QUEDABAN 2-3" alongside the count; when no set of the day captured one, the fragment is omitted entirely — silence, not a fabricated zero. The day header adds the routine's name when it applies ("Sat 15 · Leg A"), or just the date for a free session. Along the way, a latent bug in the history query got fixed: once a history reached 600 saved sets, the cap kept the OLDEST ones and dropped the recent ones; it now keeps the most recent, as the rest of the app expects.
+  ([StrengthStore.swift](Packages/CenitStore/Sources/CenitStore/StrengthStore.swift), [ExerciseDetailScreen.swift](Cenit/Screens/ExerciseDetailScreen.swift), [WorkoutHistoryScreen.swift](Cenit/Screens/WorkoutHistoryScreen.swift))
+
 - **Tendencias: Esfuerzo, Estrés y Temp de piel en vidrio / Trends: Effort, Stress and Skin temp in glass** (FER-101).
   **ES** — Las tres pantallas de detalle que faltaban de la sección Tendencias cruzan al lenguaje
   Liquid que ya hablan Sueño y Preparación: campo teñido a sangre con la identidad de cada métrica

@@ -1,7 +1,7 @@
 import Foundation
 
-/// Single source of truth for the in-app "What's New" screen and the expectation-setting copy used
-/// in onboarding. This is the RECENT window, not the archive: the full history lives in the repo
+/// Single source of truth for the in-app "What's New" screen and its expectation-setting copy.
+/// This is the RECENT window, not the archive: the full history lives in the repo
 /// CHANGELOG.md. (FER-994 E2 truncated the 81-release Mac/Android archive that shipped here: none
 /// of it described the iOS app, and none of it was localized.)
 enum AppChangelog {
@@ -45,8 +45,8 @@ enum AppChangelog {
             ]),
     ]
 
-    /// Expectation-setting points shown during onboarding and at the top of "What's New". This is the
-    /// “what is this and what should I expect” story, so people don't have to go read GitHub.
+    /// Expectation-setting points shown at the top of "What's New". This is the "what is this and
+    /// what should I expect" story, so people don't have to go read GitHub.
     struct Expectation: Identifiable {
         let icon: String      // SF Symbol
         let title: String
@@ -58,18 +58,18 @@ enum AppChangelog {
         Expectation(
             icon: "flask",
             title: "Independent, and experimental",
-            body: "Cénit is a personal, open project. It reads a strap you own, on your own device. Treat it as a capable work-in-progress rather than a finished product."),
+            body: "Cénit is a personal, open project: a capable work-in-progress rather than a finished product. Its numbers are informed estimates, never clinical readings."),
         Expectation(
-            icon: "checkmark.seal",
-            title: "The 4.0 strap is the supported path",
-            body: "A 4.0 strap is tested and works end to end. The 5.0/MG straps are newer: live heart rate works today, but deeper metrics (recovery, strain, sleep) for 5/MG are still being figured out. Cénit always tells you what's live versus still building."),
+            icon: "heart.text.square",
+            title: "Apple Health is the data path",
+            body: "Cénit reads the samples your Apple Watch and iPhone already save to Apple Health: heart rate, HRV, sleep, workouts. It computes everything on your device, with no separate hardware to pair. Earlier versions read a fitness band directly; that path was retired, and any history it stored stays on your phone, untouched."),
         Expectation(
             icon: "hourglass",
-            title: "Your scores build over a few nights",
-            body: "Live heart rate is instant. Recovery, strain and sleep sharpen as Cénit learns your baseline over your first nights of wear. Want your history now? Connect Apple Health in Data Sources and it backfills what you already have."),
+            title: "Your trends build over a few nights",
+            body: "The nightly reads are quick, but your baseline sharpens over your first couple of weeks as Cénit learns what's normal for you, and it always tells you when it's still calibrating. Want your history now? Import your Apple Health export in Data Sources and it backfills what you already have."),
         Expectation(
             icon: "lock.shield",
             title: "Everything stays on your device",
-            body: "No account, no cloud, no sync. Cénit talks only to your strap and keeps everything local. Your data is yours alone."),
+            body: "No account, no cloud, no sync. Cénit reads Apple Health on your device and keeps everything local. Your data is yours alone."),
     ]
 }

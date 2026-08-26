@@ -1,6 +1,7 @@
 import Foundation
 import StrandTraining
 import StrandAnalytics
+import CenitStore
 
 // ProgressionPlanner.swift — the app-layer bridge for load progression (FER-E).
 //
@@ -26,7 +27,7 @@ enum ProgressionPlanner {
     /// Group raw work-set rows (oldest→newest) into per-session facts for the classifier. A session's
     /// working weight is its TOP work-set weight; the reps counted toward the goal are the reps done AT
     /// that weight (back-off sets at lighter loads don't gate the raise).
-    static func pastSessions(from rows: [(startTs: Int, weightKg: Double, reps: Int, optedOut: Bool)])
+    static func pastSessions(from rows: [WorkSetHistoryRow])
         -> [(startTs: Int, session: ProgressionMath.PastSession)] {
         var grouped: [Int: [(weightKg: Double, reps: Int, optedOut: Bool)]] = [:]
         for r in rows { grouped[r.startTs, default: []].append((r.weightKg, r.reps, r.optedOut)) }
@@ -50,7 +51,7 @@ enum ProgressionPlanner {
     /// Returns (state, raise). `raise` is non-nil for `.readyToAdvance` (applied to the seed) AND for
     /// `.deferred` (`waiting == true`: earned, held by today's verdict, offered one tap away).
     static func evaluate(re: RoutineExercise,
-                         history: [(startTs: Int, weightKg: Double, reps: Int, optedOut: Bool)],
+                         history: [WorkSetHistoryRow],
                          inventory: [PlateMath.PlateStock],
                          equipment: String?,
                          advice: TrainingRegulation.Advice)

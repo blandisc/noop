@@ -15483,6 +15483,57 @@
         }
       }
     },
+    "TREND · ESTIMATED 1RM · 90 DAYS" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "TREND · ESTIMATED 1RM · 90 DAYS"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "TENDENCIA · 1RM ESTIMADO · 90 DÍAS"
+          }
+        }
+      }
+    },
+    "Approximately %lld percent more over 90 days" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Approximately %lld percent more over 90 days"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aproximadamente %lld por ciento más en 90 días"
+          }
+        }
+      }
+    },
+    "Approximately %lld percent less over 90 days" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Approximately %lld percent less over 90 days"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aproximadamente %lld por ciento menos en 90 días"
+          }
+        }
+      }
+    },
     "EXERCISE MEDIA" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -31027,6 +31078,74 @@
         }
       }
     },
+    "Records" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Records"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Récords"
+          }
+        }
+      }
+    },
+    "Best weight" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Best weight"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mejor peso"
+          }
+        }
+      }
+    },
+    "Best volume in one session" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Best volume in one session"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mejor volumen en una sesión"
+          }
+        }
+      }
+    },
+    "Progression cycle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Progression cycle"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ciclo de progresión"
+          }
+        }
+      }
+    },
     "RECOVERY · BASELINE" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -31251,6 +31370,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ciclos de subida"
+          }
+        }
+      }
+    },
+    "Raise %@ today" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Raise %@ today"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sube %@ hoy"
           }
         }
       }

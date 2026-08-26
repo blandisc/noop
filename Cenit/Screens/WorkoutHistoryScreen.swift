@@ -1046,7 +1046,7 @@ struct WorkoutHistoryScreen: View {
     /// «Progreso por ejercicio» (FER-136 · V7): los ejercicios con historial REAL (sets logueados en
     /// las sesiones de `recentSessions`), no la composición actual de las rutinas — un ejercicio sigue
     /// apareciendo aquí aunque su rutina se haya editado o borrado después. 1RM reusa
-    /// `OneRepMax.dailySparkline(...).last` — el MISMO cálculo que el héroe «Estimated 1RM · Today» de
+    /// `OneRepMax.dailySparkline(...).last` — el MISMO cálculo que el numeral del héroe de
     /// `ExerciseDetailScreen.progressSection` (no `bestEstimate`, que es el máximo histórico y podía
     /// mostrar un número distinto al tocar la fila y entrar al mismo ejercicio; quisquilloso ronda 4).
     /// Deduplicado por exerciseId, tope 6 filas (mismo tope que `loadProgressionRows`), sesiones más
@@ -1793,6 +1793,17 @@ enum StrengthHistoryFormat {
     }
 
     static func strain(_ v: Double) -> String { String(format: "%.1f", v) }
+
+    /// «QUEDABAN» read for a day's captured effort (FER-147) — the Historial tab's per-day subrow.
+    /// Same RIR reading as `LiveStrengthSheet.qLabel`: per set `rir = clamp(10 − round(rpe), 0, 4)`,
+    /// 4 reads «4+»; the day shows the RANGE across only the sets that captured an RPE. `nil` when no
+    /// set of the day captured one — the fragment is omitted entirely, silence over a fabricated zero.
+    static func rirRange(rpes: [Double]) -> String? {
+        let rirs = rpes.map { min(max(10 - Int($0.rounded()), 0), 4) }
+        guard let lo = rirs.min(), let hi = rirs.max() else { return nil }
+        func label(_ r: Int) -> String { r >= 4 ? "4+" : "\(r)" }
+        return lo == hi ? label(lo) : "\(label(lo))-\(label(hi))"
+    }
 
     /// One performed set as "20 kg × 6", "8 reps" (bodyweight), or a time/distance fallback.
     static func setLine(_ s: SetEntry, system: UnitSystem) -> String {

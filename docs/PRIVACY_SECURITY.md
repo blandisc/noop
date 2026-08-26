@@ -137,7 +137,8 @@ It holds exactly the kinds of data you would expect from the features:
   `skinTempSample`, `respSample`, `gravitySample`, `battery`, `event`.
 - **Derived/cached metrics**: `sleepSession`, `dailyMetric`, `workout`, `journal`,
   `appleDaily`, and the generic long-format `metricSeries`.
-- **A transient raw outbox** (`rawBatch`): compressed raw BLE frames, **prunable**.
+- **A transient raw outbox** (`rawBatch`): compressed raw BLE frames from the retired
+  band era — **dormant** and **prunable**.
 - **Device records** (`device`): device id (historical), MAC, name, first/last-seen timestamps.
 
 The database is opened in WAL journal mode with `synchronous = NORMAL` and a busy

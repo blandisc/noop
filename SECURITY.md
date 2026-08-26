@@ -3,17 +3,19 @@
 ## Scope
 
 Cénit is a fully offline, on-device app. It has no servers, no accounts, and no
-cloud sync, so the usual web attack surface does not apply. What remains is local:
+cloud sync, so the usual web attack surface does not apply. It reads Apple Health
+on your device and no longer pairs with any Bluetooth hardware (the WHOOP-band /
+BLE path was retired). What remains is local:
 
-- **Bluetooth Low Energy** — the link to your WHOOP strap.
 - **Local SQLite database** — every reading is stored on your own device.
-- **File imports** — WHOOP CSV exports and Apple Health ZIP files you choose to open.
+- **File imports** — the Apple Health export ZIP, and Cénit backup files, that you
+  choose to open.
 - **AI Coach (optional, off by default)** — the only feature that makes a network
   request, and only with an API key you supply yourself, to the provider you choose.
 
 A useful security report is one that lets data leave the device when it shouldn't,
-lets a malicious strap or crafted import file corrupt the database or run code, or
-otherwise breaks the offline, local-only guarantee the app makes.
+lets a crafted import file corrupt the database or run code, or otherwise breaks the
+offline, local-only guarantee the app makes.
 
 ## Reporting a vulnerability
 
@@ -45,6 +47,5 @@ own copy, rebuild from the latest tag to pick up security fixes.
 - Vulnerabilities that require physical access to an already-unlocked device
 - Issues in third-party dependencies — please report those upstream (see
   [`NOTICE`](NOTICE) for the bundled libraries and their licences)
-- The WHOOP strap firmware itself, which Cénit does not ship or modify
 - The user's own API key being misused after they have entered it (the key is
   stored in the platform keystore; protecting the device account is the user's job)

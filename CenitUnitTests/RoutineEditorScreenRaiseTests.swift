@@ -1,6 +1,7 @@
 import XCTest
 import StrandTraining
 import StrandAnalytics
+import CenitStore
 @testable import Cenit
 
 /// FER-88 — regresión de la decisión #4 del épico («La línea de la subida») dentro de
@@ -28,9 +29,11 @@ final class RoutineEditorScreenRaiseTests: XCTestCase {
                         progressionEnabled: true, progressionSessions: 2, progressionIncrementKg: 2.5)
     }
 
-    private func earnedHistory() -> [(startTs: Int, weightKg: Double, reps: Int, optedOut: Bool)] {
+    private func earnedHistory() -> [WorkSetHistoryRow] {
         [1, 2].flatMap { session in
-            (0..<3).map { _ in (startTs: session * 1000, weightKg: 80.0, reps: 8, optedOut: false) }
+            (0..<3).map { _ in
+                WorkSetHistoryRow(sessionId: "s\(session)", startTs: session * 1000, weightKg: 80.0, reps: 8)
+            }
         }
     }
 
