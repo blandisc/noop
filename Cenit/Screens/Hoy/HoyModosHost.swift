@@ -45,8 +45,9 @@ struct HoyMatrizHost: View {
                     }
                 }
                 // El margen de la FRANJA (24, alineada con el héroe). Los módulos de vidrio llevan
-                // el suyo (16, = dock) y lo aplica la cara: dos dueños distintos a propósito
-                // (FER-118), nunca sumados (hallazgo DeepSeek #14: 24 + 16 = 40 desalineados).
+                // el suyo (`margenModulos`), y lo aplica la cara: son dos dueños distintos a
+                // propósito (FER-118) y NUNCA se suman. Desde FER-159 ambos valen 24 (el dueño los
+                // alineó con el héroe; antes los módulos iban a 16 = dock).
                 .padding(.horizontal, MatrizTokens.margenH)
             }
             MatrizHoyFace(model: matriz, onTapSeccion: onTapSeccion,
