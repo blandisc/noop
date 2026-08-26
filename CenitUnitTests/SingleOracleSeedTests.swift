@@ -1,6 +1,7 @@
 import XCTest
 import StrandTraining
 import StrandAnalytics
+import CenitStore
 @testable import Cenit
 
 /// FER-82 — the app-layer half of «un solo oráculo», where the pure mapping meets the screen.
@@ -24,9 +25,11 @@ final class SingleOracleSeedTests: XCTestCase {
                         progressionEnabled: true, progressionSessions: 2, progressionIncrementKg: 2.5)
     }
 
-    private func earnedHistory() -> [(startTs: Int, weightKg: Double, reps: Int, optedOut: Bool)] {
+    private func earnedHistory() -> [WorkSetHistoryRow] {
         [1, 2].flatMap { session in
-            (0..<3).map { _ in (startTs: session * 1000, weightKg: 80.0, reps: 8, optedOut: false) }
+            (0..<3).map { _ in
+                WorkSetHistoryRow(sessionId: "s\(session)", startTs: session * 1000, weightKg: 80.0, reps: 8)
+            }
         }
     }
 
@@ -219,11 +222,11 @@ final class SingleOracleSeedTests: XCTestCase {
     /// el peso tope de la sesión mixta (82.5), o la tabla del día siguiente abriría en el peso subido
     /// justo en un día que retiene la subida.
     func testAMixedSessionDoesNotBecomeTheNewCycleWeight() {
-        let mixed: [(startTs: Int, weightKg: Double, reps: Int, optedOut: Bool)] =
+        let mixed: [WorkSetHistoryRow] =
             earnedHistory() + [
-                (startTs: 3000, weightKg: 80.0, reps: 8, optedOut: true),
-                (startTs: 3000, weightKg: 82.5, reps: 8, optedOut: true),
-                (startTs: 3000, weightKg: 82.5, reps: 8, optedOut: true),
+                WorkSetHistoryRow(sessionId: "s3", startTs: 3000, weightKg: 80.0, reps: 8, optedOut: true),
+                WorkSetHistoryRow(sessionId: "s3", startTs: 3000, weightKg: 82.5, reps: 8, optedOut: true),
+                WorkSetHistoryRow(sessionId: "s3", startTs: 3000, weightKg: 82.5, reps: 8, optedOut: true),
             ]
         let result = ProgressionPlanner.evaluate(re: earnedSlot(), history: mixed,
                                                  inventory: [], equipment: nil, advice: .recover)
@@ -323,9 +326,11 @@ final class SingleOracleSeedTests: XCTestCase {
                         progressionEnabled: true, progressionSessions: 2, progressionIncrementKg: 2.5)
     }
 
-    private func historyAtReps(_ reps: Int) -> [(startTs: Int, weightKg: Double, reps: Int, optedOut: Bool)] {
+    private func historyAtReps(_ reps: Int) -> [WorkSetHistoryRow] {
         [1, 2].flatMap { session in
-            (0..<3).map { _ in (startTs: session * 1000, weightKg: 80.0, reps: reps, optedOut: false) }
+            (0..<3).map { _ in
+                WorkSetHistoryRow(sessionId: "s\(session)", startTs: session * 1000, weightKg: 80.0, reps: reps)
+            }
         }
     }
 

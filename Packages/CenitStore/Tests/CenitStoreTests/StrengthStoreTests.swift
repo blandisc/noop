@@ -856,6 +856,67 @@ final class StrengthStoreTests: XCTestCase {
         XCTAssertEqual(hist.map(\.startTs), [1000, 2000])     // session start, oldest→newest
         XCTAssertEqual(hist.map(\.weightKg), [60, 65])        // warm-up + weightless set dropped
         XCTAssertEqual(hist.map(\.optedOut), [false, false], "no «Volver a X» → no opt-out marks")
+        XCTAssertEqual(hist.map(\.sessionId), ["s1", "s2"])
+        XCTAssertNil(hist[0].routineName, "free session → no routine")
+        XCTAssertNil(hist[0].rpe, "no rpe captured on this set")
+    }
+
+    /// FER-147: `rpe` (v34) rides along per set (nil when never captured), and `routineName` comes
+    /// from a LEFT JOIN on `routine` — populated for a session logged against a routine, nil for a
+    /// free session.
+    func testWorkSetHistoryCarriesRPEAndRoutineName() async throws {
+        let store = try await CenitStore.inMemory()
+        try await store.saveRoutine(Routine(id: "r1", name: "Pierna A", createdTs: 0, updatedTs: 0),
+                                    exercises: [])
+        try await store.saveSession(StrengthSession(id: "s1", routineId: "r1", startTs: 1000), sets: [
+            SetEntry(id: "a", sessionId: "s1", exerciseId: "bench", position: 0, kind: .work,
+                     weightKg: 60, reps: 8, done: true, ts: 1001, rpe: 8),
+            SetEntry(id: "b", sessionId: "s1", exerciseId: "bench", position: 1, kind: .work,
+                     weightKg: 60, reps: 8, done: true, ts: 1002),               // no rpe captured
+        ])
+        try await store.saveSession(StrengthSession(id: "s2", startTs: 2000), sets: [
+            SetEntry(id: "c", sessionId: "s2", exerciseId: "bench", position: 0, kind: .work,
+                     weightKg: 65, reps: 5, done: true, ts: 2001),
+        ])
+        let hist = try await store.workSetHistory(exerciseId: "bench")
+        XCTAssertEqual(hist.map(\.rpe), [8, nil, nil])
+        XCTAssertEqual(hist.filter { $0.sessionId == "s1" }.map(\.routineName), ["Pierna A", "Pierna A"])
+        XCTAssertNil(hist.first { $0.sessionId == "s2" }?.routineName, "free session → nil")
+    }
+
+    /// FER-147: a session whose routine was later deleted keeps its history row — `routineName` reads
+    /// nil (LEFT JOIN, no crash, no lost row), not a dangling id.
+    func testWorkSetHistorySurvivesDeletedRoutine() async throws {
+        let store = try await CenitStore.inMemory()
+        try await store.saveRoutine(Routine(id: "r1", name: "Pierna A", createdTs: 0, updatedTs: 0),
+                                    exercises: [])
+        try await store.saveSession(StrengthSession(id: "s1", routineId: "r1", startTs: 1000), sets: [
+            SetEntry(id: "a", sessionId: "s1", exerciseId: "bench", position: 0, kind: .work,
+                     weightKg: 60, reps: 8, done: true, ts: 1001),
+        ])
+        try await store.deleteRoutine(id: "r1")
+        let hist = try await store.workSetHistory(exerciseId: "bench")
+        XCTAssertEqual(hist.count, 1, "the session's history row is not lost")
+        XCTAssertNil(hist[0].routineName, "the deleted routine's name reads nil, not a crash")
+    }
+
+    /// FER-147: the LIMIT keeps the MOST RECENT sets. A stale `ORDER BY startTs ASC LIMIT ?` would
+    /// keep the 600 OLDEST and drop the newest — exactly backwards for a trend the user wants to see
+    /// up to today. 601 sets, one per session: the oldest (ts 0) must fall off, the newest (ts 600)
+    /// must survive, and the result still reads oldest→newest.
+    func testWorkSetHistoryLimitKeepsMostRecent() async throws {
+        let store = try await CenitStore.inMemory()
+        for i in 0..<601 {
+            try await store.saveSession(StrengthSession(id: "s\(i)", startTs: i), sets: [
+                SetEntry(id: "e\(i)", sessionId: "s\(i)", exerciseId: "bench", position: 0, kind: .work,
+                         weightKg: 60, reps: 8, done: true, ts: i),
+            ])
+        }
+        let hist = try await store.workSetHistory(exerciseId: "bench", limit: 600)
+        XCTAssertEqual(hist.count, 600)
+        XCTAssertEqual(hist.first?.startTs, 1, "the oldest set (ts 0) fell off the cap")
+        XCTAssertEqual(hist.last?.startTs, 600, "the newest set survives")
+        XCTAssertEqual(hist.map(\.startTs), hist.map(\.startTs).sorted(), "still oldest→newest")
     }
 
     /// FER-835: the «Volver a X» opt-out persists per (session, exercise), surfaces only on that

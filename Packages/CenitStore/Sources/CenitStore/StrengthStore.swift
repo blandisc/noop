@@ -24,6 +24,30 @@ private func decodeJSON<T: Decodable>(_ s: String?, as type: T.Type, default def
     return v
 }
 
+/// One completed work set from `workSetHistory`, joined with its session — FER-147. `sessionId` is the
+/// grouping key for per-session facts (e.g. FER-149's best-volume-in-a-session); `rpe` (v34) feeds the
+/// «QUEDABAN» read; `routineName` is nil for a free session or a since-deleted routine.
+public struct WorkSetHistoryRow: Sendable, Equatable {
+    public var sessionId: String
+    public var startTs: Int
+    public var weightKg: Double
+    public var reps: Int
+    public var optedOut: Bool
+    public var rpe: Double?
+    public var routineName: String?
+
+    public init(sessionId: String, startTs: Int, weightKg: Double, reps: Int, optedOut: Bool = false,
+                rpe: Double? = nil, routineName: String? = nil) {
+        self.sessionId = sessionId
+        self.startTs = startTs
+        self.weightKg = weightKg
+        self.reps = reps
+        self.optedOut = optedOut
+        self.rpe = rpe
+        self.routineName = routineName
+    }
+}
+
 extension CenitStore {
 
     // MARK: - Custom exercises (user-created; the bundled catalog lives in StrandTraining)
@@ -624,25 +648,34 @@ extension CenitStore {
     /// (`setEntry` × `strengthSession`), not a query per session. The raw material the detail screen
     /// buckets by day into the estimated-1RM trend; only weight×reps sets count (1RM needs both).
     /// `optedOut` reports the session's «Volver a X» mark for this exercise (FER-835), via LEFT JOIN
-    /// on `progressionOptOut` — the progression classifier skips those sessions entirely.
-    public func workSetHistory(exerciseId: String, limit: Int = 600) async throws
-        -> [(startTs: Int, weightKg: Double, reps: Int, optedOut: Bool)] {
+    /// on `progressionOptOut` — the progression classifier skips those sessions entirely. `rpe` (v34)
+    /// feeds the «QUEDABAN» read (10 − RPE); `nil` means the set never captured effort. `routineName`
+    /// (LEFT JOIN `routine`) is nil for a free session or one whose routine was later deleted.
+    ///
+    /// The LIMIT keeps the MOST RECENT sets, not the oldest: `ORDER BY … ASC LIMIT ?` on its own would
+    /// truncate a long history from the wrong end, silently dropping everything since the cap and
+    /// keeping ancient sets instead (a real bug this fixed — a 601st set pushed out the newest row,
+    /// not the oldest one). The subquery orders DESC to pick the newest `limit` rows, then the outer
+    /// query re-sorts them ASC so every caller still sees oldest→newest.
+    public func workSetHistory(exerciseId: String, limit: Int = 600) async throws -> [WorkSetHistoryRow] {
         try syncRead { db in
             try Row.fetchAll(db, sql: """
-                SELECT s.startTs AS startTs, e.weightKg AS weightKg, e.reps AS reps,
-                       (o.exerciseId IS NOT NULL) AS optedOut
-                FROM setEntry e JOIN strengthSession s ON e.sessionId = s.id
-                LEFT JOIN progressionOptOut o ON o.sessionId = e.sessionId AND o.exerciseId = e.exerciseId
-                WHERE e.exerciseId = ? AND e.kind = 'work' AND e.done = 1
-                  AND e.weightKg IS NOT NULL AND e.reps IS NOT NULL
-                ORDER BY s.startTs ASC
-                LIMIT ?
-                """, arguments: [exerciseId, limit]).map { (row: Row) -> (startTs: Int, weightKg: Double, reps: Int, optedOut: Bool) in
-                    let startTs: Int = row["startTs"]
-                    let weightKg: Double = row["weightKg"]
-                    let reps: Int = row["reps"]
-                    let optedOut: Bool = row["optedOut"]
-                    return (startTs: startTs, weightKg: weightKg, reps: reps, optedOut: optedOut)
+                SELECT * FROM (
+                    SELECT s.id AS sessionId, s.startTs AS startTs, e.weightKg AS weightKg, e.reps AS reps,
+                           (o.exerciseId IS NOT NULL) AS optedOut, e.rpe AS rpe, r.name AS routineName
+                    FROM setEntry e JOIN strengthSession s ON e.sessionId = s.id
+                    LEFT JOIN progressionOptOut o ON o.sessionId = e.sessionId AND o.exerciseId = e.exerciseId
+                    LEFT JOIN routine r ON s.routineId = r.id
+                    WHERE e.exerciseId = ? AND e.kind = 'work' AND e.done = 1
+                      AND e.weightKg IS NOT NULL AND e.reps IS NOT NULL
+                    ORDER BY s.startTs DESC
+                    LIMIT ?
+                ) ORDER BY startTs ASC
+                """, arguments: [exerciseId, limit]).map { (row: Row) -> WorkSetHistoryRow in
+                    WorkSetHistoryRow(sessionId: row["sessionId"], startTs: row["startTs"],
+                                      weightKg: row["weightKg"], reps: row["reps"],
+                                      optedOut: row["optedOut"], rpe: row["rpe"],
+                                      routineName: row["routineName"])
                 }
         }
     }

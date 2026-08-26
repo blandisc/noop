@@ -20,6 +20,11 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **Entrenar: QUEDABAN por día en el Historial del ejercicio / Train: reps-left per day in the exercise's History** (FER-147).
+  **ES** — Cada bloque de día en la pestaña Historial del detalle de ejercicio ahora anota cuántas series hiciste y, si registraste esfuerzo esa sesión, «QUEDABAN 2-3» junto al conteo; si ningún set del día lo capturó, el fragmento no aparece — silencio, no un cero fabricado. La cabecera del día suma el nombre de la rutina cuando aplica («Sáb 15 · Pierna A»), o solo la fecha en una sesión libre. De paso se corrigió un error latente en la consulta de historial: al llegar a 600 sets guardados, el tope conservaba los más VIEJOS y descartaba los recientes; ahora conserva los más recientes, como el resto de la app espera.
+  **EN** — Each day block in the exercise detail's History tab now notes how many sets you did and, when that session captured effort, "QUEDABAN 2-3" alongside the count; when no set of the day captured one, the fragment is omitted entirely — silence, not a fabricated zero. The day header adds the routine's name when it applies ("Sat 15 · Leg A"), or just the date for a free session. Along the way, a latent bug in the history query got fixed: once a history reached 600 saved sets, the cap kept the OLDEST ones and dropped the recent ones; it now keeps the most recent, as the rest of the app expects.
+  ([StrengthStore.swift](Packages/CenitStore/Sources/CenitStore/StrengthStore.swift), [ExerciseDetailScreen.swift](Cenit/Screens/ExerciseDetailScreen.swift), [WorkoutHistoryScreen.swift](Cenit/Screens/WorkoutHistoryScreen.swift))
+
 - **Tendencias: Esfuerzo, Estrés y Temp de piel en vidrio / Trends: Effort, Stress and Skin temp in glass** (FER-101).
   **ES** — Las tres pantallas de detalle que faltaban de la sección Tendencias cruzan al lenguaje
   Liquid que ya hablan Sueño y Preparación: campo teñido a sangre con la identidad de cada métrica
