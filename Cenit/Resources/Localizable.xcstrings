@@ -5457,6 +5457,23 @@
         }
       }
     },
+    "7-day moving average: day-to-day values are noisy." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "7-day moving average: day-to-day values are noisy."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Media móvil de 7 días: día a día los valores son ruidosos."
+          }
+        }
+      }
+    },
     "7-day moving average: night-to-night values are noisy." : {
       "extractionState" : "manual",
       "localizations" : {

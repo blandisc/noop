@@ -2595,7 +2595,9 @@ struct MetricDetailScreen: View {
             dominio: liquidDominio(plot: plot),
             ticksY: liquidTicksY,
             tono: liquidTono,
-            puntoHoy: todayValue != nil ? puntos.last : nil,
+            // TND20-F6: la joya de «hoy» solo con lectura FRESCA — el último punto puede ser
+            // de anteayer.
+            puntoHoy: liquidValorFresco != nil ? puntos.last : nil,
             hoyAnillo: bandaExplorada != nil && bandaExplorada != liquidIndiceAncla,
             formatoScrub: { v, f in "\(fmt(v)) · \(Self.ejeFechaLiquid.string(from: f))" },
             formatoValorScrub: { fmt($0) },
@@ -2648,9 +2650,13 @@ struct MetricDetailScreen: View {
     /// La nota bajo la gráfica: qué línea es (suavizada vs cruda) — el conmutador Media ⇄ Rangos
     /// del papel MUERE (A9); la información sobrevive en la gráfica + la escalera con conteos.
     private var liquidNotaGrafica: String {
-        spec.clinicalBands
-            ? String(localized: "Nightly values · the healthy zone is 95% or above.")
-            : String(localized: "7-day moving average: night-to-night values are noisy.")
+        if spec.clinicalBands {
+            return String(localized: "Nightly values · the healthy zone is 95% or above.")
+        }
+        // TND20-F7: la voz sigue a la métrica — VFC y FC en reposo hablan en días.
+        return liquidNocturno
+            ? String(localized: "7-day moving average: night-to-night values are noisy.")
+            : String(localized: "7-day moving average: day-to-day values are noisy.")
     }
 
     private var liquidEstadoVacio: String {
@@ -2844,7 +2850,8 @@ struct MetricDetailScreen: View {
                                  etiqueta: spec.descriptor.key == "resp_rate"
                                      ? String(localized: "Apple Watch")
                                      : String(localized: "Apple Health"),
-                                 sufijo: todayValue != nil
+                                 // TND20-F6: el sufijo temporal solo con lectura FRESCA.
+                                 sufijo: liquidValorFresco != nil
                                      ? (liquidNocturno ? String(localized: "last night")
                                                        : String(localized: "today"))
                                      : nil)

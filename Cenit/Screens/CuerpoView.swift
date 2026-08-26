@@ -448,7 +448,11 @@ private struct CuerpoLanding: View {
                 spectralLoader: spec.descriptor.key == "hrv" ? { await loadSpectralHRV() } : nil,
                 hrMax: Double(model.profile.hrMax),
                 restingHR: resolveMeasured { $0.restingHr.map(Double.init) }?.value,
-                todayKey: Repository.localDayKey(Date())
+                todayKey: Repository.localDayKey(Date()),
+                // TND20-F8: mismo predicado que la línea de `appleConnectHint` arriba y que
+                // TodayView — el detalle Liquid enseña la cláusula de permiso + CTA a Ajustes.
+                // (FER-100: una línea añadida aquí; el resto de CuerpoView sigue siendo tuyo.)
+                sinPermiso: health.auth != .authorized && health.auth != .unavailable
             )
         } else if let item = recoveryDetail {
             PreparacionDetailScreen(modelo: item.modelo)
