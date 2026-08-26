@@ -4,6 +4,7 @@ import UIKit
 import StrandDesign
 import StrandTraining
 import StrandAnalytics
+import CenitStore
 
 // ExerciseDetailScreen.swift — one exercise: which muscles it loads, your history, and an estimated-1RM
 // trend (FER-346). Presented as a sheet from the library. «Báscula de papel»: weights are the heroes,
@@ -36,8 +37,11 @@ struct ExerciseDetailScreen: View {
     @State private var isLoopPlaying = true
 
     /// Work sets across sessions (oldest→newest), the raw material for the progress chart + PRs.
-    @State private var history: [(startTs: Int, weightKg: Double, reps: Int, optedOut: Bool)] = []
-    @State private var historySessions: [(ts: Int, sets: [(kg: Double, reps: Int)], isRecord: Bool)] = []
+    @State private var history: [WorkSetHistoryRow] = []
+    /// «Historial» tab, one row per day: sets, the RPEs captured that day (feeds «QUEDABAN»), and the
+    /// routine name of the day's first set (nil = free session).
+    @State private var historySessions: [(ts: Int, sets: [(kg: Double, reps: Int)], isRecord: Bool,
+                                           rpes: [Double], routineName: String?)] = []
     @State private var historyDays: [(ts: Int, weightKg: Double, reps: Int)] = []
     @State private var historyDaysAscending: [(ts: Int, weightKg: Double, reps: Int)] = []
     @State private var weeklyVolumes: [Double] = []
@@ -279,8 +283,10 @@ struct ExerciseDetailScreen: View {
         }
     }
 
-    /// Handoff: one block per logged day — family-hue dot + date, a RECORD badge on the day that set
-    /// the all-time top weight, and EVERY set of that day as quiet «82,5 × 8» chips.
+    /// Handoff: one block per logged day — family-hue dot + date (+ routine name, when the day was
+    /// logged against one), a RECORD badge on the day that set the all-time top weight, a subrow with
+    /// the set count and the day's «QUEDABAN» range (omitted entirely when no set captured effort),
+    /// and EVERY set of that day as quiet «82,5 × 8» chips.
     private var historyList: some View {
         let sessions = historySessions
         return VStack(alignment: .leading, spacing: 0) {
@@ -289,7 +295,7 @@ struct ExerciseDetailScreen: View {
                     HStack(spacing: CenitMetrics.space2) {
                         RoundedRectangle(cornerRadius: 3, style: .continuous)  // token-exempt: geometría del punto de familia (8×8)
                             .fill(familyTint).frame(width: 8, height: 8)
-                        historyDayText(day.ts)
+                        historyDayText(day.ts, routineName: day.routineName)
                             .font(StrandFont.body.weight(.medium)).foregroundStyle(theme.ink)
                         Spacer(minLength: 8)
                         if day.isRecord {
@@ -300,6 +306,8 @@ struct ExerciseDetailScreen: View {
                                 .background(familyTint, in: RoundedRectangle(cornerRadius: 7, style: .continuous))  // token-exempt: radio 7 del handoff
                         }
                     }
+                    historyDaySubtitle(day)
+                        .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                     ChipFlow(spacing: 7) {
                         ForEach(Array(day.sets.enumerated()), id: \.offset) { _, s in
                             Text(verbatim: "\(StrengthDisplay.weightNumber(s.kg, system: system)) × \(s.reps)")
@@ -317,19 +325,40 @@ struct ExerciseDetailScreen: View {
         }
     }
 
-    /// «Hoy» for today, else a short day-month («8 jul») — a `Text` so it follows the view's locale.
-    private func historyDayText(_ ts: Int) -> Text {
+    /// «Hoy» for today, else a short day-month («8 jul»), plus «· routineName» when the day was logged
+    /// against a routine — a `Text` so the date part follows the view's locale.
+    private func historyDayText(_ ts: Int, routineName: String?) -> Text {
         let date = Date(timeIntervalSince1970: TimeInterval(ts))
-        if Calendar.current.isDateInToday(date) { return Text("Today") }
-        return Text(date, format: .dateTime.day().month(.abbreviated))
+        let base = Calendar.current.isDateInToday(date)
+            ? Text("Today") : Text(date, format: .dateTime.day().month(.abbreviated))
+        guard let routineName, !routineName.isEmpty else { return base }
+        return base + Text(verbatim: " · \(routineName)")
+    }
+
+    /// «4 series · QUEDABAN 2-3» — set count plus the day's RIR range, reusing the same «quedaban»
+    /// kicker as the live keypad (FER-134). The QUEDABAN fragment is OMITTED entirely, not zeroed,
+    /// when no set of the day captured an RPE.
+    private func historyDaySubtitle(_ day: (ts: Int, sets: [(kg: Double, reps: Int)], isRecord: Bool,
+                                            rpes: [Double], routineName: String?)) -> Text {
+        var text = Text("\(day.sets.count) sets")
+        if let rir = StrengthHistoryFormat.rirRange(rpes: day.rpes) {
+            // `.textCase(.uppercase)` needs a `View`, not the `Text` this chain concatenates (`+` is
+            // `Text`-only) — uppercase the localized string itself instead, same visual result as
+            // `SessionKeypad`'s «QUEDABAN» kicker.
+            let kicker = String(localized: "Reps left kicker").uppercased()
+            text = text + Text(verbatim: " · \(kicker) \(rir)")
+        }
+        return text
     }
 
     private func rebuildHistoryDerived() {
-        var byDaySessions: [String: (ts: Int, sets: [(kg: Double, reps: Int)])] = [:]
+        var byDaySessions: [String: (ts: Int, sets: [(kg: Double, reps: Int)], rpes: [Double],
+                                     routineName: String?)] = [:]
         for h in history.sorted(by: { $0.startTs < $1.startTs }) {
             let key = dayKey(h.startTs)
-            var entry = byDaySessions[key] ?? (h.startTs, [])
+            var entry = byDaySessions[key] ?? (h.startTs, [], [], h.routineName)
             entry.sets.append((h.weightKg, h.reps))
+            if let rpe = h.rpe { entry.rpes.append(rpe) }
             byDaySessions[key] = entry
         }
         let sessionDays = byDaySessions.values.sorted { $0.ts > $1.ts }
@@ -339,7 +368,7 @@ struct ExerciseDetailScreen: View {
             let hits = maxKg > 0 && day.sets.contains { $0.kg >= maxKg - 0.0001 }
             let isRecord = hits && !recordMarked
             if isRecord { recordMarked = true }
-            return (day.ts, day.sets, isRecord)
+            return (day.ts, day.sets, isRecord, day.rpes, day.routineName)
         }
 
         var byDayBest: [String: (ts: Int, weightKg: Double, reps: Int)] = [:]
@@ -792,7 +821,7 @@ struct ExerciseDetailScreen: View {
         seriesCache[metric] ?? []
     }
 
-    private func byDay(_ combine: (Double, (startTs: Int, weightKg: Double, reps: Int, optedOut: Bool)) -> Double) -> [Double] {
+    private func byDay(_ combine: (Double, WorkSetHistoryRow) -> Double) -> [Double] {
         var acc: [String: Double] = [:]
         for s in history {
             let key = dayKey(s.startTs)

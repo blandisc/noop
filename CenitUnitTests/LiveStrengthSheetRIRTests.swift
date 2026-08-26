@@ -114,4 +114,36 @@ final class LiveStrengthSheetRIRTests: XCTestCase {
         XCTAssertEqual(LiveStrengthSheet.focusDoneTiming(exerciseFullyDone: false, restStarting: true), .none)
         XCTAssertEqual(LiveStrengthSheet.focusDoneTiming(exerciseFullyDone: false, restStarting: false), .none)
     }
+
+    // MARK: - StrengthHistoryFormat.rirRange: la lectura «QUEDABAN n-m» del Historial por día
+    // (FER-147) — MISMAS reglas que `qLabel` de arriba (RIR = clamp(10 − round(RPE), 0, 4), «4+» en
+    // el tope), pero sobre el RANGO de un día entero en vez de una fila.
+
+    func testRIRRangeAcrossTwoDifferentEfforts() {
+        XCTAssertEqual(StrengthHistoryFormat.rirRange(rpes: [8, 7]), "2-3")
+    }
+
+    func testRIRRangeSingleSetCollapsesToOneNumber() {
+        XCTAssertEqual(StrengthHistoryFormat.rirRange(rpes: [8]), "2")
+    }
+
+    func testRIRRangeSaturatesAtTheTop() {
+        XCTAssertEqual(StrengthHistoryFormat.rirRange(rpes: [6, 7]), "3-4+")
+    }
+
+    func testRIRRangeAllSaturatedReadsPlainFourPlus() {
+        XCTAssertEqual(StrengthHistoryFormat.rirRange(rpes: [6]), "4+")
+    }
+
+    func testRIRRangeNoCapturedEffortReadsNilNotZero() {
+        XCTAssertNil(StrengthHistoryFormat.rirRange(rpes: []))
+    }
+
+    func testRIRRangeClampsAnOutOfRangeRPEToZero() {
+        XCTAssertEqual(StrengthHistoryFormat.rirRange(rpes: [10.5]), "0")
+    }
+
+    func testRIRRangeRoundsHalfStepsLikeQLabel() {
+        XCTAssertEqual(StrengthHistoryFormat.rirRange(rpes: [7.5]), "2")
+    }
 }

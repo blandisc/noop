@@ -353,6 +353,12 @@ concerns:
   miss. Written atomically inside `saveSession` (delete-first, so a re-save is idempotent), cleaned by
   `deleteSession`, surfaced by `workSetHistory` via LEFT JOIN, consumed as
   `ProgressionMath.PastSession.optedOut`.
+- `workSetHistory` (FER-147) returns `WorkSetHistoryRow` (`sessionId`, `startTs`, `weightKg`, `reps`,
+  `optedOut`, `rpe`, `routineName`) — one JOIN of `setEntry` × `strengthSession`, LEFT JOIN
+  `progressionOptOut` and LEFT JOIN `routine` (so a since-deleted routine reads `routineName == nil`,
+  not a crash). `rpe` (v34) feeds the Historial tab's «QUEDABAN» read (10 − RPE); `sessionId` is the
+  per-row grouping key. The row cap keeps the MOST RECENT sets (`ORDER BY startTs DESC LIMIT ?`,
+  re-sorted ASC), not the oldest.
 
 **Generic metric series** — `metricSeries(deviceId, day, key, value REAL)`: a tall, long-format
 table so *any* scalar metric from *any* source can be queried/compared uniformly (the substrate for
