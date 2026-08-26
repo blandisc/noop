@@ -80,7 +80,6 @@ No se pudo armar el recibo.
 Not a medical device.
 Overriding the automatic estimate (%@).
 Peak %@ bpm · %@
-Pick 2–4 to overlay.
 Recalibrada el %@
 Resting %@
 Round %@ of %@

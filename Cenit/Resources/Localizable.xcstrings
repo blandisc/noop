@@ -1,6 +1,193 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "compare.caption.readings" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld %2$@ across %3$lld · %4$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld %2$@ en %3$lld · %4$@"
+          }
+        }
+      }
+    },
+    "compare.caption.widened" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · sparse widened"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · ventana ampliada"
+          }
+        }
+      }
+    },
+    "compare.overlay.caption" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Each line min–max normalized within %1$@ · drag to read values"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cada línea normalizada min–max dentro de %1$@ · arrastra para leer valores"
+          }
+        }
+      }
+    },
+    "compare.overlay.caption.widened" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Min–max normalized · sparse series widened past %1$@ · drag to read values"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Normalizado min–max · serie escasa ampliada más allá de %1$@ · arrastra para leer valores"
+          }
+        }
+      }
+    },
+    "compare.chart.a11y" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comparing %1$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comparando %1$@"
+          }
+        }
+      }
+    },
+    "compare.overlay.count" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld series"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld series"
+          }
+        }
+      }
+    },
+    "compare.pairs.count" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld pairs"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld pares"
+          }
+        }
+      }
+    },
+    "compare.pair.footer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld overlapping days · %2$@ %3$@ correlation"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld días en común · correlación %2$@ %3$@"
+          }
+        }
+      }
+    },
+    "compare.pair.a11y" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ versus %2$@, r equals %3$@, %4$lld days"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ frente a %2$@, r es igual a %3$@, %4$lld días"
+          }
+        }
+      }
+    },
+    "Add or remove metrics" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add or remove metrics"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Agregar o quitar métricas"
+          }
+        }
+      }
+    },
+    " When %@ rises, %@ %@: a %@ %@ link." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " When %@ rises, %@ %@: a %@ %@ link."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " Cuando %1$@ sube, %2$@ %3$@, un vínculo %5$@ %4$@."
+          }
+        }
+      }
+    },
     "\n" : {
 
     },
@@ -30235,7 +30422,21 @@
       }
     },
     "Pick 2–4 to overlay." : {
-
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pick 2–4 to overlay."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elige de 2 a 4 para superponer."
+          }
+        }
+      }
     },
     "Pick a habit and measure it for a week" : {
       "extractionState" : "manual",
