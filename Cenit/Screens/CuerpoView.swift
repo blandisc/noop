@@ -5,17 +5,22 @@ import StrandAnalytics
 import CenitStore
 import Foundation
 
-// MARK: - Cuerpo (the «between-days / history» landing) — FER-186
+// MARK: - Cuerpo (the «between-days / history» landing) — FER-186 · FER-100 (Liquid Glass)
 //
 // The «Cuerpo» tab of the 3-layer IA redesign (FER-182 placed it; this screen replaces its interim
-// `TrendsView`). A curated landing in the light «Instrumento diurno» language: warm paper, color ONLY
-// on the datum, hierarchy by space. The body is a column of DOMAIN CARDS, not a flat list: a title +
-// date frame → Preparación (the verdict word + its clause) → Rest & load / Vitals / Activity /
-// Longevity, each a `theme.surface` card whose grouped stats (label · value in its data hue · optional
-// legend) tap straight into their detail, with the «How you wake after each sport» insight nested under
-// a hairline inside Activity → connect nudge → global actions (Compare · See all metrics) at the foot.
-// Each stat is its own tap target (the direct shortcut the old rows had); the card header is a quiet
-// label (no chevron — «See all metrics» at the foot is the one catalog door, no duplicate).
+// `TrendsView`). FER-100 repaints the landing from the light «Instrumento diurno» paper to Liquid
+// Glass: a tinted-lens hero (the Preparación verdict word + its clause, teñido by the verdict's own
+// tone — apagado to paper/ink with no verdict, never green) over a column of `LiquidModulo` glass
+// modules — Rest & load / Training load / Your body / Vitals / Activity / Longevity — each with an
+// aurora edge in the hue of ITS OWN data (only the top two animate; the rest draw a still aurora, a
+// scrolling list is too many clocks). Domain color is ALWAYS `MetricIdentity.identity(forKey:)`, never
+// a raw theme token. Grouped stats (label in quiet ink · value in its data hue · optional legend) tap
+// straight into their detail, separated by `LiquidCapilar` hairlines; the «How you wake after each
+// sport» insight nests under one inside Activity → connect nudge → global actions (Compare · See all
+// metrics) at the foot. Each stat is its own tap target (the direct shortcut the old rows had); the
+// module header is a quiet regla label (no chevron — «See all metrics» at the foot is the one catalog
+// door, no duplicate). This is a VISUAL migration only: the data path, engines and navigation below
+// are untouched (see `loadAll` / `detailOverlayContent` / `DetailChrome`).
 //
 // FER-566 (supersedes the FER-186 "number, not a chart" rule): every signal now carries a mini-trend
 // sparkline — the hero plus each stat in Rest & load, Vitals and Steps — EXCEPT Longevity and
@@ -283,12 +288,12 @@ private struct CuerpoLanding: View {
     var body: some View {
         ZStack {
         ScrollView {
-            VStack(alignment: .leading, spacing: CenitMetrics.gap) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s300) {
                 titleBlock
                 periodSelector
                 // §8.7 landing micro-legend: today's values vs last month's trends (period selector above).
                 Text("Today's values \u{00B7} last month's trends")
-                    .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                    .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 recoveryHero
                 restLoadCard
@@ -300,12 +305,12 @@ private struct CuerpoLanding: View {
                 connectNudge
                 footerActions
             }
-            .padding(.horizontal, CenitMetrics.screenPadding)
-            .padding(.top, CenitMetrics.screenTop)   // shared titled-tab top inset
-            .padding(.bottom, CenitMetrics.screenPadding)
+            .padding(.horizontal, LiquidSpace.s600)
+            .padding(.top, LiquidSpace.s400)   // shared titled-tab top inset
+            .padding(.bottom, LiquidSpace.s600)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(PaperBackground())
+        .background(LiquidSheetFondo(tone: heroTono))
             // Detalle «Instrumento» como CAPA sobre el landing (handoff v2 Chrome, FER-828 / FER-837): una
             // sola pantalla de papel opaco encima de Tendencias EN LA MISMA jerarquía, no un `fullScreenCover`
             // (que ocultaba el landing detrás de una plancha en blanco). Así el back-swipe descubre la
@@ -493,26 +498,27 @@ private struct CuerpoLanding: View {
         }
     }
 
-    /// The canvas — read inside the themed subtree so it recolors by hour too.
-    private struct PaperBackground: View {
-        @Environment(\.instrumentoTheme) private var theme
-        var body: some View { theme.paper.ignoresSafeArea() }
-    }
-
     // MARK: - Title + date
 
-    /// «Body» + today's date — the landing's temporal frame (the date is new to the card model).
-    /// Wordmark header (matching «Patrones»): the curve-with-nodes glyph + «Tendencias» on the left,
-    /// today's date in mono on the right. Replaces the old stacked «Body» + subhead-date block.
+    /// «Body» + today's date — the landing's temporal frame. Wordmark header (matching «Patrones»):
+    /// the curve-with-nodes glyph + «Tendencias» on the left, today's date in mono on the right.
+    /// Liquid re-skin of `InstrumentoTabHeader` (FER-100): same glyph, same date, tinta tokens.
     private var titleBlock: some View {
-        InstrumentoTabHeader("Tendencias") {
-            TendenciasGlyph(color: theme.ink)
-        } trailing: {
+        HStack(alignment: .center, spacing: LiquidSpace.s200) {
+            HStack(spacing: LiquidSpace.s150) {
+                TendenciasGlyph(color: LiquidColor.tinta900).frame(width: 20, height: 20)
+                Text("Tendencias")
+                    .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
+                    .foregroundStyle(LiquidColor.tinta900)
+            }
+            Spacer(minLength: LiquidSpace.s200)
             Text(Self.dateLabel)
-                .font(StrandFont.number(11, weight: .regular)).foregroundStyle(theme.inkTertiary)
-                .textCase(.uppercase)
+                .font(LiquidType.kicker).tracking(LiquidType.kickerTracking).textCase(.uppercase)
+                .foregroundStyle(LiquidColor.tinta500)
         }
-        .padding(.bottom, 6)
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isHeader)
+        .padding(.bottom, LiquidSpace.s150)
     }
 
     /// Today as «THU 12 JUN» / «JUE 12 JUN» — follows the app language (`.current`), uppercased by the
@@ -527,9 +533,19 @@ private struct CuerpoLanding: View {
 
     /// The W/M/3M/6M/1Y/ALL pills under the header (same `ExploreRange` the detail screens use). Changing it
     /// re-windows the hero trend + every stat sparkline + the hero's «vs tu media» delta.
+    /// Liquid re-skin (FER-100): the rectangular `LiquidRangeSelector` replaces `SegmentedPillControl`.
     private var periodSelector: some View {
-        // Handoff v2 landing (FER-830): the `tall` (44pt) variant for the landing's top selector.
-        SegmentedPillControl(ExploreRange.allCases, selection: $selectedPeriod, theme: theme, tall: true) { $0.label }
+        LiquidRangeSelector(opciones: ExploreRange.allCases.map(\.label),
+                            seleccion: periodIndex, tono: LiquidColor.tinta700)
+            .accessibilityLabel(String(localized: "Time range"))
+    }
+
+    /// A `Binding<Int>` bridging `LiquidRangeSelector`'s index to `selectedPeriod`
+    /// (`ExploreRange.allCases` order = W…ALL). Mirrors `CompareView.rangeIndex`.
+    private var periodIndex: Binding<Int> {
+        Binding(
+            get: { ExploreRange.allCases.firstIndex(of: selectedPeriod) ?? 0 },
+            set: { selectedPeriod = ExploreRange.allCases[$0] })
     }
 
     // MARK: - Sparkline windowing (FER-566)
@@ -566,54 +582,59 @@ private struct CuerpoLanding: View {
         return trend.filter { $0.date >= cutoffDay }.map(\.value)
     }
 
-    // MARK: - Domain card scaffolding (Instrumento rule 3: one surface, no card-in-card)
+    // MARK: - Domain module scaffolding (Liquid Glass — FER-100)
 
-    /// A domain card: a quiet overline header (a label — it only orients, Instrumento rule 4) over its
-    /// grouped stats, on a single `theme.surface` panel. The catalog door is the footer's «See all
-    /// metrics»; the header carries no chevron so it doesn't duplicate that destination.
-    private func domainCard<Content: View>(_ title: LocalizedStringKey,
-                                           @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            // §8.7 group header (handoff v2 landing, FER-826): ALL-CAPS Space Grotesk overline, not serif.
-            Text(title)
-                .font(InstrumentoType.grotesk(12, weight: .bold)).tracking(2.4).textCase(.uppercase)
-                .foregroundStyle(theme.ink)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            content()
+    /// Wraps a domain module's content in `LiquidModulo`: the aurora edge in the hue of ITS OWN data
+    /// (a 1:1 `MetricIdentity` reflection, never a raw theme token). Only `animated` modules keep a
+    /// live-spinning aurora — in a scrolling list, more clocks wash the piece out — the rest render a
+    /// STILL edge via `liquidAmbientPaused`, which freezes ONLY the aurora: unlike `liquidMotionDisabled`,
+    /// it does NOT gate `LiquidModulo`'s glass, so the 4 still modules keep the iOS 26 native lens.
+    @ViewBuilder
+    private func liquidModulo<Content: View>(index: Int, tones: [Color], period: Double,
+                                             reverse: Bool = false, animated: Bool,
+                                             @ViewBuilder content: () -> Content) -> some View {
+        if animated {
+            LiquidModulo(index: index, auroraTones: tones, auroraPeriod: period,
+                        auroraReverse: reverse, content: content)
+        } else {
+            LiquidModulo(index: index, auroraTones: tones, auroraPeriod: period,
+                        auroraReverse: reverse, content: content)
+                .environment(\.liquidAmbientPaused, true)
         }
-        .padding(.vertical, 16).padding(.horizontal, 20)
-        .frame(maxWidth: .infinity)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
-            .strokeBorder(theme.hairline, lineWidth: 1))
     }
 
-    /// A tappable stat column inside a domain card: a quiet label (optional Apple/Estimate chip), the
-    /// value in its data hue (ink «—» when absent — never a hue), an optional inline unit and a footnote
-    /// legend. `value == nil` is an honest empty state.
+    /// A module's quiet regla-kicker header («REST & LOAD»). Same voice on every module.
+    private func moduleTitle(_ title: LocalizedStringKey) -> some View {
+        Text(title).liquidRegla().foregroundStyle(LiquidColor.tinta500)
+    }
+
+    /// A tappable stat column inside a module: a quiet neutral label, the value in its data hue (ink
+    /// «—» when absent — never a hue), an optional inline unit and a footnote legend. `value == nil`
+    /// is an honest empty state. SAME 9-prop signature the paper version had (FER-826 follow-up):
+    /// `estimate`/`fromApple` stay accepted but undrawn — provenance lives only on the detail's
+    /// OriginStamp seal, this landing never lit those badges even before the migration.
     private func statColumn(_ label: LocalizedStringKey, value: String?, unit: String? = nil,
                             color: Color, legend: LocalizedStringKey? = nil, estimate: Bool = false,
                             fromApple: Bool = false, spark: [Double] = [], tap: @escaping () -> Void) -> some View {
         Button(action: tap) {
-            // Columns left-aligned; the metric name carries its own data hue. No per-stat origin dot —
-            // provenance now lives only on the detail's OriginStamp seal (FER-826 follow-up).
+            // Columns left-aligned; the metric name is quiet ink (`LiquidColumna`'s own convention) —
+            // only the VALUE carries the data hue.
             VStack(alignment: .leading, spacing: 3) {
-                Text(label)
-                    .font(InstrumentoType.grotesk(10, weight: .semibold)).tracking(1.4).textCase(.uppercase)
-                    .foregroundStyle(color)
+                Text(label).liquidDato().foregroundStyle(LiquidColor.tinta500)
                     .multilineTextAlignment(.leading)
                     .minimumScaleFactor(0.9)
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
                     Text(value ?? "—")
-                        .font(InstrumentoType.groteskTileValue)
-                        .foregroundStyle(value == nil ? theme.inkTertiary : color)
+                        .font(LiquidType.valorL)
+                        .foregroundStyle(value == nil ? LiquidColor.tinta500 : color)
+                        .opacity(value == nil ? 0.55 : 1)
                     if let unit, value != nil {
-                        Text(unit).font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
+                        Text(unit).font(LiquidType.unidad).foregroundStyle(LiquidColor.tinta500)
                     }
                 }
                 // Mini-trend over the selected period — re-windows with the header selector (FER-566). A stat
                 // with <2 points in the window draws nothing (honest empty state, never a fake spark). Color
-                // ONLY on the datum (Instrumento): the line carries the stat's own data hue, area very faint.
+                // ONLY on the datum: the line carries the stat's own data hue, area very faint.
                 if value != nil, spark.count > 1 {
                     Sparkline(values: spark,
                               gradient: ChartWell.fillGradient(color),
@@ -627,7 +648,7 @@ private struct CuerpoLanding: View {
                         .accessibilityHidden(true)
                 }
                 if let legend {
-                    Text(legend).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                    Text(legend).font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
                         .multilineTextAlignment(.leading)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -635,144 +656,170 @@ private struct CuerpoLanding: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
         }
-        .buttonStyle(MetricRowButtonStyle(pressedFill: theme.ink.opacity(0.05))) // token-exempt: press-fill <0.10
+        .buttonStyle(.liquidPress)
         .accessibilityElement(children: .combine)
     }
 
-    /// Vertical hairline between stat columns (no card-in-card — Instrumento rule 3).
-    private var vsep: some View { Divider().overlay(theme.hairline) }
+    /// Hairline between stat columns — `LiquidCapilar`, the Liquid capilar divider.
+    private var vsep: some View { LiquidCapilar() }
 
-    // MARK: - Domain cards
+    // MARK: - Domain modules
 
-    /// Rest & load — Sleep · Day Strain · Stress, each column into its detail.
+    /// Rest & load — Sleep · Day Strain · Stress, each column into its detail. Animated aurora (top module).
     private var restLoadCard: some View {
-        domainCard("Rest & load") {
-            HStack(spacing: 13) {
-                sleepStat
-                vsep
-                strainStat
-                vsep
-                stressStat
+        liquidModulo(index: 0, tones: [LiquidColor.indigo, LiquidColor.ambar, LiquidColor.estresMedio],
+                    period: 44, animated: true) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s250) {
+                moduleTitle("Rest & load")
+                HStack(spacing: LiquidSpace.s300) {
+                    sleepStat
+                    vsep
+                    strainStat
+                    vsep
+                    stressStat
+                }
             }
         }
     }
 
-    /// Carga de entrenamiento (FER-705) — the band in a plain word is the datum (colored by its flag),
+    /// Carga de entrenamiento (FER-705) — the band in a plain word is the datum (colored by its band),
     /// with the glossed ratio underneath and the replayed-ratio mini-trend as the right accessory.
     /// Calibrating (< ~2 weeks of strain) shows an honest «—» + the wait copy, never a fake number.
-    /// The whole card taps into the explainer sheet.
+    /// The whole card taps into the explainer sheet. Animated aurora (second module).
     private var trainingLoadCard: some View {
         let load = trainingLoad
         let band = load?.band
         return Button {
             trainingLoadItem = TrainingLoadItem(model: load ?? TrainingLoadModel(acwr: nil, series: []))
         } label: {
-            HStack(spacing: 14) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("Training load").font(InstrumentoType.grotesk(12, weight: .bold)).tracking(2.4).textCase(.uppercase).foregroundStyle(theme.ink)
-                    Text(band?.shortLabel ?? "—")
-                        .font(InstrumentoType.groteskVerdict)
-                        .foregroundStyle(band.map { $0.flag.color(theme) } ?? theme.inkTertiary)
-                    if let acwr = load?.acwr {
-                        Text("\(String(format: "%.2f", acwr)) · recent vs. your usual")
-                            .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                    } else {
-                        Text("I need about two weeks of recorded strain to read your load.")
-                            .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+            liquidModulo(index: 1, tones: [LiquidColor.ambar, LiquidColor.ambarClaro],
+                        period: 52, reverse: true, animated: true) {
+                VStack(alignment: .leading, spacing: LiquidSpace.s250) {
+                    moduleTitle("Training load")
+                    HStack(spacing: LiquidSpace.s400) {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(band?.shortLabel ?? "—")
+                                .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
+                                .foregroundStyle(band.map(loadBandColor) ?? LiquidColor.tinta500)
+                            if let acwr = load?.acwr {
+                                Text("\(String(format: "%.2f", acwr)) · recent vs. your usual")
+                                    .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta700)
+                            } else {
+                                Text("I need about two weeks of recorded strain to read your load.")
+                                    .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta700)
+                            }
+                        }
+                        Spacer(minLength: LiquidSpace.s200)
+                        if let load, load.series.count > 1, let band {
+                            let color = loadBandColor(band)
+                            ZStack(alignment: .center) {
+                                Capsule().fill(LiquidColor.tinta10)
+                                    .frame(width: 104, height: 3)
+                                Sparkline(values: load.series.map(\.value),
+                                          gradient: ChartWell.fillGradient(color),
+                                          lineWidth: 2.0, showsArea: false, showsHead: true, showsScrub: false)
+                                    .frame(width: 104, height: 40)
+                            }
+                            .allowsHitTesting(false)
+                            .accessibilityHidden(true)
+                        }
+                        // Sin chevron (FER-837): el renglón «Toca cualquier dato para ver su detalle» ya comunica
+                        // que la tarjeta es tocable; el chevron se reserva a las que abren una pantalla/herramienta
+                        // distinta (Mapa muscular, «tras cada deporte», Comparar, Ver todas las métricas).
                     }
                 }
-                Spacer(minLength: 8)
-                if let load, load.series.count > 1, let band {
-                    let color = band.flag.color(theme)
-                    ZStack(alignment: .center) {
-                        Capsule().fill(theme.rangeBand)
-                            .frame(width: 104, height: 3)
-                        Sparkline(values: load.series.map(\.value),
-                                  gradient: ChartWell.fillGradient(color),
-                                  lineWidth: 2.0, showsArea: false, showsHead: true, showsScrub: false)
-                            .frame(width: 104, height: 40)
-                    }
-                    .allowsHitTesting(false)
-                    .accessibilityHidden(true)
-                }
-                // Sin chevron (FER-837): el renglón «Toca cualquier dato para ver su detalle» ya comunica
-                // que la tarjeta es tocable; el chevron se reserva a las que abren una pantalla/herramienta
-                // distinta (Mapa muscular, «tras cada deporte», Comparar, Ver todas las métricas).
             }
-            .padding(.vertical, 16).padding(.horizontal, 20)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle())
-            .instrumentoCard(.card, theme: theme)
         }
-        .buttonStyle(SurfacePressStyle(tint: theme.ink.opacity(0.05))) // token-exempt: press-fill <0.10
+        .buttonStyle(.liquidPress)
         .accessibilityElement(children: .combine)
         .accessibilityHint("Opens the training-load explainer.")
     }
 
+    /// The band's Liquid color, the SAME mapping `TrainingLoadSheet.hillColor` uses (FER-105/TND-32),
+    /// re-derived here since that helper is file-private — keeps the module and its explainer sheet
+    /// agreeing on the band's color, never `ReadinessEngine.Flag.color(theme:)` (the paper mapping).
+    private func loadBandColor(_ band: ReadinessEngine.LoadBand) -> Color {
+        switch band {
+        case .rampingDown, .sweetSpot: return LiquidColor.verdePrimario
+        case .buildingFast:            return LiquidColor.atencion
+        case .spiking:                 return LiquidColor.negativo
+        }
+    }
+
     /// «Tu cuerpo» (FER-350) — a navigational card into the front/back fatigue map. The whole card is the
-    /// tap target (it opens a screen, not a metric detail), so it's a full button, not a `domainCard`.
-    /// FER-91 · E10: the eyebrow label was «Muscle map», matching the destination screen's OLD
-    /// overline; both became «Your body» together so the door's name still matches the destination.
+    /// tap target (it opens a screen, not a metric detail). FER-91 · E10: the eyebrow label was «Muscle
+    /// map», matching the destination screen's OLD overline; both became «Your body» together so the
+    /// door's name still matches the destination. Still aurora (3rd+ module).
     private var muscleMapCard: some View {
         Button { showMuscleMap = true } label: {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 8) {
-                    Text("Your body").font(InstrumentoType.grotesk(12, weight: .bold)).tracking(2.4).textCase(.uppercase).foregroundStyle(theme.ink)   // grotesk group header (FER-901)
-                    // Provisional placement here, pending a product decision on its permanent home (likely
-                    // Entrenar / Patrones). (FER-566 / handoff «DE MOMENTO»)
-                    Spacer(minLength: 8)
-                    StrandIcon.disclosure.image
-                        .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+            liquidModulo(index: 2, tones: [LiquidColor.ambar, LiquidColor.verdePrimario, LiquidColor.rosa],
+                        period: 38, animated: false) {
+                HStack(alignment: .top, spacing: LiquidSpace.s200) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        moduleTitle("Your body")
+                        // Provisional placement here, pending a product decision on its permanent home (likely
+                        // Entrenar / Patrones). (FER-566 / handoff «DE MOMENTO»)
+                        Text("What to train today")
+                            .font(LiquidType.tituloHoja).foregroundStyle(LiquidColor.tinta900)
+                        Text("Per-muscle load crossed with your recovery.")
+                            .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta700)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer(minLength: LiquidSpace.s200)
+                    LiquidIcon(.chevron, size: 12, color: LiquidColor.tinta500)
                 }
-                Text("What to train today")
-                    .font(InstrumentoType.groteskHeadline(17)).foregroundStyle(theme.ink)
-                Text("Per-muscle load crossed with your recovery.")
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.vertical, 16).padding(.horizontal, 20)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle())
-            .instrumentoCard(.card, theme: theme)
         }
-        .buttonStyle(SurfacePressStyle(tint: theme.ink.opacity(0.05))) // token-exempt: press-fill <0.10
+        .buttonStyle(.liquidPress)
         .accessibilityHint("Opens the muscle map.")
     }
 
-    /// Vitals — a 3×2 grid of scalar vitals, each into its `MetricDetailScreen`.
+    /// Vitals — a 3×2 grid of scalar vitals, each into its `MetricDetailScreen`. Two explicit rows (not
+    /// a `LazyVGrid`) so a `LiquidCapilar` can seam the two, same 6 stats/order/taps. Still aurora.
     private var vitalsCard: some View {
-        domainCard("Vitals") {
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12, alignment: .center), count: 3),
-                      alignment: .center, spacing: 18) {
-                hrvStat; rhrStat; spo2Stat; heartStat; respStat; skinTempStat
+        liquidModulo(index: 3, tones: [LiquidColor.cian, LiquidColor.rosa, LiquidColor.azul],
+                    period: 38, animated: false) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s250) {
+                moduleTitle("Vitals")
+                VStack(spacing: LiquidSpace.s300) {
+                    HStack(spacing: LiquidSpace.s300) { hrvStat; vsep; rhrStat; vsep; spo2Stat }
+                    LiquidCapilar(eje: .horizontal)
+                    HStack(spacing: LiquidSpace.s300) { heartStat; vsep; respStat; vsep; skinTempStat }
+                }
             }
         }
     }
 
-    /// Activity — Steps · Workouts·14d, with «How you wake after each sport» nested under a hairline.
+    /// Activity — Steps · Workouts·7d, with «How you wake after each sport» nested under a hairline.
+    /// Still aurora.
     private var activityCard: some View {
-        domainCard("Activity") {
-            VStack(alignment: .leading, spacing: 16) {
-                HStack(spacing: 13) {
+        liquidModulo(index: 4, tones: [LiquidColor.teal, LiquidColor.ambar], period: 58, animated: false) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s250) {
+                moduleTitle("Activity")
+                HStack(spacing: LiquidSpace.s300) {
                     stepsStat
                     vsep
                     workoutsStat
                 }
-                vsep
+                LiquidCapilar(eje: .horizontal)
                 activityInsight
             }
         }
     }
 
-    /// Longevity — Physical age · Body age · VO₂ Max, each with a micro-legend, into its sheet.
+    /// Longevity — Physical age · Body age · VO₂ Max, each with a micro-legend, into its sheet. Still aurora.
     private var longevityCard: some View {
-        domainCard("Longevity") {
-            HStack(alignment: .top, spacing: 13) {
-                physicalAgeStat
-                vsep
-                bodyAgeStat
-                vsep
-                vo2maxStat
+        liquidModulo(index: 5, tones: [LiquidColor.verdePrimario, LiquidColor.ambar, LiquidColor.tinta500],
+                    period: 44, animated: false) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s250) {
+                moduleTitle("Longevity")
+                HStack(alignment: .top, spacing: LiquidSpace.s300) {
+                    physicalAgeStat
+                    vsep
+                    bodyAgeStat
+                    vsep
+                    vo2maxStat
+                }
             }
         }
     }
@@ -796,9 +843,25 @@ private struct CuerpoLanding: View {
         return health.auth == .authorized
     }
 
+    /// The hero's tone: `LiquidHoyBuilder.actaTono` (the SAME tone the acta uses) when there's a real
+    /// verdict, `nil` otherwise — `nil` is the signal that apaga the lens to paper/ink, never green.
+    /// Gate is `isNightAnchored`, the SAME one `preparacionHeroe` branches on: no night recorded, no
+    /// verdict to tint. Also feeds the screen's ambient background (`LiquidSheetFondo`, `body`).
+    private var heroTono: Color? {
+        guard let prep = repo.todayPreparedness, prep.verdict != .lowSignal, prep.isNightAnchored
+        else { return nil }
+        return LiquidHoyBuilder.actaTono(prep)
+    }
+
+    /// The tinted-lens hero — FER-100's bespoke Liquid piece (`liquidLenteTenida`, below): a
+    /// diagonal-gradient card in the verdict's own tone with a calado numeral, or paper/ink with NO
+    /// gradient when there's nothing to tint. Content = the verdict WORD (or the calibration count, or
+    /// «—»), never a number — the 0–100 score is retired and doesn't come back through this door.
     private var recoveryHero: some View {
         let prep = repo.todayPreparedness
         let cal = recoveryCalibration
+        let tono = heroTono
+        let calado = tono != nil
         return Button {
             // FER-954: present the loading state IMMEDIATELY; the model builds off-main and swaps
             // in under the same id (same pattern as `sleepStat`, FER-953).
@@ -811,25 +874,17 @@ private struct CuerpoLanding: View {
                 }
             }
         } label: {
-            HStack(spacing: 14) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("Preparation").font(InstrumentoType.grotesk(12, weight: .bold)).tracking(2.4).textCase(.uppercase).foregroundStyle(theme.ink)   // grotesk group header (FER-901)
-                    preparacionHeroe(prep, calibrando: cal)
-                }
-                Spacer(minLength: 8)
-                recoveryHeroAccessory(calibrating: cal)
-                // Sin chevron (FER-837): el renglón «Toca cualquier dato…» ya comunica el toque; el chevron
-                // queda solo en las tarjetas que abren pantalla/herramienta distinta.
+            VStack(alignment: .leading, spacing: LiquidSpace.s100) {
+                Text("Preparation")
+                    .font(LiquidType.franja).tracking(LiquidType.franjaTracking).textCase(.uppercase)
+                    .foregroundStyle(calado ? LiquidColor.papelAlto.opacity(LiquidCampo.alfaRotulo) : LiquidColor.tinta500)
+                preparacionHeroe(prep, calibrando: cal)
             }
-            .padding(.vertical, 18).padding(.horizontal, 20)
-            .frame(maxWidth: .infinity)
-            .instrumentoCard(.card, theme: theme)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
+            .liquidLenteTenida(tono: tono)
         }
-        // Press feedback to match the stats: the hero draws its own `surface` background, so a fill
-        // BEHIND the label (MetricRowButtonStyle) wouldn't show — `SurfacePressStyle` overlays the tint
-        // on top, clipped to the same rounded shape. (FER-186 follow-up)
-        .buttonStyle(SurfacePressStyle(tint: theme.ink.opacity(0.05))) // token-exempt: press-fill <0.10
+        .buttonStyle(.liquidPress)
         .accessibilityElement(children: .combine)
     }
 
@@ -840,32 +895,36 @@ private struct CuerpoLanding: View {
     /// obsoletas cuando estas las sustituyeron.
     @ViewBuilder
     private func preparacionHeroe(_ prep: Preparedness.Read?, calibrando: Int?) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
-            // `isNightAnchored` es OBLIGATORIO, el MISMO gate que Hoy pone antes de titular
-            // (`LiquidHoyBuilder.actaTono`, `:1185`): sin noche grabada no hay veredicto que
-            // decir, y titularlo teñido contradiría al texto de la propia pantalla.
-            if let prep, prep.verdict != .lowSignal, prep.isNightAnchored {
-                Text(LiquidHoyBuilder.palabraVeredicto(prep.verdict))
-                    // `relativeTo:` es obligatorio: sin él la palabra queda FIJA mientras su
-                    // cláusula (`StrandFont.subhead`) sí escala, y a tallas de accesibilidad el
-                    // texto de apoyo terminaba más grande que el dato que manda.
-                    .font(InstrumentoType.grotesk(32, weight: .bold, relativeTo: .title2))
-                    .foregroundStyle(LiquidHoyBuilder.actaTono(prep))
-                Text(LiquidHoyBuilder.clausulaVeredicto(prep))
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-            } else if let calibrando {
-                Text("\(calibrando)").instrumentoHero(48).foregroundStyle(theme.ink)
-                Text(recoverySubtitle(calibrating: calibrando))
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-            } else {
-                Text("—").instrumentoHero(56).foregroundStyle(theme.inkTertiary)
-                Text(recoverySubtitle(calibrating: nil))
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-            }
+        // `isNightAnchored` es OBLIGATORIO, el MISMO gate que Hoy pone antes de titular
+        // (`LiquidHoyBuilder.actaTono`, `:1185`): sin noche grabada no hay veredicto que
+        // decir, y titularlo teñido contradiría al texto de la propia pantalla.
+        if let prep, prep.verdict != .lowSignal, prep.isNightAnchored {
+            Text(LiquidHoyBuilder.palabraVeredicto(prep.verdict))
+                .font(LiquidType.displayL).tracking(LiquidType.displayLTracking)
+                .foregroundStyle(LiquidColor.papelAlto)
+            Text(LiquidHoyBuilder.clausulaVeredicto(prep))
+                .font(LiquidType.clausulaCampo)
+                .foregroundStyle(LiquidColor.papelAlto.opacity(LiquidCampo.alfaRotulo))
+                .fixedSize(horizontal: false, vertical: true)
+        } else if let calibrando {
+            Text("\(calibrando)")
+                .font(LiquidType.displayL).tracking(LiquidType.displayLTracking)
+                .foregroundStyle(LiquidColor.tinta900)
+            Text(recoverySubtitle(calibrating: calibrando))
+                .font(LiquidType.clausulaCampo).foregroundStyle(LiquidColor.tinta700)
+            recoveryHeroAccessory(calibrating: calibrando)
+        } else {
+            Text("—")
+                .font(LiquidType.displayL).tracking(LiquidType.displayLTracking)
+                .foregroundStyle(LiquidColor.tinta500)
+            Text(recoverySubtitle(calibrating: nil))
+                .font(LiquidType.clausulaCampo).foregroundStyle(LiquidColor.tinta700)
         }
     }
 
-    /// El acompañante del héroe: la barra de calibración mientras la base madura.
+    /// El acompañante del héroe: la barra de calibración mientras la base madura. SOLO la barra —
+    /// sin sparkline, sin «vs media» (FER-100 spec). Track/relleno en tinta, nunca verde: calibrando
+    /// vive en la rama SIN veredicto del héroe (apagada a papel/tinta).
     ///
     /// FER-119 le quitó la sparkline: su serie era `windowedSpark(\.recovery)` y los dos
     /// escritores de filas guardan `recovery: nil` (AppleHealthImport:70, HealthKitBridge:452),
@@ -874,12 +933,13 @@ private struct CuerpoLanding: View {
     @ViewBuilder
     private func recoveryHeroAccessory(calibrating: Int?) -> some View {
         if let calibrating {
-            Capsule().fill(theme.hairline)
-                .frame(width: 104, height: 6)
+            Capsule().fill(LiquidColor.tinta10)
+                .frame(width: 132, height: 6)
                 .overlay(alignment: .leading) {
-                    Capsule().fill(theme.dataRecovery)
-                        .frame(width: 104 * CGFloat(calibrating) / CGFloat(Self.recoverySeed), height: 6)
+                    Capsule().fill(LiquidColor.tinta500)
+                        .frame(width: 132 * CGFloat(calibrating) / CGFloat(Self.recoverySeed), height: 6)
                 }
+                .padding(.top, LiquidSpace.s200)
                 .accessibilityHidden(true)
         }
     }
@@ -889,7 +949,8 @@ private struct CuerpoLanding: View {
     private var sleepStat: some View {
         let r = resolveMeasured { $0.totalSleepMin }
         let fromApple = r?.fromApple == true
-        return statColumn("Sleep", value: r.map { sleepText($0.value) }, color: theme.dataSleep,
+        return statColumn("Sleep", value: r.map { sleepText($0.value) },
+                          color: MetricIdentity.identity(forKey: "sleep_total_min").hue,
                           fromApple: fromApple, spark: windowedSpark { $0.totalSleepMin }) {
             // FER-953: present the loading state IMMEDIATELY; the model builds off-main and swaps
             // in under the same id (so the layer updates in place — no re-presentation).
@@ -912,7 +973,7 @@ private struct CuerpoLanding: View {
         let v = model.displayedDayStrain
         let estimated = repo.isStrainEstimated(repo.today?.day ?? Repository.localDayKey(Date()))
         return statColumn(estimated ? "Day load" : "Day Strain", value: v.map { String(format: "%.1f", $0) },
-                          color: theme.dataStrain,
+                          color: MetricIdentity.identity(forKey: "strain").hue,
                           spark: windowedSpark { $0.strain }) {
             // Opens the rich Detalle de Esfuerzo (FER-238) — built fresh from the in-memory dashboard.
             // (Hoy still uses `MetricInfo.strain`/`MetricInfoSheet`.) FER-954: present the loading state IMMEDIATELY;
@@ -931,9 +992,12 @@ private struct CuerpoLanding: View {
 
     private var stressStat: some View {
         let s = stressModel?.score
+        // Stress accompanies, it doesn't vote (HJ-09): a STATIC identity chip, not a band ramp —
+        // `MetricIdentity`'s representative mid-ocre for "stress", same color with or without a
+        // reading today (the empty-state grey in `statColumn` already handles `value == nil`).
         return statColumn("Stress", value: s.map { String(format: "%.1f", $0) },
                           unit: s == nil ? nil : "/ 3",
-                          color: s.map(stressDataColor) ?? theme.inkTertiary,
+                          color: MetricIdentity.identity(forKey: "stress").hue,
                           spark: stressSpark) {
             stressDayMap = StressDayMapPresenter.make(
                 repo: repo, maxHR: model.profile.hrMax, restingHR: stressRestingHR)
@@ -951,7 +1015,7 @@ private struct CuerpoLanding: View {
         let r = resolveMeasured { $0.avgHrv }
         let fromApple = r?.fromApple == true
         return statColumn("HRV", value: r.map { "\(Int($0.value.rounded()))" }, unit: String(localized: "ms"),
-                          color: theme.dataHrv,
+                          color: MetricIdentity.identity(forKey: "hrv").hue,
                           fromApple: fromApple,
                           spark: windowedSpark { $0.avgHrv }) {
             metricSpec = .hrv(r?.value)
@@ -962,7 +1026,7 @@ private struct CuerpoLanding: View {
         let r = resolveMeasured { $0.restingHr.map(Double.init) }
         let fromApple = r?.fromApple == true
         return statColumn("Resting HR", value: r.map { "\(Int($0.value.rounded()))" }, unit: String(localized: "bpm"),
-                          color: theme.dataHeart,
+                          color: MetricIdentity.identity(forKey: "rhr").hue,
                           fromApple: fromApple,
                           spark: windowedSpark { $0.restingHr.map(Double.init) }) {
             metricSpec = .restingHR(r.map { Int($0.value.rounded()) })
@@ -973,7 +1037,7 @@ private struct CuerpoLanding: View {
         let r = resolveMeasured { $0.spo2Pct }
         let fromApple = r?.fromApple == true
         return statColumn("Blood Oxygen", value: r.map { String(format: "%.0f", $0.value) }, unit: "%",
-                          color: theme.dataSpO2,
+                          color: MetricIdentity.identity(forKey: "spo2").hue,
                           fromApple: fromApple,
                           spark: windowedSpark { $0.spo2Pct }) {
             metricSpec = .spo2(r?.value)
@@ -986,7 +1050,7 @@ private struct CuerpoLanding: View {
         // dashboard series — its own detail has no period trend either (FER-253). A daily mean-HR series
         // doesn't exist in `displayDays`, so the honest landing read is the number alone. (FER-566)
         return statColumn("Heart Rate", value: avg.map { "\($0)" }, unit: String(localized: "bpm"),
-                          color: theme.dataHeart,
+                          color: MetricIdentity.identity(forKey: "heart_rate").hue,
                           legend: "intraday, no daily series") {
             metricSpec = .heartRate(avg)
         }
@@ -996,7 +1060,7 @@ private struct CuerpoLanding: View {
         let r = resolveMeasured { $0.respRateBpm }
         let fromApple = r?.fromApple == true
         return statColumn("Respiratory", value: r.map { String(format: "%.1f", $0.value) }, unit: String(localized: "rpm"),
-                          color: theme.dataSpO2,
+                          color: MetricIdentity.identity(forKey: "resp_rate").hue,
                           fromApple: fromApple,
                           spark: windowedSpark { $0.respRateBpm }) {
             metricSpec = .respiratory(r?.value)
@@ -1007,7 +1071,7 @@ private struct CuerpoLanding: View {
         let r = resolveMeasured { $0.skinTempDevC }
         let fromApple = r?.fromApple == true
         return statColumn("Skin temp", value: r.map { String(format: "%+.1f", $0.value) }, unit: "°C",
-                          color: theme.dataStrain,
+                          color: MetricIdentity.identity(forKey: "skin_temp").hue,
                           fromApple: fromApple,
                           spark: windowedSpark { $0.skinTempDevC }) {
             // Opens the rich light Detalle de Temperatura de la piel (FER-256) — built fresh from the
@@ -1021,14 +1085,16 @@ private struct CuerpoLanding: View {
         let steps = freshSteps
         let fromApple = steps != nil
         return statColumn("Steps", value: steps.map { intString(Double($0)) },
-                          color: theme.dataSteps,
+                          color: MetricIdentity.identity(forKey: "steps").hue,
                           fromApple: fromApple,
                           spark: windowedSpark { $0.steps.map(Double.init) }) {
             metricSpec = .steps(steps)
         }
     }
 
-    /// «Entrenamientos» — the recent-session count tinted in the effort hue (`dataStrain`). No recent
+    /// «Entrenamientos» — the recent-session count tinted in the effort hue. Not a `MetricCatalog` key
+    /// (no `MetricIdentity` entry to route through), so it takes the strain family's hue directly —
+    /// the same `LiquidColor.ambar` `MetricIdentity.identity(forKey: "strain")` resolves to. No recent
     /// sessions → honest "—"; VoiceOver says it plainly, not "dash". (FER-259)
     @ViewBuilder private var workoutsStat: some View {
         let n = recentWorkoutCount
@@ -1036,7 +1102,7 @@ private struct CuerpoLanding: View {
         // the tile you tap and the screen you land on always show the same count (the «this week» legend
         // was a third, different window that read as a contradiction). (FER — unify to 7d trailing)
         let col = statColumn("Workouts · 7d", value: n > 0 ? "\(n)" : nil,
-                             color: theme.dataStrain) {
+                             color: LiquidColor.ambar) {
             showWorkouts = true
         }
         if n > 0 { col } else { col.accessibilityLabel(Text("no workouts yet")) }
@@ -1049,7 +1115,7 @@ private struct CuerpoLanding: View {
     private var physicalAgeStat: some View {
         let snap = fitnessAge
         let estimate = snap?.readiness.confidence == .estimate
-        let color = snap?.result.map(physicalAgeColor) ?? theme.inkTertiary
+        let color = snap?.result.map(physicalAgeColor) ?? LiquidColor.tinta500
         return statColumn("Physical age",
                           value: snap?.result.map { "\(Int($0.fitnessAge.rounded()))" },
                           color: color,
@@ -1060,11 +1126,12 @@ private struct CuerpoLanding: View {
 
     /// Direction hue: younger → recovery green, older → warning amber, even → ink. The ±0.5-yr
     /// deadband lives on `FitnessAgeResult.direction` (StrandAnalytics) so the row and the sheet agree.
+    /// Physical age is NOT metric identity (FER-100 spec) — it keeps its DIRECTIONAL color by delta.
     private func physicalAgeColor(_ result: FitnessAgeResult) -> Color {
         switch result.direction {
-        case .younger: return theme.dataRecovery
-        case .older:   return theme.warning
-        case .even:    return theme.ink
+        case .younger: return LiquidColor.verdePrimario
+        case .older:   return LiquidColor.atencion
+        case .even:    return LiquidColor.tinta900
         }
     }
 
@@ -1100,7 +1167,9 @@ private struct CuerpoLanding: View {
     /// «vs your N» legend; opens the longevity detail (the honest checklist even with no reading).
     private var bodyAgeStat: some View {
         let r = vitalityResult
-        let color = r.map { BodyAgeSheet.tint(forDelta: $0.deltaYears, theme: theme) } ?? theme.inkTertiary
+        // NOT metric identity (FER-100 spec) — DIRECTIONAL by delta, via the sheet's OWN Liquid ladder
+        // (`BodyAgeSheet.tintLiquid`) so the tile and the detail it opens never disagree on a color.
+        let color = r.map { BodyAgeSheet.tintLiquid(forDelta: $0.deltaYears) } ?? LiquidColor.tinta500
         // «Estimate» chip when a heaviest factor (HRV/RHR) is missing — same mechanism as Physical age
         // (FER-643), so the two longevity stats read consistently.
         return statColumn("Body age", value: r.map { "\(Int($0.bodyAge.rounded()))" },
@@ -1115,8 +1184,10 @@ private struct CuerpoLanding: View {
     /// carried by the «ml/kg·min» legend so the numeral stays clean. «—» + no chip when unread.
     private var vo2maxStat: some View {
         let v = latestAppleVO2max
+        // Neutral ink on purpose (MetricIdentity D1, FER-108) — no family assigned yet, so it borrows
+        // no other metric's color. Fixes the paper's `theme.dataSpO2` (blue) reuse bug.
         return statColumn("VO₂ Max", value: v.map { String(format: "%.0f", $0) },
-                          color: theme.dataSpO2,
+                          color: MetricIdentity.identity(forKey: "vo2max").hue,
                           legend: "ml/kg·min", fromApple: v != nil) {
             metricSpec = .vo2max(value: v, age: model.profile.age, sex: model.profile.sex)
         }
@@ -1130,42 +1201,47 @@ private struct CuerpoLanding: View {
         let notConnected = health.auth != .authorized && health.auth != .unavailable
         if notConnected && freshSteps == nil {
             Button { darkSheet = .screen(.dataSources) } label: {
-                HStack(spacing: 8) {
-                    StrandIcon.heart.image.font(StrandFont.glyph(.chevron)).foregroundStyle(theme.dataSpO2)
+                HStack(spacing: LiquidSpace.s200) {
+                    LiquidIcon(.corazon, size: 17, color: LiquidColor.azul)
                     Text("Connect Apple Health to fill steps and more.")
-                        .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-                    Spacer(minLength: 6)
-                    StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
+                        .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta700)
+                    Spacer(minLength: LiquidSpace.s150)
+                    LiquidIcon(.chevron, size: 12, color: LiquidColor.tinta500)
                 }
+                .padding(.horizontal, LiquidSpace.s400)
+                .padding(.vertical, LiquidSpace.s300)
+                .background(LiquidColor.azul.opacity(0.07), // token-exempt: nudge tint, preview-approved
+                           in: RoundedRectangle(cornerRadius: LiquidRadius.tarjeta, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: LiquidRadius.tarjeta, style: .continuous)
+                    .strokeBorder(LiquidColor.azul.opacity(0.14), lineWidth: 1))  // token-exempt: nudge border, preview-approved
                 .contentShape(Rectangle())
             }
-            .buttonStyle(ControlPressStyle())
+            .buttonStyle(.liquidPress)
         }
     }
 
     private var footerActions: some View {
         VStack(spacing: 0) {
             actionRow("Compare", icon: "arrow.left.arrow.right") { showCompare = true }
-            Divider().overlay(theme.hairline).padding(.leading, 46)
+            LiquidCapilar(eje: .horizontal).padding(.leading, 46)
             actionRow("See all metrics", icon: "square.grid.2x2") { showExplore = true }
         }
-        .instrumentoCard(.card, theme: theme)
+        .liquidGlass(.superficieSolida)
     }
 
     private func actionRow(_ label: LocalizedStringKey, icon: String, open: @escaping () -> Void) -> some View {
         Button(action: open) {
-            HStack(spacing: 12) {
-                Image(systemName: icon).font(StrandFont.glyph(.inline, weight: .medium))
-                    .foregroundStyle(theme.inkSecondary).frame(width: 22)
-                Text(label).font(StrandFont.body).foregroundStyle(theme.ink)
-                Spacer(minLength: 8)
-                StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold))
-                    .foregroundStyle(theme.inkTertiary)
+            HStack(spacing: LiquidSpace.s300) {
+                Image(systemName: icon).font(LiquidType.iconSF(size: 17))
+                    .foregroundStyle(LiquidColor.tinta700).frame(width: 22)
+                Text(label).font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
+                Spacer(minLength: LiquidSpace.s200)
+                LiquidIcon(.chevron, size: 12, color: LiquidColor.tinta500)
             }
-            .padding(.horizontal, 16).padding(.vertical, 15)
+            .padding(.horizontal, LiquidSpace.s400).padding(.vertical, 15)
             .contentShape(Rectangle())
         }
-        .buttonStyle(MetricRowButtonStyle(pressedFill: theme.ink.opacity(0.05))) // token-exempt: press-fill <0.10
+        .buttonStyle(.liquidPress)
     }
 
     // MARK: - Activity insight (FER-139) — nested under Activity, NOT a card-in-card (Instrumento rule 3)
@@ -1176,20 +1252,19 @@ private struct CuerpoLanding: View {
     /// hides. Lives under a hairline inside the Activity card; its own chevron jumps to the detail.
     private var activityInsight: some View {
         Button { showActivityCost = true } label: {
-            VStack(alignment: .leading, spacing: 11) {
-                HStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s150) {
+                HStack(spacing: LiquidSpace.s200) {
                     Text("How you wake after each sport")
-                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                        .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
                     // Provisional placement (likely Entrenar / Patrones later). (FER-566)
-                    Spacer(minLength: 8)
+                    Spacer(minLength: LiquidSpace.s200)
                     if activityCosts.isEmpty {
-                        Text("Gathering data").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                        Text("Gathering data").font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
                     }
-                    StrandIcon.disclosure.image
-                        .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                    LiquidIcon(.chevron, size: 12, color: LiquidColor.tinta500)
                 }
                 if !activityCosts.isEmpty {
-                    VStack(spacing: 8) {
+                    VStack(spacing: LiquidSpace.s150) {
                         ForEach(Array(activityCosts.prefix(3).enumerated()), id: \.offset) { _, c in
                             activityCostRow(c)
                         }
@@ -1199,25 +1274,30 @@ private struct CuerpoLanding: View {
             .frame(maxWidth: .infinity)
             .contentShape(Rectangle())
         }
-        .buttonStyle(MetricRowButtonStyle(pressedFill: theme.ink.opacity(0.05))) // token-exempt: press-fill <0.10
+        .buttonStyle(.liquidPress)
         .accessibilityElement(children: .combine)
         .accessibilityHint("Opens the per-sport detail.")
     }
 
     /// One summary row inside the block: sport name (ink) · its direction/points. Colour on the datum:
-    /// the gap is `dataStrain` when there's a real link, quiet ink when it's under the engine's noise
-    /// floor (then it reads «no clear link»). Localized; "pts" stays plural (a reported gap is ≥ 3).
+    /// the gap takes the strain family's hue (`LiquidColor.ambar`, not routed through `MetricIdentity` —
+    /// this delta isn't a catalog metric) when there's a real link, quiet ink when it's under the
+    /// engine's noise floor (then it reads «no clear link»). Same single-tone rule the paper had — NOT
+    /// re-colored by the sign of the delta: `ActivityCost.delta`'s good/bad direction depends on which
+    /// underlying signal moved, and guessing it here risked telling the wrong story (FER-100 — kept
+    /// conservative rather than invent a new positive/negative semantic). Localized; "pts" stays plural
+    /// (a reported gap is ≥ 3).
     private func activityCostRow(_ c: ActivityCost) -> some View {
         let meaningful = abs(c.delta) >= ActivityCostEngine.barelyMovesPoints
         let pts = Int(abs(c.delta).rounded())
         let summary: LocalizedStringKey = !meaningful ? "no clear link"
             : (c.delta >= 0 ? "\(pts) pts lower" : "\(pts) pts higher")
-        return HStack(spacing: 8) {
-            Text(verbatim: c.sport).font(StrandFont.body).foregroundStyle(theme.ink)
-            Spacer(minLength: 8)
+        return HStack(spacing: LiquidSpace.s200) {
+            Text(verbatim: c.sport).font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
+            Spacer(minLength: LiquidSpace.s200)
             Text(summary)
-                .font(StrandFont.subhead)
-                .foregroundStyle(meaningful ? theme.dataStrain : theme.inkTertiary)
+                .font(LiquidType.captionLectura)
+                .foregroundStyle(meaningful ? LiquidColor.ambar : LiquidColor.tinta500)
                 .multilineTextAlignment(.trailing)
         }
     }
@@ -1594,12 +1674,6 @@ private struct CuerpoLanding: View {
         return Int((v.reduce(0, +) / Double(v.count)).rounded())
     }
 
-    /// Stress value color by band 0–3 (low → verdict, medium → warning, high → critical). Reuses
-    /// `StressBand` (StressView), matching Today's stress tile semantics.
-    private func stressDataColor(_ score: Double) -> Color {
-        StressBand(score: score).dataColor(theme)
-    }
-
     /// La línea bajo el héroe cuando todavía no hay veredicto que decir. FER-119 le quitó
     /// el parámetro `score`: el puntaje 0-100 murió con la banda, y su rama era inalcanzable.
     private func recoverySubtitle(calibrating: Int?) -> LocalizedStringKey {
@@ -1614,6 +1688,67 @@ private struct CuerpoLanding: View {
         MetricCatalog.all.first { $0.key == key }
     }
 
+}
+
+// MARK: - Liquid lente teñida (FER-100 — the Preparación hero's bespoke card)
+//
+// A tinted-lens card, purpose-built for this landing (not a general DS piece — a single call site).
+// Radius `LiquidRadius.hoja` (the biggest of the five canonical radii — this is the one dominant
+// element on the screen, Instrumento rule 1 carried into Liquid). Fill is a diagonal gradient of the
+// verdict's own tone darkened via `LiquidColor.tonoCampo` (the SAME AA-safe darkening the detail
+// screens' tinted field uses), OR `LiquidColor.papelGradient` when `tono` is nil — the apagado state
+// (never a tinta gradient, never green without a verdict). One specular hairline dares it to read as
+// glass, not flat color; the shadow glows the tone (`LiquidElevation.e2`) or sits quiet (`e1`) apagado.
+private extension View {
+    func liquidLenteTenida(tono: Color?) -> some View {
+        modifier(LiquidLenteTenidaModifier(tono: tono))
+    }
+}
+
+private struct LiquidLenteTenidaModifier: ViewModifier {
+    let tono: Color?
+
+    private var shape: RoundedRectangle {
+        RoundedRectangle(cornerRadius: LiquidRadius.hoja, style: .continuous)
+    }
+
+    func body(content: Content) -> some View {
+        content
+            .padding(.horizontal, LiquidSpace.s550)
+            .padding(.vertical, LiquidSpace.s400)
+            .background(fondo)
+            .overlay { especularSuperior }
+            .overlay { shape.strokeBorder(LiquidColor.vidrioRealcePastilla, lineWidth: 1) }
+            .clipShape(shape)
+            .liquidShadow(sombra, silhouette: shape)
+    }
+
+    @ViewBuilder private var fondo: some View {
+        if let tono {
+            LinearGradient(colors: [tono, LiquidColor.tonoCampo(tono)],
+                           startPoint: .topLeading, endPoint: .bottomTrailing)
+        } else {
+            LiquidColor.papelGradient
+        }
+    }
+
+    /// El especular del canto superior: dice dónde empieza el material sin brillar (misma alfa de
+    /// referencia que `LiquidCampoMetrica`, `LiquidCampo.alfaEspecularSuperior`).
+    private var especularSuperior: some View {
+        VStack(spacing: 0) {
+            LinearGradient(colors: [.white.opacity(LiquidCampo.alfaEspecularSuperior), .clear],
+                           startPoint: .top, endPoint: .bottom)
+                .frame(height: 40)
+            Spacer(minLength: 0)
+        }
+        .clipShape(shape)
+        .allowsHitTesting(false)
+    }
+
+    private var sombra: [LiquidShadowLayer] {
+        if let tono { return LiquidElevation.e2(tone: tono) }
+        return LiquidElevation.e1
+    }
 }
 
 // MARK: - Preview

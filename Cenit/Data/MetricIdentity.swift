@@ -41,9 +41,10 @@ enum MetricIdentity {
         case "hrv":
             return (LiquidColor.cian, .onda)
 
-        // Heart rate → rosa · corazón. The sheet's «heart_rate» (intraday HR) family; the catalog's
-        // resting / average / max HR all belong to it.
-        case "rhr", "avg_hr", "max_hr":
+        // Heart rate → rosa · corazón. Intraday HR (`heart_rate`) and the catalog's resting / average
+        // / max HR all belong to the one family — the Tendencias landing shows an intraday «Heart Rate»
+        // column, so `heart_rate` is mapped here explicitly, not left to the neutral fallback (FER-100).
+        case "heart_rate", "rhr", "avg_hr", "max_hr":
             return (LiquidColor.rosa, .corazon)
 
         // Effort (strain) → ámbar · llama.
