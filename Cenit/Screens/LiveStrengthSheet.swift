@@ -2098,13 +2098,10 @@ struct LiveStrengthSheet: View {
     /// Never shows KG/REPS (a done exercise has nothing left to capture) — the exercise's own set count
     /// and, when the day earned one, the applied raise are the only numbers here.
     ///
-    /// Copy deliberately NOT literal (revisión ronda 1, hallazgo menor): the prototype's title is
-    /// «‹ejercicio›, hecha» (name + «, hecha»), which agrees in gender with the exercise's own noun.
-    /// «Sentadilla» is feminine («hecha») but most exercise names in the catalog are masculine
-    /// («Press banca hecho», not «hecha») — the prototype's fixed suffix breaks on its own catalog.
-    /// «Ejercicio hecho: ‹nombre›» sidesteps the agreement entirely, same principle as
-    /// `copy-no-supone-genero` elsewhere in this codebase. Flagged for the owner to confirm as an
-    /// intentional deviation, not silently swapped.
+    /// «Hecho · ‹nombre›» (FER-150, elegido por el dueño sobre maqueta): el ritmo del prototipo sin
+    /// su problema de género — el literal «‹ejercicio›, hecha» concuerda con el sustantivo y el
+    /// catálogo es mixto («Press banca, hecha» rompe). «Hecho» aquí califica al acto, no al nombre,
+    /// mismo principio `copy-no-supone-genero` del resto del app.
     @ViewBuilder private func focusDonePhase(_ ei: Int) -> some View {
         let run = session.runs[ei]
         let doneCount = run.sets.filter { $0.kind == .work && $0.done }.count
@@ -2122,7 +2119,7 @@ struct LiveStrengthSheet: View {
             // explícito del botón, así que el hueco real doblaba `focusRegisterTop`/`sectionGap`
             // (28) a 36. `spacing: 0` + padding explícito por hijo corrige el margen al token real.
             VStack(spacing: 0) {
-                (Text("Exercise done") + Text(verbatim: ": \(run.name)"))
+                (Text("Done heading") + Text(verbatim: " · \(run.name)"))
                     .font(InstrumentoType.grotesk(EntrenarMetrics.focusTitle, weight: .bold))
                     .foregroundStyle(theme.ink).multilineTextAlignment(.center)
                 if let raise, !raise.waiting {
