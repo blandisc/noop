@@ -44,8 +44,8 @@ final class FuentesDatosEscaleraUnicaTests: XCTestCase {
 
     // MARK: - Identidad Liquid alcanzable desde la clave de ingesta (probado por mutación)
 
-    /// Si el puente se rompe, `resting_hr` cae al fallback `verdePrimario` y esto truena. Ese es el
-    /// bug que la guarda existe para atrapar.
+    /// Si el puente se rompe, `resting_hr` cae al fallback neutro (`tinta500`) en vez del rosa de
+    /// corazón, y esto truena. Ese es el bug que la guarda existe para atrapar.
     func testIdentidadDesdeClaveDeIngesta() {
         let fc = MetricIdentity.identity(forIngestKey: "resting_hr")
         XCTAssertEqual(fc.hue, LiquidColor.rosa, "FC en reposo es rosa de corazón, no el verde de fallback")
