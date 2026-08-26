@@ -1,286 +1,22 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "%@ trend" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ trend"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "tendencia de %@"
-          }
-        }
-      }
+    "\n" : {
+
     },
-    "Change" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Change"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cambio"
-          }
-        }
-      }
-    },
-    "The daily series of this metric, in its unit; the number above is the most recent day." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The daily series of this metric, in its unit; the number above is the most recent day."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La serie diaria de esta métrica, en su unidad; el número de arriba es el día más reciente."
-          }
-        }
-      }
-    },
-    "The number is the most recent calculated value; the chart traces the daily values across the range." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The number is the most recent calculated value; the chart traces the daily values across the range."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El número es el valor calculado más reciente; la gráfica traza los diarios del rango."
-          }
-        }
-      }
-    },
-    "The number is the most recent value in this series; the chart traces the daily values across the range." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The number is the most recent value in this series; the chart traces the daily values across the range."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El número es el valor más reciente de esta serie; la gráfica traza los diarios del rango."
-          }
-        }
-      }
-    },
-    "compare.caption.readings" : {
+    " No clear relationship: they move largely independently." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$lld %2$@ · %3$@"
+            "value" : " No clear relationship: they move largely independently."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$lld %2$@ · %3$@"
-          }
-        }
-      }
-    },
-    "compare.caption.widened" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ · sparse widened"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ · ventana ampliada"
-          }
-        }
-      }
-    },
-    "compare.overlay.caption" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Each line min–max normalized within %1$@ · drag to read values"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cada línea normalizada min–max dentro de %1$@ · arrastra para leer valores"
-          }
-        }
-      }
-    },
-    "compare.overlay.caption.widened" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Min–max normalized · sparse series widened past %1$@ · drag to read values"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Normalizado min–max · serie escasa ampliada más allá de %1$@ · arrastra para leer valores"
-          }
-        }
-      }
-    },
-    "compare.chart.a11y" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Comparing %1$@"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Comparando %1$@"
-          }
-        }
-      }
-    },
-    "compare.overlay.count" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld series"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld series"
-          }
-        }
-      }
-    },
-    "compare.pairs.count" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld pairs"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld pares"
-          }
-        }
-      }
-    },
-    "compare.pair.footer" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$lld overlapping days · %2$@ correlation"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$lld días en común · correlación %2$@"
-          }
-        }
-      }
-    },
-    "compare.pair.a11y" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ versus %2$@, r equals %3$@, %4$lld days"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ frente a %2$@, r es igual a %3$@, %4$lld días"
-          }
-        }
-      }
-    },
-    "At most 4 metrics." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "At most 4 metrics."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Máximo 4 métricas."
-          }
-        }
-      }
-    },
-    "Pick 2–4 metrics to overlay." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pick 2–4 metrics to overlay."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Elige de 2 a 4 métricas para superponer."
-          }
-        }
-      }
-    },
-    "Add or remove metrics" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Add or remove metrics"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Agregar o quitar métricas"
+            "value" : " Sin relación clara, se mueven de forma independiente."
           }
         }
       }
@@ -298,26 +34,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : " Cuando el %1$@ sube, %2$@ %3$@, un vínculo %5$@ %4$@."
-          }
-        }
-      }
-    },
-    "\n" : {
-
-    },
-    " No clear relationship: they move largely independently." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : " No clear relationship: they move largely independently."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : " Sin relación clara, se mueven de forma independiente."
           }
         }
       }
@@ -1201,6 +917,22 @@
         }
       }
     },
+    "%@ trend" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ trend"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tendencia de %@"
+          }
+        }
+      }
+    },
     "%@ versus %@, r equals %@, %lld days" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -1372,6 +1104,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ avisos en la muñeca"
+          }
+        }
+      }
+    },
+    "%@ years" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ years"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ años"
           }
         }
       }
@@ -3097,53 +2846,36 @@
         }
       }
     },
-    "%lld of 4 nights needed" : {
+    "%lld of 7 days so far." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld of 4 nights needed"
+            "value" : "%lld of 7 days so far."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld de 4 noches necesarias"
+            "value" : "%lld de 7 días hasta ahora."
           }
         }
       }
     },
-    "%lld of 7 days" : {
+    "%lld of 7 nights so far." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld of 7 days"
+            "value" : "%lld of 7 nights so far."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld de 7 días"
-          }
-        }
-      }
-    },
-    "%lld of 7 nights" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld of 7 nights"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld de 7 noches"
+            "value" : "%lld de 7 noches hasta ahora."
           }
         }
       }
@@ -4071,6 +3803,23 @@
         }
       }
     },
+    "%lld years" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld years"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld años"
+          }
+        }
+      }
+    },
     "%lld years above your %lld" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4088,36 +3837,19 @@
         }
       }
     },
-    "%lld years above your age of %lld." : {
+    "%lld years older than your age of %lld." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld years above your age of %lld."
+            "value" : "%lld years older than your age of %lld."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld años por encima de tu edad de %lld."
-          }
-        }
-      }
-    },
-    "%lld years older than your age (%lld)" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld years older than your age (%lld)"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld años mayor que tu edad (%lld)"
+            "value" : "%lld años mayor que tu edad de %lld."
           }
         }
       }
@@ -4135,23 +3867,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld años más joven que tus %lld"
-          }
-        }
-      }
-    },
-    "%lld years younger than your age (%lld)" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld years younger than your age (%lld)"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld años más joven que tu edad (%lld)"
           }
         }
       }
@@ -5461,6 +5176,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sondas de protocolo 5/MG"
+          }
+        }
+      }
+    },
+    "50 = typical" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "50 = typical"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "50 = típico"
           }
         }
       }
@@ -7373,6 +7104,23 @@
         }
       }
     },
+    "Add or remove metrics" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add or remove metrics"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Agregar o quitar métricas"
+          }
+        }
+      }
+    },
     "Add set" : {
       "localizations" : {
         "en" : {
@@ -7481,6 +7229,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Agregar entrenamiento"
+          }
+        }
+      }
+    },
+    "Add your age and sex." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add your age and sex."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Agrega tu edad y sexo."
           }
         }
       }
@@ -8496,6 +8260,40 @@
         }
       }
     },
+    "Approximately %lld percent less over 90 days" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Approximately %lld percent less over 90 days"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aproximadamente %lld por ciento menos en 90 días"
+          }
+        }
+      }
+    },
+    "Approximately %lld percent more over 90 days" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Approximately %lld percent more over 90 days"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aproximadamente %lld por ciento más en 90 días"
+          }
+        }
+      }
+    },
     "Around your usual" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -8662,6 +8460,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "En casa"
+          }
+        }
+      }
+    },
+    "At most 4 metrics." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "At most 4 metrics."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Máximo 4 métricas."
           }
         }
       }
@@ -9935,6 +9750,40 @@
         }
       }
     },
+    "Best volume in one session" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Best volume in one session"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mejor volumen en una sesión"
+          }
+        }
+      }
+    },
+    "Best weight" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Best weight"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mejor peso"
+          }
+        }
+      }
+    },
     "Best: %@" : {
 
     },
@@ -11143,74 +10992,6 @@
         }
       }
     },
-    "Calibrating your base · %lld of 7 days. I need a few more days to show your 7-day average, your normal range and the trend." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Calibrating your base · %lld of 7 days. I need a few more days to show your 7-day average, your normal range and the trend."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Calibrando tu base · %lld de 7 días. Necesito unos días más para mostrar tu promedio de 7 días, tu rango normal y la tendencia."
-          }
-        }
-      }
-    },
-    "Calibrating your base · %lld of 7 nights. I need a few more nights to show your 7-day average, your normal range and the trend." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Calibrating your base · %lld of 7 nights. I need a few more nights to show your 7-day average, your normal range and the trend."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Calibrando tu base · %lld de 7 noches. Necesito unas noches más para mostrar tu promedio de 7 días, tu rango normal y la tendencia."
-          }
-        }
-      }
-    },
-    "Calibrating · %lld of 7 days" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Calibrating · %lld of 7 days"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Calibrando · %lld de 7 días"
-          }
-        }
-      }
-    },
-    "Calibrating · %lld of 7 nights" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Calibrating · %lld of 7 nights"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Calibrando · %lld de 7 noches"
-          }
-        }
-      }
-    },
     "Calibrating baseline" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -11245,6 +11026,40 @@
         }
       }
     },
+    "Calibrating your base · %lld of 7 days. I need a few more days to show your 7-day average, your normal range and the trend." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calibrating your base · %lld of 7 days. I need a few more days to show your 7-day average, your normal range and the trend."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calibrando tu base · %lld de 7 días. Necesito unos días más para mostrar tu promedio de 7 días, tu rango normal y la tendencia."
+          }
+        }
+      }
+    },
+    "Calibrating your base · %lld of 7 nights. I need a few more nights to show your 7-day average, your normal range and the trend." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calibrating your base · %lld of 7 nights. I need a few more nights to show your 7-day average, your normal range and the trend."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calibrando tu base · %lld de 7 noches. Necesito unas noches más para mostrar tu promedio de 7 días, tu rango normal y la tendencia."
+          }
+        }
+      }
+    },
     "Calibrating your baseline" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -11258,6 +11073,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Calibrando tu base"
+          }
+        }
+      }
+    },
+    "Calibrating · %lld of 7 days" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calibrating · %lld of 7 days"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calibrando · %lld de 7 días"
+          }
+        }
+      }
+    },
+    "Calibrating · %lld of 7 nights" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calibrating · %lld of 7 nights"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calibrando · %lld de 7 noches"
           }
         }
       }
@@ -11613,6 +11462,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Categoría"
+          }
+        }
+      }
+    },
+    "Change" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cambio"
           }
         }
       }
@@ -12591,6 +12456,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Conecta Apple Salud para llenar pasos y más."
+          }
+        }
+      }
+    },
+    "Connect Apple Health to include them." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect Apple Health to include them."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conecta Apple Salud para incluirlos."
           }
         }
       }
@@ -13653,6 +13535,23 @@
         }
       }
     },
+    "Cénit can't work out your physical age yet. The list below shows what it still needs." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cénit can't work out your physical age yet. The list below shows what it still needs."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cénit aún no puede calcular tu edad física. La lista de abajo muestra lo que le falta."
+          }
+        }
+      }
+    },
     "Cénit couldn't open your database." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -13666,6 +13565,39 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cénit no pudo abrir tu base de datos."
+          }
+        }
+      }
+    },
+    "Cénit needs about 6 sessions of the same sport before it can show how you wake afterward. Keep logging your workouts and this fills in on its own." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cénit needs about 6 sessions of the same sport before it can show how you wake afterward. Keep logging your workouts and this fills in on its own."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cénit necesita unas 6 sesiones de un mismo deporte antes de poder mostrar cómo amaneces. Sigue registrando tus entrenamientos y esto se completa solo."
+          }
+        }
+      }
+    },
+    "Cénit needs at least 3 signals to work this out without guessing. So far it has %lld." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cénit needs at least 3 signals to work this out without guessing. So far it has %lld."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cénit necesita al menos 3 señales para calcularla sin adivinar. Por ahora lleva %lld."
           }
         }
       }
@@ -15740,57 +15672,6 @@
         }
       }
     },
-    "TREND · ESTIMATED 1RM · 90 DAYS" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "TREND · ESTIMATED 1RM · 90 DAYS"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "TENDENCIA · 1RM ESTIMADO · 90 DÍAS"
-          }
-        }
-      }
-    },
-    "Approximately %lld percent more over 90 days" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Approximately %lld percent more over 90 days"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aproximadamente %lld por ciento más en 90 días"
-          }
-        }
-      }
-    },
-    "Approximately %lld percent less over 90 days" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Approximately %lld percent less over 90 days"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aproximadamente %lld por ciento menos en 90 días"
-          }
-        }
-      }
-    },
     "EXERCISE MEDIA" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -16703,13 +16584,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Estimate"
+            "value" : "estimate"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Estimado"
+            "value" : "estimado"
           }
         }
       }
@@ -17743,6 +17624,17 @@
         }
       }
     },
+    "Fitness age" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edad fitness"
+          }
+        }
+      }
+    },
     "Fitness category" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -17756,17 +17648,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Categoría de forma"
-          }
-        }
-      }
-    },
-    "Fitness age" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Edad fitness"
           }
         }
       }
@@ -18772,23 +18653,6 @@
         }
       }
     },
-    "HRV history" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "HRV history"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Historial de VFC"
-          }
-        }
-      }
-    },
     "HRV (RMSSD)" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -18870,6 +18734,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "La VFC cayó muy por debajo de tu línea base, lo que apunta a estrés o fatiga elevados. Baja el ritmo y dale a tu cuerpo tiempo de recuperarse."
+          }
+        }
+      }
+    },
+    "HRV history" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "HRV history"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Historial de VFC"
           }
         }
       }
@@ -20228,19 +20109,19 @@
         }
       }
     },
-    "How your Charge tends to look the morning after each sport, vs your rest days. Observed in your history, not a cause." : {
+    "How your Recovery tends to look the morning after each sport, vs your rest days. Observed in your history, not a cause." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "How your Charge tends to look the morning after each sport, vs your rest days. Observed in your history, not a cause."
+            "value" : "How your Recovery tends to look the morning after each sport, vs your rest days. Observed in your history, not a cause."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cómo suele verse tu Carga la mañana después de cada deporte, vs tus días de descanso. Observado en tu historial, no una causa."
+            "value" : "Cómo suele verse tu Recuperación la mañana después de cada deporte, vs tus días de descanso. Observado en tu historial, no una causa."
           }
         }
       }
@@ -20469,23 +20350,6 @@
     "I need at least 3 signals to work this out without guessing. You have %@." : {
       "comment" : "A message in the hero when the Body Age reading is not yet available.",
       "isCommentAutoGenerated" : true
-    },
-    "I need at least 3 signals to work this out without guessing. You have %lld." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "I need at least 3 signals to work this out without guessing. You have %lld."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Necesito al menos 3 señales para calcularla sin adivinar. Llevas %lld."
-          }
-        }
-      }
     },
     "I need several weeks of nights with your band on to read the rhythm of your temperature. Still watching." : {
       "localizations" : {
@@ -25626,6 +25490,40 @@
         }
       }
     },
+    "Needs a few more nights." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Needs a few more nights."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Faltan algunas noches."
+          }
+        }
+      }
+    },
+    "Needs a few more valid nights." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Needs a few more valid nights."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Faltan algunas noches válidas."
+          }
+        }
+      }
+    },
     "Needs about 2 weeks of recorded strain" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -30491,6 +30389,23 @@
         }
       }
     },
+    "Pick 2–4 metrics to overlay." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pick 2–4 metrics to overlay."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elige de 2 a 4 métricas para superponer."
+          }
+        }
+      }
+    },
     "Pick 2–4 to overlay." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -30966,6 +30881,23 @@
         }
       }
     },
+    "Progression cycle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Progression cycle"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ciclo de progresión"
+          }
+        }
+      }
+    },
     "Progression that earns itself" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -31349,74 +31281,6 @@
         }
       }
     },
-    "Records" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Records"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Récords"
-          }
-        }
-      }
-    },
-    "Best weight" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Best weight"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mejor peso"
-          }
-        }
-      }
-    },
-    "Best volume in one session" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Best volume in one session"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mejor volumen en una sesión"
-          }
-        }
-      }
-    },
-    "Progression cycle" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Progression cycle"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ciclo de progresión"
-          }
-        }
-      }
-    },
     "RECOVERY · BASELINE" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -31628,23 +31492,6 @@
         }
       }
     },
-    "Raise cycles" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Raise cycles"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ciclos de subida"
-          }
-        }
-      }
-    },
     "Raise %@ today" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -31658,6 +31505,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sube %@ hoy"
+          }
+        }
+      }
+    },
+    "Raise cycles" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Raise cycles"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ciclos de subida"
           }
         }
       }
@@ -32377,6 +32241,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Grabando"
+          }
+        }
+      }
+    },
+    "Records" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Records"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Récords"
           }
         }
       }
@@ -33666,23 +33547,6 @@
         }
       }
     },
-    "Resting heart rate history" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Resting heart rate history"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Historial de FC en reposo"
-          }
-        }
-      }
-    },
     "Resting HR is elevated and HRV is below your baseline: both classic signs of high activation. Prioritise rest, hydration and an easy day." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -33781,6 +33645,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "La frecuencia cardiaca en reposo y la VFC están en tu línea base o por debajo, estrés fisiológico bajo. Estás en un estado tranquilo y recuperado."
+          }
+        }
+      }
+    },
+    "Resting heart rate history" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resting heart rate history"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Historial de FC en reposo"
           }
         }
       }
@@ -34156,23 +34037,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Justo en tu edad de %lld."
-          }
-        }
-      }
-    },
-    "Right at your chronological age (%lld)" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Right at your chronological age (%lld)"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Justo en tu edad cronológica (%lld)"
           }
         }
       }
@@ -35655,121 +35519,121 @@
         }
       }
     },
-    "Sessions like this are barely linked to any change in your next-day Charge (n=%lld)." : {
+    "Sessions like this are barely linked to any change in your next-day Recovery (n=%lld)." : {
       "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sessions like this are barely linked to any change in your next-day Charge (n=%lld)."
+            "value" : "Sessions like this are barely linked to any change in your next-day Recovery (n=%lld)."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Las sesiones de este deporte apenas se relacionan con un cambio en tu Charge del día siguiente (n=%lld)."
+            "value" : "Las sesiones de este deporte apenas se relacionan con un cambio en tu Recuperación del día siguiente (n=%lld)."
           }
         }
       }
     },
-    "Sessions like this are typically followed by a Charge about %lld points higher the next morning (n=%lld)." : {
+    "Sessions like this are typically followed by a Recovery about %lld points higher the next morning (n=%lld)." : {
       "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sessions like this are typically followed by a Charge about %lld points higher the next morning (n=%lld)."
+            "value" : "Sessions like this are typically followed by a Recovery about %lld points higher the next morning (n=%lld)."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Después de una sesión así, sueles amanecer con un Charge unos %lld puntos más arriba (n=%lld)."
+            "value" : "Después de una sesión así, sueles amanecer con una Recuperación unos %lld puntos más arriba (n=%lld)."
           }
         }
       }
     },
-    "Sessions like this are typically followed by a Charge about %lld points higher the next morning, climbing back in about %lld days (n=%lld)." : {
+    "Sessions like this are typically followed by a Recovery about %lld points higher the next morning, climbing back in about %lld days (n=%lld)." : {
       "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sessions like this are typically followed by a Charge about %lld points higher the next morning, climbing back in about %lld days (n=%lld)."
+            "value" : "Sessions like this are typically followed by a Recovery about %lld points higher the next morning, climbing back in about %lld days (n=%lld)."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Después de una sesión así, sueles amanecer con un Charge unos %lld puntos más arriba, y vuelves a tu nivel en unos %lld días (n=%lld)."
+            "value" : "Después de una sesión así, sueles amanecer con una Recuperación unos %lld puntos más arriba, y vuelves a tu nivel en unos %lld días (n=%lld)."
           }
         }
       }
     },
-    "Sessions like this are typically followed by a Charge about %lld points higher the next morning, climbing back in about 1 day (n=%lld)." : {
+    "Sessions like this are typically followed by a Recovery about %lld points higher the next morning, climbing back in about 1 day (n=%lld)." : {
       "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sessions like this are typically followed by a Charge about %lld points higher the next morning, climbing back in about 1 day (n=%lld)."
+            "value" : "Sessions like this are typically followed by a Recovery about %lld points higher the next morning, climbing back in about 1 day (n=%lld)."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Después de una sesión así, sueles amanecer con un Charge unos %lld puntos más arriba, y vuelves a tu nivel en un día (n=%lld)."
+            "value" : "Después de una sesión así, sueles amanecer con una Recuperación unos %lld puntos más arriba, y vuelves a tu nivel en un día (n=%lld)."
           }
         }
       }
     },
-    "Sessions like this are typically followed by a Charge about %lld points lower the next morning (n=%lld)." : {
+    "Sessions like this are typically followed by a Recovery about %lld points lower the next morning (n=%lld)." : {
       "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sessions like this are typically followed by a Charge about %lld points lower the next morning (n=%lld)."
+            "value" : "Sessions like this are typically followed by a Recovery about %lld points lower the next morning (n=%lld)."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Después de una sesión así, sueles amanecer con un Charge unos %lld puntos más abajo (n=%lld)."
+            "value" : "Después de una sesión así, sueles amanecer con una Recuperación unos %lld puntos más abajo (n=%lld)."
           }
         }
       }
     },
-    "Sessions like this are typically followed by a Charge about %lld points lower the next morning, climbing back in about %lld days (n=%lld)." : {
+    "Sessions like this are typically followed by a Recovery about %lld points lower the next morning, climbing back in about %lld days (n=%lld)." : {
       "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sessions like this are typically followed by a Charge about %lld points lower the next morning, climbing back in about %lld days (n=%lld)."
+            "value" : "Sessions like this are typically followed by a Recovery about %lld points lower the next morning, climbing back in about %lld days (n=%lld)."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Después de una sesión así, sueles amanecer con un Charge unos %lld puntos más abajo, y vuelves a tu nivel en unos %lld días (n=%lld)."
+            "value" : "Después de una sesión así, sueles amanecer con una Recuperación unos %lld puntos más abajo, y vuelves a tu nivel en unos %lld días (n=%lld)."
           }
         }
       }
     },
-    "Sessions like this are typically followed by a Charge about %lld points lower the next morning, climbing back in about 1 day (n=%lld)." : {
+    "Sessions like this are typically followed by a Recovery about %lld points lower the next morning, climbing back in about 1 day (n=%lld)." : {
       "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sessions like this are typically followed by a Charge about %lld points lower the next morning, climbing back in about 1 day (n=%lld)."
+            "value" : "Sessions like this are typically followed by a Recovery about %lld points lower the next morning, climbing back in about 1 day (n=%lld)."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Después de una sesión así, sueles amanecer con un Charge unos %lld puntos más abajo, y vuelves a tu nivel en un día (n=%lld)."
+            "value" : "Después de una sesión así, sueles amanecer con una Recuperación unos %lld puntos más abajo, y vuelves a tu nivel en un día (n=%lld)."
           }
         }
       }
@@ -37951,23 +37815,6 @@
         }
       }
     },
-    "Still gathering how you wake after each sport." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Still gathering how you wake after each sport."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aún estoy juntando cómo amaneces tras cada deporte."
-          }
-        }
-      }
-    },
     "Still learning how consistent your nightly warming is: keep wearing it to bed." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -38725,6 +38572,23 @@
         }
       }
     },
+    "TREND · ESTIMATED 1RM · 90 DAYS" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "TREND · ESTIMATED 1RM · 90 DAYS"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "TENDENCIA · 1RM ESTIMADO · 90 DÍAS"
+          }
+        }
+      }
+    },
     "Take it easy" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -39416,23 +39280,6 @@
         }
       }
     },
-    "The band, not the exact point, is the reading." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The band, not the exact point, is the reading."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La banda, no el punto exacto, es la lectura."
-          }
-        }
-      }
-    },
     "The beat-to-beat tacogram only comes from the band; it isn't available with Apple Health only." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -39463,6 +39310,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "La cresta: tu equilibrio %@ a %@."
+          }
+        }
+      }
+    },
+    "The daily series of this metric, in its unit; the number above is the most recent day." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The daily series of this metric, in its unit; the number above is the most recent day."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La serie diaria de esta métrica, en su unidad; el número de arriba es el día más reciente."
           }
         }
       }
@@ -39791,6 +39654,38 @@
         }
       }
     },
+    "The number is the most recent calculated value; the chart traces the daily values across the range." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The number is the most recent calculated value; the chart traces the daily values across the range."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El número es el valor calculado más reciente; la gráfica traza los diarios del rango."
+          }
+        }
+      }
+    },
+    "The number is the most recent value in this series; the chart traces the daily values across the range." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The number is the most recent value in this series; the chart traces the daily values across the range."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El número es el valor más reciente de esta serie; la gráfica traza los diarios del rango."
+          }
+        }
+      }
+    },
     "The number you see is the HRV Apple records: SDNN, the overall spread of the time between your heartbeats. Your daily verdict does NOT read this signal (SDNN): it stands on your resting heart rate and your sleep, and on your nocturnal RMSSD when the night is dense enough. SDNN is shown here as a reference against your own average. The trend uses a different HRV measure, RMSSD, recomputed from the beat-to-beat intervals of your densest nights; RMSSD tracks the vagal, rest-and-repair branch specifically, while SDNN blends both branches, so the two won't always move together." : {
       "localizations" : {
         "en" : {
@@ -39946,6 +39841,23 @@
         }
       }
     },
+    "The range, not the exact point, is the reading." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The range, not the exact point, is the reading."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El rango, no el punto exacto, es la lectura."
+          }
+        }
+      }
+    },
     "The ratio compares your average load over the last ~7 days against your last ~28: what science calls ACWR (acute:chronic). 1.0 is training about your usual; 0.8 to 1.3 reads as balance (Gabbett 2016). It's a debated heuristic and does not predict injuries (Impellizzeri 2020)." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -40002,6 +39914,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "El ritual"
+          }
+        }
+      }
+    },
+    "The same measure, 0–100" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The same measure, 0–100"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La misma medida, 0–100"
           }
         }
       }
@@ -43368,23 +43296,6 @@
         }
       }
     },
-    "We can't calculate your physical age yet." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "We can't calculate your physical age yet."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Todavía no podemos calcular tu edad física."
-          }
-        }
-      }
-    },
     "We can't score your recovery yet. We need at least %lld nights of sleep to learn your baseline; you're at %lld of %lld. We'd rather not show you a made-up number." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -43402,18 +43313,18 @@
         }
       }
     },
-    "We compare the median of your Charge the morning after each sport against your “untouched” rest days (no workouts, and not the days right after a session). The difference is what you see here." : {
+    "We compare the median of your Recovery the morning after each sport against your “untouched” rest days (no workouts, and not the days right after a session). The difference is what you see here." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "We compare the median of your Charge the morning after each sport against your “untouched” rest days (no workouts, and not the days right after a session). The difference is what you see here."
+            "value" : "We compare the median of your Recovery the morning after each sport against your “untouched” rest days (no workouts, and not the days right after a session). The difference is what you see here."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Comparamos la mediana de tu Charge la mañana siguiente a cada deporte contra tus días de descanso «intactos» (sin entrenamientos y fuera de los días posteriores a una sesión). La diferencia es lo que ves aquí."
+            "value" : "Comparamos la mediana de tu Recuperación la mañana siguiente a cada deporte contra tus días de descanso «intactos» (sin entrenamientos y fuera de los días posteriores a una sesión). La diferencia es lo que ves aquí."
           }
         }
       }
@@ -43561,22 +43472,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Necesitamos unas noches más para mostrar tu media de 7 días, tu rango normal y la tendencia."
-          }
-        }
-      }
-    },
-    "We need about 6 sessions of the same sport to start showing how you wake afterward. Keep logging your workouts and this fills in on its own." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "We need about 6 sessions of the same sport to start showing how you wake afterward. Keep logging your workouts and this fills in on its own."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Necesitamos unas 6 sesiones de un mismo deporte para empezar a ver cómo amaneces después. Sigue registrando tus entrenamientos y esto se llena solo."
           }
         }
       }
@@ -44380,23 +44275,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lo que te faltó dormir frente a lo que tu cuerpo necesita. No se salda con una sola noche buena."
-          }
-        }
-      }
-    },
-    "What's moving it" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "What's moving it"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Qué la mueve"
           }
         }
       }
@@ -46106,23 +45984,6 @@
         }
       }
     },
-    "Your band" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your band"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu banda"
-          }
-        }
-      }
-    },
     "Your baseline\nis settling" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -46899,19 +46760,19 @@
         }
       }
     },
-    "Your next-day Charge barely moves after the sports we can see so far." : {
+    "Your next-day Recovery barely moves after the sports we can see so far." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your next-day Charge barely moves after the sports we can see so far."
+            "value" : "Your next-day Recovery barely moves after the sports we can see so far."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tu Carga del día siguiente casi no se mueve tras los deportes que alcanzamos a ver."
+            "value" : "Tu Recuperación del día siguiente casi no se mueve tras los deportes que alcanzamos a ver."
           }
         }
       }
@@ -47215,6 +47076,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tu pulso cuando el cuerpo está en calma. Más bajo suele ser mejor estado; una subida sobre tu normal puede ser fatiga."
+          }
+        }
+      }
+    },
+    "Your range" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your range"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu rango"
           }
         }
       }
@@ -49521,6 +49399,23 @@
         }
       }
     },
+    "average of the %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "average of the %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "media del %@"
+          }
+        }
+      }
+    },
     "average over %lld days · %@ %@" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -49551,23 +49446,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "promedio de %lld días · %@ pasos"
-          }
-        }
-      }
-    },
-    "average of the %@" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "average of the %@"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "media del %@"
           }
         }
       }
@@ -50306,6 +50184,159 @@
         }
       }
     },
+    "compare.caption.readings" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld %2$@ · %3$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld %2$@ · %3$@"
+          }
+        }
+      }
+    },
+    "compare.caption.widened" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · sparse widened"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · ventana ampliada"
+          }
+        }
+      }
+    },
+    "compare.chart.a11y" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comparing %1$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comparando %1$@"
+          }
+        }
+      }
+    },
+    "compare.overlay.caption" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Each line min–max normalized within %1$@ · drag to read values"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cada línea normalizada min–max dentro de %1$@ · arrastra para leer valores"
+          }
+        }
+      }
+    },
+    "compare.overlay.caption.widened" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Min–max normalized · sparse series widened past %1$@ · drag to read values"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Normalizado min–max · serie escasa ampliada más allá de %1$@ · arrastra para leer valores"
+          }
+        }
+      }
+    },
+    "compare.overlay.count" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld series"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld series"
+          }
+        }
+      }
+    },
+    "compare.pair.a11y" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ versus %2$@, r equals %3$@, %4$lld days"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ frente a %2$@, r es igual a %3$@, %4$lld días"
+          }
+        }
+      }
+    },
+    "compare.pair.footer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld overlapping days · %2$@ correlation"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld días en común · correlación %2$@"
+          }
+        }
+      }
+    },
+    "compare.pairs.count" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld pairs"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld pares"
+          }
+        }
+      }
+    },
     "computed" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -50336,23 +50367,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "calculado en tu teléfono"
-          }
-        }
-      }
-    },
-    "connect Apple Health" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "connect Apple Health"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "conecta Apple Salud"
           }
         }
       }
@@ -51460,13 +51474,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your verdict stands on your resting heart rate at night, and it hasn't arrived. Sleeping with your Apple Watch is what unlocks it."
+            "value" : "It rests on your resting heart rate at night, which hasn't arrived. Sleeping with your Apple Watch unlocks it."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tu veredicto se apoya en tu FC en reposo de la noche, y no ha llegado. Dormir con tu Apple Watch es lo que la destraba."
+            "value" : "Se apoya en tu FC en reposo de la noche, que aún no llega. Dormir con tu Apple Watch la destraba."
           }
         }
       }
@@ -53974,6 +53988,22 @@
         }
       }
     },
+    "medium" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "medium"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "medio"
+          }
+        }
+      }
+    },
     "mi" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -54132,22 +54162,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "ml/kg/min"
-          }
-        }
-      }
-    },
-    "medium" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "medium"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "medio"
           }
         }
       }
@@ -54355,40 +54369,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "n.s."
-          }
-        }
-      }
-    },
-    "needs nights" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "needs nights"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "faltan noches"
-          }
-        }
-      }
-    },
-    "needs valid nights" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "needs valid nights"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "faltan noches válidas"
           }
         }
       }

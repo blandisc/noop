@@ -46,14 +46,15 @@ final class EcosistemaRotuloAlFiloRenderTests: XCTestCase {
         try render(v, a: "con_veredicto")
     }
 
-    /// Estado SIN lectura (demotado, neutra) — donde el dueño reportó el traslape.
+    /// Estado SIN lectura (demotado, neutra) — SIN kicker PREPARACIÓN (dueño 2026-08-26) y con el
+    /// subtítulo corto (2 líneas). Donde el dueño reportó el traslape + el kicker de más.
     @MainActor
     func test_render_sinVeredicto() throws {
         let m = LiquidHoyModel.ejemplo
         let hero = LiquidHoyModel.Hero.demotado(
-            kicker: "PREPARACIÓN",
+            kicker: nil,
             title: "Todavía no puedo leer tus mañanas",
-            subtitle: "Tu veredicto se apoya en tu FC en reposo de la noche, y no ha llegado.")
+            subtitle: "Se apoya en tu FC en reposo de la noche, que aún no llega. Dormir con tu Apple Watch la destraba.")
         let v = LiquidEcosistema(
             senales: m.senales, hero: hero, guardian: m.guardian,
             ambiente: .neutro, calibracion: nil, rotulos: .base,

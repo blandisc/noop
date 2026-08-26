@@ -15,6 +15,9 @@ public struct LiquidIcon: View {
         case carga
         // Guardián (cabecera de la hoja) — SF Symbol `shield`, path de catálogo.
         case escudo
+        // Edad física · tras el deporte (hojas de Tendencias) — SF Symbols `figure.run` /
+        // `arrow.triangle.2.circlepath`. La edad CORPORAL reusa `.corazon` (no lleva glifo propio).
+        case fitnessAge, afterSport
         // Señales (SignalOrb) — viewBox 16, stroke 1.5.
         case ondaSenal, lunaSenal, termoSenal
         // Modos de entrenamiento (ModeTile) — viewBox 16, stroke 1.5.
@@ -60,6 +63,8 @@ public struct LiquidIcon: View {
         case .estres: "gauge.with.needle"
         case .carga: "dumbbell"
         case .escudo: "shield"
+        case .fitnessAge: "figure.run"
+        case .afterSport: "arrow.triangle.2.circlepath"
         default: nil
         }
     }
@@ -200,6 +205,19 @@ extension LiquidIcon.Glyph {
         case .escudo:
             return Spec(viewBox: 16, strokeWidth: 1.6, paths: [
                 "M8 1.5l5.5 2v4.2c0 3.4-2.3 5.8-5.5 6.8-3.2-1-5.5-3.4-5.5-6.8V3.5z",
+            ])
+        // `.fitnessAge` / `.afterSport` se dibujan como SF Symbols (`sfName`); los paths custom
+        // (figura corriendo · flechas en ciclo) mantienen el invariante del catálogo — todo glifo
+        // parsea a un path no vacío dentro de su viewBox (LiquidGlassTests).
+        case .fitnessAge:
+            return Spec(viewBox: 16, strokeWidth: 1.6, paths: [
+                "M10.9 3.4A1.4 1.4 0 1 0 8.1 3.4A1.4 1.4 0 1 0 10.9 3.4",
+                "M9 5.5l-3 2 2.2 1.4-.7 3.6M9 5.5l2.6 1.2 1 2.8",
+            ])
+        case .afterSport:
+            return Spec(viewBox: 16, strokeWidth: 1.6, paths: [
+                "M13 8A5 5 0 1 0 3 8A5 5 0 1 0 13 8",
+                "M11 4.5l1.5 1-1 1.6",
             ])
 
         // MARK: Señales (viewBox 16, sw 1.8) — familia FINAL elegida por el dueño

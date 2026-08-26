@@ -431,7 +431,7 @@ struct TodayView: View {
                 // Hoja «Carga de entrenamiento» (FER-705 · handoff «Carga» · FER-33 F2) —
                 // tema explícito (no cruza `.sheet`), sin NavigationStack anidado (FER-171).
                 // «Ver más en Tendencias» despacha al tab Cuerpo vía `TabRouter`.
-                TrainingLoadSheet(model: item.model, theme: theme,
+                TrainingLoadSheet(model: item.model,
                                   onSeeTrends: item.onSeeTrends)
                     .recEntranceGate()
             }
