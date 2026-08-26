@@ -73,6 +73,10 @@ public enum EcosistemaSimulacion {
         public static let umbralEstreno: Double = 0.82
         /// Embrión de calibrando.
         public static let radioEmbrion: CGFloat = 30
+        /// A′ (FER-157): filo de guarda para los rótulos de las señales. Un rótulo que caería
+        /// sobre el disco del orbe fundido se empuja radialmente hasta `radioOrbe + este margen`,
+        /// para que el texto nunca se dibuje encima de las partículas. Constante de ensamble.
+        public static let margenRotuloOrbe: CGFloat = 12
         /// El orbe RETROCEDIDO del estado separado (FER-22): chico y tenue al fondo,
         /// entre las estaciones — jamás ausente, jamás partido.
         public static let radioOrbeFondo: CGFloat = 30
