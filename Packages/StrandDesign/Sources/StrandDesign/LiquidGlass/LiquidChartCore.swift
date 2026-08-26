@@ -283,6 +283,12 @@ struct LiquidChartPlot: View {
     let tono: Color
     let puntoHoy: (fecha: Date, valor: Double)?
     let hoyAnillo: Bool
+    /// Línea horizontal de REFERENCIA (p. ej. la FC en reposo de anoche bajo la curva del
+    /// día — FER-103 · TND-23): punteada, en la misma tinta que la regla del scrub. Es
+    /// CONTEXTO, no dato, así que vive con washes y grid, fuera del fade de entrada de la
+    /// serie. La etiqueta que la nombra es del caller (el caption bajo la gráfica, paridad
+    /// del papel); solo se pinta si cae dentro del dominio. `nil` = sin línea.
+    var lineaRef: Double? = nil
     /// La frase COMPUESTA «valor · fecha» del caller. Es la voz de VoiceOver (el DS no
     /// puede acuñar el separador ni el orden — D3) y el fallback de una línea del popup
     /// cuando el caller no parte el formato en dos.
@@ -326,6 +332,7 @@ struct LiquidChartPlot: View {
          tono: Color,
          puntoHoy: (fecha: Date, valor: Double)?,
          hoyAnillo: Bool,
+         lineaRef: Double? = nil,
          formatoScrub: ((Double, Date) -> String)? = nil,
          formatoValorScrub: ((Double) -> String)? = nil,
          formatoFechaScrub: ((Date) -> String)? = nil,
@@ -350,6 +357,7 @@ struct LiquidChartPlot: View {
         self.tono = tono
         self.puntoHoy = puntoHoy
         self.hoyAnillo = hoyAnillo
+        self.lineaRef = lineaRef
         self.formatoScrub = formatoScrub
         self.formatoValorScrub = formatoValorScrub
         self.formatoFechaScrub = formatoFechaScrub
@@ -412,6 +420,7 @@ struct LiquidChartPlot: View {
             ZStack(alignment: .topLeading) {
                 washes(w, h)
                 grid(w, h)
+                lineaReferencia(w, h)
                 ejeX(w, h)
                 Group {
                     serie(w, h)
@@ -602,6 +611,28 @@ struct LiquidChartPlot: View {
                     .frame(width: canaleta, alignment: .leading)
                     .offset(x: 0, y: ty - 6)
             }
+        }
+    }
+
+    // MARK: Línea de referencia (contexto punteado, TND-23)
+
+    /// Patrón de la punteada de referencia — paridad `LiquidBarrasHora.dashReferencia`.
+    private static let dashReferencia: [CGFloat] = [4, 3] // token-exempt: geometría de dato
+
+    /// La punteada horizontal de referencia: misma tinta y grosor que la regla del scrub,
+    /// cortada en guiones para que jamás compita con la serie (la familia ya habla así:
+    /// `LiquidBarrasHora`). Fuera de dominio no se pinta — el caller decide si su dominio
+    /// la incluye (la curva FC ya ensancha el suyo hasta la FC en reposo).
+    @ViewBuilder private func lineaReferencia(_ w: CGFloat, _ h: CGFloat) -> some View {
+        if let ref = lineaRef, dominio.contains(ref) {
+            let ry = y(ref, h)
+            Path { p in
+                p.move(to: CGPoint(x: canaleta, y: ry))
+                p.addLine(to: CGPoint(x: canaleta + fondoW(w), y: ry))
+            }
+            .stroke(LiquidColor.tinta900.opacity(LiquidChart.scrubReglaAlfa),
+                    style: StrokeStyle(lineWidth: LiquidChart.scrubReglaAncho,
+                                       dash: Self.dashReferencia))
         }
     }
 

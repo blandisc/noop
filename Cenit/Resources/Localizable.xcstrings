@@ -33052,6 +33052,23 @@
         }
       }
     },
+    "Rest · below zone 1" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rest · below zone 1"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reposo · bajo zona 1"
+          }
+        }
+      }
+    },
     "Restart" : {
       "extractionState" : "stale",
       "localizations" : {

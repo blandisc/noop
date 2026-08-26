@@ -137,40 +137,26 @@ struct MetricDetailScreen: View {
         // re-deriving `effectiveRange`/`windowed`/`windowValues` and re-parsing the whole
         // history on every redraw. (FER-216)
         let window = MetricWindowMath.make(parsedSeries, selected: range)
-        return Group {
-            if (isNarrative && !isIntraday) || spec.descriptor.key == "steps"
-                || spec.descriptor.key == "vo2max" {
-                // FER-103 · TND-20: the four scalar narrative vitals (HRV / rhr / resp_rate / SpO₂)
-                // ride the Liquid body; TND-21 adds Steps and TND-22 VO₂max, each on its own Liquid
-                // skeleton. The fondo goes on BOTH presentation forms — `background` for Cuerpo's
-                // overlay layer and `presentationBackground` for Hoy's sheet (same pair as
-                // SleepDetailScreen/SkinTempDetailScreen, FER-102) — so neither call site changes.
-                ScrollView {
-                    switch spec.descriptor.key {
-                    case "steps":  stepsBodyLiquid(window)
-                    case "vo2max": vo2maxBodyLiquid(window)
-                    default:       narrativeBodyLiquid(window)
-                    }
-                }
-                .background { LiquidSheetFondo(tone: liquidTono).ignoresSafeArea() }
-                .presentationBackground { LiquidSheetFondo(tone: liquidTono) }
-                .presentationDragIndicator(.visible)
-                .presentationCornerRadius(LiquidRadius.hoja)
-            } else {
-                // Paper «Instrumento» skeleton, untouched: Heart Rate's intraday path is the LAST
-                // paper body — it migrates in its own TND block (regla de transición FER-103). The
-                // Steps / VO₂max paper trees (`stepsBodyFinal` / `vo2maxBodyFinal`) stay compiled
-                // as the rollback, no longer called from here.
-                ScrollView {
-                    if isIntraday {
-                        narrativeIntradayFinal(window)
-                    }
-                }
-                .background(theme.paper)
-                .presentationDragIndicator(.visible)
-                .sheetPaper(theme)
+        // FER-103 · TND-20: the four scalar narrative vitals (HRV / rhr / resp_rate / SpO₂)
+        // ride the Liquid body; TND-21 adds Steps, TND-22 VO₂max and TND-23 Heart Rate's
+        // intraday path — the LAST paper body of the file — each on its own Liquid skeleton.
+        // The fondo goes on BOTH presentation forms — `background` for Cuerpo's overlay layer
+        // and `presentationBackground` for Hoy's sheet (same pair as SleepDetailScreen /
+        // SkinTempDetailScreen, FER-102) — so neither call site changes. The paper trees
+        // (`narrativeBodyFinal`, `stepsBodyFinal`, `vo2maxBodyFinal`, `narrativeIntradayFinal`)
+        // stay compiled as the rollback, no longer called from here.
+        return ScrollView {
+            switch spec.descriptor.key {
+            case "steps":      stepsBodyLiquid(window)
+            case "vo2max":     vo2maxBodyLiquid(window)
+            case "heart_rate": intradayBodyLiquid
+            default:           narrativeBodyLiquid(window)
             }
         }
+        .background { LiquidSheetFondo(tone: liquidTono).ignoresSafeArea() }
+        .presentationBackground { LiquidSheetFondo(tone: liquidTono) }
+        .presentationDragIndicator(.visible)
+        .presentationCornerRadius(LiquidRadius.hoja)
         .task {
             range = defaultRange
             if let loader = intradayCurveLoader {
@@ -2156,11 +2142,11 @@ struct MetricDetailScreen: View {
     /// sangre lee como juicio, el tono nuevo es decisión del dueño, no de este bloque.
     private var liquidTono: Color {
         switch spec.descriptor.key {
-        case "hrv":    return LiquidColor.cian
-        case "rhr":    return LiquidColor.rosa
-        case "steps":  return LiquidColor.teal
-        case "vo2max": return LiquidColor.verdePrimario
-        default:       return LiquidColor.azul   // resp_rate, spo2
+        case "hrv":               return LiquidColor.cian
+        case "rhr", "heart_rate": return LiquidColor.rosa   // TND-23: mismo par que la hoja (:231)
+        case "steps":             return LiquidColor.teal
+        case "vo2max":            return LiquidColor.verdePrimario
+        default:                  return LiquidColor.azul   // resp_rate, spo2
         }
     }
 
@@ -2168,10 +2154,10 @@ struct MetricDetailScreen: View {
     /// «el set Liquid no tiene gota»; el oxígeno comparte la familia respiratoria, igual que su hue.
     private var liquidGlifo: LiquidIcon.Glyph {
         switch spec.descriptor.key {
-        case "hrv":   return .onda
-        case "rhr":   return .corazon
-        case "steps": return .pasos
-        default:      return .resp              // resp_rate, spo2
+        case "hrv":               return .onda
+        case "rhr", "heart_rate": return .corazon
+        case "steps":             return .pasos
+        default:                  return .resp   // resp_rate, spo2
         }
     }
 
@@ -3378,6 +3364,310 @@ struct MetricDetailScreen: View {
                            tono: LiquidColor.tinta700)
             LiquidNotaLine(String(localized: "Mandsager 2018 (JAMA) · Kodama 2009"))
         }
+    }
+
+    // MARK: - Cuerpo intradía de FC en vidrio Liquid (FER-103 · TND-23)
+    //
+    // Migración PURAMENTE VISUAL del camino intradía (`narrativeIntradayFinal`, que queda como
+    // rollback) — el ÚLTIMO cuerpo de papel del archivo. Los rasgos PROPIOS de la métrica:
+    //
+    // · INTRADÍA ES HOY por definición: no hay ancla vieja que vestir ni serie diaria (el
+    //   caller inyecta `seriesLoader: { [] }`), así que aquí no aplican `liquidValorFresco`
+    //   ni el pie genérico (`liquidPieMetodo` gatea en `series`) — el intradía tiene el suyo.
+    //   Pero SIN lecturas hoy el campo va apagado («No readings yet today.», clave de la
+    //   familia) y NADA dice «en curso» sobre un guion.
+    // · Sin selector de rango, sin escalera, sin calendario: el papel tampoco los tenía.
+    // · Identidad rosa/.corazon — el MISMO par que la hoja de Hoy (`LiquidMetricSheetView.tono`
+    //   :231 / `.glifo` :264); el vidrio de la curva es LA MISMA pieza (`LiquidCurvaFC`) con
+    //   el MISMO vocabulario («Beats per minute», «5-minute average · since midnight»,
+    //   Min/Avg/Max), extendida en TND-23 con la referencia (FC en reposo) y el pico marcado
+    //   que el papel dibujaba (`TrendChart` referenceLine/markedPoint) — cero pérdida.
+    // · HORAS CIVILES del reloj local (`Self.hrClock`, paridad papel): la curva vive en el
+    //   día del teléfono, sin llaves UTC.
+    // · Zonas: `LiquidTiempoZonas` (FER-99, su PRIMER cliente) sobre `cachedZoneMinutes`
+    //   (el cálculo en `Task.detached` queda INTACTO, A14). La pieza arregla el pecado del
+    //   papel (`mins[i] >= 1` borraba una zona en cero), así que el gate del papel («algún
+    //   mins[1...] > 0») MUERE: un día todo-reposo enseña la barra llena de reposo y los
+    //   cinco rieles vacíos — el estado honesto que la pieza existe para dibujar (su preview
+    //   «Zonas · día en reposo» es exactamente esto, firmado en el DS).
+    // · Sello de origen: «Apple Health» (el vocabulario de la hoja: `origen` cae a
+    //   `.appleSalud` para heart_rate), sufijo «today, in progress» (clave del papel) SOLO
+    //   con lecturas hoy — M2: nunca procedencia sobre un guion.
+
+    /// El esqueleto Liquid del intradía: campo → (ⓘ) → Tu día → zonas → método.
+    @ViewBuilder private var intradayBodyLiquid: some View {
+        LazyVStack(alignment: .leading, spacing: 0) {
+            if let v = intradayAverage {
+                liquidIntraCampoConDato(v)
+            } else {
+                liquidIntraCampoSinDato
+            }
+            if infoOpen { liquidQueMedimosCard }
+            if !loaded {
+                LiquidSheetSkeleton(a11yCargando: String(localized: "Reading your history…"))
+                    .liquidSeccion()
+            } else {
+                if intradayCurve.count > 1 {
+                    seccionLiquid(String(localized: "Your day")) { liquidIntraCurvaContent }
+                    if let mins = cachedZoneMinutes {
+                        seccionLiquid(String(localized: "Time in zones · today")) {
+                            liquidIntraZonasContent(mins)
+                        }
+                    }
+                }
+                // Sin lecturas el campo apagado ya lo dice todo (paridad familia: vo2max /
+                // narrativo tampoco montan el pie sin datos). Con lecturas, método + sello.
+                if !intradayCurve.isEmpty {
+                    liquidIntraPieMetodo
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // MARK: TND-23 · 1. El campo — la media de hoy, siempre «en curso»
+
+    /// El campo teñido con dato: numeral = la MEDIA de hoy (el mismo `heroTodayValue` →
+    /// `intradayAverage` del papel), veredicto = «min · max · resting» (mismas claves que
+    /// `intradayHeroContextLine`), y en la ranura libre «en curso» — el día corre SIEMPRE
+    /// en intradía (paridad héroe de papel :914) — más la cápsula «Apple» si el caller la
+    /// declarara (hoy nunca para heart_rate; el `if` es paridad de familia, no promesa).
+    private func liquidIntraCampoConDato(_ v: Double) -> some View {
+        LiquidCampoMetrica(
+            tono: liquidTono,
+            titulo: String(localized: spec.info.name),
+            glifo: liquidGlifo,
+            datos: [.init(valor: fmt(v), unidad: unit,
+                          rotulo: String(localized: "today"))],
+            veredicto: liquidIntraVeredicto,
+            infoAbierto: infoOpen,
+            infoEtiqueta: String(localized: "What we measure"),
+            onInfo: { withAnimation(LiquidMotion.lift) { infoOpen.toggle() } }
+        ) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s150) {
+                LiquidCampoSello(String(localized: "in progress"))
+                if todayFromApple {
+                    LiquidCampoSello(String(localized: "Apple"))
+                }
+            }
+        }
+    }
+
+    /// «min 51 · max 142 · resting 52 bpm» — la cláusula del héroe de papel
+    /// (`intradayHeroContextLine`), con sus mismas claves, en la voz `String` del campo.
+    private var liquidIntraVeredicto: String? {
+        let v = intradayCurve.map(\.value)
+        guard v.count > 1, let lo = v.min(), let hi = v.max() else { return nil }
+        let minS = "\(Int(lo.rounded()))", maxS = "\(Int(hi.rounded()))"
+        if let rest = restingHR {
+            let restS = "\(Int(rest.rounded()))"
+            return String(localized: "min \(minS) · max \(maxS) · resting \(restS) bpm")
+        }
+        return String(localized: "min \(minS) · max \(maxS) bpm")
+    }
+
+    /// El campo APAGADO: sin lecturas hoy el numeral es un guion, nunca un cero, y nada
+    /// dice «en curso». Tres vacíos, no uno: cargando · sin permiso · sin lecturas hoy
+    /// (el intradía no calibra ni tiene «historia abajo» — la curva ES el dato).
+    private var liquidIntraCampoSinDato: some View {
+        LiquidCampoMetrica(
+            tono: liquidTono,
+            titulo: String(localized: spec.info.name),
+            glifo: liquidGlifo,
+            datos: [.init(valor: LiquidCajita.sinDato,
+                          rotulo: String(localized: "today"),
+                          a11y: String(localized: "no data"), ausente: true)],
+            clausula: liquidIntraClausulaSinDato
+        ) {
+            if sinPermiso {
+                LiquidVerMas(title: String(localized: "Manage Apple Health permissions"),
+                             tone: LiquidColor.papelAlto) { Self.abrirAjustesSalud() }
+            }
+        }
+    }
+
+    private var liquidIntraClausulaSinDato: String {
+        guard loaded else { return String(localized: "Reading your history…") }
+        if sinPermiso {
+            return String(localized: "Cénit can't read this vital: Apple Health hasn't granted permission. Turn it on and your readings will show up here.")
+        }
+        return String(localized: "No readings yet today.")
+    }
+
+    // MARK: TND-23 · 2. Tu día — la curva de la hoja + referencia y pico del papel
+
+    /// `LiquidCurvaFC` con el MISMO cableado que la hoja de Hoy (`heartRateBlock` :991) más
+    /// los dos contextos del papel: la FC en reposo como punteada (`referencia`) y el pico
+    /// como joya (`puntoMarcado`). El caption pico/reposo del papel va debajo, mismas claves.
+    @ViewBuilder private var liquidIntraCurvaContent: some View {
+        let values: [Double] = intradayCurve.map(\.value)
+        VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+            LiquidCurvaFC(
+                titulo: String(localized: "Beats per minute"),
+                subtitulo: String(localized: "5-minute average · since midnight"),
+                ultimo: values.last.map { String(localized: "\(Int($0.rounded())) bpm") },
+                puntos: intradayCurve.map { (fecha: $0.date, valor: $0.value) },
+                // El dominio del papel: aire del 12 % y ensanchado hasta la FC en reposo,
+                // para que la punteada de referencia siempre caiga dentro.
+                dominio: Self.hrRange(values, resting: restingHR),
+                referencia: restingHR,
+                puntoMarcado: peakPoint.map { (fecha: $0.date, valor: $0.value) },
+                stats: liquidIntraStats(values),
+                statsEtiquetas: (min: String(localized: "Min"),
+                                 prom: String(localized: "Avg"),
+                                 max: String(localized: "Max")),
+                ticksY: liquidIntraTicksY(values),
+                formatoScrub: { (v: Double, f: Date) in
+                    "\(String(localized: "\(Int(v.rounded())) bpm")) · \(Self.hrClock.string(from: f))"
+                },
+                formatoValorScrub: { (v: Double) in String(localized: "\(Int(v.rounded())) bpm") },
+                formatoFechaScrub: { (d: Date) in Self.hrClock.string(from: d) },
+                formatoFechaEje: { (d: Date) in Self.hrClock.string(from: d) },
+                estado: .datos,
+                a11yLabel: String(localized: "Today's heart rate, 5-minute averages"))
+            liquidIntraCaption
+        }
+        .liquidTarjetaSeccion()
+    }
+
+    /// «Pico 142 lpm · 6 p. m. · Reposo 52» — el caption del papel (`peakRestingCaption`),
+    /// mismas claves, dicho como nota de la familia.
+    @ViewBuilder private var liquidIntraCaption: some View {
+        if let peak = peakPoint {
+            let pico = String(localized: "Peak \(Int(peak.value.rounded())) bpm · \(Self.hrClock.string(from: peak.date))")
+            if let rest = restingHR {
+                LiquidNotaLine("\(pico) · \(String(localized: "Resting \(Int(rest.rounded()))"))")
+            } else {
+                LiquidNotaLine(pico)
+            }
+        }
+    }
+
+    /// Min / prom / max YA formateados (calco `hrStats` de la hoja / `intradayCurveStatsRow`
+    /// del papel — mismas cifras, cero matemática nueva).
+    private func liquidIntraStats(_ v: [Double]) -> (min: String, prom: String, max: String)? {
+        guard !v.isEmpty else { return nil }
+        let lo: Double = v.min() ?? 0
+        let hi: Double = v.max() ?? 0
+        let avg: Double = v.reduce(0, +) / Double(Swift.max(v.count, 1))
+        return (min: "\(Int(lo.rounded()))",
+                prom: "\(Int(avg.rounded()))",
+                max: "\(Int(hi.rounded()))")
+    }
+
+    /// Tres marcas sobre los DATOS (mín · medio · máx en latidos enteros, calco del
+    /// `ticksY(_:cuanto:1)` de la hoja): los bordes del dominio son puro respiro y
+    /// etiquetarlos imprimiría valores que nunca ocurrieron.
+    private func liquidIntraTicksY(_ v: [Double]) -> [(valor: Double, etiqueta: String)] {
+        guard let lo = v.min(), let hi = v.max(), hi > lo else { return [] }
+        let qLo = lo.rounded(), qHi = hi.rounded(), qMedio = ((lo + hi) / 2).rounded()
+        var valores: [Double] = [qLo]
+        if qMedio > qLo && qMedio < qHi { valores.append(qMedio) }
+        if qHi > qLo { valores.append(qHi) }
+        return valores.map { (v: Double) -> (valor: Double, etiqueta: String) in
+            (valor: v, etiqueta: "\(Int(v))")
+        }
+    }
+
+    // MARK: TND-23 · 3. Tiempo en zonas — LiquidTiempoZonas sobre los minutos cacheados
+
+    /// Titular «138 min elevated (zone 3+)» (mismas claves y misma suma que el papel) +
+    /// la pieza de zonas + la nota Tanaka. Sin tarjeta: la pieza no trae marco propio y la
+    /// sección la enmarca (contrato de `LiquidTiempoZonas`; mismo trato que el espectral).
+    @ViewBuilder private func liquidIntraZonasContent(_ mins: [Double]) -> some View {
+        let elevated = Int((mins[3] + mins[4] + mins[5]).rounded())
+        VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+            HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s150) {
+                Text(verbatim: "\(elevated)")
+                    .font(LiquidType.valorTileL)
+                    .tracking(LiquidType.valorTileTracking)
+                    .foregroundStyle(liquidTono)
+                Text(String(localized: "min elevated (zone 3+)"))
+                    .font(LiquidType.captionLectura)
+                    .foregroundStyle(LiquidColor.tinta700)
+            }
+            LiquidTiempoZonas(
+                zonas: liquidIntraZonas(mins),
+                a11yLabel: String(localized: "Time in zones · today"),
+                // Vacío a propósito: la pieza deriva el reparto por ciento de las MISMAS
+                // partes que dibuja — una sola fuente, cero copy nuevo.
+                a11yValue: "")
+            LiquidNotaLine(String(localized: "Zones as a percentage of your max heart rate (\(Int(hrMax.rounded())) bpm, Tanaka). The rest of the day you were resting or very light."))
+        }
+    }
+
+    /// Las 6 zonas SIEMPRE (contrato de la pieza): minutos medidos (jamás `nil` aquí — la
+    /// curva existe si llegamos), etiqueta con las claves del papel + el reposo, y el
+    /// detalle «N min» que la leyenda de papel ponía a la derecha.
+    private func liquidIntraZonas(_ mins: [Double]) -> [LiquidTiempoZonas.Zona] {
+        (0..<6).map { i in
+            let m: Double = i < mins.count ? mins[i] : 0
+            return LiquidTiempoZonas.Zona(
+                id: i,
+                etiqueta: liquidIntraZonaEtiqueta(i),
+                minutos: m,
+                color: Self.liquidZonaRampa(i, tono: liquidTono),
+                detalle: String(localized: "\(Int(m.rounded())) min"))
+        }
+    }
+
+    /// Las MISMAS claves que `zoneLabel` (papel) para Z1…Z5; el reposo — que el papel
+    /// nunca rotulaba porque su leyenda lo filtraba — estrena la suya con el patrón de
+    /// la familia («Reposo · bajo zona 1»).
+    private func liquidIntraZonaEtiqueta(_ i: Int) -> String {
+        switch i {
+        case 0:  return String(localized: "Rest · below zone 1")
+        case 1:  return String(localized: "Zone 1 · very light")
+        case 2:  return String(localized: "Zone 2 · light")
+        case 3:  return String(localized: "Zone 3 · moderate")
+        case 4:  return String(localized: "Zone 4 · hard")
+        default: return String(localized: "Zone 5 · max")
+        }
+    }
+
+    /// La rampa de zona en el hue de identidad: reposo en tinta quieta y las cinco zonas
+    /// graduando el rosa, más oscuro = más duro — calco del `zoneFill` de papel (misma
+    /// geometría de opacidades) dicho en tokens Liquid, y el MISMO reparto que la preview
+    /// de `LiquidTiempoZonas` documenta (el DS no conoce zonas de pulso: la rampa es del
+    /// caller). Estática para poder fijarla en un test sin montar la pantalla.
+    static func liquidZonaRampa(_ i: Int, tono: Color) -> Color {
+        switch i {
+        case 0:  return LiquidColor.tinta10
+        case 1:  return tono.opacity(0.35) // token-exempt: rampa de intensidad de zona (geometría de dato)
+        case 2:  return tono.opacity(0.5)  // token-exempt: rampa de intensidad de zona (geometría de dato)
+        case 3:  return tono.opacity(0.65) // token-exempt: rampa de intensidad de zona (geometría de dato)
+        case 4:  return tono.opacity(0.82) // token-exempt: rampa de intensidad de zona (geometría de dato)
+        default: return tono
+        }
+    }
+
+    // MARK: TND-23 · 4. Método + sello — rama intradía del pie
+
+    /// El pie del intradía: método del catálogo (Tanaka) + el chip de procedencia en el
+    /// vocabulario de la hoja («Apple Health» — `LiquidMetricSheetView.origen` cae a
+    /// `.appleSalud` para heart_rate) con el sufijo del papel «today, in progress» SOLO
+    /// cuando hay lecturas hoy (paridad `pieMetodoIntradayFinal`: el sello gateaba en
+    /// `intradayCurve.count > 1`; M2: nunca procedencia sobre un guion).
+    private var liquidIntraPieMetodo: some View {
+        VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+            LiquidCapilar(eje: .horizontal)
+            if visibleBlocks.contains(.method), let method = spec.info.method {
+                LiquidMetodo(title: String(localized: "How it's calculated"),
+                             mostrar: String(localized: "Show explanation"),
+                             ocultar: String(localized: "Hide explanation")) {
+                    LiquidNotaLine(String(localized: method.prose), tono: LiquidColor.tinta700)
+                    if let citation = method.citation {
+                        LiquidNotaLine(String(localized: citation))
+                    }
+                }
+            }
+            if intradayCurve.count > 1 {
+                LiquidOrigenChip(glyph: liquidGlifo, badgeTono: liquidTono,
+                                 etiqueta: String(localized: "Apple Health"),
+                                 sufijo: String(localized: "today, in progress"))
+            }
+        }
+        .liquidSeccion(top: LiquidSpace.s200, bottom: LiquidSpace.s800)
     }
 
 }

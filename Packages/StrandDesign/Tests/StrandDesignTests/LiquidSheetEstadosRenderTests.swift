@@ -515,6 +515,7 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
     /// índice: los buckets de 5 min sin muestras no existen en la serie.
     @MainActor
     private static func heartRate() -> AnyView {
+        let serie = curvaFCDia()
         var curva = LiquidCurvaFC(
             titulo: "Pulsaciones por minuto",
             subtitulo: "Promedio de 5 min · desde medianoche",
@@ -522,8 +523,13 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
             // último 62): con los valores decorativos de antes el dominio 40…105 recortaba
             // el valle y el popup del scrub cantaba «33 lpm» bajo un «MÍN 48».
             ultimo: "62 lpm",
-            puntos: curvaFCDia(),
+            puntos: serie,
             dominio: 26...88,
+            // TND-23: los dos contextos que el detalle de FC cablea — la punteada de
+            // referencia (FC en reposo, dentro del dominio) y la joya anclada al PICO,
+            // derivado de la serie y no un literal que no contiene (regla 4).
+            referencia: 34,
+            puntoMarcado: serie.max { $0.valor < $1.valor },
             stats: (min: "32", prom: "62", max: "82"),
             statsEtiquetas: (min: "Mín", prom: "Prom", max: "Máx"),
             // Tres marcas sobre los DATOS (mín · prom · máx), como las cablea la hoja: los
