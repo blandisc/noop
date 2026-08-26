@@ -2247,7 +2247,12 @@ struct MetricDetailScreen: View {
             titulo: String(localized: spec.info.name),
             glifo: liquidGlifo,
             datos: [.init(valor: fmt(v), unidad: unit,
-                          rotulo: liquidNocturno ? String(localized: "last night")
+                          // El rótulo temporal SOLO con frescura confirmada: la semilla del spec
+                          // puede venir de Cuerpo con la lectura de AYER (VIT-03 P2 residual) —
+                          // el numeral se ve desde el primer frame, la palabra «hoy/anoche»
+                          // espera al `.task`.
+                          rotulo: !loaded ? ""
+                                : liquidNocturno ? String(localized: "last night")
                                                  : String(localized: "today"))],
             veredicto: liquidVeredicto,
             infoAbierto: infoOpen,
@@ -2328,7 +2333,9 @@ struct MetricDetailScreen: View {
     /// segundo vocabulario. SpO₂ = `spo2HeroVerdict` (la escalera de DOS tramos del motor,
     /// TND-19). El campo NUNCA se tiñe por juicio (las gemelas tampoco): la palabra basta.
     private var liquidVeredicto: String? {
-        guard let today = liquidValorFresco else { return nil }
+        // Sin frescura confirmada, sin frase: la semilla del spec puede ser de ayer (VIT-03
+        // residual) — la frase «hoy/anoche» espera al `.task`, como el rótulo.
+        guard loaded, let today = liquidValorFresco else { return nil }
         switch spec.descriptor.key {
         case "spo2":
             let v = Self.spo2HeroVerdict(today)
@@ -3014,7 +3021,8 @@ struct MetricDetailScreen: View {
             tono: liquidTono,
             titulo: String(localized: spec.info.name),
             glifo: liquidGlifo,
-            datos: [.init(valor: fmt(v), rotulo: String(localized: "today"))],
+            // Rótulo temporal solo con frescura confirmada (VIT-03 residual, como el narrativo).
+            datos: [.init(valor: fmt(v), rotulo: !loaded ? "" : String(localized: "today"))],
             veredicto: liquidStepsVeredicto,
             infoAbierto: infoOpen,
             infoEtiqueta: String(localized: "What we measure"),
@@ -3045,7 +3053,8 @@ struct MetricDetailScreen: View {
     /// por el carril del motor donde cae el conteo fresco («Activo, un buen día» / «Tranquilo
     /// hasta ahora» / «Muy activo hoy»).
     private var liquidStepsVeredicto: String? {
-        guard let i = liquidIndiceAncla, let levelKey = liquidBandas[i].key else { return nil }
+        // Sin frescura confirmada, sin frase (VIT-03 residual — misma regla que el narrativo).
+        guard loaded, let i = liquidIndiceAncla, let levelKey = liquidBandas[i].key else { return nil }
         return liquidFraseHoja(levelKey: levelKey)
     }
 
