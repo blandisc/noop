@@ -177,7 +177,7 @@ struct AppleHealthView: View {
                 if loaded && !hasAnyData {
                     emptyState
                 } else if !loaded {
-                    LiquidSheetSkeleton(a11yCargando: String(localized: "Reading your Apple Health history…"))
+                    loadingState
                 } else {
                     rangeControl
                     tileGrid
@@ -230,6 +230,20 @@ struct AppleHealthView: View {
                 .foregroundStyle(LiquidColor.tinta700)
                 .fixedSize(horizontal: false, vertical: true)
         }
+        .liquidTarjetaSeccion()
+    }
+
+    /// The loading state: it NAMES what it is doing, visibly — not only in VoiceOver — in the same
+    /// card the empty state uses. NOT `LiquidSheetSkeleton`, whose stage / hypnogram / double-data
+    /// geometry belongs to the sleep detail, not to an Apple-Health list (FER-108 · Grok).
+    private var loadingState: some View {
+        HStack(spacing: LiquidSpace.s250) {
+            ProgressView().tint(LiquidColor.tinta500)
+            Text(String(localized: "Reading your Apple Health history…"))
+                .font(LiquidType.cuerpo)
+                .foregroundStyle(LiquidColor.tinta700)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .liquidTarjetaSeccion()
     }
 

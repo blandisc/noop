@@ -195,8 +195,10 @@ struct DataSourcesView: View {
                 Spacer(minLength: 0)
             }
             if let s = model.appleHealthImportSummary {
+                // A failed import is a WARNING, not a crash: `atencionTexto` (the ámbar the paper's
+                // `theme.warning` used), never `negativo` (critical). FER-108 · Grok.
                 Text(verbatim: s).font(LiquidType.captionLectura)
-                    .foregroundStyle(model.appleHealthImportFailed ? LiquidColor.negativo : LiquidColor.positivo)
+                    .foregroundStyle(model.appleHealthImportFailed ? LiquidColor.atencionTexto : LiquidColor.positivo)
             }
             // FER-115: coverage grid — macOS only (iOS shows it in its own «Cobertura» section)
             #if !os(iOS)
@@ -239,7 +241,8 @@ struct DataSourcesView: View {
                 appleHealthConnectBody
             }
             if let err = health.lastError {
-                LiquidNotaLine(err, tono: LiquidColor.negativo)
+                // A HealthKit error is a warning to surface, not a critical alarm (paper: theme.warning).
+                LiquidNotaLine(err, tono: LiquidColor.atencionTexto)
             }
 
             strengthWorkoutToggle
@@ -517,21 +520,18 @@ struct DataSourcesView: View {
         }
     }
 
-    /// Stage key → localized label for the live progress line. Keys come from `HealthKitBridge`.
+    /// Stage key → localized label for the live progress line. Keys come from `HealthKitBridge`. A
+    /// metric stage reads the ONE canonical name (`canonicalTitle` via the ingest-key bridge), so the
+    /// sync line never says «Resting heart rate» beside a checklist row that says «Resting HR» — one
+    /// name everywhere (FER-108 · Grok). The non-metric stages (sleep maps to its metric; basal energy
+    /// / workouts / saving have no catalog metric) keep their own label.
     private static func stageLabel(_ key: String) -> String {
         switch key {
-        case "resting_hr":                return String(localized: "Resting heart rate")
-        case "avg_hr", "max_hr":          return String(localized: "Heart rate")
-        case "hrv":                       return String(localized: "HRV")
-        case "spo2":                      return String(localized: "Blood oxygen")
-        case "resp_rate":                 return String(localized: "Respiration")
-        case "steps":                     return String(localized: "Steps")
-        case "active_kcal", "basal_kcal": return String(localized: "Energy")
-        case "vo2max":                    return String(localized: "VO₂ max")
-        case "sleep":                     return String(localized: "Sleep")
-        case "workouts":                  return String(localized: "Workouts")
-        case "saving":                    return String(localized: "Saving…")
-        default:                          return String(localized: "Apple Health")
+        case "sleep":      return MetricCatalog.descriptor(forIngestKey: "asleep_min")?.canonicalTitle ?? String(localized: "Sleep")
+        case "basal_kcal": return String(localized: "Energy")
+        case "workouts":   return String(localized: "Workouts")
+        case "saving":     return String(localized: "Saving…")
+        default:           return MetricCatalog.descriptor(forIngestKey: key)?.canonicalTitle ?? String(localized: "Apple Health")
         }
     }
 
