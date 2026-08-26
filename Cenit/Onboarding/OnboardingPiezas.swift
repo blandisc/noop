@@ -235,9 +235,13 @@ enum OnbCopy {
         String(localized: "onb.4.sinfc.causa",
                defaultValue: "Almost always it's one of two things: the heart permission stayed off in Health, or you don't sleep with a watch on yet.")
     }
+    /// El «in 4 nights» era una promesa incondicional, y la subcausa MÁS probable de esta rama es el
+    /// permiso apagado (lo dice `sinFcCausa`): ahí no hay noche que valga hasta encender Salud. Se
+    /// separan las dos causas —reloj sin usar de noche vs permiso apagado— para no prometer que
+    /// esperar arregla lo que solo arregla el botón de abajo.
     static var sinFcCuerpo2: String {
         String(localized: "onb.4.sinfc.2",
-               defaultValue: "If you have an Apple Watch, sleep with it and in 4 nights your first reading shows up. If you don't have one, I'd rather tell you today than leave you waiting.")
+               defaultValue: "If you have a watch, wear it to sleep and your first reading comes within a few nights, as long as the heart permission is on. If it's off, waiting won't help: that's what the Health button below is for. If you have no watch, I'd rather tell you today than leave you waiting.")
     }
     static var sinFcCuerpo3: String {
         String(localized: "onb.4.sinfc.3",
@@ -262,10 +266,11 @@ enum OnbCopy {
         String(localized: "onb.4.error", defaultValue: "Couldn't read Apple Health. Try again.")
     }
 
-    // Acto 5 · El perfil (FER-113)
+    // Acto 6 · El perfil (FER-113)
     //
-    // Sus claves van SIN número (`onb.perfil.*`): este acto se insertó entre el 4 y el acta, y un
-    // prefijo numérico obligaría a renumerar 60 claves ya traducidas cada vez que el guion cambie.
+    // Sus claves van SIN número (`onb.perfil.*`): este acto se cobra al SALIR del acta (rumbo al
+    // ciclo), y un prefijo numérico obligaría a renumerar 60 claves ya traducidas cada vez que el
+    // guion cambie. Orden real del flujo: … reveal (4) → acta (5) → perfil (6) → ciclo (7).
     /// El overline NO dice «para tu base»: la base del veredicto es tu historial de FC en reposo, y
     /// estos cuatro datos no la alimentan (`Profile.hrMax = 208 − 0.7·edad`, sin sexo). Lo único
     /// cierto de los cuatro es que NO salen de tus señales.
@@ -330,7 +335,7 @@ enum OnbCopy {
                defaultValue: "It comes out of your age. If you know your real one from a test, you can set it by hand in Settings.")
     }
 
-    // Acto 6 · El acta (sus claves conservan el prefijo `onb.5.*` de FER-109)
+    // Acto 5 · El acta (sus claves conservan el prefijo `onb.5.*` de FER-109)
     static var actaOverline: String {
         String(localized: "onb.5.overline", defaultValue: "What it's made of")
     }
@@ -423,15 +428,19 @@ enum OnbCopy {
         String(localized: "onb.5.overline.contra", defaultValue: "What I compare you against")
     }
     /// Dos respuestas, no una: el corazón se mide contra TU historia y el sueño contra un piso que
-    /// es igual para todos. La versión anterior extendía la primera a todo el veredicto.
-    static func actaContra(noches: Int) -> String {
-        String(format: String(localized: "onb.5.contra",
-                              defaultValue: "Your heart, against your own %lld nights, never against anybody else's average. Your sleep, against the hours a body asks for, because what you got used to sleeping isn't what you need. That's why I need time before I say anything: by the fourth night I already give you a reading, by the fourteenth I know your normal."),
-               noches)
+    /// es igual para todos. La versión anterior extendía la primera a todo el veredicto. Sin conteo
+    /// a propósito: el acta explica el MÉTODO, no cuántas noches llevas hoy —y citar «tus propias 0
+    /// noches» al llegar desde `.calibrando(0)` contradecía justo la tesis que la frase defiende.
+    static var actaContra: String {
+        String(localized: "onb.5.contra",
+               defaultValue: "Your heart, against your own nights, never against anybody else's average. Your sleep, against the hours a body asks for, because what you got used to sleeping isn't what you need. That's why I need time before I say anything: by the fourth night I already give you a reading, by the fourteenth I know your normal.")
     }
+    /// Sin «de tu veredicto»: al Acta se llega también desde `.calibrando`, que no mostró ⓘ ni
+    /// veredicto. La ⓘ es donde vive esto pase lo que pase —haya palabra hoy o no—, así que el pie
+    /// no la ata a un veredicto que esa rama todavía no tiene.
     static var actaPie: String {
         String(localized: "onb.5.pie",
-               defaultValue: "All of this lives in the ⓘ of your verdict. You can come back whenever you want.")
+               defaultValue: "All of this is always one tap away, in the ⓘ. You can come back whenever you want.")
     }
     static var actaCta: String { String(localized: "onb.5.cta", defaultValue: "Got it") }
 
@@ -498,12 +507,17 @@ enum OnbCopy {
         String(localized: "onb.6.cierre.aviso",
                defaultValue: "If you want, I'll set you a reminder at whatever time you pick. It lives in Settings.")
     }
+    /// El cierre «sin reloj» solo lo ve UN tipo de usuario: `.calibrando(0)` —con FC en reposo (o
+    /// sea, CON reloj) pero sin noches nocturnas—, porque el Ciclo únicamente se alcanza desde
+    /// lectura/calibrando (las ramas sin reloj de verdad salen antes). Así que «si algún día usas un
+    /// reloj» era falso para su única audiencia: sí tiene reloj, no ha dormido con él. Y «sin que
+    /// hagas nada» reintroducía la lectura pasiva que el cierre CON reloj ya había quitado.
     static var cierreTitularSinReloj: String {
-        String(localized: "onb.6.cierre.titular.sinreloj", defaultValue: "If you ever wear a watch")
+        String(localized: "onb.6.cierre.titular.sinreloj", defaultValue: "Wear it to sleep, too")
     }
     static var cierreCuerpoSinReloj: String {
         String(localized: "onb.6.cierre.cuerpo.sinreloj",
-               defaultValue: "That very night I start reading you, without you doing a thing.")
+               defaultValue: "Your watch is already giving me your days. Sleep with it on and I start reading your nights. That's where your morning word comes from.")
     }
     static var cicloDock: String {
         String(localized: "onb.6.dock", defaultValue: "Today says · Train does")

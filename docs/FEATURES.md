@@ -60,25 +60,64 @@ until you bond.
 
 ## First-run onboarding
 
-The onboarding wizard (`OnboardingWizard.swift`) appears on first launch and runs once
-(tracked by the `noop.onboarded` preference). It is a calm, paged flow with a progress
-"thread" along the bottom and a Back button always available:
+The onboarding wizard (`OnboardingWizard.swift`, with `OnboardingActo*.swift` siblings) appears
+on first launch and runs once (tracked by the `noop.onboarded` preference, an `@AppStorage` flag).
+It is **not** a form wizard and there is no band to pair: it's a single scene that transforms
+**seven times over one continuous particle field**, built entirely on **Apple Health** — no
+Bluetooth, no strap, no radar. The canvas fills with *your* evidence (density comes from how much
+real history landed, never from how long you wait), and color arrives once, as a revelation, when
+your verdict tints the field. There is **no global progress indicator, no generic Skip, and no
+cross-launch resume** — most acts carry a **Back** control, but the reveal does not, and quitting
+before you finish restarts at act 1.
 
-1. **Welcome** — "all your data, none of the cloud".
-2. **What Cénit does** — three value slides: the recovery ring, live heart, offline ownership.
-3. **Bluetooth priming** — explains *before* the iOS Bluetooth prompt that nothing leaves
-   your phone; the connection is local BLE with no server in the middle.
-4. **Wear & wake** — put the strap on (snug, sensor on skin), charge it, keep it within ~1 m.
-5. **Scan** — a radar sweep; tapping **Scan** calls the BLE engine. If it hasn't bonded after
-   ~12 seconds, a reassurance card appears explaining the strap won't show in iOS Settings,
-   that only one host can hold it at a time (close the WHOOP phone app), etc.
-6. **Bonded celebration** — a recovery ring blooms in when the strap bonds, with battery %.
-7. **Profile** — age, sex, weight, height (feeds zones, calories and baselines). Shows your
-   estimated max heart rate.
-8. **Import (optional)** — points you to Data Sources; fully skippable.
-9. **Done** — "Your thread starts here."
+- **Act 1 · Promesa** — the pitch: "all your data, none of the cloud", with a one-line privacy
+  promise you can check on the spot (turn on airplane mode). One button: **Empezar**.
+- **Act 2 · Permiso** — the single gate of the whole app, and it *is* the weight diagram. It
+  requests Apple Health access and, in the same breath, shows how the engine weighs your six
+  signals: three votes — the **autonomic axis** (resting HR + night HRV), **sleep**, and the
+  **sentinel** (skin temperature + respiration, which counts only when *both* drift the same day)
+  — plus one signal that does **not** vote (daytime HRV, shown without color). A pinned **Conectar**
+  button, an **Ahora no** off-ramp, and a note that a partial grant is indistinguishable from a
+  denied one (HealthKit never reveals read permission).
+- **Acts 3–4 · Conexión → Lectura** — one screen that transforms with no cut. First it **reads
+  your last 180 days** of Apple Health: a rolling day counter, the current stage named and tinted
+  (15 stages), a **2.5 s floor** (reading 180 days can't look like a blink) and a **20 s ceiling**
+  (after which a real "enter anyway" exit appears); a failed sync offers **Reintentar**. Then the
+  field converges, densifies to the evidence that actually exists, **tints with the verdict**, falls
+  silent, and the **verdict word** fades in — borrowed from the same builder that says it on
+  **Control Center**, so the two screens can never disagree. The landing has four branches
+  (`OnboardingLanding.swift`, decided by what *landed* in the local database, never by the
+  permission):
+  - **lectura** — there's a word, with a confidence line ("8 of 14 nights") and a history line; an
+    ⓘ points to the Acta.
+  - **calibrando** — resting HR arrived but the baseline is young: no word, an honest count
+    ("night N of 4").
+  - **sinRitmoEnReposo** — signals arrived but *zero* resting HR: the hard ceiling. Without it
+    there is no verdict, ever, so the flow doesn't promise one — it offers what works without a
+    watch and a door back to Apple Health.
+  - **sinDatos** — not a single row (denied read or empty Health, indistinguishable): open Health,
+    retry, or enter anyway.
+- **Act 5 · Acta** — what the word is made of. The field decomposes into three wells, one per axis,
+  as you watch. It states plainly there is **no 0–100 score**, lists the four verdict words with
+  their glosses and the three votes, and — inside the axis that leads — shows the actual weights
+  (resting HR **1.0**, the spine; night HRV **0.5**, its companion), what doesn't weigh (daytime
+  HRV, steps), and what it compares you against.
+- **Act 6 · Perfil** — the four data points the engine needs from *you*: **age, sex, weight,
+  height**, auto-filled from Apple Health where possible, each field showing its provenance ("From
+  Apple Health" / "You set this" / "I set this"). Age alone drives your HR zones (Tanaka,
+  208 − 0.7·age); sex, weight and height tune workout burn. The derived **max HR** updates live as
+  you edit, and anything you change wins over the autofill. This is the **last common stop of every
+  branch** — you pass through it whichever way you arrived.
+- **Act 7 · Ciclo** — the close: "and with that, what?" The field circulates between the two
+  centers the tab dock shows. It translates each verdict word into what it means for the day,
+  renders the **real** tab dock (not a drawing), and — only where a reading can actually exist —
+  offers the optional morning-reading notice. No confetti: tomorrow's word might be "take it easy".
 
-You can revisit pairing and profile any time from **Settings**.
+**Salida ("Ahora no")** — the off-ramp from Permiso. Not a dead end: it names what you lose, what
+still works, and leaves both doors open (reconsider and grant, or enter anyway). It never reappears
+on its own.
+
+You can edit your **Profile** any time from **Settings**.
 
 ---
 

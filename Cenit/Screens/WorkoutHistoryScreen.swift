@@ -76,6 +76,16 @@ struct WorkoutHistoryScreen: View {
     /// `repo.storeHandle()` came back nil — a real read failure, distinct from «cero sesiones»
     /// (Estados, decisión #16 del épico, FER-90).
     @State private var readError = false
+    /// FER-136 · V7: marcas nuevas por sesión, acotado a `recentSessions90` (misma llamada acotada
+    /// que `EntrenarView.marcaCount`, nunca un barrido sin ventana).
+    @State private var marksBySession: [String: Int] = [:]
+    /// FER-136 · V7: «Progreso por ejercicio» — un estimado de 1RM por cada ejercicio con historial,
+    /// hasta 6 filas (mismo tope que `progressionRows`).
+    @State private var progressExercises: [ProgressExerciseRow] = []
+    /// La fila de «Progreso» tocada — abre `ExerciseDetailScreen` en su tab Progreso.
+    @State private var progressDetailExercise: Exercise?
+    /// «Registrar entreno a mano» (FER-136 · V7) — el mismo `ManualWorkoutSheet` que «Mis entrenamientos».
+    @State private var showManualEntry = false
     /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
     @ObserveInjection private var inject
 
@@ -101,8 +111,10 @@ struct WorkoutHistoryScreen: View {
                     } else if sessions.isEmpty {
                         emptyState
                     } else {
+                        progressSection
                         savedTicketsEntry
                     }
+                    manualEntryRow
                 }
             }
             .padding(.top, 20)
@@ -137,26 +149,76 @@ struct WorkoutHistoryScreen: View {
         // when the repository publishes a new pass — the progression rows read today's verdict, so a
         // cold-start visit corrects itself the moment it lands (FER-82) instead of staying empty.
         .task(id: [coordinator.reloadToken, repo.refreshSeq]) { await load() }
+        // FER-136 · V7: «Progreso por ejercicio» abre el MISMO `ExerciseDetailScreen` que la sesión
+        // detallada usa (mismo patrón `.sheet(item:)` que `WorkoutSessionDetailScreen.detailExercise`
+        // más abajo en este archivo), en su tab Progreso.
+        .sheet(item: $progressDetailExercise) { ex in
+            NavigationStack {
+                ExerciseDetailScreen(exercise: ex, startOnProgress: true)
+                    .toolbar { ToolbarItem(placement: .confirmationAction) {
+                        Button("Done") { progressDetailExercise = nil }.foregroundStyle(theme.ink)
+                    } }
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbarBackground(theme.paper, for: .navigationBar)
+            }
+            .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+        }
+        // «Registrar entreno a mano ›» — el MISMO `ManualWorkoutSheet` que «Mis entrenamientos».
+        .sheet(isPresented: $showManualEntry) {
+            ManualWorkoutSheet(theme: theme) { row, replacing in
+                Task {
+                    do {
+                        try await repo.saveManualWorkout(row, replacing: replacing)
+                        coordinator.bumpReload()
+                    } catch {
+                        saveError = true
+                    }
+                }
+            }
+            .instrumentoTheme(theme).preferredColorScheme(.light)
+        }
         .enableInjection()
     }
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 4) {
-            // Decisión Fer (2026-07-16): «On the rise» se retiró — el título principal es el nombre
-            // de la pantalla, sin editorializar.
-            InstrumentoFlowTitle(Text("My workouts"))
-            // Handoff v2: sessions this month, plus the count of load raises when any (from progression).
-            Group {
-                if raisedThisMonth > 0 {
-                    Text("\(monthAggregate.count) sessions this month · \(raisedThisMonth) load raises")
-                } else {
-                    Text("\(monthAggregate.count) sessions this month")
-                }
-            }
-            .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-            .fixedSize(horizontal: false, vertical: true)
+            // FER-136 · V7: la Bitácora del handoff — kicker «Bitácora · 90 días» + título «Historial
+            // y progreso», por el slot `overline:` de `InstrumentoFlowTitle` (mismo helper canónico
+            // que usa `WorkoutSessionDetailScreen.heading` más abajo, no un `groteskOverline` suelto).
+            // El subtítulo cuenta la MISMA ventana de 90 días que la landing anuncia («N sesiones ·
+            // 90 días»), no el mes en curso.
+            InstrumentoFlowTitle(overline: Text("Log · 90 days"), Text("History and progress"))
+            Text(historialSubtitle)
+                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
+
+    /// «11 sesiones · 90 días · 3 marcas nuevas» — sin marcas nuevas en la ventana, la cláusula de
+    /// marcas simplemente no aparece (copy.md «Historial»: «sin marcas: solo sesiones»). Singular/
+    /// plural correcto en las dos partes.
+    private var historialSubtitle: LocalizedStringKey {
+        let sessionsPart = recentSessions90.count == 1
+            ? String(localized: "1 session · 90 days")
+            : String(localized: "\(recentSessions90.count) sessions · 90 days")
+        guard marksTotal90 > 0 else { return LocalizedStringKey(sessionsPart) }
+        let marksPart = marksTotal90 == 1
+            ? String(localized: "1 new mark")
+            : String(localized: "\(marksTotal90) new marks")
+        return LocalizedStringKey("\(sessionsPart) · \(marksPart)")
+    }
+
+    /// Sesiones COMPLETADAS en los últimos 90 días naturales — la MISMA ventana y el MISMO filtro que
+    /// `EntrenarView.recentSessions90` (`endTs != nil`, para que una sesión en curso nunca cuente
+    /// como terminada aquí tampoco).
+    private var recentSessions90: [StrengthSession] {
+        let cutoff = Date().timeIntervalSince1970 - 90 * 86_400
+        return sessions.filter { $0.endTs != nil && Double($0.startTs) >= cutoff }
+    }
+
+    /// Total de marcas nuevas en la ventana de 90 días — la suma de `marksBySession` (cargado en
+    /// `load()`, acotado a `recentSessions90`).
+    private var marksTotal90: Int { marksBySession.values.reduce(0, +) }
 
     // MARK: - «TU MES» (handoff v2, FER-941) — the weekly-volume card + the three month tiles
 
@@ -298,7 +360,7 @@ struct WorkoutHistoryScreen: View {
             }
             Text(caption).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
         }
-        .padding(12)
+        .padding(CenitMetrics.gap)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
@@ -388,7 +450,10 @@ struct WorkoutHistoryScreen: View {
     private var progressionBlock: some View {
         if !progressionRows.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
-                InstrumentoSectionBand("Your progression")
+                // «Ciclos de subida», no «Tu progresión» (FER-148, decisión del dueño): en esta misma
+                // pantalla vive «Progreso» (1RM por ejercicio, FER-136) y los dos nombres casi
+                // iguales nombraban cosas distintas — este es el plan de subida, aquel el marcador.
+                InstrumentoSectionBand("Raise cycles")
                 ForEach(progressionRows) { row in
                     HStack(spacing: 10) {
                         Text(row.name)
@@ -434,7 +499,10 @@ struct WorkoutHistoryScreen: View {
     /// dibuja sus 91 celdas `.empty`) sin una rama aparte.
     private var sessionsSection: some View {
         VStack(alignment: .leading, spacing: 4) {
-            InstrumentoSectionBand("Sessions")
+            InstrumentoSectionBand("Sessions") {
+                Text(verbatim: "\(String(localized: "Effort")) /21")
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+            }
             TrainingCalendar(
                 days: historyCalendarDays, size: .full, summary: historyCalendarSummary,
                 onTapDay: { day in
@@ -447,14 +515,18 @@ struct WorkoutHistoryScreen: View {
             )
             .padding(.top, 6).padding(.bottom, 2)
             LazyVStack(alignment: .leading, spacing: 0) {
-                ForEach(sessions) { session in
+                // FER-136 (quisquilloso ronda 4): la lista se acota a la MISMA ventana de 90 días que
+                // `historialSubtitle` anuncia — antes iteraba `sessions` (hasta 200, cualquier
+                // antigüedad) mientras el subtítulo prometía «90 días», el mismo bug que la landing ya
+                // corrigió en `EntrenarView.recentSessions90`.
+                ForEach(recentSessions90) { session in
                     NavigationLink(value: route(for: session)) {
                         sessionRow(session)
                     }
                     .buttonStyle(.plain)
                     // The long-press delete `contextMenu` was retired (FER-951): iOS draws it as a
                     // system balloon that ignores the theme; «Delete» lives in the detail's «···» menu.
-                    if session.id != sessions.last?.id { Divider().overlay(theme.hairline) }
+                    if session.id != recentSessions90.last?.id { Divider().overlay(theme.hairline) }
                 }
             }
         }
@@ -552,15 +624,24 @@ struct WorkoutHistoryScreen: View {
                 .background(theme.patternBlock, in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
-                Text(name(for: session)).font(StrandFont.subhead).fontWeight(.semibold).foregroundStyle(theme.ink)
-                    .lineLimit(1).minimumScaleFactor(0.8)
+                HStack(spacing: CenitMetrics.space1) {
+                    Text(name(for: session)).font(StrandFont.subhead).fontWeight(.semibold).foregroundStyle(theme.ink)
+                        .lineLimit(1).minimumScaleFactor(0.8)
+                    if let marks = marksBySession[session.id], marks > 0 {
+                        marcaChip(marks)
+                    }
+                }
                 Text(sessionMeta(session)).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                     .lineLimit(1).minimumScaleFactor(0.8)
             }
             Spacer(minLength: 8)
             if let strain = session.strain {
-                Text(StrengthHistoryFormat.strain(strain))
-                    .font(InstrumentoType.grotesk(13, weight: .bold)).foregroundStyle(theme.dataStrain)
+                // Mismo remedio de contraste que `EntrenarView.bitacoraRow`: 13 pt está bajo el piso
+                // de 24 pt, `dataStrain` crudo no llega a 4.5:1 sobre el papel.
+                (Text(verbatim: StrengthHistoryFormat.strain(strain))
+                    .font(InstrumentoType.grotesk(13, weight: .bold))
+                    .foregroundStyle(OKLab.darkened(theme.dataStrain, toContrast: 4.5, against: theme.paper))
+                 + Text(verbatim: " /21").font(StrandFont.caption).foregroundStyle(theme.inkTertiary))
             } else if let k = session.energyKcal {
                 (Text(StrandFormat.groupedInt(k)) + Text(verbatim: " ") + Text("kcal"))
                     .font(InstrumentoType.grotesk(13, weight: .bold)).foregroundStyle(theme.inkSecondary)
@@ -570,6 +651,15 @@ struct WorkoutHistoryScreen: View {
         }
         .frame(minHeight: 56)
         .contentShape(Rectangle())
+        // Mismo agrupamiento que `EntrenarView.bitacoraRow` (misma fila, misma sesión): VoiceOver la
+        // lee como UNA parada — nombre, chip de marca y esfuerzo — no tres (quisquilloso ronda 2).
+        .accessibilityElement(children: .combine)
+    }
+
+    /// El chip «N marca(s)» — mismo componente compartido que la landing (`EntrenarMarcaChip`,
+    /// StrandDesign — quisquilloso ronda 4: antes dos copias `private` idénticas).
+    private func marcaChip(_ count: Int) -> some View {
+        EntrenarMarcaChip(count, theme: theme)
     }
 
     /// «vie 10 jul · 48 min · 4.320 kg» — everything the old card said, in one quiet line.
@@ -625,6 +715,7 @@ struct WorkoutHistoryScreen: View {
                     StrandIcon.disclosure.image
                         .font(StrandFont.glyph(.chevron, weight: .semibold))
                         .foregroundStyle(theme.inkTertiary)
+                        .accessibilityHidden(true)
                 }
                 .padding(CenitMetrics.cardPadding)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -633,6 +724,9 @@ struct WorkoutHistoryScreen: View {
                     .strokeBorder(theme.hairline, lineWidth: 1))
             }
             .buttonStyle(.plain)
+            // Revisión final (g4-a11y): sin agrupamiento, VoiceOver exponía ícono/título/subtítulo/
+            // chevron como controles sueltos.
+            .accessibilityElement(children: .combine)
 
             HStack(spacing: 10) {
                 ForEach(Array(sessions.prefix(3).enumerated()), id: \.element.id) { index, session in
@@ -653,6 +747,71 @@ struct WorkoutHistoryScreen: View {
                 theme: theme
             )
         }
+    }
+
+    // MARK: - «Progreso» — por ejercicio (FER-136 · V7 · DECISIÓN DEL DUEÑO: se construye)
+
+    @ViewBuilder private var progressSection: some View {
+        if !progressExercises.isEmpty {
+            VStack(alignment: .leading, spacing: 0) {
+                InstrumentoSectionBand("Progress") {
+                    Text("per exercise").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                }
+                ForEach(progressExercises) { row in
+                    progressRow(row)
+                    if row.id != progressExercises.last?.id { Divider().overlay(theme.hairline) }
+                }
+            }
+        }
+    }
+
+    private func progressRow(_ row: ProgressExerciseRow) -> some View {
+        Button { progressDetailExercise = row.exercise } label: {
+            HStack {
+                (Text(verbatim: row.name)
+                    .font(StrandFont.body).foregroundStyle(theme.ink)
+                 + Text(verbatim: " · ")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                 + Text(oneRMLabel(row.oneRMKg))
+                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary))
+                Spacer(minLength: 8)
+                StrandIcon.disclosure.image
+                    .font(StrandFont.glyph(.chevron, weight: .semibold))
+                    .foregroundStyle(theme.inkTertiary)
+                    .accessibilityHidden(true)
+            }
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text(row.name) + Text(verbatim: ", ") + Text(oneRMLabel(row.oneRMKg)))
+        .accessibilityHint(Text("Opens the full detail"))
+    }
+
+    private func oneRMLabel(_ kg: Double) -> String {
+        String(localized: "Est. 1RM \(StrengthDisplay.weight(kg, system: system))")
+    }
+
+    // MARK: - «Registrar entreno a mano» (FER-136 · V7 — pie de Historial, mismo `ManualWorkoutSheet»)
+
+    private var manualEntryRow: some View {
+        Button { showManualEntry = true } label: {
+            HStack {
+                Text("Log a workout by hand").font(StrandFont.body).foregroundStyle(theme.ink)
+                Spacer(minLength: 8)
+                StrandIcon.disclosure.image
+                    .font(StrandFont.glyph(.chevron, weight: .semibold))
+                    .foregroundStyle(theme.inkTertiary)
+                    .accessibilityHidden(true)
+            }
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text("Log a workout by hand"))
+        .accessibilityHint(Text("Opens the manual workout form"))
     }
 
     private var emptyState: some View {
@@ -685,6 +844,14 @@ struct WorkoutHistoryScreen: View {
 
     private struct MonthAggregate { let count: Int; let hours: Double; let volumeKg: Double; let energyKcal: Double? }
 
+    /// One row in «Progreso» (FER-136 · V7): an exercise with logged history, its estimated 1RM.
+    private struct ProgressExerciseRow: Identifiable {
+        var id: String { exercise.id }
+        let exercise: Exercise
+        let name: String
+        let oneRMKg: Double
+    }
+
     /// One row in «Your progression»: an exercise whose cycle is raised, deferred, or stalled.
     private struct ProgressionRow: Identifiable {
         enum Kind {
@@ -695,12 +862,6 @@ struct WorkoutHistoryScreen: View {
         let id: String
         let name: String
         let kind: Kind
-    }
-
-    /// Count of exercises whose cycle just raised (the hero's «N subidas de carga»), from the same
-    /// progression signals the «Your progression» block shows.
-    private var raisedThisMonth: Int {
-        progressionRows.filter { if case .raised = $0.kind { return true }; return false }.count
     }
 
     /// This calendar month's totals across finished sessions. kcal sums only sessions that carry it; nil
@@ -854,6 +1015,64 @@ struct WorkoutHistoryScreen: View {
         self.routineRegions = regions
         // Progression can take a beat (routines × exercises); paint the rest of the screen first.
         self.progressionRows = await loadProgressionRows()
+        // FER-136 · V7: marcas por sesión (acotado a 90 días) y 1RM por ejercicio, tras el resto.
+        self.marksBySession = await loadMarksBySession()
+        self.progressExercises = await loadProgressExercises(sessions: sessions, customByID: customByID)
+    }
+
+    /// Marcas nuevas por sesión, acotado a `recentSessions90` — el mismo patrón acotado que
+    /// `EntrenarView.marcaCount`, aquí escalado a la ventana completa de 90 días (no solo 2 filas)
+    /// porque el subtítulo de esta pantalla necesita el total.
+    private func loadMarksBySession() async -> [String: Int] {
+        var marks: [String: Int] = [:]
+        for s in recentSessions90 { marks[s.id] = await marcaCount(for: s) }
+        return marks
+    }
+
+    /// Cuántos PR caen dentro de [inicio, fin] de una sesión — mismo cálculo que
+    /// `EntrenarView.marcaCount`, duplicado aquí porque esa función es `private` allá.
+    private func marcaCount(for session: StrengthSession) async -> Int {
+        let sets = await repo.sessionSets(sessionId: session.id)
+        let exerciseIds = Set(sets.map(\.exerciseId))
+        let start = session.startTs, end = session.endTs ?? session.startTs
+        var count = 0
+        for exerciseId in exerciseIds {
+            let prs = await repo.personalRecords(exerciseId: exerciseId)
+            count += prs.filter { $0.ts >= start && $0.ts <= end }.count
+        }
+        return count
+    }
+
+    /// «Progreso por ejercicio» (FER-136 · V7): los ejercicios con historial REAL (sets logueados en
+    /// las sesiones de `recentSessions`), no la composición actual de las rutinas — un ejercicio sigue
+    /// apareciendo aquí aunque su rutina se haya editado o borrado después. 1RM reusa
+    /// `OneRepMax.dailySparkline(...).last` — el MISMO cálculo que el héroe «Estimated 1RM · Today» de
+    /// `ExerciseDetailScreen.progressSection` (no `bestEstimate`, que es el máximo histórico y podía
+    /// mostrar un número distinto al tocar la fila y entrar al mismo ejercicio; quisquilloso ronda 4).
+    /// Deduplicado por exerciseId, tope 6 filas (mismo tope que `loadProgressionRows`), sesiones más
+    /// recientes primero.
+    private func loadProgressExercises(sessions: [StrengthSession], customByID: [String: Exercise]) async -> [ProgressExerciseRow] {
+        var seen = Set<String>()
+        var rows: [ProgressExerciseRow] = []
+        outer: for session in sessions {
+            let sets = await repo.sessionSets(sessionId: session.id)
+            let exerciseIds = sets.map(\.exerciseId).reduce(into: [String]()) { acc, id in
+                if !acc.contains(id) { acc.append(id) }
+            }
+            for exerciseId in exerciseIds {
+                guard seen.insert(exerciseId).inserted else { continue }
+                let history = await repo.exerciseHistory(exerciseId: exerciseId)
+                let usable = history.filter { !$0.optedOut }.map {
+                    (day: Repository.localDayKey(Date(timeIntervalSince1970: TimeInterval($0.startTs))),
+                     weightKg: $0.weightKg, reps: $0.reps)
+                }
+                guard let oneRM = OneRepMax.dailySparkline(usable).last?.estimatedKg else { continue }
+                guard let ex = ExerciseCatalog.byID(exerciseId) ?? customByID[exerciseId] else { continue }
+                rows.append(.init(exercise: ex, name: StrengthDisplay.name(ex), oneRMKg: oneRM))
+                if rows.count >= 6 { break outer }
+            }
+        }
+        return rows
     }
 
     /// Exercises with progression enabled (deduped by exerciseId, first routine slot wins — same rule as
@@ -1210,7 +1429,12 @@ struct WorkoutSessionDetailScreen: View {
     private var heading: some View {
         HStack(alignment: .center, spacing: 8) {
             if let region = dispRoutineRegion { EntrenarFamilyDot(region.tint(theme)) }
-            InstrumentoFlowTitle(overline: Text(StrengthHistoryFormat.dateTime(dispStart)),
+            // «Sesión · {fecha}» — el kicker literal de copy.md «Acta» para el acta pasada
+            // (FER-136 · V7). NOTA: esta pantalla sigue siendo `WorkoutSessionDetailScreen`, no una
+            // reutilización completa de `LiveStrengthSheet.summaryPhase` (esa hoja arma su
+            // `StrengthSummary` — comparación, costo, músculos — solo al CERRAR la sesión en vivo;
+            // reconstruirla para una sesión pasada es un cambio de fondo, fuera de este carril ligero).
+            InstrumentoFlowTitle(overline: Text("Session · \(StrengthHistoryFormat.dateTime(dispStart))"),
                                  Text(verbatim: dispRoutineName))
         }
     }
@@ -1220,7 +1444,9 @@ struct WorkoutSessionDetailScreen: View {
     @ViewBuilder
     private var hero: some View {
         if let strain = dispStrain {
-            heroStat("Effort", StrengthHistoryFormat.strain(strain), unit: nil,
+            // quisquilloso ronda 4: «/21» — el MISMO sufijo que la fila de Historial pinta para el
+            // mismo esfuerzo, para que las dos pantallas lean el número con el mismo formato.
+            heroStat("Effort", StrengthHistoryFormat.strain(strain), unit: "/21",
                      color: theme.dataStrain, caption: "What this session cost your body.")
         } else if let mins = StrengthHistoryFormat.durationMinutes(start: dispStart, end: dispEnd) {
             heroStat("Duration", "\(mins)", unit: "min",
@@ -1460,12 +1686,17 @@ struct WorkoutSessionDetailScreen: View {
                     Text(g.name).font(StrandFont.headline).foregroundStyle(theme.ink)
                     StrandIcon.disclosure.image
                         .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                        .accessibilityHidden(true)
                     Spacer(minLength: 0)
                 }
                 .frame(minHeight: EntrenarMetrics.row)
                 .contentShape(Rectangle())
             }
             .buttonStyle(EntrenarPressStyle())
+            // Revisión final (g4-a11y): igual que `progressRow`/`manualEntryRow` — combinar y ocultar
+            // el chevron para que VoiceOver anuncie un solo control con un rótulo, no el glifo suelto.
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(Text(g.name))
             .accessibilityHint(Text("Opens the exercise"))
         } else {
             Text(g.name).font(StrandFont.headline).foregroundStyle(theme.ink)

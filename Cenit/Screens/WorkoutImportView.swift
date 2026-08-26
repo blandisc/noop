@@ -99,11 +99,15 @@ struct WorkoutImportView: View {
             }
         }
         .animation(StrandMotion.fade, value: saveError)
+        // FER-138: captura y confirmación llevan su propio «‹» en `importHeader` — este ✕ se queda
+        // solo para mapeo y hecho, que no lo tocó el rediseño.
         .overlay(alignment: .topTrailing) {
-            BackButton(role: .close, theme: theme) {
-                if midWork { confirmDiscard = true } else { dismiss() }
+            if phase == .mapping || phase == .done {
+                BackButton(role: .close, theme: theme) {
+                    if midWork { confirmDiscard = true } else { dismiss() }
+                }
+                .padding(.trailing, CenitMetrics.space2).padding(.top, CenitMetrics.space2)
             }
-            .padding(.trailing, CenitMetrics.space2).padding(.top, CenitMetrics.space2)
         }
         .interactiveDismissDisabled(midWork)
         // El gesto repite el guard del botón: a medias pregunta, nunca descarta el mapeo en silencio.
@@ -148,79 +152,114 @@ struct WorkoutImportView: View {
 
     // MARK: - Capture
 
+    /// FER-138: la piel de dos fases del handoff — «‹» + kicker propio en vez del stepper de 4 pasos
+    /// (ese sigue vivo en `mappingFlow`, sin tocar). PASO 1 muestra el prompt REAL que se copia (no un
+    /// resumen inventado, truncado a 4 líneas); PASO 2 es la zona punteada de pegar + «Abrir archivo».
+    /// La lógica sigue intacta: `parse`/`copyPrompt`/`handleImport` no cambian, solo quién los llama.
     private var captureFlow: some View {
         VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
-            stepper(current: .capture)
-            header("Import plan", "Bring your plan from your AI")
-
-            step(1, "Copy the prompt and paste it into your trusted AI, along with your plan (text, photo or PDF).") {
-                emberButton(copied ? "Copied" : "Copy prompt") { copyPrompt() }
+            importHeader
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Your plan, from your AI")
+                    .font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking)
+                    .foregroundStyle(theme.ink)
+                Text("Cénit never calls the network. Copy the prompt, run it in your AI with your plan, and paste the result here.")
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
-            step(2, "Bring back the file it gives you: paste it or upload it.") {
-                VStack(alignment: .leading, spacing: CenitMetrics.gap) {
-                    pasteField
-                    HStack(spacing: CenitMetrics.gap) {
-                        QuietButton("Upload .json file") { showFileImporter = true }
-                        QuietButton("Continue") { parse(text: pasteText) }
-                            .disabled(pasteText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    }
-                    if let parseError { errorNote(parseError) }
+            VStack(alignment: .leading, spacing: CenitMetrics.gap) {
+                HStack(alignment: .center, spacing: CenitMetrics.space2) {
+                    Text("STEP 1 · THE PROMPT").entrenarCabeceraKicker().foregroundStyle(theme.inkTertiary)
+                    Spacer(minLength: CenitMetrics.space2)
+                    QuietButton(copied ? "✓ Copied" : "Copy") { copyPrompt() }
                 }
+                .frame(minHeight: EntrenarMetrics.row)
+                // El prototipo dibuja la caja a 10.5; aquí va `StrandFont.mono` (footnote, ~13,
+                // escalable): un bloque de texto que el usuario debe LEER y copiar no baja de la
+                // talla mínima legible ni se clava fuera de Dynamic Type. Desviación consciente.
+                Text(verbatim: WorkoutPrompt.forCurrentLocale())
+                    .font(StrandFont.mono).foregroundStyle(theme.inkSecondary)
+                    .lineLimit(4)
+                    .padding(CenitMetrics.cardPadding)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
+                        .strokeBorder(theme.hairlineStrong, lineWidth: 1))
             }
 
-            privacyNote
-        }
-    }
+            VStack(alignment: .leading, spacing: CenitMetrics.gap) {
+                Text("STEP 2 · BRING THE RESULT").entrenarCabeceraKicker().foregroundStyle(theme.inkTertiary)
+                    .frame(minHeight: EntrenarMetrics.row, alignment: .leading)
+                dashedPasteField
+                HStack(spacing: CenitMetrics.gap) {
+                    openFileLink
+                    Spacer(minLength: CenitMetrics.space2)
+                    // Deviation from the prototype's tap-to-paste demo: parsing needs an explicit
+                    // trigger (a real paste can be partial/edited before it's valid JSON), so a
+                    // «Continue» stays, only once there's something to parse.
+                    if !pasteText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        QuietButton("Continue") { parse(text: pasteText) }
+                    }
+                }
+                if let parseError { errorNote(parseError) }
+            }
 
-    /// Handoff: la promesa offline como tarjeta con barra verde — es la garantía del flujo, no letra chica.
-    private var privacyNote: some View {
-        HStack(alignment: .top, spacing: CenitMetrics.gap) {
-            RoundedRectangle(cornerRadius: 1.5)  // token-exempt: geometría de la barra de acento (3pt de ancho)
-                .fill(theme.verdict).frame(width: 3)
-            Text("Your routines are created on your iPhone. Cénit never connects: you run the AI step yourself.")
-                .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
+            Text("Exercises that don't match the catalog go through a mapping step (pick an equivalent or create it) before anything is written.")
+                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(CenitMetrics.cardPadding)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
-        .fixedSize(horizontal: false, vertical: true)
-        .accessibilityElement(children: .combine)
     }
 
-    /// Handoff: acción de acento dentro de un paso (ember lleno) — distinta del CTA canónico de tinta.
-    private func emberButton(_ title: LocalizedStringKey, action: @escaping () -> Void) -> some View {
-        // Compacto (abraza su contenido), pero en la MISMA voz del CTA del módulo (Grotesk 15/bold/0.3)
-        // — antes hablaba SF headline (auditoría D).
-        Button(action: action) {
-            Text(title)
-                .font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3).foregroundStyle(theme.paperHi)
-                .padding(.horizontal, 18).padding(.vertical, 10)
-                .background(theme.dataStrain, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
-                .contentShape(Rectangle())
+    /// «‹» + kicker, compartido por captura y confirmación (FER-138) — el stepper de 4 pasos se queda
+    /// solo en mapeo/hecho, sin tocar. El mismo guard de `confirmDiscard` que el ✕ global ya tenía.
+    private var importHeader: some View {
+        HStack(spacing: 10) {
+            BackButton(role: .back, theme: theme) {
+                if midWork { confirmDiscard = true } else { dismiss() }
+            }
+            Text("Import plan · bring your own AI").entrenarCabeceraKicker().foregroundStyle(theme.inkSecondary)
+            Spacer(minLength: 0)
         }
-        .buttonStyle(.plain)
     }
 
-    private var pasteField: some View {
+    /// La zona punteada de PASO 2: sigue siendo el mismo `TextEditor` de siempre (pegar o escribir),
+    /// solo con el marco a rayas y el texto de invitación del handoff.
+    private var dashedPasteField: some View {
         TextEditor(text: $pasteText)
             .font(StrandFont.mono)
             .foregroundStyle(theme.ink)
             .scrollContentBackground(.hidden)
             .frame(minHeight: 96)
             .padding(CenitMetrics.cardPadding)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+            .background(theme.paper, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
-                .strokeBorder(theme.hairlineStrong, lineWidth: 1))
-            .overlay(alignment: .topLeading) {
+                .strokeBorder(theme.hairlineStrong, style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])))
+            .overlay(alignment: .center) {
                 if pasteText.isEmpty {
-                    Text("Paste the result here…")
-                        .font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
-                        .padding(CenitMetrics.cardPadding).allowsHitTesting(false)
+                    VStack(spacing: 4) {
+                        Text("Paste the JSON").font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.ink)
+                        Text("or open the downloaded .json file").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                    }
+                    .multilineTextAlignment(.center)
+                    .allowsHitTesting(false)
                 }
             }
             .accessibilityLabel("Paste your plan")
+    }
+
+    private var openFileLink: some View {
+        Button { showFileImporter = true } label: {
+            HStack(spacing: 6) {
+                Text("Open file").font(StrandFont.subhead.weight(.medium)).foregroundStyle(theme.inkSecondary)
+                StrandIcon.disclosure.image
+                    .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                    .accessibilityHidden(true)
+            }
+            .frame(minHeight: CenitMetrics.touchTarget, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     private func errorNote(_ error: WorkoutProgramParseError) -> some View {
@@ -272,11 +311,14 @@ struct WorkoutImportView: View {
                 .foregroundStyle(isOmitted ? theme.inkTertiary : theme.ink)
             if isOmitted {
                 HStack(spacing: CenitMetrics.space2) {
+                    // Ronda 2 revisión final, hallazgo grave (g4-a11y): `.combine` vivía en el HStack
+                    // completo, fundiendo «Undo» (un Button hermano) en un elemento estático — VoiceOver
+                    // no podía deshacer un «Omitir». Solo el texto se combina; el botón queda suelto.
                     Text("Omitted").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+                        .accessibilityElement(children: .combine)
                     Spacer(minLength: CenitMetrics.space2)
                     undoLink { omitted.remove(key) }
                 }
-                .accessibilityElement(children: .combine)
             } else if let resolved {
                 let isAuto = autoMatched.contains(key)   // FER-794: pre-resolved, marked as automatic
                 HStack(spacing: CenitMetrics.space2) {
@@ -295,10 +337,10 @@ struct WorkoutImportView: View {
                     .foregroundStyle(theme.verdict)
                     .padding(.horizontal, 9).padding(.vertical, 3)
                     .background(theme.verdict.opacity(StrandOpacity.tintFill), in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
+                    .accessibilityElement(children: .combine)
                     Spacer(minLength: CenitMetrics.space2)
                     undoLink { resolution[key] = nil; autoMatched.remove(key) }
                 }
-                .accessibilityElement(children: .combine)
                 Button { mappingTarget = MappingName(name: name) } label: {
                     Text("Change mapping").font(InstrumentoType.grotesk(13, weight: .medium)).foregroundStyle(theme.inkTertiary).underline()
                 }
@@ -357,16 +399,31 @@ struct WorkoutImportView: View {
 
     // MARK: - Confirm
 
+    /// FER-138: mismo «‹» + kicker que `captureFlow` (comparten `importHeader`), título fijo «Se leyó
+    /// bien» (ya no repite el nombre del plan — vive en la fila de cada rutina) y el resumen con
+    /// singular/plural correcto (`confirmSummary`). El chevron de «Corregir» vuelve a `.mapping`: es el
+    /// paso donde SÍ se corrigen mapeos, aunque el prototipo lo dibuje volviendo a la captura.
     private func confirmFlow(_ program: WorkoutProgram) -> some View {
         VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
-            stepper(current: .confirm)
+            importHeader
             VStack(alignment: .leading, spacing: 4) {
-                Text("Import plan").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                nameText(program.name, fallback: "Your program").font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking).foregroundStyle(theme.ink)
-                Text(programSummary(program)).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                Text("It read well")
+                    .font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking)
+                    .foregroundStyle(theme.ink)
+                Text(verbatim: confirmSummary(program))
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
             }
 
             VStack(alignment: .leading, spacing: 0) {
+                // Ronda 2 (menor): el kicker es UNA sola cadena con el separador «·», como pide el
+                // spec — antes vivía partido en dos `Text` (nombre + metadato a la derecha).
+                // `.textCase(.uppercase)` de `instrumentoOverline()` gritaría también el sufijo
+                // (`NOOP.WORKOUT.V1`), así que solo «Rutinas leídas» se sube a mayúsculas a mano —
+                // el identificador de formato se queda tal cual.
+                Text(verbatim: String(localized: "Routines read").uppercased() + " · noop.workout.v1")
+                    .font(InstrumentoType.overline).tracking(InstrumentoType.overlineTracking)
+                    .foregroundStyle(theme.inkTertiary)
+                    .frame(minHeight: EntrenarMetrics.row, alignment: .leading)
                 ForEach(Array(program.routines.enumerated()), id: \.offset) { index, routine in
                     routinePreview(routine)
                     if index < program.routines.count - 1 {
@@ -375,10 +432,50 @@ struct WorkoutImportView: View {
                 }
             }
 
-            StrandCTAButton(createRoutinesTitle(program.routines.count)) { save(program) }
+            HStack(spacing: CenitMetrics.gap) {
+                Spacer(minLength: 0)
+                fixLink
+                StrandCTAButton(createRoutinesTitle(program.routines.count), tint: theme.positiveText, fillsWidth: false) {
+                    save(program)
+                }
+            }
         }
     }
 
+    private var fixLink: some View {
+        Button { phase = .mapping } label: {
+            HStack(spacing: 6) {
+                Text("Fix").font(StrandFont.subhead.weight(.medium)).foregroundStyle(theme.inkSecondary)
+                StrandIcon.disclosure.image
+                    .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                    .accessibilityHidden(true)
+            }
+            .frame(minHeight: CenitMetrics.touchTarget)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// «N rutinas · M ejercicios · K por mapear (ya resuelto/s)» — cada tramo con su propio singular
+    /// correcto (el catálogo NO pluraliza «rutinas»/«ejercicios» dentro de una cadena combinada, así
+    /// que se arman por separado, igual que `CrearPlanScreen.routineCountText`).
+    private func confirmSummary(_ p: WorkoutProgram) -> String {
+        let exercises = p.routines.reduce(0) { $0 + $1.exercises.filter { !omitted.contains(norm($0.name)) }.count }
+        let routineWord = p.routines.count == 1 ? String(localized: "1 routine") : String(localized: "\(p.routines.count) routines")
+        let exerciseWord = exercises == 1 ? String(localized: "1 exercise") : String(localized: "\(exercises) exercises")
+        var parts = [routineWord, exerciseWord]
+        let mapped = unmatched.filter { !omitted.contains(norm($0)) }.count   // resolved AND kept (FER-536)
+        if mapped > 0 {
+            parts.append(mapped == 1 ? String(localized: "1 to map (already resolved)")
+                                      : String(localized: "\(mapped) to map (already resolved)"))
+        }
+        return parts.joined(separator: " · ")
+    }
+
+    /// Row 52pt: nombre en el tinte de `RoutineClassifier` + el detalle por ejercicio de siempre
+    /// (sets/reps/kg) como «desc» — más útil que el resumen terso del prototipo, y el mismo dato que
+    /// `save()` va a escribir. El chip verde solo aparece si esta rutina trajo algún ejercicio que
+    /// necesitó mapeo (FER-138).
     private func routinePreview(_ routine: WorkoutRoutine) -> some View {
         // Resolver con la misma precedencia que save(): reconciliador (matches directos/aliases) y
         // luego las decisiones manuales — si no, las rutinas con puros matches directos no clasifican.
@@ -387,20 +484,12 @@ struct WorkoutImportView: View {
         }
         let region = RoutineClassifier.classify(primaryMusclesPerExercise: muscles)
         let accent = region.tint(theme)
-        // Handoff: glyph de familia de movimiento en chip lavado con borde del tinte — espejo de Tu Plan.
+        let mapped = mappedCount(routine)
         return HStack(alignment: .top, spacing: CenitMetrics.gap) {
-            RoutineRegionGlyph(glyphKind(region), tint: accent)
-                .frame(width: 22, height: 22)
-                .frame(width: 40, height: 40)
-                .background(accent.opacity(StrandOpacity.tintFill),
-                            in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
-                    .strokeBorder(accent, lineWidth: 1.5))
-                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: CenitMetrics.space2) {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     nameText(routine.name, fallback: "Routine")
-                        .font(StrandFont.body.weight(.semibold)).foregroundStyle(theme.ink)
+                        .font(StrandFont.body.weight(.semibold)).foregroundStyle(accent)
                     if let tag = routine.tag {
                         Text(verbatim: "· \(tag)").font(StrandFont.footnote).foregroundStyle(accent)
                     }
@@ -413,17 +502,27 @@ struct WorkoutImportView: View {
                     }
                 }
             }
+            Spacer(minLength: CenitMetrics.space2)
+            if mapped > 0 {
+                Text(mapped == 1 ? "1 mapped" : "\(mapped) mapped")
+                    .font(StrandFont.caption.weight(.semibold)).foregroundStyle(theme.verdict)
+                    .padding(.horizontal, 9).padding(.vertical, 3)
+                    .background(theme.verdict.opacity(StrandOpacity.tintFill),
+                                in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
+            }
         }
+        .frame(minHeight: 52, alignment: .top)
         .padding(.vertical, CenitMetrics.gap)
     }
 
-    private func glyphKind(_ region: RoutineRegion?) -> RoutineGlyphKind {
-        switch region {
-        case .push: return .push
-        case .pull: return .pull
-        case .legs: return .legs
-        case .fullBody, .none: return .fullBody
-        }
+    /// How many of this routine's exercises needed a mapping decision (were in `unmatched`) and are
+    /// still in — omitted ones don't count as «mapeados» (FER-536: they aren't imported at all).
+    private func mappedCount(_ routine: WorkoutRoutine) -> Int {
+        let unmatchedKeys = Set(unmatched.map(norm))
+        return routine.exercises.filter { ex in
+            let key = norm(ex.name)
+            return unmatchedKeys.contains(key) && !omitted.contains(key) && resolution[key] != nil
+        }.count
     }
 
     // MARK: - Done
@@ -520,21 +619,6 @@ struct WorkoutImportView: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(overline).instrumentoOverline().foregroundStyle(theme.inkTertiary)
             Text(title).font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking).foregroundStyle(theme.ink)
-        }
-    }
-
-    private func step<Action: View>(_ n: Int, _ text: LocalizedStringKey,
-                                    @ViewBuilder action: () -> Action) -> some View {
-        HStack(alignment: .top, spacing: CenitMetrics.gap) {
-            Text("\(n)").font(InstrumentoType.groteskNumber(15))
-                .foregroundStyle(theme.paperHi)
-                .frame(width: 26, height: 26)
-                .background(Circle().fill(theme.dataStrain))
-            VStack(alignment: .leading, spacing: CenitMetrics.gap) {
-                Text(text).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                action()
-            }
         }
     }
 
@@ -684,12 +768,6 @@ struct WorkoutImportView: View {
     }
 
     // MARK: - Display
-
-    private func programSummary(_ p: WorkoutProgram) -> LocalizedStringKey {
-        // Count only what will actually be imported — omitted exercises don't count (FER-536).
-        let exercises = p.routines.reduce(0) { $0 + $1.exercises.filter { !omitted.contains(norm($0.name)) }.count }
-        return "\(p.routines.count) routines · \(exercises) exercises"
-    }
 
     private func exerciseLine(_ ex: WorkoutExercise) -> String {
         var parts = [ex.name]

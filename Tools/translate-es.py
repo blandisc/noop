@@ -2273,6 +2273,20 @@ ES: dict[str, str] = {
     "Effort (0–21 scale) is computed only by your strap: this session doesn't carry it.": "El esfuerzo (escala 0–21) solo lo calcula tu banda, esta sesión no lo trae.",
     "%@ · sparse: widened to %@": "%@ · pocas, se amplió a %@",
     "They come from your strap and Apple Health history. Import them in Data Sources, or add one you tracked elsewhere.": "Vienen del historial de tu banda y Apple Salud. Impórtalos en Orígenes de datos, o agrega uno que registraste en otro lado.",
+    # FER-137 — «Crear plan»: la puerta única de «Tres caminos» (CrearPlanScreen).
+    "Create your plan": "Crear tu plan",
+    "Three paths": "Tres caminos",
+    "Ready-made templates, your own routine, or the plan you already have in your AI":
+        "plantillas listas, tu propia rutina, o el plan que ya tienes en tu IA",
+    "catalog routines": "rutinas del catálogo",
+    "From scratch": "Desde cero",
+    "%lld routines": "%lld rutinas",
+    "Choose exercises from the library (%lld in the catalog)": "elige ejercicios de la biblioteca (%lld en el catálogo)",
+    "Import from your AI": "Importar de tu IA",
+    "Paste the plan you built with your LLM · noop.workout.v1": "pega el plan que armaste con tu LLM · noop.workout.v1",
+    "Choosing a template creates its routines and your week is set; you can always edit it later, day by day.":
+        "Al elegir plantilla se crean sus rutinas y la semana queda armada; todo se puede editar después, día por día.",
+    "Template applied · your week is set, edit it whenever": "Plantilla aplicada · semana armada, edítala cuando quieras",
 }
 
 

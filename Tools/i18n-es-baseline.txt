@@ -73,6 +73,7 @@ Heart rate %@
 Heart rate %@, zone %@, %@ percent of your maximum
 I need at least 3 signals to work this out without guessing. You have %@.
 Kept **%@ of %@** days.
+Library · %lld exercises
 Mark your meals · 0 of %@
 Miro la variabilidad de los latidos que tu reloj registra mientras duermes y la comparo con tu propio promedio, no con el de otra persona ni con un número fijo de población.
 No se pudo armar el recibo.
@@ -83,7 +84,6 @@ Pick 2–4 to overlay.
 Recalibrada el %@
 Resting %@
 Round %@ of %@
-Set %@
 Set %@ · %@ × %@ reps
 Showing the last %@ days
 Sleep stages: deep %@ percent, light %@ percent, REM %@ percent, awake %@ percent
@@ -96,6 +96,7 @@ Timing, %@ seconds
 Vigilar señales de enfermedad
 With this plan: %@×%@ with %@ kg %@ → next time you train with **%@**.
 Write-back to Apple Health: %@/%@ enabled
+You'll lose %lld logged set(s) today. This can't be undone.
 YOUR INVENTORY · PER SIDE
 You're %@ of %@ sessions in with %@.
 Your plates can't hit %@ kg exactly, closest is %@ kg
@@ -103,11 +104,9 @@ Z%@
 Zones as a percentage of your max heart rate (%@ bpm, Tanaka). The rest of the day you were resting or very light.
 adherence · %@ of %@ meals
 applies to all %@ work sets
-kg
 max weight · %@ wk
 ms²
 nights in a row · kept %@ of %@
-of %@
 rest %@ + margin %@ bpm
 vs your normal · ~%@ bpm · %@ sessions
 your rest + %@ bpm margin

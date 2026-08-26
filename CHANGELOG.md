@@ -36,6 +36,103 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
   explorable history with a tappable ladder, the 90-day calendar, and the method foot with an
   honest origin stamp. Each screen now derives every representation from ONE engine ladder, and
   nothing claims "today" over yesterday's anchored reading.
+- **Entrenar: dos nombres que el dueño eligió — «Ciclos de subida» y «Hecho · {ejercicio}» / Train: two names the owner picked — "Raise cycles" and "Done · {exercise}"** (FER-148, FER-150).
+  **ES** — En Historial, la sección de pesos que subieron o esperan deja de llamarse «Tu progresión» y pasa a «Ciclos de subida»: en la misma pantalla ya vive «Progreso» (tu fuerza estimada por ejercicio) y los dos nombres casi iguales nombraban cosas distintas. Y en el Modo Foco, la pantalla de ejercicio terminado titula «Hecho · Press banca», el ritmo del prototipo sin su problema de género.
+  **EN** — In History, the raised-or-waiting weights section is no longer "Your progression" but "Raise cycles": "Progress" (your estimated strength per exercise) lives on the same screen and the two near-identical names meant different things. And in Focus Mode, the finished-exercise screen titles "Done · Bench press", the prototype's rhythm without its gender problem.
+  ([WorkoutHistoryScreen.swift](Cenit/Screens/WorkoutHistoryScreen.swift), [LiveStrengthSheet.swift](Cenit/Screens/LiveStrengthSheet.swift))
+
+- **Entrenar: la revisión final del épico pule voz, contraste y VoiceOver / Train: the epic's final review polishes voice, contrast and VoiceOver** (FER-140).
+  **ES** — Barrido final de todo lo reconstruido, con siete revisores. Los ejercicios hechos y los próximos de la sesión ya no se atenúan con la opacidad de «deshabilitado»: siguen siendo botones y ahora se leen con contraste real. Todos los chevrones decorativos callan ante VoiceOver y las filas tocables anuncian su contenido completo. El «···» y el «≡» de cada ejercicio ganan su blanco táctil de 44 pt. Sin permiso de Salud, el hilo dice el imperativo de la tabla: «Conecta Apple Salud». La Isla Dinámica de la Live Activity corrige su contraste. Y el peso del héroe de la landing se formatea como el resto de la fuerza (en libras, redondeado).
+  **EN** — Final sweep over everything rebuilt, with seven reviewers. Done and upcoming exercises in the session no longer dim with the "disabled" opacity: they're still buttons and now read at real contrast. Every decorative chevron is silent for VoiceOver and tappable rows announce their full content. Each exercise's "···" and "≡" gain their 44 pt touch target. Without Health permission, the thread says the table's imperative: "Connect Apple Health". The Live Activity's Dynamic Island fixes its contrast. And the landing hero's weight formats like the rest of strength (rounded pounds).
+  ([EntrenarView.swift](Cenit/Screens/EntrenarView.swift), [LiveStrengthSheet.swift](Cenit/Screens/LiveStrengthSheet.swift), [EntrenarNivel.swift](Packages/StrandDesign/Sources/StrandDesign/Entrenar/EntrenarNivel.swift), [LiquidHoyBuilder.swift](Cenit/Screens/Hoy/LiquidHoyBuilder.swift))
+
+- **Entrenar: cotejo fino de Biblioteca, Detalle, la pill y los avisos contra el prototipo / Train: fine-tooth pass over Library, Detail, the pill and the prompts against the prototype** (FER-139).
+  **ES** — La Biblioteca encabeza con «Biblioteca · N ejercicios» en el kicker del handoff, su búsqueda dice «busca por nombre, músculo o equipo», la sección con historial anota «mejor marca» y «＋ Crear ejercicio» es la píldora de papel abajo a la derecha. En el Detalle del ejercicio, el tipo de medida acompaña al overline y «Cambiar tipo de medida ›» vive al pie de las tres pestañas, como en la lámina. El punto de la pill flotante pasa a índigo. El aviso de descartar pregunta «¿Descartar el entrenamiento?» y dice cuántas series se pierden, con el número real. En la Live Activity, el botón de la serie activa dice «✓ Completar serie». El dock y la voz del Apple Watch ya coincidían: sin cambios.
+  **EN** — The Library leads with "Library · N exercises" in the handoff kicker, its search says "search by name, muscle or equipment", the with-history section notes "best mark" and "＋ Create exercise" is the paper pill at the bottom right. In the exercise Detail, the measure type joins the overline and "Change measure type ›" sits under all three tabs, as in the artboard. The floating pill's dot turns indigo. The discard prompt asks "Discard the workout?" and says how many sets are lost, with the real number. In the Live Activity, the active-set button reads "✓ Complete set". The dock and the Apple Watch voice already matched: untouched.
+  ([ExerciseLibraryScreen.swift](Cenit/Screens/ExerciseLibraryScreen.swift), [ExerciseDetailScreen.swift](Cenit/Screens/ExerciseDetailScreen.swift), [RootTabView.swift](CenitApp/App/RootTabView.swift), [RestLiveActivity.swift](CenitWidgets/RestLiveActivity.swift))
+- **Onboarding: plurales del acto 4 con formato de sustitución / Onboarding: act-4 plurals via substitution** (FER-142).
+  **ES** — Las tres frases del primer día que cuentan tu historia y tus noches con el reloj
+  («onb.4.historia» y las dos de «calibrando») ya concuerdan con el número: con una sola noche
+  dicen «1 noche», no «1 noches», y el posesivo acompaña («tu 1 día … tu 1 noche», nunca
+  «tus 1 …»). Se pasaron al formato de diccionario de sustitución del catálogo (plural one/other
+  por número), porque cada frase interpola varios números que se pluralizan por separado. **EN** —
+  The three first-run lines that count your history and your nights with the watch on now agree with
+  the count: a single night reads «1 night», not «1 nights». They moved to the String Catalog
+  substitution-dictionary format (per-number one/other plurals), since each line interpolates several
+  independently-pluralized numbers.
+- **Entrenar: importar tu plan en dos pasos, y una hoja rápida para rotar tu semana / Train:
+  import your plan in two steps, and a quick sheet to rotate your week** (FER-138).
+  **ES** — La pantalla de importar (traer tu plan de tu IA) se rediseñó en dos fases: PASO 1 copia
+  el prompt real («✓ copiado» al tocar), PASO 2 pega o abre el .json en una zona punteada; leer el
+  plan confirma con «Se leyó bien», el número real de rutinas/ejercicios y cuántos necesitaron mapeo
+  (singular/plural correcto), cada rutina en el tinte de su tipo. La lógica de lectura y creación no
+  cambió. Además, TU SEMANA en la landing de Entrenar ahora abre una hoja rápida: tocar un día futuro
+  u hoy rota su rutina (Descanso → rutina → rutina → …) y lo guarda al instante; un día ya entrenado
+  no se toca (aviso). El editor completo (asignar carpetas, gestionar rutinas) se mudó a «Editar
+  rutinas y semana ›», sin perder su puerta. **EN** — The import screen (bring your plan from your
+  AI) is now two phases: STEP 1 copies the real prompt («✓ Copied» on tap), STEP 2 pastes or opens
+  the .json in a dashed drop zone; a successful read confirms with «It read well», the real routine/
+  exercise counts and how many needed mapping (correct singular/plural), each routine tinted by its
+  type. The read/create logic is unchanged. Also, TU SEMANA on the Train landing now opens a quick
+  sheet: tapping a future or today's day rotates its routine (Rest → routine → routine → …) and
+  saves it instantly; an already-trained day can't be edited (a toast says so). The full editor
+  (assign folders, manage routines) moved to «Edit routines and week ›», keeping its own door.
+
+- **Onboarding: el primer arranque dice la verdad cuando aún no hay veredicto / Onboarding:
+  first-run tells the truth before there's a verdict** (FER-141).
+  **ES** — Auditoría de los estados del onboarding. Cuando Cénit todavía no puede darte una palabra
+  (poca base, o un reloj sin usar de noche), el flujo dejó de prometer de más: la explicación de
+  «con qué se compara» ya no dice «contra tus propias 0 noches»; la pantalla sin frecuencia en
+  reposo ya no promete una lectura «en 4 noches» cuando lo que falta es el permiso de Salud (que se
+  arregla ahí, no esperando); y el cierre para quien trae reloj pero no ha dormido con él ahora le
+  dice «úsalo también de noche» en vez de tratarlo como si no tuviera reloj. Más arreglos finos de
+  VoiceOver y de texto. **EN** — An audit of the onboarding states. When Cénit can't give you a word
+  yet (thin baseline, or a watch not worn at night), the flow stops over-promising: the «how it's
+  computed» card no longer says «against your own 0 nights»; the no-resting-heart screen no longer
+  promises a reading «in 4 nights» when the real blocker is the Health permission (fixed there, not
+  by waiting); and the close for someone who has a watch but hasn't slept in it now says «wear it to
+  sleep, too» instead of treating them as watchless. Plus small VoiceOver and copy fixes.
+
+- **Entrenar: Crear plan — tres caminos / Train: Create plan — three paths** (FER-137).
+  **ES** — Nueva pantalla «Tres caminos»: el chip «Crear plan» de la landing y el CTA «Crear mi
+  plan» del primer uso ya no saltan directo a una hoja; abren esta puerta única con tres filas.
+  PLANTILLAS lista los cinco grupos del catálogo (Empuje · Jalón · Pierna, Cuerpo completo, Torso /
+  Pierna, En casa, Movilidad) — tocar uno copia TODAS sus rutinas y arma la semana llenando los días
+  libres en orden (lunes primero; un día que ya tenías asignado nunca se pisa), y vuelve a la
+  landing con el aviso «Plantilla aplicada · semana armada, edítala cuando quieras». DESDE CERO
+  empuja «Nueva rutina» a la Biblioteca en su flujo de creación existente. «Importar de tu IA» abre
+  el importador `noop.workout.v1` existente. **EN** — A new «Three paths» screen: the landing's
+  «Create plan» chip and the first-use «Build my plan» CTA now open this single door instead of
+  jumping straight to a sheet. TEMPLATES lists the catalog's five groups — tapping one copies ALL of
+  its routines and fills the free days of the week in order (never overwriting a day you already
+  assigned), then returns to the landing with a success toast. FROM SCRATCH pushes «New routine»
+  into the existing library create-flow. «Import from your AI» opens the existing
+  `noop.workout.v1` importer.
+
+- **Entrenar: Tu cuerpo, Historial y el acta — el hilo del veredicto, progreso por ejercicio y el
+  recibo / Train: Your body, History and the ballot — the verdict thread, per-exercise progress and
+  the receipt** (FER-136). **ES** — «Tu cuerpo» gana el hilo del veredicto (el mismo orbe y la misma
+  boleta que Entrenar y la sesión en vivo): la palabra del día se completa con una lectura generada
+  del mapa de carga muscular («Cuádriceps con carga de hoy, Espalda a medias»), seguida de una
+  «Lectura gruesa» en prosa y la nota de honestidad literal del handoff bajo el ranking de músculos
+  cargados (con sus columnas «Carga» / «Series · 7 d»). «Mis entrenamientos» pasa a «Historial y
+  progreso»: la cabecera cuenta las sesiones y marcas nuevas de los últimos 90 días, cada fila de
+  sesión suma el esfuerzo «/21» y su chip de marca (mismo tratamiento que la Bitácora de la landing),
+  y una nueva sección «Progreso» lista los ejercicios con historial y su 1RM estimado — toca uno para
+  abrir su detalle ya en el tab Progreso, con «Registrar entreno a mano ›» al pie, hacia el mismo
+  formulario manual que ya existía. En el acta de la sesión en vivo, «Compartir…» pasa a «Imprimir
+  recibo»: mismo destino (el recibo térmico), copy del handoff. **EN** — "Your body" gains the
+  verdict thread (the same orb and the same ballot Train and the live session already show): the
+  day's word is completed by a sentence generated from the muscle-load map ("Quads loaded today,
+  Back halfway"), followed by a "Rough read" paragraph and the handoff's literal honesty note under
+  the loaded-muscles ranking (with its "Load" / "Sets · 7 d" columns). "My workouts" becomes "History
+  and progress": the header counts the last 90 days' sessions and new marks, each session row adds
+  its effort "/21" and mark chip (same treatment as the landing's Log), and a new "Progress" section
+  lists exercises with history and their estimated 1RM — tap one to open its detail already on the
+  Progress tab — with "Log a workout by hand ›" at the foot, into the same manual form that already
+  existed. On the live session's ballot, "Share…" becomes "Print receipt": same destination (the
+  thermal receipt), handoff copy.
+
 - **Entrenar: Modo Foco — serie, descanso, hecho / Train: Focus Mode — set, rest, done** (FER-135).
   **ES** — Foco gana un tercer estado, HECHO, entre cada serie cerrada del último ejercicio y la
   siguiente: el ejercicio recién terminado a pantalla completa («Ejercicio hecho: ‹nombre›» + el

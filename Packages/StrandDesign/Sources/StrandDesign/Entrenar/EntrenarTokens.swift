@@ -152,6 +152,11 @@ public enum EntrenarMetrics {
     /// reusarlo aquí dejaba el orbe visiblemente chico junto al título de 16 pt y el resto de la
     /// cabecera de 36 pt.
     public static let orbeSesionCabecera: CGFloat = 32
+    /// El radio del orbe del hilo del veredicto en «Tu cuerpo» (FER-136 · V7, handoff
+    /// «cuerpo-historial-acta»: `canvas … style="width:44px;height:44px"`). Más grande que
+    /// `orbeSesionCabecera` (32): la cabecera de Tu cuerpo no compite con un título de sesión en vivo,
+    /// así que el orbe puede ser el elemento dominante.
+    public static let orbeCuerpo: CGFloat = 44
     /// El aro punteado que ocupa el lugar del orbe cuando no hay lectura.
     public static let aroHueco: CGFloat = 22
     /// El punto de identidad de familia. UN tamaño, no dos: antes de FER-86 este punto estaba
@@ -185,8 +190,9 @@ public enum EntrenarMetrics {
     /// Los tres numerales de la sesión («~50 min · 6 ejercicios · 18 series»), separados del subtítulo.
     public static let heroNumeralsTop: CGFloat = 20
     /// El canal entre los tres numerales, cuando se dibujan como bloques sueltos (handoff «canal 28»)
-    /// — la landing hoy los lee como una sola frase con «·», así que este canal no tiene un sitio
-    /// vivo todavía; se documenta para no perder el número del handoff.
+    /// — usado por la sesión en vivo y la landing («Tu plan»/héroe) para el `HStack` de numerales
+    /// (`EntrenarView.swift`); corrección revisión final (g3-adn): el comentario decía huérfano y no
+    /// lo era.
     public static let heroNumeralsGap: CGFloat = 28
     /// La línea de progresión / subida del día, separada de los numerales. (= `CenitMetrics.gap`.)
     public static let heroProgressTop: CGFloat = CenitMetrics.gap
@@ -382,6 +388,23 @@ public extension View {
     func entrenarMarcaChip() -> some View {
         self.font(InstrumentoType.grotesk(9.5, weight: .semibold, relativeTo: .caption2))
             .tracking(1.2)
+    }
+}
+
+/// El chip completo «N marca(s)»: verdeProfundo sobre su propio tinte al 10 % — pluralización correcta
+/// más el estilo de `entrenarMarcaChip()`. Compartido entre la Bitácora de la landing y la sección
+/// «Sesiones» de Historial (quisquilloso ronda 4: antes dos copias `private` idénticas por pantalla).
+public struct EntrenarMarcaChip: View {
+    let count: Int
+    let theme: InstrumentoTheme
+    public init(_ count: Int, theme: InstrumentoTheme) { self.count = count; self.theme = theme }
+    public var body: some View {
+        Text(count == 1 ? "1 mark" : "\(count) marks")
+            .entrenarMarcaChip()
+            .foregroundStyle(theme.positiveText)
+            .padding(.horizontal, CenitMetrics.space2)
+            .padding(.vertical, CenitMetrics.space1)
+            .background(theme.tint(theme.positiveText), in: Capsule())
     }
 }
 

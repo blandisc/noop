@@ -36,8 +36,26 @@ struct RestLiveActivity: Widget {
                 .activityBackgroundTint(theme.paper)
                 .activitySystemActionForegroundColor(theme.ink)
         } dynamicIsland: { context in
-            SessionDynamicIsland.make(state: context.state, theme: theme)
+            SessionDynamicIsland.make(state: context.state, theme: theme, islandTheme: dynamicIslandTheme)
         }
+    }
+
+    /// The Dynamic Island is always rendered by ActivityKit on the system's true black — never on
+    /// `theme.paper` — so `.base`'s ink/data hues (tuned for AA on warm paper) need the same relight
+    /// `.watch` does for the wrist, PLUS the specific amber/rose bump the handoff calls out for THIS
+    /// surface (README.md §Live Activity: «sobre negro de la isla el ámbar/rosa suben a #E8923F/#D97A90
+    /// por contraste»). The lock-screen card keeps `.base` unchanged — it paints its own `theme.paper`.
+    private var dynamicIslandTheme: InstrumentoTheme {
+        InstrumentoTheme(
+            paper: .black, surface: InstrumentoTheme.watch.surface,
+            hairline: InstrumentoTheme.watch.hairline, hairlineStrong: InstrumentoTheme.watch.hairlineStrong,
+            ink: InstrumentoTheme.watch.ink, inkSecondary: InstrumentoTheme.watch.inkSecondary, inkTertiary: InstrumentoTheme.watch.inkTertiary,
+            dataRecovery: InstrumentoTheme.watch.dataRecovery, dataStrain: Color(hex: "#E8923F"),  // token-exempt: handoff-mandated Dynamic Island contrast bump (README.md §Live Activity)
+            dataSleep: InstrumentoTheme.watch.dataSleep, dataHrv: InstrumentoTheme.watch.dataHrv,
+            dataHeart: Color(hex: "#D97A90"), dataSpO2: InstrumentoTheme.watch.dataSpO2,  // token-exempt: handoff-mandated Dynamic Island contrast bump (README.md §Live Activity)
+            dataOxygen: InstrumentoTheme.watch.dataOxygen, dataSteps: InstrumentoTheme.watch.dataSteps,
+            verdict: InstrumentoTheme.watch.verdict, warning: InstrumentoTheme.watch.warning, critical: InstrumentoTheme.watch.critical
+        )
     }
 }
 
@@ -392,9 +410,10 @@ private struct ActionsRow: View {
         }
     }
 
-    // Active set: one primary «Completar» that logs the set and enters the rest.
+    // Active set: one primary «✓ Completar serie» that logs the set and enters the rest (lámina
+    // «Fuera de la app · Live Activity»: the checkmark is part of the label, not a separate glyph).
     private var activeActions: some View {
-        PrimaryButton(title: Text("Complete"), intent: RestCompleteSetIntent(), theme: theme)
+        PrimaryButton(title: Text(verbatim: "✓ ") + Text("Complete set"), intent: RestCompleteSetIntent(), theme: theme)
             .accessibilityLabel(Text("Complete set"))
             .accessibilityHint(Text("Logs the set and advances"))
     }
@@ -558,20 +577,23 @@ private struct PulseChip: View {
 // MARK: - Dynamic Island
 
 private enum SessionDynamicIsland {
-    static func make(state s: RestActivityAttributes.ContentState, theme: InstrumentoTheme) -> DynamicIsland {
+    /// `theme` (`.base`) is unused here on purpose — every region below paints on ActivityKit's own true
+    /// black, never `theme.paper`, so it takes `islandTheme` (the relit-for-black palette, see
+    /// `RestLiveActivity.dynamicIslandTheme`) instead.
+    static func make(state s: RestActivityAttributes.ContentState, theme: InstrumentoTheme, islandTheme: InstrumentoTheme) -> DynamicIsland {
         DynamicIsland {
-            DynamicIslandExpandedRegion(.leading) { expandedLeading(s, theme) }
-            DynamicIslandExpandedRegion(.trailing) { expandedTrailing(s, theme) }
-            DynamicIslandExpandedRegion(.bottom) { expandedBottom(s, theme) }
+            DynamicIslandExpandedRegion(.leading) { expandedLeading(s, islandTheme) }
+            DynamicIslandExpandedRegion(.trailing) { expandedTrailing(s, islandTheme) }
+            DynamicIslandExpandedRegion(.bottom) { expandedBottom(s, islandTheme) }
         } compactLeading: {
-            compactLeading(s, theme)
+            compactLeading(s, islandTheme)
         } compactTrailing: {
-            compactTrailing(s, theme)
+            compactTrailing(s, islandTheme)
         } minimal: {
-            minimal(s, theme)
+            minimal(s, islandTheme)
         }
         .widgetURL(URL(string: "noopdev://session"))
-        .keylineTint(s.isHRRest ? theme.dataHeart : theme.dataStrain)
+        .keylineTint(s.isHRRest ? islandTheme.dataHeart : islandTheme.dataStrain)
     }
 
     // Compact leading: the phase's dominant glyph — set count / countdown / pulse.

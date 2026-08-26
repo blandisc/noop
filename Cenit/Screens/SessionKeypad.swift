@@ -161,7 +161,9 @@ struct SessionKeypad: View {
                         .font(StrandFont.glyph(.inline, weight: .semibold))
                         .foregroundStyle(theme.inkSecondary)
                         .frame(width: 34, height: 34)
-                        .contentShape(Rectangle())
+                        // Revisión final (FER-140), hallazgo grave: el dibujo se queda en 34pt (el
+                        // handoff), pero el toque se extiende al mínimo HIG de 44pt.
+                        .contentShape(Rectangle().inset(by: -5))
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text("Hide keyboard"))
@@ -171,7 +173,7 @@ struct SessionKeypad: View {
                             .font(StrandFont.glyph(.inline, weight: .semibold))
                             .foregroundStyle(theme.inkSecondary)
                             .frame(width: 34, height: 34)
-                            .contentShape(Rectangle())
+                            .contentShape(Rectangle().inset(by: -5))
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(isPaused ? Text("Resume session") : Text("Pause session"))
@@ -185,7 +187,9 @@ struct SessionKeypad: View {
                     Text("Next").font(StrandFont.subhead).fontWeight(.semibold)
                         .foregroundStyle(theme.dataRecovery)
                         .padding(.horizontal, 12).frame(height: 34)
-                        .contentShape(Rectangle())
+                        // Revisión final (FER-140), hallazgo menor: 34pt de alto queda bajo el mínimo
+                        // HIG en el eje vertical; se extiende el toque sin tocar el dibujo.
+                        .contentShape(Rectangle().inset(by: -5))
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text("Next field"))
@@ -201,7 +205,7 @@ struct SessionKeypad: View {
                 .padding(.horizontal, 11).frame(height: 34)
                 .background(Capsule().fill(Color.clear))
                 .overlay(Capsule().strokeBorder(enabled ? theme.hairlineStrong : theme.hairline, lineWidth: 1))
-                .contentShape(Capsule())
+                .contentShape(Rectangle().inset(by: -5))
         }
         .buttonStyle(.plain)
         .disabled(!enabled)

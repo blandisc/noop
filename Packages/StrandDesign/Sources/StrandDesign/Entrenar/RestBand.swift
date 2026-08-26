@@ -107,39 +107,46 @@ public struct RestBand<Next: View>: View {
 
     public var body: some View {
         VStack(alignment: large ? .center : .leading, spacing: EntrenarMetrics.bandGap) {
-            // Ronda 4, hallazgo grave: `trailing` (el reloj transcurrido) solo pertenece a la banda
-            // en línea, donde comparte la fila con el kicker. La pantalla completa de DESCANSO en
-            // Foco ya dice el mismo dato dentro del numeral grande — repetirlo a la derecha rompe la
-            // simetría centrada que pide el prototipo y estira un `Spacer` sin ancla en una fila a
-            // todo lo ancho de la pantalla.
-            if large {
-                Text(kicker).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            } else {
-                HStack(alignment: .firstTextBaseline) {
+            // Ronda 2 revisión final, hallazgo grave (g4-a11y): `.combine` vivía en la VStack completa,
+            // fundiendo el botón «Skip» (un hermano real, no contenido de texto) en un solo elemento
+            // estático sin acción — VoiceOver perdía el control. Solo el bloque de texto se combina;
+            // el botón queda fuera, alcanzable con su propio trait.
+            Group {
+                // Ronda 4, hallazgo grave: `trailing` (el reloj transcurrido) solo pertenece a la banda
+                // en línea, donde comparte la fila con el kicker. La pantalla completa de DESCANSO en
+                // Foco ya dice el mismo dato dentro del numeral grande — repetirlo a la derecha rompe la
+                // simetría centrada que pide el prototipo y estira un `Spacer` sin ancla en una fila a
+                // todo lo ancho de la pantalla.
+                if large {
                     Text(kicker).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                    Spacer(minLength: CenitMetrics.space2)
-                    if let trailing {
-                        Text(verbatim: trailing)
-                            .font(InstrumentoType.groteskNumber(13, weight: .bold, relativeTo: .caption))
-                            .foregroundStyle(theme.inkSecondary)
+                } else {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(kicker).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                        Spacer(minLength: CenitMetrics.space2)
+                        if let trailing {
+                            Text(verbatim: trailing)
+                                .font(InstrumentoType.groteskNumber(13, weight: .bold, relativeTo: .caption))
+                                .foregroundStyle(theme.inkSecondary)
+                        }
                     }
                 }
+                headline
+                rail
+                // El riel solo aparece con el descanso por pulso Y con lectura: sin pulso no hay caída
+                // que dibujar, y un riel vacío sería un instrumento que finge medir.
+                if case let .heartRate(_, objetivo, actual) = mode, let actual {
+                    RestPulseRail(bpm: actual, target: objetivo)
+                        .padding(.top, 2)
+                }
+                if let note {
+                    Text(note)
+                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                        .multilineTextAlignment(large ? .center : .leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                next
             }
-            headline
-            rail
-            // El riel solo aparece con el descanso por pulso Y con lectura: sin pulso no hay caída
-            // que dibujar, y un riel vacío sería un instrumento que finge medir.
-            if case let .heartRate(_, objetivo, actual) = mode, let actual {
-                RestPulseRail(bpm: actual, target: objetivo)
-                    .padding(.top, 2)
-            }
-            if let note {
-                Text(note)
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                    .multilineTextAlignment(large ? .center : .leading)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            next
+            .accessibilityElement(children: .combine)
             if let onSkip {
                 Button(action: onSkip) {
                     Text("Skip")
@@ -164,7 +171,6 @@ public struct RestBand<Next: View>: View {
         // dibuja ningún borde. `!large` evita dos reglas huérfanas flotando solas en Foco.
         .overlay(alignment: .top) { if !large { Rectangle().fill(theme.hairline).frame(height: 1) } }
         .overlay(alignment: .bottom) { if !large { Rectangle().fill(theme.hairline).frame(height: 1) } }
-        .accessibilityElement(children: .combine)
     }
 
     /// El tamaño del numeral: 40 pt en la lista en línea, 52 pt (`focusRestValue`) en la variante

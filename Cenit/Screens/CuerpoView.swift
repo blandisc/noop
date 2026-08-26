@@ -341,6 +341,7 @@ private struct CuerpoLanding: View {
             TrainingBodyScreen(theme: theme)
                 .instrumentoTheme(theme)
                 .environmentObject(repo)
+                .environmentObject(health)
                 .preferredColorScheme(.light)
         }
         // Handoff from the strength summary's muscle chips (FER-409): open the fatigue map on arrival.

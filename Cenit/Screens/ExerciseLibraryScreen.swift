@@ -131,23 +131,17 @@ struct ExerciseLibraryScreen: View {
     // MARK: - Header
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            // Handoff: overline «BIBLIOTECA» + the COUNT as the Grotesk hero title («873 ejercicios»).
-            // The count reflects the REAL loaded catalog (never a made-up figure) — until it loads, the
-            // title falls back to the section name so nothing flashes a wrong 0.
-            Text(createFlow ? "New routine · pick exercises" : (addMode ? "Add to routine" : "Library"))
-                .groteskSheetTitle().textCase(.uppercase).foregroundStyle(theme.inkTertiary)
-            Group {
-                if loaded {
-                    Text("\(exercises.count) exercises")
-                } else {
-                    Text("Library")
-                }
+        // Handoff V10 (FER-139): a single kicker line — «Biblioteca · N ejercicios» — not the older
+        // count-as-hero-title pattern (FER-942). The count reflects the REAL loaded catalog (never a
+        // made-up figure); until it loads, the line falls back to the section name alone.
+        Group {
+            if loaded {
+                Text("Library · \(exercises.count) exercises")
+            } else {
+                Text(createFlow ? "New routine · pick exercises" : (addMode ? "Add to routine" : "Library"))
             }
-            .font(InstrumentoType.groteskHeroNumeral(28)).tracking(InstrumentoType.groteskHeroTrackingScaled(28))
-            .foregroundStyle(theme.ink)
-            .padding(.top, 2)
         }
+        .entrenarCabeceraKicker().foregroundStyle(theme.inkTertiary)
     }
 
     private var searchField: some View {
@@ -160,6 +154,7 @@ struct ExerciseLibraryScreen: View {
                 Button { search = "" } label: {
                     Image(systemName: "xmark.circle.fill").foregroundStyle(theme.inkTertiary)
                 }.buttonStyle(.plain)
+                    .accessibilityLabel(Text("Clear search"))
             }
         }
         .padding(.horizontal, CenitMetrics.gap).padding(.vertical, CenitMetrics.rowVPad)
@@ -231,8 +226,11 @@ struct ExerciseLibraryScreen: View {
             }
             // «Con historial tuyo» — the exercises you've logged, first, each with its best mark + sparkline.
             if !mine.isEmpty {
-                InstrumentoSectionBand("With your history")
-                    .padding(.top, CenitMetrics.space1).padding(.bottom, CenitMetrics.space2)
+                InstrumentoSectionBand("With your history") {
+                    Text("Best mark").font(InstrumentoType.grotesk(11, weight: .semibold)).tracking(1.4)
+                        .textCase(.uppercase).foregroundStyle(theme.inkTertiary)
+                }
+                .padding(.top, CenitMetrics.space1).padding(.bottom, CenitMetrics.space2)
                 ForEach(mine) { ex in
                     exerciseRow(ex, showsHistory: true)
                     if ex.id != mine.last?.id { Divider().overlay(theme.hairline.opacity(StrandOpacity.muted)) }
@@ -385,16 +383,24 @@ struct ExerciseLibraryScreen: View {
         }
     }
 
+    // Handoff V10 (FER-139): a paper pill, bottom-right, 44pt tall — not a full-width list row.
     private var createRow: some View {
-        Button { showCreate = true } label: {
-            HStack(spacing: CenitMetrics.space2) {
-                StrandIcon.add.image.font(StrandFont.glyph(.inline, weight: .semibold))
-                    .foregroundStyle(theme.dataStrain)   // handoff: the ＋ carries the ember accent
-                Text("Create your own exercise").font(StrandFont.body).foregroundStyle(theme.ink)
+        HStack {
+            Spacer(minLength: 0)
+            Button { showCreate = true } label: {
+                HStack(spacing: CenitMetrics.space2) {
+                    StrandIcon.add.image.font(StrandFont.glyph(.inline, weight: .semibold))
+                        .foregroundStyle(theme.dataStrain)   // handoff: the ＋ carries the ember accent
+                    Text("Create exercise").font(StrandFont.body).foregroundStyle(theme.ink)
+                }
+                .padding(.horizontal, CenitMetrics.gap)
+                .frame(height: EntrenarMetrics.row)
+                .background(theme.surface, in: Capsule(style: .continuous))
+                .overlay(Capsule(style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
             }
-            .padding(.vertical, CenitMetrics.gap).contentShape(Rectangle())
+            .buttonStyle(EntrenarPressStyle())
         }
-        .buttonStyle(EntrenarPressStyle())
+        .padding(.top, CenitMetrics.space1)
     }
 
     // MARK: - Add bar (ADD mode)

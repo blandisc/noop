@@ -109,6 +109,13 @@ private struct EntrenarLanding: View {
     /// FER-85/FER-84: la boleta del veredicto, servida DENTRO de Entrenar. El hilo la abre como
     /// hoja; nunca cambia de pestaña. Es la misma acta que Hoy sirve, con el mismo modelo.
     @State private var showVeredictoActa = false
+    /// FER-138: TU SEMANA (encabezado y tira) abre la hoja rápida de rotar días — pero solo cuando
+    /// ya hay al menos una rutina en el split (`semanaSection`); en primer uso (`split` vacío,
+    /// `primerUsoSection`) TU SEMANA sigue abriendo el editor completo vía `openWeeklyPlan`, porque
+    /// la hoja rápida solo rota entre rutinas YA programadas y no tiene forma de asignar la primera.
+    /// «Editar rutinas y semana ›» (`utilityRow` en `semanaSection`) también sigue llevando a
+    /// `WeeklyPlanEditorView` vía `openWeeklyPlan`.
+    @State private var showWeekEditorSheet = false
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
     private var unitSystem: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
     /// El MISMO «Marcar todo recuperado» que lee `TrainingBodyScreen` (FER-525): sin este filtro
@@ -158,6 +165,10 @@ private struct EntrenarLanding: View {
     @State private var showTricks = false
     /// FER-952: the hub's «New routine» — pushes the unified create flow (library → editor).
     @State private var showCreateRoutine = false
+    /// FER-137: «Crear plan» — the single door into «Tres caminos» (plantillas / desde cero / importar).
+    @State private var showCreatePlan = false
+    /// Success toast after a template group is applied from `CrearPlanScreen` — auto-dismisses.
+    @State private var showPlanAppliedToast = false
     /// FER-950: Quick / Mobility discs with a live strength session — confirm resume instead of
     /// silently re-presenting via `startStrengthSession`'s no-op guard (which looks like "start new").
     @State private var confirmResumeStrength = false
@@ -283,6 +294,8 @@ private struct EntrenarLanding: View {
         // FER-969: el fallo de escritura es un banner honesto, no éxito silencioso. Componente
         // compartido desde 2026-07-19 (era la misma copia en tres pantallas).
         .saveErrorToast(isPresented: $saveError)
+        // FER-137: el eco de «Plantilla aplicada» tras volver de `CrearPlanScreen`.
+        .planAppliedToast(isPresented: $showPlanAppliedToast)
         // La boleta del veredicto, dentro de Entrenar (FER-85): el mismo modelo y la misma vista
         // que sirve Hoy, así que las dos pantallas no pueden divergir ni en la tabla ni en la
         // gráfica de cajas. «Ver más» cierra la hoja sin cambiar de pestaña.
@@ -294,6 +307,16 @@ private struct EntrenarLanding: View {
             // arma este contenido, para que las dos pantallas no puedan divergir.
             VeredictoActaSheet(prep: repo.todayPreparedness, healthConnected: healthConnected,
                                fullyLoaded: repo.fullyLoaded)
+        }
+        // FER-138: la hoja rápida de rotar días — TU SEMANA (encabezado y tira) la abre, en las dos
+        // secciones que la muestran. `$split` es un binding: rotar un día en la hoja actualiza esta
+        // misma landing al instante, sin esperar a que la hoja cierre.
+        .sheet(isPresented: $showWeekEditorSheet) {
+            WeekEditorSheet(theme: theme, split: $split, routines: routines,
+                            orderedWeekdays: orderedWeekdays, todayWeekday: todayWeekday,
+                            doneWeekdays: Set(orderedWeekdays.filter { trainedThisWeek($0) != nil }),
+                            dayLetter: weekdayLetter)
+                .environmentObject(repo)
         }
         // First-use «Rutinas de plantilla» (mock 5a): the grouped templates list. «Add to my routines»
         // is the only action here (no `onStart`), so a copy lands in «My routines» and the landing
@@ -310,6 +333,12 @@ private struct EntrenarLanding: View {
         // FER-952: «＋ Nueva rutina» del hub — el flujo unificado directo (Biblioteca → editor).
         .navigationDestination(isPresented: $showCreateRoutine) {
             ExerciseLibraryScreen(createFlow: true) { picks in createRoutineFromHub(picks) }
+        }
+        // FER-137: «Crear plan» — la puerta única de «Tres caminos».
+        .navigationDestination(isPresented: $showCreatePlan) {
+            CrearPlanScreen(openRoutine: openRoutine, onChange: { await load() }) {
+                showPlanAppliedToast = true
+            }
         }
         .navigationDestination(isPresented: $showTricks) {
             WorkshopTricksScreen()
@@ -580,7 +609,9 @@ private struct EntrenarLanding: View {
             ? String(localized: "exercise \(p.index) of \(p.total) · \(p.doneSets) sets done")
             : String(localized: "\(p.doneSets) sets done")
         guard let last = lastDoneSet(session) else { return head }
-        let kg = UnitFormatter.massFromKilograms(last.kg, system: unitSystem)
+        // `StrengthDisplay.weight`, no `massFromKilograms`: en imperial el peso absoluto se lee
+        // redondeado («182 lb») en TODA la sección de fuerza; el crudo daba «181.9 lb» solo aquí.
+        let kg = StrengthDisplay.weight(last.kg, system: unitSystem)
         return head + " · " + String(localized: "last: \(last.name) \(kg) × \(last.reps)")
     }
 
@@ -863,7 +894,7 @@ private struct EntrenarLanding: View {
 
     /// «Hoy subes Press banca · 82,5 kg y Press militar · 26 kg» — the names+loads in the raise green.
     private var raiseText: Text {
-        let parts = raisesToday.map { "\($0.name) · \(UnitFormatter.massFromKilograms($0.kg, system: unitSystem))" }
+        let parts = raisesToday.map { "\($0.name) · \(StrengthDisplay.weight($0.kg, system: unitSystem))" }
         // Grotesk RELATIVO al subhead, igual que su fila hermana: las dos pueden estar en pantalla a
         // la vez y con Dynamic Type una crecía y la otra se quedaba clavada en 13 pt.
         let strong = parts.map {
@@ -893,7 +924,7 @@ private struct EntrenarLanding: View {
     private var heldRaiseText: Text {
         let shown = deferredToday.prefix(3)
         let rest = deferredToday.count - shown.count
-        let parts = shown.map { "\($0.name) · \(UnitFormatter.massFromKilograms($0.kg, system: unitSystem))" }
+        let parts = shown.map { "\($0.name) · \(StrengthDisplay.weight($0.kg, system: unitSystem))" }
         // Grotesk RELATIVE to the surrounding subhead: the weights are the datum of this sentence, so
         // they have to grow with it — a fixed 13 pt stayed put while the prose reached xxxLarge.
         let strong = parts.map {
@@ -923,12 +954,12 @@ private struct EntrenarLanding: View {
     /// ya existía sin llamador — con la piel nueva de `planRoutineRow` (`EntrenarFamilyDot`).
     private var semanaSection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // El encabezado NO es botón: la tira `WeekTokens` de abajo ya abre el editor semanal, y un
-            // segundo blanco tocable con el mismo destino justo encima duplicaba el tap target — algo
-            // que este mismo cambio evita en MÚSCULOS CARGADOS y BITÁCORA (sus encabezados tampoco
-            // navegan; solo la fila de dato lo hace).
-            nivelHub { EntrenarNivel("Your week", value: semanaValor, kickerStyle: .handoff) }
-            WeekTokens(days: weekTokenDays, labels: orderedWeekdays.map(weekdayLetter)) { openWeeklyPlan() }
+            // FER-138: el encabezado y la tira abren la hoja rápida de rotar días (`WeekEditorSheet`),
+            // no `WeeklyPlanEditorView` — ese editor completo se mudó a «Editar rutinas y semana ›»
+            // (`utilityRow` más abajo), así que sigue teniendo una puerta y ninguna de las dos queda
+            // huérfana.
+            nivelHub { EntrenarNivel("Your week", value: semanaValor, kickerStyle: .handoff) { showWeekEditorSheet = true } }
+            WeekTokens(days: weekTokenDays, labels: orderedWeekdays.map(weekdayLetter)) { showWeekEditorSheet = true }
                 .padding(.top, CenitMetrics.space2)
             ForEach(otherPlanRoutines, id: \.routineId) { row in
                 planRoutineRow(row)
@@ -938,6 +969,10 @@ private struct EntrenarLanding: View {
             ForEach(unscheduledRoutines, id: \.id) { r in
                 planRoutineRow((routineId: r.id, name: r.name, days: String(localized: "no day yet")))
             }
+            // FER-138: la puerta al editor COMPLETO (`WeeklyPlanEditorView`) — asignar rutinas a días,
+            // gestionar carpetas — ya no vive en el encabezado/tira (que ahora abren la hoja rápida de
+            // rotar); sin esta fila `openWeeklyPlan` quedaría sin llamador.
+            utilityRow(icon: "calendar.badge.clock", label: "Edit routines and week") { openWeeklyPlan() }
             nuevaRutinaRow
         }
     }
@@ -985,7 +1020,12 @@ private struct EntrenarLanding: View {
                 showCreateRoutine = true
             }
             HStack(spacing: CenitMetrics.space2) {
-                CrearPlanChip(onTemplates: { showTemplates = true }, onImport: { showHubImport = true })
+                // FER-137: el chip abre «Tres caminos» (`CrearPlanScreen`) directo, ya no el paperMenu
+                // de dos ítems de `CrearPlanChip` — ese componente sigue vivo para «Tu Plan» (FER-88),
+                // que aún reparte Plantilla/Importar en su propio menú.
+                InstrumentoToolChip(systemImage: "rectangle.stack.badge.plus", label: Text("Create plan")) {
+                    showCreatePlan = true
+                }
                 InstrumentoToolChip(systemImage: "questionmark.circle", label: Text("Tricks")) { showTricks = true }
             }
         }
@@ -1254,7 +1294,7 @@ private struct EntrenarLanding: View {
             HStack {
                 Text("Load").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 Spacer(minLength: CenitMetrics.space2)
-                Text("Sets · 7d").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text("Sets · 7 d").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             }
             .padding(.top, CenitMetrics.space2)
             ForEach(Array(muscleLoads.prefix(5)), id: \.muscle) { load in
@@ -1320,7 +1360,7 @@ private struct EntrenarLanding: View {
     /// «Fresco: pecho · hombros» — hasta 2 músculos en estado `.fresh` (quisquilloso ronda 3: el
     /// músculo PRINCIPAL, `muscleLoads.first`, siempre tiene `relative == 1.0` así que nunca cae aquí
     /// — no hay riesgo de listarlo dos veces). Reusa la MISMA etiqueta «Fresh: »/«Fresco: » y el
-    /// MISMO patrón de unión sin adjetivo flexionado que `TrainingBodyScreen.freshLine`, para que la
+    /// MISMO patrón de unión sin adjetivo flexionado que `TrainingBodyScreen.muscleReading`, para que la
     /// landing y su pantalla hermana no inventen dos vocabularios para lo mismo. `nil` cuando ningún
     /// músculo está fresco (primeras sesiones: todo lo tocado carga, nada está fresco todavía).
     private var freshMusclesClause: Text? {
@@ -1402,14 +1442,10 @@ private struct EntrenarLanding: View {
         .overlay(alignment: .bottom) { Divider().overlay(theme.hairline) }
     }
 
-    /// El chip «N marca(s)»: verdeProfundo sobre su propio tinte al 10 % (`StrandOpacity.tintFill`).
+    /// El chip «N marca(s)»: mismo componente compartido que Historial (`EntrenarMarcaChip`,
+    /// StrandDesign — quisquilloso ronda 4: antes dos copias `private` idénticas).
     private func marcaChip(_ count: Int) -> some View {
-        Text(count == 1 ? "1 mark" : "\(count) marks")
-            .entrenarMarcaChip()
-            .foregroundStyle(theme.positiveText)
-            .padding(.horizontal, CenitMetrics.space2)
-            .padding(.vertical, CenitMetrics.space1)
-            .background(theme.tint(theme.positiveText), in: Capsule())
+        EntrenarMarcaChip(count, theme: theme)
     }
 
     /// «Mié 12 · Tirón A».
@@ -1505,9 +1541,15 @@ private struct EntrenarLanding: View {
             }
             .buttonStyle(EntrenarPressStyle())
             .accessibilityElement(children: .combine)
-            StrandCTAButton("Build my plan", tint: theme.positiveText, fillsWidth: false) { showTemplates = true }
+            // FER-137: el CTA de primer uso abre «Tres caminos» — antes saltaba derecho a la hoja de
+            // plantillas, un solo camino de los tres que ahora ofrece la puerta.
+            StrandCTAButton("Build my plan", tint: theme.positiveText, fillsWidth: false) { showCreatePlan = true }
                 .padding(.top, CenitMetrics.space1)
-            nivelHub { EntrenarNivel("Your week", value: "Tap a day", kickerStyle: .handoff) }
+            // FER-138 (ronda 2, grave): con `split` vacío no hay nada que rotar — la hoja rápida
+            // solo tiene sentido una vez que ya existe al menos una rutina programada. Aquí TU
+            // SEMANA sigue abriendo el editor completo (`openWeeklyPlan` → `WeeklyPlanEditorView`),
+            // el único lugar donde se puede asignar la primera rutina a un día.
+            nivelHub { EntrenarNivel("Your week", value: "Tap a day", kickerStyle: .handoff) { openWeeklyPlan() } }
                 .padding(.top, EntrenarMetrics.firstLevelTop)
             WeekTokens(days: weekTokenDays, labels: orderedWeekdays.map(weekdayLetter)) { openWeeklyPlan() }
                 .padding(.top, CenitMetrics.space2)
@@ -1710,14 +1752,9 @@ private struct EntrenarLanding: View {
 
     /// La fecha de hoy en la plantilla localizada «EEE d MMM» («sáb 15 ago» / «Sat 15 Aug»), con la
     /// inicial en mayúscula — la plantilla de weekday corto sale toda en minúsculas en es-MX.
-    private var cabeceraFecha: String {
-        let f = DateFormatter()
-        f.locale = Locale.autoupdatingCurrent
-        f.setLocalizedDateFormatFromTemplate("EEE d MMM")
-        let s = f.string(from: Date())
-        guard let first = s.first else { return s }
-        return String(first).uppercased() + s.dropFirst()
-    }
+    /// `StrandFormat.weekdayHeading` (StrandDesign): mismo helper compartido con la cabecera de «Tu
+    /// cuerpo» (quisquilloso ronda 4: antes dos copias a mano).
+    private var cabeceraFecha: String { StrandFormat.weekdayHeading(Date()) }
 
     /// El hilo del veredicto: la misma pastilla que es la puerta de Hoy, construida por el MISMO
     /// constructor (`LiquidHoyBuilder.hiloEntrenar`) para que las dos pantallas no puedan divergir.
