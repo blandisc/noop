@@ -2426,6 +2426,23 @@
         }
       }
     },
+    "%lld measurements in this range" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld measurements in this range"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld mediciones en este rango"
+          }
+        }
+      }
+    },
     "%lld min" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -26129,6 +26146,23 @@
         }
       }
     },
+    "No measurements in this range: showing your most recent %lld." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No measurements in this range: showing your most recent %lld."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin mediciones en este rango: se muestran tus %lld más recientes."
+          }
+        }
+      }
+    },
     "No muscle · tap to complete" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -27142,6 +27176,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aún no hay suficiente historial"
+          }
+        }
+      }
+    },
+    "Not enough measurements in this range to draw a trend." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not enough measurements in this range to draw a trend."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No hay suficientes mediciones en este rango para trazar una tendencia."
           }
         }
       }
@@ -41707,6 +41758,23 @@
         }
       }
     },
+    "VO₂max history" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "VO₂max history"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Historial de VO₂max"
+          }
+        }
+      }
+    },
     "VS YESTERDAY" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -51773,6 +51841,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "más reciente"
+          }
+        }
+      }
+    },
+    "latest measurement" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "latest measurement"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "última medición"
           }
         }
       }

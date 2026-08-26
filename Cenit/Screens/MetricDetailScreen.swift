@@ -138,17 +138,18 @@ struct MetricDetailScreen: View {
         // history on every redraw. (FER-216)
         let window = MetricWindowMath.make(parsedSeries, selected: range)
         return Group {
-            if (isNarrative && !isIntraday) || spec.descriptor.key == "steps" {
+            if (isNarrative && !isIntraday) || spec.descriptor.key == "steps"
+                || spec.descriptor.key == "vo2max" {
                 // FER-103 · TND-20: the four scalar narrative vitals (HRV / rhr / resp_rate / SpO₂)
-                // ride the Liquid body; TND-21 adds Steps on its own Liquid skeleton. The fondo goes
-                // on BOTH presentation forms — `background` for Cuerpo's overlay layer and
-                // `presentationBackground` for Hoy's sheet (same pair as
+                // ride the Liquid body; TND-21 adds Steps and TND-22 VO₂max, each on its own Liquid
+                // skeleton. The fondo goes on BOTH presentation forms — `background` for Cuerpo's
+                // overlay layer and `presentationBackground` for Hoy's sheet (same pair as
                 // SleepDetailScreen/SkinTempDetailScreen, FER-102) — so neither call site changes.
                 ScrollView {
-                    if spec.descriptor.key == "steps" {
-                        stepsBodyLiquid(window)
-                    } else {
-                        narrativeBodyLiquid(window)
+                    switch spec.descriptor.key {
+                    case "steps":  stepsBodyLiquid(window)
+                    case "vo2max": vo2maxBodyLiquid(window)
+                    default:       narrativeBodyLiquid(window)
                     }
                 }
                 .background { LiquidSheetFondo(tone: liquidTono).ignoresSafeArea() }
@@ -156,14 +157,13 @@ struct MetricDetailScreen: View {
                 .presentationDragIndicator(.visible)
                 .presentationCornerRadius(LiquidRadius.hoja)
             } else {
-                // Paper «Instrumento» skeletons, untouched: Heart Rate's intraday path and VO₂max
-                // migrate in their own TND blocks (regla de transición FER-103). Steps' paper tree
-                // (`stepsBodyFinal`) stays compiled as the rollback, no longer called from here.
+                // Paper «Instrumento» skeleton, untouched: Heart Rate's intraday path is the LAST
+                // paper body — it migrates in its own TND block (regla de transición FER-103). The
+                // Steps / VO₂max paper trees (`stepsBodyFinal` / `vo2maxBodyFinal`) stay compiled
+                // as the rollback, no longer called from here.
                 ScrollView {
                     if isIntraday {
                         narrativeIntradayFinal(window)
-                    } else if spec.descriptor.key == "vo2max" {
-                        vo2maxBodyFinal(window)
                     }
                 }
                 .background(theme.paper)
@@ -2144,19 +2144,23 @@ struct MetricDetailScreen: View {
     // azul, calco `LiquidMetricSheetView.tono` :225-248), nunca por juicio.
     //
     // Los helpers de papel del camino narrativo (narrativeBodyFinal, hoyVsRangoContent,
-    // graficaRangosBlock, tileStripFinal, …) quedan INTACTOS: los cuerpos de Pasos / VO₂max /
-    // intradía siguen en papel hasta sus propios bloques, y el árbol viejo es el rollback.
+    // graficaRangosBlock, tileStripFinal, …) quedan INTACTOS: el cuerpo intradía sigue en papel
+    // hasta su propio bloque, y los árboles viejos (Pasos, VO₂max incluidos) son el rollback.
 
     /// La identidad Liquid de la métrica — calco del mapa id→hue de la hoja de Hoy
     /// (`LiquidMetricSheetView.tono` :225-248): hrv → cian · rhr → rosa · resp_rate/spo2 → azul
-    /// (familia respiratoria) · steps → teal (TND-21). Nunca un color de juicio: el veredicto lo
-    /// dicen las palabras.
+    /// (familia respiratoria) · steps → teal (TND-21) · vo2max → verdePrimario (TND-22, el
+    /// mismo default que la hoja de Hoy le da a vo2max en :247). Nunca un color de juicio: el
+    /// veredicto lo dicen las palabras. OJO declarado (A11): verde también es el color del
+    /// veredicto en el sistema — aquí viste IDENTIDAD por precedente de la hoja; si el campo a
+    /// sangre lee como juicio, el tono nuevo es decisión del dueño, no de este bloque.
     private var liquidTono: Color {
         switch spec.descriptor.key {
-        case "hrv":   return LiquidColor.cian
-        case "rhr":   return LiquidColor.rosa
-        case "steps": return LiquidColor.teal
-        default:      return LiquidColor.azul   // resp_rate, spo2
+        case "hrv":    return LiquidColor.cian
+        case "rhr":    return LiquidColor.rosa
+        case "steps":  return LiquidColor.teal
+        case "vo2max": return LiquidColor.verdePrimario
+        default:       return LiquidColor.azul   // resp_rate, spo2
         }
     }
 
@@ -2682,11 +2686,12 @@ struct MetricDetailScreen: View {
 
     private var liquidA11yGrafica: String {
         switch spec.descriptor.key {
-        case "hrv":   return String(localized: "HRV history")
-        case "rhr":   return String(localized: "Resting heart rate history")
-        case "spo2":  return String(localized: "Blood oxygen history")
-        case "steps": return String(localized: "Steps history")
-        default:      return String(localized: "Breathing history")
+        case "hrv":    return String(localized: "HRV history")
+        case "rhr":    return String(localized: "Resting heart rate history")
+        case "spo2":   return String(localized: "Blood oxygen history")
+        case "steps":  return String(localized: "Steps history")
+        case "vo2max": return String(localized: "VO₂max history")
+        default:       return String(localized: "Breathing history")
         }
     }
 
@@ -2865,15 +2870,28 @@ struct MetricDetailScreen: View {
             // (axioma cero banda). M2: nunca procedencia sobre un guion — el chip solo con
             // historia, y el sufijo temporal solo cuando HAY lectura fresca.
             if !series.isEmpty {
-                LiquidOrigenChip(glyph: liquidGlifo, badgeTono: liquidTono,
-                                 etiqueta: spec.descriptor.key == "resp_rate"
-                                     ? String(localized: "Apple Watch")
-                                     : String(localized: "Apple Health"),
-                                 // TND20-F6: el sufijo temporal solo con lectura FRESCA.
-                                 sufijo: liquidValorFresco != nil
-                                     ? (liquidNocturno ? String(localized: "last night")
-                                                       : String(localized: "today"))
-                                     : nil)
+                if spec.descriptor.key == "vo2max" {
+                    // TND-22 · A11: vo2max no tiene glifo Liquid (paridad hoja de Hoy,
+                    // `LiquidMetricSheetView.glifo` :255-268), así que el chip calca el de
+                    // PROCEDENCIA de esa hoja (`origenChipVista` :1613-1616): gota `.corazon`
+                    // sobre rosa + «Apple Health» — la marca de la fuente, no de la métrica.
+                    // Honestidad temporal ESTRUCTURAL: el sufijo «today» SOLO si la última
+                    // medición es literalmente de hoy (casi nunca lo es).
+                    LiquidOrigenChip(glyph: .corazon, badgeTono: LiquidColor.rosa,
+                                     etiqueta: String(localized: "Apple Health"),
+                                     sufijo: liquidValorFresco != nil
+                                         ? String(localized: "today") : nil)
+                } else {
+                    LiquidOrigenChip(glyph: liquidGlifo, badgeTono: liquidTono,
+                                     etiqueta: spec.descriptor.key == "resp_rate"
+                                         ? String(localized: "Apple Watch")
+                                         : String(localized: "Apple Health"),
+                                     // TND20-F6: el sufijo temporal solo con lectura FRESCA.
+                                     sufijo: liquidValorFresco != nil
+                                         ? (liquidNocturno ? String(localized: "last night")
+                                                           : String(localized: "today"))
+                                         : nil)
+                }
             }
         }
         .liquidSeccion(top: LiquidSpace.s200, bottom: LiquidSpace.s800)
@@ -3102,6 +3120,259 @@ struct MetricDetailScreen: View {
                                                   : String(localized: "\(racha) days")))
         }
         return celdas
+    }
+
+    // MARK: - Cuerpo de VO₂max en vidrio Liquid (FER-103 · TND-22)
+    //
+    // Migración PURAMENTE VISUAL del camino de VO₂max (`vo2maxBodyFinal`, que queda como rollback)
+    // sobre los mismos legos que los cuerpos de arriba. Los rasgos PROPIOS de la métrica:
+    //
+    // · SPARSE MEASURED: Apple lo mide de vez en cuando, no a diario. La gráfica traza los puntos
+    //   medidos CRUDOS (paridad `chartBlock`: `chartPlotsRaw` → sin media móvil; el modo rangos
+    //   del papel era código muerto inalcanzable y NO se resucita). `info.bands` está VACÍO: sin
+    //   escalera, sin `LiquidReadingLine`, sin `LiquidLevelsList`.
+    // · ANCLA = LA ÚLTIMA MEDICIÓN, casi nunca de hoy. Honestidad temporal ESTRUCTURAL (la clase
+    //   ancla-vieja, TND20-F6): el rótulo del numeral dice «latest measurement», NUNCA «today»;
+    //   el sello dice «Measured N days ago» (claves del papel); la joya de la gráfica y el sufijo
+    //   del chip solo cuando la medición ES de hoy (`liquidValorFresco`).
+    // · NO CALIBRA: sin base personal no hay «N de 7» — con 1 medición ya hay campo y secciones;
+    //   el pozo del historial es el único gate (>1 punto para trazar).
+    // · VOZ de MEDICIONES: los conteos y vacíos del historial hablan de mediciones, ni días ni
+    //   noches — la serie no es un diario.
+    // · VOCABULARIO ÚNICO: la categoría (Low/Average/Good/Excellent) sale SOLO de
+    //   `VO2maxReference.category` + `vo2maxCategoryWord` — héroe, cajita y frases, una fuente.
+    // · Identidad verdePrimario SIN glifo (paridad hoja de Hoy :247/:267); chip de procedencia
+    //   calcado de `origenChipVista` (A11, ver `liquidPieMetodo`).
+
+    /// El esqueleto Liquid de VO₂max: campo (ancla) → (ⓘ) → historial → dónde caes → método.
+    @ViewBuilder private func vo2maxBodyLiquid(_ window: MetricWindow) -> some View {
+        LazyVStack(alignment: .leading, spacing: 0) {
+            // El campo enseña la última medición SIEMPRE que exista (hero `.latest`, paridad
+            // papel) — la honestidad vive en el rótulo/sello, no en esconder el dato.
+            if let v = heroValue {
+                liquidVo2CampoConDato(v)
+            } else {
+                liquidVo2CampoSinDato
+            }
+            if infoOpen { liquidQueMedimosCard }
+            if !loaded {
+                LiquidSheetSkeleton(a11yCargando: String(localized: "Reading your history…"))
+                    .liquidSeccion()
+            } else if !series.isEmpty {
+                // (En el vacío total no entra nada aquí: el campo apagado ya lo dice todo —
+                // cláusula + sello + CTA — y el pie con chip solo viaja con historia, paridad
+                // familia.)
+                seccionLiquid(String(localized: "History")) { liquidVo2HistoryContent(window) }
+                seccionLiquid(String(localized: "Where you fall")) { liquidVo2DondeCaesContent }
+                liquidPieMetodo
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // MARK: TND-22 · 1. El campo — la última medición como ancla, sin «hoy» jamás
+
+    /// El campo teñido con dato: numeral = la ÚLTIMA MEDICIÓN («latest measurement», nunca
+    /// «today»), veredicto = dónde cae vs lo esperado para tu edad (mismas claves y deadband
+    /// que `vo2maxComparison` del papel), y en la ranura libre el sello de honestidad temporal
+    /// «Measured N days ago» + la cápsula «Apple» del papel.
+    private func liquidVo2CampoConDato(_ v: Double) -> some View {
+        LiquidCampoMetrica(
+            tono: liquidTono,
+            titulo: String(localized: spec.info.name),
+            // Sin glifo: el set Liquid no tiene uno para vo2max y la hoja de Hoy lo deja
+            // igual (`LiquidMetricSheetView.glifo` :267 — «recovery y vo2max quedan sin
+            // glifo»). `LiquidCampoMetrica` ya contempla el campo sin gota (glifo opcional).
+            datos: [.init(valor: fmt(v), unidad: unit,
+                          rotulo: String(localized: "latest measurement"))],
+            veredicto: liquidVo2Veredicto,
+            infoAbierto: infoOpen,
+            infoEtiqueta: String(localized: "What we measure"),
+            onInfo: { withAnimation(LiquidMotion.lift) { infoOpen.toggle() } }
+        ) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s150) {
+                if let s = liquidVo2SelloMedido {
+                    LiquidCampoSello(s)
+                }
+                // FER-487: el dato de HOY vino de Apple — con ancla vieja no se enseña.
+                if todayFromApple {
+                    LiquidCampoSello(String(localized: "Apple"))
+                }
+                // VO₂max NO calibra: sin base personal, sin sello «N de 7».
+            }
+        }
+    }
+
+    /// El campo APAGADO: sin medición el numeral es un guion. La cláusula conserva el copy del
+    /// vacío del papel (`sparseEmptyState`), el título de aquel card vive como sello, y el hint
+    /// de conectar Apple Salud (cableado solo para vo2max desde CuerpoView) es el CTA a Ajustes.
+    private var liquidVo2CampoSinDato: some View {
+        LiquidCampoMetrica(
+            tono: liquidTono,
+            titulo: String(localized: spec.info.name),
+            datos: [.init(valor: LiquidCajita.sinDato,
+                          rotulo: String(localized: "latest measurement"),
+                          a11y: String(localized: "no data"), ausente: true)],
+            clausula: liquidVo2ClausulaSinDato
+        ) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s150) {
+                if loaded {
+                    LiquidCampoSello(String(localized: "No VO₂max yet"))
+                }
+                if appleConnectHint {
+                    LiquidVerMas(title: String(localized: "Connect Apple Health to see your VO₂max."),
+                                 tone: LiquidColor.papelAlto) { Self.abrirAjustesSalud() }
+                }
+            }
+        }
+    }
+
+    /// Dos vacíos, no cuatro: cargando · sin mediciones (VO₂max no calibra ni promete rango
+    /// normal, y la explicación del Watch cubre también el caso sin permiso — el CTA de arriba
+    /// abre la puerta).
+    private var liquidVo2ClausulaSinDato: String {
+        guard loaded else { return String(localized: "Reading your history…") }
+        return String(localized: "Your Apple Watch estimates VO₂max during outdoor walks and runs with a good GPS signal.")
+    }
+
+    /// Dónde cae la última medición vs la mediana de tu edad/sexo — las MISMAS claves y el mismo
+    /// deadband ±1.5 que `vo2maxComparison` (:1711, el papel es el rollback; esta es la voz en
+    /// `String` que el campo necesita).
+    private var liquidVo2Veredicto: String? {
+        guard let v = heroValue, let exp = vo2maxExpected else { return nil }
+        if v > exp + 1.5 { return String(localized: "Above what's expected for your age.") }
+        if v < exp - 1.5 { return String(localized: "Below what's expected for your age.") }
+        return String(localized: "In line with what's expected for your age.")
+    }
+
+    /// «Measured today / yesterday / N days ago» — el ancla temporal, con las claves del papel
+    /// (:848-862, que queda como rollback).
+    private var liquidVo2SelloMedido: String? {
+        guard let day = series.last?.day, let date = Repository.parseDayKey(day) else { return nil }
+        let cal = Calendar.current
+        guard let d = cal.dateComponents([.day],
+                                         from: cal.startOfDay(for: date),
+                                         to: cal.startOfDay(for: Date())).day,
+              d >= 0 else { return nil }
+        switch d {
+        case 0:  return String(localized: "Measured today")
+        case 1:  return String(localized: "Measured yesterday")
+        default: return String(localized: "Measured \(d) days ago")
+        }
+    }
+
+    // MARK: TND-22 · 2. Historial — puntos medidos crudos, sin escalera, con las dos anclas
+
+    /// Selector + gráfica cruda + las dos anclas del papel como `LiquidNotaLine` (paridad
+    /// gemelas: BarraAncla → NotaLine). Sin `LiquidResumenVentana`: el papel no tenía celdas
+    /// de resumen para vo2max y no se inventan.
+    private func liquidVo2HistoryContent(_ window: MetricWindow) -> some View {
+        // sparseMeasured: se traza la serie CRUDA de la ventana (paridad `chartBlock`).
+        let plot = window.values
+        return VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+            if visibleBlocks.contains(.periodSelector) {
+                LiquidRangeSelector(opciones: ExploreRange.allCases.map(\.label),
+                                    seleccion: liquidRangeSeleccion, tono: liquidTono)
+            }
+            if plot.count > 1 {
+                VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+                    // Voz de MEDICIONES; con fallback la frase mentiría («N en este rango»
+                    // cuando el rango elegido está vacío), así que la nota honesta la releva.
+                    if window.fellBack {
+                        LiquidNotaLine(String(localized: "No measurements in this range: showing your most recent \(window.rows.count)."),
+                                       tono: LiquidColor.atencionTexto)
+                    } else {
+                        LiquidFraseNivel(nivel: nil,
+                                         conteo: String(localized: "\(plot.count) measurements in this range"),
+                                         tono: liquidTono)
+                    }
+                    liquidVo2Grafica(window, plot: plot)
+                    // La leyenda del papel para sparse (`chartCaption` :1511): puntos crudos.
+                    LiquidNotaLine(String(localized: "Measured values."))
+                }
+                .liquidTarjetaSeccion()
+            } else {
+                // 1 medición o el rango elegido vacío sin dónde ensanchar → pozo honesto.
+                LiquidGraficaNiveles(puntos: [], bandas: [],
+                                     dominio: liquidDominio(plot: []), ticksY: [],
+                                     tono: liquidTono,
+                                     estadoVacio: String(localized: "Not enough measurements in this range to draw a trend."),
+                                     a11yLabel: liquidA11yGrafica)
+            }
+            liquidVo2Anclas
+        }
+    }
+
+    /// Las DOS BarraAncla del papel (:807-839) dichas en NotaLine, bajo la tarjeta (la posición
+    /// de las notas post-tarjeta de la familia).
+    @ViewBuilder private var liquidVo2Anclas: some View {
+        if let exp = vo2maxExpected {
+            LiquidNotaLine(String(localized: "Expected for your age: ~\(Int(exp.rounded()))"))
+        }
+        if let s = liquidVo2SelloMedido {
+            LiquidNotaLine(s)
+        }
+    }
+
+    /// La gráfica del historial: puntos medidos crudos, SIN carriles (info.bands vacío), y la
+    /// joya de «hoy» SOLO si la última medición es literalmente de hoy (TND20-F6).
+    private func liquidVo2Grafica(_ window: MetricWindow, plot: [Double]) -> some View {
+        let puntos = MetricWindowMath
+            .decimatedPoints(rows: window.rows, values: plot, maxPoints: 80)
+            .map { (fecha: $0.date, valor: $0.value) }
+        return LiquidGraficaNiveles(
+            puntos: puntos,
+            bandas: [],
+            dominio: liquidDominio(plot: plot),
+            ticksY: liquidVo2TicksY(plot: plot),
+            tono: liquidTono,
+            puntoHoy: liquidValorFresco != nil ? puntos.last : nil,
+            formatoScrub: { v, f in "\(fmt(v)) · \(Self.ejeFechaLiquid.string(from: f))" },
+            formatoValorScrub: { fmt($0) },
+            formatoFechaScrub: { Self.ejeFechaLiquid.string(from: $0) },
+            formatoFechaEje: { Self.ejeFechaLiquid.string(from: $0) },
+            estadoVacio: String(localized: "Not enough measurements in this range to draw a trend."),
+            a11yLabel: liquidA11yGrafica)
+            .id(range)
+    }
+
+    /// Los ticks del eje: sin cortes de motor (info.bands vacío), afirman los EXTREMOS medidos
+    /// reales de la ventana (el mismo papel que los bordes del dominio clínico juegan en SpO₂,
+    /// `liquidTicksY`) — presentación, cero matemática nueva.
+    private func liquidVo2TicksY(plot: [Double]) -> [(valor: Double, etiqueta: String)] {
+        guard let lo = plot.min(), let hi = plot.max(), hi > lo else { return [] }
+        return [(hi, fmt(hi)), (lo, fmt(lo))]
+    }
+
+    // MARK: TND-22 · 3. Dónde caes — categoría + edad equivalente, calco «Estabilidad térmica»
+
+    /// `LiquidCajitaGrid` (calco `SkinTempDetailScreen.thermalBlock` :513-525) + el copy de
+    /// longevidad y sus citas INTACTOS como notas del bloque (la posición de las notas de hedge
+    /// del patrón espectral/térmico) — visibles sin desplegar, como en el papel; el método del
+    /// pie carga además su propia versión con FRIEND/Kaminsky (catálogo, sin cambios).
+    @ViewBuilder private var liquidVo2DondeCaesContent: some View {
+        VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+            if let v = heroValue, let profile = spec.vo2maxProfile {
+                // VOCABULARIO ÚNICO: la categoría sale SOLO de `VO2maxReference` +
+                // `vo2maxCategoryWord` — la misma fuente que usaba el papel.
+                let active = VO2maxReference.category(value: v, age: profile.age, sex: profile.sex)
+                let eq = VO2maxReference.equivalentAge(value: v, sex: profile.sex)
+                LiquidCajitaGrid {
+                    // La PALABRA de juicio en tinta neutra (calco SkinTemp: «el verde/ámbar de
+                    // juicio del papel no cruza al vidrio»); el número lleva el tono.
+                    LiquidCajita(rotulo: String(localized: "FITNESS CATEGORY"),
+                                 valor: vo2maxCategoryWord(active),
+                                 compacto: true)
+                    LiquidCajita(rotulo: String(localized: "EQUIVALENT AGE"),
+                                 valor: "~\(eq)",
+                                 tono: liquidTono,
+                                 compacto: true)
+                }
+            }
+            LiquidNotaLine(String(localized: "A higher VO₂max is associated with a lower risk of all-cause mortality. It's one of the best-evidenced predictors of long-term health."),
+                           tono: LiquidColor.tinta700)
+            LiquidNotaLine(String(localized: "Mandsager 2018 (JAMA) · Kodama 2009"))
+        }
     }
 
 }
