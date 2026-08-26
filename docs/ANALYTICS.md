@@ -16,6 +16,8 @@ All analytics live in the cross-platform `StrandAnalytics` Swift package. Every 
 
 The package contains more analytics than the app currently calls. This section is the honest map of **library-only** vs **live**, verified against the app sources.
 
+> **The band-offload recompute pipeline is dormant (FER-1003).** The on-device *recompute* path in the table below — `AnalyticsEngine.analyzeDay` / `IntelligenceEngine.analyzeRecent`, the computed `"-noop"` source, and anything described as running "while connected" or "for nights the strap offloaded" — was the WHOOP-band offload loop. Under the pinned **Apple-Health-only** mode it guards on `mode.usesWhoop` and returns early (see `docs/ARCHITECTURE.md` → "Dormant / retired surfaces"), so the ~15-minute strap-night scoring loop does **not** run today. These engines still exist and are exercised over imported/historical band data; today's live readiness comes from `Preparedness` over Apple Health (below), and the only live heart rate is inside a guided strength session, mirrored from the **Apple Watch**.
+
 | Engine | File | Status in the app |
 |---|---|---|
 | `HRVAnalyzer` | `HRVAnalyzer.swift` | **Library-only** as a type. The app computes RMSSD inline via `AppModel.rmssd(_:)` (same Task-Force formula) for the live stress nudge. |
@@ -47,7 +49,7 @@ Source: `Cenit/App/AppModel.swift`. These run against the ingested Apple Health 
 
 Every screen shows a **smoothed** bpm (`AppModel.bpm`), never the raw per-beat value (which swings with HRV). The smoother:
 
-1. Prefers the strap's reported HR; falls back to `60000 / RR` (last R-R interval) if needed.
+1. Prefers the source's reported HR (the Apple Watch mirror during a guided session); falls back to `60000 / RR` (last R-R interval) if needed.
 2. Clamps to a plausible `30…220` bpm range — rejects `0` and garbage spikes.
 3. Keeps a ~10-second sliding window (max 40 samples) and **publishes the window median**.
 
@@ -74,13 +76,13 @@ static func rmssd(_ rr: [Int]) -> Double {
 }
 ```
 
-`evaluateStress()` is an **experimental, off-by-default** resting-stress nudge:
+`evaluateStress()` was an **experimental, off-by-default** resting-stress nudge, **retired with the band (FER-1003)**: it gated on a **bonded, worn strap** and buzzed the strap motor on fire, neither of which exists now, so it no longer runs. Kept here for the method:
 
-- Only runs when `behavior.stressNudge` is on **and** the strap is bonded **and** worn.
+- Only ran when `behavior.stressNudge` is on **and** the strap is bonded **and** worn.
 - Filters R-R to plausible beats (`300 < rr < 2000` ms, i.e. 30–200 bpm), keeps the last 60, needs ≥ 20.
 - Tracks a **slow HRV baseline** as an EWMA: `hrvBaseline = hrvBaseline * 0.98 + rmssd * 0.02`.
 - Only fires when HR is in a **resting band** (`55…100` bpm — not a workout) and current RMSSD has dropped **below 60% of baseline**.
-- Rate-limited to **once per 15 minutes** (`> 900` s). On fire it buzzes the strap once and logs "take a paced breath."
+- Rate-limited to **once per 15 minutes** (`> 900` s). On fire it buzzed the strap once and logged "take a paced breath."
 
 It is intentionally conservative so it rarely false-fires.
 
@@ -93,7 +95,7 @@ let pct = Double(hr) / maxHR
 let zone = pct >= 0.9 ? 5 : pct >= 0.8 ? 4 : pct >= 0.7 ? 3 : pct >= 0.6 ? 2 : 1
 ```
 
-On crossing **into zone 5** it buzzes three times ("ease off"); on dropping back **to zone ≤ 1** it buzzes once ("recovered"). Gated on `behavior.zoneCoaching`, bonded, worn, and a valid `hrMax`.
+On crossing **into zone 5** it buzzed three times ("ease off"); on dropping back **to zone ≤ 1** it buzzed once ("recovered"). Gated on `behavior.zoneCoaching`, a **bonded, worn strap**, and a valid `hrMax` — **retired with the band (FER-1003)**: with no bonded strap and no continuous live HR outside a guided session, it no longer runs.
 
 ### 4. Illness / strain early-warning (`evaluateIllness`)
 
@@ -468,7 +470,7 @@ Per-second blend of **Keytel (2005)** active expenditure and **revised Harris–
 
 ### Strength sessions (`Calories.estimateStrengthEnergy`)
 
-A guided strength session uses `Calories.estimateStrengthEnergy`, which prefers heart rate when the session captured it (FER-399): with ≥2 strap HR samples it uses the **Keytel (2005)** HR model (`estimateBoutCalories`, the same as detected bouts); without usable HR it falls back to a **MET** estimate (`estimateStrengthCalories`): `kcal = MET × bodyMassKg × hours`, with MET from the **Compendium of Physical Activities (Ainsworth et al. 2011)** — resistance training ≈ 3.5 MET (8–15 reps, varied resistance), the moderate value since a no-HR session doesn't measure effort. Body mass falls back to 70 kg when unknown; duration is clamped to [0, 6 h]. The captured HR also yields the session's `avgHr` + `strain` (`StrainScorer`). **Approximate** — not laboratory calorimetry.
+A guided strength session uses `Calories.estimateStrengthEnergy`, which prefers heart rate when the session captured it (FER-399): with ≥2 Apple Watch HR samples it uses the **Keytel (2005)** HR model (`estimateBoutCalories`, the same as detected bouts); without usable HR it falls back to a **MET** estimate (`estimateStrengthCalories`): `kcal = MET × bodyMassKg × hours`, with MET from the **Compendium of Physical Activities (Ainsworth et al. 2011)** — resistance training ≈ 3.5 MET (8–15 reps, varied resistance), the moderate value since a no-HR session doesn't measure effort. Body mass falls back to 70 kg when unknown; duration is clamped to [0, 6 h]. The captured HR also yields the session's `avgHr` + `strain` (`StrainScorer`). **Approximate** — not laboratory calorimetry.
 
 ---
 

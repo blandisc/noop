@@ -38,10 +38,10 @@ You don't have to, and the project is built so you never need to. But the work
 is ongoing and unpaid, and donations go toward more of it:
 
 - **A Windows build** — bringing the same offline, local-first experience to PC.
-- **More features and polish** — deeper analytics, broader strap coverage, and
-  improvements to the existing screens.
-- **Test hardware and time** — straps, devices, and the hours to keep the
-  reverse-engineering work current as firmware changes.
+- **More features and polish** — deeper analytics and improvements to the existing
+  screens.
+- **Test devices and time** — the iPhones, Apple Watches, and hours to keep Cénit
+  working across new iOS and Apple Health versions.
 
 Donations are a thank-you, not a transaction. Nothing about the app, your data,
 or your access depends on them.
