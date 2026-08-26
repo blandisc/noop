@@ -523,7 +523,10 @@ struct CompareView: View {
             .font(LiquidType.tituloFila)
             .foregroundStyle(LiquidColor.tinta900)
         // Neutral ink: the value is the datum by SIZE (valorM/mono), not by hue. Sign is the «−».
-        let valorR = Text(verbatim: "r = \(signedR(p.r))")
+        // C-04: the coefficient is written the SAME way as the Explorer — the bare signed number,
+        // no «r = » prefix (jargon for this non-technical audience; the strength word in the footer
+        // names it, the Explorer's bar names it there). One coefficient, one written form.
+        let valorR = Text(verbatim: signedR(p.r))
             .font(LiquidType.valorM).monospacedDigit()
             .foregroundStyle(LiquidColor.tinta900)
 
@@ -617,9 +620,9 @@ struct CompareView: View {
     }
 
     private func pairA11y(_ p: PairResult) -> String {
-        // C-03: VoiceOver reads the r with the SAME minus glyph the screen shows (U+2212), not the
-        // ASCII hyphen `%.2f` emits — so the spoken value matches `signedR`'s «−».
-        let rTexto = String(format: "%.2f", p.r).replacingOccurrences(of: "-", with: "−")
+        // C-03: VoiceOver speaks the EXACT visible string — `signedR`, so the «+» is spoken for a
+        // positive r and the «−» (U+2212) for a negative, never the bare `%.2f` (ASCII hyphen, no +).
+        let rTexto = signedR(p.r)
         return String(format: String(localized: "compare.pair.a11y",
                               defaultValue: "%1$@ versus %2$@, r equals %3$@, %4$lld days"),
                p.a.metric.canonicalTitle, p.b.metric.canonicalTitle,

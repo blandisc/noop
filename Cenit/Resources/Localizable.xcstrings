@@ -1168,33 +1168,6 @@
         }
       }
     },
-    "%@ · n = %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$@ · n = %2$@"
-          }
-        }
-      }
-    },
-    "%@ · n = %lld" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ · n = %lld"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ · n=%lld"
-          }
-        }
-      }
-    },
     "%@ · no reading" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -50281,7 +50254,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld series"
+            "value" : "%lld métricas"
           }
         }
       }
@@ -50333,6 +50306,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld pares"
+          }
+        }
+      }
+    },
+    "explore.corr.footer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · n=%2$lld"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · n=%2$lld"
           }
         }
       }

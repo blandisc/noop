@@ -373,7 +373,17 @@ struct MetricDetailView: View {
     }
 
     private var asOfClause: String? {
+        // C-12: the family (Today's twins, the vital detail) never stamps a FRESH numeral with an
+        // absolute date — it says «hoy» / «anoche». The Explorer, though, covers all 35 catalog
+        // metrics and many go stale (a weight from three weeks ago, a VO₂max from months back).
+        // Dating a reading that IS current would desentonar with the family; NOT dating a 21-day-old
+        // weight would LIE that it's current — and copy that misdates the body is the class that
+        // breaks the review. So the clause stays SILENT inside the family's freshness window
+        // (today / yesterday, the same cut CuerpoView.freshSteps uses) and only dates a reading
+        // older than that.
         guard let day = latest?.day, let d = Repository.parseDayKey(day) else { return nil }
+        let cutoff = Repository.localDayKey(Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date())
+        guard day < cutoff else { return nil }
         return String(localized: "as of \(longDate(d))")
     }
 
@@ -540,7 +550,11 @@ struct MetricDetailView: View {
         let identidad = VStack(alignment: .leading, spacing: LiquidSpace.s050) {
             Text(row.metric.canonicalTitle)
                 .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
-            Text(String(localized: "\(row.metric.localizedCategory) · n = \(row.n)"))
+            // C-09: a STABLE key with the house-style «n=%lld» (no spaces, §4.6), not the
+            // interpolation-generated «%@ · n = %@» whose count printed as %@ and never grew an `es`.
+            Text(String(format: String(localized: "explore.corr.footer",
+                                       defaultValue: "%1$@ · n=%2$lld"),
+                        row.metric.localizedCategory, row.n))
                 .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
         }
         let valorTexto = Text(verbatim: valor)
@@ -573,7 +587,9 @@ struct MetricDetailView: View {
         .padding(.vertical, LiquidSpace.s250)
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(Text(String(localized: "\(row.metric.canonicalTitle), correlation \(String(format: "%.2f", row.r)), \(row.n) days")))
+        // C-03: VoiceOver speaks the SAME signed string the screen shows — the leading «−» (U+2212)
+        // and «+», not the ASCII hyphen `%.2f` emits — so the spoken value matches `valor`.
+        .accessibilityLabel(Text(String(localized: "\(row.metric.canonicalTitle), correlation \(valor), \(row.n) days")))
     }
 
     /// The zero-axis r bar: a 1 pt tinta axis at centre, a capsule of width `(track/2)·|r|` growing
