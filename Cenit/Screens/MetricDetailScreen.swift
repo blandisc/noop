@@ -472,12 +472,13 @@ struct MetricDetailScreen: View {
     private func infoBandsAsGrafica() -> [GraficaRangos.Banda] {
         let banded = spec.info.bands.filter { $0.lower != nil || $0.upper != nil }
         guard !banded.isEmpty else { return [] }
-        let colors = bandLaneColors(count: banded.count)
-        return banded.enumerated().reversed().map { i, b in
+        // TND-19: colour by the band's engine KEY, never its index — a positional ramp is how SpO₂'s
+        // «low» lane turned green when the ladder shrank to two bands.
+        return banded.reversed().map { b in
             GraficaRangos.Banda(
                 label: plainLocalizedLabel(b.label),
                 lo: b.lower, hi: b.upper,
-                color: colors[Swift.min(i, colors.count - 1)],
+                color: bandLaneColor(key: b.key),
                 range: b.range)
         }
     }
@@ -1780,16 +1781,27 @@ struct MetricDetailScreen: View {
     private var heroTodayValue: Double? { isIntraday ? intradayAverage : todayValue }
 
     /// Today's plain-language verdict word: in-range «Normal for you» (green) vs «Unusual for you» (amber)
-    /// for the personal vitals; the clinical Healthy / Borderline / Low for SpO₂. nil until there's a reading.
+    /// for the personal vitals; the clinical Healthy / Low for SpO₂. nil until there's a reading.
     private var heroVerdict: (word: LocalizedStringKey, color: Color)? {
         guard let today = todayValue else { return nil }
         if spec.descriptor.key == "spo2" {
-            if today >= 95 { return ("Healthy", theme.verdict) }
-            if today >= 90 { return ("Borderline", theme.warning) }
-            return ("Low", theme.critical)
+            let v = Self.spo2HeroVerdict(today)
+            return (LocalizedStringKey(v.word), v.healthy ? theme.verdict : theme.warning)
         }
         guard let band = normalRange else { return nil }
         return band.contains(today) ? ("Normal for you", theme.verdict) : ("Unusual for you", theme.warning)
+    }
+
+    /// SpO₂'s hero word rides the engine's TWO-band ladder (`MetricLevels.bloodOxygen`: low < 95 /
+    /// normal ≥ 95) — the hand-built three-way switch (≥ 95 / ≥ 90 / < 90) was the «Borderline
+    /// fantasma» `DisplayBandsTests.testBloodOxygenIsTwoBandsNotThree` declared dead: a 94% read
+    /// «Borderline» in the hero and «low» everywhere else. Static so the guard can pin that only two
+    /// readings exist (patrón `StrainDetailScreen.fraseCarril`, TND-19). The word is the catalog key
+    /// («Healthy» / «Low», es «Sano» / «Bajo»); the caller maps healthy → verdict, not → warning.
+    static func spo2HeroVerdict(_ value: Double) -> (word: String, healthy: Bool) {
+        let i = MetricLevels.index(of: value, for: .bloodOxygen)
+        let healthy = MetricLevels.levels(for: .bloodOxygen)[i].key == "normal"
+        return (healthy ? "Healthy" : "Low", healthy)
     }
 
     /// "7-day level · 58 ms" — the trailing-average context that used to be the hero. nil until calibrated.

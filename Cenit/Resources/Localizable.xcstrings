@@ -9892,23 +9892,6 @@
         }
       }
     },
-    "Borderline" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Borderline"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Límite"
-          }
-        }
-      }
-    },
     "Borrar la media" : {
       "extractionState" : "manual",
       "localizations" : {
