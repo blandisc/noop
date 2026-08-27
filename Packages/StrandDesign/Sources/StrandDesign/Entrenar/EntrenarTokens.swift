@@ -414,6 +414,16 @@ public struct EntrenarMarcaChip: View {
     }
 }
 
+/// La tipografía de la CÁPSULA-PUERTA del hub v18 («EDITAR ›» / «MAPA ›», FER-171 · Parte A, mock
+/// `eje-hub-v18.html` `.editar`/`.mapa`): 9.5 pt / 700 (BOLD, no semibold — a diferencia de
+/// `entrenarMarcaChip`, que es 600 a la misma talla), tracking 1.2.
+public extension View {
+    func entrenarCapsulaPuertaLabel() -> some View {
+        self.font(InstrumentoType.grotesk(9.5, weight: .bold, relativeTo: .caption2))
+            .tracking(1.2)
+    }
+}
+
 /// La inicial del día bajo cada token de `WeekTokens` (handoff «Niveles», prototipo línea 55):
 /// 10.5 pt / 600 / tracking 1.4 — un escalón entre el chip de marca (9.5) y el kicker de cabecera
 /// (11.5), porque siete letras solas necesitan más aire que un número de chip para no verse
