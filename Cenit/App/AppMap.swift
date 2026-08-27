@@ -224,7 +224,7 @@ private struct RoutineEditorMapCell: View {
     var body: some View {
         Group {
             if seeded {
-                NavigationStack { RoutineEditorScreen(origin: .today(routineId: nil)) }
+                NavigationStack { RoutineSheet(origin: .today(routineId: nil), mode: .editing) }
             } else {
                 ProgressView()
             }
@@ -273,7 +273,7 @@ private struct RoutineEditorMapCell: View {
 
 /// «Tu Plan» (WeeklyPlanEditorView) — la pantalla madre del editor de rutina: la semana con su split,
 /// las rutinas y las carpetas. NAVEGABLE: tocar una rutina o un día del plan empuja el editor REAL
-/// (`RoutineEditorScreen`) en el mismo stack, así que desde este preview puedes recorrer el flujo
+/// (`RoutineSheet`) en el mismo stack, así que desde este preview puedes recorrer el flujo
 /// completo Tu Plan → Rutina, igual que en el app.
 private struct WeeklyPlanMapCell: View {
     @State private var model = AppModel()
@@ -291,7 +291,7 @@ private struct WeeklyPlanMapCell: View {
                         openDay: { path.append(RoutineEditorRoute.planDay(weekday: $0)) }
                     )
                     .navigationDestination(for: RoutineEditorRoute.self) { route in
-                        RoutineEditorScreen(origin: route)
+                        RoutineSheet(origin: route, mode: .editing)
                     }
                 }
             } else {
@@ -336,7 +336,7 @@ private struct NewRoutineFlowMapCell: View {
                         openDay: { path.append(RoutineEditorRoute.planDay(weekday: $0)) }
                     )
                     .navigationDestination(for: RoutineEditorRoute.self) { route in
-                        RoutineEditorScreen(origin: route)
+                        RoutineSheet(origin: route, mode: .editing)
                     }
                 }
             } else {
@@ -413,7 +413,7 @@ private struct EntrenarFlowsMapCell: View {
                     )
                     .navigationDestination(for: Route.self) { destination($0) }
                     .navigationDestination(for: RoutineEditorRoute.self) { route in
-                        RoutineEditorScreen(origin: route).toolbar(.hidden, for: .navigationBar)
+                        RoutineSheet(origin: route, mode: .editing).toolbar(.hidden, for: .navigationBar)
                     }
                     .navigationDestination(for: WorkoutSessionRoute.self) { route in
                         WorkoutSessionDetailScreen(route: route,

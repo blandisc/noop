@@ -1,0 +1,72 @@
+#if os(iOS)
+import SwiftUI
+import StrandDesign
+import StrandTraining
+
+// MARK: - HojaPlegada — la receta de una línea + «＋ Agregar ejercicio» (FER-166)
+//
+// Mock `hoja-pantallas.html` P1 `.mod.plegada` («Prensa inclinada» → «3 × 10 · 145 kg») y
+// `.agregar` («＋ Agregar ejercicio», troquel punteado). Tocar una plegada la abre (single-open
+// accordion, ver `RoutineSheet.openIndex`) y pliega la que estaba abierta. A3 (pirámide sin
+// castigo): cuando las series de trabajo no son iguales, la receta se lee «N recetas ›» — el dato
+// honesto (no finge una sola línea), sin el aviso inline de antes (esa acción se mudó a «···»,
+// `RoutineSheetLogic.exerciseMenuItems`).
+
+enum HojaPlegada {
+
+    static func row(sheet: RoutineSheet, idx: Int) -> some View {
+        let item = sheet.items[idx]
+        let equal = sheet.setsAreEqual(idx)
+        let receta = equal ? sheet.recetaSummary(idx) : String(localized: "\(sheet.recetaCount(idx)) recipes")
+        return Button {
+            withAnimation(.snappy) { sheet.openIndex = idx }
+        } label: {
+            EntrenarModulo(tono: .neutro) {
+                HStack(spacing: 11) {
+                    Text(StrengthDisplay.name(item.exercise))
+                        .font(StrandFont.subhead.weight(.semibold)).foregroundStyle(sheet.theme.ink)
+                        .lineLimit(1)
+                    Spacer(minLength: 8)
+                    HStack(spacing: 2) {
+                        Text(receta)
+                        if !equal { Text(verbatim: "›") }
+                    }
+                    .font(InstrumentoType.groteskNumber(12.5, weight: .bold))
+                    .foregroundStyle(equal ? sheet.theme.ink : sheet.theme.inkSecondary)
+                    .lineLimit(1)
+                }
+            }
+        }
+        .buttonStyle(.liquidPress)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(verbatim: "\(StrengthDisplay.name(item.exercise)), \(receta)"))
+        .accessibilityHint(Text("Opens the exercise"))
+    }
+
+    /// «＋ Agregar ejercicio» — troquel punteado centrado (mock `.agregar`). Distinto de
+    /// `AddExerciseNode`: aquel carga el hilo/dot del riel de «recibo» que La Hoja ya no usa (todo
+    /// vidrio independiente, sin hilo) — se hace a mano en vez de ensanchar ese componente para un
+    /// caller que ya no comparte su lenguaje visual.
+    static func addExercise(sheet: RoutineSheet) -> some View {
+        Button {
+            sheet.replaceIndex = nil
+            sheet.showLibrary = true
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "plus").font(.system(size: 12, weight: .semibold))  // token-exempt: glifo del troquel, mismo criterio que AddExerciseNode
+                Text("Add exercise").font(InstrumentoType.grotesk(13, weight: .semibold))
+            }
+            .foregroundStyle(sheet.theme.inkSecondary)
+            .frame(maxWidth: .infinity, minHeight: HojaMetrics.hitMin)
+            .contentShape(RoundedRectangle(cornerRadius: CenitMetrics.tileRadius, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: CenitMetrics.tileRadius, style: .continuous)
+                    .strokeBorder(sheet.theme.dataStrain.opacity(StrandOpacity.strokeSoft),
+                                  style: StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
+            )
+        }
+        .buttonStyle(.liquidPress)
+        .accessibilityLabel(Text("Add exercise"))
+    }
+}
+#endif

@@ -41,8 +41,10 @@
 %lld pieces
 %lld raising
 %lld readings
+%lld recipes
 %lld records
 %lld reps
+%lld rounds
 %lld seconds
 %lld sessions
 %lld sets
