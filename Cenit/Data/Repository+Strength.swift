@@ -346,6 +346,26 @@ extension Repository {
         guard let store = await storeHandle() else { return [] }
         return (try? await store.exerciseNotes(exerciseId: exerciseId, excludingSession: excludingSession)) ?? []
     }
+
+    // MARK: - Marcas del hub v18 (FER-171 · Parte B)
+
+    /// El PR más reciente de todo el historial — «Marcas · N en {mes}» del hub. `nil` sin PRs.
+    func latestPersonalRecord() async -> PersonalRecord? {
+        guard let store = await storeHandle() else { return nil }
+        return try? await store.latestPersonalRecord()
+    }
+
+    /// Cuántos PRs cayeron desde `sinceTs` — el rótulo «Marcas · N en {mes}».
+    func personalRecordCount(sinceTs: Double) async -> Int {
+        guard let store = await storeHandle() else { return 0 }
+        return (try? await store.personalRecordCount(sinceTs: sinceTs)) ?? 0
+    }
+
+    /// El PR anterior del mismo ejercicio+métrica — «antes X · hace N días».
+    func previousPersonalRecord(exerciseId: String, metric: PRMetric, beforeTs: Double) async -> PersonalRecord? {
+        guard let store = await storeHandle() else { return nil }
+        return try? await store.previousPersonalRecord(exerciseId: exerciseId, metric: metric, beforeTs: beforeTs)
+    }
 }
 
 extension Exercise {
