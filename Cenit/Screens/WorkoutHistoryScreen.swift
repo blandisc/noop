@@ -904,24 +904,16 @@ struct WorkoutHistoryScreen: View {
     private struct WeekVolume: Identifiable { let id: Int; let volumeKg: Double; let count: Int; let start: Date?; let isCurrent: Bool }
 
     /// Total volume per week over the last 8 weeks (oldest→newest), Monday-anchored. The last bucket is
-    /// the current week (drawn in `dataRecovery`).
+    /// the current week (drawn in `dataRecovery`). Bucketing itself delegates to `TrainingWeeks` (FER-171
+    /// · Parte B) — same cubeta Historial and the hub now share, instead of two hand-rolled copies.
     private var weeklyVolumes: [WeekVolume] {
-        var cal = Calendar.current; cal.firstWeekday = 2
-        let thisWeekStart = cal.dateInterval(of: .weekOfYear, for: Date())?.start ?? Date()
-        var buckets = [Double](repeating: 0, count: 8)
-        var counts = [Int](repeating: 0, count: 8)
-        for s in sessions where s.endTs != nil {
-            let date = Date(timeIntervalSince1970: TimeInterval(s.startTs))
-            guard let ws = cal.dateInterval(of: .weekOfYear, for: date)?.start else { continue }
-            let weeksAgo = cal.dateComponents([.weekOfYear], from: ws, to: thisWeekStart).weekOfYear ?? 0
-            guard weeksAgo >= 0, weeksAgo < 8 else { continue }
-            buckets[7 - weeksAgo] += volumes[s.id]?.volumeKg ?? 0
-            counts[7 - weeksAgo] += 1
+        let raw = sessions.compactMap { s -> (ts: Double, volumeKg: Double)? in
+            guard s.endTs != nil else { return nil }
+            return (ts: Double(s.startTs), volumeKg: volumes[s.id]?.volumeKg ?? 0)
         }
-        return buckets.enumerated().map { i, kg in
-            WeekVolume(id: i, volumeKg: kg, count: counts[i],
-                       start: cal.date(byAdding: .weekOfYear, value: i - 7, to: thisWeekStart),
-                       isCurrent: i == 7)
+        let buckets = TrainingWeeks.volumeBuckets(sessions: raw, weeks: 8, now: Date(), calendar: Calendar.current)
+        return buckets.enumerated().map { i, b in
+            WeekVolume(id: i, volumeKg: b.volumeKg, count: b.sessionCount, start: b.weekStart, isCurrent: b.isCurrent)
         }
     }
 

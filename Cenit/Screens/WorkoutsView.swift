@@ -275,19 +275,12 @@ struct WorkoutsView: View {
     private struct WeekVolume: Identifiable { let id: Int; let volumeKg: Double; let isCurrent: Bool }
 
     /// Total strength volume per week over the last 8 weeks (oldest→newest), Monday-anchored; last bucket
-    /// = current week. Same bucketing as `WorkoutHistoryScreen.weeklyVolumes`.
+    /// = current week. Bucketing delegates to `TrainingWeeks` (FER-171 · Parte B) — the same cubeta
+    /// `WorkoutHistoryScreen.weeklyVolumes` and the Entrenar hub now share.
     private func weeklyStrengthVolumes() -> [WeekVolume] {
-        var cal = Calendar.current; cal.firstWeekday = 2
-        let thisWeekStart = cal.dateInterval(of: .weekOfYear, for: Date())?.start ?? Date()
-        var buckets = [Double](repeating: 0, count: 8)
-        for s in strengthSessions {
-            let date = Date(timeIntervalSince1970: TimeInterval(s.startTs))
-            guard let ws = cal.dateInterval(of: .weekOfYear, for: date)?.start else { continue }
-            let weeksAgo = cal.dateComponents([.weekOfYear], from: ws, to: thisWeekStart).weekOfYear ?? 0
-            guard weeksAgo >= 0, weeksAgo < 8 else { continue }
-            buckets[7 - weeksAgo] += sessionVolumes[s.id]?.volumeKg ?? 0
-        }
-        return buckets.enumerated().map { WeekVolume(id: $0.offset, volumeKg: $0.element, isCurrent: $0.offset == 7) }
+        let raw = strengthSessions.map { (ts: Double($0.startTs), volumeKg: sessionVolumes[$0.id]?.volumeKg ?? 0) }
+        let buckets = TrainingWeeks.volumeBuckets(sessions: raw, weeks: 8, now: Date(), calendar: Calendar.current)
+        return buckets.enumerated().map { i, b in WeekVolume(id: i, volumeKg: b.volumeKg, isCurrent: b.isCurrent) }
     }
 
     /// Σ strength volume for sessions whose `startTs` falls in the SAME window as the Hours/Kcal tiles
