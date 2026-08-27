@@ -23,6 +23,11 @@ struct EntrenarHubHistorial: View {
     let promedio: (minutes: Int, kcal: Int?, tons: Double)?
     let onOpenHistory: () -> Void
 
+    /// Ronda 2 · D2: `historialTitulo`/`historialSubtitulo` eran `Font.system(size:)` fijo — texto de
+    /// LECTURA sin escalar.
+    @ScaledMetric(relativeTo: .subheadline) private var historialTituloSize = EntrenarHubMetrics.historialTituloBase
+    @ScaledMetric(relativeTo: .caption2) private var historialSubtituloSize = EntrenarHubMetrics.historialSubtituloBase
+
     var body: some View {
         EntrenarModulo(tono: .neutro) {
             VStack(alignment: .leading, spacing: 0) {
@@ -41,7 +46,10 @@ struct EntrenarHubHistorial: View {
                 ForEach(Array(filas.enumerated()), id: \.element.id) { i, fila in
                     filaRow(fila)
                     if i == 0, gapDays > 0 {
-                        Text(gapDays == 1 ? "1 day not logged" : "\(gapDays) days not logged")
+                        // Ronda 2 · O1: prefijo «· · » — mock línea 349. Piezas separadas para no
+                        // tocar las claves YA traducidas («1 day not logged» / «%lld days not logged»).
+                        (Text(verbatim: "· · ")
+                         + Text(gapDays == 1 ? "1 day not logged" : "\(gapDays) days not logged"))
                             .entrenarHub9Label().foregroundStyle(LiquidColor.tinta500)
                             .padding(.leading, EntrenarHubMetrics.historialHuecoIndent)
                     }
@@ -61,9 +69,9 @@ struct EntrenarHubHistorial: View {
                     .fill(fila.family?.tono.base ?? LiquidColor.tinta500)
                     .frame(width: EntrenarMetrics.familyDot, height: EntrenarMetrics.familyDot)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(verbatim: fila.title).font(EntrenarHubMetrics.historialTitulo)
+                    Text(verbatim: fila.title).font(.system(size: historialTituloSize, weight: .semibold))
                         .foregroundStyle(LiquidColor.tinta900)
-                    Text(verbatim: fila.subtitle).font(EntrenarHubMetrics.historialSubtitulo)
+                    Text(verbatim: fila.subtitle).font(.system(size: historialSubtituloSize))
                         .foregroundStyle(LiquidColor.tinta500)
                 }
                 Spacer(minLength: 0)
