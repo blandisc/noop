@@ -36,6 +36,16 @@ el mismo PR** que la implementa (una línea basta: fecha, decisión, por qué).
   en vivo por default para retoques visuales; verificación proporcional; `/orquesta`
   default para trabajo multi-paso con Fable/Opus orquestando, Sonnet implementando,
   DeepSeek en lo mecánico y Grok SOLO revisando; tablero obligatorio en toda corrida.
+- **2026-08-27 · Reversión parcial del reparto de modelos (orden del dueño):** Grok
+  VUELVE al carril de implementación — «para ir más rápido, paralelizar y ahorrar
+  tokens» — SOLO para lotes bien especificados (componentes contra mock, wiring,
+  trabajo de paquete con spec de 5 partes cerrado) y SOLO vía `grok-lane.sh`
+  (worktree determinista + permisos que sí escriben + prohibido compilar; la
+  verificación la corre el director). Lo delicado (migraciones, motores, BLE,
+  concurrencia) sigue en Claude, y cuando Grok teclea, la revisión adversarial la
+  hace OTRA familia — Grok nunca se auto-revisa. Revierte parcialmente el punto
+  «Grok SOLO revisando» del contrato 2026-08-25; la falla de agosto tenía causa
+  raíz de tooling (hook-discovery + acceptEdits), resuelta por el wrapper.
 - **2026-08-26 · Build del iPhone:** sigue siendo manual y al ritmo del dueño — no se
   agenda ni se automatiza.
 - **DNA:** «Instrumento diurno» es canónico; el sistema oscuro es legacy (mantener, no

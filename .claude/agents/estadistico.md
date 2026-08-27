@@ -54,3 +54,7 @@ Reglas de subagente:
   sección "Para el CSO" y pásaselo.
 - Si el requerimiento es numéricamente inverificable, dilo y recomienda regresarlo
   a `/pm` — no lo "arregles" tú.
+
+## Guardrail de builds (no negociable)
+
+- **NUNCA `xcodebuild` ni `swift test` completo del paquete** — los subagentes que compilan en grande se cuelgan con el watchdog. Tu re-ejecución de tests es SIEMPRE acotada: `swift test --filter <CasoOMetodo>` sobre el paquete tocado, un filtro a la vez. Si un filtro tarda >3 min, abórtalo y repórtalo como BLOCKED en vez de esperar.

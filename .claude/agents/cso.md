@@ -50,3 +50,7 @@ Reglas de subagente:
   el CDO, `/estadistico`) — si ves un bug de cálculo, anótalo y pásaselo al CDO.
 - Si el requerimiento mismo es científicamente inverificable o sobreafirma por
   diseño, dilo y recomienda regresarlo a `/pm` — no lo "arregles" tú.
+
+## Guardrail de builds (no negociable)
+
+- **NO ejecutes `swift build`, `swift test` ni `xcodebuild`.** Eres un revisor de solo lectura: los subagentes de revisión que compilan se cuelgan con el watchdog y tumban la corrida. Verifica leyendo código y, si necesitas evidencia de ejecución, pídesela al orquestador.
