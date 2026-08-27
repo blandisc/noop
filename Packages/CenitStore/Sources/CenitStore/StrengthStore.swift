@@ -188,20 +188,25 @@ extension CenitStore {
                 let derivedSets = max(work.count, 1)
                 let derivedReps = work.first?.reps
                 let derivedWeight = work.first?.weightKg
+                // FER-166: normalize here (trim; blank → NULL) so the "note or NULL, never ''" invariant
+                // doesn't depend on the discipline of whichever UI wrote it — same contract `saveSession`
+                // already uses for `strengthExerciseNote`.
+                let noteText = re.note?.trimmingCharacters(in: .whitespacesAndNewlines)
                 let args: [DatabaseValueConvertible?] = [
                     re.id, re.routineId, re.exerciseId, re.position, derivedSets, derivedReps,
                     derivedWeight, encodeJSON(re.warmupPercents), re.restMode.rawValue, re.restSeconds,
                     re.supersetGroup, re.hrRestReference.rawValue, re.hrRestValue,
                     re.progressionEnabled, re.progressionSessions, re.progressionIncrementKg,
-                    re.progressionDeload.rawValue, re.progressionIgnoreRecovery
+                    re.progressionDeload.rawValue, re.progressionIgnoreRecovery,
+                    (noteText?.isEmpty == false) ? noteText : nil
                 ]
                 try db.execute(sql: """
                     INSERT INTO routineExercise
                         (id, routineId, exerciseId, position, targetSets, targetReps, targetWeightKg,
                          warmupPercents, restMode, restSeconds, supersetGroup, hrRestReference, hrRestValue,
                          progressionEnabled, progressionSessions, progressionIncrementKg, progressionDeload,
-                         progressionIgnoreRecovery)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                         progressionIgnoreRecovery, note)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """, arguments: StatementArguments(args))
                 for (idx, s) in planned.enumerated() {
                     // The four rest columns are written together (FER-715): a non-nil override writes
@@ -422,7 +427,8 @@ extension CenitStore {
                         progressionSessions: r["progressionSessions"] ?? 2,
                         progressionIncrementKg: r["progressionIncrementKg"],
                         progressionDeload: DeloadPolicy(rawValue: r["progressionDeload"] ?? "propose") ?? .propose,
-                        progressionIgnoreRecovery: r["progressionIgnoreRecovery"] ?? false)
+                        progressionIgnoreRecovery: r["progressionIgnoreRecovery"] ?? false,
+                        note: r["note"])
     }
 
     private static func routineSet(_ r: Row) -> RoutineSet {

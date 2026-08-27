@@ -121,4 +121,30 @@ final class StrengthSessionSnapshotTests: XCTestCase {
         XCTAssertNil(decoded.runs.first?.note)
         XCTAssertNil(decoded.runs.first?.sets.first?.note)
     }
+
+    /// FER-166: `seededNote` (the routine's fixed note as it was seeded into the run) rides the
+    /// snapshot separately from the live, possibly-edited `note` — so a crash mid-session doesn't blur
+    /// "untouched seed" with "user edited it this session".
+    func testRunSnapshotSeededNoteRoundTripAndLegacyDecodesNil() throws {
+        var snap = sample()
+        snap.runs[0].note = "Buena técnica hoy"          // unchanged from the seed
+        snap.runs[0].seededNote = "Buena técnica hoy"    // what the routine seeded
+        let decoded = try JSONDecoder().decode(
+            StrengthSessionSnapshot.self, from: try JSONEncoder().encode(snap))
+        XCTAssertEqual(decoded.runs.first?.seededNote, "Buena técnica hoy")
+        XCTAssertEqual(decoded.runs.first?.note, decoded.runs.first?.seededNote,
+                      "an untouched seed decodes identical to the live note")
+    }
+
+    /// FER-166: a snapshot persisted BEFORE the field existed (no `seededNote` key) still decodes —
+    /// absent means nil, so after a restore from such a legacy snapshot an intact seed is copied to the
+    /// acta at most once (same as the pre-FER-166 behavior), never a startup crash.
+    func testPreFer166SnapshotDecodesWithoutSeededNote() throws {
+        var snap = sample()
+        snap.runs[0].seededNote = nil
+        let data = try JSONEncoder().encode(snap)   // optional nil → key absent, like a pre-166 snapshot
+        XCTAssertFalse(String(data: data, encoding: .utf8)!.contains("seededNote"))
+        let decoded = try JSONDecoder().decode(StrengthSessionSnapshot.self, from: data)
+        XCTAssertNil(decoded.runs.first?.seededNote)
+    }
 }

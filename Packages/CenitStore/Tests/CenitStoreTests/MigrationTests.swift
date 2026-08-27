@@ -6,9 +6,9 @@ import BiometricStreams
 
 final class MigrationTests: XCTestCase {
     func testMigratorRegistersContiguousVersions() {
-        XCTAssertEqual(CenitStore.makeMigrator().migrations, (1...38).map { "v\($0)" })
-        XCTAssertEqual(CenitStoreInfo.schemaVersion, 38)
-        XCTAssertEqual(CenitStoreInfo.latestMigration, "v38")
+        XCTAssertEqual(CenitStore.makeMigrator().migrations, (1...39).map { "v\($0)" })
+        XCTAssertEqual(CenitStoreInfo.schemaVersion, 39)
+        XCTAssertEqual(CenitStoreInfo.latestMigration, "v39")
     }
 
     func testInMemoryRunsMigrations() async throws {
