@@ -33564,6 +33564,17 @@
         }
       }
     },
+    "rest · down to %lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "descanso · baja a %lld"
+          }
+        }
+      }
+    },
     "Rest ends when your pulse drops to the threshold. The phone buzzes when you're ready." : {
       "localizations" : {
         "es" : {
@@ -50842,6 +50853,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "bajando hacia "
+          }
+        }
+      }
+    },
+    "♥ now · dropping" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "♥ ahora · va bajando"
           }
         }
       }
