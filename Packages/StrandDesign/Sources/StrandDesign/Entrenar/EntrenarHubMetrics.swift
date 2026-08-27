@@ -22,6 +22,13 @@ public enum EntrenarHubMetrics {
     /// Gap de la fila de teselas — mock `.semRow{gap:8px}` (las 7 teselas quedan a ancho FIJO,
     /// nunca `.frame(maxWidth: .infinity)`; solo «EDITAR ›» se empuja al filo con un `Spacer`).
     public static let semRowGap: CGFloat = 8
+    /// La inicial del día DENTRO de la tesela — grotesk 9.5/700 (mock `.dia{font-size:9.5px;
+    /// font-weight:700}`). Ronda 2 · G11: vivía inline en `EntrenarHubSemana`, movido aquí (Grotesk
+    /// sí acepta `relativeTo:` vía `.custom`, a diferencia de los tamaños SF de arriba).
+    public static let teselaLabel = InstrumentoType.grotesk(9.5, weight: .bold, relativeTo: .caption2)
+    /// El blanco táctil de una tesela — 44 pt (Ronda 2 · O3), el dibujo se queda en `teselaSize`
+    /// (26) — mismo patrón que `EntrenarCapsulaPuerta` (dibujo chico, toque HIG).
+    public static let teselaToque: CGFloat = 44
 
     // MARK: DOSIS — el riel de series por músculo (mock `.dtrack`/`.drow`)
 
@@ -97,8 +104,13 @@ public enum EntrenarHubMetrics {
     public static let subPillShadowAlfa: Double = 0.10
     /// El disco blanco «↑» dentro de la píldora (mock `.subPill .up{width:18px;height:18px}`).
     public static let subPillBadge: CGFloat = 18
-    /// El texto de la píldora — 12.5/400 (mock `.subPill{font-size:12.5px}`, sin peso propio → regular).
-    public static let subPillTexto = Font.system(size: 12.5)
+    /// El texto de la píldora — 12.5/400 BASE (mock `.subPill{font-size:12.5px}`, sin peso propio →
+    /// regular). Ronda 2 · D2: es texto de LECTURA, así que debe escalar con Dynamic Type — pero
+    /// `Font.system(size:)` es de tamaño fijo y SF no acepta `relativeTo:` (a diferencia de Grotesk,
+    /// que sí vía `.custom(_:size:relativeTo:)`, ver `LiquidType`). El patrón del sistema para SF a
+    /// tamaño propio es `@ScaledMetric(relativeTo:)` EN LA VISTA (un `enum` estático no tiene
+    /// entorno) — este archivo solo publica la base; `EntrenarHubHeroe` la escala.
+    public static let subPillTextoBase: CGFloat = 12.5
     /// El glifo «↑» dentro del disco — grotesk 10/700 (mock `.subPill .up{font-size:10px;font-weight:700}`).
     public static let subPillGlifo = InstrumentoType.grotesk(10, weight: .bold)
 
@@ -131,9 +143,10 @@ public enum EntrenarHubMetrics {
     public static let heroMeta = InstrumentoType.grotesk(12.5, weight: .medium, relativeTo: .footnote)
     /// Meta → nombres de ejercicios (mock `.nombres{margin-top:11px}`).
     public static let heroMetaToNombresTop: CGFloat = 11
-    /// Nombres de ejercicios — 12/400, line-height 1.6, ancho máximo 300 (mock `.nombres{font-size:
-    /// 12px;line-height:1.6;max-width:300px}`).
-    public static let heroNombres = Font.system(size: 12)
+    /// Nombres de ejercicios — 12/400 BASE, line-height 1.6, ancho máximo 300 (mock `.nombres{
+    /// font-size:12px;line-height:1.6;max-width:300px}`). Ronda 2 · D2: base para `@ScaledMetric`
+    /// en la vista (ver `subPillTextoBase`).
+    public static let heroNombresBase: CGFloat = 12
     public static let heroNombresLineSpacing: CGFloat = 7.2   // 12 × (1.6 − 1) ≈ 7.2
     public static let heroNombresMaxWidth: CGFloat = 300
     /// Nombres → píldora «Hoy subes» (mock `.subPill{margin-top:13px}`).
@@ -157,42 +170,49 @@ public enum EntrenarHubMetrics {
 
     public static let subLsTop: CGFloat = 8
     public static let subLsGap: CGFloat = 4
-    /// Una fila de «Subidas listas» — 11/400 color t7 (mock `.subLs div`).
-    public static let subLsFila = Font.system(size: 11)
+    /// Una fila de «Subidas listas» — 11/400 BASE color t7 (mock `.subLs div`). Ronda 2 · D2: base
+    /// para `@ScaledMetric` en la vista.
+    public static let subLsFilaBase: CGFloat = 11
     /// El delta en negritas — grotesk 10.5/700, tabular (mock `.subLs b`).
     public static let subLsDelta = InstrumentoType.groteskNumber(10.5, weight: .bold, relativeTo: .caption)
     /// El «▲» que antecede al delta — 8 pt (mock `.subLs b i{font-size:8px}`).
     public static let subLsGlifo = Font.system(size: 8)
-    /// La cláusula de «Descanso real» — 11/400, line-height 1.55, tabular (mock `.tDes .sub2`).
-    public static let restClausula = Font.system(size: 11)
+    /// La cláusula de «Descanso real» — 11/400 BASE, line-height 1.55, tabular (mock `.tDes .sub2`).
+    /// Ronda 2 · D2: base para `@ScaledMetric` en la vista.
+    public static let restClausulaBase: CGFloat = 11
     public static let restClausulaLineSpacing: CGFloat = 6   // 11 × (1.55 − 1) ≈ 6
     public static let restTrackTop: CGFloat = 10
 
     // MARK: MARCAS · VOLUMEN — el pie de cada tile (mock `.tMar .ult`/`.prev`, `.tVol .delta`)
 
     public static let marcasUltTop: CGFloat = 8
-    /// «Sentadilla · peso máx» — 11/400 color t7 (mock `.tMar .ult`).
-    public static let marcasUlt = Font.system(size: 11)
-    /// «antes 100.0 · hace 2 días» — 11/400 color t5, tabular (mock `.tMar .prev`).
-    public static let marcasPrev = Font.system(size: 11)
+    /// «Sentadilla · peso máx» — 11/400 BASE color t7 (mock `.tMar .ult`). Ronda 2 · D2: base para
+    /// `@ScaledMetric` en la vista.
+    public static let marcasUltBase: CGFloat = 11
+    /// «antes 100.0 · hace 2 días» — 11/400 BASE color t5, tabular (mock `.tMar .prev`). Ronda 2 ·
+    /// D2: base para `@ScaledMetric` en la vista.
+    public static let marcasPrevBase: CGFloat = 11
     /// «↗ +9 %» — grotesk 10.5/700 (mock `.delta`).
     public static let volumenDelta = InstrumentoType.grotesk(10.5, weight: .bold, relativeTo: .caption)
 
     // MARK: CUERPO — la fila del pictograma (mock `.cuerpo`)
 
     public static let cuerpoGap: CGFloat = 10
-    /// «Espalda baja cargada · el resto, fresco» — 11.5/400 color t7 (mock `.cuerpo{font-size:11.5px}`).
-    public static let cuerpoLinea = Font.system(size: 11.5)
+    /// «Espalda baja cargada · el resto, fresco» — 11.5/400 BASE color t7 (mock `.cuerpo{font-size:
+    /// 11.5px}`). Ronda 2 · D2: base para `@ScaledMetric` en la vista.
+    public static let cuerpoLineaBase: CGFloat = 11.5
     public static let cuerpoPictogramSize = CGSize(width: 15, height: 23)
 
     // MARK: HISTORIAL (mock `.hist`/`.fila`/`.hueco`/`.prom`)
 
     public static let historialFilaGap: CGFloat = 10
     public static let historialFilaPaddingV: CGFloat = 8
-    /// El título de una fila — 13.5/600 (mock `.fila .tit`).
-    public static let historialTitulo = Font.system(size: 13.5, weight: .semibold)
-    /// El subtítulo de una fila — 11/400 color t5, tabular (mock `.fila .subt`).
-    public static let historialSubtitulo = Font.system(size: 11)
+    /// El título de una fila — 13.5/600 BASE (mock `.fila .tit`). Ronda 2 · D2: base para
+    /// `@ScaledMetric` en la vista (el peso `.semibold` lo aplica el caller).
+    public static let historialTituloBase: CGFloat = 13.5
+    /// El subtítulo de una fila — 11/400 BASE color t5, tabular (mock `.fila .subt`). Ronda 2 · D2:
+    /// base para `@ScaledMetric` en la vista.
+    public static let historialSubtituloBase: CGFloat = 11
     /// El indentado de «· · N días sin registrar», a plomo con el NOMBRE tras el bead (mock `.hueco{
     /// padding-left:19px}` = el bead de 9 pt + el gap de fila de 10 pt).
     public static let historialHuecoIndent: CGFloat = 19
@@ -234,7 +254,7 @@ public extension View {
             .fill(LiquidColor.cian)
             .frame(width: EntrenarHubMetrics.teselaSize, height: EntrenarHubMetrics.teselaSize)
             .overlay {
-                Text(verbatim: "J").font(.system(size: 9.5, weight: .bold)).foregroundStyle(.white)
+                Text(verbatim: "J").font(EntrenarHubMetrics.teselaLabel).foregroundStyle(.white)
             }
         HStack(spacing: EntrenarHubMetrics.vbarsGap) {
             ForEach(0..<8, id: \.self) { i in
