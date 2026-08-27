@@ -26,9 +26,18 @@ public enum EntrenarHubMetrics {
     /// font-weight:700}`). Ronda 2 · G11: vivía inline en `EntrenarHubSemana`, movido aquí (Grotesk
     /// sí acepta `relativeTo:` vía `.custom`, a diferencia de los tamaños SF de arriba).
     public static let teselaLabel = InstrumentoType.grotesk(9.5, weight: .bold, relativeTo: .caption2)
-    /// El blanco táctil de una tesela — 44 pt (Ronda 2 · O3), el dibujo se queda en `teselaSize`
-    /// (26) — mismo patrón que `EntrenarCapsulaPuerta` (dibujo chico, toque HIG).
+    /// El blanco táctil VERTICAL de una tesela — 44 pt (Ronda 2 · O3), el dibujo se queda en
+    /// `teselaSize` (26) — mismo patrón que `EntrenarCapsulaPuerta` (dibujo chico, toque HIG). Sin
+    /// vecino arriba/abajo dentro de la fila, el eje vertical sí llega a los 44 exclusivos.
     public static let teselaToque: CGFloat = 44
+    /// Ronda 3 (anexo Grok r2): el inset HORIZONTAL del toque NO puede igualar al vertical — a 44×44
+    /// simétrico, las 7 teselas (pitch 26 + gap `semRowGap` 8 = 34 pt centro a centro) se traslapan
+    /// ~10 pt y el canto del toque cae en el día VECINO (HOY abre rutina, el vecino abre el editor —
+    /// un misfire real). El techo geométrico SIN traslape es el pitch mismo: inset 4 por lado da
+    /// 26+2×4 = 34 pt de ancho de toque, exactamente el pitch — los vecinos se TOCAN, nunca se
+    /// invaden. 44 horizontales exclusivos son imposibles en esta fila sin romper el mock (que fija
+    /// las 7 teselas a 26×26 con gap 8).
+    public static let teselaToqueInsetH: CGFloat = 4
 
     // MARK: DOSIS — el riel de series por músculo (mock `.dtrack`/`.drow`)
 
@@ -42,9 +51,15 @@ public enum EntrenarHubMetrics {
     public static let dosisTickWidth: CGFloat = 1.5
     /// Ancho fijo del rótulo de 3 letras (mock `.drow i{flex:0 0 30px}`).
     public static let dosisLabelWidth: CGFloat = 30
-    /// Ancho fijo del numeral de series, para que la columna no baile fila a fila (mock
-    /// `.drow b{flex:0 0 18px}`).
-    public static let dosisNumeralWidth: CGFloat = 18
+    /// Ancho fijo BASE del numeral de series, para que la columna no baile fila a fila (mock
+    /// `.drow b{flex:0 0 18px}`) — sigue siendo un ancho EXACTO, no `minWidth`: si variara por fila,
+    /// el riel de esa fila (`.frame(maxWidth: .infinity)`) se angostaría distinto y las columnas de
+    /// riel entre filas dejarían de alinear en el filo derecho. Ronda 3 · D5: 18 truncaba con
+    /// elipsis los valores con medio que trajo G7 («12.5», ~22 pt en grotesk tabular 10.5) — se
+    /// ensancha a 4 glifos (28) y pasa a BASE para que el consumidor la escale con
+    /// `@ScaledMetric(relativeTo: .caption)`, el MISMO `relativeTo` que ya usa `subLsDelta` (el
+    /// numeral y su columna tienen que crecer juntos con Dynamic Type).
+    public static let dosisNumeralWidthBase: CGFloat = 28
     /// Fill «bajo la banda» — cian al 65 % en vez del cian sólido (mock `.fill.low`).
     public static let dosisFillBajoAlfa: Double = 0.65
     /// Entre filas del riel (mock `.drow{margin-top:8px}`, salvo la primera).

@@ -25,6 +25,13 @@ struct EntrenarHubDosis: View {
 
     let rows: [Fila]
 
+    /// Ronda 3 · D5: `dosisNumeralWidth` era un ancho FIJO de 18 — los valores con medio que G7
+    /// rescató («12.5») se truncaban con elipsis, peor con Dynamic Type (la fuente escala vía
+    /// `relativeTo`, el frame no). `@ScaledMetric` con el MISMO `relativeTo` que `subLsDelta`
+    /// (`.caption`) — numeral y columna crecen juntos. Sigue siendo un ancho EXACTO (no `minWidth`):
+    /// así todas las filas reservan la MISMA columna y el riel de cada una alinea su filo derecho.
+    @ScaledMetric(relativeTo: .caption) private var dosisNumeralWidth = EntrenarHubMetrics.dosisNumeralWidthBase
+
     var body: some View {
         if !rows.isEmpty {
             EntrenarModulo(tono: .cian) {
@@ -68,7 +75,8 @@ struct EntrenarHubDosis: View {
             Text(verbatim: MuscleFatigueMap.formattedSets(fila.sets))
                 .font(EntrenarHubMetrics.subLsDelta)   // grotesk 10.5/700 tabular — mismo peldaño que `.drow b`
                 .foregroundStyle(LiquidColor.tinta700)
-                .frame(width: EntrenarHubMetrics.dosisNumeralWidth, alignment: .trailing)
+                .lineLimit(1)
+                .frame(width: dosisNumeralWidth, alignment: .trailing)
         }
     }
 
