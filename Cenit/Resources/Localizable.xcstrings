@@ -3701,6 +3701,23 @@
         }
       }
     },
+    "%lld this month" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld this month"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld este mes"
+          }
+        }
+      }
+    },
     "%lld this week" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -24123,6 +24140,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Marcadores contra tu base: FC en reposo arriba o VFC abajo se lee como activación."
+          }
+        }
+      }
+    },
+    "Marks" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marks"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marcas"
           }
         }
       }
@@ -49994,6 +50028,23 @@
         }
       }
     },
+    "best set" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "best set"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "mejor serie"
+          }
+        }
+      }
+    },
     "better than your base" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -54202,6 +54253,23 @@
         }
       }
     },
+    "max weight" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "max weight"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "peso máx"
+          }
+        }
+      }
+    },
     "max weight · %@ wk" : {
 
     },
@@ -54492,6 +54560,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "mañanas"
+          }
+        }
+      }
+    },
+    "most reps" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "most reps"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "más reps"
           }
         }
       }
@@ -61777,6 +61862,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "entrenadas"
+          }
+        }
+      }
+    },
+    "trained day" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "trained day"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "entrenaste"
           }
         }
       }
