@@ -852,6 +852,18 @@ extension CenitStore {
                 $0.add(column: "repsRangeTop", .integer)
             }
         }
+        // v39 (FER-166): a fixed note per exercise, kept on the routine itself so it travels to every
+        // session as a seed (`ExerciseRun.note`/`seededNote`, not copied into the session's acta unless
+        // edited — see StrengthSessionModel.buildForSave). One nullable column on `routineExercise`:
+        // NULL = no note, never '' (`saveRoutine` normalizes on write — the same "text or NULL" contract
+        // `saveSession` already uses for `strengthExerciseNote`). Append-only via `addColumnIfMissing`
+        // (FER-791/792 discipline — a re-run against a DB that already grew the column is a no-op, not a
+        // "duplicate column" crash).
+        migrator.registerMigration("v39") { db in
+            try addColumnIfMissing(db, "note", on: "routineExercise") {
+                $0.add(column: "note", .text)
+            }
+        }
         return migrator
     }
 
