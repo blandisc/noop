@@ -524,6 +524,42 @@ final class StrengthSessionModelTests: XCTestCase {
         XCTAssertTrue(notes.contains { $0.setPosition == 0 && $0.text == "Nota de la serie 1" })
     }
 
+    // MARK: Fixed exercise note seed (FER-166)
+
+    /// `make` seeds the run's live `note` AND `seededNote` from the routine's fixed note; an untouched
+    /// seed never becomes an `ExerciseNote` row in the acta (only a note the user actually typed/edited
+    /// this session does) — and the invariant survives a crash→restore.
+    func testMakeSeedsNoteFromRoutineAndBuildForSaveSkipsSeed() {
+        let seeded = StrengthSessionModel.PlanSlot(
+            re: RoutineExercise(id: "a", routineId: "rt", exerciseId: "bench", position: 0,
+                                targetSets: 1, restMode: .fixed, restSeconds: 90,
+                                note: "Cadera atrás, no rodillas"),
+            exercise: ex("bench", "Bench"), lastSets: [])
+        let s = make([seeded])
+
+        // The seed rides both the live note and the memory of what was seeded.
+        XCTAssertEqual(s.runs[0].note, "Cadera atrás, no rodillas")
+        XCTAssertEqual(s.runs[0].seededNote, "Cadera atrás, no rodillas")
+        XCTAssertTrue(s.runs[0].hasNote, "the seeded note lights the chip")
+
+        s.registerCurrentSet()   // log something so buildForSave has a session worth saving
+        let (_, _, _, untouchedNotes) = s.buildForSave(deviceId: nil, endTs: 9000)
+        XCTAssertTrue(untouchedNotes.isEmpty, "an intact seed must NOT be copied to the session's acta")
+
+        // The user edits the note THIS session — now it must be saved as history.
+        let run = s.runs[0].id
+        s.setExerciseNote(exercise: run, text: "Bajar más despacio")
+        let (_, _, _, editedNotes) = s.buildForSave(deviceId: nil, endTs: 9000)
+        XCTAssertEqual(editedNotes.count, 1, "an edited note IS copied to the acta")
+        XCTAssertEqual(editedNotes.first?.text, "Bajar más despacio")
+
+        // Crash-safe: snapshot → restore keeps the invariant — the seed's memory isn't lost.
+        let restored = StrengthSessionModel.restore(from: s.snapshot(now: 200))
+        XCTAssertEqual(restored.runs[0].seededNote, "Cadera atrás, no rodillas")
+        let (_, _, _, restoredNotes) = restored.buildForSave(deviceId: nil, endTs: 9000)
+        XCTAssertEqual(restoredNotes.count, 1, "restore keeps the edited-vs-seed distinction")
+    }
+
     func testElapsedFreezesWhilePaused() {
         let s = oneSlot()   // startTs = 100
         XCTAssertEqual(s.elapsedSeconds(now: Date(timeIntervalSince1970: 200)), 100)
