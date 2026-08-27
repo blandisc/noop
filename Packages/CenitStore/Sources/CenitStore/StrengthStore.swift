@@ -706,6 +706,47 @@ extension CenitStore {
         }
     }
 
+    // MARK: - Consultas del hub v18 (FER-171 · Parte A) — SIN columnas nuevas, solo SELECTs.
+
+    /// El PR más reciente de todo el historial (cualquier ejercicio/métrica), por `ts`. `nil` si
+    /// no hay ninguno todavía.
+    public func latestPersonalRecord() async throws -> PersonalRecord? {
+        try syncRead { db in
+            try Row.fetchOne(db, sql: "SELECT * FROM personalRecord ORDER BY ts DESC LIMIT 1")
+                .map(Self.personalRecord)
+        }
+    }
+
+    /// Cuántos PRs tienen `ts >= sinceTs` — «Marcas · 3 en ago».
+    public func personalRecordCount(sinceTs: Double) async throws -> Int {
+        try syncRead { db in
+            try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM personalRecord WHERE ts >= ?",
+                             arguments: [Int(sinceTs)]) ?? 0
+        }
+    }
+
+    /// El PR ANTERIOR del mismo ejercicio+métrica, con `ts < beforeTs` («antes 100.0 · hace 2
+    /// días»). `personalRecord` guarda solo el mejor VIGENTE (una fila por ejercicio+métrica, PK
+    /// compuesta) — no hay historial ahí, así que "el de antes" se re-deriva de los sets crudos
+    /// (`setEntry`, done + work) anteriores a `beforeTs`, reusando `bestPRs`: el mismo criterio de
+    /// "qué cuenta como marca" que ya usan el guardado (`updatePersonalRecords`) y el borrado
+    /// (`recomputePR`) — nunca un segundo criterio inventado aquí. `nil` si no hay ninguno.
+    public func previousPersonalRecord(exerciseId: String, metric: PRMetric,
+                                       beforeTs: Double) async throws -> PersonalRecord? {
+        try syncRead { db in
+            let work = try Row.fetchAll(db, sql: """
+                SELECT * FROM setEntry
+                WHERE exerciseId = ? AND kind = 'work' AND done = 1 AND ts < ?
+                """, arguments: [exerciseId, Int(beforeTs)]).map(Self.setEntry)
+            let best = Self.bestPRs(work, exerciseId: exerciseId)
+            switch metric {
+            case .maxWeight: return best.maxWeight
+            case .maxReps:   return best.maxReps
+            case .maxVolume: return best.maxVolume
+            }
+        }
+    }
+
     private static func session(_ r: Row) -> StrengthSession {
         StrengthSession(id: r["id"], routineId: r["routineId"], startTs: r["startTs"], endTs: r["endTs"],
                         deviceId: r["deviceId"], strain: r["strain"], avgHr: r["avgHr"], notes: r["notes"],
