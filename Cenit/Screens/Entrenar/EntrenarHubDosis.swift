@@ -1,12 +1,16 @@
 #if os(iOS)
 import SwiftUI
 import StrandDesign
+import StrandAnalytics
 
 // MARK: - Entrenar · DOSIS del hub v18 (FER-171 · Parte B)
 //
 // «Series por músculo · 7 días»: hasta 4 filas (rótulo de 3 letras · riel · numeral de series), cian
 // oscuro. Silencio si hay menos de 3 sesiones en 7 días (`EntrenarLanding` decide eso antes de
 // construir `rows`; este componente solo pinta lo que recibe — vacío ⇒ `EmptyView`).
+//
+// Ronda 2 · G7: el numeral usa `MuscleFatigueMap.formattedSets` (Int(sets.rounded()) se tragaba el
+// .5 de una serie secundaria — «7» en vez de «7.5»), el MISMO formateo que ya usa el mapa muscular.
 
 struct EntrenarHubDosis: View {
     struct Fila: Identifiable {
@@ -61,7 +65,7 @@ struct EntrenarHubDosis: View {
             .frame(maxWidth: .infinity)
             .frame(height: EntrenarHubMetrics.dosisTrackHeight)
             .clipShape(Capsule())
-            Text(verbatim: "\(Int(fila.sets.rounded()))")
+            Text(verbatim: MuscleFatigueMap.formattedSets(fila.sets))
                 .font(EntrenarHubMetrics.subLsDelta)   // grotesk 10.5/700 tabular — mismo peldaño que `.drow b`
                 .foregroundStyle(LiquidColor.tinta700)
                 .frame(width: EntrenarHubMetrics.dosisNumeralWidth, alignment: .trailing)
@@ -72,7 +76,7 @@ struct EntrenarHubDosis: View {
         rows.enumerated().reduce(Text("Sets per muscle · 7 days")) { acc, pair in
             let (_, fila) = pair
             return acc + Text(verbatim: ". ") + Text(verbatim: fila.label3) + Text(verbatim: " ")
-                + Text(verbatim: "\(Int(fila.sets.rounded()))")
+                + Text(verbatim: MuscleFatigueMap.formattedSets(fila.sets))
         }
     }
 }
