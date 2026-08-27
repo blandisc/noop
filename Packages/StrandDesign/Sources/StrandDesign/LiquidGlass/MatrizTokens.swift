@@ -127,7 +127,10 @@ public enum MatrizTokens {
 
     // MARK: Alturas de gráfica por forma
 
-    public static let alturaLinea: CGFloat = 56
+    /// 48 = gemela de `alturaBarras` (dueño 2026-08-26: los tiles de Sueño/FC se leían
+    /// alargados; igualar la altura de sus gráficas a la familia de Contexto los compacta
+    /// sin dejar el borde inferior dentado entre estantes).
+    public static let alturaLinea: CGFloat = 48
 
     // MARK: Los módulos de vidrio y los estantes (FER-118 · Hoy en atmósfera)
     //
@@ -140,6 +143,11 @@ public enum MatrizTokens {
     /// dock, pero la columna de módulos quedaba más ancha que el héroe de arriba y se leía descentrada;
     /// ahora todo el contenido comparte un solo margen y alinea. El dock mantiene su propio filo (16).
     public static let margenModulos: CGFloat = LiquidSpace.s600
+    /// Compensación de centrado de la matriz cuando hay filas de gemelas (`.split`): su contenido
+    /// mínimo (~361pt) desborda el presupuesto post-margen (402−48=354) y SwiftUI ancla el
+    /// sobrante a la izquierda; este medio-sobrante lo reparte (ver el comentario del body de
+    /// `MatrizHoyFace`). Derivado del desborde medido con los tokens vigentes (margen 24, gap 12).
+    public static let centradoSplit: CGFloat = 4
     /// Padding interior del módulo (prototipo 18/18/14 → tokens 16/16/12).
     public static let moduloPadH: CGFloat = LiquidSpace.s400
     public static let moduloPadTop: CGFloat = LiquidSpace.s400
