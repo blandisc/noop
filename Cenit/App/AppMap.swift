@@ -248,8 +248,9 @@ private struct RoutineEditorMapCell: View {
         .fullScreenCover(isPresented: $model.strengthSheetPresented, onDismiss: {
             if model.strengthSession?.summary != nil { model.closeStrengthSummary() }
         }) {
-            if let session = model.strengthSession {
-                LiveStrengthSheet(session: session)
+            // FER-167 (F2): La Hoja viva sustituye a `LiveStrengthSheet` como superficie montada.
+            if model.strengthSession != nil {
+                RoutineSheet(origin: .today(routineId: model.strengthSession?.routineId), mode: .live)
                     .environmentObject(model.repo)
                     .environment(model)
                     .environmentObject(TabRouter())
@@ -359,8 +360,9 @@ private struct NewRoutineFlowMapCell: View {
         .fullScreenCover(isPresented: $model.strengthSheetPresented, onDismiss: {
             if model.strengthSession?.summary != nil { model.closeStrengthSummary() }
         }) {
-            if let session = model.strengthSession {
-                LiveStrengthSheet(session: session)
+            // FER-167 (F2): La Hoja viva sustituye a `LiveStrengthSheet` como superficie montada.
+            if model.strengthSession != nil {
+                RoutineSheet(origin: .today(routineId: model.strengthSession?.routineId), mode: .live)
                     .environmentObject(model.repo)
                     .environment(model)
                     .environmentObject(TabRouter())
@@ -433,16 +435,22 @@ private struct EntrenarFlowsMapCell: View {
         .environmentObject(TabRouter())
         .environmentObject(historyCoordinator)
         .environmentObject(HealthKitBridge(repo: model.repo, appleDeviceId: "map-apple", noopDeviceId: "map"))
-        // FER-132 ronda 3 (ux, menor): esta celda del arnés monta EntrenarView directo, sin pestañas
-        // — equivale siempre a «estar en la pestaña Entrenar», así que replica aquí la condición de
-        // RootTabView.swift:245 (`&& selection != .train`) retirando el pill del todo: el héroe de
-        // Sesión viva de EntrenarView ya cubre ese estado y el pill lo duplicaría.
+        // FER-132 DEROGADA (FER-167 · F2): el héroe de sesión viva que cubría este estado se retiró
+        // — la píldora ahora vive en TODOS los tabs, Entrenar incluido, igual que las otras celdas.
+        .overlay(alignment: .bottom) {
+            if model.strengthSession != nil && !model.strengthSheetPresented {
+                MapSessionPillHost(model: model)
+                    .padding(.bottom, CenitMetrics.space2)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
         .animation(StrandMotion.gentle, value: model.strengthSheetPresented)
         .fullScreenCover(isPresented: $model.strengthSheetPresented, onDismiss: {
             if model.strengthSession?.summary != nil { model.closeStrengthSummary() }
         }) {
-            if let session = model.strengthSession {
-                LiveStrengthSheet(session: session)
+            // FER-167 (F2): La Hoja viva sustituye a `LiveStrengthSheet` como superficie montada.
+            if model.strengthSession != nil {
+                RoutineSheet(origin: .today(routineId: model.strengthSession?.routineId), mode: .live)
                     .environmentObject(model.repo)
                     .environment(model)
                     .environmentObject(TabRouter())

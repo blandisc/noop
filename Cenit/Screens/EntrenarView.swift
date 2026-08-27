@@ -178,10 +178,6 @@ private struct EntrenarLanding: View {
     /// silently re-presenting via `startStrengthSession`'s no-op guard (which looks like "start new").
     @State private var confirmResumeStrength = false
     @State private var saveError = false
-    /// «Terminar sesión ›» del héroe de sesión viva (FER-132 · ⑤): el MISMO confirm de descarte que
-    /// el pill flotante ya presenta desde `RootTabView` — solo que la landing no tiene acceso a ese
-    /// binding, así que sostiene el suyo propio y llama al mismo `endStrengthSession(save: false)`.
-    @State private var confirmEndLiveSession = false
 
     /// Monday-first display order in the Calendar weekday convention.
     private let orderedWeekdays = [2, 3, 4, 5, 6, 7, 1]
@@ -232,14 +228,13 @@ private struct EntrenarLanding: View {
                     if loadFailed {
                         loadErrorState       // §5 — «No pude leer tu plan» + Reintentar, niveles ocultos
                             .padding(.top, CenitMetrics.sectionGap)
-                    } else if let live = model.strengthSession {
+                    } else if model.strengthSession != nil {
                         // ⑤ Sesión viva: gana sobre CUALQUIER otro estado — incluido «sin plan todavía»
-                        // (un entrenamiento rápido, sin rutina, puede arrancar sin split armado). El
-                        // héroe viejo sigue arriba (FER-171 no lo toca); el mosaico v18 completo va
-                        // debajo — spec §«Estados no-rutina».
-                        heroSectionSesionViva(live)
-                            .padding(.top, EntrenarMetrics.heroKickerTop)
-                        v18Mosaico.padding(.top, CenitMetrics.gap)
+                        // (un entrenamiento rápido, sin rutina, puede arrancar sin split armado).
+                        // FER-167 (F2, orden del épico): el héroe de sesión viva se RETIRA — deroga
+                        // FER-132. Entrenar pasa a ser mosaico v18 + píldora, como los otros 4 tabs
+                        // (Continuar = tap en la píldora; Terminar/Descartar = su confirm vigente).
+                        v18Mosaico.padding(.top, EntrenarMetrics.heroKickerTop)
                     } else if split.isEmpty {
                         primerUsoSection     // ④ Primer uso — «Arma tu semana» + plantillas + Crear mi plan
                             .padding(.top, EntrenarMetrics.heroKickerTop)
@@ -327,21 +322,9 @@ private struct EntrenarLanding: View {
                 .init(String(localized: "Not now"), role: .secondary)
             ]
         )
-        // «Terminar sesión ›» del héroe de sesión viva (FER-132 · ⑤): la MISMA copia y la MISMA
-        // acción que el ✕ del pill flotante ya usa en `RootTabView` — un solo confirm de descarte,
-        // repetido a propósito porque cada anfitrión sostiene su propio `@State`.
-        .instrumentoConfirm(
-            isPresented: $confirmEndLiveSession,
-            title: String(localized: "Discard this session?"),
-            context: String(localized: "SESSION · IN PROGRESS"),
-            message: String(localized: "Its logged sets won't be saved."),
-            actions: [
-                .init(String(localized: "Keep training"), role: .primary),
-                .init(String(localized: "Discard session"), role: .destructive) {
-                    model.endStrengthSession(save: false)
-                }
-            ]
-        )
+        // FER-167 (F2): el confirm «Terminar sesión ›» del héroe de sesión viva se retiró junto con
+        // el héroe (FER-132 derogada) — Terminar/Descartar viven en el confirm de la píldora, que ya
+        // cubre los 5 tabs incluido este.
         // The guided strength session (FER-347) is now presented at the shell (`RootTabView`) as a
         // full-screen cover with a floating pill on all five tabs (FER-716), so it survives tab switches
         // and no longer needs a «Resume» row here. The session lives in AppModel.
@@ -722,113 +705,6 @@ private struct EntrenarLanding: View {
             : String(localized: "Your week marks rest")
     }
 
-    /// ⑤ Sesión viva: el héroe entero habla de la sesión en curso, no del plan del día — kicker «EN
-    /// CURSO · N MIN», el nombre de la rutina que corre (puede no ser la de hoy — FER-86), el avance
-    /// como numerales, y SOLO «Continuar» + «Terminar sesión»: sin «Otra forma» (ya hay una sesión
-    /// abierta) y sin progresión (no hay subida que anunciar a mitad de sesión).
-    private func heroSectionSesionViva(_ session: StrengthSessionModel) -> some View {
-        // FER-132 ronda 2: `TimelineView` — igual que `ActiveSessionPillHost`, el pill que este héroe
-        // reemplaza en Entrenar — para que «N min» avance solo mientras la landing está en pantalla,
-        // en vez de quedarse congelado hasta el siguiente cambio de estado ajeno.
-        TimelineView(.periodic(from: .now, by: 1)) { context in
-            heroSesionVivaBody(session, now: context.date)
-        }
-    }
-
-    private func heroSesionVivaBody(_ session: StrengthSessionModel, now: Date) -> some View {
-        let minutes = max(0, session.elapsedSeconds(now: now) / 60)
-        let progress = liveSessionProgress(session)
-        let accent = routineTint(region(name: session.routineName))
-        return VStack(alignment: .leading, spacing: 0) {
-            Text(String(localized: "In progress · \(minutes) min"))
-                .entrenarCabeceraKicker().foregroundStyle(theme.inkTertiary)
-            Text(session.routineName)
-                .font(InstrumentoType.grotesk(32, weight: .bold)).tracking(-1)
-                .foregroundStyle(theme.ink)
-                .lineLimit(2).minimumScaleFactor(0.65)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, EntrenarMetrics.heroTitleTop)
-            Text(liveSessionSubtitle(session, progress))
-                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                .padding(.top, EntrenarMetrics.heroSubTop)
-            HStack(alignment: .firstTextBaseline, spacing: EntrenarMetrics.heroNumeralsGap) {
-                bigStat(Text(verbatim: "\(minutes)"), unit: Text("min"), valueColor: accent)
-                // Ronda 3 (ux, grave): una sesión rápida sin rutina arranca con `activeExercises`/`runs`
-                // vacíos — sin este guard se mostraba «0 / 0» tanto de ejercicio como de series, justo
-                // lo que `liveSessionSubtitle` (línea 557) ya evita con el mismo dato.
-                if progress.total > 0 {
-                    bigStat(Text(verbatim: "\(progress.index)"), unit: Text(verbatim: "/ \(progress.total)"), valueColor: accent)
-                }
-                if progress.totalSets > 0 {
-                    bigStat(Text(verbatim: "\(progress.doneSets)"),
-                            unit: Text(verbatim: "/ \(progress.totalSets)") + Text(verbatim: " ") + Text("sets"),
-                            valueColor: accent)
-                }
-            }
-            .padding(.top, EntrenarMetrics.heroNumeralsTop)
-            .accessibilityElement(children: .combine)
-            HStack(alignment: .center, spacing: EntrenarMetrics.ctaRowGap) {
-                StrandCTAButton("Continue", tint: theme.positiveText, fillsWidth: false) {
-                    model.resumeStrengthSession()
-                }
-                Button { confirmEndLiveSession = true } label: {
-                    HStack(spacing: CenitMetrics.space1) {
-                        Text("End session").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                        StrandIcon.disclosure.image
-                            .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
-                            .accessibilityHidden(true)
-                    }
-                    .padding(.horizontal, CenitMetrics.space1 + 2)
-                    .frame(minHeight: EntrenarMetrics.row, alignment: .leading)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(EntrenarPressStyle())
-                .accessibilityElement(children: .combine)
-            }
-            .padding(.top, EntrenarMetrics.ctaRowTop)
-        }
-    }
-
-    /// «ejercicio 2 de 6 · 5 series hechas · última: Sentadilla trasera 80 kg × 8» — el avance de la
-    /// sesión en curso, cerrando con la última serie marcada (copy.md «Héroe»: «omite partes sin
-    /// dato» — la cláusula «última:» solo se omite cuando de verdad no hay ningún set `done` todavía,
-    /// p. ej. justo al arrancar la sesión).
-    private func liveSessionSubtitle(_ session: StrengthSessionModel,
-                                      _ p: (index: Int, total: Int, doneSets: Int, totalSets: Int)) -> String {
-        let head = p.total > 0
-            ? String(localized: "exercise \(p.index) of \(p.total) · \(p.doneSets) sets done")
-            : String(localized: "\(p.doneSets) sets done")
-        guard let last = lastDoneSet(session) else { return head }
-        // `StrengthDisplay.weight`, no `massFromKilograms`: en imperial el peso absoluto se lee
-        // redondeado («182 lb») en TODA la sección de fuerza; el crudo daba «181.9 lb» solo aquí.
-        let kg = StrengthDisplay.weight(last.kg, system: unitSystem)
-        return head + " · " + String(localized: "last: \(last.name) \(kg) × \(last.reps)")
-    }
-
-    /// El último set marcado `done` en toda la sesión (cualquier corrida, no solo la enfocada), por
-    /// `doneTs` más reciente — la misma fuente que `doneCount` ya recorre, sin inventar un segundo
-    /// modelo. `nil` cuando ninguna serie se ha marcado todavía (arranque de sesión).
-    private func lastDoneSet(_ session: StrengthSessionModel) -> (name: String, kg: Double, reps: Int)? {
-        var best: (ts: Int, name: String, kg: Double, reps: Int)?
-        for run in session.runs {
-            for s in run.sets where s.done {
-                let ts = s.doneTs ?? 0
-                if best == nil || ts > best!.ts { best = (ts, run.name, s.weightKg, s.reps) }
-            }
-        }
-        return best.map { (name: $0.name, kg: $0.kg, reps: $0.reps) }
-    }
-
-    /// El avance de la sesión viva: qué ejercicio activo enfoca (1-based, entre los NO saltados) y
-    /// cuántas series ya se marcaron sobre el total planeado.
-    private func liveSessionProgress(_ session: StrengthSessionModel) -> (index: Int, total: Int, doneSets: Int, totalSets: Int) {
-        let active = session.activeExercises
-        let total = active.count
-        let index = (active.firstIndex { $0.index == session.currentIndex }.map { $0 + 1 }) ?? min(total, 1)
-        let totalSets = active.reduce(0) { $0 + $1.run.sets.count }
-        return (max(index, total > 0 ? 1 : 0), total, session.doneCount, totalSets)
-    }
-
     /// The handoff's per-routine tint (mock 1a). The family is derived from the routine's exercises'
     /// `primaryMuscles` via the shared `RoutineClassifier` (FER-775) — never guessed from the name or a
     /// per-process hash, so a routine keeps the same color across launches. The flow colors coincide with
@@ -943,16 +819,6 @@ private struct EntrenarLanding: View {
     // Big Grotesk numerals for the session's shape (min · exercises · sets), the earned raise as the
     // green line (FER-G — it lives where you start), and the recovery hint on a thin green filete.
     // Rest days and empty routines skip the whole section — nothing to detail.
-
-    private func bigStat(_ value: Text, unit: Text, valueColor: Color? = nil) -> Text {
-        // 24 pt, no 22: el tinte de familia solo está sancionado en numerales de 24 para arriba
-        // («Hue saturado: … numerales ≥ 24 pt», EntrenarTokens). A 22, el ámbar da 3.61:1 y el teal
-        // 3.48:1 sobre el papel — bajo el piso. El handoff los dibujó a 22 pero solo rendereó días
-        // de pierna, y el índigo (5.43:1) es el único de los tres que pasaba.
-        value.font(InstrumentoType.groteskNumber(24)).foregroundStyle(valueColor ?? theme.ink)
-            + Text(verbatim: " ")
-            + unit.font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-    }
 
     /// «Hoy subes: Press banca · 82,5 kg y Press militar · 26 kg» — the names+loads in the raise
     /// green. La píldora sigue mostrando el peso NUEVO (`toKg`) — el escalón es cosa de la tile
@@ -1330,7 +1196,7 @@ private struct EntrenarLanding: View {
                     .padding(.horizontal, CenitMetrics.space2)
                     // El prototipo pide 36 pt; sube a EntrenarMetrics.row (44 pt) por el mínimo de
                     // tap target de HIG — misma regla que el resto de filas de esta pantalla
-                    // (sesionMetrics, heroSesionVivaBody). Deviation documentada ronda 3 (quisquilloso).
+                    // (sesionMetrics). Deviation documentada ronda 3 (quisquilloso).
                     .frame(minHeight: EntrenarMetrics.row, alignment: .leading)
                     .background(theme.surface, in: Capsule())
                     .overlay(Capsule().strokeBorder(theme.hairline, lineWidth: 1))
