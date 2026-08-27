@@ -6,9 +6,9 @@ import BiometricStreams
 
 final class MigrationTests: XCTestCase {
     func testMigratorRegistersContiguousVersions() {
-        XCTAssertEqual(CenitStore.makeMigrator().migrations, (1...38).map { "v\($0)" })
-        XCTAssertEqual(CenitStoreInfo.schemaVersion, 38)
-        XCTAssertEqual(CenitStoreInfo.latestMigration, "v38")
+        XCTAssertEqual(CenitStore.makeMigrator().migrations, (1...39).map { "v\($0)" })
+        XCTAssertEqual(CenitStoreInfo.schemaVersion, 39)
+        XCTAssertEqual(CenitStoreInfo.latestMigration, "v39")
     }
 
     func testInMemoryRunsMigrations() async throws {
@@ -1324,6 +1324,56 @@ final class MigrationTests: XCTestCase {
         try await dbQueue.read { db in
             XCTAssertTrue(try migrator.appliedIdentifiers(db).contains("v38"),
                           "v38 must be recorded so it never re-runs and wedges startup")
+        }
+    }
+
+    // MARK: - v39 (FER-166): fixed per-exercise note on routineExercise
+
+    /// v39 adds `routineExercise.note` (nullable, append-only via `addColumnIfMissing`): the pre-v39
+    /// row survives untouched and the new column reads back NULL, never an empty string.
+    func testV39AddsNoteToRoutineExerciseAppendOnly() async throws {
+        let dbQueue = try DatabaseQueue()
+        let migrator = CenitStore.makeMigrator()
+        try migrator.migrate(dbQueue, upTo: "v38")
+
+        try await dbQueue.write { db in
+            try db.execute(sql: """
+                INSERT INTO routineExercise
+                    (id, routineId, exerciseId, position, targetSets, warmupPercents, restMode, restSeconds)
+                VALUES ('re1', 'rt1', 'ex1', 0, 3, '[]', 'fixed', 90)
+                """)
+        }
+
+        try migrator.migrate(dbQueue)   // → v39
+
+        try await dbQueue.read { db in
+            let cols = try db.columns(in: "routineExercise").map(\.name)
+            XCTAssertTrue(cols.contains("note"), "v39 must add routineExercise.note")
+            let row = try Row.fetchOne(db, sql: "SELECT * FROM routineExercise WHERE id='re1'")
+            XCTAssertNotNil(row, "the pre-v39 row must survive")
+            XCTAssertNil(row?["note"] as String?, "new column defaults to NULL, never empty string")
+            XCTAssertEqual(row?["restSeconds"] as Int?, 90, "existing columns untouched")
+        }
+    }
+
+    /// v39 must be idempotent (FER-791/792 discipline): column already present but v39 unrecorded →
+    /// re-running records it without a "duplicate column" crash.
+    func testV39IsIdempotentWhenColumnAlreadyExists() async throws {
+        let dbQueue = try DatabaseQueue()
+        let migrator = CenitStore.makeMigrator()
+        try migrator.migrate(dbQueue, upTo: "v38")
+
+        try await dbQueue.write { db in
+            try db.alter(table: "routineExercise") { t in
+                t.add(column: "note", .text)
+            }
+        }
+
+        try migrator.migrate(dbQueue)   // → v39; must not throw
+
+        try await dbQueue.read { db in
+            XCTAssertTrue(try migrator.appliedIdentifiers(db).contains("v39"),
+                          "v39 must be recorded so it never re-runs and wedges startup")
         }
     }
 }

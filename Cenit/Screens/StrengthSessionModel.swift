@@ -190,6 +190,14 @@ final class StrengthSessionModel: ObservableObject {
         /// Exercise-scoped note text (FER-932), written from the «✎ Nota» chip with «Guardar en: Este
         /// ejercicio». nil = no note. A set-scope note lives on the individual `WorkingSet.note` instead.
         var note: String? = nil
+        /// The routine's fixed note (`RoutineExercise.note`, FER-166) exactly as it was seeded into
+        /// `note` above by `make(...)`. `buildForSave` compares `note` against this to tell an
+        /// untouched seed (never copied to the session's acta) from a note the user actually edited
+        /// this session (copied, same as any other `ExerciseNote`). `var` with a default, not `let`: a
+        /// `let` with an initial value falls out of the memberwise init. `addExercise`/
+        /// `insertExerciseAfterCurrent`/`replaceExercise` all leave it nil — an ad-hoc or swapped
+        /// exercise never inherits the old movement's note.
+        var seededNote: String? = nil
         /// Whether this run (or any of its sets) carries a note (FER-932) — drives the chip's «con nota» state.
         var hasNote: Bool { (note?.isEmpty == false) || sets.contains { $0.note?.isEmpty == false } }
 
@@ -899,7 +907,9 @@ final class StrengthSessionModel: ObservableObject {
             // FER-835: the exercise's «Volver a X» mark rides with the save — only if something was
             // actually logged (no saved sets → no session rows to mark).
             if run.raiseOptedOut, run.sets.contains(where: \.done) { optedOut.insert(run.exerciseId) }
-            if let text = run.note, !text.isEmpty {
+            // FER-166: an untouched seed (the routine's fixed note, never edited this session) never
+            // copies into the session's acta — only a note the user actually typed/changed does.
+            if let text = run.note, !text.isEmpty, text != run.seededNote {
                 notes.append(ExerciseNote(sessionId: id, exerciseId: run.exerciseId, text: text, ts: endTs))
             }
             for (setIndex, set) in run.sets.enumerated() {
@@ -947,7 +957,8 @@ final class StrengthSessionModel: ObservableObject {
                     // FER-82: only a HELD raise travels — an applied one is already in the weights.
                     heldRaise: run.proposedRaise.flatMap { r in
                         r.waiting ? .init(fromKg: r.fromKg, toKg: r.toKg, phrase: r.phrase) : nil
-                    })
+                    },
+                    seededNote: run.seededNote)
             },
             currentIndex: currentIndex, restEndsAt: restEndsAt, restStartedAt: restStartedAt,
             currentRestTarget: currentRestTarget, currentRestMode: currentRestMode,
@@ -979,7 +990,7 @@ final class StrengthSessionModel: ObservableObject {
                                                      phrase: $0.phrase, waiting: true)
                         },
                         raiseOptedOut: r.raiseOptedOut ?? false,
-                        supersetGroup: r.supersetGroup, note: r.note)
+                        supersetGroup: r.supersetGroup, note: r.note, seededNote: r.seededNote)
         }
         let model = StrengthSessionModel(id: snap.id, routineId: snap.routineId,
                                          routineName: snap.routineName, startTs: snap.startTs, runs: runs)
@@ -1053,7 +1064,8 @@ final class StrengthSessionModel: ObservableObject {
                                lastTimeS: last?.timeS.map { Int($0) }, lastDistanceM: last?.distanceM,
                                sets: sets, currentSet: 0, skipped: false,
                                proposedRaise: type == .weightReps ? slot.raise : nil,
-                               supersetGroup: slot.re.supersetGroup)
+                               supersetGroup: slot.re.supersetGroup,
+                               note: slot.re.note, seededNote: slot.re.note)
         }
         return StrengthSessionModel(routineId: routineId, routineName: routineName,
                                     startTs: startTs, runs: runs)

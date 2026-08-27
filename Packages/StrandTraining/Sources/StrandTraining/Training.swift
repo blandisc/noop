@@ -150,6 +150,18 @@ public struct RoutineSet: Codable, Sendable, Identifiable, Equatable {
         guard let top = repsRangeTop, top > reps else { return "\(reps)" }
         return "\(reps)-\(top)"
     }
+
+    /// La invariante piso ≤ techo (E13/FER-94, R4 — FER-166 ronda 2): un techo inválido nunca se
+    /// PERSISTE, no solo se tolera al leer (`repsRangeLabel` arriba ya caía al piso al leer un
+    /// rango roto; esto evita que exista en primer lugar). Pura, sin `View`/`Repository`, para que
+    /// el único punto de escritura (`RoutineSheetKeypad.swift`, capa app) y la limpieza de datos
+    /// legados al cargar (`RoutineSheet.load()`) llamen la MISMA regla: un techo que no supera al
+    /// piso, o un techo sin piso con qué compararse, se normaliza a `nil` (piso único) — nunca un
+    /// rango invertido como "10-8".
+    public static func normalizedRepsRangeTop(reps: Int?, top: Int?) -> Int? {
+        guard let top, let reps, top > reps else { return nil }
+        return top
+    }
 }
 
 /// What to do when an exercise stalls (progression, FER-A). `propose` pre-populates a deload; `warn`
@@ -200,6 +212,9 @@ public struct RoutineExercise: Codable, Sendable, Identifiable, Equatable {
     /// `true` = raise even on a low-recovery day (skip the TrainingRegulation gate). Default `false`:
     /// a `recoveryLow` day DEFERS an earned raise to the next session (2c's "Recuperación baja" row).
     public var progressionIgnoreRecovery: Bool
+    /// Nota fija del ejercicio (FER-166): viaja a cada sesión como semilla de `ExerciseRun.note`; nil =
+    /// sin nota, nunca "". Distinta de `strengthExerciseNote`, que es historia por sesión.
+    public var note: String?
 
     public init(id: String = UUID().uuidString, routineId: String, exerciseId: String,
                 position: Int, targetSets: Int, targetReps: Int? = nil,
@@ -209,7 +224,7 @@ public struct RoutineExercise: Codable, Sendable, Identifiable, Equatable {
                 hrRestReference: HRRestReference = .restingMargin, hrRestValue: Double = 0,
                 progressionEnabled: Bool = false, progressionSessions: Int = 2,
                 progressionIncrementKg: Double? = nil, progressionDeload: DeloadPolicy = .propose,
-                progressionIgnoreRecovery: Bool = false) {
+                progressionIgnoreRecovery: Bool = false, note: String? = nil) {
         self.id = id; self.routineId = routineId; self.exerciseId = exerciseId
         self.position = position; self.targetSets = targetSets; self.targetReps = targetReps
         self.targetWeightKg = targetWeightKg; self.warmupPercents = warmupPercents
@@ -219,6 +234,7 @@ public struct RoutineExercise: Codable, Sendable, Identifiable, Equatable {
         self.progressionEnabled = progressionEnabled; self.progressionSessions = progressionSessions
         self.progressionIncrementKg = progressionIncrementKg; self.progressionDeload = progressionDeload
         self.progressionIgnoreRecovery = progressionIgnoreRecovery
+        self.note = note
     }
 
     /// The per-set plan to act on: the authored `sets` when present, else a 1:1 expansion of the legacy
@@ -373,6 +389,13 @@ public struct StrengthSessionSnapshot: Codable, Sendable, Equatable {
         /// Exercise-scoped note text (FER-932). Optional so a pre-FER-932 snapshot (key absent)
         /// still decodes; nil means no note, never confused with an empty string.
         public var note: String?
+        /// The routine's fixed note (`RoutineExercise.note`) as it was SEEDED into this run (FER-166),
+        /// distinct from `note` above which is the live, possibly-edited value. Lets `buildForSave`
+        /// tell "untouched seed" from "user edited it this session" apart even after a crash→restore,
+        /// without access to the routine. Optional so a pre-FER-166 snapshot (key absent) still decodes
+        /// to nil — after a restore from such a snapshot, an intact seed is copied to the acta at most
+        /// once, same as today.
+        public var seededNote: String?
         /// An earned raise today's verdict is HOLDING (FER-82): the cells opened at last time's
         /// weight and the session offers it one tap away, so it has to survive a crash like anything
         /// else the athlete can still act on. An APPLIED raise is not carried — its weights are
@@ -395,7 +418,8 @@ public struct StrengthSessionSnapshot: Codable, Sendable, Equatable {
                     hrRestValue: Double, lastWeightKg: Double? = nil, lastReps: Int? = nil,
                     lastTimeS: Int? = nil, lastDistanceM: Double? = nil, sets: [SetSnapshot],
                     currentSet: Int, skipped: Bool, raiseOptedOut: Bool? = nil,
-                    supersetGroup: Int? = nil, note: String? = nil, heldRaise: HeldRaise? = nil) {
+                    supersetGroup: Int? = nil, note: String? = nil, heldRaise: HeldRaise? = nil,
+                    seededNote: String? = nil) {
             self.id = id; self.exerciseId = exerciseId; self.name = name; self.type = type
             self.restSeconds = restSeconds; self.restMode = restMode
             self.hrRestReference = hrRestReference; self.hrRestValue = hrRestValue
@@ -406,6 +430,7 @@ public struct StrengthSessionSnapshot: Codable, Sendable, Equatable {
             self.supersetGroup = supersetGroup
             self.note = note
             self.heldRaise = heldRaise
+            self.seededNote = seededNote
         }
     }
     public var id: String

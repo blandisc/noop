@@ -123,10 +123,10 @@ struct RootTabView: View {
                 trainChrome(secondaryDestination(screen))
             }
             .navigationDestination(for: RoutineEditorRoute.self) { route in
-                // «Rutina» (FER-839): ONE prescription editor for every origin (today / plan day /
-                // Mis rutinas). It draws its own back/cancel header + pinned CTA, so the native nav
-                // bar is hidden (trainChrome still paints paper + reserves the bar).
-                trainChrome(RoutineEditorScreen(origin: route))
+                // «La Hoja» (FER-166, F1): crear = editar, la misma hoja en frío para todo origen
+                // (hoy / día del plan / Mis rutinas). Sustituye a `RoutineEditorScreen` (FER-839).
+                // Draws its own back/cancel header + pinned CTA, so the native nav bar is hidden.
+                trainChrome(RoutineSheet(origin: route, mode: .editing))
                     .toolbar(.hidden, for: .navigationBar)
             }
             .navigationDestination(for: WorkoutSessionRoute.self) { route in
@@ -484,7 +484,7 @@ struct RootTabView: View {
                 openRoutine: { id in trainStack.append(RoutineEditorRoute.routine(routineId: id)) },
                 openLibrary: { trainStack.append(SecondaryScreen.library) },
                 openDay: { wd in trainStack.append(RoutineEditorRoute.planDay(weekday: wd)) })
-        case .routineToday: RoutineEditorScreen(origin: .today(routineId: nil))
+        case .routineToday: RoutineSheet(origin: .today(routineId: nil), mode: .editing)
         case .explore:      MetricExplorerView()
         case .compare:      CompareView()
         case .workouts:     WorkoutsView()

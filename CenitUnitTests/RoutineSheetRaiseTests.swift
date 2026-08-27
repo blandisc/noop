@@ -4,13 +4,13 @@ import StrandAnalytics
 import CenitStore
 @testable import Cenit
 
-/// FER-88 — regresión de la decisión #4 del épico («La línea de la subida») dentro de
-/// `RoutineEditorScreen`: el `raise` que llega a `EditorItem` (y de ahí a `PlanSlot`) NUNCA se
-/// condiciona por el veredicto. `RoutineEditorScreen.load()` ya cumplía esto antes de esta fase
-/// (`raise: seed.evaluation?.raise`, sin `if allowsRaise(advice)` alrededor); FER-88 solo extrajo esa
-/// línea a `RoutineEditorScreen.raiseForEditorItem(_:)`, nombrada y `static`, para que quedara
-/// probable sin montar la vista completa (`EditorItem` es `private` al archivo — no se puede
-/// construir desde aquí ni con `@testable import`).
+/// FER-88 — regresión de la decisión #4 del épico («La línea de la subida»), portada de
+/// `RoutineEditorScreenRaiseTests` a `RoutineSheet` (FER-166, F1 — «La Hoja» sustituye al editor
+/// viejo): el `raise` que llega a `EditorItem` (y de ahí a `PlanSlot`) NUNCA se condiciona por el
+/// veredicto. `RoutineSheet.load()` cumple esto igual que el editor viejo (`raise:
+/// seed.evaluation?.raise`, sin `if allowsRaise(advice)` alrededor) — la línea sigue extraída y
+/// nombrada, `static`, en `RoutineSheet.raiseForEditorItem(_:)` (`RoutineSheetLogic.swift`), para
+/// que quedara probable sin montar la vista completa.
 ///
 /// Este test truena si alguien reintroduce el bug que la decisión #4 prohíbe: envolver esa línea en
 /// `if TrainingRegulation.allowsRaise(advice) { seed.evaluation?.raise } else { nil }` (o el
@@ -18,7 +18,7 @@ import CenitStore
 /// hacía que el editor sembrara la sesión sin la subida ganada y el héroe perdía la fila «↑ X te
 /// espera».
 @MainActor
-final class RoutineEditorScreenRaiseTests: XCTestCase {
+final class RoutineSheetRaiseTests: XCTestCase {
 
     /// Un slot que YA ganó su subida: 3×8 a 80 kg, dos veces, con progresión encendida — el mismo
     /// fixture que `SingleOracleSeedTests.earnedSlot()`/`earnedHistory()`.
@@ -44,7 +44,7 @@ final class RoutineEditorScreenRaiseTests: XCTestCase {
         let evaluation = ProgressionPlanner.evaluate(re: earnedSlot(), history: earnedHistory(),
                                                      inventory: [], equipment: nil, advice: .recover)
         XCTAssertFalse(TrainingRegulation.allowsRaise(.recover), "fixture del test: .recover no aplica")
-        guard let raise = RoutineEditorScreen.raiseForEditorItem(evaluation) else {
+        guard let raise = RoutineSheet.raiseForEditorItem(evaluation) else {
             return XCTFail("la subida retenida debe seguir poblada en .recover")
         }
         XCTAssertTrue(raise.waiting, "retenida, no aplicada — pero PRESENTE")
@@ -58,7 +58,7 @@ final class RoutineEditorScreenRaiseTests: XCTestCase {
     func testAppliedRaiseSurvivesPlanAsIsAdvice() {
         let evaluation = ProgressionPlanner.evaluate(re: earnedSlot(), history: earnedHistory(),
                                                      inventory: [], equipment: nil, advice: .planAsIs)
-        guard let raise = RoutineEditorScreen.raiseForEditorItem(evaluation) else {
+        guard let raise = RoutineSheet.raiseForEditorItem(evaluation) else {
             return XCTFail("expected an applied raise")
         }
         XCTAssertFalse(raise.waiting)
@@ -67,6 +67,6 @@ final class RoutineEditorScreenRaiseTests: XCTestCase {
     /// Sin evaluación (el slot no opta a progresión, o `sessionSeed` no la calculó) → `nil`, sin
     /// tronar. `raiseForEditorItem` no inventa una subida donde `sessionSeed` no la vio.
     func testNilEvaluationYieldsNilRaise() {
-        XCTAssertNil(RoutineEditorScreen.raiseForEditorItem(nil))
+        XCTAssertNil(RoutineSheet.raiseForEditorItem(nil))
     }
 }

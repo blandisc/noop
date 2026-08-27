@@ -523,6 +523,35 @@ final class StrengthStoreTests: XCTestCase {
         XCTAssertTrue(back?.sets.allSatisfy { $0.reps == 10 && $0.weightKg == 40 } ?? false)
     }
 
+    // MARK: - Fixed exercise note (FER-166)
+
+    /// A fixed per-exercise note round-trips through `saveRoutine`/`routineExercises()`; nil stays nil,
+    /// and pure whitespace normalizes to nil (never a blank string) — the same "text or NULL" contract
+    /// `saveSession` already uses for `strengthExerciseNote`. Re-saving the loaded routine (the autosave
+    /// path) must not drop the note either.
+    func testRoutineExerciseNoteRoundTripAndNormalizesEmpty() async throws {
+        let store = try await CenitStore.inMemory()
+        let r = Routine(id: "rt1", name: "Pierna", createdTs: 0, updatedTs: 0)
+        let exs = [
+            RoutineExercise(id: "a", routineId: "rt1", exerciseId: "ex1", position: 0, targetSets: 3,
+                            note: "  Cadera atrás, no rodillas  "),
+            RoutineExercise(id: "b", routineId: "rt1", exerciseId: "ex2", position: 1, targetSets: 3),  // nil
+            RoutineExercise(id: "c", routineId: "rt1", exerciseId: "ex3", position: 2, targetSets: 3,
+                            note: "   "),  // blank → NULL
+        ]
+        try await store.saveRoutine(r, exercises: exs)
+
+        let back = try await store.routineExercises(routineId: "rt1")
+        XCTAssertEqual(back.first { $0.id == "a" }?.note, "Cadera atrás, no rodillas", "trims but keeps text")
+        XCTAssertNil(back.first { $0.id == "b" }?.note)
+        XCTAssertNil(back.first { $0.id == "c" }?.note, "pure whitespace normalizes to NULL, never a blank string")
+
+        // Re-saving the loaded routine (the autosave path) must not drop the note.
+        try await store.saveRoutine(r, exercises: back)
+        let again = try await store.routineExercises(routineId: "rt1")
+        XCTAssertEqual(again.first { $0.id == "a" }?.note, "Cadera atrás, no rodillas")
+    }
+
     func testSessionSetsAndPR() async throws {
         let store = try await CenitStore.inMemory()
         let session = StrengthSession(id: "s1", routineId: "rt1", startTs: 1000)

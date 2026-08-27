@@ -44,4 +44,38 @@ final class RoutineSetRepsRangeTests: XCTestCase {
         XCTAssertNil(s.repsRangeTop)
         XCTAssertEqual(s.repsRangeLabel, "8")
     }
+
+    // MARK: - `normalizedRepsRangeTop` (R4, FER-166 ronda 2 — invariante piso ≤ techo)
+    //
+    // `repsRangeLabel` ya TOLERABA un techo inválido con un fallback de lectura (arriba). R4 va más
+    // lejos: la escritura nunca debe PERSISTIR un rango invertido en primer lugar — ni por un
+    // instante, ni espejado a otras rondas de una superserie. Esta es la regla pura que
+    // `RoutineSheetKeypad.swift` llama en cada escritura de piso/techo, y que `RoutineSheet.load()`
+    // aplica una vez sobre datos legados que pudieran traer un rango roto de antes de este fix.
+
+    /// Un techo mayor al piso es válido tal cual.
+    func testNormalizeKeepsValidTop() {
+        XCTAssertEqual(RoutineSet.normalizedRepsRangeTop(reps: 8, top: 12), 12)
+    }
+
+    /// Techo igual al piso → no es un rango, se normaliza a nil (piso único).
+    func testNormalizeTopEqualToFloorBecomesNil() {
+        XCTAssertNil(RoutineSet.normalizedRepsRangeTop(reps: 8, top: 8))
+    }
+
+    /// Techo por debajo del piso (el "10-8" invertido) → nil, nunca se persiste invertido.
+    func testNormalizeTopBelowFloorBecomesNil() {
+        XCTAssertNil(RoutineSet.normalizedRepsRangeTop(reps: 8, top: 5))
+    }
+
+    /// Sin techo tecleado → nil pasa derecho.
+    func testNormalizeNilTopStaysNil() {
+        XCTAssertNil(RoutineSet.normalizedRepsRangeTop(reps: 8, top: nil))
+    }
+
+    /// Sin piso (tipos sin reps) → un techo no tiene con qué compararse; se normaliza a nil en vez
+    /// de dejar un techo huérfano que ninguna lectura puede usar.
+    func testNormalizeNilFloorClearsTop() {
+        XCTAssertNil(RoutineSet.normalizedRepsRangeTop(reps: nil, top: 12))
+    }
 }
