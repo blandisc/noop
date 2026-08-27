@@ -58,6 +58,7 @@ struct EntrenarHubDosis: View {
                         .position(x: geo.size.width - EntrenarHubMetrics.dosisTickWidth / 2, y: geo.size.height / 2)
                 }
             }
+            .frame(maxWidth: .infinity)
             .frame(height: EntrenarHubMetrics.dosisTrackHeight)
             .clipShape(Capsule())
             Text(verbatim: "\(Int(fila.sets.rounded()))")

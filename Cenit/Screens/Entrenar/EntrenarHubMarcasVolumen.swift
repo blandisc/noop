@@ -69,6 +69,7 @@ struct EntrenarHubMarcasVolumen: View {
                 .padding(.top, EntrenarHubMetrics.marcasUltTop)
             }
         }
+        .accessibilityElement(children: .combine)
     }
 
     // MARK: - Volumen (ámbar)
@@ -109,6 +110,7 @@ struct EntrenarHubMarcasVolumen: View {
                 .accessibilityHidden(true)
             }
         }
+        .accessibilityElement(children: .combine)
     }
 
     private static func oneDecimal(_ v: Double) -> String { String(format: "%.1f", v) }

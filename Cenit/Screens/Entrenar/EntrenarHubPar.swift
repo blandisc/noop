@@ -94,6 +94,7 @@ struct EntrenarHubPar: View {
                 }
             }
         }
+        .accessibilityElement(children: .combine)
     }
 
     private func restTrack(real: Int, planS: Int) -> some View {
@@ -107,6 +108,7 @@ struct EntrenarHubPar: View {
                     .position(x: geo.size.width - EntrenarHubMetrics.restPlanTickWidth / 2, y: geo.size.height / 2)
             }
         }
+        .frame(maxWidth: .infinity)
         .frame(height: EntrenarHubMetrics.restTrackHeight)
         .clipShape(Capsule())
     }

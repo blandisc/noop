@@ -43,27 +43,35 @@ struct EntrenarHubHeroe<Pliegue: View>: View {
         EntrenarModulo(tono: tono, intensidad: EntrenarHubMetrics.heroIntensidad,
                        insets: EntrenarHubMetrics.heroInsets) {
             VStack(alignment: .leading, spacing: 0) {
-                Text("Today · your session")
-                    .liquidRegla()
-                    .foregroundStyle(tono.rotulo)
-                Text(verbatim: routineName)
-                    .font(LiquidType.displayM).tracking(LiquidType.displayMTracking)
-                    .foregroundStyle(LiquidColor.tinta900)
-                    .lineLimit(2).minimumScaleFactor(0.7)
-                    .padding(.top, EntrenarHubMetrics.heroKickerToTituloTop)
-                Text(verbatim: meta)
-                    .font(EntrenarHubMetrics.heroMeta)
-                    .foregroundStyle(LiquidColor.tinta700)
-                    .padding(.top, EntrenarHubMetrics.heroTituloToMetaTop)
-                if let exerciseNames, !exerciseNames.isEmpty {
-                    Text(verbatim: exerciseNames)
-                        .font(EntrenarHubMetrics.heroNombres)
+                // El bloque de LECTURA (kicker+título+meta+nombres) es UN elemento de accesibilidad
+                // — pero NO el héroe entero: la píldora de subida, «Empezar», «Otra forma» y el
+                // pliegue son botones propios, y combinarlos aquí les habría robado su acción a
+                // VoiceOver (regla del spec «un elemento por módulo» es para lectura, no para un
+                // módulo con varios controles vivos).
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("Today · your session")
+                        .liquidRegla()
+                        .foregroundStyle(tono.rotulo)
+                    Text(verbatim: routineName)
+                        .font(LiquidType.displayM).tracking(LiquidType.displayMTracking)
+                        .foregroundStyle(LiquidColor.tinta900)
+                        .lineLimit(2).minimumScaleFactor(0.7)
+                        .padding(.top, EntrenarHubMetrics.heroKickerToTituloTop)
+                    Text(verbatim: meta)
+                        .font(EntrenarHubMetrics.heroMeta)
                         .foregroundStyle(LiquidColor.tinta700)
-                        .lineSpacing(EntrenarHubMetrics.heroNombresLineSpacing)
-                        .lineLimit(2)
-                        .frame(maxWidth: EntrenarHubMetrics.heroNombresMaxWidth, alignment: .leading)
-                        .padding(.top, EntrenarHubMetrics.heroMetaToNombresTop)
+                        .padding(.top, EntrenarHubMetrics.heroTituloToMetaTop)
+                    if let exerciseNames, !exerciseNames.isEmpty {
+                        Text(verbatim: exerciseNames)
+                            .font(EntrenarHubMetrics.heroNombres)
+                            .foregroundStyle(LiquidColor.tinta700)
+                            .lineSpacing(EntrenarHubMetrics.heroNombresLineSpacing)
+                            .lineLimit(2)
+                            .frame(maxWidth: EntrenarHubMetrics.heroNombresMaxWidth, alignment: .leading)
+                            .padding(.top, EntrenarHubMetrics.heroMetaToNombresTop)
+                    }
                 }
+                .accessibilityElement(children: .combine)
                 if let raiseLine {
                     subPill(raiseLine).padding(.top, EntrenarHubMetrics.heroNombresToSubPillTop)
                 }
@@ -72,7 +80,6 @@ struct EntrenarHubHeroe<Pliegue: View>: View {
             }
         }
         .liquidEntrada(index: 0)
-        .accessibilityElement(children: .combine)
     }
 
     // MARK: - Píldora «Hoy subes»
@@ -88,6 +95,7 @@ struct EntrenarHubHeroe<Pliegue: View>: View {
                             .font(EntrenarHubMetrics.subPillGlifo)
                             .foregroundStyle(LiquidColor.verdeProfundo)
                     }
+                    .accessibilityHidden(true)   // decorativo — la palabra «subes» ya lo dice
                 line.font(EntrenarHubMetrics.subPillTexto).foregroundStyle(LiquidColor.tinta700)
                     .fixedSize(horizontal: false, vertical: true)
             }
