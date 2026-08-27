@@ -19,6 +19,9 @@ public enum EntrenarHubMetrics {
     public static let teselaOffLineWidth: CGFloat = 1.5
     /// Aro de HOY, tinta llena (mock `.d-hoy{border:2px solid var(--t9)}`).
     public static let teselaHoyLineWidth: CGFloat = 2
+    /// Gap de la fila de teselas — mock `.semRow{gap:8px}` (las 7 teselas quedan a ancho FIJO,
+    /// nunca `.frame(maxWidth: .infinity)`; solo «EDITAR ›» se empuja al filo con un `Spacer`).
+    public static let semRowGap: CGFloat = 8
 
     // MARK: DOSIS — el riel de series por músculo (mock `.dtrack`/`.drow`)
 
