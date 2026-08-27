@@ -19,6 +19,9 @@ struct EntrenarHubCuerpo: View {
     let topMuscleKey: String
     let onOpenMap: () -> Void
 
+    /// Ronda 2 · D2: `cuerpoLinea` era `Font.system(size:)` fijo — texto de LECTURA sin escalar.
+    @ScaledMetric(relativeTo: .caption2) private var cuerpoLineaSize = EntrenarHubMetrics.cuerpoLineaBase
+
     var body: some View {
         EntrenarModulo(tono: .neutro) {
             HStack(spacing: EntrenarHubMetrics.cuerpoGap) {
@@ -28,7 +31,7 @@ struct EntrenarHubCuerpo: View {
                  + Text("high load").foregroundStyle(LiquidColor.tinta700)
                  + Text(verbatim: " · ").foregroundStyle(LiquidColor.tinta700)
                  + Text("the rest, fresh").foregroundStyle(LiquidColor.tinta700))
-                    .font(EntrenarHubMetrics.cuerpoLinea)
+                    .font(.system(size: cuerpoLineaSize))
                     .lineLimit(2)
                 Spacer(minLength: CenitMetrics.space1)
                 EntrenarCapsulaPuerta(String(localized: "Body map").uppercased(), action: onOpenMap)
