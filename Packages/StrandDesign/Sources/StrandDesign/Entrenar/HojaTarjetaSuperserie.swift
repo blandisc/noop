@@ -45,7 +45,7 @@ public struct HojaTarjetaSuperserie<Filas: View>: View {
     /// Fondo pastilla (`.ssL` `background:rgba(20,124,140,.10)`).
     private static var pastillaFondoAlfa: Double { 0.10 }
     /// = EntrenarTono.cian rotulo — hex #136A78 del mock `.ssL` / `.ronda`.
-    private static let cianRotulo = Color(hex: "#136A78")
+    private static var cianRotulo: Color { Color(hex: "#136A78") }
     /// Menú ··· (`.menu` 14 px, tinta500).
     private static var menuSize: CGFloat { 14 }
     /// Pie: grotesk 10 / 600 tinta700.
