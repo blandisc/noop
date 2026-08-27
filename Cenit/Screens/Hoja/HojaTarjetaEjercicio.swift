@@ -200,9 +200,11 @@ struct HojaTarjetaEjercicio: View {
                 .padding(.horizontal, 11).padding(.vertical, 6)
                 .frame(minHeight: HojaMetrics.hitMin)
                 .background {
-                    Capsule().fill(Color.white.opacity(0.72))   // token-exempt: misma receta privada que EntrenarCapsulaPuerta.fondoAlfa — sin token público, ver comentario de agregarSerie
+                    // FER-167 ronda 2 (R21, Grok 15 + QA O5): la MISMA constante que la Hoja viva
+                    // (`HojaLiveMetrics`) — antes cada archivo repetía el literal por separado.
+                    Capsule().fill(HojaLiveMetrics.capsulaFondo)
                 }
-                .overlay { Capsule().strokeBorder(Color.white.opacity(0.9), lineWidth: 1) }   // token-exempt: EntrenarCapsulaPuerta.highlightAlfa, no expuesto
+                .overlay { Capsule().strokeBorder(HojaLiveMetrics.capsulaBorde, lineWidth: 1) }
                 .overlay { Capsule().stroke(LiquidColor.tinta900.opacity(0.12), lineWidth: 0.5) }   // token-exempt: EntrenarCapsulaPuerta.cantoAlfa, no expuesto
         }
         .buttonStyle(.liquidPress)

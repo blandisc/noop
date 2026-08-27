@@ -10,7 +10,7 @@ final class StrengthSessionSnapshotTests: XCTestCase {
         let set1 = StrengthSessionSnapshot.SetSnapshot(
             id: "s1", weightKg: 60, reps: 8, done: true, doneTs: 1000,
             rest: RestConfig(mode: .fixed, seconds: 90, hrReference: .restingMargin, hrValue: 0),
-            kind: .work, rpe: 7, note: "Falló al final")
+            kind: .work, rpe: 7, note: "Falló al final", restTakenS: 95)
         let set2 = StrengthSessionSnapshot.SetSnapshot(
             id: "s2", weightKg: 60, reps: 8, done: false, kind: .warmup)
         let run = StrengthSessionSnapshot.RunSnapshot(
@@ -27,7 +27,7 @@ final class StrengthSessionSnapshotTests: XCTestCase {
             currentRestTarget: 110, currentRestMode: .heartRate,
             timerStart: nil,
             paused: true, pausedAccumulatedS: 45, pausedAt: Date(timeIntervalSince1970: 1002),
-            updatedTs: 1005)
+            updatedTs: 1005, restOwnerSetId: "s2")
     }
 
     func testRoundTripPreservesEverything() throws {
@@ -146,5 +146,29 @@ final class StrengthSessionSnapshotTests: XCTestCase {
         XCTAssertFalse(String(data: data, encoding: .utf8)!.contains("seededNote"))
         let decoded = try JSONDecoder().decode(StrengthSessionSnapshot.self, from: data)
         XCTAssertNil(decoded.runs.first?.seededNote)
+    }
+
+    /// FER-167: a set's measured real rest, and the id of the set that owns the rest currently in
+    /// flight, both ride the snapshot — a crash mid-rest must not lose either.
+    func testSnapshotCarriesRestTakenSAndOwnerAndLegacyDecodes() throws {
+        let decoded = try JSONDecoder().decode(
+            StrengthSessionSnapshot.self, from: try JSONEncoder().encode(sample()))
+        XCTAssertEqual(decoded.runs.first?.sets.first?.restTakenS, 95)
+        XCTAssertEqual(decoded.restOwnerSetId, "s2")
+    }
+
+    /// FER-167: a snapshot persisted BEFORE the fields existed (no `restTakenS`/`restOwnerSetId` keys)
+    /// still decodes — absent means nil, so a restore from such a legacy snapshot loses at most the one
+    /// rest measurement in flight, never a startup crash.
+    func testPreFer167SnapshotDecodesWithoutRestTakenSOrOwner() throws {
+        var snap = sample()
+        snap.runs[0].sets[0].restTakenS = nil
+        snap.restOwnerSetId = nil
+        let data = try JSONEncoder().encode(snap)   // optional nil → key absent, like a pre-167 snapshot
+        XCTAssertFalse(String(data: data, encoding: .utf8)!.contains("restTakenS"))
+        XCTAssertFalse(String(data: data, encoding: .utf8)!.contains("restOwnerSetId"))
+        let decoded = try JSONDecoder().decode(StrengthSessionSnapshot.self, from: data)
+        XCTAssertNil(decoded.runs.first?.sets.first?.restTakenS)
+        XCTAssertNil(decoded.restOwnerSetId)
     }
 }

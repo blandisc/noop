@@ -232,6 +232,10 @@ public struct HojaFilaSerie: View {
         if let onMarcar, contexto == .sesion {
             Button(action: onMarcar) { glifo }
                 .buttonStyle(.plain)
+                // FER-167 ronda 2 (R3): el dibujo son 22pt — el toque HIG mínimo es 44. Expande solo
+                // el ÁREA DE TOQUE (mismo patrón `EntrenarCapsulaPuerta`/`sessionHeaderDisc`:
+                // `.contentShape` con inset negativo), nunca el dibujo.
+                .contentShape(Rectangle().inset(by: -11))
         } else {
             glifo
         }

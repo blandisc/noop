@@ -613,6 +613,83 @@ final class StrengthStoreTests: XCTestCase {
         XCTAssertEqual(afterEdit.first { $0.id == "a" }?.rpe, 9)
     }
 
+    // MARK: - Real rest per set (FER-167, v40)
+
+    /// `restTakenS` round-trips through `saveSession`, reads back NULL (never 0) when no rest was
+    /// measured, and `updateSession` (editing a saved session) preserves it just like `rpe` does.
+    func testRestTakenSRoundTripAndSurvivesUpdateSession() async throws {
+        let store = try await CenitStore.inMemory()
+        let session = StrengthSession(id: "s1", routineId: "rt1", startTs: 1000)
+        let sets = [
+            SetEntry(id: "a", sessionId: "s1", exerciseId: "bench", position: 0, kind: .work,
+                     weightKg: 60, reps: 8, done: true, ts: 1001, restTakenS: 95),
+            SetEntry(id: "b", sessionId: "s1", exerciseId: "bench", position: 1, kind: .work,
+                     weightKg: 62.5, reps: 6, done: true, ts: 1002, restTakenS: nil),
+        ]
+        try await store.saveSession(session, sets: sets)
+
+        let back = try await store.setEntries(sessionId: "s1")
+        XCTAssertEqual(back.first { $0.id == "a" }?.restTakenS, 95)
+        XCTAssertNil(back.first { $0.id == "b" }?.restTakenS, "no rest measured must read back nil, never 0")
+
+        // updateSession (editing a saved session) preserves restTakenS.
+        try await store.updateSession(session, sets: [
+            SetEntry(id: "a", sessionId: "s1", exerciseId: "bench", position: 0, kind: .work,
+                     weightKg: 60, reps: 8, done: true, ts: 1001, restTakenS: 130)
+        ])
+        let afterEdit = try await store.setEntries(sessionId: "s1")
+        XCTAssertEqual(afterEdit.first { $0.id == "a" }?.restTakenS, 130)
+    }
+
+    /// `realRestSeconds(routineId:sessionLimit:)` — the insumo of the «DESCANSO REAL» tile — only
+    /// counts done WORK sets with a measured rest, from the given routine's most recent sessions,
+    /// scoped by session count (not row count).
+    func testRealRestSecondsScopesRoutineWorkDoneAndLimit() async throws {
+        let store = try await CenitStore.inMemory()
+        try await store.saveRoutine(Routine(id: "r1", name: "Empuje", createdTs: 0, updatedTs: 0),
+                                    exercises: [])
+        try await store.saveRoutine(Routine(id: "r2", name: "Jalón", createdTs: 0, updatedTs: 0),
+                                    exercises: [])
+
+        // r1, session 1 (oldest): a measured work set, a warmup (excluded), and a not-done set (excluded).
+        try await store.saveSession(StrengthSession(id: "s1", routineId: "r1", startTs: 1000), sets: [
+            SetEntry(id: "a", sessionId: "s1", exerciseId: "bench", position: 0, kind: .work,
+                     weightKg: 60, reps: 8, done: true, ts: 1001, restTakenS: 90),
+            SetEntry(id: "aw", sessionId: "s1", exerciseId: "bench", position: 1, kind: .warmup,
+                     weightKg: 30, reps: 10, done: true, ts: 1001, restTakenS: 30),
+            SetEntry(id: "and", sessionId: "s1", exerciseId: "bench", position: 2, kind: .work,
+                     weightKg: 60, reps: 8, done: false, ts: 1001, restTakenS: 999),
+        ])
+        // r1, session 2: a work set with no measured rest (NULL, excluded) + one measured.
+        try await store.saveSession(StrengthSession(id: "s2", routineId: "r1", startTs: 2000), sets: [
+            SetEntry(id: "b", sessionId: "s2", exerciseId: "bench", position: 0, kind: .work,
+                     weightKg: 60, reps: 8, done: true, ts: 2001, restTakenS: nil),
+            SetEntry(id: "c", sessionId: "s2", exerciseId: "bench", position: 1, kind: .work,
+                     weightKg: 60, reps: 6, done: true, ts: 2002, restTakenS: 110),
+        ])
+        // r1, session 3 (newest): one measured work set.
+        try await store.saveSession(StrengthSession(id: "s3", routineId: "r1", startTs: 3000), sets: [
+            SetEntry(id: "d", sessionId: "s3", exerciseId: "bench", position: 0, kind: .work,
+                     weightKg: 60, reps: 8, done: true, ts: 3001, restTakenS: 100),
+        ])
+        // r2 (a different routine): must never show up in r1's results.
+        try await store.saveSession(StrengthSession(id: "s4", routineId: "r2", startTs: 4000), sets: [
+            SetEntry(id: "e", sessionId: "s4", exerciseId: "row", position: 0, kind: .work,
+                     weightKg: 40, reps: 10, done: true, ts: 4001, restTakenS: 60),
+        ])
+
+        // Unbounded: every qualifying set from r1's 3 sessions, excluding s1's warmup/not-done and
+        // s2's NULL — never r2's.
+        let all = try await store.realRestSeconds(routineId: "r1", sessionLimit: 10)
+        XCTAssertEqual(Set(all), [90, 110, 100])
+
+        // LIMIT is by SESSION count, not row count: sessionLimit 2 keeps only s2 and s3 (the two
+        // newest sessions), dropping s1's 90 entirely even though s1 alone has fewer rows than 2.
+        let limited = try await store.realRestSeconds(routineId: "r1", sessionLimit: 2)
+        XCTAssertEqual(Set(limited), [110, 100])
+        XCTAssertFalse(limited.contains(90), "the oldest session falls outside the session-count limit")
+    }
+
     // MARK: - Exercise notes (FER-932)
 
     /// Notes round-trip through save → read at both scopes: exercise-wide (`setPosition` nil) and

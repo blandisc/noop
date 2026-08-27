@@ -41,6 +41,26 @@ final class StrengthSessionModelTests: XCTestCase {
         XCTAssertEqual(s.runs.first?.lastWeightKg, 80)
     }
 
+    /// FER-167 ronda 2 (R12): «la última vez» también trae el RPE, para el playhead ANT «· Q» —
+    /// GAP cerrado (ronda 1 lo declaró fuera de alcance por tocar el modelo; autorizado aquí).
+    func testPrefillSeedsLastRPE() {
+        var last = lastSet("bench", weight: 80, reps: 8)
+        last.rpe = 8
+        let slot = StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 3),
+                                                 exercise: ex("bench", "Bench"), lastSets: [last])
+        let s = make([slot])
+        XCTAssertEqual(s.runs.first?.lastRPE, 8, "seeded from the last session's top set RPE")
+    }
+
+    /// Sin RPE capturado la última vez, el playhead se queda sin Q — nunca se inventa.
+    func testPrefillLastRPENilWhenNeverCaptured() {
+        let slot = StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 3),
+                                                 exercise: ex("bench", "Bench"),
+                                                 lastSets: [lastSet("bench", weight: 80, reps: 8)])
+        let s = make([slot])
+        XCTAssertNil(s.runs.first?.lastRPE, "no RPE last time → nil, not a fabricated default")
+    }
+
     func testFirstTimeUsesTargetsThenDefaults() {
         let withTarget = StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "sq", sets: 2, reps: 5, weight: 100),
                                                        exercise: ex("sq", "Squat"), lastSets: [])
@@ -159,6 +179,82 @@ final class StrengthSessionModelTests: XCTestCase {
         s.registerCurrentSet()
         XCTAssertEqual(s.currentIndex, 1, "moved to the next exercise once the first finished")
         XCTAssertEqual(s.current?.exerciseId, "row")
+    }
+
+    // MARK: Real rest per set (FER-167)
+
+    /// Registering the NEXT set while the previous rest is still counting down closes it right there,
+    /// onto the OWNER set (the one that opened it) — not the just-completed one.
+    func testRegisterClosesPreviousRestOntoOwnerSet() {
+        let s = make([StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 3, rest: 90),
+                                                    exercise: ex("bench", "Bench"), lastSets: [])])
+        s.registerCurrentSet(now: Date(timeIntervalSince1970: 5000))   // set 0 done, rest opens for set 0
+        XCTAssertNil(s.runs[0].sets[0].restTakenS, "not measured yet — the rest is still open")
+        s.registerCurrentSet(now: Date(timeIntervalSince1970: 5030))   // set 1 done, closes set 0's rest first
+        XCTAssertEqual(s.runs[0].sets[0].restTakenS, 30, "set 0's rest measured 30s, onto set 0 (the owner)")
+        XCTAssertNil(s.runs[0].sets[1].restTakenS, "set 1's own rest is still open, not yet closed")
+    }
+
+    /// Skipping the rest (tap «saltar», and the auto-cierre of a fixed countdown that runs out on its
+    /// own, LiveStrengthSheet ~1387) records exactly the elapsed time — the number the user saw.
+    func testSkipRestRecordsElapsed() {
+        let s = make([StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 2, rest: 90),
+                                                    exercise: ex("bench", "Bench"), lastSets: [])])
+        s.registerCurrentSet(now: Date(timeIntervalSince1970: 5000))
+        s.skipRest(now: Date(timeIntervalSince1970: 5045))
+        XCTAssertEqual(s.runs[0].sets[0].restTakenS, 45, "skip early → the short elapsed is what's saved")
+        XCTAssertNil(s.restEndsAt)
+        XCTAssertEqual(s.phase, .capturing)
+    }
+
+    /// The intra-round jump between superset members (A1 → A2, same round) never starts a rest, so the
+    /// member that was just finished never gets a measured rest — by construction, not by a special case.
+    func testSupersetIntraRoundLeavesNil() {
+        let s = supersetSession()
+        s.registerCurrentSet(now: Date(timeIntervalSince1970: 5000))   // A1 round 0 → jumps to A2, no rest
+        XCTAssertEqual(s.phase, .capturing, "no rest card between A1 and A2")
+        XCTAssertNil(s.runs[0].sets[0].restTakenS, "A1's round never had a rest that could be measured")
+    }
+
+    /// A pause mid-rest freezes the clock (FER-823): the paused interval must not count as rest. Resume
+    /// shifts `restStartedAt` forward by the paused delta, so `closeOpenRest` naturally excludes it.
+    func testPauseExcludedFromMeasuredRest() {
+        let s = make([StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 2, rest: 90),
+                                                    exercise: ex("bench", "Bench"), lastSets: [])])
+        s.registerCurrentSet(now: Date(timeIntervalSince1970: 5000))   // rest opens at 5000
+        s.pause(now: Date(timeIntervalSince1970: 5010))                // 10s in
+        s.resume(now: Date(timeIntervalSince1970: 5070))               // 60s paused
+        s.skipRest(now: Date(timeIntervalSince1970: 5100))
+        // Wall clock 5000→5100 = 100s, minus the 60s paused = 40s measured.
+        XCTAssertEqual(s.runs[0].sets[0].restTakenS, 40, "the paused interval is excluded from the measurement")
+    }
+
+    /// FER-167 ronda 2 (R15): an OPEN pause (never resumed) at the moment the rest closes must clamp
+    /// to `pausedAt`, not the real wall-clock — the saved number is what the user saw frozen. Distinct
+    /// from `testPauseExcludedFromMeasuredRest`, which covers a pause already CLOSED by `resume()`.
+    func testCloseOpenRestClampsToOpenPause() {
+        let s = make([StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 2, rest: 90),
+                                                    exercise: ex("bench", "Bench"), lastSets: [])])
+        s.registerCurrentSet(now: Date(timeIntervalSince1970: 5000))   // rest opens at 5000
+        s.pause(now: Date(timeIntervalSince1970: 5010))                // frozen 10s in — never resumed
+        s.skipRest(now: Date(timeIntervalSince1970: 5200))             // real wall-clock is 200s later
+        XCTAssertEqual(s.runs[0].sets[0].restTakenS, 10,
+                       "clamped to pausedAt (10s), not the 200s wall-clock gap")
+    }
+
+    /// Ending the session while a rest is still open (the last-tapped set's rest never got skipped or
+    /// closed by another register) must NOT retroactively record it — `buildForSave` only persists what
+    /// `closeOpenRest` already wrote, and an open rest at save time wrote nothing.
+    func testSessionEndDiscardsOpenRest() {
+        let s = make([
+            StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 1), exercise: ex("bench", "Bench"), lastSets: []),
+            StrengthSessionModel.PlanSlot(re: re("b", exerciseId: "row", sets: 1), exercise: ex("row", "Row"), lastSets: [])
+        ])
+        s.registerCurrentSet(now: Date(timeIntervalSince1970: 5000))   // bench done, its rest is open
+        XCTAssertEqual(s.phase, .resting, "a rest is genuinely open — row is still pending")
+        let (_, sets, _, _) = s.buildForSave(deviceId: nil, endTs: 9000)
+        XCTAssertEqual(sets.first { $0.exerciseId == "bench" }?.restTakenS, nil,
+                       "an open, never-closed rest is discarded — not retroactively recorded at save")
     }
 
     // MARK: Add / skip set

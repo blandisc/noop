@@ -146,6 +146,10 @@ final class StrengthSessionModel: ObservableObject {
         /// Set-scoped note text (FER-932), written from the note sheet with «Guardar en: Solo la serie N».
         /// nil = no set-scope note; the exercise-scope note lives on `ExerciseRun.note` instead.
         var note: String? = nil
+        /// The real rest (seconds, pauses excluded) that FOLLOWED this set (FER-167), written by
+        /// `closeOpenRest`. nil = no rest was measured for this set (not yet closed, never started —
+        /// «Sin descanso» — or an intra-round superset jump).
+        var restTakenS: Int? = nil
     }
 
     /// One exercise's run: its plan, the editable sets, which set the Foco is on, and whether it was skipped.
@@ -167,6 +171,10 @@ final class StrengthSessionModel: ObservableObject {
         /// Last time's captured time / distance, for the «ANTERIOR» cell on time / distance exercises.
         let lastTimeS: Int?
         let lastDistanceM: Double?
+        /// Last time's top work set's perceived effort (FER-167 ronda 2 · R12), for the ANT playhead's
+        /// «· Q2» suffix (`HojaSesionViva.antPlayhead`). `nil` when the last session never captured RPE
+        /// there — the playhead just omits the Q, same honesty rule as everywhere else Q is optional.
+        let lastRPE: Double?
         var sets: [WorkingSet]
         var currentSet: Int
         var skipped: Bool
@@ -232,6 +240,10 @@ final class StrengthSessionModel: ObservableObject {
     @Published var currentRestTarget: Int?
     /// Which number dominates this rest: a fixed countdown, or the HR «N bpm to ready» HUD.
     @Published var currentRestMode: RestMode = .fixed
+    /// The `WorkingSet.id` that opened the rest currently in flight (FER-167) — who `closeOpenRest`
+    /// writes `restTakenS` onto when the rest closes. nil = no rest open (or one that never started,
+    /// e.g. «Sin descanso»).
+    var restOwnerSetId: String?
     /// When the current set's stopwatch started; nil when not running. For `time`/`distance` Foco. Durable
     /// (an absolute Date), so the running clock survives closing the sheet or switching tabs.
     @Published var timerStart: Date?
@@ -466,6 +478,9 @@ final class StrengthSessionModel: ObservableObject {
     /// target can be resolved without the model importing CoreBluetooth/HealthKit (FER-506).
     func registerCurrentSet(now: Date = Date(), restingHR: Double? = nil, maxHR: Double? = nil) {
         guard runs.indices.contains(currentIndex) else { return }
+        // FER-167: palomear la siguiente serie mientras el descanso anterior sigue corriendo lo cierra
+        // aquí mismo — ANTES de cualquier otra cosa, incluido el salto de ronda de superserie de abajo.
+        closeOpenRest(now: now)
         if timerStart != nil { stopSetTimer(now: now) }
         let i = runs[currentIndex].currentSet
         guard runs[currentIndex].sets.indices.contains(i) else { return }
@@ -507,6 +522,7 @@ final class StrengthSessionModel: ObservableObject {
         }
         computeRestTarget(rest: rest, doneTs: doneTs, restingHR: restingHR, maxHR: maxHR)
         startRest(seconds: rest.seconds, now: now)
+        restOwnerSetId = runs[currentIndex].sets[i].id   // FER-167: `i` captured before advancing
         advanceToNextPending()
         // r9 (owner): tras el ÚLTIMO set del ÚLTIMO ejercicio no hay nada que descansar.
         if isComplete {
@@ -588,7 +604,7 @@ final class StrengthSessionModel: ObservableObject {
                               restSeconds: Self.adHocRestSeconds, restMode: .fixed,
                               hrRestReference: .restingMargin, hrRestValue: 0,
                               lastWeightKg: lastWeightKg, lastReps: lastReps,
-                              lastTimeS: nil, lastDistanceM: nil,
+                              lastTimeS: nil, lastDistanceM: nil, lastRPE: nil,
                               sets: [set], currentSet: 0, skipped: false)
         runs.append(run)
         currentIndex = runs.count - 1
@@ -610,7 +626,7 @@ final class StrengthSessionModel: ObservableObject {
                               restSeconds: Self.adHocRestSeconds, restMode: .fixed,
                               hrRestReference: .restingMargin, hrRestValue: 0,
                               lastWeightKg: lastWeightKg, lastReps: lastReps,
-                              lastTimeS: nil, lastDistanceM: nil,
+                              lastTimeS: nil, lastDistanceM: nil, lastRPE: nil,
                               sets: [set], currentSet: 0, skipped: false)
         runs.insert(run, at: min(currentIndex + 1, runs.count))
     }
@@ -662,6 +678,8 @@ final class StrengthSessionModel: ObservableObject {
         let nowDone = !runs[ei].sets[si].done
         runs[ei].sets[si].done = nowDone
         runs[ei].sets[si].doneTs = nowDone ? Int(now.timeIntervalSince1970) : nil
+        // FER-167: palomear inline también es «volví a trabajar» — cierra el descanso abierto (si lo hay).
+        if nowDone { closeOpenRest(now: now) }
     }
     /// Append a set to a specific exercise (copying its last row's load) — the inline «Agregar serie».
     func addSet(exercise ei: Int) {
@@ -746,7 +764,7 @@ final class StrengthSessionModel: ObservableObject {
             restSeconds: old.restSeconds, restMode: old.restMode,
             hrRestReference: old.hrRestReference, hrRestValue: old.hrRestValue,
             lastWeightKg: lastWeightKg, lastReps: lastReps,
-            lastTimeS: nil, lastDistanceM: nil,
+            lastTimeS: nil, lastDistanceM: nil, lastRPE: nil,
             sets: newSets, currentSet: min(doneSets.count, max(0, newSets.count - 1)),
             skipped: false)
         if ei == currentIndex { phase = .capturing; clearRest(); timerStart = nil }
@@ -812,7 +830,14 @@ final class StrengthSessionModel: ObservableObject {
         restEndsAt = max(now, end.addingTimeInterval(TimeInterval(delta)))   // moves the ceiling, not the floor
         reprogramarAviso()
     }
-    func skipRest() { phase = .capturing; clearRest() }
+    /// Salta el descanso — tap manual, auto-cierre del countdown fijo al llegar a 0, tope 3:00 del modo
+    /// FC, y los skips espejo del Watch (todos comparten este único punto). Cierra y registra primero
+    /// (FER-167): el número que el usuario vio es el que se guarda.
+    func skipRest(now: Date = Date()) {
+        closeOpenRest(now: now)
+        phase = .capturing
+        clearRest()
+    }
 
     /// Edit a run's rest configuration mid-session at EXERCISE scope (FER-540, generalized in FER-715).
     /// Applies to that exercise's *remaining* rests (the next `startRest` reads `restSeconds`;
@@ -841,10 +866,36 @@ final class StrengthSessionModel: ObservableObject {
     /// the next rest or a non-resting phase.
     private func clearRest() {
         restEndsAt = nil; restStartedAt = nil; currentRestTarget = nil; currentRestMode = .fixed
+        // FER-167: toda salida de descanso que pasa por aquí SIN haber llamado `closeOpenRest` primero
+        // (navegación, cierre de sesión) DESCARTA la medición — un descanso que ninguna serie consumió
+        // o que se abandonó por un cambio de plan no es dato de la tile.
+        restOwnerSetId = nil
         // FER-93: TODAS las salidas del descanso pasan por aquí (saltarlo, palomear la siguiente
         // serie, cerrar la sesión), así que este es el sitio donde el aviso no puede sobrevivir.
         // Un aviso que suena cuando ya volviste a entrenar es peor que no avisar.
         RestEndNotifier.cancel()
+    }
+
+    /// Cierra el descanso abierto registrando su duración real (segundos, pausas excluidas) en la
+    /// serie dueña (FER-167). Sin descanso abierto = no-op. No toca `phase`/`restEndsAt` — quien llama
+    /// decide qué hacer con la fase después (seguir descansando no tendría sentido, pero eso lo deciden
+    /// `skipRest`/`registerCurrentSet`/`toggleDone`, no esta función).
+    func closeOpenRest(now: Date = Date()) {
+        guard let started = restStartedAt, let owner = restOwnerSetId else { return }
+        // FER-167 ronda 2 (R15): si la pausa sigue ABIERTA (nunca se reanudó), el reloj que el
+        // usuario VIO se congeló en `pausedAt` — medir contra el wall-clock real inflaría el
+        // descanso con tiempo en pausa. `resume()` ya cubre la pausa CERRADA (desplaza
+        // `restStartedAt` por el delta pausado, así que este cálculo la excluye solo); esto cubre
+        // la que sigue abierta cuando `closeOpenRest` dispara (p. ej. saltar sin haber reanudado).
+        let effectiveNow = pausedAt ?? now
+        let elapsed = max(0, Int(effectiveNow.timeIntervalSince(started)))
+        for ri in runs.indices {
+            if let si = runs[ri].sets.firstIndex(where: { $0.id == owner }) {
+                runs[ri].sets[si].restTakenS = elapsed
+                break
+            }
+        }
+        restOwnerSetId = nil
     }
 
     /// Move focus to the next not-done set: rest of the current exercise, then later non-skipped exercises.
@@ -923,7 +974,8 @@ final class StrengthSessionModel: ObservableObject {
                 entries.append(SetEntry(id: set.id, sessionId: id, exerciseId: run.exerciseId,
                                         position: position, kind: set.kind,
                                         weightKg: f.weightKg, reps: f.reps, timeS: f.timeS, distanceM: f.distanceM,
-                                        done: true, ts: set.doneTs ?? endTs, rpe: set.rpe))
+                                        done: true, ts: set.doneTs ?? endTs, rpe: set.rpe,
+                                        restTakenS: set.restTakenS))
                 position += 1
             }
         }
@@ -943,13 +995,13 @@ final class StrengthSessionModel: ObservableObject {
                     restSeconds: run.restSeconds, restMode: run.restMode,
                     hrRestReference: run.hrRestReference, hrRestValue: run.hrRestValue,
                     lastWeightKg: run.lastWeightKg, lastReps: run.lastReps,
-                    lastTimeS: run.lastTimeS, lastDistanceM: run.lastDistanceM,
+                    lastTimeS: run.lastTimeS, lastDistanceM: run.lastDistanceM, lastRPE: run.lastRPE,
                     sets: run.sets.map { s in
                         StrengthSessionSnapshot.SetSnapshot(
                             id: s.id, weightKg: s.weightKg, reps: s.reps, timeS: s.timeS,
                             distanceM: s.distanceM, done: s.done, doneTs: s.doneTs,
                             rest: s.rest, kind: s.kind, rpe: s.rpe, note: s.note,
-                            touched: s.touched ? true : nil)
+                            touched: s.touched ? true : nil, restTakenS: s.restTakenS)
                     },
                     currentSet: run.currentSet, skipped: run.skipped,
                     raiseOptedOut: run.raiseOptedOut ? true : nil,
@@ -964,7 +1016,7 @@ final class StrengthSessionModel: ObservableObject {
             currentRestTarget: currentRestTarget, currentRestMode: currentRestMode,
             timerStart: timerStart,
             paused: paused, pausedAccumulatedS: pausedAccumulatedS, pausedAt: pausedAt,
-            updatedTs: now)
+            updatedTs: now, restOwnerSetId: restOwnerSetId)
     }
 
     /// Rebuild a live session from a persisted snapshot (FER-798). Re-derives `phase` from the rest state;
@@ -975,12 +1027,12 @@ final class StrengthSessionModel: ObservableObject {
                         restSeconds: r.restSeconds, restMode: r.restMode,
                         hrRestReference: r.hrRestReference, hrRestValue: r.hrRestValue,
                         lastWeightKg: r.lastWeightKg, lastReps: r.lastReps,
-                        lastTimeS: r.lastTimeS, lastDistanceM: r.lastDistanceM,
+                        lastTimeS: r.lastTimeS, lastDistanceM: r.lastDistanceM, lastRPE: r.lastRPE,
                         sets: r.sets.map { s in
                             WorkingSet(id: s.id, weightKg: s.weightKg, reps: s.reps, timeS: s.timeS,
                                        distanceM: s.distanceM, done: s.done, doneTs: s.doneTs,
                                        rest: s.rest, kind: s.kind, touched: s.touched ?? false,
-                                       rpe: s.rpe, note: s.note)
+                                       rpe: s.rpe, note: s.note, restTakenS: s.restTakenS)
                         },
                         currentSet: r.currentSet, skipped: r.skipped,
                         // The held offer is re-armed exactly as it was: the table already opened at
@@ -999,6 +1051,7 @@ final class StrengthSessionModel: ObservableObject {
         model.restStartedAt = snap.restStartedAt
         model.currentRestTarget = snap.currentRestTarget
         model.currentRestMode = snap.currentRestMode
+        model.restOwnerSetId = snap.restOwnerSetId
         model.timerStart = snap.timerStart
         model.phase = snap.restEndsAt != nil ? .resting : .capturing
         model.paused = snap.paused
@@ -1062,6 +1115,7 @@ final class StrengthSessionModel: ObservableObject {
                                hrRestValue: slot.re.hrRestValue,
                                lastWeightKg: lastWeight, lastReps: lastReps,
                                lastTimeS: last?.timeS.map { Int($0) }, lastDistanceM: last?.distanceM,
+                               lastRPE: last?.rpe,
                                sets: sets, currentSet: 0, skipped: false,
                                proposedRaise: type == .weightReps ? slot.raise : nil,
                                supersetGroup: slot.re.supersetGroup,

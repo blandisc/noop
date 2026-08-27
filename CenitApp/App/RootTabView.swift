@@ -238,11 +238,11 @@ struct RootTabView: View {
         // The active-session pill (FER-716): floats over the dock on the OTHER four tabs while a
         // session is running and the full-screen cover is minimized. Tapping it re-opens the session.
         //
-        // FER-132: hidden on Entrenar itself — its landing already tells the live-session story in
-        // full (kicker «EN CURSO · N MIN», the routine, the progress numerals, «Continuar»), so the
-        // same fact repeated as a floating pill over that same screen was noise, not a second signal.
+        // FER-132 DEROGADA (FER-167 · F2, orden del épico): el héroe de sesión viva del hub se
+        // retiró — Entrenar ahora es mosaico v18 + píldora, como los otros 4 tabs. La píldora vive
+        // en TODOS los tabs, incluido Entrenar.
         .overlay(alignment: .bottom) {
-            if appModel.strengthSession != nil && !appModel.strengthSheetPresented && selection != .train {
+            if appModel.strengthSession != nil && !appModel.strengthSheetPresented {
                 ActiveSessionPillHost(model: appModel, confirmDiscard: $confirmDiscardSession)
                     .padding(.horizontal, CenitMetrics.screenPadding)
                     .padding(.bottom, barHeight + CenitMetrics.space2)
@@ -285,8 +285,10 @@ struct RootTabView: View {
         .fullScreenCover(isPresented: $appModel.strengthSheetPresented, onDismiss: {
             if appModel.strengthSession?.summary != nil { appModel.closeStrengthSummary() }
         }) {
-            if let session = appModel.strengthSession {
-                LiveStrengthSheet(session: session, theme: .base)
+            // FER-167 (F2): La Hoja viva sustituye a `LiveStrengthSheet` como superficie montada —
+            // ese tipo sigue vivo (modo Foco + acta), compuesto desde `HojaSesionViva`.
+            if appModel.strengthSession != nil {
+                RoutineSheet(origin: .today(routineId: appModel.strengthSession?.routineId), mode: .live)
                     .environment(appModel)
                     .environmentObject(tabRouter)
                     .preferredColorScheme(.light)
@@ -534,11 +536,18 @@ private struct ActiveSessionPillHost: View {
                 // FER-952: pause-aware clock (the raw now−start kept ticking while paused).
                 let elapsed = SessionClock.format(session.elapsedSeconds(now: context.date))
                 let total = session.runs.filter { !$0.skipped }.reduce(0) { $0 + $1.sets.count }
+                // FER-167 ronda 2 (R20, Grok 14 + QA O2): «Serie N de M» — la MISMA palabra y el
+                // MISMO «N de N · completa» que la cabecera de la Hoja viva (`HojaCabeceraSesion`),
+                // nunca dos fuentes que puedan divergir en la unidad de avance.
+                let isComplete = total > 0 && session.pendingCount == 0
+                let detail: String? = total == 0 ? nil : (isComplete
+                    ? String(localized: "\(total) of \(total) · complete")
+                    : String(localized: "Set \(min(session.doneCount + 1, total)) of \(total)"))
                 SessionPill(
                     routineName: session.routineName,
                     elapsed: elapsed,
                     bpm: model.watchBpm,
-                    detail: total > 0 ? String(localized: "set \(min(session.doneCount + 1, total))/\(total)") : nil,
+                    detail: detail,
                     paused: session.paused,
                     hue: theme.dataSleep,
                     theme: theme,

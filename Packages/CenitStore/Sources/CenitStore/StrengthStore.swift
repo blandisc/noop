@@ -474,12 +474,12 @@ extension CenitStore {
             for s in sets {
                 let args: [DatabaseValueConvertible?] = [
                     s.id, s.sessionId, s.exerciseId, s.position, s.kind.rawValue,
-                    s.weightKg, s.reps, s.timeS, s.distanceM, s.done ? 1 : 0, s.ts, s.rpe
+                    s.weightKg, s.reps, s.timeS, s.distanceM, s.done ? 1 : 0, s.ts, s.rpe, s.restTakenS
                 ]
                 try db.execute(sql: """
                     INSERT INTO setEntry
-                        (id, sessionId, exerciseId, position, kind, weightKg, reps, timeS, distanceM, done, ts, rpe)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        (id, sessionId, exerciseId, position, kind, weightKg, reps, timeS, distanceM, done, ts, rpe, restTakenS)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """, arguments: StatementArguments(args))
             }
             // Replace this session's opt-out rows (delete-first keeps a re-save idempotent, like setEntry).
@@ -535,12 +535,12 @@ extension CenitStore {
             for s in sets {
                 let args: [DatabaseValueConvertible?] = [
                     s.id, s.sessionId, s.exerciseId, s.position, s.kind.rawValue,
-                    s.weightKg, s.reps, s.timeS, s.distanceM, s.done ? 1 : 0, s.ts, s.rpe
+                    s.weightKg, s.reps, s.timeS, s.distanceM, s.done ? 1 : 0, s.ts, s.rpe, s.restTakenS
                 ]
                 try db.execute(sql: """
                     INSERT INTO setEntry
-                        (id, sessionId, exerciseId, position, kind, weightKg, reps, timeS, distanceM, done, ts, rpe)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        (id, sessionId, exerciseId, position, kind, weightKg, reps, timeS, distanceM, done, ts, rpe, restTakenS)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """, arguments: StatementArguments(args))
             }
 
@@ -686,6 +686,24 @@ extension CenitStore {
         }
     }
 
+    /// Descansos reales (s) de las series de trabajo hechas en las últimas `sessionLimit` sesiones de
+    /// una rutina — el insumo de la tile «DESCANSO REAL» (FER-167). Plano; el promedio/el corte de
+    /// interrupciones es de `RestStats` (StrandTraining), no de SQL. El LIMIT es por SESIÓN, no por
+    /// fila: la subquery elige las `sessionLimit` sesiones más recientes de la rutina, y solo entonces
+    /// se filtran sus `setEntry` — así una sesión antigua con muchas series no le roba cupo a una
+    /// reciente con pocas. `strengthSession` no tiene índice por `routineId`; la tabla es de cientos de
+    /// filas — un scan del LIMIT es barato; no se agrega índice.
+    public func realRestSeconds(routineId: String, sessionLimit: Int = 10) async throws -> [Int] {
+        try syncRead { db in
+            try Int.fetchAll(db, sql: """
+                SELECT e.restTakenS FROM setEntry e
+                JOIN (SELECT id FROM strengthSession WHERE routineId = ?
+                      ORDER BY startTs DESC LIMIT ?) s ON e.sessionId = s.id
+                WHERE e.restTakenS IS NOT NULL AND e.kind = 'work' AND e.done = 1
+                """, arguments: [routineId, sessionLimit])
+        }
+    }
+
     /// Every completed *work* set since `sinceTs` (epoch seconds) with its exercise id and the session's
     /// start time, newest first — one JOIN (`setEntry` × `strengthSession`), not a query per session.
     /// The raw material for the muscle-fatigue map (FER-350), which counts involvement-weighted *series*
@@ -764,7 +782,7 @@ extension CenitStore {
         SetEntry(id: r["id"], sessionId: r["sessionId"], exerciseId: r["exerciseId"], position: r["position"],
                  kind: SetKind(rawValue: r["kind"]) ?? .work, weightKg: r["weightKg"], reps: r["reps"],
                  timeS: r["timeS"], distanceM: r["distanceM"], done: (r["done"] as Int) != 0, ts: r["ts"],
-                 rpe: r["rpe"])
+                 rpe: r["rpe"], restTakenS: r["restTakenS"])
     }
 
     private static func personalRecord(_ r: Row) -> PersonalRecord {

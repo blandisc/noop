@@ -28,8 +28,10 @@ enum RoutineEditorRoute: Hashable {
 }
 
 struct RoutineSheet: View {
-    /// El modo de la hoja. Solo `.editing` existe hoy — `.live` (capturar en sesión) es F2.
-    enum Mode { case editing }
+    /// El modo de la hoja. `.live` (FER-167 · F2): capturar → descansar → repetir, montada por los
+    /// 4 hosts (`RootTabView`/`AppMap`) en vez de `LiveStrengthSheet` directo — ese tipo sigue vivo
+    /// para el modo Foco y el acta (ver `HojaSesionViva`), no se borra hasta F5.
+    enum Mode { case editing, live }
 
     let origin: RoutineEditorRoute
     let mode: Mode
@@ -143,6 +145,21 @@ struct RoutineSheet: View {
     /// Inject: los hooks van en la vista NO privada más externa del archivo.
     @ObserveInjection private var inject
     var body: some View {
+        switch mode {
+        case .editing: editingBody
+        case .live: liveBody
+        }
+    }
+
+    /// FER-167 (F2): la Hoja viva lee `model.strengthSession` directo — nunca se fuerza el
+    /// desenvuelto (el mismo cuidado que ya tenían los 4 hosts con `if let session = …`).
+    @ViewBuilder private var liveBody: some View {
+        if let session = model.strengthSession {
+            HojaSesionViva(sheet: self, session: session)
+        }
+    }
+
+    private var editingBody: some View {
         VStack(spacing: 0) {
             HojaCabecera.header(sheet: self)
             if loaded, routine != nil {

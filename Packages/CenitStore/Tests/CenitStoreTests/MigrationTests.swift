@@ -6,9 +6,9 @@ import BiometricStreams
 
 final class MigrationTests: XCTestCase {
     func testMigratorRegistersContiguousVersions() {
-        XCTAssertEqual(CenitStore.makeMigrator().migrations, (1...39).map { "v\($0)" })
-        XCTAssertEqual(CenitStoreInfo.schemaVersion, 39)
-        XCTAssertEqual(CenitStoreInfo.latestMigration, "v39")
+        XCTAssertEqual(CenitStore.makeMigrator().migrations, (1...40).map { "v\($0)" })
+        XCTAssertEqual(CenitStoreInfo.schemaVersion, 40)
+        XCTAssertEqual(CenitStoreInfo.latestMigration, "v40")
     }
 
     func testInMemoryRunsMigrations() async throws {
@@ -1374,6 +1374,55 @@ final class MigrationTests: XCTestCase {
         try await dbQueue.read { db in
             XCTAssertTrue(try migrator.appliedIdentifiers(db).contains("v39"),
                           "v39 must be recorded so it never re-runs and wedges startup")
+        }
+    }
+
+    // MARK: - v40 (FER-167): real rest per set on setEntry
+
+    /// v40 adds `setEntry.restTakenS` (nullable, append-only via `addColumnIfMissing`): the pre-v40
+    /// row survives untouched and the new column reads back NULL, never a default 0.
+    func testV40AddsRestTakenSToSetEntryAppendOnly() async throws {
+        let dbQueue = try DatabaseQueue()
+        let migrator = CenitStore.makeMigrator()
+        try migrator.migrate(dbQueue, upTo: "v39")
+
+        try await dbQueue.write { db in
+            try db.execute(sql: """
+                INSERT INTO setEntry (id, sessionId, exerciseId, position, kind, ts)
+                VALUES ('se1', 's1', 'bench-press', 0, 'work', 1000)
+                """)
+        }
+
+        try migrator.migrate(dbQueue)   // → v40
+
+        try await dbQueue.read { db in
+            let cols = try db.columns(in: "setEntry").map(\.name)
+            XCTAssertTrue(cols.contains("restTakenS"), "v40 must add setEntry.restTakenS")
+            let row = try Row.fetchOne(db, sql: "SELECT * FROM setEntry WHERE id='se1'")
+            XCTAssertNotNil(row, "the pre-v40 row must survive")
+            XCTAssertNil(row?["restTakenS"] as Int?, "new column defaults to NULL, never 0")
+            XCTAssertEqual(row?["ts"] as Int?, 1000, "existing columns untouched")
+        }
+    }
+
+    /// v40 must be idempotent (FER-791/792 discipline): column already present but v40 unrecorded →
+    /// re-running records it without a "duplicate column" crash.
+    func testV40IsIdempotentWhenColumnAlreadyExists() async throws {
+        let dbQueue = try DatabaseQueue()
+        let migrator = CenitStore.makeMigrator()
+        try migrator.migrate(dbQueue, upTo: "v39")
+
+        try await dbQueue.write { db in
+            try db.alter(table: "setEntry") { t in
+                t.add(column: "restTakenS", .integer)
+            }
+        }
+
+        try migrator.migrate(dbQueue)   // → v40; must not throw
+
+        try await dbQueue.read { db in
+            XCTAssertTrue(try migrator.appliedIdentifiers(db).contains("v40"),
+                          "v40 must be recorded so it never re-runs and wedges startup")
         }
     }
 }

@@ -864,6 +864,17 @@ extension CenitStore {
                 $0.add(column: "note", .text)
             }
         }
+        // v40 (FER-167): the real rest that FOLLOWED each logged set, in seconds (pauses excluded),
+        // captured by `StrengthSessionModel` and persisted at save. One nullable column on `setEntry`:
+        // NULL = no measured rest (last set of the session, an intra-round superset jump, «sin
+        // descanso» configured, or a pre-v40 row) — never a default 0. Append-only via
+        // `addColumnIfMissing` (FER-791/792 discipline — a re-run against a DB that already grew the
+        // column is a no-op, not a "duplicate column" crash).
+        migrator.registerMigration("v40") { db in
+            try addColumnIfMissing(db, "restTakenS", on: "setEntry") {
+                $0.add(column: "restTakenS", .integer)
+            }
+        }
         return migrator
     }
 

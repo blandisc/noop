@@ -43,6 +43,34 @@ struct LiveStrengthSheet: View {
     @AppStorage(HealthKitBridge.saveStrengthWorkoutsKey) private var saveStrengthWorkouts = false
     var theme: InstrumentoTheme = .base
 
+    /// FER-167 (F2 ronda 2 · R2): la instancia efímera que hospeda SOLO el modo Foco no pinta la
+    /// tabla en línea vieja detrás del cover — `HojaSesionViva` ya es esa superficie, y dejar
+    /// `inlineSession` viva ahí abajo la construía (efectos incluidos) sin necesidad, y podía
+    /// asomar un frame de la tabla vieja entre «salir de Foco» y que el cover exterior cierre.
+    private let suppressInlineSession: Bool
+    /// FER-167 (F2 ronda 2 · R2b): la instancia efímera notifica al caller cuando el foco INTERNO
+    /// se cierra (cualquiera de sus 3 salidas — link, botón «‹», HECHO→siguiente/terminar), para
+    /// que `HojaSesionViva.focusMode` baje con él. Sin esto, cerrar el foco solo apagaba el
+    /// `@State` de ESTA instancia efímera y el cover exterior de la Hoja viva se quedaba abierto,
+    /// revelando su tabla vieja suprimida (arriba) en vez de volver a la Hoja viva real.
+    private let onExitFocus: (() -> Void)?
+
+    /// FER-167 (F2): «La Hoja viva» (`HojaSesionViva`) es ahora la superficie montada por los 4
+    /// hosts — este tipo se queda vivo para el modo Foco (F5 lo rediseña) y el acta/summary
+    /// (`bodySummaryScroll`), a los que `HojaSesionViva` entra construyendo una instancia fresca de
+    /// ESTE tipo, sin duplicar ni una línea de su cuerpo. `startInFocus` es la única puerta nueva:
+    /// arranca `focusMode` ya abierto en vez de la tabla en línea (que `HojaSesionViva` ya cubre).
+    /// Cero pérdida — el init implícito de siempre sigue funcionando para cada llamador existente
+    /// (los parámetros nuevos traen default), y ninguna línea del cuerpo de Foco se tocó.
+    init(session: StrengthSessionModel, theme: InstrumentoTheme = .base, startInFocus: Bool = false,
+         onExitFocus: (() -> Void)? = nil) {
+        self.session = session
+        self.theme = theme
+        self.suppressInlineSession = startInFocus
+        self.onExitFocus = onExitFocus
+        if startInFocus { _focusMode = State(initialValue: true) }
+    }
+
     @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var confirmFinish = false
@@ -295,6 +323,10 @@ struct LiveStrengthSheet: View {
                 nothingToSaveCard
             } else if let summary = session.summary {
                 bodySummaryScroll(summary)
+            } else if suppressInlineSession {
+                // R2(b): la instancia efímera de Foco no pinta nada aquí — el cover de Foco (montado
+                // más abajo en la cadena) es lo único que esta instancia existe para mostrar.
+                Color.clear
             } else if isEmptyAdHoc {
                 emptyAdHocSession
             } else {
@@ -402,7 +434,12 @@ struct LiveStrengthSheet: View {
             }
             // FER-135: a stale «Exercise done» screen must never greet the NEXT time Focus opens.
             .onChange(of: focusMode) { _, isOpen in
-                if !isOpen { focusDoneEi = nil; pendingFocusDoneEi = nil }
+                if !isOpen {
+                    focusDoneEi = nil; pendingFocusDoneEi = nil
+                    // R2(b): las 3 salidas del foco (link, «‹», HECHO→siguiente/terminar) convergen
+                    // en apagar `focusMode` — este único punto avisa al caller sea cual sea la puerta.
+                    onExitFocus?()
+                }
             }
     }
 

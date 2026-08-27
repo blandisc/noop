@@ -22054,6 +22054,159 @@
         }
       }
     },
+    "Archive" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Archive"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Archivar"
+          }
+        }
+      }
+    },
+    "Moves guided focus here" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Moves guided focus here"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mueve el foco guiado aquí"
+          }
+        }
+      }
+    },
+    "You left a session open yesterday · %@, %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You left a session open yesterday · %@, %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dejaste una sesión abierta ayer · %@, %@"
+          }
+        }
+      }
+    },
+    "%lld of %lld · complete" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld of %lld · complete"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld de %lld · completa"
+          }
+        }
+      }
+    },
+    "Take the raise to %@ %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Take the raise to %@ %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toma la subida a %@ %@"
+          }
+        }
+      }
+    },
+    "still %lld bpm up · not on you" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "still %lld bpm up · not on you"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sigues %lld lpm arriba · no es tu culpa"
+          }
+        }
+      }
+    },
+    "Finish and save" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finish and save"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Terminar y guardar"
+          }
+        }
+      }
+    },
+    "Your receipt is waiting on the other side" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your receipt is waiting on the other side"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El acta te espera del otro lado"
+          }
+        }
+      }
+    },
+    "continues" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "continues"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sigue"
+          }
+        }
+      }
+    },
     "Keep workout" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -33560,6 +33713,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Descansa hasta"
+          }
+        }
+      }
+    },
+    "rest · down to %lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "descanso · baja a %lld"
           }
         }
       }
@@ -50842,6 +51006,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "bajando hacia "
+          }
+        }
+      }
+    },
+    "♥ now · dropping" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "♥ ahora · va bajando"
           }
         }
       }
