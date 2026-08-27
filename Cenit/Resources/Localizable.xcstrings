@@ -2115,6 +2115,23 @@
         }
       }
     },
+    "%lld days not logged" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld days not logged"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld días sin registrar"
+          }
+        }
+      }
+    },
     "%lld days with data in this range" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -4550,6 +4567,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "1 día"
+          }
+        }
+      }
+    },
+    "1 day not logged" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 day not logged"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 día sin registrar"
           }
         }
       }
@@ -8761,6 +8795,23 @@
         }
       }
     },
+    "Average · 7 days" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Average · 7 days"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Promedio · 7 días"
+          }
+        }
+      }
+    },
     "Avg" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -10018,6 +10069,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Grasa corporal"
+          }
+        }
+      }
+    },
+    "Body map" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Body map"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mapa"
           }
         }
       }
@@ -12667,6 +12735,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Consistencia (CV)"
+          }
+        }
+      }
+    },
+    "Consistency · 12 weeks" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Consistency · 12 weeks"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Constancia · 12 sem"
           }
         }
       }
@@ -24058,6 +24143,23 @@
         }
       }
     },
+    "Marks · %lld in %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marks · %lld in %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marcas · %lld en %@"
+          }
+        }
+      }
+    },
     "Match" : {
       "localizations" : {
         "es" : {
@@ -29290,6 +29392,23 @@
         }
       }
     },
+    "Opens today's routine" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens today's routine"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre tu rutina de hoy"
+          }
+        }
+      }
+    },
     "Opens today's signals detail" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -31858,6 +31977,23 @@
         }
       }
     },
+    "Ready raises" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ready raises"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Subidas listas"
+          }
+        }
+      }
+    },
     "Ready to edit" : {
       "localizations" : {
         "en" : {
@@ -31921,6 +32057,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "plantillas listas, tu propia rutina, o el plan que ya tienes en tu IA"
+          }
+        }
+      }
+    },
+    "Real rest" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Real rest"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Descanso real"
           }
         }
       }
@@ -35776,6 +35929,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Series distintas"
+          }
+        }
+      }
+    },
+    "Sets per muscle · 7 days" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sets per muscle · 7 days"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Series por músculo · 7 días"
           }
         }
       }
@@ -40920,6 +41090,23 @@
         }
       }
     },
+    "Today · your session" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today · your session"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoy · tu sesión"
+          }
+        }
+      }
+    },
     "Today · your week marks" : {
       "localizations" : {
         "en" : {
@@ -42861,6 +43048,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Volumen vs la banda 10-20"
+          }
+        }
+      }
+    },
+    "Volume · 8 weeks" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Volume · 8 weeks"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Volumen · 8 sem"
           }
         }
       }
@@ -49671,6 +49875,40 @@
         }
       }
     },
+    "before %@ · %lld days ago" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "before %@ · %lld days ago"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "antes %@ · hace %lld días"
+          }
+        }
+      }
+    },
+    "before %@ · 1 day ago" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "before %@ · 1 day ago"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "antes %@ · hace 1 día"
+          }
+        }
+      }
+    },
     "behind this week" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -51604,6 +51842,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "alta"
+          }
+        }
+      }
+    },
+    "high load" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "high load"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "carga alta"
           }
         }
       }
@@ -61174,6 +61429,23 @@
         }
       }
     },
+    "the plan calls for" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "the plan calls for"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "el plan pide"
+          }
+        }
+      }
+    },
     "the raise to %@ is on record" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -61203,6 +61475,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "las subidas esperan"
+          }
+        }
+      }
+    },
+    "the rest, fresh" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "the rest, fresh"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "el resto, fresco"
           }
         }
       }
@@ -62283,6 +62572,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "tu VFC"
+          }
+        }
+      }
+    },
+    "your average" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "your average"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tu promedio"
           }
         }
       }
