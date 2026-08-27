@@ -9,10 +9,18 @@ import StrandDesign
 // HOY = borde de tinta sin fondo. Sin animación de tejido (constancia no teje, spec §3).
 
 struct EntrenarHubConstancia: View {
-    /// Una columna (una semana), vieja→actual — 13 elementos, cada uno hasta 3 huecos.
+    /// Una columna (una semana), vieja→actual — 13 elementos, cada uno con `constanciaSlotsPerWeek`
+    /// huecos EXACTOS (el caller rellena a ese tope, nunca un arreglo más corto).
     struct Semana {
-        /// `nil` = hueco vacío ese slot; `.some(nil)` no existe: cada hueco es familia conocida o vacío.
-        let huecos: [EntrenarFamily?]
+        /// Ronda 2 · G3: un hueco es o una SESIÓN (con o sin familia clasificable — «Rápido» no
+        /// desaparece) o VACÍO (no hubo sesión ese lugar). Antes `EntrenarFamily?` colapsaba
+        /// «sesión sin familia» y «sin sesión» en el mismo `nil` — la sesión sin familia se borraba
+        /// de la rejilla.
+        enum Hueco {
+            case vacio
+            case sesion(EntrenarFamily?)
+        }
+        let huecos: [Hueco]
         let isCurrent: Bool
     }
 
@@ -44,7 +52,7 @@ struct EntrenarHubConstancia: View {
                     ForEach(0..<3, id: \.self) { slot in
                         HStack(spacing: EntrenarHubMetrics.ghgridGap) {
                             ForEach(Array(semanas.enumerated()), id: \.offset) { week, semana in
-                                celda(family: semana.huecos[safe: slot] ?? nil,
+                                celda(hueco: slot < semana.huecos.count ? semana.huecos[slot] : .vacio,
                                      esHoy: todaySlot?.week == week && todaySlot?.slot == slot)
                             }
                         }
@@ -67,29 +75,32 @@ struct EntrenarHubConstancia: View {
         .liquidEntrada(index: 6)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text("Consistency · 12 weeks"))
-        .accessibilityValue(Text(verbatim: "\(sessionsThisMonth)"))
+        // Ronda 2 · G10: el value decía solo el número — VoiceOver perdía el calificativo «este mes»
+        // que sí lee quien ve la pantalla.
+        .accessibilityValue(Text("\(sessionsThisMonth) this month"))
     }
 
-    private func celda(family: EntrenarFamily?, esHoy: Bool) -> some View {
+    private func celda(hueco: Semana.Hueco, esHoy: Bool) -> some View {
         let shape = RoundedRectangle(cornerRadius: EntrenarHubMetrics.ghgridRadius, style: .continuous)
         return ZStack {
             if esHoy {
                 shape.strokeBorder(LiquidColor.tinta900, lineWidth: EntrenarHubMetrics.ghgridHoyStroke)
-            } else if let family {
-                shape.fill(family.tono.base)
             } else {
-                shape.fill(LiquidColor.tinta900.opacity(EntrenarHubMetrics.ghgridEmptyAlfa))
-                    .overlay { shape.strokeBorder(LiquidColor.tinta900.opacity(EntrenarHubMetrics.ghgridCantoAlfa), lineWidth: 0.5) }
+                switch hueco {
+                case .sesion(let family?):
+                    shape.fill(family.tono.base)
+                case .sesion(nil):
+                    // Ronda 2 · G3: sesión SIN familia clasificable — celda LLENA neutra (tinta500),
+                    // nunca vacía (mismo respaldo que `EntrenarHubHistorial` con `family ?? tinta500`).
+                    shape.fill(LiquidColor.tinta500)
+                case .vacio:
+                    shape.fill(LiquidColor.tinta900.opacity(EntrenarHubMetrics.ghgridEmptyAlfa))
+                        .overlay { shape.strokeBorder(LiquidColor.tinta900.opacity(EntrenarHubMetrics.ghgridCantoAlfa), lineWidth: 0.5) }
+                }
             }
         }
         .aspectRatio(1, contentMode: .fit)
         .frame(maxWidth: .infinity)
-    }
-}
-
-private extension Array {
-    subscript(safe index: Int) -> Element? {
-        indices.contains(index) ? self[index] : nil
     }
 }
 #endif
