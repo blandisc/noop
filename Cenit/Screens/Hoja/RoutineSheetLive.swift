@@ -5,21 +5,27 @@ import StrandTraining
 import StrandAnalytics
 import Inject
 
-// MARK: - HojaSesionViva — «La Hoja» en modo `.live` (FER-167 · F2, épico FER-165)
+// MARK: - HojaSesionViva — «La Hoja» en modo `.live` (FER-167 · F2, épico FER-165, ronda 2)
 //
 // El bucle capturar → descansar → repetir (mapa B1-B4) + la integridad de la sesión (B14-B17),
-// montada por `RoutineSheet(mode: .live)` en sus 4 hosts. Compone piezas YA CONSTRUIDAS —
-// `HojaFilaSerie` en contexto `.sesion` (F1, nunca ejercitado fuera de su #Preview hasta hoy),
-// `RestBand` (ya dice la meta), `SessionKeypad` (QUEDABAN/DISCOS/pausa ya existían) — sobre el MOTOR
-// vigente (`StrengthSessionModel`, cero reescritura). `LiveStrengthSheet.swift` NO se borra: sigue
-// siendo quien pinta el modo Foco (`startInFocus`) y el acta final (`session.summary`) — ver la nota
-// en ese archivo. Lo demás (superserie con banda propia, intervenciones nuevas, capa 3 rediseñada)
-// es F3/F4/F5; aquí solo se compone lo que YA existe para esos casos.
+// montada por `RoutineSheet(mode: .live)` en sus 5 hosts. Compone piezas YA CONSTRUIDAS —
+// `HojaFilaSerie` en contexto `.sesion`, `RestBand` (ya dice la meta), `SessionKeypad` — sobre el
+// MOTOR vigente (`StrengthSessionModel`, cero reescritura salvo los 2 toques quirúrgicos
+// autorizados: `lastRPE` para el playhead Q y `closeOpenRest` para la pausa abierta). El modo Foco
+// y el acta final siguen siendo `LiveStrengthSheet.swift`, sin tocar una línea de su cuerpo — esta
+// vista lo hospeda como instancia efímera (`startInFocus`/`onExitFocus`).
+//
+// REGLA DURA (ronda 2, 3.ª aparición de la clase): cero identidad por índice. `ForEach` va por
+// `run.id`; el ancla del descanso (`accordionIndex`, en `RoutineSheetLiveLogic.swift`) se DERIVA de
+// `session.restOwnerSetId` (v40) — no hay `@State … Int` que un reorden pueda desincronizar.
 
 struct HojaSesionViva: View {
     let sheet: RoutineSheet
     @ObservedObject var session: StrengthSessionModel
     @EnvironmentObject var tabRouter: TabRouter
+    /// R24: la Hoja viva respeta Reduce Motion — cada `withAnimation(.snappy/.gentle)` de este
+    /// árbol pasa por esta bandera (`reduceMotion ? nil : …`).
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
 
     // MARK: Captura por teclado — mismos tipos que `LiveStrengthSheet` (cero duplicado de contrato)
     @State var activeCell: LiveStrengthSheet.CellRef?
@@ -28,9 +34,12 @@ struct HojaSesionViva: View {
     @State var selectedRIR: Int?
     @State var selectedRIRTarget: LiveStrengthSheet.RIRTarget?
 
-    // MARK: Descanso — qué ejercicio ancla la banda mientras `currentIndex` ya avanzó
-    @State var restAnchorEi: Int?
+    // MARK: Descanso (R7: SIN ancla `Int` — `accordionIndex` se deriva de `session.restOwnerSetId`)
     @State var restStartBpm: Int?
+
+    // MARK: R16 · destello de récord
+    @State var personalRecords: [String: [PRMetric: PersonalRecord]] = [:]
+    @State var prFlashSetId: String?
 
     // MARK: Capa 3 (hojas ya existentes — mismos tipos, mismas pantallas)
     @State var platesTarget: LiveStrengthSheet.PlatesTarget?
@@ -43,6 +52,8 @@ struct HojaSesionViva: View {
     @State var progressionEdit: LiveStrengthSheet.ProgressionEditTarget?
     @State var routineREs: [String: RoutineExercise] = [:]
     @State var menuExerciseIndex: Int?
+    /// R8: el «robo» de superserie pide confirmar antes de deshacer la pareja del vecino.
+    @State var confirmSupersetSteal: Int?
 
     // MARK: Modo foco — sigue viviendo en `LiveStrengthSheet.swift` (F5 lo rediseña)
     @State var focusMode = false
@@ -71,8 +82,8 @@ struct HojaSesionViva: View {
         // `LiveStrengthSheet` ya usaba en el mismo cover).
         .edgeSwipeToExit { sheet.model.strengthSheetPresented = false }
         .task(id: session.routineId) { await loadRoutineREs() }
+        .task { await loadPersonalRecords() }   // R16
         .onChange(of: session.phase) { _, phase in
-            if phase != .resting { restAnchorEi = nil }
             restStartBpm = phase == .resting ? sheet.model.watchBpm : nil
         }
         .sheet(item: $detailExercise) { ex in
@@ -94,7 +105,7 @@ struct HojaSesionViva: View {
                     Task {
                         let last = await sheet.model.repo.exerciseHistory(exerciseId: ex.id).last
                         await MainActor.run {
-                            withAnimation(.snappy) {
+                            withAnimation(reduceMotion ? nil : .snappy) {
                                 session.replaceExercise(at: target.ei, with: ex, lastWeightKg: last?.weightKg, lastReps: last?.reps)
                             }
                         }
@@ -184,17 +195,33 @@ struct HojaSesionViva: View {
             }
         }
         .fullScreenCover(isPresented: $focusMode) {
-            // El modo foco vigente, sin tocar una línea de su cuerpo (ver `LiveStrengthSheet.init`).
-            LiveStrengthSheet(session: session, theme: sheet.theme, startInFocus: true)
+            // R2: el modo foco vigente, sin tocar una línea de su cuerpo. `onExitFocus` baja
+            // `focusMode` de ESTA vista cuando cualquiera de las 3 salidas internas del foco dispara
+            // — sin esto, cerrar el foco dejaba el cover exterior abierto sobre una tabla suprimida.
+            LiveStrengthSheet(session: session, theme: sheet.theme, startInFocus: true,
+                              onExitFocus: { focusMode = false })
         }
         .instrumentoConfirm(
             isPresented: $confirmFinish,
             title: String(localized: "Finish workout?"),
             context: String(localized: "SESSION · IN PROGRESS"),
-            message: String(localized: "\(session.doneCount) set(s) logged, ready to save."),
+            // R6: DEDUPLICADA — la clave existente de `LiveStrengthSheet`, no una nueva.
+            message: String(localized: "You logged \(session.doneCount) sets. Finish to save this workout."),
             actions: [
-                .init(String(localized: "Keep training"), role: .primary),
-                .init(String(localized: "Finish and save"), role: .destructive) { sheet.model.endStrengthSession(save: true) }
+                // R18 (Grok 12): guardar NO es destructivo — primaria, como el confirm viejo.
+                .init(String(localized: "Finish and save"), role: .primary) { sheet.model.endStrengthSession(save: true) },
+                .init(String(localized: "Keep training"), role: .secondary)
+            ]
+        )
+        // R8: confirma antes de robarle la pareja de superserie al vecino — misma clave que F1.
+        .instrumentoConfirm(
+            isPresented: Binding(get: { confirmSupersetSteal != nil }, set: { if !$0 { confirmSupersetSteal = nil } }),
+            title: String(localized: "Break its current superset?"),
+            context: String(localized: "SESSION · IN PROGRESS"),
+            message: supersetStealMessage,
+            actions: [
+                .init(String(localized: "Pair here"), role: .primary) { confirmSupersetStealAndPair() },
+                .init(String(localized: "Keep as is"), role: .secondary)
             ]
         )
         .enableInjection()
@@ -207,13 +234,28 @@ struct HojaSesionViva: View {
             HojaCabeceraSesion.header(vivo: self)
             HojaCabeceraSesion.avance(vivo: self)
             if session.saveError { saveErrorBanner }   // B14
-            ScrollView {
-                LazyVStack(spacing: CenitMetrics.sectionGap) {
-                    ForEach(rows, id: \.self) { ei in row(ei) }
+            // R14 (Grok 6): scroll-to cuando el foco avanza — paridad `LiveStrengthSheet` (línea 646),
+            // ancla por `run.id` (regla dura), nunca por índice.
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack(spacing: CenitMetrics.sectionGap) {
+                        // REGLA DURA: `ForEach` por `run.id` — `session.runs.enumerated()` da `ei` fresco
+                        // en cada construcción (nunca un ancla que sobreviva un reorden).
+                        ForEach(Array(session.runs.enumerated()), id: \.element.id) { ei, run in
+                            if !run.skipped { row(ei).id("hoja-viva-ejercicio-\(run.id)") }
+                        }
+                    }
+                    .padding(.horizontal, CenitMetrics.screenPadding)
+                    .padding(.top, 14)
+                    .padding(.bottom, CenitMetrics.screenPadding)
                 }
-                .padding(.horizontal, CenitMetrics.screenPadding)
-                .padding(.top, 14)
-                .padding(.bottom, CenitMetrics.screenPadding)
+                .onChange(of: accordionIndex) { _, newIndex in
+                    guard session.runs.indices.contains(newIndex) else { return }
+                    let id = session.runs[newIndex].id
+                    withAnimation(reduceMotion ? nil : StrandMotion.gentle.delay(0.15)) {
+                        proxy.scrollTo("hoja-viva-ejercicio-\(id)", anchor: .center)
+                    }
+                }
             }
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -221,9 +263,6 @@ struct HojaSesionViva: View {
             if session.isComplete { HojaCabeceraSesion.ctaTerminar(vivo: self) } else { keypadInset }
         }
     }
-
-    /// Los ejercicios activos (no saltados), en orden del plan.
-    private var rows: [Int] { session.runs.indices.filter { !session.runs[$0].skipped } }
 
     @ViewBuilder private func row(_ ei: Int) -> some View {
         if session.isInSuperset(ei) {

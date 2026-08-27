@@ -4,12 +4,16 @@ import StrandDesign
 import StrandTraining
 import StrandAnalytics
 
-// MARK: - HojaSesionViva — el motor del bucle B1-B4 (FER-167 · F2)
+// MARK: - HojaSesionViva — el motor del bucle B1-B4 (FER-167 · F2, ronda 2)
 //
 // Toda mutación reusa la API vigente de `StrengthSessionModel` (NO se reescribe: v40 ya trae la
 // captura del descanso real) — este archivo solo decide QUÉ llamar y CUÁNDO, igual que
 // `LiveStrengthSheet.registerActiveSet`/`confirmOrToggleSet`, de donde está portado 1:1 (el modelo
 // es el mismo, así que el contrato es idéntico; lo único que cambia es la piel que lo dispara).
+//
+// REGLA DURA (ronda 2): cero identidad por índice. El ancla del descanso (`accordionIndex`) se
+// DERIVA de `session.restOwnerSetId` (v40, viaja en el snapshot) — no hay `@State restAnchorEi: Int`
+// que un reorden (Subir/Bajar) pueda desincronizar.
 
 extension HojaSesionViva {
 
@@ -59,6 +63,9 @@ extension HojaSesionViva {
         }
     }
 
+    /// R2(a): la puerta a Foco — paridad `SessionStatsBar.onFocus` (`LiveStrengthSheet.puedeEnfocar`).
+    var puedeEnfocar: Bool { session.summary == nil && !session.isComplete && !isZombie }
+
     // MARK: - B15b — sesión zombie (quedó abierta un día calendario distinto)
 
     /// Umbral decidido aquí (el mapa no fija horas, solo «AYER»): cambio de DÍA CALENDARIO local
@@ -81,30 +88,32 @@ extension HojaSesionViva {
         guard session.runs.indices.contains(ei), session.runs[ei].sets.indices.contains(si) else { return }
         let set = session.runs[ei].sets[si]
         let isCurrent = si == session.runs[ei].currentSet && !set.done
-        withAnimation(.snappy) {
+        withAnimation(reduceMotion ? nil : .snappy) {
             if set.done {
                 session.toggleDone(exercise: ei, set: si)
             } else {
                 activeCell = nil
                 if !isCurrent { session.select(exerciseIndex: ei, setIndex: si) }
-                registerActiveSet()
+                registerActiveSet(ei: ei, si: si)
             }
         }
     }
 
-    /// Todo «✓» de la Hoja viva pasa por aquí: ancla el ejercicio dueño del descanso ANTES de que el
-    /// modelo avance, registra (con el QUEDABAN elegido si aplica) y limpia el RIR de la celda.
-    func registerActiveSet() {
-        restAnchorEi = session.currentIndex
-        let ei = session.currentIndex
-        let si = session.runs.indices.contains(ei) ? session.runs[ei].currentSet : -1
+    /// Todo «✓» de la Hoja viva pasa por aquí: registra (con el QUEDABAN elegido si aplica), limpia
+    /// el RIR de la celda, revisa PR (R16) y da la háptica. `ei`/`si` son la celda que se ESTABA
+    /// mirando ANTES de registrar (para el RIR/PR de ESA serie) — el modelo puede haber avanzado el
+    /// foco a otra ya para cuando este método termina.
+    func registerActiveSet(ei: Int, si: Int) {
         session.registerCurrentSet(restingHR: restingBaseline, maxHR: profileMaxHR)
         let rirForThisSet = LiveStrengthSheet.rirScoped(
             selectedRIR: selectedRIR, selectedRIRTarget: selectedRIRTarget,
             registering: LiveStrengthSheet.RIRTarget(ei: ei, si: si))
-        if session.runs.indices.contains(ei), session.runs[ei].sets.indices.contains(si),
-           let rpe = LiveStrengthSheet.rpeToWrite(selectedRIR: rirForThisSet, existingRPE: session.runs[ei].sets[si].rpe) {
-            session.setRPE(exercise: session.runs[ei].id, set: session.runs[ei].sets[si].id, rpe: rpe)
+        if session.runs.indices.contains(ei), session.runs[ei].sets.indices.contains(si) {
+            let registered = session.runs[ei].sets[si]
+            if let rpe = LiveStrengthSheet.rpeToWrite(selectedRIR: rirForThisSet, existingRPE: registered.rpe) {
+                session.setRPE(exercise: session.runs[ei].id, set: registered.id, rpe: rpe)
+            }
+            checkForPR(ei: ei, set: registered)   // R16
         }
         selectedRIR = nil
         selectedRIRTarget = nil
@@ -113,13 +122,54 @@ extension HojaSesionViva {
 
     /// SALTAR (B2/B3 consola, mock P4): el mismo `skipRest()` que el botón «SALTAR ›» de la banda.
     func skipRest() {
-        withAnimation(StrandMotion.gentle) { session.skipRest() }
+        withAnimation(reduceMotion ? nil : StrandMotion.gentle) { session.skipRest() }
+    }
+
+    // MARK: - R16 · destello de récord (detección VIGENTE — `PRMetric`, sin redefinir tipos, F4/B11 intacto)
+
+    /// Carga los PR de cada ejercicio de la sesión una sola vez al abrir — la referencia contra la
+    /// que `checkForPR` compara cada serie que se palomea.
+    func loadPersonalRecords() async {
+        guard let store = await sheet.repo.storeHandle() else { return }
+        var built: [String: [PRMetric: PersonalRecord]] = [:]
+        for exId in Set(session.runs.map(\.exerciseId)) {
+            guard let prs = try? await store.personalRecords(exerciseId: exId) else { continue }
+            built[exId] = Dictionary(uniqueKeysWithValues: prs.map { ($0.metric, $0) })
+        }
+        personalRecords = built
+    }
+
+    /// Si la serie recién registrada bate cualquiera de los 3 `PRMetric` (peso máximo, reps máximas,
+    /// volumen máximo — SIN 1RM, eso sigue sin existir aquí, F4/B11) contra los PR cargados al abrir,
+    /// arma el destello breve (`prFlashSetId`), que `HojaFilaSerie`'s caller apaga solo tras un rato.
+    private func checkForPR(ei: Int, set: StrengthSessionModel.WorkingSet) {
+        guard set.kind == .work, session.runs.indices.contains(ei) else { return }
+        let exId = session.runs[ei].exerciseId
+        let prs = personalRecords[exId] ?? [:]
+        let volume = set.weightKg * Double(set.reps)
+        let beatsWeight = (prs[.maxWeight]?.valueKg).map { set.weightKg > $0 } ?? (set.weightKg > 0)
+        let beatsReps = (prs[.maxReps]?.reps).map { set.reps > $0 } ?? (set.reps > 0)
+        let beatsVolume = (prs[.maxVolume]?.valueKg).map { volume > $0 } ?? (volume > 0)
+        guard beatsWeight || beatsReps || beatsVolume else { return }
+        prFlashSetId = set.id
+        Task {
+            try? await Task.sleep(for: .seconds(1.1))
+            if prFlashSetId == set.id { prFlashSetId = nil }
+        }
     }
 
     // MARK: - Descanso: dónde ancla la banda + qué combustible dibuja (porteado de `restBandHRBody`/`restBandTimeBody`)
 
+    /// R7: el ejercicio dueño del descanso — derivado de `session.restOwnerSetId` (el SET que lo
+    /// abrió, v40), nunca un `@State` `Int` que un reorden («Subir») podría dejar apuntando al
+    /// ejercicio que ocupó ese slot. `nil` cuando no hay descanso en vuelo o su set dueño ya no existe.
+    var restOwnerExerciseIndex: Int? {
+        guard let ownerId = session.restOwnerSetId else { return nil }
+        return session.runs.firstIndex { $0.sets.contains { $0.id == ownerId } }
+    }
+
     var accordionIndex: Int {
-        (session.phase == .resting ? restAnchorEi : nil) ?? session.currentIndex
+        (session.phase == .resting ? restOwnerExerciseIndex : nil) ?? session.currentIndex
     }
 
     /// El índice donde la banda debe insertarse: justo tras la última fila hecha de ESE ejercicio —
@@ -156,36 +206,65 @@ extension HojaSesionViva {
         return "REST · SET \(String(from)) → \(String(to))"
     }
 
+    /// R1 (QA D1 = Grok 1 — B3): el descanso FIJO se cierra SOLO al llegar a 0, con háptica + chime
+    /// — porteado de `LiveStrengthSheet.swift` (antes `restInlineSlice`'s `.task(id: session.restEndsAt)`).
+    /// NUNCA en pausa (el `guard !session.paused` congela el auto-cierre igual que el reloj visible).
+    private func restAutoSkipTask() -> some ViewModifier { RestAutoSkipModifier(vivo: self) }
+
     /// La banda de descanso ANCLADA (mock P4): dos combustibles — FC dice la meta («baja a N»,
-    /// `RestBand` ya lo pinta desde FER-167), reloj fijo cuando no hay Watch. Misma regla de
-    /// honestidad que `LiveStrengthSheet`: sin señal, cae al reloj (tope 5 min) en vez de inventar.
+    /// `RestBand` ya lo pinta desde FER-167), reloj fijo cuando no hay Watch. R13: con razón
+    /// `.ceiling` y el pulso TODAVÍA arriba de la meta, la banda no dice «Listo» — dice el tope
+    /// honesto y ofrece SEGUIR. R4: la misma función alcanza también a la superserie (Tarjeta.swift
+    /// la monta igual), así que el auto-skip fijo cubre ambas sin duplicar el `.task`.
     @ViewBuilder func restBand() -> some View {
-        let hrMode = session.currentRestMode == .heartRate
-        if hrMode, let started = session.restStartedAt {
-            TimelineView(.periodic(from: started, by: 1)) { ctx in
-                let tick = session.paused ? (session.pausedAt ?? ctx.date) : ctx.date
-                let elapsed = max(0, Int(tick.timeIntervalSince(started)))
-                let v = RestReadinessRule.evaluate(
-                    currentHR: sheet.model.watchBpm, worn: sheet.model.watchBpm != nil, restingHR: restingBaseline,
-                    elapsedS: elapsed, targetHR: session.currentRestTarget)
-                if v.state == .noSignal {
-                    restBandTimeBody(end: session.restEndsAt, now: tick, noStrapFallback: true)
-                } else {
-                    RestBand(kicker: restBandKicker,
-                             mode: .heartRate(remainingBpm: v.bpmToReady, targetBpm: v.targetReadyHR ?? 0,
-                                              currentBpm: sheet.model.watchBpm),
-                             trailing: SessionClock.format(elapsed),
-                             note: "at 5 bpm I say «almost» · at 3:00 I let you go even if it hasn't dropped",
-                             isAlmost: v.state == .almostReady, isReady: v.ready, startBpm: restStartBpm,
-                             onSkip: { skipRest() })
-                        .accessibilityAddTraits(.updatesFrequently)
+        VStack(alignment: .leading, spacing: CenitMetrics.space2) {
+            restBandCore()
+            // R11(a): «Cambiar descanso» — el editor de umbral (capacidad intacta), paridad
+            // `LiveStrengthSheet.restEditorPill`. `RestBand` no trae este control; se queda como
+            // pastilla propia bajo la banda.
+            if let ei = restOwnerExerciseIndex {
+                Button { openRestEditor(ei: ei) } label: {
+                    Label("Change rest", systemImage: "pencil").font(StrandFont.caption).foregroundStyle(sheet.theme.ink)
+                        .padding(.horizontal, 13).padding(.vertical, 6)
+                        .overlay(Capsule().strokeBorder(sheet.theme.hairlineStrong, lineWidth: 1))
                 }
-            }
-        } else if let end = session.restEndsAt, let started = session.restStartedAt {
-            TimelineView(.periodic(from: started, by: 1)) { ctx in
-                restBandTimeBody(end: end, now: session.paused ? (session.pausedAt ?? ctx.date) : ctx.date, noStrapFallback: false)
+                .buttonStyle(.plain)
             }
         }
+    }
+
+    @ViewBuilder private func restBandCore() -> some View {
+        let hrMode = session.currentRestMode == .heartRate
+        Group {
+            if hrMode, let started = session.restStartedAt {
+                TimelineView(.periodic(from: started, by: 1)) { ctx in
+                    let tick = session.paused ? (session.pausedAt ?? ctx.date) : ctx.date
+                    let elapsed = max(0, Int(tick.timeIntervalSince(started)))
+                    let v = RestReadinessRule.evaluate(
+                        currentHR: sheet.model.watchBpm, worn: sheet.model.watchBpm != nil, restingHR: restingBaseline,
+                        elapsedS: elapsed, targetHR: session.currentRestTarget)
+                    if v.state == .noSignal {
+                        restBandTimeBody(end: session.restEndsAt, now: tick, noStrapFallback: true)
+                    } else {
+                        let ceiling = v.reason == .ceiling && (v.bpmToReady ?? 0) > 0
+                        RestBand(kicker: restBandKicker,
+                                 mode: .heartRate(remainingBpm: v.bpmToReady, targetBpm: v.targetReadyHR ?? 0,
+                                                  currentBpm: sheet.model.watchBpm),
+                                 trailing: SessionClock.format(elapsed),
+                                 note: "at 5 bpm I say «almost» · at 3:00 I let you go even if it hasn't dropped",
+                                 isAlmost: v.state == .almostReady, isReady: v.ready, isCeilingRelease: ceiling,
+                                 startBpm: restStartBpm,
+                                 onSkip: { skipRest() })
+                            .accessibilityAddTraits(.updatesFrequently)
+                    }
+                }
+            } else if let end = session.restEndsAt, let started = session.restStartedAt {
+                TimelineView(.periodic(from: started, by: 1)) { ctx in
+                    restBandTimeBody(end: end, now: session.paused ? (session.pausedAt ?? ctx.date) : ctx.date, noStrapFallback: false)
+                }
+            }
+        }
+        .modifier(restAutoSkipTask())
     }
 
     private func restBandTimeBody(end: Date?, now: Date, noStrapFallback: Bool) -> some View {
@@ -201,27 +280,102 @@ extension HojaSesionViva {
             .accessibilityAddTraits(.updatesFrequently)
     }
 
-    // MARK: - «···» del ejercicio (porteado de `LiveStrengthSheet.exerciseMenuItems` — mismas puertas)
+    // MARK: - «···» del ejercicio (R8, porteado completo de `LiveStrengthSheet.exerciseMenuItems`)
 
     func exerciseMenuItems(ei: Int, run: StrengthSessionModel.ExerciseRun) -> [PaperMenuItem] {
         var rows: [PaperMenuItem] = []
         if ei > 0 {
             rows.append(.init(String(localized: "Move up"), systemImage: "arrow.up") {
-                withAnimation(.snappy) { session.moveExerciseEarlier(ei) }
+                withAnimation(reduceMotion ? nil : .snappy) { session.moveExerciseEarlier(ei) }
             })
         }
-        rows.append(.init(String(localized: "Progression"), systemImage: "chart.line.uptrend.xyaxis") {
+        if ei < session.runs.count - 1 {
+            rows.append(.init(String(localized: "Move down"), systemImage: "arrow.down") {
+                withAnimation(reduceMotion ? nil : .snappy) { moveExerciseLater(ei) }
+            })
+        }
+        if ei < session.runs.count - 1 {
+            let paired = run.supersetGroup != nil && run.supersetGroup == session.runs[ei + 1].supersetGroup
+            rows.append(.init(String(localized: paired ? "Undo superset" : "Superset with next"),
+                              systemImage: "link") {
+                if !paired, session.runs[ei + 1].supersetGroup != nil {
+                    confirmSupersetSteal = ei
+                } else {
+                    withAnimation(reduceMotion ? nil : .snappy) { session.toggleSupersetWithNext(ei) }
+                    persistSupersetGroups()
+                }
+            })
+        }
+        rows.append(.init(String(localized: "Progression"), subtitle: progressionSubtitle(run),
+                          systemImage: "chart.line.uptrend.xyaxis") {
             progressionEdit = LiveStrengthSheet.ProgressionEditTarget(id: ei)
         })
         rows.append(.init(String(localized: "Change exercise"), systemImage: "arrow.triangle.2.circlepath") {
             changeExercise = LiveStrengthSheet.ChangeTarget(ei: ei, run: run)
         })
+        if puedeEnfocar {
+            rows.append(.init(String(localized: "Focus"), systemImage: "arrow.up.left.and.arrow.down.right") {
+                focusMode = true
+            })
+        }
         if session.runs.count > 1 {
             rows.append(.init(String(localized: "Remove from session"), systemImage: "trash", isDestructive: true) {
-                withAnimation(.snappy) { session.removeExercise(at: ei) }
+                withAnimation(reduceMotion ? nil : .snappy) { session.removeExercise(at: ei) }
             })
         }
         return rows
+    }
+
+    /// «Bajar» — el modelo solo trae `moveExerciseEarlier`; una posición más tarde es el mismo swap
+    /// al revés, manteniendo el foco guiado si le tocaba a él (misma garantía que `moveExerciseEarlier`).
+    private func moveExerciseLater(_ ei: Int) {
+        guard session.runs.indices.contains(ei + 1) else { return }
+        session.moveExerciseEarlier(ei + 1)
+    }
+
+    /// «activada · +2,5 kg cada 2 ✓» / «desactivada» — paridad `LiveStrengthSheet.progressionSubtitle`.
+    private func progressionSubtitle(_ run: StrengthSessionModel.ExerciseRun) -> String {
+        guard let re = routineREs[run.id], re.progressionEnabled else { return String(localized: "off") }
+        let derived = PlateMath.minimumIncrement(for: .from(equipment: ExerciseCatalog.byID(run.exerciseId)?.equipment),
+                                                 inventory: sheet.model.plates.inventory)
+        return String(localized: "on") + " · " + ProgressionChip.summary(re, system: sheet.system, derived: derived)
+    }
+
+    /// R8: el «robo» de superserie pide confirmar antes de deshacer la pareja del vecino — paridad
+    /// `LiveStrengthSheet.bodySupersetStealMessage`.
+    var supersetStealMessage: String {
+        let neighborName: String = confirmSupersetSteal.flatMap { ei -> String? in
+            let next = ei + 1
+            guard session.runs.indices.contains(next) else { return nil }
+            return session.runs[next].name
+        } ?? ""
+        return String(format: String(localized: "%@ is already paired in another superset. Pairing it here undoes that one."),
+                      neighborName)
+    }
+
+    func confirmSupersetStealAndPair() {
+        guard let ei = confirmSupersetSteal else { return }
+        withAnimation(reduceMotion ? nil : .snappy) { session.toggleSupersetWithNext(ei) }
+        persistSupersetGroups()
+        confirmSupersetSteal = nil
+    }
+
+    /// Persiste la pareja/deshecho de superserie a la RUTINA (paridad `LiveStrengthSheet.persistSupersetGroups`,
+    /// r30): la sesión ya cambió `supersetGroup` en el modelo en memoria; esto lo hace sobrevivir a la
+    /// próxima vez que la rutina se abra a editar. Sin rutina detrás (sesión ad-hoc), no-op.
+    func persistSupersetGroups() {
+        guard let rid = session.routineId else { return }
+        let groups = Dictionary(uniqueKeysWithValues: session.runs.map { ($0.id, $0.supersetGroup) })
+        Task {
+            guard let store = await sheet.repo.storeHandle(),
+                  var res = try? await store.routineExercises(routineId: rid),
+                  let routine = (try? await store.routines())?.first(where: { $0.id == rid }) else { return }
+            for i in res.indices where groups.keys.contains(res[i].id) {
+                res[i].supersetGroup = groups[res[i].id] ?? nil
+            }
+            try? await store.saveRoutine(routine, exercises: res)
+            for re in res { routineREs[re.id] = re }
+        }
     }
 
     // MARK: - Formato (mismos formateadores que `LiveStrengthSheet`, sin duplicar la unidad)
@@ -233,13 +387,12 @@ extension HojaSesionViva {
     func plateNumber(_ v: Double) -> String { StrengthDisplay.displayNumber(v, system: sheet.system) }
     func weightUnit() -> String { StrengthDisplay.weightUnit(sheet.system).lowercased() }
 
-    /// «80 × 8» — el playhead ANT bajo la fila activa. Sin Q: `ExerciseRun` solo guarda
-    /// `lastWeightKg`/`lastReps` de la sesión anterior, no su RPE (GAP declarado en el reporte —
-    /// añadir `lastRPE` es un cambio de `StrengthSessionModel`, fuera de alcance de F2).
+    /// «ANT 80 × 8 · Q2» — el playhead bajo la fila activa (R12: `lastRPE` ya viaja en el modelo).
     func antPlayhead(_ run: StrengthSessionModel.ExerciseRun) -> String? {
         guard let w = run.lastWeightKg, let r = run.lastReps else { return nil }
         let weightPart = run.type == .weightReps ? "\(plateNumber(displayWeight(w))) × " : ""
-        return "ANT \(weightPart)\(r)"
+        let qPart = run.lastRPE.map { " · " + LiveStrengthSheet.qLabel(fromRPE: $0) } ?? ""
+        return "ANT \(weightPart)\(r)\(qPart)"
     }
 
     /// «3 × 10 · 145 kg» — receta de una línea para la fila plegada (mismo orden que
@@ -256,10 +409,56 @@ extension HojaSesionViva {
         return head
     }
 
+    /// R11(a): abre el editor de descanso — misma hoja capa 3 (`RestEditorScreen`) que F1, para la
+    /// serie que le sigue a la que acaba de cerrar (`session.runs[ei].currentSet`).
+    func openRestEditor(ei: Int) {
+        guard session.runs.indices.contains(ei) else { return }
+        restEdit = LiveStrengthSheet.RestEdit(id: ei, setIndex: session.runs[ei].currentSet)
+    }
+
+    /// R11(b): «✎ Nota» en la tarjeta activa (adjudicado en r1) — abre la MISMA `NoteSheet` que F1.
+    func openNote(ei: Int) {
+        guard session.runs.indices.contains(ei) else { return }
+        let run = session.runs[ei]
+        let firstSet = run.sets.first
+        noteTarget = LiveStrengthSheet.NoteTarget(
+            id: run.id, exerciseId: run.exerciseId, exerciseName: run.name,
+            setId: firstSet?.id ?? "", setNumber: 1)
+        noteHistory = nil
+        Task {
+            guard let store = await sheet.repo.storeHandle() else { return }
+            let history = (try? await store.exerciseNotes(exerciseId: run.exerciseId, excludingSession: session.id)) ?? []
+            noteHistory = history
+        }
+    }
+
     func usesBarbell(_ ei: Int) -> Bool {
         guard session.runs.indices.contains(ei),
               let eq = ExerciseCatalog.byID(session.runs[ei].exerciseId)?.equipment?.lowercased() else { return false }
         return eq.contains("barbell") || eq.contains("curl bar")
+    }
+}
+
+/// R1: el `.task(id:)` de auto-cierre del descanso fijo, envuelto en un `ViewModifier` propio para
+/// poder colgarlo de `restBand()` (una `@ViewBuilder func`, que no puede declarar `@State`/leer
+/// `\.scenePhase` por sí misma) sin ensanchar la firma de todo el archivo.
+private struct RestAutoSkipModifier: ViewModifier {
+    let vivo: HojaSesionViva
+    @Environment(\.scenePhase) private var scenePhase
+
+    func body(content: Content) -> some View {
+        content.task(id: vivo.session.restEndsAt) {
+            guard vivo.session.currentRestMode == .fixed, let end = vivo.session.restEndsAt else { return }
+            let delay = end.timeIntervalSinceNow
+            if delay > 0 { try? await Task.sleep(for: .seconds(delay)) }
+            guard !Task.isCancelled, vivo.session.phase == .resting, !vivo.session.paused else { return }
+            let fresco = abs(end.timeIntervalSinceNow) < 2 && scenePhase == .active
+            if fresco {
+                vivo.sheet.model.buzz(loops: 1)
+                SessionComfort.playRestChime()
+            }
+            withAnimation(vivo.reduceMotion ? nil : StrandMotion.gentle) { vivo.session.skipRest() }
+        }
     }
 }
 #endif

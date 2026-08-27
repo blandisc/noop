@@ -3,17 +3,19 @@ import SwiftUI
 import StrandDesign
 import StrandTraining
 
-// MARK: - HojaCabeceraSesion — cabecera + avance + CTA de «La Hoja viva» (FER-167 · F2)
+// MARK: - HojaCabeceraSesion — cabecera + avance + CTA de «La Hoja viva» (FER-167 · F2, ronda 2)
 //
-// Mock `hoja-pantallas.html` P3/P4/P7: `.headS` (‹ · dot · nombre · «Serie N de M» · reloj · ‖) ·
-// `.avance` (riel 3pt) · P7 el mismo `.headS` con «N de N · completa» + CTA `.ctaV` «Terminar y
-// guardar». «Serie N de M» es la unidad ÚNICA de avance (cabecera + píldora + riel) — mismo cálculo
-// que `HojaSesionViva.serieActualYTotal`, nunca dos fuentes que puedan divergir.
+// Mock `hoja-pantallas.html` P3/P4/P7: `.headS` (‹ · dot · nombre · «Serie N de M» · ♥ · reloj ·
+// ⤢ · ‖) · `.avance` (riel 3pt) · P7 el mismo `.headS` con «N de N · completa» + CTA `.ctaV`
+// «Terminar y guardar». «Serie N de M» es la unidad ÚNICA de avance (cabecera + píldora + riel) —
+// mismo cálculo que `HojaSesionViva.serieSubtitle`, nunca dos fuentes que puedan divergir (R20: la
+// píldora flotante lo comparte, ver `RootTabView`/`AppMap`).
 
 @MainActor
 enum HojaCabeceraSesion {
 
-    /// Fila de cabecera: ‹ minimiza · dot de familia + nombre de rutina + «Serie N de M» · reloj + ‖.
+    /// Fila de cabecera: ‹ minimiza · dot de familia + nombre + «Serie N de M» · ♥ (R14, solo con
+    /// FC viva) · reloj · ⤢ Foco (R2a) · ‖.
     static func header(vivo: HojaSesionViva) -> some View {
         HStack(spacing: CenitMetrics.space2) {
             Button {
@@ -36,12 +38,26 @@ enum HojaCabeceraSesion {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
+            heartRate(vivo: vivo)
+
             TimelineView(.periodic(from: Date(), by: 1)) { ctx in
                 Text(SessionClock.format(vivo.session.elapsedSeconds(now: ctx.date)))
                     .font(InstrumentoType.groteskNumber(15)).monospacedDigit()
                     .foregroundStyle(vivo.sheet.theme.inkSecondary)
             }
             .accessibilityHidden(true)
+
+            // R2(a): ⤢ — la misma puerta a Foco que `SessionStatsBar.onFocus` ofrecía en la barra vieja.
+            if vivo.puedeEnfocar {
+                Button { vivo.focusMode = true } label: {
+                    Image(systemName: "arrow.up.left.and.arrow.down.right")
+                        .font(StrandFont.glyph(.inline, weight: .semibold))
+                        .foregroundStyle(vivo.sheet.theme.inkSecondary)
+                        .frame(width: 34, height: 34).contentShape(Rectangle().inset(by: -5))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text("Focus"))
+            }
 
             if let alternar = vivo.alternarPausa {
                 Button(action: alternar) {
@@ -56,6 +72,21 @@ enum HojaCabeceraSesion {
         }
         .padding(.horizontal, CenitMetrics.screenPadding)
         .padding(.top, 6)
+    }
+
+    /// ♥ 118 — SOLO con FC viva (R14, paridad `LiveStrengthSheet.sessionHeaderHeartRate`). Sin punto
+    /// animado a propósito: el numeral ya es la señal de vida.
+    @ViewBuilder private static func heartRate(vivo: HojaSesionViva) -> some View {
+        if let bpm = vivo.sheet.model.watchBpm {
+            let tone = OKLab.darkened(vivo.sheet.theme.dataHeart, toContrast: 4.5, against: vivo.sheet.theme.paper)
+            HStack(spacing: CenitMetrics.space1) {
+                Image(systemName: "heart.fill").font(StrandFont.glyph(.chevron))
+                Text("\(bpm)").font(StrandFont.subhead.weight(.semibold))
+            }
+            .foregroundStyle(tone)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text("Heart rate \(bpm) beats per minute"))
+        }
     }
 
     /// El riel de avance (mock `.avance`): índigo, 3pt — MISMA fracción que la píldora/cabecera leen.

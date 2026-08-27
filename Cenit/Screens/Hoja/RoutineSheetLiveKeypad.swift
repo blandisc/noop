@@ -11,6 +11,9 @@ import StrandTraining
 // tecla verde grande dice **✓ SERIE**. Durante el descanso (B2) la MISMA tecla se vuelve **SALTAR
 // ›** y el renglón QUEDABAN se calla (mock: `.qrow` solo vive en P3). Motor idéntico a
 // `LiveStrengthSheet` — solo cambia cuándo se muestra el teclado.
+//
+// Sin tecla ocultar (FER-167 ronda 2 · R19): la consola always-on no tiene de dónde reabrirse, así
+// que `onHide` se queda en `nil` (default) — `SessionKeypad` ya la retira sola.
 
 extension HojaSesionViva {
 
@@ -32,27 +35,45 @@ extension HojaSesionViva {
         if case .weight = ref { return true }; return false
     }
 
+    /// R3/R10: abre la consola sobre una celda concreta — el tap-zone de una fila activa/fantasma
+    /// (peso o reps) llama esto, igual que tocar una celda en F1.
+    func beginEditing(_ cell: LiveStrengthSheet.CellRef) {
+        withAnimation(reduceMotion ? nil : .snappy(duration: 0.22)) { activeCell = cell }
+        syncBufferFromModel(cell)
+    }
+
+    /// R10 (QA D6 = Grok 7): «copiar anterior» — paridad `LiveStrengthSheet` 1439/1446/4082. Solo
+    /// vivo con peso×reps, que es donde `previousText` tiene algo que copiar.
+    func previousText(_ run: StrengthSessionModel.ExerciseRun) -> String? {
+        guard let w = run.lastWeightKg, let r = run.lastReps else { return nil }
+        return "\(plateNumber(displayWeight(w))) × \(r)"
+    }
+
     @ViewBuilder var keypadInset: some View {
         if session.summary == nil, !isZombie, let cell = effectiveCell {
             let (ei, si) = cellIndices(cell)
+            let run = session.runs.indices.contains(ei) ? session.runs[ei] : nil
             let resting = session.phase == .resting
             SessionKeypad(
                 theme: sheet.theme,
                 stepLabel: isWeightCell(cell) ? (imperial ? "±5" : "±2,5") : "±1",
-                canCopyPrevious: false,
+                canCopyPrevious: run.map { previousText($0) != nil } ?? false,
                 platesEnabled: isWeightCell(cell) && usesBarbell(ei),
                 onDigit: { keypadInput(String($0), cell: cell) },
                 onComma: { keypadComma(cell: cell) },
                 onBackspace: { keypadBackspace(cell: cell) },
                 onNext: { focusNextCell(after: cell) },
-                onCopyPrevious: {},
+                onCopyPrevious: {
+                    guard let run, let text = previousText(run) else { return }
+                    session.prefillPrevious(exercise: ei, set: si)
+                    buffer = text; bufferTyped = true
+                },
                 onStep: { keypadStep(cell, sign: 1) },
                 onStepDown: { keypadStep(cell, sign: -1) },
                 onPlates: { openPlates(ei: ei, si: si) },
                 onConfirmSet: { resting ? skipRest() : confirmOrToggleSet(ei: ei, si: si) },
                 confirmSetLabel: resting ? String(localized: "Skip") + " ›" : String(localized: "✓ Serie"),
                 confirmSetAccessibilityLabel: resting ? Text("Skip rest") : Text("Mark set as done"),
-                onHide: { withAnimation(.snappy(duration: 0.22)) { activeCell = nil } },
                 onPause: alternarPausa,
                 isPaused: session.paused,
                 // QUEDABAN se calla durante el descanso (mock P4: `.pad` sin `.qrow`).
@@ -96,16 +117,24 @@ extension HojaSesionViva {
         if !buffer.isEmpty { buffer.removeLast() }
         commitBuffer(cell)
     }
+    /// R9 (Grok 9): el paso ± opera sobre el VALOR DE LA CELDA (léelo → suma paso → escribe por el
+    /// mismo camino que `commitBuffer`) — antes llamaba `session.bumpWeight`/`bumpReps`, que mutan
+    /// el set CORRIENTE del motor, distinto de la celda que la consola está editando tras «Siguiente».
     func keypadStep(_ cell: LiveStrengthSheet.CellRef, sign: Int) {
         let (ei, si) = cellIndices(cell)
         guard session.runs.indices.contains(ei), session.runs[ei].sets.indices.contains(si) else { return }
+        let set = session.runs[ei].sets[si]
+        let newValue: String
         switch cell {
-        case .weight: session.bumpWeight(byKg: Double(sign) * weightStepKg)
-        case .reps: session.bumpReps(sign)
+        case .weight:
+            newValue = plateNumber(displayWeight(set.weightKg) + (imperial ? Double(sign) * 5 : Double(sign) * weightStepKg))
+        case .reps:
+            newValue = "\(max(0, set.reps + sign))"
         }
         activeCell = cell
-        buffer = currentCellString(cell)
-        bufferTyped = false
+        buffer = newValue
+        bufferTyped = true
+        commitBuffer(cell)
     }
     private func commitBuffer(_ cell: LiveStrengthSheet.CellRef) {
         let (ei, si) = cellIndices(cell)
@@ -131,7 +160,7 @@ extension HojaSesionViva {
             guard session.runs[ei].sets.indices.contains(nextSi) else { return nil }
             return usesWeight ? .weight(ei, nextSi) : .reps(ei, nextSi)
         }()
-        withAnimation(.snappy(duration: 0.22)) { activeCell = next }
+        withAnimation(reduceMotion ? nil : .snappy(duration: 0.22)) { activeCell = next }
         if let next { syncBufferFromModel(next) }
     }
     func openPlates(ei: Int, si: Int) {

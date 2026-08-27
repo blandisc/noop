@@ -3,16 +3,18 @@ import SwiftUI
 import StrandDesign
 import StrandTraining
 
-// MARK: - Tarjetas de «La Hoja viva» (FER-167 · F2)
+// MARK: - Tarjetas de «La Hoja viva» (FER-167 · F2, ronda 2)
 //
 // `HojaTarjetaEjercicioSesion`: el ejercicio ACTIVO — mock `hoja-pantallas.html` P3/P4, vidrio
-// índigo (`EntrenarModulo(tono: .indigo)`), filas `HojaFilaSerie` en contexto `.sesion` (el caso que
-// F1 ya construyó y nunca ejercitó fuera de su #Preview), la banda de descanso ANCLADA bajo la fila
-// que la causó. `HojaTarjetaSuperserieSesion`: la superserie en sesión — una fila por MIEMBRO
-// mostrando su ronda actual (round-robin del motor vigente), SIN divisores de ronda ni banda interna
-// (F3 los trae); palomeo intercalado funciona porque cada fila llama al MISMO `confirmOrToggleSet`.
-// `HojaPlegadaSesion`: el resto de la rutina, receta de una línea, sin acordeón tocable (la Hoja
-// viva no pliega/abre — el foco lo decide el motor, no un tap).
+// índigo (`EntrenarModulo(tono: .indigo)`), filas `HojaFilaSerie` en contexto `.sesion`, la banda
+// de descanso ANCLADA bajo la fila que la causó. `HojaTarjetaSuperserieSesion`: la superserie en
+// sesión — una fila por MIEMBRO (su ronda actual, round-robin del motor vigente), palomeo
+// intercalado, Y su propia banda de descanso al cerrar ronda (R4) — sin divisores de ronda ni
+// rediseño interno, eso sigue siendo F3. `HojaPlegadaSesion`: el resto de la rutina, tocable (R5) —
+// un tap mueve el foco guiado ahí, paridad `LiveStrengthSheet.doneRow`/`comingRow`.
+//
+// REGLA DURA: cero `ForEach(..., id: \.self)` sobre `Int`. Toda identidad de fila es el `id` del
+// run/set — `ei`/`si` se derivan frescos en cada construcción, nunca sobreviven como ancla.
 
 struct HojaTarjetaEjercicioSesion: View {
     let vivo: HojaSesionViva
@@ -24,6 +26,7 @@ struct HojaTarjetaEjercicioSesion: View {
         EntrenarModulo(tono: .indigo) {
             VStack(alignment: .leading, spacing: 0) {
                 chead
+                notaF.padding(.top, 4)   // R11(b): ✎ Nota, adjudicado — misma hoja que F1
                 if vivo.session.canTakeHeldRaise(at: ei) { raisePill.padding(.top, 4) }
                 tabla.padding(.top, 6)
                 footer.padding(.top, 8)
@@ -55,11 +58,26 @@ struct HojaTarjetaEjercicioSesion: View {
         }
     }
 
+    /// R11(b): ✎ Nota — paridad `HojaTarjetaEjercicio.notaF` (F1), misma `NoteSheet` (capa 3).
+    private var notaF: some View {
+        Button { vivo.openNote(ei: ei) } label: {
+            HStack(alignment: .top, spacing: 4) {
+                Text(verbatim: "✎").font(StrandFont.footnote)
+                let note = run.note?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                Text(note.isEmpty ? String(localized: "Add note") : note)
+                    .font(StrandFont.caption).foregroundStyle(vivo.sheet.theme.inkTertiary)
+                    .lineLimit(2).multilineTextAlignment(.leading)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
     /// «Subida esperando ▲» — la propuesta de la barra RETENIDA (mapa: intervención vigente, alcanzable
     /// aquí). El «por qué» expandible es F4 (deload/intervención); esta hoja solo ofrece tomarla.
     private var raisePill: some View {
         Button {
-            withAnimation(.snappy) { _ = vivo.session.takeHeldRaise(at: ei) }
+            withAnimation(vivo.reduceMotion ? nil : .snappy) { _ = vivo.session.takeHeldRaise(at: ei) }
         } label: {
             HStack(spacing: 6) {
                 Text(verbatim: "▲").foregroundStyle(LiquidColor.verdeProfundo)
@@ -76,9 +94,11 @@ struct HojaTarjetaEjercicioSesion: View {
 
     private var tabla: some View {
         VStack(alignment: .leading, spacing: 0) {
-            ForEach(Array(run.sets.enumerated()), id: \.element.id) { si, set in
+            ForEach(run.sets, id: \.id) { set in
+                let si = run.sets.firstIndex { $0.id == set.id } ?? 0
                 if vivo.restSlotIndex(ei: ei) == si { vivo.restBand().padding(.vertical, 6) }
                 filaSerie(si: si, set: set, esPrimera: si == 0)
+                    .id("hoja-viva-serie-\(set.id)")   // R14: ancla de scroll-to por identidad, no índice
             }
             // El descanso puede no tener dónde anclar (el ejercicio ya cerró todas sus filas visibles) —
             // mismo respaldo que `LiveStrengthSheet.activeExerciseFooter`.
@@ -112,6 +132,25 @@ struct HojaTarjetaEjercicioSesion: View {
         return HojaFilaSerie(datos: datos, contexto: .sesion, marca: marca) {
             vivo.confirmOrToggleSet(ei: ei, si: si)
         }
+        // R3: tap en peso/reps de una fila activa/fantasma abre la consola sobre ESA celda —
+        // paridad de intención con las tap-zones de F1 (`HojaFilaSerieTapZones`).
+        .overlay {
+            if marca != .hecha, usesReps {
+                TapZonesSesion(
+                    onPeso: { vivo.beginEditing(.weight(ei, si)) },
+                    onReps: { vivo.beginEditing(.reps(ei, si)) }
+                )
+            }
+        }
+        // R16: destello rosa breve al palomear con récord — sin animación si Reduce Motion.
+        .background {
+            if vivo.prFlashSetId == set.id {
+                RoundedRectangle(cornerRadius: HojaMetrics.activaRadius, style: .continuous)
+                    .fill(LiquidColor.rosa.opacity(0.16))   // token-exempt: destello breve R16, sin token de opacidad para «molde rosa» transitorio todavía
+                    .transition(vivo.reduceMotion ? .identity : .opacity)
+            }
+        }
+        .animation(vivo.reduceMotion ? nil : .easeOut(duration: 0.4), value: vivo.prFlashSetId)
     }
 
     @ViewBuilder private var footer: some View {
@@ -119,13 +158,13 @@ struct HojaTarjetaEjercicioSesion: View {
         let allDone = !workSets.isEmpty && workSets.allSatisfy(\.done)
         HStack {
             if !allDone {
-                Button { withAnimation(.snappy) { vivo.session.addSet(exercise: ei) } } label: {
+                Button { withAnimation(vivo.reduceMotion ? nil : .snappy) { vivo.session.addSet(exercise: ei) } } label: {
                     Text(verbatim: "＋ \(String(localized: "SET"))")
                         .font(InstrumentoType.grotesk(9.5, weight: .bold, relativeTo: .caption2)).tracking(1)
                         .foregroundStyle(LiquidColor.tinta900)
                         .padding(.horizontal, 11).padding(.vertical, 6)
-                        .background(Capsule().fill(Color.white.opacity(0.72)))   // token-exempt: misma receta privada que HojaTarjetaEjercicio.agregarSerie (EntrenarCapsulaPuerta.fondoAlfa, sin token público)
-                        .overlay(Capsule().strokeBorder(Color.white.opacity(0.9), lineWidth: 1))   // token-exempt: EntrenarCapsulaPuerta.highlightAlfa, no expuesto
+                        .background(Capsule().fill(HojaLiveMetrics.capsulaFondo))
+                        .overlay(Capsule().strokeBorder(HojaLiveMetrics.capsulaBorde, lineWidth: 1))
                 }
                 .buttonStyle(.liquidPress)
                 .accessibilityLabel(Text("Add set"))
@@ -140,8 +179,37 @@ struct HojaTarjetaEjercicioSesion: View {
     }
 }
 
-/// Ejercicio SIN abrir — recibo de una línea (hecho/pendiente/«sigue»). El foco de la Hoja viva lo
-/// decide el motor (`accordionIndex`), nunca un tap — a diferencia de F1, aquí no hay acordeón que abrir.
+/// Tira invisible con la geometría de `HojaFilaSerie` en contexto `.sesion` (`HojaMetrics`), para
+/// distinguir toques por campo sin ensanchar el componente sellado — mismo patrón que
+/// `HojaFilaSerieTapZones` de F1, con las columnas de sesión (peso 86 / reps flexible). La columna
+/// de marca queda SIN gesto propio (`allowsHitTesting(false)`): el ✓/pendiente de `HojaFilaSerie`
+/// ya tiene su botón ahí, y una zona encima se lo robaría.
+private struct TapZonesSesion: View {
+    let onPeso: (() -> Void)?
+    let onReps: (() -> Void)?
+
+    var body: some View {
+        HStack(spacing: HojaMetrics.filaGap) {
+            Color.clear.frame(width: HojaMetrics.colNumero)
+            zone(onPeso).frame(width: HojaMetrics.colPesoSesion)
+            zone(onReps).frame(maxWidth: .infinity)
+            Color.clear.frame(width: HojaMetrics.colMarca).allowsHitTesting(false)
+        }
+        .padding(.horizontal, HojaMetrics.filaHPad)
+    }
+
+    @ViewBuilder private func zone(_ action: (() -> Void)?) -> some View {
+        Color.clear
+            .contentShape(Rectangle())
+            .onTapGesture { action?() }
+            .allowsHitTesting(action != nil)
+    }
+}
+
+/// Ejercicio SIN abrir — recibo de una línea, TOCABLE (R5, paridad `LiveStrengthSheet.doneRow`/
+/// `comingRow`): mueve el foco guiado ahí, para corregir una hecha o saltar a una venidera sin
+/// esperar a que el motor llegue solo. El foco de la Hoja viva lo decide el motor
+/// (`accordionIndex`) — este tap solo lo REDIRIGE, no abre un acordeón propio.
 struct HojaPlegadaSesion: View {
     let vivo: HojaSesionViva
     let ei: Int
@@ -156,40 +224,54 @@ struct HojaPlegadaSesion: View {
     }
 
     var body: some View {
-        EntrenarModulo(tono: .neutro) {
-            HStack(spacing: 11) {
-                if allDone {
-                    ZStack {
-                        Circle().fill(LiquidColor.verdePrimario)
-                        Text(verbatim: "✓").font(StrandFont.caption.weight(.bold)).foregroundStyle(Color.white)
+        Button {
+            withAnimation(vivo.reduceMotion ? nil : .snappy(duration: 0.22)) {
+                session_select()
+            }
+        } label: {
+            EntrenarModulo(tono: .neutro) {
+                HStack(spacing: 11) {
+                    if allDone {
+                        ZStack {
+                            Circle().fill(LiquidColor.verdePrimario)
+                            Text(verbatim: "✓").font(StrandFont.caption.weight(.bold)).foregroundStyle(Color.white)
+                        }
+                        .frame(width: 22, height: 22)
                     }
-                    .frame(width: 22, height: 22)
-                }
-                Text(run.name).font(StrandFont.subhead.weight(.semibold)).foregroundStyle(vivo.sheet.theme.ink).lineLimit(1)
-                Spacer(minLength: 8)
-                if sigue {
-                    Text("continues").font(StrandFont.caption).foregroundStyle(vivo.sheet.theme.inkTertiary)
-                } else {
-                    Text(vivo.recetaSummary(run))
-                        .font(InstrumentoType.groteskNumber(12.5, weight: .bold, relativeTo: .caption))
-                        .foregroundStyle(vivo.sheet.theme.inkTertiary).lineLimit(1)
+                    Text(run.name).font(StrandFont.subhead.weight(.semibold)).foregroundStyle(vivo.sheet.theme.ink).lineLimit(1)
+                    Spacer(minLength: 8)
+                    if sigue {
+                        Text("continues").font(StrandFont.caption).foregroundStyle(vivo.sheet.theme.inkTertiary)
+                    } else {
+                        Text(vivo.recetaSummary(run))
+                            .font(InstrumentoType.groteskNumber(12.5, weight: .bold, relativeTo: .caption))
+                            .foregroundStyle(vivo.sheet.theme.inkTertiary).lineLimit(1)
+                    }
                 }
             }
         }
+        .buttonStyle(.liquidPress)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(verbatim: "\(run.name), \(allDone ? String(localized: "done") : vivo.recetaSummary(run))"))
+        .accessibilityHint(Text("Moves guided focus here"))
+    }
+
+    private func session_select() {
+        let target = run.sets.firstIndex { !$0.done } ?? 0
+        vivo.session.select(exerciseIndex: ei, setIndex: target)
     }
 }
 
 /// La superserie en sesión (mapa C2/mock `.ss2`): una fila por MIEMBRO, su ronda actual, palomeo
 /// intercalado — round-robin real del motor (`registerCurrentSet`), sin divisores de ronda (F3).
+/// R4: descansa igual que un ejercicio solo — la MISMA `restBand()` anclada al pie del bloque
+/// cuando el descanso pertenece a cualquiera de sus miembros.
 struct HojaTarjetaSuperserieSesion: View {
     let vivo: HojaSesionViva
     let members: [Int]
 
-    private var nombre: String {
-        members.map { vivo.session.runs[$0].name }.joined(separator: " ＋ ")
-    }
+    private var runs: [StrengthSessionModel.ExerciseRun] { members.map { vivo.session.runs[$0] } }
+    private var nombre: String { runs.map(\.name).joined(separator: " ＋ ") }
 
     var body: some View {
         EntrenarModulo(tono: .indigo) {
@@ -200,14 +282,18 @@ struct HojaTarjetaSuperserieSesion: View {
                 }
                 Text(nombre).font(StrandFont.headline).foregroundStyle(vivo.sheet.theme.ink)
                     .padding(.top, 4).padding(.bottom, 6)
-                ForEach(members, id: \.self) { ei in filaMiembro(ei) }
+                // REGLA DURA: identidad por `run.id`, no por el `Int` de `members`.
+                ForEach(runs) { run in filaMiembro(run) }
+                if vivo.session.phase == .resting, members.contains(vivo.accordionIndex) {
+                    vivo.restBand().padding(.top, 6)
+                }
             }
         }
         .liquidEntrada()
     }
 
-    private func filaMiembro(_ ei: Int) -> some View {
-        let run = vivo.session.runs[ei]
+    private func filaMiembro(_ run: StrengthSessionModel.ExerciseRun) -> some View {
+        let ei = vivo.session.runs.firstIndex { $0.id == run.id } ?? (members.first ?? 0)
         let si = run.currentSet
         let set = run.sets.indices.contains(si) ? run.sets[si] : nil
         let marca: HojaFilaSerie.Marca = (set?.done ?? false) ? .hecha : .activa
@@ -217,15 +303,24 @@ struct HojaTarjetaSuperserieSesion: View {
             unidad: run.type == .weightReps ? vivo.weightUnit() : "",
             conSubida: false,
             reps: (run.type == .weightReps || run.type == .bodyweight) ? "\(set?.reps ?? 0)" : "—",
-            q: nil, ant: nil, esPrimera: ei == members.first
+            q: nil, ant: nil, esPrimera: run.id == runs.first?.id
         )
         return VStack(alignment: .leading, spacing: 2) {
             Text(run.name).font(StrandFont.caption).foregroundStyle(vivo.sheet.theme.inkTertiary).lineLimit(1)
             HojaFilaSerie(datos: datos, contexto: .sesion, marca: marca) {
-                guard let si = run.sets.indices.contains(si) ? si : nil else { return }
+                guard set != nil else { return }   // sin serie corriente (miembro ya cerrado), nada que marcar
                 vivo.confirmOrToggleSet(ei: ei, si: si)
             }
         }
     }
+}
+
+/// Constantes compartidas de «＋ SET» — F1 (`HojaTarjetaEjercicio.agregarSerie`) y la Hoja viva
+/// pintan la MISMA cápsula («la última vez» seed sobre vidrio); antes cada archivo repetía los
+/// literales `Color.white.opacity(0.72/0.9)` (Grok 15 + QA O5). Sin token público en StrandDesign
+/// todavía — GAP anotado en el reporte por si conviene promoverlas.
+enum HojaLiveMetrics {
+    static let capsulaFondo = Color.white.opacity(0.72)   // token-exempt: EntrenarCapsulaPuerta.fondoAlfa, sin token público (R21, compartida con F1)
+    static let capsulaBorde = Color.white.opacity(0.9)   // token-exempt: EntrenarCapsulaPuerta.highlightAlfa, sin token público (R21, compartida con F1)
 }
 #endif
