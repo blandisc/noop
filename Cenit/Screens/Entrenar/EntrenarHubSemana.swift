@@ -83,19 +83,19 @@ struct EntrenarHubSemana: View {
                                        style: StrokeStyle(lineWidth: EntrenarHubMetrics.teselaOffLineWidth, dash: [2, 2]))
                 }
                 Text(verbatim: label)
-                    .font(entrenarWeekDayLabelFont)
+                    .font(EntrenarHubMetrics.teselaLabel)
                     .foregroundStyle(teselaTextColor(day))
             }
             .frame(width: EntrenarHubMetrics.teselaSize, height: EntrenarHubMetrics.teselaSize)
         }
         .buttonStyle(.liquidPress)
+        // Ronda 2 · O3: el DIBUJO se queda en 26×26 (7 teselas + gap de 8 no caben a 44 cada una en
+        // el ancho del módulo) — lo que crece a 44 es el ÁREA DE TOQUE, vía `contentShape` con un
+        // inset negativo (no infla el layout, mismo criterio que `EntrenarCapsulaPuerta` pero sin
+        // el `.frame(minWidth:)` que ahí SÍ cabe porque esa pastilla vive sola, no en fila apretada).
+        .contentShape(Rectangle().inset(by: -(EntrenarHubMetrics.teselaToque - EntrenarHubMetrics.teselaSize) / 2))
         .accessibilityLabel(accessibilityLabel(day, dayName: label))
     }
-
-    /// El mismo tamaño que `entrenarWeekDayLabel()` (10.5/600/tracking 1.4) — la inicial dentro de
-    /// la tesela, no debajo (mock `.dia{font-size:9.5px;font-weight:700}`, un punto más chico y más
-    /// bold que el rótulo compartido; se declara aquí porque solo esta tesela lo necesita).
-    private var entrenarWeekDayLabelFont: Font { InstrumentoType.grotesk(9.5, weight: .bold, relativeTo: .caption2) }
 
     private func teselaTextColor(_ day: EntrenarDayToken) -> Color {
         switch day {
@@ -107,7 +107,9 @@ struct EntrenarHubSemana: View {
     private func accessibilityLabel(_ day: EntrenarDayToken, dayName: String) -> Text {
         let name = Text(verbatim: dayName) + Text(verbatim: ", ")
         switch day {
-        case .done(let f):       return name + Text("trained") + Text(verbatim: ", ") + Text(f.label)
+        // Ronda 2 · D3: clave PROPIA — «trained» es «entrenadas» (de «horas entrenadas»), un
+        // adjetivo plural que no concuerda con un día suelto («L, entrenadas, Empuje»).
+        case .done(let f):       return name + Text("trained day") + Text(verbatim: ", ") + Text(f.label)
         case .today(let isRest): return name + Text("today") + Text(verbatim: ", ")
                                        + (isRest ? Text("rest day") : Text("training day"))
         case .planned(let f):    return name + Text("planned") + Text(verbatim: ", ") + Text(f.label)
