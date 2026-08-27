@@ -51,6 +51,10 @@ public struct HojaFilaSerie: View {
         public let ant: String?
         /// Edición: glifo ≡ tinta500 en la última columna.
         public let arrastrable: Bool
+        /// FER-166 (GAP cerrado): la primera fila de un stack no dibuja el hairline superior
+        /// (`.trow:first-child{border-top:0}` del mock). El init sellado obligaba al caller a
+        /// recortar con padding negativo; ahora el propio dato lo declara.
+        public let esPrimera: Bool
 
         public init(
             numero: String,
@@ -62,7 +66,8 @@ public struct HojaFilaSerie: View {
             q: String? = nil,
             anterior: String? = nil,
             ant: String? = nil,
-            arrastrable: Bool = false
+            arrastrable: Bool = false,
+            esPrimera: Bool = false
         ) {
             self.numero = numero
             self.esCalentamiento = esCalentamiento
@@ -74,6 +79,7 @@ public struct HojaFilaSerie: View {
             self.anterior = anterior
             self.ant = ant
             self.arrastrable = arrastrable
+            self.esPrimera = esPrimera
         }
     }
 
@@ -111,11 +117,9 @@ public struct HojaFilaSerie: View {
             }
         }
         .overlay(alignment: .top) {
-            // Hairline arriba salvo activa (mock `.activa{border-top-color:transparent}`).
-            // GAP: sin `esPrimera` en el init sellado, la primera fila de un stack también
-            // dibuja el separador — el caller puede recortar con padding negativo o aceptar el
-            // hairline (`.trow:first-child{border-top:0}` no se puede cumplir literal).
-            if marca != .activa {
+            // Hairline arriba salvo activa (mock `.activa{border-top-color:transparent}`) o
+            // primera fila (`.trow:first-child{border-top:0}`).
+            if marca != .activa, !datos.esPrimera {
                 Rectangle()
                     .fill(LiquidColor.tinta7)
                     .frame(height: HojaMetrics.separadorGrosor)
