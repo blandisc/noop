@@ -37,6 +37,10 @@ public enum EntrenarHubMetrics {
     public static let dosisNumeralWidth: CGFloat = 18
     /// Fill «bajo la banda» — cian al 65 % en vez del cian sólido (mock `.fill.low`).
     public static let dosisFillBajoAlfa: Double = 0.65
+    /// Entre filas del riel (mock `.drow{margin-top:8px}`, salvo la primera).
+    public static let dosisRowTop: CGFloat = 8
+    /// Dentro de una fila: rótulo · riel · numeral (mock `.drow{gap:9px}`).
+    public static let dosisRowGap: CGFloat = 9
 
     // MARK: VOLUMEN — las 8 barras semanales (mock `.vbars`/`.vb`)
 
@@ -90,6 +94,10 @@ public enum EntrenarHubMetrics {
     public static let subPillShadowAlfa: Double = 0.10
     /// El disco blanco «↑» dentro de la píldora (mock `.subPill .up{width:18px;height:18px}`).
     public static let subPillBadge: CGFloat = 18
+    /// El texto de la píldora — 12.5/400 (mock `.subPill{font-size:12.5px}`, sin peso propio → regular).
+    public static let subPillTexto = Font.system(size: 12.5)
+    /// El glifo «↑» dentro del disco — grotesk 10/700 (mock `.subPill .up{font-size:10px;font-weight:700}`).
+    public static let subPillGlifo = InstrumentoType.grotesk(10, weight: .bold)
 
     // MARK: SEMANA / CONSTANCIA — el valor a la derecha de la regla (mock `.semVal`)
 
@@ -130,6 +138,10 @@ public enum EntrenarHubMetrics {
     /// Píldora «Hoy subes» → fila CTA (mock `.ctaRow{margin-top:12px}`).
     public static let heroSubPillToCtaTop: CGFloat = 12
     public static let heroCtaGap: CGFloat = 14
+    /// «Empezar» — grotesk 14/600 (mock `.ctaV{font-size:14px;font-weight:600}`).
+    public static let heroCTATexto = InstrumentoType.grotesk(14, weight: .semibold)
+    /// «Otra forma ⌄» — grotesk 13/600 (mock `.otra{font-size:13px;font-weight:600}`).
+    public static let heroOtraFormaTexto = InstrumentoType.grotesk(13, weight: .semibold)
 
     // MARK: HÉROE / PAR / MARCAS·VOLUMEN — el numeral grande + su fila (mock `.numRow`)
 
@@ -146,6 +158,8 @@ public enum EntrenarHubMetrics {
     public static let subLsFila = Font.system(size: 11)
     /// El delta en negritas — grotesk 10.5/700, tabular (mock `.subLs b`).
     public static let subLsDelta = InstrumentoType.groteskNumber(10.5, weight: .bold, relativeTo: .caption)
+    /// El «▲» que antecede al delta — 8 pt (mock `.subLs b i{font-size:8px}`).
+    public static let subLsGlifo = Font.system(size: 8)
     /// La cláusula de «Descanso real» — 11/400, line-height 1.55, tabular (mock `.tDes .sub2`).
     public static let restClausula = Font.system(size: 11)
     public static let restClausulaLineSpacing: CGFloat = 6   // 11 × (1.55 − 1) ≈ 6
