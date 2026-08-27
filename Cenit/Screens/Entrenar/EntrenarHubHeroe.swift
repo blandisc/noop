@@ -24,6 +24,13 @@ struct EntrenarHubHeroe<Pliegue: View>: View {
     private let pliegue: Pliegue
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Ronda 2 · D2: `heroNombres`/`subPillTexto` eran `Font.system(size:)` fijo — texto de LECTURA
+    /// sin escalar. `@ScaledMetric` en la vista (el `enum` de tokens no tiene entorno); la base sigue
+    /// en `EntrenarHubMetrics`. `subPillTextoSize` ancla a `.subheadline`, el MISMO `relativeTo` que
+    /// las cifras en negritas de `raiseText` (`EntrenarView`) — el prefijo «Hoy subes:» y los pesos
+    /// tienen que crecer JUNTOS, no cada quien a su ritmo.
+    @ScaledMetric(relativeTo: .footnote) private var heroNombresSize = EntrenarHubMetrics.heroNombresBase
+    @ScaledMetric(relativeTo: .subheadline) private var subPillTextoSize = EntrenarHubMetrics.subPillTextoBase
 
     /// Init explícito (mismo patrón que `EntrenarModulo`, Parte A): `pliegue` se invoca UNA vez, aquí
     /// — el `body` de este struct se reconstruye cada vez que su padre redibuja de todos modos, así
@@ -63,7 +70,7 @@ struct EntrenarHubHeroe<Pliegue: View>: View {
                         .padding(.top, EntrenarHubMetrics.heroTituloToMetaTop)
                     if let exerciseNames, !exerciseNames.isEmpty {
                         Text(verbatim: exerciseNames)
-                            .font(EntrenarHubMetrics.heroNombres)
+                            .font(.system(size: heroNombresSize))
                             .foregroundStyle(LiquidColor.tinta700)
                             .lineSpacing(EntrenarHubMetrics.heroNombresLineSpacing)
                             .lineLimit(2)
@@ -96,7 +103,7 @@ struct EntrenarHubHeroe<Pliegue: View>: View {
                             .foregroundStyle(LiquidColor.verdeProfundo)
                     }
                     .accessibilityHidden(true)   // decorativo — la palabra «subes» ya lo dice
-                line.font(EntrenarHubMetrics.subPillTexto).foregroundStyle(LiquidColor.tinta700)
+                line.font(.system(size: subPillTextoSize)).foregroundStyle(LiquidColor.tinta700)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .padding(.leading, EntrenarHubMetrics.subPillPaddingLeading)
