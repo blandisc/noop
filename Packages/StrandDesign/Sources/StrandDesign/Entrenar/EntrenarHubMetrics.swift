@@ -26,9 +26,18 @@ public enum EntrenarHubMetrics {
     /// font-weight:700}`). Ronda 2 · G11: vivía inline en `EntrenarHubSemana`, movido aquí (Grotesk
     /// sí acepta `relativeTo:` vía `.custom`, a diferencia de los tamaños SF de arriba).
     public static let teselaLabel = InstrumentoType.grotesk(9.5, weight: .bold, relativeTo: .caption2)
-    /// El blanco táctil de una tesela — 44 pt (Ronda 2 · O3), el dibujo se queda en `teselaSize`
-    /// (26) — mismo patrón que `EntrenarCapsulaPuerta` (dibujo chico, toque HIG).
+    /// El blanco táctil VERTICAL de una tesela — 44 pt (Ronda 2 · O3), el dibujo se queda en
+    /// `teselaSize` (26) — mismo patrón que `EntrenarCapsulaPuerta` (dibujo chico, toque HIG). Sin
+    /// vecino arriba/abajo dentro de la fila, el eje vertical sí llega a los 44 exclusivos.
     public static let teselaToque: CGFloat = 44
+    /// Ronda 3 (anexo Grok r2): el inset HORIZONTAL del toque NO puede igualar al vertical — a 44×44
+    /// simétrico, las 7 teselas (pitch 26 + gap `semRowGap` 8 = 34 pt centro a centro) se traslapan
+    /// ~10 pt y el canto del toque cae en el día VECINO (HOY abre rutina, el vecino abre el editor —
+    /// un misfire real). El techo geométrico SIN traslape es el pitch mismo: inset 4 por lado da
+    /// 26+2×4 = 34 pt de ancho de toque, exactamente el pitch — los vecinos se TOCAN, nunca se
+    /// invaden. 44 horizontales exclusivos son imposibles en esta fila sin romper el mock (que fija
+    /// las 7 teselas a 26×26 con gap 8).
+    public static let teselaToqueInsetH: CGFloat = 4
 
     // MARK: DOSIS — el riel de series por músculo (mock `.dtrack`/`.drow`)
 
