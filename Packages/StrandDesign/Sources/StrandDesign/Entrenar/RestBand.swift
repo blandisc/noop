@@ -1,13 +1,13 @@
 import SwiftUI
 
-// MARK: - RestBand — la banda de descanso (FER-83 · E2)
+// MARK: - RestBand — la banda de descanso (FER-83 · E2 · FER-167)
 //
 // El descanso NO es una tarjeta: es una banda de la Matriz, con filo arriba y filo abajo, que ocupa
 // el ancho de la pantalla. Dos formas de contar, las dos honestas:
 //
-//   • Por pulso (con reloj): el numeral dice cuánto FALTA en latidos («te faltan 18 lpm»), el riel
-//     dibuja dónde va tu pulso contra el objetivo, y la nota confiesa las dos reglas del motor: a
-//     5 lpm te dice «casi», y a los 2:30 te suelta aunque no baje.
+//   • Por pulso (con reloj): el headline dice LA META («descanso · baja a 108»), el numeral es el
+//     pulso vivo («112 ♥ ahora · va bajando»), el riel dibuja la caída contra el objetivo, y a
+//     ≤ 5 lpm aparece la cápsula «CASI»; a los 2:30 el motor te suelta aunque no baje.
 //   • Reloj fijo (sin pulso): el numeral es el tiempo («1:18 de 2:30») en tinta, sin inventar un
 //     número de latidos ni un color de fisiología que no se midió.
 //
@@ -177,33 +177,50 @@ public struct RestBand<Next: View>: View {
     /// GRANDE de Foco (revisión ronda 1, hallazgo grave).
     private var headlineSize: CGFloat { large ? EntrenarMetrics.focusRestValue : 40 }
 
-    /// El numeral grande. Con pulso, el dato es cuánto falta EN LATIDOS; sin pulso, el tiempo.
+    /// Banda de honestidad del motor: a ≤ N lpm de la meta se pinta la cápsula «CASI».
+    /// Misma cifra que documenta el encabezado del archivo y `RestReadinessRule.defaultBandBPM`;
+    /// StrandDesign no importa Analytics, así que vive aquí como constante nombrada.
+    private static var almostBandBPM: Int { 5 }
+
+    /// El numeral grande. Con pulso: meta («rest · down to N») + pulso vivo; sin pulso, el tiempo.
     @ViewBuilder private var headline: some View {
         switch mode {
-        case .heartRate(let remaining, _, _):
+        case .heartRate(let remaining, let target, let current):
             if isReady {
                 Text("Ready")
                     .font(InstrumentoType.grotesk(headlineSize, weight: .bold, relativeTo: .largeTitle))
                     .foregroundStyle(theme.positiveText)
-            } else if isAlmost {
-                // La banda de honestidad del motor (5 lpm) tiene su propia palabra, la que la nota
-                // promete: sin esto, «casi» era un parámetro que nadie leía y una promesa incumplida.
-                Text("Almost")
-                    .font(InstrumentoType.grotesk(headlineSize, weight: .bold, relativeTo: .largeTitle))
-                    .foregroundStyle(OKLab.darkened(theme.dataHeart, toContrast: 4.5, against: theme.paper))
-            } else if let remaining {
-                // Una sola frase, no tres fragmentos: partida en «te faltan» + N + «lpm más» decía
-                // dos veces lo mismo y no se puede reordenar al traducir.
-                (Text("you need").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                 + Text(verbatim: " ")
-                 + Text(verbatim: "\(remaining)")
-                    .font(InstrumentoType.groteskNumber(headlineSize, weight: .bold, relativeTo: .largeTitle))
-                    .foregroundStyle(theme.dataHeart)
-                 + Text(verbatim: " ")
-                 + Text("bpm").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary))
-                    .multilineTextAlignment(large ? .center : .leading)
-                    .fixedSize(horizontal: false, vertical: true)
+            } else if let current {
+                // FER-167: la meta + el pulso vivo (mock P4). «te faltan N bpm» muere en iPhone.
+                VStack(alignment: large ? .center : .leading, spacing: CenitMetrics.space1) {
+                    HStack(spacing: CenitMetrics.space2) {
+                        Text("rest · down to \(target)")
+                            .instrumentoOverline()
+                            .foregroundStyle(theme.inkTertiary)
+                        if showsAlmostCapsule(remaining: remaining) {
+                            // Cápsula «CASI»: reusa `isAlmost` del caller y/o remaining ≤ almostBandBPM.
+                            Text("Almost")
+                                .font(StrandFont.caption.weight(.semibold))
+                                .textCase(.uppercase)
+                                .foregroundStyle(theme.inkSecondary)
+                                .padding(.horizontal, CenitMetrics.space2)
+                                .padding(.vertical, CenitMetrics.space1)
+                                .background(theme.paper, in: Capsule())
+                                .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                        }
+                    }
+                    (Text(verbatim: "\(current)")
+                        .font(InstrumentoType.groteskNumber(headlineSize, weight: .bold, relativeTo: .largeTitle))
+                        .foregroundStyle(theme.dataHeart)
+                     + Text(verbatim: " ")
+                     + Text("♥ now · dropping")
+                        .font(StrandFont.subhead)
+                        .foregroundStyle(theme.inkSecondary))
+                        .multilineTextAlignment(large ? .center : .leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             } else {
+                // Sin Watch / sin lectura: no inventar un numeral de pulso.
                 Text("Waiting for your pulse")
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
             }
@@ -216,6 +233,13 @@ public struct RestBand<Next: View>: View {
                 .multilineTextAlignment(large ? .center : .leading)
                 .fixedSize(horizontal: false, vertical: true)
         }
+    }
+
+    /// «CASI» cuando el caller ya marcó `isAlmost`, o cuando `remainingBpm` cae en la banda.
+    private func showsAlmostCapsule(remaining: Int?) -> Bool {
+        if isAlmost { return true }
+        guard let remaining else { return false }
+        return remaining <= Self.almostBandBPM
     }
 
     /// El riel: tinta de fondo, punto de pulso en rosa y un tick para el OBJETIVO. Sin pulso el riel
@@ -273,18 +297,18 @@ public struct RestBand<Next: View>: View {
 #if DEBUG
 #Preview("RestBand · por pulso") {
     VStack(spacing: 28) {
+        // Lejos de la meta: meta + pulso vivo, sin cápsula.
         RestBand(kicker: "REST · SET 1 → 2",
-                 mode: .heartRate(remainingBpm: 18, targetBpm: 110, currentBpm: 128),
+                 mode: .heartRate(remainingBpm: 18, targetBpm: 108, currentBpm: 126),
                  trailing: "1:18",
                  note: "at 5 bpm I say «almost» · at 2:30 I let you go even if it hasn't dropped",
                  onSkip: {})
+        // CASI: remaining ≤ almostBandBPM → cápsula junto a la meta.
         RestBand(kicker: "REST · SET 2 → 3",
-                 mode: .heartRate(remainingBpm: 4, targetBpm: 110, currentBpm: 114),
+                 mode: .heartRate(remainingBpm: 4, targetBpm: 108, currentBpm: 112),
                  trailing: "1:52", isAlmost: true, onSkip: {})
-        RestBand(kicker: "REST · SET 3 → 4",
-                 mode: .heartRate(remainingBpm: 0, targetBpm: 110, currentBpm: 108),
-                 trailing: "2:04", isReady: true, onSkip: {})
-        RestBand(kicker: "REST", mode: .heartRate(remainingBpm: nil, targetBpm: 110, currentBpm: nil),
+        // Sin Watch: no se inventa un numeral de pulso.
+        RestBand(kicker: "REST", mode: .heartRate(remainingBpm: nil, targetBpm: 108, currentBpm: nil),
                  trailing: "0:12")
     }
     .padding(24)
