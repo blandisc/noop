@@ -49196,7 +49196,7 @@
       }
     },
     "active" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -49207,7 +49207,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "activas"
+            "value" : "activa"
           }
         }
       }
@@ -64230,19 +64230,19 @@
         }
       }
     },
-    "This superset's rounds don't all match yet — this will make every round the same." : {
+    "This superset's rounds don't all match yet · this will make every round the same." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "This superset's rounds don't all match yet — this will make every round the same."
+            "value" : "This superset's rounds don't all match yet · this will make every round the same."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Las rondas de esta superserie aún no coinciden — esto igualará todas."
+            "value" : "Las rondas de esta superserie aún no coinciden · esto igualará todas."
           }
         }
       }

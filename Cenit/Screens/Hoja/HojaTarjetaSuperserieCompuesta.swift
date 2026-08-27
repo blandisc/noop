@@ -24,7 +24,22 @@ struct HojaTarjetaSuperserieCompuesta: View {
         members.map { StrengthDisplay.name(sheet.items[$0].exercise) }.joined(separator: " ＋ ")
     }
 
-    private var rondas: Int { sheet.items[members[0]].re.sets.count }
+    /// N3 (ronda 3, moderado): rondas son series de TRABAJO — un calentamiento no cuenta (mentía
+    /// «6 rounds» cuando en realidad eran 3 rondas + una rampa de 3 pasos).
+    private var rondas: Int { sheet.items[members[0]].re.sets.filter { $0.kind == .work }.count }
+
+    /// N1 (ronda 3, bloqueante): `ForEach(members, id: \.self)` identificaba por POSICIÓN — tras un
+    /// swap, la vista de «posición 3» seguía viva (misma identidad) pero su clausura recomputaba
+    /// `memberId` con el ejercicio que acababa de ATERRIZAR ahí, no el que el dedo seguía
+    /// arrastrando. El `dragID` capturado por el gesto pasaba a ser otro EN CADA EVENTO → el par se
+    /// intercambiaba sin parar (misma clase que R2/D2: autosalvado, corrompía la rutina). Fix:
+    /// identidad por el id REAL del ejercicio — la vista «sigue» a su contenido cuando se mueve, en
+    /// vez de que el contenido cambie bajo una vista fija (mismo patrón que las series de
+    /// `HojaTarjetaEjercicio.tabla`, `ForEach(..., id: \.element.id)`).
+    private struct MemberSlot: Identifiable { let idx: Int; let id: String }
+    private var memberSlots: [MemberSlot] {
+        members.map { MemberSlot(idx: $0, id: sheet.items[$0].id) }
+    }
 
     /// R15 (QA D14): «N rondas · descanso al cerrar cada ronda · M:SS» — el orden y la copia EXACTA
     /// del mock (`hoja-pantallas.html` P1 `.ss2`, pie del footer).
@@ -39,8 +54,8 @@ struct HojaTarjetaSuperserieCompuesta: View {
         // corriendo, no hay «···» — nada que mutar bajo el candado.
         let onMenu: (() -> Void)? = sheet.locked ? nil : { sheet.menuExerciseIndex = members[0] }
         HojaTarjetaSuperserie(nombre: nombre, pie: pie, onMenu: onMenu) {
-            ForEach(members, id: \.self) { idx in
-                filaMiembro(idx)
+            ForEach(memberSlots) { slot in
+                filaMiembro(slot.idx)
             }
         }
         .liquidEntrada()
@@ -62,7 +77,10 @@ struct HojaTarjetaSuperserieCompuesta: View {
     private func filaMiembro(_ idx: Int) -> some View {
         let item = sheet.items[idx]
         let type = item.exercise.type
-        let set = item.re.sets.first
+        // N3: la fila muestra la PRIMERA serie de TRABAJO — nunca la rampa, que si existe vive
+        // antes (posición 0..2) por cómo la inserta `addWarmupRamp`.
+        let workSi = sheet.firstWorkIndex(idx)
+        let set = workSi.map { item.re.sets[$0] }
         // R11 (QA D7): `relativeTo` en las tres — cero fuentes fixedSize en texto de lectura.
         return HStack(alignment: .firstTextBaseline, spacing: HojaMetrics.filaGap) {
             Text(StrengthDisplay.name(item.exercise))
@@ -94,15 +112,17 @@ struct HojaTarjetaSuperserieCompuesta: View {
         .overlay {
             let re = item.re
             let memberId = re.id
+            // N3: se edita/enfoca la primera serie de TRABAJO, no la posición 0 a secas.
+            let editSi = workSi ?? 0
             // R7(a): señal de celda activa (mismo patrón que la tarjeta sola).
             let activeField: RoutineSheet.EditorCell.Field? =
-                (sheet.activeCell?.idx == idx && sheet.activeCell?.si == 0) ? sheet.activeCell?.field : nil
+                (sheet.activeCell?.idx == idx && sheet.activeCell?.si == editSi) ? sheet.activeCell?.field : nil
             HStack(spacing: HojaMetrics.filaGap) {
                 Color.clear.frame(maxWidth: .infinity)
-                tapZone(sheet.showsWeight(type) ? { sheet.beginEditing(.init(idx: idx, si: 0, field: .weight)) } : nil,
+                tapZone(sheet.showsWeight(type) ? { sheet.beginEditing(.init(idx: idx, si: editSi, field: .weight)) } : nil,
                         active: activeField == .weight)
                     .frame(width: HojaMetrics.colPesoEdicion)
-                tapZone(sheet.showsReps(type) ? { sheet.beginEditing(.init(idx: idx, si: 0, field: .repsFloor)) } : nil,
+                tapZone(sheet.showsReps(type) ? { sheet.beginEditing(.init(idx: idx, si: editSi, field: .repsFloor)) } : nil,
                         active: activeField == .repsFloor)
                     .frame(width: HojaMetrics.colRepsEdicion)
                 Color.clear.frame(width: HojaMetrics.colMarcaEdicion)
@@ -150,8 +170,11 @@ struct HojaTarjetaSuperserieCompuesta: View {
             sheet.breakSuperset(members[0])
         })
         for idx in members {
+            // N3 (decisión): sin «Add warm-up» aquí — la tarjeta de superserie no tiene dónde
+            // mostrar una rampa (una fila por miembro, atada a rondas sincronizadas). Ver la nota
+            // en `RoutineSheetLogic.exerciseMenuItems`.
             rows.append(.init(StrengthDisplay.name(sheet.items[idx].exercise), systemImage: nil,
-                              children: sheet.exerciseMenuItems(idx)))
+                              children: sheet.exerciseMenuItems(idx, includeWarmup: false)))
         }
         return rows
     }

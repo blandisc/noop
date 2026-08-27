@@ -19,7 +19,9 @@ enum HojaCabecera {
             BackButton(role: .close, theme: sheet.theme) { sheet.back() }
                 .padding(.leading, -2)
             Spacer()
-            if sheet.dirty {
+            // N4 (ronda 3): `undo()` ya corta bajo candado (R1) — el botón tampoco se ofrece, para
+            // no dejar un control que toca y no hace nada.
+            if sheet.dirty, !sheet.locked {
                 Button { sheet.undo() } label: {
                     Text(String(localized: "Undo")).font(StrandFont.body).foregroundStyle(sheet.theme.ink)
                         .frame(minHeight: 44).contentShape(Rectangle())

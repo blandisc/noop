@@ -33,13 +33,15 @@ extension RoutineSheet {
     }
 
     /// C2 (tarjeta única de superserie, sin A1/A2): el mock muestra UNA fila por miembro, no una
-    /// por ronda — la prescripción se edita de una vez y se refleja a TODAS las rondas de ese
-    /// miembro, para que «N rondas» nunca quede con datos huérfanos en filas que ya no se ven. Las
-    /// series SOLO (fuera de superserie) no pasan por aquí — cada una sigue siendo independiente.
+    /// por ronda — la prescripción se edita de una vez y se refleja a TODAS las rondas de TRABAJO
+    /// de ese miembro, para que «N rondas» nunca quede con datos huérfanos en filas que ya no se
+    /// ven. N3 (ronda 3): un calentamiento (si el miembro llegó con rampa desde antes de agruparse)
+    /// NO es una ronda — el espejo lo salta, nunca lo pisa ni lo clona. Las series SOLO (fuera de
+    /// superserie) no pasan por aquí — cada una sigue siendo independiente.
     func mirrorAcrossRoundsIfSuperset(idx: Int, si: Int) {
-        guard RoutineSetEditing.inSuperset(items.map(\.re), idx) else { return }
+        guard RoutineSetEditing.inSuperset(items.map(\.re), idx), items[idx].re.sets[si].kind == .work else { return }
         let src = items[idx].re.sets[si]
-        for i in items[idx].re.sets.indices where i != si {
+        for i in items[idx].re.sets.indices where i != si && items[idx].re.sets[i].kind == .work {
             items[idx].re.sets[i].weightKg = src.weightKg
             items[idx].re.sets[i].reps = src.reps
             items[idx].re.sets[i].repsRangeTop = src.repsRangeTop
@@ -56,9 +58,12 @@ extension RoutineSheet {
         return true
     }
 
+    /// N3: compara solo series de TRABAJO — un calentamiento (40-80 % rampeado, distinto por
+    /// diseño) no debe disparar el confirm de «rondas desiguales» en cada edición.
     func roundsAreEven(_ idx: Int) -> Bool {
-        guard let first = items[idx].re.sets.first else { return true }
-        return items[idx].re.sets.allSatisfy {
+        let work = items[idx].re.sets.filter { $0.kind == .work }
+        guard let first = work.first else { return true }
+        return work.allSatisfy {
             $0.weightKg == first.weightKg && $0.reps == first.reps && $0.repsRangeTop == first.repsRangeTop
         }
     }

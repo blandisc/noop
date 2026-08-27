@@ -135,7 +135,11 @@ extension RoutineSheet {
         try? await repo.deleteRoutine(id: r.id)
     }
 
+    /// N4 (ronda 3, moderado): el candado se había quedado a medias — «Deshacer» podía revertir Y
+    /// PERSISTIR la prescripción de una rutina con sesión viva corriéndola. Ahora corta igual que
+    /// toda mutación (R1).
     func undo() {
+        guard !locked else { return }
         items = itemsSnapshot
         dirty = false
         refreshTint()
@@ -391,12 +395,21 @@ extension RoutineSheet {
                           hrReference: re.hrRestReference, hrValue: re.hrRestValue)
     }
 
-    /// «＋ RONDA» (C2): agrega una ronda a TODOS los miembros del grupo a la vez, sembrada con la
-    /// prescripción visible de cada uno (set 0 — el que la tarjeta muestra y edita).
+    /// N3 (ronda 3, moderado): «rondas» de una superserie son series de TRABAJO — un calentamiento
+    /// (posible si un ejercicio con rampa se agrupó vía «Superserie con el siguiente») no cuenta
+    /// como ronda, no se muestra como LA prescripción, ni se pisa/clona al espejar o al ＋/− ronda.
+    /// El índice de la primera serie de trabajo — la que la tarjeta de superserie muestra y edita
+    /// (nunca la posición 0 a secas: la rampa vive ahí cuando existe).
+    func firstWorkIndex(_ idx: Int) -> Int? {
+        items[idx].re.sets.firstIndex(where: { $0.kind == .work })
+    }
+
+    /// «＋ RONDA» (C2): agrega una ronda de TRABAJO a TODOS los miembros del grupo a la vez,
+    /// sembrada con la prescripción visible de cada uno (su primera serie de trabajo).
     func addRound(members: [Int]) {
         guard !locked, members.allSatisfy({ items.indices.contains($0) }) else { return }
         for idx in members {
-            let seed = items[idx].re.sets.first
+            let seed = items[idx].re.sets.first { $0.kind == .work }
             items[idx].re.sets.append(RoutineSet(position: items[idx].re.sets.count, kind: .work,
                                                  reps: seed?.reps, weightKg: seed?.weightKg,
                                                  repsRangeTop: seed?.repsRangeTop))
@@ -405,12 +418,15 @@ extension RoutineSheet {
         dirty = true
     }
 
-    /// Quita la ÚLTIMA ronda de todos los miembros a la vez (mantiene sus arreglos de series del
-    /// mismo tamaño). No baja de 1 ronda.
+    /// Quita la ÚLTIMA ronda de TRABAJO de todos los miembros a la vez. No baja de 1 ronda de
+    /// trabajo (la rampa, si existe, no cuenta para ese piso ni se toca).
     func removeLastRound(members: [Int]) {
-        guard !locked, members.allSatisfy({ items.indices.contains($0) && items[$0].re.sets.count > 1 }) else { return }
+        guard !locked, members.allSatisfy({
+            items.indices.contains($0) && items[$0].re.sets.filter({ $0.kind == .work }).count > 1
+        }) else { return }
         for idx in members {
-            withAnimation(.snappy) { _ = items[idx].re.sets.removeLast() }
+            guard let lastWork = items[idx].re.sets.lastIndex(where: { $0.kind == .work }) else { continue }
+            withAnimation(.snappy) { _ = items[idx].re.sets.remove(at: lastWork) }
         }
         activeCell = nil
         dirty = true
@@ -522,10 +538,18 @@ extension RoutineSheet {
 
     // MARK: - «···» del ejercicio (A9: solo bloque edición)
 
-    func exerciseMenuItems(_ idx: Int) -> [PaperMenuItem] {
+    /// N3 (ronda 3, moderado — decisión): `includeWarmup` sale en `false` SOLO desde el submenú por
+    /// miembro de una superserie (`HojaTarjetaSuperserieCompuesta.menuItems`). La tarjeta de
+    /// superserie enseña UNA fila por miembro atada a «N rondas» sincronizadas entre todos; una
+    /// rampa de calentamiento no tiene dónde vivir ahí (no hay fila de sobra que la muestre, y
+    /// contarla como ronda ya mentía «6 rounds»). Se retira la ENTRADA, no la capacidad: un
+    /// ejercicio con rampa que se agrupa después vía «Superserie con el siguiente» la conserva
+    /// intacta (los filtros por `kind == .work` de arriba la protegen), y deshacer la superserie
+    /// la deja editable como antes, tarjeta sola.
+    func exerciseMenuItems(_ idx: Int, includeWarmup: Bool = true) -> [PaperMenuItem] {
         let item = items[idx]
         var rows: [PaperMenuItem] = []
-        if !hasWarmups(idx) {
+        if includeWarmup, !hasWarmups(idx) {
             rows.append(.init(String(localized: "Add warm-up"), systemImage: "flame") {
                 addWarmupRamp(idx)
             })

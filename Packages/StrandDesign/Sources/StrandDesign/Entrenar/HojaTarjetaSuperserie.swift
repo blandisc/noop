@@ -85,7 +85,9 @@ public struct HojaTarjetaSuperserie<Filas: View>: View {
         .padding(.horizontal, Self.padH)
         .background { cristal }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(Text(verbatim: "Superserie, \(nombre)"))
+        // N5 (ronda 3, menor): vía catálogo — reusa la MISMA clave que `SupersetTag`
+        // (`RoutineSetEditing.swift`) en vez de hardcodear «Superserie» en español.
+        .accessibilityLabel(Text(verbatim: "\(String(localized: "Superset")), \(nombre)"))
     }
 
     // MARK: - Header

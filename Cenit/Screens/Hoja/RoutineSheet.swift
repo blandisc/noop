@@ -174,7 +174,7 @@ struct RoutineSheet: View {
             isPresented: Binding(get: { pendingMirror != nil }, set: { if !$0 { pendingMirror = nil } }),
             title: String(localized: "Equalize all rounds?"),
             context: String(localized: "ROUTINE"),
-            message: String(localized: "This superset's rounds don't all match yet — this will make every round the same."),
+            message: String(localized: "This superset's rounds don't all match yet · this will make every round the same."),
             actions: [
                 .init(String(localized: "Keep as is"), role: .primary),
                 .init(String(localized: "Equalize"), role: .destructive) { confirmPendingMirror() }
