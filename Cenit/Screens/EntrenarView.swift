@@ -95,7 +95,10 @@ private struct EntrenarLanding: View {
     @State private var routines: [Routine] = []
     @State private var exerciseCounts: [String: Int] = [:]
     /// Exercises whose earned raise seeds today's session (FER-G): name + proposed kg for the hero's «Hoy subes» line.
-    @State private var raisesToday: [(name: String, kg: Double)] = []
+    /// Ronda 2 · D1: conserva `fromKg` además de `toKg` — la píldora del héroe sigue mostrando el
+    /// peso NUEVO (`toKg`), pero la tile «Subidas listas» del mosaico necesita el ESCALÓN
+    /// (`toKg − fromKg`, mock «▲ 2.5 kg»).
+    @State private var raisesToday: [(name: String, fromKg: Double, toKg: Double)] = []
     /// The verdict `todaySlots` were seeded with; `nil` until the first load. Guards «Empezar» from
     /// handing the session a table built under a verdict that has since changed (FER-82).
     @State private var slotsAdvice: TrainingRegulation.Advice?
@@ -381,7 +384,10 @@ private struct EntrenarLanding: View {
     /// forma» que aloja es el EXISTENTE (`otraFormaPliegue`, sus cuatro puertas intactas).
     private func heroeV18(_ r: Routine) -> some View {
         EntrenarHubHeroe(
-            tono: (region(name: r.name)?.family ?? .push).tono,
+            // Ronda 2 · G13: `routineCategory[r.id]` directo — `load()` ya la llena por id; resolver
+            // por NOMBRE (`region(name:)`) es un paso de más que además puede fallar si dos rutinas
+            // comparten nombre. Mismo respaldo `.push` que el resto de la pantalla.
+            tono: (routineCategory[r.id]?.family ?? .push).tono,
             routineName: r.name,
             meta: sesionMetaTexto(r.id),
             exerciseNames: todaySlotsExerciseNames,
@@ -471,10 +477,21 @@ private struct EntrenarLanding: View {
 
     // MARK: - PAR (v18) — «Subidas listas» de `raisesToday`; «Descanso real» SIEMPRE nil (F2).
 
+    /// Ronda 2 · D1: el ESCALÓN (`toKg − fromKg`), no el peso nuevo — mock «▲ 2.5 kg».
+    /// `incrementNumber` (no `weightNumber`): es un incremento, conserva su decimal en las dos
+    /// unidades (`StrengthDisplay` ya documenta por qué redondear un salto de progresión miente).
+    /// Sin escalón real (`delta <= 0` — primera vez, o `toKg` no superó `fromKg`) la fila muestra el
+    /// peso nuevo, SIN «▲» (el spec es explícito: el triángulo es exclusivo del escalón).
     private var parRaises: [EntrenarHubPar.Subida] {
         raisesToday.map { raise in
-            EntrenarHubPar.Subida(id: raise.name, name: raise.name,
-                                  deltaText: StrengthDisplay.weight(raise.kg, system: unitSystem))
+            let delta = raise.toKg - raise.fromKg
+            guard delta > 0 else {
+                return EntrenarHubPar.Subida(id: raise.name, name: raise.name,
+                                             valueText: StrengthDisplay.weight(raise.toKg, system: unitSystem),
+                                             isStep: false)
+            }
+            let valueText = "\(StrengthDisplay.incrementNumber(delta, system: unitSystem)) \(StrengthDisplay.weightUnit(unitSystem))"
+            return EntrenarHubPar.Subida(id: raise.name, name: raise.name, valueText: valueText, isStep: true)
         }
     }
 
@@ -487,11 +504,14 @@ private struct EntrenarLanding: View {
 
     // MARK: - MARCAS (v18) — el PR más reciente + cuántos cayeron este mes + el PR anterior.
 
+    /// Ronda 2 · O1: minúsculas — mock «Sentadilla · peso máx» (línea 317). Claves NUEVAS, en
+    /// minúsculas, distintas de «Max weight»/«Peso máximo» (esas siguen usándose en Resumen de
+    /// sesión con su propia mayúscula inicial — no se re-litiga esa pantalla).
     private static func prMetricLabel(_ m: PRMetric) -> String {
         switch m {
-        case .maxWeight: return String(localized: "Max weight")
-        case .maxReps:   return String(localized: "Most reps")
-        case .maxVolume: return String(localized: "Best set")
+        case .maxWeight: return String(localized: "max weight")
+        case .maxReps:   return String(localized: "most reps")
+        case .maxVolume: return String(localized: "best set")
         }
     }
 
@@ -509,19 +529,27 @@ private struct EntrenarLanding: View {
 
     private var marcasData: EntrenarHubMarcasVolumen.Marca? {
         guard let latestPR else { return nil }
-        let monthLabel = Calendar.current.shortMonthSymbols[Calendar.current.component(.month, from: Date()) - 1].lowercased()
+        let cal = Calendar.current
+        let monthLabel = cal.shortMonthSymbols[cal.component(.month, from: Date()) - 1].lowercased()
         let (valueText, unitText) = prValueText(latestPR)
         var previousText: String?
         if let previousPR {
             let (prevValue, prevUnit) = prValueText(previousPR)
             let prevText = prevUnit.map { "\(prevValue) \($0)" } ?? prevValue
-            let daysAgo = max(0, Int((Date().timeIntervalSince1970 - Double(previousPR.ts)) / 86_400))
+            // Ronda 2 · G12: días CALENDARIO, no ÷86,400 — cerca de medianoche esa división daba
+            // «hace 0 días» para un PR de ayer (mismo criterio que `historialGapDays`).
+            let prevDay = cal.startOfDay(for: Date(timeIntervalSince1970: Double(previousPR.ts)))
+            let today = cal.startOfDay(for: Date())
+            let daysAgo = max(0, cal.dateComponents([.day], from: prevDay, to: today).day ?? 0)
             previousText = daysAgo == 1
                 ? String(localized: "before \(prevText) · 1 day ago")
                 : String(localized: "before \(prevText) · \(daysAgo) days ago")
         }
         return EntrenarHubMarcasVolumen.Marca(
-            countThisMonth: personalRecordCountThisMonth, monthLabel: monthLabel,
+            // Ronda 2 · O2: «Marcas · 0 en {mes}» es alcanzable (PR vigente de un mes anterior) —
+            // 0 este mes ⇒ `countThisMonth: nil`, la regla dice solo «MARCAS» (decisión registrada).
+            countThisMonth: personalRecordCountThisMonth > 0 ? personalRecordCountThisMonth : nil,
+            monthLabel: monthLabel,
             valueText: valueText, unitText: unitText,
             exerciseAndMetric: "\(latestPRExerciseName) · \(Self.prMetricLabel(latestPR.metric))",
             previousText: previousText)
@@ -537,31 +565,49 @@ private struct EntrenarLanding: View {
         return TrainingWeeks.volumeBuckets(sessions: raw, weeks: 8, now: Date(), calendar: Calendar.current)
     }
 
+    /// Ronda 2 · G5: con 3+ sesiones históricas pero 0 esta semana (p. ej. lunes, apenas arrancando),
+    /// el numeral describía la semana ACTUAL — «0.0 t» fabricado. El numeral, el delta y la barra
+    /// acentuada describen ahora la ÚLTIMA semana CON sesiones (la actual si tiene ≥1; si no, la
+    /// última cubeta con `sessionCount ≥ 1`). El delta solo se muestra cuando esa semana activa ES
+    /// la actual — `TrainingWeeks.volumeDeltaPercent` compara «última semana completa vs. tu
+    /// promedio reciente», un delta desalineado con el numeral (de una semana más vieja) mentiría.
     private var volumenData: EntrenarHubMarcasVolumen.Volumen? {
         let buckets = volumenBuckets
         let totalSessions = buckets.reduce(0) { $0 + $1.sessionCount }
-        guard totalSessions >= 3, let current = buckets.last else { return nil }
+        guard totalSessions >= 3, let activeIndex = buckets.lastIndex(where: { $0.sessionCount > 0 }) else { return nil }
+        let active = buckets[activeIndex]
         let maxKg = buckets.map(\.volumeKg).max() ?? 0
         let bars = buckets.map { maxKg > 0 ? $0.volumeKg / maxKg : 0 }
-        return EntrenarHubMarcasVolumen.Volumen(tons: current.volumeKg / 1000,
-                                                deltaPercent: TrainingWeeks.volumeDeltaPercent(buckets: buckets),
-                                                bars: bars)
+        let delta = active.isCurrent ? TrainingWeeks.volumeDeltaPercent(buckets: buckets) : nil
+        return EntrenarHubMarcasVolumen.Volumen(tons: active.volumeKg / 1000, deltaPercent: delta,
+                                                bars: bars, accentIndex: activeIndex)
     }
 
     // MARK: - CONSTANCIA (v18) — 13 semanas × 3 huecos, la MISMA familia por sesión que el calendario
     // de `WorkoutHistoryScreen` (`routineCategory[routineId]?.family`, respaldo `.push`).
+
+    /// Huecos por semana en la rejilla — `TrainingWeeks.consistency(slotsPerWeek:)` usa el mismo tope.
+    private static let constanciaSlotsPerWeek = 3
 
     private var consistencyWeeks: [TrainingWeeks.ConsistencyWeek] {
         let raw = sessions.compactMap { s -> (ts: Double, family: RoutineRegion?)? in
             guard s.endTs != nil else { return nil }
             return (ts: Double(s.startTs), family: s.routineId.flatMap { routineCategory[$0] })
         }
-        return TrainingWeeks.consistency(sessions: raw, weeks: 13, slotsPerWeek: 3, now: Date(), calendar: Calendar.current)
+        return TrainingWeeks.consistency(sessions: raw, weeks: 13, slotsPerWeek: Self.constanciaSlotsPerWeek,
+                                         now: Date(), calendar: Calendar.current)
     }
 
+    /// Ronda 2 · G3: `week.sessions` (de `TrainingWeeks.consistency`) es literalmente «la familia de
+    /// cada sesión real de esa semana» — un `nil` AHÍ significa «sesión sin familia clasificable»
+    /// (p. ej. «Rápido»), NUNCA «sin sesión». El hueco VACÍO es que el arreglo sea más corto que
+    /// `constanciaSlotsPerWeek`. Antes `$0?.family` colapsaba los dos casos en el mismo `nil` y una
+    /// sesión sin familia desaparecía de la rejilla — se rellena aquí a los 3 huecos explícitos.
     private var constanciaSemanas: [EntrenarHubConstancia.Semana] {
         consistencyWeeks.map { week in
-            EntrenarHubConstancia.Semana(huecos: week.sessions.map { $0?.family }, isCurrent: week.isCurrent)
+            var huecos = week.sessions.map { EntrenarHubConstancia.Semana.Hueco.sesion($0?.family) }
+            while huecos.count < Self.constanciaSlotsPerWeek { huecos.append(.vacio) }
+            return EntrenarHubConstancia.Semana(huecos: huecos, isCurrent: week.isCurrent)
         }
     }
 
@@ -584,7 +630,7 @@ private struct EntrenarLanding: View {
     private var constanciaTodaySlot: (week: Int, slot: Int)? {
         guard let lastIndex = consistencyWeeks.indices.last else { return nil }
         let count = consistencyWeeks[lastIndex].sessions.count
-        guard count < 3 else { return nil }
+        guard count < Self.constanciaSlotsPerWeek else { return nil }
         return (week: lastIndex, slot: count)
     }
 
@@ -899,9 +945,11 @@ private struct EntrenarLanding: View {
             + unit.font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
     }
 
-    /// «Hoy subes Press banca · 82,5 kg y Press militar · 26 kg» — the names+loads in the raise green.
+    /// «Hoy subes: Press banca · 82,5 kg y Press militar · 26 kg» — the names+loads in the raise
+    /// green. La píldora sigue mostrando el peso NUEVO (`toKg`) — el escalón es cosa de la tile
+    /// «Subidas listas» del mosaico (Ronda 2 · D1), no del héroe.
     private var raiseText: Text {
-        let parts = raisesToday.map { "\($0.name) · \(StrengthDisplay.weight($0.kg, system: unitSystem))" }
+        let parts = raisesToday.map { "\($0.name) · \(StrengthDisplay.weight($0.toKg, system: unitSystem))" }
         // Grotesk RELATIVO al subhead, igual que su fila hermana: las dos pueden estar en pantalla a
         // la vez y con Dynamic Type una crecía y la otra se quedaba clavada en 13 pt.
         let strong = parts.map {
@@ -911,7 +959,8 @@ private struct EntrenarLanding: View {
                 // `positiveText` es el MISMO verde, oscurecido lo justo para llegar a 4.5:1.
                 .foregroundStyle(theme.positiveText)
         }
-        var t = Text("Today you raise") + Text(verbatim: " ")
+        // Ronda 2 · O1: dos puntos — mock «Hoy subes: sentadilla · 82.5 kg» (línea 254).
+        var t = Text("Today you raise") + Text(verbatim: ": ")
         for (i, s) in strong.enumerated() {
             if i > 0 { t = t + Text(verbatim: " · ") }
             t = t + s
@@ -1464,7 +1513,7 @@ private struct EntrenarLanding: View {
         // today's routine is loaded (bounded), with the same catalog + override + «la última vez» resolution
         // «Rutina de hoy» uses, so the prefill matches.
         var slots: [StrengthSessionModel.PlanSlot] = []
-        var raisingToday: [(name: String, kg: Double)] = []
+        var raisingToday: [(name: String, fromKg: Double, toKg: Double)] = []
         // The verdict this whole pass was built with, published together with the slots it seeded.
         var passAdvice = repo.trainingAdvice
         if let tid = WeeklySplit.todayRoutineId(split: splitMap, todayWeekday: todayWeekday) {
@@ -1482,7 +1531,7 @@ private struct EntrenarLanding: View {
             raisingToday = seeded.compactMap { slot in
                 guard let raise = slot.raise, !raise.waiting else { return nil }
                 let name = slot.exercise.map(StrengthDisplay.name) ?? slot.re.exerciseId
-                return (name: name, kg: raise.toKg)
+                return (name: name, fromKg: raise.fromKg, toKg: raise.toKg)
             }
         }
         let recent = (try? await store.recentSessions(limit: 200)) ?? []
