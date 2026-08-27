@@ -89,18 +89,11 @@ struct EntrenarHubSemana: View {
             .frame(width: EntrenarHubMetrics.teselaSize, height: EntrenarHubMetrics.teselaSize)
         }
         .buttonStyle(.liquidPress)
-        // Ronda 2 · O3 + Ronda 3 (anexo Grok r2, misfire real): el DIBUJO se queda en 26×26 — lo que
-        // crece es el ÁREA DE TOQUE, pero NO simétrica. Vertical: inset `teselaToque` (44, sin vecino
-        // en ese eje dentro de la fila). Horizontal: inset `teselaToqueInsetH` (4 por lado → 34 pt =
-        // el PITCH exacto entre teselas — 44 simétrico traslapaba ~10 pt con la vecina y el canto del
-        // toque caía en el día equivocado, HOY abriendo el editor de otro día). `Path`, no
-        // `Rectangle().inset(by:)`: ese método solo acepta un inset uniforme.
-        .contentShape(Path(CGRect(
-            x: -EntrenarHubMetrics.teselaToqueInsetH,
-            y: -(EntrenarHubMetrics.teselaToque - EntrenarHubMetrics.teselaSize) / 2,
-            width: EntrenarHubMetrics.teselaSize + 2 * EntrenarHubMetrics.teselaToqueInsetH,
-            height: EntrenarHubMetrics.teselaToque
-        )))
+        // Ronda 2 · O3: el DIBUJO se queda en 26×26 (7 teselas + gap de 8 no caben a 44 cada una en
+        // el ancho del módulo) — lo que crece a 44 es el ÁREA DE TOQUE, vía `contentShape` con un
+        // inset negativo (no infla el layout, mismo criterio que `EntrenarCapsulaPuerta` pero sin
+        // el `.frame(minWidth:)` que ahí SÍ cabe porque esa pastilla vive sola, no en fila apretada).
+        .contentShape(Rectangle().inset(by: -(EntrenarHubMetrics.teselaToque - EntrenarHubMetrics.teselaSize) / 2))
         .accessibilityLabel(accessibilityLabel(day, dayName: label))
     }
 

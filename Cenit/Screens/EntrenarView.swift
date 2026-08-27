@@ -566,18 +566,11 @@ private struct EntrenarLanding: View {
     }
 
     /// Ronda 2 · G5: con 3+ sesiones históricas pero 0 esta semana (p. ej. lunes, apenas arrancando),
-    /// el numeral describía la semana ACTUAL — «0.0 t» fabricado. El numeral y la barra acentuada
-    /// describen ahora la ÚLTIMA semana CON sesiones (la actual si tiene ≥1; si no, la última cubeta
-    /// con `sessionCount ≥ 1`).
-    ///
-    /// Ronda 3 (anexo Grok r2): el delta es la TENDENCIA de semanas completas —
-    /// `TrainingWeeks.volumeDeltaPercent` siempre compara «última semana completa vs. el promedio de
-    /// las 3 completas anteriores», sin importar cuál semana resalta el numeral. Condicionarlo a
-    /// `active.isCurrent` invertía el criterio: lo mostraba cuando el numeral SÍ era la semana en
-    /// curso (numeral de esta semana, delta de otra) y lo callaba en lunes (el único caso en que
-    /// numeral y delta describirían la MISMA semana). El mock empareja numeral de semana en curso +
-    /// delta de tendencia — sin condición; las reglas de silencio del propio motor (`nil` con <4
-    /// semanas completas) siguen aplicando solas.
+    /// el numeral describía la semana ACTUAL — «0.0 t» fabricado. El numeral, el delta y la barra
+    /// acentuada describen ahora la ÚLTIMA semana CON sesiones (la actual si tiene ≥1; si no, la
+    /// última cubeta con `sessionCount ≥ 1`). El delta solo se muestra cuando esa semana activa ES
+    /// la actual — `TrainingWeeks.volumeDeltaPercent` compara «última semana completa vs. tu
+    /// promedio reciente», un delta desalineado con el numeral (de una semana más vieja) mentiría.
     private var volumenData: EntrenarHubMarcasVolumen.Volumen? {
         let buckets = volumenBuckets
         let totalSessions = buckets.reduce(0) { $0 + $1.sessionCount }
@@ -585,7 +578,7 @@ private struct EntrenarLanding: View {
         let active = buckets[activeIndex]
         let maxKg = buckets.map(\.volumeKg).max() ?? 0
         let bars = buckets.map { maxKg > 0 ? $0.volumeKg / maxKg : 0 }
-        let delta = TrainingWeeks.volumeDeltaPercent(buckets: buckets)
+        let delta = active.isCurrent ? TrainingWeeks.volumeDeltaPercent(buckets: buckets) : nil
         return EntrenarHubMarcasVolumen.Volumen(tons: active.volumeKg / 1000, deltaPercent: delta,
                                                 bars: bars, accentIndex: activeIndex)
     }
