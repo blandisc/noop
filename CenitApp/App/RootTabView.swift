@@ -536,11 +536,18 @@ private struct ActiveSessionPillHost: View {
                 // FER-952: pause-aware clock (the raw now−start kept ticking while paused).
                 let elapsed = SessionClock.format(session.elapsedSeconds(now: context.date))
                 let total = session.runs.filter { !$0.skipped }.reduce(0) { $0 + $1.sets.count }
+                // FER-167 ronda 2 (R20, Grok 14 + QA O2): «Serie N de M» — la MISMA palabra y el
+                // MISMO «N de N · completa» que la cabecera de la Hoja viva (`HojaCabeceraSesion`),
+                // nunca dos fuentes que puedan divergir en la unidad de avance.
+                let isComplete = total > 0 && session.pendingCount == 0
+                let detail: String? = total == 0 ? nil : (isComplete
+                    ? String(localized: "\(total) of \(total) · complete")
+                    : String(localized: "Set \(min(session.doneCount + 1, total)) of \(total)"))
                 SessionPill(
                     routineName: session.routineName,
                     elapsed: elapsed,
                     bpm: model.watchBpm,
-                    detail: total > 0 ? String(localized: "set \(min(session.doneCount + 1, total))/\(total)") : nil,
+                    detail: detail,
                     paused: session.paused,
                     hue: theme.dataSleep,
                     theme: theme,

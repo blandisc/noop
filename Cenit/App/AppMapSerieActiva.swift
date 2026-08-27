@@ -24,8 +24,10 @@ private struct SerieActivaPreviewCell: View {
 
     var body: some View {
         Group {
-            if let session = model.strengthSession {
-                LiveStrengthSheet(session: session)
+            if model.strengthSession != nil {
+                // FER-167 ronda 2 (R23, QA O3): La Hoja viva sustituye a `LiveStrengthSheet` como
+                // superficie montada — igual que los otros 4 hosts (RootTabView + AppMap ×3).
+                RoutineSheet(origin: .today(routineId: model.strengthSession?.routineId), mode: .live)
                     .environmentObject(model.repo)
                     .environment(model)
                     .environmentObject(TabRouter())

@@ -560,11 +560,16 @@ private struct MapSessionPillHost: View {
             let theme = InstrumentoTheme.base
             TimelineView(.periodic(from: .now, by: 1)) { context in
                 let total = session.runs.filter { !$0.skipped }.reduce(0) { $0 + $1.sets.count }
+                // FER-167 ronda 2 (R20): misma unidad que `HojaCabeceraSesion` — «Serie N de M» / «N de N · completa».
+                let isComplete = total > 0 && session.pendingCount == 0
+                let detail: String? = total == 0 ? nil : (isComplete
+                    ? String(localized: "\(total) of \(total) · complete")
+                    : String(localized: "Set \(min(session.doneCount + 1, total)) of \(total)"))
                 SessionPill(
                     routineName: session.routineName,
                     elapsed: SessionClock.format(session.elapsedSeconds(now: context.date)),
                     bpm: model.watchBpm,
-                    detail: total > 0 ? String(localized: "set \(min(session.doneCount + 1, total))/\(total)") : nil,
+                    detail: detail,
                     paused: session.paused,
                     hue: theme.dataStrain,
                     theme: theme,
