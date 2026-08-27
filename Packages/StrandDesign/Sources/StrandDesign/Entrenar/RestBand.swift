@@ -180,7 +180,7 @@ public struct RestBand<Next: View>: View {
     /// Banda de honestidad del motor: a ≤ N lpm de la meta se pinta la cápsula «CASI».
     /// Misma cifra que documenta el encabezado del archivo y `RestReadinessRule.defaultBandBPM`;
     /// StrandDesign no importa Analytics, así que vive aquí como constante nombrada.
-    private static let almostBandBPM = 5
+    private static var almostBandBPM: Int { 5 }
 
     /// El numeral grande. Con pulso: meta («rest · down to N») + pulso vivo; sin pulso, el tiempo.
     @ViewBuilder private var headline: some View {
