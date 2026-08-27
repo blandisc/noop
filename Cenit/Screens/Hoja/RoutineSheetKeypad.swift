@@ -19,8 +19,17 @@ extension RoutineSheet {
 
     func repsText(idx: Int, si: Int) -> Binding<String> {
         Binding(get: { items[idx].re.sets[si].reps.map(String.init) ?? "" },
-                set: { items[idx].re.sets[si].reps = Int($0.filter(\.isNumber)); dirty = true
-                       mirrorAcrossRoundsIfSuperset(idx: idx, si: si) })
+                set: { raw in
+                    guard !locked else { return }
+                    guard !holdForMirrorConfirm(idx: idx, si: si, field: .repsFloor, raw: raw) else { return }
+                    items[idx].re.sets[si].reps = Int(raw.filter(\.isNumber))
+                    // R4: subir el piso puede invalidar un techo ya puesto — re-normaliza los dos
+                    // juntos, no solo la celda que se acaba de teclear.
+                    items[idx].re.sets[si].repsRangeTop = RoutineSet.normalizedRepsRangeTop(
+                        reps: items[idx].re.sets[si].reps, top: items[idx].re.sets[si].repsRangeTop)
+                    dirty = true
+                    mirrorAcrossRoundsIfSuperset(idx: idx, si: si)
+                })
     }
 
     /// C2 (tarjeta única de superserie, sin A1/A2): el mock muestra UNA fila por miembro, no una
@@ -37,13 +46,66 @@ extension RoutineSheet {
         }
     }
 
+    /// R8 (QA D10, adjudicado): si esta serie pertenece a una superserie cuyas rondas YA son
+    /// desiguales entre sí (dato legado, de antes de que el espejo existiera), la escritura que
+    /// dispararía el espejo se queda en `pendingMirror` en vez de aplicarse — `true` = espera un
+    /// confirm, nada se tocó todavía. Rondas ya parejas no preguntan nada (no hay qué perder).
+    func holdForMirrorConfirm(idx: Int, si: Int, field: EditorCell.Field, raw: String) -> Bool {
+        guard RoutineSetEditing.inSuperset(items.map(\.re), idx), !roundsAreEven(idx) else { return false }
+        pendingMirror = PendingMirror(idx: idx, si: si, field: field, value: raw)
+        return true
+    }
+
+    func roundsAreEven(_ idx: Int) -> Bool {
+        guard let first = items[idx].re.sets.first else { return true }
+        return items[idx].re.sets.allSatisfy {
+            $0.weightKg == first.weightKg && $0.reps == first.reps && $0.repsRangeTop == first.repsRangeTop
+        }
+    }
+
+    /// Libera un `pendingMirror`: escribe el valor que había quedado en espera y espeja normal.
+    func confirmPendingMirror() {
+        guard let p = pendingMirror, !locked,
+              items.indices.contains(p.idx), items[p.idx].re.sets.indices.contains(p.si) else {
+            pendingMirror = nil
+            return
+        }
+        switch p.field {
+        case .weight:
+            let norm = p.value.replacingOccurrences(of: ",", with: ".")
+            if let v = Double(norm), v > 0 {
+                items[p.idx].re.sets[p.si].weightKg = system == .imperial ? UnitFormatter.poundsToKg(v) : v
+            } else {
+                items[p.idx].re.sets[p.si].weightKg = nil
+            }
+        case .repsFloor:
+            items[p.idx].re.sets[p.si].reps = Int(p.value.filter(\.isNumber))
+            items[p.idx].re.sets[p.si].repsRangeTop = RoutineSet.normalizedRepsRangeTop(
+                reps: items[p.idx].re.sets[p.si].reps, top: items[p.idx].re.sets[p.si].repsRangeTop)
+        case .repsTop:
+            items[p.idx].re.sets[p.si].repsRangeTop = RoutineSet.normalizedRepsRangeTop(
+                reps: items[p.idx].re.sets[p.si].reps, top: Int(p.value.filter(\.isNumber)))
+        }
+        dirty = true
+        mirrorAcrossRoundsIfSuperset(idx: p.idx, si: p.si)
+        pendingMirror = nil
+    }
+
     /// El TECHO del rango (E13/FER-94): vacío = sin rango, un solo piso fijo (comportamiento de
-    /// siempre). Un valor menor o igual al piso se acepta tal cual — `RoutineSet.repsRangeLabel` ya
-    /// lo trata como dato inválido y cae a solo el piso, así que no hay estado imposible que mostrar.
+    /// siempre). R4 (FER-166 ronda 2): un techo que no supera al piso NUNCA se persiste — se
+    /// normaliza a `nil` al commitear (`RoutineSet.normalizedRepsRangeTop`), nunca un "10-8"
+    /// invertido, ni un instante antes de espejarse a otras rondas de una superserie.
     func repsTopText(idx: Int, si: Int) -> Binding<String> {
         Binding(get: { items[idx].re.sets[si].repsRangeTop.map(String.init) ?? "" },
-                set: { items[idx].re.sets[si].repsRangeTop = Int($0.filter(\.isNumber)); dirty = true
-                       mirrorAcrossRoundsIfSuperset(idx: idx, si: si) })
+                set: { raw in
+                    guard !locked else { return }
+                    guard !holdForMirrorConfirm(idx: idx, si: si, field: .repsTop, raw: raw) else { return }
+                    let candidate = Int(raw.filter(\.isNumber))
+                    items[idx].re.sets[si].repsRangeTop = RoutineSet.normalizedRepsRangeTop(
+                        reps: items[idx].re.sets[si].reps, top: candidate)
+                    dirty = true
+                    mirrorAcrossRoundsIfSuperset(idx: idx, si: si)
+                })
     }
 
     func weightText(idx: Int, si: Int) -> Binding<String> {
@@ -53,6 +115,8 @@ extension RoutineSheet {
                 return StrengthDisplay.weightNumber(kg, system: system)
             },
             set: { raw in
+                guard !locked else { return }
+                guard !holdForMirrorConfirm(idx: idx, si: si, field: .weight, raw: raw) else { return }
                 let norm = raw.replacingOccurrences(of: ",", with: ".")
                 dirty = true
                 if let v = Double(norm), v > 0 {
@@ -107,12 +171,14 @@ extension RoutineSheet {
     }
 
     func keypadInput(_ digit: String) {
+        guard !locked else { return }
         if !bufferTyped { buffer = ""; bufferTyped = true }
         buffer += digit
         commitBuffer()
     }
 
     func keypadComma() {
+        guard !locked else { return }
         guard let cell = activeCell, cell.field == .weight else { return }   // reps son enteras
         if !bufferTyped { buffer = "0"; bufferTyped = true }
         if !buffer.contains(",") && !buffer.contains(".") { buffer += "," }
@@ -120,41 +186,51 @@ extension RoutineSheet {
     }
 
     func keypadBackspace() {
+        guard !locked else { return }
         if !bufferTyped { buffer = ""; bufferTyped = true }
         if !buffer.isEmpty { buffer.removeLast() }
         commitBuffer()
     }
 
     /// El ± suma un paso sobre el valor del MODELO (no sobre el buffer a medias), y resincroniza.
+    /// Pasa por el MISMO binding que el teclear directo (no escribe aparte): así hereda el candado
+    /// (R1), la invariante piso ≤ techo (R4) y el confirm de rondas desiguales (R8) sin duplicar
+    /// esas tres reglas una segunda vez aquí.
     func keypadStep(_ cell: EditorCell) {
-        guard items.indices.contains(cell.idx), items[cell.idx].re.sets.indices.contains(cell.si) else { return }
+        guard !locked, items.indices.contains(cell.idx), items[cell.idx].re.sets.indices.contains(cell.si) else { return }
+        let set = items[cell.idx].re.sets[cell.si]
+        let newValue: String
         switch cell.field {
         case .weight:
             let stepKg = system == .imperial ? 5 * 0.45359237 : 2.5
-            let current = items[cell.idx].re.sets[cell.si].weightKg ?? 0
-            items[cell.idx].re.sets[cell.si].weightKg = current + stepKg
+            newValue = StrengthDisplay.weightNumber((set.weightKg ?? 0) + stepKg, system: system)
         case .repsFloor:
-            items[cell.idx].re.sets[cell.si].reps = (items[cell.idx].re.sets[cell.si].reps ?? 0) + 1
+            newValue = "\((set.reps ?? 0) + 1)"
         case .repsTop:
-            let floor = items[cell.idx].re.sets[cell.si].reps ?? 0
-            let current = items[cell.idx].re.sets[cell.si].repsRangeTop ?? floor
-            items[cell.idx].re.sets[cell.si].repsRangeTop = current + 1
+            let floor = set.reps ?? 0
+            newValue = "\((set.repsRangeTop ?? floor) + 1)"
         }
-        dirty = true
+        binding(for: cell).wrappedValue = newValue
         buffer = binding(for: cell).wrappedValue
         bufferTyped = false
     }
 
     /// Empuja el buffer por el binding, que ya parsea y guarda (incluida la conversión imperial).
+    /// R7: si la celda dueña ya no existe (se borró el ejercicio/serie mientras el keypad seguía
+    /// montado), no escribe sobre un índice fantasma — se limpia en su lugar.
     func commitBuffer() {
-        guard let cell = activeCell else { return }
+        guard !locked, let cell = activeCell else { return }
+        guard items.indices.contains(cell.idx), items[cell.idx].re.sets.indices.contains(cell.si) else {
+            activeCell = nil
+            return
+        }
         binding(for: cell).wrappedValue = buffer
     }
 
     /// «Copiar arriba»: copia el valor YA FORMATEADO del MISMO campo de la serie anterior, dentro
     /// del MISMO ejercicio. Un valor vacío arriba no copia nada.
     func copyAbove(_ cell: EditorCell) {
-        guard cell.si > 0, items.indices.contains(cell.idx),
+        guard !locked, cell.si > 0, items.indices.contains(cell.idx),
               items[cell.idx].re.sets.indices.contains(cell.si - 1) else { return }
         let above = EditorCell(idx: cell.idx, si: cell.si - 1, field: cell.field)
         let value = binding(for: above).wrappedValue

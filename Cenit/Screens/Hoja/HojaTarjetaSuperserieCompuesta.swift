@@ -26,14 +26,19 @@ struct HojaTarjetaSuperserieCompuesta: View {
 
     private var rondas: Int { sheet.items[members[0]].re.sets.count }
 
+    /// R15 (QA D14): «N rondas · descanso al cerrar cada ronda · M:SS» — el orden y la copia EXACTA
+    /// del mock (`hoja-pantallas.html` P1 `.ss2`, pie del footer).
     private var pie: String {
         let restLabel = RoutineSetEditing.restChipLabel(sheet.exerciseRest(members.last ?? members[0]))
         return String(localized: "\(rondas) rounds") + " · "
-            + String(localized: "rest when the round closes") + " · " + restLabel
+            + String(localized: "rest when each round closes") + " · " + restLabel
     }
 
     var body: some View {
-        HojaTarjetaSuperserie(nombre: nombre, pie: pie, onMenu: { sheet.menuExerciseIndex = members[0] }) {
+        // R1 (paridad con la tarjeta sola, `HojaTarjetaEjercicio.chead` línea 70): sin sesión viva
+        // corriendo, no hay «···» — nada que mutar bajo el candado.
+        let onMenu: (() -> Void)? = sheet.locked ? nil : { sheet.menuExerciseIndex = members[0] }
+        HojaTarjetaSuperserie(nombre: nombre, pie: pie, onMenu: onMenu) {
             ForEach(members, id: \.self) { idx in
                 filaMiembro(idx)
             }
@@ -45,6 +50,11 @@ struct HojaTarjetaSuperserieCompuesta: View {
             items: menuItems
         )
         .accessibilityElement(children: .contain)
+        .accessibilityAction(named: Text("Reorder exercises")) {   // R12
+            guard !sheet.locked else { return }
+            sheet.activeCell = nil
+            withAnimation(.snappy) { sheet.reordering = true }
+        }
     }
 
     // MARK: - Filas de miembro (`.trow.ssrow`: nombre flex · peso 76 · reps · ≡)
@@ -53,27 +63,28 @@ struct HojaTarjetaSuperserieCompuesta: View {
         let item = sheet.items[idx]
         let type = item.exercise.type
         let set = item.re.sets.first
+        // R11 (QA D7): `relativeTo` en las tres — cero fuentes fixedSize en texto de lectura.
         return HStack(alignment: .firstTextBaseline, spacing: HojaMetrics.filaGap) {
             Text(StrengthDisplay.name(item.exercise))
-                .font(InstrumentoType.grotesk(11.5, weight: .semibold))
+                .font(InstrumentoType.grotesk(11.5, weight: .semibold, relativeTo: .caption2))
                 .foregroundStyle(LiquidColor.tinta900)
                 .lineLimit(1)
                 .frame(maxWidth: .infinity, alignment: .leading)
             HStack(alignment: .firstTextBaseline, spacing: 0) {
                 Text(verbatim: sheet.showsWeight(type) ? (set?.weightKg.map { StrengthDisplay.weightNumber($0, system: sheet.system) } ?? "—") : "—")
-                    .font(InstrumentoType.groteskNumber(15, weight: .bold)).foregroundStyle(LiquidColor.tinta900)
+                    .font(InstrumentoType.groteskNumber(15, weight: .bold, relativeTo: .callout)).foregroundStyle(LiquidColor.tinta900)
                 if sheet.showsWeight(type) {
                     Text(verbatim: StrengthDisplay.weightUnit(sheet.system).lowercased())
-                        .font(InstrumentoType.grotesk(10, weight: .semibold)).foregroundStyle(LiquidColor.tinta500)
+                        .font(InstrumentoType.grotesk(10, weight: .semibold, relativeTo: .caption2)).foregroundStyle(LiquidColor.tinta500)
                         .padding(.leading, 2)
                 }
             }
             .frame(width: HojaMetrics.colPesoEdicion, alignment: .leading)
             Text(sheet.showsReps(type) ? (set?.repsRangeLabel ?? "—") : "—")
-                .font(InstrumentoType.groteskNumber(15, weight: .bold)).foregroundStyle(LiquidColor.tinta900)
+                .font(InstrumentoType.groteskNumber(15, weight: .bold, relativeTo: .callout)).foregroundStyle(LiquidColor.tinta900)
                 .frame(width: HojaMetrics.colRepsEdicion, alignment: .leading)
             Text(verbatim: "≡")
-                .font(InstrumentoType.grotesk(HojaMetrics.agarreSize, weight: .regular))
+                .font(InstrumentoType.grotesk(HojaMetrics.agarreSize, weight: .regular, relativeTo: .caption))
                 .foregroundStyle(LiquidColor.tinta500)
                 .frame(width: HojaMetrics.colMarcaEdicion, alignment: .trailing)
         }
@@ -81,17 +92,26 @@ struct HojaTarjetaSuperserieCompuesta: View {
         .frame(minHeight: HojaMetrics.hitMin)
         .contentShape(Rectangle())
         .overlay {
+            let re = item.re
+            let memberId = re.id
+            // R7(a): señal de celda activa (mismo patrón que la tarjeta sola).
+            let activeField: RoutineSheet.EditorCell.Field? =
+                (sheet.activeCell?.idx == idx && sheet.activeCell?.si == 0) ? sheet.activeCell?.field : nil
             HStack(spacing: HojaMetrics.filaGap) {
                 Color.clear.frame(maxWidth: .infinity)
-                tapZone(sheet.showsWeight(type) ? { sheet.beginEditing(.init(idx: idx, si: 0, field: .weight)) } : nil)
+                tapZone(sheet.showsWeight(type) ? { sheet.beginEditing(.init(idx: idx, si: 0, field: .weight)) } : nil,
+                        active: activeField == .weight)
                     .frame(width: HojaMetrics.colPesoEdicion)
-                tapZone(sheet.showsReps(type) ? { sheet.beginEditing(.init(idx: idx, si: 0, field: .repsFloor)) } : nil)
+                tapZone(sheet.showsReps(type) ? { sheet.beginEditing(.init(idx: idx, si: 0, field: .repsFloor)) } : nil,
+                        active: activeField == .repsFloor)
                     .frame(width: HojaMetrics.colRepsEdicion)
                 Color.clear.frame(width: HojaMetrics.colMarcaEdicion)
                     .contentShape(Rectangle())
                     .gesture(
+                        // R2 (QA D2 = Grok G6): `dragID` = `RoutineExercise.id` FROZEN — nunca el
+                        // `idx` de esta construcción de fila.
                         DragGesture(minimumDistance: 4)
-                            .onChanged { sheet.dragMemberChanged(members: members, startIdx: idx, translation: $0.translation.height) }
+                            .onChanged { sheet.dragMemberChanged(members: members, dragID: memberId, translation: $0.translation.height) }
                             .onEnded { _ in sheet.dragSetEnded() }
                     )
             }
@@ -102,12 +122,16 @@ struct HojaTarjetaSuperserieCompuesta: View {
         })
     }
 
-    @ViewBuilder private func tapZone(_ action: (() -> Void)?) -> some View {
-        if let action {
-            Color.clear.contentShape(Rectangle()).onTapGesture(perform: action)
-        } else {
-            Color.clear
-        }
+    @ViewBuilder private func tapZone(_ action: (() -> Void)?, active: Bool) -> some View {
+        Color.clear
+            .contentShape(Rectangle())
+            .onTapGesture { action?() }
+            .allowsHitTesting(action != nil)
+            .overlay(alignment: .bottom) {
+                if active {
+                    Rectangle().fill(LiquidColor.tinta900).frame(height: 2).padding(.bottom, 6)
+                }
+            }
     }
 
     // MARK: - «···» — reordenar en bloque, deshacer, ＋ ronda, y el menú completo de cada miembro

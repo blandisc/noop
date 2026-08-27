@@ -64,12 +64,29 @@ extension RoutineSheet {
                 built.append(EditorItem(re: re, exercise: ex))
             }
         }
+        // R4 (limpieza de datos legados): normaliza CUALQUIER rango piso/techo que haya quedado
+        // invertido antes de que esta invariante existiera — nunca desde disco a un estado
+        // imposible, ni por el tiempo que tarda la primera edición en tocarlo.
+        for i in built.indices {
+            for si in built[i].re.sets.indices {
+                built[i].re.sets[si].repsRangeTop = RoutineSet.normalizedRepsRangeTop(
+                    reps: built[i].re.sets[si].reps, top: built[i].re.sets[si].repsRangeTop)
+            }
+        }
         items = built
         refreshTint()
         dirty = false
         itemsSnapshot = items
-        // La primera tarjeta SOLO (no superserie) abre por defecto (mock P1: «Sentadilla» abierta).
-        openIndex = items.indices.first { !RoutineSetEditing.inSuperset(items.map(\.re), $0) }
+        activeCell = nil
+        // R6 (Grok G8): abre el primer BLOQUE, superserie incluida — no «el primer ejercicio
+        // no-superserie». Una superserie ya se muestra completa siempre (nunca pliega), así que
+        // cuando el primer bloque ES una superserie, `openID` se queda en nil a propósito: ningún
+        // ejercicio SOLO debe robarse el acordeón porque el primero no calificaba.
+        if let first = items.first, !RoutineSetEditing.inSuperset(items.map(\.re), 0) {
+            openID = first.id
+        } else {
+            openID = nil
+        }
     }
 
     func persist() {
@@ -128,6 +145,9 @@ extension RoutineSheet {
     // MARK: - Start the guided session
 
     func start() {
+        // R1: el keypad no sigue escribiendo tras bloquear — bloquear es EXACTAMENTE lo que pasa
+        // al arrancar/reanudar una sesión desde aquí.
+        activeCell = nil
         if model.strengthSession != nil { model.resumeStrengthSession(); return }
         guard let r = routine else { return }
         if dirty { persist() }
@@ -139,8 +159,13 @@ extension RoutineSheet {
     }
 
     // MARK: - Set + exercise mutations
+    //
+    // R1 (QA D1 = Grok G2): el candado vive en el MODELO — cada mutación corta con `guard !locked`,
+    // no solo la vista que la dispara. La UI ya oculta/deshabilita los controles (paridad, doble
+    // cinturón); esto es lo que de verdad impide escribir con una sesión viva corriendo esta rutina.
 
     func addSet(_ idx: Int) {
+        guard !locked, items.indices.contains(idx) else { return }
         let work = items[idx].re.sets.last { $0.kind == .work }
         let reps = work?.reps ?? (showsReps(items[idx].exercise.type) ? 8 : nil)
         items[idx].re.sets.append(RoutineSet(position: items[idx].re.sets.count, kind: .work,
@@ -149,10 +174,16 @@ extension RoutineSheet {
         dirty = true
     }
 
-    func deleteSet(idx: Int, si: Int) {
-        guard items[idx].re.sets.count > 1 else { return }
+    /// R2 (QA D2 = Grok G6): por `setId` — la identidad FROZEN al armar la pastilla «Quitar serie»
+    /// — nunca por un `si` de posición que el propio arrastre (o cualquier otra mutación) pudo
+    /// haber corrido desde entonces.
+    func deleteSet(idx: Int, setId: String) {
+        guard !locked, items.indices.contains(idx),
+              let si = items[idx].re.sets.firstIndex(where: { $0.id == setId }),
+              items[idx].re.sets.count > 1 else { return }
         withAnimation(.snappy) { _ = items[idx].re.sets.remove(at: si) }
         renumber(idx)
+        activeCell = nil   // R7: la celda dueña puede haber sido esta serie u otra que se corrió.
         dirty = true
     }
 
@@ -164,6 +195,7 @@ extension RoutineSheet {
 
     /// «Añadir calentamiento» (A9, ahora en «···»): rampa 40·60·80 %.
     func addWarmupRamp(_ idx: Int) {
+        guard !locked, items.indices.contains(idx) else { return }
         let ramp = RoutineSetEditing.warmupFactors
         items[idx].re.warmupPercents = ramp
         let top = items[idx].re.sets.first { $0.kind == .work }?.weightKg
@@ -174,17 +206,23 @@ extension RoutineSheet {
         }
         withAnimation(.snappy) { items[idx].re.sets.insert(contentsOf: rows, at: 0) }
         renumber(idx)
+        activeCell = nil   // R7: la rampa se inserta AL PRINCIPIO — corre el `si` de todo lo demás.
         dirty = true
     }
 
     func deleteExercise(_ idx: Int) {
+        guard !locked, items.indices.contains(idx) else { return }
+        let removedId = items[idx].id
         withAnimation(.snappy) { _ = items.remove(at: idx) }
-        if openIndex == idx { openIndex = nil }
+        // R5: por id, no por índice — nada que reindexar.
+        if openID == removedId { openID = nil }
+        activeCell = nil
         refreshTint()
         dirty = true
     }
 
     func duplicate(_ idx: Int) {
+        guard !locked, items.indices.contains(idx) else { return }
         let src = items[idx]
         var copy = src.re
         copy.id = UUID().uuidString
@@ -192,28 +230,32 @@ extension RoutineSheet {
         copy.supersetGroup = nil
         copy.sets = src.re.sets.map { s in var n = s; n.id = UUID().uuidString; return n }
         withAnimation(.snappy) { items.insert(EditorItem(re: copy, exercise: src.exercise), at: idx + 1) }
+        activeCell = nil
         refreshTint()
         dirty = true
     }
 
     /// Replace an exercise (keeping its sets) or append new ones, from the library.
     func addOrReplace(with picks: [Exercise]) {
-        guard let first = picks.first, let r = routine else { return }
+        guard !locked, let first = picks.first, let r = routine else { return }
         if let i = replaceIndex, items.indices.contains(i) {
             items[i].exercise = first
             items[i].re.exerciseId = first.id
+            activeCell = nil
         } else {
-            let startIndex = items.count
+            var addedId: String? = nil
             for pick in picks {
                 let usesReps = pick.type == .weightReps || pick.type == .bodyweight
                 let reps: Int? = usesReps ? 8 : nil
                 let sets = (0..<3).map { RoutineSet(position: $0, kind: .work, reps: reps, weightKg: nil) }
                 let re = RoutineExercise(routineId: r.id, exerciseId: pick.id, position: items.count,
                                          targetSets: 3, targetReps: reps, targetWeightKg: nil, sets: sets)
-                items.append(EditorItem(re: re, exercise: pick))
+                let item = EditorItem(re: re, exercise: pick)
+                if addedId == nil { addedId = item.id }
+                items.append(item)
             }
             // La tarjeta recién agregada se abre sola — no hay ceremonia entre agregar y prescribir.
-            openIndex = startIndex
+            if let addedId { openID = addedId }
         }
         replaceIndex = nil
         refreshTint()
@@ -226,20 +268,20 @@ extension RoutineSheet {
         RoutineSetEditing.workSetsAreEqual(items[idx].re.sets)
     }
 
-    /// «3 series · 80 kg × 8» — solo series de TRABAJO.
+    /// R15 (QA D14): «3 × 10 · 145 kg» — el orden y la agrupación EXACTOS del mock
+    /// (`hoja-pantallas.html` `.plegada .receta`: series × reps, luego el peso). Solo series de
+    /// TRABAJO. Sin reps que emparejar (tiempo/distancia) cae al fallback legible «N sets».
     func recetaSummary(_ idx: Int) -> String {
         let work = items[idx].re.sets.filter { $0.kind == .work }
         let type = items[idx].exercise.type
-        var parts: [String] = []
+        guard showsReps(type), let r = work.first?.reps else {
+            return String(localized: "\(work.count) sets")
+        }
+        var head = "\(work.count) × \(r)"
         if showsWeight(type), let w = work.first?.weightKg, w > 0 {
-            parts.append("\(StrengthDisplay.weightNumber(w, system: system)) \(StrengthDisplay.weightUnit(system).lowercased())")
+            head += " · \(StrengthDisplay.weightNumber(w, system: system)) \(StrengthDisplay.weightUnit(system).lowercased())"
         }
-        if showsReps(type), let r = work.first?.reps {
-            parts.append("\(r)")
-        }
-        let count = String(localized: "\(work.count) sets")
-        guard !parts.isEmpty else { return count }
-        return count + " · " + parts.joined(separator: " × ")
+        return head
     }
 
     /// A3 (pirámide sin castigo): cuántas recetas DISTINTAS hay entre las series de trabajo, cuando
@@ -271,7 +313,8 @@ extension RoutineSheet {
     }
 
     func equalizeAll(_ idx: Int) {
-        guard let first = items[idx].re.sets.first(where: { $0.kind == .work }) else { return }
+        guard !locked, items.indices.contains(idx),
+              let first = items[idx].re.sets.first(where: { $0.kind == .work }) else { return }
         for si in items[idx].re.sets.indices where items[idx].re.sets[si].kind == .work {
             items[idx].re.sets[si].weightKg = first.weightKg
             items[idx].re.sets[si].reps = first.reps
@@ -285,16 +328,24 @@ extension RoutineSheet {
     // Sin `List` por serie (las series viven dentro de UNA fila del `List` externo, la tarjeta
     // completa), así que no hay `.onMove` nativo aquí. Recorrido por umbral: cada vez que el dedo
     // cruza medio renglón, la serie arrastrada intercambia con su vecina — sin offset visual en
-    // vuelo (decisión: simplicidad sobre pulir la animación de «Reordenar ejercicios», que si
-    // reutiliza `List.onMove`). `startSi` fija el origen del gesto; `translation` de `DragGesture`
-    // es acumulado desde ahí, así que el índice deseado se recalcula entero cada llamada.
-    func dragSetChanged(idx: Int, startSi: Int, translation: CGFloat) {
-        guard items.indices.contains(idx) else { return }
-        let rowHeight = HojaMetrics.hitMin + HojaMetrics.filaVPad * 2
-        let state = (dragSet?.idx == idx && dragSet?.startSi == startSi)
-            ? dragSet! : DragSetState(idx: idx, startSi: startSi, currentSi: startSi)
+    // vuelo (decisión: simplicidad sobre pulir la animación de «Reordenar ejercicios», que sí
+    // reutiliza `List.onMove`).
+    //
+    // R2 (QA D2 = Grok G6): llaveado por `dragID` = `RoutineSet.id`, FROZEN por el caller al
+    // reconocer el gesto — nunca por un `si` de posición que un swap A MEDIO GESTO ya movió (la
+    // cascada de swaps auto-guardados era corrupción real de la rutina: la vista podía seguir
+    // entregando el `si` viejo mientras el arreglo ya había cambiado). La posición SIEMPRE se
+    // resuelve de nuevo contra esa identidad en cada llamada; `rowHeight` es el alto REAL de la
+    // fila (`HojaMetrics.hitMin`, 44 — el padding vertical ya está absorbido por ese `minHeight`,
+    // sumarlo aparte medía 62 y desincronizaba el umbral del gesto contra la fila real).
+    func dragSetChanged(idx: Int, setId: String, translation: CGFloat) {
+        guard !locked, items.indices.contains(idx),
+              let liveSi = items[idx].re.sets.firstIndex(where: { $0.id == setId }) else { return }
+        let rowHeight = HojaMetrics.hitMin
+        let state = (dragSet?.idx == idx && dragSet?.dragID == setId)
+            ? dragSet! : DragSetState(idx: idx, dragID: setId, startSi: liveSi, currentSi: liveSi)
         let count = items[idx].re.sets.count
-        let desired = min(max(startSi + Int((translation / rowHeight).rounded()), 0), count - 1)
+        let desired = min(max(state.startSi + Int((translation / rowHeight).rounded()), 0), count - 1)
         guard desired != state.currentSi else { dragSet = state; return }
         let toOffset = desired > state.currentSi ? desired + 1 : desired
         withAnimation(.snappy) {
@@ -302,29 +353,32 @@ extension RoutineSheet {
         }
         renumber(idx)
         dirty = true
-        dragSet = DragSetState(idx: idx, startSi: startSi, currentSi: desired)
+        dragSet = DragSetState(idx: idx, dragID: setId, startSi: state.startSi, currentSi: desired)
     }
 
     func dragSetEnded() {
         dragSet = nil
     }
 
-    /// Mismo umbral que `dragSetChanged`, pero reordenando MIEMBROS de una superserie entre sí
-    /// (el mock también dibuja «≡» en cada `.ssrow`). Restringido al rango del grupo — no puede
-    /// escapar de la tarjeta.
-    func dragMemberChanged(members: [Int], startIdx: Int, translation: CGFloat) {
-        guard let lo = members.min(), let hi = members.max(), members.contains(startIdx) else { return }
-        let rowHeight = HojaMetrics.hitMin + HojaMetrics.filaVPad * 2
-        let state = (dragSet?.idx == -1 && dragSet?.startSi == startIdx)
-            ? dragSet! : DragSetState(idx: -1, startSi: startIdx, currentSi: startIdx)
-        let desired = min(max(startIdx + Int((translation / rowHeight).rounded()), lo), hi)
+    /// Mismo criterio de identidad que `dragSetChanged`, para reordenar MIEMBROS de una superserie
+    /// entre sí (el mock también dibuja «≡» en cada `.ssrow`). `dragID` = `RoutineExercise.id` del
+    /// miembro arrastrado; `lo`/`hi` acotan el rango del grupo (fijo mientras dura el gesto — un
+    /// reacomodo INTERNO no cambia cuántos miembros tiene ni dónde empieza/termina el bloque).
+    func dragMemberChanged(members: [Int], dragID: String, translation: CGFloat) {
+        guard !locked, let lo = members.min(), let hi = members.max(),
+              items.indices.contains(lo), items.indices.contains(hi),
+              let liveIdx = (lo...hi).first(where: { items[$0].re.id == dragID }) else { return }
+        let rowHeight = HojaMetrics.hitMin
+        let state = (dragSet?.idx == -1 && dragSet?.dragID == dragID)
+            ? dragSet! : DragSetState(idx: -1, dragID: dragID, startSi: liveIdx, currentSi: liveIdx)
+        let desired = min(max(state.startSi + Int((translation / rowHeight).rounded()), lo), hi)
         guard desired != state.currentSi else { dragSet = state; return }
         let toOffset = desired > state.currentSi ? desired + 1 : desired
         withAnimation(.snappy) {
             items.move(fromOffsets: IndexSet(integer: state.currentSi), toOffset: toOffset)
         }
         dirty = true
-        dragSet = DragSetState(idx: -1, startSi: startIdx, currentSi: desired)
+        dragSet = DragSetState(idx: -1, dragID: dragID, startSi: state.startSi, currentSi: desired)
     }
 
     // MARK: - Superset helpers (grouping lives in RoutineSetEditing)
@@ -340,43 +394,51 @@ extension RoutineSheet {
     /// «＋ RONDA» (C2): agrega una ronda a TODOS los miembros del grupo a la vez, sembrada con la
     /// prescripción visible de cada uno (set 0 — el que la tarjeta muestra y edita).
     func addRound(members: [Int]) {
+        guard !locked, members.allSatisfy({ items.indices.contains($0) }) else { return }
         for idx in members {
             let seed = items[idx].re.sets.first
             items[idx].re.sets.append(RoutineSet(position: items[idx].re.sets.count, kind: .work,
                                                  reps: seed?.reps, weightKg: seed?.weightKg,
                                                  repsRangeTop: seed?.repsRangeTop))
         }
+        activeCell = nil
         dirty = true
     }
 
     /// Quita la ÚLTIMA ronda de todos los miembros a la vez (mantiene sus arreglos de series del
     /// mismo tamaño). No baja de 1 ronda.
     func removeLastRound(members: [Int]) {
-        guard members.allSatisfy({ items[$0].re.sets.count > 1 }) else { return }
+        guard !locked, members.allSatisfy({ items.indices.contains($0) && items[$0].re.sets.count > 1 }) else { return }
         for idx in members {
             withAnimation(.snappy) { _ = items[idx].re.sets.removeLast() }
         }
+        activeCell = nil
         dirty = true
     }
 
     func supersetWithNext(_ i: Int) {
+        guard !locked, items.indices.contains(i) else { return }
         var res = items.map(\.re)
         RoutineSetEditing.supersetWithNext(&res, i)
         for (j, re) in res.enumerated() { items[j].re = re }
+        activeCell = nil
         dirty = true
     }
     func breakSuperset(_ i: Int) {
+        guard !locked, items.indices.contains(i) else { return }
         var res = items.map(\.re)
         RoutineSetEditing.breakSuperset(&res, i)
         for (j, re) in res.enumerated() { items[j].re = re }
+        activeCell = nil
         dirty = true
     }
 
     /// One-step move (menu «Move up/down»). Cruzar el límite de una superserie solo la entra/sale
-    /// visualmente; los grupos se conservan por id.
+    /// visualmente; los grupos se conservan por id — `openID` (R5) no necesita reindexarse.
     func moveExercise(_ idx: Int, to dest: Int) {
-        guard items.indices.contains(idx), items.indices.contains(dest) else { return }
+        guard !locked, items.indices.contains(idx), items.indices.contains(dest) else { return }
         withAnimation(.snappy) { items.swapAt(idx, dest) }
+        activeCell = nil
         dirty = true
     }
 
@@ -393,6 +455,22 @@ extension RoutineSheet {
             }
         }
         return max(1, Int((Double(seconds) / 60).rounded()))
+    }
+
+    /// R15 (QA D14): el tonelaje estimado de la meta («· ~4,300 kg») — suma peso × reps × series de
+    /// TRABAJO de toda la prescripción. `nil` cuando ningún ejercicio tiene peso (bodyweight/tiempo
+    /// puros): no hay tonelaje que fingir, así que la meta lo omite.
+    var estimatedTonnageKg: Double? {
+        var total = 0.0
+        var sawWeight = false
+        for item in items {
+            for s in item.re.sets where s.kind == .work {
+                guard let kg = s.weightKg, kg > 0, let reps = s.reps else { continue }
+                sawWeight = true
+                total += kg * Double(reps)
+            }
+        }
+        return sawWeight ? total : nil
     }
 
     func refreshTint() {
@@ -415,7 +493,7 @@ extension RoutineSheet {
     // MARK: - Day assignment (.planDay «···»)
 
     func changeRoutine(to r: Routine) {
-        guard let wd = planWeekday else { return }
+        guard !locked, let wd = planWeekday else { return }
         Task {
             guard let store = await repo.storeHandle() else { saveError = true; return }
             do {
@@ -428,7 +506,7 @@ extension RoutineSheet {
     }
 
     func markRest() {
-        guard let wd = planWeekday else { return }
+        guard !locked, let wd = planWeekday else { return }
         Task {
             if dirty, !(await persistNow()) { return }
             guard let store = await repo.storeHandle() else { saveError = true; return }

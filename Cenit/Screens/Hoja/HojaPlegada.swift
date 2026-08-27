@@ -7,7 +7,7 @@ import StrandTraining
 //
 // Mock `hoja-pantallas.html` P1 `.mod.plegada` («Prensa inclinada» → «3 × 10 · 145 kg») y
 // `.agregar` («＋ Agregar ejercicio», troquel punteado). Tocar una plegada la abre (single-open
-// accordion, ver `RoutineSheet.openIndex`) y pliega la que estaba abierta. A3 (pirámide sin
+// accordion, ver `RoutineSheet.openID`) y pliega la que estaba abierta. A3 (pirámide sin
 // castigo): cuando las series de trabajo no son iguales, la receta se lee «N recetas ›» — el dato
 // honesto (no finge una sola línea), sin el aviso inline de antes (esa acción se mudó a «···»,
 // `RoutineSheetLogic.exerciseMenuItems`).
@@ -19,7 +19,9 @@ enum HojaPlegada {
         let equal = sheet.setsAreEqual(idx)
         let receta = equal ? sheet.recetaSummary(idx) : String(localized: "\(sheet.recetaCount(idx)) recipes")
         return Button {
-            withAnimation(.snappy) { sheet.openIndex = idx }
+            // R7: cambiar de tarjeta abierta corta cualquier edición a medias en la anterior.
+            sheet.activeCell = nil
+            withAnimation(.snappy) { sheet.openID = item.id }
         } label: {
             EntrenarModulo(tono: .neutro) {
                 HStack(spacing: 11) {
@@ -31,7 +33,8 @@ enum HojaPlegada {
                         Text(receta)
                         if !equal { Text(verbatim: "›") }
                     }
-                    .font(InstrumentoType.groteskNumber(12.5, weight: .bold))
+                    // R11 (QA D7): `relativeTo` — cero fuentes fixedSize en texto de lectura.
+                    .font(InstrumentoType.groteskNumber(12.5, weight: .bold, relativeTo: .caption))
                     .foregroundStyle(equal ? sheet.theme.ink : sheet.theme.inkSecondary)
                     .lineLimit(1)
                 }

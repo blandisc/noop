@@ -64080,19 +64080,19 @@
         }
       }
     },
-    "rest when the round closes" : {
+    "rest when each round closes" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "rest when the round closes"
+            "value" : "rest when each round closes"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "descanso al cerrar la ronda"
+            "value" : "descanso al cerrar cada ronda"
           }
         }
       }
@@ -64189,6 +64189,132 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld rondas"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "~%@ %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "~%1$@ %2$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "~%1$@ %2$@"
+          }
+        }
+      }
+    },
+    "Equalize all rounds?" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Equalize all rounds?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Igualar todas las rondas?"
+          }
+        }
+      }
+    },
+    "This superset's rounds don't all match yet — this will make every round the same." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This superset's rounds don't all match yet — this will make every round the same."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las rondas de esta superserie aún no coinciden — esto igualará todas."
+          }
+        }
+      }
+    },
+    "ASSIGN" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ASSIGN"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ASIGNAR"
+          }
+        }
+      }
+    },
+    "next" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "next"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "siguiente"
+          }
+        }
+      }
+    },
+    "%lld left" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld left"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld left"
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "quedaba %lld"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "quedaban %lld"
                 }
               }
             }

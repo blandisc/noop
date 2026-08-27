@@ -60,11 +60,15 @@ enum HojaCabecera {
                     .font(StrandFont.caption).foregroundStyle(sheet.theme.inkTertiary)
                     .padding(.top, 2)
             }
-            if !sheet.items.isEmpty { metaLine(sheet: sheet) }
+            // R13 (QA D11, mapa A1): la meta calla con MENOS de 2 ejercicios — un solo ejercicio
+            // recién agregado no tiene nada útil que resumir todavía («1 ejercicio · 3 series ·
+            // ~2 min» no ayuda a nadie).
+            if sheet.items.count >= 2 { metaLine(sheet: sheet) }
         }
     }
 
-    /// El dot de familia + «{grupo} · N ejercicios · M series · ~T min».
+    /// El dot de familia + «{grupo} · N ejercicios · M series · ~T min · ~T,TTT kg» (R15: el
+    /// tonelaje se omite cuando ningún ejercicio tiene peso — nunca un «~0 kg» inventado).
     private static func metaLine(sheet: RoutineSheet) -> some View {
         HStack(spacing: 10) {
             HStack(spacing: 6) {
@@ -74,6 +78,10 @@ enum HojaCabecera {
             Text(String(localized: "\(sheet.items.count) exercises")).font(StrandFont.caption).foregroundStyle(sheet.theme.inkTertiary)
             Text(String(localized: "\(sheet.totalSets) sets")).font(StrandFont.caption).monospacedDigit().foregroundStyle(sheet.theme.inkTertiary)
             Text(String(localized: "~\(sheet.estimatedMinutes) min")).font(StrandFont.caption).monospacedDigit().foregroundStyle(sheet.theme.inkTertiary)
+            if let kg = sheet.estimatedTonnageKg {
+                Text(String(localized: "~\(StrengthDisplay.weightNumber(kg, system: sheet.system)) \(StrengthDisplay.weightUnit(sheet.system).lowercased())"))
+                    .font(StrandFont.caption).monospacedDigit().foregroundStyle(sheet.theme.inkTertiary)
+            }
         }
         .padding(.top, 2)
     }

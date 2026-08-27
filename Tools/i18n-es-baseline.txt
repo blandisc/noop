@@ -14,7 +14,6 @@
 %@ of %@ sets
 %@ of ~%@ nights
 %@ of ~%@ nights learned
-%@ overlapping days · %@ %@ correlation
 %@ raising
 %@ receipts · tap one to reprint
 %@ receipts · today's on top
@@ -26,7 +25,6 @@
 %@ sessions · 90 days
 %@ sessions · tap another bar to switch
 %@ · %@h
-%@ · n = %@
 %@ ›
 %@%%
 %@, %@%% last night
@@ -36,6 +34,7 @@
 %lld breaths
 %lld days
 %lld exercises
+%lld left
 %lld nights
 %lld packets
 %lld pieces

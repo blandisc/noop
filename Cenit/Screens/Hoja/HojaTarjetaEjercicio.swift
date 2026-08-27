@@ -37,6 +37,13 @@ struct HojaTarjetaEjercicio: View {
         }
         .liquidEntrada()
         .accessibilityElement(children: .contain)
+        // R12 (QA D13 = Grok G9): rotor de VoiceOver al modo reorder que ya existe (el editor viejo
+        // lo tenía; se había perdido en la composición nueva).
+        .accessibilityAction(named: Text("Reorder exercises")) {
+            guard !sheet.locked else { return }
+            sheet.activeCell = nil
+            withAnimation(.snappy) { sheet.reordering = true }
+        }
     }
 
     // MARK: - Cabecera
@@ -78,6 +85,7 @@ struct HojaTarjetaEjercicio: View {
                 .foregroundStyle(sheet.theme.inkTertiary).frame(width: 30, height: 44).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(Text("More options"))   // R12 (QA D13 = Grok G9)
         .paperMenu(
             isPresented: Binding(get: { sheet.menuExerciseIndex == idx },
                                  set: { if !$0 { sheet.menuExerciseIndex = nil } }),
@@ -131,20 +139,26 @@ struct HojaTarjetaEjercicio: View {
             arrastrable: true,
             esPrimera: si == 0
         )
+        // R7(a): la celda activa de ESTA fila (si la hay) — la tira de toques dibuja su señal.
+        let activeField: RoutineSheet.EditorCell.Field? =
+            (sheet.activeCell?.idx == idx && sheet.activeCell?.si == si) ? sheet.activeCell?.field : nil
         return HojaFilaSerie(datos: datos, contexto: .edicion, marca: .pendiente)
             .overlay {
                 HojaFilaSerieTapZones(
                     onPeso: sheet.showsWeight(type) ? { sheet.beginEditing(.init(idx: idx, si: si, field: .weight)) } : nil,
                     onRepsFloor: sheet.showsReps(type) ? { sheet.beginEditing(.init(idx: idx, si: si, field: .repsFloor)) } : nil,
                     onRepsTop: sheet.showsReps(type) ? { sheet.beginEditing(.init(idx: idx, si: si, field: .repsTop)) } : nil,
-                    onDragChanged: { t in guard !sheet.locked else { return }; sheet.dragSetChanged(idx: idx, startSi: si, translation: t) },
+                    activeField: activeField,
+                    // R2 (QA D2 = Grok G6): `setId` FROZEN, nunca el `si` de esta construcción de
+                    // fila — un swap a medio gesto ya lo dejaría mirando a la serie equivocada.
+                    onDragChanged: { t in sheet.dragSetChanged(idx: idx, setId: setId, translation: t) },
                     onDragEnded: { sheet.dragSetEnded() }
                 )
             }
             .overlay(alignment: .trailing) {
                 if sheet.armedDeleteSetId == setId {
                     DeleteSetPill {
-                        withAnimation(.snappy) { sheet.armedDeleteSetId = nil; sheet.deleteSet(idx: idx, si: si) }
+                        withAnimation(.snappy) { sheet.armedDeleteSetId = nil; sheet.deleteSet(idx: idx, setId: setId) }
                     }
                 }
             }
@@ -159,7 +173,7 @@ struct HojaTarjetaEjercicio: View {
             })
             .accessibilityActions {
                 if !sheet.locked, item.re.sets.count > 1 {
-                    Button("Delete set") { sheet.deleteSet(idx: idx, si: si) }
+                    Button("Delete set") { sheet.deleteSet(idx: idx, setId: setId) }
                 }
             }
     }
@@ -204,16 +218,19 @@ private struct HojaFilaSerieTapZones: View {
     let onPeso: (() -> Void)?
     let onRepsFloor: (() -> Void)?
     let onRepsTop: (() -> Void)?
+    /// R7(a): qué campo de ESTA fila está activo (o nil) — dibuja la señal de foco, restaurada del
+    /// `setCellChrome(focused:)` del editor viejo (subrayado tinta cuando enfocado).
+    let activeField: RoutineSheet.EditorCell.Field?
     let onDragChanged: (CGFloat) -> Void
     let onDragEnded: () -> Void
 
     var body: some View {
         HStack(spacing: HojaMetrics.filaGap) {
             Color.clear.frame(width: HojaMetrics.colNumero)
-            zone(onPeso).frame(width: HojaMetrics.colPesoEdicion)
+            zone(onPeso, active: activeField == .weight).frame(width: HojaMetrics.colPesoEdicion)
             HStack(spacing: 0) {
-                zone(onRepsFloor)
-                zone(onRepsTop)
+                zone(onRepsFloor, active: activeField == .repsFloor)
+                zone(onRepsTop, active: activeField == .repsTop)
             }
             .frame(width: HojaMetrics.colRepsEdicion)
             Color.clear.frame(maxWidth: .infinity)
@@ -228,12 +245,17 @@ private struct HojaFilaSerieTapZones: View {
         .padding(.horizontal, HojaMetrics.filaHPad)
     }
 
-    @ViewBuilder private func zone(_ action: (() -> Void)?) -> some View {
-        if let action {
-            Color.clear.contentShape(Rectangle()).onTapGesture(perform: action)
-        } else {
-            Color.clear
-        }
+    @ViewBuilder private func zone(_ action: (() -> Void)?, active: Bool) -> some View {
+        Color.clear
+            .contentShape(Rectangle())
+            .onTapGesture { action?() }
+            .allowsHitTesting(action != nil)
+            .overlay(alignment: .bottom) {
+                if active {
+                    Rectangle().fill(LiquidColor.tinta900).frame(height: 2)
+                        .padding(.bottom, 6)
+                }
+            }
     }
 }
 #endif

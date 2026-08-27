@@ -70,13 +70,19 @@ struct RoutineSheet: View {
 
     // MARK: Tarjeta abierta única (FER-166)
     //
-    // La Hoja muestra UN ejercicio a tinta plena a la vez; el resto pliega en receta. Un `Int?`
-    // (no un `Set`, a diferencia de `RoutineEditorScreen.expandedExercises`): tocar una plegada la
-    // abre Y pliega la anterior. Las tarjetas de superserie no entran en este acordeón — se
-    // muestran siempre completas (mock `hoja-pantallas.html` P1 `.ss2`).
-    @State var openIndex: Int? = nil
+    // La Hoja muestra UN ejercicio a tinta plena a la vez; el resto pliega en receta. Ronda 2 (R5,
+    // QA D8 = Grok G1): por ID de ejercicio, no por índice — un `Int` moría en cuanto borrar/mover
+    // reindexaba el arreglo (la tarjeta abierta saltaba a la del vecino). Las tarjetas de
+    // superserie no entran en este acordeón — se muestran siempre completas (mock
+    // `hoja-pantallas.html` P1 `.ss2`); ver `load()` para por qué ese caso deja `openID` en nil.
+    @State var openID: String? = nil
     /// El ejercicio (índice en `items`) pendiente de confirmar «Igualar todas» (ahora en «···», A3).
     @State var equalizeTarget: Int? = nil
+    /// R8 (QA D10, adjudicado): una superserie legada con rondas YA desiguales no se aplana en
+    /// silencio — la primera edición que dispararía el espejo queda aquí hasta que el confirm
+    /// («¿Igualar todas las rondas?») la libere.
+    struct PendingMirror { let idx: Int; let si: Int; let field: EditorCell.Field; let value: String }
+    @State var pendingMirror: PendingMirror? = nil
 
     // MARK: Captura con el keypad de la sesión
     /// La celda que se está tecleando; nil = keypad oculto. Ver `RoutineSheetKeypad.swift`.
@@ -115,10 +121,14 @@ struct RoutineSheet: View {
         let field: Field
     }
 
-    /// El set en arrastre: qué ejercicio, dónde EMPEZÓ el gesto (el `translation` de `DragGesture`
-    /// es acumulado desde ahí) y en qué posición vive AHORA tras los swaps ya aplicados.
+    /// El set (o miembro de superserie) en arrastre. Ronda 2 (R2, QA D2 = Grok G6): llaveado por
+    /// `dragID` — la identidad FROZEN al reconocer el gesto (`RoutineSet.id` para una serie,
+    /// `RoutineExercise.id` para un miembro), nunca por un índice de posición que un swap a medio
+    /// gesto ya movió. `startSi`/`currentSi` son posiciones resueltas contra esa identidad en cada
+    /// llamada — nunca un `si` que el caller capturó al construir la fila.
     struct DragSetState: Equatable {
-        let idx: Int
+        let idx: Int          // exercise index (-1 = arrastre de MIEMBROS, no de series)
+        let dragID: String
         let startSi: Int
         var currentSi: Int
     }
@@ -156,6 +166,18 @@ struct RoutineSheet: View {
                 .init(String(localized: "Equalize"), role: .destructive) {
                     if let idx = equalizeTarget { equalizeAll(idx) }
                 }
+            ]
+        )
+        // R8 (QA D10, adjudicado): una superserie legada con rondas ya desiguales pide confirmar
+        // antes de que la primera edición las espeje a todas. Mismo patrón que «Igualar todas».
+        .instrumentoConfirm(
+            isPresented: Binding(get: { pendingMirror != nil }, set: { if !$0 { pendingMirror = nil } }),
+            title: String(localized: "Equalize all rounds?"),
+            context: String(localized: "ROUTINE"),
+            message: String(localized: "This superset's rounds don't all match yet — this will make every round the same."),
+            actions: [
+                .init(String(localized: "Keep as is"), role: .primary),
+                .init(String(localized: "Equalize"), role: .destructive) { confirmPendingMirror() }
             ]
         )
         .toolbar(.hidden, for: .navigationBar)
@@ -204,6 +226,11 @@ struct RoutineSheet: View {
                     guard enabled else { return }
                     for si in items[t.ei].re.sets.indices where items[t.ei].re.sets[si].kind == .work {
                         items[t.ei].re.sets[si].reps = targetReps
+                        // R4: este es un camino de escritura directo (no pasa por el binding
+                        // gateado) — re-normaliza aquí también, el piso que la progresión acaba
+                        // de subir puede alcanzar/pasar un techo ya puesto.
+                        items[t.ei].re.sets[si].repsRangeTop = RoutineSet.normalizedRepsRangeTop(
+                            reps: items[t.ei].re.sets[si].reps, top: items[t.ei].re.sets[si].repsRangeTop)
                     }
                 }
             )
@@ -252,11 +279,11 @@ struct RoutineSheet: View {
 
     @ViewBuilder
     private var fullList: some View {
-        ForEach(Array(items.enumerated()), id: \.element.id) { idx, _ in
+        ForEach(Array(items.enumerated()), id: \.element.id) { idx, item in
             let grouped = RoutineSetEditing.inSuperset(items.map(\.re), idx)
             if grouped {
                 if firstOfGroup(idx) { supersetCard(from: idx).hojaRow(top: CenitMetrics.sectionGap, bottom: 0) }
-            } else if openIndex == idx {
+            } else if openID == item.id {
                 HojaTarjetaEjercicio(sheet: self, idx: idx).hojaRow(top: idx == 0 ? 6 : CenitMetrics.sectionGap, bottom: 0)
             } else {
                 HojaPlegada.row(sheet: self, idx: idx).hojaRow(top: idx == 0 ? 6 : CenitMetrics.sectionGap, bottom: 0)
@@ -284,6 +311,12 @@ struct RoutineSheet: View {
                            : "This routine could not be found.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+            // R14 (QA D12): el fallback de descanso no es un callejón sin salida — la puerta
+            // regresa a Tu Plan, de donde SIEMPRE se llega a un `.planDay` vacío, para asignar.
+            if isPlanDay {
+                EntrenarCapsulaPuerta(String(localized: "ASSIGN")) { dismiss() }
+                    .padding(.top, 6)
+            }
         }
         .padding(.horizontal, 32)
     }
@@ -302,7 +335,11 @@ struct RoutineSheet: View {
         locked ? String(localized: "Resume") : String(localized: "Start session")
     }
 
-    var startsSession: Bool { routine != nil && !items.isEmpty }
+    /// R3 (QA D3, adjudicado por el director — ronda 2): `.planDay` NO tiene CTA de empezar (mapa
+    /// A6). El editor de un día del plan es de PRESCRIPCIÓN, no de captura — «Empezar sesión» desde
+    /// ahí competía con el punto de entrada real (Tu Plan / Rutina de hoy). `.today`/`.routine`
+    /// conservan el CTA (FER-952 sigue vigente para ellos).
+    var startsSession: Bool { routine != nil && !items.isEmpty && !isPlanDay }
     var isPlanDay: Bool { if case .planDay = origin { return true } else { return false } }
 
     var planWeekday: Int? {
@@ -399,12 +436,15 @@ struct RoutineSheet: View {
         return s
     }
 
+    /// R9 (Grok G7, ronda 2): un solo drop ya NO cierra el modo — dura hasta «Listo» (a diferencia
+    /// del editor viejo, «dropping reopens the tables», que este issue reemplaza a propósito: la
+    /// hoja puede pedir varios movimientos seguidos sin reabrir el menú cada vez).
     func moveBlocks(from source: IndexSet, to destination: Int) {
+        guard !locked else { return }
         var blocks = reorderBlocks
         blocks.move(fromOffsets: source, toOffset: destination)
         withAnimation(.snappy) {
             items = blocks.flatMap(\.items)
-            reordering = false
         }
         dirty = true
     }
