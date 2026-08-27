@@ -386,6 +386,9 @@ public struct StrengthSessionSnapshot: Codable, Sendable, Equatable {
         public var lastReps: Int?
         public var lastTimeS: Int?
         public var lastDistanceM: Double?
+        /// Last time's top work set's RPE (FER-167 ronda 2 · R12). Optional so a pre-R12 snapshot
+        /// (key absent) still decodes to nil — the ANT playhead's «· Q» suffix just stays silent.
+        public var lastRPE: Double?
         public var sets: [SetSnapshot]
         public var currentSet: Int
         public var skipped: Bool
@@ -425,7 +428,8 @@ public struct StrengthSessionSnapshot: Codable, Sendable, Equatable {
         public init(id: String, exerciseId: String, name: String, type: ExerciseType,
                     restSeconds: Int, restMode: RestMode, hrRestReference: HRRestReference,
                     hrRestValue: Double, lastWeightKg: Double? = nil, lastReps: Int? = nil,
-                    lastTimeS: Int? = nil, lastDistanceM: Double? = nil, sets: [SetSnapshot],
+                    lastTimeS: Int? = nil, lastDistanceM: Double? = nil, lastRPE: Double? = nil,
+                    sets: [SetSnapshot],
                     currentSet: Int, skipped: Bool, raiseOptedOut: Bool? = nil,
                     supersetGroup: Int? = nil, note: String? = nil, heldRaise: HeldRaise? = nil,
                     seededNote: String? = nil) {
@@ -433,7 +437,7 @@ public struct StrengthSessionSnapshot: Codable, Sendable, Equatable {
             self.restSeconds = restSeconds; self.restMode = restMode
             self.hrRestReference = hrRestReference; self.hrRestValue = hrRestValue
             self.lastWeightKg = lastWeightKg; self.lastReps = lastReps
-            self.lastTimeS = lastTimeS; self.lastDistanceM = lastDistanceM
+            self.lastTimeS = lastTimeS; self.lastDistanceM = lastDistanceM; self.lastRPE = lastRPE
             self.sets = sets; self.currentSet = currentSet; self.skipped = skipped
             self.raiseOptedOut = raiseOptedOut
             self.supersetGroup = supersetGroup

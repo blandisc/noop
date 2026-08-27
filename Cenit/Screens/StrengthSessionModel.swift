@@ -171,6 +171,10 @@ final class StrengthSessionModel: ObservableObject {
         /// Last time's captured time / distance, for the «ANTERIOR» cell on time / distance exercises.
         let lastTimeS: Int?
         let lastDistanceM: Double?
+        /// Last time's top work set's perceived effort (FER-167 ronda 2 · R12), for the ANT playhead's
+        /// «· Q2» suffix (`HojaSesionViva.antPlayhead`). `nil` when the last session never captured RPE
+        /// there — the playhead just omits the Q, same honesty rule as everywhere else Q is optional.
+        let lastRPE: Double?
         var sets: [WorkingSet]
         var currentSet: Int
         var skipped: Bool
@@ -600,7 +604,7 @@ final class StrengthSessionModel: ObservableObject {
                               restSeconds: Self.adHocRestSeconds, restMode: .fixed,
                               hrRestReference: .restingMargin, hrRestValue: 0,
                               lastWeightKg: lastWeightKg, lastReps: lastReps,
-                              lastTimeS: nil, lastDistanceM: nil,
+                              lastTimeS: nil, lastDistanceM: nil, lastRPE: nil,
                               sets: [set], currentSet: 0, skipped: false)
         runs.append(run)
         currentIndex = runs.count - 1
@@ -622,7 +626,7 @@ final class StrengthSessionModel: ObservableObject {
                               restSeconds: Self.adHocRestSeconds, restMode: .fixed,
                               hrRestReference: .restingMargin, hrRestValue: 0,
                               lastWeightKg: lastWeightKg, lastReps: lastReps,
-                              lastTimeS: nil, lastDistanceM: nil,
+                              lastTimeS: nil, lastDistanceM: nil, lastRPE: nil,
                               sets: [set], currentSet: 0, skipped: false)
         runs.insert(run, at: min(currentIndex + 1, runs.count))
     }
@@ -760,7 +764,7 @@ final class StrengthSessionModel: ObservableObject {
             restSeconds: old.restSeconds, restMode: old.restMode,
             hrRestReference: old.hrRestReference, hrRestValue: old.hrRestValue,
             lastWeightKg: lastWeightKg, lastReps: lastReps,
-            lastTimeS: nil, lastDistanceM: nil,
+            lastTimeS: nil, lastDistanceM: nil, lastRPE: nil,
             sets: newSets, currentSet: min(doneSets.count, max(0, newSets.count - 1)),
             skipped: false)
         if ei == currentIndex { phase = .capturing; clearRest(); timerStart = nil }
@@ -878,7 +882,13 @@ final class StrengthSessionModel: ObservableObject {
     /// `skipRest`/`registerCurrentSet`/`toggleDone`, no esta función).
     func closeOpenRest(now: Date = Date()) {
         guard let started = restStartedAt, let owner = restOwnerSetId else { return }
-        let elapsed = max(0, Int(now.timeIntervalSince(started)))
+        // FER-167 ronda 2 (R15): si la pausa sigue ABIERTA (nunca se reanudó), el reloj que el
+        // usuario VIO se congeló en `pausedAt` — medir contra el wall-clock real inflaría el
+        // descanso con tiempo en pausa. `resume()` ya cubre la pausa CERRADA (desplaza
+        // `restStartedAt` por el delta pausado, así que este cálculo la excluye solo); esto cubre
+        // la que sigue abierta cuando `closeOpenRest` dispara (p. ej. saltar sin haber reanudado).
+        let effectiveNow = pausedAt ?? now
+        let elapsed = max(0, Int(effectiveNow.timeIntervalSince(started)))
         for ri in runs.indices {
             if let si = runs[ri].sets.firstIndex(where: { $0.id == owner }) {
                 runs[ri].sets[si].restTakenS = elapsed
@@ -985,7 +995,7 @@ final class StrengthSessionModel: ObservableObject {
                     restSeconds: run.restSeconds, restMode: run.restMode,
                     hrRestReference: run.hrRestReference, hrRestValue: run.hrRestValue,
                     lastWeightKg: run.lastWeightKg, lastReps: run.lastReps,
-                    lastTimeS: run.lastTimeS, lastDistanceM: run.lastDistanceM,
+                    lastTimeS: run.lastTimeS, lastDistanceM: run.lastDistanceM, lastRPE: run.lastRPE,
                     sets: run.sets.map { s in
                         StrengthSessionSnapshot.SetSnapshot(
                             id: s.id, weightKg: s.weightKg, reps: s.reps, timeS: s.timeS,
@@ -1017,7 +1027,7 @@ final class StrengthSessionModel: ObservableObject {
                         restSeconds: r.restSeconds, restMode: r.restMode,
                         hrRestReference: r.hrRestReference, hrRestValue: r.hrRestValue,
                         lastWeightKg: r.lastWeightKg, lastReps: r.lastReps,
-                        lastTimeS: r.lastTimeS, lastDistanceM: r.lastDistanceM,
+                        lastTimeS: r.lastTimeS, lastDistanceM: r.lastDistanceM, lastRPE: r.lastRPE,
                         sets: r.sets.map { s in
                             WorkingSet(id: s.id, weightKg: s.weightKg, reps: s.reps, timeS: s.timeS,
                                        distanceM: s.distanceM, done: s.done, doneTs: s.doneTs,
@@ -1105,6 +1115,7 @@ final class StrengthSessionModel: ObservableObject {
                                hrRestValue: slot.re.hrRestValue,
                                lastWeightKg: lastWeight, lastReps: lastReps,
                                lastTimeS: last?.timeS.map { Int($0) }, lastDistanceM: last?.distanceM,
+                               lastRPE: last?.rpe,
                                sets: sets, currentSet: 0, skipped: false,
                                proposedRaise: type == .weightReps ? slot.raise : nil,
                                supersetGroup: slot.re.supersetGroup,

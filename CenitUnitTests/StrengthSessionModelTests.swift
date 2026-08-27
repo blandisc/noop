@@ -41,6 +41,26 @@ final class StrengthSessionModelTests: XCTestCase {
         XCTAssertEqual(s.runs.first?.lastWeightKg, 80)
     }
 
+    /// FER-167 ronda 2 (R12): «la última vez» también trae el RPE, para el playhead ANT «· Q» —
+    /// GAP cerrado (ronda 1 lo declaró fuera de alcance por tocar el modelo; autorizado aquí).
+    func testPrefillSeedsLastRPE() {
+        var last = lastSet("bench", weight: 80, reps: 8)
+        last.rpe = 8
+        let slot = StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 3),
+                                                 exercise: ex("bench", "Bench"), lastSets: [last])
+        let s = make([slot])
+        XCTAssertEqual(s.runs.first?.lastRPE, 8, "seeded from the last session's top set RPE")
+    }
+
+    /// Sin RPE capturado la última vez, el playhead se queda sin Q — nunca se inventa.
+    func testPrefillLastRPENilWhenNeverCaptured() {
+        let slot = StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 3),
+                                                 exercise: ex("bench", "Bench"),
+                                                 lastSets: [lastSet("bench", weight: 80, reps: 8)])
+        let s = make([slot])
+        XCTAssertNil(s.runs.first?.lastRPE, "no RPE last time → nil, not a fabricated default")
+    }
+
     func testFirstTimeUsesTargetsThenDefaults() {
         let withTarget = StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "sq", sets: 2, reps: 5, weight: 100),
                                                        exercise: ex("sq", "Squat"), lastSets: [])
@@ -207,6 +227,19 @@ final class StrengthSessionModelTests: XCTestCase {
         s.skipRest(now: Date(timeIntervalSince1970: 5100))
         // Wall clock 5000→5100 = 100s, minus the 60s paused = 40s measured.
         XCTAssertEqual(s.runs[0].sets[0].restTakenS, 40, "the paused interval is excluded from the measurement")
+    }
+
+    /// FER-167 ronda 2 (R15): an OPEN pause (never resumed) at the moment the rest closes must clamp
+    /// to `pausedAt`, not the real wall-clock — the saved number is what the user saw frozen. Distinct
+    /// from `testPauseExcludedFromMeasuredRest`, which covers a pause already CLOSED by `resume()`.
+    func testCloseOpenRestClampsToOpenPause() {
+        let s = make([StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 2, rest: 90),
+                                                    exercise: ex("bench", "Bench"), lastSets: [])])
+        s.registerCurrentSet(now: Date(timeIntervalSince1970: 5000))   // rest opens at 5000
+        s.pause(now: Date(timeIntervalSince1970: 5010))                // frozen 10s in — never resumed
+        s.skipRest(now: Date(timeIntervalSince1970: 5200))             // real wall-clock is 200s later
+        XCTAssertEqual(s.runs[0].sets[0].restTakenS, 10,
+                       "clamped to pausedAt (10s), not the 200s wall-clock gap")
     }
 
     /// Ending the session while a rest is still open (the last-tapped set's rest never got skipped or
