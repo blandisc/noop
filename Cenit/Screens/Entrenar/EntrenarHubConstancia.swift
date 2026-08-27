@@ -31,12 +31,13 @@ struct EntrenarHubConstancia: View {
                 HStack(alignment: .firstTextBaseline) {
                     Text("Consistency · 12 weeks").liquidRegla().foregroundStyle(LiquidColor.tinta500)
                     Spacer(minLength: CenitMetrics.space2)
+                    // `Text.textCase(_:)` devuelve `some View`, no `Text` — rompe la concatenación `+`.
+                    // Mayúsculas sobre el STRING ya resuelto (mismo patrón que `EntrenarHubSemana`).
                     (Text(verbatim: "\(sessionsThisMonth)")
                         .font(EntrenarHubMetrics.semValNumeral).tracking(EntrenarHubMetrics.semValTracking)
                      + Text(verbatim: " ")
-                     + Text("this month")
-                        .font(EntrenarHubMetrics.semValCalificativo).tracking(EntrenarHubMetrics.semValCalificativoTracking)
-                        .textCase(.uppercase))
+                     + Text(verbatim: String(localized: "this month").uppercased())
+                        .font(EntrenarHubMetrics.semValCalificativo).tracking(EntrenarHubMetrics.semValCalificativoTracking))
                         .foregroundStyle(LiquidColor.tinta900)
                 }
                 VStack(spacing: EntrenarHubMetrics.ghgridGap) {

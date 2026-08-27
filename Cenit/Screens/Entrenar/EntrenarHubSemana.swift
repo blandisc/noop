@@ -31,12 +31,15 @@ struct EntrenarHubSemana: View {
                     Spacer(minLength: CenitMetrics.space2)
                     semVal
                 }
-                HStack(spacing: 0) {
+                // Teselas de ancho FIJO con gap chico (mock `.semRow{gap:8px}`) — no `WeekTokens`, cuya
+                // tira sí reparte 1/7 del ancho por columna. «EDITAR ›» se empuja al filo con un
+                // `Spacer` (mock `.editar{margin-left:auto}`), absorbiendo el resto del ancho.
+                HStack(spacing: EntrenarHubMetrics.semRowGap) {
                     ForEach(Array(days.enumerated()), id: \.offset) { i, day in
                         tesela(day, label: i < labels.count ? labels[i] : "",
                               action: i == todayIndex ? onTapToday : onTapOtherDay)
-                            .frame(maxWidth: .infinity)
                     }
+                    Spacer(minLength: CenitMetrics.space2)
                     EntrenarCapsulaPuerta(String(localized: "Edit").uppercased(), action: onEdit)
                 }
                 .padding(.top, CenitMetrics.space2)
@@ -51,12 +54,14 @@ struct EntrenarHubSemana: View {
                 .font(EntrenarHubMetrics.semValNumeral).tracking(EntrenarHubMetrics.semValTracking)
                 .foregroundStyle(LiquidColor.tinta900)
         } else {
+            // `Text.textCase(_:)` devuelve `some View`, no `Text` — rompe la concatenación `+` de más
+            // abajo. Mayúsculas sobre el STRING ya resuelto, no sobre la vista (mismo patrón que
+            // `EntrenarCapsulaPuerta` con «Edit»).
             (Text(verbatim: "\(sessionsDone)")
                 .font(EntrenarHubMetrics.semValNumeral).tracking(EntrenarHubMetrics.semValTracking)
              + Text(verbatim: " ")
-             + Text("of \(sessionsPlanned)")
-                .font(EntrenarHubMetrics.semValCalificativo).tracking(EntrenarHubMetrics.semValCalificativoTracking)
-                .textCase(.uppercase))
+             + Text(verbatim: String(localized: "of \(sessionsPlanned)").uppercased())
+                .font(EntrenarHubMetrics.semValCalificativo).tracking(EntrenarHubMetrics.semValCalificativoTracking))
                 .foregroundStyle(LiquidColor.tinta900)
         }
     }
