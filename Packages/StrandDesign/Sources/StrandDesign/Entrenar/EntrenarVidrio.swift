@@ -66,6 +66,23 @@ public enum EntrenarTono: Sendable, Equatable, CaseIterable {
     }
 }
 
+/// El puente familia→tono del hub v18 (FER-171 · Parte B): qué `EntrenarTono` tiñe el HÉROE (que
+/// tiñe por la familia de la rutina del día) y las TESELAS de semana / celdas de constancia (que
+/// tiñen por la familia de cada sesión) — los tres únicos lugares del hub donde la identidad de
+/// color viene de una FAMILIA en vez del rol fijo del módulo (Marcas siempre rosa, Volumen siempre
+/// ámbar, con o sin importar qué se entrenó). Mapeo 1:1 con `EntrenarFamily.tint` (push → ember,
+/// pull → teal, legs/fullBody → índigo) para que un mismo día lea el mismo color en el héroe, la
+/// tesela y la celda — una sola tabla, no una por consumidor.
+public extension EntrenarFamily {
+    var tono: EntrenarTono {
+        switch self {
+        case .push:             return .ambar
+        case .pull:             return .cian
+        case .legs, .fullBody:  return .indigo
+        }
+    }
+}
+
 /// Las constantes con nombre de la receta — nada suelto en `EntrenarVidrioReceta`. Cada valor
 /// cita su origen exacto en el mock `eje-hub-v18.html` para que un cambio de diseño futuro sepa
 /// qué línea de CSS está tocando. `public`: `moduloInsets` es el default-argument de un `init`
