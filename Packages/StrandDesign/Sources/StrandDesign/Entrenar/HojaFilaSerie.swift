@@ -293,30 +293,42 @@ public struct HojaFilaSerie: View {
         return marca == .fantasma ? LiquidColor.tinta500 : LiquidColor.tinta700
     }
 
-    /// Label compuesto para VoiceOver (mock AC: «Serie 2, 82.5 kilogramos, 8 repeticiones, pendiente»).
+    /// Label compuesto para VoiceOver. R10 (QA D6, FER-166 ronda 2): antes hardcodeaba «kilogramos»
+    /// SIEMPRE (mentía en libras) y en español SIEMPRE (sordo al idioma del dispositivo), y anunciaba
+    /// «—, kilogramos» en bodyweight/tiempo aunque no hubiera peso que decir. Ahora: la unidad es la
+    /// REAL que trae `datos.unidad` (kg/lb, ya resuelta por el caller según `unitSystem`); las
+    /// palabras de estado pasan por `String(localized:)` (catálogo, no texto suelto); y las partes
+    /// vacías (`"—"`, el placeholder de `HojaTarjetaEjercicio`/`HojaTarjetaSuperserieCompuesta`
+    /// para un tipo sin peso/reps) se OMITEN en vez de leerse como ruido.
     private var accessibilityLabel: String {
         var parts: [String] = []
         if datos.esCalentamiento {
-            parts.append("Calentamiento")
+            parts.append(String(localized: "Warm-up"))
         } else {
-            parts.append("Serie \(datos.numero)")
+            // `numero` es siempre un entero como texto salvo calentamiento (ya cubierto arriba);
+            // el fallback no localizado es defensivo y en la práctica nunca se toma.
+            parts.append(Int(datos.numero).map { String(localized: "Set \($0)") } ?? "Set \(datos.numero)")
         }
-        parts.append("\(datos.peso) kilogramos")
-        parts.append("\(datos.reps) repeticiones")
+        if !datos.peso.isEmpty, datos.peso != "—" {
+            parts.append(datos.unidad.isEmpty ? datos.peso : "\(datos.peso) \(datos.unidad)")
+        }
+        if !datos.reps.isEmpty, datos.reps != "—" {
+            parts.append(datos.reps)
+        }
         switch marca {
         case .hecha:
-            parts.append("hecha")
+            parts.append(String(localized: "done"))
             if let q = datos.q {
                 let resto = q.hasPrefix("Q") ? String(q.dropFirst()) : q
-                parts.append("quedaban \(resto)")
+                if let n = Int(resto) { parts.append(String(localized: "\(n) left")) }
             }
         case .pendiente:
-            parts.append("pendiente")
+            parts.append(String(localized: "pending"))
         case .activa:
-            parts.append("activa")
+            parts.append(String(localized: "active"))
             if let ant = datos.ant { parts.append(ant) }
         case .fantasma:
-            parts.append("próxima")
+            parts.append(String(localized: "next"))
         }
         return parts.joined(separator: ", ")
     }

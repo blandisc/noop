@@ -125,7 +125,9 @@ public struct HojaTarjetaSuperserie<Filas: View>: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(Text(verbatim: "Más opciones"))
+                // R10 (QA D6): vía catálogo, no español hardcodeado (`String(localized:)` en vez de
+                // `Text(verbatim:)` — la clave "More options" ya existe y trae su es-MX).
+                .accessibilityLabel(Text("More options"))
             }
         }
     }
