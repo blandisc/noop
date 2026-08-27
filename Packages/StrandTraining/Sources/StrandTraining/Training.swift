@@ -150,6 +150,18 @@ public struct RoutineSet: Codable, Sendable, Identifiable, Equatable {
         guard let top = repsRangeTop, top > reps else { return "\(reps)" }
         return "\(reps)-\(top)"
     }
+
+    /// La invariante piso ≤ techo (E13/FER-94, R4 — FER-166 ronda 2): un techo inválido nunca se
+    /// PERSISTE, no solo se tolera al leer (`repsRangeLabel` arriba ya caía al piso al leer un
+    /// rango roto; esto evita que exista en primer lugar). Pura, sin `View`/`Repository`, para que
+    /// el único punto de escritura (`RoutineSheetKeypad.swift`, capa app) y la limpieza de datos
+    /// legados al cargar (`RoutineSheet.load()`) llamen la MISMA regla: un techo que no supera al
+    /// piso, o un techo sin piso con qué compararse, se normaliza a `nil` (piso único) — nunca un
+    /// rango invertido como "10-8".
+    public static func normalizedRepsRangeTop(reps: Int?, top: Int?) -> Int? {
+        guard let top, let reps, top > reps else { return nil }
+        return top
+    }
 }
 
 /// What to do when an exercise stalls (progression, FER-A). `propose` pre-populates a deload; `warn`
