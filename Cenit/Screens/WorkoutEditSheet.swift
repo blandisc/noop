@@ -441,7 +441,8 @@ struct WorkoutEditSheet: View {
                                     kind: .work,
                                     weightKg: usesWeightReps ? s.weightKg : nil,
                                     reps: usesWeightReps ? s.reps : nil,
-                                    timeS: s.timeS, distanceM: s.distanceM, done: true, ts: s.ts))
+                                    timeS: s.timeS, distanceM: s.distanceM, done: true, ts: s.ts,
+                                    restTakenS: s.restTakenS))
                 pos += 1
             }
         }
@@ -516,10 +517,14 @@ private struct EditSet: Identifiable, Equatable {
     var timeS: Double?
     var distanceM: Double?
     let ts: Int
+    /// The real rest that followed this set (FER-167), carried through untouched so editing a session
+    /// doesn't silently erase a measurement the editor never shows a control for.
+    var restTakenS: Int?
 
     init(_ s: SetEntry) {
         id = s.id; weightKg = s.weightKg ?? 0; reps = s.reps ?? 0
         timeS = s.timeS; distanceM = s.distanceM; ts = s.ts
+        restTakenS = s.restTakenS
     }
     init(new ts: Int, template: EditSet?) {
         id = UUID().uuidString
@@ -527,6 +532,7 @@ private struct EditSet: Identifiable, Equatable {
         reps = template?.reps ?? 8
         timeS = nil; distanceM = nil
         self.ts = ts
+        restTakenS = nil   // a freshly added set never had a measured rest
     }
 }
 

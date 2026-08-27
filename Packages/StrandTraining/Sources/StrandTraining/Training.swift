@@ -315,14 +315,19 @@ public struct SetEntry: Codable, Sendable, Identifiable, Equatable {
     /// Perceived effort (RPE), 6-10 scale with half-steps (FER-930). Optional: nil means "not captured",
     /// never a default of 0 — marking a set done never requires an RPE.
     public var rpe: Double?
+    /// The real rest (seconds, pauses excluded) that FOLLOWED this set — measured by the live session
+    /// and persisted at save (FER-167, v40). `nil` = no measured rest (last set of the session, an
+    /// intra-round superset jump, «sin descanso» configured, or a pre-v40 row) — never a default 0.
+    public var restTakenS: Int?
 
     public init(id: String = UUID().uuidString, sessionId: String, exerciseId: String,
                 position: Int, kind: SetKind = .work, weightKg: Double? = nil,
                 reps: Int? = nil, timeS: Double? = nil, distanceM: Double? = nil,
-                done: Bool = false, ts: Int, rpe: Double? = nil) {
+                done: Bool = false, ts: Int, rpe: Double? = nil, restTakenS: Int? = nil) {
         self.id = id; self.sessionId = sessionId; self.exerciseId = exerciseId
         self.position = position; self.kind = kind; self.weightKg = weightKg; self.reps = reps
         self.timeS = timeS; self.distanceM = distanceM; self.done = done; self.ts = ts; self.rpe = rpe
+        self.restTakenS = restTakenS
     }
 }
 
@@ -352,15 +357,19 @@ public struct StrengthSessionSnapshot: Codable, Sendable, Equatable {
         /// El usuario YA editó esta celda (modelo fantasma FER-952): una fila sin tocar muestra su
         /// semilla («la última vez») en tinta tenue y palomearla la registra tal cual. Legacy → nil.
         public var touched: Bool?
+        /// The real rest (seconds, pauses excluded) that FOLLOWED this set (FER-167), mirroring
+        /// `SetEntry.restTakenS`. Legacy JSON without the key decodes to nil, same pattern as `rpe`.
+        public var restTakenS: Int?
 
         public init(id: String, weightKg: Double, reps: Int, timeS: Int? = nil,
                     distanceM: Double? = nil, done: Bool = false, doneTs: Int? = nil,
                     rest: RestConfig? = nil, kind: SetKind = .work, rpe: Double? = nil,
-                    note: String? = nil, touched: Bool? = nil) {
+                    note: String? = nil, touched: Bool? = nil, restTakenS: Int? = nil) {
             self.id = id; self.weightKg = weightKg; self.reps = reps; self.timeS = timeS
             self.distanceM = distanceM; self.done = done; self.doneTs = doneTs
             self.rest = rest; self.kind = kind; self.rpe = rpe; self.note = note
             self.touched = touched
+            self.restTakenS = restTakenS
         }
     }
     /// One exercise's run within the session.
@@ -444,6 +453,10 @@ public struct StrengthSessionSnapshot: Codable, Sendable, Equatable {
     public var restStartedAt: Date?
     public var currentRestTarget: Int?
     public var currentRestMode: RestMode
+    /// The `WorkingSet.id` that opened the in-flight rest above (FER-167) — the descanso en vuelo needs
+    /// to know whose row to close onto after a restore. Optional so a pre-FER-167 snapshot (key absent)
+    /// still decodes; nil loses at most the one measurement in flight, never the invariant.
+    public var restOwnerSetId: String?
     /// The running stopwatch anchor for time/distance sets; nil when not running.
     public var timerStart: Date?
     /// Pause state (FER-823), so a crash mid-pause restores paused with the right accumulated pause time.
@@ -458,7 +471,7 @@ public struct StrengthSessionSnapshot: Codable, Sendable, Equatable {
                 restStartedAt: Date? = nil, currentRestTarget: Int? = nil,
                 currentRestMode: RestMode = .fixed, timerStart: Date? = nil,
                 paused: Bool = false, pausedAccumulatedS: Int = 0, pausedAt: Date? = nil,
-                updatedTs: Int) {
+                updatedTs: Int, restOwnerSetId: String? = nil) {
         self.id = id; self.routineId = routineId; self.routineName = routineName
         self.startTs = startTs; self.runs = runs; self.currentIndex = currentIndex
         self.restEndsAt = restEndsAt; self.restStartedAt = restStartedAt
@@ -466,6 +479,7 @@ public struct StrengthSessionSnapshot: Codable, Sendable, Equatable {
         self.timerStart = timerStart
         self.paused = paused; self.pausedAccumulatedS = pausedAccumulatedS; self.pausedAt = pausedAt
         self.updatedTs = updatedTs
+        self.restOwnerSetId = restOwnerSetId
     }
 }
 
