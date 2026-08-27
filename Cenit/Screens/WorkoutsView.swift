@@ -278,7 +278,12 @@ struct WorkoutsView: View {
     /// = current week. Bucketing delegates to `TrainingWeeks` (FER-171 · Parte B) — the same cubeta
     /// `WorkoutHistoryScreen.weeklyVolumes` and the Entrenar hub now share.
     private func weeklyStrengthVolumes() -> [WeekVolume] {
-        let raw = strengthSessions.map { (ts: Double($0.startTs), volumeKg: sessionVolumes[$0.id]?.volumeKg ?? 0) }
+        // Ronda 2 · G6: filtra `endTs != nil` — sin esto una sesión EN CURSO (sin cerrar) entraba a
+        // la cubeta, igual que ya filtran el hub v18 y `WorkoutHistoryScreen.weeklyVolumes`.
+        let raw = strengthSessions.compactMap { s -> (ts: Double, volumeKg: Double)? in
+            guard s.endTs != nil else { return nil }
+            return (ts: Double(s.startTs), volumeKg: sessionVolumes[s.id]?.volumeKg ?? 0)
+        }
         let buckets = TrainingWeeks.volumeBuckets(sessions: raw, weeks: 8, now: Date(), calendar: Calendar.current)
         return buckets.enumerated().map { i, b in WeekVolume(id: i, volumeKg: b.volumeKg, isCurrent: b.isCurrent) }
     }
