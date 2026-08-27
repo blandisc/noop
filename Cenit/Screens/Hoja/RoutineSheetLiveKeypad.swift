@@ -51,39 +51,57 @@ extension HojaSesionViva {
 
     @ViewBuilder var keypadInset: some View {
         if session.summary == nil, !isZombie, let cell = effectiveCell {
-            let (ei, si) = cellIndices(cell)
-            let run = session.runs.indices.contains(ei) ? session.runs[ei] : nil
-            let resting = session.phase == .resting
-            SessionKeypad(
-                theme: sheet.theme,
-                stepLabel: isWeightCell(cell) ? (imperial ? "±5" : "±2,5") : "±1",
-                canCopyPrevious: run.map { previousText($0) != nil } ?? false,
-                platesEnabled: isWeightCell(cell) && usesBarbell(ei),
-                onDigit: { keypadInput(String($0), cell: cell) },
-                onComma: { keypadComma(cell: cell) },
-                onBackspace: { keypadBackspace(cell: cell) },
-                onNext: { focusNextCell(after: cell) },
-                onCopyPrevious: {
-                    guard let run, let text = previousText(run) else { return }
-                    session.prefillPrevious(exercise: ei, set: si)
-                    buffer = text; bufferTyped = true
-                },
-                onStep: { keypadStep(cell, sign: 1) },
-                onStepDown: { keypadStep(cell, sign: -1) },
-                onPlates: { openPlates(ei: ei, si: si) },
-                onConfirmSet: { resting ? skipRest() : confirmOrToggleSet(ei: ei, si: si) },
-                confirmSetLabel: resting ? String(localized: "Skip") + " ›" : String(localized: "✓ Serie"),
-                confirmSetAccessibilityLabel: resting ? Text("Skip rest") : Text("Mark set as done"),
-                onPause: alternarPausa,
-                isPaused: session.paused,
-                // QUEDABAN se calla durante el descanso (mock P4: `.pad` sin `.qrow`).
-                selectedRIR: resting ? nil : LiveStrengthSheet.rirScoped(
-                    selectedRIR: selectedRIR, selectedRIRTarget: selectedRIRTarget,
-                    registering: LiveStrengthSheet.RIRTarget(ei: ei, si: si)),
-                onSelectRIR: resting ? nil : { selectedRIR = $0; selectedRIRTarget = LiveStrengthSheet.RIRTarget(ei: ei, si: si) }
-            )
-            .transition(.move(edge: .bottom))
+            if session.phase == .resting {
+                // O-r2b (ronda 3): un `TimelineView` propio para que la tecla vuelva a preguntar
+                // «¿estamos en el tope?» cada segundo, igual que la banda — sin esto, la consola se
+                // quedaba dicha «Saltar ›» aunque la banda ya hubiera pasado a «Continuar ›».
+                TimelineView(.periodic(from: Date(), by: 1)) { ctx in
+                    keypadBody(cell: cell, ceiling: isCeilingReleased(now: ctx.date))
+                }
+            } else {
+                keypadBody(cell: cell, ceiling: false)
+            }
         }
+    }
+
+    @ViewBuilder private func keypadBody(cell: LiveStrengthSheet.CellRef, ceiling: Bool) -> some View {
+        let (ei, si) = cellIndices(cell)
+        let run = session.runs.indices.contains(ei) ? session.runs[ei] : nil
+        let resting = session.phase == .resting
+        SessionKeypad(
+            theme: sheet.theme,
+            stepLabel: isWeightCell(cell) ? (imperial ? "±5" : "±2,5") : "±1",
+            canCopyPrevious: run.map { previousText($0) != nil } ?? false,
+            platesEnabled: isWeightCell(cell) && usesBarbell(ei),
+            onDigit: { keypadInput(String($0), cell: cell) },
+            onComma: { keypadComma(cell: cell) },
+            onBackspace: { keypadBackspace(cell: cell) },
+            onNext: { focusNextCell(after: cell) },
+            onCopyPrevious: {
+                guard let run, let text = previousText(run) else { return }
+                session.prefillPrevious(exercise: ei, set: si)
+                buffer = text; bufferTyped = true
+            },
+            onStep: { keypadStep(cell, sign: 1) },
+            onStepDown: { keypadStep(cell, sign: -1) },
+            onPlates: { openPlates(ei: ei, si: si) },
+            onConfirmSet: { resting ? skipRest() : confirmOrToggleSet(ei: ei, si: si) },
+            // O-r2b: en el tope, MISMA palabra que la banda — «Continuar ›», no «Saltar ›» (la
+            // acción de fondo no cambia: `skipRest()` sigue siendo lo que suelta el descanso).
+            confirmSetLabel: resting
+                ? (ceiling ? String(localized: "Continue") + " ›" : String(localized: "Skip") + " ›")
+                : String(localized: "✓ Serie"),
+            confirmSetAccessibilityLabel: resting
+                ? (ceiling ? Text("Continue") : Text("Skip rest")) : Text("Mark set as done"),
+            onPause: alternarPausa,
+            isPaused: session.paused,
+            // QUEDABAN se calla durante el descanso (mock P4: `.pad` sin `.qrow`).
+            selectedRIR: resting ? nil : LiveStrengthSheet.rirScoped(
+                selectedRIR: selectedRIR, selectedRIRTarget: selectedRIRTarget,
+                registering: LiveStrengthSheet.RIRTarget(ei: ei, si: si)),
+            onSelectRIR: resting ? nil : { selectedRIR = $0; selectedRIRTarget = LiveStrengthSheet.RIRTarget(ei: ei, si: si) }
+        )
+        .transition(.move(edge: .bottom))
     }
 
     func currentCellString(_ ref: LiveStrengthSheet.CellRef) -> String {

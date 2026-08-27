@@ -168,14 +168,28 @@ extension HojaSesionViva {
         return session.runs.firstIndex { $0.sets.contains { $0.id == ownerId } }
     }
 
+    /// O-r2a (ronda 3): quién se muestra a tinta plena. Mientras se descansa, el ancla automática es
+    /// el dueño del descanso — SALVO que el usuario haya tocado explícitamente una tarjeta plegada
+    /// para verla (`peekRunId`, por `id` — regla dura, nunca un índice que sobreviva un reorden): el
+    /// select explícito GANA la tarjeta abierta. El descanso en sí NO se toca (`session.phase` sigue
+    /// `.resting`, el auto-skip sigue vivo — ver `RestAutoSkipModifier`, ahora colgado a nivel de
+    /// `HojaSesionViva.body` para que sobreviva aunque la tarjeta dueña se pliegue); solo la banda
+    /// deja de verse, porque su tarjeta (la dueña) ya no es la que está abierta. Documentado aquí y
+    /// en `HojaPlegadaSesion` (dónde se arma `peekRunId`) y en `restSlotIndex` (por qué NO usa esto).
     var accordionIndex: Int {
-        (session.phase == .resting ? restOwnerExerciseIndex : nil) ?? session.currentIndex
+        guard session.phase == .resting else { return session.currentIndex }
+        if let peekId = peekRunId, let idx = session.runs.firstIndex(where: { $0.id == peekId }) { return idx }
+        return restOwnerExerciseIndex ?? session.currentIndex
     }
 
     /// El índice donde la banda debe insertarse: justo tras la última fila hecha de ESE ejercicio —
-    /// `nil` cuando el ejercicio ya no tiene fila pendiente que anclar (la tarjeta la muestra en su pie).
+    /// `nil` cuando el ejercicio ya no tiene fila pendiente que anclar (la tarjeta la muestra en su
+    /// pie). Ancla contra el DUEÑO real (`restOwnerExerciseIndex`), NUNCA contra `accordionIndex`
+    /// (O-r2a): mientras el usuario espía otra tarjeta (`peekRunId`), `accordionIndex` apunta ahí,
+    /// pero la banda sigue siendo del dueño — si su tarjeta quedó plegada, la banda simplemente no
+    /// se pinta en ningún lado (no se reasigna a la tarjeta espiada, que no es la que descansa).
     func restSlotIndex(ei: Int) -> Int? {
-        guard session.phase == .resting, ei == accordionIndex, session.summary == nil,
+        guard session.phase == .resting, ei == restOwnerExerciseIndex, session.summary == nil,
               session.runs.indices.contains(ei) else { return nil }
         let run = session.runs[ei]
         guard let lastDone = run.sets.lastIndex(where: { $0.done }) else {
@@ -206,16 +220,31 @@ extension HojaSesionViva {
         return "REST · SET \(String(from)) → \(String(to))"
     }
 
-    /// R1 (QA D1 = Grok 1 — B3): el descanso FIJO se cierra SOLO al llegar a 0, con háptica + chime
-    /// — porteado de `LiveStrengthSheet.swift` (antes `restInlineSlice`'s `.task(id: session.restEndsAt)`).
-    /// NUNCA en pausa (el `guard !session.paused` congela el auto-cierre igual que el reloj visible).
-    private func restAutoSkipTask() -> some ViewModifier { RestAutoSkipModifier(vivo: self) }
+    /// O-r2a (ronda 3): el auto-skip (R1) ya NO cuelga de `restBand()` — esa vista solo se monta
+    /// bajo la tarjeta del DUEÑO, que puede plegarse mientras el usuario espía otra (`peekRunId`), y
+    /// SwiftUI cancela el `.task` de una vista que sale del árbol. Colgado en cambio de
+    /// `HojaSesionViva.body` (siempre presente), el auto-skip sigue vivo pase lo que pase con el
+    /// acordeón — «el auto-skip no cambia» es la garantía, no una promesa vacía.
+    func restAutoSkipModifier() -> some ViewModifier { RestAutoSkipModifier(vivo: self) }
+
+    /// O-r2b (ronda 3): la consola dice lo MISMO que la banda en el tope — «Continuar ›», no
+    /// «Saltar ›» (misma razón `.ceiling` que `restBandCore` ya evalúa, aquí expuesta como función
+    /// pura para que `keypadInset` la re-consulte cada segundo con su propio `TimelineView`).
+    func isCeilingReleased(now: Date) -> Bool {
+        guard session.phase == .resting, session.currentRestMode == .heartRate,
+              let started = session.restStartedAt else { return false }
+        let tick = session.paused ? (session.pausedAt ?? now) : now
+        let elapsed = max(0, Int(tick.timeIntervalSince(started)))
+        let v = RestReadinessRule.evaluate(currentHR: sheet.model.watchBpm, worn: sheet.model.watchBpm != nil,
+                                           restingHR: restingBaseline, elapsedS: elapsed, targetHR: session.currentRestTarget)
+        return v.reason == .ceiling && (v.bpmToReady ?? 0) > 0
+    }
 
     /// La banda de descanso ANCLADA (mock P4): dos combustibles — FC dice la meta («baja a N»,
     /// `RestBand` ya lo pinta desde FER-167), reloj fijo cuando no hay Watch. R13: con razón
     /// `.ceiling` y el pulso TODAVÍA arriba de la meta, la banda no dice «Listo» — dice el tope
     /// honesto y ofrece SEGUIR. R4: la misma función alcanza también a la superserie (Tarjeta.swift
-    /// la monta igual), así que el auto-skip fijo cubre ambas sin duplicar el `.task`.
+    /// la monta igual).
     @ViewBuilder func restBand() -> some View {
         VStack(alignment: .leading, spacing: CenitMetrics.space2) {
             restBandCore()
@@ -264,7 +293,6 @@ extension HojaSesionViva {
                 }
             }
         }
-        .modifier(restAutoSkipTask())
     }
 
     private func restBandTimeBody(end: Date?, now: Date, noStrapFallback: Bool) -> some View {
@@ -432,6 +460,19 @@ extension HojaSesionViva {
         }
     }
 
+    /// D-r2.2 (ronda 3): abre la hoja de RPE — alcanzable desde el bucle (el viejo SÍ lo hacía,
+    /// `tapEntrenarCell` case `.rpe`), no solo desde Foco. El `onPick` de la hoja (`RoutineSheetLive.swift`)
+    /// llama `session.setRPE(...)` SIN condición — PISA cualquier RPE existente, a propósito: abrir
+    /// la hoja a mano es una decisión explícita del usuario, distinta del auto-relleno de QUEDABAN
+    /// (`rpeToWrite`, arriba) que sí protege un RPE ya puesto para no pisarlo con una inferencia.
+    func openRPE(ei: Int, si: Int) {
+        guard session.runs.indices.contains(ei), session.runs[ei].sets.indices.contains(si) else { return }
+        let run = session.runs[ei]
+        let set = run.sets[si]
+        rpeTarget = LiveStrengthSheet.RPETarget(id: set.id, runId: run.id, setNumber: si + 1,
+                                                weightKg: displayWeight(set.weightKg), reps: set.reps, currentRPE: set.rpe)
+    }
+
     func usesBarbell(_ ei: Int) -> Bool {
         guard session.runs.indices.contains(ei),
               let eq = ExerciseCatalog.byID(session.runs[ei].exerciseId)?.equipment?.lowercased() else { return false }
@@ -440,9 +481,10 @@ extension HojaSesionViva {
 }
 
 /// R1: el `.task(id:)` de auto-cierre del descanso fijo, envuelto en un `ViewModifier` propio para
-/// poder colgarlo de `restBand()` (una `@ViewBuilder func`, que no puede declarar `@State`/leer
-/// `\.scenePhase` por sí misma) sin ensanchar la firma de todo el archivo.
-private struct RestAutoSkipModifier: ViewModifier {
+/// poder colgarlo de `HojaSesionViva.body` (ronda 3 · O-r2a: a nivel de la vista raíz, no de una
+/// tarjeta que puede plegarse — ver `restAutoSkipModifier()` arriba) sin ensanchar su firma. No
+/// `private`: `RoutineSheetLive.swift` lo monta directo.
+struct RestAutoSkipModifier: ViewModifier {
     let vivo: HojaSesionViva
     @Environment(\.scenePhase) private var scenePhase
 

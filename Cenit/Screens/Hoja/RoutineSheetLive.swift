@@ -36,6 +36,11 @@ struct HojaSesionViva: View {
 
     // MARK: Descanso (R7: SIN ancla `Int` — `accordionIndex` se deriva de `session.restOwnerSetId`)
     @State var restStartBpm: Int?
+    /// O-r2a (ronda 3): la tarjeta que el usuario tocó explícitamente para verla mientras descansa
+    /// en OTRO ejercicio — por `id` (regla dura), nunca un índice. `nil` = sin espiar, el acordeón
+    /// sigue al dueño del descanso como siempre. Ver `accordionIndex`/`restSlotIndex` en
+    /// `RoutineSheetLiveLogic.swift` y el tap de `HojaPlegadaSesion`.
+    @State var peekRunId: String?
 
     // MARK: R16 · destello de récord
     @State var personalRecords: [String: [PRMetric: PersonalRecord]] = [:]
@@ -69,6 +74,15 @@ struct HojaSesionViva: View {
             if session.summary != nil {
                 // El acta de siempre — cero cambios (FER-167 §3: «el cierre de sesión NO cambia»).
                 LiveStrengthSheet(session: session, theme: sheet.theme)
+            } else if session.routineId == nil && session.runs.isEmpty {
+                // D-r2.1 (ronda 3, regresión bloqueante): «Sesión rápida» vacía (`startQuickStrength`)
+                // — el buscador + sugerencias de frescura siguen siendo `LiveStrengthSheet.emptyAdHocSession`
+                // (B13 los rediseña en F4). Construir una instancia NORMAL (sin `startInFocus`, sin
+                // `summary`) hace que SU PROPIO `body` la muestre — mismo patrón de composición que ya
+                // usamos para el acta y el foco: cero líneas de ese estado tocadas. Al agregar el
+                // primer ejercicio `session.runs` deja de estar vacío (mismo `session`, por
+                // referencia) y este `body` vuelve a evaluar hacia `liveLoop` solo.
+                LiveStrengthSheet(session: session, theme: sheet.theme)
             } else if isZombie, !zombieAcknowledged {
                 zombieGate   // B15b
             } else {
@@ -81,10 +95,15 @@ struct HojaSesionViva: View {
         // B17: el gesto de borde minimiza — NUNCA termina la sesión (mismo modificador que
         // `LiveStrengthSheet` ya usaba en el mismo cover).
         .edgeSwipeToExit { sheet.model.strengthSheetPresented = false }
+        // O-r2a (ronda 3): el auto-skip del descanso fijo (R1) vive AQUÍ, a nivel de la vista raíz —
+        // sobrevive aunque la tarjeta del dueño se pliegue por un «espiar» (`peekRunId`). Es un
+        // no-op mientras no hay `restEndsAt` fijo en vuelo (ver `RestAutoSkipModifier`).
+        .modifier(restAutoSkipModifier())
         .task(id: session.routineId) { await loadRoutineREs() }
         .task { await loadPersonalRecords() }   // R16
         .onChange(of: session.phase) { _, phase in
             restStartBpm = phase == .resting ? sheet.model.watchBpm : nil
+            peekRunId = nil   // O-r2a: cualquier cambio de fase limpia el «espiar» — nunca queda rancio
         }
         .sheet(item: $detailExercise) { ex in
             NavigationStack {

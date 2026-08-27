@@ -101,8 +101,10 @@ struct HojaTarjetaEjercicioSesion: View {
                     .id("hoja-viva-serie-\(set.id)")   // R14: ancla de scroll-to por identidad, no índice
             }
             // El descanso puede no tener dónde anclar (el ejercicio ya cerró todas sus filas visibles) —
-            // mismo respaldo que `LiveStrengthSheet.activeExerciseFooter`.
-            if vivo.session.phase == .resting, ei == vivo.accordionIndex, vivo.restSlotIndex(ei: ei) == nil {
+            // mismo respaldo que `LiveStrengthSheet.activeExerciseFooter`. Contra el DUEÑO real
+            // (O-r2a), no `accordionIndex`: si el usuario espía otra tarjeta, esta banda no reaparece
+            // aquí — la tarjeta dueña puede estar plegada en ese momento.
+            if vivo.session.phase == .resting, ei == vivo.restOwnerExerciseIndex, vivo.restSlotIndex(ei: ei) == nil {
                 vivo.restBand().padding(.vertical, 6)
             }
         }
@@ -133,13 +135,19 @@ struct HojaTarjetaEjercicioSesion: View {
             vivo.confirmOrToggleSet(ei: ei, si: si)
         }
         // R3: tap en peso/reps de una fila activa/fantasma abre la consola sobre ESA celda —
-        // paridad de intención con las tap-zones de F1 (`HojaFilaSerieTapZones`).
+        // paridad de intención con las tap-zones de F1 (`HojaFilaSerieTapZones`). D-r2.2 (ronda 3):
+        // en una fila HECHA la misma zona de reps (donde vive el sufijo «· Q») abre la hoja de RPE —
+        // el viejo también lo hacía desde la tabla en línea (`tapEntrenarCell` case `.rpe`).
         .overlay {
-            if marca != .hecha, usesReps {
-                TapZonesSesion(
-                    onPeso: { vivo.beginEditing(.weight(ei, si)) },
-                    onReps: { vivo.beginEditing(.reps(ei, si)) }
-                )
+            if usesReps {
+                if marca == .hecha {
+                    TapZonesSesion(onPeso: nil, onReps: { vivo.openRPE(ei: ei, si: si) })
+                } else {
+                    TapZonesSesion(
+                        onPeso: { vivo.beginEditing(.weight(ei, si)) },
+                        onReps: { vivo.beginEditing(.reps(ei, si)) }
+                    )
+                }
             }
         }
         // R16: destello rosa breve al palomear con récord — sin animación si Reduce Motion.
@@ -208,8 +216,18 @@ private struct TapZonesSesion: View {
 
 /// Ejercicio SIN abrir — recibo de una línea, TOCABLE (R5, paridad `LiveStrengthSheet.doneRow`/
 /// `comingRow`): mueve el foco guiado ahí, para corregir una hecha o saltar a una venidera sin
-/// esperar a que el motor llegue solo. El foco de la Hoja viva lo decide el motor
-/// (`accordionIndex`) — este tap solo lo REDIRIGE, no abre un acordeón propio.
+/// esperar a que el motor llegue solo.
+///
+/// O-r2a (ronda 3): el select explícito GANA la tarjeta abierta, SIEMPRE — al instante, sin
+/// excepción. Cómo se logra difiere según si se está descansando: fuera de descanso, es el mismo
+/// `session.select(...)` de siempre (paridad exacta con el viejo). DURANTE el descanso,
+/// `session.select(...)` NO se llama — ese método fuerza `phase = .capturing` como efecto de lado,
+/// lo que apagaría el descanso entero (el reloj, el auto-skip, la consola) solo por abrir OTRA
+/// tarjeta a mirarla. En su lugar se arma `peekRunId` (un «espiar» a nivel de vista, por `id`, sin
+/// tocar el modelo): la tarjeta tocada se abre igual de instantáneo, pero el descanso sigue
+/// corriendo intacto en segundo plano — la banda deja de verse (su tarjeta, la del dueño, quedó
+/// plegada) y eso es lo esperado, no un bug. Si el usuario palomea algo en la tarjeta espiada,
+/// `confirmOrToggleSet` ya llama `session.select` cuando hace falta — ahí sí, a propósito.
 struct HojaPlegadaSesion: View {
     let vivo: HojaSesionViva
     let ei: Int
@@ -226,7 +244,7 @@ struct HojaPlegadaSesion: View {
     var body: some View {
         Button {
             withAnimation(vivo.reduceMotion ? nil : .snappy(duration: 0.22)) {
-                session_select()
+                openTapped()
             }
         } label: {
             EntrenarModulo(tono: .neutro) {
@@ -256,9 +274,13 @@ struct HojaPlegadaSesion: View {
         .accessibilityHint(Text("Moves guided focus here"))
     }
 
-    private func session_select() {
-        let target = run.sets.firstIndex { !$0.done } ?? 0
-        vivo.session.select(exerciseIndex: ei, setIndex: target)
+    private func openTapped() {
+        if vivo.session.phase == .resting {
+            vivo.peekRunId = run.id   // «espiar»: el descanso del dueño sigue corriendo, sin tocar el modelo
+        } else {
+            let target = run.sets.firstIndex { !$0.done } ?? 0
+            vivo.session.select(exerciseIndex: ei, setIndex: target)
+        }
     }
 }
 
@@ -284,7 +306,9 @@ struct HojaTarjetaSuperserieSesion: View {
                     .padding(.top, 4).padding(.bottom, 6)
                 // REGLA DURA: identidad por `run.id`, no por el `Int` de `members`.
                 ForEach(runs) { run in filaMiembro(run) }
-                if vivo.session.phase == .resting, members.contains(vivo.accordionIndex) {
+                // Contra el DUEÑO real (O-r2a) — la superserie nunca se pliega, así que su banda
+                // debe seguir viéndose aunque el usuario espíe otra tarjeta fuera del grupo.
+                if vivo.session.phase == .resting, let owner = vivo.restOwnerExerciseIndex, members.contains(owner) {
                     vivo.restBand().padding(.top, 6)
                 }
             }
