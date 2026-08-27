@@ -54,8 +54,10 @@ struct SessionKeypad: View {
     var confirmSetLabel: String = String(localized: "✓ Serie")
     var confirmSetAccessibilityLabel: Text = Text("Mark set as done")
     /// Hides the keypad without registering anything (canvas pass 2026-07-15) — every keystroke has
-    /// already committed live to the model, so dismissing loses nothing.
-    var onHide: () -> Void = {}
+    /// already committed live to the model, so dismissing loses nothing. `nil` hides the button
+    /// itself (FER-167 ronda 2 · R19): the live Hoja's console is always-on by design (no cell tap
+    /// gates it), so a hide key there was dead — `.editing`'s keypad still passes a real closure.
+    var onHide: (() -> Void)? = nil
     /// Pausa/reanuda sin cerrar el teclado (FER-86). El teclado OCUPA el sitio de la barra de estado,
     /// que es donde vive la pausa; sin este accesorio, el control desaparece justo mientras registras
     /// una serie — que es cuando te interrumpen. `nil` lo oculta, nunca lo deshabilita.
@@ -160,18 +162,21 @@ struct SessionKeypad: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
                 // Hide-keyboard at the far LEFT (mirror of «Next»), subordinated ink — never reads as
-                // «register». VoiceOver: «Hide keyboard», not «Done»/«Close».
-                Button(action: onHide) {
-                    Image(systemName: "chevron.down")
-                        .font(StrandFont.glyph(.inline, weight: .semibold))
-                        .foregroundStyle(theme.inkSecondary)
-                        .frame(width: 34, height: 34)
-                        // Revisión final (FER-140), hallazgo grave: el dibujo se queda en 34pt (el
-                        // handoff), pero el toque se extiende al mínimo HIG de 44pt.
-                        .contentShape(Rectangle().inset(by: -5))
+                // «register». VoiceOver: «Hide keyboard», not «Done»/«Close». `nil` = no button
+                // (R19): the live console has no cell-tap gate to reopen it from.
+                if let onHide {
+                    Button(action: onHide) {
+                        Image(systemName: "chevron.down")
+                            .font(StrandFont.glyph(.inline, weight: .semibold))
+                            .foregroundStyle(theme.inkSecondary)
+                            .frame(width: 34, height: 34)
+                            // Revisión final (FER-140), hallazgo grave: el dibujo se queda en 34pt (el
+                            // handoff), pero el toque se extiende al mínimo HIG de 44pt.
+                            .contentShape(Rectangle().inset(by: -5))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Text("Hide keyboard"))
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel(Text("Hide keyboard"))
                 if let onPause {
                     Button(action: onPause) {
                         Image(systemName: isPaused ? "play.fill" : "pause.fill")

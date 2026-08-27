@@ -7,7 +7,9 @@ import SwiftUI
 //
 //   • Por pulso (con reloj): el headline dice LA META («descanso · baja a 108»), el numeral es el
 //     pulso vivo («112 ♥ ahora · va bajando»), el riel dibuja la caída contra el objetivo, y a
-//     ≤ 5 lpm aparece la cápsula «CASI»; a los 2:30 el motor te suelta aunque no baje.
+//     ≤ 5 lpm aparece la cápsula «CASI»; a los 3:00 el motor te suelta aunque no baje — honesto
+//     (`isCeilingRelease`, FER-167 ronda 2 · R13): no dice «Listo» en verde si el pulso sigue
+//     arriba, dice el tope tal cual y ofrece SEGUIR.
 //   • Reloj fijo (sin pulso): el numeral es el tiempo («1:18 de 2:30») en tinta, sin inventar un
 //     número de latidos ni un color de fisiología que no se midió.
 //
@@ -79,6 +81,11 @@ public struct RestBand<Next: View>: View {
     private let note: LocalizedStringKey?
     private let isAlmost: Bool
     private let isReady: Bool
+    /// FER-167 ronda 2 (R13, mapa B4): el tope de 3:00 soltó el descanso SIN que el pulso llegara a
+    /// la meta (`RestReadyReason.ceiling` con `bpmToReady > 0`). La banda NUNCA dice «Listo» verde en
+    /// ese caso — dice el tope tal cual, honesto, y su tecla se vuelve «Continuar ›» en vez de
+    /// «Saltar». `false` por defecto: cero cambio de piel para cualquier caller que no lo pase.
+    private let isCeilingRelease: Bool
     private let trailing: String?
     /// El pulso con el que empezó este descanso (el máximo visto). Sin él, el riel no coloca punto.
     private let startBpm: Int?
@@ -98,10 +105,12 @@ public struct RestBand<Next: View>: View {
 
     public init(kicker: LocalizedStringKey, mode: RestBandMode, trailing: String? = nil,
                 note: LocalizedStringKey? = nil, isAlmost: Bool = false, isReady: Bool = false,
+                isCeilingRelease: Bool = false,
                 startBpm: Int? = nil, large: Bool = false, onSkip: (() -> Void)? = nil,
                 @ViewBuilder next: () -> Next = { EmptyView() }) {
         self.kicker = kicker; self.mode = mode; self.trailing = trailing
         self.note = note; self.isAlmost = isAlmost; self.isReady = isReady
+        self.isCeilingRelease = isCeilingRelease
         self.startBpm = startBpm; self.large = large; self.onSkip = onSkip; self.next = next()
     }
 
@@ -149,7 +158,9 @@ public struct RestBand<Next: View>: View {
             .accessibilityElement(children: .combine)
             if let onSkip {
                 Button(action: onSkip) {
-                    Text("Skip")
+                    // R13: el tope honesto ofrece SEGUIR (no «Saltar» — no hay nada que saltar,
+                    // el motor ya soltó el descanso solo).
+                    Text(isCeilingRelease ? "Continue" : "Skip")
                         .font(StrandFont.caption.weight(.semibold))
                         .foregroundStyle(theme.inkSecondary)
                         .padding(.horizontal, CenitMetrics.gap)
@@ -186,7 +197,20 @@ public struct RestBand<Next: View>: View {
     @ViewBuilder private var headline: some View {
         switch mode {
         case .heartRate(let remaining, let target, let current):
-            if isReady {
+            if isCeilingRelease {
+                // R13 (mapa B4): el tope de 3:00 sin recuperación honesta — nunca «Listo» verde.
+                VStack(alignment: large ? .center : .leading, spacing: CenitMetrics.space1) {
+                    Text(verbatim: "3:00")
+                        .font(InstrumentoType.groteskNumber(headlineSize, weight: .bold, relativeTo: .largeTitle))
+                        .foregroundStyle(theme.ink)
+                    if let remaining, remaining > 0 {
+                        Text("still \(remaining) bpm up · not on you")
+                            .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    }
+                }
+                .multilineTextAlignment(large ? .center : .leading)
+                .fixedSize(horizontal: false, vertical: true)
+            } else if isReady {
                 Text("Ready")
                     .font(InstrumentoType.grotesk(headlineSize, weight: .bold, relativeTo: .largeTitle))
                     .foregroundStyle(theme.positiveText)
@@ -301,12 +325,16 @@ public struct RestBand<Next: View>: View {
         RestBand(kicker: "REST · SET 1 → 2",
                  mode: .heartRate(remainingBpm: 18, targetBpm: 108, currentBpm: 126),
                  trailing: "1:18",
-                 note: "at 5 bpm I say «almost» · at 2:30 I let you go even if it hasn't dropped",
+                 note: "at 5 bpm I say «almost» · at 3:00 I let you go even if it hasn't dropped",
                  onSkip: {})
         // CASI: remaining ≤ almostBandBPM → cápsula junto a la meta.
         RestBand(kicker: "REST · SET 2 → 3",
                  mode: .heartRate(remainingBpm: 4, targetBpm: 108, currentBpm: 112),
                  trailing: "1:52", isAlmost: true, onSkip: {})
+        // R13: el tope de 3:00 soltó SIN recuperación honesta — nunca «Listo» verde.
+        RestBand(kicker: "REST · SET 3 → 4",
+                 mode: .heartRate(remainingBpm: 12, targetBpm: 108, currentBpm: 120),
+                 trailing: "3:00", isCeilingRelease: true, onSkip: {})
         // Sin Watch: no se inventa un numeral de pulso.
         RestBand(kicker: "REST", mode: .heartRate(remainingBpm: nil, targetBpm: 108, currentBpm: nil),
                  trailing: "0:12")
