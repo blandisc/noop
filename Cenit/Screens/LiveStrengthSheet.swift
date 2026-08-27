@@ -43,6 +43,19 @@ struct LiveStrengthSheet: View {
     @AppStorage(HealthKitBridge.saveStrengthWorkoutsKey) private var saveStrengthWorkouts = false
     var theme: InstrumentoTheme = .base
 
+    /// FER-167 (F2): «La Hoja viva» (`HojaSesionViva`) es ahora la superficie montada por los 4
+    /// hosts — este tipo se queda vivo para el modo Foco (F5 lo rediseña) y el acta/summary
+    /// (`bodySummaryScroll`), a los que `HojaSesionViva` entra construyendo una instancia fresca de
+    /// ESTE tipo, sin duplicar ni una línea de su cuerpo. `startInFocus` es la única puerta nueva:
+    /// arranca `focusMode` ya abierto en vez de la tabla en línea (que `HojaSesionViva` ya cubre).
+    /// Cero pérdida — el init implícito de siempre sigue funcionando para cada llamador existente
+    /// (el parámetro trae default), y ninguna línea del cuerpo de Foco se tocó.
+    init(session: StrengthSessionModel, theme: InstrumentoTheme = .base, startInFocus: Bool = false) {
+        self.session = session
+        self.theme = theme
+        if startInFocus { _focusMode = State(initialValue: true) }
+    }
+
     @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var confirmFinish = false

@@ -48,6 +48,11 @@ struct SessionKeypad: View {
     /// Habilita «✓ Serie»: se atenúa (no desaparece) donde no hay una serie que palomear — el editor
     /// de rutina prescribe, no registra (mismo motivo que `stepDownEnabled`).
     var confirmSetEnabled: Bool = true
+    /// FER-167 (F2, mock P4): durante el descanso la MISMA tecla dice «Saltar ›» — un solo slot que
+    /// cambia de rol en vez de una quinta tecla. El caller decide QUÉ hace `onConfirmSet` en cada
+    /// caso (registrar vs. saltar); esta etiqueta solo pinta lo que la tecla promete.
+    var confirmSetLabel: String = String(localized: "✓ Serie")
+    var confirmSetAccessibilityLabel: Text = Text("Mark set as done")
     /// Hides the keypad without registering anything (canvas pass 2026-07-15) — every keystroke has
     /// already committed live to the model, so dismissing loses nothing.
     var onHide: () -> Void = {}
@@ -264,8 +269,8 @@ struct SessionKeypad: View {
             actionKey("−\(stepMagnitude)", enabled: stepDownEnabled,
                       accessibilityLabel: Text("Decrease by \(stepMagnitude)"), action: onStepDown)
         case .confirmSet:
-            actionKey(String(localized: "✓ Serie"), enabled: confirmSetEnabled,
-                      accessibilityLabel: Text("Mark set as done"), action: onConfirmSet)
+            actionKey(confirmSetLabel, enabled: confirmSetEnabled,
+                      accessibilityLabel: confirmSetAccessibilityLabel, action: onConfirmSet)
         }
     }
 
