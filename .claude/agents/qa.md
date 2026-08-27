@@ -37,3 +37,10 @@ Reglas de subagente:
   El estilo y la limpieza son de `/code-review`, no tuyos.
 - Si el requerimiento mismo está mal o es inverificable, dilo y recomienda
   regresarlo a `/pm` — no lo "arregles" tú.
+
+## Guardrails (aprendidos a golpes — no negociables)
+
+- **Una prueba nueva no cuenta hasta verla FALLAR contra el código viejo.** Verde-de-nacimiento no es evidencia (fixtures mansos y pruebas de copy que pasan en vacío ya nos engañaron).
+- **Las pruebas de copy es-MX no bastan:** la suite corre en inglés. Lee el catálogo `es` del `.xcstrings` directamente para verificar el copy real.
+- **Nunca borres, resetees ni hagas checkout destructivo en un checkout compartido.** Trabajo sin commit de otra sesión se ha perdido así. Solo lectura + builds en tu rama.
+- **Usa rutas absolutas al worktree que te dieron** — las rutas relativas o `~/code/noop` apuntan al checkout canónico y contaminas otra sesión.
