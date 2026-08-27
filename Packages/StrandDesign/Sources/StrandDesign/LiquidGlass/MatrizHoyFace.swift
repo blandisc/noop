@@ -280,6 +280,15 @@ public struct MatrizHoyFace: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.horizontal, MatrizTokens.margenModulos)
+        // Centrado de la fila de gemelas (FER-159 lo destapó): el contenido mínimo de una fila
+        // `.split` (~361pt) excede el presupuesto tras el margen de 24 (402−48=354), y SwiftUI
+        // ancla el desborde a la IZQUIERDA — las tarjetas quedaban con margen izq 24 / der ~15.
+        // Ningún `frame`/`containerRelativeFrame` re-centra a un hijo sobredimensionado, y el
+        // desborde es invisible para `onGeometryChange` (todo wrapper reporta el ancho propuesto),
+        // así que la única palanca es un `offset` que reparte el sobrante mitad y mitad. Inerte
+        // en columna única (Dynamic Type accesible: sin gemelas no hay desborde). El arreglo de
+        // fondo — hacer comprimible el mínimo del contenido de la tile — queda apuntado en Multica.
+        .offset(x: columnaUnica ? 0 : -MatrizTokens.centradoSplit)
         .padding(.bottom, LiquidSpace.s600)
         // FER-audit: solo en la transición «se puso» (tap), no también en la limpieza a nil
         // 320 ms después — que hacía vibrar DOS veces por un solo toque.
@@ -399,7 +408,11 @@ public struct MatrizHoyFace: View {
             .padding(.horizontal, MatrizTokens.moduloPadH)
             .padding(.top, MatrizTokens.moduloPadTop)
             .padding(.bottom, MatrizTokens.moduloPadBottom)
-            .frame(maxWidth: .infinity, maxHeight: estirar ? .infinity : nil, alignment: .topLeading)
+            // `minWidth: 0` es el gate de compresión: sin él, un hijo `maxWidth:∞` reporta su
+            // ancho IDEAL como piso al HStack de gemelas, así que las dos se niegan a encoger bajo
+            // su ancho natural y la fila `.split` desborda ~8pt a la derecha (tras FER-159, que
+            // apretó la columna de 179→171pt). Mismo patrón que StatTile.swift:88.
+            .frame(minWidth: 0, maxWidth: .infinity, maxHeight: estirar ? .infinity : nil, alignment: .topLeading)
             // Sin gemela, el módulo mide su CONTENIDO (el `Spacer` interior no se infla aunque el
             // contenedor proponga alto de sobra — p. ej. un render con marco fijo).
             .fixedSize(horizontal: false, vertical: !estirar)
@@ -437,7 +450,9 @@ public struct MatrizHoyFace: View {
             // separados, para que un toque abra y un arrastre lea sin pelear (patrón #118).
             VStack(alignment: .leading, spacing: 0) {
                 botonEncabezado(s) { textos(s) }
-                Spacer(minLength: LiquidSpace.s300)
+                // s200 (antes s300): el aire texto→gráfica se apretó junto con la altura de la
+                // gráfica (48) — el dueño leía los tiles verticales como alargados (2026-08-26).
+                Spacer(minLength: LiquidSpace.s200)
                 grafica(s, noches: s.scrubNoches ?? [])
             }
         }
@@ -449,7 +464,11 @@ public struct MatrizHoyFace: View {
                                           @ViewBuilder label: () -> L) -> some View {
         Button { tocar(s.id) } label: {
             label()
-                .frame(maxWidth: expandir ? .infinity : nil, alignment: .leading)
+                // `minWidth: 0`: segundo marco `maxWidth:∞` (además del de `modulo`) que el texto
+                // de la tile atraviesa; sin el piso en 0, el label reporta su ancho ideal a la
+                // fila de gemelas y una tile (FC, con unidad «bpm») queda ~13pt más ancha que su
+                // hermana, corriendo el bloque a la derecha.
+                .frame(minWidth: 0, maxWidth: expandir ? .infinity : nil, alignment: .leading)
                 // Hit ≥ 44 pt (HIG) hacia afuera, sin engordar el vidrio ni mover la gráfica.
                 .contentShape(Rectangle().inset(by: -LiquidSpace.s125))
         }
