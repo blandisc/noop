@@ -1042,7 +1042,8 @@ struct LiveStrengthSheet: View {
         v.truncatingRemainder(dividingBy: 1) == 0 ? String(format: "%.0f", v) : String(format: "%.1f", v).replacingOccurrences(of: ".", with: ",")
     }
 
-    // MARK: Empty ad-hoc state (mock 1p, FER-762)
+    // MARK: Empty ad-hoc state (mock B13 `hoja-mapa.html`, FER-191 reskin of FER-762 — same freshness
+    // + search logic below, only the piel changes to La Hoja's liquid glass: `EntrenarModulo`/`EntrenarTono`)
 
     private var emptyAdHocSession: some View {
         ScrollView {
@@ -1052,27 +1053,27 @@ struct LiveStrengthSheet: View {
                     .fixedSize(horizontal: false, vertical: true)
 
                 Button { showLibraryPicker = true } label: {
-                    HStack(spacing: 9) {
-                        StrandIcon.search.image.font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTertiary)
-                        Text("Search the library…").font(StrandFont.body).foregroundStyle(theme.inkTertiary)
-                        Spacer(minLength: 0)
+                    EntrenarModulo(tono: .neutro) {
+                        HStack(spacing: 9) {
+                            StrandIcon.search.image.font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTertiary)
+                            Text("Search the library…").font(StrandFont.body).foregroundStyle(theme.inkTertiary)
+                            Spacer(minLength: 0)
+                        }
                     }
-                    .padding(.horizontal, 13).padding(.vertical, 11)
-                    .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
-                        .strokeBorder(theme.hairline, lineWidth: 1))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(EntrenarPressStyle())
                 .padding(.top, 2)
                 .accessibilityLabel(Text("Search the exercise library"))
 
                 // FER-762: a brand-new user has no muscle-load history yet — `loadFreshSuggestions` then
-                // returns no picks. Falling back to the search-only flow (no orphaned "Suggested" header
+                // returns no picks. Falling back to the search-only flow (no orphaned "Fresh today" header
                 // over an empty list) rather than a section with nothing under it.
                 if let suggestions = freshSuggestions, !suggestions.isEmpty {
-                    Text("Suggested · muscles fresh today").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Text("Fresh today").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                         .padding(.top, 10)
-                    ForEach(suggestions) { s in suggestionRow(s) }
+                    VStack(spacing: CenitMetrics.space2) {
+                        ForEach(suggestions) { s in freshSuggestionChip(s) }
+                    }
 
                     if let muscle = loadedMuscle {
                         (Text(MuscleAtlas.name(muscle)) + Text(verbatim: " ") + Text("still carries load · suggestions avoid it."))
@@ -1113,28 +1114,45 @@ struct LiveStrengthSheet: View {
         }
     }
 
-    private func suggestionRow(_ s: QuickSuggestion) -> some View {
-        HStack(spacing: 12) {
-            RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
-                .fill(theme.surface).frame(width: 48, height: 48)
-                .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
-            VStack(alignment: .leading, spacing: 1) {
-                Text(StrengthDisplay.name(s.exercise)).font(StrandFont.body).foregroundStyle(theme.ink)
-                (Text(MuscleAtlas.name(s.muscle)) + Text(verbatim: " · ") + Text("fresh")
-                    + (lastTimeText(s).map { Text(verbatim: " · ") + Text("last time \($0)") } ?? Text(verbatim: "")))
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+    /// Un ejercicio fresco como cápsula de vidrio de La Hoja (FER-191): el mismo dato que
+    /// `loadFreshSuggestions` calculaba antes (ejercicio + músculo + última marca), ahora en el
+    /// idioma de `EntrenarModulo`, teñido por la familia de su músculo (`EntrenarTono`) — la cápsula
+    /// entera es el toque de «agregar», sin un pill «Add» aparte.
+    private func freshSuggestionChip(_ s: QuickSuggestion) -> some View {
+        let tono = chipTono(for: s.muscle)
+        return Button { Task { await addExercises([s.exercise]) } } label: {
+            EntrenarModulo(tono: tono) {
+                HStack(spacing: 12) {
+                    RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
+                        .fill(theme.surface).frame(width: 40, height: 40)
+                        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(StrengthDisplay.name(s.exercise)).font(StrandFont.body).foregroundStyle(theme.ink)
+                        (Text(MuscleAtlas.name(s.muscle)) + Text(verbatim: " · ") + Text("fresh")
+                            + (lastTimeText(s).map { Text(verbatim: " · ") + Text("last time \($0)") } ?? Text(verbatim: "")))
+                            .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    }
+                    Spacer(minLength: 8)
+                    StrandIcon.add.image.font(StrandFont.glyph(.inline, weight: .semibold))
+                        .foregroundStyle(tono.rotulo)
+                        .accessibilityHidden(true)
+                }
             }
-            Spacer(minLength: 8)
-            Button { Task { await addExercises([s.exercise]) } } label: {
-                Text("Add").font(StrandFont.caption).foregroundStyle(theme.ink)
-                    .padding(.horizontal, 12).padding(.vertical, 5)
-                    .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(Text("Add \(StrengthDisplay.name(s.exercise))"))
         }
-        .padding(.vertical, 8)
-        .overlay(alignment: .bottom) { Divider().overlay(theme.hairline) }
+        .buttonStyle(EntrenarPressStyle())
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityLabel(Text("Add \(StrengthDisplay.name(s.exercise))"))
+    }
+
+    /// El tono de vidrio de la cápsula (FER-191): el músculo de la sugerencia → su región de
+    /// entrenamiento (`RoutineClassifier`, el MISMO clasificador que tiñe rutinas y sesiones) →
+    /// la familia de diseño → su `EntrenarTono`. Músculos neutros (abdominales, cuello, lumbar) no
+    /// clasifican a ninguna región — caen a `.neutro`, el mismo vidrio blanco de las tarjetas de
+    /// ejercicio ya en curso, en vez de inventar un color.
+    private func chipTono(for muscle: String) -> EntrenarTono {
+        RoutineClassifier.region(for: muscle)?.family.tono ?? .neutro
     }
 
     /// «82,5 kg × 8» — the last logged weight/reps for a suggestion, plain data (not a localized phrase,
