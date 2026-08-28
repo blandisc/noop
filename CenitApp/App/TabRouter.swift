@@ -12,10 +12,11 @@ final class TabRouter: ObservableObject {
 
     /// A one-shot tab-switch request. `RootTabView` consumes it (sets it back to nil) on receipt.
     @Published var requested: Tab?
-    /// One-shot: after landing on «Cuerpo», open the muscle-fatigue map. Consumed (reset to false) by
-    /// `CuerpoView`. Lets the strength summary's muscle chips reach the map without stacking a third
-    /// sheet over the session (FER-409).
-    @Published var openMuscleMap = false
+
+    /// One-shot: after landing on «Entrenar», push the muscle-fatigue map (`MuscleVolumeRoute`).
+    /// Consumed (reset to false) by `RootTabView`. Lets the strength summary's «Ver mapa» reach the
+    /// map in Entrenar without stacking a third sheet over the session (FER-409 → FER-186).
+    @Published var openMuscleMapInTrain = false
 
     /// One-shot: after landing on «Entrenar», start today's guided session. Consumed (reset to false) by
     /// `EntrenarView`. Lets the Daily Brief's «Hoy en tu plan» block start the workout in one tap, reusing
@@ -34,8 +35,8 @@ final class TabRouter: ObservableObject {
 
     func select(_ tab: Tab) { requested = tab }
 
-    /// Switch to «Cuerpo» and ask it to open the fatigue map (the strength summary's muscle chips).
-    func openFatigueMap() { openMuscleMap = true; requested = .body }
+    /// Switch to «Entrenar» and ask it to push the fatigue map (the strength summary's «Ver mapa»).
+    func openFatigueMap() { openMuscleMapInTrain = true; requested = .train }
 
     /// Switch to «Entrenar» and ask it to start today's session (the Daily Brief's «Empezar»).
     func startTodayTraining() { startTodaySession = true; requested = .train }

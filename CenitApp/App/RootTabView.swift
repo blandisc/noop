@@ -334,6 +334,14 @@ struct RootTabView: View {
             trainStack.append(route)
             appModel.pendingReceiptRoute = nil
         }
+        // FER-186: strength summary «Ver mapa» → Entrenar + push `MuscleVolumeRoute` (same stack as
+        // the hub MAPA door). Mirrors `pendingReceiptRoute`: apply + clear on the train stack owner.
+        .onChange(of: tabRouter.openMuscleMapInTrain, initial: true) { _, open in
+            guard open else { return }
+            selection = .train
+            trainStack.append(MuscleVolumeRoute())
+            tabRouter.openMuscleMapInTrain = false
+        }
         #if DEBUG
         .onReceive(NotificationCenter.default.publisher(for: .noopDebugNav)) { note in
             guard let screen = note.object as? String else { return }

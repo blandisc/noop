@@ -11,7 +11,7 @@ import Foundation
 // `TrendsView`). FER-100 repaints the landing from the light «Instrumento diurno» paper to Liquid
 // Glass: a tinted-lens hero (the Preparación verdict word + its clause, teñido by the verdict's own
 // tone — apagado to paper/ink with no verdict, never green) over a column of `LiquidModulo` glass
-// modules — Rest & load / Training load / Your body / Vitals / Activity / Longevity — each with an
+// modules — Rest & load / Training load / Vitals / Activity / Longevity — each with an
 // aurora edge in the hue of ITS OWN data (only the top two animate; the rest draw a still aurora, a
 // scrolling list is too many clocks). Domain color is ALWAYS `MetricIdentity.identity(forKey:)`, never
 // a raw theme token. Grouped stats (label in quiet ink · value in its data hue · optional legend) tap
@@ -188,7 +188,6 @@ private struct CuerpoLanding: View {
     @EnvironmentObject var repo: Repository
     @Environment(AppModel.self) var model
     @EnvironmentObject var health: HealthKitBridge
-    @EnvironmentObject var tabRouter: TabRouter
     @Environment(\.instrumentoTheme) private var theme
 
     /// Light metric sheet (the same one Today opens), for metrics that have a `MetricInfo` factory.
@@ -278,10 +277,6 @@ private struct CuerpoLanding: View {
     @State private var fitnessAge: FitnessAgeSnapshot? = nil
     /// Drives the Fitness Age detail sheet (the light «Instrumento» sheet for «Edad física»).
     @State private var showFitnessAge = false
-    /// Light «Instrumento» Mapa muscular (FER-350) — front/back silhouettes tinted by per-muscle training
-    /// load, crossed with systemic recovery. Theme passed explicitly (it doesn't cross the `.sheet`
-    /// boundary, FER-162); the per-muscle detail rides a nested sheet, NO NavigationStack (FER-171).
-    @State private var showMuscleMap = false
 
     private static let recoverySeed = Baselines.minNightsSeed
 
@@ -298,7 +293,6 @@ private struct CuerpoLanding: View {
                 recoveryHero
                 restLoadCard
                 trainingLoadCard
-                muscleMapCard
                 vitalsCard
                 activityCard
                 longevityCard
@@ -338,23 +332,6 @@ private struct CuerpoLanding: View {
         }
         .animation(StrandMotion.interactive, value: detailPresented)
         .task(id: repo.refreshSeq) { await loadAll() }
-        .sheet(isPresented: $showMuscleMap) {
-            // Light «Instrumento» «Tu cuerpo» (FER-350, fusionado por FER-91 · E10) — theme injected
-            // at the root (it doesn't cross the `.sheet` boundary, FER-162) and `repo` re-supplied (a
-            // sheet starts a fresh environment). NO nested NavigationStack (FER-171); the per-muscle
-            // detail rides its own nested sheet.
-            TrainingBodyScreen(theme: theme)
-                .instrumentoTheme(theme)
-                .environmentObject(repo)
-                .environmentObject(health)
-                .preferredColorScheme(.light)
-        }
-        // Handoff from the strength summary's muscle chips (FER-409): open the fatigue map on arrival.
-        // `onAppear` covers a lazily-built tab; `onChange` covers the case where Cuerpo is already visible.
-        .onAppear { if tabRouter.openMuscleMap { showMuscleMap = true; tabRouter.openMuscleMap = false } }
-        .onChange(of: tabRouter.openMuscleMap) { _, open in
-            if open { showMuscleMap = true; tabRouter.openMuscleMap = false }
-        }
         .sheet(item: $darkSheet) { sheet in darkSheetContent(sheet) }
         .sheet(isPresented: $showCompare) {
             // Light «Instrumento» Comparar — the theme is injected at the root (it doesn't cross the
@@ -725,7 +702,7 @@ private struct CuerpoLanding: View {
                         }
                         // Sin chevron (FER-837): el renglón «Toca cualquier dato para ver su detalle» ya comunica
                         // que la tarjeta es tocable; el chevron se reserva a las que abren una pantalla/herramienta
-                        // distinta (Mapa muscular, «tras cada deporte», Comparar, Ver todas las métricas).
+                        // distinta («tras cada deporte», Comparar, Ver todas las métricas).
                     }
                 }
             }
@@ -744,34 +721,6 @@ private struct CuerpoLanding: View {
         case .buildingFast:            return LiquidColor.atencion
         case .spiking:                 return LiquidColor.negativo
         }
-    }
-
-    /// «Tu cuerpo» (FER-350) — a navigational card into the front/back fatigue map. The whole card is the
-    /// tap target (it opens a screen, not a metric detail). FER-91 · E10: the eyebrow label was «Muscle
-    /// map», matching the destination screen's OLD overline; both became «Your body» together so the
-    /// door's name still matches the destination. Still aurora (3rd+ module).
-    private var muscleMapCard: some View {
-        Button { showMuscleMap = true } label: {
-            liquidModulo(index: 2, tones: [LiquidColor.ambar, LiquidColor.verdePrimario, LiquidColor.rosa],
-                        period: 38, animated: false) {
-                HStack(alignment: .top, spacing: LiquidSpace.s200) {
-                    VStack(alignment: .leading, spacing: 3) {
-                        moduleTitle("Your body")
-                        // Provisional placement here, pending a product decision on its permanent home (likely
-                        // Entrenar / Patrones). (FER-566 / handoff «DE MOMENTO»)
-                        Text("What to train today")
-                            .font(LiquidType.tituloHoja).foregroundStyle(LiquidColor.tinta900)
-                        Text("Per-muscle load crossed with your recovery.")
-                            .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta700)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    Spacer(minLength: LiquidSpace.s200)
-                    LiquidIcon(.chevron, size: 12, color: LiquidColor.tinta500)
-                }
-            }
-        }
-        .buttonStyle(.liquidPress)
-        .accessibilityHint("Opens the muscle map.")
     }
 
     /// Vitals — a 3×2 grid of scalar vitals, each into its `MetricDetailScreen`. Two explicit rows (not
