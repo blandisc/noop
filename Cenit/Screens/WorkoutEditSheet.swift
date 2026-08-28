@@ -80,7 +80,6 @@ struct WorkoutEditSheet: View {
     var body: some View {
         NavigationStack {
             listBody
-            .background(theme.paper.ignoresSafeArea())
             .navigationTitle("Edit workout")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(theme.paper, for: .navigationBar)
@@ -95,6 +94,12 @@ struct WorkoutEditSheet: View {
                 }
             }
         }
+        // FER-199 (Ola 3, épico FER-195): fondo de vidrio El Eje EN LA RAÍZ del `NavigationStack`
+        // propio — mismo patrón que `ChangeExerciseSheet`/`ExerciseDetailScreen` (Ola 2): el stack
+        // trae SUS DOS acciones de salida nativas (Cancel a la izquierda, Save a la derecha), así
+        // que se CONSERVA su toolbar tal cual en vez de reducirlo a la salida única de
+        // `EntrenarHojaCabecera` — forzar la cabecera aquí le quitaría un control (REGLA SUPREMA).
+        .entrenarHojaFondo(tono: .neutro)
         .interactiveDismissDisabled(isDirty)
         // FER-998: una hoja no tiene gesto de borde; se lo damos. Pasa por `cancel()`, así que con
         // cambios sin guardar sale la confirmación de descartar igual que al tocar el botón.
@@ -109,23 +114,12 @@ struct WorkoutEditSheet: View {
                 .init(String(localized: "Discard changes"), role: .destructive) { dismiss() }
             ]
         )
-        // FER-837: save failure is an inline banner (a result must not cover the screen), not an alert.
-        .overlay(alignment: .top) {
-            if saveError {
-                Text("Couldn't save the workout. Try again.")
-                    .font(.system(size: 13))   // token-exempt: cuerpo de banner (13pt, igual que el mensaje de ConfirmCard)
-                    .foregroundStyle(theme.ink)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .patternBlock(theme, bar: theme.critical)
-                    .padding(.horizontal, 16)
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                    .task {
-                        try? await Task.sleep(for: .seconds(4))
-                        saveError = false
-                    }
-            }
-        }
-        .animation(StrandMotion.fade, value: saveError)
+        // FER-837: save failure is an inline banner (a result must not cover the screen), not an
+        // alert. FER-199 (Ola 3): absorbe el banner hecho a mano en `SaveErrorToast` — ya en
+        // cristal El Eje (mismo `patternBlock` + auto-descarte a 4s) y usado en el resto de
+        // Entrenar (`WorkoutSessionDetailScreen.duplicateError`, `WorkoutDetailScreen`); mismo
+        // disparador (`saveError = true` en el catch de `save()`), mismo cuándo/por qué.
+        .saveErrorToast(isPresented: $saveError)
         .sheet(item: $reassignGroup) { target in
             NavigationStack {
                 ExerciseLibraryScreen { picks in

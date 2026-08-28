@@ -1221,7 +1221,10 @@ struct WorkoutSessionDetailScreen: View {
             .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(theme.paper.ignoresSafeArea())
+        // FER-199 (Ola 3, épico FER-195): fondo de vidrio El Eje en vez del papel plano — la
+        // pantalla llega empujada (`WorkoutSessionRoute`) y conserva su navegación/toolbar del
+        // stack ambiente tal cual, sin cabecera propia que sustituir.
+        .entrenarHojaFondo(tono: .neutro)
         // FER-969 / X-05a: delete (or undo-restore) failure — banner; do NOT pop or seed pendingUndo.
         .overlay(alignment: .top) {
             if saveError {

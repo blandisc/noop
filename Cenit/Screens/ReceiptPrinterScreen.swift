@@ -64,8 +64,6 @@ struct ReceiptPrinterScreen: View {
 
     var body: some View {
         ZStack {
-            theme.paper.ignoresSafeArea()
-
             VStack(spacing: 0) {
                 printerMouthRow
                     .padding(.top, 4)
@@ -80,6 +78,13 @@ struct ReceiptPrinterScreen: View {
                     .padding(.bottom, CenitMetrics.screenPadding)
             }
         }
+        // FER-199 (Ola 3, épico FER-195): fondo de vidrio El Eje EN VEZ del papel plano — el
+        // `BackButton(role: .close)` de `printerMouthRow` ya ES la salida `.cerrar` de la familia
+        // (mismo componente), y esta pantalla no trae título/subtítulo que rellenar en una
+        // `EntrenarHojaCabecera`, así que se queda sin cabecera propia. `ThermalTicketView` (el
+        // ticket, en pantalla y en el `ImageRenderer` exportable) NO se toca: conserva su
+        // identidad térmica (decisión del dueño).
+        .entrenarHojaFondo(tono: .neutro)
         .instrumentoTheme(theme)
         .preferredColorScheme(.light)
         // El arrastre del ticket es VERTICAL, así que el guard de dominancia horizontal del gesto
