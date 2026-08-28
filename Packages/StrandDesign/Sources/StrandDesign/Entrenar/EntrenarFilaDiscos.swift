@@ -11,8 +11,12 @@ import SwiftUI
 // un radio/opacidad de sistema — mismo criterio que documenta `PlatesScreen.plateBar`.
 
 public struct EntrenarFilaDiscos: View {
-    public struct Disco: Identifiable {
-        public let id = UUID()
+    /// SIN `Identifiable`/`UUID` a propósito: el despiece de placas es POSICIONAL, no una lista
+    /// que se reordena — el `ForEach` de abajo identifica cada disco por su ÍNDICE (`id: \.offset`,
+    /// mismo patrón que `PlatesScreen.barDiagram`), para que un recálculo del despiece actualice
+    /// las barras en su lugar en vez de recrearlas (un `UUID()` nuevo en cada `init` rompía esa
+    /// identidad estable y producía parpadeo).
+    public struct Disco {
         /// La masa real del disco — SOLO para escalar el dibujo (el componente no la formatea).
         public let masaKg: Double
         /// El peso YA formateado («20», «1,25»).
@@ -41,12 +45,12 @@ public struct EntrenarFilaDiscos: View {
 
     public var body: some View {
         HStack(alignment: .center, spacing: LiquidSpace.s050) {
-            ForEach(discos.reversed()) { barra($0) }
+            ForEach(Array(discos.reversed().enumerated()), id: \.offset) { _, disco in barra(disco) }
             RoundedRectangle(cornerRadius: LiquidRadius.hairline)
                 .fill(LiquidColor.tinta10)
                 .frame(width: EntrenarFilaDiscosMetrics.barraAncho,
                        height: EntrenarFilaDiscosMetrics.barraAlto)
-            ForEach(discos) { barra($0) }
+            ForEach(Array(discos.enumerated()), id: \.offset) { _, disco in barra(disco) }
         }
         .frame(maxWidth: .infinity, minHeight: EntrenarFilaDiscosMetrics.altoMinimo)
         .accessibilityElement()
@@ -62,7 +66,7 @@ public struct EntrenarFilaDiscos: View {
             .frame(width: ancho, height: alto)
             .overlay {
                 Text(disco.etiqueta)
-                    .font(.system(size: 9, weight: .medium))
+                    .font(.system(size: 9, weight: .medium))   // token-exempt: microtexto <10pt
                     .monospacedDigit()
                     .foregroundStyle(LiquidColor.papelTarjeta)
                     .rotationEffect(.degrees(-90))

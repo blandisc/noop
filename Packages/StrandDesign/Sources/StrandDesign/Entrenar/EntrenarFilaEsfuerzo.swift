@@ -42,7 +42,7 @@ public struct EntrenarFilaEsfuerzo: View {
                 .font(InstrumentoType.groteskNumber(17, weight: seleccionada ? .bold : .regular))
                 .foregroundStyle(seleccionada ? LiquidColor.papelTarjeta : LiquidColor.tinta700)
                 .frame(maxWidth: .infinity)
-                .frame(height: EntrenarFilaEsfuerzoMetrics.celda)
+                .frame(minHeight: EntrenarFilaEsfuerzoMetrics.celda)
                 .background(fondoCelda(seleccionada: seleccionada))
                 .contentShape(Rectangle())
         }

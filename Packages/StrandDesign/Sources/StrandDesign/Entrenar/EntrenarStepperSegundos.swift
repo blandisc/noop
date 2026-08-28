@@ -54,7 +54,7 @@ public struct EntrenarStepperSegundos: View {
                        etiqueta: String) -> some View {
         Button(action: action) {
             Image(systemName: system)
-                .font(.system(size: 15, weight: .semibold))
+                .font(.system(size: 15, weight: .semibold))   // token-exempt: glifo de control
                 .foregroundStyle(habilitado ? LiquidColor.tinta900 : LiquidColor.tinta500)
                 .frame(width: EntrenarStepperSegundosMetrics.boton,
                        height: EntrenarStepperSegundosMetrics.boton)

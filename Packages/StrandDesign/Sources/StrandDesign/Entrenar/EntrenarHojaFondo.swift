@@ -33,16 +33,19 @@ import SwiftUI
 // | `PlatesScreen` | `.entrenarHojaFondo(tono: .ambar)` | reemplaza overline+`BackButton` por `EntrenarHojaCabecera(.cerrar)` | sheet `.large`, `ScrollView` |
 // | `ChangeExerciseSheet` | `.entrenarHojaFondo(tono:)` en la raíz DEL `NavigationStack` propio (no lo reemplaza) | CONSERVA su `NavigationStack`/toolbar — el buscador vive en el toolbar nativo | sheet, `NavigationStack` |
 // | `ExerciseDetailScreen` | `.entrenarHojaFondo(tono:)` en la raíz del `NavigationStack` que pone el caller | CONSERVA su `NavigationStack`/toolbar (item «Done») | sheet, `NavigationStack` |
-// | `ExerciseLibraryScreen` | `.entrenarHojaFondo(tono: .neutro)` | CONSERVA su `NavigationStack`/toolbar | sheet, `NavigationStack` |
+// | `ExerciseLibraryScreen` | `.entrenarHojaFondo(tono: .neutro)` en su raíz | SIN `NavigationStack` propio en NINGUNO de sus 5 call sites (verificado en código): su `body` es un `ScrollView` con un kicker dibujado a mano, no un toolbar nativo — la Ola 2 decide si lo sustituye por `EntrenarHojaCabecera` | push/`.navigationDestination` según lo decida el caller (el `NavigationStack` es AMBIENTE, no propio) |
 // | `CreateExerciseSheet` | `.entrenarHojaFondo(tono: .neutro)` | reemplaza el título Grotesk dibujado a mano por `EntrenarHojaCabecera(.cancelar(_:))` — el CTA de guardar sigue siendo el botón grande de abajo, sin cambio | sheet dentro de Library, SIN `NavigationStack` propio |
 // | `LiveStrengthSheet.summaryPhase` | `.entrenarHojaFondo(tono:)` en la raíz del `fullScreenCover` | NO aplica — es una SECCIÓN dentro de una hoja ya cubierta, sin cabecera de salida propia | `fullScreenCover` |
 // | `emptyAdHocSession` | `.entrenarHojaFondo(tono:)` | NO aplica, misma razón | `fullScreenCover` (misma clase que `summaryPhase`) |
 //
-// Regla de lectura: las tres primeras filas (push/sheet, sin `NavigationStack` propio) y
-// `CreateExerciseSheet` REEMPLAZAN su cabecera dibujada a mano por `EntrenarHojaCabecera`; las
-// tres de `NavigationStack` CONSERVAN su toolbar nativo tal cual (el fondo se aplica en la raíz
-// del stack, no en su toolbar); las dos de `fullScreenCover` son secciones internas de una hoja
-// que la Ola 2 no reestructura, así que solo heredan el fondo.
+// Regla de lectura: las tres primeras filas, `ExerciseLibraryScreen` y `CreateExerciseSheet` —
+// las CINCO que NO traen `NavigationStack` propio — REEMPLAZAN su cabecera dibujada a mano por
+// `EntrenarHojaCabecera` (aunque `ExerciseLibraryScreen` es la única de las cinco que la Ola 2
+// puede dejar como está: hoy es solo un kicker mudo, sin acción de salida que resolver). Las DOS
+// de `NavigationStack` propio (`ChangeExerciseSheet`, `ExerciseDetailScreen`) CONSERVAN su
+// toolbar nativo tal cual (el fondo se aplica en la raíz del stack, no en su toolbar); las dos
+// de `fullScreenCover` son secciones internas de una hoja que la Ola 2 no reestructura, así que
+// solo heredan el fondo.
 
 public extension View {
     /// Viste el fondo de una hoja-herramienta con el cristal El Eje, teñido por `tono`. Aplícalo
