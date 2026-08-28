@@ -207,6 +207,7 @@ struct HojaFoco: View {
                         .padding(.top, FocoMetrics.capcionTop)
                 }
             }
+            if let bpm = vivo.sheet.model.watchBpm { zonaBadge(bpm).padding(.top, FocoMetrics.capcionTop) }
             Button {
                 withAnimation(vivo.reduceMotion ? nil : StrandMotion.gentle) {
                     if running { vivo.registerFromFoco() } else { vivo.session.startSetTimer() }
@@ -242,6 +243,7 @@ struct HojaFoco: View {
             .font(InstrumentoType.groteskNumber(FocoMetrics.runningClockSize, weight: .bold))
             .foregroundStyle(LiquidColor.tinta900).monospacedDigit()
             .padding(.top, FocoMetrics.capcionTop)
+            if let bpm = vivo.sheet.model.watchBpm { zonaBadge(bpm).padding(.top, FocoMetrics.capcionTop) }
             Button {
                 withAnimation(vivo.reduceMotion ? nil : StrandMotion.gentle) {
                     running ? vivo.session.stopSetTimer() : vivo.session.startSetTimer()
@@ -415,6 +417,20 @@ struct HojaFoco: View {
             }
             .padding(.horizontal, CenitMetrics.screenPadding)
         }
+    }
+
+    /// «ZONA 2 · 118» (variante tiempo/distancia del mock: «FocoHeroe con unidad de tiempo/distancia
+    /// + zona FC») — la MISMA regla de 5 zonas que `HojaTarjetaEjercicioSesion.zonaBadge` (% de tu
+    /// FC máx), aquí porque D1 no monta esa tarjeta. Solo aparece con Watch — sin pulso no se inventa
+    /// una zona.
+    private func zonaBadge(_ bpm: Int) -> some View {
+        let maxHR = Double(vivo.sheet.model.profile.hrMax)
+        let pct = maxHR > 0 ? Double(bpm) / maxHR : 0
+        let zone = max(1, min(5, Int((pct * 5).rounded(.up))))
+        return Text("ZONE \(zone) · \(bpm)")
+            .font(StrandFont.caption.weight(.bold)).foregroundStyle(LiquidColor.tinta500)
+            .padding(.horizontal, 8).padding(.vertical, 3)
+            .overlay(Capsule().strokeBorder(LiquidColor.tinta10, lineWidth: 1))
     }
 
     // MARK: - Formato
