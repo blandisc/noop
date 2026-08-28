@@ -1,5 +1,6 @@
 import XCTest
 import StrandTraining
+import StrandAnalytics
 @testable import Cenit
 
 /// Pins the guided strength session logic (FER-347): prefill from «la última vez», register/advance,
@@ -858,5 +859,69 @@ final class StrengthSessionModelTests: XCTestCase {
         XCTAssertEqual(s.runs[0].supersetGroup, 1, "A1 starts grouped")
         s.replaceExercise(at: 0, with: ex("incline", "Incline bench"))
         XCTAssertNil(s.runs[0].supersetGroup, "swapping the exercise breaks its superset membership")
+    }
+
+    // MARK: - removeExercise leaves an orphaned superset dissolved (FER-188)
+    //
+    // Pre-existing bug found in F3: `removeExercise` isn't group-aware. Removing one of a 2-member
+    // superset left the survivor with a `supersetGroup` pointing at a group of ONE — behaviorally
+    // inert (paints loose) but dirty state that can confuse the superset logic downstream. Fix reuses
+    // the same criterion `breakSupersetBlock` (RoutineSheetLiveLogic) uses to dissolve a block: set
+    // `supersetGroup = nil` on whoever's left, only when that leaves fewer than 2 members.
+
+    /// [A,B] superset → remove A → B must NOT keep a group-of-one; it becomes standalone (nil).
+    func testRemoveExerciseDissolvesGroupOfTwoDownToOne() {
+        let s = supersetSession()   // a(bench)+b(row) grouped as 1; c(curl) standalone
+        XCTAssertEqual(s.runs[0].supersetGroup, 1, "sanity: a starts grouped")
+        XCTAssertEqual(s.runs[1].supersetGroup, 1, "sanity: b starts grouped")
+        s.removeExercise(at: 0)   // remove "bench" (a)
+        XCTAssertEqual(s.runs.first?.exerciseId, "row", "b took a's old slot")
+        XCTAssertNil(s.runs.first?.supersetGroup, "b left alone must not carry a dead group-of-one")
+    }
+
+    /// [A,B,C] superset → remove A → B and C stay grouped (2 members is still a real superset).
+    func testRemoveExerciseKeepsGroupOfThreeDownToTwo() {
+        let s = make([
+            StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 1, superset: 1),
+                                          exercise: ex("bench", "Bench"), lastSets: []),
+            StrengthSessionModel.PlanSlot(re: re("b", exerciseId: "row", sets: 1, superset: 1),
+                                          exercise: ex("row", "Row"), lastSets: []),
+            StrengthSessionModel.PlanSlot(re: re("c", exerciseId: "curl", sets: 1, superset: 1),
+                                          exercise: ex("curl", "Curl"), lastSets: [])
+        ])
+        s.removeExercise(at: 0)   // remove "bench" (a); b, c remain
+        XCTAssertEqual(s.runs.count, 2)
+        XCTAssertEqual(s.runs[0].exerciseId, "row")
+        XCTAssertEqual(s.runs[0].supersetGroup, 1, "b stays grouped — 2 members is still a real superset")
+        XCTAssertEqual(s.runs[1].supersetGroup, 1, "c stays grouped too")
+    }
+
+    /// Removing a run with NO group (standalone) never touches anyone else's grouping.
+    func testRemoveStandaloneExerciseLeavesOtherGroupsUntouched() {
+        let s = supersetSession()   // a+b grouped as 1; c standalone
+        s.removeExercise(at: 2)     // remove "curl" (c, standalone)
+        XCTAssertEqual(s.runs.count, 2)
+        XCTAssertEqual(s.runs[0].supersetGroup, 1, "a's group is untouched")
+        XCTAssertEqual(s.runs[1].supersetGroup, 1, "b's group is untouched")
+    }
+
+    // MARK: - The deload pill survives a crash-restore (FER-189)
+    //
+    // Bug found in F4: `ExerciseRun.deloadState` (the B7 deload proposal) wasn't part of
+    // `snapshot`/`restore`, unlike `proposedRaise`/`heldRaise` which are preserved deliberately. A
+    // crash mid-session dropped an un-actioned deload proposal (it gets recomputed next session, but
+    // this one vanishes for the rest of THIS session). An already-APPLIED deload survives regardless
+    // (it's baked into the cell weights the snapshot already carries) — this is only about the offer.
+
+    func testDeloadProposalSurvivesSnapshotRestore() {
+        let slot = StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 1),
+                                                 exercise: ex("bench", "Bench"), lastSets: [],
+                                                 progressionState: .deloading(fromKg: 100, toKg: 92.5))
+        let s = make([slot])
+        XCTAssertEqual(s.runs[0].deloadState, .deloading(fromKg: 100, toKg: 92.5), "sanity: seeded")
+
+        let restored = StrengthSessionModel.restore(from: s.snapshot(now: 200))
+        XCTAssertEqual(restored.runs[0].deloadState, .deloading(fromKg: 100, toKg: 92.5),
+                       "the un-actioned deload proposal must survive a crash-restore")
     }
 }
