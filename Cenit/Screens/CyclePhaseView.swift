@@ -52,6 +52,12 @@ struct CyclePhaseSheet: View {
     var body: some View {
         // Ronda 2 #9: la hoja no tenía «Listo» — solo swipe, que en Dynamic Type / VoiceOver no es
         // un cierre. NavigationStack + toolbar, mismo patrón que Data Sources.
+        //
+        // Ronda 3 #2: ese «Listo» pintaba TAMBIÉN en el consentimiento (`enabled == false`), donde
+        // cierra sin activar (`dismiss()`) — un botón a la derecha, en iOS, se lee como confirmar, y
+        // ahí ya viven «Turn on experiment» / «Not now». Quien marcaba el check y tocaba Listo se
+        // iba con el experimento APAGADO. Ahora el toolbar solo pinta Listo en la tarjeta de ESTADO
+        // (`enabled == true`); el consentimiento no pinta Done.
         NavigationStack {
             ScrollView {
                 Group {
@@ -82,9 +88,11 @@ struct CyclePhaseSheet: View {
             .background { LiquidSheetFondo().ignoresSafeArea() }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(String(localized: "Done")) { dismiss() }
-                        .foregroundStyle(LiquidColor.tinta900)
+                if enabled {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button(String(localized: "Done")) { dismiss() }
+                            .foregroundStyle(LiquidColor.tinta900)
+                    }
                 }
             }
         }

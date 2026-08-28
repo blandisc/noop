@@ -51,22 +51,22 @@
         }
       }
     },
-    "Crosses your wrist temperature and nighttime resting heart rate to warn you early of possible illness. Approximate, not a diagnosis; needs about two weeks of data. If it fires, you'll see it in Hoy and, if you've allowed notifications, in a notification." : {
+    "Crosses your wrist temperature and nighttime resting heart rate to warn you early of possible illness. Approximate, not a diagnosis; needs about two weeks of data. If it fires, you'll see it in %@ and, if you've allowed notifications, in a notification." : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cruza tu temperatura de muñeca y tu pulso en reposo nocturno para avisarte temprano de una posible enfermedad. Aproximado, no es un diagnóstico; necesita unas dos semanas de datos. Si se dispara, lo verás en Hoy y, si permitiste notificaciones, en un aviso."
+            "value" : "Cruza tu temperatura de muñeca y tu pulso en reposo nocturno para avisarte temprano de una posible enfermedad. Aproximado, no es un diagnóstico; necesita unas dos semanas de datos. Si se dispara, lo verás en %@ y, si permitiste notificaciones, en un aviso."
           }
         }
       }
     },
-    "You'll still see it in Hoy; the system notice won't arrive until you allow notifications." : {
+    "You'll still see it in %@; the system notice won't arrive until you allow notifications." : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lo verás en Hoy; el aviso del sistema no llegará hasta que permitas notificaciones."
+            "value" : "Lo verás en %@; el aviso del sistema no llegará hasta que permitas notificaciones."
           }
         }
       }
@@ -111,12 +111,12 @@
         }
       }
     },
-    "Go back to Data Sources and tap Sync now (or Connect, if Apple Health isn't linked yet)." : {
+    "Go back to Data Sources and tap Sync now (or Connect Apple Health, if it isn't linked yet)." : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vuelve a Fuentes de datos y toca Sincronizar (o Conectar, si Apple Salud todavía no está vinculada)."
+            "value" : "Vuelve a Fuentes de datos y toca Sincronizar (o Conectar Apple Salud, si todavía no está vinculada)."
           }
         }
       }

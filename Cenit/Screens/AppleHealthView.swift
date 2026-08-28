@@ -228,12 +228,14 @@ struct AppleHealthView: View {
     /// Data Sources' own empty state two taps back («tap Sync now»), and named a macOS step («On an
     /// iPhone:») nobody on this screen can be running. The fast path (Sync now / Connect, back in
     /// Data Sources) leads; the zip is the long-history fallback, named as one.
+    /// Ronda 3 #4: cita el rótulo REAL del botón desconectado («Connect Apple Health»,
+    /// `DataSourcesView.swift:385`), no «Connect» a secas.
     private var emptyState: some View {
         VStack(alignment: .leading, spacing: LiquidSpace.s150) {
             Text(String(localized: "Nothing imported yet"))
                 .font(LiquidType.tituloFila)
                 .foregroundStyle(LiquidColor.tinta900)
-            Text(String(localized: "Go back to Data Sources and tap Sync now (or Connect, if Apple Health isn't linked yet)."))
+            Text(String(localized: "Go back to Data Sources and tap Sync now (or Connect Apple Health, if it isn't linked yet)."))
                 .font(LiquidType.cuerpo)
                 .lineSpacing(LiquidType.cuerpoLineSpacing)
                 .foregroundStyle(LiquidColor.tinta700)

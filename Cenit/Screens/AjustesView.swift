@@ -302,11 +302,15 @@ private struct AjustesLanding: View {
                     }
                     .tint(LiquidColor.verdePrimario)
                     .frame(minHeight: 44)
-                    Text(String(localized: "Crosses your wrist temperature and nighttime resting heart rate to warn you early of possible illness. Approximate, not a diagnosis; needs about two weeks of data. If it fires, you'll see it in Hoy and, if you've allowed notifications, in a notification."))
+                    // Ronda 3 #3: interpola el nombre real de la pestaña (`Today`/«Hoy»), no el
+                    // literal español «Hoy» dentro de la cadena fuente inglesa — el dock usa esa
+                    // MISMA clave (`LiquidTabRotulos+Cenit.swift`), así que en UI inglesa esto ya
+                    // dice «Today», el nombre real de la pestaña.
+                    Text(String(localized: "Crosses your wrist temperature and nighttime resting heart rate to warn you early of possible illness. Approximate, not a diagnosis; needs about two weeks of data. If it fires, you'll see it in \(String(localized: "Today")) and, if you've allowed notifications, in a notification."))
                         .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
                         .fixedSize(horizontal: false, vertical: true)
                     if illnessNegado {
-                        LiquidNotaLine(String(localized: "You'll still see it in Hoy; the system notice won't arrive until you allow notifications."),
+                        LiquidNotaLine(String(localized: "You'll still see it in \(String(localized: "Today")); the system notice won't arrive until you allow notifications."),
                                       tono: LiquidColor.atencionTexto)
                         Button { abrirAjustesDeIOS() } label: {
                             Text(String(localized: "Open Settings")).font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta700)
@@ -336,8 +340,15 @@ private struct AjustesLanding: View {
                     .tint(LiquidColor.verdePrimario)
                     .frame(minHeight: 44)
                     .onChange(of: keepScreenAwake) { _, on in
-                        // Apagarlo a media sesión tiene que surtir efecto ya, no en la siguiente.
-                        if !on { SessionComfort.applyKeepAwake(active: false) }
+                        // Ronda 3 #5: prender/apagar a media sesión tiene que surtir efecto ya, no
+                        // en la siguiente. Apagar es incondicional (siempre seguro); prender solo
+                        // si hay sesión viva — `applyKeepAwake` ya AND-ea la bandera con `active`,
+                        // pero `active` aquí significa «hay sesión», no «el switch está en on».
+                        if on {
+                            if model.strengthSession != nil { SessionComfort.applyKeepAwake(active: true) }
+                        } else {
+                            SessionComfort.applyKeepAwake(active: false)
+                        }
                     }
                     Text(String(localized: "If you don't touch your phone, iOS locks it mid-set. It only applies while the session is open, and it uses more battery: your iPhone goes back to its normal auto-lock when the session ends."))
                         .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
@@ -733,41 +744,40 @@ private struct ProfileWheelSheet: View {
         _heightCm = State(initialValue: profile.heightCm)
     }
 
+    // Ronda 3 #1: NO NavigationStack — no abraza su contenido, llena el detent y rompe
+    // `.fittedSheet()` (la rueda quedaba recortada en el detent inicial de 320). Cancelar/Listo
+    // viven como una barra DENTRO del VStack que `.fittedSheet()` mide, no en un toolbar de nav.
     var body: some View {
-        NavigationStack {
-            VStack(alignment: .leading, spacing: LiquidSpace.s600) {
-                VStack(alignment: .leading, spacing: LiquidSpace.s100) {
-                    Text(String(localized: "Profile"))
-                        .font(LiquidType.franja).tracking(LiquidType.franjaTracking).textCase(.uppercase)
-                        .foregroundStyle(LiquidColor.tinta500)
-                    Text(verbatim: title)
-                        .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
-                        .foregroundStyle(LiquidColor.tinta900)
+        VStack(alignment: .leading, spacing: LiquidSpace.s600) {
+            HStack {
+                Button(String(localized: "Cancel")) { dismiss() }
+                    .foregroundStyle(LiquidColor.tinta700)
+                Spacer()
+                Button(String(localized: "Done")) {
+                    profile.age = age
+                    profile.weightKg = weightKg
+                    profile.heightCm = heightCm
+                    dismiss()
                 }
+                .foregroundStyle(LiquidColor.tinta900)
+            }
+            .font(LiquidType.boton)
 
-                wheelBody
-                    .frame(maxWidth: .infinity)
-            }
-            .padding(LiquidSpace.s600)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background { LiquidSheetFondo().ignoresSafeArea() }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(String(localized: "Cancel")) { dismiss() }
-                        .foregroundStyle(LiquidColor.tinta700)
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(String(localized: "Done")) {
-                        profile.age = age
-                        profile.weightKg = weightKg
-                        profile.heightCm = heightCm
-                        dismiss()
-                    }
+            VStack(alignment: .leading, spacing: LiquidSpace.s100) {
+                Text(String(localized: "Profile"))
+                    .font(LiquidType.franja).tracking(LiquidType.franjaTracking).textCase(.uppercase)
+                    .foregroundStyle(LiquidColor.tinta500)
+                Text(verbatim: title)
+                    .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
                     .foregroundStyle(LiquidColor.tinta900)
-                }
             }
+
+            wheelBody
+                .frame(maxWidth: .infinity)
         }
+        .padding(LiquidSpace.s600)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background { LiquidSheetFondo().ignoresSafeArea() }
         .fittedSheet()
     }
 
@@ -862,68 +872,67 @@ private struct MaxHRSheet: View {
     /// The Tanaka auto estimate (208 − 0.7·age), shown in Auto and referenced in Manual.
     private var autoBpm: Int { Int((208 - 0.7 * Double(profile.age)).rounded()) }
 
+    // Ronda 3 #1: NO NavigationStack (ver ProfileWheelSheet) — Cancelar/Listo en una barra
+    // dentro del VStack que mide `.fittedSheet()`, para que la rueda Manual (que crece) no
+    // se recorte en el detent inicial.
     var body: some View {
-        NavigationStack {
-            VStack(alignment: .leading, spacing: LiquidSpace.s600) {
-                VStack(alignment: .leading, spacing: LiquidSpace.s100) {
-                    Text(String(localized: "Profile"))
-                        .font(LiquidType.franja).tracking(LiquidType.franjaTracking).textCase(.uppercase)
-                        .foregroundStyle(LiquidColor.tinta500)
-                    Text(String(localized: "Max heart rate"))
-                        .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
-                        .foregroundStyle(LiquidColor.tinta900)
+        VStack(alignment: .leading, spacing: LiquidSpace.s600) {
+            HStack {
+                Button(String(localized: "Cancel")) { dismiss() }
+                    .foregroundStyle(LiquidColor.tinta700)
+                Spacer()
+                Button(String(localized: "Done")) {
+                    profile.hrMaxOverride = manual ? overrideBpm : 0
+                    dismiss()
                 }
-
-                Picker(String(localized: "Mode"), selection: $manual) {
-                    Text(String(localized: "Automatic")).tag(false)
-                    Text(String(localized: "Manual")).tag(true)
-                }
-                .pickerStyle(.segmented)
-                .onChange(of: manual) { _, isManual in
-                    if isManual, overrideBpm == 0 { overrideBpm = autoBpm }
-                }
-
-                if manual {
-                    Picker(String(localized: "Maximum heart rate"), selection: $overrideBpm) {
-                        ForEach(100...230, id: \.self) { Text("\($0)").tag($0) }
-                    }
-                    .pickerStyle(.wheel).labelsHidden().tint(LiquidColor.tinta900)
-                    .frame(maxWidth: .infinity)
-                    Text(String(localized: "Overriding the automatic estimate (\(autoBpm))."))
-                        .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta700)
-                } else {
-                    VStack(alignment: .center, spacing: LiquidSpace.s100) {
-                        Text("\(autoBpm)")
-                            .font(LiquidType.displayL).tracking(LiquidType.displayLTracking)
-                            .foregroundStyle(LiquidColor.tinta900)
-                        Text(String(localized: "bpm · Tanaka"))
-                            .font(LiquidType.clausulaCampo).foregroundStyle(LiquidColor.tinta500)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, LiquidSpace.s600)
-                    Text(String(localized: "Estimated from your age (208 − 0.7 × age). Set it manually if you know your true max."))
-                        .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta700)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+                .foregroundStyle(LiquidColor.tinta900)
             }
-            .padding(LiquidSpace.s600)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background { LiquidSheetFondo().ignoresSafeArea() }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(String(localized: "Cancel")) { dismiss() }
-                        .foregroundStyle(LiquidColor.tinta700)
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(String(localized: "Done")) {
-                        profile.hrMaxOverride = manual ? overrideBpm : 0
-                        dismiss()
-                    }
+            .font(LiquidType.boton)
+
+            VStack(alignment: .leading, spacing: LiquidSpace.s100) {
+                Text(String(localized: "Profile"))
+                    .font(LiquidType.franja).tracking(LiquidType.franjaTracking).textCase(.uppercase)
+                    .foregroundStyle(LiquidColor.tinta500)
+                Text(String(localized: "Max heart rate"))
+                    .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
                     .foregroundStyle(LiquidColor.tinta900)
+            }
+
+            Picker(String(localized: "Mode"), selection: $manual) {
+                Text(String(localized: "Automatic")).tag(false)
+                Text(String(localized: "Manual")).tag(true)
+            }
+            .pickerStyle(.segmented)
+            .onChange(of: manual) { _, isManual in
+                if isManual, overrideBpm == 0 { overrideBpm = autoBpm }
+            }
+
+            if manual {
+                Picker(String(localized: "Maximum heart rate"), selection: $overrideBpm) {
+                    ForEach(100...230, id: \.self) { Text("\($0)").tag($0) }
                 }
+                .pickerStyle(.wheel).labelsHidden().tint(LiquidColor.tinta900)
+                .frame(maxWidth: .infinity)
+                Text(String(localized: "Overriding the automatic estimate (\(autoBpm))."))
+                    .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta700)
+            } else {
+                VStack(alignment: .center, spacing: LiquidSpace.s100) {
+                    Text("\(autoBpm)")
+                        .font(LiquidType.displayL).tracking(LiquidType.displayLTracking)
+                        .foregroundStyle(LiquidColor.tinta900)
+                    Text(String(localized: "bpm · Tanaka"))
+                        .font(LiquidType.clausulaCampo).foregroundStyle(LiquidColor.tinta500)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, LiquidSpace.s600)
+                Text(String(localized: "Estimated from your age (208 − 0.7 × age). Set it manually if you know your true max."))
+                    .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta700)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
+        .padding(LiquidSpace.s600)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background { LiquidSheetFondo().ignoresSafeArea() }
         .fittedSheet()
     }
 }
@@ -937,59 +946,59 @@ private struct UnidadesSheet: View {
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
     @AppStorage(UnitPrefs.temperatureKey) private var temperatureRaw = ""
 
+    // Ronda 3 #1: NO NavigationStack (ver ProfileWheelSheet). Aquí no hubo nunca Cancelar —
+    // los bindings son vivos (`$unitSystemRaw`/`$temperatureRaw`), solo hay Listo para cerrar.
     var body: some View {
-        NavigationStack {
-            VStack(alignment: .leading, spacing: LiquidSpace.s600) {
-                VStack(alignment: .leading, spacing: LiquidSpace.s100) {
-                    Text(String(localized: "Display"))
-                        .font(LiquidType.franja).tracking(LiquidType.franjaTracking).textCase(.uppercase)
-                        .foregroundStyle(LiquidColor.tinta500)
-                    Text(String(localized: "Units & format"))
-                        .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
-                        .foregroundStyle(LiquidColor.tinta900)
-                }
-                Text(String(localized: "Your data is always stored the same way: this only changes how distances, weights, heights and temperatures are shown."))
-                    .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta700)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                VStack(alignment: .leading, spacing: LiquidSpace.s300) {
-                    HStack(spacing: LiquidSpace.s400) {
-                        Text(String(localized: "Measurement system")).font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        Picker(String(localized: "Measurement system"), selection: $unitSystemRaw) {
-                            Text(String(localized: "Metric")).tag(UnitSystem.metric.rawValue)
-                            Text(String(localized: "Imperial")).tag(UnitSystem.imperial.rawValue)
-                        }
-                        .labelsHidden().pickerStyle(.segmented).fixedSize()
-                    }
-                    LiquidCapilar(eje: .horizontal)
-                    HStack(spacing: LiquidSpace.s400) {
-                        Text(String(localized: "Temperature")).font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        // Ronda 2 #11 (revierte una regresión de ronda 1): «Match system»/«Según el
-                        // sistema» alargó la etiqueta y reabrió el mismo truncado que un segmentado de
-                        // 3 con `.fixedSize()` ya tenía — un menú no trunca y no necesita el hack de
-                        // ancho.
-                        Picker(String(localized: "Temperature"), selection: $temperatureRaw) {
-                            Text(String(localized: "Match system")).tag("")
-                            Text("°C").tag(TemperatureUnit.celsius.rawValue)
-                            Text("°F").tag(TemperatureUnit.fahrenheit.rawValue)
-                        }
-                        .labelsHidden().pickerStyle(.menu).tint(LiquidColor.tinta700)
-                    }
-                }
+        VStack(alignment: .leading, spacing: LiquidSpace.s600) {
+            HStack {
+                Spacer()
+                Button(String(localized: "Done")) { dismiss() }
+                    .foregroundStyle(LiquidColor.tinta900)
             }
-            .padding(LiquidSpace.s600)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background { LiquidSheetFondo().ignoresSafeArea() }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(String(localized: "Done")) { dismiss() }
-                        .foregroundStyle(LiquidColor.tinta900)
+            .font(LiquidType.boton)
+
+            VStack(alignment: .leading, spacing: LiquidSpace.s100) {
+                Text(String(localized: "Display"))
+                    .font(LiquidType.franja).tracking(LiquidType.franjaTracking).textCase(.uppercase)
+                    .foregroundStyle(LiquidColor.tinta500)
+                Text(String(localized: "Units & format"))
+                    .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
+                    .foregroundStyle(LiquidColor.tinta900)
+            }
+            Text(String(localized: "Your data is always stored the same way: this only changes how distances, weights, heights and temperatures are shown."))
+                .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta700)
+                .fixedSize(horizontal: false, vertical: true)
+
+            VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+                HStack(spacing: LiquidSpace.s400) {
+                    Text(String(localized: "Measurement system")).font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    Picker(String(localized: "Measurement system"), selection: $unitSystemRaw) {
+                        Text(String(localized: "Metric")).tag(UnitSystem.metric.rawValue)
+                        Text(String(localized: "Imperial")).tag(UnitSystem.imperial.rawValue)
+                    }
+                    .labelsHidden().pickerStyle(.segmented).fixedSize()
+                }
+                LiquidCapilar(eje: .horizontal)
+                HStack(spacing: LiquidSpace.s400) {
+                    Text(String(localized: "Temperature")).font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    // Ronda 2 #11 (revierte una regresión de ronda 1): «Match system»/«Según el
+                    // sistema» alargó la etiqueta y reabrió el mismo truncado que un segmentado de
+                    // 3 con `.fixedSize()` ya tenía — un menú no trunca y no necesita el hack de
+                    // ancho.
+                    Picker(String(localized: "Temperature"), selection: $temperatureRaw) {
+                        Text(String(localized: "Match system")).tag("")
+                        Text("°C").tag(TemperatureUnit.celsius.rawValue)
+                        Text("°F").tag(TemperatureUnit.fahrenheit.rawValue)
+                    }
+                    .labelsHidden().pickerStyle(.menu).tint(LiquidColor.tinta700)
                 }
             }
         }
+        .padding(LiquidSpace.s600)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background { LiquidSheetFondo().ignoresSafeArea() }
         .fittedSheet()
     }
 }
