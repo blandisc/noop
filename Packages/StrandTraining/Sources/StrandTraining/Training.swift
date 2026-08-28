@@ -413,6 +413,11 @@ public struct StrengthSessionSnapshot: Codable, Sendable, Equatable {
         /// else the athlete can still act on. An APPLIED raise is not carried — its weights are
         /// already in the cells. Optional so a pre-FER-82 snapshot (key absent) still decodes.
         public var heldRaise: HeldRaise?
+        /// B7 (FER-169/FER-189): today's un-actioned deload proposal/stall, mirroring
+        /// `StrengthSessionModel.ExerciseRun.deloadState`. It has to survive a crash the same way
+        /// `heldRaise` does — an APPLIED deload is not carried (its weight is already in the cells);
+        /// this is only the offer/warning. Optional so a pre-FER-189 snapshot (key absent) still decodes.
+        public var deloadState: DeloadStateSnapshot?
 
         /// The three facts a held raise needs to be re-offered after a restore: where it comes from,
         /// where it goes, and the arithmetic sentence that justifies it with real dates.
@@ -425,6 +430,17 @@ public struct StrengthSessionSnapshot: Codable, Sendable, Equatable {
             }
         }
 
+        /// A Codable mirror of `StrandAnalytics.ProgressionState` (FER-189) — `StrandTraining` can't
+        /// import `StrandAnalytics` (the dependency only runs the other way, per the package graph),
+        /// so this carries the same cases across the snapshot, one-to-one.
+        public enum DeloadStateSnapshot: Codable, Sendable, Equatable {
+            case readyToAdvance(newKg: Double)
+            case inCycle(done: Int, of: Int)
+            case stalled(sessions: Int)
+            case deloading(fromKg: Double, toKg: Double)
+            case deferred(newKg: Double)
+        }
+
         public init(id: String, exerciseId: String, name: String, type: ExerciseType,
                     restSeconds: Int, restMode: RestMode, hrRestReference: HRRestReference,
                     hrRestValue: Double, lastWeightKg: Double? = nil, lastReps: Int? = nil,
@@ -432,7 +448,7 @@ public struct StrengthSessionSnapshot: Codable, Sendable, Equatable {
                     sets: [SetSnapshot],
                     currentSet: Int, skipped: Bool, raiseOptedOut: Bool? = nil,
                     supersetGroup: Int? = nil, note: String? = nil, heldRaise: HeldRaise? = nil,
-                    seededNote: String? = nil) {
+                    seededNote: String? = nil, deloadState: DeloadStateSnapshot? = nil) {
             self.id = id; self.exerciseId = exerciseId; self.name = name; self.type = type
             self.restSeconds = restSeconds; self.restMode = restMode
             self.hrRestReference = hrRestReference; self.hrRestValue = hrRestValue
@@ -444,6 +460,7 @@ public struct StrengthSessionSnapshot: Codable, Sendable, Equatable {
             self.note = note
             self.heldRaise = heldRaise
             self.seededNote = seededNote
+            self.deloadState = deloadState
         }
     }
     public var id: String

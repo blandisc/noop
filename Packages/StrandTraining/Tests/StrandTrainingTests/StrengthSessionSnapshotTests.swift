@@ -171,4 +171,27 @@ final class StrengthSessionSnapshotTests: XCTestCase {
         XCTAssertNil(decoded.runs.first?.sets.first?.restTakenS)
         XCTAssertNil(decoded.restOwnerSetId)
     }
+
+    /// FER-189 (B7): the un-actioned deload proposal (`StrengthSessionModel.ExerciseRun.deloadState`)
+    /// rides the snapshot — `StrandTraining` can't import `StrandAnalytics` (the dependency only runs
+    /// the other way), so `DeloadStateSnapshot` is a Codable mirror of `ProgressionState`, same reason
+    /// `HeldRaise` mirrors `ProgressionPlanner.Raise` instead of storing it directly.
+    func testPreservesDeloadState() throws {
+        var snap = sample()
+        snap.runs[0].deloadState = .deloading(fromKg: 100, toKg: 92.5)
+        let decoded = try JSONDecoder().decode(
+            StrengthSessionSnapshot.self, from: try JSONEncoder().encode(snap))
+        XCTAssertEqual(decoded.runs.first?.deloadState, .deloading(fromKg: 100, toKg: 92.5))
+    }
+
+    /// FER-189: a snapshot persisted BEFORE the field existed (no `deloadState` key) still decodes —
+    /// absent means nil, so a restore from such a legacy snapshot loses at most today's un-actioned
+    /// deload offer (it gets recomputed next session), never a startup crash.
+    func testPreFer189SnapshotDecodesWithoutDeloadState() throws {
+        let snap = sample()   // deloadState already nil in the base fixture
+        let data = try JSONEncoder().encode(snap)   // optional nil → key absent, like a pre-189 snapshot
+        XCTAssertFalse(String(data: data, encoding: .utf8)!.contains("deloadState"))
+        let decoded = try JSONDecoder().decode(StrengthSessionSnapshot.self, from: data)
+        XCTAssertNil(decoded.runs.first?.deloadState)
+    }
 }

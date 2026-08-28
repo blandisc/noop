@@ -1,5 +1,6 @@
 import XCTest
 import StrandTraining
+import StrandAnalytics
 @testable import Cenit
 
 /// Pins the guided strength session logic (FER-347): prefill from «la última vez», register/advance,
@@ -902,5 +903,25 @@ final class StrengthSessionModelTests: XCTestCase {
         XCTAssertEqual(s.runs.count, 2)
         XCTAssertEqual(s.runs[0].supersetGroup, 1, "a's group is untouched")
         XCTAssertEqual(s.runs[1].supersetGroup, 1, "b's group is untouched")
+    }
+
+    // MARK: - The deload pill survives a crash-restore (FER-189)
+    //
+    // Bug found in F4: `ExerciseRun.deloadState` (the B7 deload proposal) wasn't part of
+    // `snapshot`/`restore`, unlike `proposedRaise`/`heldRaise` which are preserved deliberately. A
+    // crash mid-session dropped an un-actioned deload proposal (it gets recomputed next session, but
+    // this one vanishes for the rest of THIS session). An already-APPLIED deload survives regardless
+    // (it's baked into the cell weights the snapshot already carries) — this is only about the offer.
+
+    func testDeloadProposalSurvivesSnapshotRestore() {
+        let slot = StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 1),
+                                                 exercise: ex("bench", "Bench"), lastSets: [],
+                                                 progressionState: .deloading(fromKg: 100, toKg: 92.5))
+        let s = make([slot])
+        XCTAssertEqual(s.runs[0].deloadState, .deloading(fromKg: 100, toKg: 92.5), "sanity: seeded")
+
+        let restored = StrengthSessionModel.restore(from: s.snapshot(now: 200))
+        XCTAssertEqual(restored.runs[0].deloadState, .deloading(fromKg: 100, toKg: 92.5),
+                       "the un-actioned deload proposal must survive a crash-restore")
     }
 }
