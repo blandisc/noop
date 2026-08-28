@@ -8135,6 +8135,23 @@
         }
       }
     },
+    "All-time total" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All-time total"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Total histórico"
+          }
+        }
+      }
+    },
     "All history" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -14469,6 +14486,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cobertura de datos de los últimos 30 días: %lld días con datos. %lld días en el dispositivo, %lld días solo de Apple Salud, %lld días sin datos."
+          }
+        }
+      }
+    },
+    "Data coverage for the last 30 days: %lld days with data, %lld days with no data." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Data coverage for the last 30 days: %lld days with data, %lld days with no data."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cobertura de datos de los últimos 30 días: %lld días con datos, %lld días sin datos."
           }
         }
       }
@@ -45529,6 +45563,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Con"
+          }
+        }
+      }
+    },
+    "With data" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "With data"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Con datos"
           }
         }
       }
