@@ -2289,6 +2289,13 @@ ES: dict[str, str] = {
     "Template applied · your week is set, edit it whenever": "Plantilla aplicada · semana armada, edítala cuando quieras",
 
     # FER-169 — F4 «Intervención»: cuando el humano decide a media sesión (La Hoja viva, B5-B13/B16b).
+    # ⚠️ NO corras `python3 Tools/translate-es.py` para aplicar estas 24 — ese comando regenera el
+    # catálogo ENTERO vía `json.dumps` y revierte traducciones buenas de OTRAS pantallas (drift
+    # conocido de esta herramienta contra el catálogo actual, ~4000 claves con solo ~1500 en el
+    # dict de abajo — ver CLAUDE.md/memoria «translate-es-dict-catalog-drift»). Estas 24 ya viven en
+    # `Cenit/Resources/Localizable.xcstrings` — se insertaron A MANO, por unión, como texto crudo
+    # (nunca `json.dump` del archivo completo). Este bloque queda solo como referencia legible de
+    # cuáles son y qué dicen; NO es el mecanismo que las aplicó.
     # B6b «Volver a X» sobre una subida ya aplicada.
     "Back to %@ %@": "Volver a %@ %@",
     "Keep %@ %@": "Seguir en %@ %@",
