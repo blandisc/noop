@@ -20,6 +20,11 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **El mapa de cuerpo sale de Tendencias / The body map leaves Trends** (FER-186).
+  **ES** — «Tu cuerpo» (el mapa muscular) ya no vive en la pestaña Tendencias: la tarjeta y el atajo desde el resumen de fuerza apuntaban ahí. Ahora el mapa tiene un solo hogar — Entrenar (la puerta MAPA del hub y «Ver mapa» del historial) — y los chips / «Ver mapa» del resumen de fuerza te llevan a Entrenar, no a Tendencias.
+  **EN** — "Your body" (the muscle map) no longer lives in the Trends tab: the card and the strength-summary shortcut used to open it there. The map now has one home — Train (the hub's MAP door and History's "See map") — and the strength summary's "See map" takes you to Train, not Trends.
+  ([CuerpoView.swift](Cenit/Screens/CuerpoView.swift), [TabRouter.swift](CenitApp/App/TabRouter.swift), [RootTabView.swift](CenitApp/App/RootTabView.swift))
+
 - **Editar una sesión ya no borra tu esfuerzo percibido (RPE) / Editing a session no longer erases your perceived effort (RPE)** (FER-172).
   **ES** — Corregir el peso o las repeticiones de un entrenamiento guardado (desde «Mis entrenamientos» › Editar) ya no borraba en silencio el RPE (6–10) que capturaste en vivo durante la sesión — el editor lo reconstruía todo desde cero y lo dejaba en blanco. Ahora ese dato, y el descanso real medido tras cada serie, viajan intactos: el editor sigue tocando solo peso/reps, todo lo demás llega igual que se guardó.
   **EN** — Correcting a saved workout's weight or reps (from "My workouts" › Edit) used to silently wipe the RPE (6–10) you captured live during the session — the editor rebuilt every set from scratch and left it blank. That value, and the real rest measured after each set, now travel through untouched: the editor still only edits weight/reps, everything else arrives exactly as it was saved.
