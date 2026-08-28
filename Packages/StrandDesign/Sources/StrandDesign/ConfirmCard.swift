@@ -20,7 +20,8 @@ public struct InstrumentoConfirmAction: Identifiable {
         /// Verde El Eje (gradiente `verdeBotonAlto` → `verdePrimario`) — el camino
         /// seguro/principal. Nunca destructivo.
         case primary
-        /// Vidrio (receta `.pastilla`: borde hairline, relleno translúcido).
+        /// Vidrio OPACO (receta `.pastillaSolida`: borde hairline, relleno de papel —
+        /// vidrio-sobre-vidrio no vale dentro de una hoja ya de cristal, ADN §11.1).
         case secondary
         /// Contorno rojo (`LiquidColor.negativo`). SIEMPRE contorno, nunca relleno.
         case destructive
@@ -107,6 +108,8 @@ public struct ConfirmCard: View {
     let actions: [InstrumentoConfirmAction]
     @Binding var isPresented: Bool
 
+    @Environment(\.liquidMotionDisabled) private var motionDisabled
+
     public init(title: String, context: String, message: String?,
                 actions: [InstrumentoConfirmAction], isPresented: Binding<Bool>) {
         self.title = title
@@ -167,19 +170,28 @@ public struct ConfirmCard: View {
         UnevenRoundedRectangle(topLeadingRadius: LiquidRadius.hoja, topTrailingRadius: LiquidRadius.hoja)
     }
 
-    /// El cristal: mismos tokens que la receta `.superficie` (`LiquidColor.vidrioSuperficie` +
-    /// `.ultraThinMaterial` + borde `vidrioBordeSuperficie` + highlight superior 0.8→0.35),
-    /// sobre la forma de esquinas parciales que `.liquidGlass(_:)` no expone. La sombra
-    /// se dibuja como silueta detrás del vidrio (no `.shadow` sobre el contenido: eso
-    /// proyectaría el rectángulo del material, no la silueta — mismo defecto documentado en
-    /// `LiquidGlassRecipes.swift`), con `y` NEGATIVA porque esta hoja proyecta hacia ARRIBA
+    /// El cristal + su sombra, sobre la forma de esquinas parciales que `.liquidGlass(_:)` no
+    /// expone: mismo split nativo-vs-imitación que `LiquidModulo`/`LiquidTabBar` (vidrio NATIVO
+    /// en iOS 26 con refracción/lensing reales; `.ultraThinMaterial` + relleno + highlight
+    /// superior 0.8→0.35 antes, y en renders/previews congelados). La sombra usa la silueta
+    /// pública `liquidShadow(_:silhouette:)` — un `.shadow` sobre el contenido proyectaría el
+    /// rectángulo del material, no la silueta (mismo defecto documentado en
+    /// `LiquidGlassRecipes.swift`) — con `y` NEGATIVA porque esta hoja proyecta hacia ARRIBA
     /// (token-exempt: `LiquidElevation` solo modela sombras hacia abajo).
     private var cardGlassBackground: some View {
-        ZStack {
-            cardShape
-                .fill(LiquidColor.tinta900.opacity(0.18))
-                .blur(radius: 20)
-                .offset(y: -12)
+        cardGlassFill
+            .liquidShadow([.init(color: LiquidColor.tinta900.opacity(0.18), radius: 20, y: -12)],
+                          silhouette: cardShape)
+            .ignoresSafeArea(edges: .bottom)
+    }
+
+    @ViewBuilder
+    private var cardGlassFill: some View {
+        if #available(iOS 26.0, macOS 26.0, watchOS 26.0, *), !motionDisabled {
+            Color.clear
+                .background { cardShape.fill(LiquidColor.vidrioSuperficie) }
+                .glassEffect(.regular, in: cardShape)
+        } else {
             ZStack {
                 cardShape.fill(.ultraThinMaterial)
                 cardShape.fill(LiquidColor.vidrioSuperficie)
@@ -198,7 +210,6 @@ public struct ConfirmCard: View {
                     .allowsHitTesting(false)
             }
         }
-        .ignoresSafeArea(edges: .bottom)
     }
 
     @ViewBuilder
@@ -238,7 +249,9 @@ public struct ConfirmCard: View {
         case .secondary:
             text
                 .foregroundStyle(LiquidColor.tinta900)
-                .liquidGlass(.pastilla)
+                // OPACO a propósito (no-sheet-glass, ADN §11.1): la ConfirmCard YA es una
+                // hoja de vidrio — un botón de vidrio adentro sería vidrio-sobre-vidrio.
+                .liquidGlass(.pastillaSolida)
         case .destructive:
             text
                 .foregroundStyle(LiquidColor.negativo)
