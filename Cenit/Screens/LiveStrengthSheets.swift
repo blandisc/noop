@@ -58,25 +58,22 @@ struct RPESheet: View {
         }
         .padding(.horizontal, CenitMetrics.screenPadding)
         .padding(.bottom, CenitMetrics.screenPadding)
-        .background(theme.paper.ignoresSafeArea())
+        // FER-198 (Ola 2, épico FER-195): el fondo de vidrio El Eje (Ola 1, FER-197) reemplaza el
+        // papel plano — misma hoja, mismo gesto de cierre; solo el vestido cambia.
+        .entrenarHojaFondo(tono: .ambar)
         .enableInjection()   // Inject: recarga en caliente (no-op en Release)
     }
 
+    /// FER-198: `EntrenarHojaCabecera` reemplaza el título+`BackButton` a mano — MISMA acción de
+    /// cierre (`onClose`, disco `.cerrar`: DESCARTA, no guarda — «Ok ✓» abajo sigue siendo el único
+    /// camino que guarda), mismo texto de subtítulo, solo el vestido cambia. El glifo `.llama` es
+    /// el mismo que ya tiñe «ESFUERZO» en otras superficies (`LiquidSheetHeader`, ámbar).
     private var header: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            HStack {
-                // Canvas pass 2026-07-15: it's a TITLE, not a label — Grotesk bold with real air above.
-                Text("RPE").font(InstrumentoType.grotesk(22, weight: .bold)).foregroundStyle(theme.ink)
-                Spacer()
-                // Hoja de 560pt: se unifica el botón, pero NO gana gesto de borde — su gesto
-                // natural, y el que ya funciona, es arrastrar hacia abajo.
-                BackButton(role: .close, theme: theme, action: onClose)
-            }
-            Text("Set \(target.setNumber) · \(weightLabel) × \(target.reps) reps")
-                .font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
-        }
-        .padding(.top, CenitMetrics.sectionGap)
-        .padding(.bottom, 8)
+        EntrenarHojaCabecera(glifo: .llama, titulo: String(localized: "RPE"),
+                             subtitulo: String(localized: "Set \(target.setNumber) · \(weightLabel) × \(target.reps) reps"),
+                             tono: .ambar, salida: .cerrar, onSalir: onClose)
+            .padding(.top, CenitMetrics.sectionGap)
+            .padding(.bottom, 8)
     }
 
     private var hero: some View {
@@ -93,31 +90,16 @@ struct RPESheet: View {
         .frame(maxWidth: .infinity)
     }
 
+    /// FER-198: `EntrenarFilaEsfuerzo` (Ola 1) reemplaza el `LazyVGrid` de celdas a mano — MISMA
+    /// selección (índice tocado → `Self.scale[index]`) y MISMA animación (`StrandMotion.interactive`).
     private var scale: some View {
-        // Canvas pass 2026-07-15: the whole scale visible at once — ONE row of six (7,5/8,5 dropped),
-        // tiles ≥56pt (HIG), rounded-rect.
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 6),
-                  spacing: CenitMetrics.gap) {
-            ForEach(Self.scale, id: \.self) { value in
-                let sel = value == selected
-                Button {
-                    withAnimation(StrandMotion.interactive) { selected = value }
-                } label: {
-                    Text(LiveStrengthSheet.formatDecimalComma(value))
-                        // r26: el numeral RPE también habla Grotesk (era el último en StrandFont.number).
-                        .font(InstrumentoType.groteskNumber(17, weight: sel ? .bold : .regular))
-                        .foregroundStyle(sel ? theme.paper : theme.inkSecondary)
-                        .frame(maxWidth: .infinity).frame(height: 56)
-                        .background {
-                            let shape = RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
-                            if sel { shape.fill(theme.dataEffort) }
-                            else { shape.strokeBorder(theme.hairlineStrong, lineWidth: 1) }
-                        }
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityAddTraits(sel ? [.isSelected] : [])
-            }
+        EntrenarFilaEsfuerzo(
+            opciones: Self.scale.map { LiveStrengthSheet.formatDecimalComma($0) },
+            seleccion: Self.scale.firstIndex(of: selected),
+            tono: .ambar
+        ) { index in
+            guard Self.scale.indices.contains(index) else { return }
+            withAnimation(StrandMotion.interactive) { selected = Self.scale[index] }
         }
     }
 
@@ -192,7 +174,6 @@ struct NoteSheet: View {
 
     @State private var scope: Scope
     @State private var text: String
-    @FocusState private var focused: Bool
 
     init(theme: InstrumentoTheme, target: LiveStrengthSheet.NoteTarget, initialScope: Scope,
          exerciseText: String, setText: String, history: [ExerciseNote]?,
@@ -220,56 +201,38 @@ struct NoteSheet: View {
         .padding(.horizontal, CenitMetrics.screenPadding)
         .padding(.top, 32)   // r12 (owner): más aire aún — el grabber respira lejos del título
         .padding(.bottom, CenitMetrics.screenPadding)
-        .background(theme.paper.ignoresSafeArea())
+        // FER-198 (Ola 2): fondo de vidrio El Eje — el `TextEditor` sigue SIN envolver (regla dura
+        // del épico), solo cambia el marco que lo rodea.
+        .entrenarHojaFondo(tono: .ambar)
         .onChange(of: scope) { _, newScope in
             text = newScope == .exercise ? exerciseText : setText
         }
         .enableInjection()   // Inject: recarga en caliente (no-op en Release)
     }
 
+    /// FER-198: `EntrenarHojaCabecera(.guardar(_:))` reemplaza el título+«Save» a mano — MISMO
+    /// guardado (`onSave(scope, text)`, sigue siendo el ÚNICO camino que guarda: no hay control de
+    /// cerrar aquí, tal como antes — el descarte es el swipe-dismiss nativo del sheet).
     private var header: some View {
-        HStack(alignment: .top, spacing: 12) {
-            VStack(alignment: .leading, spacing: 2) {
-                // r10: voz de hoja hermana — título Grotesk como RPE/Progresión.
-                Text("Note · \(target.exerciseName)")
-                    .font(InstrumentoType.grotesk(20, weight: .semibold)).foregroundStyle(theme.ink)
-                    .lineLimit(2)
-                Text(scope == .exercise
-                     ? "Saved in this exercise's history"
-                     : "Saved for this set only")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-            }
-            Spacer()
-            Button { onSave(scope, text) } label: {
-                Text("Save").font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.verdictDeep)
-                    // toque 44 (HIG §8.7-4) — FER-89: mismo valor, ahora con el token compartido.
-                    .frame(minWidth: EntrenarMetrics.row, minHeight: EntrenarMetrics.row, alignment: .trailing)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-        }
+        EntrenarHojaCabecera(
+            titulo: String(localized: "Note · \(target.exerciseName)"),
+            subtitulo: scope == .exercise
+                ? String(localized: "Saved in this exercise's history")
+                : String(localized: "Saved for this set only"),
+            tono: .ambar,
+            salida: .guardar(String(localized: "Save")),
+            onSalir: { onSave(scope, text) }
+        )
     }
 
+    /// FER-198: `EntrenarNotaCampo` (Ola 1) reemplaza el marco a mano del `TextEditor` — el editor
+    /// real (binding, tinte, placeholder) es EXACTAMENTE el mismo, solo cambia su vestido.
     private var editor: some View {
-        ZStack(alignment: .topLeading) {
-            if text.isEmpty {
-                Text("Jot something for next time: how it felt, technique, a load tweak…")
-                    .font(StrandFont.body).foregroundStyle(theme.inkTertiary)
-                    .padding(.horizontal, 13).padding(.vertical, 13)
-                    .allowsHitTesting(false)
-            }
-            TextEditor(text: $text)
-                .font(StrandFont.body)
-                .foregroundStyle(theme.ink)
-                .scrollContentBackground(.hidden)
-                .tint(theme.dataStrain)
-                .focused($focused)
-                .padding(9)
-        }
-        .frame(minHeight: 100)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
-            .strokeBorder(theme.dataStrain, lineWidth: 1.5))
+        EntrenarNotaCampo(
+            texto: $text,
+            placeholder: String(localized: "Jot something for next time: how it felt, technique, a load tweak…"),
+            tono: .ambar
+        )
     }
 
     private func historySection(_ history: [ExerciseNote]) -> some View {
@@ -399,7 +362,6 @@ struct ChangeExerciseSheet: View {
                 .padding(.vertical, 16)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .background(theme.paper)
             .navigationTitle(Text("Change \(run.name)"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(theme.paper, for: .navigationBar)
@@ -417,6 +379,10 @@ struct ChangeExerciseSheet: View {
                     .instrumentoTheme(theme)
             }
         }
+        // FER-198 (Ola 2): fondo de vidrio El Eje EN LA RAÍZ del `NavigationStack` propio — se
+        // CONSERVA el stack + su toolbar nativo (el buscador vive en el toolbar), solo se tiñe por
+        // debajo (mismo patrón que la propia preview de `EntrenarHojaFondo` «sobre NavigationStack»).
+        .entrenarHojaFondo(tono: .neutro)
         .task {
             guard !loaded else { return }
             async let exercisesTask = repo.allExercises()

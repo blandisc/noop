@@ -35580,6 +35580,26 @@
         }
       }
     },
+    "Saved for this set only" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se guarda solo para esta serie"
+          }
+        }
+      }
+    },
+    "Saved in this exercise's history" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se guarda en el historial de este ejercicio"
+          }
+        }
+      }
+    },
     "Save keeps this workout. Discard deletes everything you logged." : {
       "extractionState" : "manual",
       "localizations" : {

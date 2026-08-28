@@ -86,7 +86,10 @@ struct ExerciseLibraryScreen: View {
             .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(theme.paper.ignoresSafeArea())
+        // FER-198 (Ola 2, épico FER-195): fondo de vidrio El Eje (Ola 1, FER-197) — esta pantalla
+        // no trae `NavigationStack` propio en ninguno de sus call sites (push/destination puros);
+        // su kicker («Biblioteca · N ejercicios») se queda tal cual, no gana control de salida.
+        .entrenarHojaFondo(tono: .neutro)
         .safeAreaInset(edge: .bottom) { if addMode { addBar } }
         .task { await reload() }
         .onChange(of: search) {
@@ -607,7 +610,13 @@ struct CreateExerciseSheet: View {
             .padding(.top, CenitMetrics.screenTop).padding(.horizontal, CenitMetrics.screenPadding).padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(theme.paper.ignoresSafeArea())
+        // FER-198 (Ola 2): fondo de vidrio El Eje — se CONSERVA el chrome actual (título Grotesk a
+        // mano + el CTA grande de guardar abajo); esta hoja no tiene botón «Cancelar» hoy (solo
+        // swipe-dismiss + el CTA de guardar) y NO se le agrega uno — el menú de presentación de
+        // `EntrenarHojaFondo.swift` sugiere `EntrenarHojaCabecera(.cancelar(_:))` aquí, pero eso
+        // AÑADIRÍA un control de salida que hoy no existe (violaría la regla de cero cambio de
+        // comportamiento de la Ola 2) — se ignora deliberadamente y se flagea en el reporte.
+        .entrenarHojaFondo(tono: .neutro)
     }
 
     private func pickerRow(_ title: LocalizedStringKey, isPresented: Binding<Bool>, selection: Binding<String>,
