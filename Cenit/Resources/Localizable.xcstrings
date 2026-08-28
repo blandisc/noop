@@ -31655,6 +31655,23 @@
         }
       }
     },
+    "REST · ROUND" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "REST · ROUND"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DESCANSO · RONDA"
+          }
+        }
+      }
+    },
     "REST · SET %@ → %@" : {
       "extractionState" : "manual",
       "localizations" : {

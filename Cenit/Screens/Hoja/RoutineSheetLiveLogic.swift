@@ -209,7 +209,12 @@ extension HojaSesionViva {
         session.runs.indices.contains(accordionIndex) ? session.runs[accordionIndex] : nil
     }
 
-    private var restBandKicker: LocalizedStringKey {
+    /// R6 (ronda 2 del gate FER-168): la superserie descansa por RONDA, no por «SET N → M» — ese
+    /// conteo (posición dentro de las series de un solo ejercicio) no significa nada cuando la
+    /// banda cierra una ronda con varios miembros. `esRonda` cambia SOLO este rótulo; el headline
+    /// de meta («down to N») que ya vive en `RestBand` no se toca — mismo contenido, misma meta.
+    private func restBandKicker(esRonda: Bool) -> LocalizedStringKey {
+        if esRonda { return "REST · ROUND" }
         guard let run = accordionRestRun, let lastDone = run.sets.lastIndex(where: { $0.done }) else { return "REST" }
         let from = run.sets.prefix(lastDone + 1).reduce(0) { $0 + ($1.kind == .work ? 1 : 0) }
         guard from > 0 else { return "REST" }
@@ -244,10 +249,11 @@ extension HojaSesionViva {
     /// `RestBand` ya lo pinta desde FER-167), reloj fijo cuando no hay Watch. R13: con razón
     /// `.ceiling` y el pulso TODAVÍA arriba de la meta, la banda no dice «Listo» — dice el tope
     /// honesto y ofrece SEGUIR. R4: la misma función alcanza también a la superserie (Tarjeta.swift
-    /// la monta igual).
-    @ViewBuilder func restBand() -> some View {
+    /// la monta igual). `esRonda` (R6, ronda 2 del gate): SOLO cambia el rótulo del kicker («REST ·
+    /// ROUND» en vez de «SET N → M») — el headline de meta es idéntico en los dos casos.
+    @ViewBuilder func restBand(esRonda: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: CenitMetrics.space2) {
-            restBandCore()
+            restBandCore(esRonda: esRonda)
             // R11(a): «Cambiar descanso» — el editor de umbral (capacidad intacta), paridad
             // `LiveStrengthSheet.restEditorPill`. `RestBand` no trae este control; se queda como
             // pastilla propia bajo la banda.
@@ -262,7 +268,7 @@ extension HojaSesionViva {
         }
     }
 
-    @ViewBuilder private func restBandCore() -> some View {
+    @ViewBuilder private func restBandCore(esRonda: Bool) -> some View {
         let hrMode = session.currentRestMode == .heartRate
         Group {
             if hrMode, let started = session.restStartedAt {
@@ -273,10 +279,10 @@ extension HojaSesionViva {
                         currentHR: sheet.model.watchBpm, worn: sheet.model.watchBpm != nil, restingHR: restingBaseline,
                         elapsedS: elapsed, targetHR: session.currentRestTarget)
                     if v.state == .noSignal {
-                        restBandTimeBody(end: session.restEndsAt, now: tick, noStrapFallback: true)
+                        restBandTimeBody(end: session.restEndsAt, now: tick, noStrapFallback: true, esRonda: esRonda)
                     } else {
                         let ceiling = v.reason == .ceiling && (v.bpmToReady ?? 0) > 0
-                        RestBand(kicker: restBandKicker,
+                        RestBand(kicker: restBandKicker(esRonda: esRonda),
                                  mode: .heartRate(remainingBpm: v.bpmToReady, targetBpm: v.targetReadyHR ?? 0,
                                                   currentBpm: sheet.model.watchBpm),
                                  trailing: SessionClock.format(elapsed),
@@ -289,18 +295,19 @@ extension HojaSesionViva {
                 }
             } else if let end = session.restEndsAt, let started = session.restStartedAt {
                 TimelineView(.periodic(from: started, by: 1)) { ctx in
-                    restBandTimeBody(end: end, now: session.paused ? (session.pausedAt ?? ctx.date) : ctx.date, noStrapFallback: false)
+                    restBandTimeBody(end: end, now: session.paused ? (session.pausedAt ?? ctx.date) : ctx.date,
+                                     noStrapFallback: false, esRonda: esRonda)
                 }
             }
         }
     }
 
-    private func restBandTimeBody(end: Date?, now: Date, noStrapFallback: Bool) -> some View {
+    private func restBandTimeBody(end: Date?, now: Date, noStrapFallback: Bool, esRonda: Bool) -> some View {
         let started = session.restStartedAt ?? now
         let cappedEnd = noStrapFallback ? min(end ?? now, started.addingTimeInterval(300)) : end
         let totalS = cappedEnd.map { max(0, Int($0.timeIntervalSince(started))) } ?? 0
         let elapsed = max(0, min(totalS, Int(now.timeIntervalSince(started))))
-        return RestBand(kicker: restBandKicker,
+        return RestBand(kicker: restBandKicker(esRonda: esRonda),
                          mode: .clock(elapsed: SessionClock.format(elapsed), target: SessionClock.format(totalS)),
                          trailing: sheet.model.watchBpm == nil ? String(localized: "no watch on your wrist") : SessionClock.format(elapsed),
                          note: noStrapFallback ? "resting by clock: connect your Apple Watch for rest by heart rate" : nil,
@@ -310,29 +317,38 @@ extension HojaSesionViva {
 
     // MARK: - «···» del ejercicio (R8, porteado completo de `LiveStrengthSheet.exerciseMenuItems`)
 
-    func exerciseMenuItems(ei: Int, run: StrengthSessionModel.ExerciseRun) -> [PaperMenuItem] {
+    /// `incluirEstructura` (R1, ronda 2 del gate FER-168): `false` cuando este menú se monta como
+    /// SUBMENÚ de un miembro dentro de la tarjeta de superserie viva (`HojaTarjetaSuperserieSesion`)
+    /// — ahí «Move up/down» fragmentaría el bloque (swap ciego de un solo índice, sin conciencia de
+    /// grupo) y «Superset with next/Undo» duplicaría/contradiría el «Undo superset» de BLOQUE que
+    /// esa tarjeta ya ofrece arriba (`breakSupersetBlock`). Foco tampoco es por-miembro: abre sobre
+    /// el foco REAL del motor (`focusMode`, sin `ei`), así que vive en el nivel de bloque, no aquí.
+    /// `true` (default) preserva el menú de siempre para la tarjeta de un ejercicio suelto.
+    func exerciseMenuItems(ei: Int, run: StrengthSessionModel.ExerciseRun, incluirEstructura: Bool = true) -> [PaperMenuItem] {
         var rows: [PaperMenuItem] = []
-        if ei > 0 {
-            rows.append(.init(String(localized: "Move up"), systemImage: "arrow.up") {
-                withAnimation(reduceMotion ? nil : .snappy) { session.moveExerciseEarlier(ei) }
-            })
-        }
-        if ei < session.runs.count - 1 {
-            rows.append(.init(String(localized: "Move down"), systemImage: "arrow.down") {
-                withAnimation(reduceMotion ? nil : .snappy) { moveExerciseLater(ei) }
-            })
-        }
-        if ei < session.runs.count - 1 {
-            let paired = run.supersetGroup != nil && run.supersetGroup == session.runs[ei + 1].supersetGroup
-            rows.append(.init(String(localized: paired ? "Undo superset" : "Superset with next"),
-                              systemImage: "link") {
-                if !paired, session.runs[ei + 1].supersetGroup != nil {
-                    confirmSupersetSteal = ei
-                } else {
-                    withAnimation(reduceMotion ? nil : .snappy) { session.toggleSupersetWithNext(ei) }
-                    persistSupersetGroups()
-                }
-            })
+        if incluirEstructura {
+            if ei > 0 {
+                rows.append(.init(String(localized: "Move up"), systemImage: "arrow.up") {
+                    withAnimation(reduceMotion ? nil : .snappy) { session.moveExerciseEarlier(ei) }
+                })
+            }
+            if ei < session.runs.count - 1 {
+                rows.append(.init(String(localized: "Move down"), systemImage: "arrow.down") {
+                    withAnimation(reduceMotion ? nil : .snappy) { moveExerciseLater(ei) }
+                })
+            }
+            if ei < session.runs.count - 1 {
+                let paired = run.supersetGroup != nil && run.supersetGroup == session.runs[ei + 1].supersetGroup
+                rows.append(.init(String(localized: paired ? "Undo superset" : "Superset with next"),
+                                  systemImage: "link") {
+                    if !paired, session.runs[ei + 1].supersetGroup != nil {
+                        confirmSupersetSteal = ei
+                    } else {
+                        withAnimation(reduceMotion ? nil : .snappy) { session.toggleSupersetWithNext(ei) }
+                        persistSupersetGroups()
+                    }
+                })
+            }
         }
         rows.append(.init(String(localized: "Progression"), subtitle: progressionSubtitle(run),
                           systemImage: "chart.line.uptrend.xyaxis") {
@@ -341,7 +357,7 @@ extension HojaSesionViva {
         rows.append(.init(String(localized: "Change exercise"), systemImage: "arrow.triangle.2.circlepath") {
             changeExercise = LiveStrengthSheet.ChangeTarget(ei: ei, run: run)
         })
-        if puedeEnfocar {
+        if incluirEstructura, puedeEnfocar {
             rows.append(.init(String(localized: "Focus"), systemImage: "arrow.up.left.and.arrow.down.right") {
                 focusMode = true
             })
@@ -352,6 +368,20 @@ extension HojaSesionViva {
             })
         }
         return rows
+    }
+
+    /// R1 (ronda 2 del gate FER-168, bloqueante): deshace la superserie COMPLETA desde la tarjeta
+    /// viva. A diferencia de `toggleSupersetWithNext` (solo desempareja DOS vecinos — con 3+
+    /// miembros dejaba 2 sueltos + 1 «huérfano» con un `supersetGroup` viejo todavía puesto, QA
+    /// D1/D2/D3), esto limpia `supersetGroup` en TODOS los miembros del bloque de una sola vez, sin
+    /// importar cuántos sean. Persiste a la rutina igual que el toggle de a pares.
+    func breakSupersetBlock(members: [Int]) {
+        withAnimation(reduceMotion ? nil : .snappy) {
+            for ei in members where session.runs.indices.contains(ei) {
+                session.runs[ei].supersetGroup = nil
+            }
+        }
+        persistSupersetGroups()
     }
 
     /// «Bajar» — el modelo solo trae `moveExerciseEarlier`; una posición más tarde es el mismo swap
