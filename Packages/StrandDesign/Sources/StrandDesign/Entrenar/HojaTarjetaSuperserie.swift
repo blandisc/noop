@@ -101,28 +101,10 @@ public struct HojaTarjetaSuperserie<Filas: View>: View {
 
     private var header: some View {
         HStack(alignment: .center, spacing: 0) {
-            Text(verbatim: nombre)
-                .font(InstrumentoType.grotesk(
-                    Self.nombreSize, weight: .bold, relativeTo: .footnote))
-                .foregroundStyle(LiquidColor.tinta900)
-                .lineLimit(2)
-            Text(verbatim: "SUPERSERIE")
-                .font(InstrumentoType.grotesk(
-                    Self.pastillaSize, weight: .bold, relativeTo: .caption2))
-                .tracking(Self.pastillaTracking)
-                .foregroundStyle(Self.cianRotulo)
-                .padding(.horizontal, Self.pastillaPadH)
-                .padding(.vertical, Self.pastillaPadV)
-                .background(
-                    Capsule()
-                        .fill(LiquidColor.cian.opacity(Self.pastillaFondoAlfa))
-                        .overlay(
-                            Capsule()
-                                .strokeBorder(LiquidColor.cian.opacity(Self.cantoAlfa), lineWidth: 0.5)
-                        )
-                )
-                .padding(.leading, Self.pastillaGap)
-                .accessibilityHidden(true) // ya va en el label de la tarjeta
+            // FER-187: cromo sin celdas (nombre + pastilla). Con `onEnfocar` (sesión viva), un tap
+            // entra a foco — las filas de ronda conservan sus TapZones. En edición `onEnfocar` es
+            // nil y el cromo no responde.
+            cromoNombre
             Spacer(minLength: 8)
             // D0 (FER-170 · F5): «⤢» — la puerta directa a Foco (mock `hoja-mapa.html` D0), junto al
             // «···» que ya trae «Enfoque» como respaldo. La acción real vive en `.accessibilityAction`
@@ -152,6 +134,39 @@ public struct HojaTarjetaSuperserie<Filas: View>: View {
                 // `Text(verbatim:)` — la clave "More options" ya existe y trae su es-MX).
                 .accessibilityLabel(Text("More options"))
             }
+        }
+    }
+
+    @ViewBuilder private var cromoNombre: some View {
+        let bloque = HStack(alignment: .center, spacing: 0) {
+            Text(verbatim: nombre)
+                .font(InstrumentoType.grotesk(
+                    Self.nombreSize, weight: .bold, relativeTo: .footnote))
+                .foregroundStyle(LiquidColor.tinta900)
+                .lineLimit(2)
+            Text(verbatim: "SUPERSERIE")
+                .font(InstrumentoType.grotesk(
+                    Self.pastillaSize, weight: .bold, relativeTo: .caption2))
+                .tracking(Self.pastillaTracking)
+                .foregroundStyle(Self.cianRotulo)
+                .padding(.horizontal, Self.pastillaPadH)
+                .padding(.vertical, Self.pastillaPadV)
+                .background(
+                    Capsule()
+                        .fill(LiquidColor.cian.opacity(Self.pastillaFondoAlfa))
+                        .overlay(
+                            Capsule()
+                                .strokeBorder(LiquidColor.cian.opacity(Self.cantoAlfa), lineWidth: 0.5)
+                        )
+                )
+                .padding(.leading, Self.pastillaGap)
+                .accessibilityHidden(true) // ya va en el label de la tarjeta
+        }
+        .contentShape(Rectangle())
+        if let onEnfocar {
+            bloque.onTapGesture(perform: onEnfocar)
+        } else {
+            bloque
         }
     }
 
