@@ -6,12 +6,19 @@ import StrandDesign
 import CenitStore
 import StrandTraining
 
-// MARK: - Recordatorio del día que toca entrenar (FER-95 · E14) — la sección de Ajustes
+// MARK: - Recordatorio del día que toca entrenar (FER-95 · E14) — Liquid Glass (FER-178)
 //
-// Mismo patrón que `AvisoMatutinoSection` (FER-114): su propio archivo, su propio permiso del sistema,
-// su propio estado. La diferencia real es la fuente del plan — el aviso matutino lee `repo.
-// todayPreparedness` (algo que `AppModel` ya publica); este lee el split semanal DIRECTO del store,
-// porque esta pantalla no es parte del árbol de Entrenar que `AppModel` alimenta.
+// Migración de piel de `RecordatorioEntrenoSection` al lenguaje Liquid Glass (FER-175/176:
+// mismas reglas que la raíz de Ajustes ya migrada). Es un pase de PIEL, no de hilo: el permiso
+// del sistema, el estado del plan semanal, el switch, la hora y el mensaje de negado en iOS se
+// conservan verbatim. Lo que cambia es la superficie — overline `franja`, el grupo
+// toggle+hora en `liquidTarjetaSeccion`, `LiquidCapilar` como separador, `LiquidNotaLine` para
+// la glosa y los avisos.
+//
+// Mismo patrón que `AvisoMatutinoSection` (FER-114): su propio archivo, su propio permiso del
+// sistema, su propio estado. La diferencia real es la fuente del plan — el aviso matutino lee
+// `repo.todayPreparedness` (algo que `AppModel` ya publica); este lee el split semanal DIRECTO
+// del store, porque esta pantalla no es parte del árbol de Entrenar que `AppModel` alimenta.
 //
 // Las mismas cuatro verdades que `AvisoMatutinoSection` sostiene a la vista:
 //   1. El permiso se pide AL ENCENDER el switch, nunca antes.
@@ -22,7 +29,6 @@ import StrandTraining
 //      hasta que haya un plan, y es mejor decirlo aquí que dejar al dueño esperando un aviso que no
 //      va a llegar.
 struct RecordatorioEntrenoSection: View {
-    @Environment(\.instrumentoTheme) private var theme
     @Environment(\.scenePhase) private var scenePhase
     @EnvironmentObject private var repo: Repository
 
@@ -50,52 +56,54 @@ struct RecordatorioEntrenoSection: View {
     /// «Lo pediste, iOS deja, pero hoy no tienes ningún día con rutina asignada.»
     private var sinPlan: Bool { encendido && split.isEmpty }
 
+    private var capilar: some View { LiquidCapilar(eje: .horizontal) }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s300) {
             Text("Training reminder")
-                .instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                .font(LiquidType.franja).tracking(LiquidType.franjaTracking).textCase(.uppercase)
+                .foregroundStyle(LiquidColor.tinta500)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityAddTraits(.isHeader)
 
-            Toggle(isOn: Binding(get: { encendido }, set: { encender($0) })) {
-                Text("Remind me on training days")
-                    .font(StrandFont.body).foregroundStyle(theme.ink)
-            }
-            .toggleStyle(.instrumento)
-            .frame(minHeight: 44)
-            .disabled(pidiendoPermiso || negadoEnIOS)
-
-            if encendido {
-                Divider().overlay(theme.hairline)
-                HStack(alignment: .center, spacing: 16) {
-                    Text("At what time")
-                        .font(StrandFont.body).foregroundStyle(theme.ink)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    DatePicker("", selection: horaBinding, displayedComponents: .hourAndMinute)
-                        .labelsHidden()
-                        .accessibilityLabel(Text("At what time"))
+            VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+                Toggle(isOn: Binding(get: { encendido }, set: { encender($0) })) {
+                    Text("Remind me on training days")
+                        .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
                 }
+                .tint(LiquidColor.verdePrimario)
                 .frame(minHeight: 44)
-            }
+                // Con el permiso NEGADO en Ajustes de iOS el switch no hace nada (el diálogo del
+                // sistema ya no vuelve a aparecer): tocable e inerte era peor que deshabilitado. El
+                // camino real es el botón de abajo. Para APAGAR la preferencia no hace falta el switch:
+                // sin permiso ya no suena nada.
+                .disabled(pidiendoPermiso || negadoEnIOS)
 
-            Text("One reminder on each day your plan assigns a routine, at the time you pick. It's frozen when scheduled: it names the routine, never how you'll be feeling that day.")
-                .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                .fixedSize(horizontal: false, vertical: true)
+                if encendido {
+                    capilar
+                    HStack(alignment: .center, spacing: LiquidSpace.s400) {
+                        Text("At what time")
+                            .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        DatePicker("", selection: horaBinding, displayedComponents: .hourAndMinute)
+                            .labelsHidden()
+                            .accessibilityLabel(Text("At what time"))
+                    }
+                    .frame(minHeight: 44)
+                }
+            }
+            .liquidTarjetaSeccion()
+
+            LiquidNotaLine(String(localized: "One reminder on each day your plan assigns a routine, at the time you pick. It's frozen when scheduled: it names the routine, never how you'll be feeling that day."))
 
             if sinPlan {
-                Text("You have no training days assigned yet, so there's nothing to remind you of.")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                LiquidNotaLine(String(localized: "You have no training days assigned yet, so there's nothing to remind you of."))
             }
 
             if negadoEnIOS {
-                Text("Notifications are off in iOS Settings, so this can't reach you.")
-                    .font(StrandFont.caption).foregroundStyle(theme.critical)
-                    .fixedSize(horizontal: false, vertical: true)
-                Button { abrirAjustesDeIOS() } label: {
-                    Text("Open Settings").font(StrandFont.subhead).foregroundStyle(theme.dataRecovery)
-                }
-                .buttonStyle(.plain)
-                .frame(minHeight: 32)
+                LiquidNotaLine(String(localized: "Notifications are off in iOS Settings, so this can't reach you."),
+                               tono: LiquidColor.atencionTexto)
+                settingsButton
             }
         }
         .task { await sincronizar() }
@@ -107,6 +115,15 @@ struct RecordatorioEntrenoSection: View {
         }
         .onChange(of: hora) { _, _ in reprogramar() }
         .onChange(of: minuto) { _, _ in reprogramar() }
+    }
+
+    private var settingsButton: some View {
+        Button { abrirAjustesDeIOS() } label: {
+            Text("Open Settings")
+                .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta700)
+        }
+        .buttonStyle(.liquidPress)
+        .frame(minHeight: 32)
     }
 
     // MARK: - Estado
