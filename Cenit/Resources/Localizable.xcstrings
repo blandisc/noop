@@ -1,6 +1,16 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "I cross your wrist temperature with your resting nighttime pulse to warn you early of a possible illness. It's approximate, not a diagnosis, and I need about two weeks of data. If it fires, you'll see it in %@ and, if you've allowed notifications, in a notification." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cruzo tu temperatura de muñeca con tu pulso en reposo nocturno para avisarte temprano de una posible enfermedad. Es aproximado, no es un diagnóstico, y necesito unas dos semanas de datos. Si se dispara, lo verás en %@ y, si permitiste notificaciones, en un aviso."
+          }
+        }
+      }
+    },
     "Saved animations are deleted from your iPhone. You can re-download them anytime." : {
       "localizations" : {
         "es" : {
@@ -61,12 +71,12 @@
         }
       }
     },
-    "You'll still see it in %@; the system notice won't arrive until you allow notifications." : {
+    "You'll still see it in %@; I can't send you a notification until you allow it." : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lo verás en %@; el aviso del sistema no llegará hasta que permitas notificaciones."
+            "value" : "Lo verás en %@; no puedo mandarte una notificación hasta que la permitas."
           }
         }
       }
@@ -8135,6 +8145,23 @@
         }
       }
     },
+    "All-time total" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All-time total"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Total histórico"
+          }
+        }
+      }
+    },
     "All history" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -14469,6 +14496,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cobertura de datos de los últimos 30 días: %lld días con datos. %lld días en el dispositivo, %lld días solo de Apple Salud, %lld días sin datos."
+          }
+        }
+      }
+    },
+    "Data coverage for the last 30 days: %lld days with data, %lld days with no data." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Data coverage for the last 30 days: %lld days with data, %lld days with no data."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cobertura de datos de los últimos 30 días: %lld días con datos, %lld días sin datos."
           }
         }
       }
@@ -29327,18 +29371,18 @@
         }
       }
     },
-    "One reminder on each day your plan assigns a routine, at the time you pick. It's frozen when scheduled: it names the routine, never how you'll be feeling that day." : {
+    "One reminder on each day your plan assigns a routine, at the time you pick. I freeze it when I schedule it: I name the routine, never how you'll be feeling that day." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "One reminder on each day your plan assigns a routine, at the time you pick. It's frozen when scheduled: it names the routine, never how you'll be feeling that day."
+            "value" : "One reminder on each day your plan assigns a routine, at the time you pick. I freeze it when I schedule it: I name the routine, never how you'll be feeling that day."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Un aviso cada día que tu plan te asigna una rutina, a la hora que elijas. Se congela al programarse: nombra la rutina, nunca cómo te vas a sentir ese día."
+            "value" : "Un aviso cada día que tu plan te asigna una rutina, a la hora que elijas. Lo congelo al programarlo: nombro la rutina, nunca cómo te vas a sentir ese día."
           }
         }
       }
@@ -45533,6 +45577,23 @@
         }
       }
     },
+    "With data" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "With data"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Con datos"
+          }
+        }
+      }
+    },
     "With no night recorded, the guardian has nothing to compare against." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -46175,18 +46236,18 @@
         }
       }
     },
-    "You have no training days assigned yet, so there's nothing to remind you of." : {
+    "You haven't assigned any training days yet, so I have nothing to remind you of." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You have no training days assigned yet, so there's nothing to remind you of."
+            "value" : "You haven't assigned any training days yet, so I have nothing to remind you of."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Todavía no tienes días de entreno asignados, así que no hay nada que recordarte."
+            "value" : "Todavía no tienes ningún día de entreno asignado, así que no tengo nada que recordarte."
           }
         }
       }

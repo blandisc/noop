@@ -484,9 +484,13 @@ struct DataSourcesView: View {
     }
 
     /// Metrics shown in the per-metric status list, in display order — INGEST keys (what
-    /// `HealthKitBridge` writes and `AppleHealthCoverage.daysByMetric` is keyed by).
+    /// `HealthKitBridge` writes and `AppleHealthCoverage.daysByMetric` is keyed by). Coherent with the
+    /// SQL in `appleHealthCoverage`: every key counted there is listed here, and vice versa (FER-192
+    /// added `skin_temp` — imported at HealthKitBridge stage 10 and consumed by the illness/cycle-phase
+    /// engines, but invisible in this checklist until now — and `avg_hr`, already counted but not shown).
     private static let metricKeys: [String] = [
-        "hrv", "asleep_min", "resting_hr", "spo2", "resp_rate", "steps", "active_kcal", "vo2max",
+        "hrv", "resting_hr", "avg_hr", "asleep_min", "spo2", "resp_rate", "skin_temp",
+        "steps", "active_kcal", "vo2max",
     ]
 
     /// Permissions affordance: a one-line write-back tally (the status HealthKit *does* expose
@@ -577,6 +581,14 @@ struct DataSourcesView: View {
 
     /// Summary line + 6×5 grid + legend (the leading section overline already names the block, so this
     /// body opens straight on the summary line).
+    ///
+    /// FER-192: Cénit is Apple-only (AXIOMA cero-banda — no real user ever had the strap). Coverage
+    /// used to split into "on-device" (strap) vs "Apple Health only" swatches/legend/summary — band
+    /// vocabulary nobody on a real device can trigger, and a false choice ("only" compared to what?).
+    /// It now reads as ONE source, Apple Health: days WITH data vs days WITHOUT. `storedStrapDays`
+    /// keeps existing as harmless historical plumbing (empty for every real user, proof of the
+    /// «nothing is deleted» invariant if it's ever non-empty) — it's folded into the same "with data"
+    /// set instead of getting its own color/label.
     @ViewBuilder
     private var coverageBodyView: some View {
         let cal = Calendar.current
@@ -584,24 +596,18 @@ struct DataSourcesView: View {
         let days30: [String] = (0..<30).reversed().compactMap { offset in
             cal.date(byAdding: .day, value: -offset, to: today).map { Repository.localDayKey($0) }
         }
-        let strapDays = repo.storedStrapDays      // FER-485: stored coverage, unfiltered by the mode
-        let appleOnly = repo.storedAppleOnlyDays
-        let whoopCount = days30.filter { strapDays.contains($0) }.count
-        let appleCount = days30.filter { appleOnly.contains($0) }.count
-        let emptyCount  = 30 - whoopCount - appleCount
+        let withData = repo.storedStrapDays.union(repo.storedAppleOnlyDays)   // FER-485: stored coverage, unfiltered by the mode
+        let withDataCount = days30.filter { withData.contains($0) }.count
+        let emptyCount = 30 - withDataCount
         VStack(alignment: .leading, spacing: LiquidSpace.s200) {
-            Text(coverageSummaryString(whoop: whoopCount, apple: appleCount))
+            Text(coverageSummaryString(withData: withDataCount))
                 .font(LiquidType.cuerpo)
-                .foregroundStyle(whoopCount + appleCount > 0 ? LiquidColor.tinta700 : LiquidColor.tinta500)
+                .foregroundStyle(withDataCount > 0 ? LiquidColor.tinta700 : LiquidColor.tinta500)
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: LiquidSpace.s100), count: 6),
                       spacing: LiquidSpace.s100) {
                 ForEach(Array(days30.enumerated()), id: \.offset) { _, day in
-                    let isWhoop = strapDays.contains(day)
-                    let isApple = appleOnly.contains(day)
                     Group {
-                        if isWhoop {
-                            RoundedRectangle(cornerRadius: 4).fill(LiquidColor.verdePrimario)  // token-exempt: geometría de dato
-                        } else if isApple {
+                        if withData.contains(day) {
                             RoundedRectangle(cornerRadius: 4).fill(LiquidColor.azul)  // token-exempt: geometría de dato
                         } else {
                             RoundedRectangle(cornerRadius: 4)  // token-exempt: geometría de dato
@@ -613,30 +619,26 @@ struct DataSourcesView: View {
                 }
             }
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel(coverageA11yLabel(whoop: whoopCount, apple: appleCount, empty: emptyCount))
-            coverageLegendView(hasWhoop: whoopCount > 0, hasApple: appleCount > 0)
+            .accessibilityLabel(coverageA11yLabel(withData: withDataCount, empty: emptyCount))
+            coverageLegendView(hasData: withDataCount > 0)
         }
     }
 
-    private func coverageSummaryString(whoop: Int, apple: Int) -> String {
-        let total = whoop + apple
-        if total == 0 { return String(localized: "No data in the last 30 days") }
-        if apple == 0 { return String(localized: "\(total) of 30 days with data") }
-        if whoop == 0 { return String(localized: "\(total) of 30 days · Apple Health only") }
-        return String(localized: "\(total) of 30 days · \(whoop) on-device, \(apple) Apple Health only")
+    private func coverageSummaryString(withData: Int) -> String {
+        if withData == 0 { return String(localized: "No data in the last 30 days") }
+        return String(localized: "\(withData) of 30 days with data")
     }
 
-    private func coverageA11yLabel(whoop: Int, apple: Int, empty: Int) -> String {
-        String(localized: "Data coverage for the last 30 days: \(whoop + apple) days with data. \(whoop) days on-device, \(apple) days Apple Health only, \(empty) days with no data.")
+    private func coverageA11yLabel(withData: Int, empty: Int) -> String {
+        String(localized: "Data coverage for the last 30 days: \(withData) days with data, \(empty) days with no data.")
     }
 
     /// Flow-laid legend (`LiquidFlujoLeyenda`): each peldaño keeps the swatch geometry of the canonical
-    /// `LiquidCalendario90` legend, and dims to 30% when its source contributed nothing this window —
-    /// the same "inactive" signal the mock's `.legend-item.inactive` shows.
-    private func coverageLegendView(hasWhoop: Bool, hasApple: Bool) -> some View {
+    /// `LiquidCalendario90` legend, and dims to 30% when it contributed nothing this window — the same
+    /// "inactive" signal the mock's `.legend-item.inactive` shows.
+    private func coverageLegendView(hasData: Bool) -> some View {
         LiquidFlujoLeyenda(espacioH: LiquidSpace.s400, espacioV: LiquidSpace.s200) {
-            coverageLegendItem(color: LiquidColor.verdePrimario, label: "On-device", active: hasWhoop)
-            coverageLegendItem(color: LiquidColor.azul, label: "Apple Health only", active: hasApple)
+            coverageLegendItem(color: LiquidColor.azul, label: "With data", active: hasData)
             coverageLegendItem(color: LiquidColor.tinta7, label: "No data", active: true)
         }
     }
@@ -656,34 +658,25 @@ struct DataSourcesView: View {
 
     // MARK: - Sources summary (reskinned inline — was the dark `SourcesSummaryCard`)
 
-    /// True when there's a per-source line worth showing (mirrors `SourcesSummaryCard`).
+    /// True when there's a source line worth showing (mirrors `SourcesSummaryCard`).
     private var sourcesHasContent: Bool {
-        let whoopDays = repo.storedStrapDays.count
-        // Strap last-sync footnote retired with the band (Ola 2); content = day counts only.
-        return whoopDays > 0 || repo.storedAppleOnlyDays.count > 0
+        !repo.storedStrapDays.isEmpty || !repo.storedAppleOnlyDays.isEmpty
     }
 
-    /// The compact "Sources" rollup — one row per data source (color rides the source-count datum),
-    /// plain on the section ground below the coverage card (same data, same conditions as before).
+    /// The compact "Sources" rollup. FER-192: Cénit is Apple-only, so this is ONE row — Apple Health ·
+    /// N days — not a per-source split, and the day count is the SAME unit the coverage card above
+    /// uses (days), never sleeps-vs-workouts (an old defect: the strap row counted sleep SESSIONS
+    /// while its Apple sibling counted WORKOUT sessions, two incomparable units dressed as parallel
+    /// rows). `storedStrapDays` is folded into the same day count instead of getting its own row —
+    /// it's empty for every real user (AXIOMA cero-banda), and this way an empty case just shows 0
+    /// extra rows rather than a phantom "on-device" source.
     @ViewBuilder
     private var sourcesSummary: some View {
-        let whoopDays = repo.storedStrapDays.count
-        let ahDays    = repo.storedAppleOnlyDays.count
+        let days = repo.storedStrapDays.union(repo.storedAppleOnlyDays).count
         VStack(alignment: .leading, spacing: LiquidSpace.s200) {
-            if whoopDays > 0 {
-                sourceRow(name: String(localized: "On-device"),
-                          count: String(localized: "\(whoopDays) days · \(repo.sleeps.count) sleeps"),
-                          tint: LiquidColor.verdePrimario)
-            }
-            if ahDays > 0 {
-                if whoopDays > 0 { capilar }
-                sourceRow(name: String(localized: "Apple Health"),
-                          count: String(localized: "\(ahDays) days · \(appleWorkouts) workouts"),
-                          tint: LiquidColor.azul)
-            }
-        }
-        .task {
-            appleWorkouts = (await repo.workoutRows(respectingMode: false)).filter { $0.source == "apple-health" }.count
+            sourceRow(name: String(localized: "Apple Health"),
+                      count: days == 1 ? String(localized: "\(days) day") : String(localized: "\(days) days"),
+                      tint: LiquidColor.azul)
         }
     }
 
@@ -696,8 +689,6 @@ struct DataSourcesView: View {
             Text(verbatim: count).font(LiquidType.valorS).monospacedDigit().foregroundStyle(tint)
         }
     }
-
-    @State private var appleWorkouts = 0
 
     // MARK: - Import plumbing (unchanged)
 

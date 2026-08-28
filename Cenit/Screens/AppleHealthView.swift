@@ -46,7 +46,9 @@ struct AppleHealthView: View {
     // Loaded state.
     @State private var loaded = false
     @State private var appleRows: [AppleDaily] = []
-    @State private var workoutCount = 0
+    // FER-192: kept as the raw rows (not a precomputed count) so the workouts tile can window to the
+    // active range like every other tile on this page, instead of always showing the all-time total.
+    @State private var appleWorkouts: [WorkoutRow] = []
 
     // Raw series (day, value) keyed by metric — ALL history, ascending by day.
     @State private var series: [String: [(day: String, value: Double)]] = [:]
@@ -75,10 +77,13 @@ struct AppleHealthView: View {
         var rows: [(day: String, value: Double)]
     }
 
-    // The series keys this page pulls from the apple-health source.
+    // The series keys this page pulls from the apple-health source. FER-192: `skin_temp` added — it
+    // imports at HealthKitBridge stage 10 (and the illness/cycle-phase engines already read it), but
+    // it had no tile or chart here, so it was invisible in the ONE viewer meant to show everything
+    // that landed.
     private static let seriesKeys = [
         "steps", "active_kcal", "vo2max",
-        "resting_hr", "hrv", "spo2", "resp_rate", "asleep_min",
+        "resting_hr", "hrv", "spo2", "resp_rate", "skin_temp", "asleep_min",
         "weight", "body_fat", "lean_mass", "bmi"
     ]
 
@@ -287,7 +292,7 @@ struct AppleHealthView: View {
         // Previews inject data directly (store-backed reads can't be seeded).
         if let pd = previewData {
             appleRows = pd.rows.sorted { $0.day < $1.day }
-            workoutCount = pd.workoutCount
+            appleWorkouts = pd.workouts
             series = pd.series
             rebuildWindowCache()
             loaded = true
@@ -309,12 +314,18 @@ struct AppleHealthView: View {
         }
 
         let loadedRows = await rows
-        let appleWorkouts = await workouts.filter { $0.source == "apple_health" || $0.source == "apple-health" }
+        let filteredWorkouts = await workouts.filter { $0.source == "apple_health" || $0.source == "apple-health" }
 
         await MainActor.run {
             appleRows = loadedRows.sorted { $0.day < $1.day }
-            workoutCount = appleWorkouts.count
-            series = fetched
+            appleWorkouts = filteredWorkouts
+            // FER-192: `skin_temp`'s series is NOT in `metricSeries` — HealthKit stage 10 writes the
+            // nightly wrist-temp DEVIATION to `DailyMetric.skinTempDevC`, not a series point. Source the
+            // chart from `repo.days` like `CuerpoView.skinTempStat`, so it isn't empty for already-synced
+            // data (the checklist already counts the same column).
+            var withSkin = fetched
+            withSkin["skin_temp"] = repo.days.compactMap { d in d.skinTempDevC.map { (day: d.day, value: $0) } }
+            series = withSkin
             rebuildWindowCache()
             loaded = true
         }
@@ -455,14 +466,38 @@ struct AppleHealthView: View {
                           sparkline: values.count > 1 ? sparkValues(values) : nil)
     }
 
-    /// Workouts is a count, not a series — its own tile, still on the same recipe.
+    /// Workouts is a count, not a series — its own tile, still on the same recipe. FER-192: used to
+    /// always show the all-time total regardless of the W/M/3M/6M/1Y/ALL selector, unlike every other
+    /// tile on this page (steps/HR/weight… all trim to the active range) — an easy false "your workout
+    /// count" read on, say, the Week pill. Now windowed the same way, anchored to the latest daily-row
+    /// day like the rest of the page; when there's no daily anchor to window against (workouts with no
+    /// daily rows at all — edge case), it falls back to the honest all-time total, labeled as such
+    /// rather than silently mislabeling a partial count as the selected range.
     private var workoutsTile: some View {
-        liquidTile(label: String(localized: "Workouts"),
-                  value: "\(workoutCount)",
-                  caption: workoutCount > 0 ? String(localized: "Apple-logged") : nil,
-                  tone: workoutCount > 0 ? LiquidColor.ambar : LiquidColor.tinta500,
+        let n = windowedWorkoutCount
+        return liquidTile(label: String(localized: "Workouts"),
+                  value: "\(n)",
+                  caption: n > 0 ? (workoutCountIsWindowed ? String(localized: "Apple-logged") : String(localized: "All-time total")) : nil,
+                  tone: n > 0 ? LiquidColor.ambar : LiquidColor.tinta500,
                   glyph: .carga,
                   sparkline: nil)
+    }
+
+    /// Workout count trimmed to the active range, anchored to the latest daily-row day (same anchor
+    /// `computeWindowedRows` uses) rather than "now" — consistent with every other window on this page.
+    /// `.all` always returns everything, honestly (no anchor needed: the range itself means "all time").
+    private var windowedWorkoutCount: Int {
+        guard let n = range.days else { return appleWorkouts.count }
+        guard let lastDay = appleRows.last?.day, let last = date(lastDay) else { return appleWorkouts.count }
+        let cutoff = last.addingTimeInterval(-Double(n - 1) * 86_400)
+        return appleWorkouts.filter { Date(timeIntervalSince1970: TimeInterval($0.startTs)) >= cutoff }.count
+    }
+
+    /// False only in the edge case above: a bounded range selected but no daily-row anchor exists to
+    /// window workouts against, so `windowedWorkoutCount` fell back to the all-time total.
+    private var workoutCountIsWindowed: Bool {
+        guard range.days != nil else { return true }
+        return (appleRows.last?.day).flatMap(date) != nil
     }
 
     /// One composed Liquid tile, uniform height: icon drop + label, value in tone, optional
@@ -509,6 +544,11 @@ struct AppleHealthView: View {
                       fmt: { String(format: "%.1f%%", $0) })
             chartCard(key: "resp_rate", fallback: 10...22,
                       fmt: { String(format: "%.1f rpm", $0) })
+            // FER-192: was imported (stage 10) and already drove the illness/cycle-phase engines, but
+            // had no chart on this page. Deviation from baseline (°C), not an absolute temperature —
+            // same unit/format `CuerpoView.skinTempStat` and `MetricInfoCatalog.skinTemp` use.
+            chartCard(key: "skin_temp", fallback: -1.5...1.5,
+                      fmt: { String(format: "%+.1f°C", $0) })
         }
     }
 
@@ -743,10 +783,11 @@ struct AppleHealthView: View {
 // MARK: - Preview seam
 
 extension AppleHealthView {
-    /// In-memory bundle that bypasses the store-backed async load for previews.
+    /// In-memory bundle that bypasses the store-backed async load for previews. `workouts` carries raw
+    /// rows (not a count) so the windowed workouts tile has real dates to window against in the canvas.
     fileprivate struct PreviewData {
         var rows: [AppleDaily]
-        var workoutCount: Int
+        var workouts: [WorkoutRow]
         var series: [String: [(day: String, value: Double)]]
     }
 }
@@ -759,9 +800,10 @@ private func appleHealthPreviewData() -> AppleHealthView.PreviewData {
     let today = Date()
 
     var rows: [AppleDaily] = []
+    var workouts: [WorkoutRow] = []
     var series: [String: [(day: String, value: Double)]] = [
         "steps": [], "active_kcal": [], "vo2max": [],
-        "resting_hr": [], "hrv": [], "spo2": [], "resp_rate": [], "asleep_min": [],
+        "resting_hr": [], "hrv": [], "spo2": [], "resp_rate": [], "skin_temp": [], "asleep_min": [],
         "weight": [], "body_fat": [], "lean_mass": [], "bmi": []
     ]
 
@@ -778,6 +820,8 @@ private func appleHealthPreviewData() -> AppleHealthView.PreviewData {
         let resp   = 14.5 + 1.2 * sin(phase / 7.0)
         let vo2    = 47 + 2.2 * sin(phase / 21.0)
         let asleep = 410 + 55 * sin(phase / 5.0 + 1.1) + Double((Int(phase) * 11) % 30) - 15
+        // Baseline deviation in °C, not an absolute temperature — mirrors the real skinTempDevC column.
+        let skinTemp = 0.15 * sin(phase / 10.0) + Double((Int(phase) * 7) % 5) * 0.05 - 0.1
         // Slow body-composition drift over the two years (measured WEEKLY → sparse).
         let weight = 78.0 - 5.0 * sin(phase / 220.0) + 0.6 * sin(phase / 13.0)
         let bodyFat = 18.0 - 3.0 * sin(phase / 240.0) + 0.4 * sin(phase / 11.0)
@@ -802,6 +846,7 @@ private func appleHealthPreviewData() -> AppleHealthView.PreviewData {
         series["hrv"]?.append((day, max(15, hrv)))
         series["spo2"]?.append((day, min(100, spo2)))
         series["resp_rate"]?.append((day, resp))
+        series["skin_temp"]?.append((day, skinTemp))
         series["asleep_min"]?.append((day, max(180, asleep)))
         // Body composition is logged once a week → deliberately sparse, to exercise
         // the trailing-window → ALL fallback (a W/M view would otherwise be empty).
@@ -811,9 +856,19 @@ private func appleHealthPreviewData() -> AppleHealthView.PreviewData {
             series["lean_mass"]?.append((day, lean))
             series["bmi"]?.append((day, bmi))
         }
+        // A workout roughly every 6 days, spread across the full 2-year span — FER-192: this feeds
+        // the windowed workouts tile, so the canvas can show a different count per range pill instead
+        // of the old all-time total repeated on every pill.
+        if Int(phase) % 6 == 0 {
+            let startTs = Int(d.timeIntervalSince1970)
+            workouts.append(WorkoutRow(
+                startTs: startTs, endTs: startTs + 2700, sport: "run", source: "apple-health",
+                durationS: 2700, energyKcal: 380, avgHr: 132, maxHr: 158, strain: nil,
+                distanceM: 5200, zonesJSON: nil, notes: nil))
+        }
     }
 
-    return .init(rows: rows, workoutCount: 124, series: series)
+    return .init(rows: rows, workouts: workouts, series: series)
 }
 
 #Preview("Apple Health: seeded") {
@@ -823,7 +878,7 @@ private func appleHealthPreviewData() -> AppleHealthView.PreviewData {
 }
 
 #Preview("Apple Health: empty") {
-    AppleHealthView(previewData: .init(rows: [], workoutCount: 0, series: [:]))
+    AppleHealthView(previewData: .init(rows: [], workouts: [], series: [:]))
         .environmentObject(Repository(deviceId: "preview"))
         .frame(width: 920, height: 600)
 }

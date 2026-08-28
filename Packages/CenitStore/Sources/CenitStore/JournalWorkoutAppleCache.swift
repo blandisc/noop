@@ -309,9 +309,12 @@ extension CenitStore {
 
     /// Per-metric coverage for the Apple-Health source under `deviceId`: the non-NULL day count of
     /// each metric in `appleDaily` (steps, active energy, VO₂max, avg HR) and `dailyMetric` (sleep,
-    /// HRV, resting HR, SpO₂, respiration), plus the distinct-day span across both tables. Cheap
-    /// enough to call on view-appear — three aggregate scans over the small per-day tables. Metric
-    /// keys match `AppleHealthView.seriesKeys` (e.g. "hrv", "asleep_min", "resting_hr").
+    /// HRV, resting HR, SpO₂, respiration, skin temperature), plus the distinct-day span across both
+    /// tables. Cheap enough to call on view-appear — three aggregate scans over the small per-day
+    /// tables. Metric keys match `AppleHealthView.seriesKeys` (e.g. "hrv", "asleep_min", "resting_hr").
+    /// FER-192: `skin_temp` (`skinTempDevC`) is counted here so it can stop being invisible in the
+    /// checklist even though HealthKitBridge stage 10 imports it and the illness/cycle-phase engines
+    /// already consume it.
     public func appleHealthCoverage(deviceId: String) async throws -> AppleHealthCoverage {
         try syncRead { db in
             var byMetric: [String: Int] = [:]
@@ -333,10 +336,10 @@ extension CenitStore {
             tally(try Row.fetchOne(db, sql: """
                 SELECT COUNT(totalSleepMin) AS asleep_min, COUNT(avgHrv) AS hrv,
                        COUNT(restingHr) AS resting_hr, COUNT(spo2Pct) AS spo2,
-                       COUNT(respRateBpm) AS resp_rate
+                       COUNT(respRateBpm) AS resp_rate, COUNT(skinTempDevC) AS skin_temp
                 FROM dailyMetric WHERE deviceId = ?
                 """, arguments: [deviceId]),
-                ["asleep_min", "hrv", "resting_hr", "spo2", "resp_rate"])
+                ["asleep_min", "hrv", "resting_hr", "spo2", "resp_rate", "skin_temp"])
 
             var firstDay: String?, lastDay: String?, totalDays = 0
             // UNION (not UNION ALL) dedups the day across both tables, so COUNT(*) is distinct days.

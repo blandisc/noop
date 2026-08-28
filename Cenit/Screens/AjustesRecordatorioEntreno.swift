@@ -93,10 +93,10 @@ struct RecordatorioEntrenoSection: View {
                 }
 
                 // Glosa y estados DENTRO de la tarjeta, igual que «Aviso matutino» (secciones hermanas).
-                LiquidNotaLine(String(localized: "One reminder on each day your plan assigns a routine, at the time you pick. It's frozen when scheduled: it names the routine, never how you'll be feeling that day."))
+                LiquidNotaLine(String(localized: "One reminder on each day your plan assigns a routine, at the time you pick. I freeze it when I schedule it: I name the routine, never how you'll be feeling that day."))
 
                 if sinPlan {
-                    LiquidNotaLine(String(localized: "You have no training days assigned yet, so there's nothing to remind you of."))
+                    LiquidNotaLine(String(localized: "You haven't assigned any training days yet, so I have nothing to remind you of."))
                 }
 
                 if negadoEnIOS {
