@@ -107,10 +107,9 @@ private struct AjustesLanding: View {
     /// (conceder en Ajustes de iOS y regresar tiene que reflejarse aquí, no quedarse congelado).
     @State private var restPermiso: UNAuthorizationStatus?
     @State private var pidiendoPermisoDescanso = false
-    /// Mismo contrato para «Vigilar señales de enfermedad»: antes pedía el permiso y se olvidaba de
-    /// la respuesta, dejando el switch encendido aunque iOS hubiera negado.
+    /// Ronda 2 #1: solo se usa para PINTAR la nota de negado — ya NO gobierna si el switch puede
+    /// prenderse (ver `illnessNegado` / `encenderVigilanciaEnfermedad`).
     @State private var illnessPermiso: UNAuthorizationStatus?
-    @State private var pidiendoPermisoEnfermedad = false
     @EnvironmentObject private var mediaCoordinator: MediaDownloadCoordinator
     @State private var confirmDeleteMedia = false
     @State private var confirmRecalibrate = false
@@ -144,13 +143,13 @@ private struct AjustesLanding: View {
             UnidadesSheet()
         }
         .sheet(isPresented: $showMaxHR) {
-            MaxHRSheet().environmentObject(profile)
+            MaxHRSheet(profile: profile)
         }
         .sheet(isPresented: $showCyclePhase) {
             CyclePhaseSheet().environmentObject(repo)
         }
         .sheet(item: $profileWheel) { wheel in
-            ProfileWheelSheet(wheel: wheel).environmentObject(profile)
+            ProfileWheelSheet(wheel: wheel, profile: profile)
         }
         .sheet(item: $presentedSheet) { screen in sheetContent(screen) }
         // Both confirmations hang here, on the STABLE body of the landing (ScrollView level), not
@@ -166,8 +165,27 @@ private struct AjustesLanding: View {
         } message: {
             Text(String(localized: "Your baseline will re-anchor from today and your earlier nights will be ignored. You'll lose your recovery number for a few days while it recalibrates. Your data and history aren't deleted."))
         }
-        // El confirm de borrar-media NO puede colgar del mismo view que el de Recalibrar: SwiftUI solo
-        // honra un `.confirmationDialog` por vista. Vive en su propio botón (siempre montado en Experimental).
+        // Ronda 2 #13 (revierte una regresión de ronda 1): el confirm de borrar-media vivía colgado
+        // del propio botón destructivo, dentro de una rama que desaparece justo cuando se confirma el
+        // borrado (`hasCachedMedia` pasa a false) — la vista que lo hospedaba se desmontaba a media
+        // salida, el mismo bug que Recalibrar ya tuvo y resolvió subiendo el diálogo aquí, al cuerpo
+        // ESTABLE del landing (SwiftUI sí admite varios `.confirmationDialog` en la misma vista; cada
+        // uno tiene su propio `isPresented`).
+        .confirmationDialog(
+            String(localized: "Delete all downloaded exercise animations?"),
+            isPresented: $confirmDeleteMedia,
+            titleVisibility: .visible
+        ) {
+            Button(String(localized: "Delete the animations"), role: .destructive) {
+                mediaCoordinator.deleteAllCachedMedia()
+                // El borrado por sí solo no limpia el estado de progreso: sin esto la línea
+                // seguía diciendo «Download complete: X/Y» sobre un caché vacío.
+                mediaCoordinator.resetDownloadState()
+            }
+            Button(String(localized: "Keep the animations"), role: .cancel) { }
+        } message: {
+            Text(String(localized: "Saved animations are deleted from your iPhone. You can re-download them anytime."))
+        }
     }
 
     // MARK: - Header (one-off chrome: wordmark + a privacy line)
@@ -177,7 +195,11 @@ private struct AjustesLanding: View {
             // FER-176: the wordmark alone, no `gearshape` — Tendencias doesn't repeat its dock glyph
             // next to its title either (`TendenciasGlyph`, not the tab bar's SF Symbol); a tab root
             // doesn't need to echo the icon that got you here.
-            Text(String(localized: "Ajustes"))
+            // Ronda 2 #24: la clave-fuente era el texto español «Ajustes» (una isla), marcada
+            // `stale` en el catálogo — un prune futuro se la habría llevado. Ahora usa la MISMA
+            // clave inglesa que el rótulo del dock (`LiquidTabRotulos+Cenit.swift`), así que
+            // pantalla y dock siguen diciendo lo mismo en cualquier idioma.
+            Text(String(localized: "Settings"))
                 .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
                 .foregroundStyle(LiquidColor.tinta900)
             Text(String(localized: "On this iPhone · no account · no cloud"))
@@ -221,8 +243,10 @@ private struct AjustesLanding: View {
         }
     }
 
-    /// Sex is a segmented `Picker`, not a value+chevron row, so it can't be a `LiquidListRow` — this
+    /// Sex is a `Picker`, not a value+chevron row, so it can't be a `LiquidListRow` — this
     /// hand-builds the same row geometry (padding, bottom hairline) so it seams into the same card.
+    /// Ronda 2 #10: three segments + `.fixedSize()` truncated Male/Female/Non-binary at 390 pt —
+    /// a menu never truncates and needs no width hack.
     private var sexRow: some View {
         HStack(spacing: LiquidSpace.s300) {
             Text(String(localized: "Sex")).font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
@@ -232,7 +256,7 @@ private struct AjustesLanding: View {
                 Text(String(localized: "Female")).tag("female")
                 Text(String(localized: "Non-binary")).tag("nonbinary")
             }
-            .labelsHidden().pickerStyle(.segmented).fixedSize()
+            .labelsHidden().pickerStyle(.menu).tint(LiquidColor.tinta700)
             .accessibilityLabel(String(localized: "Sex"))
         }
         .padding(.vertical, 11)  // token-exempt: paridad fila LiquidListRow (padding interno no público)
@@ -275,28 +299,35 @@ private struct AjustesLanding: View {
                 }
                 .liquidTarjetaSeccion(padding: LiquidSpace.s300)
             }
+            // Ronda 2 #2: la única excepción de red de la app vivía escondida bajo «Experimental»,
+            // junto a métricas opt-in que nada tienen que ver con una descarga — quien se saltaba
+            // esa sección nunca veía el único control de red del app. Su propia sección, fuera de
+            // Experimental.
+            section(String(localized: "Exercise library")) { exerciseLibraryCard }
             // FER-1021: el interruptor de «vigilar enfermedad» vivía en la difunta AutomationsView
             // (retirada con la banda). El motor sigue vivo y ruteado a Apple (temp de muñeca + FC en
             // reposo nocturna, FER-884); esto le repone el acceso para que la feature sea alcanzable.
-            // «Salud» es el nombre de la app de Apple, no de esta sección — «Watch»/«Vigilancia» no
-            // se lo roba.
-            section(String(localized: "Watch")) {
+            // «Salud» es el nombre de la app de Apple, no de esta sección. Ronda 2 #12: tampoco
+            // «Watch» en inglés — en una app de Apple Watch ese nombre es el hardware, no la sección.
+            section(String(localized: "Monitoring")) {
                 VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+                    // Ronda 2 #1 (revierte una regresión de ronda 1): la superficie viva de esta
+                    // feature es el banner de Hoy, NO una notificación — a diferencia del aviso
+                    // matutino / recordatorio de entreno, cuya ÚNICA superficie SÍ es la notificación.
+                    // El switch sigue SIEMPRE la preferencia (`behavior.illnessWatch`), nunca el
+                    // permiso del sistema: negarlo en Ajustes de iOS apaga el AVISO, no la vigilancia,
+                    // así que el switch no se deshabilita ni se auto-apaga por esa respuesta.
                     Toggle(isOn: Binding(get: { illnessEncendido }, set: { encenderVigilanciaEnfermedad($0) })) {
                         Text(String(localized: "Watch for illness signs"))
                             .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
                     }
                     .tint(LiquidColor.verdePrimario)
                     .frame(minHeight: 44)
-                    // Mismo contrato que `AvisoMatutinoSection`: negado en Ajustes de iOS, el switch
-                    // no hace nada (el diálogo del sistema ya no vuelve) — tocable e inerte sería peor
-                    // que deshabilitado.
-                    .disabled(pidiendoPermisoEnfermedad || illnessNegado)
-                    Text(String(localized: "Crosses your wrist temperature and nighttime resting heart rate to warn you early of possible illness. Approximate, not a diagnosis; needs about two weeks of data."))
+                    Text(String(localized: "Crosses your wrist temperature and nighttime resting heart rate to warn you early of possible illness. Approximate, not a diagnosis; needs about two weeks of data. If it fires, you'll see it in Hoy and, if you've allowed notifications, in a notification."))
                         .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
                         .fixedSize(horizontal: false, vertical: true)
                     if illnessNegado {
-                        LiquidNotaLine(String(localized: "Notices are off in iOS Settings, so I cannot reach you."),
+                        LiquidNotaLine(String(localized: "You'll still see it in Hoy; the system notice won't arrive until you allow notifications."),
                                       tono: LiquidColor.atencionTexto)
                         Button { abrirAjustesDeIOS() } label: {
                             Text(String(localized: "Open Settings")).font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta700)
@@ -329,7 +360,7 @@ private struct AjustesLanding: View {
                         // Apagarlo a media sesión tiene que surtir efecto ya, no en la siguiente.
                         if !on { SessionComfort.applyKeepAwake(active: false) }
                     }
-                    Text(String(localized: "Between sets two minutes pass without touching anything, and the phone falls asleep right when you pick it up to log. It only applies while the session is open, and it uses more battery: your iPhone goes back to its normal auto-lock when the session ends."))
+                    Text(String(localized: "If you don't touch your phone, iOS locks it mid-set. It only applies while the session is open, and it uses more battery: your iPhone goes back to its normal auto-lock when the session ends."))
                         .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
                         .fixedSize(horizontal: false, vertical: true)
                     LiquidCapilar(eje: .horizontal)
@@ -393,7 +424,7 @@ private struct AjustesLanding: View {
         }
     }
 
-    /// The two experimental toggles (whitespace metrics + exercise-animation download), one card.
+    /// The experimental-metrics toggle, alone (ronda 2 #2 moved the media download out of this card).
     private var experimentalTogglesCard: some View {
         VStack(alignment: .leading, spacing: LiquidSpace.s300) {
             Toggle(isOn: $whitespaceMetrics) {
@@ -405,7 +436,16 @@ private struct AjustesLanding: View {
             Text(String(localized: "New, approximate readings: nocturnal vagal reserve, thermal stability, night respiration and post-session recovery. They need several days of use to read well."))
                 .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
                 .fixedSize(horizontal: false, vertical: true)
-            LiquidCapilar(eje: .horizontal)
+        }
+        .liquidTarjetaSeccion()
+    }
+
+    /// The exercise-media download, in its own «Exercise library» card (ronda 2 #2), out from under
+    /// «Experimental»: it's the app's only network exception (ExerciseDB's CDN, opt-in, off by
+    /// default), not an unstable metric — burying it next to opt-in metrics hid the one control that
+    /// actually matters for the offline promise.
+    private var exerciseLibraryCard: some View {
+        VStack(alignment: .leading, spacing: LiquidSpace.s300) {
             Toggle(isOn: $exerciseMediaEnabled) {
                 Text(String(localized: "Downloaded exercise animations"))
                     .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
@@ -420,31 +460,20 @@ private struct AjustesLanding: View {
                 .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
                 .fixedSize(horizontal: false, vertical: true)
             mediaDownloadStatus
-            // Nada que borrar hasta que una descarga haya corrido esta sesión: el botón
-            // destructivo no vive suelto prometiendo una acción sin caché detrás.
-            if mediaCoordinator.downloadState != .idle {
+            // Ronda 2 #13 (revierte una regresión de ronda 1): visible cuando hay caché EN DISCO,
+            // no cuando `downloadState` de ESTA sesión no es `.idle` — al relanzar la app el estado
+            // vuelve a `.idle` aunque el caché siga lleno, así que el botón se volvía inalcanzable
+            // sin antes encender el toggle (disparando red) solo para poder borrar. El diálogo de
+            // confirmación NO cuelga de este botón: vive en el cuerpo estable del landing, junto al
+            // de Recalibrar, para que borrar (que hace desaparecer este botón) no desmonte al
+            // presentador a media salida.
+            if mediaCoordinator.hasCachedMedia {
                 LiquidCapilar(eje: .horizontal)
                 Button(role: .destructive) { confirmDeleteMedia = true } label: {
                     Text(String(localized: "Delete downloaded animations"))
                         .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.negativo)
                 }
                 .buttonStyle(.plain)
-                .confirmationDialog(
-                    String(localized: "Delete all downloaded exercise animations?"),
-                    isPresented: $confirmDeleteMedia,
-                    titleVisibility: .visible
-                ) {
-                    Button(String(localized: "Delete the animations"), role: .destructive) {
-                        mediaCoordinator.deleteAllCachedMedia()
-                        // El borrado por sí solo no limpia el estado de progreso: sin esto la línea
-                        // seguía diciendo «Download complete: X/Y» sobre un caché vacío, y el botón
-                        // destructivo se quedaba visible sin nada que borrar.
-                        mediaCoordinator.resetDownloadState()
-                    }
-                    Button(String(localized: "Keep the animations"), role: .cancel) { }
-                } message: {
-                    Text(String(localized: "Saved animations are deleted from your iPhone. You can re-download them anytime."))
-                }
             }
         }
         .liquidTarjetaSeccion()
@@ -520,7 +549,7 @@ private struct AjustesLanding: View {
         case .completed(let matched, let total):
             Text(total == 0
                  ? String(localized: "Already fully downloaded.")
-                 : String(localized: "Download complete: \(matched)/\(total) exercises with video."))
+                 : String(localized: "Download complete: \(matched)/\(total) exercises with animation."))
                 .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta700)
         case .failed:
             Text(String(localized: "Couldn't download. Check your connection and try again."))
@@ -542,30 +571,32 @@ private struct AjustesLanding: View {
 
     // MARK: - Notification permission contract (illness watch + rest-end notice)
     //
-    // Both switches follow the same contract as `AvisoMatutinoSection`: the system permission is
+    // The rest-end notice follows the `AvisoMatutinoSection` contract: the system permission is
     // requested the instant the switch turns ON (never at launch, never mid-session); if iOS denies
     // it the switch shows OFF and disabled with a note + an «Open Settings» deep-link, instead of
     // staying lit and promising a notice that will never arrive; and the real permission is reread
-    // whenever the app returns to the foreground, so granting it in iOS Settings and coming back is
-    // reflected here instead of staying frozen on stale state.
+    // whenever the app returns to the foreground. Its ONLY surface IS the system notification, so
+    // that contract fits it exactly.
+    //
+    // The illness watch does NOT share that contract (ronda 2 #1 reverts a ronda-1 regression that
+    // copied it wholesale): its live surface is the Hoy banner, not a notification, so the switch
+    // always reflects the PREFERENCE alone — never disabled, never auto-off on a denial. The
+    // permission is still requested on enable (for the system notice), and still reread on
+    // foreground, purely to decide whether to show the «you'll still see it in Hoy» note.
 
-    /// The illness-watch switch only shows ON when the preference AND the real permission agree.
-    private var illnessEncendido: Bool {
-        guard behavior.illnessWatch else { return false }
-        guard let illnessPermiso else { return true }
-        return illnessPermiso == .authorized
-    }
+    /// The illness-watch switch shows exactly the preference — the permission never overrides it.
+    private var illnessEncendido: Bool { behavior.illnessWatch }
+    /// Preference ON but the system notice denied: the banner in Hoy still fires, only the
+    /// notification won't — the note below says so, the switch stays on.
     private var illnessNegado: Bool {
         guard behavior.illnessWatch, let illnessPermiso else { return false }
         return illnessPermiso == .denied
     }
     private func encenderVigilanciaEnfermedad(_ on: Bool) {
-        guard on else {
-            behavior.illnessWatch = false
-            model.reevaluateIllness()
-            return
-        }
-        pidiendoPermisoEnfermedad = true
+        // La preferencia manda YA, pase lo que pase con el permiso que se pide abajo.
+        behavior.illnessWatch = on
+        model.reevaluateIllness()
+        guard on else { return }
         Task {
             var estado = await IllnessNotifier.authorizationStatus()
             if estado == .notDetermined {
@@ -573,9 +604,6 @@ private struct AjustesLanding: View {
                 estado = await IllnessNotifier.authorizationStatus()
             }
             illnessPermiso = estado
-            behavior.illnessWatch = true
-            pidiendoPermisoEnfermedad = false
-            model.reevaluateIllness()
         }
     }
 
@@ -684,32 +712,66 @@ private struct AjustesLanding: View {
 // MARK: - Profile wheel (a focused wheel for Age / Weight / Height)
 
 /// «Editar perfil» — a single value behind a `Picker(.wheel)`, honouring the imperial display
-/// preference (the wheel itself shows lb / ft·in and writes the SI equivalent back). Stored data
-/// is unchanged; only how it's entered.
+/// preference (the wheel itself shows lb / ft·in and writes the SI equivalent back). Ronda 2 #8:
+/// the wheel used to write straight into `profile.*` on every tick (a stray flick silently retuned
+/// Tanaka, HR zones and kcal) with no way back — it now edits a LOCAL snapshot and only reaches
+/// `profile.*` on «Listo»; «Cancelar» discards it. `profile` arrives as a plain reference (not
+/// `@EnvironmentObject`): the caller already holds it and the local snapshot must be seeded once,
+/// at init, before the environment would even be available.
 private struct ProfileWheelSheet: View {
     let wheel: ProfileWheel
+    let profile: ProfileStore
     @Environment(\.dismiss) private var dismiss
-    @EnvironmentObject private var profile: ProfileStore
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
     private var unitSystem: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: LiquidSpace.s600) {
-            VStack(alignment: .leading, spacing: LiquidSpace.s100) {
-                Text(String(localized: "Profile"))
-                    .font(LiquidType.franja).tracking(LiquidType.franjaTracking).textCase(.uppercase)
-                    .foregroundStyle(LiquidColor.tinta500)
-                Text(verbatim: title)
-                    .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
-                    .foregroundStyle(LiquidColor.tinta900)
-            }
+    @State private var age: Int
+    @State private var weightKg: Double
+    @State private var heightCm: Double
 
-            wheelBody
-                .frame(maxWidth: .infinity)
+    init(wheel: ProfileWheel, profile: ProfileStore) {
+        self.wheel = wheel
+        self.profile = profile
+        _age = State(initialValue: profile.age)
+        _weightKg = State(initialValue: profile.weightKg)
+        _heightCm = State(initialValue: profile.heightCm)
+    }
+
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: LiquidSpace.s600) {
+                VStack(alignment: .leading, spacing: LiquidSpace.s100) {
+                    Text(String(localized: "Profile"))
+                        .font(LiquidType.franja).tracking(LiquidType.franjaTracking).textCase(.uppercase)
+                        .foregroundStyle(LiquidColor.tinta500)
+                    Text(verbatim: title)
+                        .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
+                        .foregroundStyle(LiquidColor.tinta900)
+                }
+
+                wheelBody
+                    .frame(maxWidth: .infinity)
+            }
+            .padding(LiquidSpace.s600)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background { LiquidSheetFondo().ignoresSafeArea() }
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(String(localized: "Cancel")) { dismiss() }
+                        .foregroundStyle(LiquidColor.tinta700)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(String(localized: "Done")) {
+                        profile.age = age
+                        profile.weightKg = weightKg
+                        profile.heightCm = heightCm
+                        dismiss()
+                    }
+                    .foregroundStyle(LiquidColor.tinta900)
+                }
+            }
         }
-        .padding(LiquidSpace.s600)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background { LiquidSheetFondo().ignoresSafeArea() }
         .fittedSheet()
     }
 
@@ -724,15 +786,15 @@ private struct ProfileWheelSheet: View {
     @ViewBuilder private var wheelBody: some View {
         switch wheel {
         case .age:
-            Picker(String(localized: "Age"), selection: $profile.age) {
+            Picker(String(localized: "Age"), selection: $age) {
                 ForEach(13...100, id: \.self) { Text("\($0)").tag($0) }
             }
             .pickerStyle(.wheel).labelsHidden().tint(LiquidColor.tinta900)
         case .weight:
             if unitSystem == .imperial {
                 let pounds = Binding<Double>(
-                    get: { UnitFormatter.kgToPounds(profile.weightKg) },
-                    set: { profile.weightKg = UnitFormatter.poundsToKg($0) })
+                    get: { UnitFormatter.kgToPounds(weightKg) },
+                    set: { weightKg = UnitFormatter.poundsToKg($0) })
                 let opts = Array(stride(from: 66.0, through: 551.0, by: 1))
                 let lb = snapped(pounds, options: opts)
                 Picker(String(localized: "Weight in pounds"), selection: lb) {
@@ -741,7 +803,7 @@ private struct ProfileWheelSheet: View {
                 .pickerStyle(.wheel).labelsHidden().tint(LiquidColor.tinta900)
             } else {
                 let opts = Array(stride(from: 30.0, through: 250.0, by: 0.5))
-                let kg = snapped($profile.weightKg, options: opts)
+                let kg = snapped($weightKg, options: opts)
                 Picker(String(localized: "Weight in kilograms"), selection: kg) {
                     ForEach(opts, id: \.self) { Text(String(format: "%.1f kg", $0)).tag($0) }
                 }
@@ -750,8 +812,8 @@ private struct ProfileWheelSheet: View {
         case .height:
             if unitSystem == .imperial {
                 let inchesValue = Binding<Double>(
-                    get: { UnitFormatter.cmToInches(profile.heightCm).rounded() },
-                    set: { profile.heightCm = $0 * UnitFormatter.centimetersPerInch })
+                    get: { UnitFormatter.cmToInches(heightCm).rounded() },
+                    set: { heightCm = $0 * UnitFormatter.centimetersPerInch })
                 let opts = Array(stride(from: 47.0, through: 91.0, by: 1))
                 let inches = snapped(inchesValue, options: opts)
                 Picker(String(localized: "Height in inches"), selection: inches) {
@@ -763,7 +825,7 @@ private struct ProfileWheelSheet: View {
                 .pickerStyle(.wheel).labelsHidden().tint(LiquidColor.tinta900)
             } else {
                 let opts = Array(stride(from: 120.0, through: 230.0, by: 1))
-                let cm = snapped($profile.heightCm, options: opts)
+                let cm = snapped($heightCm, options: opts)
                 Picker(String(localized: "Height in centimeters"), selection: cm) {
                     ForEach(opts, id: \.self) { Text("\(Int($0)) cm").tag($0) }
                 }
@@ -785,64 +847,88 @@ private struct ProfileWheelSheet: View {
 
 /// «FC máxima» — a focused sheet over `profile.hrMaxOverride` (0 = auto). The segmented control is pure
 /// UI sugar on that one value: Auto shows the Tanaka estimate large; Manual reveals a wheel writing the
-/// override (and notes it's anulando the auto estimate).
+/// override (and notes it's anulando the auto estimate). Ronda 2 #8: same fix as `ProfileWheelSheet` —
+/// edits a LOCAL snapshot, only reaches `profile.hrMaxOverride` on «Listo»; «Cancelar» discards it.
 private struct MaxHRSheet: View {
-    @EnvironmentObject private var profile: ProfileStore
-    /// Local mode toggle. Drives the override: Auto → 0; Manual → keep/seed a concrete bpm.
-    @State private var manual = false
+    let profile: ProfileStore
+    @Environment(\.dismiss) private var dismiss
+    /// Local mode toggle. Drives the LOCAL override: Auto → 0; Manual → keep/seed a concrete bpm.
+    @State private var manual: Bool
+    @State private var overrideBpm: Int
+
+    init(profile: ProfileStore) {
+        self.profile = profile
+        let auto = Int((208 - 0.7 * Double(profile.age)).rounded())
+        _manual = State(initialValue: profile.hrMaxOverride > 0)
+        _overrideBpm = State(initialValue: profile.hrMaxOverride > 0 ? profile.hrMaxOverride : auto)
+    }
 
     /// The Tanaka auto estimate (208 − 0.7·age), shown in Auto and referenced in Manual.
     private var autoBpm: Int { Int((208 - 0.7 * Double(profile.age)).rounded()) }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: LiquidSpace.s600) {
-            VStack(alignment: .leading, spacing: LiquidSpace.s100) {
-                Text(String(localized: "Profile"))
-                    .font(LiquidType.franja).tracking(LiquidType.franjaTracking).textCase(.uppercase)
-                    .foregroundStyle(LiquidColor.tinta500)
-                Text(String(localized: "Max heart rate"))
-                    .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
-                    .foregroundStyle(LiquidColor.tinta900)
-            }
-
-            Picker(String(localized: "Mode"), selection: $manual) {
-                Text(String(localized: "Automatic")).tag(false)
-                Text(String(localized: "Manual")).tag(true)
-            }
-            .pickerStyle(.segmented)
-            .onChange(of: manual) { _, isManual in
-                if isManual { if profile.hrMaxOverride == 0 { profile.hrMaxOverride = autoBpm } }
-                else { profile.hrMaxOverride = 0 }
-            }
-
-            if manual {
-                Picker(String(localized: "Maximum heart rate"), selection: $profile.hrMaxOverride) {
-                    ForEach(100...230, id: \.self) { Text("\($0)").tag($0) }
-                }
-                .pickerStyle(.wheel).labelsHidden().tint(LiquidColor.tinta900)
-                .frame(maxWidth: .infinity)
-                Text(String(localized: "Overriding the automatic estimate (\(autoBpm))."))
-                    .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta700)
-            } else {
-                VStack(alignment: .center, spacing: LiquidSpace.s100) {
-                    Text("\(autoBpm)")
-                        .font(LiquidType.displayL).tracking(LiquidType.displayLTracking)
+        NavigationStack {
+            VStack(alignment: .leading, spacing: LiquidSpace.s600) {
+                VStack(alignment: .leading, spacing: LiquidSpace.s100) {
+                    Text(String(localized: "Profile"))
+                        .font(LiquidType.franja).tracking(LiquidType.franjaTracking).textCase(.uppercase)
+                        .foregroundStyle(LiquidColor.tinta500)
+                    Text(String(localized: "Max heart rate"))
+                        .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
                         .foregroundStyle(LiquidColor.tinta900)
-                    Text(String(localized: "bpm · Tanaka"))
-                        .font(LiquidType.clausulaCampo).foregroundStyle(LiquidColor.tinta500)
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, LiquidSpace.s600)
-                Text(String(localized: "Estimated from your age (208 − 0.7 × age). Set it manually if you know your true max."))
-                    .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta700)
-                    .fixedSize(horizontal: false, vertical: true)
+
+                Picker(String(localized: "Mode"), selection: $manual) {
+                    Text(String(localized: "Automatic")).tag(false)
+                    Text(String(localized: "Manual")).tag(true)
+                }
+                .pickerStyle(.segmented)
+                .onChange(of: manual) { _, isManual in
+                    if isManual, overrideBpm == 0 { overrideBpm = autoBpm }
+                }
+
+                if manual {
+                    Picker(String(localized: "Maximum heart rate"), selection: $overrideBpm) {
+                        ForEach(100...230, id: \.self) { Text("\($0)").tag($0) }
+                    }
+                    .pickerStyle(.wheel).labelsHidden().tint(LiquidColor.tinta900)
+                    .frame(maxWidth: .infinity)
+                    Text(String(localized: "Overriding the automatic estimate (\(autoBpm))."))
+                        .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta700)
+                } else {
+                    VStack(alignment: .center, spacing: LiquidSpace.s100) {
+                        Text("\(autoBpm)")
+                            .font(LiquidType.displayL).tracking(LiquidType.displayLTracking)
+                            .foregroundStyle(LiquidColor.tinta900)
+                        Text(String(localized: "bpm · Tanaka"))
+                            .font(LiquidType.clausulaCampo).foregroundStyle(LiquidColor.tinta500)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, LiquidSpace.s600)
+                    Text(String(localized: "Estimated from your age (208 − 0.7 × age). Set it manually if you know your true max."))
+                        .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta700)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .padding(LiquidSpace.s600)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background { LiquidSheetFondo().ignoresSafeArea() }
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(String(localized: "Cancel")) { dismiss() }
+                        .foregroundStyle(LiquidColor.tinta700)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(String(localized: "Done")) {
+                        profile.hrMaxOverride = manual ? overrideBpm : 0
+                        dismiss()
+                    }
+                    .foregroundStyle(LiquidColor.tinta900)
+                }
             }
         }
-        .padding(LiquidSpace.s600)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background { LiquidSheetFondo().ignoresSafeArea() }
         .fittedSheet()
-        .onAppear { manual = profile.hrMaxOverride > 0 }
     }
 }
 
@@ -851,49 +937,63 @@ private struct MaxHRSheet: View {
 /// «Unidades y formato» — the display-only unit prefs. Nothing stored changes; this only changes
 /// how values are shown.
 private struct UnidadesSheet: View {
+    @Environment(\.dismiss) private var dismiss
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
     @AppStorage(UnitPrefs.temperatureKey) private var temperatureRaw = ""
 
     var body: some View {
-        VStack(alignment: .leading, spacing: LiquidSpace.s600) {
-            VStack(alignment: .leading, spacing: LiquidSpace.s100) {
-                Text(String(localized: "Display"))
-                    .font(LiquidType.franja).tracking(LiquidType.franjaTracking).textCase(.uppercase)
-                    .foregroundStyle(LiquidColor.tinta500)
-                Text(String(localized: "Units & format"))
-                    .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
-                    .foregroundStyle(LiquidColor.tinta900)
-            }
-            Text(String(localized: "Your data is always stored the same way: this only changes how distances, weights, heights and temperatures are shown."))
-                .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta700)
-                .fixedSize(horizontal: false, vertical: true)
-
-            VStack(alignment: .leading, spacing: LiquidSpace.s300) {
-                HStack(spacing: LiquidSpace.s400) {
-                    Text(String(localized: "Measurement system")).font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    Picker(String(localized: "Measurement system"), selection: $unitSystemRaw) {
-                        Text(String(localized: "Metric")).tag(UnitSystem.metric.rawValue)
-                        Text(String(localized: "Imperial")).tag(UnitSystem.imperial.rawValue)
-                    }
-                    .labelsHidden().pickerStyle(.segmented).fixedSize()
+        NavigationStack {
+            VStack(alignment: .leading, spacing: LiquidSpace.s600) {
+                VStack(alignment: .leading, spacing: LiquidSpace.s100) {
+                    Text(String(localized: "Display"))
+                        .font(LiquidType.franja).tracking(LiquidType.franjaTracking).textCase(.uppercase)
+                        .foregroundStyle(LiquidColor.tinta500)
+                    Text(String(localized: "Units & format"))
+                        .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
+                        .foregroundStyle(LiquidColor.tinta900)
                 }
-                LiquidCapilar(eje: .horizontal)
-                HStack(spacing: LiquidSpace.s400) {
-                    Text(String(localized: "Temperature")).font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    Picker(String(localized: "Temperature"), selection: $temperatureRaw) {
-                        Text(String(localized: "Match system")).tag("")
-                        Text("°C").tag(TemperatureUnit.celsius.rawValue)
-                        Text("°F").tag(TemperatureUnit.fahrenheit.rawValue)
+                Text(String(localized: "Your data is always stored the same way: this only changes how distances, weights, heights and temperatures are shown."))
+                    .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta700)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+                    HStack(spacing: LiquidSpace.s400) {
+                        Text(String(localized: "Measurement system")).font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        Picker(String(localized: "Measurement system"), selection: $unitSystemRaw) {
+                            Text(String(localized: "Metric")).tag(UnitSystem.metric.rawValue)
+                            Text(String(localized: "Imperial")).tag(UnitSystem.imperial.rawValue)
+                        }
+                        .labelsHidden().pickerStyle(.segmented).fixedSize()
                     }
-                    .labelsHidden().pickerStyle(.segmented).fixedSize()
+                    LiquidCapilar(eje: .horizontal)
+                    HStack(spacing: LiquidSpace.s400) {
+                        Text(String(localized: "Temperature")).font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        // Ronda 2 #11 (revierte una regresión de ronda 1): «Match system»/«Según el
+                        // sistema» alargó la etiqueta y reabrió el mismo truncado que un segmentado de
+                        // 3 con `.fixedSize()` ya tenía — un menú no trunca y no necesita el hack de
+                        // ancho.
+                        Picker(String(localized: "Temperature"), selection: $temperatureRaw) {
+                            Text(String(localized: "Match system")).tag("")
+                            Text("°C").tag(TemperatureUnit.celsius.rawValue)
+                            Text("°F").tag(TemperatureUnit.fahrenheit.rawValue)
+                        }
+                        .labelsHidden().pickerStyle(.menu).tint(LiquidColor.tinta700)
+                    }
+                }
+            }
+            .padding(LiquidSpace.s600)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background { LiquidSheetFondo().ignoresSafeArea() }
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(String(localized: "Done")) { dismiss() }
+                        .foregroundStyle(LiquidColor.tinta900)
                 }
             }
         }
-        .padding(LiquidSpace.s600)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background { LiquidSheetFondo().ignoresSafeArea() }
         .fittedSheet()
     }
 }

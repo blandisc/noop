@@ -100,7 +100,11 @@ struct RecordatorioEntrenoSection: View {
                 }
 
                 if negadoEnIOS {
-                    LiquidNotaLine(String(localized: "Notifications are off in iOS Settings, so this can't reach you."),
+                    // Ronda 2 #21: la misma clave que «Aviso matutino» (`AvisoMatutinoSection`) para
+                    // el mismo permiso — dos frases distintas para «negado en Ajustes de iOS» era el
+                    // mismo hecho contado dos veces, con dos voces.
+                    LiquidNotaLine(String(localized: "aviso.matutino.denegado",
+                                defaultValue: "Notices are off in iOS Settings, so I cannot reach you."),
                                    tono: LiquidColor.atencionTexto)
                     settingsButton
                 }

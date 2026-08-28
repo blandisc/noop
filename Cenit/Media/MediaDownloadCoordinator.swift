@@ -38,6 +38,13 @@ final class MediaDownloadCoordinator: ObservableObject {
 
     var isEnabled: Bool { userDefaults.bool(forKey: Self.enabledKey) }
 
+    /// Whether the disk cache holds anything right now (ronda 2 #13) — Ajustes reads this, not
+    /// `downloadState`, to decide whether «Borrar animaciones» is reachable: this session's progress
+    /// state resets to `.idle` on every relaunch even though the cache on disk survives, so gating the
+    /// destructive button on `downloadState != .idle` made it unreachable without first re-triggering
+    /// a download (which fires network) just to be able to delete.
+    var hasCachedMedia: Bool { cache?.hasAnyThumb ?? false }
+
     @Published private(set) var downloadState: DownloadState = .idle
 
     /// Guards against a second bulk pass running concurrently — the launch resume (FER-800) and the

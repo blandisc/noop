@@ -12,7 +12,7 @@ import UIKit       // UIApplication.openSettingsURLString
 //
 // Migration of the light «Instrumento diurno» Data Sources screen to the Liquid Glass language
 // (FER-104 family: same visual system as Compare/Explore). This is a SKIN pass, not a thread
-// change: every importer, the live Apple Health sync, the FER-83 band diagnostic, the coverage
+// change: every importer, the live Apple Health sync, the coverage diagnostic, the coverage
 // grid and the backup/restore + iCloud auto-backup logic are conserved verbatim. What changes is
 // the surface — `LiquidSheetFondo`, inset section overlines (`bloque`, the Compare pattern),
 // `liquidTarjetaSeccion` cards for grouped content, `LiquidChecklistRow`/`LiquidListRow` for the
@@ -560,7 +560,7 @@ struct DataSourcesView: View {
         // denied/unavailable or has imported nothing (mirrors the dark screen's guards).
         let healthAccessible = health.auth != .denied && health.auth != .unavailable
         // FER-485: coverage is diagnostic — it reads the STORED day sets (unfiltered by the mode), so it
-        // shows what's on the iPhone even in «Solo la banda» / «Solo Apple Salud».
+        // shows what's on the iPhone regardless of the app's current data-source filter.
         let showsCoverage = !repo.storedStrapDays.isEmpty || (!repo.storedAppleOnlyDays.isEmpty && healthAccessible)
         if showsCoverage || sourcesHasContent {
             section(String(localized: "Coverage")) {
