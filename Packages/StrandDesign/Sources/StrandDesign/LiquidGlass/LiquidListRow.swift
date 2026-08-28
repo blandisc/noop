@@ -18,7 +18,9 @@ public struct LiquidListRow: View {
     private let title: String
     private let subtitle: String
     private let trailing: String?
-    private let tone: Color
+    /// Tono de la fila — identidad de una métrica real (punto con glow + chevron en el tono).
+    /// `nil` = fila "chrome" (sin métrica que colorear, FER-175): sin punto, chevron en tinta500.
+    private let tone: Color?
     /// nil = fila de navegación (chevron). No-nil = toggle: ✓ cuando `true`.
     private let seleccionado: Bool?
     /// Fila apagada e inerte (tope de selección alcanzado).
@@ -28,7 +30,7 @@ public struct LiquidListRow: View {
     private let divider: Bool
     private let action: (() -> Void)?
 
-    public init(title: String, subtitle: String = "", trailing: String? = nil, tone: Color,
+    public init(title: String, subtitle: String = "", trailing: String? = nil, tone: Color? = nil,
                 seleccionado: Bool? = nil, deshabilitado: Bool = false, a11yHint: String? = nil,
                 divider: Bool = true, action: (() -> Void)? = nil) {
         self.title = title
@@ -66,14 +68,12 @@ public struct LiquidListRow: View {
         deshabilitado ? LiquidColor.tinta500 : LiquidColor.tinta900
     }
 
-    private var tonoPunto: Color {
-        deshabilitado ? LiquidColor.tinta500 : tone
-    }
-
-    private var content: some View {
-        HStack(spacing: 10) {
+    /// Punto con glow — solo existe si la fila tiene un tono real. `tone == nil` (fila "chrome",
+    /// FER-175) no dibuja NADA aquí, ni un punto en tinta: sin métrica que colorear, sin punto.
+    @ViewBuilder private var punto: some View {
+        if let tone {
             Circle()
-                .fill(tonoPunto)
+                .fill(deshabilitado ? LiquidColor.tinta500 : tone)
                 .frame(width: 8, height: 8)
                 // Glow del punto como geometría (regla del sistema: nada de .shadow a mano).
                 // Apagada: sin glow, para que la fila inerte no compita con las elegibles.
@@ -81,6 +81,12 @@ public struct LiquidListRow: View {
                               ? []
                               : [.init(color: tone.opacity(0.35), radius: 4, y: 0)],
                               silhouette: Circle())
+        }
+    }
+
+    private var content: some View {
+        HStack(spacing: 10) {
+            punto
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).font(LiquidType.tituloFila).foregroundStyle(tintaTitulo)
                 if !subtitle.isEmpty {
@@ -108,14 +114,17 @@ public struct LiquidListRow: View {
         if let seleccionado {
             // Modo toggle: ✓ en el tono cuando está elegida. El hueco se reserva SIEMPRE
             // (opacidad 0 cuando no) para que activar/desactivar no mueva el layout.
+            // `tone` debería venir siempre en modo selección; el fallback a tinta500 es solo
+            // para no crashear si algún día no fuera así.
             Image(systemName: "checkmark")
                 .font(LiquidType.iconSF(size: 12))
-                .foregroundStyle(tone)
+                .foregroundStyle(tone ?? LiquidColor.tinta500)
                 .opacity(seleccionado ? 1 : 0)
                 .frame(width: 14, alignment: .trailing)
                 .accessibilityHidden(true)
         } else {
-            LiquidIcon(.chevron, size: 12, color: tone)
+            // Fila "chrome" (tone nil): chevron en tinta500, sin inventar un color de métrica.
+            LiquidIcon(.chevron, size: 12, color: tone ?? LiquidColor.tinta500)
         }
     }
 }
@@ -163,5 +172,22 @@ public struct LiquidListCard<Content: View>: View {
     .liquidTarjetaSeccion()
     .padding(LiquidSpace.s550)
     .background(LiquidSheetFondo(tone: LiquidColor.cian))
+}
+
+/// FER-175: `tone: nil` para filas de "chrome" (sin métrica que colorear) — sin punto, chevron
+/// en tinta500 — junto a una fila con tono real para comparar ambos modos lado a lado.
+#Preview("Liquid · ListRow tono opcional") {
+    VStack(spacing: LiquidSpace.s300) {
+        LiquidListCard {
+            LiquidListRow(title: "Exportar datos", tone: nil, action: {})
+            LiquidListRow(title: "Cerrar sesión", tone: nil, divider: false, action: {})
+        }
+        LiquidListCard {
+            LiquidListRow(title: "Frecuencia cardiaca", subtitle: "Apple Watch",
+                          tone: LiquidColor.rosa, divider: false, action: {})
+        }
+    }
+    .padding(LiquidSpace.s550)
+    .background(LiquidColor.papelGradient)
 }
 #endif
