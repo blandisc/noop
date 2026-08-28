@@ -61,9 +61,10 @@ struct RestEditorScreen: View {
     let onCancel: () -> Void
     /// (config, applyToAllSets, saveToRoutine).
     let onApply: (RestConfig, Bool, Bool) -> Void
-    /// EST-6 (FER-831): the close affordance follows the presentation. The Builder PUSHES this (chevron
-    /// back, default); the live session presents it as a `.sheet`, so it closes with ✕. One correct
-    /// affordance per context — and NO `NavigationStack` inside the session (FER-171 forbids nesting one).
+    /// EST-6 (FER-831): originally chose the header's icon by presentation (chevron pushed, ✕ sheeted).
+    /// FER-198 (Ola 2) unified the exit into `EntrenarHojaCabecera(.cancelar("Cancel"))` — one text
+    /// control, same in both contexts — so this flag no longer drives the icon; kept only because
+    /// callers outside this screen still set it (out of this reskin's file scope to prune).
     var closeAsDismiss: Bool = false
 
     @State private var mode: RestMode
@@ -153,10 +154,15 @@ struct RestEditorScreen: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                header
-                InstrumentoFlowTitle(
-                    overline: Text(setNumber.map { String(localized: "\(exerciseName) · set \($0)") } ?? exerciseName),
-                    Text("Rest when you finish"))
+                // FER-198 (Ola 2): la cabecera de la familia El Eje absorbe el `header` a mano
+                // (BackButton) Y el `InstrumentoFlowTitle` de abajo — mismas DOS cadenas ya
+                // localizadas (título/overline), sin copy nueva. `Salida.cancelar` unifica el
+                // cierre en un único control de texto (antes chevron/aspa según `closeAsDismiss`
+                // — ese flag queda inerte en esta hoja, ver nota en `closeAsDismiss`).
+                EntrenarHojaCabecera(
+                    titulo: String(localized: "Rest when you finish"),
+                    subtitulo: setNumber.map { String(localized: "\(exerciseName) · set \($0)") } ?? exerciseName,
+                    tono: .verde, salida: .cancelar(String(localized: "Cancel")), onSalir: onCancel)
                 // FER-89: las 2 formas AL FRENTE — por tiempo fijo y sobre tu reposo (el default de
                 // FC). Las otras 3 (Karvonen, caída desde el pico, lpm fijo) viven en «más opciones»
                 // dentro de `hrSection`; si una de ellas está activa, ningún segmento de este control
@@ -186,22 +192,12 @@ struct RestEditorScreen: View {
             .padding(.top, 12).padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(theme.paper.ignoresSafeArea())
+        .entrenarHojaFondo(tono: .verde)
         .instrumentoTheme(theme)
         // FER-988: el gesto de volver, vetado a favor de `onCancel` — la salida de esta pantalla
         // aplica/descarta según su modo, y un pop crudo se la saltaría. Inerte como hoja (`.close`).
         .keepsSwipeBack { onCancel(); return false }
         .enableInjection()   // Inject: recarga en caliente (no-op en Release)
-    }
-
-    private var header: some View {
-        HStack {
-            // EST-6 (FER-814/831): a single close affordance that matches the presentation — the back
-            // chevron when pushed (Builder), the ✕ when presented as a sheet (the live session). Never two.
-            BackButton(role: closeAsDismiss ? .close : .back, theme: theme, action: onCancel)
-                .padding(.leading, -2)
-            Spacer()
-        }
     }
 
     // MARK: HR mode
