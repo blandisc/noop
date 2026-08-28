@@ -4,44 +4,35 @@ import StrandDesign
 import StrandAnalytics
 import CenitStore
 
-// MARK: - Ajustes (the Settings tab root) — FER-337
+// MARK: - Ajustes (the Settings tab root) — FER-337, reskinned to Liquid Glass (FER-176)
 //
-// The redesigned «Ajustes» tab in the light «Instrumento diurno» language (warm paper, color only on
-// the datum, hierarchy by space). It replaces TWO stacked surfaces from the old shell: the interim
-// «Más» drawer (a junk list of orphan screens) AND the dark `SettingsView` it pointed at. The tab now
-// opens DIRECTLY here — no list → "Settings" indirection.
+// The «Ajustes» tab root in the Liquid Glass language (glass surfaces, color as identity,
+// hierarchy by space) — same information architecture and row names as before, only the skin
+// changes. It replaced TWO stacked surfaces from the old shell: the interim «Más» drawer (a junk
+// list of orphan screens) AND the SettingsView it pointed at. The tab opens DIRECTLY here — no
+// list → "Settings" indirection.
 //
-// Structure (Opción B, approved preview FER-337): Perfil and «Tu strap» are surfaced inline on the
-// root; everything else is a quiet row that opens a focused screen. Like Cuerpo, navigation is by
-// SHEET, not a nested NavigationStack (FER-171): the light sub-screens (Unidades, Log de la banda)
-// ride light sheets with the theme passed explicitly (it doesn't cross `.sheet` — FER-162); the three
-// still-dark sibling screens (Datos y fuentes, Automatizaciones, Acerca de y soporte) ride a sheet
-// pinned to `.dark` (a light tab can't host a dark screen without breaking the status bar — same
-// bridge Cuerpo/Today use). Those go light in FER-338 / FER-69 / FER-67.
+// Structure (unchanged): Profile is surfaced inline on the root; everything else is a quiet row
+// grouped under an overline that opens a focused sheet. Navigation is by SHEET, not a nested
+// NavigationStack: the focused sub-screens (Units & format, the profile wheels, Max heart rate)
+// ride Liquid sheets that build their own `LiquidSheetFondo` (the theme doesn't cross `.sheet`);
+// the two sibling screens (Data & sources, About & support) ride a sheet too — Ajustes injects
+// nothing into either (each screen owns its own background; About & support's own reskin is a
+// separate issue).
 //
-// Pulir pass (handoff «Pulir App Cenit»): profile steppers → wheels; HR-max auto/manual sheet;
-// WHOOP 5/MG experimental moved off «Tu banda» into a new «Avanzado» sheet; the lower list grouped
-// with overlines + subtitles; a privacy chip + gear icon in the header; Disconnect demoted to a text
-// link behind a confirmation. Pure presentation — no store/state contracts change.
-//
-// Explore · Compare · Workouts are NOT here: they already open from Cuerpo's footer; the old «Más»
-// duplicate is gone.
+// Explore · Compare · Workouts are NOT here: they already open from Cuerpo's footer; the old
+// «Más» duplicate is gone.
 
-/// Theme wrapper: anchors `\.instrumentoTheme` to the single warm day paper (`.base`), then hands to
-/// `AjustesLanding`, which reads the resolved theme from the environment. (FER-398 retired the
-/// by-the-hour tint; Ajustes no longer changes colour with the clock.)
 struct AjustesView: View {
     var body: some View {
         AjustesLanding()
-            .instrumentoTheme(.base)
     }
 }
 
 // MARK: - Sheet routing
 
-/// A still-dark sibling screen, presented as a self-contained sheet pinned to `.dark`. Each goes light
-/// in its own issue (Datos y fuentes → FER-338, Automatizaciones → FER-69, Acerca de y soporte → FER-67).
-private enum AjustesDarkScreen: String, Identifiable {
+/// A sibling screen presented as a self-contained sheet.
+private enum AjustesSheetScreen: String, Identifiable {
     case dataSources, support
     var id: String { rawValue }
 }
@@ -80,12 +71,11 @@ private extension View {
 private struct AjustesLanding: View {
     @Environment(AppModel.self) var model
     @EnvironmentObject var profile: ProfileStore
-    // Read only to re-inject into the dark sibling sheets (a sheet starts a fresh environment branch).
+    // Read only to re-inject into the sibling sheets (a sheet starts a fresh environment branch).
     @EnvironmentObject private var repo: Repository
     @EnvironmentObject private var health: HealthKitBridge
     @EnvironmentObject private var behavior: BehaviorStore
     @EnvironmentObject private var autoBackup: AutoBackup
-    @Environment(\.instrumentoTheme) private var theme
 
     // Imperial/Metric display preference (D#103). Stored data is always SI; this only changes how
     // distances/weights/heights/temperatures are SHOWN — and lets the profile fields take imperial entry.
@@ -96,8 +86,6 @@ private struct AjustesLanding: View {
     // Sheet drivers.
     @State private var showUnits = false
     @State private var showMaxHR = false
-    @State private var showCyclePhase = false
-    @AppStorage(CyclePhaseExperiment.enabledKey) private var cyclePhaseOn = false
     @AppStorage(WhitespaceMetricsExperiment.enabledKey) private var whitespaceMetrics = false
     /// FER-722: opt-in exercise media download (default off — the first/only exception to offline
     /// for exercise thumbs/loops, gated end-to-end by `MediaDownloadCoordinator`).
@@ -113,103 +101,128 @@ private struct AjustesLanding: View {
     @State private var confirmDeleteMedia = false
     @State private var confirmRecalibrate = false
     @State private var profileWheel: ProfileWheel? = nil
-    @State private var darkScreen: AjustesDarkScreen? = nil
+    @State private var presentedSheet: AjustesSheetScreen? = nil
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s800) {
                 header
-
                 profileSection
                 moreSection
-
                 footer
             }
-            .padding(.top, CenitMetrics.screenTop)   // shared titled-tab top inset
-            .padding(.horizontal, CenitMetrics.screenPadding)
-            .padding(.bottom, CenitMetrics.screenPadding)
+            .padding(.horizontal, LiquidSpace.s600)
+            .padding(.top, LiquidSpace.s400)
+            .padding(.bottom, LiquidSpace.s800)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(theme.paper.ignoresSafeArea())
+        .scrollIndicators(.hidden)
+        .background { LiquidSheetFondo().ignoresSafeArea() }
         .sheet(isPresented: $showUnits) {
-            UnidadesSheet().instrumentoTheme(theme)
-        }
-        .sheet(isPresented: $showCyclePhase) {
-            CyclePhaseSheet().instrumentoTheme(theme).environmentObject(repo)
+            UnidadesSheet()
         }
         .sheet(isPresented: $showMaxHR) {
-            MaxHRSheet().instrumentoTheme(theme).environmentObject(profile)
+            MaxHRSheet().environmentObject(profile)
         }
         .sheet(item: $profileWheel) { wheel in
-            ProfileWheelSheet(wheel: wheel).instrumentoTheme(theme).environmentObject(profile)
+            ProfileWheelSheet(wheel: wheel).environmentObject(profile)
         }
-        .sheet(item: $darkScreen) { screen in darkSheet(screen) }
+        .sheet(item: $presentedSheet) { screen in sheetContent(screen) }
+        // Both confirmations hang here, on the STABLE body of the landing (ScrollView level), not
+        // inside the idle-branch Button of `recalibrateRow`: if the confirm lived only in the
+        // `else` branch, the swap to the «Deshacer» state would tear down the presenter mid-dismiss.
+        .confirmationDialog(
+            String(localized: "¿Recalibrar tu recuperación?"),
+            isPresented: $confirmRecalibrate,
+            titleVisibility: .visible
+        ) {
+            Button(String(localized: "Recalibrar desde hoy"), role: .destructive) { model.recalibrateBaseline() }
+            Button(String(localized: "Dejar la base como está"), role: .cancel) { }
+        } message: {
+            Text(String(localized: "Tu línea base se re-anclará desde hoy y se ignorarán tus noches anteriores. Perderás tu número de recuperación unos días mientras se recalibra. Tus datos e historial no se borran."))
+        }
+        .confirmationDialog(
+            String(localized: "¿Borrar toda la media de ejercicios descargada?"),
+            isPresented: $confirmDeleteMedia,
+            titleVisibility: .visible
+        ) {
+            Button(String(localized: "Borrar la media"), role: .destructive) { mediaCoordinator.deleteAllCachedMedia() }
+            Button(String(localized: "Conservar la media"), role: .cancel) { }
+        } message: {
+            Text(String(localized: "Las animaciones guardadas se borran de tu iPhone. Puedes volver a descargarlas cuando quieras."))
+        }
     }
 
-    // MARK: - Header (A6: gear icon + title, privacy chip)
+    // MARK: - Header (one-off chrome: gearshape + title + a privacy line)
 
     private var header: some View {
-        // The shared titled-tab wordmark (FER-605): same lockup, size and baseline as «Patrones» /
-        // «Tendencias» / «Entrenar», so Ajustes lines up with them as you swipe between tabs. The privacy
-        // chip rides below as a quiet subline (the lockup's trailing slot stays empty).
-        VStack(alignment: .leading, spacing: 10) {
-            InstrumentoTabHeader("Ajustes") {
-                Image(systemName: "gearshape").font(StrandFont.glyph(.lead)).foregroundStyle(theme.ink)
+        VStack(alignment: .leading, spacing: LiquidSpace.s150) {
+            HStack(spacing: LiquidSpace.s150) {
+                Image(systemName: "gearshape")
+                    .font(LiquidType.iconSF(size: 20)).foregroundStyle(LiquidColor.tinta900)
+                Text(String(localized: "Ajustes"))
+                    .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
+                    .foregroundStyle(LiquidColor.tinta900)
             }
-            privacyChip
+            Text(String(localized: "On this iPhone · no account · no cloud"))
+                .font(LiquidType.captionLectura)
+                .foregroundStyle(LiquidColor.tinta500)
         }
-        .padding(.bottom, -8)
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isHeader)
     }
 
-    /// «En este iPhone · sin cuenta · sin nube» — the offline promise, made visible (A6).
-    private var privacyChip: some View {
-        Text("On this iPhone · no account · no cloud")
-            .font(StrandFont.caption).foregroundStyle(theme.positiveText)
-            .padding(.horizontal, 10).padding(.vertical, 5)
-            .background(
-                Capsule(style: .continuous).fill(theme.tint(theme.dataRecovery))
-            )
-            .accessibilityLabel("Everything stays on this iPhone. No account, no cloud.")
-    }
-
-    // MARK: - Footer (A6: the offline promise, restated)
+    // MARK: - Footer (version, no repeated privacy promise — the header already said it)
 
     private var footer: some View {
-        Text("Cénit \(appVersion) · everything is computed on your iPhone · no account · no server")
-            .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+        Text(String(localized: "Cénit \(appVersion) · everything is computed on your iPhone"))
+            .font(LiquidType.captionLectura)
+            .foregroundStyle(LiquidColor.tinta500)
             .fixedSize(horizontal: false, vertical: true)
-            .padding(.top, 8)
     }
 
     private var appVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
     }
 
-    // MARK: - Profile (A1: steppers → wheels; A2: HR-max → sheet)
+    // MARK: - Profile (Age/Weight/Height/Max HR open a wheel sheet; Sex is inline)
 
     private var profileSection: some View {
-        section("Profile") {
-            valueRow("Age", value: "\(profile.age)",
-                     a11y: "Age, \(profile.age) years") { profileWheel = .age }
-            divider
-            formRow("Sex") {
-                Picker("Sex", selection: $profile.sex) {
-                    Text("Male").tag("male")
-                    Text("Female").tag("female")
-                    Text("Non-binary").tag("nonbinary")
-                }
-                .labelsHidden().pickerStyle(.segmented).fixedSize()
-                .accessibilityLabel("Sex")
+        section(String(localized: "Profile")) {
+            VStack(spacing: 0) {
+                LiquidListRow(title: String(localized: "Age"), trailing: "\(profile.age)",
+                              a11yHint: String(localized: "Opens a picker")) { profileWheel = .age }
+                sexRow
+                LiquidListRow(title: String(localized: "Weight"), trailing: weightDisplay,
+                              a11yHint: String(localized: "Opens a picker")) { profileWheel = .weight }
+                LiquidListRow(title: String(localized: "Height"), trailing: heightDisplay,
+                              a11yHint: String(localized: "Opens a picker")) { profileWheel = .height }
+                LiquidListRow(title: String(localized: "Max heart rate"), trailing: maxHRDisplay,
+                              tone: LiquidColor.rosa, divider: false,
+                              a11yHint: String(localized: "Opens a picker")) { showMaxHR = true }
             }
-            divider
-            valueRow("Weight", value: weightDisplay,
-                     a11y: "Weight, \(weightDisplay)") { profileWheel = .weight }
-            divider
-            valueRow("Height", value: heightDisplay,
-                     a11y: "Height, \(heightDisplay)") { profileWheel = .height }
-            divider
-            valueRow("Max heart rate", value: maxHRDisplay,
-                     a11y: "Maximum heart rate, \(maxHRDisplay)") { showMaxHR = true }
+            .liquidTarjetaSeccion(padding: LiquidSpace.s300)
+        }
+    }
+
+    /// Sex is a segmented `Picker`, not a value+chevron row, so it can't be a `LiquidListRow` — this
+    /// hand-builds the same row geometry (padding, bottom hairline) so it seams into the same card.
+    private var sexRow: some View {
+        HStack(spacing: LiquidSpace.s300) {
+            Text(String(localized: "Sex")).font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Picker(String(localized: "Sex"), selection: $profile.sex) {
+                Text(String(localized: "Male")).tag("male")
+                Text(String(localized: "Female")).tag("female")
+                Text(String(localized: "Non-binary")).tag("nonbinary")
+            }
+            .labelsHidden().pickerStyle(.segmented).fixedSize()
+            .accessibilityLabel(String(localized: "Sex"))
+        }
+        .padding(.vertical, 11)  // token-exempt: paridad fila LiquidListRow (padding interno no público)
+        .padding(.horizontal, LiquidSpace.s100)
+        .overlay(alignment: .bottom) {
+            Rectangle().fill(LiquidColor.tinta10).frame(height: 0.5)  // token-exempt: paridad divisor LiquidListRow (no público)
         }
     }
 
@@ -226,136 +239,149 @@ private struct AjustesLanding: View {
             ? "\(profile.hrMaxOverride) bpm"
             : String(localized: "Auto · \(profile.hrMax) bpm")
     }
-    // MARK: - More (A5: grouped drill rows with overlines + subtitles)
+
+    // MARK: - More (grouped nav rows + toggle blocks, each in its own overlined card)
 
     private var moreSection: some View {
-        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
-            section("App") {
-                navRow("Units & format", subtitle: unitsSubtitle) { showUnits = true }
+        VStack(alignment: .leading, spacing: LiquidSpace.s800) {
+            section(String(localized: "App")) {
+                VStack(spacing: 0) {
+                    LiquidListRow(title: String(localized: "Units & format"), subtitle: unitsSubtitle,
+                                  divider: false) { showUnits = true }
+                }
+                .liquidTarjetaSeccion(padding: LiquidSpace.s300)
             }
-            section("Data") {
-                navRow("Data & sources", subtitle: Text("Apple Health · backup")) { darkScreen = .dataSources }
-                divider
-                recalibrateRow
+            section(String(localized: "Data")) {
+                VStack(spacing: 0) {
+                    LiquidListRow(title: String(localized: "Data & sources"),
+                                  subtitle: String(localized: "Apple Health · backup"),
+                                  tone: LiquidColor.azul) { presentedSheet = .dataSources }
+                    recalibrateRow
+                }
+                .liquidTarjetaSeccion(padding: LiquidSpace.s300)
             }
-            section("Salud") {
-                // FER-1021: el interruptor de «vigilar enfermedad» vivía en la difunta AutomationsView
-                // (retirada con la banda). El motor sigue vivo y ruteado a Apple (temp de muñeca + FC en
-                // reposo nocturna, FER-884); esto le repone el acceso para que la feature sea alcanzable.
-                Toggle(isOn: $behavior.illnessWatch) {
-                    Text("Vigilar señales de enfermedad").font(StrandFont.body).foregroundStyle(theme.ink)
-                }
-                .toggleStyle(.instrumento)
-                .frame(minHeight: 44)
-                .onChange(of: behavior.illnessWatch) { _, on in
-                    if on { IllnessNotifier.requestAuthorization() }
-                    model.reevaluateIllness()
-                }
-                Text("Cruza tu temperatura de muñeca y tu pulso en reposo nocturno para avisarte temprano de una posible enfermedad. Aproximado, no es un diagnóstico; necesita unas dos semanas de datos.")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            // FER-114: el aviso matutino trae su propia sección entera (switch + hora + estado real
-            // del permiso); vive en `AjustesAvisoMatutino.swift`.
-            AvisoMatutinoSection()
-            // FER-95 · E14: el recordatorio del día que toca entrenar, mismo patrón; vive en
-            // `AjustesRecordatorioEntreno.swift`.
-            RecordatorioEntrenoSection()
-            // FER-115: la puerta informada del «Historial de FA». Trae su propio overline y se
-            // calla sola cuando las series de latidos ya llegan (ver `HistorialFAPuerta`).
-            HistorialFASection()
-            section("During a session") {
-                Toggle(isOn: $keepScreenAwake) {
-                    Text("Keep the screen on").font(StrandFont.body).foregroundStyle(theme.ink)
-                }
-                .toggleStyle(.instrumento)
-                .frame(minHeight: 44)
-                .onChange(of: keepScreenAwake) { _, on in
-                    // Apagarlo a media sesión tiene que surtir efecto ya, no en la siguiente.
-                    if !on { SessionComfort.applyKeepAwake(active: false) }
-                }
-                Text("Between sets two minutes pass without touching anything, and the phone falls asleep right when you pick it up to log. It only applies while the session is open, and it uses more battery: your iPhone goes back to its normal auto-lock when the session ends.")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                    .fixedSize(horizontal: false, vertical: true)
-                divider
-                Toggle(isOn: $restSound) {
-                    Text("Sound when a timed rest ends").font(StrandFont.body).foregroundStyle(theme.ink)
-                }
-                .toggleStyle(.instrumento)
-                .frame(minHeight: 44)
-                Text("A short system tone next to the haptic, for a rest counted by the clock. It follows your ring switch, and it only sounds with the app on screen: if the iPhone locked, there's no sound.")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                    .fixedSize(horizontal: false, vertical: true)
-                divider
-                Toggle(isOn: $restNotify) {
-                    Text("Notify me when rest is up").font(StrandFont.body).foregroundStyle(theme.ink)
-                }
-                .toggleStyle(.instrumento)
-                .frame(minHeight: 44)
-                .onChange(of: restNotify) { _, on in
-                    // El permiso se pide AQUÍ, en el momento en que lo enciendes, no en un arranque
-                    // cualquiera ni a media serie. Y si iOS lo niega, el interruptor se apaga solo:
-                    // dejarlo encendido sería prometer un aviso que jamás va a llegar.
-                    guard on else { RestEndNotifier.cancel(); return }
-                    Task { @MainActor in
-                        if await RestEndNotifier.requestAuthorization() == false {
-                            restNotify = false
-                            notifDenegado = true
-                        }
+            section(String(localized: "Salud")) {
+                VStack(alignment: .leading, spacing: LiquidSpace.s200) {
+                    // FER-1021: el interruptor de «vigilar enfermedad» vivía en la difunta
+                    // AutomationsView (retirada con la banda). El motor sigue vivo y ruteado a
+                    // Apple (temp de muñeca + FC en reposo nocturna, FER-884); esto le repone el
+                    // acceso para que la feature sea alcanzable.
+                    Toggle(isOn: $behavior.illnessWatch) {
+                        Text(String(localized: "Vigilar señales de enfermedad"))
+                            .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
                     }
-                }
-                if notifDenegado {
-                    Text("Your iPhone has notifications off for Cénit. You can turn them on in Settings.")
-                        .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                    .tint(LiquidColor.verdePrimario)
+                    .onChange(of: behavior.illnessWatch) { _, on in
+                        if on { IllnessNotifier.requestAuthorization() }
+                        model.reevaluateIllness()
+                    }
+                    Text(String(localized: "Cruza tu temperatura de muñeca y tu pulso en reposo nocturno para avisarte temprano de una posible enfermedad. Aproximado, no es un diagnóstico; necesita unas dos semanas de datos."))
+                        .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                Text("The only notice that survives locking your phone: a notification your iPhone delivers on its own, for when you leave it on the floor between sets. It's scheduled and delivered on your device; nothing leaves it.")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                    .fixedSize(horizontal: false, vertical: true)
+                .liquidTarjetaSeccion()
             }
-            section("Experimental") {
-                Toggle(isOn: $whitespaceMetrics) {
-                    Text("Experimental metrics").font(StrandFont.body).foregroundStyle(theme.ink)
+            // FER-114: el aviso matutino trae su propia sección entera (switch + hora + estado real
+            // del permiso); vive en `AjustesAvisoMatutino.swift`. Migra en OTRO issue.
+            AvisoMatutinoSection()
+            // FER-95 · E14: el recordatorio del día que toca entrenar, mismo patrón; vive en
+            // `AjustesRecordatorioEntreno.swift`. Migra en OTRO issue.
+            RecordatorioEntrenoSection()
+            // FER-115: la puerta informada del «Historial de FA». Trae su propio overline y se
+            // calla sola cuando las series de latidos ya llegan. Migra en OTRO issue.
+            HistorialFASection()
+            section(String(localized: "During a session")) {
+                VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+                    Toggle(isOn: $keepScreenAwake) {
+                        Text(String(localized: "Keep the screen on"))
+                            .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
+                    }
+                    .tint(LiquidColor.verdePrimario)
+                    .onChange(of: keepScreenAwake) { _, on in
+                        // Apagarlo a media sesión tiene que surtir efecto ya, no en la siguiente.
+                        if !on { SessionComfort.applyKeepAwake(active: false) }
+                    }
+                    Text(String(localized: "Between sets two minutes pass without touching anything, and the phone falls asleep right when you pick it up to log. It only applies while the session is open, and it uses more battery: your iPhone goes back to its normal auto-lock when the session ends."))
+                        .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
+                        .fixedSize(horizontal: false, vertical: true)
+                    LiquidCapilar(eje: .horizontal)
+                    Toggle(isOn: $restSound) {
+                        Text(String(localized: "Sound when a timed rest ends"))
+                            .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
+                    }
+                    .tint(LiquidColor.verdePrimario)
+                    Text(String(localized: "A short system tone next to the haptic, for a rest counted by the clock. It follows your ring switch, and it only sounds with the app on screen: if the iPhone locked, there's no sound."))
+                        .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
+                        .fixedSize(horizontal: false, vertical: true)
+                    LiquidCapilar(eje: .horizontal)
+                    Toggle(isOn: $restNotify) {
+                        Text(String(localized: "Notify me when rest is up"))
+                            .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
+                    }
+                    .tint(LiquidColor.verdePrimario)
+                    .onChange(of: restNotify) { _, on in
+                        // El permiso se pide AQUÍ, en el momento en que lo enciendes, no en un
+                        // arranque cualquiera ni a media serie. Y si iOS lo niega, el interruptor
+                        // se apaga solo: dejarlo encendido sería prometer un aviso que jamás llegará.
+                        guard on else { RestEndNotifier.cancel(); return }
+                        Task { @MainActor in
+                            if await RestEndNotifier.requestAuthorization() == false {
+                                restNotify = false
+                                notifDenegado = true
+                            }
+                        }
+                    }
+                    if notifDenegado {
+                        Text(String(localized: "Your iPhone has notifications off for Cénit. You can turn them on in Settings."))
+                            .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta700)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Text(String(localized: "The only notice that survives locking your phone: a notification your iPhone delivers on its own, for when you leave it on the floor between sets. It's scheduled and delivered on your device; nothing leaves it."))
+                        .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                .toggleStyle(.instrumento)
-                .frame(minHeight: 44)
-                Text("New, approximate readings: nocturnal vagal reserve, thermal stability, night respiration and post-session recovery. They need several days of use to read well.")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                    .fixedSize(horizontal: false, vertical: true)
-                divider
-                Toggle(isOn: $exerciseMediaEnabled) {
-                    Text("Descargar biblioteca de ejercicios").font(StrandFont.body).foregroundStyle(theme.ink)
-                }
-                .toggleStyle(.instrumento)
-                .frame(minHeight: 44)
-                .onChange(of: exerciseMediaEnabled) { _, enabled in
-                    if enabled { Task { await mediaCoordinator.bulkDownloadThumbsIfNeeded() } }
-                    else { mediaCoordinator.resetDownloadState() }
-                }
-                Text("Downloads each exercise's animation from ExerciseDB's image CDN, an external service. They're saved on your iPhone forever and work offline afterwards. This is the only exception to Cénit's zero-network rule: fetching each image exposes your IP to that service, like loading any image on the internet; no other data of yours (not even the exercise name) ever leaves. Turning this off stops future downloads; it doesn't delete what's already saved.")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                    .fixedSize(horizontal: false, vertical: true)
-                mediaDownloadStatus
-                divider
-                Button(role: .destructive) { confirmDeleteMedia = true } label: {
-                    Text("Borrar media descargada").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                }
-                .buttonStyle(.plain)
-                .frame(minHeight: 32)
-                .instrumentoConfirm(
-                    isPresented: $confirmDeleteMedia,
-                    title: String(localized: "¿Borrar toda la media de ejercicios descargada?"),
-                    context: String(localized: "EXERCISE MEDIA"),
-                    message: String(localized: "Las animaciones guardadas se borran de tu iPhone. Puedes volver a descargarlas cuando quieras."),
-                    actions: [
-                        .init(String(localized: "Conservar la media"), role: .primary),
-                        .init(String(localized: "Borrar la media"), role: .destructive) { mediaCoordinator.deleteAllCachedMedia() }
-                    ]
-                )
+                .liquidTarjetaSeccion()
             }
-            section("More") {
-                navRow("About & support",
-                       subtitle: Text("Version \(appVersion) · help · licenses")) { darkScreen = .support }
+            section(String(localized: "Experimental")) {
+                VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+                    Toggle(isOn: $whitespaceMetrics) {
+                        Text(String(localized: "Experimental metrics"))
+                            .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
+                    }
+                    .tint(LiquidColor.verdePrimario)
+                    Text(String(localized: "New, approximate readings: nocturnal vagal reserve, thermal stability, night respiration and post-session recovery. They need several days of use to read well."))
+                        .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
+                        .fixedSize(horizontal: false, vertical: true)
+                    LiquidCapilar(eje: .horizontal)
+                    Toggle(isOn: $exerciseMediaEnabled) {
+                        Text(String(localized: "Descargar biblioteca de ejercicios"))
+                            .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
+                    }
+                    .tint(LiquidColor.verdePrimario)
+                    .onChange(of: exerciseMediaEnabled) { _, enabled in
+                        if enabled { Task { await mediaCoordinator.bulkDownloadThumbsIfNeeded() } }
+                        else { mediaCoordinator.resetDownloadState() }
+                    }
+                    Text(String(localized: "Downloads each exercise's animation from ExerciseDB's image CDN, an external service. They're saved on your iPhone forever and work offline afterwards. This is the only exception to Cénit's zero-network rule: fetching each image exposes your IP to that service, like loading any image on the internet; no other data of yours (not even the exercise name) ever leaves. Turning this off stops future downloads; it doesn't delete what's already saved."))
+                        .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
+                        .fixedSize(horizontal: false, vertical: true)
+                    mediaDownloadStatus
+                    LiquidCapilar(eje: .horizontal)
+                    Button(role: .destructive) { confirmDeleteMedia = true } label: {
+                        Text(String(localized: "Borrar media descargada"))
+                            .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta700)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .liquidTarjetaSeccion()
+            }
+            section(String(localized: "More")) {
+                VStack(spacing: 0) {
+                    LiquidListRow(title: String(localized: "About & support"),
+                                  subtitle: String(localized: "Version \(appVersion) · help · licenses"),
+                                  divider: false) { presentedSheet = .support }
+                }
+                .liquidTarjetaSeccion(padding: LiquidSpace.s300)
             }
         }
     }
@@ -366,45 +392,28 @@ private struct AjustesLanding: View {
     @ViewBuilder
     private var recalibrateRow: some View {
         if profile.canUndoRecalibration {
-            HStack(spacing: 12) {
+            // The «Deshacer» state doesn't fit `LiquidListRow` (its trailing slot is a plain
+            // String, not a button) — hand-built to the same row geometry.
+            HStack(spacing: LiquidSpace.s300) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Recalibrate recovery").font(StrandFont.body).foregroundStyle(theme.ink)
-                    Text("Recalibrada el \(recalibratedDateText)")
-                        .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                    Text(String(localized: "Recalibrate recovery"))
+                        .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
+                    Text(String(localized: "Recalibrada el \(recalibratedDateText)"))
+                        .font(LiquidType.unidadCompacta).foregroundStyle(LiquidColor.tinta500)
                 }
-                Spacer(minLength: 8)
-                Button("Deshacer") { model.undoRecalibrateBaseline() }
-                    .font(StrandFont.subhead).foregroundStyle(theme.critical)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                Button(String(localized: "Deshacer")) { model.undoRecalibrateBaseline() }
+                    .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.negativo)
                     .buttonStyle(.plain)
             }
-            .frame(minHeight: 44)
+            .padding(.vertical, 11)  // token-exempt: paridad fila LiquidListRow (padding interno no público)
+            .padding(.horizontal, LiquidSpace.s100)
         } else {
-            Button { confirmRecalibrate = true } label: {
-                HStack(spacing: 12) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Recalibrate recovery").font(StrandFont.body).foregroundStyle(theme.ink)
-                        Text("Restarts your calibration from today if your baseline went wrong (band change, an anomalous stretch).")
-                            .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    Image(systemName: "arrow.clockwise")
-                        .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkSecondary)
-                }
-                .frame(minHeight: 44)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .instrumentoConfirm(
-                isPresented: $confirmRecalibrate,
-                title: String(localized: "¿Recalibrar tu recuperación?"),
-                context: String(localized: "RECOVERY · BASELINE"),
-                message: String(localized: "Tu línea base se re-anclará desde hoy y se ignorarán tus noches anteriores. Perderás tu número de recuperación unos días mientras se recalibra. Tus datos e historial no se borran."),
-                actions: [
-                    .init(String(localized: "Dejar la base como está"), role: .primary),
-                    .init(String(localized: "Recalibrar desde hoy"), role: .destructive) { model.recalibrateBaseline() }
-                ]
-            )
+            LiquidListRow(
+                title: String(localized: "Recalibrate recovery"),
+                subtitle: String(localized: "Restarts your calibration from today if your baseline went wrong (an anomalous stretch)."),
+                tone: LiquidColor.verdePrimario,
+                divider: false) { confirmRecalibrate = true }
         }
     }
 
@@ -423,120 +432,65 @@ private struct AjustesLanding: View {
         case .idle:
             EmptyView()
         case .downloading(let completed, let total):
-            HStack(spacing: 6) {
+            HStack(spacing: LiquidSpace.s150) {
                 ProgressView().controlSize(.small)
-                Text("Downloading \(completed)/\(total)…")
+                Text(String(localized: "Downloading \(completed)/\(total)…"))
             }
-            .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+            .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta700)
         case .completed(let matched, let total):
             Text(total == 0
                  ? String(localized: "Already fully downloaded.")
                  : String(localized: "Download complete: \(matched)/\(total) exercises with video."))
-                .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta700)
         case .failed:
-            Text("Couldn't download. Check your connection and try again.")
-                .font(StrandFont.caption).foregroundStyle(theme.critical)
+            Text(String(localized: "Couldn't download. Check your connection and try again."))
+                .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.negativo)
         }
     }
 
-    /// Live units summary, e.g. «Metric · °C» (A5).
-    private var unitsSubtitle: Text {
-        let sys = Text(unitSystem == .metric ? "Metric" : "Imperial")
+    /// Live units summary, e.g. «Metric · °C».
+    private var unitsSubtitle: String {
+        let sys = unitSystem == .metric ? String(localized: "Metric") : String(localized: "Imperial")
         let temp: String
         switch temperatureRaw {
         case TemperatureUnit.celsius.rawValue:    temp = "°C"
         case TemperatureUnit.fahrenheit.rawValue: temp = "°F"
         default:                                  temp = "°C/°F"
         }
-        return sys + Text(verbatim: " · \(temp)")
+        return "\(sys) · \(temp)"
     }
 
-    // MARK: - Section scaffolding (Instrumento: overline + rows on paper, no card-in-card)
+    // MARK: - Section scaffolding (Liquid: inset franja overline, DataSourcesView's pattern)
 
     @ViewBuilder
-    private func section<Rows: View>(_ title: LocalizedStringKey, @ViewBuilder rows: () -> Rows) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                .frame(maxWidth: .infinity, alignment: .leading)
+    private func section<Rows: View>(_ title: String, @ViewBuilder rows: () -> Rows) -> some View {
+        VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+            Text(verbatim: title)
+                .font(LiquidType.franja).tracking(LiquidType.franjaTracking).textCase(.uppercase)
+                .foregroundStyle(LiquidColor.tinta500)
+                .accessibilityAddTraits(.isHeader)
             rows()
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private var divider: some View { Divider().overlay(theme.hairline) }
-
-    /// A label-left / control-right form row.
-    private func formRow<Control: View>(_ label: LocalizedStringKey,
-                                        @ViewBuilder control: () -> Control) -> some View {
-        HStack(alignment: .center, spacing: 16) {
-            Text(label).font(StrandFont.body).foregroundStyle(theme.ink)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            control()
-        }
-        .frame(minHeight: 36)
-    }
-
-    /// A label-left / value + chevron row that opens a wheel sheet (A1/A2).
-    private func valueRow(_ label: LocalizedStringKey, value: String, a11y: String,
-                          open: @escaping () -> Void) -> some View {
-        Button(action: open) {
-            HStack(spacing: 12) {
-                Text(label).font(StrandFont.body).foregroundStyle(theme.ink)
-                Spacer(minLength: 8)
-                Text(value).font(StrandFont.bodyNumber).foregroundStyle(theme.ink)
-                StrandIcon.disclosure.image
-                    .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
-            }
-            .frame(minHeight: 44)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(a11y)
-        .accessibilityHint("Opens a picker")
-    }
-
-    /// A quiet drill row: ink label (+ optional subtitle) + chevron, whole row tappable.
-    private func navRow(_ label: LocalizedStringKey, subtitle: Text? = nil,
-                        open: @escaping () -> Void) -> some View {
-        Button(action: open) {
-            HStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(label).font(StrandFont.body).foregroundStyle(theme.ink)
-                    if let subtitle {
-                        subtitle.font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                    }
-                }
-                Spacer(minLength: 8)
-                StrandIcon.disclosure.image
-                    .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
-            }
-            .frame(minHeight: 44)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityElement(children: .combine)
-    }
-
-    // MARK: - Sibling sheet (DataSources is light · Automations / Support still dark, pinned to .dark)
+    // MARK: - Sibling sheet (Data & sources · About & support — each owns its own background)
 
     @ViewBuilder
-    private func darkSheet(_ screen: AjustesDarkScreen) -> some View {
+    private func sheetContent(_ screen: AjustesSheetScreen) -> some View {
         switch screen {
         case .dataSources:
-            // Reskinned to the light «Instrumento» language (FER-338): a light sheet with its own
-            // NavigationStack (so «Ver datos importados» pushes the Apple Health viewer). The theme is
-            // injected at the root (it doesn't cross the `.sheet` boundary, FER-162); a light sheet from
-            // a light tab keeps the status bar honest (no dark pin needed).
             NavigationStack {
                 DataSourcesView()
                     .navigationBarTitleDisplayMode(.inline)
-                    .toolbarBackground(theme.paper, for: .navigationBar)
+                    .toolbarBackground(LiquidColor.papelAlto, for: .navigationBar)
                     .toolbar {
                         ToolbarItem(placement: .confirmationAction) {
-                            Button("Done") { darkScreen = nil }.foregroundStyle(theme.ink)
+                            Button(String(localized: "Done")) { presentedSheet = nil }
+                                .foregroundStyle(LiquidColor.tinta900)
                         }
                     }
             }
-            .instrumentoTheme(theme)
             .environment(model)
             .environmentObject(repo)
             .environmentObject(health)
@@ -544,19 +498,17 @@ private struct AjustesLanding: View {
             .environmentObject(autoBackup)
             .preferredColorScheme(.light)
         case .support:
-            // Reskinned to light «Instrumento» (FER-67): a light sheet, theme injected at the root
-            // (it doesn't cross the `.sheet` boundary, FER-162); no dark pin needed.
             NavigationStack {
                 SupportView()
                     .navigationBarTitleDisplayMode(.inline)
-                    .toolbarBackground(theme.paper, for: .navigationBar)
+                    .toolbarBackground(LiquidColor.papelAlto, for: .navigationBar)
                     .toolbar {
                         ToolbarItem(placement: .confirmationAction) {
-                            Button("Done") { darkScreen = nil }.foregroundStyle(theme.ink)
+                            Button(String(localized: "Done")) { presentedSheet = nil }
+                                .foregroundStyle(LiquidColor.tinta900)
                         }
                     }
             }
-            .instrumentoTheme(theme)
             .environment(model)
             .environmentObject(repo)
             .environmentObject(health)
@@ -567,50 +519,53 @@ private struct AjustesLanding: View {
     }
 }
 
-// MARK: - Profile wheel (A1: a focused wheel for Age / Weight / Height)
+// MARK: - Profile wheel (a focused wheel for Age / Weight / Height)
 
 /// «Editar perfil» — a single value behind a `Picker(.wheel)`, honouring the imperial display
-/// preference (the wheel itself shows lb / ft·in and writes the SI equivalent back). Replaces the
-/// per-row steppers on the landing. Stored data is unchanged; only how it's entered.
+/// preference (the wheel itself shows lb / ft·in and writes the SI equivalent back). Stored data
+/// is unchanged; only how it's entered.
 private struct ProfileWheelSheet: View {
     let wheel: ProfileWheel
-    @Environment(\.instrumentoTheme) private var theme
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var profile: ProfileStore
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
     private var unitSystem: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Profile").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                Text(title).font(StrandFont.title1).foregroundStyle(theme.ink)
+        VStack(alignment: .leading, spacing: LiquidSpace.s600) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s100) {
+                Text(String(localized: "Profile"))
+                    .font(LiquidType.franja).tracking(LiquidType.franjaTracking).textCase(.uppercase)
+                    .foregroundStyle(LiquidColor.tinta500)
+                Text(verbatim: title)
+                    .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
+                    .foregroundStyle(LiquidColor.tinta900)
             }
 
             wheelBody
                 .frame(maxWidth: .infinity)
         }
-        .padding(CenitMetrics.screenPadding)
+        .padding(LiquidSpace.s600)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.paper.ignoresSafeArea())
+        .background { LiquidSheetFondo().ignoresSafeArea() }
         .fittedSheet()
     }
 
-    private var title: LocalizedStringKey {
+    private var title: String {
         switch wheel {
-        case .age: return "Age"
-        case .weight: return "Weight"
-        case .height: return "Height"
+        case .age: return String(localized: "Age")
+        case .weight: return String(localized: "Weight")
+        case .height: return String(localized: "Height")
         }
     }
 
     @ViewBuilder private var wheelBody: some View {
         switch wheel {
         case .age:
-            Picker("Age", selection: $profile.age) {
+            Picker(String(localized: "Age"), selection: $profile.age) {
                 ForEach(13...100, id: \.self) { Text("\($0)").tag($0) }
             }
-            .pickerStyle(.wheel).labelsHidden().tint(theme.ink)
+            .pickerStyle(.wheel).labelsHidden().tint(LiquidColor.tinta900)
         case .weight:
             if unitSystem == .imperial {
                 let pounds = Binding<Double>(
@@ -618,17 +573,17 @@ private struct ProfileWheelSheet: View {
                     set: { profile.weightKg = UnitFormatter.poundsToKg($0) })
                 let opts = Array(stride(from: 66.0, through: 551.0, by: 1))
                 let lb = snapped(pounds, options: opts)
-                Picker("Weight in pounds", selection: lb) {
+                Picker(String(localized: "Weight in pounds"), selection: lb) {
                     ForEach(opts, id: \.self) { Text("\(Int($0)) lb").tag($0) }
                 }
-                .pickerStyle(.wheel).labelsHidden().tint(theme.ink)
+                .pickerStyle(.wheel).labelsHidden().tint(LiquidColor.tinta900)
             } else {
                 let opts = Array(stride(from: 30.0, through: 250.0, by: 0.5))
                 let kg = snapped($profile.weightKg, options: opts)
-                Picker("Weight in kilograms", selection: kg) {
+                Picker(String(localized: "Weight in kilograms"), selection: kg) {
                     ForEach(opts, id: \.self) { Text(String(format: "%.1f kg", $0)).tag($0) }
                 }
-                .pickerStyle(.wheel).labelsHidden().tint(theme.ink)
+                .pickerStyle(.wheel).labelsHidden().tint(LiquidColor.tinta900)
             }
         case .height:
             if unitSystem == .imperial {
@@ -637,20 +592,20 @@ private struct ProfileWheelSheet: View {
                     set: { profile.heightCm = $0 * UnitFormatter.centimetersPerInch })
                 let opts = Array(stride(from: 47.0, through: 91.0, by: 1))
                 let inches = snapped(inchesValue, options: opts)
-                Picker("Height in inches", selection: inches) {
+                Picker(String(localized: "Height in inches"), selection: inches) {
                     ForEach(opts, id: \.self) { v -> Text in
                         let ft = Int(v) / 12, inch = Int(v) % 12
                         return Text("\(ft)′ \(inch)″")
                     }
                 }
-                .pickerStyle(.wheel).labelsHidden().tint(theme.ink)
+                .pickerStyle(.wheel).labelsHidden().tint(LiquidColor.tinta900)
             } else {
                 let opts = Array(stride(from: 120.0, through: 230.0, by: 1))
                 let cm = snapped($profile.heightCm, options: opts)
-                Picker("Height in centimetres", selection: cm) {
+                Picker(String(localized: "Height in centimetres"), selection: cm) {
                     ForEach(opts, id: \.self) { Text("\(Int($0)) cm").tag($0) }
                 }
-                .pickerStyle(.wheel).labelsHidden().tint(theme.ink)
+                .pickerStyle(.wheel).labelsHidden().tint(LiquidColor.tinta900)
             }
         }
     }
@@ -664,13 +619,12 @@ private struct ProfileWheelSheet: View {
     }
 }
 
-// MARK: - Max heart rate (A2: auto / manual)
+// MARK: - Max heart rate (auto / manual)
 
 /// «FC máxima» — a focused sheet over `profile.hrMaxOverride` (0 = auto). The segmented control is pure
 /// UI sugar on that one value: Auto shows the Tanaka estimate large; Manual reveals a wheel writing the
 /// override (and notes it's anulando the auto estimate).
 private struct MaxHRSheet: View {
-    @Environment(\.instrumentoTheme) private var theme
     @EnvironmentObject private var profile: ProfileStore
     /// Local mode toggle. Drives the override: Auto → 0; Manual → keep/seed a concrete bpm.
     @State private var manual = false
@@ -679,15 +633,19 @@ private struct MaxHRSheet: View {
     private var autoBpm: Int { Int((208 - 0.7 * Double(profile.age)).rounded()) }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Profile").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                Text("Max heart rate").font(StrandFont.title1).foregroundStyle(theme.ink)
+        VStack(alignment: .leading, spacing: LiquidSpace.s600) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s100) {
+                Text(String(localized: "Profile"))
+                    .font(LiquidType.franja).tracking(LiquidType.franjaTracking).textCase(.uppercase)
+                    .foregroundStyle(LiquidColor.tinta500)
+                Text(String(localized: "Max heart rate"))
+                    .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
+                    .foregroundStyle(LiquidColor.tinta900)
             }
 
-            Picker("Mode", selection: $manual) {
-                Text("Automatic").tag(false)
-                Text("Manual").tag(true)
+            Picker(String(localized: "Mode"), selection: $manual) {
+                Text(String(localized: "Automatic")).tag(false)
+                Text(String(localized: "Manual")).tag(true)
             }
             .pickerStyle(.segmented)
             .onChange(of: manual) { _, isManual in
@@ -696,69 +654,74 @@ private struct MaxHRSheet: View {
             }
 
             if manual {
-                Picker("Maximum heart rate", selection: $profile.hrMaxOverride) {
+                Picker(String(localized: "Maximum heart rate"), selection: $profile.hrMaxOverride) {
                     ForEach(100...230, id: \.self) { Text("\($0)").tag($0) }
                 }
-                .pickerStyle(.wheel).labelsHidden().tint(theme.ink)
+                .pickerStyle(.wheel).labelsHidden().tint(LiquidColor.tinta900)
                 .frame(maxWidth: .infinity)
-                Text("Overriding the automatic estimate (\(autoBpm)).")
-                    .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
+                Text(String(localized: "Overriding the automatic estimate (\(autoBpm))."))
+                    .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta700)
             } else {
-                VStack(alignment: .center, spacing: 4) {
+                VStack(alignment: .center, spacing: LiquidSpace.s100) {
                     Text("\(autoBpm)")
-                        .font(StrandFont.number(48)).foregroundStyle(theme.ink)
-                    Text("bpm · Tanaka").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                        .font(LiquidType.displayL).tracking(LiquidType.displayLTracking)
+                        .foregroundStyle(LiquidColor.tinta900)
+                    Text(String(localized: "bpm · Tanaka"))
+                        .font(LiquidType.clausulaCampo).foregroundStyle(LiquidColor.tinta500)
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 24)
-                Text("Estimated from your age (208 − 0.7 × age). Set it manually if you know your true max.")
-                    .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
+                .padding(.vertical, LiquidSpace.s600)
+                Text(String(localized: "Estimated from your age (208 − 0.7 × age). Set it manually if you know your true max."))
+                    .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta700)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .padding(CenitMetrics.screenPadding)
+        .padding(LiquidSpace.s600)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.paper.ignoresSafeArea())
+        .background { LiquidSheetFondo().ignoresSafeArea() }
         .fittedSheet()
         .onAppear { manual = profile.hrMaxOverride > 0 }
     }
 }
 
-// MARK: - Units & format (light sheet)
+// MARK: - Units & format (Liquid sheet)
 
-/// «Unidades y formato» — the display-only unit prefs, migrated from `SettingsView.unitsCard` into a
-/// light «Instrumento» sheet. Nothing stored changes; this only changes how values are shown.
+/// «Unidades y formato» — the display-only unit prefs. Nothing stored changes; this only changes
+/// how values are shown.
 private struct UnidadesSheet: View {
-    @Environment(\.instrumentoTheme) private var theme
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
     @AppStorage(UnitPrefs.temperatureKey) private var temperatureRaw = ""
 
     var body: some View {
-        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Display").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                Text("Units & format").font(StrandFont.title1).foregroundStyle(theme.ink)
+        VStack(alignment: .leading, spacing: LiquidSpace.s600) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s100) {
+                Text(String(localized: "Display"))
+                    .font(LiquidType.franja).tracking(LiquidType.franjaTracking).textCase(.uppercase)
+                    .foregroundStyle(LiquidColor.tinta500)
+                Text(String(localized: "Units & format"))
+                    .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
+                    .foregroundStyle(LiquidColor.tinta900)
             }
-            Text("Your data is always stored the same way: this only changes how distances, weights, heights and temperatures are shown.")
-                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+            Text(String(localized: "Your data is always stored the same way: this only changes how distances, weights, heights and temperatures are shown."))
+                .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta700)
                 .fixedSize(horizontal: false, vertical: true)
 
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 16) {
-                    Text("Measurement system").font(StrandFont.body).foregroundStyle(theme.ink)
+            VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+                HStack(spacing: LiquidSpace.s400) {
+                    Text(String(localized: "Measurement system")).font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                    Picker("Measurement system", selection: $unitSystemRaw) {
-                        Text("Metric").tag(UnitSystem.metric.rawValue)
-                        Text("Imperial").tag(UnitSystem.imperial.rawValue)
+                    Picker(String(localized: "Measurement system"), selection: $unitSystemRaw) {
+                        Text(String(localized: "Metric")).tag(UnitSystem.metric.rawValue)
+                        Text(String(localized: "Imperial")).tag(UnitSystem.imperial.rawValue)
                     }
                     .labelsHidden().pickerStyle(.segmented).fixedSize()
                 }
-                Divider().overlay(theme.hairline)
-                HStack(spacing: 16) {
-                    Text("Temperature").font(StrandFont.body).foregroundStyle(theme.ink)
+                LiquidCapilar(eje: .horizontal)
+                HStack(spacing: LiquidSpace.s400) {
+                    Text(String(localized: "Temperature")).font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                    Picker("Temperature", selection: $temperatureRaw) {
-                        Text("Match").tag("")
+                    Picker(String(localized: "Temperature"), selection: $temperatureRaw) {
+                        Text(String(localized: "Match")).tag("")
                         Text("°C").tag(TemperatureUnit.celsius.rawValue)
                         Text("°F").tag(TemperatureUnit.fahrenheit.rawValue)
                     }
@@ -766,9 +729,9 @@ private struct UnidadesSheet: View {
                 }
             }
         }
-        .padding(CenitMetrics.screenPadding)
+        .padding(LiquidSpace.s600)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.paper.ignoresSafeArea())
+        .background { LiquidSheetFondo().ignoresSafeArea() }
         .fittedSheet()
     }
 }
