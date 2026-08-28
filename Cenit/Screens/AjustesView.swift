@@ -198,8 +198,9 @@ private struct AjustesLanding: View {
                 LiquidListRow(title: String(localized: "Height"), trailing: heightDisplay,
                               a11yHint: String(localized: "Opens a picker")) { profileWheel = .height }
                 LiquidListRow(title: String(localized: "Max heart rate"), trailing: maxHRDisplay,
-                              tone: LiquidColor.rosa, divider: false,
-                              a11yHint: String(localized: "Opens a picker")) { showMaxHR = true }
+                              tone: LiquidColor.rosa,
+                              a11yHint: String(localized: "Opens a picker"),
+                              divider: false) { showMaxHR = true }
             }
             .liquidTarjetaSeccion(padding: LiquidSpace.s300)
         }
