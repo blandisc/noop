@@ -14744,6 +14744,23 @@
         }
       }
     },
+    "Decrease" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Decrease"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disminuir"
+          }
+        }
+      }
+    },
     "Decrease added weight" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -21659,6 +21676,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "En tu rango de siempre."
+          }
+        }
+      }
+    },
+    "Increase" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Increase"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aumentar"
           }
         }
       }
