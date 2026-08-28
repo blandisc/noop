@@ -26,6 +26,10 @@ el mismo PR** que la implementa (una línea basta: fecha, decisión, por qué).
   CSO+CDO (FER-149) ya ejecutados.
 - **2026-08 · Anomalías vitales:** solo FC en reposo (FER-48).
 - **Señales:** temperatura de piel reemplaza a SpO₂.
+- **2026-08-28 · Foco gestos (FER-187).** Además del «⤢» y el grabber-tap: (a) tap del cromo
+  sin celdas de la tarjeta activa (thumb + nombre; no las filas/TapZones de peso-reps) entra
+  a foco; (b) arrastre del grabber ⌄ hacia abajo sale. El DragGesture vive SOLO en el
+  grabber de `FocoCabecera`, nunca sobre el ScrollView de Foco.
 
 ## Proceso
 

@@ -10,7 +10,9 @@ import StrandTraining
 // `RoutineSheetLiveCabecera.swift`, `HojaSesionViva.enterFoco()` en `RoutineSheetLiveLogic.swift`) —
 // las tres llaman al MISMO gesto, con continuidad geométrica vía `focoNS`/`namespaceId`
 // (`matchedGeometryEffect`, compartido con el fondo invisible que `HojaSesionViva.focoDoor(_:)`
-// cuelga detrás de la tarjeta activa). Este archivo es D1 (captura) · D2 (descanso) · D3 (HECHO),
+// cuelga detrás de la tarjeta activa). FER-187: también el tap del cromo (thumb+nombre) de la
+// tarjeta activa, y el arrastre-hacia-abajo del grabber (`FocoCabecera.onArrastrarCerrar`) — el
+// DragGesture NO vive sobre el ScrollView. Este archivo es D1 (captura) · D2 (descanso) · D3 (HECHO),
 // compuestos con `FocoHeroe`/`FocoCabecera` (StrandDesign/Entrenar, F3) — NO se redibujan.
 //
 // REGLA DURA: cero identidad por índice. `focusDoneRunId`/`pendingFocusDoneRunId` (en
@@ -72,6 +74,7 @@ struct HojaFoco: View {
         if let run = vivo.session.current {
             let ei = vivo.session.currentIndex
             FocoCabecera(titulo: focoTitulo(ei: ei), onCerrar: salir,
+                        onArrastrarCerrar: salir,
                         etiquetaCerrar: String(localized: "Close focus mode"))
             ScrollView {
                 VStack(spacing: 0) {
@@ -111,6 +114,7 @@ struct HojaFoco: View {
             // que ya exigen `!session.isComplete` — pero una serie pendiente que el motor no resuelve
             // aquí no debe mostrar una pantalla en blanco.
             FocoCabecera(titulo: String(localized: "Focus"), onCerrar: salir,
+                        onArrastrarCerrar: salir,
                         etiquetaCerrar: String(localized: "Close focus mode"))
             VStack(spacing: CenitMetrics.gap) {
                 Spacer(minLength: 0)
@@ -358,6 +362,7 @@ struct HojaFoco: View {
         let esRonda = vivo.restOwnerExerciseIndex.map { vivo.session.isInSuperset($0) } ?? false
         return VStack(spacing: 0) {
             FocoCabecera(titulo: String(localized: "Rest"), onCerrar: salir,
+                        onArrastrarCerrar: salir,
                         etiquetaCerrar: String(localized: "Close focus mode"))
             ScrollView {
                 VStack(spacing: 0) {
@@ -420,6 +425,7 @@ struct HojaFoco: View {
         let nextRun = isLast ? nil : vivo.session.current
         return VStack(spacing: 0) {
             FocoCabecera(titulo: String(localized: "Done heading"), onCerrar: salir,
+                        onArrastrarCerrar: salir,
                         etiquetaCerrar: String(localized: "Close focus mode"))
             VStack(spacing: 0) {
                 Spacer(minLength: 0)

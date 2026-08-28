@@ -37,20 +37,19 @@ struct HojaTarjetaEjercicioSesion: View {
         }
         .liquidEntrada()
         .accessibilityElement(children: .contain)
-        // D0 (FER-170 · F5): la acción de VoiceOver, alcanzable sin ver el «⤢» — respaldo del mismo
-        // gesto que el botón de `chead` y el «Enfoque» del «···» (tres puertas, un solo destino).
+        // D0 (FER-170 · F5) + FER-187: la acción de VoiceOver, alcanzable sin ver el «⤢» — respaldo
+        // del mismo gesto que el botón de `chead`, el tap del cromo (thumb+nombre) y el «Enfoque»
+        // del «···» (puertas, un solo destino).
         .accessibilityAction(named: Text("Focus")) { vivo.enterFoco() }
     }
 
     private var chead: some View {
         HStack(spacing: 10) {
-            Button { vivo.detailExercise = ExerciseCatalog.byID(run.exerciseId) } label: {
-                SessionRunThumb(exerciseId: run.exerciseId, side: 40)
-            }
-            .buttonStyle(.plain)
-            .accessibilityHint(Text("Opens the exercise"))
-            Text(run.name).font(StrandFont.headline).foregroundStyle(vivo.sheet.theme.ink)
-                .frame(maxWidth: .infinity, alignment: .leading).lineLimit(1)
+            // FER-187 · colisión 1: tap-para-foco SOLO en el cromo sin celdas (thumb + nombre).
+            // Las filas `HojaFilaSerie` / `TapZonesSesion` NO se tocan — peso/reps siguen editando.
+            // Esta vista (`HojaTarjetaEjercicioSesion`) solo se monta cuando `ei == accordionIndex`
+            // (tarjeta activa); una plegada sigue en `HojaPlegadaSesion` (select/peek).
+            cromoSinCeldas
             // D0 (FER-170 · F5): «⤢» — la puerta directa a Foco (mock `hoja-mapa.html` D0), junto al
             // «···» que ya trae «Enfoque» como respaldo. Solo sobre la tarjeta que SÍ puede enfocarse
             // (`puedeEnfocar` — no en sesión llena/zombie/acta).
@@ -73,6 +72,30 @@ struct HojaTarjetaEjercicioSesion: View {
                 isPresented: Binding(get: { vivo.menuExerciseIndex == ei }, set: { if !$0 { vivo.menuExerciseIndex = nil } }),
                 items: vivo.exerciseMenuItems(ei: ei, run: run)
             )
+        }
+    }
+
+    /// Thumb + nombre: con `puedeEnfocar`, un tap entra a foco (FER-187); si no, el thumb abre el
+    /// detalle del ejercicio como antes.
+    @ViewBuilder private var cromoSinCeldas: some View {
+        let thumb = SessionRunThumb(exerciseId: run.exerciseId, side: 40)
+        let nombre = Text(run.name).font(StrandFont.headline).foregroundStyle(vivo.sheet.theme.ink)
+            .frame(maxWidth: .infinity, alignment: .leading).lineLimit(1)
+        if vivo.puedeEnfocar {
+            HStack(spacing: 10) {
+                thumb
+                nombre
+            }
+            .contentShape(Rectangle())
+            .onTapGesture { vivo.enterFoco() }
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(.isButton)
+            .accessibilityHint(Text("Focus"))
+        } else {
+            Button { vivo.detailExercise = ExerciseCatalog.byID(run.exerciseId) } label: { thumb }
+                .buttonStyle(.plain)
+                .accessibilityHint(Text("Opens the exercise"))
+            nombre
         }
     }
 

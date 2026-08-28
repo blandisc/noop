@@ -66,10 +66,11 @@ extension HojaSesionViva {
     /// R2(a): la puerta a Foco — paridad `SessionStatsBar.onFocus` (`LiveStrengthSheet.puedeEnfocar`).
     var puedeEnfocar: Bool { session.summary == nil && !session.isComplete && !isZombie }
 
-    /// D0 (FER-170 · F5): la ÚNICA puerta a Foco — la tocan el «⤢» de la cabecera, el «⤢» de la
-    /// tarjeta activa y el «Enfoque» del «···» (tres puertas, un solo destino, mismo gesto). Reduce
-    /// Motion: sin `withAnimation` la transacción no anima — el `matchedGeometryEffect` compartido
-    /// entre la tarjeta y `HojaFoco` (`focoNS`) simplemente salta al estado final, corte seco.
+    /// D0 (FER-170 · F5) + FER-187: la ÚNICA puerta a Foco — la tocan el «⤢» de la cabecera, el
+    /// «⤢» de la tarjeta activa, el tap del cromo (thumb+nombre) de la tarjeta activa, y el
+    /// «Enfoque» del «···» (puertas, un solo destino, mismo gesto). Reduce Motion: sin
+    /// `withAnimation` la transacción no anima — el `matchedGeometryEffect` compartido entre la
+    /// tarjeta y `HojaFoco` (`focoNS`) simplemente salta al estado final, corte seco.
     func enterFoco() {
         withAnimation(reduceMotion ? nil : .snappy) { focusMode = true }
     }
