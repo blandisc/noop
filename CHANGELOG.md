@@ -20,6 +20,11 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **Editar una sesión ya no borra tu esfuerzo percibido (RPE) / Editing a session no longer erases your perceived effort (RPE)** (FER-172).
+  **ES** — Corregir el peso o las repeticiones de un entrenamiento guardado (desde «Mis entrenamientos» › Editar) ya no borraba en silencio el RPE (6–10) que capturaste en vivo durante la sesión — el editor lo reconstruía todo desde cero y lo dejaba en blanco. Ahora ese dato, y el descanso real medido tras cada serie, viajan intactos: el editor sigue tocando solo peso/reps, todo lo demás llega igual que se guardó.
+  **EN** — Correcting a saved workout's weight or reps (from "My workouts" › Edit) used to silently wipe the RPE (6–10) you captured live during the session — the editor rebuilt every set from scratch and left it blank. That value, and the real rest measured after each set, now travel through untouched: the editor still only edits weight/reps, everything else arrives exactly as it was saved.
+  ([WorkoutEditSheet.swift](Cenit/Screens/WorkoutEditSheet.swift))
+
 - **Sesión rápida vacía viste la piel de La Hoja / The empty quick-session state gains The Sheet's skin** (FER-191).
   **ES** — El estado «sin plan» de la sesión guiada (buscar o tomar lo fresco de hoy) ya no se ve suelto del resto de Entrenar: el buscador y cada sugerencia por músculo fresco viven ahora en el vidrio de La Hoja, y cada sugerencia es una cápsula completa, teñida por su familia de movimiento, que se toca entera para agregarla — ya no un renglón con un botón «Agregar» aparte. La lógica no cambió: la misma frescura muscular de siempre, el mismo buscador de la biblioteca.
   **EN** — The guided session's "no plan yet" state (search, or grab what's fresh today) no longer looks stranded from the rest of Train: the search field and each fresh-muscle suggestion now sit in The Sheet's glass, and every suggestion is one full capsule — tinted by its movement family — that you tap anywhere to add, instead of a row with a separate "Add" button. The logic didn't change: same muscle-freshness math, same library search.
