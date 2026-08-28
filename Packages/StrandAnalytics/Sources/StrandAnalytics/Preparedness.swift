@@ -498,9 +498,11 @@ public enum Preparedness {
         /// discounted from the asOf-day resting-HR value ONLY, so a normal luteal-phase RHR bump isn't
         /// misread as "out of range". Never applied to the baseline series (see field doc on `cyclePhase`).
         public var lutealRHRAllowanceBpm: Double = 2.0
-        /// Maijala 2019 BMC Women's Health: luteal-phase nightly skin-temp shift ≈ +0.30 °C — discounted
-        /// from the asOf-day HIGH-side temperature deviation only (never the low/cold side, and never the
-        /// baseline series).
+        /// Luteal-phase nightly skin-temp shift ≈ +0.3 °C — discounted from the asOf-day HIGH-side
+        /// temperature deviation only (never the low/cold side, and never the baseline series). Site-matched
+        /// citation for WRIST skin temp (what Apple Watch measures): Shilaih et al. 2018, Bioscience Reports
+        /// 38(6):BSR20171279 (doi:10.1042/BSR20171279): early-luteal wrist temp +0.33 °C vs the fertile
+        /// window, n=136. (Maijala 2019, finger/Oura +0.30 °C, is the corroborating finger-site value.)
         public var lutealTempAllowanceC: Double = 0.3
         // Sleep axis (v3 — graded vs need, not the binary 6h cliff). `low` when the night is short
         // vs the personal need OR efficiency is poor. Need = a population FLOOR here (Hirshkowitz

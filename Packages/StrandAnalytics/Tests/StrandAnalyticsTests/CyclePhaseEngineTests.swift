@@ -77,6 +77,25 @@ final class CyclePhaseEngineTests: XCTestCase {
         XCTAssertEqual(CyclePhaseEngine.estimate(all, asOf: all.last!.day), .noClearPattern)
     }
 
+    /// FER-182: the `tempNoiseFloorC` (0.05 °C) floor is placed for the Apple Watch's overnight wrist-temp
+    /// resolution — it must pass a realistic nightly swing and only block a genuinely blunted signal.
+    /// A physiologic Apple wrist-temp deviation oscillates ~0.2–0.5 °C peak-to-peak; a swing of amp 0.25
+    /// (robust σ ≈ 0.18 °C, well above the 0.05 floor) must NOT be dropped to `.noClearPattern`, while a
+    /// near-flat signal below the floor must be. This is the check the CSO asked for (FER-181).
+    func testNoiseFloorClearsRealisticAppleSignalButBlocksFlat() {
+        // Realistic Apple wrist-temp swing (amp 0.25 °C), 56 usable nights → clears the floor and estimates.
+        let (realistic, today) = nights(count: 56, amp: 0.25)
+        if case .noClearPattern = CyclePhaseEngine.estimate(realistic, asOf: today) {
+            XCTFail("a realistic Apple wrist-temp swing (σ ≈ 0.18 °C) must clear the 0.05 °C noise floor")
+        }
+        guard case .estimated = CyclePhaseEngine.estimate(realistic, asOf: today) else {
+            return XCTFail("with 56 usable nights and a clear rhythm the engine should estimate")
+        }
+        // A near-flat signal (amp 0.03 °C → robust σ ≈ 0.02 °C, below the floor) is honestly no clear pattern.
+        let (flat, flatToday) = nights(count: 56, amp: 0.03)
+        XCTAssertEqual(CyclePhaseEngine.estimate(flat, asOf: flatToday), .noClearPattern)
+    }
+
     func testTonightAtTypicalLevelDeclinesToLean() {
         // Oscillating window, but tonight sits at the median (≈0) → decline to lean.
         let (all, today) = nights(count: 56, tonightTemp: 0.0)
@@ -147,5 +166,28 @@ final class CyclePhaseEngineTests: XCTestCase {
         XCTAssertEqual(CyclePhaseEngine.weightTemp, 0.75, accuracy: 1e-9)
         XCTAssertEqual(CyclePhaseEngine.weightRHR, 0.25, accuracy: 1e-9)
         XCTAssertEqual(CyclePhaseEngine.weightTemp + CyclePhaseEngine.weightRHR, 1.0, accuracy: 1e-9)
+    }
+
+    // MARK: - Consent gate (FER-183): the verdict only sees the phase when the user opted IN
+
+    /// The recovery verdict's luteal discount is gated on `gatedPhase`. Opted OUT (the default), the phase
+    /// the verdict sees must be `nil` EVEN when the raw estimate is a clear luteal lean — so a user who never
+    /// turned on the experiment never has their number silently adjusted (reverts FER-181/H8). Opted IN, the
+    /// verdict sees the estimated phase.
+    func testGatedPhaseIsNilWhenOptedOutEvenIfLuteal() {
+        let (all, today) = nights(count: 56, tonightTemp: 0.3)   // a clear warm night → luteal-lean
+        guard case .estimated(.lutealLean, _, _) = CyclePhaseEngine.estimate(all, asOf: today) else {
+            return XCTFail("fixture should estimate .lutealLean")
+        }
+        XCTAssertNil(CyclePhaseEngine.gatedPhase(optIn: false, nights: all, asOf: today),
+                     "opted out → the verdict must see no phase, so no luteal discount is applied")
+        XCTAssertEqual(CyclePhaseEngine.gatedPhase(optIn: true, nights: all, asOf: today), .lutealLean,
+                       "opted in → the verdict sees the estimated phase")
+    }
+
+    /// Even opted IN, a non-estimated state (still learning, or no clear pattern) gives the verdict `nil`.
+    func testGatedPhaseIsNilWhenNotEstimatedEvenIfOptedIn() {
+        let (learning, lToday) = nights(count: 20)             // under the night gate → .learning
+        XCTAssertNil(CyclePhaseEngine.gatedPhase(optIn: true, nights: learning, asOf: lToday))
     }
 }

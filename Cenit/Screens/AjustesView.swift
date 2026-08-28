@@ -86,6 +86,10 @@ private struct AjustesLanding: View {
     // Sheet drivers.
     @State private var showUnits = false
     @State private var showMaxHR = false
+    // FER-183: «Fase del ciclo» vuelve a ser alcanzable (un control real la abre), ahora VIVA. El
+    // opt-in gobierna, además, si el veredicto aplica el margen lútea (ver Repository, FER-183).
+    @State private var showCyclePhase = false
+    @AppStorage(CyclePhaseExperiment.enabledKey) private var cyclePhaseOn = false
     @AppStorage(WhitespaceMetricsExperiment.enabledKey) private var whitespaceMetrics = false
     /// FER-722: opt-in exercise media download (default off — the first/only exception to offline
     /// for exercise thumbs/loops, gated end-to-end by `MediaDownloadCoordinator`).
@@ -123,6 +127,9 @@ private struct AjustesLanding: View {
         }
         .sheet(isPresented: $showMaxHR) {
             MaxHRSheet().environmentObject(profile)
+        }
+        .sheet(isPresented: $showCyclePhase) {
+            CyclePhaseSheet().environmentObject(repo)
         }
         .sheet(item: $profileWheel) { wheel in
             ProfileWheelSheet(wheel: wheel).environmentObject(profile)
@@ -381,6 +388,13 @@ private struct AjustesLanding: View {
                     } message: {
                         Text(String(localized: "Las animaciones guardadas se borran de tu iPhone. Puedes volver a descargarlas cuando quieras."))
                     }
+                    LiquidCapilar(eje: .horizontal)
+                    LiquidListRow(
+                        title: String(localized: "Cycle phase"),
+                        subtitle: cyclePhaseOn
+                            ? String(localized: "On · adjusts your recovery on luteal days")
+                            : String(localized: "Off · a self-knowledge experiment"),
+                        divider: false) { showCyclePhase = true }
                 }
                 .liquidTarjetaSeccion()
             }
