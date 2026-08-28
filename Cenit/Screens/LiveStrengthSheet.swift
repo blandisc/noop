@@ -1103,10 +1103,10 @@ struct LiveStrengthSheet: View {
             .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        // FER-198 (Ola 2): fondo propio de vidrio El Eje — el `.background(theme.paper)` de antes
-        // era OPACO y hubiera tapado el fondo compartido de `bodyChrome`; SIN tocar el buscador de
-        // frescura ni ninguna otra lógica de esta sección.
-        .entrenarHojaFondo(tono: .neutro)
+        // FER-198 (Ola 2): SIN fondo propio — lo aporta el `.entrenarHojaFondo` compartido de
+        // `bodyChrome` (una sola raíz para las 3 secciones). Un segundo aquí apilaba material y
+        // destello (costura visible); el `.background(theme.paper)` opaco de antes se removió por lo
+        // mismo. Buscador de frescura y demás lógica de esta sección, intactos.
         .safeAreaInset(edge: .top, spacing: 0) { liveHead }
         // FER-82: las sugerencias las gatea el veredicto, así que una lista calculada mientras el
         // veredicto todavía se computaba está vencida en cuanto aterriza. Se recalcula cuando el
