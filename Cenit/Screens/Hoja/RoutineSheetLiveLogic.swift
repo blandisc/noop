@@ -373,21 +373,21 @@ extension HojaSesionViva {
     /// miembro de superserie, que la RONDA que esta serie completaba cierre (mapa D3: «en superserie
     /// solo al cerrar ronda») — un salto de round-robin a un compañero DENTRO de la misma ronda
     /// (`registerCurrentSet`, sin descanso) no cuenta como cierre; se detecta comparando cuántas
-    /// rondas están cerradas antes/después de registrar (`closedSupersetRounds`).
+    /// rondas están cerradas antes/después de registrar (`StrengthSessionModel.closedSupersetRounds`).
     func registerFromFoco() {
         let ei = session.currentIndex
         guard session.runs.indices.contains(ei) else { return }
         let si = session.runs[ei].currentSet
         let inSuperset = session.isInSuperset(ei)
         let members = inSuperset ? session.supersetMembers(at: ei) : []
-        let roundsClosedBefore = inSuperset ? closedSupersetRounds(members: members) : 0
+        let roundsClosedBefore = inSuperset ? session.closedSupersetRounds(members: members) : 0
         let runId = session.runs[ei].id
 
         registerActiveSet(ei: ei, si: si)
 
         let closedNow: Bool
         if inSuperset {
-            closedNow = closedSupersetRounds(members: members) > roundsClosedBefore
+            closedNow = session.closedSupersetRounds(members: members) > roundsClosedBefore
         } else {
             closedNow = session.runs.indices.contains(ei)
                 && !session.runs[ei].sets.contains(where: { $0.kind == .work && !$0.done })
@@ -398,29 +398,6 @@ extension HojaSesionViva {
         case .pending: pendingFocusDoneRunId = runId
         case .immediate: focusDoneRunId = runId
         }
-    }
-
-    /// Cuántas rondas de este bloque de superserie están CERRADAS ahora mismo (todas las filas de
-    /// esa ronda, en TODOS los miembros, `.done`) — mismo criterio que
-    /// `HojaTarjetaSuperserieSesion.rondaCerrada`, como conteo puro para comparar antes/después de
-    /// registrar (`registerFromFoco`). Se detiene en la primera ronda abierta — las rondas cierran
-    /// en orden, nunca fuera de secuencia.
-    func closedSupersetRounds(members: [Int]) -> Int {
-        let total = members.map { session.supersetRounds(at: $0) }.max() ?? 0
-        guard total > 0 else { return 0 }
-        var closed = 0
-        for r in 1...total {
-            var slots = 0, done = 0
-            for ei in members where session.runs.indices.contains(ei) {
-                let work = session.runs[ei].sets.filter { $0.kind == .work }
-                guard r <= work.count else { continue }
-                slots += 1
-                if work[r - 1].done { done += 1 }
-            }
-            guard slots > 0, slots == done else { break }
-            closed += 1
-        }
-        return closed
     }
 
     // MARK: - B9 · corregir una hecha (FER-169)
@@ -590,16 +567,28 @@ extension HojaSesionViva {
         return v.reason == .ceiling && (v.bpmToReady ?? 0) > 0
     }
 
+    /// R2 (ronda 2 del gate, bloqueante — criterio explícito del mapa D2: «toggle TIEMPO/FC»): D2 de
+    /// Foco puede ofrecer los DOS combustibles al usuario, no solo el que el motor eligió — pero solo
+    /// cuando el motor de verdad resolvió un objetivo de FC honesto (`currentRestMode == .heartRate`,
+    /// `computeRestTarget`). Sin él, no hay «vista FC» que enseñar sin inventar un objetivo — el
+    /// toggle simplemente no aparece (mismo principio «sin inventar» de toda la app).
+    var puedeElegirCombustibleDescanso: Bool { session.currentRestMode == .heartRate }
+
     /// La banda de descanso ANCLADA (mock P4): dos combustibles — FC dice la meta («baja a N»,
     /// `RestBand` ya lo pinta desde FER-167), reloj fijo cuando no hay Watch. R13: con razón
     /// `.ceiling` y el pulso TODAVÍA arriba de la meta, la banda no dice «Listo» — dice el tope
     /// honesto y ofrece SEGUIR. R4: la misma función alcanza también a la superserie (Tarjeta.swift
-    /// la monta igual). `esRonda` (R6, ronda 2 del gate): SOLO cambia el rótulo del kicker («REST ·
-    /// ROUND» en vez de «SET N → M») — el headline de meta es idéntico en los dos casos. `large`
-    /// (FER-170 · F5): la variante GRANDE/centrada que pide D2 de Foco — «reusa el RestBand de F2»,
-    /// misma lógica de descanso, solo la piel cambia (paridad `RestBand.large`, ya construido en F2
-    /// para el modo foco vigente que este archivo retira).
-    @ViewBuilder func restBand(esRonda: Bool = false, large: Bool = false) -> some View {
+    /// la monta igual). `esRonda` (R6, ronda 2 del gate FER-168): SOLO cambia el rótulo del kicker
+    /// («REST · ROUND» en vez de «SET N → M») — el headline de meta es idéntico en los dos casos.
+    /// `large` (FER-170 · F5): la variante GRANDE/centrada que pide D2 de Foco — «reusa el RestBand de
+    /// F2», misma lógica de descanso, solo la piel cambia (paridad `RestBand.large`, ya construido en
+    /// F2 para el modo foco vigente que este archivo retira). `forzarTiempo` (ronda 2 del gate FER-170,
+    /// R2): el toggle TIEMPO/FC de D2 — `true` fuerza la vista de RELOJ aunque el motor haya resuelto
+    /// FC (`puedeElegirCombustibleDescanso`); SIN caso nuevo en `RestBand` (F2, sin tocar su API
+    /// pública) — el «reloj de respaldo» que YA existe para el caso sin señal (`restBandTimeBody`,
+    /// alimentado por `session.restEndsAt`, que el motor fija SIEMPRE, en las dos rutas) es la MISMA
+    /// vista que esta rama pide, solo que elegida a propósito en vez de por falta de señal.
+    @ViewBuilder func restBand(esRonda: Bool = false, large: Bool = false, forzarTiempo: Bool = false) -> some View {
         VStack(alignment: large ? .center : .leading, spacing: CenitMetrics.space2) {
             if session.paused {
                 // B5 (FER-169): «pausada» congela el descanso — la banda no sigue diciendo REST/tu
@@ -611,11 +600,11 @@ extension HojaSesionViva {
                     Spacer(minLength: 6)
                     Text("waits with you").font(StrandFont.caption).foregroundStyle(sheet.theme.inkTertiary)
                 }
-                restBandCore(esRonda: esRonda, large: large)
+                restBandCore(esRonda: esRonda, large: large, forzarTiempo: forzarTiempo)
                     .opacity(0.45)   // token-exempt: atenuación transitoria B5 «congelado», sin token de opacidad propio todavía (mismo patrón que el destello R16)
                     .allowsHitTesting(false)
             } else {
-                restBandCore(esRonda: esRonda, large: large)
+                restBandCore(esRonda: esRonda, large: large, forzarTiempo: forzarTiempo)
             }
             // R11(a): «Cambiar descanso» — el editor de umbral (capacidad intacta), paridad
             // `LiveStrengthSheet.restEditorPill`. `RestBand` no trae este control; se queda como
@@ -631,8 +620,8 @@ extension HojaSesionViva {
         }
     }
 
-    @ViewBuilder private func restBandCore(esRonda: Bool, large: Bool) -> some View {
-        let hrMode = session.currentRestMode == .heartRate
+    @ViewBuilder private func restBandCore(esRonda: Bool, large: Bool, forzarTiempo: Bool = false) -> some View {
+        let hrMode = session.currentRestMode == .heartRate && !forzarTiempo
         Group {
             if hrMode, let started = session.restStartedAt {
                 TimelineView(.periodic(from: started, by: 1)) { ctx in

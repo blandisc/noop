@@ -29,6 +29,15 @@ struct HojaFoco: View {
     /// vez (`accordionIndex`), así que un id fijo no puede cruzarse con otro.
     static let namespaceId = "hoja-foco-tarjeta"
 
+    /// D2 (ronda 2 del gate, bloqueante — criterio explícito del mapa): el toggle TIEMPO/FC. `false`
+    /// (default) = lo que el motor eligió (FC si resolvió un objetivo honesto); `true` = el usuario
+    /// forzó la vista de reloj. Vive AQUÍ (no en `HojaSesionViva`): es una preferencia de PANTALLA, no
+    /// de sesión. `HojaFoco` no se remonta entre descansos (Foco se queda abierto D1↔D2↔D3), así que
+    /// sin ayuda este `@State` arrastraría la elección de UN descanso al siguiente — el `.onChange(of:
+    /// session.restStartedAt)` en `body` lo resetea a `false` cada vez que arranca un descanso nuevo,
+    /// para que el default sea siempre lo que el motor decide, no lo último que tocaste hace 3 series.
+    @State private var forzarVistaTiempo = false
+
     var body: some View {
         VStack(spacing: 0) {
             if let doneRunId = vivo.focusDoneRunId,
@@ -48,6 +57,9 @@ struct HojaFoco: View {
         }
         .zIndex(2)
         .transition(.identity)   // el `matchedGeometryEffect` del fondo ya anima el marco.
+        // D2: cada descanso NUEVO vuelve al default del motor — el toggle no arrastra la elección
+        // manual de un descanso anterior en la misma sesión de Foco.
+        .onChange(of: vivo.session.restStartedAt) { _, _ in forzarVistaTiempo = false }
     }
 
     private func salir() {
@@ -78,8 +90,14 @@ struct HojaFoco: View {
                             .font(StrandFont.subhead).foregroundStyle(LiquidColor.verdeProfundo)
                             .padding(.top, FocoMetrics.raiseTop)
                     }
-                    ctaSerieHecha(ei: ei)
-                        .padding(.top, FocoMetrics.ctaTop)
+                    // R3 (ronda 2 del gate, bloqueante): UN solo camino de registro por tipo. Tiempo/
+                    // distancia registran con su propio botón Start/Stop-and-save (`heroes`, abajo) —
+                    // el «✓ Serie hecha» genérico (peso/reps) no aplica ahí y por poco tiempo mostraba
+                    // los DOS a la vez (doble registro posible, Grok G5).
+                    if run.type == .weightReps || run.type == .bodyweight {
+                        ctaSerieHecha(ei: ei)
+                            .padding(.top, FocoMetrics.ctaTop)
+                    }
                     prevNextBar(ei: ei)
                         .padding(.top, FocoMetrics.prevNextTop)
                 }
@@ -115,7 +133,7 @@ struct HojaFoco: View {
         if vivo.session.isInSuperset(ei) {
             let members = vivo.session.supersetMembers(at: ei)
             let total = members.map { vivo.session.supersetRounds(at: $0) }.max() ?? 1
-            let actual = min(total, vivo.closedSupersetRounds(members: members) + 1)
+            let actual = min(total, vivo.session.closedSupersetRounds(members: members) + 1)
             return "\(run.name) · " + String(localized: "Round \(actual) of \(total)")
         }
         let work = run.sets.filter { $0.kind == .work }
@@ -244,12 +262,18 @@ struct HojaFoco: View {
             .foregroundStyle(LiquidColor.tinta900).monospacedDigit()
             .padding(.top, FocoMetrics.capcionTop)
             if let bpm = vivo.sheet.model.watchBpm { zonaBadge(bpm).padding(.top, FocoMetrics.capcionTop) }
+            // R3 (ronda 2 del gate, bloqueante): el MISMO patrón que `.time` arriba — Start/Stop-and-
+            // save es el ÚNICO camino de registro (antes, «Stop» solo detenía el cronómetro y el «✓
+            // Serie hecha» genérico de abajo registraba aparte — dos caminos para un mismo dato,
+            // Grok G5). `registerCurrentSet` ya detiene el cronómetro internamente al registrar
+            // (`if timerStart != nil { stopSetTimer(...) }`), así que `registerFromFoco()` sola
+            // captura lo corrido y cierra la serie, sin un `stopSetTimer()` aparte.
             Button {
                 withAnimation(vivo.reduceMotion ? nil : StrandMotion.gentle) {
-                    running ? vivo.session.stopSetTimer() : vivo.session.startSetTimer()
+                    if running { vivo.registerFromFoco() } else { vivo.session.startSetTimer() }
                 }
             } label: {
-                Text(running ? String(localized: "Stop") : String(localized: "Start"))
+                Text(running ? String(localized: "Stop and save") : String(localized: "Start"))
                     .font(StrandFont.subhead.weight(.semibold)).foregroundStyle(LiquidColor.tinta900)
                     .padding(.horizontal, 16).padding(.vertical, 8)
                     .overlay(Capsule().strokeBorder(LiquidColor.tinta10, lineWidth: 1))
@@ -323,21 +347,53 @@ struct HojaFoco: View {
 
     // MARK: - D2 · Descanso
 
-    /// La banda cae sola — reusa `RestBand` de F2 tal cual (`vivo.restBand`, `large: true`), la
-    /// MISMA lógica de descanso (FC vs reloj, CASI, tope honesto, SALTAR) que la lista en línea. Sin
-    /// toggle manual TIEMPO/FC propio: el motor YA elige el combustible (FC con Watch, reloj sin
-    /// él) — un selector aparte duplicaría/podría contradecir esa decisión (ver reporte, decisión).
+    /// La banda cae sola — reusa `RestBand` de F2 tal cual (`vivo.restBand`, `large: true`), la MISMA
+    /// lógica de descanso (FC vs reloj, CASI, tope honesto, SALTAR) que la lista en línea. R2 (ronda
+    /// 2 del gate, bloqueante — criterio explícito del mapa): el toggle TIEMPO/FC — SOLO cuando el
+    /// motor resolvió un objetivo de FC honesto (`puedeElegirCombustibleDescanso`; sin Watch/objetivo
+    /// no hay «vista FC» que enseñar sin inventar uno). `forzarVistaTiempo` fuerza el reloj de
+    /// respaldo que `RestBand`/`restBand(forzarTiempo:)` YA exponían para el caso sin señal — sin
+    /// caso nuevo en `RestBand` (F2), sin tocar su API pública.
     private var d2Descanso: some View {
         let esRonda = vivo.restOwnerExerciseIndex.map { vivo.session.isInSuperset($0) } ?? false
         return VStack(spacing: 0) {
             FocoCabecera(titulo: String(localized: "Rest"), onCerrar: salir,
                         etiquetaCerrar: String(localized: "Close focus mode"))
             ScrollView {
-                vivo.restBand(esRonda: esRonda, large: true)
-                    .padding(.horizontal, CenitMetrics.screenPadding)
-                    .padding(.top, FocoMetrics.contentTop)
+                VStack(spacing: 0) {
+                    if vivo.puedeElegirCombustibleDescanso {
+                        combustibleToggle.padding(.bottom, FocoMetrics.capsulasTop)
+                    }
+                    vivo.restBand(esRonda: esRonda, large: true, forzarTiempo: forzarVistaTiempo)
+                }
+                .padding(.horizontal, CenitMetrics.screenPadding)
+                .padding(.top, FocoMetrics.contentTop)
             }
         }
+    }
+
+    /// El toggle TIEMPO/FC — mismo lenguaje de pastilla de dos segmentos que `CompactTrendToggle`
+    /// (StrandDesign), sin generalizar ese componente (está acoplado a `TrendMode`, un concepto
+    /// ajeno): misma receta (padding 3, cápsula, segmento activo en tinta), en `InstrumentoTheme`
+    /// (el ambiente de esta pantalla, igual que `RestBand`).
+    private var combustibleToggle: some View {
+        HStack(spacing: 3) {
+            combustibleSegmento(String(localized: "Time"), activo: forzarVistaTiempo) { forzarVistaTiempo = true }
+            combustibleSegmento(String(localized: "HR"), activo: !forzarVistaTiempo) { forzarVistaTiempo = false }
+        }
+        .padding(3)
+        .background(vivo.sheet.theme.surface, in: Capsule())
+    }
+
+    private func combustibleSegmento(_ label: String, activo: Bool, action: @escaping () -> Void) -> some View {
+        Text(verbatim: label)
+            .font(InstrumentoType.grotesk(10, weight: .semibold)).tracking(0.6).textCase(.uppercase)
+            .foregroundStyle(activo ? vivo.sheet.theme.paper : vivo.sheet.theme.inkTertiary)
+            .padding(.horizontal, 11).padding(.vertical, 5).frame(minHeight: 34)
+            .background { if activo { Capsule().fill(vivo.sheet.theme.ink) } }
+            .contentShape(Capsule())
+            .onTapGesture { withAnimation(vivo.reduceMotion ? nil : StrandMotion.interactive) { action() } }
+            .accessibilityAddTraits(activo ? [.isSelected, .isButton] : .isButton)
     }
 
     // MARK: - D3 · HECHO
@@ -355,7 +411,7 @@ struct HojaFoco: View {
         let (doneN, totalN): (Int, Int) = {
             if inSuperset {
                 let total = members.map { vivo.session.supersetRounds(at: $0) }.max() ?? 0
-                return (vivo.closedSupersetRounds(members: members), total)
+                return (vivo.session.closedSupersetRounds(members: members), total)
             }
             let work = run.sets.filter { $0.kind == .work }
             return (work.filter(\.done).count, work.count)

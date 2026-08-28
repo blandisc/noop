@@ -127,8 +127,11 @@ struct HojaSesionViva: View {
             // FER-170 (F5): el enfoque expande la tarjeta activa DENTRO de esta misma pantalla — un
             // overlay que comparte `focoNS` con la tarjeta, no un `.fullScreenCover` (ese sería una
             // hoja NUEVA sin continuidad geométrica posible con lo que había debajo). Corte seco con
-            // Reduce Motion: `withAnimation` nunca envuelve el toggle de `focusMode` cuando está activo
-            // (ver `HojaTarjetaEjercicioSesion`/`HojaTarjetaSuperserieSesion`/`HojaFoco`).
+            // Reduce Motion (R4, ronda 2 del gate): el toggle de `focusMode` SIEMPRE pasa por
+            // `withAnimation(reduceMotion ? nil : .snappy)` (`HojaSesionViva.enterFoco`/`HojaFoco.salir`)
+            // — con Reduce Motion activo, ese `withAnimation` recibe `nil` (sin transacción animada),
+            // así que el `matchedGeometryEffect` compartido no interpola y el cambio salta directo,
+            // sin envolver el toggle en NINGÚN `withAnimation` con animación real.
             if focusMode { HojaFoco(vivo: self) }
         }
         .background(sheet.theme.paper.ignoresSafeArea())
@@ -354,10 +357,16 @@ struct HojaSesionViva: View {
         if session.isInSuperset(ei) {
             let members = session.supersetMembers(at: ei)
             if members.first == ei {
-                focoDoor { HojaTarjetaSuperserieSesion(vivo: self, members: members) }
+                // R1 (ronda 2 del gate, Grok G1/G4, bloqueante): F3 NO pliega las tarjetas de
+                // superserie — con 2+ bloques en la misma sesión, esta rama se evalúa una vez POR
+                // bloque. `esActiva` decide cuál de ellos (a lo más uno) es la «Now Playing» real.
+                focoDoor(esActiva: members.contains(accordionIndex)) {
+                    HojaTarjetaSuperserieSesion(vivo: self, members: members)
+                }
             }
         } else if ei == accordionIndex {
-            focoDoor { HojaTarjetaEjercicioSesion(vivo: self, ei: ei) }
+            // Esta rama solo se evalúa para el ÚNICO `ei` que iguala `accordionIndex` — siempre activa.
+            focoDoor(esActiva: true) { HojaTarjetaEjercicioSesion(vivo: self, ei: ei) }
         } else {
             HojaPlegadaSesion(vivo: self, ei: ei)
         }
@@ -370,10 +379,15 @@ struct HojaSesionViva: View {
     /// patrón que el «···» de cada una, que ya conocía `focusMode`). Sin ancla mientras Foco está
     /// abierto (`!focusMode`): una vez expandido, `HojaFoco` es la única dueña del marco compartido
     /// — dejar las dos vivas fuerza a SwiftUI a reconciliar el mismo id dos veces por frame.
-    @ViewBuilder private func focoDoor<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+    ///
+    /// R1 (ronda 2 del gate, bloqueante): `esActiva` es el segundo candado — nunca cuelga el ancla en
+    /// una tarjeta que NO es la «Now Playing» real. Sin él, 2+ tarjetas de superserie sin plegar (F3)
+    /// reclamarían el MISMO id de `matchedGeometryEffect` a la vez — SwiftUI no puede elegir una
+    /// fuente indefinida entre varias, y el morph podía salir del marco equivocado.
+    @ViewBuilder private func focoDoor<Content: View>(esActiva: Bool, @ViewBuilder content: () -> Content) -> some View {
         content()
             .background {
-                if !focusMode {
+                if !focusMode, esActiva {
                     Color.clear.matchedGeometryEffect(id: HojaFoco.namespaceId, in: focoNS)
                 }
             }

@@ -384,6 +384,32 @@ final class StrengthSessionModel: ObservableObject {
         return runs[index].sets.filter { $0.kind == .work }.count
     }
 
+    /// FER-170 (F5, ronda 2 del gate · R7): cuántas rondas de este bloque de superserie están
+    /// CERRADAS ahora mismo (todas las filas de esa ronda, en TODOS los miembros, `.done`) — mismo
+    /// criterio que `HojaTarjetaSuperserieSesion.rondaCerrada` (Cenit/Screens/Hoja/
+    /// RoutineSheetLiveTarjeta.swift), como conteo puro para comparar antes/después de registrar
+    /// (`HojaSesionViva.registerFromFoco`, D3: HECHO en superserie solo al cerrar ronda). Se detiene
+    /// en la primera ronda abierta — las rondas cierran en orden, nunca fuera de secuencia. Vive aquí
+    /// (no en la vista) porque solo toca datos de sesión — pura, testable con `StrengthSessionModel`
+    /// sola (`StrengthSessionModelTests`), sin montar ninguna vista.
+    func closedSupersetRounds(members: [Int]) -> Int {
+        let total = members.map { supersetRounds(at: $0) }.max() ?? 0
+        guard total > 0 else { return 0 }
+        var closed = 0
+        for r in 1...total {
+            var slots = 0, done = 0
+            for ei in members where runs.indices.contains(ei) {
+                let work = runs[ei].sets.filter { $0.kind == .work }
+                guard r <= work.count else { continue }
+                slots += 1
+                if work[r - 1].done { done += 1 }
+            }
+            guard slots > 0, slots == done else { break }
+            closed += 1
+        }
+        return closed
+    }
+
     // MARK: The held raise (FER-82)
 
     /// Whether the run at `index` is offering a raise that can still be taken: earned, held by today's
