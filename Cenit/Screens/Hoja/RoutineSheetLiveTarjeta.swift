@@ -8,10 +8,11 @@ import StrandTraining
 // `HojaTarjetaEjercicioSesion`: el ejercicio ACTIVO — mock `hoja-pantallas.html` P3/P4, vidrio
 // índigo (`EntrenarModulo(tono: .indigo)`), filas `HojaFilaSerie` en contexto `.sesion`, la banda
 // de descanso ANCLADA bajo la fila que la causó. `HojaTarjetaSuperserieSesion`: la superserie en
-// sesión — una fila por MIEMBRO (su ronda actual, round-robin del motor vigente), palomeo
-// intercalado, Y su propia banda de descanso al cerrar ronda (R4) — sin divisores de ronda ni
-// rediseño interno, eso sigue siendo F3. `HojaPlegadaSesion`: el resto de la rutina, tocable (R5) —
-// un tap mueve el foco guiado ahí, paridad `LiveStrengthSheet.doneRow`/`comingRow`.
+// sesión (FER-168 · F3) — tarjeta única con RONDAS INTERCALADAS: «Ronda K de M» (`HojaRondaDivisor`)
+// antes de cada grupo, una fila por MIEMBRO por ronda, sin letras A1/A2, sin descanso entre
+// miembros, y la banda de descanso ADENTRO de la tarjeta al cerrar cada ronda. `HojaPlegadaSesion`:
+// el resto de la rutina, tocable (R5) — un tap mueve el foco guiado ahí, paridad
+// `LiveStrengthSheet.doneRow`/`comingRow`.
 //
 // REGLA DURA: cero `ForEach(..., id: \.self)` sobre `Int`. Toda identidad de fila es el `id` del
 // run/set — `ei`/`si` se derivan frescos en cada construcción, nunca sobreviven como ancla.
@@ -284,58 +285,206 @@ struct HojaPlegadaSesion: View {
     }
 }
 
-/// La superserie en sesión (mapa C2/mock `.ss2`): una fila por MIEMBRO, su ronda actual, palomeo
-/// intercalado — round-robin real del motor (`registerCurrentSet`), sin divisores de ronda (F3).
-/// R4: descansa igual que un ejercicio solo — la MISMA `restBand()` anclada al pie del bloque
-/// cuando el descanso pertenece a cualquiera de sus miembros.
+/// La superserie en sesión (mapa C1/mock P5 `.ss2`): tarjeta única con RONDAS INTERCALADAS — un
+/// divisor «Ronda K de M» (`HojaRondaDivisor`) antes de cada grupo, una fila por MIEMBRO por ronda
+/// (round-robin real del motor, `registerCurrentSet`), sin letras A1/A2. Reusa `HojaTarjetaSuperserie`
+/// (StrandDesign) — el mismo cristal cian + header + pastilla + «···» que ya monta C2/edición — en
+/// vez de un cristal propio: la única pieza nueva de este archivo es CÓMO se arman las filas.
+///
+/// N3: las rondas son series de TRABAJO — un calentamiento no cuenta ni se intercala; si un miembro
+/// trae rampa, sus filas «C» van ANTES del primer divisor, estilo tabla normal (`calentamientos`).
+///
+/// «Fila activa = la que el motor señala» (spec F3): la marca no se decide por-miembro en
+/// aislamiento — se compara contra `session.currentIndex`/`currentSet`, el ÚNICO puntero real del
+/// motor, así que exactamente una fila del bloque entero es `.activa` a la vez; el resto de las
+/// pendientes son `.fantasma` (el «ghost» del mock). R4: la banda de descanso ya NO vive al pie del
+/// bloque — se inserta ADENTRO, justo tras la ronda que la abrió (`rondaDelDescanso`).
 struct HojaTarjetaSuperserieSesion: View {
     let vivo: HojaSesionViva
     let members: [Int]
 
     private var runs: [StrengthSessionModel.ExerciseRun] { members.map { vivo.session.runs[$0] } }
     private var nombre: String { runs.map(\.name).joined(separator: " ＋ ") }
+    private var primerMiembro: Int { members.first ?? 0 }
 
-    var body: some View {
-        EntrenarModulo(tono: .indigo) {
-            VStack(alignment: .leading, spacing: 0) {
-                HStack {
-                    SupersetTag()
-                    Spacer()
-                }
-                Text(nombre).font(StrandFont.headline).foregroundStyle(vivo.sheet.theme.ink)
-                    .padding(.top, 4).padding(.bottom, 6)
-                // REGLA DURA: identidad por `run.id`, no por el `Int` de `members`.
-                ForEach(runs) { run in filaMiembro(run) }
-                // Contra el DUEÑO real (O-r2a) — la superserie nunca se pliega, así que su banda
-                // debe seguir viéndose aunque el usuario espíe otra tarjeta fuera del grupo.
-                if vivo.session.phase == .resting, let owner = vivo.restOwnerExerciseIndex, members.contains(owner) {
-                    vivo.restBand().padding(.top, 6)
+    /// M — total de rondas del bloque (mismo criterio que `session.supersetRounds(at:)`, ya usado
+    /// por el motor: series de TRABAJO del primer miembro).
+    private var totalRondas: Int { vivo.session.supersetRounds(at: primerMiembro) }
+
+    /// Cuántas rondas RENDERIZAR (1-based): crecen conforme se completan — nunca se adelantan a una
+    /// que el motor no ha alcanzado (el mock nunca dibuja una ronda 3 futura mientras la 2 sigue
+    /// abierta). Fuente: el work-index del `currentSet` del miembro con el foco REAL
+    /// (`session.currentIndex` — tras el round-robin, ya apunta a la ronda siguiente aun DURANTE el
+    /// descanso de la anterior, que es justo lo que P5 dibuja). Si el foco está fuera del bloque (no
+    /// alcanzado todavía, o ya avanzó a otro ejercicio), cae al máximo de rondas YA cerradas por
+    /// cualquier miembro — 0 antes de empezar (se enseña la ronda 1 en blanco), `totalRondas` cuando
+    /// el bloque queda completo.
+    private var rondasARenderizar: Int {
+        if members.contains(vivo.session.currentIndex) {
+            let ei = vivo.session.currentIndex
+            let run = vivo.session.runs[ei]
+            if run.sets.indices.contains(run.currentSet) {
+                let work = run.sets.filter { $0.kind == .work }
+                if let workIdx = work.firstIndex(where: { $0.id == run.sets[run.currentSet].id }) {
+                    return min(totalRondas, workIdx + 1)
                 }
             }
         }
-        .liquidEntrada()
+        let maxCerradas = runs.map { r in r.sets.filter { $0.kind == .work && $0.done }.count }.max() ?? 0
+        return max(1, min(totalRondas, maxCerradas))
     }
 
-    private func filaMiembro(_ run: StrengthSessionModel.ExerciseRun) -> some View {
-        let ei = vivo.session.runs.firstIndex { $0.id == run.id } ?? (members.first ?? 0)
-        let si = run.currentSet
-        let set = run.sets.indices.contains(si) ? run.sets[si] : nil
-        let marca: HojaFilaSerie.Marca = (set?.done ?? false) ? .hecha : .activa
+    /// La ronda (1-based) que el descanso EN VUELO cierra — `nil` si este bloque no está
+    /// descansando ahora. El motor solo descansa tras el ÚLTIMO miembro del grupo (round-robin: los
+    /// demás saltan sin descanso), así que `restOwnerSetId` siempre es una serie de `members.last` —
+    /// su work-index + 1 es la ronda.
+    private var rondaDelDescanso: Int? {
+        guard vivo.session.phase == .resting, let ownerId = vivo.session.restOwnerSetId,
+              let last = members.last, vivo.session.runs.indices.contains(last) else { return nil }
+        let work = vivo.session.runs[last].sets.filter { $0.kind == .work }
+        guard let workIdx = work.firstIndex(where: { $0.id == ownerId }) else { return nil }
+        return workIdx + 1
+    }
+
+    var body: some View {
+        HojaTarjetaSuperserie(nombre: nombre, pie: nil, onMenu: { vivo.menuExerciseIndex = primerMiembro }) {
+            calentamientos
+            // REGLA DURA: identidad por ronda (un `Int` semántico y estable — el bloque no gana
+            // rondas en vivo, no es posición de un array reorderable), nunca por posición de fila.
+            ForEach(rondaSlots) { slot in bloqueRonda(slot.numero) }
+        }
+        .liquidEntrada()
+        .paperMenu(
+            isPresented: Binding(get: { vivo.menuExerciseIndex == primerMiembro }, set: { if !$0 { vivo.menuExerciseIndex = nil } }),
+            items: runs.first.map { vivo.exerciseMenuItems(ei: primerMiembro, run: $0) } ?? []
+        )
+        .accessibilityElement(children: .contain)
+    }
+
+    // MARK: - Rondas
+
+    private struct RondaSlot: Identifiable { let numero: Int; var id: Int { numero } }
+    private var rondaSlots: [RondaSlot] { (1...max(1, rondasARenderizar)).map(RondaSlot.init) }
+
+    @ViewBuilder
+    private func bloqueRonda(_ r: Int) -> some View {
+        HojaRondaDivisor(texto: rondaTexto(r))
+        let slots = miembros(enRonda: r)
+        ForEach(slots) { m in filaRonda(m, ronda: r, esPrimera: m.id == slots.first?.id) }
+        if rondaDelDescanso == r { vivo.restBand().padding(.top, 6) }
+    }
+
+    private func rondaTexto(_ r: Int) -> String {
+        String(format: String(localized: "Round %lld of %lld"), r, totalRondas)
+    }
+
+    private struct MiembroRondaSlot: Identifiable {
+        let ei: Int
+        let run: StrengthSessionModel.ExerciseRun
+        let si: Int
+        var id: String { run.id }
+    }
+
+    /// Los miembros que SÍ llegan a la ronda `r` — normalmente todos (rondas sincronizadas por el
+    /// editor), pero una superserie legada con rondas ya desiguales (R8/`RoutineSheet`) no revienta
+    /// aquí: el miembro corto simplemente no aporta fila en esa ronda.
+    private func miembros(enRonda r: Int) -> [MiembroRondaSlot] {
+        zip(members, runs).compactMap { ei, run in
+            workSetIndex(run, round: r).map { si in MiembroRondaSlot(ei: ei, run: run, si: si) }
+        }
+    }
+
+    /// El índice REAL en `run.sets` de la K-ésima serie de TRABAJO (1-based) — N3: los calentamientos
+    /// no cuentan para la numeración de ronda.
+    private func workSetIndex(_ run: StrengthSessionModel.ExerciseRun, round r: Int) -> Int? {
+        var seen = 0
+        for (si, set) in run.sets.enumerated() where set.kind == .work {
+            seen += 1
+            if seen == r { return si }
+        }
+        return nil
+    }
+
+    private func filaRonda(_ slot: MiembroRondaSlot, ronda: Int, esPrimera: Bool) -> some View {
+        let set = slot.run.sets[slot.si]
+        let esActiva = slot.ei == vivo.session.currentIndex && slot.si == slot.run.currentSet
+        let marca: HojaFilaSerie.Marca = set.done ? .hecha : (esActiva ? .activa : .fantasma)
+        let usesReps = slot.run.type == .weightReps || slot.run.type == .bodyweight
         let datos = HojaFilaSerie.Datos(
-            numero: "\(si + 1)", esCalentamiento: false,
-            peso: run.type == .weightReps ? vivo.plateNumber(vivo.displayWeight(set?.weightKg ?? 0)) : "—",
-            unidad: run.type == .weightReps ? vivo.weightUnit() : "",
+            numero: "\(ronda)", esCalentamiento: false,
+            peso: usesReps ? vivo.plateNumber(vivo.displayWeight(set.weightKg)) : "—",
+            unidad: slot.run.type == .weightReps ? vivo.weightUnit() : "",
             conSubida: false,
-            reps: (run.type == .weightReps || run.type == .bodyweight) ? "\(set?.reps ?? 0)" : "—",
-            q: nil, ant: nil, esPrimera: run.id == runs.first?.id
+            reps: usesReps ? "\(set.reps)" : "—",
+            // N4 (spec F3, «filas ssrow … reps(+Q)»): el sufijo Q solo en filas HECHAS, mismo
+            // patrón que `HojaTarjetaEjercicioSesion.filaSerie`. Sin playhead ANT: el mock P5 no lo
+            // dibuja para miembros de superserie (decisión documentada en el reporte).
+            q: marca == .hecha ? set.rpe.map(LiveStrengthSheet.qLabel(fromRPE:)) : nil,
+            ant: nil, esPrimera: esPrimera
         )
         return VStack(alignment: .leading, spacing: 2) {
-            Text(run.name).font(StrandFont.caption).foregroundStyle(vivo.sheet.theme.inkTertiary).lineLimit(1)
+            Text(slot.run.name)
+                .font(StrandFont.caption).foregroundStyle(vivo.sheet.theme.inkTertiary).lineLimit(1)
+                // A11y: «Zancadas, ronda 2 de 3» — el nombre por sí solo no basta para orientar en
+                // una tabla intercalada; `.combine` (abajo) lo funde con el label de `HojaFilaSerie`
+                // en UN elemento («fila = un elemento», spec F3), sin reabrir ese componente sellado.
+                .accessibilityLabel(Text(verbatim: "\(slot.run.name), \(rondaTexto(ronda))"))
             HojaFilaSerie(datos: datos, contexto: .sesion, marca: marca) {
-                guard set != nil else { return }   // sin serie corriente (miembro ya cerrado), nada que marcar
-                vivo.confirmOrToggleSet(ei: ei, si: si)
+                vivo.confirmOrToggleSet(ei: slot.ei, si: slot.si)
             }
         }
+        .accessibilityElement(children: .combine)
+    }
+
+    // MARK: - Calentamiento (N3: fuera de ronda, antes del primer divisor)
+
+    private struct CalentamientoSlot: Identifiable {
+        let ei: Int
+        let run: StrengthSessionModel.ExerciseRun
+        let si: Int
+        let set: StrengthSessionModel.WorkingSet
+        // `self.` obligatorio: Swift lee un `{ set` a secas como el inicio de un accessor `set { }`
+        // (el campo se llama literalmente `set`), no como la expresión `set.id`.
+        var id: String { self.set.id }
+    }
+
+    /// R8/N3: el editor de superserie no ofrece «Add warm-up» a un miembro (`HojaTarjetaSuperserieCompuesta`
+    /// ya lo excluye a propósito), pero una rampa heredada de antes de agrupar sigue viva en datos —
+    /// esto la sigue mostrando en vez de tragársela en silencio.
+    private var calentamientoSlots: [CalentamientoSlot] {
+        zip(members, runs).flatMap { ei, run in
+            run.sets.enumerated().compactMap { si, set in
+                set.kind == .warmup ? CalentamientoSlot(ei: ei, run: run, si: si, set: set) : nil
+            }
+        }
+    }
+
+    @ViewBuilder private var calentamientos: some View {
+        ForEach(Array(calentamientoSlots.enumerated()), id: \.element.id) { pos, slot in
+            filaCalentamiento(slot, esPrimera: pos == 0)
+        }
+    }
+
+    private func filaCalentamiento(_ slot: CalentamientoSlot, esPrimera: Bool) -> some View {
+        let esActiva = slot.ei == vivo.session.currentIndex && slot.si == slot.run.currentSet
+        let marca: HojaFilaSerie.Marca = slot.set.done ? .hecha : (esActiva ? .activa : .fantasma)
+        let usesReps = slot.run.type == .weightReps || slot.run.type == .bodyweight
+        let datos = HojaFilaSerie.Datos(
+            numero: String(localized: "C"), esCalentamiento: true,
+            peso: usesReps ? vivo.plateNumber(vivo.displayWeight(slot.set.weightKg)) : "—",
+            unidad: slot.run.type == .weightReps ? vivo.weightUnit() : "",
+            conSubida: false,
+            reps: usesReps ? "\(slot.set.reps)" : "—",
+            q: marca == .hecha ? slot.set.rpe.map(LiveStrengthSheet.qLabel(fromRPE:)) : nil,
+            ant: nil, esPrimera: esPrimera
+        )
+        return VStack(alignment: .leading, spacing: 2) {
+            Text(slot.run.name).font(StrandFont.caption).foregroundStyle(vivo.sheet.theme.inkTertiary).lineLimit(1)
+            HojaFilaSerie(datos: datos, contexto: .sesion, marca: marca) {
+                vivo.confirmOrToggleSet(ei: slot.ei, si: slot.si)
+            }
+        }
+        .accessibilityElement(children: .combine)
     }
 }
 
