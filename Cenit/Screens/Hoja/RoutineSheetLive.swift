@@ -42,9 +42,25 @@ struct HojaSesionViva: View {
     /// `RoutineSheetLiveLogic.swift` y el tap de `HojaPlegadaSesion`.
     @State var peekRunId: String?
 
-    // MARK: R16 · destello de récord
+    // MARK: R16/B11 · destello de récord
     @State var personalRecords: [String: [PRMetric: PersonalRecord]] = [:]
-    @State var prFlashSetId: String?
+    @State var prFlash: PRFlash?
+
+    // MARK: B10 · guard de captura absurda (FER-169)
+    @State var absurdCapture: AbsurdCaptureTarget?
+
+    // MARK: B8 · «＋ Agregar ejercicio» desde el ··· en sesión (FER-169)
+    /// El índice tras el cual insertar — no-nil abre `ExerciseLibraryScreen`; `nil` = cerrada.
+    @State var addExerciseAfter: Int?
+    /// FER-969: persistir el ejercicio agregado a la RUTINA falló — toast, no el banner persistente
+    /// (ese es solo para el guardado FINAL de la sesión, `session.saveError`). La sesión en sí ya
+    /// tiene el ejercicio; solo no sobrevivirá a la próxima vez que se abra esta rutina a editar.
+    @State var routineWriteError = false
+
+    // MARK: B6b · «Volver a X» sobre una subida ya tomada (FER-169)
+    /// El `run.id` cuya tarjeta «Volver a {anterior} / Seguir en {actual}» está abierta — un tap en el
+    /// ▲ de una fila con subida aplicada la abre; solo una a la vez, por identidad (regla dura).
+    @State var raiseRevertOpenRunId: String?
 
     // MARK: Capa 3 (hojas ya existentes — mismos tipos, mismas pantallas)
     @State var platesTarget: LiveStrengthSheet.PlatesTarget?
@@ -66,6 +82,10 @@ struct HojaSesionViva: View {
     // MARK: Integridad (B14 en `session.saveError`/`model.retryStrengthSave()`; B15b aquí; B16 en la cabecera)
     @State var confirmFinish = false
     @State var zombieAcknowledged = false
+
+    // MARK: B16b · «¿La rutina se queda así?» (FER-169)
+    /// No-nil = hubo cambios estructurales y la pregunta está en pantalla; `nil` = cerrada/no aplica.
+    @State var routineChangesToConfirm: RoutineChangesSummary?
 
     @ObserveInjection var inject
 
@@ -101,6 +121,7 @@ struct HojaSesionViva: View {
         .modifier(restAutoSkipModifier())
         .task(id: session.routineId) { await loadRoutineREs() }
         .task { await loadPersonalRecords() }   // R16
+        .saveErrorToast(isPresented: $routineWriteError)   // B8: falló persistir a la rutina (no la sesión)
         .onChange(of: session.phase) { _, phase in
             restStartBpm = phase == .resting ? sheet.model.watchBpm : nil
             peekRunId = nil   // O-r2a: cualquier cambio de fase limpia el «espiar» — nunca queda rancio
@@ -113,6 +134,17 @@ struct HojaSesionViva: View {
                     } }
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbarBackground(sheet.theme.paper, for: .navigationBar)
+            }
+            .instrumentoTheme(sheet.theme).environmentObject(sheet.repo).preferredColorScheme(.light)
+        }
+        // B8 (FER-169): «＋ Agregar ejercicio» — mismo picker que la Hoja fría/`LiveStrengthSheet`
+        // (`ExerciseLibraryScreen`), reusado tal cual; insertar+persistir es 1:1 con
+        // `LiveStrengthSheet.addExercises`/`persistInsertedExercises`.
+        .sheet(isPresented: Binding(get: { addExerciseAfter != nil }, set: { if !$0 { addExerciseAfter = nil } })) {
+            ExerciseLibraryScreen { picks in
+                let after = addExerciseAfter
+                addExerciseAfter = nil
+                Task { await addExercisesFromLibrary(picks, after: after) }
             }
             .instrumentoTheme(sheet.theme).environmentObject(sheet.repo).preferredColorScheme(.light)
         }
@@ -228,8 +260,21 @@ struct HojaSesionViva: View {
             message: String(localized: "You logged \(session.doneCount) sets. Finish to save this workout."),
             actions: [
                 // R18 (Grok 12): guardar NO es destructivo — primaria, como el confirm viejo.
-                .init(String(localized: "Finish and save"), role: .primary) { sheet.model.endStrengthSession(save: true) },
+                // B16b (FER-169): pasa por el detector de cambios de rutina antes de terminar de verdad.
+                .init(String(localized: "Finish and save"), role: .primary) { requestFinish() },
                 .init(String(localized: "Keep training"), role: .secondary)
+            ]
+        )
+        // B16b (FER-169): «¿La rutina se queda así?» — solo aparece cuando SÍ hubo cambios (mapa: una
+        // pregunta, una vez); si no hay ninguno, `requestFinish()` ya terminó sin pasar por aquí.
+        .instrumentoConfirm(
+            isPresented: Binding(get: { routineChangesToConfirm != nil }, set: { if !$0 { routineChangesToConfirm = nil } }),
+            title: String(localized: "Keep the routine this way?"),
+            context: String(localized: "SESSION · IN PROGRESS"),
+            message: routineChangesToConfirm?.phrase ?? "",
+            actions: [
+                .init(String(localized: "Save to the routine"), role: .primary) { finishAndSaveRoutineChanges() },
+                .init(String(localized: "Just for today"), role: .secondary) { finishWithoutSavingRoutineChanges() }
             ]
         )
         // R8: confirma antes de robarle la pareja de superserie al vecino — misma clave que F1.
@@ -355,10 +400,36 @@ struct HojaSesionViva: View {
                         targetReps: run.sets.first?.reps, targetWeightKg: run.sets.first?.weightKg)
     }
 
-    private func loadRoutineREs() async {
+    func loadRoutineREs() async {
         guard let rid = session.routineId, let store = await sheet.repo.storeHandle(),
               let res = try? await store.routineExercises(routineId: rid) else { return }
         routineREs = Dictionary(uniqueKeysWithValues: res.map { ($0.id, $0) })
     }
+}
+
+/// B11 (FER-169): la serie que acaba de batir un récord y qué copy le corresponde — «RÉCORD {metric}
+/// · antes {priorText}» (mapa). `priorText` ya viene formateado (unidad del sistema del usuario,
+/// StrandDesign no formatea); `nil` cuando el ejercicio no tenía PR previo de ese tipo («primera vez»).
+struct PRFlash: Equatable {
+    let setId: String
+    let metric: PRMetric
+    let priorText: String?
+}
+
+/// B16b (FER-169): qué cambió en la marcha respecto a la rutina base — series por ejercicio y
+/// sustituciones. `phraseEs`/`phrase` es la línea del mapa («prensa 3 → 4 series · zancadas por
+/// búlgaras»), ya armada, para no reconstruir gramática dispersa en la vista.
+struct RoutineChangesSummary: Equatable {
+    let phrase: String
+}
+
+/// B10 (FER-169): la serie que está pidiendo confirmación por captura absurda — `nil` mientras no hay
+/// ninguna pregunta en pantalla. `weightKg`/`referenceKg` viajan tal como se evaluó el guard, para que
+/// el copy («¿825 KG? es 8× tu récord») y la corrección («ERA 82.5») no tengan que releer el modelo.
+struct AbsurdCaptureTarget: Equatable {
+    let ei: Int
+    let si: Int
+    let weightKg: Double
+    let referenceKg: Double
 }
 #endif

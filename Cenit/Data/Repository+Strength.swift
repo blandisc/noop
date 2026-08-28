@@ -79,7 +79,8 @@ extension Repository {
         for re in exs {
             let ex = (ExerciseCatalog.byID(re.exerciseId) ?? memo.customById[re.exerciseId])?.applying(memo.overrides)
             let seed = await sessionSeed(re: re, exercise: ex, inventory: inventory, advice: advice)
-            slots.append(.init(re: re, exercise: ex, lastSets: seed.lastSets, raise: seed.evaluation?.raise))
+            slots.append(.init(re: re, exercise: ex, lastSets: seed.lastSets, raise: seed.evaluation?.raise,
+                               progressionState: seed.evaluation?.state))
         }
         return slots
     }

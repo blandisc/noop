@@ -2287,6 +2287,41 @@ ES: dict[str, str] = {
     "Choosing a template creates its routines and your week is set; you can always edit it later, day by day.":
         "Al elegir plantilla se crean sus rutinas y la semana queda armada; todo se puede editar después, día por día.",
     "Template applied · your week is set, edit it whenever": "Plantilla aplicada · semana armada, edítala cuando quieras",
+
+    # FER-169 — F4 «Intervención»: cuando el humano decide a media sesión (La Hoja viva, B5-B13/B16b).
+    # B6b «Volver a X» sobre una subida ya aplicada.
+    "Back to %@ %@": "Volver a %@ %@",
+    "Keep %@ %@": "Seguir en %@ %@",
+    # B7 la bajada propuesta (deload en vivo).
+    "Drop to %@": "Bajar a %@",
+    "%lld sessions unmoved · proposes %@ %@": "%lld sesiones igual · propone %@ %@",
+    "%lld sessions unmoved · goal not met": "%lld sesiones igual · sin llegar a la meta",
+    # B8 «el plan cede»: saltar / sustituir / agregar / mover, desde el ··· en sesión.
+    "Skip exercise · goes to the end": "Saltar ejercicio · vuelve al final",
+    "Substitute · same muscle first": "Sustituir · misma zona primero",
+    # B9 corregir una hecha — la explicación vive en un comentario de código, sin copy nuevo propio.
+    # B10 el guard de captura absurda — «¿825 KG? es 8× tu récord» / ERA X / SÍ, N.
+    "%@ %@?": "¿%@ %@?",
+    "is 8× your record": "es 8× tu récord",
+    "It was %@": "Era %@",
+    "Yes, %@": "Sí, %@",
+    # B11 récord en vivo, estricto — «RÉCORD peso máx · antes 100.0».
+    "max reps": "reps máx",
+    "max volume": "volumen máx",
+    "before %@": "antes %@",
+    "%@ × %lld": "%@ × %lld",
+    # B12 tiempo/distancia con zona de FC — cronómetro compacto de La Hoja.
+    "ZONE %lld · %lld": "ZONA %lld · %lld",
+    "goal %@": "meta %@",
+    # B5 pausada — la banda de descanso congelada dice lo mismo que la cabecera («Paused»).
+    "REST · PAUSED": "DESCANSO · PAUSADO",
+    "waits with you": "espera contigo",
+    # B16b «¿La rutina se queda así?» al terminar con cambios hechos sobre la marcha.
+    "Keep the routine this way?": "¿La rutina se queda así?",
+    "Save to the routine": "Guardar en la rutina",
+    "Just for today": "Solo por hoy",
+    "%@ for %@": "%@ por %@",
+    "%@ %lld → %lld sets": "%@ %lld → %lld series",
 }
 
 

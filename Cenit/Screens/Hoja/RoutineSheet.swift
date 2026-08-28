@@ -513,6 +513,9 @@ struct EditorItem: Identifiable {
     var exercise: Exercise
     var lastSets: [SetEntry] = []
     var raise: ProgressionPlanner.Raise? = nil
+    /// B7 (FER-169): today's progression classification, carried through to the live session's deload
+    /// pill — same convention as `raise` (only ever set on the `.today` origin's `willStart` path).
+    var progressionState: ProgressionState? = nil
     var id: String { re.id }
 }
 

@@ -59,7 +59,8 @@ extension RoutineSheet {
             if willStart {
                 let seed = await repo.sessionSeed(re: re, exercise: ex, inventory: inventory, advice: advice)
                 built.append(EditorItem(re: re, exercise: ex, lastSets: seed.lastSets,
-                                        raise: Self.raiseForEditorItem(seed.evaluation)))
+                                        raise: Self.raiseForEditorItem(seed.evaluation),
+                                        progressionState: seed.evaluation?.state))
             } else {
                 built.append(EditorItem(re: re, exercise: ex))
             }
@@ -157,7 +158,7 @@ extension RoutineSheet {
         if dirty { persist() }
         let slots = items.map {
             StrengthSessionModel.PlanSlot(re: $0.re, exercise: $0.exercise, lastSets: $0.lastSets,
-                                          raise: $0.raise)
+                                          raise: $0.raise, progressionState: $0.progressionState)
         }
         model.startStrengthSession(routineId: r.id, routineName: r.name, slots: slots)
     }
