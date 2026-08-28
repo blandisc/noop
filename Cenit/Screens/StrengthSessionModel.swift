@@ -828,9 +828,22 @@ final class StrengthSessionModel: ObservableObject {
     func removeExercise(at ei: Int) {
         guard runs.indices.contains(ei), runs.count > 1 else { return }
         let wasCurrent = ei == currentIndex
+        // FER-188: capture the OTHER members of `ei`'s superset span BEFORE removing it, by their
+        // stable id (never their index — the removal below shifts every later index down by one). If
+        // that leaves fewer than 2 members, the group is dissolved on whoever's left — same criterion
+        // `breakSupersetBlock` (RoutineSheetLiveLogic) uses to clear a whole block — so a member never
+        // survives alone carrying a dead group-of-one `supersetGroup`.
+        let otherGroupMemberIds = supersetMembers(at: ei).filter { $0 != ei }
+            .compactMap { runs.indices.contains($0) ? runs[$0].id : nil }
         runs.remove(at: ei)
         if ei < currentIndex { currentIndex -= 1 }
         currentIndex = min(currentIndex, runs.count - 1)
+        if otherGroupMemberIds.count < 2 {
+            for id in otherGroupMemberIds {
+                guard let idx = runs.firstIndex(where: { $0.id == id }) else { continue }
+                runs[idx].supersetGroup = nil
+            }
+        }
         if wasCurrent { phase = .capturing; clearRest(); timerStart = nil; advanceToNextPending(fromStart: true) }
     }
 
