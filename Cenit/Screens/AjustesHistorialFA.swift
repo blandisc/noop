@@ -75,7 +75,6 @@ enum HistorialFAPuerta {
 /// La sección de Ajustes. Se pinta solo cuando la evidencia dice que las series todavía no llegan.
 struct HistorialFASection: View {
     @EnvironmentObject private var repo: Repository
-    @Environment(\.instrumentoTheme) private var theme
     @Environment(\.openURL) private var openURL
     @State private var puerta: HistorialFAPuerta.Estado = .sinResolver
 
@@ -89,48 +88,37 @@ struct HistorialFASection: View {
     // MARK: Contenido
 
     private var contenido: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Heart rhythm").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+        VStack(alignment: .leading, spacing: LiquidSpace.s150) {
+            Text(String(localized: "Heart rhythm"))
+                .font(LiquidType.franja).tracking(LiquidType.franjaTracking).textCase(.uppercase)
+                .foregroundStyle(LiquidColor.tinta500)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityAddTraits(.isHeader)
 
-            VStack(alignment: .leading, spacing: 12) {
-                Text("AFib History, in the Health app")
-                    .font(StrandFont.body).foregroundStyle(theme.ink)
+            VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+                Text(String(localized: "AFib History, in the Health app"))
+                    .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
 
-                Text("If you turn it on there, your Apple Watch measures your heartbeat beat by beat far more often while you sleep. That density is what my nightly HRV reading needs. The morning verdict rides on your resting heart rate, with it or without it.")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                Text(String(localized: "If you turn it on there, your Apple Watch measures your heartbeat beat by beat far more often while you sleep. That density is what my nightly HRV reading needs. The morning verdict rides on your resting heart rate, with it or without it."))
+                    .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta500)
                     .fixedSize(horizontal: false, vertical: true)
 
-                // Las dos caras, mismo contenedor y misma tipografía. Solo el hue cambia: verde de
-                // dato para lo que afina, ámbar de cautela para lo que cuesta.
-                cara(title: "What it tunes",
-                     texto: "HRV joins your resting heart rate as a second, lighter signal on the nights that come in dense: at least 60 clean beats and 30 successive pairs. It is a tuning, not a requirement, and it never speaks on its own.",
-                     bar: theme.dataRecovery)
-                cara(title: "What it costs",
-                     texto: "To turn it on, Apple asks you to confirm that a doctor diagnosed you with atrial fibrillation. It is not intended for people under 22. And it switches off the real time irregular rhythm notifications: from then on your Apple Watch sends you a weekly summary instead.",
-                     bar: theme.warning)
+                // Las dos caras, MISMO componente (LiquidPatternBlock) y MISMO peso visual. Solo el
+                // tono cambia: verde de dato para lo que afina, ámbar de cautela para lo que cuesta.
+                LiquidPatternBlock(
+                    overline: String(localized: "What it tunes"),
+                    lineas: [String(localized: "HRV joins your resting heart rate as a second, lighter signal on the nights that come in dense: at least 60 clean beats and 30 successive pairs. It is a tuning, not a requirement, and it never speaks on its own.")],
+                    tono: LiquidColor.verdePrimario)
+                LiquidPatternBlock(
+                    overline: String(localized: "What it costs"),
+                    lineas: [String(localized: "To turn it on, Apple asks you to confirm that a doctor diagnosed you with atrial fibrillation. It is not intended for people under 22. And it switches off the real time irregular rhythm notifications: from then on your Apple Watch sends you a weekly summary instead.")],
+                    tono: LiquidColor.atencion)
 
                 enlaceSalud
 
-                Text("I am not recommending it and I am not talking you out of it: both sides are here so you can decide. Cénit does not diagnose anything, and none of this is medical advice.")
-                    .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                    .fixedSize(horizontal: false, vertical: true)
+                LiquidNotaLine(String(localized: "I am not recommending it and I am not talking you out of it: both sides are here so you can decide. Cénit does not diagnose anything, and none of this is medical advice."))
             }
         }
-    }
-
-    /// Una cara de la decisión. Las dos se construyen con esta MISMA función: el peso visual no
-    /// puede desbalancearse sin que se note en un solo lugar.
-    private func cara(title: LocalizedStringKey, texto: LocalizedStringKey, bar: Color) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title).instrumentoOverline().foregroundStyle(theme.inkSecondary)
-            Text(texto)
-                .font(StrandFont.caption).foregroundStyle(theme.ink)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, CenitMetrics.gap).padding(.vertical, CenitMetrics.rowVPad)
-        .patternBlock(theme, bar: bar)
     }
 
     /// Enlace quieto a la app Salud (el ajuste vive allá, no aquí). A propósito NO es un CTA sólido
@@ -139,18 +127,18 @@ struct HistorialFASection: View {
         Button {
             if let url = URL(string: "x-apple-health://") { openURL(url) }
         } label: {
-            HStack(spacing: 8) {
+            HStack(spacing: LiquidSpace.s200) {
                 Image(systemName: "arrow.up.forward.app")
-                    .font(StrandFont.glyph(.inline, weight: .semibold))
-                Text("Open the Health app").font(StrandFont.subhead)
+                    .font(LiquidType.iconSF(size: 13))
+                Text(String(localized: "Open the Health app")).font(LiquidType.tituloFila)
                 Spacer(minLength: 8)
             }
-            .foregroundStyle(theme.ink)
-            .frame(minHeight: CenitMetrics.touchTarget)
+            .foregroundStyle(LiquidColor.tinta900)
+            .frame(minHeight: 44)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
-        .accessibilityHint("Opens Apple's Health app")
+        .buttonStyle(.liquidPress)
+        .accessibilityHint(Text(String(localized: "Opens Apple's Health app")))
     }
 
     // MARK: Evidencia
@@ -174,10 +162,9 @@ struct HistorialFASection: View {
 #Preview("Historial de FA · puerta") {
     ScrollView {
         HistorialFASection()
-            .padding(.horizontal, CenitMetrics.screenPadding)
+            .padding(.horizontal, LiquidSpace.s550)
     }
-    .background(InstrumentoTheme.base.paper.ignoresSafeArea())
-    .instrumentoTheme(.base)
+    .background { LiquidSheetFondo().ignoresSafeArea() }
     .environmentObject(Repository(deviceId: "preview"))
 }
 #endif
