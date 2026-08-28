@@ -217,6 +217,12 @@ public enum LiquidColor {
     /// LIQUID-GLASS.md) por la misma razón — la tabla dependía del backdrop y cambiaba
     /// de valor al arrastrar/scrollear la hoja.
     public static let vidrioSuperficie = Color.white.opacity(0.46)
+    /// `.7` — relleno de los steppers circulares del enfoque (FER-170 · F5, ronda 2 del gate — Grok
+    /// G8: `FocoHeroe` traía `Color.white.opacity(...)` crudo). Mock `hoja-pantallas.html` `.step
+    /// {background:rgba(255,255,255,.7)}` — un alfa propio, distinto de `vidrioBordeSuperficie` (.72)
+    /// o `vidrioBordePastilla` (.8): no se aproxima a un token vecino para no perder el decimal exacto
+    /// del mock.
+    public static let vidrioStep = Color.white.opacity(0.7)
 
     // MARK: Vidrio de «El Tablero» (FER-28 — módulos de Hoy sobre fondo casi blanco)
     //
