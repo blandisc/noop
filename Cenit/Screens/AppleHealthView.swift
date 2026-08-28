@@ -82,17 +82,20 @@ struct AppleHealthView: View {
         "weight", "body_fat", "lean_mass", "bmi"
     ]
 
+    // Ronda 2 #7: clavados a `en_US_POSIX` salían en inglés bajo es-MX («28 Aug 2026»). Mismo
+    // patrón que CuerpoView (`dateHeader`, locale del app) y DataSourcesView (`shortDate`,
+    // `setLocalizedDateFormatFromTemplate`) — se usan los dos juntos aquí.
     private static let spanFormatter: DateFormatter = {
         let f = DateFormatter()
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.dateFormat = "d MMM yyyy"
+        f.locale = .current
+        f.setLocalizedDateFormatFromTemplate("dMMMyyyy")
         return f
     }()
 
     private static let asOfFormatter: DateFormatter = {
         let f = DateFormatter()
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.dateFormat = "d MMM"
+        f.locale = .current
+        f.setLocalizedDateFormatFromTemplate("dMMM")
         return f
     }()
 
@@ -200,7 +203,9 @@ struct AppleHealthView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 4) {
-            LiquidOverline(String(localized: "Apple Health"))
+            // Ronda 2 #20: el overline decía «Apple Health» igual que el título justo debajo — un
+            // overline es de ROL (Cuerpo: glifo + Tendencias + fecha), no el mismo nombre repetido.
+            LiquidOverline(String(localized: "Source"))
             Text(String(localized: "Apple Health"))
                 .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
                 .foregroundStyle(LiquidColor.tinta900)
@@ -219,15 +224,25 @@ struct AppleHealthView: View {
 
     /// The honest empty state: no imported history at all yet. Composed from atoms (no 1:1 Liquid
     /// piece for this) inside the same solid-card recipe every other block on this screen uses.
+    /// Ronda 2 #5: used to open straight on the 7-year zip export — the SLOW path — contradicting
+    /// Data Sources' own empty state two taps back («tap Sync now»), and named a macOS step («On an
+    /// iPhone:») nobody on this screen can be running. The fast path (Sync now / Connect, back in
+    /// Data Sources) leads; the zip is the long-history fallback, named as one.
+    /// Ronda 3 #4: cita el rótulo REAL del botón desconectado («Connect Apple Health»,
+    /// `DataSourcesView.swift:385`), no «Connect» a secas.
     private var emptyState: some View {
         VStack(alignment: .leading, spacing: LiquidSpace.s150) {
             Text(String(localized: "Nothing imported yet"))
                 .font(LiquidType.tituloFila)
                 .foregroundStyle(LiquidColor.tinta900)
-            Text(String(localized: "On an iPhone: Health app, tap your photo, Export All Health Data, then import the .zip here in Data Sources."))
+            Text(String(localized: "Go back to Data Sources and tap Sync now (or Connect Apple Health, if it isn't linked yet)."))
                 .font(LiquidType.cuerpo)
                 .lineSpacing(LiquidType.cuerpoLineSpacing)
                 .foregroundStyle(LiquidColor.tinta700)
+                .fixedSize(horizontal: false, vertical: true)
+            Text(String(localized: "For years of history at once: Health app → your photo → Export All Health Data, then import that .zip in Data Sources."))
+                .font(LiquidType.captionLectura)
+                .foregroundStyle(LiquidColor.tinta500)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .liquidTarjetaSeccion()

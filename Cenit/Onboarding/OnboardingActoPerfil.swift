@@ -336,7 +336,7 @@ struct OnbActoPerfil: View {
         switch raw {
         case "male":   return String(localized: "Male")
         case "female": return String(localized: "Female")
-        default:       return String(localized: "Other")
+        default:       return String(localized: "Non-binary")
         }
     }
 

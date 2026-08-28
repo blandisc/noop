@@ -12,10 +12,11 @@ extension LiquidTabRotulos {
         .init(hoy: String(localized: "Today"),
               tendencias: String(localized: "Trends"),
               entrenar: String(localized: "Train"),
-              // Clave «Ajustes», no «Settings»: las dos dan "Settings" en inglés, pero en
-              // español la primera dice «Ajustes» —lo que ya dice el encabezado de esa misma
-              // pantalla— y la segunda diría «Configuración». El dock y su pantalla tienen que
-              // llamarse igual.
-              ajustes: String(localized: "Ajustes"))
+              // Ronda 2 #24: clave «Settings» (inglés), no el texto español «Ajustes» — esa era
+              // una isla marcada `stale` en el catálogo, en riesgo de que un prune del catálogo se
+              // la llevara y dejara el dock en español bajo UI inglesa. El encabezado de la propia
+              // pantalla (`AjustesView.header`) usa la MISMA clave, así que dock y pantalla siguen
+              // diciendo lo mismo («Ajustes» en es-MX) sin depender de un literal español.
+              ajustes: String(localized: "Settings"))
     }
 }

@@ -1,5 +1,7 @@
 #if os(iOS)
 import SwiftUI
+import UIKit             // UIApplication.openSettingsURLString (abrir Ajustes de iOS cuando negó un permiso)
+import UserNotifications // UNAuthorizationStatus, para releer el permiso real de enfermedad/descanso
 import StrandDesign
 import StrandAnalytics
 import CenitStore
@@ -16,7 +18,7 @@ import CenitStore
 // grouped under an overline that opens a focused sheet. Navigation is by SHEET, not a nested
 // NavigationStack: the focused sub-screens (Units & format, the profile wheels, Max heart rate)
 // ride Liquid sheets that build their own `LiquidSheetFondo` (the theme doesn't cross `.sheet`);
-// the two sibling screens (Data & sources, About & support) ride a sheet too — Ajustes injects
+// the two sibling screens (Data Sources, About & support) ride a sheet too — Ajustes injects
 // nothing into either (each screen owns its own background; About & support's own reskin is a
 // separate issue).
 //
@@ -70,6 +72,7 @@ private extension View {
 
 private struct AjustesLanding: View {
     @Environment(AppModel.self) var model
+    @Environment(\.scenePhase) private var scenePhase
     @EnvironmentObject var profile: ProfileStore
     // Read only to re-inject into the sibling sheets (a sheet starts a fresh environment branch).
     @EnvironmentObject private var repo: Repository
@@ -98,9 +101,15 @@ private struct AjustesLanding: View {
     @AppStorage(SessionComfort.keepAwakeKey) private var keepScreenAwake = false
     @AppStorage(SessionComfort.restSoundKey) private var restSound = false
     @AppStorage(SessionComfort.restNotifyKey) private var restNotify = false
-    /// iOS negó el permiso: se dice, con la ruta a Ajustes del sistema, en vez de dejar el
-    /// interruptor encendido prometiendo un aviso que nunca llegará.
-    @State private var notifDenegado = false
+    /// Permiso REAL de notificaciones para «Notificar fin de descanso», releído (no `@State`
+    /// volátil): mismo contrato que `AvisoMatutinoSection` — se pide al encender, si iOS niega el
+    /// switch se ve apagado y se ofrece el atajo a Ajustes, y se relee al volver a primer plano
+    /// (conceder en Ajustes de iOS y regresar tiene que reflejarse aquí, no quedarse congelado).
+    @State private var restPermiso: UNAuthorizationStatus?
+    @State private var pidiendoPermisoDescanso = false
+    /// Ronda 2 #1: solo se usa para PINTAR la nota de negado — ya NO gobierna si el switch puede
+    /// prenderse (ver `illnessNegado` / `encenderVigilanciaEnfermedad`).
+    @State private var illnessPermiso: UNAuthorizationStatus?
     @EnvironmentObject private var mediaCoordinator: MediaDownloadCoordinator
     @State private var confirmDeleteMedia = false
     @State private var confirmRecalibrate = false
@@ -122,47 +131,56 @@ private struct AjustesLanding: View {
         }
         .scrollIndicators(.hidden)
         .background { LiquidSheetFondo().ignoresSafeArea() }
+        .task { await sincronizarPermisosDeAviso() }
+        // Volver de Ajustes de iOS es EXACTAMENTE cuando estos dos permisos pudieron cambiar (mismo
+        // contrato que `AvisoMatutinoSection`): sin esto, conceder allá y regresar aquí encontraba
+        // los switches todavía congelados en su verdad vieja.
+        .onChange(of: scenePhase) { _, fase in
+            guard fase == .active else { return }
+            Task { await sincronizarPermisosDeAviso() }
+        }
         .sheet(isPresented: $showUnits) {
             UnidadesSheet()
         }
         .sheet(isPresented: $showMaxHR) {
-            MaxHRSheet().environmentObject(profile)
+            MaxHRSheet(profile: profile)
         }
         .sheet(isPresented: $showCyclePhase) {
             CyclePhaseSheet().environmentObject(repo)
         }
         .sheet(item: $profileWheel) { wheel in
-            ProfileWheelSheet(wheel: wheel).environmentObject(profile)
+            ProfileWheelSheet(wheel: wheel, profile: profile)
         }
         .sheet(item: $presentedSheet) { screen in sheetContent(screen) }
         // Both confirmations hang here, on the STABLE body of the landing (ScrollView level), not
         // inside the idle-branch Button of `recalibrateRow`: if the confirm lived only in the
         // `else` branch, the swap to the «Deshacer» state would tear down the presenter mid-dismiss.
         .confirmationDialog(
-            String(localized: "¿Recalibrar tu recuperación?"),
+            String(localized: "Recalibrate your recovery?"),
             isPresented: $confirmRecalibrate,
             titleVisibility: .visible
         ) {
-            Button(String(localized: "Recalibrar desde hoy"), role: .destructive) { model.recalibrateBaseline() }
-            Button(String(localized: "Dejar la base como está"), role: .cancel) { }
+            Button(String(localized: "Recalibrate from today"), role: .destructive) { model.recalibrateBaseline() }
+            Button(String(localized: "Leave the baseline as is"), role: .cancel) { }
         } message: {
-            Text(String(localized: "Tu línea base se re-anclará desde hoy y se ignorarán tus noches anteriores. Perderás tu número de recuperación unos días mientras se recalibra. Tus datos e historial no se borran."))
+            Text(String(localized: "Your baseline will re-anchor from today and your earlier nights will be ignored. You'll lose your recovery number for a few days while it recalibrates. Your data and history aren't deleted."))
         }
-        // El confirm de borrar-media NO puede colgar del mismo view que el de Recalibrar: SwiftUI solo
-        // honra un `.confirmationDialog` por vista. Vive en su propio botón (siempre montado en Experimental).
     }
 
-    // MARK: - Header (one-off chrome: gearshape + title + a privacy line)
+    // MARK: - Header (one-off chrome: wordmark + a privacy line)
 
     private var header: some View {
         VStack(alignment: .leading, spacing: LiquidSpace.s150) {
-            HStack(spacing: LiquidSpace.s150) {
-                Image(systemName: "gearshape")
-                    .font(LiquidType.iconSF(size: 20)).foregroundStyle(LiquidColor.tinta900)
-                Text(String(localized: "Ajustes"))
-                    .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
-                    .foregroundStyle(LiquidColor.tinta900)
-            }
+            // FER-176: the wordmark alone, no `gearshape` — Tendencias doesn't repeat its dock glyph
+            // next to its title either (`TendenciasGlyph`, not the tab bar's SF Symbol); a tab root
+            // doesn't need to echo the icon that got you here.
+            // Ronda 2 #24: la clave-fuente era el texto español «Ajustes» (una isla), marcada
+            // `stale` en el catálogo — un prune futuro se la habría llevado. Ahora usa la MISMA
+            // clave inglesa que el rótulo del dock (`LiquidTabRotulos+Cenit.swift`), así que
+            // pantalla y dock siguen diciendo lo mismo en cualquier idioma.
+            Text(String(localized: "Settings"))
+                .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
+                .foregroundStyle(LiquidColor.tinta900)
             Text(String(localized: "On this iPhone · no account · no cloud"))
                 .font(LiquidType.captionLectura)
                 .foregroundStyle(LiquidColor.tinta500)
@@ -171,7 +189,7 @@ private struct AjustesLanding: View {
         .accessibilityAddTraits(.isHeader)
     }
 
-    // MARK: - Footer (version, no repeated privacy promise — the header already said it)
+    // MARK: - Footer (version + a compact echo of the header's offline promise)
 
     private var footer: some View {
         Text(String(localized: "Cénit \(appVersion) · everything is computed on your iPhone"))
@@ -197,7 +215,6 @@ private struct AjustesLanding: View {
                 LiquidListRow(title: String(localized: "Height"), trailing: heightDisplay,
                               a11yHint: String(localized: "Opens a picker")) { profileWheel = .height }
                 LiquidListRow(title: String(localized: "Max heart rate"), trailing: maxHRDisplay,
-                              tone: LiquidColor.rosa,
                               a11yHint: String(localized: "Opens a picker"),
                               divider: false) { showMaxHR = true }
             }
@@ -205,8 +222,10 @@ private struct AjustesLanding: View {
         }
     }
 
-    /// Sex is a segmented `Picker`, not a value+chevron row, so it can't be a `LiquidListRow` — this
+    /// Sex is a `Picker`, not a value+chevron row, so it can't be a `LiquidListRow` — this
     /// hand-builds the same row geometry (padding, bottom hairline) so it seams into the same card.
+    /// Ronda 2 #10: three segments + `.fixedSize()` truncated Male/Female/Non-binary at 390 pt —
+    /// a menu never truncates and needs no width hack.
     private var sexRow: some View {
         HStack(spacing: LiquidSpace.s300) {
             Text(String(localized: "Sex")).font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
@@ -216,7 +235,7 @@ private struct AjustesLanding: View {
                 Text(String(localized: "Female")).tag("female")
                 Text(String(localized: "Non-binary")).tag("nonbinary")
             }
-            .labelsHidden().pickerStyle(.segmented).fixedSize()
+            .labelsHidden().pickerStyle(.menu).tint(LiquidColor.tinta700)
             .accessibilityLabel(String(localized: "Sex"))
         }
         .padding(.vertical, 11)  // token-exempt: paridad fila LiquidListRow (padding interno no público)
@@ -237,7 +256,7 @@ private struct AjustesLanding: View {
     private var maxHRDisplay: String {
         profile.hrMaxOverride > 0
             ? "\(profile.hrMaxOverride) bpm"
-            : String(localized: "Auto · \(profile.hrMax) bpm")
+            : String(localized: "Automatic · \(profile.hrMax) bpm")
     }
 
     // MARK: - More (grouped nav rows + toggle blocks, each in its own overlined card)
@@ -253,43 +272,64 @@ private struct AjustesLanding: View {
             }
             section(String(localized: "Data")) {
                 VStack(spacing: 0) {
-                    LiquidListRow(title: String(localized: "Data & sources"),
-                                  subtitle: String(localized: "Apple Health · backup"),
-                                  tone: LiquidColor.azul) { presentedSheet = .dataSources }
+                    LiquidListRow(title: String(localized: "Data Sources"),
+                                  subtitle: String(localized: "Apple Health · backup")) { presentedSheet = .dataSources }
                     recalibrateRow
                 }
                 .liquidTarjetaSeccion(padding: LiquidSpace.s300)
             }
-            section(String(localized: "Salud")) {
-                VStack(alignment: .leading, spacing: LiquidSpace.s200) {
-                    // FER-1021: el interruptor de «vigilar enfermedad» vivía en la difunta
-                    // AutomationsView (retirada con la banda). El motor sigue vivo y ruteado a
-                    // Apple (temp de muñeca + FC en reposo nocturna, FER-884); esto le repone el
-                    // acceso para que la feature sea alcanzable.
-                    Toggle(isOn: $behavior.illnessWatch) {
-                        Text(String(localized: "Vigilar señales de enfermedad"))
+            // Ronda 2 #2: la única excepción de red de la app vivía escondida bajo «Experimental»,
+            // junto a métricas opt-in que nada tienen que ver con una descarga — quien se saltaba
+            // esa sección nunca veía el único control de red del app. Su propia sección, fuera de
+            // Experimental.
+            section(String(localized: "Exercise library")) { exerciseLibraryCard }
+            // FER-1021: el interruptor de «vigilar enfermedad» vivía en la difunta AutomationsView
+            // (retirada con la banda). El motor sigue vivo y ruteado a Apple (temp de muñeca + FC en
+            // reposo nocturna, FER-884); esto le repone el acceso para que la feature sea alcanzable.
+            // «Salud» es el nombre de la app de Apple, no de esta sección. Ronda 2 #12: tampoco
+            // «Watch» en inglés — en una app de Apple Watch ese nombre es el hardware, no la sección.
+            section(String(localized: "Monitoring")) {
+                VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+                    // Ronda 2 #1 (revierte una regresión de ronda 1): la superficie viva de esta
+                    // feature es el banner de Hoy, NO una notificación — a diferencia del aviso
+                    // matutino / recordatorio de entreno, cuya ÚNICA superficie SÍ es la notificación.
+                    // El switch sigue SIEMPRE la preferencia (`behavior.illnessWatch`), nunca el
+                    // permiso del sistema: negarlo en Ajustes de iOS apaga el AVISO, no la vigilancia,
+                    // así que el switch no se deshabilita ni se auto-apaga por esa respuesta.
+                    Toggle(isOn: Binding(get: { illnessEncendido }, set: { encenderVigilanciaEnfermedad($0) })) {
+                        Text(String(localized: "Watch for illness signs"))
                             .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
                     }
                     .tint(LiquidColor.verdePrimario)
                     .frame(minHeight: 44)
-                    .onChange(of: behavior.illnessWatch) { _, on in
-                        if on { IllnessNotifier.requestAuthorization() }
-                        model.reevaluateIllness()
-                    }
-                    Text(String(localized: "Cruza tu temperatura de muñeca y tu pulso en reposo nocturno para avisarte temprano de una posible enfermedad. Aproximado, no es un diagnóstico; necesita unas dos semanas de datos."))
+                    // Ronda 3 #3: interpola el nombre real de la pestaña (`Today`/«Hoy»), no el
+                    // literal español «Hoy» dentro de la cadena fuente inglesa — el dock usa esa
+                    // MISMA clave (`LiquidTabRotulos+Cenit.swift`), así que en UI inglesa esto ya
+                    // dice «Today», el nombre real de la pestaña.
+                    Text(String(localized: "Crosses your wrist temperature and nighttime resting heart rate to warn you early of possible illness. Approximate, not a diagnosis; needs about two weeks of data. If it fires, you'll see it in \(String(localized: "Today")) and, if you've allowed notifications, in a notification."))
                         .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
                         .fixedSize(horizontal: false, vertical: true)
+                    if illnessNegado {
+                        LiquidNotaLine(String(localized: "You'll still see it in \(String(localized: "Today")); the system notice won't arrive until you allow notifications."),
+                                      tono: LiquidColor.atencionTexto)
+                        Button { abrirAjustesDeIOS() } label: {
+                            Text(String(localized: "Open Settings")).font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta700)
+                        }
+                        .buttonStyle(.liquidPress)
+                        .frame(minHeight: 32)
+                    }
                 }
                 .liquidTarjetaSeccion()
             }
-            // FER-114: el aviso matutino trae su propia sección entera (switch + hora + estado real
-            // del permiso); vive en `AjustesAvisoMatutino.swift`. Migra en OTRO issue.
+            // El aviso matutino trae su propia sección entera (switch + hora + estado real del
+            // permiso); vive en `AjustesAvisoMatutino.swift` (FER-177, ya migrada a Liquid Glass).
             AvisoMatutinoSection()
-            // FER-95 · E14: el recordatorio del día que toca entrenar, mismo patrón; vive en
-            // `AjustesRecordatorioEntreno.swift`. Migra en OTRO issue.
+            // El recordatorio del día que toca entrenar, mismo patrón; vive en
+            // `AjustesRecordatorioEntreno.swift` (FER-178, ya migrada a Liquid Glass).
             RecordatorioEntrenoSection()
-            // FER-115: la puerta informada del «Historial de FA». Trae su propio overline y se
-            // calla sola cuando las series de latidos ya llegan. Migra en OTRO issue.
+            // La puerta informada del «Historial de FA». Trae su propio overline y se calla sola
+            // cuando las series de latidos ya llegan; vive en `AjustesHistorialFA.swift` (FER-115,
+            // ya migrada a Liquid Glass).
             HistorialFASection()
             section(String(localized: "During a session")) {
                 VStack(alignment: .leading, spacing: LiquidSpace.s300) {
@@ -300,10 +340,17 @@ private struct AjustesLanding: View {
                     .tint(LiquidColor.verdePrimario)
                     .frame(minHeight: 44)
                     .onChange(of: keepScreenAwake) { _, on in
-                        // Apagarlo a media sesión tiene que surtir efecto ya, no en la siguiente.
-                        if !on { SessionComfort.applyKeepAwake(active: false) }
+                        // Ronda 3 #5: prender/apagar a media sesión tiene que surtir efecto ya, no
+                        // en la siguiente. Apagar es incondicional (siempre seguro); prender solo
+                        // si hay sesión viva — `applyKeepAwake` ya AND-ea la bandera con `active`,
+                        // pero `active` aquí significa «hay sesión», no «el switch está en on».
+                        if on {
+                            if model.strengthSession != nil { SessionComfort.applyKeepAwake(active: true) }
+                        } else {
+                            SessionComfort.applyKeepAwake(active: false)
+                        }
                     }
-                    Text(String(localized: "Between sets two minutes pass without touching anything, and the phone falls asleep right when you pick it up to log. It only applies while the session is open, and it uses more battery: your iPhone goes back to its normal auto-lock when the session ends."))
+                    Text(String(localized: "If you don't touch your phone, iOS locks it mid-set. It only applies while the session is open, and it uses more battery: your iPhone goes back to its normal auto-lock when the session ends."))
                         .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
                         .fixedSize(horizontal: false, vertical: true)
                     LiquidCapilar(eje: .horizontal)
@@ -317,28 +364,21 @@ private struct AjustesLanding: View {
                         .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
                         .fixedSize(horizontal: false, vertical: true)
                     LiquidCapilar(eje: .horizontal)
-                    Toggle(isOn: $restNotify) {
+                    Toggle(isOn: Binding(get: { restEncendido }, set: { encenderAvisoDescanso($0) })) {
                         Text(String(localized: "Notify me when rest is up"))
                             .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
                     }
                     .tint(LiquidColor.verdePrimario)
                     .frame(minHeight: 44)
-                    .onChange(of: restNotify) { _, on in
-                        // El permiso se pide AQUÍ, en el momento en que lo enciendes, no en un
-                        // arranque cualquiera ni a media serie. Y si iOS lo niega, el interruptor
-                        // se apaga solo: dejarlo encendido sería prometer un aviso que jamás llegará.
-                        guard on else { RestEndNotifier.cancel(); return }
-                        Task { @MainActor in
-                            if await RestEndNotifier.requestAuthorization() == false {
-                                restNotify = false
-                                notifDenegado = true
-                            }
+                    .disabled(pidiendoPermisoDescanso || restNegado)
+                    if restNegado {
+                        LiquidNotaLine(String(localized: "Notices are off in iOS Settings, so I cannot reach you."),
+                                      tono: LiquidColor.atencionTexto)
+                        Button { abrirAjustesDeIOS() } label: {
+                            Text(String(localized: "Open Settings")).font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta700)
                         }
-                    }
-                    if notifDenegado {
-                        Text(String(localized: "Your iPhone has notifications off for Cénit. You can turn them on in Settings."))
-                            .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta700)
-                            .fixedSize(horizontal: false, vertical: true)
+                        .buttonStyle(.liquidPress)
+                        .frame(minHeight: 32)
                     }
                     Text(String(localized: "The only notice that survives locking your phone: a notification your iPhone delivers on its own, for when you leave it on the floor between sets. It's scheduled and delivered on your device; nothing leaves it."))
                         .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
@@ -348,64 +388,101 @@ private struct AjustesLanding: View {
             }
             section(String(localized: "Experimental")) {
                 VStack(alignment: .leading, spacing: LiquidSpace.s300) {
-                    Toggle(isOn: $whitespaceMetrics) {
-                        Text(String(localized: "Experimental metrics"))
-                            .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
+                    experimentalTogglesCard
+                    // FER-183: «Fase del ciclo» en su propia tarjeta de navegación — misma receta
+                    // que «Units & format» — en vez de al final de la tarjeta de switches (padding
+                    // distinto, chevron peleando con el cromo de toggle).
+                    VStack(spacing: 0) {
+                        LiquidListRow(
+                            title: String(localized: "Cycle phase"),
+                            subtitle: cyclePhaseOn
+                                ? String(localized: "On · adjusts your recovery on luteal days")
+                                : String(localized: "Off · a self-knowledge experiment"),
+                            divider: false) { showCyclePhase = true }
                     }
-                    .tint(LiquidColor.verdePrimario)
-                    .frame(minHeight: 44)
-                    Text(String(localized: "New, approximate readings: nocturnal vagal reserve, thermal stability, night respiration and post-session recovery. They need several days of use to read well."))
-                        .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
-                        .fixedSize(horizontal: false, vertical: true)
-                    LiquidCapilar(eje: .horizontal)
-                    Toggle(isOn: $exerciseMediaEnabled) {
-                        Text(String(localized: "Descargar biblioteca de ejercicios"))
-                            .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
-                    }
-                    .tint(LiquidColor.verdePrimario)
-                    .frame(minHeight: 44)
-                    .onChange(of: exerciseMediaEnabled) { _, enabled in
-                        if enabled { Task { await mediaCoordinator.bulkDownloadThumbsIfNeeded() } }
-                        else { mediaCoordinator.resetDownloadState() }
-                    }
-                    Text(String(localized: "Downloads each exercise's animation from ExerciseDB's image CDN, an external service. They're saved on your iPhone forever and work offline afterwards. This is the only exception to Cénit's zero-network rule: fetching each image exposes your IP to that service, like loading any image on the internet; no other data of yours (not even the exercise name) ever leaves. Turning this off stops future downloads; it doesn't delete what's already saved."))
-                        .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
-                        .fixedSize(horizontal: false, vertical: true)
-                    mediaDownloadStatus
-                    LiquidCapilar(eje: .horizontal)
-                    Button(role: .destructive) { confirmDeleteMedia = true } label: {
-                        Text(String(localized: "Borrar media descargada"))
-                            .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta700)
-                    }
-                    .buttonStyle(.plain)
-                    .confirmationDialog(
-                        String(localized: "¿Borrar toda la media de ejercicios descargada?"),
-                        isPresented: $confirmDeleteMedia,
-                        titleVisibility: .visible
-                    ) {
-                        Button(String(localized: "Borrar la media"), role: .destructive) { mediaCoordinator.deleteAllCachedMedia() }
-                        Button(String(localized: "Conservar la media"), role: .cancel) { }
-                    } message: {
-                        Text(String(localized: "Las animaciones guardadas se borran de tu iPhone. Puedes volver a descargarlas cuando quieras."))
-                    }
-                    LiquidCapilar(eje: .horizontal)
-                    LiquidListRow(
-                        title: String(localized: "Cycle phase"),
-                        subtitle: cyclePhaseOn
-                            ? String(localized: "On · adjusts your recovery on luteal days")
-                            : String(localized: "Off · a self-knowledge experiment"),
-                        divider: false) { showCyclePhase = true }
+                    .liquidTarjetaSeccion(padding: LiquidSpace.s300)
                 }
-                .liquidTarjetaSeccion()
             }
             section(String(localized: "More")) {
                 VStack(spacing: 0) {
                     LiquidListRow(title: String(localized: "About & support"),
-                                  subtitle: String(localized: "Version \(appVersion) · help · licenses"),
+                                  subtitle: String(localized: "Version \(appVersion) · what Cénit is"),
                                   divider: false) { presentedSheet = .support }
                 }
                 .liquidTarjetaSeccion(padding: LiquidSpace.s300)
             }
+        }
+    }
+
+    /// The experimental-metrics toggle, alone (ronda 2 #2 moved the media download out of this card).
+    private var experimentalTogglesCard: some View {
+        VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+            Toggle(isOn: $whitespaceMetrics) {
+                Text(String(localized: "Experimental metrics"))
+                    .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
+            }
+            .tint(LiquidColor.verdePrimario)
+            .frame(minHeight: 44)
+            Text(String(localized: "New, approximate readings: nocturnal vagal reserve, thermal stability, night respiration and post-session recovery. They need several days of use to read well."))
+                .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .liquidTarjetaSeccion()
+    }
+
+    /// The exercise-media download, in its own «Exercise library» card (ronda 2 #2), out from under
+    /// «Experimental»: it's the app's only network exception (ExerciseDB's CDN, opt-in, off by
+    /// default), not an unstable metric — burying it next to opt-in metrics hid the one control that
+    /// actually matters for the offline promise.
+    private var exerciseLibraryCard: some View {
+        VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+            Toggle(isOn: $exerciseMediaEnabled) {
+                Text(String(localized: "Downloaded exercise animations"))
+                    .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
+            }
+            .tint(LiquidColor.verdePrimario)
+            .frame(minHeight: 44)
+            .onChange(of: exerciseMediaEnabled) { _, enabled in
+                if enabled { Task { await mediaCoordinator.bulkDownloadThumbsIfNeeded() } }
+                else { mediaCoordinator.resetDownloadState() }
+            }
+            Text(String(localized: "Downloads each exercise's animation from ExerciseDB's image CDN, an external service. They're saved on your iPhone forever and work offline afterwards. This is the only exception to Cénit's zero-network rule: fetching each image exposes your IP to that service, like loading any image on the internet; no other data of yours (not even the exercise name) ever leaves. Turning this off stops future downloads; it doesn't delete what's already saved."))
+                .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
+                .fixedSize(horizontal: false, vertical: true)
+            mediaDownloadStatus
+            // Ronda 2 #13 (revierte una regresión de ronda 1): visible cuando hay caché EN DISCO,
+            // no cuando `downloadState` de ESTA sesión no es `.idle` — al relanzar la app el estado
+            // vuelve a `.idle` aunque el caché siga lleno, así que el botón se volvía inalcanzable
+            // sin antes encender el toggle (disparando red) solo para poder borrar. El diálogo de
+            // confirmación NO cuelga de este botón: vive en el cuerpo estable del landing, junto al
+            // de Recalibrar, para que borrar (que hace desaparecer este botón) no desmonte al
+            // presentador a media salida.
+            if mediaCoordinator.hasCachedMedia {
+                LiquidCapilar(eje: .horizontal)
+                Button(role: .destructive) { confirmDeleteMedia = true } label: {
+                    Text(String(localized: "Delete downloaded animations"))
+                        .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.negativo)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .liquidTarjetaSeccion()
+        // El confirm de borrar-animaciones vive en la tarjeta ESTABLE de la Biblioteca (siempre montada;
+        // solo el botón es condicional), NO en el landing: así NO comparte vista con el confirm de
+        // Recalibrar —SwiftUI honra un solo `.confirmationDialog` por vista, el bug de FER-174— y borrar
+        // (que desmonta el botón) no tumba al presentador a media salida.
+        .confirmationDialog(
+            String(localized: "Delete all downloaded exercise animations?"),
+            isPresented: $confirmDeleteMedia,
+            titleVisibility: .visible
+        ) {
+            Button(String(localized: "Delete the animations"), role: .destructive) {
+                mediaCoordinator.deleteAllCachedMedia()
+                mediaCoordinator.resetDownloadState()
+            }
+            Button(String(localized: "Keep the animations"), role: .cancel) { }
+        } message: {
+            Text(String(localized: "Saved animations are deleted from your iPhone. You can re-download them anytime."))
         }
     }
 
@@ -421,11 +498,11 @@ private struct AjustesLanding: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(String(localized: "Recalibrate recovery"))
                         .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
-                    Text(String(localized: "Recalibrada el \(recalibratedDateText)"))
+                    Text(String(localized: "Recalibrated on \(recalibratedDateText)"))
                         .font(LiquidType.unidadCompacta).foregroundStyle(LiquidColor.tinta500)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                Button(String(localized: "Deshacer")) { model.undoRecalibrateBaseline() }
+                Button(String(localized: "Undo")) { model.undoRecalibrateBaseline() }
                     .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.negativo)
                     .buttonStyle(.plain)
             }
@@ -479,7 +556,7 @@ private struct AjustesLanding: View {
         case .completed(let matched, let total):
             Text(total == 0
                  ? String(localized: "Already fully downloaded.")
-                 : String(localized: "Download complete: \(matched)/\(total) exercises with video."))
+                 : String(localized: "Download complete: \(matched)/\(total) exercises with animation."))
                 .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta700)
         case .failed:
             Text(String(localized: "Couldn't download. Check your connection and try again."))
@@ -499,6 +576,87 @@ private struct AjustesLanding: View {
         return "\(sys) · \(temp)"
     }
 
+    // MARK: - Notification permission contract (illness watch + rest-end notice)
+    //
+    // The rest-end notice follows the `AvisoMatutinoSection` contract: the system permission is
+    // requested the instant the switch turns ON (never at launch, never mid-session); if iOS denies
+    // it the switch shows OFF and disabled with a note + an «Open Settings» deep-link, instead of
+    // staying lit and promising a notice that will never arrive; and the real permission is reread
+    // whenever the app returns to the foreground. Its ONLY surface IS the system notification, so
+    // that contract fits it exactly.
+    //
+    // The illness watch does NOT share that contract (ronda 2 #1 reverts a ronda-1 regression that
+    // copied it wholesale): its live surface is the Hoy banner, not a notification, so the switch
+    // always reflects the PREFERENCE alone — never disabled, never auto-off on a denial. The
+    // permission is still requested on enable (for the system notice), and still reread on
+    // foreground, purely to decide whether to show the «you'll still see it in Hoy» note.
+
+    /// The illness-watch switch shows exactly the preference — the permission never overrides it.
+    private var illnessEncendido: Bool { behavior.illnessWatch }
+    /// Preference ON but the system notice denied: the banner in Hoy still fires, only the
+    /// notification won't — the note below says so, the switch stays on.
+    private var illnessNegado: Bool {
+        guard behavior.illnessWatch, let illnessPermiso else { return false }
+        return illnessPermiso == .denied
+    }
+    private func encenderVigilanciaEnfermedad(_ on: Bool) {
+        // La preferencia manda YA, pase lo que pase con el permiso que se pide abajo.
+        behavior.illnessWatch = on
+        model.reevaluateIllness()
+        guard on else { return }
+        Task {
+            var estado = await IllnessNotifier.authorizationStatus()
+            if estado == .notDetermined {
+                _ = await IllnessNotifier.requestAuthorization()
+                estado = await IllnessNotifier.authorizationStatus()
+            }
+            illnessPermiso = estado
+        }
+    }
+
+    /// Same shape for the rest-end notice; `restNotify` keeps holding what the owner ASKED for
+    /// (`RestEndNotifier.schedule` rechecks the real system permission at schedule time regardless).
+    private var restEncendido: Bool {
+        guard restNotify else { return false }
+        guard let restPermiso else { return true }
+        return restPermiso == .authorized
+    }
+    private var restNegado: Bool {
+        guard restNotify, let restPermiso else { return false }
+        return restPermiso == .denied
+    }
+    private func encenderAvisoDescanso(_ on: Bool) {
+        guard on else {
+            restNotify = false
+            RestEndNotifier.cancel()
+            return
+        }
+        pidiendoPermisoDescanso = true
+        Task {
+            var estado = await RestEndNotifier.authorizationStatus()
+            if estado == .notDetermined {
+                _ = await RestEndNotifier.requestAuthorization()
+                estado = await RestEndNotifier.authorizationStatus()
+            }
+            restPermiso = estado
+            restNotify = true
+            pidiendoPermisoDescanso = false
+        }
+    }
+
+    /// Reads both real permissions — called on appear and every time the app returns to the
+    /// foreground (`scenePhase == .active`), so Ajustes de iOS granting/denying either one is
+    /// reflected here without needing to toggle anything.
+    @MainActor
+    private func sincronizarPermisosDeAviso() async {
+        illnessPermiso = await IllnessNotifier.authorizationStatus()
+        restPermiso = await RestEndNotifier.authorizationStatus()
+    }
+
+    private func abrirAjustesDeIOS() {
+        if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
+    }
+
     // MARK: - Section scaffolding (Liquid: inset franja overline, DataSourcesView's pattern)
 
     @ViewBuilder
@@ -513,7 +671,7 @@ private struct AjustesLanding: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    // MARK: - Sibling sheet (Data & sources · About & support — each owns its own background)
+    // MARK: - Sibling sheet (Data Sources · About & support — each owns its own background)
 
     @ViewBuilder
     private func sheetContent(_ screen: AjustesSheetScreen) -> some View {
@@ -561,17 +719,50 @@ private struct AjustesLanding: View {
 // MARK: - Profile wheel (a focused wheel for Age / Weight / Height)
 
 /// «Editar perfil» — a single value behind a `Picker(.wheel)`, honouring the imperial display
-/// preference (the wheel itself shows lb / ft·in and writes the SI equivalent back). Stored data
-/// is unchanged; only how it's entered.
+/// preference (the wheel itself shows lb / ft·in and writes the SI equivalent back). Ronda 2 #8:
+/// the wheel used to write straight into `profile.*` on every tick (a stray flick silently retuned
+/// Tanaka, HR zones and kcal) with no way back — it now edits a LOCAL snapshot and only reaches
+/// `profile.*` on «Listo»; «Cancelar» discards it. `profile` arrives as a plain reference (not
+/// `@EnvironmentObject`): the caller already holds it and the local snapshot must be seeded once,
+/// at init, before the environment would even be available.
 private struct ProfileWheelSheet: View {
     let wheel: ProfileWheel
+    let profile: ProfileStore
     @Environment(\.dismiss) private var dismiss
-    @EnvironmentObject private var profile: ProfileStore
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
     private var unitSystem: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
 
+    @State private var age: Int
+    @State private var weightKg: Double
+    @State private var heightCm: Double
+
+    init(wheel: ProfileWheel, profile: ProfileStore) {
+        self.wheel = wheel
+        self.profile = profile
+        _age = State(initialValue: profile.age)
+        _weightKg = State(initialValue: profile.weightKg)
+        _heightCm = State(initialValue: profile.heightCm)
+    }
+
+    // Ronda 3 #1: NO NavigationStack — no abraza su contenido, llena el detent y rompe
+    // `.fittedSheet()` (la rueda quedaba recortada en el detent inicial de 320). Cancelar/Listo
+    // viven como una barra DENTRO del VStack que `.fittedSheet()` mide, no en un toolbar de nav.
     var body: some View {
         VStack(alignment: .leading, spacing: LiquidSpace.s600) {
+            HStack {
+                Button(String(localized: "Cancel")) { dismiss() }
+                    .foregroundStyle(LiquidColor.tinta700)
+                Spacer()
+                Button(String(localized: "Done")) {
+                    profile.age = age
+                    profile.weightKg = weightKg
+                    profile.heightCm = heightCm
+                    dismiss()
+                }
+                .foregroundStyle(LiquidColor.tinta900)
+            }
+            .font(LiquidType.boton)
+
             VStack(alignment: .leading, spacing: LiquidSpace.s100) {
                 Text(String(localized: "Profile"))
                     .font(LiquidType.franja).tracking(LiquidType.franjaTracking).textCase(.uppercase)
@@ -601,15 +792,15 @@ private struct ProfileWheelSheet: View {
     @ViewBuilder private var wheelBody: some View {
         switch wheel {
         case .age:
-            Picker(String(localized: "Age"), selection: $profile.age) {
+            Picker(String(localized: "Age"), selection: $age) {
                 ForEach(13...100, id: \.self) { Text("\($0)").tag($0) }
             }
             .pickerStyle(.wheel).labelsHidden().tint(LiquidColor.tinta900)
         case .weight:
             if unitSystem == .imperial {
                 let pounds = Binding<Double>(
-                    get: { UnitFormatter.kgToPounds(profile.weightKg) },
-                    set: { profile.weightKg = UnitFormatter.poundsToKg($0) })
+                    get: { UnitFormatter.kgToPounds(weightKg) },
+                    set: { weightKg = UnitFormatter.poundsToKg($0) })
                 let opts = Array(stride(from: 66.0, through: 551.0, by: 1))
                 let lb = snapped(pounds, options: opts)
                 Picker(String(localized: "Weight in pounds"), selection: lb) {
@@ -618,7 +809,7 @@ private struct ProfileWheelSheet: View {
                 .pickerStyle(.wheel).labelsHidden().tint(LiquidColor.tinta900)
             } else {
                 let opts = Array(stride(from: 30.0, through: 250.0, by: 0.5))
-                let kg = snapped($profile.weightKg, options: opts)
+                let kg = snapped($weightKg, options: opts)
                 Picker(String(localized: "Weight in kilograms"), selection: kg) {
                     ForEach(opts, id: \.self) { Text(String(format: "%.1f kg", $0)).tag($0) }
                 }
@@ -627,21 +818,21 @@ private struct ProfileWheelSheet: View {
         case .height:
             if unitSystem == .imperial {
                 let inchesValue = Binding<Double>(
-                    get: { UnitFormatter.cmToInches(profile.heightCm).rounded() },
-                    set: { profile.heightCm = $0 * UnitFormatter.centimetersPerInch })
+                    get: { UnitFormatter.cmToInches(heightCm).rounded() },
+                    set: { heightCm = $0 * UnitFormatter.centimetersPerInch })
                 let opts = Array(stride(from: 47.0, through: 91.0, by: 1))
                 let inches = snapped(inchesValue, options: opts)
                 Picker(String(localized: "Height in inches"), selection: inches) {
-                    ForEach(opts, id: \.self) { v -> Text in
+                    ForEach(opts, id: \.self) { v in
                         let ft = Int(v) / 12, inch = Int(v) % 12
-                        return Text("\(ft)′ \(inch)″")
+                        Text("\(ft)′ \(inch)″").tag(v)
                     }
                 }
                 .pickerStyle(.wheel).labelsHidden().tint(LiquidColor.tinta900)
             } else {
                 let opts = Array(stride(from: 120.0, through: 230.0, by: 1))
-                let cm = snapped($profile.heightCm, options: opts)
-                Picker(String(localized: "Height in centimetres"), selection: cm) {
+                let cm = snapped($heightCm, options: opts)
+                Picker(String(localized: "Height in centimeters"), selection: cm) {
                     ForEach(opts, id: \.self) { Text("\(Int($0)) cm").tag($0) }
                 }
                 .pickerStyle(.wheel).labelsHidden().tint(LiquidColor.tinta900)
@@ -662,17 +853,42 @@ private struct ProfileWheelSheet: View {
 
 /// «FC máxima» — a focused sheet over `profile.hrMaxOverride` (0 = auto). The segmented control is pure
 /// UI sugar on that one value: Auto shows the Tanaka estimate large; Manual reveals a wheel writing the
-/// override (and notes it's anulando the auto estimate).
+/// override (and notes it's anulando the auto estimate). Ronda 2 #8: same fix as `ProfileWheelSheet` —
+/// edits a LOCAL snapshot, only reaches `profile.hrMaxOverride` on «Listo»; «Cancelar» discards it.
 private struct MaxHRSheet: View {
-    @EnvironmentObject private var profile: ProfileStore
-    /// Local mode toggle. Drives the override: Auto → 0; Manual → keep/seed a concrete bpm.
-    @State private var manual = false
+    let profile: ProfileStore
+    @Environment(\.dismiss) private var dismiss
+    /// Local mode toggle. Drives the LOCAL override: Auto → 0; Manual → keep/seed a concrete bpm.
+    @State private var manual: Bool
+    @State private var overrideBpm: Int
+
+    init(profile: ProfileStore) {
+        self.profile = profile
+        let auto = Int((208 - 0.7 * Double(profile.age)).rounded())
+        _manual = State(initialValue: profile.hrMaxOverride > 0)
+        _overrideBpm = State(initialValue: profile.hrMaxOverride > 0 ? profile.hrMaxOverride : auto)
+    }
 
     /// The Tanaka auto estimate (208 − 0.7·age), shown in Auto and referenced in Manual.
     private var autoBpm: Int { Int((208 - 0.7 * Double(profile.age)).rounded()) }
 
+    // Ronda 3 #1: NO NavigationStack (ver ProfileWheelSheet) — Cancelar/Listo en una barra
+    // dentro del VStack que mide `.fittedSheet()`, para que la rueda Manual (que crece) no
+    // se recorte en el detent inicial.
     var body: some View {
         VStack(alignment: .leading, spacing: LiquidSpace.s600) {
+            HStack {
+                Button(String(localized: "Cancel")) { dismiss() }
+                    .foregroundStyle(LiquidColor.tinta700)
+                Spacer()
+                Button(String(localized: "Done")) {
+                    profile.hrMaxOverride = manual ? overrideBpm : 0
+                    dismiss()
+                }
+                .foregroundStyle(LiquidColor.tinta900)
+            }
+            .font(LiquidType.boton)
+
             VStack(alignment: .leading, spacing: LiquidSpace.s100) {
                 Text(String(localized: "Profile"))
                     .font(LiquidType.franja).tracking(LiquidType.franjaTracking).textCase(.uppercase)
@@ -688,12 +904,11 @@ private struct MaxHRSheet: View {
             }
             .pickerStyle(.segmented)
             .onChange(of: manual) { _, isManual in
-                if isManual { if profile.hrMaxOverride == 0 { profile.hrMaxOverride = autoBpm } }
-                else { profile.hrMaxOverride = 0 }
+                if isManual, overrideBpm == 0 { overrideBpm = autoBpm }
             }
 
             if manual {
-                Picker(String(localized: "Maximum heart rate"), selection: $profile.hrMaxOverride) {
+                Picker(String(localized: "Maximum heart rate"), selection: $overrideBpm) {
                     ForEach(100...230, id: \.self) { Text("\($0)").tag($0) }
                 }
                 .pickerStyle(.wheel).labelsHidden().tint(LiquidColor.tinta900)
@@ -719,7 +934,6 @@ private struct MaxHRSheet: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background { LiquidSheetFondo().ignoresSafeArea() }
         .fittedSheet()
-        .onAppear { manual = profile.hrMaxOverride > 0 }
     }
 }
 
@@ -728,11 +942,21 @@ private struct MaxHRSheet: View {
 /// «Unidades y formato» — the display-only unit prefs. Nothing stored changes; this only changes
 /// how values are shown.
 private struct UnidadesSheet: View {
+    @Environment(\.dismiss) private var dismiss
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
     @AppStorage(UnitPrefs.temperatureKey) private var temperatureRaw = ""
 
+    // Ronda 3 #1: NO NavigationStack (ver ProfileWheelSheet). Aquí no hubo nunca Cancelar —
+    // los bindings son vivos (`$unitSystemRaw`/`$temperatureRaw`), solo hay Listo para cerrar.
     var body: some View {
         VStack(alignment: .leading, spacing: LiquidSpace.s600) {
+            HStack {
+                Spacer()
+                Button(String(localized: "Done")) { dismiss() }
+                    .foregroundStyle(LiquidColor.tinta900)
+            }
+            .font(LiquidType.boton)
+
             VStack(alignment: .leading, spacing: LiquidSpace.s100) {
                 Text(String(localized: "Display"))
                     .font(LiquidType.franja).tracking(LiquidType.franjaTracking).textCase(.uppercase)
@@ -759,12 +983,16 @@ private struct UnidadesSheet: View {
                 HStack(spacing: LiquidSpace.s400) {
                     Text(String(localized: "Temperature")).font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
                         .frame(maxWidth: .infinity, alignment: .leading)
+                    // Ronda 2 #11 (revierte una regresión de ronda 1): «Match system»/«Según el
+                    // sistema» alargó la etiqueta y reabrió el mismo truncado que un segmentado de
+                    // 3 con `.fixedSize()` ya tenía — un menú no trunca y no necesita el hack de
+                    // ancho.
                     Picker(String(localized: "Temperature"), selection: $temperatureRaw) {
-                        Text(String(localized: "Match")).tag("")
+                        Text(String(localized: "Match system")).tag("")
                         Text("°C").tag(TemperatureUnit.celsius.rawValue)
                         Text("°F").tag(TemperatureUnit.fahrenheit.rawValue)
                     }
-                    .labelsHidden().pickerStyle(.segmented).fixedSize()
+                    .labelsHidden().pickerStyle(.menu).tint(LiquidColor.tinta700)
                 }
             }
         }

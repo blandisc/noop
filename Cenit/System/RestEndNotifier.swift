@@ -32,6 +32,12 @@ enum RestEndNotifier {
             .requestAuthorization(options: [.alert, .sound])) ?? false
     }
 
+    /// El permiso real, releído cada vez que Ajustes vuelve a primer plano — para que concederlo en
+    /// Ajustes de iOS y regresar no deje el interruptor congelado en su verdad vieja.
+    static func authorizationStatus() async -> UNAuthorizationStatus {
+        await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
+    }
+
     /// Si este descanso merece un aviso. Pura y probada aparte: un `endsAt` ya vencido (el caso de
     /// reabrir la app con un descanso viejo en el modelo) dispararía un aviso inmediato de algo que
     /// terminó hace rato.

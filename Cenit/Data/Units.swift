@@ -29,7 +29,7 @@ enum TemperatureUnit: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 }
 
-/// UserDefaults keys for the two unit preferences. Public-ish (internal) so `SettingsView`'s
+/// UserDefaults keys for the two unit preferences. Public-ish (internal) so `AjustesView`'s
 /// `@AppStorage(UnitPrefs.systemKey)` and the formatter read the SAME key — no drift.
 enum UnitPrefs {
     static let systemKey = "units.system"

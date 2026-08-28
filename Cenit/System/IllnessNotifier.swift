@@ -10,10 +10,18 @@ enum IllnessNotifier {
     private static let lastDayKey = "behavior.illnessLastNotifiedDay"
 
     /// Ask up front (called when the user enables the watch) so the system dialog appears at a
-    /// predictable moment, not on the first 3 a.m. transition.
-    static func requestAuthorization() {
-        UNUserNotificationCenter.current()
-            .requestAuthorization(options: [.alert, .sound]) { _, _ in }
+    /// predictable moment, not on the first 3 a.m. transition. Returns whether the system granted
+    /// it: the caller (Ajustes) needs the answer to decide whether the switch may show ON.
+    @discardableResult
+    static func requestAuthorization() async -> Bool {
+        (try? await UNUserNotificationCenter.current()
+            .requestAuthorization(options: [.alert, .sound])) ?? false
+    }
+
+    /// The current, real system permission — read again whenever Ajustes returns to the foreground,
+    /// so granting it in iOS Settings and coming back doesn't leave the switch on stale state.
+    static func authorizationStatus() async -> UNAuthorizationStatus {
+        await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
     }
 
     /// Post the early-warning, at most once per local calendar day.

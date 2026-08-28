@@ -27,6 +27,16 @@ struct MediaCache {
         FileManager.default.fileExists(atPath: thumbPath(exerciseId).path)
     }
 
+    /// Whether ANYTHING at all is cached on disk right now (ronda 2 #13) — cheap directory-emptiness
+    /// check, independent of any in-memory download-session state. Used to decide whether «Borrar
+    /// animaciones» has anything to act on: a session's `downloadState` resets to `.idle` on every
+    /// relaunch even though the cache survives, so that state alone can't answer this.
+    var hasAnyThumb: Bool {
+        guard let contents = try? FileManager.default.contentsOfDirectory(
+            at: mediaDir, includingPropertiesForKeys: nil) else { return false }
+        return !contents.isEmpty
+    }
+
     func thumbPath(_ exerciseId: String) -> URL {
         mediaDir.appendingPathComponent("\(Self.sanitize(exerciseId)).gif")
     }

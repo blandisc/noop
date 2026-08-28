@@ -50,33 +50,52 @@ struct CyclePhaseSheet: View {
     @AppStorage(CyclePhaseExperiment.consentVersionKey) private var consentVersion = 0
 
     var body: some View {
-        ScrollView {
-            Group {
+        // Ronda 2 #9: la hoja no tenía «Listo» — solo swipe, que en Dynamic Type / VoiceOver no es
+        // un cierre. NavigationStack + toolbar, mismo patrón que Data Sources.
+        //
+        // Ronda 3 #2: ese «Listo» pintaba TAMBIÉN en el consentimiento (`enabled == false`), donde
+        // cierra sin activar (`dismiss()`) — un botón a la derecha, en iOS, se lee como confirmar, y
+        // ahí ya viven «Turn on experiment» / «Not now». Quien marcaba el check y tocaba Listo se
+        // iba con el experimento APAGADO. Ahora el toolbar solo pinta Listo en la tarjeta de ESTADO
+        // (`enabled == true`); el consentimiento no pinta Done.
+        NavigationStack {
+            ScrollView {
+                Group {
+                    if enabled {
+                        // FER-184: real Apple wrist temperature, straight off repo.days — no strap-domain
+                        // clearing to undo (Cénit is Apple-only; there's no cross-source mix left to guard).
+                        CyclePhaseStateBody(days: repo.days, onDeactivate: {
+                            enabled = false
+                            // Apagar debe surtir efecto YA: el veredicto en memoria aún lleva el margen lútea
+                            // hasta el próximo sync. Recalcula para retirarlo en el acto (Grok, FER-181-B).
+                            Task { await repo.refresh() }
+                        })
+                    } else {
+                        CyclePhaseConsentBody(onActivate: {
+                            consentVersion = CyclePhaseExperiment.consentVersion
+                            enabled = true
+                            // Encender aplica el margen lútea al número: recalcula ya, no en el próximo sync.
+                            Task { await repo.refresh() }
+                        }, onDecline: { dismiss() })
+                    }
+                }
+                .padding(.horizontal, LiquidSpace.s550)
+                .padding(.top, LiquidSpace.s550)
+                .padding(.bottom, LiquidSpace.s800)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .scrollIndicators(.hidden)
+            .background { LiquidSheetFondo().ignoresSafeArea() }
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
                 if enabled {
-                    // FER-184: real Apple wrist temperature, straight off repo.days — no strap-domain
-                    // clearing to undo (Cénit is Apple-only; there's no cross-source mix left to guard).
-                    CyclePhaseStateBody(days: repo.days, onDeactivate: {
-                        enabled = false
-                        // Apagar debe surtir efecto YA: el veredicto en memoria aún lleva el margen lútea
-                        // hasta el próximo sync. Recalcula para retirarlo en el acto (Grok, FER-181-B).
-                        Task { await repo.refresh() }
-                    })
-                } else {
-                    CyclePhaseConsentBody(onActivate: {
-                        consentVersion = CyclePhaseExperiment.consentVersion
-                        enabled = true
-                        // Encender aplica el margen lútea al número: recalcula ya, no en el próximo sync.
-                        Task { await repo.refresh() }
-                    }, onDecline: { dismiss() })
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button(String(localized: "Done")) { dismiss() }
+                            .foregroundStyle(LiquidColor.tinta900)
+                    }
                 }
             }
-            .padding(.horizontal, LiquidSpace.s550)
-            .padding(.top, LiquidSpace.s550)
-            .padding(.bottom, LiquidSpace.s800)
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .scrollIndicators(.hidden)
-        .background { LiquidSheetFondo().ignoresSafeArea() }
     }
 }
 
@@ -208,23 +227,33 @@ private struct CyclePhaseStateBody: View {
             .buttonStyle(.plain)
         }
         .sheet(isPresented: $showInfo) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: LiquidSpace.s800) {
-                    VStack(alignment: .leading, spacing: LiquidSpace.s100) {
-                        LiquidOverline(String(localized: "Experiment"))
-                        Text(String(localized: "Cycle phase"))
-                            .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
+            // Ronda 2 #9: mismo «Listo» que la hoja madre — esta también solo cerraba por swipe.
+            NavigationStack {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: LiquidSpace.s800) {
+                        VStack(alignment: .leading, spacing: LiquidSpace.s100) {
+                            LiquidOverline(String(localized: "Experiment"))
+                            Text(String(localized: "Cycle phase"))
+                                .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
+                                .foregroundStyle(LiquidColor.tinta900)
+                        }
+                        CyclePhaseWhatItIs()
+                    }
+                    .padding(.horizontal, LiquidSpace.s550)
+                    .padding(.top, LiquidSpace.s550)
+                    .padding(.bottom, LiquidSpace.s800)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .scrollIndicators(.hidden)
+                .background { LiquidSheetFondo().ignoresSafeArea() }
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button(String(localized: "Done")) { showInfo = false }
                             .foregroundStyle(LiquidColor.tinta900)
                     }
-                    CyclePhaseWhatItIs()
                 }
-                .padding(.horizontal, LiquidSpace.s550)
-                .padding(.top, LiquidSpace.s550)
-                .padding(.bottom, LiquidSpace.s800)
-                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .scrollIndicators(.hidden)
-            .background { LiquidSheetFondo().ignoresSafeArea() }
         }
         .confirmationDialog(
             String(localized: "Turn off experiment"),
@@ -272,7 +301,7 @@ private struct CyclePhaseStateBody: View {
             Text(String(localized: "I need several weeks of nights with your Apple Watch worn to bed to read the rhythm of your temperature. Still watching."))
                 .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta500)
                 .fixedSize(horizontal: false, vertical: true)
-            CyclePhaseProgressBar(fraction: needed > 0 ? min(1, Double(soFar) / Double(needed)) : 0)
+            CyclePhaseProgressBar(soFar: soFar, needed: needed)
                 .padding(.top, LiquidSpace.s100)
             Text(String(localized: "\(soFar) of ~\(needed) nights"))
                 .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
@@ -324,7 +353,10 @@ private struct CyclePhaseStateBody: View {
 
 /// A calm, dateless progress bar for the learning state — a fill fraction, no percentage read-out.
 private struct CyclePhaseProgressBar: View {
-    let fraction: Double
+    let soFar: Int
+    let needed: Int
+
+    private var fraction: Double { needed > 0 ? Double(soFar) / Double(needed) : 0 }
 
     var body: some View {
         GeometryReader { geo in
@@ -336,6 +368,8 @@ private struct CyclePhaseProgressBar: View {
         }
         .frame(height: 6)
         .accessibilityElement()
-        .accessibilityLabel(Text("\(Int((fraction * Double(CyclePhaseEngine.minUsableNights)).rounded())) of ~\(CyclePhaseEngine.minUsableNights) nights learned"))
+        // `soFar`/`needed` directly, not re-derived from `fraction` — the day `needed` changes from
+        // `minUsableNights`, a re-derived label would silently disagree with what the caller passed.
+        .accessibilityLabel(Text("\(soFar) of ~\(needed) nights learned"))
     }
 }

@@ -28,7 +28,6 @@
 %@ ›
 %@%%
 %@, %@%% last night
-%@: all your data, none of the cloud.
 %@–%@%@ · step %@
 %@′ %@″
 %lld breaths
@@ -54,7 +53,6 @@
 /100
 0
 =
-A health app built on Apple Health. Everything stays on this device: your history, your nights, your numbers. Nothing is uploaded. %@ is an independent, experimental project.
 Active session: %@, %@, heart rate %@
 Add %lld exercise(s)
 An estimate with a ±%@-year margin.
@@ -95,7 +93,6 @@ The «vs your base» bars show each signal's deviation in σ (above your base = 
 Timing, %@ seconds
 Vigilar señales de enfermedad
 With this plan: %@×%@ with %@ kg %@ → next time you train with **%@**.
-Write-back to Apple Health: %@/%@ enabled
 You'll lose %lld logged set(s) today. This can't be undone.
 YOUR INVENTORY · PER SIDE
 You're %@ of %@ sessions in with %@.

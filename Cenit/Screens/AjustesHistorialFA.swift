@@ -99,7 +99,10 @@ struct HistorialFASection: View {
                 Text(String(localized: "AFib History, in the Health app"))
                     .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
 
-                Text(String(localized: "If you turn it on there, your Apple Watch measures your heartbeat beat by beat far more often while you sleep. That density is what my nightly HRV reading needs. The morning verdict rides on your resting heart rate, with it or without it."))
+                // Ronda 2 #6: el título prometía «en la app Salud» sin decir DÓNDE, y el botón de
+                // abajo abre la app Salud en su inicio, no en Historial de FA directamente — Apple no
+                // ofrece ese deep link. La ruta se dice aquí, en el cuerpo.
+                Text(String(localized: "In Health: Browse → Heart → AFib History. Turning it on there makes your Apple Watch measure your heartbeat beat by beat far more often while you sleep. That density is what my nightly HRV reading needs. The morning verdict rides on your resting heart rate, with it or without it."))
                     .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta500)
                     .fixedSize(horizontal: false, vertical: true)
 
@@ -118,6 +121,7 @@ struct HistorialFASection: View {
 
                 LiquidNotaLine(String(localized: "I am not recommending it and I am not talking you out of it: both sides are here so you can decide. Cénit does not diagnose anything, and none of this is medical advice."))
             }
+            .liquidTarjetaSeccion()
         }
     }
 
