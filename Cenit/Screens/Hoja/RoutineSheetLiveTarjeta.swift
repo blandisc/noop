@@ -307,9 +307,11 @@ struct HojaTarjetaSuperserieSesion: View {
     private var nombre: String { runs.map(\.name).joined(separator: " ＋ ") }
     private var primerMiembro: Int { members.first ?? 0 }
 
-    /// M — total de rondas del bloque (mismo criterio que `session.supersetRounds(at:)`, ya usado
-    /// por el motor: series de TRABAJO del primer miembro).
-    private var totalRondas: Int { vivo.session.supersetRounds(at: primerMiembro) }
+    /// M — total de rondas del bloque. R2 (ronda 2 del gate FER-168, bloqueante): el MÁXIMO de
+    /// `session.supersetRounds(at:)` sobre TODOS los miembros, no solo el primero — con un miembro
+    /// posterior con más series de trabajo, anclar M al primero dejaba esas rondas sin dibujarse Y
+    /// sin ninguna fila `.activa` (el puntero del motor caía fuera del rango renderizado).
+    private var totalRondas: Int { members.map { vivo.session.supersetRounds(at: $0) }.max() ?? 0 }
 
     /// Cuántas rondas RENDERIZAR (1-based): crecen conforme se completan — nunca se adelantan a una
     /// que el motor no ha alcanzado (el mock nunca dibuja una ronda 3 futura mientras la 2 sigue
@@ -335,15 +337,27 @@ struct HojaTarjetaSuperserieSesion: View {
     }
 
     /// La ronda (1-based) que el descanso EN VUELO cierra — `nil` si este bloque no está
-    /// descansando ahora. El motor solo descansa tras el ÚLTIMO miembro del grupo (round-robin: los
-    /// demás saltan sin descanso), así que `restOwnerSetId` siempre es una serie de `members.last` —
-    /// su work-index + 1 es la ronda.
+    /// descansando ahora. R3 (ronda 2 del gate FER-168, bloqueante): busca `restOwnerSetId` en
+    /// CUALQUIER miembro del bloque, no asume `members.last` — el motor descansa tras quien de
+    /// verdad cierra la ronda, que NO es siempre el último índice del grupo (un miembro posterior
+    /// saltado, o uno anterior con más rondas de trabajo que el resto). Anclar por posición hacía
+    /// desaparecer la banda entera en esos casos.
     private var rondaDelDescanso: Int? {
-        guard vivo.session.phase == .resting, let ownerId = vivo.session.restOwnerSetId,
-              let last = members.last, vivo.session.runs.indices.contains(last) else { return nil }
-        let work = vivo.session.runs[last].sets.filter { $0.kind == .work }
-        guard let workIdx = work.firstIndex(where: { $0.id == ownerId }) else { return nil }
-        return workIdx + 1
+        guard vivo.session.phase == .resting, let ownerId = vivo.session.restOwnerSetId else { return nil }
+        for ei in members where vivo.session.runs.indices.contains(ei) {
+            let work = vivo.session.runs[ei].sets.filter { $0.kind == .work }
+            if let workIdx = work.firstIndex(where: { $0.id == ownerId }) { return workIdx + 1 }
+        }
+        return nil
+    }
+
+    /// R3: la banda solo se pinta cuando la ronda `r` está visualmente CERRADA — todas sus filas
+    /// (las que de verdad tienen slot en esa ronda, `miembros(enRonda:)`) ya `.hecha`. Antes se
+    /// pintaba con solo `rondaDelDescanso == r`, sin exigirlo (Grok G4): un miembro con más rondas
+    /// que el que acaba de cerrar podía quedar sin su fila visualmente marcada todavía.
+    private func rondaCerrada(_ r: Int) -> Bool {
+        let slots = miembros(enRonda: r)
+        return !slots.isEmpty && slots.allSatisfy { $0.run.sets[$0.si].done }
     }
 
     var body: some View {
@@ -354,11 +368,42 @@ struct HojaTarjetaSuperserieSesion: View {
             ForEach(rondaSlots) { slot in bloqueRonda(slot.numero) }
         }
         .liquidEntrada()
+        // R1 (ronda 2 del gate FER-168, bloqueante): menú CONSCIENTE de superserie, no el de un
+        // ejercicio suelto aplicado a `members[0]` — ver `menuItemsSuperserie`.
         .paperMenu(
             isPresented: Binding(get: { vivo.menuExerciseIndex == primerMiembro }, set: { if !$0 { vivo.menuExerciseIndex = nil } }),
-            items: runs.first.map { vivo.exerciseMenuItems(ei: primerMiembro, run: $0) } ?? []
+            items: menuItemsSuperserie
         )
         .accessibilityElement(children: .contain)
+    }
+
+    // MARK: - «···» del BLOQUE (R1, ronda 2 del gate FER-168)
+    //
+    // Antes: `vivo.exerciseMenuItems(ei: primerMiembro)` — el menú de UN ejercicio, aplicado al
+    // primer miembro. Rompía dos veces: «Deshacer superserie» llamaba `toggleSupersetWithNext`
+    // (desempareja DOS vecinos — con 3+ miembros dejaba 2 sueltos + 1 huérfano, QA D1/D2/D3), y
+    // «Mover arriba/abajo» hacía `swapAt` de un solo índice sin conciencia de grupo, fragmentando el
+    // bloque. Ahora: acciones de BLOQUE arriba (Foco — ya es global al motor, no por-miembro; Deshacer
+    // superserie — `breakSupersetBlock`, el grupo COMPLETO de una vez) + un submenú POR MIEMBRO,
+    // rotulado con su nombre, para lo que sí es individual (Progresión / Cambiar ejercicio / Quitar
+    // de la sesión) — paridad con el patrón que ya usa `HojaTarjetaSuperserieCompuesta` en edición.
+    // «Mover» se RETIRA del menú vivo (decisión, spec R1): mover el bloque como unidad es F4/B8,
+    // fuera de esta ronda; no hay «mover a medias» aquí.
+    private var menuItemsSuperserie: [PaperMenuItem] {
+        var rows: [PaperMenuItem] = []
+        if vivo.puedeEnfocar {
+            rows.append(.init(String(localized: "Focus"), systemImage: "arrow.up.left.and.arrow.down.right") {
+                vivo.focusMode = true
+            })
+        }
+        rows.append(.init(String(localized: "Undo superset"), systemImage: "link", isDestructive: true) {
+            vivo.breakSupersetBlock(members: members)
+        })
+        for (ei, run) in zip(members, runs) {
+            rows.append(.init(run.name, systemImage: nil,
+                              children: vivo.exerciseMenuItems(ei: ei, run: run, incluirEstructura: false)))
+        }
+        return rows
     }
 
     // MARK: - Rondas
@@ -371,7 +416,13 @@ struct HojaTarjetaSuperserieSesion: View {
         HojaRondaDivisor(texto: rondaTexto(r))
         let slots = miembros(enRonda: r)
         ForEach(slots) { m in filaRonda(m, ronda: r, esPrimera: m.id == slots.first?.id) }
-        if rondaDelDescanso == r { vivo.restBand().padding(.top, 6) }
+        // R3: además de ser la ronda dueña del descanso, exige que esté CERRADA (todas sus filas
+        // hechas) — sin este guard se podía pintar antes de que la última fila terminara de marcar.
+        if rondaDelDescanso == r, rondaCerrada(r) {
+            // R6: la banda de RONDA dice «Descanso · ronda», no «Descanso · serie N → M» (ese
+            // conteo es de UN ejercicio; no significa nada cerrando una ronda de varios miembros).
+            vivo.restBand(esRonda: true).padding(.top, CenitMetrics.space2)
+        }
     }
 
     private func rondaTexto(_ r: Int) -> String {
@@ -422,7 +473,7 @@ struct HojaTarjetaSuperserieSesion: View {
             q: marca == .hecha ? set.rpe.map(LiveStrengthSheet.qLabel(fromRPE:)) : nil,
             ant: nil, esPrimera: esPrimera
         )
-        return VStack(alignment: .leading, spacing: 2) {
+        return VStack(alignment: .leading, spacing: CenitMetrics.space1) {
             Text(slot.run.name)
                 .font(StrandFont.caption).foregroundStyle(vivo.sheet.theme.inkTertiary).lineLimit(1)
                 // A11y: «Zancadas, ronda 2 de 3» — el nombre por sí solo no basta para orientar en
@@ -478,8 +529,13 @@ struct HojaTarjetaSuperserieSesion: View {
             q: marca == .hecha ? slot.set.rpe.map(LiveStrengthSheet.qLabel(fromRPE:)) : nil,
             ant: nil, esPrimera: esPrimera
         )
-        return VStack(alignment: .leading, spacing: 2) {
-            Text(slot.run.name).font(StrandFont.caption).foregroundStyle(vivo.sheet.theme.inkTertiary).lineLimit(1)
+        return VStack(alignment: .leading, spacing: CenitMetrics.space1) {
+            Text(slot.run.name)
+                .font(StrandFont.caption).foregroundStyle(vivo.sheet.theme.inkTertiary).lineLimit(1)
+                // R4 (Grok G5): paridad con `filaRonda` — un label EXPLÍCITO en la cápita, no
+                // implícito por el texto visible. Aquí no hay «ronda» que inyectar (el sufijo «C»
+                // ya lo dice `HojaFilaSerie` como «Warm-up»), pero la fila queda igual de intencional.
+                .accessibilityLabel(Text(verbatim: slot.run.name))
             HojaFilaSerie(datos: datos, contexto: .sesion, marca: marca) {
                 vivo.confirmOrToggleSet(ei: slot.ei, si: slot.si)
             }
