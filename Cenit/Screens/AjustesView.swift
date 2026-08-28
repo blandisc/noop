@@ -165,27 +165,6 @@ private struct AjustesLanding: View {
         } message: {
             Text(String(localized: "Your baseline will re-anchor from today and your earlier nights will be ignored. You'll lose your recovery number for a few days while it recalibrates. Your data and history aren't deleted."))
         }
-        // Ronda 2 #13 (revierte una regresión de ronda 1): el confirm de borrar-media vivía colgado
-        // del propio botón destructivo, dentro de una rama que desaparece justo cuando se confirma el
-        // borrado (`hasCachedMedia` pasa a false) — la vista que lo hospedaba se desmontaba a media
-        // salida, el mismo bug que Recalibrar ya tuvo y resolvió subiendo el diálogo aquí, al cuerpo
-        // ESTABLE del landing (SwiftUI sí admite varios `.confirmationDialog` en la misma vista; cada
-        // uno tiene su propio `isPresented`).
-        .confirmationDialog(
-            String(localized: "Delete all downloaded exercise animations?"),
-            isPresented: $confirmDeleteMedia,
-            titleVisibility: .visible
-        ) {
-            Button(String(localized: "Delete the animations"), role: .destructive) {
-                mediaCoordinator.deleteAllCachedMedia()
-                // El borrado por sí solo no limpia el estado de progreso: sin esto la línea
-                // seguía diciendo «Download complete: X/Y» sobre un caché vacío.
-                mediaCoordinator.resetDownloadState()
-            }
-            Button(String(localized: "Keep the animations"), role: .cancel) { }
-        } message: {
-            Text(String(localized: "Saved animations are deleted from your iPhone. You can re-download them anytime."))
-        }
     }
 
     // MARK: - Header (one-off chrome: wordmark + a privacy line)
@@ -477,6 +456,23 @@ private struct AjustesLanding: View {
             }
         }
         .liquidTarjetaSeccion()
+        // El confirm de borrar-animaciones vive en la tarjeta ESTABLE de la Biblioteca (siempre montada;
+        // solo el botón es condicional), NO en el landing: así NO comparte vista con el confirm de
+        // Recalibrar —SwiftUI honra un solo `.confirmationDialog` por vista, el bug de FER-174— y borrar
+        // (que desmonta el botón) no tumba al presentador a media salida.
+        .confirmationDialog(
+            String(localized: "Delete all downloaded exercise animations?"),
+            isPresented: $confirmDeleteMedia,
+            titleVisibility: .visible
+        ) {
+            Button(String(localized: "Delete the animations"), role: .destructive) {
+                mediaCoordinator.deleteAllCachedMedia()
+                mediaCoordinator.resetDownloadState()
+            }
+            Button(String(localized: "Keep the animations"), role: .cancel) { }
+        } message: {
+            Text(String(localized: "Saved animations are deleted from your iPhone. You can re-download them anytime."))
+        }
     }
 
     /// «Recalibrar recuperación» (FER-677): re-anchors every nightly baseline from today. Two states —
