@@ -262,7 +262,11 @@ struct LiveStrengthSheet: View {
     /// Theme, banners, library picker, rest-anchor onChange — no session sheets yet.
     private var bodyChrome: some View {
         bodyPhaseContent
-            .background(theme.paper.ignoresSafeArea())
+            // FER-198 (Ola 2, épico FER-195): fondo de vidrio El Eje (Ola 1, FER-197) para las 3
+            // secciones que este tipo monta (nothingToSave / summaryPhase / emptyAdHocSession) —
+            // un solo `fullScreenCover`, un solo fondo compartido; ninguna cambia su header (no
+            // traen uno propio) ni su lógica de cierre.
+            .entrenarHojaFondo(tono: .neutro)
             .instrumentoTheme(theme)
             .safeAreaInset(edge: .top) { if session.saveError { saveErrorBanner } }
             // FER-969: mid-session routine write failure (insert / superset / progression) — toast only;
@@ -1099,7 +1103,10 @@ struct LiveStrengthSheet: View {
             .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(theme.paper)
+        // FER-198 (Ola 2): SIN fondo propio — lo aporta el `.entrenarHojaFondo` compartido de
+        // `bodyChrome` (una sola raíz para las 3 secciones). Un segundo aquí apilaba material y
+        // destello (costura visible); el `.background(theme.paper)` opaco de antes se removió por lo
+        // mismo. Buscador de frescura y demás lógica de esta sección, intactos.
         .safeAreaInset(edge: .top, spacing: 0) { liveHead }
         // FER-82: las sugerencias las gatea el veredicto, así que una lista calculada mientras el
         // veredicto todavía se computaba está vencida en cuanto aterriza. Se recalcula cuando el
