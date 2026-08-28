@@ -39,7 +39,9 @@ struct PlatesScreen: View {
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
-                    header
+                    // FER-198 (Ola 2): la cabecera de la familia El Eje reemplaza el overline a
+                    // mano + `BackButton` — mismo `exerciseName`, sin copy nueva.
+                    EntrenarHojaCabecera(titulo: exerciseName, tono: .ambar, salida: .cerrar, onSalir: onClose)
                     loadedTotal
                     barDiagram
                     inventorySection
@@ -54,20 +56,10 @@ struct PlatesScreen: View {
             }
             .onAppear { if startAtWarmup { proxy.scrollTo("warmup", anchor: .top) } }
         }
-        .background(theme.paper.ignoresSafeArea())
+        .entrenarHojaFondo(tono: .ambar)
         .instrumentoTheme(theme)
         .preferredColorScheme(.light)
         .edgeSwipeToExit(onClose)
-    }
-
-    // MARK: Header
-
-    private var header: some View {
-        HStack {
-            Text(exerciseName.uppercased()).groteskOverline().foregroundStyle(theme.inkTertiary)
-            Spacer()
-            BackButton(role: .close, theme: theme, action: onClose)
-        }
     }
 
     // MARK: The dominant number — the loaded total
@@ -109,33 +101,16 @@ struct PlatesScreen: View {
 
     // MARK: Bar diagram (to scale, per side)
 
+    // FER-198 (Ola 2): `EntrenarFilaDiscos` es el mismo diagrama re-vestido — misma fórmula de
+    // alto/ancho por kg, mismo orden invertido/directo por lado, mismo color del DATO
+    // (`theme.dataStrain` == `LiquidColor.ambar` #C4631F); la barra central y el microtexto migran
+    // a tokens Liquid (`tinta10`, `LiquidRadius.hairline`, `papelTarjeta`) — reemplaza el
+    // `plateBar` a mano de abajo.
     private var barDiagram: some View {
-        HStack(alignment: .center, spacing: 2) {
-            ForEach(Array(loading.perSide.reversed().enumerated()), id: \.offset) { _, kg in
-                plateBar(kg)
-            }
-            RoundedRectangle(cornerRadius: 2).fill(theme.hairlineStrong) // token-exempt: geometría de dato
-                .frame(width: 54, height: 6)
-            ForEach(Array(loading.perSide.enumerated()), id: \.offset) { _, kg in
-                plateBar(kg)
-            }
-        }
-        .frame(maxWidth: .infinity, minHeight: 76)
-        .accessibilityElement()
-        .accessibilityLabel(Text(perSideCaption))
-    }
-
-    private func plateBar(_ kg: Double) -> some View {
-        // Height scales with plate mass (25 kg → tall, 1.25 kg → short), clamped to a readable band.
-        let h = 30 + min(46, kg * 1.7)
-        return RoundedRectangle(cornerRadius: 3) // token-exempt: geometría de dato
-            .fill(theme.dataStrain)   // los discos SON el dato (carga) — ember, no tinta (handoff)
-            .frame(width: max(8, min(16, 6 + kg * 0.45)), height: h)
-            .overlay(
-                Text(plate(kg)).font(.system(size: 9, weight: .medium)).monospacedDigit() // token-exempt: microtexto <10pt
-                    .foregroundStyle(theme.paper)
-                    .rotationEffect(.degrees(-90)).fixedSize()
-            )
+        EntrenarFilaDiscos(
+            discos: loading.perSide.map { EntrenarFilaDiscos.Disco(masaKg: $0, etiqueta: plate($0)) },
+            tono: .ambar,
+            a11yLabel: perSideCaption)
     }
 
     // MARK: Inventory

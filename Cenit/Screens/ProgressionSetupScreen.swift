@@ -82,9 +82,15 @@ struct ProgressionSetupScreen: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                header
-                InstrumentoFlowTitle(overline: Text("Progression"),
-                                     Text("Raise with the plan"))
+                // FER-198 (Ola 2): la cabecera de la familia El Eje absorbe el `header` a mano
+                // (BackButton solo) Y el `InstrumentoFlowTitle` de abajo — mismas DOS cadenas ya
+                // localizadas («Progression»/«Raise with the plan»), sin copy nueva, sin duplicar
+                // el título. Revisión adversarial: `.cerrar` (aspa) mentía — esta hoja GUARDA al
+                // salir, no descarta, y su ruta fría es un push, no un modal. `.guardar("Save")`
+                // es la afordancia honesta: dice «Guardar» y sigue disparando `saveAndClose`.
+                EntrenarHojaCabecera(titulo: String(localized: "Raise with the plan"),
+                                     subtitulo: String(localized: "Progression"),
+                                     tono: .verde, salida: .guardar(String(localized: "Save")), onSalir: saveAndClose)
                 Text("Cénit proposes the raise when you earn it. You can always edit the cell in session.")
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -138,19 +144,10 @@ struct ProgressionSetupScreen: View {
             .padding(.top, 12).padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(theme.paper.ignoresSafeArea())
+        .entrenarHojaFondo(tono: .verde)
         .instrumentoTheme(theme)
-        // FER-988: deslizar guarda igual que el chevron — la convención del editor Instrumento.
+        // FER-988: deslizar guarda igual que «Guardar» — la convención del editor Instrumento.
         .keepsSwipeBack { saveAndClose(); return false }
-    }
-
-    private var header: some View {
-        HStack {
-            // Saves on back — the Instrumento editor convention (no «OK»); RestEditorScreen's chevron.
-            BackButton(role: .back, theme: theme, action: saveAndClose)
-                .padding(.leading, -2)
-            Spacer()
-        }
     }
 
     // MARK: Rows

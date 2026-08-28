@@ -26,8 +26,8 @@ import SwiftUI
 //
 // | Superficie | Fondo | Cabecera | Presentación |
 // |---|---|---|---|
-// | `ProgressionSetupScreen` | `.entrenarHojaFondo(tono:)` en su raíz | reemplaza su header a mano por `EntrenarHojaCabecera` (no trae `NavigationStack` propio en ningún camino) | fría: push (`.navigationDestination`, `RoutineSheet.swift`) · viva: sheet sin detent explícito (`RoutineSheetLive.swift`/`LiveStrengthSheet.swift`) |
-// | `RestEditorScreen` | `.entrenarHojaFondo(tono:)` | reemplaza su header a mano (hoy `BackButton`) por `EntrenarHojaCabecera(.cerrar)` | fría: push · viva: sheet `.large` |
+// | `ProgressionSetupScreen` | `.entrenarHojaFondo(tono:)` en su raíz | reemplaza su header a mano por `EntrenarHojaCabecera(.guardar(_:))` — GUARDA al salir (`saveAndClose`), no descarta; `.cerrar` (aspa) mentiría (no trae `NavigationStack` propio en ningún camino) | fría: push (`.navigationDestination`, `RoutineSheet.swift`) · viva: sheet sin detent explícito (`RoutineSheetLive.swift`/`LiveStrengthSheet.swift`) |
+// | `RestEditorScreen` | `.entrenarHojaFondo(tono:)` | reemplaza su header a mano (hoy `BackButton`) por `EntrenarHojaCabecera(.cancelar(_:))` — cierra DESCARTANDO (`onCancel`); el «Apply» commitea aparte | fría: push · viva: sheet `.large` |
 // | `RPESheet` | `.entrenarHojaFondo(tono: .ambar)` | reemplaza título+`BackButton` a mano por `EntrenarHojaCabecera(.cerrar)` | sheet `.height(560)`, fila de 6 (`EntrenarFilaEsfuerzo`) |
 // | `NoteSheet` | `.entrenarHojaFondo(tono: .ambar)` — el `TextEditor` (`EntrenarNotaCampo`) queda INTACTO, sin envolver | reemplaza título+«Save» a mano por `EntrenarHojaCabecera(.guardar(_:))` | sheet `.medium`/`.large` |
 // | `PlatesScreen` | `.entrenarHojaFondo(tono: .ambar)` | reemplaza overline+`BackButton` por `EntrenarHojaCabecera(.cerrar)` | sheet `.large`, `ScrollView` |
