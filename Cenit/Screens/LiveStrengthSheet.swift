@@ -1944,7 +1944,7 @@ struct LiveStrengthSheet: View {
         return t
     }
 
-    /// Close the summary and hand off to «Cuerpo» → fatigue map (no third sheet stacked on the session).
+    /// Close the summary and hand off to «Entrenar» → fatigue map (no third sheet stacked on the session).
     private func openFatigueMap() {
         tabRouter.openFatigueMap()
         model.closeStrengthSummary()
