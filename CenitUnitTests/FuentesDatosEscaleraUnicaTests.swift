@@ -18,6 +18,9 @@ final class FuentesDatosEscaleraUnicaTests: XCTestCase {
     private let clavesDeIngesta = [
         "steps", "active_kcal", "vo2max", "resting_hr", "hrv", "spo2",
         "resp_rate", "asleep_min", "weight", "body_fat", "lean_mass", "bmi",
+        // FER-192: skin_temp (checklist + visor + cobertura) y avg_hr (checklist) se sumaron a las dos
+        // pantallas — el contrato exige que también resuelvan a una métrica real del catálogo.
+        "skin_temp", "avg_hr",
     ]
 
     // MARK: - UN puente ingesta → catálogo

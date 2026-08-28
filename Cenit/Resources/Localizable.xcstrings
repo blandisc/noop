@@ -1,6 +1,16 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "I cross your wrist temperature with your resting nighttime pulse to warn you early of a possible illness. It's approximate, not a diagnosis, and I need about two weeks of data. If it fires, you'll see it in %@ and, if you've allowed notifications, in a notification." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cruzo tu temperatura de muñeca con tu pulso en reposo nocturno para avisarte temprano de una posible enfermedad. Es aproximado, no es un diagnóstico, y necesito unas dos semanas de datos. Si se dispara, lo verás en %@ y, si permitiste notificaciones, en un aviso."
+          }
+        }
+      }
+    },
     "Saved animations are deleted from your iPhone. You can re-download them anytime." : {
       "localizations" : {
         "es" : {

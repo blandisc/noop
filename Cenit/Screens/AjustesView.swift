@@ -306,7 +306,7 @@ private struct AjustesLanding: View {
                     // literal español «Hoy» dentro de la cadena fuente inglesa — el dock usa esa
                     // MISMA clave (`LiquidTabRotulos+Cenit.swift`), así que en UI inglesa esto ya
                     // dice «Today», el nombre real de la pestaña.
-                    Text(String(localized: "Crosses your wrist temperature and nighttime resting heart rate to warn you early of possible illness. Approximate, not a diagnosis; needs about two weeks of data. If it fires, you'll see it in \(String(localized: "Today")) and, if you've allowed notifications, in a notification."))
+                    Text(String(localized: "I cross your wrist temperature with your resting nighttime pulse to warn you early of a possible illness. It's approximate, not a diagnosis, and I need about two weeks of data. If it fires, you'll see it in \(String(localized: "Today")) and, if you've allowed notifications, in a notification."))
                         .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
                         .fixedSize(horizontal: false, vertical: true)
                     if illnessNegado {

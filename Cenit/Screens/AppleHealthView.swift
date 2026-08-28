@@ -319,7 +319,13 @@ struct AppleHealthView: View {
         await MainActor.run {
             appleRows = loadedRows.sorted { $0.day < $1.day }
             appleWorkouts = filteredWorkouts
-            series = fetched
+            // FER-192: `skin_temp`'s series is NOT in `metricSeries` — HealthKit stage 10 writes the
+            // nightly wrist-temp DEVIATION to `DailyMetric.skinTempDevC`, not a series point. Source the
+            // chart from `repo.days` like `CuerpoView.skinTempStat`, so it isn't empty for already-synced
+            // data (the checklist already counts the same column).
+            var withSkin = fetched
+            withSkin["skin_temp"] = repo.days.compactMap { d in d.skinTempDevC.map { (day: d.day, value: $0) } }
+            series = withSkin
             rebuildWindowCache()
             loaded = true
         }
