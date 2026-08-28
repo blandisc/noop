@@ -122,7 +122,15 @@ disparador pesado, súbelo a pesado.
    la bitácora de producto** (`CHANGELOG.md` — obligatoria si el cambio es visible
    para el usuario; ver "La bitácora de producto" abajo) → push → PR hacia `iOS`
    (`Closes FER-NN`, criterios verificados en "How it was tested") →
-   **squash-merge a `iOS`** → **borra la rama** (`--delete-branch`).
+   **squash-merge a `iOS`** → **borra la rama** (`--delete-branch`) → **cierra el
+   issue en `done` aquí mismo**, no después.
+   - **El cierre del issue es parte de la entrega, no un trámite posterior.** Con
+     `Closes FER-NN` en el PR, Multica puede pasarlo solo; **verifícalo** con
+     `multica issue get FER-NN` y, si no se movió, `multica issue status FER-NN done`
+     + comenta el link del PR. Un issue que se quedó en `in_progress` con su código
+     ya en `iOS` es un semáforo que miente: la retro del 2026-08-28 encontró tres
+     (FER-86, FER-33, FER-15), uno de ellos 26 días viejo. La regla nueva es que
+     mergear y apagar el semáforo son **el mismo acto**.
    - **Gate de Design Lint (obligatorio, ambos carriles) antes del squash-merge.**
      El repo es privado en plan Free: GitHub NO puede imponer required checks, así
      que **tú eres el gate**. Corre
@@ -134,45 +142,27 @@ disparador pesado, súbelo a pesado.
      en #874. Verifica además con `gh pr checks <N>` que el job `lint` quedó verde.
 10. **Limpieza final.** Sincroniza el checkout de build: `git -C ~/code/noop fetch origin`
     y `git -C ~/code/noop merge --ff-only origin/iOS` (si no puede fast-forward, avísale
-    al usuario en vez de forzar). Con `Closes FER-NN` en el PR, Multica puede pasar el
-    issue a `done` al merge; si no, `multica issue status FER-NN done` y comenta el link
-    del PR. Reporta en lenguaje claro: qué cambió en la app, qué criterios quedaron
-    verificados, y que el único paso manual restante es compilar/instalar en Xcode.
-11. **Poda DerivedData y worktrees muertos (disco).** Cada worktree compilado en Xcode
-    deja una carpeta DerivedData de ~1 GB (`Cenit-<hash>`, una por ruta de proyecto); se
-    acumulan rápido (visto: 54 GB / 56 carpetas, y vuelve a inflarse cada pocas semanas).
-    Dos cosas a limpiar, en este orden:
-
-    **a) El DerivedData de ESTA sesión — tu propia basura, SIEMPRE púrgalo.** Al cerrar,
-    el harness borra la *carpeta del worktree* pero **NO su DerivedData** (vive aparte en
-    `~/Library/Developer/Xcode/DerivedData/Cenit-<hash>`, indexado por ruta) → queda
-    huérfano para siempre. Tu rama ya está mergeada, así que ese DerivedData es basura.
-    Púrgalo por `WorkspacePath` (el hash del nombre es opaco, no lo adivines). Es seguro
-    aquí porque al final del flujo Xcode ya no compila esta ruta:
+    al usuario en vez de forzar). Reporta en lenguaje claro: qué cambió en la app, qué
+    criterios quedaron verificados, y que el único paso manual restante es
+    compilar/instalar en Xcode.
+11. **Barrido de disco (obligatorio, un comando).**
     ```bash
-    SELF="$PWD"   # el worktree de ESTA sesión
-    for d in ~/Library/Developer/Xcode/DerivedData/*/; do
-      wsp=$(/usr/libexec/PlistBuddy -c 'Print :WorkspacePath' "${d}info.plist" 2>/dev/null) || continue
-      case "$wsp" in "$SELF"/*) rm -rf "$d" && echo "purgado DerivedData propio: $d";; esac
-    done
+    Tools/cleanup.sh --apply
     ```
+    Poda los worktrees ya entregados y el DerivedData que dejaron atrás (~1 GB por
+    worktree compilado). Corre primero sin `--apply` si quieres ver el simulacro.
 
-    **b) Worktrees fósiles ya mergeados.** Tras sincronizar, poda los worktrees cuya rama
-    ya está en `origin/iOS` —**menos el de esta sesión** (no puedes borrar el worktree
-    donde corres)— y los fósiles `Strand-*` del rename, que son basura 100% segura:
-    ```bash
-    SELF="$PWD"   # captura ANTES del cd, para nunca borrarlo
-    rm -rf ~/Library/Developer/Xcode/DerivedData/Strand-*   # fósiles pre-rename Cénit, ya no existen
-    cd ~/code/noop && git worktree list --porcelain | awk '/^worktree /{wt=$2} /^branch /{print wt" "$2}' | while read wt ref; do
-      br="${ref##refs/heads/}"; [ "$br" = "iOS" ] && continue
-      [ "$wt" = "$SELF" ] && continue   # nunca el worktree actual
-      git merge-base --is-ancestor "$br" origin/iOS 2>/dev/null && git worktree remove "$wt" 2>/dev/null && echo "podado: $br"
-    done; git worktree prune
-    ```
-    `git worktree remove` se niega solo si el worktree tiene cambios sin commitear → los
-    conserva sin riesgo. NO toques los simuladores (`CoreSimulator/Devices`): el usuario
-    prueba otros modelos de iPhone. Detalle y receta completa en la nota de memoria
-    [[deriveddata-bloat-corruption]].
+    **No lo reimplementes a mano.** La receta inline que vivía aquí detectaba las ramas
+    entregadas con `git merge-base --is-ancestor <rama> origin/iOS` — y ese chequeo es
+    **ciego a todo squash-merge**, que es como se mergea *todo* en este repo: el squash
+    reescribe los commits, así que la rama entregada nunca queda como ancestro de `iOS`.
+    Por eso el barrido no atrapaba nada y se acumularon 22 worktrees / 7.9 GB sin que
+    nadie lo viera (FER-194). La señal correcta, que `cleanup.sh` sí usa, es la que el
+    propio flujo produce: **la rama tuvo upstream en `origin` y ya no está ahí** porque
+    el merge la borró. El script conserva el worktree actual, el canónico, los `locked`,
+    los que tienen cambios sin commitear, los que nunca se empujaron y los que siguen
+    vivos en `origin` (otra sesión). Ver [[deriveddata-bloat-corruption]] y
+    [[squash-merge-ancestry-lies]].
 
 ## La bitácora de producto (`CHANGELOG.md`) — qué cambió, en cristiano
 

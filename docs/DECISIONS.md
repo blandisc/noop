@@ -33,6 +33,14 @@ el mismo PR** que la implementa (una línea basta: fecha, decisión, por qué).
 
 ## Proceso
 
+- **2026-08-28 · Cerrar es parte de entregar.** El issue se pasa a `done` en el **mismo
+  paso** que se borra la rama, no como trámite posterior; y todo cierre (de issue en
+  `/implement`, de corrida en `/orquesta`) corre `Tools/cleanup.sh --apply`. Origen: la
+  retro del 2026-08-28 encontró 3 issues verdes-pero-mentirosos (hasta 26 días) y 7.9 GB
+  en 22 worktrees fósiles. La receta de poda que ya existía era **ciega por diseño**:
+  detectaba ramas entregadas con `merge-base --is-ancestor`, que el squash-merge —el
+  único modo de merge del repo— invalida siempre. La señal buena es «la rama tuvo
+  upstream y ya no está en `origin`» (FER-194).
 - **2026-07-11 · Orquestación:** preview solo frena en pantalla nueva/rediseño;
   auto-merge a iOS salvo riesgo; el alcance por corrida lo fija el dueño al invocar.
 - **2026-08-25 · Contrato de flujo:** topes de vueltas adversariales (2 ligero / 3
