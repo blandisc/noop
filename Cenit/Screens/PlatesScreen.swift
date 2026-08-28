@@ -101,9 +101,11 @@ struct PlatesScreen: View {
 
     // MARK: Bar diagram (to scale, per side)
 
-    // FER-198 (Ola 2): `EntrenarFilaDiscos` es el mismo diagrama re-vestido (misma fórmula de
-    // alto/ancho por kg, mismo orden invertido/directo por lado, mismo `theme.dataStrain` ==
-    // `LiquidColor.ambar` #C4631F) — reemplaza el `plateBar` a mano de abajo 1:1.
+    // FER-198 (Ola 2): `EntrenarFilaDiscos` es el mismo diagrama re-vestido — misma fórmula de
+    // alto/ancho por kg, mismo orden invertido/directo por lado, mismo color del DATO
+    // (`theme.dataStrain` == `LiquidColor.ambar` #C4631F); la barra central y el microtexto migran
+    // a tokens Liquid (`tinta10`, `LiquidRadius.hairline`, `papelTarjeta`) — reemplaza el
+    // `plateBar` a mano de abajo.
     private var barDiagram: some View {
         EntrenarFilaDiscos(
             discos: loading.perSide.map { EntrenarFilaDiscos.Disco(masaKg: $0, etiqueta: plate($0)) },
