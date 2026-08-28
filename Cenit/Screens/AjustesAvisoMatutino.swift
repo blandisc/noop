@@ -111,7 +111,7 @@ struct AvisoMatutinoSection: View {
                 if negadoEnIOS {
                     LiquidNotaLine(String(localized: "aviso.matutino.denegado",
                                 defaultValue: "Notices are off in iOS Settings, so I cannot reach you."),
-                                  tono: LiquidColor.negativo)
+                                  tono: LiquidColor.atencionTexto)
                     Button { abrirAjustesDeIOS() } label: {
                         Text("Open Settings").font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta700)
                     }

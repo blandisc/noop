@@ -409,11 +409,27 @@ private struct AjustesLanding: View {
             .padding(.vertical, 11)  // token-exempt: paridad fila LiquidListRow (padding interno no público)
             .padding(.horizontal, LiquidSpace.s100)
         } else {
-            LiquidListRow(
-                title: String(localized: "Recalibrate recovery"),
-                subtitle: String(localized: "Restarts your calibration from today if your baseline went wrong (an anomalous stretch)."),
-                tone: LiquidColor.verdePrimario,
-                divider: false) { confirmRecalibrate = true }
+            // Recalibrar es una ACCIÓN (abre un confirm), no navegación: fila a mano con el ícono
+            // `arrow.clockwise` del original, no un `LiquidListRow` (cuyo chevron prometería empujar a
+            // otra pantalla). Misma geometría de fila que la rama «Deshacer».
+            Button { confirmRecalibrate = true } label: {
+                HStack(spacing: LiquidSpace.s300) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(String(localized: "Recalibrate recovery"))
+                            .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
+                        Text(String(localized: "Restarts your calibration from today if your baseline went wrong (an anomalous stretch)."))
+                            .font(LiquidType.unidadCompacta).foregroundStyle(LiquidColor.tinta500)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    Image(systemName: "arrow.clockwise")
+                        .font(LiquidType.iconSF(size: 14)).foregroundStyle(LiquidColor.tinta700)
+                }
+                .padding(.vertical, 11)  // token-exempt: paridad fila LiquidListRow (padding interno no público)
+                .padding(.horizontal, LiquidSpace.s100)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.liquidPress)
         }
     }
 
