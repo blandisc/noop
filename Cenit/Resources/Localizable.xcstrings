@@ -18140,6 +18140,23 @@
         }
       }
     },
+    "Fresh today" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fresh today"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Frescos hoy"
+          }
+        }
+      }
+    },
     "Fresh: " : {
       "localizations" : {
         "en" : {
@@ -38755,23 +38772,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sugerido · "
-          }
-        }
-      }
-    },
-    "Suggested · muscles fresh today" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Suggested · muscles fresh today"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sugeridos · músculos frescos hoy"
           }
         }
       }
