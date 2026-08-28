@@ -5,7 +5,7 @@ import UserNotifications
 import StrandDesign
 import StrandAnalytics
 
-// MARK: - Aviso matutino (FER-114) — la sección de Ajustes
+// MARK: - Aviso matutino (FER-114) — la sección de Ajustes — Liquid Glass (FER-177)
 //
 // El onboarding ofrece «te pongo un recordatorio a la hora que elijas»; esta sección es donde ese
 // recordatorio se enciende. Vive en su propio archivo (y no dentro de `AjustesView`) porque es una
@@ -14,6 +14,11 @@ import StrandAnalytics
 //
 // FER-111 · Es un RECORDATORIO, no una entrega: Cénit no despierta sola, así que el aviso no puede
 // traer la lectura, solo acordarse por ti de venir por ella. El copy lo dice en voz alta.
+//
+// FER-177: pase de PIEL de papel «Instrumento» a Liquid Glass — mismo comportamiento, mismos
+// permisos, mismo copy; cambia solo la superficie (overline `franja`, grupo en
+// `.liquidTarjetaSeccion()`, toggle nativo con `.tint(LiquidColor.verdePrimario)`), siguiendo el
+// patrón ya sentado por `DataSourcesView`.
 //
 // Cuatro verdades que la sección tiene que sostener a la vista:
 //   1. El permiso se pide AL ENCENDER el switch, nunca antes.
@@ -26,7 +31,6 @@ import StrandAnalytics
 //      tenerla, y es mejor decirlo aquí que dejar al dueño esperando un aviso que no va a llegar.
 
 struct AvisoMatutinoSection: View {
-    @Environment(\.instrumentoTheme) private var theme
     @Environment(\.scenePhase) private var scenePhase
     @EnvironmentObject private var repo: Repository
 
@@ -62,61 +66,60 @@ struct AvisoMatutinoSection: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s300) {
             Text(String(localized: "aviso.matutino.overline", defaultValue: "Morning notice"))
-                .instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .font(LiquidType.franja).tracking(LiquidType.franjaTracking).textCase(.uppercase)
+                .foregroundStyle(LiquidColor.tinta500)
+                .accessibilityAddTraits(.isHeader)
 
-            Toggle(isOn: Binding(get: { encendido }, set: { encender($0) })) {
-                Text(String(localized: "aviso.matutino.toggle",
-                            defaultValue: "Remind me to read myself in the morning"))
-                    .font(StrandFont.body).foregroundStyle(theme.ink)
-            }
-            .toggleStyle(.instrumento)
-            .frame(minHeight: 44)
-            // Con el permiso NEGADO en Ajustes de iOS el switch no hace nada (el diálogo del
-            // sistema ya no vuelve a aparecer): tocable e inerte era peor que deshabilitado. El
-            // camino real es el botón de abajo. Para APAGAR la preferencia no hace falta el switch:
-            // sin permiso ya no suena nada.
-            .disabled(pidiendoPermiso || negadoEnIOS)
-
-            if encendido {
-                Divider().overlay(theme.hairline)
-                HStack(alignment: .center, spacing: 16) {
-                    Text(String(localized: "aviso.matutino.hora", defaultValue: "At what time"))
-                        .font(StrandFont.body).foregroundStyle(theme.ink)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    DatePicker("", selection: horaBinding, displayedComponents: .hourAndMinute)
-                        .labelsHidden()
-                        .accessibilityLabel(String(localized: "aviso.matutino.hora",
-                                                   defaultValue: "At what time"))
+            VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+                Toggle(isOn: Binding(get: { encendido }, set: { encender($0) })) {
+                    Text(String(localized: "aviso.matutino.toggle",
+                                defaultValue: "Remind me to read myself in the morning"))
+                        .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
                 }
+                .tint(LiquidColor.verdePrimario)
                 .frame(minHeight: 44)
-            }
+                // Con el permiso NEGADO en Ajustes de iOS el switch no hace nada (el diálogo del
+                // sistema ya no vuelve a aparecer): tocable e inerte era peor que deshabilitado. El
+                // camino real es el botón de abajo. Para APAGAR la preferencia no hace falta el
+                // switch: sin permiso ya no suena nada.
+                .disabled(pidiendoPermiso || negadoEnIOS)
 
-            Text(String(localized: "aviso.matutino.glosa",
-                        defaultValue: "One reminder a day, at the time you pick, on your iPhone. It's a reminder, not the reading: I compute the moment you open me, so your word for the day waits for you inside."))
-                .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                .fixedSize(horizontal: false, vertical: true)
-
-            if sinLecturaQueDar {
-                Text(String(localized: "aviso.matutino.sinlectura",
-                            defaultValue: "I have no reading to give you yet, so I will stay quiet until I do."))
-                    .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            if negadoEnIOS {
-                Text(String(localized: "aviso.matutino.denegado",
-                            defaultValue: "Notices are off in iOS Settings, so I cannot reach you."))
-                    .font(StrandFont.caption).foregroundStyle(theme.critical)
-                    .fixedSize(horizontal: false, vertical: true)
-                Button { abrirAjustesDeIOS() } label: {
-                    Text("Open Settings").font(StrandFont.subhead).foregroundStyle(theme.dataRecovery)
+                if encendido {
+                    LiquidCapilar(eje: .horizontal)
+                    HStack(alignment: .center, spacing: LiquidSpace.s400) {
+                        Text(String(localized: "aviso.matutino.hora", defaultValue: "At what time"))
+                            .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        DatePicker("", selection: horaBinding, displayedComponents: .hourAndMinute)
+                            .labelsHidden()
+                            .accessibilityLabel(String(localized: "aviso.matutino.hora",
+                                                       defaultValue: "At what time"))
+                    }
+                    .frame(minHeight: 44)
                 }
-                .buttonStyle(.plain)
-                .frame(minHeight: 32)
+
+                LiquidNotaLine(String(localized: "aviso.matutino.glosa",
+                            defaultValue: "One reminder a day, at the time you pick, on your iPhone. It's a reminder, not the reading: I compute the moment you open me, so your word for the day waits for you inside."))
+
+                if sinLecturaQueDar {
+                    LiquidNotaLine(String(localized: "aviso.matutino.sinlectura",
+                                defaultValue: "I have no reading to give you yet, so I will stay quiet until I do."))
+                }
+
+                if negadoEnIOS {
+                    LiquidNotaLine(String(localized: "aviso.matutino.denegado",
+                                defaultValue: "Notices are off in iOS Settings, so I cannot reach you."),
+                                  tono: LiquidColor.atencionTexto)
+                    Button { abrirAjustesDeIOS() } label: {
+                        Text("Open Settings").font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta700)
+                    }
+                    .buttonStyle(.liquidPress)
+                    .frame(minHeight: 32)
+                }
             }
+            .liquidTarjetaSeccion()
         }
         .task { await sincronizar() }
         // Volver de Ajustes de iOS es EXACTAMENTE cuando el permiso pudo cambiar: sin esto, quien

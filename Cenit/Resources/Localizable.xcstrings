@@ -1,6 +1,68 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Deshacer" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deshacer"
+          }
+        }
+      }
+    },
+    "Experimental" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Experimental"
+          }
+        }
+      }
+    },
+    "Opens a picker" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre un selector"
+          }
+        }
+      }
+    },
+    "Salud" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Salud"
+          }
+        }
+      }
+    },
+    "Cénit %@ · everything is computed on your iPhone" : {
+      "comment" : "Footer: app version + the offline promise, already stated once in the header (this line doesn't repeat it).",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cénit %@ · todo se calcula en tu iPhone"
+          }
+        }
+      }
+    },
+    "Restarts your calibration from today if your baseline went wrong (an anomalous stretch)." : {
+      "comment" : "Gloss under the Recalibrate recovery row, explaining when to use it.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reinicia tu calibración desde hoy si tu base quedó mal (un tramo anómalo)."
+          }
+        }
+      }
+    },
     "\n" : {
 
     },
