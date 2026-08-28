@@ -28,12 +28,22 @@ public struct EntrenarNotaCampo: View {
                     .padding(.vertical, LiquidSpace.s300)
                     .allowsHitTesting(false)
             }
+            #if os(watchOS)
+            // watchOS no tiene `TextEditor` (y no hay `NoteSheet` en el reloj). Fallback de
+            // solo-compilación: el texto en lectura, con el mismo padding/tipografía.
+            Text(texto)
+                .font(LiquidType.cuerpo)
+                .foregroundStyle(LiquidColor.tinta900)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(LiquidSpace.s200)
+            #else
             TextEditor(text: $texto)
                 .font(LiquidType.cuerpo)
                 .foregroundStyle(LiquidColor.tinta900)
                 .scrollContentBackground(.hidden)
                 .tint(tono.base)
                 .padding(LiquidSpace.s200)
+            #endif
         }
         .frame(minHeight: EntrenarNotaCampoMetrics.altoMinimo)
         .liquidGlass(.superficieSolida)

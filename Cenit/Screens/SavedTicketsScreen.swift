@@ -73,7 +73,10 @@ struct SavedTicketsScreen: View {
             .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(theme.paper.ignoresSafeArea())
+        // FER-199 (Ola 3, épico FER-195): fondo de vidrio El Eje en vez del papel plano — la
+        // pantalla llega empujada (SavedTicketsRoute) y conserva su navegación/toolbar del stack
+        // ambiente tal cual, sin cabecera propia que sustituir.
+        .entrenarHojaFondo(tono: .neutro)
         .task { await load() }
         .fullScreenCover(item: $receiptTarget) { target in
             ReceiptPrinterScreen(theme: theme, summary: target.summary,

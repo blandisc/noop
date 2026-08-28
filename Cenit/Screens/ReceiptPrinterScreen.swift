@@ -63,23 +63,26 @@ struct ReceiptPrinterScreen: View {
     private var removeThreshold: CGFloat { -(screenHeight * 0.33) }
 
     var body: some View {
-        ZStack {
-            theme.paper.ignoresSafeArea()
+        VStack(spacing: 0) {
+            printerMouthRow
+                .padding(.top, 4)
 
-            VStack(spacing: 0) {
-                printerMouthRow
-                    .padding(.top, 4)
+            Spacer(minLength: 8)
 
-                Spacer(minLength: 8)
+            centerContent
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-                centerContent
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-                actionBar
-                    .padding(.horizontal, CenitMetrics.screenPadding)
-                    .padding(.bottom, CenitMetrics.screenPadding)
-            }
+            actionBar
+                .padding(.horizontal, CenitMetrics.screenPadding)
+                .padding(.bottom, CenitMetrics.screenPadding)
         }
+        // FER-199 (Ola 3, épico FER-195): fondo de vidrio El Eje EN VEZ del papel plano — el
+        // `BackButton(role: .close)` de `printerMouthRow` ya ES la salida `.cerrar` de la familia
+        // (mismo componente), y esta pantalla no trae título/subtítulo que rellenar en una
+        // `EntrenarHojaCabecera`, así que se queda sin cabecera propia. `ThermalTicketView` (el
+        // ticket, en pantalla y en el `ImageRenderer` exportable) NO se toca: conserva su
+        // identidad térmica (decisión del dueño).
+        .entrenarHojaFondo(tono: .neutro)
         .instrumentoTheme(theme)
         .preferredColorScheme(.light)
         // El arrastre del ticket es VERTICAL, así que el guard de dominancia horizontal del gesto
