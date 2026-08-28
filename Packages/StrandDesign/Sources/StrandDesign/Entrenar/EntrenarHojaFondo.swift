@@ -153,6 +153,8 @@ private struct EntrenarHojaFondoModifier: ViewModifier {
     .entrenarHojaFondo(tono: .cian)
 }
 
+// watchOS no tiene `TextEditor`, así que este preview se excluye ahí.
+#if !os(watchOS)
 /// Prueba estructural de la REGLA DURA: el fondo detrás de un `TextEditor` real, sin envolverlo
 /// (el `TextEditor` sigue siendo dueño de su propio scroll).
 #Preview("EntrenarHojaFondo · sobre TextEditor (no lo envuelve)") {
@@ -165,4 +167,5 @@ private struct EntrenarHojaFondoModifier: ViewModifier {
     .padding(LiquidSpace.s550)
     .entrenarHojaFondo(tono: .ambar)
 }
+#endif
 #endif
