@@ -118,8 +118,11 @@ struct WorkoutEditSheet: View {
         // alert. FER-199 (Ola 3): absorbe el banner hecho a mano en `SaveErrorToast` — ya en
         // cristal El Eje (mismo `patternBlock` + auto-descarte a 4s) y usado en el resto de
         // Entrenar (`WorkoutSessionDetailScreen.duplicateError`, `WorkoutDetailScreen`); mismo
-        // disparador (`saveError = true` en el catch de `save()`), mismo cuándo/por qué.
-        .saveErrorToast(isPresented: $saveError)
+        // disparador (`saveError = true` en el catch de `save()`), mismo cuándo/por qué. La copy
+        // NO cambia: `message:` conserva el texto original de esta pantalla (revisión adversarial
+        // — el genérico del componente le habría restado la palabra «workout»).
+        .saveErrorToast(isPresented: $saveError,
+                        message: String(localized: "Couldn't save the workout. Try again."))
         .sheet(item: $reassignGroup) { target in
             NavigationStack {
                 ExerciseLibraryScreen { picks in

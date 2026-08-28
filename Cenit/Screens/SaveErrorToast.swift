@@ -15,6 +15,12 @@ import StrandDesign
 struct SaveErrorToast: ViewModifier {
     @Environment(\.instrumentoTheme) private var theme
     @Binding var isPresented: Bool
+    /// Texto del banner. `nil` (el default, para los 10+ call sites que no lo pasan) muestra el
+    /// genérico «Couldn't save. Try again.» — pásalo ya resuelto (`String(localized:)`) cuando la
+    /// pantalla necesita nombrar qué falló específicamente (FER-199: `WorkoutEditSheet` conserva
+    /// su copy original, «Couldn't save the workout. Try again.», al absorber su banner a mano en
+    /// este componente).
+    var message: String? = nil
     /// Segundos antes de irse solo. El fallo de guardado NO es terminal (el trabajo sigue en pantalla),
     /// así que el aviso no debe requerir un toque para desaparecer.
     var seconds: Double = 4
@@ -23,7 +29,7 @@ struct SaveErrorToast: ViewModifier {
         content
             .overlay(alignment: .top) {
                 if isPresented {
-                    Text("Couldn't save. Try again.")
+                    banner
                         .font(.system(size: 13))   // token-exempt: cuerpo de banner (13pt, igual que el mensaje de ConfirmCard)
                         .foregroundStyle(theme.ink)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -38,12 +44,21 @@ struct SaveErrorToast: ViewModifier {
             }
             .animation(StrandMotion.fade, value: isPresented)
     }
+
+    @ViewBuilder
+    private var banner: some View {
+        if let message {
+            Text(message)
+        } else {
+            Text("Couldn't save. Try again.")
+        }
+    }
 }
 
 extension View {
     /// Banner «No se pudo guardar» que se descarta solo. Ver `SaveErrorToast`.
-    func saveErrorToast(isPresented: Binding<Bool>) -> some View {
-        modifier(SaveErrorToast(isPresented: isPresented))
+    func saveErrorToast(isPresented: Binding<Bool>, message: String? = nil) -> some View {
+        modifier(SaveErrorToast(isPresented: isPresented, message: message))
     }
 }
 #endif
