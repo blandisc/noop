@@ -310,7 +310,7 @@ private struct AjustesLanding: View {
                         .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
                         .fixedSize(horizontal: false, vertical: true)
                     if illnessNegado {
-                        LiquidNotaLine(String(localized: "You'll still see it in \(String(localized: "Today")); the system notice won't arrive until you allow notifications."),
+                        LiquidNotaLine(String(localized: "You'll still see it in \(String(localized: "Today")); I can't send you a notification until you allow it."),
                                       tono: LiquidColor.atencionTexto)
                         Button { abrirAjustesDeIOS() } label: {
                             Text(String(localized: "Open Settings")).font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta700)

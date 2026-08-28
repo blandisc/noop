@@ -61,12 +61,12 @@
         }
       }
     },
-    "You'll still see it in %@; the system notice won't arrive until you allow notifications." : {
+    "You'll still see it in %@; I can't send you a notification until you allow it." : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lo verás en %@; el aviso del sistema no llegará hasta que permitas notificaciones."
+            "value" : "Lo verás en %@; no puedo mandarte una notificación hasta que la permitas."
           }
         }
       }
@@ -29361,18 +29361,18 @@
         }
       }
     },
-    "One reminder on each day your plan assigns a routine, at the time you pick. It's frozen when scheduled: it names the routine, never how you'll be feeling that day." : {
+    "One reminder on each day your plan assigns a routine, at the time you pick. I freeze it when I schedule it: I name the routine, never how you'll be feeling that day." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "One reminder on each day your plan assigns a routine, at the time you pick. It's frozen when scheduled: it names the routine, never how you'll be feeling that day."
+            "value" : "One reminder on each day your plan assigns a routine, at the time you pick. I freeze it when I schedule it: I name the routine, never how you'll be feeling that day."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Un aviso cada día que tu plan te asigna una rutina, a la hora que elijas. Se congela al programarse: nombra la rutina, nunca cómo te vas a sentir ese día."
+            "value" : "Un aviso cada día que tu plan te asigna una rutina, a la hora que elijas. Lo congelo al programarlo: nombro la rutina, nunca cómo te vas a sentir ese día."
           }
         }
       }
@@ -46226,18 +46226,18 @@
         }
       }
     },
-    "You have no training days assigned yet, so there's nothing to remind you of." : {
+    "You haven't assigned any training days yet, so I have nothing to remind you of." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You have no training days assigned yet, so there's nothing to remind you of."
+            "value" : "You haven't assigned any training days yet, so I have nothing to remind you of."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Todavía no tienes días de entreno asignados, así que no hay nada que recordarte."
+            "value" : "Todavía no tienes ningún día de entreno asignado, así que no tengo nada que recordarte."
           }
         }
       }
