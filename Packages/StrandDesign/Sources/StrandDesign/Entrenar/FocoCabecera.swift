@@ -83,7 +83,11 @@ public struct FocoCabecera: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityLabel(Text(verbatim: etiquetaCerrar ?? "Cerrar enfoque"))
+            // R6 (ronda 2 del gate, Grok G9): el default también vía `String(localized:)` — un
+            // literal `Text(verbatim:)` en español hardcodeado nunca traduciría para un caller que
+            // omitiera `etiquetaCerrar`. Misma clave que YA usan los tres call sites de Foco
+            // (`RoutineSheetLiveFoco.swift`), así que el default coincide con lo que de verdad se ve.
+            .accessibilityLabel(Text(verbatim: etiquetaCerrar ?? String(localized: "Close focus mode", bundle: .main)))
         } else {
             asa
                 .accessibilityHidden(true)

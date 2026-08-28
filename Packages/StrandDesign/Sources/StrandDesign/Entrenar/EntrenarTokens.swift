@@ -254,60 +254,25 @@ public enum EntrenarMetrics {
     /// El aire horizontal y vertical entre teclas de la rejilla.
     public static let keyGap: CGFloat = 6
 
-    // MARK: - Foco V6 (FER-135, prototipo `foco.txt`): SERIE y HECHO
+    // MARK: - Foco (FER-170 · F5, épico FER-165): DESCANSO en pantalla completa
     //
-    // El DESCANSO del Foco no trae tokens propios: reusa `RestBand` tal cual (la misma banda que
-    // ya dibuja la lista en línea) — «solo la piel cambia, la lógica de descanso es la de V5»
-    // (FER-135). Estos tokens son solo para los otros dos estados, que no tenían dónde vivir.
+    // El modo Foco V6 (FER-135) que traía SERIE/HECHO propios se RETIRÓ — el enfoque nuevo
+    // (`HojaFoco`, `RoutineSheetLiveFoco.swift`) compone `FocoHeroe`/`FocoCabecera`
+    // (`Entrenar/FocoHeroe.swift`/`FocoCabecera.swift`, con sus propias constantes) para D1/D3, así
+    // que sus tokens de tamaño se retiraron con él. Estos dos SOBREVIVEN: D2 (descanso) sigue
+    // reusando `RestBand` tal cual, con su variante `large` — «solo la piel cambia, la lógica de
+    // descanso es la de siempre».
 
-    /// El thumb centrado del ejercicio activo en SERIE (prototipo «thumb 56»).
-    public static let focusThumb: CGFloat = 56
-    /// El título Grotesk del ejercicio activo, en SERIE y HECHO (prototipo «30/700»).
-    public static let focusTitle: CGFloat = 30
-    /// El numeral KG/REPS de SERIE (prototipo «52/700 tracking -2», vía `instrumentoHero`).
-    public static let focusValue: CGFloat = 52
-    /// Aire antes del bloque centrado de SERIE (prototipo «margin-top:44»).
-    public static let focusHeroTop: CGFloat = 44
-    /// Aire antes de la fila KG × REPS (prototipo «margin-top:40»).
-    public static let focusValuesTop: CGFloat = 40
-    /// Aire antes de «subida ganada» (prototipo «margin-top:18»).
-    public static let focusRaiseTop: CGFloat = 18
-    /// Aire antes del botón «✓ Serie hecha» (prototipo «margin-top:36»).
-    public static let focusRegisterTop: CGFloat = 36
-    /// Aire antes del bloque centrado de HECHO (prototipo «margin-top:120»). Ronda 4, hallazgo
-    /// grave: la cabecera compartida de Foco YA mete `sectionGap` (28) antes del cuerpo
-    /// (`focusModeView`), así que un valor crudo de 120 aquí renderizaba 28+120=148 — 28 de más.
-    /// 92 (120−28) es el mismo descuento que ya hace `focusRestTop`, su hermano en la misma pantalla.
-    public static let focusDoneTop: CGFloat = 92
-    /// Alto del botón primario «✓ Serie hecha» (prototipo «height:56») — más alto que
-    /// `CenitMetrics.control`/`EntrenarMetrics.primaryButton` (46): en SERIE es el único gesto que
-    /// cierra la serie, así que el prototipo le da un escalón más de peso que al resto de los CTA.
-    public static let focusPrimaryButton: CGFloat = 56
-    /// Relleno horizontal del botón primario «✓ Serie hecha» (prototipo «padding:0 44px»). Ronda 4,
-    /// hallazgo menor: reusaba `CenitMetrics.sectionGap` (28), notablemente más angosto que el proto.
-    public static let focusPrimaryButtonPadding: CGFloat = 44
     /// El numeral grande de DESCANSO en Foco a pantalla completa (revisión ronda 1, hallazgo grave;
-    /// prototipo `foco.txt` «52px»/700): el mismo escalón que `focusValue` en SERIE, para que las
-    /// tres pantallas de Foco lean del mismo peso. `RestBand` sigue con su numeral de 40 pt de
-    /// siempre en la lista en línea (`large: false`, su valor por defecto) — esta es la variante
-    /// GRANDE que solo pide la pantalla completa de Foco.
+    /// prototipo `foco.txt` «52px»/700). `RestBand` sigue con su numeral de 40 pt de siempre en la
+    /// lista en línea (`large: false`, su valor por defecto) — esta es la variante GRANDE que solo
+    /// pide la pantalla completa de Foco.
     public static let focusRestValue: CGFloat = 52
     /// El botón «Saltar» de DESCANSO en Foco (prototipo `foco.txt` «height:46px»): el mismo alto que
     /// cualquier botón primario de la pantalla (`primaryButton`) — más alto que el «Skip» de 36 pt
     /// (`secondaryButton`) que `RestBand` dibuja en la lista en línea, donde comparte fila con
     /// celdas más chicas.
     public static let focusRestSkip: CGFloat = primaryButton
-    /// El «×» separador entre los numerales KG y REPS de SERIE (revisión ronda 2, hallazgo grave;
-    /// prototipo `foco.txt` «font-size:22px;font-weight:500»). Token dedicado en vez de
-    /// `StrandFont.body` porque el prototipo documenta un tamaño propio, distinto del cuerpo.
-    public static let focusValueSeparator: CGFloat = 22
-    /// Aire antes del bloque de DESCANSO en Foco a pantalla completa (revisión ronda 3, hallazgo
-    /// grave; prototipo `foco.txt` «margin-top:56»). DESCANSO reusa `RestBand` tal cual (§comentario
-    /// de `focusRestPhase`), pero el margen que lo separa de la cabecera SÍ es propio del layout de
-    /// Foco, igual que `focusHeroTop`/`focusDoneTop` en las otras dos pantallas — sin este token el
-    /// bloque arrancaba pegado a la cabecera (solo el `sectionGap` genérico del contenedor, 28, la
-    /// mitad de lo que le toca). Sumado al `sectionGap` de la cabecera (28) da los 56 del proto.
-    public static let focusRestTop: CGFloat = 28
 
     /// Alto del héroe de media en el Detalle de ejercicio (FER-149, «como el handoff»): 150, más
     /// bajo que `ExerciseThumbnail.heroHeight` (176). Token PROPIO — `heroHeight` es compartido

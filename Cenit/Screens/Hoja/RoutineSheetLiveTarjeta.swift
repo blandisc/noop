@@ -37,6 +37,9 @@ struct HojaTarjetaEjercicioSesion: View {
         }
         .liquidEntrada()
         .accessibilityElement(children: .contain)
+        // D0 (FER-170 · F5): la acción de VoiceOver, alcanzable sin ver el «⤢» — respaldo del mismo
+        // gesto que el botón de `chead` y el «Enfoque» del «···» (tres puertas, un solo destino).
+        .accessibilityAction(named: Text("Focus")) { vivo.enterFoco() }
     }
 
     private var chead: some View {
@@ -48,6 +51,18 @@ struct HojaTarjetaEjercicioSesion: View {
             .accessibilityHint(Text("Opens the exercise"))
             Text(run.name).font(StrandFont.headline).foregroundStyle(vivo.sheet.theme.ink)
                 .frame(maxWidth: .infinity, alignment: .leading).lineLimit(1)
+            // D0 (FER-170 · F5): «⤢» — la puerta directa a Foco (mock `hoja-mapa.html` D0), junto al
+            // «···» que ya trae «Enfoque» como respaldo. Solo sobre la tarjeta que SÍ puede enfocarse
+            // (`puedeEnfocar` — no en sesión llena/zombie/acta).
+            if vivo.puedeEnfocar {
+                Button { vivo.enterFoco() } label: {
+                    Image(systemName: "arrow.up.left.and.arrow.down.right")
+                        .font(StrandFont.glyph(.inline, weight: .semibold))
+                        .foregroundStyle(vivo.sheet.theme.inkTertiary).frame(width: 30, height: 44).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityHidden(true)   // la acción vive en `.accessibilityAction` del cuerpo — sin botón duplicado en el rotor
+            }
             Button { vivo.menuExerciseIndex = ei } label: {
                 Image(systemName: "ellipsis").font(StrandFont.glyph(.inline, weight: .semibold))
                     .foregroundStyle(vivo.sheet.theme.inkTertiary).frame(width: 30, height: 44).contentShape(Rectangle())
@@ -580,7 +595,13 @@ struct HojaTarjetaSuperserieSesion: View {
     }
 
     var body: some View {
-        HojaTarjetaSuperserie(nombre: nombre, pie: nil, onMenu: { vivo.menuExerciseIndex = primerMiembro }) {
+        HojaTarjetaSuperserie(
+            nombre: nombre, pie: nil,
+            onMenu: { vivo.menuExerciseIndex = primerMiembro },
+            // D0 (FER-170 · F5): la puerta directa a Foco — `nil` cuando la sesión ya no puede
+            // enfocarse (llena/zombie/acta), mismo gate que la tarjeta de un ejercicio suelto.
+            onEnfocar: vivo.puedeEnfocar ? { vivo.enterFoco() } : nil
+        ) {
             calentamientos
             // REGLA DURA: identidad por ronda (un `Int` semántico y estable — el bloque no gana
             // rondas en vivo, no es posición de un array reorderable), nunca por posición de fila.
@@ -612,7 +633,7 @@ struct HojaTarjetaSuperserieSesion: View {
         var rows: [PaperMenuItem] = []
         if vivo.puedeEnfocar {
             rows.append(.init(String(localized: "Focus"), systemImage: "arrow.up.left.and.arrow.down.right") {
-                vivo.focusMode = true
+                vivo.enterFoco()
             })
         }
         rows.append(.init(String(localized: "Undo superset"), systemImage: "link", isDestructive: true) {

@@ -796,6 +796,58 @@ final class StrengthSessionModelTests: XCTestCase {
         XCTAssertNotNil(s.restEndsAt)
     }
 
+    // MARK: - closedSupersetRounds (FER-170 · F5, ronda 2 del gate · R7)
+    //
+    // El núcleo de «HECHO en Foco solo al cerrar ronda» (`HojaSesionViva.registerFromFoco`, D3):
+    // cuenta rondas CERRADAS (todos los miembros con esa ronda `.done`) desde el inicio, se detiene
+    // en la primera abierta, y no deja que un miembro con MENOS series bloquee el conteo de otro con
+    // más — pura, sin motor de round-robin de por medio (se muta `.done` directo, como el resto de
+    // este archivo).
+
+    /// Cero cuando nadie ha registrado nada — nunca inventa una ronda cerrada de la nada.
+    func testClosedSupersetRoundsZeroWhenNothingDone() {
+        let s = supersetSession(rounds: 2)
+        let members = s.supersetMembers(at: 0)
+        XCTAssertEqual(s.closedSupersetRounds(members: members), 0)
+    }
+
+    /// Cuenta ronda a ronda: cerrar SOLO la ronda 0 de los dos miembros cuenta 1; cerrar también la
+    /// ronda 1 cuenta 2 — nunca antes de que el miembro faltante también la marque.
+    func testClosedSupersetRoundsCountsRoundByRound() {
+        let s = supersetSession(rounds: 2)
+        let members = s.supersetMembers(at: 0)
+        s.runs[0].sets[0].done = true; s.runs[1].sets[0].done = true   // ronda 0: A y B
+        XCTAssertEqual(s.closedSupersetRounds(members: members), 1)
+        s.runs[0].sets[1].done = true; s.runs[1].sets[1].done = true   // ronda 1: A y B
+        XCTAssertEqual(s.closedSupersetRounds(members: members), 2)
+    }
+
+    /// Se DETIENE en la primera ronda abierta: A cerró su ronda 0, pero B todavía no la suya — la
+    /// ronda 0 del BLOQUE sigue abierta, así que el conteo es 0, aunque A ya tenga su parte hecha.
+    func testClosedSupersetRoundsStopsAtFirstOpenRound() {
+        let s = supersetSession(rounds: 2)
+        let members = s.supersetMembers(at: 0)
+        s.runs[0].sets[0].done = true   // solo A cerró su ronda 0 — B sigue pendiente
+        XCTAssertEqual(s.closedSupersetRounds(members: members), 0)
+    }
+
+    /// Tolera miembros con distinto número de series (rampa heredada de antes de agrupar, N3): A con
+    /// 3 rondas, B con solo 2 — cerradas las dos que B SÍ tiene y la 3.ª (solo de A), el conteo llega
+    /// a 3 sin que la falta de una 3.ª fila en B lo bloquee (B «no aporta fila en esa ronda» — no
+    /// cuenta como abierta).
+    func testClosedSupersetRoundsToleratesUnevenMemberCounts() {
+        let s = make([
+            StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 3, superset: 1),
+                                          exercise: ex("bench", "Bench"), lastSets: []),
+            StrengthSessionModel.PlanSlot(re: re("b", exerciseId: "row", sets: 2, superset: 1),
+                                          exercise: ex("row", "Row"), lastSets: [])
+        ])
+        let members = s.supersetMembers(at: 0)
+        for i in 0..<3 { s.runs[0].sets[i].done = true }   // A: las 3 rondas
+        for i in 0..<2 { s.runs[1].sets[i].done = true }   // B: sus 2 rondas (todas las que tiene)
+        XCTAssertEqual(s.closedSupersetRounds(members: members), 3, "B no tener 3.ª fila no bloquea la cuenta de A")
+    }
+
     /// `addExercise` (ad-hoc, FER-762) and `replaceExercise` (swap mid-session, FER-894) both always seed
     /// `supersetGroup = nil` — neither auto-joins a superset it wasn't authored into.
     func testAddExerciseAndReplaceExerciseLeaveSupersetGroupNil() {

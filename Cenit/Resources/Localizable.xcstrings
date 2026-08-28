@@ -22234,6 +22234,23 @@
         }
       }
     },
+    "%lld of %lld · next: %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld of %lld · next: %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld de %lld · sigue: %@"
+          }
+        }
+      }
+    },
     "Take the raise to %@ %@" : {
       "extractionState" : "manual",
       "localizations" : {

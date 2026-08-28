@@ -49,7 +49,7 @@ enum HojaCabeceraSesion {
 
             // R2(a): ⤢ — la misma puerta a Foco que `SessionStatsBar.onFocus` ofrecía en la barra vieja.
             if vivo.puedeEnfocar {
-                Button { vivo.focusMode = true } label: {
+                Button { vivo.enterFoco() } label: {
                     Image(systemName: "arrow.up.left.and.arrow.down.right")
                         .font(StrandFont.glyph(.inline, weight: .semibold))
                         .foregroundStyle(vivo.sheet.theme.inkSecondary)

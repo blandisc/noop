@@ -30,20 +30,26 @@ private enum EntrenarCapsulaPuertaMetrics {
 /// tocarla.
 public struct EntrenarCapsulaPuerta: View {
     private let titulo: String
+    private let mostrarFlecha: Bool
     private let action: () -> Void
 
     /// - Parameters:
     ///   - titulo: el texto YA localizado; las mayúsculas las decide el caller (el catálogo debe
     ///     traer la cadena ya en mayúsculas — el componente no aplica `.textCase`).
+    ///   - mostrarFlecha: `true` (default) agrega «›» — la puerta EDITAR/MAPA del hub v18. `false`
+    ///     (FER-170 · F5, épico FER-165): la cápsula RPE/✎ NOTA del enfoque (mock `hoja-pantallas.html`
+    ///     `.capsula`) es la MISMA receta de vidrio, pero sin flecha — no navega a «otra pantalla»,
+    ///     abre una hoja encima.
     ///   - action: qué hace al tocarla (navegar a la hoja/pantalla que anuncia).
-    public init(_ titulo: String, action: @escaping () -> Void) {
+    public init(_ titulo: String, mostrarFlecha: Bool = true, action: @escaping () -> Void) {
         self.titulo = titulo
+        self.mostrarFlecha = mostrarFlecha
         self.action = action
     }
 
     public var body: some View {
         Button(action: action) {
-            Text(verbatim: "\(titulo) \(EntrenarCapsulaPuertaMetrics.chevron)")
+            Text(verbatim: mostrarFlecha ? "\(titulo) \(EntrenarCapsulaPuertaMetrics.chevron)" : titulo)
                 .entrenarCapsulaPuertaLabel()
                 .foregroundStyle(LiquidColor.tinta900)
                 .padding(.horizontal, EntrenarCapsulaPuertaMetrics.paddingH)

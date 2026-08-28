@@ -55,17 +55,23 @@ public struct HojaTarjetaSuperserie<Filas: View>: View {
     private let nombre: String
     private let pie: String?
     private let onMenu: (() -> Void)?
+    /// D0 (FER-170 · F5, épico FER-165): la puerta directa a Foco («⤢», mock `hoja-mapa.html` D0) —
+    /// `nil` (default) la omite, para no aparecer en la Hoja fría/edición donde esta misma tarjeta
+    /// también se monta y no hay sesión que enfocar.
+    private let onEnfocar: (() -> Void)?
     private let filas: Filas
 
     public init(
         nombre: String,
         pie: String?,
         onMenu: (() -> Void)? = nil,
+        onEnfocar: (() -> Void)? = nil,
         @ViewBuilder filas: () -> Filas
     ) {
         self.nombre = nombre
         self.pie = pie
         self.onMenu = onMenu
+        self.onEnfocar = onEnfocar
         self.filas = filas()
     }
 
@@ -88,6 +94,7 @@ public struct HojaTarjetaSuperserie<Filas: View>: View {
         // N5 (ronda 3, menor): vía catálogo — reusa la MISMA clave que `SupersetTag`
         // (`RoutineSetEditing.swift`) en vez de hardcodear «Superserie» en español.
         .accessibilityLabel(Text(verbatim: "\(String(localized: "Superset")), \(nombre)"))
+        .accessibilityActionIfAvailable(onEnfocar)
     }
 
     // MARK: - Header
@@ -117,6 +124,20 @@ public struct HojaTarjetaSuperserie<Filas: View>: View {
                 .padding(.leading, Self.pastillaGap)
                 .accessibilityHidden(true) // ya va en el label de la tarjeta
             Spacer(minLength: 8)
+            // D0 (FER-170 · F5): «⤢» — la puerta directa a Foco (mock `hoja-mapa.html` D0), junto al
+            // «···» que ya trae «Enfoque» como respaldo. La acción real vive en `.accessibilityAction`
+            // del cuerpo (rotor) — este botón se oculta del árbol de accesibilidad para no duplicarla.
+            if let onEnfocar {
+                Button(action: onEnfocar) {
+                    Image(systemName: "arrow.up.left.and.arrow.down.right")
+                        .font(InstrumentoType.grotesk(Self.menuSize, weight: .semibold, relativeTo: .body))
+                        .foregroundStyle(LiquidColor.tinta500)
+                        .frame(minWidth: HojaMetrics.hitMin, minHeight: HojaMetrics.hitMin)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityHidden(true)
+            }
             if let onMenu {
                 Button(action: onMenu) {
                     Text(verbatim: "···")
@@ -160,6 +181,20 @@ public struct HojaTarjetaSuperserie<Filas: View>: View {
                 color: LiquidColor.cian.opacity(Self.sombraAlfa),
                 radius: Self.sombraRadio / 2,
                 x: 0, y: Self.sombraY)
+    }
+}
+
+/// D0 (FER-170 · F5): agrega la acción de VoiceOver «Foco» solo cuando el caller trae una — sin
+/// esto, un `.accessibilityAction` incondicional expondría un botón «Foco» inerte en el rotor
+/// cuando la tarjeta se monta SIN sesión que enfocar (Hoja fría/edición).
+private extension View {
+    @ViewBuilder
+    func accessibilityActionIfAvailable(_ action: (() -> Void)?) -> some View {
+        if let action {
+            self.accessibilityAction(named: Text("Focus"), action)
+        } else {
+            self
+        }
     }
 }
 

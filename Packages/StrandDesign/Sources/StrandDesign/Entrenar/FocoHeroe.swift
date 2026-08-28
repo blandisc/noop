@@ -16,8 +16,6 @@ private enum FocoHeroeMetrics {
     static var stepDiametro: CGFloat { 38 }
     /// `.step` glifo `font-size: 16px`.
     static var stepGlifoSize: CGFloat { 16 }
-    /// `.step` `background: rgba(255,255,255,.7)`.
-    static var stepFondoAlfa: Double { 0.7 }
     /// `.step` canto `0 0 0 .5px var(--canto)` (= tinta 8 %).
     static var stepCantoAlfa: Double { 0.08 }
     /// Gap de la fila (spec F5; mock inline sin gap nombrado).
@@ -121,8 +119,10 @@ public struct FocoHeroe: View {
                     width: FocoHeroeMetrics.stepDiametro,
                     height: FocoHeroeMetrics.stepDiametro)
                 .background {
+                    // R5 (ronda 2 del gate, Grok G8): `LiquidColor.vidrioStep` — antes `Color.white
+                    // .opacity(...)` crudo.
                     Circle()
-                        .fill(Color.white.opacity(FocoHeroeMetrics.stepFondoAlfa))
+                        .fill(LiquidColor.vidrioStep)
                 }
                 .overlay {
                     Circle()
