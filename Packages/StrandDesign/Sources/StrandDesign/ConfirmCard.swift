@@ -1,23 +1,28 @@
 import SwiftUI
 
-// MARK: - ConfirmCard — «Instrumento» confirmation (handoff entrenamiento-v4 · 5b, FER-836)
+// MARK: - ConfirmCard — cristal El Eje (dialecto Entrenar de Liquid Glass; reskin FER-196)
 //
-// The styled replacement for `.confirmationDialog`: a paper card anchored to the
-// bottom edge over an ink scrim. Three rules are LAW here, not convention:
-//   • The overline names the CONTEXT and what is at stake («SESIÓN · 23:41 EN CURSO»).
-//   • The body states the CONCRETE consequence of confirming.
-//   • A destructive action renders as a red OUTLINE — never as the filled primary —
-//     and every action names what it does. «Cancelar»/«OK» do not exist in this system.
+// El reemplazo estilizado de `.confirmationDialog`: una tarjeta de VIDRIO anclada al borde
+// inferior sobre un scrim de tinta — vidrio translúcido claro (`LiquidColor.vidrioSuperficie`
+// + `.ultraThinMaterial`), canto hairline, highlight superior y una sombra que proyecta hacia
+// ARRIBA. Piel El Eje sobre el mismo esqueleto de siempre: API pública y comportamiento
+// intactos (FER-196, Ola 0 del épico «Entrenar en vidrio»). Tres reglas son LEY aquí, no
+// convención:
+//   • El overline nombra el CONTEXTO y lo que está en juego («SESIÓN · 23:41 EN CURSO»).
+//   • El cuerpo dice la consecuencia CONCRETA de confirmar.
+//   • Una acción destructiva se renderiza como contorno ROJO — nunca como el primario
+//     relleno — y cada acción nombra lo que hace. «Cancelar»/«OK» no existen en este sistema.
 
 /// One action inside an `instrumentoConfirm` card. Order in the array is render order
 /// (primary usually first, the "stay safe" action last).
 public struct InstrumentoConfirmAction: Identifiable {
     public enum Role {
-        /// Filled ink button — the safe / main path. Never destructive.
+        /// Verde El Eje (gradiente `verdeBotonAlto` → `verdePrimario`) — el camino
+        /// seguro/principal. Nunca destructivo.
         case primary
-        /// Outline button on `hairlineStrong`.
+        /// Vidrio (receta `.pastilla`: borde hairline, relleno translúcido).
         case secondary
-        /// Red outline on `critical`. ALWAYS an outline, never filled.
+        /// Contorno rojo (`LiquidColor.negativo`). SIEMPRE contorno, nunca relleno.
         case destructive
     }
 
@@ -34,10 +39,11 @@ public struct InstrumentoConfirmAction: Identifiable {
 }
 
 public extension View {
-    /// 1:1 replacement for `.confirmationDialog` in the «Instrumento» language (spec 5b).
+    /// 1:1 replacement for `.confirmationDialog` in the cristal El Eje language (reskin FER-196
+    /// de la spec 5b original).
     /// - Parameters:
-    ///   - title: Space Grotesk 22/700 headline.
-    ///   - context: ALL-CAPS overline naming what is at stake («SESIÓN · 23:41 EN CURSO»).
+    ///   - title: `LiquidType.displayS` — 22/700, escala con Dynamic Type.
+    ///   - context: overline MAYÚSCULAS naming what is at stake («SESIÓN · 23:41 EN CURSO»).
     ///   - message: the concrete consequence of confirming — never a vague warning.
     ///   - actions: 2–3 actions; each copy names its action (never «Cancelar»/«OK»).
     func instrumentoConfirm(
@@ -61,14 +67,15 @@ private struct InstrumentoConfirmModifier: ViewModifier {
     let message: String?
     let actions: [InstrumentoConfirmAction]
 
-    @Environment(\.instrumentoTheme) private var theme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.liquidMotionDisabled) private var motionDisabled
 
     func body(content: Content) -> some View {
         content
             .overlay(alignment: .bottom) {
                 ZStack(alignment: .bottom) {
                     if isPresented {
-                        theme.ink.opacity(0.28)
+                        LiquidColor.tinta900.opacity(0.28)
                             .ignoresSafeArea()
                             .transition(.opacity)
                             .onTapGesture { isPresented = false }
@@ -79,8 +86,16 @@ private struct InstrumentoConfirmModifier: ViewModifier {
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
                 }
-                .animation(StrandMotion.interactive, value: isPresented)
+                .animation(cardAnimation, value: isPresented)
             }
+    }
+
+    /// «Sin resorte» bajo Reduce Motion (FER-196): mismo `sheetDuration` (560 ms), pero
+    /// `glassOut` en vez de `glassSpring` — la degradación queda DEFINIDA, no apagada.
+    private var cardAnimation: Animation {
+        reduceMotion || motionDisabled
+            ? LiquidMotion.glassOut(LiquidMotion.sheetDuration)
+            : LiquidMotion.sheet
     }
 }
 
@@ -91,8 +106,6 @@ public struct ConfirmCard: View {
     let message: String?
     let actions: [InstrumentoConfirmAction]
     @Binding var isPresented: Bool
-
-    @Environment(\.instrumentoTheme) private var theme
 
     public init(title: String, context: String, message: String?,
                 actions: [InstrumentoConfirmAction], isPresented: Binding<Bool>) {
@@ -106,86 +119,133 @@ public struct ConfirmCard: View {
     public var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(context)
-                .font(InstrumentoType.groteskOverline)
-                .tracking(InstrumentoType.groteskOverlineTracking)
-                .textCase(.uppercase)
-                .foregroundStyle(theme.inkTertiary)
+                .liquidRegla()
+                .foregroundStyle(LiquidColor.tinta500)
 
             Text(title)
-                .font(InstrumentoType.grotesk(22, weight: .bold))
-                .foregroundStyle(theme.ink)
-                .padding(.top, 8)
+                .font(LiquidType.displayS)
+                .tracking(LiquidType.displaySTracking)
+                .foregroundStyle(LiquidColor.tinta900)
+                .padding(.top, LiquidSpace.s200)
 
             if let message {
                 Text(message)
-                    .font(StrandFont.scaled(13))
-                    .foregroundStyle(theme.inkSecondary)
+                    .font(LiquidType.clausulaCampo)
+                    .foregroundStyle(LiquidColor.tinta700)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 6)
+                    .padding(.top, LiquidSpace.s150)
             }
 
-            VStack(spacing: 10) {
+            VStack(spacing: LiquidSpace.s250) {
                 ForEach(actions) { action in
                     Button {
                         isPresented = false
                         action.handler()
                     } label: {
-                        Text(action.title)
-                            .font(InstrumentoType.grotesk(15, weight: .bold))
-                            .frame(maxWidth: .infinity, minHeight: 50)
+                        actionLabel(action)
                     }
-                    .buttonStyle(ConfirmActionStyle(role: action.role, theme: theme))
+                    .buttonStyle(.liquidPress)
                 }
             }
-            .padding(.top, 18)
+            .padding(.top, LiquidSpace.s400)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 24)
-        .padding(.top, 20)
-        .padding(.bottom, 20)
-        .background(
-            UnevenRoundedRectangle(topLeadingRadius: 20, topTrailingRadius: 20)
-                .fill(theme.surface)
-                // token-exempt: hoja inferior que proyecta hacia ARRIBA (y negativa); StrandElevation solo modela sombras hacia abajo.
-                .shadow(color: theme.ink.opacity(0.18), radius: 20, y: -12)
-                .ignoresSafeArea(edges: .bottom)
-        )
+        .padding(.horizontal, LiquidSpace.s600)
+        .padding(.top, LiquidSpace.s550)
+        .padding(.bottom, LiquidSpace.s550)
+        .background(cardGlassBackground)
         .overlay(alignment: .top) {
-            UnevenRoundedRectangle(topLeadingRadius: 20, topTrailingRadius: 20)
-                .stroke(theme.hairline, lineWidth: 1)
+            cardShape
+                .stroke(LiquidColor.vidrioBordeSuperficie, lineWidth: 0.5)
                 .ignoresSafeArea(edges: .bottom)
         }
     }
-}
 
-private struct ConfirmActionStyle: ButtonStyle {
-    let role: InstrumentoConfirmAction.Role
-    let theme: InstrumentoTheme
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .foregroundStyle(foreground)
-            .background(
-                RoundedRectangle(cornerRadius: 14)
-                    .fill(role == .primary ? theme.ink : .clear)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .stroke(border, lineWidth: role == .primary ? 0 : 1.5)
-            )
-            .opacity(configuration.isPressed ? 0.75 : 1)
+    /// Esquinas SOLO arriba (hoja anclada abajo) — `LiquidRadius.hoja` (28), el radio
+    /// reservado del sistema para sheets y modales.
+    private var cardShape: UnevenRoundedRectangle {
+        UnevenRoundedRectangle(topLeadingRadius: LiquidRadius.hoja, topTrailingRadius: LiquidRadius.hoja)
     }
 
-    private var foreground: Color {
-        switch role {
-        case .primary:     return theme.surface
-        case .secondary:   return theme.ink
-        case .destructive: return theme.critical
+    /// El cristal: mismos tokens que la receta `.superficie` (`LiquidColor.vidrioSuperficie` +
+    /// `.ultraThinMaterial` + borde `vidrioBordeSuperficie` + highlight superior 0.8→0.35),
+    /// sobre la forma de esquinas parciales que `.liquidGlass(_:)` no expone. La sombra
+    /// se dibuja como silueta detrás del vidrio (no `.shadow` sobre el contenido: eso
+    /// proyectaría el rectángulo del material, no la silueta — mismo defecto documentado en
+    /// `LiquidGlassRecipes.swift`), con `y` NEGATIVA porque esta hoja proyecta hacia ARRIBA
+    /// (token-exempt: `LiquidElevation` solo modela sombras hacia abajo).
+    private var cardGlassBackground: some View {
+        ZStack {
+            cardShape
+                .fill(LiquidColor.tinta900.opacity(0.18))
+                .blur(radius: 20)
+                .offset(y: -12)
+            ZStack {
+                cardShape.fill(.ultraThinMaterial)
+                cardShape.fill(LiquidColor.vidrioSuperficie)
+            }
+            .overlay {
+                cardShape
+                    .strokeBorder(
+                        LinearGradient(
+                            stops: [
+                                .init(color: .white.opacity(0.8), location: 0),
+                                .init(color: .white.opacity(0.35), location: 1),
+                            ],
+                            startPoint: .topLeading, endPoint: .bottomTrailing),
+                        lineWidth: 1.5)
+                    .blur(radius: 0.5)
+                    .allowsHitTesting(false)
+            }
         }
+        .ignoresSafeArea(edges: .bottom)
     }
 
-    private var border: Color {
-        role == .destructive ? theme.critical : theme.hairlineStrong
+    @ViewBuilder
+    private func actionLabel(_ action: InstrumentoConfirmAction) -> some View {
+        let text = Text(action.title)
+            .font(LiquidType.boton)
+            .tracking(LiquidType.botonTracking)
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, LiquidSpace.s550)
+            .frame(maxWidth: .infinity, minHeight: LiquidControl.hitTarget)
+
+        switch action.role {
+        case .primary:
+            text
+                .foregroundStyle(LiquidColor.tintaSobreVerde)
+                .background {
+                    Capsule().fill(LinearGradient(
+                        colors: [LiquidColor.verdeBotonAlto, LiquidColor.verdePrimario],
+                        startPoint: .top, endPoint: .bottom))
+                }
+                .overlay {
+                    // inset 0 1px 1px blanco .35 — la luz entrando por el canto superior
+                    // (misma receta que `LiquidGlassButton.primary`).
+                    Capsule()
+                        .strokeBorder(
+                            LinearGradient(
+                                stops: [
+                                    .init(color: .white.opacity(0.35), location: 0),
+                                    .init(color: .white.opacity(0), location: 0.5),
+                                ],
+                                startPoint: .top, endPoint: .bottom),
+                            lineWidth: 1)
+                        .allowsHitTesting(false)
+                }
+                .clipShape(Capsule())
+                .liquidShadow([.init(color: LiquidColor.verdePrimario.opacity(0.30), radius: 7, y: 5)])
+        case .secondary:
+            text
+                .foregroundStyle(LiquidColor.tinta900)
+                .liquidGlass(.pastilla)
+        case .destructive:
+            text
+                .foregroundStyle(LiquidColor.negativo)
+                .overlay {
+                    Capsule().strokeBorder(LiquidColor.negativo, lineWidth: 1.5)
+                }
+        }
     }
 }
 
@@ -194,7 +254,7 @@ private struct ConfirmActionStyle: ButtonStyle {
 #Preview("ConfirmCard · 3 acciones (destructiva)") {
     Color.clear
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(InstrumentoTheme.base.paper)
+        .background(LiquidColor.papelGradient)
         .instrumentoConfirm(
             isPresented: .constant(true),
             title: "¿Terminar la sesión?",
@@ -211,7 +271,7 @@ private struct ConfirmActionStyle: ButtonStyle {
 #Preview("ConfirmCard · 2 acciones") {
     Color.clear
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(InstrumentoTheme.base.paper)
+        .background(LiquidColor.papelGradient)
         .instrumentoConfirm(
             isPresented: .constant(true),
             title: "¿Salir sin guardar?",
