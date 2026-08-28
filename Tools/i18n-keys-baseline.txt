@@ -26,9 +26,6 @@
 # --- Deuda heredada: literal en ESPAÑOL usado como clave, que nunca traduce al inglés
 #     (la misma clase que caza check-hardcoded-strings.py, en archivos fuera de su alcance; FER-124).
 '*** COPIA PARA TI ***'
-'Tu línea base se re-anclará desde hoy y se ignorarán tus noches anteriores. Perderás tu número de recuperación unos días mientras se recalibra. Tus datos e historial no se borran.'
-'¿Borrar toda la media de ejercicios descargada?'
-'¿Recalibrar tu recuperación?'
 
 # --- No es copy: se lee igual en los dos idiomas.
 # el nombre del método (Karvonen 1957), no una palabra traducible

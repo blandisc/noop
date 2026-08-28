@@ -272,7 +272,7 @@ private struct CyclePhaseStateBody: View {
             Text(String(localized: "I need several weeks of nights with your Apple Watch worn to bed to read the rhythm of your temperature. Still watching."))
                 .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta500)
                 .fixedSize(horizontal: false, vertical: true)
-            CyclePhaseProgressBar(fraction: needed > 0 ? min(1, Double(soFar) / Double(needed)) : 0)
+            CyclePhaseProgressBar(soFar: soFar, needed: needed)
                 .padding(.top, LiquidSpace.s100)
             Text(String(localized: "\(soFar) of ~\(needed) nights"))
                 .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
@@ -324,7 +324,10 @@ private struct CyclePhaseStateBody: View {
 
 /// A calm, dateless progress bar for the learning state — a fill fraction, no percentage read-out.
 private struct CyclePhaseProgressBar: View {
-    let fraction: Double
+    let soFar: Int
+    let needed: Int
+
+    private var fraction: Double { needed > 0 ? Double(soFar) / Double(needed) : 0 }
 
     var body: some View {
         GeometryReader { geo in
@@ -336,6 +339,8 @@ private struct CyclePhaseProgressBar: View {
         }
         .frame(height: 6)
         .accessibilityElement()
-        .accessibilityLabel(Text("\(Int((fraction * Double(CyclePhaseEngine.minUsableNights)).rounded())) of ~\(CyclePhaseEngine.minUsableNights) nights learned"))
+        // `soFar`/`needed` directly, not re-derived from `fraction` — the day `needed` changes from
+        // `minUsableNights`, a re-derived label would silently disagree with what the caller passed.
+        .accessibilityLabel(Text("\(soFar) of ~\(needed) nights learned"))
     }
 }

@@ -177,11 +177,8 @@ struct DataSourcesView: View {
     private var appleHealthImportBlock: some View {
         let importingAppleHealth = model.isImporting(.appleHealth)
         return blockPlano(
-            // Plain literals (not `String(localized:)`), matching origin: these block descriptions
-            // were never catalogued; the visual migration leaves i18n behaviour unchanged (their es
-            // translation is deferred to the i18n backlog issue, not bundled into this repaint).
-            "Apple Health Export",
-            subtitle: "Import an Apple Health export (Health app → profile → Export All Health Data → export.zip). 7 years of HR, HRV, sleep, SpO₂, steps and more: streamed locally. Large exports take a minute or two.") {
+            String(localized: "Apple Health Export"),
+            subtitle: String(localized: "Import an Apple Health export (Health app → profile → Export All Health Data → export.zip). 7 years of HR, HRV, sleep, SpO₂, steps and more: streamed locally. Large exports take a minute or two.")) {
             HStack(spacing: LiquidSpace.s300) {
                 LiquidGlassButton(importingAppleHealth ? String(localized: "Working…") : String(localized: "Choose export.zip…"),
                                   variant: .glass) { presentImporter(.appleHealth) }
@@ -236,7 +233,7 @@ struct DataSourcesView: View {
 
             switch health.auth {
             case .unavailable:
-                Text(verbatim: "Apple Health isn’t available on this device.")
+                Text(String(localized: "Apple Health isn’t available on this device."))
                     .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
             case .authorized:
                 appleHealthAuthorizedBody
@@ -374,7 +371,7 @@ struct DataSourcesView: View {
             appleHealthCoverageSection
             appleHealthMetricList
             if let at = health.lastSync {
-                Text(verbatim: "Last synced \(at.formatted(.relative(presentation: .named)))")
+                Text(String(localized: "Last synced \(at.formatted(.relative(presentation: .named)))"))
                     .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
             }
         }
@@ -400,7 +397,7 @@ struct DataSourcesView: View {
             Spacer(minLength: 0)
         }
         if health.auth == .denied {
-            LiquidNotaLine("Apple Health access was declined. Enable it in Settings › Privacy & Security › Health › Cénit.",
+            LiquidNotaLine(String(localized: "Apple Health access was declined. Enable it in Settings › Privacy & Security › Health › Cénit."),
                            tono: LiquidColor.atencionTexto)
             settingsButton
         }
@@ -684,7 +681,6 @@ struct DataSourcesView: View {
                           count: String(localized: "\(ahDays) days · \(appleWorkouts) workouts"),
                           tint: LiquidColor.azul)
             }
-            // TODO(/pm): sin banda, el footnote de «última sync de historia» perdió su fuente; ¿equivalente Apple?
         }
         .task {
             appleWorkouts = (await repo.workoutRows(respectingMode: false)).filter { $0.source == "apple-health" }.count
@@ -742,7 +738,7 @@ struct DataSourcesView: View {
     private var backupBlock: some View {
         blockCard(
             String(localized: "Backup & restore"),
-            subtitle: "Move all your Cénit data to another device. Export saves everything to one file you can copy across; import replaces this device's data with a backup.") {
+            subtitle: String(localized: "Move all your Cénit data to another device. Export saves everything to one file you can copy across; import replaces this device's data with a backup.")) {
             VStack(alignment: .leading, spacing: LiquidSpace.s400) {
                 HStack(spacing: LiquidSpace.s300) {
                     LiquidGlassButton(String(localized: "Export…"), variant: .glass) { runExport() }
@@ -761,7 +757,7 @@ struct DataSourcesView: View {
     private var autoBackupBlock: some View {
         blockCard(
             String(localized: "Automatic iCloud backup"),
-            subtitle: "Pick a folder in iCloud Drive and Cénit keeps a fresh copy of all your data there. Your history lives only inside the app, so this is what protects it if you reinstall Cénit or switch phones. A free Apple ID is enough.") {
+            subtitle: String(localized: "Pick a folder in iCloud Drive and Cénit keeps a fresh copy of all your data there. Your history lives only inside the app, so this is what protects it if you reinstall Cénit or switch phones. A free Apple ID is enough.")) {
             VStack(alignment: .leading, spacing: LiquidSpace.s300) {
                 if let name = autoBackup.destinationName {
                     HStack(spacing: LiquidSpace.s150) {
@@ -843,15 +839,15 @@ struct DataSourcesView: View {
         switch result {
         case .cancelled: return
         case .exported(let url):
-            backupAlertTitle = "Backup exported"
-            backupAlertMessage = "Saved to \(url.lastPathComponent). Copy this file to your other device and use Import there to restore everything."
+            backupAlertTitle = String(localized: "Backup exported")
+            backupAlertMessage = String(localized: "Saved to \(url.lastPathComponent). Copy this file to your other device and use Import there to restore everything.")
             backupAlertIsError = false; showBackupAlert = true
         case .imported:
-            backupAlertTitle = "Backup imported"
-            backupAlertMessage = "Your data has been restored. Quit and reopen Cénit for it to take effect."
+            backupAlertTitle = String(localized: "Backup imported")
+            backupAlertMessage = String(localized: "Your data has been restored. Quit and reopen Cénit for it to take effect.")
             backupAlertIsError = false; showBackupAlert = true
         case .failure(let message):
-            backupAlertTitle = "Backup problem"; backupAlertMessage = message
+            backupAlertTitle = String(localized: "Backup problem"); backupAlertMessage = message
             backupAlertIsError = true; showBackupAlert = true
         }
     }

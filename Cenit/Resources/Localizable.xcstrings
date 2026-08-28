@@ -1,6 +1,306 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Saved animations are deleted from your iPhone. You can re-download them anytime." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las animaciones guardadas se borran de tu iPhone. Puedes volver a descargarlas cuando quieras."
+          }
+        }
+      }
+    },
+    "Version %@ · what Cénit is" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Versión %@ · qué es Cénit"
+          }
+        }
+      }
+    },
+    "Match system" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Según el sistema"
+          }
+        }
+      }
+    },
+    "Watch" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vigilancia"
+          }
+        }
+      }
+    },
+    "Watch for illness signs" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vigilar señales de enfermedad"
+          }
+        }
+      }
+    },
+    "Crosses your wrist temperature and nighttime resting heart rate to warn you early of possible illness. Approximate, not a diagnosis; needs about two weeks of data." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cruza tu temperatura de muñeca y tu pulso en reposo nocturno para avisarte temprano de una posible enfermedad. Aproximado, no es un diagnóstico; necesita unas dos semanas de datos."
+          }
+        }
+      }
+    },
+    "Notices are off in iOS Settings, so I cannot reach you." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los avisos están apagados en Ajustes de iOS, así que no puedo alcanzarte."
+          }
+        }
+      }
+    },
+    "Downloaded exercise animations" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Animaciones de ejercicios"
+          }
+        }
+      }
+    },
+    "Delete downloaded animations" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Borrar animaciones descargadas"
+          }
+        }
+      }
+    },
+    "Delete all downloaded exercise animations?" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Borrar todas las animaciones de ejercicios descargadas?"
+          }
+        }
+      }
+    },
+    "Delete the animations" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Borrar las animaciones"
+          }
+        }
+      }
+    },
+    "Keep the animations" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conservar las animaciones"
+          }
+        }
+      }
+    },
+    "Recalibrate your recovery?" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Recalibrar tu recuperación?"
+          }
+        }
+      }
+    },
+    "Recalibrate from today" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recalibrar desde hoy"
+          }
+        }
+      }
+    },
+    "Leave the baseline as is" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dejar la base como está"
+          }
+        }
+      }
+    },
+    "Your baseline will re-anchor from today and your earlier nights will be ignored. You'll lose your recovery number for a few days while it recalibrates. Your data and history aren't deleted." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu línea base se re-anclará desde hoy y se ignorarán tus noches anteriores. Perderás tu número de recuperación unos días mientras se recalibra. Tus datos e historial no se borran."
+          }
+        }
+      }
+    },
+    "Recalibrated on %@" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recalibrada el %@"
+          }
+        }
+      }
+    },
+    "Automatic · %@ bpm" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Automática · %@ bpm"
+          }
+        }
+      }
+    },
+    "Height in centimeters" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estatura en centímetros"
+          }
+        }
+      }
+    },
+    "Apple Health Export" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exportación de Apple Health"
+          }
+        }
+      }
+    },
+    "Import an Apple Health export (Health app → profile → Export All Health Data → export.zip). 7 years of HR, HRV, sleep, SpO₂, steps and more: streamed locally. Large exports take a minute or two." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importa una exportación de Apple Health (app Salud → perfil → Exportar todos los datos de salud → export.zip). 7 años de FC, VFC, sueño, SpO₂, pasos y más: se procesan en tu iPhone. Las exportaciones grandes tardan uno o dos minutos."
+          }
+        }
+      }
+    },
+    "Apple Health isn’t available on this device." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Health no está disponible en este dispositivo."
+          }
+        }
+      }
+    },
+    "Apple Health access was declined. Enable it in Settings › Privacy & Security › Health › Cénit." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se negó el acceso a Apple Health. Actívalo en Ajustes › Privacidad y seguridad › Salud › Cénit."
+          }
+        }
+      }
+    },
+    "Move all your Cénit data to another device. Export saves everything to one file you can copy across; import replaces this device's data with a backup." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mueve todos tus datos de Cénit a otro dispositivo. Exportar guarda todo en un archivo que puedes copiar; importar reemplaza los datos de este dispositivo con un respaldo."
+          }
+        }
+      }
+    },
+    "Pick a folder in iCloud Drive and Cénit keeps a fresh copy of all your data there. Your history lives only inside the app, so this is what protects it if you reinstall Cénit or switch phones. A free Apple ID is enough." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elige una carpeta en iCloud Drive y Cénit guarda ahí una copia reciente de todos tus datos. Tu historial vive solo dentro de la app, así que esto es lo que lo protege si reinstalas Cénit o cambias de teléfono. Basta un Apple ID gratis."
+          }
+        }
+      }
+    },
+    "Backup exported" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Respaldo exportado"
+          }
+        }
+      }
+    },
+    "Saved to %@. Copy this file to your other device and use Import there to restore everything." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guardado en %@. Copia este archivo a tu otro dispositivo y usa Importar ahí para restaurar todo."
+          }
+        }
+      }
+    },
+    "Backup imported" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Respaldo importado"
+          }
+        }
+      }
+    },
+    "Your data has been restored. Quit and reopen Cénit for it to take effect." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus datos se restauraron. Cierra y vuelve a abrir Cénit para que surta efecto."
+          }
+        }
+      }
+    },
+    "Backup problem" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Problema con el respaldo"
+          }
+        }
+      }
+    },
     "While it's on, it also gives your recovery number a small allowance on likely-luteal days, so the normal luteal rise in your pulse and temperature isn't read as «less recovered». With it off, your recovery ignores your cycle entirely." : {
       "localizations" : {
         "es" : {
@@ -8729,7 +9029,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Automático"
+            "value" : "Automática"
           }
         }
       }
@@ -14567,7 +14867,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Leave the baseline as is"
+            "value" : "Dejar la base como está"
           }
         },
         "es" : {
@@ -22514,7 +22814,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Saved animations are deleted from your iPhone. You can re-download them anytime."
+            "value" : "Las animaciones guardadas se borran de tu iPhone. Puedes volver a descargarlas cuando quieras."
           }
         },
         "es" : {
@@ -32409,7 +32709,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Recalibrate from today"
+            "value" : "Recalibrar desde hoy"
           }
         },
         "es" : {
@@ -45564,6 +45864,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Write-back to Apple Health: %1$@/%2$@ enabled"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guardar en Salud: %1$@/%2$@ habilitados"
           }
         }
       }

@@ -118,6 +118,7 @@ struct HistorialFASection: View {
 
                 LiquidNotaLine(String(localized: "I am not recommending it and I am not talking you out of it: both sides are here so you can decide. Cénit does not diagnose anything, and none of this is medical advice."))
             }
+            .liquidTarjetaSeccion()
         }
     }
 

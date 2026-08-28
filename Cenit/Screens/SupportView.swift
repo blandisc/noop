@@ -12,10 +12,18 @@ import StrandDesign
 // device» disclaimer; that content and its behavior (none — the screen is static) are conserved
 // verbatim.
 //
-// The screen is presented inside its own NavigationStack by every caller (AjustesView's dark-sheet
-// slot today), so no navigation chrome lives here.
+// The screen is presented inside its own NavigationStack by every caller (Ajustes forces the light
+// paper theme on the sheet, `.preferredColorScheme(.light)`), so no navigation chrome lives here.
 
 struct SupportView: View {
+    /// Single source of truth for the version pill: the app bundle's marketing version, same value
+    /// `AjustesView`'s footer shows. `AppChangelog.currentVersion` tracks a DIFFERENT thing (the last
+    /// changelog entry shown in What's New) and drifts from the bundle version on every release that
+    /// doesn't touch the changelog — it must never be shown to the user as "the app version".
+    private var appVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: LiquidSpace.s800) {
@@ -56,7 +64,7 @@ struct SupportView: View {
         VStack(alignment: .leading, spacing: LiquidSpace.s300) {
             HStack(spacing: LiquidSpace.s200) {
                 Text(ProjectInfo.appName).font(LiquidType.titulo).foregroundStyle(LiquidColor.tinta900)
-                Text("v\(AppChangelog.currentVersion)")
+                Text("v\(appVersion)")
                     .font(LiquidType.unidadCompacta)
                     .foregroundStyle(LiquidColor.tinta500)
                     .padding(.horizontal, LiquidSpace.s250)

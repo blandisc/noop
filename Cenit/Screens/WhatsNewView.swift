@@ -1,9 +1,9 @@
 import SwiftUI
 import StrandDesign
 
-/// "What's New" — a proper in-app changelog, shown automatically after an update and reachable any
-/// time from Settings. It also restates, up top, what NOOP is and what to expect, so people who never
-/// open GitHub still understand the experimental footing and the WHOOP 5/MG status.
+/// "What's New" — a proper in-app changelog, shown automatically after an update (there is no door to
+/// it from Settings today). It also restates, up top, what NOOP is and what to expect, so people who
+/// never open GitHub still understand the experimental footing and the WHOOP 5/MG status.
 ///
 /// FER-415 — migrated to the light «Instrumento diurno» language (warm paper, ink, hierarchy by space —
 /// no dark `NoopCard` boxes), matching the other sheets (FER-167 `WhyVerdictSheet`, FER-162). The theme

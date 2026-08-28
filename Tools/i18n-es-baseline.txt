@@ -95,7 +95,6 @@ The «vs your base» bars show each signal's deviation in σ (above your base = 
 Timing, %@ seconds
 Vigilar señales de enfermedad
 With this plan: %@×%@ with %@ kg %@ → next time you train with **%@**.
-Write-back to Apple Health: %@/%@ enabled
 You'll lose %lld logged set(s) today. This can't be undone.
 YOUR INVENTORY · PER SIDE
 You're %@ of %@ sessions in with %@.
