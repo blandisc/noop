@@ -20,6 +20,11 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **Las confirmaciones de Entrenar pasan a vidrio / Train's confirmations turn to glass** (FER-196).
+  **ES** — Las tarjetas de confirmación (terminar la sesión, romper un superset, descartar el entreno…) dejan el papel plano y pasan al cristal El Eje: vidrio translúcido con highlight superior y sombra que flota hacia arriba, botón principal verde de marca, secundario en vidrio y la acción destructiva siempre en contorno rojo — nunca rellena. Es solo la piel: mismo texto, mismas acciones, mismo comportamiento en las 7 confirmaciones de Entrenar y en Bucle/Cuerpo.
+  **EN** — The confirmation cards (finish the session, break a superset, discard the workout…) leave flat paper for El Eje glass: translucent glass with a top highlight and an upward-floating shadow, a brand-green primary button, a glass secondary, and the destructive action always as a red outline — never filled. It's skin-only: same copy, same actions, same behavior across Train's 7 confirmations and Loop/Body.
+  ([ConfirmCard.swift](Packages/StrandDesign/Sources/StrandDesign/ConfirmCard.swift))
+
 - **Ajustes habla con una sola voz / Settings speaks with one voice** (FER-193).
   **ES** — Un par de frases de Ajustes se habían salido de la voz de la app: describían lo que Cénit hace por ti en tercera persona («se congela», «cruza tu temperatura») en vez de la primera persona con que te habla el resto («lo congelo», «cruzo tu temperatura»). Ahora las secciones hermanas suenan igual; los mensajes de error siguen impersonales, como debe ser.
   **EN** — A couple of Settings lines had drifted out of the app's voice: they described what Cénit does for you in the third person ("it freezes", "crosses your temperature") instead of the first person the rest speaks in ("I freeze it", "I cross your temperature"). Sibling sections now sound alike; error messages stay impersonal, as they should.
