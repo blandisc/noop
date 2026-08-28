@@ -643,10 +643,19 @@ extension CenitStore {
     /// The most recent *work* sets for an exercise, newest first — powers "la última vez" pre-fill.
     public func lastWorkSets(exerciseId: String, limit: Int = 12) async throws -> [SetEntry] {
         try syncRead { db in
-            try Row.fetchAll(db, sql: """
+            // FER-169 · B10: a confirmed-absurd capture (the athlete answered «SÍ, 825») is still
+            // saved as-is — the acta doesn't lie — but must never resurface as tomorrow's starting
+            // weight. Fetch a wider buffer than `limit` so `excludingAbsurdCaptures` can drop it
+            // before truncating: without the buffer, a single 8× row within the requested window
+            // would just shrink the returned count instead of being replaced by the real Nth-most-
+            // recent legitimate set.
+            let buffered = try Row.fetchAll(db, sql: """
                 SELECT * FROM setEntry WHERE exerciseId = ? AND kind = 'work' AND done = 1
                 ORDER BY ts DESC LIMIT ?
-                """, arguments: [exerciseId, limit]).map(Self.setEntry)
+                """, arguments: [exerciseId, limit + Self.absurdGuardBuffer]).map(Self.setEntry)
+            let priorMaxKg = try Self.existingMaxWeightPR(db, exerciseId: exerciseId)
+            let eligible = Self.excludingAbsurdCaptures(buffered, priorMaxKg: priorMaxKg)  // oldest→newest
+            return Array(eligible.suffix(limit).reversed())  // back to newest-first, same contract as before
         }
     }
 
@@ -665,7 +674,7 @@ extension CenitStore {
     /// query re-sorts them ASC so every caller still sees oldest→newest.
     public func workSetHistory(exerciseId: String, limit: Int = 600) async throws -> [WorkSetHistoryRow] {
         try syncRead { db in
-            try Row.fetchAll(db, sql: """
+            let rows = try Row.fetchAll(db, sql: """
                 SELECT * FROM (
                     SELECT s.id AS sessionId, s.startTs AS startTs, e.weightKg AS weightKg, e.reps AS reps,
                            (o.exerciseId IS NOT NULL) AS optedOut, e.rpe AS rpe, r.name AS routineName
@@ -683,6 +692,10 @@ extension CenitStore {
                                       optedOut: row["optedOut"], rpe: row["rpe"],
                                       routineName: row["routineName"])
                 }
+            // FER-169 · B10: this feeds `ProgressionPlanner.evaluate` (via `sessionSeed`) — the "siembra"
+            // consumer of the guard. Already oldest→newest, so the fold runs straight over it.
+            let priorMaxKg = try Self.existingMaxWeightPR(db, exerciseId: exerciseId)
+            return Self.excludingAbsurd(rows, weightKg: { $0.weightKg }, priorMaxKg: priorMaxKg)
         }
     }
 
@@ -762,6 +775,8 @@ extension CenitStore {
                 SELECT * FROM setEntry
                 WHERE exerciseId = ? AND kind = 'work' AND done = 1 AND ts < ?
                 """, arguments: [exerciseId, Int(beforeTs)]).map(Self.setEntry)
+            // FER-169 · B10: same absurd-capture exclusion as the save/delete paths — "el de antes"
+            // must never be an 8× typo either.
             let best = Self.bestPRs(work, exerciseId: exerciseId)
             switch metric {
             case .maxWeight: return best.maxWeight
@@ -795,16 +810,57 @@ extension CenitStore {
 
     // MARK: - PR derivation
 
+    /// FER-169 · B10 — how many EXTRA rows `lastWorkSets` fetches beyond `limit` so an absurd capture
+    /// within the window can be dropped and still leave `limit` real rows to return. Absurd captures
+    /// are rare (one fat-finger event, not a pattern), so a small fixed cushion is plenty.
+    private static let absurdGuardBuffer = 8
+
+    /// The exercise's current maxWeight `PersonalRecord`, or nil with none yet — the reference the
+    /// guard folds from when there's no earlier row in the batch being judged itself (FER-169 · B10).
+    private static func existingMaxWeightPR(_ db: Database, exerciseId: String) throws -> Double? {
+        let id = PersonalRecord(exerciseId: exerciseId, metric: .maxWeight, ts: 0).id
+        return try Row.fetchOne(db, sql: "SELECT * FROM personalRecord WHERE id = ?", arguments: [id])
+            .map(personalRecord)?.valueKg
+    }
+
+    /// FER-169 · B10 — the one fold every "what's the best/most-recent weight" reader defers to:
+    /// walking `itemsAscending` (oldest→newest) left to right, an item is dropped when its weight is
+    /// `CaptureGuard.isAbsurd` against the best weight already ACCEPTED so far (seeded with
+    /// `priorMaxKg`, typically the exercise's existing PR) — never seen, never counted toward later
+    /// comparisons, and never able to poison anything after it. No persisted flag: the same recompute
+    /// runs independently wherever history is read.
+    private static func excludingAbsurd<T>(_ itemsAscending: [T], weightKg: (T) -> Double?,
+                                           priorMaxKg: Double?) -> [T] {
+        var bestKg = priorMaxKg ?? 0
+        return itemsAscending.filter { item in
+            guard let w = weightKg(item) else { return true }   // time/distance — the guard doesn't apply
+            guard !CaptureGuard.isAbsurd(weightKg: w, referenceKg: bestKg) else { return false }
+            bestKg = max(bestKg, w)
+            return true
+        }
+    }
+
+    /// `excludingAbsurd` specialized to `SetEntry`, sorting by `ts` first (callers don't have to).
+    private static func excludingAbsurdCaptures(_ sets: [SetEntry], priorMaxKg: Double? = nil) -> [SetEntry] {
+        excludingAbsurd(sets.sorted { $0.ts < $1.ts }, weightKg: \.weightKg, priorMaxKg: priorMaxKg)
+    }
+
     /// The 3 candidate PRs (best weight / reps / volume) from a set of *done work* sets for one exercise;
     /// each is nil when no set qualifies. The single source of "what counts as a record" — shared by the
-    /// save path (`updatePersonalRecords`, upgrade-only) and the delete path (`recomputePR`, write-exact).
-    private static func bestPRs(_ work: [SetEntry], exerciseId: String)
+    /// save path (`updatePersonalRecords`, upgrade-only), the delete path (`recomputePR`, write-exact)
+    /// and `previousPersonalRecord`. `priorMaxKg` (FER-169 · B10) seeds the absurd-capture fold with the
+    /// exercise's PR BEFORE `work` — needed by `updatePersonalRecords`, which only ever sees one
+    /// session's own new sets, not the history an 8× capture there needs to be judged against. The
+    /// full-history callers (`recomputePR`, `previousPersonalRecord`) pass nil: their own `work` already
+    /// spans every session, so the chronological fold alone is a complete reference.
+    private static func bestPRs(_ work: [SetEntry], exerciseId: String, priorMaxKg: Double? = nil)
         -> (maxWeight: PersonalRecord?, maxReps: PersonalRecord?, maxVolume: PersonalRecord?) {
-        let maxWeight = work.compactMap { s in s.weightKg.map { (v: $0, ts: s.ts) } }.max { $0.v < $1.v }
+        let eligible = excludingAbsurdCaptures(work, priorMaxKg: priorMaxKg)
+        let maxWeight = eligible.compactMap { s in s.weightKg.map { (v: $0, ts: s.ts) } }.max { $0.v < $1.v }
             .map { PersonalRecord(exerciseId: exerciseId, metric: .maxWeight, valueKg: $0.v, ts: $0.ts) }
-        let maxReps = work.compactMap { s in s.reps.map { (v: $0, ts: s.ts) } }.max { $0.v < $1.v }
+        let maxReps = eligible.compactMap { s in s.reps.map { (v: $0, ts: s.ts) } }.max { $0.v < $1.v }
             .map { PersonalRecord(exerciseId: exerciseId, metric: .maxReps, reps: $0.v, ts: $0.ts) }
-        let maxVolume = work.compactMap { s -> (vol: Double, w: Double, reps: Int, ts: Int)? in
+        let maxVolume = eligible.compactMap { s -> (vol: Double, w: Double, reps: Int, ts: Int)? in
                 guard let w = s.weightKg, let r = s.reps else { return nil }
                 return (w * Double(r), w, r, s.ts)
             }.max { $0.vol < $1.vol }
@@ -817,7 +873,10 @@ extension CenitStore {
     private static func updatePersonalRecords(_ db: Database, sets: [SetEntry]) throws {
         let work = sets.filter { $0.kind == .work && $0.done }
         for (exerciseId, exSets) in Dictionary(grouping: work, by: \.exerciseId) {
-            let best = bestPRs(exSets, exerciseId: exerciseId)
+            // FER-169 · B10: this exercise's PR BEFORE today's sets — the reference an 8× capture in
+            // `exSets` (which only holds THIS session's own new rows) must be judged against.
+            let priorMaxKg = try existingMaxWeightPR(db, exerciseId: exerciseId)
+            let best = bestPRs(exSets, exerciseId: exerciseId, priorMaxKg: priorMaxKg)
             for pr in [best.maxWeight, best.maxReps, best.maxVolume].compactMap({ $0 }) {
                 try upsertPR(db, pr)
             }
