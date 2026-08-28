@@ -83,11 +83,24 @@ extension HojaSesionViva {
     // MARK: - El núcleo de ✓ (porteado de `LiveStrengthSheet.registerActiveSet`/`confirmOrToggleSet`)
 
     /// Desmarcar una serie hecha es corrección sin descanso; palomear la pendiente la selecciona (si
-    /// no era ya la activa) y registra con su descanso real.
-    func confirmOrToggleSet(ei: Int, si: Int) {
+    /// no era ya la activa) y registra con su descanso real. `bypassAbsurdGuard` (B10, FER-169): la
+    /// respuesta «SÍ, N» del aviso vuelve a llamar aquí mismo para no duplicar el camino de
+    /// seleccionar+registrar — pasa `true` para no volver a preguntar sobre el mismo valor.
+    func confirmOrToggleSet(ei: Int, si: Int, bypassAbsurdGuard: Bool = false) {
         guard session.runs.indices.contains(ei), session.runs[ei].sets.indices.contains(si) else { return }
         let set = session.runs[ei].sets[si]
         let isCurrent = si == session.runs[ei].currentSet && !set.done
+        // B10 (FER-169): antes de registrar una serie nueva, ¿el peso capturado es 8× lo que ya
+        // sabemos de este ejercicio? Una hecha que se está corrigiendo (B9) no vuelve a preguntar
+        // aquí — ya pasó el guard cuando se palomeó la primera vez.
+        if !set.done, !bypassAbsurdGuard {
+            let run = session.runs[ei]
+            let reference = absurdCaptureReference(run)
+            if CaptureGuard.isAbsurd(weightKg: set.weightKg, referenceKg: reference) {
+                absurdCapture = AbsurdCaptureTarget(runId: run.id, setId: set.id, weightKg: set.weightKg, referenceKg: reference)
+                return
+            }
+        }
         withAnimation(reduceMotion ? nil : .snappy) {
             if set.done {
                 session.toggleDone(exercise: ei, set: si)
@@ -96,6 +109,228 @@ extension HojaSesionViva {
                 if !isCurrent { session.select(exerciseIndex: ei, setIndex: si) }
                 registerActiveSet(ei: ei, si: si)
             }
+        }
+    }
+
+    // MARK: - B10 · el guard de captura absurda (FER-169)
+    //
+    // El umbral vive en `StrandTraining.CaptureGuard` — UNA constante que también usa `StrengthStore`
+    // al cerrar el PR y al sembrar la próxima sesión (`lastWorkSets`/`workSetHistory`), así que un
+    // «SÍ» aquí no puede envenenar ninguno de los dos sin que este archivo tenga que saberlo. Sin
+    // columna nueva: el `SetEntry` se guarda tal cual con «SÍ»; el propio umbral, recomputado ahí, es
+    // lo que lo excluye después.
+
+    /// La referencia contra la que se juzga «¿es absurdo?»: el PR de peso máximo cargado al abrir la
+    /// sesión (R16), o — sin PR — la semilla de la fila («la última vez»/prescripción, `lastWeightKg`).
+    private func absurdCaptureReference(_ run: StrengthSessionModel.ExerciseRun) -> Double {
+        personalRecords[run.exerciseId]?[.maxWeight]?.valueKg ?? run.lastWeightKg ?? 0
+    }
+
+    /// Resuelve la fila (`ei`/`si`) VIGENTE de un `AbsurdCaptureTarget` por identidad — nunca el
+    /// índice que tenía cuando se armó el aviso, que B8 (saltar-al-final, mover) puede haber corrido
+    /// mientras el aviso seguía en pantalla. `nil` si la fila ya no existe (ejercicio quitado de la
+    /// sesión mientras tanto).
+    private func resolveAbsurdCapture(_ target: AbsurdCaptureTarget) -> (ei: Int, si: Int)? {
+        guard let ei = session.runs.firstIndex(where: { $0.id == target.runId }),
+              let si = session.runs[ei].sets.firstIndex(where: { $0.id == target.setId }) else { return nil }
+        return (ei, si)
+    }
+
+    /// «SÍ, 825»: el acta no miente — registra tal cual, con el guard destapado para esta fila. El
+    /// PR y la siembra siguiente lo excluyen solos (mismo umbral, recalculado en `StrengthStore`).
+    func confirmAbsurdCaptureAsIs() {
+        guard let target = absurdCapture else { return }
+        absurdCapture = nil
+        guard let (ei, si) = resolveAbsurdCapture(target) else { return }
+        confirmOrToggleSet(ei: ei, si: si, bypassAbsurdGuard: true)
+    }
+
+    /// «ERA 82.5»: el típo más común (el punto perdido, ×10) — corrige dividiendo entre 10 y vuelve a
+    /// pasar por el guard (`confirmOrToggleSet` sin bypass): si el valor corregido TODAVÍA se ve
+    /// absurdo, pregunta de nuevo en vez de registrar algo que sigue sin cuadrar.
+    func correctAbsurdCapture() {
+        guard let target = absurdCapture else { return }
+        absurdCapture = nil
+        guard let (ei, si) = resolveAbsurdCapture(target) else { return }
+        session.setWeight(exercise: ei, set: si, kg: target.weightKg / 10)
+        confirmOrToggleSet(ei: ei, si: si)
+    }
+
+    /// Descarta el aviso sin registrar nada — la fila queda pendiente, tal como estaba antes del tap.
+    func dismissAbsurdCapture() { absurdCapture = nil }
+
+    // MARK: - B16b · «¿La rutina se queda así?» (FER-169)
+
+    /// Compara la marcha contra la rutina base (`routineREs`, cargada al abrir) — solo dos cosas
+    /// cuentan como «cambio estructural» (mapa): series distintas a lo prescrito, y sustituciones
+    /// (`run.exerciseId` ya no es el de la rutina). Agregar un ejercicio NO entra aquí: ese verbo
+    /// (B8) ya persiste de inmediato, como hacía antes de F4 — nada que preguntar dos veces. Sin
+    /// rutina detrás (sesión ad-hoc), nunca hay nada que preguntar.
+    func detectRoutineChanges() -> RoutineChangesSummary? {
+        guard session.routineId != nil else { return nil }
+        var parts: [String] = []
+        for run in session.runs {
+            guard let re = routineREs[run.id] else { continue }
+            if run.exerciseId != re.exerciseId {
+                let oldName = ExerciseCatalog.byID(re.exerciseId).map(StrengthDisplay.name) ?? re.exerciseId
+                parts.append(String(localized: "\(oldName) for \(run.name)"))
+            } else if re.targetSets > 0 {
+                let currentWork = run.sets.filter { $0.kind == .work }.count
+                if currentWork > 0, currentWork != re.targetSets {
+                    parts.append(String(localized: "\(run.name) \(re.targetSets) → \(currentWork) sets"))
+                }
+            }
+        }
+        guard !parts.isEmpty else { return nil }
+        return RoutineChangesSummary(phrase: parts.joined(separator: " · "))
+    }
+
+    /// El CTA «Terminar y guardar» (B16) pasa por aquí: si la marcha cambió la estructura, pregunta
+    /// UNA vez (B16b) antes de cerrar; si no, termina directo — el camino de siempre, intacto.
+    func requestFinish() {
+        if let summary = detectRoutineChanges() {
+            routineChangesToConfirm = summary
+        } else {
+            sheet.model.endStrengthSession(save: true)
+        }
+    }
+
+    /// «GUARDAR EN LA RUTINA»: escribe los cambios detectados a `RoutineExercise` (series, ejercicio)
+    /// y DESPUÉS termina — la próxima vez que se abra esta rutina, sale así. El acta de HOY no
+    /// depende de esto: refleja lo que de verdad se hizo sea cual sea la respuesta.
+    func finishAndSaveRoutineChanges() {
+        routineChangesToConfirm = nil
+        Task { await persistRoutineChanges() }
+        sheet.model.endStrengthSession(save: true)
+    }
+
+    /// «SOLO POR HOY»: termina sin tocar la rutina — la próxima sesión vuelve a sembrar desde lo de
+    /// siempre.
+    func finishWithoutSavingRoutineChanges() {
+        routineChangesToConfirm = nil
+        sheet.model.endStrengthSession(save: true)
+    }
+
+    private func persistRoutineChanges() async {
+        guard let rid = session.routineId, let store = await sheet.repo.storeHandle(),
+              var res = try? await store.routineExercises(routineId: rid),
+              let routine = (try? await store.routines())?.first(where: { $0.id == rid }) else { return }
+        for run in session.runs {
+            guard let idx = res.firstIndex(where: { $0.id == run.id }) else { continue }
+            let currentWork = run.sets.filter { $0.kind == .work }.count
+            if currentWork > 0 { res[idx].targetSets = currentWork }
+            if run.exerciseId != res[idx].exerciseId { res[idx].exerciseId = run.exerciseId }
+        }
+        try? await store.saveRoutine(routine, exercises: res)
+    }
+
+    // MARK: - B8 · «＋ Agregar ejercicio» (FER-169, porteado de `LiveStrengthSheet.addExercises`/
+    // `persistInsertedExercises`)
+
+    /// Inserta `picks` en la sesión justo tras el ejercicio `afterRunId` (o al final si es `nil` — la
+    /// Rápida vacía, B13, agrega sin «después» que valga) y, con rutina detrás, los persiste ahí
+    /// mismo — mismo trato PERMANENTE que ya usaba el «＋» de la Hoja fría. Por identidad (regla
+    /// dura), no por índice: el picker es un `.sheet` async y B8 puede reordenar (saltar-al-final,
+    /// mover) mientras está abierto, así que el índice se resuelve AQUÍ, tras el `await`, nunca antes.
+    /// B16b decide, al terminar, si alguna OTRA marcha (series/sustituciones) también se guarda o se
+    /// queda solo por hoy; agregar un ejercicio siempre fue permanente incluso antes de F4, así que
+    /// no espera a esa pregunta.
+    func addExercisesFromLibrary(_ picks: [Exercise], afterRunId: String?) async {
+        guard !picks.isEmpty else { return }
+        let lasts = await withTaskGroup(of: (String, Double?, Int?).self) { group in
+            for ex in picks {
+                group.addTask {
+                    let last = await self.sheet.repo.exerciseHistory(exerciseId: ex.id).last
+                    return (ex.id, last?.weightKg, last?.reps)
+                }
+            }
+            var results: [String: (Double?, Int?)] = [:]
+            for await (id, weight, reps) in group { results[id] = (weight, reps) }
+            return results
+        }
+        await MainActor.run {
+            if session.runs.isEmpty {
+                for ex in picks {
+                    let last = lasts[ex.id]
+                    session.addExercise(ex, lastWeightKg: last?.0, lastReps: last?.1)
+                }
+            } else if let afterRunId, let after = session.runs.firstIndex(where: { $0.id == afterRunId }) {
+                session.currentIndex = after   // `insertExerciseAfterCurrent` inserta a `currentIndex + 1`
+                for ex in picks.reversed() {
+                    let last = lasts[ex.id]
+                    session.insertExerciseAfterCurrent(ex, lastWeightKg: last?.0, lastReps: last?.1)
+                }
+                if session.routineId != nil { persistInsertedExercises(picks, afterRunId: afterRunId) }
+            } else {
+                for ex in picks {
+                    let last = lasts[ex.id]
+                    session.addExercise(ex, lastWeightKg: last?.0, lastReps: last?.1)
+                }
+            }
+        }
+    }
+
+    private func persistInsertedExercises(_ picks: [Exercise], afterRunId: String) {
+        guard let rid = session.routineId else { return }
+        Task {
+            guard let store = await sheet.repo.storeHandle(),
+                  var res = try? await store.routineExercises(routineId: rid),
+                  let routine = (try? await store.routines())?.first(where: { $0.id == rid }) else { return }
+            var insertAt = res.firstIndex(where: { $0.id == afterRunId }).map { $0 + 1 } ?? res.count
+            for ex in picks {
+                let re = RoutineExercise(routineId: rid, exerciseId: ex.id, position: insertAt,
+                                         targetSets: 1, targetReps: 8,
+                                         restMode: .fixed, restSeconds: StrengthSessionModel.adHocRestSeconds)
+                res.insert(re, at: min(insertAt, res.count))
+                insertAt += 1
+            }
+            for i in res.indices { res[i].position = i }
+            do {
+                try await store.saveRoutine(routine, exercises: res)
+                await loadRoutineREs()
+            } catch {
+                await MainActor.run { routineWriteError = true }
+            }
+        }
+    }
+
+    // MARK: - B7 · la bajada propuesta (FER-169)
+
+    /// «BAJAR A {toKg}»: mueve las celdas SIN palomear a la carga sugerida (mismo patrón que
+    /// `takeHeldRaise` — solo lo pendiente, lo ya hecho conserva lo real) y apaga la píldora. Sin
+    /// bandera nueva: la próxima clasificación (`ProgressionMath.classify`) lee esta sesión como
+    /// entrenada a `toKg`, así que el estancamiento se rompe solo, sin nada que persistir aquí.
+    func applyDeload(ei: Int, toKg: Double) {
+        guard session.runs.indices.contains(ei) else { return }
+        withAnimation(reduceMotion ? nil : .snappy) {
+            for si in session.runs[ei].sets.indices where !session.runs[ei].sets[si].done {
+                session.runs[ei].sets[si].weightKg = toKg
+            }
+            session.runs[ei].deloadState = nil
+        }
+    }
+
+    /// «SEGUIR EN {fromKg}»: descarta la propuesta SOLO por esta sesión — no persiste un opt-out (sin
+    /// columna nueva); si el estancamiento sigue, la próxima sesión vuelve a proponerlo.
+    func dismissDeload(ei: Int) {
+        guard session.runs.indices.contains(ei) else { return }
+        withAnimation(reduceMotion ? nil : .snappy) { session.runs[ei].deloadState = nil }
+    }
+
+    // MARK: - B6b · «Volver a X» (FER-169, porteado 1:1 de `LiveStrengthSheet.revertRaise`)
+
+    /// El per-session opt-out de una subida YA APLICADA: las celdas SIN palomear vuelven al peso
+    /// viejo; las hechas conservan lo que de verdad se levantó. La sesión queda marcada opted-out
+    /// (FER-835) — ni acierto ni fallo, la subida se vuelve a proponer la próxima vez.
+    func revertRaise(ei: Int) {
+        guard session.runs.indices.contains(ei), let raise = session.runs[ei].proposedRaise else { return }
+        withAnimation(reduceMotion ? nil : .snappy) {
+            for si in session.runs[ei].sets.indices where !session.runs[ei].sets[si].done {
+                session.runs[ei].sets[si].weightKg = raise.fromKg
+            }
+            session.runs[ei].proposedRaise = nil
+            session.runs[ei].raiseOptedOut = true
+            raiseRevertOpenRunId = nil
         }
     }
 
@@ -120,6 +355,21 @@ extension HojaSesionViva {
         sheet.model.buzz(loops: 1)   // háptica al palomear (contrato F1/F2: hápticas en palomear/fin de descanso/arranque)
     }
 
+    // MARK: - B9 · corregir una hecha (FER-169)
+
+    /// Tap en el peso de una fila HECHA: la reabre (desmarca, sin cerrar ningún descanso en curso —
+    /// `toggleDone` al DESmarcar es un no-op sobre el descanso) y el valor vuelve a la consola
+    /// (`beginEditing`, la MISMA celda que edita cualquier fila activa). Nada queda inmutable hasta
+    /// Terminar: re-✓ la vuelve a cerrar por el `confirmOrToggleSet` de siempre.
+    func reopenDoneSetForCorrection(ei: Int, si: Int) {
+        guard session.runs.indices.contains(ei), session.runs[ei].sets.indices.contains(si),
+              session.runs[ei].sets[si].done else { return }
+        withAnimation(reduceMotion ? nil : .snappy(duration: 0.22)) {
+            session.toggleDone(exercise: ei, set: si)
+        }
+        beginEditing(.weight(ei, si))
+    }
+
     /// SALTAR (B2/B3 consola, mock P4): el mismo `skipRest()` que el botón «SALTAR ›» de la banda.
     func skipRest() {
         withAnimation(reduceMotion ? nil : StrandMotion.gentle) { session.skipRest() }
@@ -139,22 +389,49 @@ extension HojaSesionViva {
         personalRecords = built
     }
 
-    /// Si la serie recién registrada bate cualquiera de los 3 `PRMetric` (peso máximo, reps máximas,
-    /// volumen máximo — SIN 1RM, eso sigue sin existir aquí, F4/B11) contra los PR cargados al abrir,
-    /// arma el destello breve (`prFlashSetId`), que `HojaFilaSerie`'s caller apaga solo tras un rato.
+    /// B11 (FER-169): si la serie recién registrada bate cualquiera de los 3 `PRMetric` (peso máximo,
+    /// reps máximas, volumen máximo — SIN 1RM, eso sigue sin existir aquí) contra los PR cargados al
+    /// abrir, arma el destello CON el copy del mapa («RÉCORD peso máx · antes 100.0»,
+    /// `HojaFilaSerie`'s caller apaga solo tras un rato). Estricto: solo `.work` (sin calentamiento) y
+    /// NUNCA lo que el guard de B10 acaba de rechazar — un 825 que «SÍ» guardó no puede además
+    /// destellar como récord numérico, sería la misma mentira por otra puerta.
     private func checkForPR(ei: Int, set: StrengthSessionModel.WorkingSet) {
         guard set.kind == .work, session.runs.indices.contains(ei) else { return }
-        let exId = session.runs[ei].exerciseId
+        let run = session.runs[ei]
+        guard !CaptureGuard.isAbsurd(weightKg: set.weightKg, referenceKg: absurdCaptureReference(run)) else { return }
+        let exId = run.exerciseId
         let prs = personalRecords[exId] ?? [:]
         let volume = set.weightKg * Double(set.reps)
-        let beatsWeight = (prs[.maxWeight]?.valueKg).map { set.weightKg > $0 } ?? (set.weightKg > 0)
-        let beatsReps = (prs[.maxReps]?.reps).map { set.reps > $0 } ?? (set.reps > 0)
-        let beatsVolume = (prs[.maxVolume]?.valueKg).map { volume > $0 } ?? (volume > 0)
-        guard beatsWeight || beatsReps || beatsVolume else { return }
-        prFlashSetId = set.id
+        let priorWeight = prs[.maxWeight]?.valueKg
+        let priorReps = prs[.maxReps]?.reps
+        // El PR de volumen guarda el peso × reps de LA SERIE que lo puso, no el volumen ya multiplicado
+        // (`PersonalRecord.valueKg`/`reps`, StrandTraining) — el volumen previo se recompone aquí, no
+        // se compara peso contra volumen por descuido.
+        let priorVolume = prs[.maxVolume].map { ($0.valueKg ?? 0) * Double($0.reps ?? 0) }
+        let beatsWeight = priorWeight.map { set.weightKg > $0 } ?? (set.weightKg > 0)
+        let beatsReps = priorReps.map { set.reps > $0 } ?? (set.reps > 0)
+        let beatsVolume = priorVolume.map { volume > $0 } ?? (volume > 0)
+        // Prioridad de copy cuando bate más de un tipo a la vez (mapa B11 muestra una sola línea):
+        // peso máx primero (el más legible), luego volumen, luego reps.
+        let flash: PRFlash?
+        if beatsWeight {
+            flash = PRFlash(setId: set.id, metric: .maxWeight,
+                            priorText: priorWeight.map { "\(plateNumber(displayWeight($0))) \(weightUnit())" })
+        } else if beatsVolume {
+            flash = PRFlash(setId: set.id, metric: .maxVolume,
+                            priorText: prs[.maxVolume].map { pr in
+                                "\(plateNumber(displayWeight(pr.valueKg ?? 0))) × \(pr.reps ?? 0)"
+                            })
+        } else if beatsReps {
+            flash = PRFlash(setId: set.id, metric: .maxReps, priorText: priorReps.map { "\($0)" })
+        } else {
+            flash = nil
+        }
+        guard let flash else { return }
+        prFlash = flash
         Task {
             try? await Task.sleep(for: .seconds(1.1))
-            if prFlashSetId == set.id { prFlashSetId = nil }
+            if prFlash?.setId == set.id { prFlash = nil }
         }
     }
 
@@ -253,11 +530,26 @@ extension HojaSesionViva {
     /// ROUND» en vez de «SET N → M») — el headline de meta es idéntico en los dos casos.
     @ViewBuilder func restBand(esRonda: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: CenitMetrics.space2) {
-            restBandCore(esRonda: esRonda)
+            if session.paused {
+                // B5 (FER-169): «pausada» congela el descanso — la banda no sigue diciendo REST/tu
+                // pulso bajando (ninguno de los dos avanza mientras `paused`); una línea honesta en
+                // vez, con el mismo tiempo restante que ya estaba (`restBandCore` congela el número —
+                // aquí solo se apaga el color/kicker para que no MIENTA que sigue corriendo).
+                HStack(spacing: 8) {
+                    Text("REST · PAUSED").instrumentoOverline().foregroundStyle(sheet.theme.inkTertiary)
+                    Spacer(minLength: 6)
+                    Text("waits with you").font(StrandFont.caption).foregroundStyle(sheet.theme.inkTertiary)
+                }
+                restBandCore(esRonda: esRonda)
+                    .opacity(0.45)   // token-exempt: atenuación transitoria B5 «congelado», sin token de opacidad propio todavía (mismo patrón que el destello R16)
+                    .allowsHitTesting(false)
+            } else {
+                restBandCore(esRonda: esRonda)
+            }
             // R11(a): «Cambiar descanso» — el editor de umbral (capacidad intacta), paridad
             // `LiveStrengthSheet.restEditorPill`. `RestBand` no trae este control; se queda como
             // pastilla propia bajo la banda.
-            if let ei = restOwnerExerciseIndex {
+            if let ei = restOwnerExerciseIndex, !session.paused {
                 Button { openRestEditor(ei: ei) } label: {
                     Label("Change rest", systemImage: "pencil").font(StrandFont.caption).foregroundStyle(sheet.theme.ink)
                         .padding(.horizontal, 13).padding(.vertical, 6)
@@ -349,13 +641,26 @@ extension HojaSesionViva {
                     }
                 })
             }
+            // B8 (FER-169) «el plan cede»: saltar ESTE ejercicio al final del plan, activo todavía —
+            // distinto de «Remove from session» (destructivo) y de `skipExercise` (lo excluye del todo).
+            if session.runs.count > 1 {
+                rows.append(.init(String(localized: "Skip exercise · goes to the end"), systemImage: "arrow.turn.down.right") {
+                    withAnimation(reduceMotion ? nil : .snappy) { session.sendExerciseToEnd(ei) }
+                })
+            }
         }
         rows.append(.init(String(localized: "Progression"), subtitle: progressionSubtitle(run),
                           systemImage: "chart.line.uptrend.xyaxis") {
             progressionEdit = LiveStrengthSheet.ProgressionEditTarget(id: ei)
         })
-        rows.append(.init(String(localized: "Change exercise"), systemImage: "arrow.triangle.2.circlepath") {
+        // B8: «Sustituir» — el mismo «Change exercise» de siempre (`ChangeExerciseSheet` ya arma la
+        // shortlist «misma zona primero»), solo con el nombre del mapa.
+        rows.append(.init(String(localized: "Substitute · same muscle first"), systemImage: "arrow.triangle.2.circlepath") {
             changeExercise = LiveStrengthSheet.ChangeTarget(ei: ei, run: run)
+        })
+        // B8: «＋ Agregar ejercicio» — inserta justo después de ESTE, sin salir de la sesión.
+        rows.append(.init(String(localized: "Add exercise"), systemImage: "plus") {
+            addExerciseAfterRunId = run.id
         })
         if incluirEstructura, puedeEnfocar {
             rows.append(.init(String(localized: "Focus"), systemImage: "arrow.up.left.and.arrow.down.right") {

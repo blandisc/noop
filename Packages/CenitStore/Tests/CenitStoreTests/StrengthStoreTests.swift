@@ -587,6 +587,74 @@ final class StrengthStoreTests: XCTestCase {
         XCTAssertEqual(prsAfter.first { $0.metric == .maxWeight }?.valueKg, 62.5)
     }
 
+    // MARK: - B10 · el guard de captura absurda (FER-169)
+
+    /// El criterio QA exacto del spec: palomear 825 (contra un PR de ~100) → «SÍ, 825» → el `SetEntry`
+    /// SÍ se guarda (el acta no miente) PERO el PR queda intacto Y la siguiente sesión no vuelve a
+    /// ofrecer 825 como semilla. Sin columna nueva: `bestPRs`/`lastWorkSets` recomputan el umbral
+    /// (`CaptureGuard`, StrandTraining) contra el PR YA existente, no contra una bandera persistida.
+    func testAbsurdCaptureConfirmedAsIsNeverMintsAPROrReseedsTheNextSession() async throws {
+        let store = try await CenitStore.inMemory()
+
+        // Sesión 1: establece un PR/semilla legítimo de 100 kg.
+        try await store.saveSession(StrengthSession(id: "s1", startTs: 1000), sets: [
+            SetEntry(id: "a", sessionId: "s1", exerciseId: "bench", position: 0, kind: .work,
+                     weightKg: 100, reps: 5, done: true, ts: 1001)
+        ])
+        let prBefore = try await store.personalRecords(exerciseId: "bench")
+        XCTAssertEqual(prBefore.first { $0.metric == .maxWeight }?.valueKg, 100)
+
+        // Sesión 2: el humano palomeó 825 (típo de 82.5) y respondió «SÍ, 825» — el `SetEntry` se
+        // guarda TAL CUAL, sin bandera ni columna nueva.
+        try await store.saveSession(StrengthSession(id: "s2", startTs: 2000), sets: [
+            SetEntry(id: "b", sessionId: "s2", exerciseId: "bench", position: 0, kind: .work,
+                     weightKg: 825, reps: 8, done: true, ts: 2001)
+        ])
+        let backRaw = try await store.setEntries(sessionId: "s2")
+        XCTAssertEqual(backRaw.first?.weightKg, 825, "the acta doesn't lie — the raw capture is saved as-is")
+
+        // El PR queda intacto — 825 NUNCA lo toca.
+        let prAfter = try await store.personalRecords(exerciseId: "bench")
+        XCTAssertEqual(prAfter.first { $0.metric == .maxWeight }?.valueKg, 100,
+                       "an 8× capture must never mint or upgrade a personal record")
+
+        // La siguiente sesión NO abre en 825 — «la última vez» sigue siendo el legítimo 100.
+        let seed = try await store.lastWorkSets(exerciseId: "bench")
+        XCTAssertEqual(seed.first?.weightKg, 100,
+                       "an 8× capture must never resurface as the next session's seed")
+        XCTAssertFalse(seed.contains { $0.weightKg == 825 })
+
+        // Ídem para el historial que alimenta la evaluación de progresión (`sessionSeed`).
+        let history = try await store.workSetHistory(exerciseId: "bench")
+        XCTAssertFalse(history.contains { $0.weightKg == 825 },
+                       "the progression classifier must never see the absurd capture either")
+    }
+
+    /// `recomputePR` (borrar/editar sesión) re-deriva el PR desde CERO sobre todos los sets que
+    /// quedan — el mismo umbral debe seguir excluyendo el 825 incluso reconstruyendo desde crudo,
+    /// sin ninguna referencia "PR ya calculado" a la mano (el chicken/egg que `recomputePR` sortea
+    /// plegando cronológicamente).
+    func testRecomputePRAfterDeleteStillExcludesTheAbsurdCapture() async throws {
+        let store = try await CenitStore.inMemory()
+        try await store.saveSession(StrengthSession(id: "s1", startTs: 1000), sets: [
+            SetEntry(id: "a", sessionId: "s1", exerciseId: "bench", position: 0, kind: .work,
+                     weightKg: 100, reps: 5, done: true, ts: 1001)
+        ])
+        try await store.saveSession(StrengthSession(id: "s2", startTs: 2000), sets: [
+            SetEntry(id: "b", sessionId: "s2", exerciseId: "bench", position: 0, kind: .work,
+                     weightKg: 825, reps: 8, done: true, ts: 2001)
+        ])
+        // Borra una sesión SIN relación (fuerza `recomputePR` a correr sobre "bench" con lo que queda).
+        try await store.saveSession(StrengthSession(id: "s3", startTs: 3000), sets: [
+            SetEntry(id: "c", sessionId: "s3", exerciseId: "squat", position: 0, kind: .work,
+                     weightKg: 50, reps: 5, done: true, ts: 3001)
+        ])
+        try await store.deleteSession(id: "s3")
+
+        let prAfter = try await store.personalRecords(exerciseId: "bench")
+        XCTAssertEqual(prAfter.first { $0.metric == .maxWeight }?.valueKg, 100)
+    }
+
     /// RPE (FER-930) round-trips through save → read, and is opt-in per set: a set with no RPE reads
     /// back nil, never 0.
     func testRPERoundTrip() async throws {

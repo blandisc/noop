@@ -2,6 +2,7 @@
 import SwiftUI
 import StrandDesign
 import StrandTraining
+import StrandAnalytics
 
 // MARK: - Tarjetas de «La Hoja viva» (FER-167 · F2, ronda 2)
 //
@@ -29,6 +30,7 @@ struct HojaTarjetaEjercicioSesion: View {
                 chead
                 notaF.padding(.top, 4)   // R11(b): ✎ Nota, adjudicado — misma hoja que F1
                 if vivo.session.canTakeHeldRaise(at: ei) { raisePill.padding(.top, 4) }
+                if let deload = run.deloadDisplay { deloadPill(deload).padding(.top, 4) }   // B7 (FER-169)
                 tabla.padding(.top, 6)
                 footer.padding(.top, 8)
             }
@@ -93,13 +95,66 @@ struct HojaTarjetaEjercicioSesion: View {
         .buttonStyle(.plain)
     }
 
+    /// B7 (FER-169): la bajada propuesta — «↓ 3 sesiones igual · propone 76» con BAJAR/SEGUIR (mapa),
+    /// o, con la política «solo avisar», la misma línea sin botones (nada que aplicar, solo el aviso).
+    private func deloadPill(_ display: StrengthSessionModel.ExerciseRun.DeloadDisplay) -> some View {
+        HStack(spacing: 8) {
+            Text(verbatim: "↓").foregroundStyle(vivo.sheet.theme.inkSecondary)
+            switch display {
+            case .propose(let fromKg, let toKg):
+                Text(String(localized: "\(ProgressionMath.deloadStallThreshold) sessions unmoved · proposes \(vivo.plateNumber(vivo.displayWeight(toKg))) \(vivo.weightUnit())"))
+                    .font(StrandFont.caption.weight(.semibold)).foregroundStyle(vivo.sheet.theme.ink)
+                Spacer(minLength: 6)
+                Button { vivo.applyDeload(ei: ei, toKg: toKg) } label: {
+                    Text("Drop to \(vivo.plateNumber(vivo.displayWeight(toKg)))")
+                        .font(StrandFont.caption.weight(.bold)).foregroundStyle(LiquidColor.verdeProfundo)
+                }
+                .buttonStyle(.plain)
+                Button { vivo.dismissDeload(ei: ei) } label: {
+                    Text("Keep \(vivo.plateNumber(vivo.displayWeight(fromKg)))")
+                        .font(StrandFont.caption.weight(.semibold)).foregroundStyle(vivo.sheet.theme.inkSecondary)
+                }
+                .buttonStyle(.plain)
+            case .warnOnly(let sessions):
+                Text(String(localized: "\(sessions) sessions unmoved · goal not met"))
+                    .font(StrandFont.caption.weight(.semibold)).foregroundStyle(vivo.sheet.theme.inkSecondary)
+                Spacer(minLength: 6)
+                Button { vivo.dismissDeload(ei: ei) } label: {
+                    Image(systemName: "xmark").font(StrandFont.glyph(.chevron)).foregroundStyle(vivo.sheet.theme.inkTertiary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text("Dismiss"))
+            }
+        }
+        .padding(.horizontal, 10).padding(.vertical, 6)
+        .accessibilityElement(children: .combine)
+    }
+
     private var tabla: some View {
         VStack(alignment: .leading, spacing: 0) {
             ForEach(run.sets, id: \.id) { set in
                 let si = run.sets.firstIndex { $0.id == set.id } ?? 0
                 if vivo.restSlotIndex(ei: ei) == si { vivo.restBand().padding(.vertical, 6) }
-                filaSerie(si: si, set: set, esPrimera: si == 0)
-                    .id("hoja-viva-serie-\(set.id)")   // R14: ancla de scroll-to por identidad, no índice
+                // B12 (FER-169): la fila ACTIVA de tiempo/distancia es su propio cronómetro compacto
+                // (piel de La Hoja sobre el flujo vigente `startSetTimer`/`stopSetTimer`/`timerElapsed`
+                // de `LiveStrengthSheet` — arranca/detiene, zona de FC solo con Watch) — las demás
+                // filas (pendientes/hechas) siguen la tabla genérica de siempre.
+                if (run.type == .time || run.type == .distance), !set.done, si == run.currentSet {
+                    cardioRow(si: si, set: set)
+                        .id("hoja-viva-serie-\(set.id)")
+                } else {
+                    filaSerie(si: si, set: set, esPrimera: si == 0)
+                        .id("hoja-viva-serie-\(set.id)")   // R14: ancla de scroll-to por identidad, no índice
+                }
+                // B10 (FER-169): el aviso vive justo bajo la fila que lo disparó — una pregunta a la vez.
+                // Por identidad (regla dura), no por índice: B8 puede reordenar mientras el aviso sigue abierto.
+                if vivo.absurdCapture?.runId == run.id, vivo.absurdCapture?.setId == set.id, let target = vivo.absurdCapture {
+                    absurdCaptureBanner(target).padding(.vertical, 6)
+                }
+                // B11 (FER-169): el destello de récord trae su copy justo bajo la fila que lo bate.
+                if vivo.prFlash?.setId == set.id, let flash = vivo.prFlash {
+                    prFlashBanner(flash).padding(.vertical, 6)
+                }
             }
             // El descanso puede no tener dónde anclar (el ejercicio ya cerró todas sus filas visibles) —
             // mismo respaldo que `LiveStrengthSheet.activeExerciseFooter`. Contra el DUEÑO real
@@ -108,7 +163,33 @@ struct HojaTarjetaEjercicioSesion: View {
             if vivo.session.phase == .resting, ei == vivo.restOwnerExerciseIndex, vivo.restSlotIndex(ei: ei) == nil {
                 vivo.restBand().padding(.vertical, 6)
             }
+            // B6b (FER-169): la tarjeta «Volver a X» de esta tarjeta, si el tap en el ▲ la abrió.
+            if vivo.raiseRevertOpenRunId == run.id, let raise = run.proposedRaise {
+                raiseRevertCard(raise).padding(.vertical, 6)
+            }
         }
+    }
+
+    /// B6b: «Volver a {fromKg}» revierte la subida ya aplicada (celdas sin palomear); «Seguir en
+    /// {toKg}» solo cierra la tarjeta — ni acierto ni fallo, la aritmética lo respeta (mapa B6b).
+    private func raiseRevertCard(_ raise: ProgressionPlanner.Raise) -> some View {
+        NoteStrip(style: .info, theme: vivo.sheet.theme) {
+            HStack(spacing: 18) {
+                Button {
+                    withAnimation(vivo.reduceMotion ? nil : .snappy) { vivo.raiseRevertOpenRunId = nil }
+                } label: {
+                    Text("Keep \(vivo.plateNumber(vivo.displayWeight(raise.toKg))) \(vivo.weightUnit())")
+                        .font(StrandFont.caption.weight(.semibold)).foregroundStyle(vivo.sheet.theme.dataRecovery)
+                }
+                .buttonStyle(.plain)
+                Button { vivo.revertRaise(ei: ei) } label: {
+                    Text("Back to \(vivo.plateNumber(vivo.displayWeight(raise.fromKg))) \(vivo.weightUnit())")
+                        .font(StrandFont.caption.weight(.semibold)).foregroundStyle(vivo.sheet.theme.inkSecondary)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .transition(vivo.reduceMotion ? .identity : .opacity)
     }
 
     private func filaSerie(si: Int, set: StrengthSessionModel.WorkingSet, esPrimera: Bool) -> some View {
@@ -142,7 +223,25 @@ struct HojaTarjetaEjercicioSesion: View {
         .overlay {
             if usesReps {
                 if marca == .hecha {
-                    TapZonesSesion(onPeso: nil, onReps: { vivo.openRPE(ei: ei, si: si) })
+                    // B9 (FER-169): tap en peso REABRE la fila — el valor vuelve a la consola para
+                    // corregirlo; re-✓ la vuelve a cerrar (mismo `confirmOrToggleSet` de siempre, sin
+                    // tocar el descanso en curso: `toggleDone` al DESmarcar nunca lo cierra). Reps
+                    // sigue abriendo la hoja de RPE (D-r2.2) — esa puerta ya existía y no se pierde.
+                    TapZonesSesion(
+                        onPeso: { vivo.reopenDoneSetForCorrection(ei: ei, si: si) },
+                        onReps: { vivo.openRPE(ei: ei, si: si) }
+                    )
+                } else if datos.conSubida {
+                    // B6b (FER-169): tocar el ▲ de una subida YA aplicada ofrece «Volver a X», no la
+                    // consola — la misma zona de peso, otra intención mientras haya subida que revertir.
+                    TapZonesSesion(
+                        onPeso: {
+                            withAnimation(vivo.reduceMotion ? nil : .snappy) {
+                                vivo.raiseRevertOpenRunId = (vivo.raiseRevertOpenRunId == run.id) ? nil : run.id
+                            }
+                        },
+                        onReps: { vivo.beginEditing(.reps(ei, si)) }
+                    )
                 } else {
                     TapZonesSesion(
                         onPeso: { vivo.beginEditing(.weight(ei, si)) },
@@ -151,15 +250,135 @@ struct HojaTarjetaEjercicioSesion: View {
                 }
             }
         }
-        // R16: destello rosa breve al palomear con récord — sin animación si Reduce Motion.
+        // R16/B11: destello rosa breve al palomear con récord — sin animación si Reduce Motion.
         .background {
-            if vivo.prFlashSetId == set.id {
+            if vivo.prFlash?.setId == set.id {
                 RoundedRectangle(cornerRadius: HojaMetrics.activaRadius, style: .continuous)
                     .fill(LiquidColor.rosa.opacity(0.16))   // token-exempt: destello breve R16, sin token de opacidad para «molde rosa» transitorio todavía
                     .transition(vivo.reduceMotion ? .identity : .opacity)
             }
         }
-        .animation(vivo.reduceMotion ? nil : .easeOut(duration: 0.4), value: vivo.prFlashSetId)
+        .animation(vivo.reduceMotion ? nil : .easeOut(duration: 0.4), value: vivo.prFlash)
+    }
+
+    /// B12 (FER-169): el cronómetro compacto de la fila ACTIVA de tiempo/distancia (mapa: nombre ·
+    /// ZONA · reloj · meta · DETENER, una sola línea) — piel de La Hoja sobre `session.startSetTimer`/
+    /// `stopSetTimer`/`timerElapsed`, el mismo motor que `LiveStrengthSheet.cardioInlineRow`. Detener
+    /// registra la serie (mismo `confirmOrToggleSet`, así que B10/B11 lo revisan igual que cualquiera).
+    @ViewBuilder private func cardioRow(si: Int, set: StrengthSessionModel.WorkingSet) -> some View {
+        let running = vivo.session.timerStart != nil
+        let metaS = run.type == .time ? (set.timeS ?? 0) : nil   // «meta» solo tiene sentido con time
+        EntrenarModulo(tono: .indigo) {
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text(run.name).font(StrandFont.subhead.weight(.semibold)).foregroundStyle(vivo.sheet.theme.ink).lineLimit(1)
+                if let bpm = vivo.sheet.model.watchBpm { zonaBadge(bpm) }
+                Spacer(minLength: 8)
+                Group {
+                    if running {
+                        TimelineView(.periodic(from: Date(), by: 1)) { ctx in
+                            Text(SessionClock.format(vivo.session.timerElapsed(now: ctx.date)))
+                        }
+                    } else {
+                        Text(SessionClock.format(set.timeS ?? 0))
+                    }
+                }
+                .font(InstrumentoType.groteskNumber(20, weight: .bold)).monospacedDigit().foregroundStyle(vivo.sheet.theme.ink)
+                if let metaS, metaS > 0 {
+                    Text("goal \(SessionClock.format(metaS))").font(StrandFont.caption).foregroundStyle(vivo.sheet.theme.inkTertiary)
+                }
+                Button {
+                    if running {
+                        withAnimation(vivo.reduceMotion ? nil : .snappy) { vivo.confirmOrToggleSet(ei: ei, si: si) }
+                    } else {
+                        vivo.session.startSetTimer()
+                    }
+                } label: {
+                    Text(running ? "Stop" : "Start")
+                        .font(StrandFont.caption.weight(.bold)).foregroundStyle(vivo.sheet.theme.ink)
+                        .padding(.horizontal, 10).padding(.vertical, 6)
+                        .overlay(Capsule().strokeBorder(vivo.sheet.theme.hairlineStrong, lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    /// «ZONA 2 · 118» — la MISMA regla de 5 zonas que `LiveStrengthSheet.hrZone` (% de tu FC máx),
+    /// en la cápsula compacta de La Hoja en vez del ramp Z1–Z5 completo (ese es de la hoja vieja).
+    private func zonaBadge(_ bpm: Int) -> some View {
+        let maxHR = Double(vivo.sheet.model.profile.hrMax)
+        let pct = maxHR > 0 ? Double(bpm) / maxHR : 0
+        let zone = max(1, min(5, Int((pct * 5).rounded(.up))))
+        return Text("ZONE \(zone) · \(bpm)")
+            .font(StrandFont.caption.weight(.bold)).foregroundStyle(vivo.sheet.theme.inkSecondary)
+            .padding(.horizontal, 8).padding(.vertical, 3)
+            .overlay(Capsule().strokeBorder(vivo.sheet.theme.hairlineStrong, lineWidth: 1))
+    }
+
+    /// B11 (FER-169): el copy del mapa — «RÉCORD peso máx · antes 100.0» — bajo la fila que acaba de
+    /// batirlo. Mismo rosa que el destello de la fila (R16, `LiquidColor.rosa` — sin token de acento
+    /// rosa en `NoteStrip`, que solo trae `.warning`/`.info`, así que este banner queda propio con las
+    /// mismas anotaciones `token-exempt` que ya usa el destello de arriba y `HojaLiveMetrics` abajo).
+    @ViewBuilder private func prFlashBanner(_ flash: PRFlash) -> some View {
+        HStack(spacing: 6) {
+            Text("RECORD").font(StrandFont.caption.weight(.bold)).foregroundStyle(LiquidColor.rosa)
+            Text(recordMetricLabel(flash.metric)).font(StrandFont.caption).foregroundStyle(vivo.sheet.theme.inkSecondary)
+            if let prior = flash.priorText {
+                Text(verbatim: "· ") + Text("before \(prior)")
+            }
+        }
+        .font(StrandFont.caption).foregroundStyle(vivo.sheet.theme.inkSecondary)
+        .padding(.horizontal, 12).padding(.vertical, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            LiquidColor.rosa.opacity(0.10),   // token-exempt: mismo molde rosa transitorio que el destello R16, arriba
+            in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
+                .strokeBorder(LiquidColor.rosa.opacity(0.30), lineWidth: 0.5)   // token-exempt: mismo molde rosa transitorio que el destello R16, arriba
+        )
+        .transition(vivo.reduceMotion ? .identity : .opacity)
+        .accessibilityElement(children: .combine)
+    }
+
+    private func recordMetricLabel(_ metric: PRMetric) -> LocalizedStringKey {
+        switch metric {
+        case .maxWeight: return "max weight"
+        case .maxReps:   return "max reps"
+        case .maxVolume: return "max volume"
+        }
+    }
+
+    /// B10 (FER-169): el aviso del mapa — «¿825 KG? es 8× tu récord» con ERA X / SÍ, N — bajo la fila
+    /// que lo disparó. `NoteStrip(.warning)` (mismo cristal que otros avisos del app), reversible: ERA
+    /// corrige y vuelve a pasar por el guard; SÍ guarda tal cual.
+    @ViewBuilder private func absurdCaptureBanner(_ target: AbsurdCaptureTarget) -> some View {
+        NoteStrip(style: .warning, theme: vivo.sheet.theme) {
+            VStack(alignment: .leading, spacing: 7) {
+                (Text("\(vivo.plateNumber(vivo.displayWeight(target.weightKg))) \(vivo.weightUnit().uppercased())?")
+                    .font(StrandFont.caption.weight(.bold))
+                 + Text(verbatim: " ")
+                 + Text("is 8× your record").font(StrandFont.caption))
+                    .foregroundStyle(vivo.sheet.theme.ink)
+                HStack(spacing: 10) {
+                    Button { vivo.correctAbsurdCapture() } label: {
+                        Text("It was \(vivo.plateNumber(vivo.displayWeight(target.weightKg / 10)))")
+                            .font(StrandFont.caption.weight(.semibold)).foregroundStyle(vivo.sheet.theme.ink)
+                            .padding(.horizontal, 12).padding(.vertical, 6)
+                            .overlay(Capsule().strokeBorder(vivo.sheet.theme.hairlineStrong, lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
+                    Button { vivo.confirmAbsurdCaptureAsIs() } label: {
+                        Text("Yes, \(vivo.plateNumber(vivo.displayWeight(target.weightKg)))")
+                            .font(StrandFont.caption.weight(.semibold)).foregroundStyle(vivo.sheet.theme.critical)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .transition(vivo.reduceMotion ? .identity : .opacity)
     }
 
     @ViewBuilder private var footer: some View {

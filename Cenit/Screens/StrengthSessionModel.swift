@@ -187,6 +187,13 @@ final class StrengthSessionModel: ObservableObject {
         /// kept the seed at last time's weight and the raise is offered here, one tap away — THAT one
         /// the snapshot does carry, because losing it would silently retract what the hero promised.
         var proposedRaise: ProgressionPlanner.Raise? = nil
+        /// B7 (FER-169): today's deload read from `ProgressionPlanner.evaluate` — `.deloading`
+        /// (propose dropping to a weight) or `.stalled` (only surfaced, never a `nil`-then-appear
+        /// after the fact — the live pill and `deloadDisplay` below decide what's worth showing).
+        /// `nil` = no stall to report (readyToAdvance/inCycle/deferred, or progression not enabled).
+        /// Cleared locally by «Seguir en X» (this session only — no opt-out persisted, same as before
+        /// F4 the live session never proposed a deload at all).
+        var deloadState: ProgressionState? = nil
         /// «Volver a X» was tapped for this exercise (FER-835). Persisted with the session at save so
         /// the progression cycle treats it as neither hit nor miss; carried by the crash snapshot.
         var raiseOptedOut: Bool = false
@@ -208,6 +215,25 @@ final class StrengthSessionModel: ObservableObject {
         var seededNote: String? = nil
         /// Whether this run (or any of its sets) carries a note (FER-932) — drives the chip's «con nota» state.
         var hasNote: Bool { (note?.isEmpty == false) || sets.contains { $0.note?.isEmpty == false } }
+
+        /// B7 (FER-169): what the deload pill shows, if anything — the single place that decides
+        /// `deloadState` is worth surfacing. `.propose` only past `ProgressionMath.deloadStallThreshold`
+        /// sessions AND when the policy allows proposing (the engine itself already folds
+        /// `deloadWarnOnly` into whether `.deloading` or `.stalled` comes back — see
+        /// `ProgressionMath.classify`); a `.stalled` BELOW threshold (1-2 sessions, mid-stall, nothing
+        /// actionable yet) stays silent — the same quiet the app already kept before F4.
+        enum DeloadDisplay: Equatable {
+            case propose(fromKg: Double, toKg: Double)
+            case warnOnly(sessions: Int)
+        }
+        var deloadDisplay: DeloadDisplay? {
+            switch deloadState {
+            case .deloading(let fromKg, let toKg): return .propose(fromKg: fromKg, toKg: toKg)
+            case .stalled(let sessions) where sessions >= ProgressionMath.deloadStallThreshold:
+                return .warnOnly(sessions: sessions)
+            default: return nil
+            }
+        }
 
         /// This exercise's rest as the shared `RestConfig` shape (FER-715), from its four flat fields.
         var restConfig: RestConfig {
@@ -782,6 +808,19 @@ final class StrengthSessionModel: ObservableObject {
         if wasCurrent { phase = .capturing; clearRest(); timerStart = nil; advanceToNextPending(fromStart: true) }
     }
 
+    /// B8 (FER-169) «Saltar ejercicio · vuelve al final»: sends this exercise to the END of the plan,
+    /// remaining fully ACTIVE — unlike `skipExercise` (which excludes it and never re-offers it), this
+    /// one is still capturable, just deferred. If it was the focused exercise, guided focus advances
+    /// to whatever is now next; sets already done ride along untouched.
+    func sendExerciseToEnd(_ index: Int) {
+        guard runs.indices.contains(index), runs.count > 1 else { return }
+        let wasCurrent = index == currentIndex
+        let run = runs.remove(at: index)
+        runs.append(run)
+        if index < currentIndex { currentIndex -= 1 }
+        if wasCurrent { phase = .capturing; clearRest(); timerStart = nil; advanceToNextPending(fromStart: true) }
+    }
+
     /// Move an exercise one slot earlier in the plan (reorder), keeping the current exercise focused.
     func moveExerciseEarlier(_ index: Int) {
         guard runs.indices.contains(index), index > 0 else { return }
@@ -1071,6 +1110,9 @@ final class StrengthSessionModel: ObservableObject {
         /// An earned raise from `ProgressionPlanner` (FER-E): the Kg cells seed with `toKg` instead of
         /// the plan/last weight. Default nil so plan-less paths (templates, repeats) are untouched.
         var raise: ProgressionPlanner.Raise? = nil
+        /// B7 (FER-169): today's progression classification, for the live deload pill. Default nil so
+        /// plan-less paths (templates, repeats) are untouched — same convention as `raise`.
+        var progressionState: ProgressionState? = nil
     }
 
     static func make(routineId: String?, routineName: String, slots: [PlanSlot],
@@ -1118,6 +1160,7 @@ final class StrengthSessionModel: ObservableObject {
                                lastRPE: last?.rpe,
                                sets: sets, currentSet: 0, skipped: false,
                                proposedRaise: type == .weightReps ? slot.raise : nil,
+                               deloadState: type == .weightReps ? slot.progressionState : nil,
                                supersetGroup: slot.re.supersetGroup,
                                note: slot.re.note, seededNote: slot.re.note)
         }
