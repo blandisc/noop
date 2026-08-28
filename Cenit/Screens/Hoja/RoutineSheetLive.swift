@@ -50,8 +50,10 @@ struct HojaSesionViva: View {
     @State var absurdCapture: AbsurdCaptureTarget?
 
     // MARK: B8 · «＋ Agregar ejercicio» desde el ··· en sesión (FER-169)
-    /// El índice tras el cual insertar — no-nil abre `ExerciseLibraryScreen`; `nil` = cerrada.
-    @State var addExerciseAfter: Int?
+    /// El `run.id` tras el cual insertar — no-nil abre `ExerciseLibraryScreen`; `nil` = cerrada.
+    /// Por identidad (regla dura), no por índice: el picker es un `.sheet` async y B8 puede reordenar
+    /// (saltar-al-final, mover) mientras está abierto.
+    @State var addExerciseAfterRunId: String?
     /// FER-969: persistir el ejercicio agregado a la RUTINA falló — toast, no el banner persistente
     /// (ese es solo para el guardado FINAL de la sesión, `session.saveError`). La sesión en sí ya
     /// tiene el ejercicio; solo no sobrevivirá a la próxima vez que se abra esta rutina a editar.
@@ -140,11 +142,11 @@ struct HojaSesionViva: View {
         // B8 (FER-169): «＋ Agregar ejercicio» — mismo picker que la Hoja fría/`LiveStrengthSheet`
         // (`ExerciseLibraryScreen`), reusado tal cual; insertar+persistir es 1:1 con
         // `LiveStrengthSheet.addExercises`/`persistInsertedExercises`.
-        .sheet(isPresented: Binding(get: { addExerciseAfter != nil }, set: { if !$0 { addExerciseAfter = nil } })) {
+        .sheet(isPresented: Binding(get: { addExerciseAfterRunId != nil }, set: { if !$0 { addExerciseAfterRunId = nil } })) {
             ExerciseLibraryScreen { picks in
-                let after = addExerciseAfter
-                addExerciseAfter = nil
-                Task { await addExercisesFromLibrary(picks, after: after) }
+                let afterRunId = addExerciseAfterRunId
+                addExerciseAfterRunId = nil
+                Task { await addExercisesFromLibrary(picks, afterRunId: afterRunId) }
             }
             .instrumentoTheme(sheet.theme).environmentObject(sheet.repo).preferredColorScheme(.light)
         }
@@ -424,11 +426,13 @@ struct RoutineChangesSummary: Equatable {
 }
 
 /// B10 (FER-169): la serie que está pidiendo confirmación por captura absurda — `nil` mientras no hay
-/// ninguna pregunta en pantalla. `weightKg`/`referenceKg` viajan tal como se evaluó el guard, para que
-/// el copy («¿825 KG? es 8× tu récord») y la corrección («ERA 82.5») no tengan que releer el modelo.
+/// ninguna pregunta en pantalla. Por identidad (regla dura), no por índice: B8 puede reordenar
+/// (saltar-al-final, mover) mientras el aviso sigue en pantalla. `weightKg`/`referenceKg` viajan tal
+/// como se evaluó el guard, para que el copy («¿825 KG? es 8× tu récord») y la corrección («ERA 82.5»)
+/// no tengan que releer el modelo — solo `runId`/`setId` se resuelven a índice fresco al confirmar.
 struct AbsurdCaptureTarget: Equatable {
-    let ei: Int
-    let si: Int
+    let runId: String
+    let setId: String
     let weightKg: Double
     let referenceKg: Double
 }

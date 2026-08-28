@@ -97,7 +97,7 @@ extension HojaSesionViva {
             let run = session.runs[ei]
             let reference = absurdCaptureReference(run)
             if CaptureGuard.isAbsurd(weightKg: set.weightKg, referenceKg: reference) {
-                absurdCapture = AbsurdCaptureTarget(ei: ei, si: si, weightKg: set.weightKg, referenceKg: reference)
+                absurdCapture = AbsurdCaptureTarget(runId: run.id, setId: set.id, weightKg: set.weightKg, referenceKg: reference)
                 return
             }
         }
@@ -126,12 +126,23 @@ extension HojaSesionViva {
         personalRecords[run.exerciseId]?[.maxWeight]?.valueKg ?? run.lastWeightKg ?? 0
     }
 
+    /// Resuelve la fila (`ei`/`si`) VIGENTE de un `AbsurdCaptureTarget` por identidad — nunca el
+    /// índice que tenía cuando se armó el aviso, que B8 (saltar-al-final, mover) puede haber corrido
+    /// mientras el aviso seguía en pantalla. `nil` si la fila ya no existe (ejercicio quitado de la
+    /// sesión mientras tanto).
+    private func resolveAbsurdCapture(_ target: AbsurdCaptureTarget) -> (ei: Int, si: Int)? {
+        guard let ei = session.runs.firstIndex(where: { $0.id == target.runId }),
+              let si = session.runs[ei].sets.firstIndex(where: { $0.id == target.setId }) else { return nil }
+        return (ei, si)
+    }
+
     /// «SÍ, 825»: el acta no miente — registra tal cual, con el guard destapado para esta fila. El
     /// PR y la siembra siguiente lo excluyen solos (mismo umbral, recalculado en `StrengthStore`).
     func confirmAbsurdCaptureAsIs() {
         guard let target = absurdCapture else { return }
         absurdCapture = nil
-        confirmOrToggleSet(ei: target.ei, si: target.si, bypassAbsurdGuard: true)
+        guard let (ei, si) = resolveAbsurdCapture(target) else { return }
+        confirmOrToggleSet(ei: ei, si: si, bypassAbsurdGuard: true)
     }
 
     /// «ERA 82.5»: el típo más común (el punto perdido, ×10) — corrige dividiendo entre 10 y vuelve a
@@ -140,8 +151,9 @@ extension HojaSesionViva {
     func correctAbsurdCapture() {
         guard let target = absurdCapture else { return }
         absurdCapture = nil
-        session.setWeight(exercise: target.ei, set: target.si, kg: target.weightKg / 10)
-        confirmOrToggleSet(ei: target.ei, si: target.si)
+        guard let (ei, si) = resolveAbsurdCapture(target) else { return }
+        session.setWeight(exercise: ei, set: si, kg: target.weightKg / 10)
+        confirmOrToggleSet(ei: ei, si: si)
     }
 
     /// Descarta el aviso sin registrar nada — la fila queda pendiente, tal como estaba antes del tap.
@@ -215,12 +227,15 @@ extension HojaSesionViva {
     // MARK: - B8 · «＋ Agregar ejercicio» (FER-169, porteado de `LiveStrengthSheet.addExercises`/
     // `persistInsertedExercises`)
 
-    /// Inserta `picks` en la sesión justo tras `after` (o al final si `after` es `nil` — la Rápida
-    /// vacía, B13, agrega sin «después» que valga) y, con rutina detrás, los persiste ahí mismo —
-    /// mismo trato PERMANENTE que ya usaba el «＋» de la Hoja fría. B16b decide, al terminar, si
-    /// alguna OTRA marcha (series/sustituciones) también se guarda o se queda solo por hoy; agregar
-    /// un ejercicio siempre fue permanente incluso antes de F4, así que no espera a esa pregunta.
-    func addExercisesFromLibrary(_ picks: [Exercise], after: Int?) async {
+    /// Inserta `picks` en la sesión justo tras el ejercicio `afterRunId` (o al final si es `nil` — la
+    /// Rápida vacía, B13, agrega sin «después» que valga) y, con rutina detrás, los persiste ahí
+    /// mismo — mismo trato PERMANENTE que ya usaba el «＋» de la Hoja fría. Por identidad (regla
+    /// dura), no por índice: el picker es un `.sheet` async y B8 puede reordenar (saltar-al-final,
+    /// mover) mientras está abierto, así que el índice se resuelve AQUÍ, tras el `await`, nunca antes.
+    /// B16b decide, al terminar, si alguna OTRA marcha (series/sustituciones) también se guarda o se
+    /// queda solo por hoy; agregar un ejercicio siempre fue permanente incluso antes de F4, así que
+    /// no espera a esa pregunta.
+    func addExercisesFromLibrary(_ picks: [Exercise], afterRunId: String?) async {
         guard !picks.isEmpty else { return }
         let lasts = await withTaskGroup(of: (String, Double?, Int?).self) { group in
             for ex in picks {
@@ -239,13 +254,13 @@ extension HojaSesionViva {
                     let last = lasts[ex.id]
                     session.addExercise(ex, lastWeightKg: last?.0, lastReps: last?.1)
                 }
-            } else if let after, session.runs.indices.contains(after) {
+            } else if let afterRunId, let after = session.runs.firstIndex(where: { $0.id == afterRunId }) {
                 session.currentIndex = after   // `insertExerciseAfterCurrent` inserta a `currentIndex + 1`
                 for ex in picks.reversed() {
                     let last = lasts[ex.id]
                     session.insertExerciseAfterCurrent(ex, lastWeightKg: last?.0, lastReps: last?.1)
                 }
-                if session.routineId != nil { persistInsertedExercises(picks, after: after) }
+                if session.routineId != nil { persistInsertedExercises(picks, afterRunId: afterRunId) }
             } else {
                 for ex in picks {
                     let last = lasts[ex.id]
@@ -255,14 +270,13 @@ extension HojaSesionViva {
         }
     }
 
-    private func persistInsertedExercises(_ picks: [Exercise], after: Int) {
-        guard let rid = session.routineId, session.runs.indices.contains(after) else { return }
-        let anchorRunId = session.runs[after].id
+    private func persistInsertedExercises(_ picks: [Exercise], afterRunId: String) {
+        guard let rid = session.routineId else { return }
         Task {
             guard let store = await sheet.repo.storeHandle(),
                   var res = try? await store.routineExercises(routineId: rid),
                   let routine = (try? await store.routines())?.first(where: { $0.id == rid }) else { return }
-            var insertAt = res.firstIndex(where: { $0.id == anchorRunId }).map { $0 + 1 } ?? res.count
+            var insertAt = res.firstIndex(where: { $0.id == afterRunId }).map { $0 + 1 } ?? res.count
             for ex in picks {
                 let re = RoutineExercise(routineId: rid, exerciseId: ex.id, position: insertAt,
                                          targetSets: 1, targetReps: 8,
@@ -646,7 +660,7 @@ extension HojaSesionViva {
         })
         // B8: «＋ Agregar ejercicio» — inserta justo después de ESTE, sin salir de la sesión.
         rows.append(.init(String(localized: "Add exercise"), systemImage: "plus") {
-            addExerciseAfter = ei
+            addExerciseAfterRunId = run.id
         })
         if incluirEstructura, puedeEnfocar {
             rows.append(.init(String(localized: "Focus"), systemImage: "arrow.up.left.and.arrow.down.right") {

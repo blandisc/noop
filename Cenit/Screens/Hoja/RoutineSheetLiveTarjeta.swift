@@ -147,7 +147,8 @@ struct HojaTarjetaEjercicioSesion: View {
                         .id("hoja-viva-serie-\(set.id)")   // R14: ancla de scroll-to por identidad, no índice
                 }
                 // B10 (FER-169): el aviso vive justo bajo la fila que lo disparó — una pregunta a la vez.
-                if vivo.absurdCapture?.ei == ei, vivo.absurdCapture?.si == si, let target = vivo.absurdCapture {
+                // Por identidad (regla dura), no por índice: B8 puede reordenar mientras el aviso sigue abierto.
+                if vivo.absurdCapture?.runId == run.id, vivo.absurdCapture?.setId == set.id, let target = vivo.absurdCapture {
                     absurdCaptureBanner(target).padding(.vertical, 6)
                 }
                 // B11 (FER-169): el destello de récord trae su copy justo bajo la fila que lo bate.
