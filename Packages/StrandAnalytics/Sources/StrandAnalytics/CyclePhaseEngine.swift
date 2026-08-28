@@ -11,12 +11,16 @@ import Foundation
 // dispersion units — never a population cutoff, never a calendar prediction.
 //
 // Verified physiology (each is an APPROXIMATE, documented driver — see docs/ANALYTICS.md):
-//   • Skin temp ↑ in luteal — the DOMINANT, most robust driver. Maijala et al. 2019, BMC Women's Health
-//     19 (doi:10.1186/s12905-019-0844-9): nightly FINGER skin temp +0.30 °C (SD 0.12), p<0.001 (Oura
-//     ring). NOOP applies this luteal signature to WRIST skin temp (WHOOP) as an approximation of the
-//     finger site — the direction holds; the magnitude is an on-device estimate, not the finger value.
-//     Gombert-Labedens et al. 2024, J Biol Rhythms 39(4):331–350 (doi:10.1177/07487304241247893):
-//     post-ovulatory thermal shift detectable in ~85% of cycles with a wearable.
+//   • Skin temp ↑ in luteal — the DOMINANT, most robust driver, read from the Apple Watch's overnight
+//     WRIST temperature. Site-matched evidence (wrist): Shilaih et al. 2018, Bioscience Reports 38(6):
+//     BSR20171279 (doi:10.1042/BSR20171279): early-luteal wrist temp +0.33 °C vs the fertile window,
+//     biphasic pattern in ~82% of cycles, n=136 — so the wrist does NOT attenuate the signal below the
+//     finger. Direct Apple-Watch validation: Human Reproduction 2025, 40(3):469: algorithms on Apple Watch
+//     overnight wrist temperature estimate ovulation retrospectively at MAE 1.22–1.59 days (~80–89% within
+//     ±2 days), signal threshold ≥0.2 °C — i.e. Apple wrist temp carries the follicular/luteal axis.
+//     Corroborating finger-site value: Maijala et al. 2019, BMC Women's Health 19 (doi:10.1186/s12905-019-
+//     0844-9): nightly FINGER skin temp +0.30 °C (SD 0.12), p<0.001 (Oura ring). NOOP re-derives the
+//     PATTERN against the user's own window in robust units, so magnitude is never assumed from any one site.
 //   • Resting HR ↑ in luteal — consistent, small CORROBORATION. Shilaih et al. 2017, Sci Rep 7
 //     (doi:10.1038/s41598-017-01433-9): sleeping pulse +1.8 bpm (mid-luteal vs fertile), +3.8 vs menses.
 //   • HRV ↓ in luteal — the WEAKEST, MIXED driver, used ONLY as conditional confidence reinforcement,
@@ -41,7 +45,8 @@ public enum CyclePhaseEngine {
 
     /// Minimum USABLE nights (those carrying a `skinTempDevC` reading) before any phase is estimated.
     /// ~1.5 mean cycles (28-day mean, 24–38-day range) — enough to cover a full cycle with margin for
-    /// nights without the band. Below this the engine is honestly still `.learning`.
+    /// nights without a wrist-temp reading (the Apple Watch needs a Series 8+/Ultra worn to sleep, and many
+    /// people charge it overnight). Below this the engine is honestly still `.learning`.
     public static let minUsableNights: Int = 42
 
     /// Usable-night count at/above which a strong lean can read as `.solid` (~2 cycles → a steadier

@@ -77,6 +77,25 @@ final class CyclePhaseEngineTests: XCTestCase {
         XCTAssertEqual(CyclePhaseEngine.estimate(all, asOf: all.last!.day), .noClearPattern)
     }
 
+    /// FER-182: the `tempNoiseFloorC` (0.05 °C) floor is placed for the Apple Watch's overnight wrist-temp
+    /// resolution — it must pass a realistic nightly swing and only block a genuinely blunted signal.
+    /// A physiologic Apple wrist-temp deviation oscillates ~0.2–0.5 °C peak-to-peak; a swing of amp 0.25
+    /// (robust σ ≈ 0.18 °C, well above the 0.05 floor) must NOT be dropped to `.noClearPattern`, while a
+    /// near-flat signal below the floor must be. This is the check the CSO asked for (FER-181).
+    func testNoiseFloorClearsRealisticAppleSignalButBlocksFlat() {
+        // Realistic Apple wrist-temp swing (amp 0.25 °C), 56 usable nights → clears the floor and estimates.
+        let (realistic, today) = nights(count: 56, amp: 0.25)
+        if case .noClearPattern = CyclePhaseEngine.estimate(realistic, asOf: today) {
+            XCTFail("a realistic Apple wrist-temp swing (σ ≈ 0.18 °C) must clear the 0.05 °C noise floor")
+        }
+        guard case .estimated = CyclePhaseEngine.estimate(realistic, asOf: today) else {
+            return XCTFail("with 56 usable nights and a clear rhythm the engine should estimate")
+        }
+        // A near-flat signal (amp 0.03 °C → robust σ ≈ 0.02 °C, below the floor) is honestly no clear pattern.
+        let (flat, flatToday) = nights(count: 56, amp: 0.03)
+        XCTAssertEqual(CyclePhaseEngine.estimate(flat, asOf: flatToday), .noClearPattern)
+    }
+
     func testTonightAtTypicalLevelDeclinesToLean() {
         // Oscillating window, but tonight sits at the median (≈0) → decline to lean.
         let (all, today) = nights(count: 56, tonightTemp: 0.0)
