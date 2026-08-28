@@ -141,16 +141,8 @@ private struct AjustesLanding: View {
         } message: {
             Text(String(localized: "Tu línea base se re-anclará desde hoy y se ignorarán tus noches anteriores. Perderás tu número de recuperación unos días mientras se recalibra. Tus datos e historial no se borran."))
         }
-        .confirmationDialog(
-            String(localized: "¿Borrar toda la media de ejercicios descargada?"),
-            isPresented: $confirmDeleteMedia,
-            titleVisibility: .visible
-        ) {
-            Button(String(localized: "Borrar la media"), role: .destructive) { mediaCoordinator.deleteAllCachedMedia() }
-            Button(String(localized: "Conservar la media"), role: .cancel) { }
-        } message: {
-            Text(String(localized: "Las animaciones guardadas se borran de tu iPhone. Puedes volver a descargarlas cuando quieras."))
-        }
+        // El confirm de borrar-media NO puede colgar del mismo view que el de Recalibrar: SwiftUI solo
+        // honra un `.confirmationDialog` por vista. Vive en su propio botón (siempre montado en Experimental).
     }
 
     // MARK: - Header (one-off chrome: gearshape + title + a privacy line)
@@ -272,6 +264,7 @@ private struct AjustesLanding: View {
                             .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
                     }
                     .tint(LiquidColor.verdePrimario)
+                    .frame(minHeight: 44)
                     .onChange(of: behavior.illnessWatch) { _, on in
                         if on { IllnessNotifier.requestAuthorization() }
                         model.reevaluateIllness()
@@ -298,6 +291,7 @@ private struct AjustesLanding: View {
                             .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
                     }
                     .tint(LiquidColor.verdePrimario)
+                    .frame(minHeight: 44)
                     .onChange(of: keepScreenAwake) { _, on in
                         // Apagarlo a media sesión tiene que surtir efecto ya, no en la siguiente.
                         if !on { SessionComfort.applyKeepAwake(active: false) }
@@ -311,6 +305,7 @@ private struct AjustesLanding: View {
                             .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
                     }
                     .tint(LiquidColor.verdePrimario)
+                    .frame(minHeight: 44)
                     Text(String(localized: "A short system tone next to the haptic, for a rest counted by the clock. It follows your ring switch, and it only sounds with the app on screen: if the iPhone locked, there's no sound."))
                         .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
                         .fixedSize(horizontal: false, vertical: true)
@@ -320,6 +315,7 @@ private struct AjustesLanding: View {
                             .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
                     }
                     .tint(LiquidColor.verdePrimario)
+                    .frame(minHeight: 44)
                     .onChange(of: restNotify) { _, on in
                         // El permiso se pide AQUÍ, en el momento en que lo enciendes, no en un
                         // arranque cualquiera ni a media serie. Y si iOS lo niega, el interruptor
@@ -350,6 +346,7 @@ private struct AjustesLanding: View {
                             .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
                     }
                     .tint(LiquidColor.verdePrimario)
+                    .frame(minHeight: 44)
                     Text(String(localized: "New, approximate readings: nocturnal vagal reserve, thermal stability, night respiration and post-session recovery. They need several days of use to read well."))
                         .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
                         .fixedSize(horizontal: false, vertical: true)
@@ -359,6 +356,7 @@ private struct AjustesLanding: View {
                             .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
                     }
                     .tint(LiquidColor.verdePrimario)
+                    .frame(minHeight: 44)
                     .onChange(of: exerciseMediaEnabled) { _, enabled in
                         if enabled { Task { await mediaCoordinator.bulkDownloadThumbsIfNeeded() } }
                         else { mediaCoordinator.resetDownloadState() }
@@ -373,6 +371,16 @@ private struct AjustesLanding: View {
                             .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta700)
                     }
                     .buttonStyle(.plain)
+                    .confirmationDialog(
+                        String(localized: "¿Borrar toda la media de ejercicios descargada?"),
+                        isPresented: $confirmDeleteMedia,
+                        titleVisibility: .visible
+                    ) {
+                        Button(String(localized: "Borrar la media"), role: .destructive) { mediaCoordinator.deleteAllCachedMedia() }
+                        Button(String(localized: "Conservar la media"), role: .cancel) { }
+                    } message: {
+                        Text(String(localized: "Las animaciones guardadas se borran de tu iPhone. Puedes volver a descargarlas cuando quieras."))
+                    }
                 }
                 .liquidTarjetaSeccion()
             }

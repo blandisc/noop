@@ -91,20 +91,21 @@ struct RecordatorioEntrenoSection: View {
                     }
                     .frame(minHeight: 44)
                 }
+
+                // Glosa y estados DENTRO de la tarjeta, igual que «Aviso matutino» (secciones hermanas).
+                LiquidNotaLine(String(localized: "One reminder on each day your plan assigns a routine, at the time you pick. It's frozen when scheduled: it names the routine, never how you'll be feeling that day."))
+
+                if sinPlan {
+                    LiquidNotaLine(String(localized: "You have no training days assigned yet, so there's nothing to remind you of."))
+                }
+
+                if negadoEnIOS {
+                    LiquidNotaLine(String(localized: "Notifications are off in iOS Settings, so this can't reach you."),
+                                   tono: LiquidColor.atencionTexto)
+                    settingsButton
+                }
             }
             .liquidTarjetaSeccion()
-
-            LiquidNotaLine(String(localized: "One reminder on each day your plan assigns a routine, at the time you pick. It's frozen when scheduled: it names the routine, never how you'll be feeling that day."))
-
-            if sinPlan {
-                LiquidNotaLine(String(localized: "You have no training days assigned yet, so there's nothing to remind you of."))
-            }
-
-            if negadoEnIOS {
-                LiquidNotaLine(String(localized: "Notifications are off in iOS Settings, so this can't reach you."),
-                               tono: LiquidColor.atencionTexto)
-                settingsButton
-            }
         }
         .task { await sincronizar() }
         // Volver de Ajustes de iOS (o de editar el plan semanal en Entrenar) es exactamente cuando el
