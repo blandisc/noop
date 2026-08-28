@@ -11,6 +11,14 @@ import CenitStore
 // NOOP already stores into the engine's input and renders the localized, hedged copy — never a date,
 // never fertility/ovulation/contraception/diagnosis (the hard claim frame lives in the copy below and
 // is guarded by CyclePhaseCopyGuardTests).
+//
+// FER-184: two changes on top of FER-672's math (untouched — the index stays a user-relative z-score).
+// (1) Input: the sheet used to read through `SourceLens.clearBandColumns`, which nils `skinTempDevC` —
+// a leftover from when this screen needed a strap that Cénit never ships with anymore. It now reads the
+// real Apple Watch wrist-temperature deviation straight off `repo.days`. (2) Skin: re-themed from the
+// light «Instrumento diurno» to Liquid Glass, matching the FER-174 family (Data Sources, Support,
+// AFib History) — a skin pass, the consent gate and the honest hedges below are unchanged in substance,
+// only reworded off a strap that never existed for any Cénit user onto the Apple Watch that does.
 
 /// Opt-in state + informed-consent record for the cycle-phase experiment. On-device only (UserDefaults),
 /// the same pattern as `TermsGateView`'s consent record — no account, no network.
@@ -36,7 +44,6 @@ enum CyclePhaseExperiment {
 
 /// The experiment's single sheet: consent when off, the state card when on.
 struct CyclePhaseSheet: View {
-    @Environment(\.instrumentoTheme) private var theme
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var repo: Repository
     @AppStorage(CyclePhaseExperiment.enabledKey) private var enabled = false
@@ -44,101 +51,115 @@ struct CyclePhaseSheet: View {
 
     var body: some View {
         ScrollView {
-            if enabled {
-                // FER-882: Apple now writes skinTempDevC too; cycle is deliberately kept band-only,
-                // matching its "needs your band" copy — revisit only if a future issue changes that UX.
-                CyclePhaseStateBody(days: SourceLens.clearBandColumns(repo.days),
-                                    onDeactivate: { enabled = false })
-            } else {
-                CyclePhaseConsentBody(onActivate: {
-                    consentVersion = CyclePhaseExperiment.consentVersion
-                    enabled = true
-                }, onDecline: { dismiss() })
+            Group {
+                if enabled {
+                    // FER-184: real Apple wrist temperature, straight off repo.days — no strap-domain
+                    // clearing to undo (Cénit is Apple-only; there's no cross-source mix left to guard).
+                    CyclePhaseStateBody(days: repo.days, onDeactivate: { enabled = false })
+                } else {
+                    CyclePhaseConsentBody(onActivate: {
+                        consentVersion = CyclePhaseExperiment.consentVersion
+                        enabled = true
+                    }, onDecline: { dismiss() })
+                }
             }
+            .padding(.horizontal, LiquidSpace.s550)
+            .padding(.top, LiquidSpace.s550)
+            .padding(.bottom, LiquidSpace.s800)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(theme.paper.ignoresSafeArea())
+        .scrollIndicators(.hidden)
+        .background { LiquidSheetFondo().ignoresSafeArea() }
     }
 }
 
 // MARK: - Consent
 
 private struct CyclePhaseConsentBody: View {
-    @Environment(\.instrumentoTheme) private var theme
     let onActivate: () -> Void
     let onDecline: () -> Void
     @State private var acked = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("EXPERIMENT").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                Text("Cycle phase").font(InstrumentoType.groteskHeadline(28)).foregroundStyle(theme.ink)
-            }
-            Text("This is a self-knowledge tool: it looks for a pattern in your own body's temperature while you sleep. Before turning it on, read calmly what it does and what it doesn't.")
-                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+        VStack(alignment: .leading, spacing: LiquidSpace.s800) {
+            header
+            CyclePhaseWhatItIs()
+            Text(String(localized: "Everything is computed on your iPhone and stays here. You can turn this experiment off whenever you like; nothing is lost. This is not medical advice."))
+                .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
                 .fixedSize(horizontal: false, vertical: true)
 
-            CyclePhaseWhatItIs(theme: theme)
+            acknowledgment
 
-            Text("Everything is computed on your iPhone and stays here. You can turn this experiment off whenever you like; nothing is lost. This is not medical advice.")
-                .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                .fixedSize(horizontal: false, vertical: true)
+            VStack(spacing: LiquidSpace.s300) {
+                LiquidGlassButton(String(localized: "Turn on experiment"), variant: .primary, expands: true) {
+                    onActivate()
+                }
+                .disabled(!acked)
+                .opacity(acked ? 1 : 0.6)
 
-            Divider().overlay(theme.hairline)
-
-            Toggle(isOn: $acked) {
-                Text("I understand this is a rough estimate to know myself better, not a contraceptive method or a medical tool.")
-                    .font(StrandFont.footnote).foregroundStyle(theme.ink)
-                    .fixedSize(horizontal: false, vertical: true)
+                Button(action: onDecline) {
+                    Text(String(localized: "Not now"))
+                        .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta500)
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                }
+                .buttonStyle(.plain)
             }
-            .toggleStyle(.instrumento)
-
-            Button(action: onActivate) {
-                Text("Turn on experiment")
-                    .font(StrandFont.headline).frame(maxWidth: .infinity).padding(.vertical, 9)
-            }
-            .buttonStyle(.borderedProminent).tint(theme.ink)
-            .disabled(!acked)
-
-            Button(action: onDecline) {
-                Text("Not now").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.plain)
         }
-        .padding(CenitMetrics.screenPadding)
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: LiquidSpace.s100) {
+            LiquidOverline(String(localized: "Experiment"))
+            Text(String(localized: "Cycle phase"))
+                .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
+                .foregroundStyle(LiquidColor.tinta900)
+            Text(String(localized: "This is a self-knowledge tool: it looks for a pattern in your own body's temperature while you sleep. Before turning it on, read calmly what it does and what it doesn't."))
+                .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta500)
+                .fixedSize(horizontal: false, vertical: true)
+        }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isHeader)
+    }
+
+    private var acknowledgment: some View {
+        Toggle(isOn: $acked) {
+            Text(String(localized: "I understand this is a rough estimate to know myself better, not a contraceptive method or a medical tool."))
+                .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta900)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .tint(LiquidColor.verdePrimario)
+        .liquidTarjetaSeccion()
     }
 }
 
 /// The «what it does / what it doesn't» block — the single source of truth for the limits, reused by the
 /// consent screen and the ⓘ explainer.
 private struct CyclePhaseWhatItIs: View {
-    let theme: InstrumentoTheme
-
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("What it does").font(StrandFont.headline).foregroundStyle(theme.ink)
-                Text("With several weeks of nights, it learns the rhythm of your temperature and estimates which phase of your cycle you're probably in: follicular or luteal.")
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+        VStack(alignment: .leading, spacing: LiquidSpace.s550) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s150) {
+                Text(String(localized: "What it does")).font(LiquidType.titulo).foregroundStyle(LiquidColor.tinta900)
+                Text(String(localized: "With several weeks of nights, it learns the rhythm of your temperature and estimates which phase of your cycle you're probably in: follicular or luteal."))
+                    .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta500)
                     .fixedSize(horizontal: false, vertical: true)
-                Text("The reading is approximate and always comes with a «probably». Temperature confirms the phase one to three days after it changes, so this looks backward, not at this moment.")
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                Text(String(localized: "The reading is approximate and always comes with a «probably». Temperature confirms the phase one to three days after it changes, so this looks backward, not at this moment."))
+                    .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta500)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            VStack(alignment: .leading, spacing: 6) {
-                Text("What it doesn't do").font(StrandFont.headline).foregroundStyle(theme.ink)
+            VStack(alignment: .leading, spacing: LiquidSpace.s150) {
+                Text(String(localized: "What it doesn't do")).font(LiquidType.titulo).foregroundStyle(LiquidColor.tinta900)
                 ForEach([
-                    "It is not a contraceptive method.",
-                    "It doesn't predict your fertile days or your ovulation.",
-                    "It doesn't diagnose pregnancy or any health condition.",
-                    "It doesn't tell you which day your next period starts.",
+                    String(localized: "It is not a contraceptive method."),
+                    String(localized: "It doesn't predict your fertile days or your ovulation."),
+                    String(localized: "It doesn't diagnose pregnancy or any health condition."),
+                    String(localized: "It doesn't tell you which day your next period starts."),
                 ], id: \.self) { line in
-                    HStack(alignment: .top, spacing: 8) {
-                        StrandIcon.close.image.font(StrandFont.glyph(.chevron, weight: .semibold))
-                            .foregroundStyle(theme.inkTertiary).padding(.top, 3)
-                        Text(LocalizedStringKey(line)).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    HStack(alignment: .top, spacing: LiquidSpace.s200) {
+                        Image(systemName: "xmark")
+                            .font(LiquidType.iconSF(size: 12))
+                            .foregroundStyle(LiquidColor.tinta500).padding(.top, 3)
+                        Text(line).font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta500)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
@@ -151,69 +172,77 @@ private struct CyclePhaseWhatItIs: View {
 // MARK: - State card
 
 private struct CyclePhaseStateBody: View {
-    @Environment(\.instrumentoTheme) private var theme
     let days: [DailyMetric]
     let onDeactivate: () -> Void
     @State private var showInfo = false
     @State private var confirmOff = false
 
-    /// Distinct usable nights (a skin-temp reading present) — the band signal the engine needs.
+    /// Distinct usable nights (a skin-temp reading present) — the Apple Watch wrist-temperature signal
+    /// the engine needs.
     private var usableCount: Int { days.compactMap(\.skinTempDevC).count }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s800) {
             content
-            Divider().overlay(theme.hairline)
-            HStack(spacing: 16) {
+            LiquidCapilar(eje: .horizontal)
+            HStack(spacing: LiquidSpace.s400) {
                 Button { showInfo = true } label: {
-                    Label("What is this?", systemImage: "info.circle")
-                        .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
+                    Label(String(localized: "What is this?"), systemImage: "info.circle")
+                        .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta500)
                 }
                 Spacer(minLength: 0)
                 Button { confirmOff = true } label: {
-                    Text("Turn off experiment").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                    Text(String(localized: "Turn off experiment")).font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta500)
                 }
             }
             .buttonStyle(.plain)
         }
-        .padding(CenitMetrics.screenPadding)
-        .frame(maxWidth: .infinity, alignment: .leading)
         .sheet(isPresented: $showInfo) {
             ScrollView {
-                VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
-                    Text("Cycle phase").font(InstrumentoType.groteskHeadline(28)).foregroundStyle(theme.ink)
-                    CyclePhaseWhatItIs(theme: theme)
+                VStack(alignment: .leading, spacing: LiquidSpace.s800) {
+                    VStack(alignment: .leading, spacing: LiquidSpace.s100) {
+                        LiquidOverline(String(localized: "Experiment"))
+                        Text(String(localized: "Cycle phase"))
+                            .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
+                            .foregroundStyle(LiquidColor.tinta900)
+                    }
+                    CyclePhaseWhatItIs()
                 }
-                .padding(CenitMetrics.screenPadding)
+                .padding(.horizontal, LiquidSpace.s550)
+                .padding(.top, LiquidSpace.s550)
+                .padding(.bottom, LiquidSpace.s800)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .background(theme.paper.ignoresSafeArea())
-            .instrumentoTheme(theme)
+            .scrollIndicators(.hidden)
+            .background { LiquidSheetFondo().ignoresSafeArea() }
         }
-        .instrumentoConfirm(
+        .confirmationDialog(
+            String(localized: "Turn off experiment"),
             isPresented: $confirmOff,
-            title: String(localized: "Turn off experiment"),
-            context: String(localized: "CYCLE PHASE · EXPERIMENT"),
-            message: String(localized: "I'll stop estimating your phase. Your temperature data and everything else stay the same."),
-            actions: [
-                .init(String(localized: "Keep estimating"), role: .primary),
-                .init(String(localized: "Turn off"), role: .destructive, handler: onDeactivate)
-            ]
-        )
+            titleVisibility: .visible
+        ) {
+            Button(String(localized: "Turn off"), role: .destructive) { onDeactivate() }
+            Button(String(localized: "Keep estimating"), role: .cancel) { }
+        } message: {
+            Text(String(localized: "I'll stop estimating your phase. Your temperature data and everything else stay the same."))
+        }
     }
 
     @ViewBuilder private var content: some View {
-        // No band signal at all → the reading needs the band (Apple-Health-only / never paired).
+        // No wrist-temperature signal at all → the reading needs the Apple Watch (Apple-Health-only,
+        // an older Watch, or one that isn't worn to bed).
         if usableCount == 0 {
-            card(overline: "NO BAND SIGNAL", title: "This reading needs your band.",
-                 body: "The phase is estimated from the temperature your band measures while you sleep. When you sync nights with the band again, I'll pick the reading back up.")
+            card(overline: String(localized: "NO SIGNAL YET"),
+                 title: String(localized: "This reading needs your Apple Watch."),
+                 body: String(localized: "The phase is estimated from the wrist temperature your Apple Watch measures while you sleep. It takes a Series 8, Ultra or newer, worn to bed every night, and about 5 nights before Apple starts giving me a reading. Once those nights land, I'll pick the estimate back up."))
         } else if let state = CyclePhaseExperiment.state(from: days) {
             switch state {
             case let .learning(soFar, needed):
                 learning(soFar: soFar, needed: needed)
             case .noClearPattern:
-                card(overline: "NO CLEAR PATTERN", title: "I don't see a clear pattern in your data.",
-                     body: "Your night-time temperature doesn't show a rhythm I can read with confidence. This is common and doesn't mean anything is wrong with you or your band. I'll keep watching in case it appears.")
+                card(overline: String(localized: "NO CLEAR PATTERN"),
+                     title: String(localized: "I don't see a clear pattern in your data."),
+                     body: String(localized: "Your night-time temperature doesn't show a rhythm I can read with confidence. This is common and doesn't mean anything is wrong with you or your Apple Watch. I'll keep watching in case it appears."))
             case let .estimated(phase, confidence, _):
                 estimated(phase: phase, confidence: confidence)
             }
@@ -224,52 +253,60 @@ private struct CyclePhaseStateBody: View {
     }
 
     private func learning(soFar: Int, needed: Int) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("LEARNING").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Text("I'm learning your pattern.").font(InstrumentoType.groteskHeadline(24)).foregroundStyle(theme.ink)
+        VStack(alignment: .leading, spacing: LiquidSpace.s250) {
+            Text(String(localized: "Learning")).liquidLabel().foregroundStyle(LiquidColor.tinta500)
+            Text(String(localized: "I'm learning your pattern."))
+                .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
+                .foregroundStyle(LiquidColor.tinta900)
                 .fixedSize(horizontal: false, vertical: true)
-            Text("I need several weeks of nights with your band on to read the rhythm of your temperature. Still watching.")
-                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+            Text(String(localized: "I need several weeks of nights with your Apple Watch worn to bed to read the rhythm of your temperature. Still watching."))
+                .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta500)
                 .fixedSize(horizontal: false, vertical: true)
-            CyclePhaseProgressBar(fraction: needed > 0 ? min(1, Double(soFar) / Double(needed)) : 0, theme: theme)
-                .padding(.top, 4)
-            Text("\(soFar) of ~\(needed) nights").font(StrandFont.subhead).foregroundStyle(theme.ink)
-            Text("The more nights you sleep with the band, the sooner I see it.")
-                .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            CyclePhaseProgressBar(fraction: needed > 0 ? min(1, Double(soFar) / Double(needed)) : 0)
+                .padding(.top, LiquidSpace.s100)
+            Text(String(localized: "\(soFar) of ~\(needed) nights"))
+                .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
+            Text(String(localized: "Apple needs a Series 8, Ultra or newer, worn to bed, and about 5 nights before it starts giving me a reading; from there, the more nights you sleep with it on, the sooner I see your rhythm."))
+                .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
     private func estimated(phase: CyclePhaseEngine.Phase, confidence: CyclePhaseEngine.PhaseConfidence) -> some View {
-        let phaseText: LocalizedStringKey = phase == .lutealLean
-            ? "You're probably in the luteal phase."
-            : "You're probably in the follicular phase."
-        let confText: LocalizedStringKey = {
+        let phaseText = phase == .lutealLean
+            ? String(localized: "You're probably in the luteal phase.")
+            : String(localized: "You're probably in the follicular phase.")
+        let confText: String = {
             switch confidence {
-            case .low: return "Low confidence · it's a faint signal."
-            case .moderate: return "Moderate confidence."
-            case .solid: return "Solid confidence for an estimate."
+            case .low: return String(localized: "Low confidence · it's a faint signal.")
+            case .moderate: return String(localized: "Moderate confidence.")
+            case .solid: return String(localized: "Solid confidence for an estimate.")
             }
         }()
-        return VStack(alignment: .leading, spacing: 8) {
-            Text("APPROXIMATE READING").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Text(phaseText).font(InstrumentoType.groteskVerdict).foregroundStyle(theme.verdict)   // color only in the datum
+        return VStack(alignment: .leading, spacing: LiquidSpace.s200) {
+            Text(String(localized: "Approximate reading")).liquidLabel().foregroundStyle(LiquidColor.tinta500)
+            Text(phaseText)
+                .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
+                .foregroundStyle(LiquidColor.tinta900)
                 .fixedSize(horizontal: false, vertical: true)
-            Text(confText).font(StrandFont.subhead).foregroundStyle(theme.ink)
-            Text("Temperature confirms the phase one to three days after the change, so this reflects your recent nights, not this instant.")
-                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+            Text(confText).font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
+            Text(String(localized: "Temperature confirms the phase one to three days after the change, so this reflects your recent nights, not this instant."))
+                .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta500)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 4)
-            Text("Based on your band's night-time temperature.")
-                .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                .padding(.top, LiquidSpace.s100)
+            Text(String(localized: "Based on your Apple Watch's night-time temperature."))
+                .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
         }
     }
 
-    private func card(overline: LocalizedStringKey, title: LocalizedStringKey, body: LocalizedStringKey) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(overline).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Text(title).font(InstrumentoType.groteskHeadline(24)).foregroundStyle(theme.ink)
+    private func card(overline: String, title: String, body: String) -> some View {
+        VStack(alignment: .leading, spacing: LiquidSpace.s250) {
+            Text(overline).liquidLabel().foregroundStyle(LiquidColor.tinta500)
+            Text(title)
+                .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
+                .foregroundStyle(LiquidColor.tinta900)
                 .fixedSize(horizontal: false, vertical: true)
-            Text(body).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+            Text(body).font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta500)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -278,13 +315,12 @@ private struct CyclePhaseStateBody: View {
 /// A calm, dateless progress bar for the learning state — a fill fraction, no percentage read-out.
 private struct CyclePhaseProgressBar: View {
     let fraction: Double
-    let theme: InstrumentoTheme
 
     var body: some View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
-                Capsule().fill(theme.hairline)
-                Capsule().fill(theme.inkSecondary)
+                Capsule().fill(LiquidColor.tinta10)
+                Capsule().fill(LiquidColor.verdePrimario)
                     .frame(width: max(0, min(1, fraction)) * geo.size.width)
             }
         }
