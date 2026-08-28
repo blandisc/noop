@@ -828,9 +828,22 @@ final class StrengthSessionModel: ObservableObject {
     func removeExercise(at ei: Int) {
         guard runs.indices.contains(ei), runs.count > 1 else { return }
         let wasCurrent = ei == currentIndex
+        // FER-188: capture the OTHER members of `ei`'s superset span BEFORE removing it, by their
+        // stable id (never their index — the removal below shifts every later index down by one). If
+        // that leaves fewer than 2 members, the group is dissolved on whoever's left — same criterion
+        // `breakSupersetBlock` (RoutineSheetLiveLogic) uses to clear a whole block — so a member never
+        // survives alone carrying a dead group-of-one `supersetGroup`.
+        let otherGroupMemberIds = supersetMembers(at: ei).filter { $0 != ei }
+            .compactMap { runs.indices.contains($0) ? runs[$0].id : nil }
         runs.remove(at: ei)
         if ei < currentIndex { currentIndex -= 1 }
         currentIndex = min(currentIndex, runs.count - 1)
+        if otherGroupMemberIds.count < 2 {
+            for id in otherGroupMemberIds {
+                guard let idx = runs.firstIndex(where: { $0.id == id }) else { continue }
+                runs[idx].supersetGroup = nil
+            }
+        }
         if wasCurrent { phase = .capturing; clearRest(); timerStart = nil; advanceToNextPending(fromStart: true) }
     }
 
@@ -1075,7 +1088,18 @@ final class StrengthSessionModel: ObservableObject {
                     heldRaise: run.proposedRaise.flatMap { r in
                         r.waiting ? .init(fromKg: r.fromKg, toKg: r.toKg, phrase: r.phrase) : nil
                     },
-                    seededNote: run.seededNote)
+                    seededNote: run.seededNote,
+                    // FER-189: the un-actioned deload proposal/stall travels too, same reasoning as
+                    // `heldRaise` — an applied deload is already in the weights.
+                    deloadState: run.deloadState.map { state in
+                        switch state {
+                        case .readyToAdvance(let newKg): return .readyToAdvance(newKg: newKg)
+                        case .inCycle(let done, let of): return .inCycle(done: done, of: of)
+                        case .stalled(let sessions): return .stalled(sessions: sessions)
+                        case .deloading(let fromKg, let toKg): return .deloading(fromKg: fromKg, toKg: toKg)
+                        case .deferred(let newKg): return .deferred(newKg: newKg)
+                        }
+                    })
             },
             currentIndex: currentIndex, restEndsAt: restEndsAt, restStartedAt: restStartedAt,
             currentRestTarget: currentRestTarget, currentRestMode: currentRestMode,
@@ -1105,6 +1129,16 @@ final class StrengthSessionModel: ObservableObject {
                         proposedRaise: r.heldRaise.map {
                             ProgressionPlanner.Raise(fromKg: $0.fromKg, toKg: $0.toKg,
                                                      phrase: $0.phrase, waiting: true)
+                        },
+                        // FER-189: re-arm the un-actioned deload proposal/stall exactly as it was.
+                        deloadState: r.deloadState.map { state in
+                            switch state {
+                            case .readyToAdvance(let newKg): return .readyToAdvance(newKg: newKg)
+                            case .inCycle(let done, let of): return .inCycle(done: done, of: of)
+                            case .stalled(let sessions): return .stalled(sessions: sessions)
+                            case .deloading(let fromKg, let toKg): return .deloading(fromKg: fromKg, toKg: toKg)
+                            case .deferred(let newKg): return .deferred(newKg: newKg)
+                            }
                         },
                         raiseOptedOut: r.raiseOptedOut ?? false,
                         supersetGroup: r.supersetGroup, note: r.note, seededNote: r.seededNote)

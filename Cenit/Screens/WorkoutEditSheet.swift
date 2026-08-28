@@ -437,12 +437,8 @@ struct WorkoutEditSheet: View {
             let type = exercisesByID[g.exerciseId]?.type ?? .weightReps
             let usesWeightReps = (type == .weightReps || type == .bodyweight)
             for s in g.sets {
-                out.append(SetEntry(id: s.id, sessionId: session.id, exerciseId: g.exerciseId, position: pos,
-                                    kind: .work,
-                                    weightKg: usesWeightReps ? s.weightKg : nil,
-                                    reps: usesWeightReps ? s.reps : nil,
-                                    timeS: s.timeS, distanceM: s.distanceM, done: true, ts: s.ts,
-                                    restTakenS: s.restTakenS))
+                out.append(s.toSetEntry(sessionId: session.id, exerciseId: g.exerciseId, position: pos,
+                                        usesWeightReps: usesWeightReps))
                 pos += 1
             }
         }
@@ -510,7 +506,9 @@ private struct EditGroup: Identifiable, Equatable {
 }
 
 /// One editable work set. Keeps the original set id (so links/PRs stay stable); a fresh set gets a new id.
-private struct EditSet: Identifiable, Equatable {
+/// Not `private`: `toSetEntry(...)` is the exact reconstruction `save()` runs, exposed at module scope
+/// (like `RoutineSetEditing`) so `CenitUnitTests` can drive it without a SwiftUI harness (FER-172).
+struct EditSet: Identifiable, Equatable {
     let id: String
     var weightKg: Double
     var reps: Int
@@ -520,11 +518,16 @@ private struct EditSet: Identifiable, Equatable {
     /// The real rest that followed this set (FER-167), carried through untouched so editing a session
     /// doesn't silently erase a measurement the editor never shows a control for.
     var restTakenS: Int?
+    /// Perceived effort captured by the live session (FER-930). The editor shows no RPE control, so
+    /// this rides through untouched on save — same class of bug as `restTakenS`, fixed in FER-172:
+    /// `save()` used to reconstruct every `SetEntry` from scratch, and `EditSet` never carried `rpe` in
+    /// the first place, so it silently dropped to `nil` on every edit.
+    var rpe: Double?
 
     init(_ s: SetEntry) {
         id = s.id; weightKg = s.weightKg ?? 0; reps = s.reps ?? 0
         timeS = s.timeS; distanceM = s.distanceM; ts = s.ts
-        restTakenS = s.restTakenS
+        restTakenS = s.restTakenS; rpe = s.rpe
     }
     init(new ts: Int, template: EditSet?) {
         id = UUID().uuidString
@@ -533,6 +536,16 @@ private struct EditSet: Identifiable, Equatable {
         timeS = nil; distanceM = nil
         self.ts = ts
         restTakenS = nil   // a freshly added set never had a measured rest
+        rpe = nil          // nor a reported RPE
+    }
+
+    /// Rebuilds the persisted `SetEntry` for this row on save: only weight/reps (the editor's own
+    /// controls, gated by `usesWeightReps`) come from the working copy — everything else the editor
+    /// never shows a control for rides through untouched from what was loaded.
+    func toSetEntry(sessionId: String, exerciseId: String, position: Int, usesWeightReps: Bool) -> SetEntry {
+        SetEntry(id: id, sessionId: sessionId, exerciseId: exerciseId, position: position, kind: .work,
+                 weightKg: usesWeightReps ? weightKg : nil, reps: usesWeightReps ? reps : nil,
+                 timeS: timeS, distanceM: distanceM, done: true, ts: ts, rpe: rpe, restTakenS: restTakenS)
     }
 }
 
