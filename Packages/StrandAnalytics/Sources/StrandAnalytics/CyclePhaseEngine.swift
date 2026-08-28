@@ -17,7 +17,9 @@ import Foundation
 //     biphasic pattern in ~82% of cycles, n=136 — so the wrist does NOT attenuate the signal below the
 //     finger. Direct Apple-Watch validation: Human Reproduction 2025, 40(3):469: algorithms on Apple Watch
 //     overnight wrist temperature estimate ovulation retrospectively at MAE 1.22–1.59 days (~80–89% within
-//     ±2 days), signal threshold ≥0.2 °C — i.e. Apple wrist temp carries the follicular/luteal axis.
+//     ±2 days), signal threshold ≥0.2 °C — evidence that Apple's wrist signal is present and usable for a
+//     temperature-based cycle read. (That paper targets the ovulation DAY; NOOP claims less — only the
+//     follicular/luteal LEAN — and never surfaces an ovulation or fertility estimate.)
 //     Corroborating finger-site value: Maijala et al. 2019, BMC Women's Health 19 (doi:10.1186/s12905-019-
 //     0844-9): nightly FINGER skin temp +0.30 °C (SD 0.12), p<0.001 (Oura ring). NOOP re-derives the
 //     PATTERN against the user's own window in robust units, so magnitude is never assumed from any one site.
@@ -111,6 +113,21 @@ public enum CyclePhaseEngine {
         /// A readable lean. `lutealIndexZ` is INTERNAL (drives confidence / tests), never shown as a
         /// number; the app shows only the phase word, always hedged.
         case estimated(phase: Phase, confidence: PhaseConfidence, lutealIndexZ: Double)
+    }
+
+    // MARK: - Consent gate (FER-183)
+
+    /// The phase the RECOVERY VERDICT is allowed to see — the estimate ONLY when the user opted IN to the
+    /// cycle-phase experiment (default OFF). The verdict's luteal discount is gated on this, so someone who
+    /// never opted in never has their recovery number silently adjusted (reverts FER-181/H8). Pure, so the
+    /// consent behaviour is pinned by a fast-loop test instead of an app-layer one; the app reads the opt-in
+    /// flag and passes it here. `.learning`/`.noClearPattern` collapse to `nil` (nothing to apply yet).
+    public static func gatedPhase(optIn: Bool, nights: [NightSample], asOf day: String) -> Phase? {
+        guard optIn else { return nil }
+        switch estimate(nights, asOf: day) {
+        case .estimated(let phase, _, _): return phase
+        case .learning, .noClearPattern:  return nil
+        }
     }
 
     // MARK: - Evaluate

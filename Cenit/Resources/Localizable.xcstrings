@@ -1,6 +1,26 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "While it's on, it also gives your recovery number a small allowance on likely-luteal days, so the normal luteal rise in your pulse and temperature isn't read as «less recovered». With it off, your recovery ignores your cycle entirely." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mientras está encendida, también le da a tu número de recuperación un pequeño margen en los días probablemente lúteos, para que la subida normal de tu pulso y tu temperatura no se lea como «menos recuperación». Apagada, tu recuperación ignora tu ciclo por completo."
+          }
+        }
+      }
+    },
+    "The phase is estimated from the wrist temperature your Apple Watch measures while you sleep. It takes a Series 8, Ultra or newer, worn to bed every night, and about 5 nights before Apple starts giving me that temperature at all. From there it's still several weeks of nights before I can read your phase." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La fase se estima a partir de la temperatura de muñeca que tu Apple Watch mide mientras duermes. Necesita un Series 8, Ultra o más nuevo, puesto para dormir cada noche, y unas 5 noches antes de que Apple empiece siquiera a darme esa temperatura. De ahí, todavía son varias semanas de noches antes de que pueda leer tu fase."
+          }
+        }
+      }
+    },
     "On · adjusts your recovery on luteal days" : {
       "localizations" : {
         "es" : {

@@ -167,4 +167,27 @@ final class CyclePhaseEngineTests: XCTestCase {
         XCTAssertEqual(CyclePhaseEngine.weightRHR, 0.25, accuracy: 1e-9)
         XCTAssertEqual(CyclePhaseEngine.weightTemp + CyclePhaseEngine.weightRHR, 1.0, accuracy: 1e-9)
     }
+
+    // MARK: - Consent gate (FER-183): the verdict only sees the phase when the user opted IN
+
+    /// The recovery verdict's luteal discount is gated on `gatedPhase`. Opted OUT (the default), the phase
+    /// the verdict sees must be `nil` EVEN when the raw estimate is a clear luteal lean — so a user who never
+    /// turned on the experiment never has their number silently adjusted (reverts FER-181/H8). Opted IN, the
+    /// verdict sees the estimated phase.
+    func testGatedPhaseIsNilWhenOptedOutEvenIfLuteal() {
+        let (all, today) = nights(count: 56, tonightTemp: 0.3)   // a clear warm night → luteal-lean
+        guard case .estimated(.lutealLean, _, _) = CyclePhaseEngine.estimate(all, asOf: today) else {
+            return XCTFail("fixture should estimate .lutealLean")
+        }
+        XCTAssertNil(CyclePhaseEngine.gatedPhase(optIn: false, nights: all, asOf: today),
+                     "opted out → the verdict must see no phase, so no luteal discount is applied")
+        XCTAssertEqual(CyclePhaseEngine.gatedPhase(optIn: true, nights: all, asOf: today), .lutealLean,
+                       "opted in → the verdict sees the estimated phase")
+    }
+
+    /// Even opted IN, a non-estimated state (still learning, or no clear pattern) gives the verdict `nil`.
+    func testGatedPhaseIsNilWhenNotEstimatedEvenIfOptedIn() {
+        let (learning, lToday) = nights(count: 20)             // under the night gate → .learning
+        XCTAssertNil(CyclePhaseEngine.gatedPhase(optIn: true, nights: learning, asOf: lToday))
+    }
 }

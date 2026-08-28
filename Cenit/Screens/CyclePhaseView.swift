@@ -55,11 +55,18 @@ struct CyclePhaseSheet: View {
                 if enabled {
                     // FER-184: real Apple wrist temperature, straight off repo.days — no strap-domain
                     // clearing to undo (Cénit is Apple-only; there's no cross-source mix left to guard).
-                    CyclePhaseStateBody(days: repo.days, onDeactivate: { enabled = false })
+                    CyclePhaseStateBody(days: repo.days, onDeactivate: {
+                        enabled = false
+                        // Apagar debe surtir efecto YA: el veredicto en memoria aún lleva el margen lútea
+                        // hasta el próximo sync. Recalcula para retirarlo en el acto (Grok, FER-181-B).
+                        Task { await repo.refresh() }
+                    })
                 } else {
                     CyclePhaseConsentBody(onActivate: {
                         consentVersion = CyclePhaseExperiment.consentVersion
                         enabled = true
+                        // Encender aplica el margen lútea al número: recalcula ya, no en el próximo sync.
+                        Task { await repo.refresh() }
                     }, onDecline: { dismiss() })
                 }
             }
@@ -144,6 +151,9 @@ private struct CyclePhaseWhatItIs: View {
                     .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta500)
                     .fixedSize(horizontal: false, vertical: true)
                 Text(String(localized: "The reading is approximate and always comes with a «probably». Temperature confirms the phase one to three days after it changes, so this looks backward, not at this moment."))
+                    .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta500)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(String(localized: "While it's on, it also gives your recovery number a small allowance on likely-luteal days, so the normal luteal rise in your pulse and temperature isn't read as «less recovered». With it off, your recovery ignores your cycle entirely."))
                     .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta500)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -234,7 +244,7 @@ private struct CyclePhaseStateBody: View {
         if usableCount == 0 {
             card(overline: String(localized: "NO SIGNAL YET"),
                  title: String(localized: "This reading needs your Apple Watch."),
-                 body: String(localized: "The phase is estimated from the wrist temperature your Apple Watch measures while you sleep. It takes a Series 8, Ultra or newer, worn to bed every night, and about 5 nights before Apple starts giving me a reading. Once those nights land, I'll pick the estimate back up."))
+                 body: String(localized: "The phase is estimated from the wrist temperature your Apple Watch measures while you sleep. It takes a Series 8, Ultra or newer, worn to bed every night, and about 5 nights before Apple starts giving me that temperature at all. From there it's still several weeks of nights before I can read your phase."))
         } else if let state = CyclePhaseExperiment.state(from: days) {
             switch state {
             case let .learning(soFar, needed):

@@ -644,19 +644,13 @@ final class Repository: ObservableObject {
                                           restingHr: $0.restingHr.map(Double.init), avgHrv: $0.avgHrv)
         }
         // FER-183 (consentimiento): la corrección lútea SOLO toca el veredicto si el usuario activó el
-        // experimento «Fase del ciclo» (apagado por defecto). Revierte FER-181/H8, donde el estimado se
-        // aplicaba al número de TODOS sin un interruptor alcanzable. Sin opt-in → `nil` → cero margen lútea.
-        // (La hoja del experimento estima por su propia vía cuando el usuario la abre; esto solo gobierna
-        // si el veredicto de recuperación descuenta o no.)
-        let cyclePhase: CyclePhaseEngine.Phase?
-        if UserDefaults.standard.bool(forKey: CyclePhaseExperiment.enabledKey) {
-            switch CyclePhaseEngine.estimate(cycleNights, asOf: inputs.asOf) {
-            case .estimated(let phase, _, _): cyclePhase = phase
-            case .learning, .noClearPattern: cyclePhase = nil
-            }
-        } else {
-            cyclePhase = nil
-        }
+        // experimento «Fase del ciclo» (apagado por defecto). El gate vive en `CyclePhaseEngine.gatedPhase`
+        // (puro, pinneado por test en el fast loop); aquí solo se lee la preferencia. Revierte FER-181/H8,
+        // donde el estimado se aplicaba al número de TODOS sin un interruptor alcanzable. Sin opt-in → nil →
+        // cero margen lútea. (La hoja del experimento estima por su propia vía cuando el usuario la abre.)
+        let cyclePhase = CyclePhaseEngine.gatedPhase(
+            optIn: UserDefaults.standard.bool(forKey: CyclePhaseExperiment.enabledKey),
+            nights: cycleNights, asOf: inputs.asOf)
         let denseRmssd: Preparedness.DenseRmssd? = (autonomicTrend.asOfWasDense == true)
             ? autonomicTrend.spark.last.map { Preparedness.DenseRmssd(z: $0, dense: true) }
             : nil

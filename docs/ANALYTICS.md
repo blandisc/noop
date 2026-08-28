@@ -779,10 +779,17 @@ minimum |z| guard the `.noClearPattern` state; confidence scales with |z| and ni
 
 ### Evidence (each an approximate, documented driver — not a reproduction of any algorithm)
 
-- **Skin temp ↑ in luteal (dominant).** Maijala et al. 2019, *BMC Women's Health* 19
-  (doi:10.1186/s12905-019-0844-9): nightly skin temp **+0.30 °C** (SD 0.12), p<0.001. Gombert-Labedens
-  et al. 2024, *J Biol Rhythms* 39(4):331–350 (doi:10.1177/07487304241247893): post-ovulatory thermal
-  shift detectable in **~85 %** of cycles with a wearable.
+- **Skin temp ↑ in luteal (dominant), read from the Apple Watch's overnight WRIST temperature.**
+  Site-matched evidence (wrist): Shilaih et al. 2018, *Bioscience Reports* 38(6):BSR20171279
+  (doi:10.1042/BSR20171279): early-luteal **wrist** temp **+0.33 °C** vs the fertile window, biphasic in
+  **~82 %** of cycles, n=136 — the wrist does not attenuate the signal below the finger. Direct
+  Apple-Watch validation: Wang et al. 2025, *Human Reproduction* 40(3):469–478: Apple Watch overnight
+  wrist temperature estimates ovulation retrospectively at MAE **1.22–1.59 days** (~80–89 % within ±2
+  days) — evidence the wrist signal is present and usable; Cénit reads only the follicular/luteal **lean**,
+  never the ovulation day. Corroborating finger-site value: Maijala et al. 2019, *BMC Women's Health* 19
+  (doi:10.1186/s12905-019-0844-9): nightly **finger** skin temp **+0.30 °C** (SD 0.12), p<0.001.
+  Gombert-Labedens et al. 2024, *J Biol Rhythms* 39(4):331–350 (doi:10.1177/07487304241247893):
+  post-ovulatory thermal shift detectable in **~85 %** of cycles with a wearable.
 - **Resting HR ↑ in luteal (corroboration).** Shilaih et al. 2017, *Sci Rep* 7
   (doi:10.1038/s41598-017-01433-9): sleeping pulse **+1.8 bpm** (mid-luteal vs fertile), +3.8 vs menses.
 - **HRV ↓ in luteal (weak, mixed — confidence only).** Real on average (Schmalenberger et al. 2019
@@ -797,7 +804,11 @@ publication** (decision H2) — they encode the evidence hierarchy (temp ≫ RHR
 pinned by `CyclePhaseEngineTests.testCalibrationConstantsPinned`. The estimate is **retrospective**: the
 temperature shift confirms a phase 1–3 days *after* it changes, so the copy never implies real-time
 detection (H3). Wellness / self-knowledge only — never fertility, ovulation, contraception, a period
-date, or any clinical claim.
+date, or any clinical claim. **Consent gate (FER-183):** the recovery verdict applies its small luteal
+allowance (RHR −2 bpm, high-side temp −0.3 °C on likely-luteal days) **only when the user has opted in**
+to this experiment; off by default, the verdict ignores the cycle entirely. `CyclePhaseEngine.gatedPhase`
+is the one pure gate, pinned by test; the sheet's consent copy states the recovery adjustment before it
+can be enabled.
 
 ---
 
