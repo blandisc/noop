@@ -1,6 +1,26 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "On · adjusts your recovery on luteal days" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Encendida · ajusta tu recuperación en días lúteos"
+          }
+        }
+      }
+    },
+    "Off · a self-knowledge experiment" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apagada · un experimento para conocerte"
+          }
+        }
+      }
+    },
     "Deshacer" : {
       "localizations" : {
         "es" : {
