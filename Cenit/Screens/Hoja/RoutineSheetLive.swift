@@ -11,9 +11,10 @@ import Inject
 // montada por `RoutineSheet(mode: .live)` en sus 5 hosts. Compone piezas YA CONSTRUIDAS —
 // `HojaFilaSerie` en contexto `.sesion`, `RestBand` (ya dice la meta), `SessionKeypad` — sobre el
 // MOTOR vigente (`StrengthSessionModel`, cero reescritura salvo los 2 toques quirúrgicos
-// autorizados: `lastRPE` para el playhead Q y `closeOpenRest` para la pausa abierta). El modo Foco
-// y el acta final siguen siendo `LiveStrengthSheet.swift`, sin tocar una línea de su cuerpo — esta
-// vista lo hospeda como instancia efímera (`startInFocus`/`onExitFocus`).
+// autorizados: `lastRPE` para el playhead Q y `closeOpenRest` para la pausa abierta). El acta final
+// sigue siendo `LiveStrengthSheet.swift`, sin tocar una línea de su cuerpo. El modo Foco (FER-170 ·
+// F5) YA NO vive ahí — es `HojaFoco` (`RoutineSheetLiveFoco.swift`), una expansión de la tarjeta
+// activa DENTRO de esta misma vista, con continuidad geométrica vía `focoNS`.
 //
 // REGLA DURA (ronda 2, 3.ª aparición de la clase): cero identidad por índice. `ForEach` va por
 // `run.id`; el ancla del descanso (`accordionIndex`, en `RoutineSheetLiveLogic.swift`) se DERIVA de
@@ -78,8 +79,19 @@ struct HojaSesionViva: View {
     /// R8: el «robo» de superserie pide confirmar antes de deshacer la pareja del vecino.
     @State var confirmSupersetSteal: Int?
 
-    // MARK: Modo foco — sigue viviendo en `LiveStrengthSheet.swift` (F5 lo rediseña)
+    // MARK: Modo foco (FER-170 · F5, épico FER-165) — expansión de la tarjeta activa, DENTRO de
+    // esta misma vista (ya no una instancia efímera de `LiveStrengthSheet`). `focoNS` amarra la
+    // continuidad geométrica entre la tarjeta chica (`row(_:)`) y `HojaFoco` a pantalla completa.
+    @Namespace var focoNS
     @State var focusMode = false
+    /// D3 · HECHO: el `run.id` cuyo cierre (ejercicio completo, o ronda cerrada en superserie) ya
+    /// puede mostrarse — `nil` mientras no hay ninguno pendiente de reconocer. Por `id` (regla
+    /// dura): un `Int` no sobreviviría un reorden mientras la pantalla de HECHO sigue en foco.
+    @State var focusDoneRunId: String?
+    /// El `run.id` que cerró hacia un descanso REAL — retenido hasta que ese descanso termina
+    /// (`session.phase` deja `.resting`), momento en el que `onChange` lo promueve a
+    /// `focusDoneRunId` (paridad `LiveStrengthSheet.focusDoneTiming`, reusada tal cual).
+    @State var pendingFocusDoneRunId: String?
 
     // MARK: Integridad (B14 en `session.saveError`/`model.retryStrengthSave()`; B15b aquí; B16 en la cabecera)
     @State var confirmFinish = false
@@ -92,24 +104,32 @@ struct HojaSesionViva: View {
     @ObserveInjection var inject
 
     var body: some View {
-        Group {
-            if session.summary != nil {
-                // El acta de siempre — cero cambios (FER-167 §3: «el cierre de sesión NO cambia»).
-                LiveStrengthSheet(session: session, theme: sheet.theme)
-            } else if session.routineId == nil && session.runs.isEmpty {
-                // D-r2.1 (ronda 3, regresión bloqueante): «Sesión rápida» vacía (`startQuickStrength`)
-                // — el buscador + sugerencias de frescura siguen siendo `LiveStrengthSheet.emptyAdHocSession`
-                // (B13 los rediseña en F4). Construir una instancia NORMAL (sin `startInFocus`, sin
-                // `summary`) hace que SU PROPIO `body` la muestre — mismo patrón de composición que ya
-                // usamos para el acta y el foco: cero líneas de ese estado tocadas. Al agregar el
-                // primer ejercicio `session.runs` deja de estar vacío (mismo `session`, por
-                // referencia) y este `body` vuelve a evaluar hacia `liveLoop` solo.
-                LiveStrengthSheet(session: session, theme: sheet.theme)
-            } else if isZombie, !zombieAcknowledged {
-                zombieGate   // B15b
-            } else {
-                liveLoop
+        ZStack {
+            Group {
+                if session.summary != nil {
+                    // El acta de siempre — cero cambios (FER-167 §3: «el cierre de sesión NO cambia»).
+                    LiveStrengthSheet(session: session, theme: sheet.theme)
+                } else if session.routineId == nil && session.runs.isEmpty {
+                    // D-r2.1 (ronda 3, regresión bloqueante): «Sesión rápida» vacía (`startQuickStrength`)
+                    // — el buscador + sugerencias de frescura siguen siendo `LiveStrengthSheet.emptyAdHocSession`
+                    // (B13 los rediseña en F4). Construir una instancia NORMAL (sin `summary`) hace que
+                    // SU PROPIO `body` la muestre — mismo patrón de composición que ya usamos para el
+                    // acta: cero líneas de ese estado tocadas. Al agregar el primer ejercicio
+                    // `session.runs` deja de estar vacío (mismo `session`, por referencia) y este
+                    // `body` vuelve a evaluar hacia `liveLoop` solo.
+                    LiveStrengthSheet(session: session, theme: sheet.theme)
+                } else if isZombie, !zombieAcknowledged {
+                    zombieGate   // B15b
+                } else {
+                    liveLoop
+                }
             }
+            // FER-170 (F5): el enfoque expande la tarjeta activa DENTRO de esta misma pantalla — un
+            // overlay que comparte `focoNS` con la tarjeta, no un `.fullScreenCover` (ese sería una
+            // hoja NUEVA sin continuidad geométrica posible con lo que había debajo). Corte seco con
+            // Reduce Motion: `withAnimation` nunca envuelve el toggle de `focusMode` cuando está activo
+            // (ver `HojaTarjetaEjercicioSesion`/`HojaTarjetaSuperserieSesion`/`HojaFoco`).
+            if focusMode { HojaFoco(vivo: self) }
         }
         .background(sheet.theme.paper.ignoresSafeArea())
         .instrumentoTheme(sheet.theme)
@@ -127,6 +147,13 @@ struct HojaSesionViva: View {
         .onChange(of: session.phase) { _, phase in
             restStartBpm = phase == .resting ? sheet.model.watchBpm : nil
             peekRunId = nil   // O-r2a: cualquier cambio de fase limpia el «espiar» — nunca queda rancio
+            // FER-170 (F5, D3): el descanso real que arrancó al cerrar un ejercicio/ronda ya terminó
+            // (se acabó o se saltó) — hasta ahora es cuando HECHO puede aparecer, nunca antes (paridad
+            // `LiveStrengthSheet.focusDoneTiming`, `.pending`).
+            if phase != .resting, let pending = pendingFocusDoneRunId {
+                pendingFocusDoneRunId = nil
+                focusDoneRunId = pending
+            }
         }
         .sheet(item: $detailExercise) { ex in
             NavigationStack {
@@ -247,13 +274,6 @@ struct HojaSesionViva: View {
                 .padding(.top, CenitMetrics.gap).presentationDragIndicator(.visible).presentationBackground(sheet.theme.paper).preferredColorScheme(.light)
             }
         }
-        .fullScreenCover(isPresented: $focusMode) {
-            // R2: el modo foco vigente, sin tocar una línea de su cuerpo. `onExitFocus` baja
-            // `focusMode` de ESTA vista cuando cualquiera de las 3 salidas internas del foco dispara
-            // — sin esto, cerrar el foco dejaba el cover exterior abierto sobre una tabla suprimida.
-            LiveStrengthSheet(session: session, theme: sheet.theme, startInFocus: true,
-                              onExitFocus: { focusMode = false })
-        }
         .instrumentoConfirm(
             isPresented: $confirmFinish,
             title: String(localized: "Finish workout?"),
@@ -333,12 +353,30 @@ struct HojaSesionViva: View {
     @ViewBuilder private func row(_ ei: Int) -> some View {
         if session.isInSuperset(ei) {
             let members = session.supersetMembers(at: ei)
-            if members.first == ei { HojaTarjetaSuperserieSesion(vivo: self, members: members) }
+            if members.first == ei {
+                focoDoor { HojaTarjetaSuperserieSesion(vivo: self, members: members) }
+            }
         } else if ei == accordionIndex {
-            HojaTarjetaEjercicioSesion(vivo: self, ei: ei)
+            focoDoor { HojaTarjetaEjercicioSesion(vivo: self, ei: ei) }
         } else {
             HojaPlegadaSesion(vivo: self, ei: ei)
         }
+    }
+
+    /// D0 (FER-170 · F5): la puerta de Foco es la tarjeta activa misma (como Now Playing). Este
+    /// wrapper solo aporta el ancla de `matchedGeometryEffect` que amarra su marco al de `HojaFoco`
+    /// — la continuidad geométrica de la expansión; el tap real («⤢» junto al «···») y la acción de
+    /// VoiceOver viven DENTRO de `HojaTarjetaEjercicioSesion`/`HojaTarjetaSuperserieSesion` (mismo
+    /// patrón que el «···» de cada una, que ya conocía `focusMode`). Sin ancla mientras Foco está
+    /// abierto (`!focusMode`): una vez expandido, `HojaFoco` es la única dueña del marco compartido
+    /// — dejar las dos vivas fuerza a SwiftUI a reconciliar el mismo id dos veces por frame.
+    @ViewBuilder private func focoDoor<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        content()
+            .background {
+                if !focusMode {
+                    Color.clear.matchedGeometryEffect(id: HojaFoco.namespaceId, in: focoNS)
+                }
+            }
     }
 
     // MARK: - B14 — fallo de guardado

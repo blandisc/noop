@@ -66,6 +66,14 @@ extension HojaSesionViva {
     /// R2(a): la puerta a Foco — paridad `SessionStatsBar.onFocus` (`LiveStrengthSheet.puedeEnfocar`).
     var puedeEnfocar: Bool { session.summary == nil && !session.isComplete && !isZombie }
 
+    /// D0 (FER-170 · F5): la ÚNICA puerta a Foco — la tocan el «⤢» de la cabecera, el «⤢» de la
+    /// tarjeta activa y el «Enfoque» del «···» (tres puertas, un solo destino, mismo gesto). Reduce
+    /// Motion: sin `withAnimation` la transacción no anima — el `matchedGeometryEffect` compartido
+    /// entre la tarjeta y `HojaFoco` (`focoNS`) simplemente salta al estado final, corte seco.
+    func enterFoco() {
+        withAnimation(reduceMotion ? nil : .snappy) { focusMode = true }
+    }
+
     // MARK: - B15b — sesión zombie (quedó abierta un día calendario distinto)
 
     /// Umbral decidido aquí (el mapa no fija horas, solo «AYER»): cambio de DÍA CALENDARIO local
@@ -355,6 +363,66 @@ extension HojaSesionViva {
         sheet.model.buzz(loops: 1)   // háptica al palomear (contrato F1/F2: hápticas en palomear/fin de descanso/arranque)
     }
 
+    // MARK: - D3 · HECHO (FER-170 · F5)
+
+    /// El «✓ Serie hecha» de Foco pasa por AQUÍ — registra con `registerActiveSet` (RIR/RPE/PR/
+    /// háptica, sin duplicar nada de eso) y decide si HECHO aparece YA o espera al descanso real que
+    /// acaba de arrancar (paridad `LiveStrengthSheet.focusDoneTiming`, reusada tal cual — pura,
+    /// tested en `LiveStrengthSheetRIRTests`). El «cierre» que dispara HECHO es distinto según el
+    /// contexto: para un ejercicio suelto, que sus series de trabajo queden todas hechas; para un
+    /// miembro de superserie, que la RONDA que esta serie completaba cierre (mapa D3: «en superserie
+    /// solo al cerrar ronda») — un salto de round-robin a un compañero DENTRO de la misma ronda
+    /// (`registerCurrentSet`, sin descanso) no cuenta como cierre; se detecta comparando cuántas
+    /// rondas están cerradas antes/después de registrar (`closedSupersetRounds`).
+    func registerFromFoco() {
+        let ei = session.currentIndex
+        guard session.runs.indices.contains(ei) else { return }
+        let si = session.runs[ei].currentSet
+        let inSuperset = session.isInSuperset(ei)
+        let members = inSuperset ? session.supersetMembers(at: ei) : []
+        let roundsClosedBefore = inSuperset ? closedSupersetRounds(members: members) : 0
+        let runId = session.runs[ei].id
+
+        registerActiveSet(ei: ei, si: si)
+
+        let closedNow: Bool
+        if inSuperset {
+            closedNow = closedSupersetRounds(members: members) > roundsClosedBefore
+        } else {
+            closedNow = session.runs.indices.contains(ei)
+                && !session.runs[ei].sets.contains(where: { $0.kind == .work && !$0.done })
+        }
+        guard closedNow else { return }
+        switch LiveStrengthSheet.focusDoneTiming(exerciseFullyDone: true, restStarting: session.phase == .resting) {
+        case .none: break
+        case .pending: pendingFocusDoneRunId = runId
+        case .immediate: focusDoneRunId = runId
+        }
+    }
+
+    /// Cuántas rondas de este bloque de superserie están CERRADAS ahora mismo (todas las filas de
+    /// esa ronda, en TODOS los miembros, `.done`) — mismo criterio que
+    /// `HojaTarjetaSuperserieSesion.rondaCerrada`, como conteo puro para comparar antes/después de
+    /// registrar (`registerFromFoco`). Se detiene en la primera ronda abierta — las rondas cierran
+    /// en orden, nunca fuera de secuencia.
+    func closedSupersetRounds(members: [Int]) -> Int {
+        let total = members.map { session.supersetRounds(at: $0) }.max() ?? 0
+        guard total > 0 else { return 0 }
+        var closed = 0
+        for r in 1...total {
+            var slots = 0, done = 0
+            for ei in members where session.runs.indices.contains(ei) {
+                let work = session.runs[ei].sets.filter { $0.kind == .work }
+                guard r <= work.count else { continue }
+                slots += 1
+                if work[r - 1].done { done += 1 }
+            }
+            guard slots > 0, slots == done else { break }
+            closed += 1
+        }
+        return closed
+    }
+
     // MARK: - B9 · corregir una hecha (FER-169)
 
     /// Tap en el peso de una fila HECHA: la reabre (desmarca, sin cerrar ningún descanso en curso —
@@ -527,9 +595,12 @@ extension HojaSesionViva {
     /// `.ceiling` y el pulso TODAVÍA arriba de la meta, la banda no dice «Listo» — dice el tope
     /// honesto y ofrece SEGUIR. R4: la misma función alcanza también a la superserie (Tarjeta.swift
     /// la monta igual). `esRonda` (R6, ronda 2 del gate): SOLO cambia el rótulo del kicker («REST ·
-    /// ROUND» en vez de «SET N → M») — el headline de meta es idéntico en los dos casos.
-    @ViewBuilder func restBand(esRonda: Bool = false) -> some View {
-        VStack(alignment: .leading, spacing: CenitMetrics.space2) {
+    /// ROUND» en vez de «SET N → M») — el headline de meta es idéntico en los dos casos. `large`
+    /// (FER-170 · F5): la variante GRANDE/centrada que pide D2 de Foco — «reusa el RestBand de F2»,
+    /// misma lógica de descanso, solo la piel cambia (paridad `RestBand.large`, ya construido en F2
+    /// para el modo foco vigente que este archivo retira).
+    @ViewBuilder func restBand(esRonda: Bool = false, large: Bool = false) -> some View {
+        VStack(alignment: large ? .center : .leading, spacing: CenitMetrics.space2) {
             if session.paused {
                 // B5 (FER-169): «pausada» congela el descanso — la banda no sigue diciendo REST/tu
                 // pulso bajando (ninguno de los dos avanza mientras `paused`); una línea honesta en
@@ -540,11 +611,11 @@ extension HojaSesionViva {
                     Spacer(minLength: 6)
                     Text("waits with you").font(StrandFont.caption).foregroundStyle(sheet.theme.inkTertiary)
                 }
-                restBandCore(esRonda: esRonda)
+                restBandCore(esRonda: esRonda, large: large)
                     .opacity(0.45)   // token-exempt: atenuación transitoria B5 «congelado», sin token de opacidad propio todavía (mismo patrón que el destello R16)
                     .allowsHitTesting(false)
             } else {
-                restBandCore(esRonda: esRonda)
+                restBandCore(esRonda: esRonda, large: large)
             }
             // R11(a): «Cambiar descanso» — el editor de umbral (capacidad intacta), paridad
             // `LiveStrengthSheet.restEditorPill`. `RestBand` no trae este control; se queda como
@@ -560,7 +631,7 @@ extension HojaSesionViva {
         }
     }
 
-    @ViewBuilder private func restBandCore(esRonda: Bool) -> some View {
+    @ViewBuilder private func restBandCore(esRonda: Bool, large: Bool) -> some View {
         let hrMode = session.currentRestMode == .heartRate
         Group {
             if hrMode, let started = session.restStartedAt {
@@ -571,7 +642,7 @@ extension HojaSesionViva {
                         currentHR: sheet.model.watchBpm, worn: sheet.model.watchBpm != nil, restingHR: restingBaseline,
                         elapsedS: elapsed, targetHR: session.currentRestTarget)
                     if v.state == .noSignal {
-                        restBandTimeBody(end: session.restEndsAt, now: tick, noStrapFallback: true, esRonda: esRonda)
+                        restBandTimeBody(end: session.restEndsAt, now: tick, noStrapFallback: true, esRonda: esRonda, large: large)
                     } else {
                         let ceiling = v.reason == .ceiling && (v.bpmToReady ?? 0) > 0
                         RestBand(kicker: restBandKicker(esRonda: esRonda),
@@ -580,7 +651,7 @@ extension HojaSesionViva {
                                  trailing: SessionClock.format(elapsed),
                                  note: "at 5 bpm I say «almost» · at 3:00 I let you go even if it hasn't dropped",
                                  isAlmost: v.state == .almostReady, isReady: v.ready, isCeilingRelease: ceiling,
-                                 startBpm: restStartBpm,
+                                 startBpm: restStartBpm, large: large,
                                  onSkip: { skipRest() })
                             .accessibilityAddTraits(.updatesFrequently)
                     }
@@ -588,13 +659,13 @@ extension HojaSesionViva {
             } else if let end = session.restEndsAt, let started = session.restStartedAt {
                 TimelineView(.periodic(from: started, by: 1)) { ctx in
                     restBandTimeBody(end: end, now: session.paused ? (session.pausedAt ?? ctx.date) : ctx.date,
-                                     noStrapFallback: false, esRonda: esRonda)
+                                     noStrapFallback: false, esRonda: esRonda, large: large)
                 }
             }
         }
     }
 
-    private func restBandTimeBody(end: Date?, now: Date, noStrapFallback: Bool, esRonda: Bool) -> some View {
+    private func restBandTimeBody(end: Date?, now: Date, noStrapFallback: Bool, esRonda: Bool, large: Bool) -> some View {
         let started = session.restStartedAt ?? now
         let cappedEnd = noStrapFallback ? min(end ?? now, started.addingTimeInterval(300)) : end
         let totalS = cappedEnd.map { max(0, Int($0.timeIntervalSince(started))) } ?? 0
@@ -603,6 +674,7 @@ extension HojaSesionViva {
                          mode: .clock(elapsed: SessionClock.format(elapsed), target: SessionClock.format(totalS)),
                          trailing: sheet.model.watchBpm == nil ? String(localized: "no watch on your wrist") : SessionClock.format(elapsed),
                          note: noStrapFallback ? "resting by clock: connect your Apple Watch for rest by heart rate" : nil,
+                         large: large,
                          onSkip: { skipRest() })
             .accessibilityAddTraits(.updatesFrequently)
     }
@@ -664,7 +736,7 @@ extension HojaSesionViva {
         })
         if incluirEstructura, puedeEnfocar {
             rows.append(.init(String(localized: "Focus"), systemImage: "arrow.up.left.and.arrow.down.right") {
-                focusMode = true
+                enterFoco()
             })
         }
         if session.runs.count > 1 {
@@ -745,10 +817,19 @@ extension HojaSesionViva {
 
     var imperial: Bool { sheet.system == .imperial }
     var weightStepKg: Double { imperial ? 5 * LiveStrengthSheet.kgPerPound : 2.5 }
+    /// FER-170 (F5): paridad `LiveStrengthSheet.distanceStepM` — el paso de Foco para ejercicios de
+    /// distancia, portado tal cual (0.1 km métrico, 0.1 mi imperial).
+    var distanceStepM: Double { imperial ? LiveStrengthSheet.metersPerMile * 0.1 : 100 }
 
     func displayWeight(_ kg: Double) -> Double { imperial ? UnitFormatter.kgToPounds(kg) : kg }
     func plateNumber(_ v: Double) -> String { StrengthDisplay.displayNumber(v, system: sheet.system) }
     func weightUnit() -> String { StrengthDisplay.weightUnit(sheet.system).lowercased() }
+    /// FER-170 (F5): paridad `LiveStrengthSheet.distanceNumber` — metros guardados → la unidad del
+    /// usuario (km/mi), dos decimales.
+    func distanceNumber(_ meters: Double) -> String {
+        let v = imperial ? meters / LiveStrengthSheet.metersPerMile : meters / 1000
+        return String(format: "%.2f", v)
+    }
 
     /// «ANT 80 × 8 · Q2» — el playhead bajo la fila activa (R12: `lastRPE` ya viaja en el modelo).
     func antPlayhead(_ run: StrengthSessionModel.ExerciseRun) -> String? {
