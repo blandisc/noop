@@ -16,7 +16,7 @@ struct WatchSummaryView: View {
                 Text("Session").instrumentoOverline().foregroundStyle(t.inkTertiary).accessibilityHidden(true)
 
                 Text(verbatim: durationText)
-                    .instrumentoHero(40)
+                    .instrumentoHero(WatchMetrics.heroSummaryDuration)
                     .foregroundStyle(t.dataStrain)
                     .minimumScaleFactor(0.5)
                     .lineLimit(1)
@@ -37,13 +37,13 @@ struct WatchSummaryView: View {
                         Text("See receipt on iPhone")
                         Image(systemName: "chevron.right").font(StrandFont.footnote).accessibilityHidden(true)
                     }
-                    .frame(maxWidth: .infinity, minHeight: 40)
+                    .frame(maxWidth: .infinity, minHeight: WatchMetrics.summarySecondaryHeight)
                 }
                 .buttonStyle(.bordered)
                 .tint(t.inkSecondary)
 
                 Button { manager.dismissSummary() } label: {
-                    Text("Done").frame(maxWidth: .infinity, minHeight: 44)
+                    Text("Done").frame(maxWidth: .infinity, minHeight: WatchMetrics.summaryPrimaryHeight)
                 }
                 .tint(t.ink)
             }

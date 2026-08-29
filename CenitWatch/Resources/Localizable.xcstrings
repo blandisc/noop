@@ -316,7 +316,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Registrar serie"
+            "value" : "Serie hecha"
           }
         }
       }
@@ -648,7 +648,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Serie %lld / %lld"
+            "value" : "Serie %lld de %lld"
           }
         }
       }

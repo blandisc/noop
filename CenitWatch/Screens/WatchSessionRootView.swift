@@ -174,15 +174,18 @@ struct WatchRestEndedView: View {
             Image(systemName: "checkmark")
                 .font(StrandFont.title1)
                 .foregroundStyle(t.verdict)
-            Text("Rest over")
+            // FER-225 — reuses the «Ready» key (→ «Listo») instead of the retired «Rest over», so the
+            // watch stops contradicting itself: `WatchLiveFaceView` already says «Listo» for the same
+            // recovered instant in HR-mode rest.
+            Text("Ready")
                 .font(StrandFont.headline)
                 .foregroundStyle(t.ink)
                 .multilineTextAlignment(.center)
         }
         .padding(.horizontal, CenitMetrics.gap)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text("Rest over"))
-        .onAppear { AccessibilityNotification.Announcement(String(localized: "Rest over")).post() }
+        .accessibilityLabel(Text("Ready"))
+        .onAppear { AccessibilityNotification.Announcement(String(localized: "Ready")).post() }
     }
 }
 
