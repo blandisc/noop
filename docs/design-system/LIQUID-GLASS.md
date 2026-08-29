@@ -1,20 +1,37 @@
-# «Liquid Glass v1» — el sistema de vidrio (handoff 2026-07)
+# «Liquid Glass · El Eje» — el sistema unificado de vidrio
 
-> **Papel cálido + vidrio líquido + una sola voz verde.** Liquid Glass es la evolución del ADN
-> «Instrumento diurno» para las pantallas rediseñadas: conserva sus axiomas (papel cálido, un
-> dato dominante, **color solo en el dato**, jerarquía por espacio) y les suma una materialidad
-> de vidrio con recetas cerradas, una escala tipográfica Space Grotesk propia y un contrato
-> de motion nombrado. La fuente de verdad hifi es el bundle
-> `design_handoff_liquid_glass/` (viewport 402 pt); este doc mapea ese handoff a los tokens
-> Swift reales.
+> **Un solo lenguaje: Liquid Glass.** Cada pantalla se lee como un instrumento de precisión hecho
+> de **vidrio líquido teñido sobre un lienzo blanco**: color con significado (el valor y la
+> identidad de cada señal), jerarquía por espacio, numerales tabulares, movimiento fisiológico.
+> La materialidad canónica es la de **El Eje**: el vidrio toma el tono de identidad de lo que
+> contiene, con la misma refracción, filo y sombra en todo el sistema.
+>
+> **Dos regímenes, una receta** (`liquidGlass(tono:regimen:)`):
+> - **Mosaico** — muchos módulos (Entrenar): cada tesela se tiñe con su identidad (~10 % sobre
+>   la superficie del vidrio); no hay un numeral que mande.
+> - **Sobrio** (default) — un dato debe dominar (Hoy/detalles): el color vive en el número y su
+>   gota; la superficie queda clara.
+>
+> **Cuatro colores que no se mezclan:** identidad de señal · identidad de módulo · juicio
+> (verde/ámbar/rojo del veredicto) · voz de marca (verde CTA). El verde de carga es
+> `verdeCarga`, nunca el verde del veredicto (`verdePrimario`).
+>
+> **«Instrumento diurno / papel cálido» es generación anterior** — absorbida por este marco y
+> en migración (inventario en `DESIGN.md` §8). No es un lenguaje vivo paralelo. El handoff
+> histórico `design_handoff_liquid_glass/` (viewport 402 pt, 2026-07) sigue siendo la fuente
+> hifi de las 7 recetas de forma; este doc es el mapa canónico del sistema unificado
+> (recetas + vidrio teñido El Eje).
 
-- **Código canónico:** `Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/`
+- **Código canónico:** `Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/` (+
+  `Entrenar/` para `LiquidTono` / contenedores mosaico)
 - **Entry points:** `LiquidColor` · `LiquidType` · `LiquidSpace` / `LiquidRadius` ·
-  `LiquidElevation` + `liquidGlass(_:)` · `LiquidMotion` · `LiquidIcon`
-- **Pantalla de referencia:** `LiquidHoyScreen` (§7.1 del handoff), armada 100 % por composición
-- **Relación con Instrumento:** conviven en el mismo paquete; Liquid Glass es el lenguaje de las
-  pantallas del rediseño 2026-07+. No mezclar recetas de vidrio Liquid con superficies
-  Instrumento en una misma pantalla.
+  `LiquidElevation` · `liquidGlass(_:)` (7 recetas de forma) ·
+  `liquidGlass(tono:regimen:)` · `LiquidTono` · `LiquidRegimen` · `LiquidMotion` ·
+  `LiquidIcon`
+- **Pantalla de referencia:** `LiquidHoyScreen` (régimen sobrio) · hub Entrenar
+  (`EntrenarModulo` / `EntrenarTile`, régimen mosaico por construcción)
+- **Relación con Instrumento:** marco retirado, en migración. Las pantallas/componentes de
+  papel restantes migran a este sistema; no se diseñan pantallas nuevas en papel cálido.
 
 ---
 
@@ -34,9 +51,10 @@ Una pantalla se arma como Lego: **tokens → átomos → componentes → pantall
 | Grupo | Tokens | Regla |
 |---|---|---|
 | Tinta | `tinta900` `#221D16` · `tinta700` `#5C5648` · `tinta500` `#6F6857` · `tinta10` · `tinta7` | texto/trazos; alfas para tracks y divisores |
-| Papel | `papelAlto` `#F8F6EF` · `papelBajo` `#F0EDE4` · `papelDock` · `papelGradient` | fondo de pantalla = degradado alto→bajo |
-| Verde (única voz de marca) | `verdePrimario` `#0C8F62` · `verdeProfundo` `#00774B` · `verdeAurora` `#2EB27D` (SOLO halos) · `verdeOrbe` · `verdeBotonAlto` | CTA, énfasis, palabra del hero, pulsos |
-| Tonos de dato (1:1, no intercambiables) | `indigo`→sueño · `cian`→HRV · `rosa`→FC reposo · `ambar`→esfuerzo/temp. piel · `teal`→pasos · `azul`→respiración · `oro`→amanecer | **el tono tiñe SOLO la gota (10–12 % alfa) y el valor numérico — nunca el fondo de la tarjeta** |
+| Lienzo / papel de superficie | `papelTarjeta` `#FFFFFF` (lienzo y tarjeta opaca) · `papelAlto`/`papelBajo`/`papelDock`/`papelGradient` (degradados y dock del handoff 2026-07) | el lienzo canónico es **blanco**; los `papel*` de degradado siguen vivos donde la superficie aún los consume |
+| Verde de marca (CTA / veredicto) | `verdePrimario` `#0C8F62` · `verdeProfundo` `#00774B` · `verdeAurora` `#2EB27D` (SOLO halos) · `verdeOrbe` · `verdeBotonAlto` | CTA, énfasis, palabra del hero, pulsos — **no** identidad de carga |
+| Verde de carga | `verdeCarga` `#3F7A5E` | identidad de la métrica/módulo de carga (`LiquidTono.verde.base`); **nunca** `verdePrimario` |
+| Tonos de dato (1:1, no intercambiables) | `indigo`→sueño · `cian`→HRV · `rosa`→FC reposo · `ambar`→esfuerzo/temp. piel · `teal`→pasos · `azul`→respiración · `oro`→amanecer | en **sobrio**: el tono tiñe gota + numeral; en **mosaico**: también tiñe la superficie del vidrio (~10 %) vía `LiquidTono` — ver §4.1 |
 | Semánticos | `positivo` `#00774B` · `atencion` `#C4631F` · `negativo` `#B3402A` | deltas y estados (`LiquidDeltaTone`, `LiquidSignalState`) |
 | Partículas del Ecosistema (FER-10) | `particulaVerde` `#10694E` · `particulaRoja` `#963426` · `particulaNeutra` `#737670` · `rojoClaro` `#E06C56` | tinta de las esferas de partículas del héroe (verde=rango/atención, roja=desgaste, neutra=calibrando/guardián) y el rojo claro del clima de alerta |
 | Blancos de vidrio | `vidrioEspecular` .92 · `vidrioBorde*` .72–.9 · `vidrioStreak` .55 · `vidrioLente` .38 · `vidrioPastilla` .46 · `vidrioSuperficie` .46 · `vidrioAtmosfera` .30 | alfas fijos de `#FFFFFF`; solo los consumen las recetas |
@@ -65,11 +83,47 @@ dock: `dockSide`=16, `dockBottom`=14. `ecosistemaAlto`=324 (la zona del héroe F
 Cinco radios, ninguno más: `control`=12 · `tarjeta`=18 · `hoja`=28 (reservado sheets) ·
 `pastilla`=999 (`Capsule`) · orbe=50 % (`Circle`). **Un radio nuevo es un cambio al sistema.**
 
-## 4. Vidrio (`liquidGlass(_:)` — recetas cerradas, nunca blur suelto)
+## 4. Vidrio — dos puertas (forma + tono)
 
-Cada receta es el stack completo: material + relleno blanco + borde + inner-highlight
-(+ especular) + sombra. En nativo el backdrop-filter se calibra con materiales del sistema
-(§8 del handoff): `.ultraThinMaterial` para superficie/pastilla, `.thinMaterial` para lente.
+Hay **dos APIs** de vidrio; no se inventa blur suelto ni se mezcla con superficies de papel
+(generación anterior en migración).
+
+1. **`liquidGlass(_ recipe: LiquidGlassRecipe)`** — las 7 recetas de **forma** (handoff 2026-07),
+   intactas: material + relleno + borde + inner-highlight (+ especular) + sombra.
+2. **`liquidGlass(tono: LiquidTono, regimen: LiquidRegimen = .sobrio)`** — sobrecarga nueva
+   (FER-234 · épico FER-229): vidrio teñido por identidad (receta de El Eje).
+
+### 4.1 Regímenes (`LiquidRegimen`) y tonos (`LiquidTono`)
+
+```swift
+enum LiquidRegimen { case mosaico, sobrio }
+
+enum LiquidTono { case neutro, indigo, cian, verde, rosa, ambar }
+// cada caso expone: base · rotulo · tesela
+// LiquidTono.verde.base == LiquidColor.verdeCarga  (nunca verdePrimario)
+// LiquidTono.intensidadDefault == 0.10
+```
+
+| Régimen | Semántica | Superficie del vidrio | Dónde vive el color |
+|---|---|---|---|
+| **`.mosaico`** | Muchos módulos; identidad por tesela (hub Entrenar). `EntrenarModulo` / `EntrenarTile` lo fijan por construcción. | Tiñe el relleno con `tono.base` al ~10 % (`intensidadDefault`) + aro teñido | En la superficie **y** en rótulos/teselas del módulo |
+| **`.sobrio`** (default) | Un dato debe dominar (Hoy / detalles). | El tono **no** toca la superficie (relleno/canto/highlight = neutro) | En el numeral y su gota; la superficie queda clara |
+
+**Contrato AA medido sobre vidrio teñido** (`LiquidTonoContrasteTests`, OKLab):
+
+| Rol | Piso | Fondo de medición |
+|---|---|---|
+| **`rotulo`** (texto pequeño sobre el vidrio) | ≥ **4.5:1** | compuesto `mix(#FFFFFF /* papelTarjeta */, base, 0.10)` |
+| **`tesela`** (celda opaca con texto/gráfico claro) | ≥ **3:1** | relleno opaco `tesela` vs blanco |
+
+Piso conservador: no se modela `glassEffect` (el blur solo aclararía → más contraste para un
+rótulo oscuro). Verde de carga anclado a `verdeCarga` (rótulo ~5.75, tesela ~5.05).
+
+### 4.2 Recetas de forma (`liquidGlass(_:)`)
+
+Cada receta es el stack completo. En nativo el backdrop-filter se calibra con materiales del
+sistema (§8 del handoff): `.ultraThinMaterial` para superficie/pastilla, `.thinMaterial` para
+lente.
 
 | Receta | API | Composición | Sombra |
 |---|---|---|---|
@@ -79,6 +133,7 @@ Cada receta es el stack completo: material + relleno blanco + borde + inner-high
 | lente | `.liquidGlass(.lente)` | papelDock, anillo interior 4 lados, **streak especular**, r/pastilla | e/3 |
 | esfera | `LiquidSphere(tone:)` | radial blanco→tono .22, borde .9, especular elíptico | e/2(tono) |
 | superficie·atmósfera (FER-118) | `.liquidGlass(.superficieAtmosfera)` | blanco **.30** (`vidrioAtmosfera`), **canto de tinta .08** (`vidrioCanto`, también sobre el vidrio nativo de iOS 26), highlight .8→.35, r/módulo (20) | e/módulo(0) |
+| superficie / pastilla sólidas | `.liquidGlass(.superficieSolida)` / `.pastillaSolida` | `papelTarjeta` opaco + mismo chrome (anti vidrio-sobre-vidrio en hoja) | e/0 |
 
 Elevación (`LiquidElevation`): `e0` reposo · `e1` tarjeta · `e2(tone:)` señal (glow del tono) ·
 `e3` flotante — vía `.liquidShadow(_:)`. Ninguna pantalla escribe `.shadow` a mano.
@@ -192,12 +247,13 @@ con paridad probada por fixtures.
    inner-shadows de CSS se aproximan con trazos interiores en degradado blanco.
 5. **e/2 en atención:** el prototipo usaba alfa 0.20 para el glow ámbar del orbe; el sistema usa
    la spec única de `e/2` (0.18) para no bifurcar el token.
-6. **`LiquidHill` — excepción sancionada a «color solo en el dato».** La colina de la hoja de
-   Carga (`LiquidHill`) conserva su lenguaje de zonas coloreadas del `LoadHillView` de
-   «Instrumento»: cuesta y cresta en verde, descenso en ámbar, caída en rojo. Rompe a propósito
-   la regla del datum único (§0/§1) porque el color de zona ES la identidad del instrumento —
-   el usuario lee la topografía por color. Decisión del dueño (2026-07-24), tras comparar contra
-   un bullet-graph neutro. Es la ÚNICA superficie Liquid con esta excepción; no se extiende a
+6. **`LiquidHill` — excepción sancionada a «color solo en el dato» (régimen sobrio).** La
+   colina de la hoja de Carga (`LiquidHill`) conserva su lenguaje de zonas coloreadas del
+   `LoadHillView` de la generación anterior («Instrumento diurno», absorbida · en migración):
+   cuesta y cresta en verde, descenso en ámbar, caída en rojo. Rompe a propósito la regla del
+   datum único en sobrio porque el color de zona ES la identidad del instrumento — el usuario
+   lee la topografía por color. Decisión del dueño (2026-07-24), tras comparar contra un
+   bullet-graph neutro. Es la ÚNICA superficie Liquid con esta excepción; no se extiende a
    otros componentes.
 
 7. **Periodos orbitales del Ecosistema < 9 s.** Las lunas (T≈7.4/10.5 s) y el guardián
@@ -207,16 +263,16 @@ con paridad probada por fixtures.
 8. **El lienzo del Ecosistema es un sistema cerrado 364×324** (`EcosistemaSimulacion.Geometria`)
    escalado al ancho disponible — specs internas de componente (regla §0), no tokens de
    `LiquidSpace`; mismo precedente que los paths de los cables retirados.
-9. **El cuadro-héroe «lente teñida» — excepción sancionada a «el tono nunca tiñe el fondo de la
-   tarjeta».** El héroe del aterrizaje de Tendencias (`liquidLenteTenida`, FER-100) rellena su
-   tarjeta con un **gradiente diagonal del tono del veredicto** (claro → profundo, `tonoCampo`) +
-   especular en el canto + sombra con el glow del propio tono. Rompe a propósito la regla de que
-   el vidrio de un módulo es casi blanco y el color vive solo en la aurora del filo (§4/§7),
-   porque aquí el cuadro teñido ES la señal de «entraste a la vista larga» y su tono ES el
-   veredicto. Sin veredicto se APAGA a papel/tinta (`papelGradient`) — sin verde sin veredicto.
-   Decisión del dueño (vista lado a lado contra los módulos neutros). Mismo estatuto que
-   `LiquidHill` (#6): es la ÚNICA superficie con esta excepción; **no se extiende** a otras
-   tarjetas ni a las hojas de detalle (que usan `LiquidCampoMetrica`, plano y a sangre).
+9. **El cuadro-héroe «lente teñida» — excepción sancionada al régimen sobrio.** El héroe del
+   aterrizaje de Tendencias (`liquidLenteTenida`, FER-100) rellena su tarjeta con un **gradiente
+   diagonal del tono del veredicto** (claro → profundo, `tonoCampo`) + especular en el canto +
+   sombra con el glow del propio tono. En sobrio el vidrio de un módulo suele quedar claro y el
+   color vive en el dato (§4.1); aquí el cuadro teñido ES la señal de «entraste a la vista
+   larga» y su tono ES el veredicto — no es el régimen mosaico de Entrenar. Sin veredicto se
+   APAGA a papel/tinta (`papelGradient`) — sin verde sin veredicto. Decisión del dueño (vista
+   lado a lado contra los módulos neutros). Mismo estatuto que `LiquidHill` (#6): es la ÚNICA
+   superficie con esta excepción; **no se extiende** a otras tarjetas ni a las hojas de detalle
+   (que usan `LiquidCampoMetrica`, plano y a sangre).
 
 ## 9. Cómo extender el sistema
 
@@ -269,8 +325,8 @@ cerrada de tokens y componentes. Todos con `#Preview`.
   target. Con eso, 44 pt es el estándar sano y los módulos abrazan su contenido.
 - **Alineación: todas centradas.** Cada dato centra título+cifra en su celda (decisión del dueño),
   no la mezcla orillas del mock CSS.
-- **Área de datos = 3 capas de color en Hoy.** Excepción nombrada a «color solo en el dato» (ver
-  `DESIGN.md §8.8`).
+- **Área de datos = 3 capas de color en Hoy.** Excepción nombrada al régimen sobrio «color en el
+  dato» (ver `DESIGN.md` §8.8 — inventario de la generación anterior en migración).
 
 ### 10.4 Tokenización 100 % de la superficie de Hoy (FER-31)
 
@@ -369,8 +425,8 @@ niveles. Quien enchufa hoy:
 - **Carga** — `LiquidHill` (la colina) + `LiquidResumenVentana`
 - **El guardián** — la tarjeta del par vigilado + `LiquidDominoRegla`
 
-Color en la sheet: **solo en el dato** + plasta monocroma del tono de la métrica (no cajas
-coloreadas). Ver nota en `DESIGN.md` §8.9.
+Color en la sheet (régimen **sobrio**): color en el dato + plasta monocroma del tono de la
+métrica (no cajas coloreadas; la superficie del vidrio no se tiñe). Ver nota en `DESIGN.md` §8.9.
 
 ### 11.4 El héroe y la ventana (FER-33)
 

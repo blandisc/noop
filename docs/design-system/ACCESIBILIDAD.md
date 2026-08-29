@@ -6,7 +6,10 @@
 > que aún no está cubierto). No propone un estándar nuevo: describe el vigente y lo hace auditable.
 >
 > Cénit no es un dispositivo médico. Accesibilidad aquí = usable con VoiceOver, Dynamic Type, alto
-> contraste y Reduce Motion, en una app iOS de papel claro.
+> contraste y Reduce Motion, en una app iOS de **Liquid Glass · El Eje** (vidrio teñido sobre
+> lienzo blanco). El contraste AA del vidrio teñido (`LiquidTono` × rol) se documenta en
+> [`LIQUID-GLASS.md` §4.1](LIQUID-GLASS.md); las pantallas de papel de la generación anterior
+> («Instrumento diurno», absorbida · en migración) siguen midiendo contra `paper` mientras migran.
 
 ---
 
@@ -23,23 +26,30 @@
 
 1. **Helper WCAG en el generador de tokens** — `StrandDesignTokens/main.swift` hace su propia
    matemática sRGB→lineal→luminancia→ratio, la fórmula canónica `(L1+0.05)/(L2+0.05)`. La columna
-   `ratio` de la tabla de color en `DESIGN.md §8.2` es ese contraste medido contra `paper`.
+   `ratio` de la tabla de color en `DESIGN.md` §8.2 (inventario Instrumento en migración) es ese
+   contraste medido contra `paper`.
 2. **Tests de contraste** que fijan ratios exactos:
    - `FitnessAgeContrastTests.swift` — numerales del héroe ≥ **3.0** (verdict/paper = 3.63,
      warning/paper = 4.62, fijados con precisión 0.1 para que el spec no mienta).
    - `InstrumentoThemeEngineTests.swift` — prueba que `verdict` **no** libra el piso de 4.5 a 12 pt
      y que `positiveText` **sí** (por eso `positiveText`/`negativeText` son reparaciones OKLab más
-     oscuras de `verdict`/`critical` para deltas chicos).
-3. **Tabla documentada** en `DESIGN.md §8.2` (generada, no editable a mano).
+     oscuras de `verdict`/`critical` para deltas chicos). Aplica al inventario de papel aún en
+     migración.
+   - `LiquidTonoContrasteTests.swift` — contrato AA del **vidrio teñido** unificado: `rotulo`
+     ≥ 4.5:1 sobre `mix(#FFFFFF, base, 0.10)`; `tesela` ≥ 3:1 sobre relleno opaco (ver
+     [`LIQUID-GLASS.md` §4.1](LIQUID-GLASS.md)).
+3. **Tabla documentada** en `DESIGN.md` §8.2 (generada, no editable a mano; generación anterior
+   en migración).
 
 **Tokens deliberadamente NO-AA** (documentados como tal, no son bug):
 - `inkDim` — celdas sin dato: el «—» y su glifo. Bajo contraste a propósito.
 - `inkMuted` — el chrome más callado: tabs inactivas (FER-708).
 
-> **Nota histórica:** la regla **«AA a cada hora»** venía del tema por hora (FER-132), donde el
-> papel cambiaba a lo largo del día y cada tono de dato se re-oscurecía contra el papel vivo. Ese
-> motor se **retiró en FER-398**; hoy hay un solo papel `.base`. No lo cites como comportamiento
-> vigente.
+> **Nota histórica:** la regla **«AA a cada hora»** venía del tema por hora (FER-132) de la
+> generación «Instrumento diurno», donde el papel cambiaba a lo largo del día y cada tono de
+> dato se re-oscurecía contra el papel vivo. Ese motor se **retiró en FER-398**; el inventario
+> de papel que aún migra usa un solo `.base`. No lo cites como comportamiento vigente del marco
+> canónico (Liquid Glass · El Eje).
 
 ---
 
@@ -157,6 +167,7 @@ let animating = animateEntrance && !reduceMotion
 ---
 
 ### Ver también
-- [`DESIGN.md`](DESIGN.md) §8.2 (tabla de contraste), split fijo/escala, 44pt.
+- [`DESIGN.md`](DESIGN.md) — marco canónico Liquid Glass · El Eje; §8.2 (tabla de contraste del inventario Instrumento en migración), split fijo/escala, 44pt.
+- [`LIQUID-GLASS.md`](LIQUID-GLASS.md) §4.1 — contrato AA del vidrio teñido (`LiquidTono` / `LiquidRegimen`).
 - [`LENGUAJE.md`](LENGUAJE.md) §5.6 — «el numeral nunca miente» (base del label honesto).
 - [`I18N.md`](I18N.md) — internacionalización.

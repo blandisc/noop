@@ -220,9 +220,12 @@ let strain = StrandPalette.strainColor(value)      // 0...21 scale
 .background(Color(red: 0.05, green: 0.08, blue: 0.07))
 ```
 
-The **canonical DNA is «Instrumento diurno»** (light, warm paper — see
-[`docs/design-system/DESIGN.md`](design-system/DESIGN.md)); the dark system is **legacy** (maintain,
-don't extend). Semantic tokens exist for surfaces
+The **canonical DNA is «Liquid Glass · El Eje»** (tinted glass on a white canvas, two regimes —
+**mosaico** / **sobrio**; see [`docs/design-system/DESIGN.md`](design-system/DESIGN.md) and
+[`LIQUID-GLASS.md`](design-system/LIQUID-GLASS.md)). «Instrumento diurno / papel cálido» is the
+**previous generation** — absorbed and in migration (`DESIGN.md` §8); do not design new screens
+on warm paper. The dark system remains **legacy** (maintain, don't extend; Watch OLED is the
+only live exception). Semantic tokens exist for surfaces
 (`surfaceBase`/`surfaceRaised`/`surfaceOverlay`/`surfaceInset`), text
 (`textPrimary`/`textSecondary`/`textTertiary`), `hairline`/`hairlineStrong` borders, the `accent`
 chrome green, status colors (`statusPositive`/`statusWarning`/`statusCritical`), the recovery and

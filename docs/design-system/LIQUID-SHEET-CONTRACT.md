@@ -1,7 +1,10 @@
 # Contrato F−1 · Hoja de resumen → Liquid Glass
 
 **Épico:** «Hoja de resumen → Liquid Glass» (plan v3, GO condicional round 2).
-**Fase:** F−1 (papel — este documento). Es el contrato que gobierna F0…F6: la matriz de estados
+**Marco:** Liquid Glass · El Eje (vidrio teñido sobre lienzo blanco; régimen **sobrio** en hojas
+de detalle). «Instrumento diurno / papel cálido» es generación anterior absorbida · en migración —
+este contrato describe el cutover desde esa hoja de papel hacia Liquid Glass.
+**Fase:** F−1 (este documento). Es el contrato que gobierna F0…F6: la matriz de estados
 sirve de criterios de aceptación para `/qa`, los props definen los componentes del DS, y las
 decisiones por pieza acoplada (C3) quedan tomadas aquí.
 
@@ -160,8 +163,8 @@ piezas en Cuerpo**; `MetricDetailScreen` queda FUERA del épico.
 `.sheet(item: $metricInfo)` (`SleepDetailScreen.swift:133-134`) desde los tiles «Tonight's
 metrics» (`:735-751`): 5 submétricas clásicas + respiración (vital-template). D5 las declara
 FUERA del épico, pero **son instancias de `MetricInfoSheet`**: el F6 del plan («se borra el
-código Instrumento de MetricInfoSheet») es imposible tal cual sin decidir qué pasa aquí
-(§dudas abiertas, D1).
+código Instrumento de MetricInfoSheet» — generación anterior en migración) es imposible tal
+cual sin decidir qué pasa aquí (§dudas abiertas, D1).
 
 ---
 
@@ -384,9 +387,9 @@ tal cual.
 
 | Pieza | Acople real | Decisión | Justificación (una línea) |
 |---|---|---|---|
-| `ZoneMeter` (`Packages/StrandDesign/Sources/StrandDesign/ZoneMeter.swift:17-102`) | `theme.ink` (tick), `theme.inkTertiary` (labels), `InstrumentoType.grotesk(8)` | **Variante Liquid nueva** (`LiquidZoneMeter`, rebuild ligero copiando la geometría de pesos `:56-61`) | La geometría son ~30 líneas triviales; parametrizar el tema ensuciaría el componente papel que Instrumento sigue usando. |
+| `ZoneMeter` (`Packages/StrandDesign/Sources/StrandDesign/ZoneMeter.swift:17-102`) | `theme.ink` (tick), `theme.inkTertiary` (labels), `InstrumentoType.grotesk(8)` | **Variante Liquid nueva** (`LiquidZoneMeter`, rebuild ligero copiando la geometría de pesos `:56-61`) | La geometría son ~30 líneas triviales; parametrizar el tema ensuciaría el componente de papel (generación Instrumento aún en migración). |
 | `SleepStageBar` (`Packages/StrandDesign/Sources/StrandDesign/SleepStageBar.swift:14-82`) | `theme` en init, `InstrumentoType.grotesk(9)` en la leyenda | **Variante Liquid nueva** (`LiquidStageBar`) | Misma razón; además la variante Liquid absorbe overline + ventana horaria (hoy montadas fuera, `MetricInfoSheet.swift:563-575`) y recibe duraciones ya formateadas. |
-| Chart del explorador (`TrendChart.swift:147-762` vía `MetricTrendChart` vía `MetricLevelsExplorer.swift:129-153`) | Fuentes `StrandFont` hardcodeadas en ejes/tooltip; colores inyectables pero tooltip/haptics Instrumento | **Re-vestir, no rediseñar ni rebuild total**: `LiquidGraficaNiveles` nueva en el DS que REUSA las piezas de interacción ya públicas — `scrubGesture` (`TrendChart.swift:642`), `CrosshairRule` (`ChartScrub.swift:172`, con alfa `LiquidChart.scrubReglaAlfa`) y el anillo del punto (paridad `HighlightDot` flat, `ChartScrub.swift:201`) — y pinta con `LiquidChart.*` | La interacción es la parte cara y los invariantes I1-I3 la congelan; `TrendChart` no puede re-skinearse in place porque lo comparten N pantallas papel. |
+| Chart del explorador (`TrendChart.swift:147-762` vía `MetricTrendChart` vía `MetricLevelsExplorer.swift:129-153`) | Fuentes `StrandFont` hardcodeadas en ejes/tooltip; colores inyectables pero tooltip/haptics de la generación Instrumento | **Re-vestir, no rediseñar ni rebuild total**: `LiquidGraficaNiveles` nueva en el DS que REUSA las piezas de interacción ya públicas — `scrubGesture` (`TrendChart.swift:642`), `CrosshairRule` (`ChartScrub.swift:172`, con alfa `LiquidChart.scrubReglaAlfa`) y el anillo del punto (paridad `HighlightDot` flat, `ChartScrub.swift:201`) — y pinta con `LiquidChart.*` | La interacción es la parte cara y los invariantes I1-I3 la congelan; `TrendChart` no puede re-skinearse in place porque lo comparten N pantallas de papel aún en migración. |
 
 **Invariantes del dueño, mapeados a código y a tokens ya acuñados:**
 - **I1 (glow/luminosidad del seleccionado):** banda activa iluminada — hoy `bandLayer` activa
@@ -475,7 +478,7 @@ y el alto del skeleton de F5.
   trend/niveles (`MetricInfoSheet.swift:274-278`).
 - [ ] Header reproduce los 4 orígenes (Calculated / Apple Health / medido / sin origen) y el ⓘ
   pliega la explicación.
-- [ ] Hoy sigue abriendo la hoja Instrumento INTACTA (flag en false). ⌘R del dueño (hito).
+- [ ] Hoy sigue abriendo la hoja Instrumento (generación anterior) INTACTA (flag en false). ⌘R del dueño (hito).
 - [ ] Estados de F1 en el arnés (header por variante × con/sin dato).
 
 **F2 · Lectura + zonas + patrón (ligero)**
@@ -487,7 +490,7 @@ y el alto del skeleton de F5.
 - [ ] Arnés: recovery scored (3 bandas de tint), vital con dato, vital sin dato (línea oculta).
 
 **F3a · Host de niveles (pesado)**
-- [ ] `MetricLevelsHostModel` en el app SIN UI nueva; la hoja Instrumento sigue idéntica.
+- [ ] `MetricLevelsHostModel` en el app SIN UI nueva; la hoja Instrumento (en migración) sigue idéntica.
 - [ ] Tests de paridad numérica: niveles resueltos (incl. HRV `Baselines.normalRange` con
   guard `nValid >= 1`, `MetricInfoSheet.swift:764-775`), conteos por nivel, ventana
   (`MetricWindowMath.make`) y caché (`resolvedLevelsKey :748-750`) — iguales bit a bit a los
@@ -529,9 +532,9 @@ y el alto del skeleton de F5.
   flag `liquidSheet` desaparece (no queda flag muerto).
 - [ ] Cuerpo: se borra el dead path completo (`CuerpoView.swift:190, 337, 1228-1238`).
 - [ ] Resolución de la duda D1 (abajo) implementada para `SleepDetailScreen.swift:133-134`.
-- [ ] Se borra el código Instrumento de la hoja que quedó huérfano (D7: solo tras cutover
-  verde) — incluyendo `ZoneMeter`/`SleepStageBar` SI ya nadie los usa (verificar por grep, no
-  por suposición).
+- [ ] Se borra el código Instrumento (generación anterior) de la hoja que quedó huérfano (D7:
+  solo tras cutover verde) — incluyendo `ZoneMeter`/`SleepStageBar` SI ya nadie los usa
+  (verificar por grep, no por suposición).
 - [ ] `/qa` PASS con §1 como checklist por variante × estado; captura por variante; CHANGELOG;
   `/simplify`; PR con label `ci-app` (toca `Cenit/**`).
 - [ ] `xcodegen generate` + build de app verde tras esperar `pgrep swift-frontend`.
@@ -550,9 +553,10 @@ y el alto del skeleton de F5.
 > primer ⌘R de F3b.
 
 1. **SleepDetailScreen usa `MetricInfoSheet` (6 tiles vivos)** y el plan la excluye (D5) pero
-   ordena borrar la hoja Instrumento en F6. Opciones: (a) F6 también cambia esa `.sheet` a la
-   hoja Liquid (las 5 submétricas son variante clásica — «gratis» con F4); (b) conservar una
-   `MetricInfoSheet` recortada solo-clásica para ese uso (contradice D7). **Recomendación: (a).**
+   ordena borrar la hoja Instrumento (generación anterior) en F6. Opciones: (a) F6 también
+   cambia esa `.sheet` a la hoja Liquid (las 5 submétricas son variante clásica — «gratis» con
+   F4); (b) conservar una `MetricInfoSheet` recortada solo-clásica para ese uso (contradice
+   D7). **Recomendación: (a).**
 2. **spo2 / heart_rate / recovery no tienen NINGÚN entry point vivo** (ni en Hoy ni en ningún
    lado; §1.6-1.7, §2). ¿F6 les cablea entrada (¿tile/orbe nuevo? — alcance nuevo, pasa por
    `/pm`) o quedan como variantes construidas verificables solo por arnés/#Preview (C5)?
