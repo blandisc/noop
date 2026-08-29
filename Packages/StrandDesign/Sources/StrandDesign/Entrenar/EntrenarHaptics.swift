@@ -58,10 +58,12 @@ public enum EntrenarHaptic {
 
     /// Reproduce la firma de inmediato. Para call sites sin un `Button`/valor observable a mano
     /// (closures de acción como "borrar", "✓ Serie" del keypad) — donde `.sensoryFeedback(trigger:)`
-    /// no tiene de qué colgarse. No-op fuera de UIKit (macOS): el paquete compila también ahí y no
-    /// puede importar UIKit sin guard.
+    /// no tiene de qué colgarse. No-op fuera de iOS: el paquete compila también para macOS y
+    /// watchOS. Ojo, el guard es `os(iOS)`, NO `canImport(UIKit)`: watchOS SÍ importa UIKit pero
+    /// NO tiene los `UI*FeedbackGenerator` (en la muñeca el háptico va por `WKInterfaceDevice`,
+    /// y eso ya lo cubre `WatchHaptics`). Un `canImport(UIKit)` aquí rompe el build de watchOS.
     public func play() {
-        #if canImport(UIKit)
+        #if os(iOS)
         switch self {
         case .serieCompletada, .sesionIniciada:
             let gen = UISelectionFeedbackGenerator()
