@@ -90,7 +90,9 @@ struct CenitApp: App {
             if paired, installed { Task { @MainActor in await model?.pushWatchIdleContext() } }
         }
         mirroring.onSessionStatusChanged = { [weak model] status in model?.watchSessionStatus = status }
-        mirroring.onWatchPulseChanged = { [weak model] bpm in model?.watchBpm = bpm }
+        mirroring.onWatchPulseChanged = { [weak model] bpm in
+            if let bpm { model?.ingestWatchPulse(bpm: bpm) } else { model?.watchBpm = nil }
+        }
         model.mirroringBridge = mirroring
         _mirroring = StateObject(wrappedValue: mirroring)
     }

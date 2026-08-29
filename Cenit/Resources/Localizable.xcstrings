@@ -9478,6 +9478,24 @@
         }
       }
     },
+    "Avg HR %lld bpm. Too short to score effort." : {
+      "extractionState" : "manual",
+      "comment" : "FER-226: SessionEffortDisplay.durationWithHR — the session captured a watch average but was too short for StrainScorer's gate; honest fallback instead of pretending no HR was ever there.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avg HR %lld bpm. Too short to score effort."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FC media %lld lpm. Muy corta para calcular esfuerzo."
+          }
+        }
+      }
+    },
     "Awake" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -9846,23 +9864,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Banda"
-          }
-        }
-      }
-    },
-    "Band + calculated" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Band + calculated"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Banda + calculado"
           }
         }
       }
@@ -44277,6 +44278,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ver %@ en YouTube"
+          }
+        }
+      }
+    },
+    "Watch + calculated" : {
+      "extractionState" : "manual",
+      "comment" : "FER-226: revives the strength-session HR capturer — same energySource, new copy (no strap any more, F7).",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Watch + calculated"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reloj + calculado"
           }
         }
       }

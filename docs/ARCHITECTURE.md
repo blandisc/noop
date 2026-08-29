@@ -246,7 +246,12 @@ the write is idempotent (delete-by-key then save). The iPhone omits its own `sav
 **only** on a positive `watchDidSaveWorkout` ack (`WorkoutSaveGate`); otherwise it saves, so a missing/absent
 watch is regression-free. Live heart rate on the strength sheet comes from the **Apple Watch mirror**
 (`AppModel.watchBpm`, FER-1003) — the watch is both control surface and live-HR source for in-session
-UI; folding more Watch physiology into the recovery/strain engine remains open product work.
+UI. That pulse is **not** merely a transient UI read: `AppModel.ingestWatchPulse` (FER-226 — revives
+what F7's band amputation had accidentally killed) ALSO admits it into the session's HR buffer and
+persists it to `CenitStore.strengthHrSample` (§7), so `avgHr`/`strain`/`energySource` on the finished
+session's receipt, and a mid-session crash's recovered average, are backed by real durable samples, not
+memory that dies with the process. Folding more Watch physiology into the recovery/strain engine
+remains open product work.
 
 The in-progress session is **durable across a crash/kill of the iPhone** (FER-798): a Codable
 `StrengthSessionSnapshot` (defined in `StrandTraining`) is written to `CenitStore`'s singleton
@@ -303,7 +308,7 @@ download already fetched.
 
 ## 7. Storage model (CenitStore / SQLite)
 
-GRDB drives a migrator (the migrator currently reaches `v40`; see `Database.swift` — the source of
+GRDB drives a migrator (the migrator currently reaches `v41`; see `Database.swift` — the source of
 truth is the migration list, not a constant). The schema groups into four
 concerns:
 
@@ -366,6 +371,17 @@ concerns:
   `realRestSeconds(routineId:sessionLimit:)` and averaged by the pure `StrandTraining.RestStats`
   (interruption cap 900 s) for the hub's «DESCANSO REAL» tile. NULL = no measured rest (last set,
   intra-round superset jump, «sin descanso», pre-v40 rows) — never a default 0.
+- `strengthHrSample` (v41, FER-226) — one row per `(sessionId, ts)`: raw watch-pulse samples captured
+  during a live guided strength session, reviving the capturer F7 ("la banda nunca existió") had
+  accidentally amputated with the band. `AppModel.ingestWatchPulse` admits each pulse through the pure
+  `StrandTraining.StrengthHRIntake` gate (drops it while paused, outside 25…240 bpm, or repeating the
+  last accepted timestamp) and flushes to `CenitStore.appendStrengthHR` every 30 samples plus once more
+  at save (`attemptStrengthSave`) — the natural `(sessionId, ts)` PK makes a retried flush a no-op for
+  whatever already landed, never a duplicate. `AppModel.restoreInProgressStrengthSessionIfNeeded`
+  rehydrates `StrengthSessionModel.hrSamples` from this table (which the JSON snapshot omits, being
+  memory-only) so a crash mid-session doesn't lose the average. Cleared by `deleteStrengthHR` on a
+  discarded session and cascade-deleted by `deleteSession`. No FK — the session row is never gone out
+  from under a live capture, and app-level ownership is enough for a table this narrow.
 
 **Generic metric series** — `metricSeries(deviceId, day, key, value REAL)`: a tall, long-format
 table so *any* scalar metric from *any* source can be queried/compared uniformly (the substrate for

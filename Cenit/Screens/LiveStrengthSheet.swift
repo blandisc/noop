@@ -1507,12 +1507,14 @@ struct LiveStrengthSheet: View {
     }
 
     /// The data-origin row on the receipt (FER-716): where this session's energy figure came from — the
-    /// strap (Keytel) or an estimate (MET fallback).
+    /// watch (Keytel, revived FER-226) or an estimate (MET fallback). `.bandCalculated`'s RAW VALUE stays
+    /// `"band_calculated"` (persisted, `Training.swift`) — only the human-facing copy changed; the app has
+    /// no strap any more (F7 "la banda nunca existió").
     private func originRow(_ src: EnergySource) -> some View {
         HStack(spacing: 5) {
             Circle().fill(src == .bandCalculated ? theme.originBand : theme.originComputed)
                 .frame(width: 6, height: 6)
-            Text(src == .bandCalculated ? "Band + calculated" : "Estimated")
+            Text(src == .bandCalculated ? "Watch + calculated" : "Estimated")
                 .font(.system(size: 10)).foregroundStyle(theme.inkTertiary) // token-exempt: microtexto <11pt
         }
         .accessibilityElement(children: .combine)

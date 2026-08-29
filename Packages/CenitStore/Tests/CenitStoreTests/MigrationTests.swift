@@ -6,9 +6,26 @@ import BiometricStreams
 
 final class MigrationTests: XCTestCase {
     func testMigratorRegistersContiguousVersions() {
-        XCTAssertEqual(CenitStore.makeMigrator().migrations, (1...40).map { "v\($0)" })
-        XCTAssertEqual(CenitStoreInfo.schemaVersion, 40)
-        XCTAssertEqual(CenitStoreInfo.latestMigration, "v40")
+        XCTAssertEqual(CenitStore.makeMigrator().migrations, (1...41).map { "v\($0)" })
+        XCTAssertEqual(CenitStoreInfo.schemaVersion, 41)
+        XCTAssertEqual(CenitStoreInfo.latestMigration, "v41")
+    }
+
+    /// v41 (FER-226): `strengthHrSample` doesn't exist at v40 and does at v41; re-migrating past HEAD
+    /// (append-only / migrator idempotence) doesn't throw.
+    func testV41CreatesStrengthHrSampleTable() async throws {
+        let dbQueue = try DatabaseQueue()
+        let migrator = CenitStore.makeMigrator()
+        try migrator.migrate(dbQueue, upTo: "v40")
+        try await dbQueue.read { db in
+            XCTAssertFalse(try db.tableExists("strengthHrSample"), "must not exist before v41")
+        }
+        try migrator.migrate(dbQueue)   // → v41
+        try await dbQueue.read { db in
+            XCTAssertTrue(try db.tableExists("strengthHrSample"), "v41 must create strengthHrSample")
+            XCTAssertEqual(try db.primaryKey("strengthHrSample").columns, ["sessionId", "ts"])
+        }
+        XCTAssertNoThrow(try migrator.migrate(dbQueue), "re-migrating past HEAD must not throw")
     }
 
     func testInMemoryRunsMigrations() async throws {

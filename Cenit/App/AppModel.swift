@@ -63,6 +63,15 @@ import UIKit
     /// FER-1003: the Apple Watch's own live heart rate during a mirrored strength session — replaces the
     /// band-sourced `bpm` now that there's no strap. nil with no watch mirroring / no reading yet.
     var watchBpm: Int?
+    /// FER-226: HR samples admitted into the live strength session but not yet flushed to
+    /// `CenitStore.appendStrengthHR` — drained every 30 samples by `ingestWatchPulse`, and once more (the
+    /// remainder) at save. Cleared on flush regardless of success — a failed write simply re-accumulates
+    /// on the next pulse and retries at the next threshold/save (the (sessionId, ts) PK makes a retry a
+    /// no-op for whatever DID land).
+    var pendingHrFlush: [HRSample] = []
+    /// The timestamp of the last watch pulse admitted into the current session — `StrengthHRIntake`'s
+    /// repeated-timestamp guard. Reset when the session changes.
+    var lastAcceptedHrTs: Date?
 
     /// Session ids for which the watch already saved the real `HKWorkout`. The one-workout invariant
     /// gate (`WorkoutSaveGate`) reads this so the iPhone omits its own save. Ephemeral — the workout is

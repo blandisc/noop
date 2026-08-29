@@ -1812,18 +1812,29 @@ struct WorkoutSessionDetailScreen: View {
         }
     }
 
-    // Effort (strain) is the hero in the effort hue, or duration in ink when the session had no HR —
-    // the same rule as the post-session receipt (FER-409).
+    // Effort (strain) is the hero in the effort hue, or duration in ink when the session had no
+    // strain — the same rule as the post-session receipt (FER-409), formalized as
+    // `SessionEffortDisplay` (FER-226): a session too short for strain but with a captured watch
+    // average says so («Avg HR {n} bpm. Too short to score effort.») instead of the flatly wrong
+    // «No heart rate this session.» when the watch WAS there.
     @ViewBuilder
     private var hero: some View {
-        if let strain = dispStrain {
+        switch SessionEffortDisplay.resolve(strain: dispStrain, avgHr: dispAvgHr) {
+        case .effort(let strain):
             // quisquilloso ronda 4: «/21» — el MISMO sufijo que la fila de Historial pinta para el
             // mismo esfuerzo, para que las dos pantallas lean el número con el mismo formato.
             heroStat("Effort", StrengthHistoryFormat.strain(strain), unit: "/21",
                      color: theme.dataStrain, caption: "What this session cost your body.")
-        } else if let mins = StrengthHistoryFormat.durationMinutes(start: dispStart, end: dispEnd) {
-            heroStat("Duration", "\(mins)", unit: "min",
-                     color: theme.ink, caption: "No heart rate this session.")
+        case .durationWithHR(let bpm):
+            if let mins = StrengthHistoryFormat.durationMinutes(start: dispStart, end: dispEnd) {
+                heroStat("Duration", "\(mins)", unit: "min", color: theme.ink,
+                         caption: "Avg HR \(bpm) bpm. Too short to score effort.")
+            }
+        case .durationOnly:
+            if let mins = StrengthHistoryFormat.durationMinutes(start: dispStart, end: dispEnd) {
+                heroStat("Duration", "\(mins)", unit: "min",
+                         color: theme.ink, caption: "No heart rate this session.")
+            }
         }
     }
 
