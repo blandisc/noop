@@ -73,7 +73,10 @@ struct WorkshopTricksScreen: View {
             .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(theme.paper.ignoresSafeArea())
+        // FER-200 (Anillo 2, épico FER-195): fondo de vidrio El Eje en vez del papel plano — llega
+        // empujada desde el hub (`navigationDestination`) y conserva la navegación del stack
+        // ambiente; su héroe no trae botón de salida propio que sustituir.
+        .entrenarHojaFondo(tono: .neutro)
         .enableInjection()
     }
 

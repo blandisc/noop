@@ -111,7 +111,11 @@ struct WeeklyPlanEditorView: View {
             .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(theme.paper.ignoresSafeArea())
+        // FER-200 (Anillo 2, épico FER-195): fondo de vidrio El Eje en vez del papel plano — la
+        // pantalla llega empujada (WeeklyPlanMap / AppMap) y conserva su navegación/toolbar del
+        // stack ambiente tal cual; su héroe («Your weekly plan») no trae botón de salida propio
+        // que sustituir. Los inputs de carpeta (nueva/renombrar) se quedan intactos.
+        .entrenarHojaFondo(tono: .neutro)
         .overlay(alignment: .bottom) {
             if let d = pendingUndo { undoBanner(d) }
             else if let fd = pendingFolderUndo { folderUndoBanner(fd) }

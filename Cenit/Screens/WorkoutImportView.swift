@@ -80,7 +80,11 @@ struct WorkoutImportView: View {
             .padding(CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(theme.paper.ignoresSafeArea())
+        // FER-200 (Anillo 2, épico FER-195): fondo de vidrio El Eje — sin `NavigationStack` propio
+        // en la raíz. Captura/confirmación visten `EntrenarHojaCabecera(.cerrar)`; mapeo/hecho
+        // CONSERVAN el ✕ overlay (el stepper ya le cede el carril de 44 pt) — unificarlos en la
+        // cabecera AÑADIRÍA título ahí o quitaría el carril del stepper (REGLA SUPREMA).
+        .entrenarHojaFondo(tono: .neutro)
         // FER-969: save failure is an inline banner (same pattern as WorkoutEditSheet). Parse errors keep
         // their existing `errorNote` path in capture; this is only the final write.
         .overlay(alignment: .top) {
@@ -99,19 +103,20 @@ struct WorkoutImportView: View {
             }
         }
         .animation(StrandMotion.fade, value: saveError)
-        // FER-138: captura y confirmación llevan su propio «‹» en `importHeader` — este ✕ se queda
-        // solo para mapeo y hecho, que no lo tocó el rediseño.
+        // FER-138 / FER-200: captura y confirmación llevan `EntrenarHojaCabecera`; este ✕ se queda
+        // solo para mapeo y hecho (el stepper le cede el carril de 44 pt).
         .overlay(alignment: .topTrailing) {
+            // FER-200: mapeo/hecho conservan el ✕ flotante (mismo `BackButton(.close)` = salida
+            // `.cerrar` de la familia) — no se unifica a `EntrenarHojaCabecera` aquí (ver nota
+            // en `.entrenarHojaFondo` arriba).
             if phase == .mapping || phase == .done {
-                BackButton(role: .close, theme: theme) {
-                    if midWork { confirmDiscard = true } else { dismiss() }
-                }
-                .padding(.trailing, CenitMetrics.space2).padding(.top, CenitMetrics.space2)
+                BackButton(role: .close, theme: theme, action: dismissImport)
+                    .padding(.trailing, CenitMetrics.space2).padding(.top, CenitMetrics.space2)
             }
         }
         .interactiveDismissDisabled(midWork)
         // El gesto repite el guard del botón: a medias pregunta, nunca descarta el mapeo en silencio.
-        .edgeSwipeToExit { if midWork { confirmDiscard = true } else { dismiss() } }
+        .edgeSwipeToExit(dismissImport)
         .instrumentoConfirm(
             isPresented: $confirmDiscard,
             title: String(localized: "Discard this import?"),
@@ -158,15 +163,15 @@ struct WorkoutImportView: View {
     /// La lógica sigue intacta: `parse`/`copyPrompt`/`handleImport` no cambian, solo quién los llama.
     private var captureFlow: some View {
         VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
-            importHeader
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Your plan, from your AI")
-                    .font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking)
-                    .foregroundStyle(theme.ink)
-                Text("Cénit never calls the network. Copy the prompt, run it in your AI with your plan, and paste the result here.")
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+            // FER-200: `EntrenarHojaCabecera(.cerrar)` absorbe `importHeader` + el héroe — mismas
+            // cadenas, misma salida (`dismiss` / `confirmDiscard` si hubiera trabajo a medias).
+            EntrenarHojaCabecera(
+                titulo: String(localized: "Your plan, from your AI"),
+                subtitulo: String(localized: "Import plan · bring your own AI"),
+                tono: .neutro, salida: .cerrar, onSalir: dismissImport)
+            Text("Cénit never calls the network. Copy the prompt, run it in your AI with your plan, and paste the result here.")
+                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
 
             VStack(alignment: .leading, spacing: CenitMetrics.gap) {
                 HStack(alignment: .center, spacing: CenitMetrics.space2) {
@@ -211,16 +216,10 @@ struct WorkoutImportView: View {
         }
     }
 
-    /// «‹» + kicker, compartido por captura y confirmación (FER-138) — el stepper de 4 pasos se queda
-    /// solo en mapeo/hecho, sin tocar. El mismo guard de `confirmDiscard` que el ✕ global ya tenía.
-    private var importHeader: some View {
-        HStack(spacing: 10) {
-            BackButton(role: .back, theme: theme) {
-                if midWork { confirmDiscard = true } else { dismiss() }
-            }
-            Text("Import plan · bring your own AI").entrenarCabeceraKicker().foregroundStyle(theme.inkSecondary)
-            Spacer(minLength: 0)
-        }
+    /// Salida compartida de captura/confirmación (y del ✕ de mapeo/hecho): a medias pregunta,
+    /// nunca tira el mapeo en silencio — misma lógica que el `importHeader` previo a FER-200.
+    private func dismissImport() {
+        if midWork { confirmDiscard = true } else { dismiss() }
     }
 
     /// La zona punteada de PASO 2: sigue siendo el mismo `TextEditor` de siempre (pegar o escribir),
@@ -399,20 +398,19 @@ struct WorkoutImportView: View {
 
     // MARK: - Confirm
 
-    /// FER-138: mismo «‹» + kicker que `captureFlow` (comparten `importHeader`), título fijo «Se leyó
-    /// bien» (ya no repite el nombre del plan — vive en la fila de cada rutina) y el resumen con
-    /// singular/plural correcto (`confirmSummary`). El chevron de «Corregir» vuelve a `.mapping`: es el
-    /// paso donde SÍ se corrigen mapeos, aunque el prototipo lo dibuje volviendo a la captura.
+    /// FER-138 / FER-200: misma cabecera de familia que `captureFlow` (`EntrenarHojaCabecera`),
+    /// título fijo «Se leyó bien» (ya no repite el nombre del plan — vive en la fila de cada rutina)
+    /// y el resumen con singular/plural correcto (`confirmSummary`). El chevron de «Corregir»
+    /// vuelve a `.mapping`: es el paso donde SÍ se corrigen mapeos, aunque el prototipo lo dibuje
+    /// volviendo a la captura.
     private func confirmFlow(_ program: WorkoutProgram) -> some View {
         VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
-            importHeader
-            VStack(alignment: .leading, spacing: 4) {
-                Text("It read well")
-                    .font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking)
-                    .foregroundStyle(theme.ink)
-                Text(verbatim: confirmSummary(program))
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-            }
+            // FER-200: misma cabecera de familia que captura — título/resumen ya localizados;
+            // salida `.cerrar` con el guard de `confirmDiscard` (fase confirm = midWork).
+            EntrenarHojaCabecera(
+                titulo: String(localized: "It read well"),
+                subtitulo: confirmSummary(program),
+                tono: .neutro, salida: .cerrar, onSalir: dismissImport)
 
             VStack(alignment: .leading, spacing: 0) {
                 // Ronda 2 (menor): el kicker es UNA sola cadena con el separador «·», como pide el

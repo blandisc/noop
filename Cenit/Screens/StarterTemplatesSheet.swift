@@ -46,7 +46,11 @@ struct StarterTemplatesSheet: View {
             .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(theme.paper.ignoresSafeArea())
+        // FER-200 (Anillo 2, épico FER-195): fondo de vidrio El Eje — se CONSERVA el chrome actual
+        // (título Grotesk a mano + preview in-place). Esta hoja no tiene botón de salida hoy (solo
+        // swipe-dismiss + «Add to my routines»); meter `EntrenarHojaCabecera` AÑADIRÍA un control
+        // (REGLA SUPREMA) — se ignora deliberadamente y se flagea en el reporte.
+        .entrenarHojaFondo(tono: .neutro)
         // FER-969: write failure is an inline banner (same pattern as WorkoutEditSheet), not silent dismiss.
         .overlay(alignment: .top) {
             if saveError {

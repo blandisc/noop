@@ -41,14 +41,13 @@ struct CrearPlanScreen: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                header
-                Text("Create your plan").entrenarCabeceraKicker().foregroundStyle(theme.inkTertiary)
-                    .padding(.top, EntrenarMetrics.heroKickerTop)
-                Text("Three paths")
-                    .font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking)
-                    .foregroundStyle(theme.ink)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, EntrenarMetrics.heroTitleTop)
+                // FER-200 (Anillo 2): `EntrenarHojaCabecera(.cerrar)` absorbe el `BackButton` a mano
+                // Y el héroe (kicker + «Three paths») — mismas cadenas ya localizadas, sin copy
+                // nueva. Salida `.cerrar`: solo cierra (`dismiss`), no guarda ni descarta trabajo.
+                EntrenarHojaCabecera(
+                    titulo: String(localized: "Three paths"),
+                    subtitulo: String(localized: "Create your plan"),
+                    tono: .neutro, salida: .cerrar, onSalir: { dismiss() })
                 Text("Ready-made templates, your own routine, or the plan you already have in your AI")
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -65,7 +64,9 @@ struct CrearPlanScreen: View {
             .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(theme.paper.ignoresSafeArea())
+        // FER-200 (Anillo 2, épico FER-195): fondo de vidrio El Eje — sin `NavigationStack` propio
+        // (push vía `navigationDestination`); la cabecera de familia ya resolvió la salida.
+        .entrenarHojaFondo(tono: .neutro)
         .toolbar(.hidden, for: .navigationBar)
         // FER-988: ocultar la barra mata el gesto de volver; esto lo devuelve.
         .keepsSwipeBack()
@@ -78,16 +79,6 @@ struct CrearPlanScreen: View {
                 .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
         }
         .enableInjection()
-    }
-
-    // MARK: - Header
-
-    private var header: some View {
-        HStack {
-            BackButton(role: .back, theme: theme) { dismiss() }
-                .padding(.leading, -2)
-            Spacer()
-        }
     }
 
     // MARK: - «Plantillas» — un grupo por fila, copia todas sus rutinas y arma la semana
