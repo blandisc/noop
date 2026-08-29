@@ -63,6 +63,47 @@ final class StrengthCSVTests: XCTestCase {
         XCTAssertEqual(fields[11], "")       // notes absent
     }
 
+    /// FER-224 defect fix: `set_index` must reset PER EXERCISE, not follow the raw position across
+    /// the whole session. A session logged squat, squat, bench, bench must number the bench sets 1, 2
+    /// — never 3, 4 (what a naive `sets.enumerated()` over the flat, position-ordered array would
+    /// produce, and did before this fix). This test would FAIL against that old flat-index code.
+    func testSetIndexResetsPerExerciseWithInterleavedExercises() {
+        func input(_ exerciseId: String, _ exerciseName: String) -> StrengthCSV.SetInput {
+            StrengthCSV.SetInput(date: Date(timeIntervalSince1970: 1_735_000_000), routineName: "Empuje A",
+                                 exerciseId: exerciseId, exerciseName: exerciseName, setKind: .work,
+                                 weightKg: 40, reps: 10, timeS: nil, distanceM: nil, rpe: nil,
+                                 restTakenS: nil, notes: nil)
+        }
+        // Session order (DB `position` order): squat, squat, bench, bench — NOT interleaved as a
+        // superset here, just two exercises back to back, which is already enough to break a flat index.
+        let sets = [
+            input("ex_squat", "Sentadilla"),
+            input("ex_squat", "Sentadilla"),
+            input("ex_bench", "Press de banca"),
+            input("ex_bench", "Press de banca"),
+        ]
+        let rows = StrengthCSV.rows(forSessionSets: sets)
+        XCTAssertEqual(rows.map(\.setIndex), [1, 2, 1, 2])
+        XCTAssertEqual(rows.map(\.exerciseName), ["Sentadilla", "Sentadilla", "Press de banca", "Press de banca"])
+    }
+
+    /// A superset (A, B, A, B — non-contiguous blocks of the same exercise) keeps ONE running counter
+    /// per exercise across the gaps: A1, B1, A2, B2 — the count the user did, not a per-block reset.
+    func testSetIndexKeepsRunningAcrossNonContiguousSupersetBlocks() {
+        func input(_ exerciseId: String, _ exerciseName: String) -> StrengthCSV.SetInput {
+            StrengthCSV.SetInput(date: Date(timeIntervalSince1970: 1_735_000_000), routineName: nil,
+                                 exerciseId: exerciseId, exerciseName: exerciseName, setKind: .work,
+                                 weightKg: 20, reps: 12, timeS: nil, distanceM: nil, rpe: nil,
+                                 restTakenS: nil, notes: nil)
+        }
+        let sets = [
+            input("ex_a", "Ejercicio A"), input("ex_b", "Ejercicio B"),
+            input("ex_a", "Ejercicio A"), input("ex_b", "Ejercicio B"),
+        ]
+        let rows = StrengthCSV.rows(forSessionSets: sets)
+        XCTAssertEqual(rows.map(\.setIndex), [1, 1, 2, 2])
+    }
+
     func testAppendRowsStreamsMultipleLinesWithHeaderSeparately() {
         var out = StrengthCSV.header + "\n"
         StrengthCSV.appendRows([row(exerciseName: "Sentadilla"), row(exerciseName: "Peso muerto")], to: &out)

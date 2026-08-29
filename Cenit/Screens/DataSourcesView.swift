@@ -864,12 +864,16 @@ struct DataSourcesView: View {
         let sessions = (try? await store.recentSessions(limit: Int.max)) ?? []
         for session in sessions.sorted(by: { $0.startTs < $1.startTs }) {
             let sets = (try? await store.setEntries(sessionId: session.id)) ?? []
-            let rows = sets.enumerated().map { index, set in
-                StrengthCSV.Row(
+            // `setEntries` is ordered by `position` across the WHOLE session, mixing exercises — the
+            // per-exercise `set_index` (squat 1, squat 2, bench 1… not squat 1, squat 2, bench 3) is
+            // computed by the pure `StrengthCSV.rows(forSessionSets:)`, not here (see its doc for the
+            // superset / warm-up semantics it decides).
+            let inputs = sets.map { set in
+                StrengthCSV.SetInput(
                     date: Date(timeIntervalSince1970: TimeInterval(session.startTs)),
                     routineName: session.routineId.flatMap { routineNamesById[$0] },
+                    exerciseId: set.exerciseId,
                     exerciseName: exercisesById[set.exerciseId]?.displayName(localized: true) ?? set.exerciseId,
-                    setIndex: index + 1,
                     setKind: set.kind,
                     weightKg: set.weightKg,
                     reps: set.reps,
@@ -879,7 +883,7 @@ struct DataSourcesView: View {
                     restTakenS: set.restTakenS,
                     notes: session.notes)
             }
-            StrengthCSV.appendRows(rows, to: &out)
+            StrengthCSV.appendRows(StrengthCSV.rows(forSessionSets: inputs), to: &out)
         }
         return out
     }

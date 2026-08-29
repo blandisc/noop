@@ -16,7 +16,11 @@ public enum StrengthCSV {
         public let date: Date
         public let routineName: String?
         public let exerciseName: String
-        /// 1-based position of this set within its session (matches what the app shows as "serie N").
+        /// 1-based position of this set WITHIN ITS EXERCISE for the session — "serie N" the way the
+        /// user counted while training, and the semantic Hevy (the parity target) uses. NOT the raw
+        /// position across the whole session: a session ordered squat, squat, bench would number the
+        /// bench set 3 there, which reads as "the exercise's 3rd set" to anyone opening the file — a
+        /// lie. Computed by `rows(forSessionSets:)`, never by the caller re-indexing a flat array.
         public let setIndex: Int
         public let setKind: SetKind
         public let weightKg: Double?
@@ -34,6 +38,55 @@ public enum StrengthCSV {
             self.setIndex = setIndex; self.setKind = setKind; self.weightKg = weightKg
             self.reps = reps; self.timeS = timeS; self.distanceM = distanceM; self.rpe = rpe
             self.restTakenS = restTakenS; self.notes = notes
+        }
+    }
+
+    /// One logged set as read from the DB, still carrying `exerciseId` (never shown in the CSV) so
+    /// `rows(forSessionSets:)` can key the per-exercise counter on the stable id rather than the
+    /// display name (two different exercises could share a name; an id never collides).
+    public struct SetInput {
+        public let date: Date
+        public let routineName: String?
+        public let exerciseId: String
+        public let exerciseName: String
+        public let setKind: SetKind
+        public let weightKg: Double?
+        public let reps: Int?
+        public let timeS: Double?
+        public let distanceM: Double?
+        public let rpe: Double?
+        public let restTakenS: Int?
+        public let notes: String?
+
+        public init(date: Date, routineName: String?, exerciseId: String, exerciseName: String,
+                    setKind: SetKind, weightKg: Double?, reps: Int?, timeS: Double?,
+                    distanceM: Double?, rpe: Double?, restTakenS: Int?, notes: String?) {
+            self.date = date; self.routineName = routineName; self.exerciseId = exerciseId
+            self.exerciseName = exerciseName; self.setKind = setKind; self.weightKg = weightKg
+            self.reps = reps; self.timeS = timeS; self.distanceM = distanceM; self.rpe = rpe
+            self.restTakenS = restTakenS; self.notes = notes
+        }
+    }
+
+    /// Turns one session's sets (already in DB `position` order — the order they were logged) into
+    /// `Row`s, computing `set_index` PER EXERCISE instead of using the flat array position.
+    ///
+    /// Two semantics decided here, not left implicit:
+    /// - **Non-contiguous blocks keep one running counter per exercise.** A superset logged A, B, A, B
+    ///   numbers A1, B1, A2, B2 — the count the user would say out loud while training — rather than
+    ///   resetting to 1 every time the exercise reappears after a different one.
+    /// - **The counter includes every `SetKind`, warm-ups too**, counted in the order they were logged.
+    ///   `set_kind` already tells a warm-up from a work set, so folding both into one running count is
+    ///   simpler than a second warm-up-only counter and no less honest about what happened.
+    public static func rows(forSessionSets sets: [SetInput]) -> [Row] {
+        var perExerciseIndex: [String: Int] = [:]
+        return sets.map { input in
+            let nextIndex = (perExerciseIndex[input.exerciseId] ?? 0) + 1
+            perExerciseIndex[input.exerciseId] = nextIndex
+            return Row(date: input.date, routineName: input.routineName, exerciseName: input.exerciseName,
+                       setIndex: nextIndex, setKind: input.setKind, weightKg: input.weightKg,
+                       reps: input.reps, timeS: input.timeS, distanceM: input.distanceM, rpe: input.rpe,
+                       restTakenS: input.restTakenS, notes: input.notes)
         }
     }
 
