@@ -3,6 +3,7 @@ import UniformTypeIdentifiers
 import StrandDesign
 import CenitStore
 import StrandAnalytics
+import StrandTraining
 #if os(iOS)
 import HealthKit   // HKAuthorizationStatus, for the write-back permission tally
 import UIKit       // UIApplication.openSettingsURLString
@@ -60,6 +61,11 @@ struct DataSourcesView: View {
     #if os(iOS)
     @EnvironmentObject private var autoBackup: AutoBackup
     #endif
+
+    /// FER-224: strength-training history export to CSV (Hevy-parity gap). Separate from
+    /// full-data Backup/Restore above — this is a human-readable spreadsheet, not a restore file.
+    @State private var strengthCSVBusy = false
+    @State private var strengthCSVError = false
 
     var body: some View {
         ScrollView {
@@ -723,6 +729,30 @@ struct DataSourcesView: View {
         section(String(localized: "Backup")) {
             backupBlock
             autoBackupBlock
+            strengthCSVBlock
+        }
+    }
+
+    /// FER-224: exports the strength-training history as a CSV spreadsheet — one row per logged set,
+    /// exercise by name, readable outside Cénit (Excel/Numbers/Sheets). Distinct from the full-data
+    /// Backup above, which is a restore-only file, not meant to be opened by a human.
+    private var strengthCSVBlock: some View {
+        blockCard(
+            String(localized: "Export strength history (CSV)"),
+            subtitle: String(localized: "Save every logged set — date, routine, exercise, weight, reps and notes — to a spreadsheet file you can open outside Cénit.")) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+                HStack(spacing: LiquidSpace.s300) {
+                    LiquidGlassButton(strengthCSVBusy ? String(localized: "Exporting…") : String(localized: "Export CSV…"),
+                                      variant: .glass) { runStrengthCSVExport() }
+                        .disabled(strengthCSVBusy)
+                        .opacity(strengthCSVBusy ? 0.6 : 1)
+                    if strengthCSVBusy { ProgressView().controlSize(.small).tint(LiquidColor.tinta500) }
+                    Spacer(minLength: 0)
+                }
+                if strengthCSVError {
+                    LiquidNotaLine(String(localized: "The export couldn't be saved. Try again."), tono: LiquidColor.negativo)
+                }
+            }
         }
     }
 
@@ -809,6 +839,50 @@ struct DataSourcesView: View {
         return String(localized: "Last backup \(rel.localizedString(for: d, relativeTo: Date()))")
     }
     #endif
+
+    /// FER-224: builds the CSV off the DB (session by session, so the whole history never sits in
+    /// memory as one array of sets) then hands it to the shared share-sheet exporter.
+    private func runStrengthCSVExport() {
+        strengthCSVError = false
+        strengthCSVBusy = true
+        Task {
+            let csv = await buildStrengthHistoryCSV()
+            strengthCSVBusy = false
+            if !FileExport.exportText(csv, suggestedName: "cenit-fuerza.csv") {
+                strengthCSVError = true
+            }
+        }
+    }
+
+    private func buildStrengthHistoryCSV() async -> String {
+        var out = StrengthCSV.header + "\n"
+        guard let store = await model.repo.storeHandle() else { return out }
+        let exercisesById = Dictionary(await model.repo.allExercises().map { ($0.id, $0) },
+                                        uniquingKeysWith: { a, _ in a })
+        let routineNamesById = Dictionary(((try? await store.routines()) ?? []).map { ($0.id, $0.name) },
+                                           uniquingKeysWith: { a, _ in a })
+        let sessions = (try? await store.recentSessions(limit: Int.max)) ?? []
+        for session in sessions.sorted(by: { $0.startTs < $1.startTs }) {
+            let sets = (try? await store.setEntries(sessionId: session.id)) ?? []
+            let rows = sets.enumerated().map { index, set in
+                StrengthCSV.Row(
+                    date: Date(timeIntervalSince1970: TimeInterval(session.startTs)),
+                    routineName: session.routineId.flatMap { routineNamesById[$0] },
+                    exerciseName: exercisesById[set.exerciseId]?.displayName(localized: true) ?? set.exerciseId,
+                    setIndex: index + 1,
+                    setKind: set.kind,
+                    weightKg: set.weightKg,
+                    reps: set.reps,
+                    timeS: set.timeS,
+                    distanceM: set.distanceM,
+                    rpe: set.rpe,
+                    restTakenS: set.restTakenS,
+                    notes: session.notes)
+            }
+            StrengthCSV.appendRows(rows, to: &out)
+        }
+        return out
+    }
 
     private func runExport() {
         backupBusy = true
