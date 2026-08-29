@@ -10,9 +10,11 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 /// was retired with the band — FER-1003 — since solo breathing has no live R-R source;
 /// the pace readout, driven by the pacer itself, is what remains.)
 ///
-/// «Instrumento diurno» (FER-342): warm paper, ink labels, color only in the measured
-/// datum. The breath orb keeps the screen's signature motion in a calm physiological
-/// glow, not saturated chrome.
+/// «Instrumento diurno» (FER-342) + cristal El Eje (FER-201 · Anillo 4): el fondo es
+/// `.entrenarHojaFondo(tono: .neutro)`; las tarjetas/píldoras internas son papel opaco
+/// (`.superficieSolida`/`.pastillaSolida`, regla no-sheet-glass). Tinta en rótulos, color
+/// solo en el dato. El orbe de respiración conserva su movimiento fisiológico; la lógica
+/// del pacer y los haptics, intacta.
 struct BreathingView: View {
 
     @Environment(AppModel.self) private var model
@@ -104,7 +106,11 @@ struct BreathingView: View {
             .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(theme.paper.ignoresSafeArea())
+        // FER-201 (Anillo 4, épico FER-195): fondo de cristal El Eje — se CONSERVA el
+        // chrome de título a mano (sin control de salida propio: el pop lo da el
+        // NavigationStack ambiente vía trainChrome). Agregar `EntrenarHojaCabecera(.cerrar)`
+        // AÑADIRÍA un control que hoy no existe (regla suprema: cero cambio de comportamiento).
+        .entrenarHojaFondo(tono: .neutro)
         // Phase driver: advance the orb toward its target and flip phases.
         .onReceive(phaseTimer) { now in
             guard running else { return }
@@ -140,8 +146,8 @@ struct BreathingView: View {
 
     private var statusRow: some View {
         HStack(spacing: 10) {
-            EntrenarStatusPill(running ? "Session live" : "Ready",
-                               dotColor: running ? theme.dataRecovery : nil)
+            statusPill(running ? "Session live" : "Ready",
+                       dotColor: running ? theme.dataRecovery : nil)
 
             Spacer()
 
@@ -155,6 +161,21 @@ struct BreathingView: View {
                     .foregroundStyle(theme.inkSecondary)
             }
         }
+    }
+
+    /// Píldora de estado opaca El Eje (FER-201) — sustituye `EntrenarStatusPill` (papel) sobre el cristal.
+    private func statusPill(_ text: LocalizedStringKey, dotColor: Color? = nil) -> some View {
+        HStack(spacing: LiquidSpace.s150) {
+            if let dotColor {
+                Circle().fill(dotColor).frame(width: LiquidSpace.s150, height: LiquidSpace.s150)
+            }
+            Text(text)
+                .font(StrandFont.caption)
+                .foregroundStyle(theme.ink)
+        }
+        .padding(.horizontal, LiquidSpace.s300)
+        .padding(.vertical, LiquidSpace.s150)
+        .liquidGlass(.pastillaSolida)
     }
 
     // MARK: - Pace selector
@@ -215,27 +236,29 @@ struct BreathingView: View {
     // MARK: - The orb
 
     private var orbCard: some View {
-        EntrenarToolCard(padding: 24) {
-            VStack(spacing: 18) {
-                HStack {
-                    Text(pace.label).groteskOverline().foregroundStyle(theme.inkTertiary)
-                    Spacer()
-                    Text(String(format: "%.1f br/min", pace.bpm))
-                        .font(InstrumentoType.groteskNumber(12, weight: .medium))
-                        .foregroundStyle(theme.inkSecondary)
-                }
-
-                breathingOrb
-                    .frame(height: 300)
-                    .frame(maxWidth: .infinity)
-
-                Text(running ? phaseWord : pace.tagline)
-                    .font(StrandFont.subhead)
-                    .foregroundStyle(running ? theme.ink : theme.inkSecondary)
-                    .strandAnimation(.easeInOut(duration: 0.2), value: phaseWord)
-                    .strandAnimation(.easeInOut(duration: 0.2), value: running)
+        // FER-201: tarjeta interna OPACA — el orbe y su TimelineView no cambian, solo el chrome.
+        VStack(spacing: 18) {
+            HStack {
+                Text(pace.label).groteskOverline().foregroundStyle(theme.inkTertiary)
+                Spacer()
+                Text(String(format: "%.1f br/min", pace.bpm))
+                    .font(InstrumentoType.groteskNumber(12, weight: .medium))
+                    .foregroundStyle(theme.inkSecondary)
             }
+
+            breathingOrb
+                .frame(height: 300)
+                .frame(maxWidth: .infinity)
+
+            Text(running ? phaseWord : pace.tagline)
+                .font(StrandFont.subhead)
+                .foregroundStyle(running ? theme.ink : theme.inkSecondary)
+                .strandAnimation(.easeInOut(duration: 0.2), value: phaseWord)
+                .strandAnimation(.easeInOut(duration: 0.2), value: running)
         }
+        .padding(LiquidSpace.s600)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .liquidGlass(.superficieSolida)
     }
 
     private var phaseWord: String {
@@ -376,29 +399,30 @@ struct BreathingView: View {
     /// `String(localized:)` en cada rama.
     private func readoutTile(label: LocalizedStringKey, value: String, unit: LocalizedStringKey,
                              accent: Color, caption: String) -> some View {
-        EntrenarToolCard(padding: 14) {
-            VStack(alignment: .leading, spacing: 0) {
-                Text(label).groteskOverline().foregroundStyle(theme.inkTertiary)
-                Spacer(minLength: 6)
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text(value)
-                        .font(InstrumentoType.groteskNumber(26))
-                        .foregroundStyle(accent)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.6)
-                        .contentTransition(.numericText())
-                    Text(unit)
-                        .font(StrandFont.caption)
-                        .foregroundStyle(theme.inkTertiary)
-                }
-                Text(caption)
-                    .font(StrandFont.footnote)
-                    .foregroundStyle(theme.inkTertiary)
+        VStack(alignment: .leading, spacing: 0) {
+            Text(label).groteskOverline().foregroundStyle(theme.inkTertiary)
+            Spacer(minLength: 6)
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text(value)
+                    .font(InstrumentoType.groteskNumber(26))
+                    .foregroundStyle(accent)
                     .lineLimit(1)
-                    .padding(.top, 4)
+                    .minimumScaleFactor(0.6)
+                    .contentTransition(.numericText())
+                Text(unit)
+                    .font(StrandFont.caption)
+                    .foregroundStyle(theme.inkTertiary)
             }
+            Text(caption)
+                .font(StrandFont.footnote)
+                .foregroundStyle(theme.inkTertiary)
+                .lineLimit(1)
+                .padding(.top, 4)
         }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .frame(height: CenitMetrics.tileHeight)
+        .liquidGlass(.superficieSolida)
     }
 
 

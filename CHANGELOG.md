@@ -20,6 +20,11 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **Intervalos y Respira pasan a vidrio / Intervals and Breathe turn to glass** (FER-201).
+  **ES** — Las dos herramientas de Entrenar (temporizador de intervalos y respiración guiada) dejan el papel plano y pasan al cristal El Eje. Es solo la piel: el temporizador, el orbe, los haptics y los controles Start/Pause/Reset siguen igual; las tarjetas y la píldora de estado internas son papel opaco sobre el vidrio (sin vidrio-sobre-vidrio); y el volver sigue siendo el de la barra de navegación — cero controles agregados o quitados.
+  **EN** — Train's two tools (interval timer and guided breathing) leave flat paper for El Eje glass. It's skin-only: the timer, the orb, the haptics and the Start/Pause/Reset controls stay the same; internal cards and the status pill are opaque paper over the glass (no glass-on-glass); and back is still the navigation bar's — zero controls added or removed.
+  ([IntervalTimerView.swift](Cenit/Screens/IntervalTimerView.swift), [BreathingView.swift](Cenit/Screens/BreathingView.swift))
+
 - **El cierre de sesión pasa a vidrio / Session close turns to glass** (FER-199).
   **ES** — El recibo térmico, los tickets guardados, el editor de un entrenamiento guardado y su detalle dejan el papel plano y pasan al cristal El Eje. Es solo la piel: el ticket térmico (en pantalla y al exportarlo) conserva su identidad térmica intacta; el editor sigue guardando con «Save» y cancelando con el disco de «Cancel», ambos en su barra de navegación nativa; y su aviso de «no se pudo guardar» ahora usa el mismo componente ya en cristal que el resto de Entrenar, sin cambiar cuándo aparece. Cero controles agregados o quitados.
   **EN** — The thermal receipt, saved tickets, the editor for a saved workout, and its detail leave flat paper for El Eje glass. It's skin-only: the thermal ticket (on screen and when exported) keeps its thermal identity untouched; the editor still saves via "Save" and cancels via the "Cancel" disc, both in its native navigation bar; and its "couldn't save" banner now uses the same already-glass component as the rest of Train, without changing when it appears. Zero controls added or removed.

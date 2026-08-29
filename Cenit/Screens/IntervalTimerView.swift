@@ -11,10 +11,11 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 /// long 5-loop buzz when the whole session finishes. On macOS (no UIKit haptics)
 /// it still works as a big glanceable visual timer.
 ///
-/// «Instrumento diurno» (FER-342): warm paper, the countdown is the dominant
-/// numeral in ink (a mechanical reading), the phase (WORK/REST/DONE) and the ring
-/// carry the one hue, and the glow/gradient of the dark original is dropped for a
-/// flat ring. All timer logic and haptics are unchanged.
+/// «Instrumento diurno» (FER-342) + cristal El Eje (FER-201 · Anillo 4): el fondo es
+/// `.entrenarHojaFondo(tono: .neutro)`; las tarjetas/píldoras internas son papel opaco
+/// (`.superficieSolida`/`.pastillaSolida`, regla no-sheet-glass). La cuenta regresiva
+/// sigue siendo el numeral dominante en tinta; fase y anillo llevan el hue. Toda la
+/// lógica del temporizador y los haptics, intacta.
 struct IntervalTimerView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.instrumentoTheme) private var theme
@@ -104,7 +105,11 @@ struct IntervalTimerView: View {
             .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(theme.paper.ignoresSafeArea())
+        // FER-201 (Anillo 4, épico FER-195): fondo de cristal El Eje — se CONSERVA el
+        // chrome de título a mano (sin control de salida propio: el pop lo da el
+        // NavigationStack ambiente vía trainChrome). Agregar `EntrenarHojaCabecera(.cerrar)`
+        // AÑADIRÍA un control que hoy no existe (regla suprema: cero cambio de comportamiento).
+        .entrenarHojaFondo(tono: .neutro)
         .onReceive(ticker) { _ in tick() }
         .onChange(of: workSeconds) { if !running { resetToStart() } }
         .onChange(of: restSeconds) { if !running { resetToStart() } }
@@ -140,18 +145,20 @@ struct IntervalTimerView: View {
                     .foregroundStyle(theme.ink)
             }
 
-            EntrenarToolCard {
-                VStack(alignment: .leading, spacing: 14) {
-                    configStepper(title: "Work", unit: "sec", value: $workSeconds,
-                                  range: 5...600, step: 5, tint: theme.dataStrain)
-                    Divider().overlay(theme.hairline)
-                    configStepper(title: "Rest", unit: "sec", value: $restSeconds,
-                                  range: 5...600, step: 5, tint: theme.dataHrv)
-                    Divider().overlay(theme.hairline)
-                    configStepper(title: "Rounds", unit: nil, value: $rounds,
-                                  range: 1...30, step: 1, tint: theme.ink)
-                }
+            // FER-201: tarjeta interna OPACA (no-sheet-glass) — sustituye `EntrenarToolCard` (papel).
+            VStack(alignment: .leading, spacing: 14) {
+                configStepper(title: "Work", unit: "sec", value: $workSeconds,
+                              range: 5...600, step: 5, tint: theme.dataStrain)
+                Divider().overlay(theme.hairline)
+                configStepper(title: "Rest", unit: "sec", value: $restSeconds,
+                              range: 5...600, step: 5, tint: theme.dataHrv)
+                Divider().overlay(theme.hairline)
+                configStepper(title: "Rounds", unit: nil, value: $rounds,
+                              range: 1...30, step: 1, tint: theme.ink)
             }
+            .padding(LiquidSpace.s400)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .liquidGlass(.superficieSolida)
 
             HStack {
                 Text("Total \(timeString(totalPlanned))")
@@ -180,63 +187,80 @@ struct IntervalTimerView: View {
         HStack(spacing: 10) {
             Spacer()
             if running {
-                EntrenarStatusPill("Running", dotColor: theme.dataStrain)
+                statusPill("Running", dotColor: theme.dataStrain)
             } else if isFinished {
-                EntrenarStatusPill("Complete", dotColor: theme.dataRecovery)
+                statusPill("Complete", dotColor: theme.dataRecovery)
             } else {
-                EntrenarStatusPill("Paused")
+                statusPill("Paused")
             }
         }
+    }
+
+    /// Píldora de estado opaca El Eje (FER-201) — sustituye `EntrenarStatusPill` (papel) sobre el cristal.
+    private func statusPill(_ text: LocalizedStringKey, dotColor: Color? = nil) -> some View {
+        HStack(spacing: LiquidSpace.s150) {
+            if let dotColor {
+                Circle().fill(dotColor).frame(width: LiquidSpace.s150, height: LiquidSpace.s150)
+            }
+            Text(text)
+                .font(StrandFont.caption)
+                .foregroundStyle(theme.ink)
+        }
+        .padding(.horizontal, LiquidSpace.s300)
+        .padding(.vertical, LiquidSpace.s150)
+        .liquidGlass(.pastillaSolida)
     }
 
     // MARK: Stage card — the big glanceable face
 
     private var stageCard: some View {
-        EntrenarToolCard {
-            VStack(spacing: 18) {
-                // Phase + round line
-                HStack(alignment: .firstTextBaseline) {
-                    Text(phase.label)
-                        .font(InstrumentoType.grotesk(34, weight: .bold))
-                        .tracking(2)
-                        .foregroundStyle(phaseColor)
-                    Spacer()
-                    HStack(spacing: 6) {
-                        Text("ROUND").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                        Text("\(min(currentRound, rounds))")
-                            .font(InstrumentoType.groteskNumber(20))
-                            .foregroundStyle(theme.ink)
-                        Text("/ \(rounds)")
-                            .font(InstrumentoType.groteskNumber(20))
-                            .foregroundStyle(theme.inkTertiary)
-                    }
+        // FER-201: tarjeta interna OPACA — el anillo/cuenta regresiva no cambian, solo el chrome.
+        VStack(spacing: 18) {
+            // Phase + round line
+            HStack(alignment: .firstTextBaseline) {
+                Text(phase.label)
+                    .font(InstrumentoType.grotesk(34, weight: .bold))
+                    .tracking(2)
+                    .foregroundStyle(phaseColor)
+                Spacer()
+                HStack(spacing: 6) {
+                    Text("ROUND").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Text("\(min(currentRound, rounds))")
+                        .font(InstrumentoType.groteskNumber(20))
+                        .foregroundStyle(theme.ink)
+                    Text("/ \(rounds)")
+                        .font(InstrumentoType.groteskNumber(20))
+                        .foregroundStyle(theme.inkTertiary)
                 }
-
-                // One bar per round — completed amber, current phase hue, future hairline.
-                roundIndicators
-
-                // The ring + countdown
-                ZStack {
-                    intervalRing
-                    VStack(spacing: 2) {
-                        // La cuenta regresiva ES el numeral protagonista de esta pantalla, así que habla
-                        // en la voz Grotesk como el resto de la app (FER-900) y no en la SF vieja.
-                        Text(isFinished ? "✓" : "\(remaining)")
-                            .instrumentoHero(96)
-                            .foregroundStyle(isFinished ? theme.dataRecovery : theme.ink)
-                            .contentTransition(.numericText())
-                            .strandAnimation(.snappy, value: remaining)
-                        Text(isFinished ? "SESSION DONE" : "SECONDS")
-                            .instrumentoOverline()
-                            .foregroundStyle(theme.inkTertiary)
-                    }
-                }
-                .frame(height: 260)
-                .frame(maxWidth: .infinity)
-
-                controls
             }
+
+            // One bar per round — completed amber, current phase hue, future hairline.
+            roundIndicators
+
+            // The ring + countdown
+            ZStack {
+                intervalRing
+                VStack(spacing: 2) {
+                    // La cuenta regresiva ES el numeral protagonista de esta pantalla, así que habla
+                    // en la voz Grotesk como el resto de la app (FER-900) y no en la SF vieja.
+                    Text(isFinished ? "✓" : "\(remaining)")
+                        .instrumentoHero(96)
+                        .foregroundStyle(isFinished ? theme.dataRecovery : theme.ink)
+                        .contentTransition(.numericText())
+                        .strandAnimation(.snappy, value: remaining)
+                    Text(isFinished ? "SESSION DONE" : "SECONDS")
+                        .instrumentoOverline()
+                        .foregroundStyle(theme.inkTertiary)
+                }
+            }
+            .frame(height: 260)
+            .frame(maxWidth: .infinity)
+
+            controls
         }
+        .padding(LiquidSpace.s400)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .liquidGlass(.superficieSolida)
     }
 
     /// Hidden from VoiceOver: the numeral (`remaining`) and `phase.label`, already read as part of
@@ -322,37 +346,38 @@ struct IntervalTimerView: View {
     // MARK: Overview card — elapsed / planned
 
     private var overviewCard: some View {
-        EntrenarToolCard {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text("Session").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                    Spacer()
-                    Text("\(timeString(elapsed)) / \(timeString(totalPlanned))")
-                        .font(InstrumentoType.groteskNumber(15, weight: .semibold))
-                        .foregroundStyle(theme.ink)
-                }
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Session").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Spacer()
+                Text("\(timeString(elapsed)) / \(timeString(totalPlanned))")
+                    .font(InstrumentoType.groteskNumber(15, weight: .semibold))
+                    .foregroundStyle(theme.ink)
+            }
 
-                // Slim total-session progress bar
-                GeometryReader { geo in
-                    ZStack(alignment: .leading) {
-                        Capsule()
-                            .fill(theme.hairline)
-                        Capsule()
-                            .fill(theme.dataStrain)
-                            .frame(width: geo.size.width * sessionProgress)
-                            .strandAnimation(.linear(duration: 0.9), value: sessionProgress)
-                    }
-                }
-                .frame(height: 8)
-
-                HStack(spacing: 0) {
-                    overviewStat("Work", "\(workSeconds)s", theme.dataStrain)
-                    overviewStat("Rest", "\(restSeconds)s", theme.dataHrv)
-                    overviewStat("Rounds", "\(rounds)", theme.ink)
-                    overviewStat("Remaining", timeString(max(0, totalPlanned - elapsed)), theme.inkSecondary)
+            // Slim total-session progress bar
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(theme.hairline)
+                    Capsule()
+                        .fill(theme.dataStrain)
+                        .frame(width: geo.size.width * sessionProgress)
+                        .strandAnimation(.linear(duration: 0.9), value: sessionProgress)
                 }
             }
+            .frame(height: 8)
+
+            HStack(spacing: 0) {
+                overviewStat("Work", "\(workSeconds)s", theme.dataStrain)
+                overviewStat("Rest", "\(restSeconds)s", theme.dataHrv)
+                overviewStat("Rounds", "\(rounds)", theme.ink)
+                overviewStat("Remaining", timeString(max(0, totalPlanned - elapsed)), theme.inkSecondary)
+            }
         }
+        .padding(LiquidSpace.s400)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .liquidGlass(.superficieSolida)
     }
 
     private var sessionProgress: Double {
