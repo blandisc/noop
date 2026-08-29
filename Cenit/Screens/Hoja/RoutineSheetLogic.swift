@@ -190,6 +190,7 @@ extension RoutineSheet {
         renumber(idx)
         activeCell = nil   // R7: la celda dueña puede haber sido esta serie u otra que se corrió.
         dirty = true
+        EntrenarHaptic.borrado.play()   // FER-223: borrar no tenía háptico propio.
     }
 
     func renumber(_ idx: Int) {
@@ -224,6 +225,7 @@ extension RoutineSheet {
         activeCell = nil
         refreshTint()
         dirty = true
+        EntrenarHaptic.borrado.play()   // FER-223: borrar no tenía háptico propio.
     }
 
     func duplicate(_ idx: Int) {

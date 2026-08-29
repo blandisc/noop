@@ -501,7 +501,7 @@ public struct SetTable: View {
         }
         .buttonStyle(EntrenarPressStyle())
         .disabled(onToggle == nil)
-        .sensoryFeedback(.success, trigger: row.done)
+        .entrenarHaptic(.serieCompletada, trigger: row.done)   // FER-223: catálogo de Entrenar, no un `.success` suelto.
         .accessibilityLabel(row.done ? Text("Done") : Text("Mark set done"))
     }
 

@@ -49,7 +49,8 @@ extension AppModel {
                                                            startedAt: Date())
         }
         scheduleInProgressPersist(immediate: true)   // FER-798: persist from the first moment (crash-safe)
-        buzz(loops: 1)   // confirm the session started, same single buzz as the manual live workout (FER-498)
+        // FER-223: evento del catálogo de Entrenar, no el `buzz` genérico de AppModel.
+        EntrenarHaptic.sesionIniciada.play()
     }
 
     /// Start the bundled mobility template as a one-off guided session, NOT saved to the plan
@@ -223,6 +224,9 @@ extension AppModel {
         // Surface the receipt on the live session — the sheet renders summaryPhase (session stays alive).
         session.summary = await buildStrengthSummary(session: session, record: pending.record,
                                                      sets: pending.sets, prior: prior, store: store)
+        // FER-223: la sesión cerró y guardó — no tenía ningún háptico. Mismo patrón de éxito
+        // ascendente que `prNuevo` (ambos son un cierre, nunca coinciden en el mismo segundo).
+        EntrenarHaptic.sesionTerminada.play()
         // FER-799: a watch-initiated end has no open sheet (the phone may be locked/backgrounded), so the
         // receipt would be stranded until the user re-opens the session. Present it — the flag re-evaluates
         // on the next foreground if the app is backgrounded. An iPhone-initiated finish already has it open.
