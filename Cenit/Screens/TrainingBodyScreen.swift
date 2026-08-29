@@ -184,7 +184,10 @@ struct TrainingBodyScreen: View {
             .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(theme.paper.ignoresSafeArea())
+        // FER-202 (Ola · anillo 3, épico FER-195): fondo de vidrio El Eje — reemplaza el papel
+        // plano. Conserva el hilo Liquid (`EntrenarHilo`), siluetas, `MuscleLoadRow` y la navegación
+        // ambiente del stack; no se duplica el hilo ni se toca la apertura de `VeredictoActaSheet`.
+        .entrenarHojaFondo(tono: .neutro)
         .task {
             async let mapLoad: () = load()
             async let volumeLoad: () = loadVolume()
@@ -935,7 +938,10 @@ private struct MuscleDetailView: View {
                     .onChange(of: proxy.size.height) { _, h in contentHeight = h }
             })
         }
-        .background(theme.paper.ignoresSafeArea())
+        // FER-202 (Ola · anillo 3): fondo de vidrio El Eje. Sin `EntrenarHojaCabecera`: hoy no hay
+        // control de salida propio (solo swipe-dismiss + detents) — agregar `.cerrar` añadiría un
+        // control (REGLA SUPREMA). Se conserva el overline del músculo y el sizing por contenido.
+        .entrenarHojaFondo(tono: .neutro)
         .presentationDetents([.height(contentHeight), .large])
         .presentationDragIndicator(.visible)
     }
