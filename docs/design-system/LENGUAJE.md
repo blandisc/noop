@@ -1,19 +1,26 @@
 # Lenguaje — voz, escritura y contenido
 
 > Compañero de [`DESIGN.md`](DESIGN.md). Donde `DESIGN.md` define **cómo se ve** el sistema
-> («Instrumento diurno»: papel cálido, un dato dominante, color solo en el dato), este documento
-> define **cómo suena**: la voz, las reglas de escritura, el microcopy por componente y el glosario
-> canónico de términos. Es es-MX y describe lo que la app **ya hace** — no inventa una voz nueva.
+> (**Liquid Glass · El Eje**: vidrio teñido sobre lienzo blanco, dos regímenes mosaico/sobrio),
+> este documento define **cómo suena**: la voz, las reglas de escritura, el microcopy por
+> componente y el glosario canónico de términos. Es es-MX y describe lo que la app **ya hace** —
+> no inventa una voz nueva.
+>
+> «Instrumento diurno / papel cálido» es la **generación anterior** del ADN (absorbida · en
+> migración; inventario en `DESIGN.md` §8) — su punto de vista (instrumento de precisión, un
+> dato dominante, color con significado) vive ahora dentro de Liquid Glass · El Eje.
 >
 > Todos los ejemplos son copy real del String Catalog (`Cenit/Resources/Localizable.xcstrings`).
-> La sección de voz visual (tipografía de la voz) vive en `DESIGN.md §8.7`; aquí está el contenido.
+> La sección de voz visual (tipografía de la voz) vive en `DESIGN.md` §8.7 (inventario en
+> migración); aquí está el contenido.
 
 ---
 
 ## 1. La voz en una frase
 
-**Un instrumento diurno que habla como un coach tranquilo en primera persona, te tutea, y nunca
-inventa un número.** Mide, no sentencia. Sugiere con evidencia, no diagnostica.
+**Un instrumento de precisión (Liquid Glass · El Eje) que habla como un coach tranquilo en
+primera persona, te tutea, y nunca inventa un número.** Mide, no sentencia. Sugiere con
+evidencia, no diagnostica.
 
 Tres rasgos que la definen:
 
