@@ -20,6 +20,11 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **La planeación de Entrenar pasa a vidrio / Train planning turns to glass** (FER-200).
+  **ES** — Tu Plan, el editor rápido de la semana, «Tres caminos», las plantillas, el importador de tu IA y los trucos del taller dejan el papel plano y pasan al cristal El Eje. Es solo la piel: mismas salidas, mismos inputs de carpeta, mismo mapeo al importar; donde no había botón de salida en cabecera no se agregó uno.
+  **EN** — Your Plan, the quick week editor, "Three paths", templates, the bring-your-own-AI importer and the workshop tricks leave flat paper for El Eje glass. It's skin-only: same exits, same folder inputs, same import mapping; where there was no header exit button, none was added.
+  ([WeeklyPlanEditorView.swift](Cenit/Screens/WeeklyPlanEditorView.swift), [WeekEditorSheet.swift](Cenit/Screens/WeekEditorSheet.swift), [CrearPlanScreen.swift](Cenit/Screens/CrearPlanScreen.swift), [StarterTemplatesSheet.swift](Cenit/Screens/StarterTemplatesSheet.swift), [WorkoutImportView.swift](Cenit/Screens/WorkoutImportView.swift), [WorkshopTricksScreen.swift](Cenit/Screens/WorkshopTricksScreen.swift))
+
 - **El cierre de sesión pasa a vidrio / Session close turns to glass** (FER-199).
   **ES** — El recibo térmico, los tickets guardados, el editor de un entrenamiento guardado y su detalle dejan el papel plano y pasan al cristal El Eje. Es solo la piel: el ticket térmico (en pantalla y al exportarlo) conserva su identidad térmica intacta; el editor sigue guardando con «Save» y cancelando con el disco de «Cancel», ambos en su barra de navegación nativa; y su aviso de «no se pudo guardar» ahora usa el mismo componente ya en cristal que el resto de Entrenar, sin cambiar cuándo aparece. Cero controles agregados o quitados.
   **EN** — The thermal receipt, saved tickets, the editor for a saved workout, and its detail leave flat paper for El Eje glass. It's skin-only: the thermal ticket (on screen and when exported) keeps its thermal identity untouched; the editor still saves via "Save" and cancels via the "Cancel" disc, both in its native navigation bar; and its "couldn't save" banner now uses the same already-glass component as the rest of Train, without changing when it appears. Zero controls added or removed.

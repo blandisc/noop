@@ -60,7 +60,11 @@ struct WeekEditorSheet: View {
             .padding(.top, CenitMetrics.gap)
         }
         .padding(CenitMetrics.screenPadding)
-        .background(theme.paper.ignoresSafeArea())
+        // FER-200 (Anillo 2, épico FER-195): fondo de vidrio El Eje — se CONSERVA el chrome actual
+        // (kicker + filas + CTA «Listo» abajo). Esta hoja no tiene botón de salida en cabecera
+        // (cierra con «Ready» / swipe); meter `EntrenarHojaCabecera` AÑADIRÍA un control (REGLA
+        // SUPREMA) — se flagea y solo se tiñe el fondo.
+        .entrenarHojaFondo(tono: .neutro)
         .saveErrorToast(isPresented: $saveError)
         .overlay(alignment: .bottom) {
             if lockedToast {
