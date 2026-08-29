@@ -2,6 +2,7 @@
 import SwiftUI
 import StrandDesign
 import StrandAnalytics
+import CenitStore   // FER-202: `WorkoutRow` — destino de detalle de actividad en el trainStack (fusión de historiales)
 import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 /// iOS navigation shell — the «IA de 3 capas» tab shell (FER-182). Five tabs over the «Barra de
