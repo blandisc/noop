@@ -1123,7 +1123,7 @@ private enum MatrizHoyFacePreviewData {
                     ])),
                 .split(
                     izq: MatrizSeccion(
-                        id: "carga", hue: LiquidColor.verdePrimario,
+                        id: "carga", hue: LiquidColor.verdeCarga,
                         titulo: "Load", valor: "1.12",
                         sublabel: "Steady",
                         chartID: "matriz-carga",
@@ -1185,7 +1185,7 @@ private enum MatrizHoyFacePreviewData {
                                         alertaHoy: .ninguna))),
                 .split(
                     izq: MatrizSeccion(
-                        id: "carga", hue: LiquidColor.verdePrimario,
+                        id: "carga", hue: LiquidColor.verdeCarga,
                         titulo: "Load", valor: "—",
                         sublabel: "Calibrating",
                         chartID: "matriz-carga",
@@ -1265,7 +1265,7 @@ private enum MatrizHoyFacePreviewData {
                     ])),
                 .split(
                     izq: MatrizSeccion(
-                        id: "carga", hue: LiquidColor.verdePrimario,
+                        id: "carga", hue: LiquidColor.verdeCarga,
                         titulo: "Load", valor: "1.48", sublabel: "Building",
                         chartID: "matriz-carga",
                         chart: .colina(p: 1.48, zona: 0.8...1.3, estela: estela)),

@@ -9,13 +9,13 @@ import SwiftUI
 
 public struct EntrenarStepperSegundos: View {
     private let valor: String
-    private let tono: EntrenarTono
+    private let tono: LiquidTono
     private let puedeBajar: Bool
     private let puedeSubir: Bool
     private let onBajar: () -> Void
     private let onSubir: () -> Void
 
-    public init(valor: String, tono: EntrenarTono = .neutro,
+    public init(valor: String, tono: LiquidTono = .neutro,
                 puedeBajar: Bool = true, puedeSubir: Bool = true,
                 onBajar: @escaping () -> Void, onSubir: @escaping () -> Void) {
         self.valor = valor

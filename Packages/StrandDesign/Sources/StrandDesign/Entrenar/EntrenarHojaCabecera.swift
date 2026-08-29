@@ -26,7 +26,7 @@ public struct EntrenarHojaCabecera: View {
     private let glifo: LiquidIcon.Glyph?
     private let titulo: String
     private let subtitulo: String?
-    private let tono: EntrenarTono
+    private let tono: LiquidTono
     private let salida: Salida
     private let onSalir: () -> Void
 
@@ -38,11 +38,11 @@ public struct EntrenarHojaCabecera: View {
     ///   - titulo: ya localizado.
     ///   - subtitulo: ya localizado; `nil` = sin segunda línea (RPE/Discos no la necesitan, la
     ///     hoja lo dice todo en el héroe de abajo).
-    ///   - tono: tiñe la gota del glifo (si hay) — el mismo `EntrenarTono` del fondo de la hoja.
+    ///   - tono: tiñe la gota del glifo (si hay) — el mismo `LiquidTono` del fondo de la hoja.
     ///   - salida: qué control de salida dibuja (ver `Salida`).
     ///   - onSalir: la acción — la hoja decide si eso guarda, descarta o solo cierra.
     public init(glifo: LiquidIcon.Glyph? = nil, titulo: String, subtitulo: String? = nil,
-                tono: EntrenarTono = .neutro, salida: Salida, onSalir: @escaping () -> Void) {
+                tono: LiquidTono = .neutro, salida: Salida, onSalir: @escaping () -> Void) {
         self.glifo = glifo
         self.titulo = titulo
         self.subtitulo = subtitulo

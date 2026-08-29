@@ -1,35 +1,37 @@
 import SwiftUI
 
-// MARK: - Entrenar · vidrio del hub v18 (FER-171 · Parte A)
+// MARK: - LiquidTono · vidrio teñido unificado (FER-234 · épico FER-229)
 //
-// La receta ÚNICA de vidrio del hub «La Principal» (mock `eje-hub-v18.html`), parametrizada por
-// tono: cada módulo/tile del hub tiñe su vidrio con la identidad de color de su dato (índigo del
-// héroe, cian de la dosis, rosa de marcas, ámbar de volumen, verde de subidas) sobre el mismo
-// fondo casi blanco de «El Tablero». Reusa el patrón de refracción/filos/sombra de `LiquidModulo`
-// (backdrop saturado 1.28×, highlight blanco superior, canto exterior, sombra de dos capas) — no
-// lo reinventa, solo lo hace tomar un tono además de un índice de profundidad.
+// La receta de vidrio teñido de Entrenar (antes enum de tono del hub + ViewModifier privado)
+// vive ahora como régimen de la puerta `liquidGlass(tono:regimen:)`. `.mosaico` = identidad
+// por relleno teñido (hub Entrenar); `.sobrio` = superficie neutra, el color lo pinta el
+// consumidor en el numeral (Hoy/detalles).
 //
-// `EntrenarModulo` y `EntrenarTile` son la MISMA receta (`EntrenarVidrioReceta`); lo único que
-// cambia entre los dos contenedores es el padding y el `minHeight` (el mock lo confirma: la
-// variante neutra de tile, `.tDes`, usa exactamente el mismo `box-shadow`/fondo que el módulo
-// neutro `.mod`, y las tres variantes teñidas de tile comparten `box-shadow` con el módulo
-// teñido `.dos`).
+// `EntrenarModulo` y `EntrenarTile` son la MISMA receta (`LiquidTonoReceta`) con `regimen:
+// .mosaico` por construcción; lo único que cambia entre los dos contenedores es el padding y el
+// `minHeight` (el mock lo confirma: la variante neutra de tile, `.tDes`, usa exactamente el mismo
+// `box-shadow`/fondo que el módulo neutro `.mod`, y las tres variantes teñidas de tile comparten
+// `box-shadow` con el módulo teñido `.dos`).
 
-/// El tono de vidrio de un módulo/tile de Entrenar — la identidad de color de la sección que lo
-/// contiene. Deliberadamente distinto de `EntrenarFamily` (push/pull/legs/fullBody, la familia de
-/// una RUTINA): `EntrenarTono` es la paleta del HUB, no de una rutina — «Marcas» siempre es rosa,
+/// El tono de vidrio teñido — identidad de color de una sección/dato. Deliberadamente distinto
+/// de `EntrenarFamily` (push/pull/legs/fullBody, la familia de una RUTINA): `LiquidTono` es la
+/// paleta del HUB y del vidrio unificado, no de una rutina — «Marcas» siempre es rosa,
 /// «Volumen» siempre ámbar, sin importar qué se entrenó ese día.
-public enum EntrenarTono: Sendable, Equatable, CaseIterable {
+public enum LiquidTono: Sendable, Equatable, CaseIterable {
     case neutro, indigo, cian, verde, rosa, ambar
+
+    /// Intensidad default del vidrio teñido (0.10). Canónico para `liquidGlass(tono:)`.
+    public static let intensidadDefault: Double = 0.10
 
     /// El color base del tono: `neutro` es blanco (el vidrio no tiñe); el resto son los MISMOS
     /// hex 1:1 que ya usa el resto del sistema vía `LiquidColor` — ninguno se redefine aquí.
+    /// `verde` es `verdeCarga` (identidad de carga), nunca `verdePrimario` (voz de marca).
     public var base: Color {
         switch self {
         case .neutro: return .white
         case .indigo: return LiquidColor.indigo
         case .cian:   return LiquidColor.cian
-        case .verde:  return LiquidColor.verdePrimario
+        case .verde:  return LiquidColor.verdeCarga
         case .rosa:   return LiquidColor.rosa
         case .ambar:  return LiquidColor.ambar
         }
@@ -66,7 +68,7 @@ public enum EntrenarTono: Sendable, Equatable, CaseIterable {
     }
 }
 
-/// El puente familia→tono del hub v18 (FER-171 · Parte B): qué `EntrenarTono` tiñe el HÉROE (que
+/// El puente familia→tono del hub v18 (FER-171 · Parte B): qué `LiquidTono` tiñe el HÉROE (que
 /// tiñe por la familia de la rutina del día) y las TESELAS de semana / celdas de constancia (que
 /// tiñen por la familia de cada sesión) — los tres únicos lugares del hub donde la identidad de
 /// color viene de una FAMILIA en vez del rol fijo del módulo (Marcas siempre rosa, Volumen siempre
@@ -74,7 +76,7 @@ public enum EntrenarTono: Sendable, Equatable, CaseIterable {
 /// pull → teal, legs/fullBody → índigo) para que un mismo día lea el mismo color en el héroe, la
 /// tesela y la celda — una sola tabla, no una por consumidor.
 public extension EntrenarFamily {
-    var tono: EntrenarTono {
+    var tono: LiquidTono {
         switch self {
         case .push:             return .ambar
         case .pull:             return .cian
@@ -83,12 +85,12 @@ public extension EntrenarFamily {
     }
 }
 
-/// Las constantes con nombre de la receta — nada suelto en `EntrenarVidrioReceta`. Cada valor
+/// Las constantes con nombre de la receta — nada suelto en `LiquidTonoReceta`. Cada valor
 /// cita su origen exacto en el mock `eje-hub-v18.html` para que un cambio de diseño futuro sepa
 /// qué línea de CSS está tocando. `public`: `moduloInsets` es el default-argument de un `init`
 /// público (Swift exige que el default sea al menos tan visible como el `init`), y el resto viaja
 /// con ella por consistencia — mismo criterio que `EntrenarMetrics`/`LiquidSpace`/`LiquidRadius`.
-public enum EntrenarVidrioMetrics {
+public enum LiquidTonoMetrics {
     /// Padding por defecto de `EntrenarModulo`: v11/h18, el valor que más se repite en el mock
     /// (`sem`/`dos`/`cuerpo`/`mesFull`/`hist` — todos `padding:11px 18px …`). El héroe (v16) pasa
     /// su propio `insets`.
@@ -103,7 +105,7 @@ public enum EntrenarVidrioMetrics {
     public static let rellenoNeutroAlfa: Double = 0.50
     /// Fondo teñido por defecto — 0.10 uniforme (mock: la mayoría de módulos/tiles teñidos caen
     /// en 0.09–0.10). El héroe índigo pide 0.11 vía el parámetro `intensidad` de `EntrenarModulo`.
-    public static let intensidadDefault: Double = 0.10
+    public static let intensidadDefault: Double = LiquidTono.intensidadDefault
 
     /// Highlight superior — aproximación de `inset 0 1px 0 rgba(255,255,255,X)` como
     /// `strokeBorder` completo (mismo patrón que `LiquidColor.vidrioBordeSuperficie` en
@@ -140,10 +142,57 @@ public enum EntrenarVidrioMetrics {
     public static let ambienteAlfaTeñido: Double = 0.14
 }
 
-/// La receta compartida, aplicada como `ViewModifier` — `EntrenarModulo`/`EntrenarTile` solo le
-/// dan padding/tamaño distintos (ver cabecera del archivo).
-private struct EntrenarVidrioReceta: ViewModifier {
-    let tono: EntrenarTono
+/// Resolución de colores de superficie para `LiquidTonoReceta` — `@testable` para que el
+/// contrato AA y los cinturones mosaico/sobrio crucen la frontera real de la receta.
+enum LiquidTonoSuperficie {
+    /// En `.sobrio` el tono no toca la superficie: se compone como si `tono == .neutro`.
+    static func tonoDeSuperficie(_ tono: LiquidTono, regimen: LiquidRegimen) -> LiquidTono {
+        regimen == .sobrio ? .neutro : tono
+    }
+
+    static func rellenoResuelto(tono: LiquidTono, regimen: LiquidRegimen, intensidad: Double) -> Color {
+        let t = tonoDeSuperficie(tono, regimen: regimen)
+        return t == .neutro
+            ? Color.white.opacity(LiquidTonoMetrics.rellenoNeutroAlfa)
+            : t.base.opacity(intensidad)
+    }
+
+    static func highlightResuelto(tono: LiquidTono, regimen: LiquidRegimen) -> Color {
+        let t = tonoDeSuperficie(tono, regimen: regimen)
+        return t == .neutro ? LiquidTonoMetrics.highlightNeutro : LiquidTonoMetrics.highlightTeñido
+    }
+
+    static func cantoResuelto(tono: LiquidTono, regimen: LiquidRegimen) -> Color {
+        let t = tonoDeSuperficie(tono, regimen: regimen)
+        return t == .neutro
+            ? LiquidColor.tinta900.opacity(0.16)
+            : t.base.opacity(LiquidTonoMetrics.cantoAlfaTeñido)
+    }
+
+    static func usaAroTeñido(tono: LiquidTono, regimen: LiquidRegimen) -> Bool {
+        tonoDeSuperficie(tono, regimen: regimen) != .neutro
+    }
+
+    static func sombrasResueltas(tono: LiquidTono, regimen: LiquidRegimen) -> [LiquidShadowLayer] {
+        let t = tonoDeSuperficie(tono, regimen: regimen)
+        if t == .neutro { return LiquidElevation.tarjeta }
+        let contacto = LiquidShadowLayer(
+            color: LiquidColor.tinta900.opacity(LiquidTonoMetrics.contactoAlfaTeñido),
+            radius: LiquidTonoMetrics.contactoRadius,
+            y: LiquidTonoMetrics.contactoY)
+        let ambiente = LiquidShadowLayer(
+            color: t.base.opacity(LiquidTonoMetrics.ambienteAlfaTeñido),
+            radius: LiquidTonoMetrics.ambienteRadiusTeñido,
+            y: LiquidTonoMetrics.ambienteYTeñido)
+        return [contacto, ambiente]
+    }
+}
+
+/// La receta compartida, aplicada como `ViewModifier` — `EntrenarModulo`/`EntrenarTile` y la
+/// sobrecarga `liquidGlass(tono:regimen:)` solo le dan padding/tamaño/régimen distintos.
+struct LiquidTonoReceta: ViewModifier {
+    let tono: LiquidTono
+    let regimen: LiquidRegimen
     let intensidad: Double
 
     @Environment(\.liquidMotionDisabled) private var motionDisabled
@@ -157,22 +206,19 @@ private struct EntrenarVidrioReceta: ViewModifier {
             .background { fondo }
             .overlay { shape.strokeBorder(highlight, lineWidth: 1) }
             .overlay {
-                if tono != .neutro {
-                    shape.strokeBorder(EntrenarVidrioMetrics.aroTeñido, lineWidth: 1)
+                if LiquidTonoSuperficie.usaAroTeñido(tono: tono, regimen: regimen) {
+                    shape.strokeBorder(LiquidTonoMetrics.aroTeñido, lineWidth: 1)
                 }
             }
             .overlay { shape.stroke(canto, lineWidth: 0.5) }
             .liquidShadow(sombrasTarjeta, silhouette: shape)
     }
 
-    /// La sombra del tile/módulo: el tono neutro usa el token ÚNICO compartido (`LiquidElevation.tarjeta`),
-    /// el mismo que las tarjetas de Tendencias — así el espacio entre tarjetas se lee igual en toda la
-    /// app. Los tonos teñidos conservan su sombra del color de su propio dato (contacto + ambiente).
     private var sombrasTarjeta: [LiquidShadowLayer] {
-        tono == .neutro ? LiquidElevation.tarjeta : [contacto, ambiente]
+        LiquidTonoSuperficie.sombrasResueltas(tono: tono, regimen: regimen)
     }
 
-    /// Mismo patrón que `LiquidModulo.glass`: vidrio nativo en iOS 26, material + backdrop
+    /// Mismo patrón que `LiquidModulo.glass`: vidrio nativo en iOS 26, material +backdrop
     /// saturado 1.28× (`LiquidColor.vidrioRefraccion`) antes de eso.
     @ViewBuilder
     private var fondo: some View {
@@ -189,55 +235,38 @@ private struct EntrenarVidrioReceta: ViewModifier {
     }
 
     private var relleno: Color {
-        tono == .neutro ? Color.white.opacity(EntrenarVidrioMetrics.rellenoNeutroAlfa)
-                         : tono.base.opacity(intensidad)
+        LiquidTonoSuperficie.rellenoResuelto(tono: tono, regimen: regimen, intensidad: intensidad)
     }
 
     private var highlight: Color {
-        tono == .neutro ? EntrenarVidrioMetrics.highlightNeutro : EntrenarVidrioMetrics.highlightTeñido
+        LiquidTonoSuperficie.highlightResuelto(tono: tono, regimen: regimen)
     }
 
     private var canto: Color {
-        tono == .neutro ? LiquidColor.tinta900.opacity(0.16) : tono.base.opacity(EntrenarVidrioMetrics.cantoAlfaTeñido)
-    }
-
-    private var contacto: LiquidShadowLayer {
-        let alfa = tono == .neutro ? EntrenarVidrioMetrics.contactoAlfaNeutro
-                                    : EntrenarVidrioMetrics.contactoAlfaTeñido
-        return LiquidShadowLayer(color: LiquidColor.tinta900.opacity(alfa),
-                                 radius: EntrenarVidrioMetrics.contactoRadius, y: EntrenarVidrioMetrics.contactoY)
-    }
-
-    private var ambiente: LiquidShadowLayer {
-        if tono == .neutro {
-            return LiquidShadowLayer(color: LiquidColor.tinta900.opacity(EntrenarVidrioMetrics.ambienteAlfaNeutro),
-                                     radius: EntrenarVidrioMetrics.ambienteRadiusNeutro,
-                                     y: EntrenarVidrioMetrics.ambienteYNeutro)
-        }
-        return LiquidShadowLayer(color: tono.base.opacity(EntrenarVidrioMetrics.ambienteAlfaTeñido),
-                                 radius: EntrenarVidrioMetrics.ambienteRadiusTeñido,
-                                 y: EntrenarVidrioMetrics.ambienteYTeñido)
+        LiquidTonoSuperficie.cantoResuelto(tono: tono, regimen: regimen)
     }
 }
 
 /// Un módulo de vidrio a lo ancho del hub (héroe, semana, dosis, constancia, historial…).
+/// Fija `regimen: .mosaico` por construcción — el default `.sobrio` de `liquidGlass(tono:)` no
+/// alcanza al hub.
 public struct EntrenarModulo<Content: View>: View {
-    private let tono: EntrenarTono
+    private let tono: LiquidTono
     private let intensidad: Double
     private let insets: EdgeInsets
     private let content: Content
 
     /// El contrato base: solo el tono, con el padding/intensidad por defecto del mock (v11/h18,
     /// 0.10).
-    public init(tono: EntrenarTono = .neutro, @ViewBuilder content: () -> Content) {
-        self.init(tono: tono, intensidad: EntrenarVidrioMetrics.intensidadDefault,
-                  insets: EntrenarVidrioMetrics.moduloInsets, content: content)
+    public init(tono: LiquidTono = .neutro, @ViewBuilder content: () -> Content) {
+        self.init(tono: tono, intensidad: LiquidTonoMetrics.intensidadDefault,
+                  insets: LiquidTonoMetrics.moduloInsets, content: content)
     }
 
     /// Override explícito — el héroe del hub lo usa para su intensidad 0.11 y su padding v16
     /// propio (mock `.hero{padding:16px 18px}`).
-    public init(tono: EntrenarTono, intensidad: Double,
-                insets: EdgeInsets = EntrenarVidrioMetrics.moduloInsets,
+    public init(tono: LiquidTono, intensidad: Double,
+                insets: EdgeInsets = LiquidTonoMetrics.moduloInsets,
                 @ViewBuilder content: () -> Content) {
         self.tono = tono
         self.intensidad = intensidad
@@ -249,35 +278,37 @@ public struct EntrenarModulo<Content: View>: View {
         content
             .padding(insets)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .modifier(EntrenarVidrioReceta(tono: tono, intensidad: intensidad))
+            .modifier(LiquidTonoReceta(tono: tono, regimen: .mosaico, intensidad: intensidad))
     }
 }
 
 /// Un tile del grid 2-col del hub (Subidas listas, Descanso real, Marcas, Volumen…). `minHeight`
 /// fijo en 104 — no es un parámetro: las cuatro tarjetas del hub comparten la misma rejilla.
+/// Fija `regimen: .mosaico` por construcción.
 public struct EntrenarTile<Content: View>: View {
-    private let tono: EntrenarTono
+    private let tono: LiquidTono
     private let content: Content
 
-    public init(tono: EntrenarTono = .neutro, @ViewBuilder content: () -> Content) {
+    public init(tono: LiquidTono = .neutro, @ViewBuilder content: () -> Content) {
         self.tono = tono
         self.content = content()
     }
 
     public var body: some View {
         content
-            .padding(EntrenarVidrioMetrics.tileInsets)
-            .frame(maxWidth: .infinity, minHeight: EntrenarVidrioMetrics.tileMinHeight,
+            .padding(LiquidTonoMetrics.tileInsets)
+            .frame(maxWidth: .infinity, minHeight: LiquidTonoMetrics.tileMinHeight,
                    maxHeight: .infinity, alignment: .topLeading)
-            .modifier(EntrenarVidrioReceta(tono: tono, intensidad: EntrenarVidrioMetrics.intensidadDefault))
+            .modifier(LiquidTonoReceta(tono: tono, regimen: .mosaico,
+                                       intensidad: LiquidTonoMetrics.intensidadDefault))
     }
 }
 
 #if DEBUG
-#Preview("EntrenarVidrio · los 6 tonos, módulo y tile") {
+#Preview("LiquidTono · los 6 tonos, módulo y tile") {
     ScrollView {
         VStack(spacing: 14) {
-            ForEach(EntrenarTono.allCases, id: \.self) { tono in
+            ForEach(LiquidTono.allCases, id: \.self) { tono in
                 VStack(alignment: .leading, spacing: 8) {
                     EntrenarModulo(tono: tono) {
                         Text(verbatim: "MÓDULO · \(String(describing: tono))")

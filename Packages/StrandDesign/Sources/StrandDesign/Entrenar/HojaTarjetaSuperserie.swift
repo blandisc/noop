@@ -3,8 +3,7 @@ import SwiftUI
 // MARK: - HojaTarjetaSuperserie — tarjeta única de superserie (FER-166)
 //
 // Estado EDICIÓN (mock `hoja-pantallas.html` P1 `.ss2` / `.ssL`). El vivo de sesión (P5) llega
-// en F3. Cristal cian LOCAL — no depende de `EntrenarVidrio` / `EntrenarTono` (pueden no existir
-// aún en la base `origin/iOS`).
+// en F3. Cristal cian local (forma/chrome propios); el rótulo cian reusa `LiquidTono.cian.rotulo`.
 
 /// Tarjeta de superserie en edición: cristal cian + nombre + pastilla + filas + pie.
 public struct HojaTarjetaSuperserie<Filas: View>: View {
@@ -44,8 +43,8 @@ public struct HojaTarjetaSuperserie<Filas: View>: View {
     private static var pastillaGap: CGFloat { 6 } // `.ssL` margin-left: 6px
     /// Fondo pastilla (`.ssL` `background:rgba(20,124,140,.10)`).
     private static var pastillaFondoAlfa: Double { 0.10 }
-    /// = EntrenarTono.cian rotulo — hex #136A78 del mock `.ssL` / `.ronda`.
-    private static var cianRotulo: Color { Color(hex: "#136A78") }
+    /// Rótulo cian canónico del vidrio teñido (mock `.ssL` / `.ronda`).
+    private static var cianRotulo: Color { LiquidTono.cian.rotulo }
     /// Menú ··· (`.menu` 14 px, tinta500).
     private static var menuSize: CGFloat { 14 }
     /// Pie: grotesk 10 / 600 tinta700.

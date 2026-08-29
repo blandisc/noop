@@ -29,13 +29,13 @@ private enum EntrenarMiniBarrasMetrics {
 /// anteriores en tinta neutra («pasado», sin protagonismo).
 public struct EntrenarMiniBarras: View {
     private let alturas: [CGFloat]
-    private let tono: EntrenarTono
+    private let tono: LiquidTono
 
     /// - Parameters:
     ///   - alturas: alturas relativas 0…1 (se clampan), izquierda→derecha en el mismo orden que
     ///     se dibujan. La ÚLTIMA es la barra "presente" y se pinta de `tono.base`.
     ///   - tono: el tono de la barra final.
-    public init(alturas: [CGFloat], tono: EntrenarTono) {
+    public init(alturas: [CGFloat], tono: LiquidTono) {
         self.alturas = alturas
         self.tono = tono
     }

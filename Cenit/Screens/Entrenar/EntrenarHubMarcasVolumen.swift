@@ -56,7 +56,7 @@ struct EntrenarHubMarcasVolumen: View {
     private func marcaTile(_ m: Marca) -> some View {
         EntrenarTile(tono: .rosa) {
             VStack(alignment: .leading, spacing: 0) {
-                marcaRegla(m).liquidRegla().foregroundStyle(EntrenarTono.rosa.rotulo)
+                marcaRegla(m).liquidRegla().foregroundStyle(LiquidTono.rosa.rotulo)
                 HStack(alignment: .firstTextBaseline, spacing: EntrenarHubMetrics.numRowGap) {
                     Text(verbatim: m.valueText)
                         .font(LiquidType.valorTileM).tracking(LiquidType.valorTileTracking)
@@ -93,7 +93,7 @@ struct EntrenarHubMarcasVolumen: View {
     private func volumenTile(_ v: Volumen) -> some View {
         EntrenarTile(tono: .ambar) {
             VStack(alignment: .leading, spacing: 0) {
-                Text("Volume · 8 weeks").liquidRegla().foregroundStyle(EntrenarTono.ambar.rotulo)
+                Text("Volume · 8 weeks").liquidRegla().foregroundStyle(LiquidTono.ambar.rotulo)
                 HStack(alignment: .firstTextBaseline, spacing: EntrenarHubMetrics.numRowGap) {
                     Text(verbatim: Self.oneDecimal(v.tons))
                         .font(LiquidType.valorTileM).tracking(LiquidType.valorTileTracking)

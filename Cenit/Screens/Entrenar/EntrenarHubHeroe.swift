@@ -10,7 +10,7 @@ import StrandDesign
 // puertas es el EXISTENTE (`EntrenarLanding.otraFormaPliegue`) — este componente solo lo aloja, vía
 // el parámetro `pliegue`, para no bifurcar su lógica.
 struct EntrenarHubHeroe<Pliegue: View>: View {
-    let tono: EntrenarTono
+    let tono: LiquidTono
     let routineName: String
     let meta: String
     let exerciseNames: String?
@@ -35,7 +35,7 @@ struct EntrenarHubHeroe<Pliegue: View>: View {
     /// Init explícito (mismo patrón que `EntrenarModulo`, Parte A): `pliegue` se invoca UNA vez, aquí
     /// — el `body` de este struct se reconstruye cada vez que su padre redibuja de todos modos, así
     /// que evaluarlo en el `init` es equivalente a guardar el closure sin invocar.
-    init(tono: EntrenarTono, routineName: String, meta: String, exerciseNames: String?, raiseLine: Text?,
+    init(tono: LiquidTono, routineName: String, meta: String, exerciseNames: String?, raiseLine: Text?,
         onOpenRaise: @escaping () -> Void, onStart: @escaping () -> Void,
         otraFormaAbierta: Bool, onToggleOtraForma: @escaping () -> Void,
         @ViewBuilder pliegue: () -> Pliegue) {

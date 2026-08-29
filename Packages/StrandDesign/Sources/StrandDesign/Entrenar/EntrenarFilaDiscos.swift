@@ -29,7 +29,7 @@ public struct EntrenarFilaDiscos: View {
     }
 
     private let discos: [Disco]
-    private let tono: EntrenarTono
+    private let tono: LiquidTono
     private let a11yLabel: String
 
     /// - Parameters:
@@ -37,7 +37,7 @@ public struct EntrenarFilaDiscos: View {
     ///   - tono: el color de dato de los discos (ámbar de carga por default).
     ///   - a11yLabel: la frase completa ya lista para VoiceOver («por lado: 20 + 15 + 1,25 · barra
     ///     20 kg») — el componente no compone frases, solo dibuja.
-    public init(discos: [Disco], tono: EntrenarTono = .ambar, a11yLabel: String) {
+    public init(discos: [Disco], tono: LiquidTono = .ambar, a11yLabel: String) {
         self.discos = discos
         self.tono = tono
         self.a11yLabel = a11yLabel

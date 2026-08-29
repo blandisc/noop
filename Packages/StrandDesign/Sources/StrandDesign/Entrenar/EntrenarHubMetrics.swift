@@ -147,7 +147,7 @@ public enum EntrenarHubMetrics {
     /// `EntrenarModulo.init`).
     public static let heroInsets = EdgeInsets(top: 16, leading: 18, bottom: 16, trailing: 18)
     /// Intensidad del vidrio índigo del héroe — 0.11, no el 0.10 por defecto (mock `.hero{background:
-    /// rgba(93,90,158,.11)}`; Parte A ya documenta el override en `EntrenarVidrioMetrics`).
+    /// rgba(93,90,158,.11)}`; Parte A ya documenta el override en `LiquidTonoMetrics`).
     public static let heroIntensidad: Double = 0.11
     /// Kicker → nombre de la rutina (mock `.hero h1{margin:5px 0 3px}`, mitad superior).
     public static let heroKickerToTituloTop: CGFloat = 5
