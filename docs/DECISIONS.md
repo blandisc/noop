@@ -62,6 +62,17 @@ el mismo PR** que la implementa (una línea basta: fecha, decisión, por qué).
   agenda ni se automatiza.
 - **DNA:** «Instrumento diurno» es canónico; el sistema oscuro es legacy (mantener, no
   extender).
+- **2026-08-29 · Fondo de pantalla blanco (revierte parcialmente el «papel cálido» del DNA):**
+  el lienzo de TODAS las secciones (Hoy, Tendencias, Entrenar, Ajustes) pasa de papel cálido a
+  blanco, vía el componente compartido `pantallaFondo` (`CenitColor.pantalla`). El papel cálido
+  (`InstrumentoTheme.paper`) sigue vivo para tarjetas, hojas y toolbars; Hoy conserva sus
+  partículas (`LiquidAtmosfera`) sobre el mismo blanco. Orden del dueño en sesión /inject.
+- **2026-08-29 · Distancia y sombra de tarjeta unificadas a un token cada una:** todo elemento tipo
+  tarjeta usa `CenitMetrics.cardGap` para su separación y `LiquidElevation.tarjeta` para su sombra
+  (las tarjetas teñidas conservan su sombra de color). Un solo lugar por cada cosa. Orden del dueño.
+- **2026-08-29 · La consola de la sesión viva vuelve a ocultarse (revierte FER-167 R19):** el keypad
+  de la sesión de fuerza gana la tecla ⌄ para bajarlo y ver la tabla completa; se reabre tocando
+  cualquier celda de peso/reps (`beginEditing`). Orden del dueño en sesión /inject.
 
 ## Cómo revertir una decisión
 

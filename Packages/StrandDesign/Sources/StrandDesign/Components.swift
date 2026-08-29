@@ -11,6 +11,7 @@ public enum CenitMetrics {
     public static let cardRadius: CGFloat = 16
     public static let cardPadding: CGFloat = 16
     public static let gap: CGFloat = 12          // gap between cards
+    public static let cardGap: CGFloat = 4       // distancia ÚNICA entre elementos tipo tarjeta en toda la app (dueño 2026-08-29): apúntale desde cada pantalla, no repitas literales
     public static let sectionGap: CGFloat = 28   // gap between sections
     public static let screenPadding: CGFloat = 24
     /// Top inset of a titled tab landing — the same distance from the safe area for «Patrones»,

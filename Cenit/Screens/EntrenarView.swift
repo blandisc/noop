@@ -257,7 +257,7 @@ private struct EntrenarLanding: View {
             .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(theme.paper.ignoresSafeArea())
+        .pantallaFondo()
         // FER-969: el fallo de escritura es un banner honesto, no éxito silencioso. Componente
         // compartido desde 2026-07-19 (era la misma copia en tres pantallas).
         .saveErrorToast(isPresented: $saveError)
@@ -417,17 +417,17 @@ private struct EntrenarLanding: View {
             onEdit: { openWeeklyPlan() }
         )
         EntrenarHubDosis(rows: dosisRows)
-            .padding(.top, dosisRows.isEmpty ? 0 : CenitMetrics.gap)
+            .padding(.top, dosisRows.isEmpty ? 0 : CenitMetrics.cardGap)
         EntrenarHubPar(raises: parRaises, restReal: nil,
                       onOpenRaises: { if let r = todayRoutine { openRoutine(r.id) } })
-            .padding(.top, parRaises.isEmpty ? 0 : CenitMetrics.gap)
+            .padding(.top, parRaises.isEmpty ? 0 : CenitMetrics.cardGap)
         if let cuerpo = cuerpoData {
             EntrenarHubCuerpo(topMuscleName: cuerpo.name, topMuscleKey: cuerpo.key, onOpenMap: openMuscleMap)
-                .padding(.top, CenitMetrics.gap)
+                .padding(.top, CenitMetrics.cardGap)
         }
         if marcasData != nil || volumenData != nil {
             EntrenarHubMarcasVolumen(marca: marcasData, volumen: volumenData)
-                .padding(.top, CenitMetrics.gap)
+                .padding(.top, CenitMetrics.cardGap)
         }
         EntrenarHubConstancia(
             semanas: constanciaSemanas,
@@ -436,10 +436,10 @@ private struct EntrenarLanding: View {
                 now: Date(), calendar: Calendar.current),
             monthLabels: constanciaMonthLabels, todaySlot: constanciaTodaySlot
         )
-        .padding(.top, CenitMetrics.gap)
+        .padding(.top, CenitMetrics.cardGap)
         EntrenarHubHistorial(filas: historialFilas, gapDays: historialGapDays, promedio: historialPromedio,
                              onOpenHistory: openHistory)
-            .padding(.top, CenitMetrics.gap)
+            .padding(.top, CenitMetrics.cardGap)
     }
 
     // MARK: - DOSIS (v18) — top 4 músculos por series en 7 días; silencio con <3 sesiones en la ventana.

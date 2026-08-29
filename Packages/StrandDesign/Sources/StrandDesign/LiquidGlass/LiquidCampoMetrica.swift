@@ -200,6 +200,7 @@ public struct LiquidCampoMetrica<Pie: View>: View {
             pie.padding(.top, LiquidSpace.s150)
         }
         .padding(.horizontal, LiquidSpace.s550)
+        .padding(.top, LiquidSpace.s200)
         .padding(.bottom, LiquidSpace.s400)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(fondo)

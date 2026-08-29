@@ -174,7 +174,7 @@ struct RootTabView: View {
                 .barReservation(barHeight)
                 .navigationDestination(for: SecondaryScreen.self) { screen in
                     secondaryDestination(screen)
-                        .background(InstrumentoTheme.base.paper.ignoresSafeArea())
+                        .pantallaFondo()
                         .barReservation(barHeight)
                         .navigationBarTitleDisplayMode(.inline)
                         .toolbarBackground(InstrumentoTheme.base.paper, for: .navigationBar)
@@ -426,7 +426,7 @@ struct RootTabView: View {
                 Color.clear   // placeholder until first selected; never visible (selecting builds it)
             }
         }
-        .background(InstrumentoTheme.base.paper.ignoresSafeArea())
+        .pantallaFondo()
         // Reserve the floating bar's height at the content level so the page's
         // ScrollView stops above the bar (the inset reaches scroll views here; it
         // would not from the TabView — see `body`).
@@ -444,7 +444,7 @@ struct RootTabView: View {
     @ViewBuilder
     private func trainChrome<V: View>(_ screen: V) -> some View {
         screen
-            .background(InstrumentoTheme.base.paper.ignoresSafeArea())
+            .pantallaFondo()
             .barReservation(barHeight)
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(InstrumentoTheme.base.paper, for: .navigationBar)

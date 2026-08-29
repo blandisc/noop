@@ -44,7 +44,7 @@ public struct LiquidModulo<Content: View>: View {
 
     public var body: some View {
         content
-            .padding(.vertical, LiquidSpace.s150)
+            .padding(.vertical, LiquidSpace.s200)
             .padding(.horizontal, LiquidSpace.s400)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background { glass }
@@ -56,7 +56,7 @@ public struct LiquidModulo<Content: View>: View {
                 LiquidAuroraEdge(tones: auroraTones, period: auroraPeriod,
                                  reverse: auroraReverse, radius: LiquidRadius.modulo)
             }
-            .liquidShadow(LiquidElevation.modulo(index: index), silhouette: shape)
+            .liquidShadow(LiquidElevation.tarjeta, silhouette: shape)
     }
 
     /// El material del módulo: en iOS 26 vidrio nativo (refracción real); antes, material del
