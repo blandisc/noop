@@ -1,13 +1,24 @@
 # Strand / Cénit — Design System
 
-> **One language: «Instrumento diurno».** Every screen reads like a precision instrument on warm
-> day paper: one dominant number, **meaningful color (the value and each signal's identity)**, hierarchy by space (not boxes),
-> tabular numerics that never reflow, and physiological motion (breathe / pulse / flow — no cartoon
-> bounce). The canonical surface / text / role tokens live in **[§8](#8-instrumento-diurno--the-daytime-language-fer-131)**.
+> **Un solo lenguaje: «Liquid Glass».** Cada pantalla se lee como un instrumento de precisión hecho
+> de vidrio líquido teñido sobre un lienzo blanco: **color con significado (el valor y la identidad
+> de cada señal)**, jerarquía por espacio, numerales tabulares que nunca se reacomodan, movimiento
+> fisiológico. La calidez ya no vive en el lienzo, vive en el vidrio y las tarjetas.
 
-> **The dark legacy system was retired (FER-430).** Cénit used to ship a dark, instrument-grade
-> language alongside Instrumento; it has been removed. What remains in §1 below is the shared,
-> language-agnostic data (recovery / strain / sleep / HR-zone / status / metric scales) + the chrome accent.
+> **La materialidad canónica es la del Eje:** el vidrio toma el tono de identidad de lo que contiene,
+> con la misma refracción, filo y sombra en todo el sistema. Dos regímenes, una receta: **Mosaico**
+> (muchos módulos, Entrenar: cada tesela se tiñe con su identidad; no hay un numeral que mande) y
+> **Sobrio** (default; un dato debe dominar en Hoy/detalles: el color vive en el número y su gota,
+> la superficie queda clara — el axioma «un dato dominante» rige el régimen sobrio).
+
+> **Cuatro colores que no se mezclan:** identidad de señal · identidad de módulo · juicio
+> (verde/ámbar/rojo del veredicto) · voz de marca (verde CTA). El verde de carga es `verdeCarga`,
+> nunca el verde del veredicto.
+
+> **«Instrumento diurno / papel cálido» se retiró como marco:** su punto de vista se absorbe; las
+> pantallas de papel migran; los componentes de papel se borran al migrar su último consumidor. El
+> sistema oscuro sigue retirado (FER-430); Watch OLED es la única excepción viva. El inventario aún
+> en migración vive en **[§8](#8-instrumento-diurno--generación-anterior-absorbida--en-migración)**.
 
 - **Source of truth:** the `StrandDesign` Swift package — `Packages/StrandDesign/Sources/StrandDesign/`
 - **Package version:** `0.1.0` (`StrandDesign.version`)
@@ -28,7 +39,7 @@
 
 ### 1.1 Color — surfaces & text
 
-Surfaces and text are **«Instrumento diurno»** (warm paper + ink) — see **[§8](#8-instrumento-diurno--the-daytime-language-fer-131)** for the canonical roles (`paper`, `surface`, `hairline`, `hairlineStrong`, `ink`, `inkSecondary`, `inkTertiary`). The dark `surface.*` / `text.*` / `glow` tokens were **retired in FER-430**.
+Surfaces and text still carry the **«Instrumento diurno»** roles while paper screens migrate — see **[§8](#8-instrumento-diurno--generación-anterior-absorbida--en-migración)** for `paper`, `surface`, `hairline`, `hairlineStrong`, `ink`, `inkSecondary`, `inkTertiary`. The dark `surface.*` / `text.*` / `glow` tokens were **retired in FER-430**. The canonical frame is Liquid Glass · El Eje (manifiesto de apertura).
 
 `opacity.disabled = 0.45` — shared dim value for disabled sections (don't invent your own).
 
@@ -254,11 +265,14 @@ See [`assets/`](assets/) (and its [README](assets/README.md)):
 
 ---
 
-## 8. «Instrumento diurno» — the daytime language (FER-131)
+## 8. «Instrumento diurno» — generación anterior (absorbida · en migración)
 
-The redesign language. It reads like a precision instrument printed on **warm paper**:
-light mode, **one dominant number**, **meaningful color (value + signal identity)**, hierarchy by space.
-It lives **alongside** the dark system (§1–§7) — no shipped screen changes in FER-131.
+**Generación anterior del ADN — ya absorbida por Liquid Glass · El Eje y en migración.** No es un
+lenguaje vivo alternativo: su punto de vista (instrumento de precisión, color con significado,
+jerarquía por espacio, numerales tabulares) se absorbió en la receta de vidrio teñido del Eje; las
+pantallas de papel migran; los componentes de papel se borran al migrar su último consumidor. Lo
+que sigue abajo es el inventario aún en tránsito (tokens, estados, voz) — no un marco canónico
+paralelo. Origen: FER-131; retiro del marco: épico FER-229.
 
 > **2026-08 · Tendencias salió del inventario Instrumento (épico FER-97).** Toda la pestaña
 > Tendencias — su aterrizaje (`CuerpoView`, FER-100), las gemelas, el detalle de vital, Sueño,
@@ -355,13 +369,16 @@ Not tokens — how the tokens are allowed to combine. `/qa` checks screens again
    numeral). Nothing else matches its size/weight.
 2. **Color carries meaning, not decoration.** Saturated hue marks a *measured value* **or a
    *signal's identity*** — each metric keeps its own tone (indigo sleep, rosa resting HR, verde
-   load, …) on its number, its label, or its mark. It never fills backgrounds, boxes, or
-   chrome, and it stays restrained: the page is still ink on warm paper, not a field of color.
+   load, …) on its number, its label, or its mark. **En régimen Mosaico** el hue de identidad
+   **sí puede teñir** la superficie del vidrio a baja intensidad (~10%); **en régimen Sobrio**
+   el color se mantiene en el dato (número + gota) y la superficie queda clara. El acento de
+   juicio (verde/ámbar/rojo del veredicto) sigue reservado y no se mezcla con el hue de señal
+   en el mismo elemento.
    *(Evolución Fer 2026-08: la regla anterior, «color solo en el dato», prohibía teñir
    rótulos/íconos; se retira. El color de identidad de cada señal también habla —como en los
-   rótulos del héroe y las filas del acta de Hoy—, con la misma contención. El único acento que
-   sigue reservado es el del **veredicto/estado**: verde/ámbar/rojo hablan de juicio, no de
-   identidad, y no se mezclan con el hue de la señal en el mismo elemento.)*
+   rótulos del héroe y las filas del acta de Hoy—, con la misma contención. Enmienda 2026-08-29
+   · Liquid Glass · El Eje: el «nunca llena fondos» queda matizado por régimen — Mosaico tiñe
+   vidrio; Sobrio no.)*
 3. **Hierarchy by space, not boxes.** Group with whitespace + hairlines. No card-in-card;
    `surface` is the exception, used sparingly and never nested.
 4. **Moderate overline.** Labels are quiet (tertiary ink). They orient; they don't announce.

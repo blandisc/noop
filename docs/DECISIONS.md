@@ -61,7 +61,19 @@ el mismo PR** que la implementa (una línea basta: fecha, decisión, por qué).
 - **2026-08-26 · Build del iPhone:** sigue siendo manual y al ritmo del dueño — no se
   agenda ni se automatiza.
 - **DNA:** «Instrumento diurno» es canónico; el sistema oscuro es legacy (mantener, no
-  extender).
+  extender). **Superseded 2026-08-29** por «Un solo vidrio: unificar en Liquid Glass · El Eje»
+  (abajo); el sistema oscuro sigue retirado.
+- **2026-08-29 · Un solo vidrio: unificar en Liquid Glass · El Eje** (épico FER-229). Un solo
+  lenguaje de ADN: la receta de vidrio teñido de El Eje bajo el nombre «Liquid Glass». Lienzo
+  blanco (ya decidido el mismo día). Dos regímenes, una receta: **Mosaico** (muchos módulos /
+  Entrenar: cada tesela se tiñe con su identidad) y **Sobrio** (default; un dato dominante — el
+  color vive en el número y su gota, superficie clara). Cuatro colores que no se mezclan:
+  identidad de señal · identidad de módulo · juicio (verde/ámbar/rojo del veredicto) · voz de
+  marca (verde CTA); `verdeCarga` ≠ verde del veredicto (`verdePrimario`). «Instrumento diurno /
+  papel cálido» queda muerto como marco y en migración (punto de vista absorbido; pantallas de
+  papel migran; componentes de papel se borran al migrar su último consumidor). Watch OLED es la
+  única excepción viva del sistema oscuro retirado. Nombre fundido en API: `liquidGlass` +
+  `LiquidTono`.
 - **2026-08-29 · Fondo de pantalla blanco (revierte parcialmente el «papel cálido» del DNA):**
   el lienzo de TODAS las secciones (Hoy, Tendencias, Entrenar, Ajustes) pasa de papel cálido a
   blanco, vía el componente compartido `pantallaFondo` (`CenitColor.pantalla`). El papel cálido
